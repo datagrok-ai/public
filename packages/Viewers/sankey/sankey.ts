@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {drag} from 'd3-drag';
-import {scaleOrdinal} from 'd3-scale';
+import {ScaleOrdinal, scaleOrdinal} from 'd3-scale';
 import {select} from 'd3-selection';
 import {
   sankey,
@@ -11,25 +11,75 @@ import {
   sankeyJustify,
   sankeyLeft,
   sankeyRight,
+  SankeyNode,
 } from 'd3-sankey';
 
+interface Node {
+  node: number,
+  name: string,
+}
+
+interface Link {
+  source: number,
+  target: number,
+  value: number,
+}
+
+// interface Graph {
+//   nodes: Node[],
+//   links: Link[],
+// }
+
+interface Margin {
+  top: number,
+  right: number,
+  bottom: number,
+  left: number,
+}
+
+interface AlignMethod {
+  center: (node: SankeyNode<{}, {}>, n: number) => number,
+  justify: (node: SankeyNode<{}, {}>, n: number) => number,
+  left: (node: SankeyNode<{}, {}>, n: number) => number,
+  right: (node: SankeyNode<{}, {}>, n: number) => number,
+}
+
 export class SankeyViewer extends DG.JsViewer {
+  sourceColumnName: string;
+  targetColumnName: string;
+  valueColumnName: string;
+  // alignment: string;
+  initialized: boolean;
+
+  //graph?: Graph | null;
+  graph: any;
+  margin?: Margin;
+  alignMethod?: AlignMethod;
+  color?: ScaleOrdinal<string, number, never>;
+  nodeWidth?: number;
+  nodePadding?: number;
+
+  strColumns?: DG.Column[];
+  numColumns?: DG.Column[];
+  sourceCol?: DG.Column;
+  targetCol?: DG.Column;
+
   constructor() {
     super();
-
     // Properties
     this.sourceColumnName = this.string('sourceColumnName');
     this.targetColumnName = this.string('targetColumnName');
-    this.valueColumnName = this.float('valueColumnName');
-    this.alignment = this.string('alignment', 'justify');
-    this.getProperty('alignment').choices = ['justify', 'left', 'right', 'center'];
+    this.valueColumnName = this.string('valueColumnName');
+    // this.alignment = this.string('alignment', 'justify');
+    // this.getProperty('alignment')!.choices = ['justify', 'left', 'right', 'center'];
 
     this.initialized = false;
   }
 
   init() {
     // Data
-    this.graph = {};
+    this.graph = null;
+
     // Chart Settings
     this.margin = {top: 10, right: 10, bottom: 10, left: 10};
     this.alignMethod = {center: sankeyCenter, justify: sankeyJustify,
@@ -65,9 +115,9 @@ export class SankeyViewer extends DG.JsViewer {
     const dataFrameValueColumn = this.dataFrame.getCol(this.valueColumnName);
     const filteredIndexList = this.dataFrame.filter.getSelectedIndexes();
 
-    const sourceList = new Array(filteredIndexList.length);
-    const targetList = new Array(filteredIndexList.length);
-    const valueList = new Array(filteredIndexList.length);
+    const sourceList = new Array<string>(filteredIndexList.length);
+    const targetList = new Array<string>(filteredIndexList.length);
+    const valueList = new Array<number>(filteredIndexList.length);
 
     for (let i = 0; i < filteredIndexList.length; i++) {
       sourceList[i] = dataFrameSourceColumn.get(filteredIndexList[i]);
@@ -78,10 +128,10 @@ export class SankeyViewer extends DG.JsViewer {
     this.sourceCol = DG.Column.fromList('string', this.sourceColumnName, sourceList);
     this.targetCol = DG.Column.fromList('string', this.targetColumnName, targetList);
 
-    const nodes = Array.from(new Set(sourceList.concat(targetList)))
-      .map((node, index) => ({node: index, name: node}));
+    const nodes: Node[] = Array.from(new Set(sourceList.concat(targetList)))
+      .map((node: string, index: number) => ({node: index, name: node}));
 
-    const links = [];
+    const links: Link[] = [];
     const rowCount = filteredIndexList.length;
     for (let i = 0; i < rowCount; i++) {
       links.push({
@@ -97,7 +147,7 @@ export class SankeyViewer extends DG.JsViewer {
     };
   }
 
-  onPropertyChanged(property) {
+  onPropertyChanged(property: DG.Property) {
     super.onPropertyChanged(property);
     if (this.initialized) {
       this.prepareData();
@@ -113,20 +163,20 @@ export class SankeyViewer extends DG.JsViewer {
     this.prepareData();
 
     $(this.root).empty();
-    const width = this.root.parentElement.clientWidth - this.margin.left - this.margin.right;
-    const height = this.root.parentElement.clientHeight - this.margin.top - this.margin.bottom;
+    const width = this.root.parentElement!.clientWidth - this.margin!.left - this.margin!.right;
+    const height = this.root.parentElement!.clientHeight - this.margin!.top - this.margin!.bottom;
 
-    const generator = sankey().nodeWidth(this.nodeWidth)
-      .nodePadding(this.nodePadding)
-      .nodeAlign(this.alignMethod[this.alignment])
+    const generator = sankey().nodeWidth(this.nodeWidth!)
+      .nodePadding(this.nodePadding!)
+      .nodeAlign(this.alignMethod!.justify)
       .extent([[0, 0], [width, height]]);
-    const graph = generator(this.graph);
+    const graph = generator(this.graph!);
 
     const svg = select(this.root).append('svg')
-      .attr('width', width + this.margin.left + this.margin.right)
-      .attr('height', height + this.margin.top + this.margin.bottom)
+      .attr('width', width + this.margin!.left + this.margin!.right)
+      .attr('height', height + this.margin!.top + this.margin!.bottom)
       .append('g')
-      .attr('transform', `translate(${this.margin.left}, ${this.margin.top})`);
+      .attr('transform', `translate(${this.margin!.left}, ${this.margin!.top})`);
 
     const nodeGroup = svg.append('g').attr('class', 'node');
 
@@ -137,20 +187,21 @@ export class SankeyViewer extends DG.JsViewer {
       .selectAll('rect')
       .data(graph.nodes)
       .join('rect')
-      .attr('x', (d) => d.x0)
-      .attr('y', (d) => d.y0)
-      .attr('height', (d) => d.y1 - d.y0)
-      .attr('width', (d) => d.x1 - d.x0)
-      .attr('fill', (d) => DG.Color.toRgb(this.color(d.name)))
-      .on('mouseover', (event, d) => {
+      .attr('x', (d) => d.x0!)
+      .attr('y', (d) => d.y0!)
+      .attr('height', (d) => d.y1! - d.y0!)
+      .attr('width', (d) => d.x1! - d.x0!)
+      .attr('fill', (d: any) => DG.Color.toRgb(this.color!(d.name)))
+      .on('mouseover', (event, d: any) => {
         ui.tooltip.showRowGroup(this.dataFrame, (i) => {
-          return this.sourceCol.get(i) === d.name ||
-            this.targetCol.get(i) === d.name;
+          return this.sourceCol!.get(i) === d.name ||
+            this.targetCol!.get(i) === d.name;
         }, event.x, event.y);
       })
       .on('mouseout', () => ui.tooltip.hide())
+      //@ts-ignore
       .call(drag().subject((d) => d).on('drag', dragmove))
-      .on('click', (event, d) => {
+      .on('click', (event, d: any) => {
         if (event.defaultPrevented) return; // dragging
         this.dataFrame.selection.handleClick((i) => {
           return dataFrameSourceColumn.get(i) === d.name ||
@@ -164,15 +215,15 @@ export class SankeyViewer extends DG.JsViewer {
       .join('path')
       .attr('class', 'link')
       .attr('d', sankeyLinkHorizontal())
-      .attr('stroke-width', (d) => Math.max(1, d.width))
-      .on('mouseover', (event, d) => {
+      .attr('stroke-width', (d) => Math.max(1, d.width!))
+      .on('mouseover', (event, d: any) => {
         ui.tooltip.showRowGroup(this.dataFrame, (i) => {
-          return this.sourceCol.get(i) === d.source.name &&
-            this.targetCol.get(i) === d.target.name;
+          return this.sourceCol!.get(i) === d.source.name &&
+            this.targetCol!.get(i) === d.target.name;
         }, event.x, event.y);
       })
       .on('mouseout', () => ui.tooltip.hide())
-      .on('click', (event, d) => {
+      .on('click', (event, d: any) => {
         this.dataFrame.selection.handleClick((i) => {
           return dataFrameSourceColumn.get(i) === d.source.name &&
             dataFrameTargetColumn.get(i) === d.target.name;
@@ -183,17 +234,18 @@ export class SankeyViewer extends DG.JsViewer {
       .selectAll('text')
       .data(graph.nodes)
       .join('text')
-      .attr('x', (d) => d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6)
-      .attr('y', (d) => (d.y1 + d.y0) / 2)
+      .attr('x', (d) => d.x0! < width / 2 ? d.x1! + 6 : d.x0! - 6)
+      .attr('y', (d) => (d.y1! + d.y0!) / 2)
       .attr('dy', '0.35em')
-      .attr('text-anchor', (d) => d.x0 < width / 2 ? 'start' : 'end')
-      .attr('class', (d) => (d.name).split(' ').join('_'))
-      .text((d) => d.name);
+      .attr('text-anchor', (d) => d.x0! < width / 2 ? 'start' : 'end')
+      .attr('class', (d: any) => (d.name).split(' ').join('_'))
+      .text((d: any) => d.name);
 
-    function dragmove(event, d) {
+    function dragmove(this: any, event: any, d: any) {
+      // this: Element???
       const rect = select(this);
-      const rectX = rect.attr('x');
-      const rectY = rect.attr('y');
+      const rectX = +rect.attr('x');
+      const rectY = +rect.attr('y');
       d.x0 += event.dx;
       d.x1 += event.dx;
       d.y0 += event.dy;

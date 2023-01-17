@@ -1,20 +1,17 @@
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {SankeyViewer} from '../sankey/sankey.js';
-import {GlobeViewer} from '../globe/globe-viewer.js';
-import {WordCloudViewer} from '../word-cloud/word-cloud-viewer.js';
-import {ChordViewer} from '../chord/chord-viewer.js';
-import { TreeViewer } from '../tree/tree-viewer.js';
-// import {DumbbellViewer} from '../dumbbell/dumbbell-viewer.js';
+import {SankeyViewer} from '../sankey/sankey';
+import {GlobeViewer} from '../globe/globe-viewer';
+import {WordCloudViewer} from '../word-cloud/word-cloud-viewer';
+import {ChordViewer} from '../chord/chord-viewer';
+import {TreeViewer} from '../tree/tree-viewer';
 
 import '../css/chord-viewer.css';
 import '../css/sankey.css';
 
-/* TODO: move cell renderer tests out of this package */
-import {FlagCellRenderer} from './flag-cell-renderer.js';
+// /* TODO: move cell renderer tests out of this package */
+import {FlagCellRenderer} from './flag-cell-renderer';
 
 
 export const _package = new DG.Package();
@@ -51,14 +48,6 @@ export function chord() {
   return new ChordViewer();
 }
 
-// name: Dumbbell
-// description: Creates a dumbbell plot
-// tags: viewer
-// output: viewer result
-// export function dumbbell() {
-//   return new DumbbellViewer();
-// }
-
 //name: Word Cloud
 //description: Creates a word cloud
 //tags: viewer
@@ -74,5 +63,3 @@ export function wordcloud() {
 export function flagCellRenderer() {
   return new FlagCellRenderer();
 }
-
-

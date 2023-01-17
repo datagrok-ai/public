@@ -1,5 +1,6 @@
-export class FlagCellRenderer extends DG.GridCellRenderer {
+import * as DG from 'datagrok-api/dg';
 
+export class FlagCellRenderer extends DG.GridCellRenderer {
   get name() {
     return 'Flag cell renderer';
   }
@@ -16,7 +17,8 @@ export class FlagCellRenderer extends DG.GridCellRenderer {
     return 50;
   }
 
-  render(g, x, y, w, h, gridCell, cellStyle) {
+  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
     g.fillStyle = 'black';
     g.fillText('flag', x, y);
   }
