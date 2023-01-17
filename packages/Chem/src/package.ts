@@ -486,8 +486,10 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
   const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molCol);
   let columnNames: string[] = [];
 
-  if (invalid.length > 0)
+  if (invalid.filter((el) => el !== null).length > 0) {
     console.log(`Invalid rows ${invalid.map((i) => i.toString()).join(', ')}`);
+    grok.shell.warning('Dataset contains malformed data!');
+  }
 
   for (let elName of elementsTable) {
     const value = elements.get(elName);
