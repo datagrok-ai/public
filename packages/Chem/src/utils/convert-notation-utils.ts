@@ -1,17 +1,7 @@
+import * as DG from 'datagrok-api/dg';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import MolNotation = DG.chem.Notation;
 
-export enum MolNotation {
-  Smiles = 'smiles',
-  Smarts = 'smarts',
-  MolBlock = 'molblock', // molblock V2000
-  V3KMolBlock = 'v3Kmolblock', // molblock V3000
-  // Inchi = 'inchi', // not fully supported yet
-  Unknown = 'unknown',
-}
-
-export function isMolBlock(s: string) {
-  return s.includes('M  END');
-}
 
 /**
  * Convert between the following notations: SMILES, SMARTS, Molfile V2000 and Molfile V3000
@@ -34,8 +24,16 @@ export function _convertMolNotation(
     throw new Error(`Convert molecule notation: source and target notations must differ: "${sourceNotation}"`);
   const mol = rdKitModule.get_mol(moleculeString);
   try {
-    if (targetNotation === MolNotation.MolBlock)
+    if (targetNotation === MolNotation.MolBlock) {
+      //when converting from smiles set coordinates and rendering parameters
+      if (sourceNotation === MolNotation.Smiles) {
+        if (!mol.has_coords())
+          mol.set_new_coords();
+        mol.normalize_depiction(1);
+        mol.straighten_depiction(false);
+      }
       return mol.get_molblock();
+    }
     if (targetNotation === MolNotation.Smiles)
       return mol.get_smiles();
     if (targetNotation === MolNotation.V3KMolBlock)
@@ -51,7 +49,7 @@ export function _convertMolNotation(
 }
 
 export function molToMolblock(molStr: string, module: RDModule): string {
-  return isMolBlock(molStr) ?
+  return DG.chem.isMolBlock(molStr) ?
     molStr : _convertMolNotation(molStr, MolNotation.Unknown, MolNotation.MolBlock, module);
 }
 

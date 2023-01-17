@@ -37,8 +37,8 @@ import {checkForStructuralAlerts} from './panels/structural-alerts';
 //utils imports
 import {Fingerprint} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
-import {checkMoleculeValid, moleculesEqual, _rdKitModule} from './utils/chem-common-rdkit';
-import {_convertMolNotation, isMolBlock} from './utils/convert-notation-utils';
+import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
+import {_convertMolNotation} from './utils/convert-notation-utils';
 import {molToMolblock} from './utils/convert-notation-utils';
 import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
 import {saveAsSdfDialog} from './utils/sdf-utils';
@@ -59,10 +59,11 @@ import {_importSmi} from './file-importers/smi-importer';
 //script api
 import {generateScaffoldTree} from "./scripts-api";
 import {setupScaffold} from './scripts-api';
+import { renderMolecule } from './rendering/render-molecule';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const DEFAULT_SKETCHER = 'Open Chem Sketcher';
-const SKETCHER_FUNCTIONS_ALIASES: {[key: string]: string} = {
+const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
   OpenChemLib: 'Open Chem Sketcher',
   Ketcher: 'Ketcher',
   Marvin: 'Marvin JS',
@@ -96,13 +97,13 @@ export async function initChem(): Promise<void> {
   _properties = await _package.getProperties();
   _rdRenderer = new RDKitCellRenderer(getRdKitModule());
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
-  const lastSelectedSketcher = _properties.Sketcher ? SKETCHER_FUNCTIONS_ALIASES[_properties.Sketcher]:
+  const lastSelectedSketcher = _properties.Sketcher ? SKETCHER_FUNCS_FRIENDLY_NAMES[_properties.Sketcher]:
       await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
   if (DG.Func.find({tags: ['moleculeSketcher']}).find(e => e.name === lastSelectedSketcher || e.friendlyName === lastSelectedSketcher) || !lastSelectedSketcher)
-    DG.chem.currentSketcher = lastSelectedSketcher;
+    DG.chem.currentSketcherType = lastSelectedSketcher;
   else {
     grok.shell.warning(`Package with ${lastSelectedSketcher} function is not installed. Switching to ${DEFAULT_SKETCHER}.`);
-    DG.chem.currentSketcher = DEFAULT_SKETCHER;
+    DG.chem.currentSketcherType = DEFAULT_SKETCHER;
   }
   _renderers = new Map();
 }
@@ -145,6 +146,17 @@ export function canvasMol(
   drawMoleculeToCanvas(x, y, w, h, canvas,
     molString, scaffoldMolString == '' ? null : scaffoldMolString,
     options);
+}
+
+
+//name: drawMolecule
+//input: string molStr
+//input: int w {optional: true}
+//input: int h {optional: true}
+//input: bool popupMenu {optional: true}
+//output: object canvas
+export function drawMolecule(molStr: string, w?: number, h?: number, popupMenu?: boolean): HTMLElement {
+  return renderMolecule(molStr, {width: w, height: h, popupMenu: popupMenu});
 }
 
 
@@ -638,21 +650,15 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
   const sketcher = new Sketcher();
   const unit = cell.cell.column.tags[DG.TAGS.UNITS];
   let molecule = cell.cell.value;
-  if (unit === DG.chem.SMILES) {
+  if (unit === DG.chem.Notation.Smiles) {
     //convert to molFile to draw in coordinates similar to dataframe cell
-    const mol = getRdKitModule().get_mol(cell.cell.value, '{"mergeQueryHs":true}');
-    if (!mol.has_coords())
-      mol.set_new_coords();
-    mol.normalize_depiction(1);
-    mol.straighten_depiction(false);
-    molecule = mol.get_molblock();
-    mol?.delete();
+    molecule = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
   }
   sketcher.setMolecule(molecule);
   ui.dialog()
     .add(sketcher)
     .onOK(() => {
-      cell.cell.value = unit == DG.chem.SMILES ? sketcher.getSmiles() : sketcher.getMolFile();
+      cell.cell.value = unit == DG.chem.Notation.Smiles ? sketcher.getSmiles() : sketcher.getMolFile();
       Sketcher.addToCollection(Sketcher.RECENT_KEY, sketcher.getMolFile());
     })
     .show();
@@ -797,22 +803,17 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
     throw 'Requires an open table view.';
 
   const molCol = value.cell.column;
-  const mol = value.value;
+  const molecule = value.value;
   if (molCol == null)
     throw 'Molecule column not found.';
 
-  let molblock = molToMolblock(mol, getRdKitModule());
+  let molblock;
 
   //in case molecule is smiles setting correct coordinates to save molecule orientation in filter
-  if (!isMolBlock(mol)) {
-    const mol = getRdKitModule().get_mol(molblock);
-    if (!mol.has_coords())
-      mol.set_new_coords();
-    mol.normalize_depiction(1);
-    mol.straighten_depiction(false);
-    molblock = mol.get_molblock();
-    mol.delete();
-  }
+  if (value.cell.column.tags[DG.TAGS.UNITS] == DG.chem.Notation.Smiles)
+    molblock = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
+  else
+    molblock = molToMolblock(molecule, getRdKitModule());
   
   tv.getFiltersGroup({createDefaultFilters: false}).add({
     type: DG.FILTER_TYPE.SUBSTRUCTURE,
@@ -923,11 +924,11 @@ export async function installScaffoldGraph() : Promise<void> {
 //input: list molecules
 //input: string molecule
 //output: list result
-export function filterMoleculeDuplicates(molecules: string[], molecule: string): string[] {
+export function removeDuplicates(molecules: string[], molecule: string): string[] {
   const mol1 = checkMoleculeValid(molecule);
   if (!mol1) throw (`Molecule is possibly malformed`);
   if (!Sketcher.isEmptyMolfile(molecule)) {
-    const filteredMolecules = molecules.filter((smiles) => !moleculesEqual(mol1, smiles));
+    const filteredMolecules = molecules.filter((smiles) => !checkMolEqualSmiles(mol1, smiles));
     mol1.delete();
     return filteredMolecules;
   }

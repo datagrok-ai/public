@@ -7,7 +7,7 @@ import rdKitLibVersion from '../rdkit_lib_version';
 //@ts-ignore
 import initRDKitModule from '../RDKit_minimal.js';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {isMolBlock} from '../utils/convert-notation-utils';
+import { isMolBlock } from './chem-common';
 
 export let _rdKitModule: RDModule;
 export let _rdKitService: RdKitService;
@@ -129,7 +129,7 @@ export function drawMoleculeToCanvas(
   }
 }
 
-export function moleculesEqual(mol1: any, molfile2: string): boolean {
+export function checkMolEqualSmiles(mol1: any, molfile2: string): boolean {
   const mol2 = checkMoleculeValid(molfile2);
   const result = mol2 ? mol1.get_smiles() === mol2.get_smiles() : false;
   mol2?.delete();

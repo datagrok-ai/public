@@ -3,7 +3,7 @@
 import {RdKitService} from '../rdkit-service/rdkit-service';
 import * as ui from 'datagrok-api/ui';
 import * as OCL from 'openchemlib/full';
-import {isMolBlock} from './convert-notation-utils';
+import * as DG from 'datagrok-api/dg';
 
 export function renderDescription(description: OCL.IParameterizedString[]): HTMLDivElement {
   const host = ui.div([]);
@@ -46,5 +46,5 @@ function _molToCanvas(mol: OCL.Molecule, width = 200, height = 100): HTMLCanvasE
 }
 
 export function oclMol(molStr: string): OCL.Molecule {
-  return isMolBlock(molStr) ? OCL.Molecule.fromMolfile(molStr) : OCL.Molecule.fromSmiles(molStr);
+  return DG.chem.isMolBlock(molStr) ? OCL.Molecule.fromMolfile(molStr) : OCL.Molecule.fromSmiles(molStr);
 }

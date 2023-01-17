@@ -1,7 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {isMolBlock} from '../utils/convert-notation-utils';
 import $ from 'cash-dom';
 import {_properties, renderer} from '../package';
 import {RDKitCellRenderer} from './rdkit-cell-renderer';
@@ -21,7 +20,7 @@ export function renderMolecule(
   //let mol: OCL.Molecule | RDMol | null = null;
   let molFile: string;
   let smiles: string;
-  isMolBlock(molStr) ? molFile = molStr : smiles = molStr;
+  DG.chem.isMolBlock(molStr) ? molFile = molStr : smiles = molStr;
 
   const moleculeHost = ui.canvas(options.width, options.height);
 
@@ -57,7 +56,7 @@ export function renderMolecule(
         });
         menu.item('Sketch', () => {
           const sketcher = new DG.chem.Sketcher();
-          isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);
+          DG.chem.isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);
           ui.dialog()
             .add(sketcher)
             .show();

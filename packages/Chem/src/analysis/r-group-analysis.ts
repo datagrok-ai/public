@@ -3,7 +3,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {findMCS, findRGroups} from '../scripts-api';
 import {getRdKitModule} from '../package';
-import {MolNotation} from '../utils/convert-notation-utils';
 
 export function convertToRDKit(smiles: string | null): string | null {
   if (smiles !== null) {
@@ -87,7 +86,7 @@ export function rGroupAnalysis(col: DG.Column): void {
           const rCol = DG.Column.fromStrings(resCol.name, molsArray);
   
           rCol.semType = DG.SEMTYPE.MOLECULE;
-          rCol.setTag(DG.TAGS.UNITS, MolNotation.MolBlock);
+          rCol.setTag(DG.TAGS.UNITS, DG.chem.Notation.MolBlock);
           col.dataFrame.columns.add(rCol);
         }
         if (res.columns.length == 0)

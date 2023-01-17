@@ -2,7 +2,6 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {getDescriptorsTree, getDescriptorsPy} from '../scripts-api';
-import {isMolBlock} from 'datagrok-api/dg';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 
@@ -32,7 +31,7 @@ export function getDescriptorsSingle(smiles: string): DG.Widget {
   } catch (e) {
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
-  const molecule = isMolBlock(smiles) ? `\"${smiles}\"` : smiles;
+  const molecule = DG.chem.isMolBlock(smiles) ? `\"${smiles}\"` : smiles;
   const widget = new DG.Widget(ui.div());
   const result = ui.div();
   const selectButton = ui.bigButton('SELECT', async () => {

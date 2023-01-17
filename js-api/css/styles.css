@@ -1,6 +1,6 @@
 .sketch-link {
     border: 1px solid #dbdcdf;
-    aspect-ratio: 4/1;
+    height: 25px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -16,4 +16,12 @@
 .extended-width {
   min-width: 800px;
   min-height: 400px;
+}
+
+.clear-button {
+  position: absolute;
+  right: 0px;
+  top: 0px;
+  font-size: 10px;
+  visibility: hidden;
 }

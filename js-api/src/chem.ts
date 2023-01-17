@@ -33,9 +33,6 @@ $$$$`
 
 let extractors: Func[];  // id => molecule
 
-export function isMolBlock(s: string | null) {
-  return s != null && s.includes('M  END');
-}
 
 /** Cheminformatics-related routines */
 export namespace chem {
@@ -43,17 +40,25 @@ export namespace chem {
   export let SKETCHER_LOCAL_STORAGE = 'sketcher';
   export const STORAGE_NAME = 'sketcher';
   export const KEY = 'selected';
-  export const SMILES = 'smiles';
-  export const MOLV3000 = 'v3Kmolblock';
-  export const SMARTS = 'smarts';
-  export const MOLBLOCK = 'molblock';
+
+  export enum Notation {
+    Smiles = 'smiles',
+    Smarts = 'smarts',
+    MolBlock = 'molblock', // molblock V2000
+    V3KMolBlock = 'v3Kmolblock', // molblock V3000
+    Unknown = 'unknown',
+  }
 
   export enum SKETCHER_MODE {
     INPLACE = 'Inplace',
     EXTERNAL = 'External'
   }
 
-  export let currentSketcher = DEFAULT_SKETCHER;
+  export let currentSketcherType = DEFAULT_SKETCHER;
+
+  export function isMolBlock(s: string | null) {
+    return s != null && s.includes('M  END');
+  }  
 
   /** A common interface that all sketchers should implement */
   export abstract class SketcherBase extends Widget {
@@ -123,11 +128,17 @@ export namespace chem {
     _smiles: string | null = null;
     _molfile: string | null = null;
     _smarts: string | null = null;
-    molFileUnits = MOLBLOCK;
+    molFileUnits = Notation.MolBlock;
 
 
     extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
+    extSketcherCanvas = ui.canvas();
     inplaceSketcherDiv: HTMLDivElement | null = null;
+    clearSketcherButton: HTMLButtonElement;
+
+    set sketcherType(type: string) {
+      this._setSketcherType(type);
+    }
 
     getSmiles(): string {
       const smilesFromSmartsWarning = () => {
@@ -135,7 +146,7 @@ export namespace chem {
         return this._smarts!;
       }
       return this.sketcher?.isInitialized ? this.sketcher.smiles : this._smiles === null ?
-        this._molfile !== null ? convert(this._molfile, MOLBLOCK, SMILES) :
+        this._molfile !== null ? convert(this._molfile, Notation.MolBlock, Notation.Smiles) :
         this._smarts !== null ? smilesFromSmartsWarning() : '' : this._smiles;
     }
 
@@ -145,36 +156,34 @@ export namespace chem {
       this._smarts = null;
       if (this.sketcher?.isInitialized)
         this.sketcher!.smiles = x;
-      this.updateExtSketcherContent(this.extSketcherDiv);
     }
 
     getMolFile(): string {
       if (this.sketcher?.isInitialized) {
-        return this.molFileUnits === MOLBLOCK ? this.sketcher.molFile : this.sketcher.molV3000;
+        return this.molFileUnits === Notation.MolBlock ? this.sketcher.molFile : this.sketcher.molV3000;
       } else {
         if (this._molfile === null) {
-          return this._smiles !== null ? convert(this._smiles, SMILES, MOLBLOCK) :
-            this._smarts !== null ? convert(this._smarts, SMARTS, MOLBLOCK) : '';
+          return this._smiles !== null ? convert(this._smiles, Notation.Smiles, Notation.MolBlock) :
+            this._smarts !== null ? convert(this._smarts, Notation.Smarts, Notation.MolBlock) : '';
         } else
           return this._molfile;
       }
     }
 
     setMolFile(x: string): void {
-      this.molFileUnits = x && x.includes('V3000') ? MOLV3000 : MOLBLOCK;
+      this.molFileUnits = x && x.includes('V3000') ? Notation.V3KMolBlock : Notation.MolBlock;
       this._molfile = x;
       this._smiles = null;
       this._smarts = null;
       if (this.sketcher?.isInitialized) {
-        this.molFileUnits === MOLBLOCK ? this.sketcher!.molFile = x : this.sketcher!.molV3000 = x;
+        this.molFileUnits === Notation.MolBlock ? this.sketcher!.molFile = x : this.sketcher!.molV3000 = x;
       }
-      this.updateExtSketcherContent(this.extSketcherDiv);
     }
 
     async getSmarts(): Promise<string | null> {
       return this.sketcher?.isInitialized ? await this.sketcher.getSmarts() : !this._smarts === undefined ?
-        this._smiles !== null ? convert(this._smiles, SMILES, SMARTS) :
-        this._molfile !== null ? convert(this._molfile, MOLBLOCK, SMARTS) : '' : this._smarts;
+        this._smiles !== null ? convert(this._smiles, Notation.Smiles, Notation.Smarts) :
+        this._molfile !== null ? convert(this._molfile, Notation.MolBlock, Notation.Smarts) : '' : this._smarts;
     }
 
     setSmarts(x: string): void {
@@ -183,7 +192,6 @@ export namespace chem {
       this._smiles = null;
       if (this.sketcher?.isInitialized)
         this.sketcher!.smarts = x;
-      this.updateExtSketcherContent(this.extSketcherDiv);
     }
 
     get supportedExportFormats(): string[] {
@@ -231,6 +239,7 @@ export namespace chem {
       if (mode)
         this._mode = mode;
       this.root.append(ui.div([ui.divText('')]));
+      this.clearSketcherButton = this.createClearSketcherButton(this.extSketcherCanvas);
       setTimeout(() => this.createSketcher(), 100);
     }
 
@@ -255,26 +264,25 @@ export namespace chem {
       this.extSketcherDiv.append(content);
     }
 
-    updateExtSketcherContent(extSketcherDiv: HTMLElement) {
-      ui.tools.waitForElementInDom(extSketcherDiv).then((_) => {
-        const width = extSketcherDiv.parentElement!.clientWidth < 100 ? 100 : extSketcherDiv.parentElement!.clientWidth;
+    updateExtSketcherContent() {
+      ui.tools.waitForElementInDom(this.extSketcherDiv).then((_) => {
+        const width = this.extSketcherDiv.parentElement!.clientWidth;
         const height = width / 2;
-        if (!(this.isEmpty()) && extSketcherDiv.parentElement) {
+        if (!(this.isEmpty()) && this.extSketcherDiv.parentElement) {
           ui.empty(this.extSketcherDiv);
-          let canvas = this.createCanvas(width, height);
-          ui.tooltip.bind(canvas, 'Click to edit');
-          const clearButton = this.createClearSketcherButton(canvas);
-          canvasMol(0, 0, canvas.width, canvas.height, canvas, this.getMolFile()!, null, {normalizeDepiction: true, straightenDepiction: true})
+          this.setCanvasSize(this.extSketcherCanvas, width, height);
+          ui.tooltip.bind(this.extSketcherCanvas, 'Click to edit');
+          canvasMol(0, 0, this.extSketcherCanvas.width, this.extSketcherCanvas.height, this.extSketcherCanvas, this.getMolFile()!, null, { normalizeDepiction: true, straightenDepiction: true })
             .then((_) => {
               ui.empty(this.extSketcherDiv);
-              this.extSketcherDiv.append(canvas);
-              this.extSketcherDiv.append(clearButton);
+              this.extSketcherDiv.append(this.extSketcherCanvas);
+              this.extSketcherDiv.append(this.clearSketcherButton);
             });
+        } else {
+          let sketchLink = ui.divText('Click to edit', 'sketch-link');
+          ui.tooltip.bind(sketchLink, 'Click to edit');
+          this._updateExtSketcherInnerHTML(sketchLink);
         }
-  
-        let sketchLink = ui.divText('Click to edit', 'sketch-link');
-        ui.tooltip.bind(sketchLink, 'Click to edit');
-        this._updateExtSketcherInnerHTML(sketchLink);
       });
     };
 
@@ -284,13 +292,10 @@ export namespace chem {
         if (!this.sketcher) {
           this.onChanged.next(null);
         }
+        this.updateExtSketcherContent();
       });
       ui.tooltip.bind(clearButton, 'Clear sketcher');
-      clearButton.style.position = 'absolute';
-      clearButton.style.right = '0px';
-      clearButton.style.top = '0px';
-      clearButton.style.fontSize = '10px';
-      clearButton.style.visibility = 'hidden';
+      clearButton.classList.add('clear-button');
       clearButton.onmouseover = () => {clearButton.style.visibility = 'visible';};
       canvas.onmouseenter = () => {clearButton.style.visibility = 'visible';};
       canvas.onmouseout = () => {clearButton.style.visibility = 'hidden';};
@@ -308,7 +313,7 @@ export namespace chem {
           let dlg = ui.dialog();
           dlg.add(this.createInplaceModeSketcher())
             .onOK(() => {
-              this.updateExtSketcherContent(this.extSketcherDiv);
+              this.updateExtSketcherContent();
               Sketcher.addToCollection(Sketcher.RECENT_KEY, savedMolFile!);
               this.sketcherDialogOpened = false;
             })
@@ -321,10 +326,11 @@ export namespace chem {
       };
 
       ui.onSizeChanged(this.extSketcherDiv).subscribe((_) => {
-        this.updateExtSketcherContent(this.extSketcherDiv);
+        if (!this.isEmpty())
+          this.updateExtSketcherContent();
       });
 
-      this.updateExtSketcherContent(this.extSketcherDiv);
+      this.updateExtSketcherContent();
       return this.extSketcherDiv;
     }
 
@@ -384,8 +390,8 @@ export namespace chem {
           .separator()
           .items(this.sketcherFunctions.map((f) => f.friendlyName), (friendlyName: string) => {
             grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, friendlyName, true);
-            currentSketcher = friendlyName;
-            this.setSketcher();
+            currentSketcherType = friendlyName;
+            this.sketcherType = currentSketcherType;
             },
             {
               isChecked: (item) => item === this.selectedSketcher?.friendlyName, toString: item => item,
@@ -395,7 +401,7 @@ export namespace chem {
       });
       $(optionsIcon).addClass('d4-input-options');
       molInputDiv.append(ui.div([this.molInput, optionsIcon], 'grok-sketcher-input'));
-      this.setSketcher();
+      this.sketcherType = currentSketcherType;
 
       this.inplaceSketcherDiv = ui.div([
         molInputDiv,
@@ -404,40 +410,36 @@ export namespace chem {
       return this.inplaceSketcherDiv;
     }
 
-    async setBaseSketcher(sketcherName: string) {
-      ui.empty(this.host);
-      this.host.classList.remove('extended-width'); //need to remove class to reset width
-      ui.setUpdateIndicator(this.host, true);
-      this.changedSub?.unsubscribe();
-      const sketcherFunc = this.sketcherFunctions.find(e => e.friendlyName == sketcherName || e.name === sketcherName) ?? this.sketcherFunctions.find(e => e.friendlyName == DEFAULT_SKETCHER);
-      this.sketcher = await sketcherFunc!.apply();
-      this.host.classList.add('sketcher-standard-size');
-      this.host.appendChild(this.sketcher!.root);
-      await ui.tools.waitForElementInDom(this.root);
-      await this.sketcher!.init(this);
-      ui.setUpdateIndicator(this.host, false);      
-      this.changedSub = this.sketcher!.onChanged.subscribe((_: any) => {
-        this.onChanged.next(null);
-        for (let callback of this.listeners)
-          callback();
-        if (this.syncCurrentObject) {
-          const molFile = this.getMolFile();
-          if (!Sketcher.isEmptyMolfile(molFile))
-            grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
-        }
-      });
-    }
 
-    setSketcher(): void {
+    private _setSketcherType(sketcherType: string): void {
       const getMolecule = async () => {
         return this._smiles === null ? this._molfile === null ? this._smarts === null ? this.getMolFile() :
           await this.getSmarts() : this.getMolFile() : this.getSmiles();
       };
-      getMolecule().then((molecule) => {
-        this.setBaseSketcher(currentSketcher).then((_) => {
-          if (molecule)              
-            this.setMolecule(molecule!, this._smarts !== null);
+      getMolecule().then(async (molecule) => {
+        ui.empty(this.host);
+        this.host.classList.remove('extended-width'); //need to remove class to reset width
+        ui.setUpdateIndicator(this.host, true);
+        this.changedSub?.unsubscribe();
+        const sketcherFunc = this.sketcherFunctions.find(e => e.friendlyName == sketcherType|| e.name === sketcherType) ?? this.sketcherFunctions.find(e => e.friendlyName == DEFAULT_SKETCHER);
+        this.sketcher = await sketcherFunc!.apply();
+        this.host.classList.add('sketcher-standard-size');
+        this.host.appendChild(this.sketcher!.root);
+        await ui.tools.waitForElementInDom(this.root);
+        await this.sketcher!.init(this);
+        ui.setUpdateIndicator(this.host, false);      
+        this.changedSub = this.sketcher!.onChanged.subscribe((_: any) => {
+          this.onChanged.next(null);
+          for (let callback of this.listeners)
+            callback();
+          if (this.syncCurrentObject) {
+            const molFile = this.getMolFile();
+            if (!Sketcher.isEmptyMolfile(molFile))
+              grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
+          }
         });
+        if (molecule)              
+        this.setMolecule(molecule!, this._smarts !== null);
       });
     }
 
@@ -455,7 +457,7 @@ export namespace chem {
 
     static checkDuplicatesAndAddToStorage(storage: string[], molecule: string, localStorageKey: string) {
       grok.functions
-        .call('Chem:filterMoleculeDuplicates', { molecules: storage, molecule: molecule })
+        .call('Chem:removeDuplicates', { molecules: storage, molecule: molecule })
         .then((array: any) => localStorage.setItem(localStorageKey, JSON.stringify([molecule, ...array.slice(0, 9)])));
     }
 
@@ -474,20 +476,19 @@ export namespace chem {
     }
 
     drawToCanvas(w: number, h: number, molecule: string): HTMLElement{
-      const imageHost = this.createCanvas(w, h);
+      const imageHost = ui.canvas();
+      this.setCanvasSize(imageHost, w, h);
       canvasMol(0, 0, imageHost.width, imageHost.height, imageHost, molecule, null, {normalizeDepiction: true, straightenDepiction: true});
       return imageHost;
     }
 
-    createCanvas(w: number, h: number): HTMLCanvasElement {
-      const imageHost = ui.canvas(w, h);
-      $(imageHost).addClass('chem-canvas');
+    setCanvasSize(canvas: HTMLCanvasElement, w: number, h: number) {
+      $(canvas).addClass('chem-canvas');
       const r = window.devicePixelRatio;
-      imageHost.width = w * r;
-      imageHost.height = h * r;
-      imageHost.style.width = (w).toString() + 'px';
-      imageHost.style.height = (h).toString() + 'px';
-      return imageHost;
+      canvas.width = w * r;
+      canvas.height = h * r;
+      canvas.style.width = (w).toString() + 'px';
+      canvas.style.height = (h).toString() + 'px';
     }
   }
 
@@ -671,6 +672,16 @@ export namespace chem {
     });
   }
 
+    export function drawMolecule(molString: string, w?: number, h?: number): HTMLDivElement {
+      const molDiv = ui.div();
+      grok.functions
+      .call('Chem:drawMolecule', {
+        'molStr': molString, 'w': w, 'h': h, 'popupMenu': false
+      })
+      .then((res) => molDiv.append(res));
+      return molDiv;
+    }
+
   /**
    * Sketches Molecule sketcher.
    * @param {function} onChangedCallback - a function that accepts (smiles, molfile)
@@ -682,7 +693,7 @@ export namespace chem {
   }
 
 
-  export function convert(s: string, sourceFormat: string, targetFormat: string): string {
+  export function convert(s: string, sourceFormat: Notation, targetFormat: Notation): string {
     const convertFunc = Func.find({package: 'Chem', name: 'convertMolNotation'})[0];
     const funcCall: FuncCall = convertFunc.prepare({molecule: s, sourceNotation: sourceFormat, targetNotation: targetFormat});
     funcCall.callSync();
