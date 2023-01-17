@@ -140,7 +140,6 @@ export function getSdfTab(): HTMLDivElement {
       const highlights = ui.div([transparent]);
       $(highlights).addClass('sdf-highlights');
       inputBase.root.appendChild(highlights);
-      let tooltip: HTMLElement;
 
       inputBase.onInput(() => {
         if (debugHighlight) {
@@ -162,7 +161,7 @@ export function getSdfTab(): HTMLDivElement {
             } else {
               highlights.innerHTML = highlights.innerHTML + '<mark>' + highlightedText + '</mark>';
               mark = highlights.getElementsByTagName('mark').item(0);
-              tooltip = ui.tooltip.bind(mark!, 'Invalid subsequence');
+              grok.shell.warning('Invalid input: malformed subsequences highlighted with red');
             }
           } else {
             highlights.innerHTML = '';
