@@ -6,9 +6,10 @@ import * as echarts from 'echarts';
 import { format } from 'echarts/lib/util/time';
 import $ from 'cash-dom';
 
-import { EChartViewer } from '../echart-viewer';
+import { EChartViewer } from '../echart/echart-viewer';
 import { options, deepCopy } from './echarts-options';
-import { ColumnData, ColumnsData, Indexable, markerPosition, markerType, timePoint, visibilityMode, VISIBILITY_MODE } from './constants';
+import { ColumnData, ColumnsData, Indexable, markerPosition, markerType, timePoint,
+  visibilityMode, VISIBILITY_MODE } from './constants';
 
 
 export class TimelinesViewer extends EChartViewer {
@@ -59,16 +60,16 @@ export class TimelinesViewer extends EChartViewer {
     this.eventsColumnNames = this.addProperty('eventsColumnNames', DG.TYPE.COLUMN_LIST);
     this.showEventInTooltip = this.bool('showEventInTooltip', true);
 
-    this.marker = <markerType>this.string('marker', 'circle', { choices: ['circle', 'rect', 'ring', 'diamond'] });
+    this.marker = <markerType> this.string('marker', 'circle', { choices: ['circle', 'rect', 'ring', 'diamond'] });
     this.markerSize = this.int('markerSize', 6);
-    this.markerPosition = <markerPosition>this.string('markerPosition', 'main line',
+    this.markerPosition = <markerPosition> this.string('markerPosition', 'main line',
       { choices: ['main line', 'above main line', 'scatter'] });
     this.lineWidth = this.int('lineWidth', 3);
     this.dateFormat = this.string('dateFormat'); // TODO: add an extendable dropdown
     this.axisPointer = this.string('axisPointer', 'shadow',
       { choices: ['cross', 'line', 'shadow', 'none'] });
     this.showZoomSliders = this.bool('showZoomSliders', true);
-    this.legendVisibility = <visibilityMode>this.string('legendVisibility', VISIBILITY_MODE.AUTO,
+    this.legendVisibility = <visibilityMode> this.string('legendVisibility', VISIBILITY_MODE.AUTO,
       { choices: Object.values(VISIBILITY_MODE) });
 
     this.splitByRegexps = [/^USUBJID$/, /id/i];
@@ -106,10 +107,10 @@ export class TimelinesViewer extends EChartViewer {
       });
 
       this.subs.push(this.onEvent('d4-context-menu').subscribe((data) => {
-          data.args.menu.item('Reset View', () => {
-            this.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];
-            this.render();
-          });
+        data.args.menu.item('Reset View', () => {
+          this.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];
+          this.render();
+        });
       }));
 
       this.chart.on('rendered', () => {
@@ -122,10 +123,10 @@ export class TimelinesViewer extends EChartViewer {
         if (params.componentType === 'series') {
           return params.value[0] === this.getStrValue(this.columnData.splitByColumnName!, i) &&
                  this.columnData.startColumnName && this.columnData.endColumnName ?
-                 (this.isSameDate(params.value[1], this.getSafeValue(this.columnData.startColumnName, i)) &&
-                 this.isSameDate(params.value[2], this.getSafeValue(this.columnData.endColumnName, i)))
-                 : Object.values(this.columnData.eventsColumnNames!).some((c) =>
-                 this.isSameDate(params.value[1], this.getSafeValue(c, i)));
+            (this.isSameDate(params.value[1], this.getSafeValue(this.columnData.startColumnName, i)) &&
+                 this.isSameDate(params.value[2], this.getSafeValue(this.columnData.endColumnName, i))) :
+            Object.values(this.columnData.eventsColumnNames!).some((c) =>
+              this.isSameDate(params.value[1], this.getSafeValue(c, i)));
         }
         return false;
       }, params.event!.event));
@@ -199,9 +200,9 @@ export class TimelinesViewer extends EChartViewer {
           return params.value[0] === this.getStrValue(this.columnData.splitByColumnName!, i) &&
             this.columnData.startColumnName && this.columnData.endColumnName ?
             (this.isSameDate(params.value[1], this.getSafeValue(this.columnData.startColumnName, i)) &&
-            this.isSameDate(params.value[2], this.getSafeValue(this.columnData.endColumnName, i)))
-            : Object.values(this.columnData.eventsColumnNames!).some((c) =>
-            this.isSameDate(params.value[1], this.getSafeValue(c, i)));
+            this.isSameDate(params.value[2], this.getSafeValue(this.columnData.endColumnName, i))) :
+            Object.values(this.columnData.eventsColumnNames!).some((c) =>
+              this.isSameDate(params.value[1], this.getSafeValue(c, i)));
         }
         return false;
       }, x, y);

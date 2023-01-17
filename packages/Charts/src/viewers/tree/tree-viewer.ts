@@ -1,7 +1,10 @@
 import * as DG from 'datagrok-api/dg';
-import { EChartViewer } from './echart-viewer';
-import { TreeUtils, treeDataType } from './utils/tree-utils';
-import * as utils from './utils/utils';
+
+import { EChartViewer } from '../echart/echart-viewer';
+import { TreeUtils, treeDataType } from '../../utils/tree-utils';
+
+import * as utils from '../../utils/utils';
+
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 export class TreeViewer extends EChartViewer {
