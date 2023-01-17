@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.1.62",
+  "version": "3.1.63",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -387,6 +387,9 @@
         },
         "1.4.11": {
           "datagrok-api": "^1.10.2"
+        },
+        "1.4.15": {
+          "datagrok-api": "^1.11.2"
         }
       },
       "description": "Cheminformatics support: RDKit-based rendering, Molecule sketching, Feature based analysis",
