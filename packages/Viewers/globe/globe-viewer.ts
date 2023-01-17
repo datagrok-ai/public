@@ -1,12 +1,38 @@
+import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+
 import * as THREE from 'three';
 import ThreeGlobe from 'three-globe';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
-import {_package} from '../src/package.js';
-import {scaleLinear, scaleSqrt, scaleSequential, interpolateYlOrRd} from 'd3';
+import {scaleLinear, scaleSqrt, scaleSequential, interpolateYlOrRd, ScaleLinear} from 'd3';
+
+import {_package} from '../src/package';
 
 
 export class GlobeViewer extends DG.JsViewer {
+  latitudeColumnName: string;
+  longitudeColumnName: string;
+  magnitudeColumnName: string;
+  colorByColumnName: string;
+  pointRadius: number;
+  pointAltitude: number;
+  autorotation: boolean;
+
+  rScale: ScaleLinear<number, number, never>;
+  points: any;
+  initialized: boolean;
+
+  globe?: ThreeGlobe;
+  width?: number;
+  height?: number;
+
+  renderer?: THREE.WebGLRenderer;
+  scene?: THREE.Scene;
+  camera?: THREE.PerspectiveCamera;
+  orbControls?: OrbitControls;
+
+  magnitudeColumn?: DG.Column;
+  numColumns?: DG.Column[];
 
   constructor() {
     super();
@@ -14,8 +40,8 @@ export class GlobeViewer extends DG.JsViewer {
     // Properties
     this.latitudeColumnName = this.string('latitudeColumnName');
     this.longitudeColumnName = this.string('longitudeColumnName');
-    this.magnitudeColumnName = this.float('magnitudeColumnName');
-    this.colorByColumnName = this.float('colorByColumnName');
+    this.magnitudeColumnName = this.string('magnitudeColumnName');
+    this.colorByColumnName = this.string('colorByColumnName');
     this.pointRadius = this.float('pointRadius', 15);
     this.pointAltitude = this.float('pointAltitude', 50);
     this.autorotation = this.bool('autorotation', true);
@@ -30,8 +56,8 @@ export class GlobeViewer extends DG.JsViewer {
       .globeImageUrl(`${_package.webRoot}globe/images/earth-blue-marble.jpg`)
       .bumpImageUrl(`${_package.webRoot}globe/images/earth-topology.png`);
 
-    this.width = this.root.parentElement.clientWidth;
-    this.height = this.root.parentElement.clientHeight;
+    this.width = this.root.parentElement!.clientWidth;
+    this.height = this.root.parentElement!.clientHeight;
 
     this.renderer = new THREE.WebGLRenderer({alpha: true});
     this.renderer.domElement.style.backgroundImage = `url(${_package.webRoot}globe/images/night-sky.png)`;
@@ -53,7 +79,7 @@ export class GlobeViewer extends DG.JsViewer {
     this.orbControls.autoRotate = true;
     this.orbControls.autoRotateSpeed = 2.2;
 
-    (function animate() {
+    (function animate(this: any) {
       this.orbControls.update();
       this.renderer.render(this.scene, this.camera);
       requestAnimationFrame(animate.bind(this));
@@ -65,12 +91,12 @@ export class GlobeViewer extends DG.JsViewer {
   onTableAttached() {
     this.init();
 
-    this.latitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE).name;
-    this.longitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE).name;
-    this.magnitudeColumn = this.dataFrame.columns.bySemType('Magnitude');
+    this.latitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE)!.name;
+    this.longitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE)!.name;
+    this.magnitudeColumn = this.dataFrame.columns.bySemType('Magnitude')!;
     if (this.magnitudeColumn !== null) this.magnitudeColumnName = this.magnitudeColumn.name;
     else {
-      this.numColumns = this.dataFrame.columns.toList().filter(col => ['double', 'int'].includes(col.type));
+      this.numColumns = this.dataFrame.columns.toList().filter((col) => ['double', 'int'].includes(col.type));
       this.magnitudeColumnName = this.numColumns[0].name;
     }
     // By default, beam color and size depend on the same column
@@ -79,20 +105,20 @@ export class GlobeViewer extends DG.JsViewer {
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => {
-      let width = this.root.parentElement.clientWidth;
-      let height = this.root.parentElement.clientHeight;
-      this.renderer.setSize(width, height);
-      this.camera.aspect = width / height;
-      this.camera.updateProjectionMatrix();
+      const width = this.root.parentElement!.clientWidth;
+      const height = this.root.parentElement!.clientHeight;
+      this.renderer!.setSize(width, height);
+      this.camera!.aspect = width / height;
+      this.camera!.updateProjectionMatrix();
     }));
 
     this.render();
   }
 
-  onPropertyChanged(property) {
+  onPropertyChanged(property: DG.Property) {
     super.onPropertyChanged(property);
     if (this.initialized) {
-      this.orbControls.autoRotate = this.autorotation;
+      this.orbControls!.autoRotate = this.autorotation;
       this.render();
     }
   }
@@ -103,41 +129,39 @@ export class GlobeViewer extends DG.JsViewer {
 
   getCoordinates() {
     this.points.length = 0;
-    let lat = this.dataFrame.getCol(this.latitudeColumnName).getRawData();
-    let lon = this.dataFrame.getCol(this.longitudeColumnName).getRawData();
+    const lat = this.dataFrame.getCol(this.latitudeColumnName).getRawData();
+    const lon = this.dataFrame.getCol(this.longitudeColumnName).getRawData();
 
-    let colorByCol = this.dataFrame.getCol(this.colorByColumnName);
-    let mag = this.dataFrame.getCol(this.magnitudeColumnName);
+    const colorByCol = this.dataFrame.getCol(this.colorByColumnName);
+    const mag = this.dataFrame.getCol(this.magnitudeColumnName);
 
-    let magRange = [mag.min, mag.max];
-    let color = scaleSequential().interpolator(interpolateYlOrRd);
+    const magRange = [mag.min, mag.max];
+    const color = scaleSequential().interpolator(interpolateYlOrRd);
     if (this.magnitudeColumnName === this.colorByColumnName) color.domain(magRange);
     else color.domain([colorByCol.min, colorByCol.max]);
 
-    let altRange = [0.1, this.rScale(this.pointAltitude)];
+    const altRange = [0.1, this.rScale(this.pointAltitude)];
     if (altRange[1] < 0.1) altRange[0] = 0;
-    let size = scaleSqrt(magRange, altRange);
+    const size = scaleSqrt(magRange, altRange);
 
-    mag = mag.getRawData();
-    colorByCol = colorByCol.getRawData();
-    for (let i of this.dataFrame.filter.getSelectedIndexes()) {
+    const magData = mag.getRawData();
+    const colorByColData = colorByCol.getRawData();
+    for (const i of this.dataFrame.filter.getSelectedIndexes()) {
       this.points.push({
         lat: lat[i],
         lng: lon[i],
-        size: size(mag[i]),
-        color: color(colorByCol[i])
+        size: size(magData[i]),
+        color: color(colorByColData[i]),
       });
     }
   }
 
   render() {
-
     this.getCoordinates();
-    this.globe
+    this.globe!
       .pointsData(this.points)
       .pointAltitude('size')
       .pointColor('color')
       .pointRadius(this.rScale(this.pointRadius));
-
   }
 }

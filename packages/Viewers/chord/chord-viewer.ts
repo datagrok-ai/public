@@ -1,9 +1,64 @@
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
+
 import * as Circos from 'circos';
-import {select, scaleLinear, scaleOrdinal, color} from 'd3';
-import {layoutConf, topSort} from './utils.js';
+
+import {select, scaleLinear, scaleOrdinal, color, ScaleLinear, ScaleOrdinal} from 'd3';
+import {layoutConf, topSort} from './utils';
+
 export class ChordViewer extends DG.JsViewer {
+  fromColumnName: string | null;
+  toColumnName: string | null;
+  aggType: string;
+  chordLengthColumnName: string;
+  colorBy: string;
+  sortBy: string;
+  direction: string;
+  includeNulls: boolean;
+
+  initialized: boolean;
+  data: any;
+  chords: any;
+  segments: any;
+
+  maxAvgNameLen?: number;
+  maxLinkNumber?: number;
+  minLengthThreshold?: number;
+  innerRadiusMargin?: number;
+  outerRadiusMargin?: number;
+
+  gapScale?: ScaleLinear<number, number, never>;
+  reservedColor?: string;
+  colorScale?: ScaleOrdinal<string, number, never>;
+  color?: (c: any) => string;
+
+  chordOpacity?: number;
+  highlightedChordOpacity?: number;
+
+  conf: any;
+  chordConf: any;
+  labelConf?: {};
+
+  strColumns?: DG.Column[];
+  numColumns?: DG.Column[];
+
+  aggregatedTable?: DG.DataFrame;
+
+  distinctCols?: boolean;
+
+  fromColumnAggr?: DG.Column;
+  toColumnAggr?: DG.Column;
+  chordWeights?: Int32Array | Float32Array | Float64Array | Uint32Array;
+  rowCountAggr?: number;
+  categories?: string[];
+
+  indexes?: Int32Array;
+  freqMap?: any;
+
+  fromColumn?: DG.Column;
+  toColumn?: DG.Column;
+
   constructor() {
     super();
 
@@ -11,7 +66,7 @@ export class ChordViewer extends DG.JsViewer {
     this.fromColumnName = this.string('fromColumnName');
     this.toColumnName = this.string('toColumnName');
     this.aggType = this.string('aggType', 'count', {choices: ['count', 'sum']});
-    this.chordLengthColumnName = this.float('chordLengthColumnName');
+    this.chordLengthColumnName = this.string('chordLengthColumnName');
     this.colorBy = this.string('colorBy', 'source', {choices: ['source', 'target']});
     this.sortBy = this.string('sortBy', 'topology', {choices: ['alphabet', 'frequency', 'topology']});
     this.direction = this.string('direction', 'clockwise', {choices: ['clockwise', 'counterclockwise']});
@@ -35,14 +90,14 @@ export class ChordViewer extends DG.JsViewer {
     const colors = DG.Color.categoricalPalette.slice();
     colors.splice(colors.indexOf(4286545791), 1); // represents the reserved color
     this.colorScale = scaleOrdinal(colors);
-    this.color = (c) => c ? DG.Color.toRgb(this.colorScale(c)) : this.reservedColor;
+    this.color = (c) => c ? DG.Color.toRgb(this.colorScale!(c)) : this.reservedColor!;
 
     this.chordOpacity = 0.7;
     this.highlightedChordOpacity = 0.9;
 
     this.conf = layoutConf;
     this.chordConf = {
-      color: (datum) => this.color(datum[this.colorBy]['label']),
+      color: (datum: any) => this.color!(datum[this.colorBy]['label']),
       opacity: this.chordOpacity,
     };
 
@@ -55,7 +110,7 @@ export class ChordViewer extends DG.JsViewer {
   }
 
   _testColumns() {
-    return (this.strColumns.length >= 2 && this.numColumns.length >= 1);
+    return (this.strColumns!.length >= 2 && this.numColumns!.length >= 1);
   }
 
   onTableAttached() {
@@ -80,7 +135,7 @@ export class ChordViewer extends DG.JsViewer {
     this.render();
   }
 
-  onPropertyChanged(property) {
+  onPropertyChanged(property: DG.Property) {
     if (this.initialized && this._testColumns()) {
       if (property.name === 'colorBy' && this.chords.length) this.render(false);
       else if (property.name === 'sortBy' && this.sortBy === 'alphabet' && !this.distinctCols) return;
@@ -92,8 +147,8 @@ export class ChordViewer extends DG.JsViewer {
     this.subs.forEach((sub) => sub.unsubscribe());
   }
 
-  _getFrequencies(sourceCol, targetCol, indexes) {
-    const map = {};
+  _getFrequencies(sourceCol: DG.Column, targetCol: DG.Column, indexes: Int32Array) {
+    const map: any = {};
     for (const i of indexes) {
       if (!this.includeNulls && (sourceCol.isNone(i) || targetCol.isNone(i))) continue;
       const from = sourceCol.isNone(i) ? '' : sourceCol.get(i);
@@ -106,9 +161,9 @@ export class ChordViewer extends DG.JsViewer {
 
   _aggregate() {
     this.aggregatedTable = this.dataFrame
-      .groupBy([this.fromColumnName, (this.distinctCols) ? this.toColumnName : null])
+      .groupBy([this.fromColumnName!, (this.distinctCols) ? this.toColumnName! : ''])
       .whereRowMask(this.dataFrame.filter)
-      .add(this.aggType, this.chordLengthColumnName, 'result')
+      .add(this.aggType as DG.AggregationType, this.chordLengthColumnName, 'result')
       .aggregate();
 
     if (!this.includeNulls) {
@@ -117,10 +172,10 @@ export class ChordViewer extends DG.JsViewer {
         .toDataFrame();
     }
 
-    this.fromColumnAggr = this.aggregatedTable.getCol(this.fromColumnName);
-    this.toColumnAggr = this.aggregatedTable.getCol(this.toColumnName);
-    this.chordWeights = this.aggregatedTable.getCol('result').getRawData();
-    this.rowCountAggr = this.aggregatedTable.rowCount;
+    this.fromColumnAggr = this.aggregatedTable!.getCol(this.fromColumnName!);
+    this.toColumnAggr = this.aggregatedTable!.getCol(this.toColumnName!);
+    this.chordWeights = this.aggregatedTable!.getCol('result').getRawData();
+    this.rowCountAggr = this.aggregatedTable!.rowCount;
 
     this.categories = Array.from(new Set(this.fromColumnAggr.categories.concat(this.toColumnAggr.categories)));
   }
@@ -129,19 +184,18 @@ export class ChordViewer extends DG.JsViewer {
     for (const prop of Object.getOwnPropertyNames(this.segments))
       delete this.segments[prop];
 
-
-    this.data.forEach((s) => {
+    this.data.forEach((s: any) => {
       this.segments[s.label] = {datum: s, targets: [], aggTotal: null, visited: false};
       s.pos = 0;
     });
 
-    for (let i = 0; i < this.rowCountAggr; i++) {
-      const from = this.fromColumnAggr.get(i);
-      const to = this.toColumnAggr.get(i);
+    for (let i = 0; i < this.rowCountAggr!; i++) {
+      const from = this.fromColumnAggr!.get(i);
+      const to = this.toColumnAggr!.get(i);
 
       this.segments[from]['targets'].push(to);
-      this.segments[from]['aggTotal'] = (this.segments[from]['aggTotal'] || 0) + this.chordWeights[i];
-      if (from !== to) this.segments[to]['aggTotal'] = (this.segments[to]['aggTotal'] || 0) + this.chordWeights[i];
+      this.segments[from]['aggTotal'] = (this.segments[from]['aggTotal'] || 0) + this.chordWeights![i];
+      if (from !== to) this.segments[to]['aggTotal'] = (this.segments[to]['aggTotal'] || 0) + this.chordWeights![i];
     }
   }
 
@@ -150,46 +204,47 @@ export class ChordViewer extends DG.JsViewer {
     this.distinctCols = this.fromColumnName !== this.toColumnName;
 
     this.indexes = this.dataFrame.filter.getSelectedIndexes();
-    this.freqMap = this._getFrequencies(this.fromColumn, this.toColumn, this.indexes);
+    this.freqMap = this._getFrequencies(this.fromColumn!, this.toColumn!, this.indexes);
 
     this.conf.events = {
-      mouseover: (datum, index, nodes, event) => {
-        select(nodes[index]).select(`#${datum.id}`).attr('stroke', color(this.color(datum.label)).darker());
+      mouseover: (datum: any, index: number, nodes: any, event: MouseEvent) => {
+        //@ts-ignore
+        select(nodes[index]).select(`#${datum.id}`).attr('stroke', color(this.color(datum.label))!.darker());
         ui.tooltip.showRowGroup(this.dataFrame, (i) => {
-          return this.dataFrame.filter.get(i) && (this.fromColumn.get(i) === datum.label ||
-            this.toColumn.get(i) === datum.label);
+          return this.dataFrame.filter.get(i) && (this.fromColumn!.get(i) === datum.label ||
+            this.toColumn!.get(i) === datum.label);
         }, event.x, event.y);
       },
-      mouseout: (datum, index, nodes, event) => {
+      mouseout: (datum: any, index: number, nodes: any, event: MouseEvent) => {
         select(nodes[index]).select(`#${datum.id}`).attr('stroke', 'none');
         ui.tooltip.hide();
       },
-      mousedown: (datum, index, nodes, event) => {
+      mousedown: (datum: any, index: number, nodes: any, event: MouseEvent) => {
         this.dataFrame.selection.handleClick((i) => {
-          return this.dataFrame.filter.get(i) && (this.fromColumn.get(i) === datum.label ||
-            this.toColumn.get(i) === datum.label);
+          return this.dataFrame.filter.get(i) && (this.fromColumn!.get(i) === datum.label ||
+            this.toColumn!.get(i) === datum.label);
         }, event);
       },
     };
 
     if (this.aggType === 'sum' && this.chordLengthColumnName === null)
-      this.chordLengthColumnName = this.numColumns[0].name;
+      this.chordLengthColumnName = this.numColumns![0].name;
 
 
     this._aggregate();
 
-    this.conf.gap = this.gapScale(this.categories.length);
+    this.conf.gap = this.gapScale!(this.categories!.length);
 
     if (this.sortBy !== 'topology') {
-      this.categories.sort((this.sortBy === 'frequency') ?
-        (a, b) => this.freqMap[b] - this.freqMap[a] : undefined);
+      this.categories!.sort((this.sortBy === 'frequency') ?
+        (a, b) => this.freqMap![b] - this.freqMap[a] : undefined);
     }
 
-    this.data = this.categories.map((s, ind) => ({
+    this.data = this.categories!.map((s, ind) => ({
       id: `id-${ind}`,
       label: s,
       len: this.freqMap[s],
-      color: this.color(s),
+      color: this.color!(s),
     }));
 
     if (this.distinctCols) this._updateBlockMap();
@@ -197,6 +252,7 @@ export class ChordViewer extends DG.JsViewer {
     if (this.sortBy === 'topology') {
       if (!this.distinctCols) {
         grok.shell.warning('Identical columns cannot be sorted topologically.');
+        //@ts-ignore
         this.props.sortBy = 'alphabet';
       } else
         this.data = topSort(this.segments);
@@ -206,18 +262,18 @@ export class ChordViewer extends DG.JsViewer {
 
   _computeChords() {
     this.chords.length = 0;
-    const source = this.fromColumnAggr.getRawData();
-    const fromCatList = this.fromColumnAggr.categories;
-    const target = this.toColumnAggr.getRawData();
-    const toCatList = this.toColumnAggr.categories;
+    const source = this.fromColumnAggr!.getRawData();
+    const fromCatList = this.fromColumnAggr!.categories;
+    const target = this.toColumnAggr!.getRawData();
+    const toCatList = this.toColumnAggr!.categories;
 
-    for (let i = 0; i < this.rowCountAggr; i++) {
+    for (let i = 0; i < this.rowCountAggr!; i++) {
       const sourceLabel = fromCatList[source[i]];
       const targetLabel = toCatList[target[i]];
       const sourceBlock = this.segments[sourceLabel]['datum'];
       const targetBlock = this.segments[targetLabel]['datum'];
-      const sourceStep = sourceBlock.len * (this.chordWeights[i] / this.segments[sourceLabel]['aggTotal']);
-      const targetStep = targetBlock.len * (this.chordWeights[i] / this.segments[targetLabel]['aggTotal']);
+      const sourceStep = sourceBlock.len * (this.chordWeights![i] / this.segments[sourceLabel]['aggTotal']);
+      const targetStep = targetBlock.len * (this.chordWeights![i] / this.segments[targetLabel]['aggTotal']);
 
       this.chords.push({
         source: {
@@ -232,7 +288,7 @@ export class ChordViewer extends DG.JsViewer {
           end: targetBlock.pos + targetStep,
           label: targetLabel,
         },
-        value: this.chordWeights[i],
+        value: this.chordWeights![i],
       });
 
       sourceBlock.pos += sourceStep;
@@ -241,42 +297,42 @@ export class ChordViewer extends DG.JsViewer {
     }
 
     this.chordConf.events = {
-      mouseover: (datum, index, nodes, event) => {
-        select(nodes[index]).attr('opacity', this.highlightedChordOpacity);
+      mouseover: (datum: any, index: number, nodes: any, event: MouseEvent) => {
+        select(nodes[index]).attr('opacity', this.highlightedChordOpacity!);
         ui.tooltip.showRowGroup(this.dataFrame, (i) => {
           return this.dataFrame.filter.get(i) &&
-            this.fromColumn.get(i) === datum.source.label &&
-            this.toColumn.get(i) === datum.target.label;
+            this.fromColumn!.get(i) === datum.source.label &&
+            this.toColumn!.get(i) === datum.target.label;
         }, event.x, event.y);
       },
-      mouseout: (datum, index, nodes, event) => {
-        select(nodes[index]).attr('opacity', this.chordOpacity);
+      mouseout: (datum: any, index: number, nodes: any, event: MouseEvent) => {
+        select(nodes[index]).attr('opacity', this.chordOpacity!);
         ui.tooltip.hide();
       },
-      mousedown: (datum, index, nodes, event) => {
+      mousedown: (datum: any, index: number, nodes: any, event: MouseEvent) => {
         this.dataFrame.selection.handleClick((i) => {
           return this.dataFrame.filter.get(i) &&
-            this.fromColumn.get(i) === datum.source.label &&
-            this.toColumn.get(i) === datum.target.label;
+            this.fromColumn!.get(i) === datum.source.label &&
+            this.toColumn!.get(i) === datum.target.label;
         }, event);
       },
     };
   }
 
-  _rotateLabels(labels) {
-    labels.filter((d, i, nodes) => {
-      return +(select(nodes[i]).attr('transform').match(/\d+\.?\d*/g)[0]) >= 180;
+  _rotateLabels(labels: any) {
+    labels.filter((d: any, i: number, nodes: any) => {
+      return +(select(nodes[i]).attr('transform').match(/\d+\.?\d*/g)![0]) >= 180;
     }).selectAll('text')
-      .attr('transform', (d, i, nodes) => select(nodes[i]).attr('transform') + ' rotate(180) ')
+      .attr('transform', (d: any, i: number, nodes: any) => select(nodes[i]).attr('transform') + ' rotate(180) ')
       .attr('text-anchor', 'end');
   }
 
-  _cropLabels(labels) {
-    labels.selectAll('text').each((d, i, nodes) => {
+  _cropLabels(labels: any) {
+    labels.selectAll('text').each((d: any, i: number, nodes: any) => {
       const el = select(nodes[i]);
       let textLength = el.node().getComputedTextLength();
       let text = el.text();
-      while (text.length && textLength > (this.outerRadiusMargin - 15)) {
+      while (text.length && textLength > (this.outerRadiusMargin! - 15)) {
         text = text.slice(0, -1);
         el.text(text + '\u2026');
         textLength = el.node().getComputedTextLength();
@@ -284,7 +340,7 @@ export class ChordViewer extends DG.JsViewer {
     });
   }
 
-  _showErrorMessage(msg) {this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));}
+  _showErrorMessage(msg: string) {this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));}
 
   render(computeData = true) {
     $(this.root).empty();
@@ -296,15 +352,15 @@ export class ChordViewer extends DG.JsViewer {
 
     if (computeData) {
       // TODO: change when columnFilter setter is available
-      this.fromColumn = this.dataFrame.getCol(this.fromColumnName);
-      this.toColumn = this.dataFrame.getCol(this.toColumnName);
+      this.fromColumn = this.dataFrame.getCol(this.fromColumnName!);
+      this.toColumn = this.dataFrame.getCol(this.toColumnName!);
     }
 
-    if (this.fromColumn.type !== 'string' || this.toColumn.type !== 'string') {
+    if (this.fromColumn!.type !== 'string' || this.toColumn!.type !== 'string') {
       this._showErrorMessage('Data of a non-string type cannot be plotted.');
       return;
     }
-    if (this.fromColumn.categories.length * this.toColumn.categories.length > this.maxLinkNumber) {
+    if (this.fromColumn!.categories.length * this.toColumn!.categories.length > this.maxLinkNumber!) {
       this._showErrorMessage('Too many categories to render.');
       return;
     }
@@ -314,8 +370,8 @@ export class ChordViewer extends DG.JsViewer {
       if (this.distinctCols) this._computeChords();
     }
 
-    const width = this.root.parentElement.clientWidth;
-    const height = this.root.parentElement.clientHeight;
+    const width = this.root.parentElement!.clientWidth;
+    const height = this.root.parentElement!.clientHeight;
     const size = Math.min(width, height);
 
     const circos = new Circos({
@@ -324,8 +380,8 @@ export class ChordViewer extends DG.JsViewer {
       height: size,
     });
 
-    this.conf.innerRadius = Math.max(0, size/2 - this.innerRadiusMargin);
-    this.conf.outerRadius = Math.max(0, size/2 - this.outerRadiusMargin);
+    this.conf.innerRadius = Math.max(0, size/2 - this.innerRadiusMargin!);
+    this.conf.outerRadius = Math.max(0, size/2 - this.outerRadiusMargin!);
     // this.chordConf.radius = d => (d.source.id === d.target.id) ? this.conf.outerRadius : null;
 
     circos.layout(this.data, this.conf);
@@ -340,13 +396,13 @@ export class ChordViewer extends DG.JsViewer {
       circos.chords('chords-track', this.chords, this.chordConf);
 
 
-    const avgNameLen = this.categories.reduce((a, b) => a + b.length, 0) / this.categories.length;
-    const showLabels = avgNameLen < this.maxAvgNameLen;
+    const avgNameLen = this.categories!.reduce((a, b) => a + b.length, 0) / this.categories!.length;
+    const showLabels = avgNameLen < this.maxAvgNameLen!;
 
     if (showLabels) {
-      circos.text('labels', this.data.map((d) => ({
+      circos.text('labels', this.data.map((d: any) => ({
         block_id: d.id,
-        position: this.freqMap[d.label] / 2,
+        position: this.freqMap![d.label] / 2,
         value: d.label,
       })), this.labelConf);
     }
@@ -359,6 +415,7 @@ export class ChordViewer extends DG.JsViewer {
       this._cropLabels(labels);
     }
 
-    this.root.firstChild.style = 'position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);';
+    (this.root.firstChild! as HTMLElement).setAttribute('style',
+      'position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);');
   }
 }

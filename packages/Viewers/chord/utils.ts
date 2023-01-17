@@ -26,25 +26,24 @@ export const layoutConf = {
     size: {
       minor: 2,
       major: 5,
-    }
+    },
   },
-  events: {}
+  events: {},
 };
 
-export function topSort(graph) {
-  let stack = [];
+export function topSort(graph: any) {
+  const stack: [] = [];
 
-  function visit(node, stack) {
+  function visit(node: any, stack: any) {
     node.visited = true;
-    for (let target of node.targets) {
+    for (const target of node.targets)
       if (!graph[target].visited) visit(graph[target], stack);
-    }
+
     stack.unshift(node.datum);
   }
 
-  for (let node of Object.values(graph)) {
-    if (!node.visited) visit(node, stack);
-  }
+  for (const node of Object.values(graph))
+    if (!(node! as any).visited) visit(node, stack);
 
   return stack;
 }
