@@ -1,4 +1,4 @@
-class ViewersPackageDetectors extends DG.Package {
+class ChartsPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType

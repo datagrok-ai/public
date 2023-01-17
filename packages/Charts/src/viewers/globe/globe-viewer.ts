@@ -6,7 +6,7 @@ import ThreeGlobe from 'three-globe';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
 import {scaleLinear, scaleSqrt, scaleSequential, interpolateYlOrRd, ScaleLinear} from 'd3';
 
-import {_package} from '../src/package';
+import {_package} from '../../package';
 
 
 export class GlobeViewer extends DG.JsViewer {
@@ -36,7 +36,6 @@ export class GlobeViewer extends DG.JsViewer {
 
   constructor() {
     super();
-
     // Properties
     this.latitudeColumnName = this.string('latitudeColumnName');
     this.longitudeColumnName = this.string('longitudeColumnName');
@@ -53,14 +52,14 @@ export class GlobeViewer extends DG.JsViewer {
 
   init() {
     this.globe = new ThreeGlobe()
-      .globeImageUrl(`${_package.webRoot}globe/images/earth-blue-marble.jpg`)
-      .bumpImageUrl(`${_package.webRoot}globe/images/earth-topology.png`);
+      .globeImageUrl(`${_package.webRoot}img/globe/earth-blue-marble.jpg`)
+      .bumpImageUrl(`${_package.webRoot}img/globe/earth-topology.png`);
 
     this.width = this.root.parentElement!.clientWidth;
     this.height = this.root.parentElement!.clientHeight;
 
     this.renderer = new THREE.WebGLRenderer({alpha: true});
-    this.renderer.domElement.style.backgroundImage = `url(${_package.webRoot}globe/images/night-sky.png)`;
+    this.renderer.domElement.style.backgroundImage = `url(${_package.webRoot}img/globe/night-sky.png)`;
     this.renderer.setSize(this.width, this.height);
     this.root.appendChild(this.renderer.domElement);
 

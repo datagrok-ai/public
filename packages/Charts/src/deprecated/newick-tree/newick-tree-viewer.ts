@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as d3 from 'd3';
 
 
-export class TreeViewer extends DG.JsViewer {
+export class NewickTreeViewer extends DG.JsViewer {
   legendDepth: number;
   innerRadiusMargin: number;
   labelFontSize: string;
