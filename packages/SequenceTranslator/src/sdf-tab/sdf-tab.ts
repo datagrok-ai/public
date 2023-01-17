@@ -161,7 +161,6 @@ export function getSdfTab(): HTMLDivElement {
             } else {
               highlights.innerHTML = highlights.innerHTML + '<mark>' + highlightedText + '</mark>';
               mark = highlights.getElementsByTagName('mark').item(0);
-              grok.shell.warning('Invalid input: malformed subsequences highlighted with red');
             }
           } else {
             highlights.innerHTML = '';
