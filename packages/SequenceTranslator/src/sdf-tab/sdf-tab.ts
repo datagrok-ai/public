@@ -136,29 +136,37 @@ export function getSdfTab(): HTMLDivElement {
   // https://codersblock.com/blog/highlight-text-inside-a-textarea/#the-plan
   [ssInput, asInput, as2Input].forEach(
     (inputBase) => {
-      const highlights = ui.div([]);
+      const transparent = ui.span([]);
+      const highlights = ui.div([transparent]);
       $(highlights).addClass('sdf-highlights');
-      // highlights.innerHTML = '<mark> Some marked text </mark>';
-      // const backdrop = ui.div([highlights]);
-      // $(backdrop).addClass('sdf-backdrop');
       inputBase.root.appendChild(highlights);
-      const textArea = inputBase.root.getElementsByTagName('textarea').item(0);
-      // const tooltip = ui.tooltip.bind(textArea!, 'Malformed part highlighted with red');
+      let tooltip: HTMLElement;
+
       inputBase.onInput(() => {
         if (debugHighlight) {
           const inputValue = inputBase.value;
+
           // validate sequence
           const cutoff = isValidSequence(inputValue, null).indexOfFirstNotValidChar;
-          const isValid = cutoff < 0;
+          const isValid = cutoff < 0 || inputValue === '';
+
+          // add red highlighted area in case the sequence is invalid
           if (!isValid) {
+            let mark = highlights.getElementsByTagName('mark').item(0);
+            const highlighted = mark === null ? false : true;
             const transparentText = inputBase.value.slice(0, cutoff);
             const highlightedText = inputBase.value.slice(cutoff);
-            highlights.innerHTML = transparentText + '<mark>' + highlightedText + '</mark>';
-            // const mark = highlights.getElementsByTagName('mark').item(0);
-            // $(tooltip).show();
+            transparent.innerHTML = transparentText;
+            if (highlighted) {
+              mark!.innerHTML = highlightedText;
+            } else {
+              highlights.innerHTML = highlights.innerHTML + '<mark>' + highlightedText + '</mark>';
+              mark = highlights.getElementsByTagName('mark').item(0);
+              tooltip = ui.tooltip.bind(mark!, 'Invalid subsequence');
+            }
           } else {
             highlights.innerHTML = '';
-            // $(tooltip).hide();
+            highlights.appendChild(transparent);
           }
         }
       });
