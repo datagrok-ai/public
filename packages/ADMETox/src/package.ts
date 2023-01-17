@@ -26,3 +26,22 @@ export async function admetoxCalculators(col: DG.Column) {
   let table = col.dataFrame;
   return await addPredictions(col, table);
 }
+
+//name: testDocker
+export async function testDocker() {
+  const dockerId = (await grok.dapi.dockerfiles.filter('admetox').first()).id;
+  console.log(dockerId);
+  const params: RequestInit = {
+    method: 'POST',
+    headers: {
+      'Accept': 'text/csv',
+      'Content-type': 'text/csv'
+    },
+    body: `smiles
+    c1cc(O)ccc1`
+  };
+  
+  const path = '/smiles/df_upload/?models=F(20%)';
+  const response = await grok.dapi.dockerfiles.request(dockerId, path, params);
+  console.log(response);
+}
