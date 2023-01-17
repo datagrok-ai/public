@@ -1,9 +1,13 @@
 const path = require('path');
+const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = {
   mode: 'production',
   entry: {
-    package: './src/package.js'
+    package: './src/package.ts'
+  },
+  resolve: {
+    extensions: ['.js', '.json', '.ts'],
   },
   // devtool: 'inline-source-map',
   externals: {
@@ -23,12 +27,16 @@ module.exports = {
       {
         test: /\.(png|svg|jpg|jpeg|gif)$/i,
         type: 'asset/resource',
+      },
+      {
+        test: /\.ts$/,
+        loader: 'ts-loader',
       }
     ]
   },
   output: {
     filename: '[name].js',
-    library: 'viewers',
+    library: packageName,
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },
