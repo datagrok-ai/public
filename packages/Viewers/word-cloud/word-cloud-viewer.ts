@@ -48,10 +48,10 @@ export class WordCloudViewer extends DG.JsViewer {
     this.render();
   }
 
-  onPropertyChanged(property: any) {
+  onPropertyChanged(property: DG.Property) {
     super.onPropertyChanged(property);
     if (this.initialized && this.testColumns()) {
-      if (property.name === 'strColumnName') this.strColumnName = property.get();
+      if (property.name === 'strColumnName') this.strColumnName = property.get(this);
       this.render();
     }
   }
