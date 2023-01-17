@@ -293,6 +293,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   dirtyFlag: boolean = false;
 
+  skipAutoGenerate: boolean = false;
+
   workersInit: boolean = false;
 
   progressBar: DG.TaskBarProgressIndicator | null = null;
@@ -304,7 +306,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     super();
 
     this.tree = ui.tree();
-
     const dframe = grok.shell.tv.dataFrame;
     this.molColumns = dframe.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
     const molColNames = new Array(this.molColumns.length);
@@ -346,6 +347,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.molColumn === null)
       return;
 
+    if (this.skipAutoGenerate) {
+     this.skipAutoGenerate = false;
+     return;
+    }
+
     this.dirtyFlag = false;
     this.message = null;
     this.clear();
@@ -361,7 +367,23 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.progressBar.update(30, 'Generating tree..: 30% completed');
     const maxMolCount = 750;
+
     let length = this.molColumn.length;
+    let valid_count = 0;
+    for (let n = 0; n < length; ++n) {
+      if (this.molColumn.get(n).includes('V3000'))
+        continue;
+      ++valid_count;
+    }
+
+    if (valid_count === 0) {
+      ui.setUpdateIndicator(this.root, false);
+      this.progressBar.update(50, 'Build failed');
+      this.progressBar.close();
+      this.message = 'The dataset contains molecular blocks in the V3000 standard which is not currently supported.';
+      return;
+    }
+
     let step = 1;
     if (this.molColumn.length > maxMolCount) {
       step = Math.floor(this.molColumn.length / maxMolCount);
@@ -371,6 +393,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     const ar = new Array(length);
     for (let n = 0, m = 0; n < length; ++n, m += step) {
+      if (this.molColumn.get(m).includes('V3000')) {
+        const mTmp = _rdKitModule.get_mol(this.molColumn.get(m));
+        ar[n] = mTmp.get_smiles();
+        mTmp.delete();
+        continue;
+      }
       ar[n] = this.molColumn.get(m);
     }
 
@@ -817,6 +845,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (this.TreeEncodeUpdateInProgress)
         return;
 
+      this.skipAutoGenerate = true;
       const json = JSON.parse(this.TreeEncode);
       const thisViewer = this;
       ScaffoldTreeViewer.deserializeTrees(json, this.tree, (molStr: string, rootGroup: TreeViewGroup) => {
@@ -826,7 +855,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.updateSizes();
       this.updateUI();
       updateAllNodesHits(this, () => thisViewer.filterTree(this.threshold)); // async
-
     } else if (p.name === 'threshold')
       this.filterTree(this.threshold);
   }
@@ -940,7 +968,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.render();
 
-    this.generateTree();
+    setTimeout(() => this.generateTree(),1000);
   }
 
   detach(): void {
