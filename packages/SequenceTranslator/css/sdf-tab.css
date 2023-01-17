@@ -27,7 +27,7 @@
   width: 100%;
   background-color: transparent;
   position: relative;
-  z-index: 1;
+  z-index: 0;
   resize: none;
   height: 22px; /* Fine tuned value to avoid "jumping" of the textarea upon autoresize */
 }
@@ -47,25 +47,29 @@
   padding-top: 20px;
 }
 
-.sdf-backdrop {
+.sdf-highlights {
   font-family: 'Roboto Mono';
   overflow: auto;
   position: absolute;
-  z-index: 0;
+  pointer-events: none;
+  z-index: 1;
   margin-top: 3px;
+  font-size: 12px;
+  line-height: normal; /* makes it the same as in textarea */
   color: transparent;
+  opacity: .5;
   margin-left: 1.75px; /* fine-tuned value */
   max-width: 100%;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  cursor: text;
 }
 
-.sdf-highlights {
-  white-space: pre-wrap;
-  color: inherit;
-  word-wrap: break-word;
-}
+/* .sdf-highlights { */
+/* } */
 
 mark {
   border-radius: 3px;
-  background-color: tomato;
-  color: inherit;
+  background-color: red;
+  color: red;
 }
