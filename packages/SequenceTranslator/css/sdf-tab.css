@@ -61,12 +61,12 @@
   font-size: 12px;
   line-height: normal;
   color: transparent;
-  opacity: .5;
   white-space: pre-wrap;
   word-wrap: break-word;
 }
 
 mark {
+  opacity: .4;
   border-radius: 3px;
   background-color: red;
   color: red;
