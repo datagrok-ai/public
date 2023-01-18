@@ -1,5 +1,5 @@
 ---
-title: "&#8204;Exercises"
+title: "Exercises"
 ---
 <!-- SUBTITLE: -->
 

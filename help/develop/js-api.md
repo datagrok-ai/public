@@ -1,5 +1,5 @@
 ---
-title: "&#8204;JavaScript API"
+title: "JavaScript API"
 ---
 <!-- SUBTITLE: -->
 

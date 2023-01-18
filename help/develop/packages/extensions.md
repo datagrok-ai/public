@@ -1,5 +1,5 @@
 ---
-title: "&#8204;Extending Datagrok"
+title: "Extending Datagrok"
 ---
 <!-- SUBTITLE: -->
 
