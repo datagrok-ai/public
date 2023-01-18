@@ -927,10 +927,7 @@ export async function installScaffoldGraph() : Promise<void> {
 export function removeDuplicates(molecules: string[], molecule: string): string[] {
   const mol1 = checkMoleculeValid(molecule);
   if (!mol1) throw (`Molecule is possibly malformed`);
-  if (!Sketcher.isEmptyMolfile(molecule)) {
-    const filteredMolecules = molecules.filter((smiles) => !checkMolEqualSmiles(mol1, smiles));
-    mol1.delete();
-    return filteredMolecules;
-  }
-  return [];
+  const filteredMolecules = molecules.filter((smiles) => !checkMolEqualSmiles(mol1, smiles));
+  mol1.delete();
+  return filteredMolecules;
 }

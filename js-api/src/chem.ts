@@ -135,6 +135,7 @@ export namespace chem {
     extSketcherCanvas = ui.canvas();
     inplaceSketcherDiv: HTMLDivElement | null = null;
     clearSketcherButton: HTMLButtonElement;
+    emptySketcherLink: HTMLDivElement;
 
     set sketcherType(type: string) {
       this._setSketcherType(type);
@@ -240,6 +241,8 @@ export namespace chem {
         this._mode = mode;
       this.root.append(ui.div([ui.divText('')]));
       this.clearSketcherButton = this.createClearSketcherButton(this.extSketcherCanvas);
+      this.emptySketcherLink = ui.divText('Click to edit', 'sketch-link');
+      ui.tooltip.bind(this.emptySketcherLink, 'Click to edit');
       setTimeout(() => this.createSketcher(), 100);
     }
 
@@ -259,14 +262,9 @@ export namespace chem {
         this.root.appendChild(this.createExternalModeSketcher());
     }
 
-    _updateExtSketcherInnerHTML(content: HTMLElement) {
-      this.extSketcherDiv.innerHTML = '';
-      this.extSketcherDiv.append(content);
-    }
-
     updateExtSketcherContent() {
       ui.tools.waitForElementInDom(this.extSketcherDiv).then((_) => {
-        const width = this.extSketcherDiv.parentElement!.clientWidth;
+        const width = this.extSketcherDiv.parentElement!.clientWidth < 100 ? 100 : this.extSketcherDiv.parentElement!.clientWidth;
         const height = width / 2;
         if (!(this.isEmpty()) && this.extSketcherDiv.parentElement) {
           ui.empty(this.extSketcherDiv);
@@ -279,9 +277,8 @@ export namespace chem {
               this.extSketcherDiv.append(this.clearSketcherButton);
             });
         } else {
-          let sketchLink = ui.divText('Click to edit', 'sketch-link');
-          ui.tooltip.bind(sketchLink, 'Click to edit');
-          this._updateExtSketcherInnerHTML(sketchLink);
+          ui.empty(this.extSketcherDiv);
+          this.extSketcherDiv.append(this.emptySketcherLink);
         }
       });
     };
@@ -314,7 +311,7 @@ export namespace chem {
           dlg.add(this.createInplaceModeSketcher())
             .onOK(() => {
               this.updateExtSketcherContent();
-              Sketcher.addToCollection(Sketcher.RECENT_KEY, savedMolFile!);
+              Sketcher.addToCollection(Sketcher.RECENT_KEY, this.getMolFile());
               this.sketcherDialogOpened = false;
             })
             .onCancel(() => {
@@ -326,7 +323,7 @@ export namespace chem {
       };
 
       ui.onSizeChanged(this.extSketcherDiv).subscribe((_) => {
-        if (!this.isEmpty())
+        if (!this.isEmpty() ?? !this.extSketcherDiv.closest('d4-popup-host'))
           this.updateExtSketcherContent();
       });
 
@@ -456,9 +453,13 @@ export namespace chem {
     }
 
     static checkDuplicatesAndAddToStorage(storage: string[], molecule: string, localStorageKey: string) {
-      grok.functions
-        .call('Chem:removeDuplicates', { molecules: storage, molecule: molecule })
-        .then((array: any) => localStorage.setItem(localStorageKey, JSON.stringify([molecule, ...array.slice(0, 9)])));
+      if (!Sketcher.isEmptyMolfile(molecule)) {
+        storage.length ?
+        grok.functions
+          .call('Chem:removeDuplicates', { molecules: storage, molecule: molecule })
+          .then((array: any) => localStorage.setItem(localStorageKey, JSON.stringify([molecule, ...array.slice(0, 9)]))) :
+        localStorage.setItem(localStorageKey, JSON.stringify([molecule]));
+      }
     }
 
     static isEmptyMolfile(molFile: string): boolean {
@@ -678,7 +679,7 @@ export namespace chem {
       .call('Chem:drawMolecule', {
         'molStr': molString, 'w': w, 'h': h, 'popupMenu': false
       })
-      .then((res) => molDiv.append(res));
+      .then((res: HTMLElement) => molDiv.append(res));
       return molDiv;
     }
 

@@ -69,7 +69,8 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     return this._smiles;
   }
 
-  set smiles(smiles) {
+  set smiles(smiles: string) {
+    this._smiles = smiles;
     this.setKetcherMolecule(smiles);
   }
 
@@ -78,6 +79,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   set molFile(molfile: string) {
+    this._molV2000 = molfile;
     this.setKetcherMolecule(molfile);
   }
 
@@ -86,6 +88,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   set molV3000(molfile: string) {
+    this._molV3000 = molfile;
     this.setKetcherMolecule(molfile);
   }
 
@@ -94,6 +97,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   set smarts(smarts: string) {
+    this._smarts = smarts;
     this.setKetcherMolecule(smarts);
   }
 
