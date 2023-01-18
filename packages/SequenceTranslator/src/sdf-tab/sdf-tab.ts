@@ -132,8 +132,7 @@ export function getSdfTab(): HTMLDivElement {
     }
   );
 
-  // highlight malformed inputs, also see
-  // https://codersblock.com/blog/highlight-text-inside-a-textarea/#the-plan
+  // highlight malformed inputs
   [ssInput, asInput, as2Input].forEach(
     (inputBase) => {
       const transparent = ui.span([]);
@@ -151,19 +150,19 @@ export function getSdfTab(): HTMLDivElement {
 
           // add red highlighted area in case the sequence is invalid
           if (!isValid) {
-            let mark = highlights.getElementsByTagName('mark').item(0);
+            const mark = highlights.getElementsByTagName('mark').item(0);
+            const transparent = highlights.getElementsByTagName('span').item(0)!;
             const highlighted = mark === null ? false : true;
             const transparentText = inputBase.value.slice(0, cutoff);
             const highlightedText = inputBase.value.slice(cutoff);
             transparent.innerHTML = transparentText;
-            if (highlighted) {
+            if (highlighted)
               mark!.innerHTML = highlightedText;
-            } else {
+            else
               highlights.innerHTML = highlights.innerHTML + '<mark>' + highlightedText + '</mark>';
-              mark = highlights.getElementsByTagName('mark').item(0);
-            }
           } else {
             highlights.innerHTML = '';
+            transparent.innerHTML = '';
             highlights.appendChild(transparent);
           }
         }
