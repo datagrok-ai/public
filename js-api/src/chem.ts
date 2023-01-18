@@ -16,7 +16,7 @@ import '../css/styles.css';
 let api = <any>window;
 declare let grok: any;
 
-const DEFAULT_SKETCHER = 'Open Chem Sketcher';
+export const DEFAULT_SKETCHER = 'OpenChemLib';
 export const WHITE_MOLBLOCK = `
   Datagrok empty molecule
 
@@ -323,7 +323,7 @@ export namespace chem {
       };
 
       ui.onSizeChanged(this.extSketcherDiv).subscribe((_) => {
-        if (!this.isEmpty() ?? !this.extSketcherDiv.closest('d4-popup-host'))
+        if (!this.isEmpty() && !this.extSketcherDiv.closest('.d4-popup-host'))
           this.updateExtSketcherContent();
       });
 
@@ -391,7 +391,7 @@ export namespace chem {
             this.sketcherType = currentSketcherType;
             },
             {
-              isChecked: (item) => item === this.selectedSketcher?.friendlyName, toString: item => item,
+              isChecked: (item) => item === currentSketcherType, toString: item => item,
               radioGroup: 'sketcher type'
             })
           .show();

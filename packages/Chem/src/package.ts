@@ -62,12 +62,11 @@ import {setupScaffold} from './scripts-api';
 import { renderMolecule } from './rendering/render-molecule';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
-const DEFAULT_SKETCHER = 'Open Chem Sketcher';
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
-  OpenChemLib: 'Open Chem Sketcher',
+  OpenChemLib: 'OpenChemLib',
   Ketcher: 'Ketcher',
-  Marvin: 'Marvin JS',
-  ChemDraw: 'Chem Draw'
+  Marvin: 'Marvin',
+  ChemDraw: 'ChemDraw'
 }
 
 /**
@@ -97,13 +96,17 @@ export async function initChem(): Promise<void> {
   _properties = await _package.getProperties();
   _rdRenderer = new RDKitCellRenderer(getRdKitModule());
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
-  const lastSelectedSketcher = _properties.Sketcher ? SKETCHER_FUNCS_FRIENDLY_NAMES[_properties.Sketcher]:
-      await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
-  if (DG.Func.find({tags: ['moleculeSketcher']}).find(e => e.name === lastSelectedSketcher || e.friendlyName === lastSelectedSketcher) || !lastSelectedSketcher)
-    DG.chem.currentSketcherType = lastSelectedSketcher;
+  let storedSketcherType = await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
+  if (!storedSketcherType && _properties.Sketcher)
+    storedSketcherType = SKETCHER_FUNCS_FRIENDLY_NAMES[_properties.Sketcher]
+  const sketcherFunc = DG.Func.find({tags: ['moleculeSketcher']}).find(e => e.name === storedSketcherType || e.friendlyName === storedSketcherType);
+  if (sketcherFunc)
+    DG.chem.currentSketcherType = sketcherFunc.friendlyName;
   else {
-    grok.shell.warning(`Package with ${lastSelectedSketcher} function is not installed. Switching to ${DEFAULT_SKETCHER}.`);
-    DG.chem.currentSketcherType = DEFAULT_SKETCHER;
+    if(!!storedSketcherType) {
+      grok.shell.warning(`Package with ${storedSketcherType} function is not installed. Switching to ${DG.DEFAULT_SKETCHER}.`);
+    }
+    DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
   }
   _renderers = new Map();
 }
@@ -692,7 +695,7 @@ export function diversitySearchTopMenu() {
   (grok.shell.v as DG.TableView).addViewer('DiversitySearchViewer');
 }
 
-//name: Open Chem Sketcher
+//name: OpenChemLib
 //tags: moleculeSketcher
 //output: widget sketcher
 export function openChemLibSketcher(): OpenChemLibSketcher {
