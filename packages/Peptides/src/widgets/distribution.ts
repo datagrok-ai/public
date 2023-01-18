@@ -7,7 +7,7 @@ import $ from 'cash-dom';
 import * as C from '../utils/constants';
 import {getStats, MaskInfo, Stats} from '../utils/statistics';
 import {PeptidesModel} from '../model';
-import { wrapDistroAndStatsDefault } from '../utils/misc';
+import {wrapDistroAndStatsDefault} from '../utils/misc';
 
 const allConst = 'All';
 const otherConst = 'Other';

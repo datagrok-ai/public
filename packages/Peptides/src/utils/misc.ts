@@ -1,4 +1,4 @@
-import { StringDictionary } from '@datagrok-libraries/utils/src/type-declarations';
+import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as C from './constants';
