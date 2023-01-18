@@ -7,6 +7,7 @@ import $ from 'cash-dom';
 import * as C from '../utils/constants';
 import {getStats, MaskInfo, Stats} from '../utils/statistics';
 import {PeptidesModel} from '../model';
+import { wrapDistroAndStatsDefault } from '../utils/misc';
 
 const allConst = 'All';
 const otherConst = 'Other';
@@ -47,7 +48,8 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
           const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, rowCount).init((i) => posCol.get(i) == aar);
           const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
           const stats = model.monomerPositionStats[position][aar];
-          const distributionRoot = getDistributionAndStats(distributionTable, stats, aarStr, otherStr, true);
+          const das = getDistributionAndStats(distributionTable, stats, aarStr, otherStr, true);
+          const distributionRoot = wrapDistroAndStatsDefault(das.labels, das.histRoot, das.tableMap);
           $(distributionRoot).addClass('d4-flex-col');
 
           res.push(distributionRoot);
@@ -74,7 +76,8 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         const stats = getStats(activityScaledData, maskInfo);
         const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
         const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
-        const distributionRoot = getDistributionAndStats(distributionTable, stats, aarStr, otherStr, true);
+        const das = getDistributionAndStats(distributionTable, stats, aarStr, otherStr, true);
+        const distributionRoot = wrapDistroAndStatsDefault(das.labels, das.histRoot, das.tableMap);
         $(distributionRoot).addClass('d4-flex-col');
 
         res.push(distributionRoot);
@@ -117,7 +120,8 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         const stats = getStats(activityScaledData, maskInfo);
         const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
         const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
-        const distributionRoot = getDistributionAndStats(distributionTable, stats, aarStr, otherStr, true);
+        const das = getDistributionAndStats(distributionTable, stats, aarStr, otherStr, true);
+        const distributionRoot = wrapDistroAndStatsDefault(das.labels, das.histRoot, das.tableMap);
         $(distributionRoot).addClass('d4-flex-col');
 
         res.push(distributionRoot);
@@ -150,7 +154,8 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
           falseCount: table.selection.falseCount,
         };
         const stats = getStats(activityScaledCol.getRawData(), maskInfo);
-        const distributionRoot = getDistributionAndStats(distributionTable, stats, aarStr, otherStr);
+        const das = getDistributionAndStats(distributionTable, stats, aarStr, otherStr);
+        const distributionRoot = wrapDistroAndStatsDefault(das.labels, das.histRoot, das.tableMap);
         $(distributionRoot).addClass('d4-flex-col');
 
         res.push(distributionRoot);
@@ -187,8 +192,10 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   return new DG.Widget(ui.divV([controlsHost, distributionHost]));
 }
 
+type DistroAndStats = {labels: HTMLDivElement, histRoot: HTMLElement, tableMap: StringDictionary};
+
 export function getDistributionAndStats(table: DG.DataFrame, stats: Stats, thisLabel: string, otherLabel: string = '',
-  isTooltip: boolean = false, splitColName?: string): HTMLDivElement {
+  isTooltip: boolean = false, splitColName?: string): DistroAndStats {
   const labels = ui.divV([
     ui.label(thisLabel, {style: {color: DG.Color.toHtml(otherLabel == '' ? DG.Color.blue : DG.Color.orange)}}),
     ui.label(otherLabel, {style: {color: DG.Color.toHtml(DG.Color.blue)}})]);
@@ -214,9 +221,5 @@ export function getDistributionAndStats(table: DG.DataFrame, stats: Stats, thisL
     'Mean difference': stats.meanDifference.toFixed(2),
   };
 
-  const result = ui.divV([labels, histRoot, ui.tableFromMap(tableMap)]);
-  result.style.minWidth = '200px';
-  if (isTooltip)
-    histRoot.style.maxHeight = '150px';
-  return result;
+  return {labels: labels, histRoot: histRoot, tableMap: tableMap};
 }
