@@ -3,6 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {drawZoomedInMolecule} from '../utils/structures-works/draw-molecule';
+
 import {LIB_PATH, DEFAULT_LIB_FILENAME} from './const';
 import {SYNTHESIZERS, TECHNOLOGIES} from '../hardcode-to-be-eliminated/map';
 
@@ -38,11 +40,12 @@ export async function viewMonomerLib(): Promise<void> {
   const table = await parseMonomerLib(LIB_PATH, DEFAULT_LIB_FILENAME);
   table.name = 'Monomer Library';
   const view = grok.shell.addTableView(table);
+  view.grid.props.allowEdit = false;
   const onDoubleClick = view.grid.onCellDoubleClick;
-  onDoubleClick.subscribe((cell) => {
-    // alert('Hi');
-    // onDoubleClick.forEach((value) => {
-    // });
+  onDoubleClick.subscribe(async (gridCell: DG.GridCell) => {
+    const molfile = gridCell.cell.value;
+    if (gridCell.tableColumn?.semType === 'Molecule')
+      await drawZoomedInMolecule(molfile);
   });
 }
 
