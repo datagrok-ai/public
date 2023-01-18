@@ -87,7 +87,8 @@ export class LogoSummary extends DG.JsViewer {
     const customClustersColumnsList = wu(this.model.customClusters).toArray();
 
     let summaryTableBuilder = this.dataFrame.groupBy([clustersColName]);
-    for (const [colName, aggregationFunc] of Object.entries(this.model.settings.columns ?? {}))
+    const aggregateColumnsEntries = Object.entries(this.model.settings.columns ?? {});
+    for (const [colName, aggregationFunc] of aggregateColumnsEntries)
       summaryTableBuilder = summaryTableBuilder.add(aggregationFunc as any, colName, `${aggregationFunc}(${colName})`);
 
     const tempSummaryTable = summaryTableBuilder.aggregate();
@@ -115,16 +116,23 @@ export class LogoSummary extends DG.JsViewer {
     const meanDifferenceColData = summaryTableCols.addNewFloat(C.LST_COLUMN_NAMES.MEAN_DIFFERENCE).getRawData();
     const pValColData = summaryTableCols.addNewFloat(C.LST_COLUMN_NAMES.P_VALUE).getRawData();
     const ratioColData = summaryTableCols.addNewFloat(C.LST_COLUMN_NAMES.RATIO).getRawData();
+    
+    for (const [colName, aggregationFunc] of aggregateColumnsEntries) {
+      const tempSummaryTableCol = tempSummaryTable.getCol(`${aggregationFunc}(${colName})`);
+      const summaryTableCol = summaryTableCols.addNew(tempSummaryTableCol.name, tempSummaryTableCol.type);
+      summaryTableCol.init((i) => i < tempSummaryTableLength ? tempSummaryTableCol.get(i) : null);
+    }
 
     this.webLogoDfPlot = new Array(summaryTableLength);
     this.distributionDfPlot = new Array(summaryTableLength);
 
     for (let summaryTableRowIndex = 0; summaryTableRowIndex < summaryTableLength; ++summaryTableRowIndex) {
+      const isOriginalCluster = summaryTableRowIndex < tempSummaryTableLength;
       const currentClusterCategoryIndex = clustersColData[summaryTableRowIndex];
       const currentCluster = clustersColCategories[currentClusterCategoryIndex];  // Cluster name
       const customClusterColData = customClustersColumnsList.find((col) => col.name == currentCluster)?.toList();
 
-      const isValidIndex = summaryTableRowIndex < tempSummaryTableLength ?
+      const isValidIndex = isOriginalCluster ?
         (j: number) => originalClustersColCategories[originalClustersColData[j]] == currentCluster :
         (j: number) => customClusterColData![j];
         
@@ -144,10 +152,10 @@ export class LogoSummary extends DG.JsViewer {
 
       //TODO: use bitset instead of splitCol
       const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
-      const getSplitColValueAt = summaryTableRowIndex < tempSummaryTableLength ?
+      const getSplitColValueAt = isOriginalCluster ?
         (splitColIndex: number) => originalClustersColData[splitColIndex] == currentClusterCategoryIndex :
         (splitColIndex: number) => customClusterColData![splitColIndex];
-      splitCol.init(getSplitColValueAt);
+      splitCol.init((i) => getSplitColValueAt(i));
 
       const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
       const dfSlice = DG.DataFrame.fromColumns([tCol]);
@@ -159,6 +167,21 @@ export class LogoSummary extends DG.JsViewer {
       meanDifferenceColData[summaryTableRowIndex] = stats.meanDifference;
       pValColData[summaryTableRowIndex] = stats.pValue;
       ratioColData[summaryTableRowIndex] = stats.ratio;
+
+      //Setting aggregated col values
+      if (!isOriginalCluster) {
+        for (const [colName, aggregationFunc] of aggregateColumnsEntries) {
+          const arrayBuffer = this.dataFrame.getCol(colName).getRawData();
+          const clusterMask = DG.BitSet.fromBytes(arrayBuffer, arrayBuffer.byteLength);
+          const subDf = this.dataFrame.clone(clusterMask, [colName]);
+          const newColName = `${aggregationFunc}(${colName})`;
+          const aggregatedDf = subDf.groupBy()
+            .add(aggregationFunc as any, colName, newColName)
+            .aggregate();
+          const value = aggregatedDf.get(newColName, 0);
+          summaryTable.set(colName, summaryTableRowIndex, value);
+        }
+      }
     }
     webLogoCol.setTag(DG.TAGS.CELL_RENDERER, 'html');
     distributionCol.setTag(DG.TAGS.CELL_RENDERER, 'html');
