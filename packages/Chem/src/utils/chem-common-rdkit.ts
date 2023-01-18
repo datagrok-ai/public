@@ -8,6 +8,7 @@ import rdKitLibVersion from '../rdkit_lib_version';
 import initRDKitModule from '../RDKit_minimal.js';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import { isMolBlock } from './chem-common';
+import $ from 'cash-dom';
 
 export let _rdKitModule: RDModule;
 export let _rdKitService: RdKitService;
@@ -96,6 +97,14 @@ export function drawMoleculeToCanvas(
   onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null,
   options = {normalizeDepiction: true, straightenDepiction: true}
 ) {
+
+  $(onscreenCanvas).addClass('chem-canvas');
+  const r = window.devicePixelRatio;
+  onscreenCanvas.width = w * r;
+  onscreenCanvas.height = h * r;
+  onscreenCanvas.style.width = (w).toString() + 'px';
+  onscreenCanvas.style.height = (h).toString() + 'px';
+
   let mol = null;
   try {
     const isMol: boolean = isMolBlock(molString);

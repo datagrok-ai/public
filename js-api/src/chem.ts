@@ -268,9 +268,8 @@ export namespace chem {
         const height = width / 2;
         if (!(this.isEmpty()) && this.extSketcherDiv.parentElement) {
           ui.empty(this.extSketcherDiv);
-          this.setCanvasSize(this.extSketcherCanvas, width, height);
           ui.tooltip.bind(this.extSketcherCanvas, 'Click to edit');
-          canvasMol(0, 0, this.extSketcherCanvas.width, this.extSketcherCanvas.height, this.extSketcherCanvas, this.getMolFile()!, null, { normalizeDepiction: true, straightenDepiction: true })
+          canvasMol(0, 0, width, height, this.extSketcherCanvas, this.getMolFile()!, null, { normalizeDepiction: true, straightenDepiction: true })
             .then((_) => {
               ui.empty(this.extSketcherDiv);
               this.extSketcherDiv.append(this.extSketcherCanvas);
@@ -478,19 +477,10 @@ export namespace chem {
 
     drawToCanvas(w: number, h: number, molecule: string): HTMLElement{
       const imageHost = ui.canvas();
-      this.setCanvasSize(imageHost, w, h);
-      canvasMol(0, 0, imageHost.width, imageHost.height, imageHost, molecule, null, {normalizeDepiction: true, straightenDepiction: true});
+      canvasMol(0, 0, w, h, imageHost, molecule, null, {normalizeDepiction: true, straightenDepiction: true});
       return imageHost;
     }
 
-    setCanvasSize(canvas: HTMLCanvasElement, w: number, h: number) {
-      $(canvas).addClass('chem-canvas');
-      const r = window.devicePixelRatio;
-      canvas.width = w * r;
-      canvas.height = h * r;
-      canvas.style.width = (w).toString() + 'px';
-      canvas.style.height = (h).toString() + 'px';
-    }
   }
 
   /**
