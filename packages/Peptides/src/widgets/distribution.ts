@@ -187,9 +187,8 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   return new DG.Widget(ui.divV([controlsHost, distributionHost]));
 }
 
-export function getDistributionAndStats(
-  table: DG.DataFrame, stats: Stats, thisLabel: string, otherLabel: string = '', isTooltip: boolean = false,
-): HTMLDivElement {
+export function getDistributionAndStats(table: DG.DataFrame, stats: Stats, thisLabel: string, otherLabel: string = '',
+  isTooltip: boolean = false, splitColName?: string): HTMLDivElement {
   const labels = ui.divV([
     ui.label(thisLabel, {style: {color: DG.Color.toHtml(otherLabel == '' ? DG.Color.blue : DG.Color.orange)}}),
     ui.label(otherLabel, {style: {color: DG.Color.toHtml(DG.Color.blue)}})]);
@@ -197,7 +196,7 @@ export function getDistributionAndStats(
   const histRoot = table.plot.histogram({
     filteringEnabled: false,
     valueColumnName: C.COLUMNS_NAMES.ACTIVITY_SCALED,
-    splitColumnName: C.COLUMNS_NAMES.SPLIT_COL,
+    splitColumnName: splitColName ?? C.COLUMNS_NAMES.SPLIT_COL,
     legendVisibility: 'Never',
     showXAxis: true,
     showColumnSelector: false,

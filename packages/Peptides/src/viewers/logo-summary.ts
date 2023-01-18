@@ -27,7 +27,7 @@ export class LogoSummary extends DG.JsViewer {
 
     this.webLogoMode = this.string('webLogoMode', PositionHeight.full,
       {choices: [PositionHeight.full, PositionHeight.Entropy]});
-    this.membersRatioThreshold = this.float('membersRatioThreshold', 0.7, {min: 0.01, max: 1.0});
+    this.membersRatioThreshold = this.float('membersRatioThreshold', 0.7, {min: 0, max: 1.0});
   }
 
   onTableAttached(): void {
@@ -49,6 +49,13 @@ export class LogoSummary extends DG.JsViewer {
   render(): void {
     if (this.initialized) {
       $(this.root).empty();
+      const df = this.viewerGrid.dataFrame;
+      if (!df.filter.anyTrue) {
+        const emptyDf = ui.divText('No clusters to satisfy the threshold. ' +
+          'Please, lower the threshold in viewer proeperties to include clusters');
+        this.root.appendChild(ui.divV([this._titleHost, emptyDf]));
+        return;
+      }
       this.viewerGrid.root.style.width = 'auto';
       const newClusterBtn = ui.button(ui.iconFA('plus'), () => this.clusterFromSelection(),
         'Creates a new cluster from selection');
@@ -219,7 +226,7 @@ export class LogoSummary extends DG.JsViewer {
     });
     this.viewerGrid.onCellTooltip((cell, x, y) => {
       if (!cell.isColHeader && cell.tableColumn?.name === clustersColName)
-        this.model.showTooltipCluster(cell.cell.rowIndex, x, y);
+        this.model.showTooltipCluster(cell.cell.rowIndex, x, y, cell.cell.value);
       return true;
     });
     const webLogoGridCol = this.viewerGrid.columns.byName('WebLogo')!;
@@ -240,7 +247,8 @@ export class LogoSummary extends DG.JsViewer {
     const memberstCol = table.getCol(C.LST_COLUMN_NAMES.MEMBERS);
     const membersColData = memberstCol.getRawData();
     const maxCount = memberstCol.stats.max;
-    table.filter.init((i) => membersColData[i] > Math.ceil(maxCount * this.membersRatioThreshold));
+    const minMembers = Math.ceil(maxCount * this.membersRatioThreshold);
+    table.filter.init((i) => membersColData[i] > minMembers);
   }
 
   clusterFromSelection(): void {
