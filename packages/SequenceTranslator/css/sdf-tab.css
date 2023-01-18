@@ -48,28 +48,29 @@
 }
 
 .sdf-highlights {
-  font-family: 'Roboto Mono';
+  /* The values here are fine tuned to those of the ui.input textarea in order
+   * to achieve precise overlap */
   overflow: auto;
   position: absolute;
   pointer-events: none;
+  cursor: text;
   z-index: 1;
-  margin-top: 3px;
+  max-width: 100%;
+  padding: 2px;
+  font-family: 'Roboto Mono';
   font-size: 12px;
-  line-height: normal; /* makes it the same as in textarea */
+  line-height: normal;
   color: transparent;
   opacity: .5;
-  margin-left: 1.75px; /* fine-tuned value */
-  max-width: 100%;
   white-space: pre-wrap;
   word-wrap: break-word;
-  cursor: text;
 }
-
-/* .sdf-highlights { */
-/* } */
 
 mark {
   border-radius: 3px;
   background-color: red;
   color: red;
+  outline-color: red;
+  outline-width: 1px;
+  outline-style: solid;
 }
