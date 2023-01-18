@@ -76,7 +76,7 @@ const config = {
           editUrl: 'https://github.com/datagrok-ai/public/tree/master/help',
           path: '../help',
           routeBasePath: 'help',
-          exclude: ['**/_*', '**/*-test.md']
+          exclude: ['**/_*/**', '_*/**', '**/_*', '**/*-test.md']
         },
         theme: {
           customCss: [
@@ -112,8 +112,8 @@ const config = {
             position: 'left',
           },
           {
-            href: 'https://github.com/datagrok-ai/public',
-            label: 'GitHub',
+            href: 'https://public.datagrok.ai',
+            label: 'Launch',
             position: 'right',
           },
         ],

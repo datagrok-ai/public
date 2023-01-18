@@ -36,12 +36,10 @@ import dayjs from "dayjs";
 let api = <any>window;
 declare let grok: any;
 
-/**
- * Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
+/** Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
  * @param {string} tagName The name of an element.
  * @param {string | null} className
- * @returns {HTMLElement}
- */
+ * @returns {HTMLElement} */
 export function element(tagName: string, className: string | null = null): HTMLElement & any {
   let x = document.createElement(tagName);
   if (className !== null)
@@ -110,8 +108,7 @@ export function _backColor(x: HTMLElement, s: string): HTMLElement {
 /**
  * @param {number} height
  * @param {number} width
- * @returns {HTMLCanvasElement}
- * */
+ * @returns {HTMLCanvasElement} */
 export function canvas(width: number | null = null, height: number | null = null): HTMLCanvasElement {
   let result = element('CANVAS');
   if (height != null && width != null) {
@@ -313,8 +310,7 @@ export function inlineText(objects: any[]): HTMLElement {
 /**
  * @param {object[]} children
  * @param {string | ElementOptions} options
- * @returns {HTMLDivElement}
- * */
+ * @returns {HTMLDivElement} */
 export function div(children: any[] | string | HTMLElement = [], options: string | ElementOptions | null = null): HTMLDivElement {
   if (!Array.isArray(children))
     children = [children];
@@ -391,8 +387,7 @@ export function setUpdateIndicator(element: HTMLElement, updating: boolean = tru
  * @param {string | Element | Array<string | Element>} content
  * @param {Function} handler
  * @param {string} tooltip
- * @returns {HTMLButtonElement}
- * */
+ * @returns {HTMLButtonElement} */
 export function button(content: string | Element | (string | Element)[], handler: Function, tooltip: string | null = null): HTMLButtonElement {
   return api.grok_UI_Button(content, handler, tooltip);
 }
@@ -407,8 +402,7 @@ export function bigButton(text: string, handler: Function, tooltip: string | nul
  * @param {Array<string>} items
  * @param {Function} handler (item) => {...}
  * @param {Function} renderer (item) => {...}
- * @returns {HTMLElement}
- * */
+ * @returns {HTMLElement} */
 export function comboPopup(caption: string | HTMLElement, items: string[], handler: (item: any) => void, renderer?: ((item: any) => HTMLElement) | null): HTMLElement {
   return api.grok_UI_ComboPopup(caption, items, handler, renderer ? (item: any) => renderer(toJs(item)) : null);
 }
@@ -417,8 +411,7 @@ export function comboPopup(caption: string | HTMLElement, items: string[], handl
  * Creates a combo popup with the specified icons and items
  * @param {string | HTMLElement} caption
  * @param {Map<string>} items
- * @returns {HTMLElement}
- * */
+ * @returns {HTMLElement} */
 export function comboPopupItems(caption: string | HTMLElement, items: { [key: string]: Function }): HTMLElement {
   return api.grok_UI_ComboPopup(caption, Object.keys(items), (key: string) => items[key](), null);
 }
@@ -440,12 +433,12 @@ export function table<T>(items: T[], renderer: ((item: T, ind: number) => any) |
   return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames)).root;
 }
 
-/** Waits for Future<Element> function to complete and collect its result.*/
+/** Waits for `Future<Element>` function to complete and collect its result.*/
 export function wait(getElement: () => Promise<HTMLElement>): any {
   return toJs(api.grok_UI_Wait(getElement));
 }
 
-/** Waits for Future<Element> function to complete and collect its result as a ui.box.*/
+/** Waits for `Future<Element>` function to complete and collect its result as a ui.box.*/
 export function waitBox(getElement: () => Promise<HTMLElement>): any {
   return toJs(api.grok_UI_WaitBox(getElement));
 }
@@ -504,7 +497,7 @@ export function image(src: string, width: number, height: number, options?: {tar
   return image;
 }
 
-/** Creates an <a> element. */
+/** Creates an `<a>` element. */
 export function link(
     text: string,
     target: string | Function | object,
@@ -562,8 +555,7 @@ export function rangeSlider(minRange: number, maxRange: number, min: number, max
  * @param {Function} renderer
  * @param {boolean} verticalScroll - vertical or horizontal scrolling
  * @param {number} maxColumns - maximum number of items on the non-scrolling axis
- * @returns {VirtualView}
- */
+ * @returns {VirtualView} */
 export function virtualView(length: number, renderer: Function, verticalScroll: boolean = true, maxColumns: number = 1000): VirtualView {
   let view = VirtualView.create(verticalScroll, maxColumns);
   view.setData(length, renderer);
@@ -930,8 +922,7 @@ let _objectHandlerSubject = new rxjs.Subject<ObjectHandlerResolutionArgs>();
  *
  * TODO: search, destructuring to properties
  *
- * Samples: {@link https://public.datagrok.ai/js/samples/ui/meta/meta}
- * */
+ * Samples: {@link https://public.datagrok.ai/js/samples/ui/meta/meta} */
 export class ObjectHandler {
 
   /** Type of the object that this meta handles. */
@@ -953,8 +944,7 @@ export class ObjectHandler {
   /**
    * Override this method to check whether this meta class should handle the specified object.
    * @param x - specified object.
-   * @returns {boolean}
-   * */
+   * @returns {boolean} */
   isApplicable(x: any): boolean {
     throw 'Not defined.';
   }
