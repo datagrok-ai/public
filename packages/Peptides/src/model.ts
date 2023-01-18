@@ -20,7 +20,7 @@ import {getSettingsDialog} from './widgets/settings';
 import {getMonomerWorks} from './package';
 import {findMutations} from './utils/algorithms';
 import {IMonomerLib, MonomerWorks, pickUpPalette, SeqPalette, TAGS as bioTAGS} from '@datagrok-libraries/bio';
-import { DataFrame } from 'datagrok-api/dg';
+import {DataFrame} from 'datagrok-api/dg';
 
 export type SummaryStats = {
   minCount: number, maxCount: number,
@@ -980,7 +980,7 @@ export class PeptidesModel {
           return grok.shell.warning('View with this name already exists!');
         await this.createNewView(newViewName.stringValue);
       },
-        'Creates a new view from current selection');
+      'Creates a new view from current selection');
       this.analysisView.setRibbonPanels([[settingsButton], [newViewName.root, newViewButton]], false);
       this.isRibbonSet = true;
     }

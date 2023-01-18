@@ -7,7 +7,7 @@ import {PeptidesModel} from '../model';
 import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
 import {PositionHeight, UnitsHandler, TAGS as bioTAGS} from '@datagrok-libraries/bio';
-import { getStats, MaskInfo, Stats } from '../utils/statistics';
+import {getStats, MaskInfo, Stats} from '../utils/statistics';
 import wu from 'wu';
 
 export class LogoSummary extends DG.JsViewer {
@@ -99,9 +99,10 @@ export class LogoSummary extends DG.JsViewer {
     const summaryTableCols = summaryTable.columns;
 
     const clustersCol = summaryTableCols.addNewString(clustersColName);
-    for (let i = 0; i < summaryTableLength; ++i)
-      clustersCol.set(i,  i < tempSummaryTableLength ? tempClustersCol.get(i) :
+    for (let i = 0; i < summaryTableLength; ++i) {
+      clustersCol.set(i, i < tempSummaryTableLength ? tempClustersCol.get(i) :
         customClustersColumnsList[i - tempSummaryTableLength].name);
+    }
     const clustersColData = clustersCol.getRawData();
     const clustersColCategories = clustersCol.categories;
 
@@ -116,7 +117,7 @@ export class LogoSummary extends DG.JsViewer {
     const meanDifferenceColData = summaryTableCols.addNewFloat(C.LST_COLUMN_NAMES.MEAN_DIFFERENCE).getRawData();
     const pValColData = summaryTableCols.addNewFloat(C.LST_COLUMN_NAMES.P_VALUE).getRawData();
     const ratioColData = summaryTableCols.addNewFloat(C.LST_COLUMN_NAMES.RATIO).getRawData();
-    
+
     for (const [colName, aggregationFunc] of aggregateColumnsEntries) {
       const tempSummaryTableCol = tempSummaryTable.getCol(`${aggregationFunc}(${colName})`);
       const summaryTableCol = summaryTableCols.addNew(tempSummaryTableCol.name, tempSummaryTableCol.type);
@@ -129,19 +130,19 @@ export class LogoSummary extends DG.JsViewer {
     for (let summaryTableRowIndex = 0; summaryTableRowIndex < summaryTableLength; ++summaryTableRowIndex) {
       const isOriginalCluster = summaryTableRowIndex < tempSummaryTableLength;
       const currentClusterCategoryIndex = clustersColData[summaryTableRowIndex];
-      const currentCluster = clustersColCategories[currentClusterCategoryIndex];  // Cluster name
+      const currentCluster = clustersColCategories[currentClusterCategoryIndex]; // Cluster name
       const customClusterColData = customClustersColumnsList.find((col) => col.name == currentCluster)?.toList();
 
       const isValidIndex = isOriginalCluster ?
         (j: number) => originalClustersColCategories[originalClustersColData[j]] == currentCluster :
         (j: number) => customClusterColData![j];
-        
+
       const stats = this.model.clusterStats[currentClusterCategoryIndex];
       const tCol = DG.Column.string('peptides', stats.count);
       let tColIdx = 0;
       for (let j = 0; j < originalClustersColLength; ++j) {
         if (isValidIndex(j))
-          tCol.set(tColIdx++, peptideColCategories[peptideColData[j]])
+          tCol.set(tColIdx++, peptideColCategories[peptideColData[j]]);
       }
 
       for (const tag of peptideColTags)
@@ -162,7 +163,7 @@ export class LogoSummary extends DG.JsViewer {
 
       this.webLogoDfPlot[summaryTableRowIndex] = dfSlice.plot;
       this.distributionDfPlot[summaryTableRowIndex] = distributionTable.plot;
-      
+
       membersColData[summaryTableRowIndex] = stats.count;
       meanDifferenceColData[summaryTableRowIndex] = stats.meanDifference;
       pValColData[summaryTableRowIndex] = stats.pValue;
@@ -314,11 +315,11 @@ export class LogoSummary extends DG.JsViewer {
       const col = viewerDfCols.byIndex(i);
       newClusterVals[i] = col.name == this.model.settings.clustersColumnName! ? newClusterName :
         col.name == C.LST_COLUMN_NAMES.MEMBERS ? maskInfo.trueCount :
-        col.name == C.LST_COLUMN_NAMES.WEB_LOGO ? null :
-        col.name == C.LST_COLUMN_NAMES.DISTRIBUTION ? null :
-        col.name == C.LST_COLUMN_NAMES.MEAN_DIFFERENCE ? stats.meanDifference:
-        col.name == C.LST_COLUMN_NAMES.P_VALUE ? stats.pValue:
-        col.name == C.LST_COLUMN_NAMES.RATIO ? stats.ratio:
+          col.name == C.LST_COLUMN_NAMES.WEB_LOGO ? null :
+            col.name == C.LST_COLUMN_NAMES.DISTRIBUTION ? null :
+              col.name == C.LST_COLUMN_NAMES.MEAN_DIFFERENCE ? stats.meanDifference:
+                col.name == C.LST_COLUMN_NAMES.P_VALUE ? stats.pValue:
+                  col.name == C.LST_COLUMN_NAMES.RATIO ? stats.ratio:
         console.warn(`PeptidesLSTWarn: value for column ${col.name} is undefined`)! || null;
     }
     viewerDf.rows.addNew(newClusterVals);
