@@ -20,8 +20,9 @@ category('renderers', () => {
   });
 
   after(async () => {
-    dfList.forEach((df: DG.DataFrame) => { grok.shell.closeTable(df); });
-    tvList.forEach((tv: DG.TableView) => tv.close());
+    // Closing viewes and data frames leads to exception
+    // dfList.forEach((df: DG.DataFrame) => { grok.shell.closeTable(df); });
+    // tvList.forEach((tv: DG.TableView) => tv.close());
   });
 
   test('long sequence performance ', async () => {
