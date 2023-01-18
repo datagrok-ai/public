@@ -1,4 +1,6 @@
-<!-- TITLE: Select tooltip columns -->
+---
+title: "Select tooltip columns"
+---
 <!-- SUBTITLE: -->
 
 # Select tooltip columns

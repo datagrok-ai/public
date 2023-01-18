@@ -1,4 +1,6 @@
-<!-- TITLE: Dashboard -->
+---
+title: "Dashboard"
+---
 <!-- SUBTITLE: -->
 
 # Dashboard

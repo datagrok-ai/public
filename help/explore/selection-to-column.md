@@ -1,4 +1,6 @@
-<!-- TITLE: Selection to column -->
+---
+title: "Selection to column"
+---
 <!-- SUBTITLE: -->
 
 # Selection to column

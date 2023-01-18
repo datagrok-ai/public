@@ -1,4 +1,6 @@
-<!-- TITLE: Column Selector -->
+---
+title: "Column Selector"
+---
 <!-- SUBTITLE: -->
 
 # Column Selector

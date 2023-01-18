@@ -1,4 +1,6 @@
-<!-- TITLE: Exploratory data analysis -->
+---
+title: "Exploratory data analysis"
+---
 <!-- SUBTITLE: -->
 
 # Exploratory data analysis

@@ -1,4 +1,6 @@
-<!-- TITLE: Job editor -->
+---
+title: "Job editor"
+---
 <!-- SUBTITLE: -->
 
 # Job Editor

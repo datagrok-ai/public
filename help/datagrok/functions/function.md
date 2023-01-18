@@ -1,4 +1,6 @@
-<!-- TITLE: Functions -->
+---
+title: "Functions"
+---
 <!-- SUBTITLE: -->
 
 # Functions

@@ -1,4 +1,6 @@
-<!-- TITLE: Search patterns -->
+---
+title: "Search patterns"
+---
 <!-- SUBTITLE: -->
 
 # Search patterns

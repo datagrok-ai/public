@@ -1,4 +1,6 @@
-<!-- TITLE: Filter by catalogs -->
+---
+title: "Filter by catalogs"
+---
 <!-- SUBTITLE: -->
 
 # Filter by catalogs

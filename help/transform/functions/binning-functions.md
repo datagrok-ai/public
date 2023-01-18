@@ -1,4 +1,6 @@
-<!-- TITLE: Binning functions -->
+---
+title: "Binning functions"
+---
 <!-- SUBTITLE: -->
 
 # Binning functions

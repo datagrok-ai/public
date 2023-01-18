@@ -1,4 +1,6 @@
-<!-- TITLE: V-Domain -->
+---
+title: "V-Domain"
+---
 <!-- SUBTITLE: -->
 
 # VdRegions

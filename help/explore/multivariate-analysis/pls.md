@@ -1,4 +1,6 @@
-<!-- TITLE: Multivariate analysis based on partial least squares (PLS) -->
+---
+title: "Multivariate analysis based on partial least squares (PLS)"
+---
 <!-- SUBTITLE: -->
 
 # Multivariate analysis based on partial least squares (pls)

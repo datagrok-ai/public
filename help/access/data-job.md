@@ -1,4 +1,6 @@
-<!-- TITLE: Data job -->
+---
+title: "Data job"
+---
 <!-- SUBTITLE: -->
 
 # Data job

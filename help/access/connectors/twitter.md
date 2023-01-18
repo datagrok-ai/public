@@ -1,4 +1,6 @@
-<!-- TITLE: Twitter -->
+---
+title: "Twitter"
+---
 <!-- SUBTITLE: -->
 
 # Twitter

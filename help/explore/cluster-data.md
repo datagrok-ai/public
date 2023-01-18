@@ -1,4 +1,6 @@
-<!-- TITLE: Cluster data -->
+---
+title: "Cluster data"
+---
 <!-- SUBTITLE: -->
 
 # Clustering

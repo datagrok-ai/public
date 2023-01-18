@@ -1,4 +1,6 @@
-<!-- TITLE: Math functions -->
+---
+title: "Math functions"
+---
 <!-- SUBTITLE: -->
 
 # Math functions

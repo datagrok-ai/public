@@ -1,4 +1,6 @@
-<!-- TITLE: TimeSpan functions -->
+---
+title: "TimeSpan functions"
+---
 <!-- SUBTITLE: -->
 
 # Timespan functions

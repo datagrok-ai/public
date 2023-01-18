@@ -1,4 +1,6 @@
-<!-- TITLE: Datagrok for Enterprise IT -->
+---
+title: "Datagrok for Enterprise IT"
+---
 <!-- SUBTITLE: -->
 
 # Datagrok for Enterprise IT

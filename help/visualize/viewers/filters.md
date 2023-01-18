@@ -1,4 +1,6 @@
-<!-- TITLE: Filters -->
+---
+title: "Filters"
+---
 <!-- SUBTITLE: -->
 
 # Filters

@@ -1,4 +1,6 @@
-<!-- TITLE: File -->
+---
+title: "File"
+---
 <!-- SUBTITLE: -->
 
 # Supported formats

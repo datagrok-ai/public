@@ -1,4 +1,6 @@
-<!-- TITLE: Deployment on a regular machine -->
+---
+title: "Deployment on a regular machine"
+---
 <!-- SUBTITLE: -->
 
 # Deployment on a regular machine

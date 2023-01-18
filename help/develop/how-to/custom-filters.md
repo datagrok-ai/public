@@ -1,4 +1,6 @@
-<!-- TITLE: Develop custom filters -->
+---
+title: "Develop custom filters"
+---
 
 # Filters
 

@@ -1,4 +1,6 @@
-<!-- TITLE: Create project -->
+---
+title: "Create project"
+---
 <!-- SUBTITLE: -->
 
 # Create project

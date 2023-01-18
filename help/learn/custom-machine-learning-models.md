@@ -1,4 +1,6 @@
-<!-- TITLE: Custom machine learning models -->
+---
+title: "Custom machine learning models"
+---
 
 # Custom machine learning models
 

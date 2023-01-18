@@ -1,4 +1,6 @@
-<!-- TITLE: Markdown -->
+---
+title: "Markdown"
+---
 <!-- SUBTITLE: -->
 
 # Markdown

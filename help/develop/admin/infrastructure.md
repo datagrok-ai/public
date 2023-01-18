@@ -1,4 +1,6 @@
-<!-- TITLE: Infrastructure -->
+---
+title: "Infrastructure"
+---
 <!-- SUBTITLE: -->
 
 # Infrastructure

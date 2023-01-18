@@ -1,4 +1,6 @@
-<!-- TITLE: Heatmap -->
+---
+title: "Heatmap"
+---
 <!-- SUBTITLE: -->
 
 # Heatmap

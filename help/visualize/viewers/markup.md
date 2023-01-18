@@ -1,4 +1,6 @@
-<!-- TITLE: Markup viewer -->
+---
+title: "Markup viewer"
+---
 <!-- SUBTITLE: -->
 
 # Markup viewer

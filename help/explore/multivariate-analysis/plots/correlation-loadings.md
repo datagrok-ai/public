@@ -1,4 +1,6 @@
-<!-- TITLE: Correlation loadings -->
+---
+title: "Correlation loadings"
+---
 <!-- SUBTITLE: -->
 
 # Correlation loadings

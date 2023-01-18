@@ -1,4 +1,6 @@
-<!-- TITLE: Smart search -->
+---
+title: "Smart search"
+---
 <!-- SUBTITLE: -->
 
 # Smart search

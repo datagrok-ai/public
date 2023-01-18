@@ -1,4 +1,6 @@
-<!-- TITLE: Drug likeness -->
+---
+title: "Drug likeness"
+---
 
 # Drug likeness
 

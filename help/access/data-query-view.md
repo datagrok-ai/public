@@ -1,4 +1,6 @@
-<!-- TITLE: Query View -->
+---
+title: "Query View"
+---
 <!-- SUBTITLE: -->
 
 # Query View

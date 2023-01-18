@@ -1,4 +1,6 @@
-<!-- TITLE: Git -->
+---
+title: "Git"
+---
 <!-- SUBTITLE: -->
 
 # Git

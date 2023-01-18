@@ -1,4 +1,6 @@
-<!-- TITLE: BigQuery -->
+---
+title: "BigQuery"
+---
 <!-- SUBTITLE: -->
 
 # BigQuery

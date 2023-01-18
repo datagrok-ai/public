@@ -1,4 +1,6 @@
-<!-- TITLE: Performance -->
+---
+title: "Performance"
+---
 <!-- SUBTITLE: -->
 
 # Performance

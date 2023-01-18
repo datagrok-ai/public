@@ -1,4 +1,6 @@
-<!-- TITLE: Macromolecules -->
+---
+title: "Macromolecules"
+---
 
 # Datagrok for Macromolecules
 

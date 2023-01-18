@@ -1,4 +1,6 @@
-<!-- TITLE: SPARQL -->
+---
+title: "SPARQL"
+---
 <!-- SUBTITLE: -->
 
 # SPARQL

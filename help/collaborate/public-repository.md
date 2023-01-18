@@ -1,4 +1,6 @@
-<!-- TITLE: Datagrok package repository -->
+---
+title: "Datagrok package repository"
+---
 <!-- SUBTITLE: -->
 
 # Datagrok package repository

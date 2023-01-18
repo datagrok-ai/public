@@ -1,4 +1,6 @@
-<!-- TITLE: Database table column -->
+---
+title: "Database table column"
+---
 <!-- SUBTITLE: -->
 
 # Database table column

@@ -1,4 +1,6 @@
-<!-- TITLE: Extract RegExp -->
+---
+title: "Extract RegExp"
+---
 <!-- SUBTITLE: -->
 
 # Extract regular expression

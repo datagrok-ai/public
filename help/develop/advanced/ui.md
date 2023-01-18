@@ -1,4 +1,6 @@
-<!-- TITLE: Datagrok UI -->
+---
+title: "Datagrok UI"
+---
 <!-- SUBTITLE: -->
 
 # Datagrok UI

@@ -1,4 +1,6 @@
-<!-- TITLE: Cassandra -->
+---
+title: "Cassandra"
+---
 <!-- SUBTITLE: -->
 
 # Cassandra

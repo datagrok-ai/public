@@ -1,4 +1,6 @@
-<!-- TITLE: Batch edit -->
+---
+title: "Batch edit"
+---
 <!-- SUBTITLE: -->
 
 # Batch edit

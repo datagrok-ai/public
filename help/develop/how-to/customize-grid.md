@@ -1,4 +1,6 @@
-<!-- TITLE: Customize a grid -->
+---
+title: "Customize a grid"
+---
 
 # Grid customization
 

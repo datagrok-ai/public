@@ -1,4 +1,6 @@
-<!-- TITLE: Gasteiger Partial Charges -->
+---
+title: "Gasteiger Partial Charges"
+---
 <!-- SUBTITLE: -->
 
 # Gasteiger partial charges

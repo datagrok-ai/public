@@ -1,4 +1,6 @@
-<!-- TITLE: Contribute to Help documentation -->
+---
+title: "Contribute to Help documentation"
+---
 
 # Contribute to Help documentation
 

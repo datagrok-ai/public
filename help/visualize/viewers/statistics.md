@@ -1,4 +1,6 @@
-<!-- TITLE: Statistics -->
+---
+title: "Statistics"
+---
 <!-- SUBTITLE: -->
 
 # Statistics

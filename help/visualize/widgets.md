@@ -1,4 +1,6 @@
-<!-- TITLE: Widgets -->
+---
+title: "Widgets"
+---
 <!-- SUBTITLE: -->
 
 # Widgets

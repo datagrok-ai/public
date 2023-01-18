@@ -1,4 +1,6 @@
-<!-- TITLE: Cheminformatics chemical structures curation -->
+---
+title: "Cheminformatics chemical structures curation"
+---
 <!-- SUBTITLE: -->
 
 # Cheminformatics chemical structures curation

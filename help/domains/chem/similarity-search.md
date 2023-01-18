@@ -1,4 +1,6 @@
-<!-- TITLE: Similarity search -->
+---
+title: "Similarity search"
+---
 <!-- SUBTITLE: -->
 
 # Similarity search

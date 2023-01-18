@@ -1,4 +1,6 @@
-<!-- TITLE: Denodo -->
+---
+title: "Denodo"
+---
 <!-- SUBTITLE: -->
 
 # Denodo

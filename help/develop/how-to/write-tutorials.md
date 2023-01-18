@@ -1,4 +1,6 @@
-<!-- TITLE: Write tutorials -->
+---
+title: "Write tutorials"
+---
 
 # Tutorials
 

@@ -1,4 +1,6 @@
-<!-- TITLE: Show formula lines -->
+---
+title: "Show formula lines"
+---
 
 # How to show formula lines
 

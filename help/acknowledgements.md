@@ -1,4 +1,6 @@
-<!-- TITLE: Acknowledgments -->
+---
+title: "Acknowledgments"
+---
 
 # Acknowledgments
 

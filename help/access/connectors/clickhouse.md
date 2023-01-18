@@ -1,4 +1,6 @@
-<!-- TITLE: ClickHouse -->
+---
+title: "ClickHouse"
+---
 <!-- SUBTITLE: -->
 
 # ClickHouse

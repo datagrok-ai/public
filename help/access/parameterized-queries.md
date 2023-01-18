@@ -1,4 +1,6 @@
-<!-- TITLE: Parameterized queries -->
+---
+title: "Parameterized queries"
+---
 
 # Parameterized queries
 

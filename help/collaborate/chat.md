@@ -1,4 +1,6 @@
-<!-- TITLE: Chat -->
+---
+title: "Chat"
+---
 <!-- SUBTITLE: -->
 
 # Composing a message

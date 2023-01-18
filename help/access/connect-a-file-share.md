@@ -1,4 +1,6 @@
-<!-- TITLE: File shares -->
+---
+title: "File shares"
+---
 <!-- SUBTITLE: -->
 
 # Connecting to file shares

@@ -1,4 +1,6 @@
-<!-- TITLE: Text to columns -->
+---
+title: "Text to columns"
+---
 <!-- SUBTITLE: -->
 
 # Text to columns

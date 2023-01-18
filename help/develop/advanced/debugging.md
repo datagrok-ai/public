@@ -1,4 +1,6 @@
-<!-- TITLE: Debugging -->
+---
+title: "Debugging"
+---
 
 # Debugging
 

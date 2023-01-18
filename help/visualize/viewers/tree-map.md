@@ -1,4 +1,6 @@
-<!-- TITLE: Treemap -->
+---
+title: "Treemap"
+---
 <!-- SUBTITLE: -->
 
 # Treemap

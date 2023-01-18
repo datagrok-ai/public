@@ -1,4 +1,6 @@
-<!-- TITLE: Grid -->
+---
+title: "Grid"
+---
 <!-- SUBTITLE: -->
 
 # Grid

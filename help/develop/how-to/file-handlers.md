@@ -1,4 +1,6 @@
-<!-- TITLE: Develop custom file handlers -->
+---
+title: "Develop custom file handlers"
+---
 
 # File handlers
 

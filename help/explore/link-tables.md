@@ -1,4 +1,6 @@
-<!-- TITLE: Link tables -->
+---
+title: "Link tables"
+---
 <!-- SUBTITLE: -->
 
 # Link tables

@@ -1,4 +1,6 @@
-<!-- TITLE: Statistical functions -->
+---
+title: "Statistical functions"
+---
 <!-- SUBTITLE: -->
 
 # Statistical functions

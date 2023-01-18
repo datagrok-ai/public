@@ -1,4 +1,6 @@
-<!-- TITLE: Aggregation functions -->
+---
+title: "Aggregation functions"
+---
 <!-- SUBTITLE: -->
 
 # Aggregation functions

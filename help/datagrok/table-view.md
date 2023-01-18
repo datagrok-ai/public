@@ -1,4 +1,6 @@
-<!-- TITLE: Table View -->
+---
+title: "Table View"
+---
 <!-- SUBTITLE: -->
 
 # Table View

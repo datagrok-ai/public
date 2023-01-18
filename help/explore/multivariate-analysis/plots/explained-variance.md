@@ -1,4 +1,6 @@
-<!-- TITLE: Explained variance -->
+---
+title: "Explained variance"
+---
 <!-- SUBTITLE: -->
 
 # Explained variance

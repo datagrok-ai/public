@@ -1,4 +1,6 @@
-<!-- TITLE: Shape map -->
+---
+title: "Shape map"
+---
 <!-- SUBTITLE: -->
 
 # Shape map

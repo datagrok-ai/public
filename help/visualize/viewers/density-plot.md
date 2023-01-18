@@ -1,4 +1,6 @@
-<!-- TITLE: Density plot -->
+---
+title: "Density plot"
+---
 <!-- SUBTITLE: -->
 
 # Density plot

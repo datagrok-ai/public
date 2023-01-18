@@ -1,4 +1,6 @@
-<!-- TITLE: Enterprise -->
+---
+title: "Enterprise"
+---
 <!-- SUBTITLE: -->
 
 # Problem

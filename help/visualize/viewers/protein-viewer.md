@@ -1,4 +1,6 @@
-<!-- TITLE: Protein viewer -->
+---
+title: "Protein viewer"
+---
 <!-- SUBTITLE: -->
 
 # Protein viewer

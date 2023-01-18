@@ -1,4 +1,6 @@
-<!-- TITLE: Redshift -->
+---
+title: "Redshift"
+---
 <!-- SUBTITLE: -->
 
 # Redshift

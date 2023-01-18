@@ -1,4 +1,6 @@
-<!-- TITLE: Developer qualifications -->
+---
+title: "Developer qualifications"
+---
 <!-- SUBTITLE: -->
 
 # Datagrok developer qualifications

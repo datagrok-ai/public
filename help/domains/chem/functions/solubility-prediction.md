@@ -1,4 +1,6 @@
-<!-- TITLE: Solubility prediction -->
+---
+title: "Solubility prediction"
+---
 <!-- SUBTITLE: -->
 
 # Solubility prediction

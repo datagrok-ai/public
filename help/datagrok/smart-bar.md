@@ -1,4 +1,6 @@
-<!-- TITLE: Smart bar -->
+---
+title: "Smart bar"
+---
 <!-- SUBTITLE: -->
 
 # Smart bar

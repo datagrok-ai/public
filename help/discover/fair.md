@@ -1,4 +1,6 @@
-<!-- TITLE: FAIR Principles -->
+---
+title: "FAIR Principles"
+---
 
 # FAIR principles
 

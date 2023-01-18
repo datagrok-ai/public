@@ -1,4 +1,6 @@
-<!-- TITLE: Data export -->
+---
+title: "Data export"
+---
 <!-- SUBTITLE: -->
 
 # Data export

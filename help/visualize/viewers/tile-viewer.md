@@ -1,4 +1,6 @@
-<!-- TITLE: Tile viewer -->
+---
+title: "Tile viewer"
+---
 <!-- SUBTITLE: -->
 
 # Tile viewer

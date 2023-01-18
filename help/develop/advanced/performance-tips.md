@@ -1,4 +1,6 @@
-<!-- TITLE: Performance tips -->
+---
+title: "Performance tips"
+---
 
 # Performance tips
 

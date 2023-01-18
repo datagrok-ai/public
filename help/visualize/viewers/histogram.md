@@ -1,4 +1,6 @@
-<!-- TITLE: Histogram -->
+---
+title: "Histogram"
+---
 <!-- SUBTITLE: -->
 
 # Histogram

@@ -1,4 +1,6 @@
-<!-- TITLE: Text functions -->
+---
+title: "Text functions"
+---
 <!-- SUBTITLE: -->
 
 # Text functions

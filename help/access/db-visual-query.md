@@ -1,4 +1,6 @@
-<!-- TITLE: DB visual query -->
+---
+title: "DB visual query"
+---
 <!-- SUBTITLE: -->
 
 # DB visual query

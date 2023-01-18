@@ -1,4 +1,6 @@
-<!-- TITLE: DB exploration -->
+---
+title: "DB exploration"
+---
 <!-- SUBTITLE: -->
 
 # DB exploration

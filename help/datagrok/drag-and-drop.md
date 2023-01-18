@@ -1,4 +1,6 @@
-<!-- TITLE: Drag-and-drop -->
+---
+title: "Drag-and-drop"
+---
 <!-- SUBTITLE: -->
 
 # Drag-and-drop

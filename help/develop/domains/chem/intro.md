@@ -1,4 +1,6 @@
-<!-- TITLE: Cheminformatics concepts -->
+---
+title: "Cheminformatics concepts"
+---
 <!-- SUBTITLE: -->
 
 # Cheminformatics

@@ -1,4 +1,6 @@
-<!-- TITLE: Molecule sketcher -->
+---
+title: "Molecule sketcher"
+---
 <!-- SUBTITLE: -->
 
 # Molecule sketcher

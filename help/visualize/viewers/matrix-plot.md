@@ -1,4 +1,6 @@
-<!-- TITLE: Matrix plot -->
+---
+title: "Matrix plot"
+---
 <!-- SUBTITLE: -->
 
 # Matrix plot

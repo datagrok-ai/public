@@ -1,4 +1,6 @@
-<!-- TITLE: Snowflake -->
+---
+title: "Snowflake"
+---
 <!-- SUBTITLE: -->
 
 # Snowflake

@@ -1,4 +1,6 @@
-<!-- TITLE: Radar viewer -->
+---
+title: "Radar viewer"
+---
 <!-- SUBTITLE: -->
 
 # Radar viewer

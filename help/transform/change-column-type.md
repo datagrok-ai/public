@@ -1,4 +1,6 @@
-<!-- TITLE: Change type -->
+---
+title: "Change type"
+---
 <!-- SUBTITLE: -->
 
 # Change type

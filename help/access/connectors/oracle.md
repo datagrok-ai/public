@@ -1,4 +1,6 @@
-<!-- TITLE: Oracle -->
+---
+title: "Oracle"
+---
 <!-- SUBTITLE: -->
 
 # Oracle

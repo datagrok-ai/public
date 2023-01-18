@@ -1,4 +1,6 @@
-<!-- TITLE: Public datasets -->
+---
+title: "Public datasets"
+---
 <!-- SUBTITLE: -->
 
 # Public datasets

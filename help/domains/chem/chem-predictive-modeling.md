@@ -1,4 +1,6 @@
-<!-- TITLE: Cheminformatics predictive modeling -->
+---
+title: "Cheminformatics predictive modeling"
+---
 <!-- SUBTITLE: -->
 
 # Cheminformatics predictive modeling

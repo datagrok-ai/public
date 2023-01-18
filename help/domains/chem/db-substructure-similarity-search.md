@@ -1,4 +1,6 @@
-<!-- TITLE: Database substructure and similarity search -->
+---
+title: "Database substructure and similarity search"
+---
 <!-- SUBTITLE: -->
 
 # Database substructure and similarity search

@@ -1,4 +1,6 @@
-<!-- TITLE: Hive2 -->
+---
+title: "Hive2"
+---
 <!-- SUBTITLE: -->
 
 # Hive2

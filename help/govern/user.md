@@ -1,4 +1,6 @@
-<!-- TITLE: User -->
+---
+title: "User"
+---
 <!-- SUBTITLE: -->
 
 # User

@@ -1,4 +1,6 @@
-<!-- TITLE: Calendar -->
+---
+title: "Calendar"
+---
 <!-- SUBTITLE: -->
 
 # Calendar

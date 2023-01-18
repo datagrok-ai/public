@@ -1,4 +1,6 @@
-<!-- TITLE: Predictive modeling -->
+---
+title: "Predictive modeling"
+---
 <!-- SUBTITLE: -->
 
 # Predictive modeling

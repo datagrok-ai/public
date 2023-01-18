@@ -1,4 +1,6 @@
-<!-- TITLE: Develop custom cell renderers -->
+---
+title: "Develop custom cell renderers"
+---
 
 # Cell renderers
 

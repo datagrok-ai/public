@@ -1,4 +1,6 @@
-<!-- TITLE: Data source -->
+---
+title: "Data source"
+---
 <!-- SUBTITLE: -->
 
 # Data source

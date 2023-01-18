@@ -1,4 +1,6 @@
-<!-- TITLE: Versioning policy -->
+---
+title: "Versioning policy"
+---
 <!-- SUBTITLE: -->
 
 # Versioning policy

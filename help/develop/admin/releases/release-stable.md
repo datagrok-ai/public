@@ -1,4 +1,6 @@
-<!-- TITLE: Stable Releases -->
+---
+title: "Stable Releases"
+---
 <!-- SUBTITLE: -->
 
 # Stable Releases

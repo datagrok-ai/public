@@ -1,4 +1,6 @@
-<!-- TITLE: OData -->
+---
+title: "OData"
+---
 <!-- SUBTITLE: -->
 
 # OData

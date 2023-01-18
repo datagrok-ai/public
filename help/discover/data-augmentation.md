@@ -1,4 +1,6 @@
-<!-- TITLE: Data augmentation -->
+---
+title: "Data augmentation"
+---
 <!-- SUBTITLE: -->
 
 # Data augmentation

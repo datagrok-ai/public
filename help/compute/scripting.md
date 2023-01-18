@@ -1,4 +1,6 @@
-<!-- TITLE: Scripting -->
+---
+title: "Scripting"
+---
 <!-- SUBTITLE: -->
 
 # Scripting

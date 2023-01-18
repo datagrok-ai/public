@@ -1,4 +1,6 @@
-<!-- TITLE: Create a custom view -->
+---
+title: "Create a custom view"
+---
 
 # Custom views
 

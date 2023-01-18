@@ -1,4 +1,6 @@
-<!-- TITLE: Neo4j -->
+---
+title: "Neo4j"
+---
 
 # Neo4j
 

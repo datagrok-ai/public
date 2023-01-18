@@ -1,4 +1,6 @@
-<!-- TITLE: Data preparation pipeline -->
+---
+title: "Data preparation pipeline"
+---
 <!-- SUBTITLE: -->
 
 # Data preparation pipeline

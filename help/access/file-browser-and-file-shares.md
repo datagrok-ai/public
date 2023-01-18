@@ -1,4 +1,6 @@
-<!-- TITLE: File browsing and sharing -->
+---
+title: "File browsing and sharing"
+---
 <!-- SUBTITLE: -->
 
 # File browser and file shares

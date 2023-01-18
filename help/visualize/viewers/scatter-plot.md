@@ -1,4 +1,6 @@
-<!-- TITLE: Scatter plot -->
+---
+title: "Scatter plot"
+---
 <!-- SUBTITLE: -->
 
 # Scatter plot

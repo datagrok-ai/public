@@ -1,4 +1,6 @@
-<!-- TITLE: Web viewer -->
+---
+title: "Web viewer"
+---
 <!-- SUBTITLE: -->
 
 # Web viewer

@@ -1,4 +1,6 @@
-<!-- TITLE: Hosting options -->
+---
+title: "Hosting options"
+---
 <!-- SUBTITLE: -->
 
 # Hosting options

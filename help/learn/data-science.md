@@ -1,4 +1,6 @@
-<!-- TITLE: Data science -->
+---
+title: "Data science"
+---
 <!-- SUBTITLE: -->
 
 # Data science

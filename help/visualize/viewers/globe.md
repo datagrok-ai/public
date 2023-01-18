@@ -1,4 +1,6 @@
-<!-- TITLE: Globe -->
+---
+title: "Globe"
+---
 <!-- SUBTITLE: -->
 
 # Globe

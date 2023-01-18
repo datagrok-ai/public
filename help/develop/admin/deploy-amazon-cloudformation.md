@@ -1,4 +1,6 @@
-<!-- TITLE: Deployment on AWS ECS using CloudFormation -->
+---
+title: "Deployment on AWS ECS using CloudFormation"
+---
 <!-- SUBTITLE: -->
 
 # Deployment on AWS ECS using CloudFormation

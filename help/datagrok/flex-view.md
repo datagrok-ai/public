@@ -1,4 +1,6 @@
-<!-- TITLE: Flex View -->
+---
+title: "Flex View"
+---
 <!-- SUBTITLE: -->
 
 # Flex View

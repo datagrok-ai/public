@@ -1,4 +1,6 @@
-<!-- TITLE: Info panels -->
+---
+title: "Info panels"
+---
 <!-- SUBTITLE: -->
 
 # Info panels

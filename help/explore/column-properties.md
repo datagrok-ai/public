@@ -1,4 +1,6 @@
-<!-- TITLE: Column properties -->
+---
+title: "Column properties"
+---
 <!-- SUBTITLE: -->
 
 # Column properties

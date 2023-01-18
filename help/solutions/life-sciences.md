@@ -1,4 +1,6 @@
-<!-- TITLE: Datagrok for life sciences -->
+---
+title: "Datagrok for life sciences"
+---
 <!-- SUBTITLE: -->
 
 # Datagrok for life sciences

@@ -1,4 +1,6 @@
-<!-- TITLE: Diversity search -->
+---
+title: "Diversity search"
+---
 <!-- SUBTITLE: -->
 
 # Diversity search

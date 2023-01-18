@@ -1,4 +1,6 @@
-<!-- TITLE: Filter to column -->
+---
+title: "Filter to column"
+---
 <!-- SUBTITLE: -->
 
 # Filter to column

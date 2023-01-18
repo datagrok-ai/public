@@ -1,4 +1,6 @@
-<!-- TITLE: Enterprise evaluation FAQ -->
+---
+title: "Enterprise evaluation FAQ"
+---
 <!-- SUBTITLE: -->
 
 # FAQ

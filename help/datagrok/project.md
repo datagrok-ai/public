@@ -1,4 +1,6 @@
-<!-- TITLE: Project -->
+---
+title: "Project"
+---
 <!-- SUBTITLE: -->
 
 # Project

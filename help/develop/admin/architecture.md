@@ -1,4 +1,6 @@
-<!-- TITLE: Architecture -->
+---
+title: "Architecture"
+---
 <!-- SUBTITLE: -->
 
 # Architecture

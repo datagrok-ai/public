@@ -1,4 +1,6 @@
-<!-- TITLE: MS SQL -->
+---
+title: "MS SQL"
+---
 <!-- SUBTITLE: -->
 
 # MS SQL

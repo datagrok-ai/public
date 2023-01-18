@@ -1,4 +1,6 @@
-<!-- TITLE: Scripting viewer -->
+---
+title: "Scripting viewer"
+---
 <!-- SUBTITLE: -->
 
 # Scripting viewer

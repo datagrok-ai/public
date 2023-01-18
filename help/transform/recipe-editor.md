@@ -1,4 +1,6 @@
-<!-- TITLE: Recipe Editor -->
+---
+title: "Recipe Editor"
+---
 <!-- SUBTITLE: -->
 
 # Recipe editor

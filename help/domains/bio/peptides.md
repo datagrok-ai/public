@@ -1,4 +1,6 @@
-<!-- TITLE: Peptide sequences -->
+---
+title: "Peptide sequences"
+---
 <!-- SUBTITLE: -->
 
 # Exploring peptides

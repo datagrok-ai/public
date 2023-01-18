@@ -1,4 +1,6 @@
-<!-- TITLE: Mutate -->
+---
+title: "Mutate"
+---
 <!-- SUBTITLE: -->
 
 # Mutate

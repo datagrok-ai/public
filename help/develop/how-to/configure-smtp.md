@@ -1,4 +1,6 @@
-<!-- TITLE: SMTP configuration -->
+---
+title: "SMTP configuration"
+---
 
 # Email service
 

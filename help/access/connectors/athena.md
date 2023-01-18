@@ -1,4 +1,6 @@
-<!-- TITLE: Athena -->
+---
+title: "Athena"
+---
 <!-- SUBTITLE: -->
 
 # Athena

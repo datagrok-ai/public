@@ -1,4 +1,6 @@
-<!-- TITLE: Files -->
+---
+title: "Files"
+---
 <!-- SUBTITLE: -->
 
 # Files

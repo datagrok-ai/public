@@ -1,4 +1,6 @@
-<!-- TITLE: Network diagram -->
+---
+title: "Network diagram"
+---
 <!-- SUBTITLE: -->
 
 # Network diagram

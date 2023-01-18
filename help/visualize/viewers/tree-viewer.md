@@ -1,4 +1,6 @@
-<!-- TITLE: Tree viewer -->
+---
+title: "Tree viewer"
+---
 <!-- SUBTITLE: -->
 
 # Tree viewer

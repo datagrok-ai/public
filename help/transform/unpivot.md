@@ -1,4 +1,6 @@
-<!-- TITLE: Unpivoting -->
+---
+title: "Unpivoting"
+---
 <!-- SUBTITLE: -->
 
 # Unpivoting

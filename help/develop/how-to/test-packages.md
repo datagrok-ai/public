@@ -1,4 +1,6 @@
-<!-- TITLE: Test packages -->
+---
+title: "Test packages"
+---
 
 # Package testing
 

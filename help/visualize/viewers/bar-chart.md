@@ -1,4 +1,6 @@
-<!-- TITLE: Bar chart -->
+---
+title: "Bar chart"
+---
 <!-- SUBTITLE: -->
 
 # Bar chart

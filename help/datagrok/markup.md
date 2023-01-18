@@ -1,4 +1,6 @@
-<!-- TITLE: Markup -->
+---
+title: "Markup"
+---
 <!-- SUBTITLE: -->
 
 # Markup

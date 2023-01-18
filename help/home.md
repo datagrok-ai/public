@@ -1,4 +1,6 @@
-<!-- TITLE: Datagrok -->
+---
+title: "Datagrok"
+---
 <!-- SUBTITLE: -->
 
 # Datagrok: Swiss Army Knife for Data

@@ -1,4 +1,6 @@
-<!-- TITLE: Create custom file viewers -->
+---
+title: "Create custom file viewers"
+---
 
 # Create custom file viewers
 

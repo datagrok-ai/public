@@ -1,4 +1,6 @@
-<!-- TITLE: Data query -->
+---
+title: "Data query"
+---
 <!-- SUBTITLE: -->
 
 # Data query

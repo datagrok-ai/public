@@ -1,4 +1,6 @@
-<!-- TITLE: Map viewer -->
+---
+title: "Map viewer"
+---
 <!-- SUBTITLE: -->
 
 # Map viewer

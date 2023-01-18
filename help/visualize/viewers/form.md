@@ -1,4 +1,6 @@
-<!-- TITLE: Form -->
+---
+title: "Form"
+---
 <!-- SUBTITLE: -->
 
 # Form

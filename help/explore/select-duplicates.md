@@ -1,4 +1,6 @@
-<!-- TITLE: Select duplicates -->
+---
+title: "Select duplicates"
+---
 <!-- SUBTITLE: -->
 
 # Select duplicates

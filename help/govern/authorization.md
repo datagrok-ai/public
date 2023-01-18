@@ -1,4 +1,6 @@
-<!-- TITLE: Authorization -->
+---
+title: "Authorization"
+---
 <!-- SUBTITLE: -->
 
 # Overview

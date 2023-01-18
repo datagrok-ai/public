@@ -1,4 +1,6 @@
-<!-- TITLE: Socrata -->
+---
+title: "Socrata"
+---
 <!-- SUBTITLE: -->
 
 # Socrata

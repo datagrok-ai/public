@@ -1,4 +1,6 @@
-<!-- TITLE: Authentication -->
+---
+title: "Authentication"
+---
 
 # Authentication
 

@@ -1,4 +1,6 @@
-<!-- TITLE: Security -->
+---
+title: "Security"
+---
 <!-- SUBTITLE: -->
 
 # Security

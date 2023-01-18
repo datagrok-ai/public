@@ -1,4 +1,6 @@
-<!-- TITLE: Scaling -->
+---
+title: "Scaling"
+---
 <!-- SUBTITLE: -->
 
 # Scaling

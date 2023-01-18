@@ -1,4 +1,6 @@
-<!-- TITLE: Trellis plot -->
+---
+title: "Trellis plot"
+---
 <!-- SUBTITLE: -->
 
 # Trellis plot

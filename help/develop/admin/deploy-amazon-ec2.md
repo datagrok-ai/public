@@ -1,4 +1,6 @@
-<!-- TITLE: Deployment on AWS EC2 -->
+---
+title: "Deployment on AWS EC2"
+---
 <!-- SUBTITLE: -->
 
 # Deployment on AWS EC2

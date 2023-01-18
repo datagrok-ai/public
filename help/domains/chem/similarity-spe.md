@@ -1,4 +1,6 @@
-<!-- TITLE: Molecular similarity analysis using Stochastic Proximity Embedding (SPE) -->
+---
+title: "Molecular similarity analysis using Stochastic Proximity Embedding (SPE)"
+---
 <!-- SUBTITLE: -->
 
 # Molecular similarity analysis using Stochastic Proximity Embedding (SPE)

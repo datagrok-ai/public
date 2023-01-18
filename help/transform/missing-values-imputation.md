@@ -1,4 +1,6 @@
-<!-- TITLE: Missing values imputation -->
+---
+title: "Missing values imputation"
+---
 <!-- SUBTITLE: -->
 
 # Missing values imputation

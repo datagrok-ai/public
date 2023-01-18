@@ -1,4 +1,6 @@
-<!-- TITLE: Datagrok Server Configuration -->
+---
+title: "Datagrok Server Configuration"
+---
 <!-- SUBTITLE: -->
 
 # Configuration

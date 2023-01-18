@@ -1,4 +1,6 @@
-<!-- TITLE: Postgres -->
+---
+title: "Postgres"
+---
 
 # Postgres
 

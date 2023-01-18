@@ -1,4 +1,6 @@
-<!-- TITLE: Chemical Space Using UMAP -->
+---
+title: "Chemical Space Using UMAP"
+---
 <!-- SUBTITLE: -->
 
 # Chemical space using UMAP

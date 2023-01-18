@@ -1,4 +1,6 @@
-<!-- TITLE: Pie chart -->
+---
+title: "Pie chart"
+---
 <!-- SUBTITLE: -->
 
 # Pie chart

@@ -1,4 +1,6 @@
-<!-- TITLE: MySQL -->
+---
+title: "MySQL"
+---
 <!-- SUBTITLE: -->
 
 # MySQL

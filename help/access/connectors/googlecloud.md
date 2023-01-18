@@ -1,4 +1,6 @@
-<!-- TITLE: Google Cloud -->
+---
+title: "Google Cloud"
+---
 <!-- SUBTITLE: -->
 
 # Google Cloud

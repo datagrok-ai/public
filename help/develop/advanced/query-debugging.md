@@ -1,4 +1,6 @@
-<!-- TITLE: Query debugging -->
+---
+title: "Query debugging"
+---
 <!-- SUBTITLE: -->
 
 # Query debugging

@@ -1,4 +1,6 @@
-<!-- TITLE: Navigation -->
+---
+title: "Navigation"
+---
 <!-- SUBTITLE: -->
 
 # Navigation

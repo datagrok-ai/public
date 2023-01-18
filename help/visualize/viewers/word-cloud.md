@@ -1,4 +1,6 @@
-<!-- TITLE: Word cloud -->
+---
+title: "Word cloud"
+---
 <!-- SUBTITLE: -->
 
 # Word cloud

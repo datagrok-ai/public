@@ -1,4 +1,6 @@
-<!-- TITLE: Library tour -->
+---
+title: "Library tour"
+---
 
 # Library tour
 

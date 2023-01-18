@@ -1,4 +1,6 @@
-<!-- TITLE: Table Manager -->
+---
+title: "Table Manager"
+---
 <!-- SUBTITLE: -->
 
 # Table Manager

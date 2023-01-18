@@ -1,4 +1,6 @@
-<!-- TITLE: Operators -->
+---
+title: "Operators"
+---
 <!-- SUBTITLE: -->
 
 # Operators

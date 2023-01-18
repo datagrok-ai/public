@@ -1,4 +1,6 @@
-<!-- TITLE: Context actions -->
+---
+title: "Context actions"
+---
 
 # Registering context actions
 

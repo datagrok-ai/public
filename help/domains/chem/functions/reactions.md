@@ -1,4 +1,6 @@
-<!-- TITLE: Reactions -->
+---
+title: "Reactions"
+---
 <!-- SUBTITLE: -->
 
 # Reactions

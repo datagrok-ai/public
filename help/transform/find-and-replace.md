@@ -1,4 +1,6 @@
-<!-- TITLE: Find and replace -->
+---
+title: "Find and replace"
+---
 <!-- SUBTITLE: -->
 
 # Find and replace

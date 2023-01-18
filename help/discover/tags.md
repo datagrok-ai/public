@@ -1,4 +1,6 @@
-<!-- TITLE: Tags -->
+---
+title: "Tags"
+---
 
 # Tags
 

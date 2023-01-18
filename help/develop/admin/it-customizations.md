@@ -1,4 +1,6 @@
-<!-- TITLE: IT customizations -->
+---
+title: "IT customizations"
+---
 <!-- SUBTITLE: -->
 
 # IT customizations

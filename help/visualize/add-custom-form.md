@@ -1,4 +1,6 @@
-<!-- TITLE: Add custom form -->
+---
+title: "Add custom form"
+---
 <!-- SUBTITLE: -->
 
 # Add custom form

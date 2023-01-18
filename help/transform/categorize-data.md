@@ -1,4 +1,6 @@
-<!-- TITLE: Categorize data -->
+---
+title: "Categorize data"
+---
 <!-- SUBTITLE: -->
 
 # Categorize data

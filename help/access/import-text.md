@@ -1,4 +1,6 @@
-<!-- TITLE: Import text -->
+---
+title: "Import text"
+---
 <!-- SUBTITLE: -->
 
 # Import text

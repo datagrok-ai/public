@@ -1,4 +1,6 @@
-<!-- TITLE: Develop custom viewers -->
+---
+title: "Develop custom viewers"
+---
 <!-- SUBTITLE: -->
 
 # Custom viewers

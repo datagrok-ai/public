@@ -1,4 +1,6 @@
-<!-- TITLE: Importing data -->
+---
+title: "Importing data"
+---
 <!-- SUBTITLE: -->
 
 # Importing data

@@ -1,4 +1,6 @@
-<!-- TITLE: Correlation plot -->
+---
+title: "Correlation plot"
+---
 <!-- SUBTITLE: -->
 
 # Correlation plot

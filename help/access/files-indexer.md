@@ -1,4 +1,6 @@
-<!-- TITLE: Indexing File Shares -->
+---
+title: "Indexing File Shares"
+---
 <!-- SUBTITLE: -->
 
 # Indexing file shares

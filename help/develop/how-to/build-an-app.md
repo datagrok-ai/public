@@ -1,4 +1,6 @@
-<!-- TITLE: Build an application -->
+---
+title: "Build an application"
+---
 <!-- SUBTITLE: -->
 
 # Applications

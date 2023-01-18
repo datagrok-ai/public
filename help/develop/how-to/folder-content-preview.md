@@ -1,4 +1,6 @@
-<!-- TITLE: Custom folder content preview -->
+---
+title: "Custom folder content preview"
+---
 
 # Folder content preview
 

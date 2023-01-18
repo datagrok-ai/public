@@ -1,4 +1,6 @@
-<!-- TITLE: Aggregate rows -->
+---
+title: "Aggregate rows"
+---
 <!-- SUBTITLE: -->
 
 # Aggregate rows

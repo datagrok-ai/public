@@ -1,4 +1,6 @@
-<!-- TITLE: Google Map view action settings -->
+---
+title: "Google Map view action settings"
+---
 <!-- SUBTITLE: -->
 
 # Google Map view action settings

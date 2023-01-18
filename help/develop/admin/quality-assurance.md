@@ -1,4 +1,6 @@
-<!-- TITLE: Quality assurance -->
+---
+title: "Quality assurance"
+---
 <!-- SUBTITLE: -->
 
 # Quality assurance

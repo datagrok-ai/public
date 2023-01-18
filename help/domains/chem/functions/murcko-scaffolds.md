@@ -1,4 +1,6 @@
-<!-- TITLE: Murcko Scaffolds -->
+---
+title: "Murcko Scaffolds"
+---
 <!-- SUBTITLE: -->
 
 # Murcko scaffolds

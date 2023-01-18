@@ -1,4 +1,6 @@
-<!-- TITLE: Structural alerts -->
+---
+title: "Structural alerts"
+---
 
 # Structural alerts
 

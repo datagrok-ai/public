@@ -1,4 +1,6 @@
-<!-- TITLE: Predicted vs. reference -->
+---
+title: "Predicted vs. reference"
+---
 <!-- SUBTITLE: -->
 
 # Predicted vs. reference

@@ -1,4 +1,6 @@
-<!-- TITLE: Manipulate viewers -->
+---
+title: "Manipulate viewers"
+---
 <!-- SUBTITLE: -->
 
 # API for manipulating viewers

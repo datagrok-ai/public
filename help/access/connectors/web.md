@@ -1,4 +1,6 @@
-<!-- TITLE: Web -->
+---
+title: "Web"
+---
 <!-- SUBTITLE: -->
 
 # Web

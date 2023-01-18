@@ -1,4 +1,6 @@
-<!-- TITLE: Data wrangling -->
+---
+title: "Data wrangling"
+---
 <!-- SUBTITLE: -->
 
 # Data wrangling

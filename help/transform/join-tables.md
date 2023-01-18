@@ -1,4 +1,6 @@
-<!-- TITLE: Join tables -->
+---
+title: "Join tables"
+---
 <!-- SUBTITLE: -->
 
 # Join tables

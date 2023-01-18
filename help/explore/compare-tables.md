@@ -1,4 +1,6 @@
-<!-- TITLE: Compare tables -->
+---
+title: "Compare tables"
+---
 <!-- SUBTITLE: -->
 
 # Compare tables

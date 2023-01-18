@@ -1,4 +1,6 @@
-<!-- TITLE: Similarity maps using fingerprints -->
+---
+title: "Similarity maps using fingerprints"
+---
 <!-- SUBTITLE: -->
 
 # Similarity maps using fingerprints

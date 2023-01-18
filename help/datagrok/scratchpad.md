@@ -1,4 +1,6 @@
-<!-- TITLE: Scratchpad -->
+---
+title: "Scratchpad"
+---
 <!-- SUBTITLE: -->
 
 # Scratchpad

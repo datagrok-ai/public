@@ -1,4 +1,6 @@
-<!-- TITLE: Data provenance -->
+---
+title: "Data provenance"
+---
 <!-- SUBTITLE: -->
 
 # Data provenance

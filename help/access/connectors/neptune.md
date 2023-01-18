@@ -1,4 +1,6 @@
-<!-- TITLE: Neptune -->
+---
+title: "Neptune"
+---
 <!-- SUBTITLE: -->
 
 # Neptune

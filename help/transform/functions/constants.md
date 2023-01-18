@@ -1,4 +1,6 @@
-<!-- TITLE: Constants -->
+---
+title: "Constants"
+---
 <!-- SUBTITLE: -->
 
 # Constants

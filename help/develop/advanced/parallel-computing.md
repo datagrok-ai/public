@@ -1,4 +1,6 @@
-<!-- TITLE: Parallel computing -->
+---
+title: "Parallel computing"
+---
 
 # Parallel computing in a browser
 

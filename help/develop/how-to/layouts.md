@@ -1,4 +1,6 @@
-<!-- TITLE: Use Layouts -->
+---
+title: "Use Layouts"
+---
 
 # Layouts
 

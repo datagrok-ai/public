@@ -1,4 +1,6 @@
-<!-- TITLE: Setting up development environment -->
+---
+title: "Setting up development environment"
+---
 
 # Setting up development environment
 

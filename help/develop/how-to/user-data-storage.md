@@ -1,4 +1,6 @@
-<!-- TITLE: User storage -->
+---
+title: "User storage"
+---
 <!-- SUBTITLE: -->
 
 # User storage

@@ -1,4 +1,6 @@
-<!-- TITLE: Self-learning platform -->
+---
+title: "Self-learning platform"
+---
 <!-- SUBTITLE: -->
 
 # Self-learning platform

@@ -1,4 +1,6 @@
-<!-- TITLE: Search data -->
+---
+title: "Search data"
+---
 <!-- SUBTITLE: -->
 
 # Search data

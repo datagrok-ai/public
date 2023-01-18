@@ -1,4 +1,6 @@
-<!-- TITLE: Sharing -->
+---
+title: "Sharing"
+---
 <!-- SUBTITLE: -->
 
 # Sharing

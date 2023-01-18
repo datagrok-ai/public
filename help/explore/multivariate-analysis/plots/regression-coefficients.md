@@ -1,4 +1,6 @@
-<!-- TITLE: Regression coefficients -->
+---
+title: "Regression coefficients"
+---
 <!-- SUBTITLE: -->
 
 # Regression coefficients

@@ -1,4 +1,6 @@
-<!-- TITLE: SQLite -->
+---
+title: "SQLite"
+---
 <!-- SUBTITLE: -->
 
 # SQLite

@@ -1,4 +1,6 @@
-<!-- TITLE: User group -->
+---
+title: "User group"
+---
 <!-- SUBTITLE: -->
 
 # User group

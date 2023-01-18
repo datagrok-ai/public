@@ -1,4 +1,6 @@
-<!-- TITLE: Add new column -->
+---
+title: "Add new column"
+---
 <!-- SUBTITLE: -->
 
 # Adding new columns

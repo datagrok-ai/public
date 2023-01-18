@@ -1,4 +1,6 @@
-<!-- TITLE: Compute -->
+---
+title: "Compute"
+---
 <!-- SUBTITLE: -->
 
 # Compute

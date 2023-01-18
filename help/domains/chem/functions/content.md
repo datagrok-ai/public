@@ -1,4 +1,6 @@
-<!-- TITLE: Content -->
+---
+title: "Content"
+---
 <!-- SUBTITLE: -->
 
 # Content

@@ -1,4 +1,6 @@
-<!-- TITLE: Stress testing results -->
+---
+title: "Stress testing results"
+---
 <!-- SUBTITLE: -->
 
 # Stress testing

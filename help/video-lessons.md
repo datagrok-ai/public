@@ -1,4 +1,6 @@
-<!-- TITLE: Video lessons -->
+---
+title: "Video lessons"
+---
 <!-- SUBTITLE: -->
 
 # Video lessons

@@ -1,4 +1,6 @@
-<!-- TITLE: Parallel coordinates plot -->
+---
+title: "Parallel coordinates plot"
+---
 <!-- SUBTITLE: -->
 
 # Parallel coordinates plot

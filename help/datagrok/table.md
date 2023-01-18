@@ -1,4 +1,6 @@
-<!-- TITLE: Table -->
+---
+title: "Table"
+---
 
 # Table
 

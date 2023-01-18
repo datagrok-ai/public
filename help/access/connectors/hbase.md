@@ -1,4 +1,6 @@
-<!-- TITLE: HBase -->
+---
+title: "HBase"
+---
 <!-- SUBTITLE: -->
 
 # HBase

@@ -1,4 +1,6 @@
-<!-- TITLE: R-group analysis -->
+---
+title: "R-group analysis"
+---
 <!-- SUBTITLE: -->
 
 # R-group analysis

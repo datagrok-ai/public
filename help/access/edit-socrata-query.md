@@ -1,4 +1,6 @@
-<!-- TITLE: Edit Socrata query -->
+---
+title: "Edit Socrata query"
+---
 <!-- SUBTITLE: -->
 
 # Edit Socrata query

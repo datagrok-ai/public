@@ -1,4 +1,6 @@
-<!-- TITLE: Aminoacids WebLogo -->
+---
+title: "Aminoacids WebLogo"
+---
 <!-- SUBTITLE: -->
 
 # Web Logo

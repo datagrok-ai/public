@@ -1,4 +1,6 @@
-<!-- TITLE: Work with package files -->
+---
+title: "Work with package files"
+---
 
 # How to work with package files
 

@@ -1,4 +1,6 @@
-<!-- TITLE: Date and Time functions -->
+---
+title: "Date and Time functions"
+---
 <!-- SUBTITLE: -->
 
 # Date and time functions

@@ -1,4 +1,6 @@
-<!-- TITLE: Custom package settings editors -->
+---
+title: "Custom package settings editors"
+---
 
 # Custom package settings editors
 

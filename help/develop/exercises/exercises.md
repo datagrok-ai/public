@@ -1,4 +1,6 @@
-<!-- TITLE: &#8204;Exercises -->
+---
+title: "&#8204;Exercises"
+---
 <!-- SUBTITLE: -->
 
 # Exercises

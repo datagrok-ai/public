@@ -1,4 +1,6 @@
-<!-- TITLE: Function parameters enhancement -->
+---
+title: "Function parameters enhancement"
+---
 <!-- SUBTITLE: -->
 
 # Function parameters enhancement

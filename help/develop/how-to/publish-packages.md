@@ -1,4 +1,6 @@
-<!-- TITLE: Publish packages -->
+---
+title: "Publish packages"
+---
 
 # Publish package
 

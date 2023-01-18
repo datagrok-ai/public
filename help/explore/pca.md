@@ -1,4 +1,6 @@
-<!-- TITLE: Principal component analysis -->
+---
+title: "Principal component analysis"
+---
 <!-- SUBTITLE: -->
 
 # Principal component analysis

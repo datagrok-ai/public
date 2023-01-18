@@ -1,4 +1,6 @@
-<!-- TITLE: Jupyter Notebook -->
+---
+title: "Jupyter Notebook"
+---
 <!-- SUBTITLE: -->
 
 # Jupyter Notebook

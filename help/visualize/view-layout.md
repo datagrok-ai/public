@@ -1,4 +1,6 @@
-<!-- TITLE: View layout -->
+---
+title: "View layout"
+---
 <!-- SUBTITLE: -->
 
 # View layout

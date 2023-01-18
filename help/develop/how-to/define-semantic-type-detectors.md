@@ -1,4 +1,6 @@
-<!-- TITLE: Define semantic type detectors -->
+---
+title: "Define semantic type detectors"
+---
 
 # Defining semantic type detectors
 

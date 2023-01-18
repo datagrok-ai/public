@@ -1,4 +1,6 @@
-<!-- TITLE: Add package tests -->
+---
+title: "Add package tests"
+---
 
 # How to add package tests
 

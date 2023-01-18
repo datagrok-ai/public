@@ -1,4 +1,6 @@
-<!-- TITLE: Community forum -->
+---
+title: "Community forum"
+---
 <!-- SUBTITLE: -->
 
 # Community forum

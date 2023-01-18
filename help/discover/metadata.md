@@ -1,4 +1,6 @@
-<!-- TITLE: Metadata -->
+---
+title: "Metadata"
+---
 <!-- SUBTITLE: -->
 
 # Metadata

@@ -1,4 +1,6 @@
-<!-- TITLE: Upload data -->
+---
+title: "Upload data"
+---
 <!-- SUBTITLE: -->
 
 # Dataframe

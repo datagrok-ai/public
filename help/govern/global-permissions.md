@@ -1,4 +1,6 @@
-<!-- TITLE: Global permissions -->
+---
+title: "Global permissions"
+---
 <!-- SUBTITLE: -->
 
 # Global permissions

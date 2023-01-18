@@ -1,4 +1,6 @@
-<!-- TITLE: Dropbox -->
+---
+title: "Dropbox"
+---
 <!-- SUBTITLE: -->
 
 # Dropbox

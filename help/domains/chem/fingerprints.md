@@ -1,4 +1,6 @@
-<!-- TITLE: Molecular fingerprints -->
+---
+title: "Molecular fingerprints"
+---
 <!-- SUBTITLE: -->
 
 # Molecular fingerprints

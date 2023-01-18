@@ -1,4 +1,6 @@
-<!-- TITLE: Anonymize data -->
+---
+title: "Anonymize data"
+---
 <!-- SUBTITLE: -->
 
 # Anonymize data

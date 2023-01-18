@@ -1,4 +1,6 @@
-<!-- TITLE: Data connection -->
+---
+title: "Data connection"
+---
 <!-- SUBTITLE: -->
 
 # Data connection

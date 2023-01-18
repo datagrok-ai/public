@@ -1,4 +1,6 @@
-<!-- TITLE: OpenAPI -->
+---
+title: "OpenAPI"
+---
 <!-- SUBTITLE: -->
 
 # OpenAPI

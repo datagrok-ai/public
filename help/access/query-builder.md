@@ -1,4 +1,6 @@
-<!-- TITLE: Query Builder -->
+---
+title: "Query Builder"
+---
 <!-- SUBTITLE: -->
 
 # Query Builder

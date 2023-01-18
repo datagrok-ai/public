@@ -1,4 +1,6 @@
-<!-- TITLE: Integration -->
+---
+title: "Integration"
+---
 <!-- SUBTITLE: -->
 
 # Overview

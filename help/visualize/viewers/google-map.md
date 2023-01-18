@@ -1,4 +1,6 @@
-<!-- TITLE: Google Map viewer -->
+---
+title: "Google Map viewer"
+---
 <!-- SUBTITLE: -->
 
 # Google Map viewer

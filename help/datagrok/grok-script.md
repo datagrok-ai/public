@@ -1,4 +1,6 @@
-<!-- TITLE: Grok Script -->
+---
+title: "Grok Script"
+---
 <!-- SUBTITLE: -->
 
 # Grok Script

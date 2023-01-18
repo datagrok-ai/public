@@ -1,4 +1,6 @@
-<!-- TITLE: Scores -->
+---
+title: "Scores"
+---
 <!-- SUBTITLE: -->
 
 # Scores

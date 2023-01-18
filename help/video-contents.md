@@ -1,4 +1,6 @@
-<!-- TITLE: Videos. Interesting topics. -->
+---
+title: "Videos. Interesting topics."
+---
 
 # Datagrok videos
 

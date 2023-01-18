@@ -1,4 +1,6 @@
-<!-- TITLE: Workspace -->
+---
+title: "Workspace"
+---
 <!-- SUBTITLE: -->
 
 # Workspace

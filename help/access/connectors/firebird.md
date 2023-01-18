@@ -1,4 +1,6 @@
-<!-- TITLE: Firebird -->
+---
+title: "Firebird"
+---
 <!-- SUBTITLE: -->
 
 # Firebird

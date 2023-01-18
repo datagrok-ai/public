@@ -1,4 +1,6 @@
-<!-- TITLE: MariaDB -->
+---
+title: "MariaDB"
+---
 <!-- SUBTITLE: -->
 
 # MariaDB

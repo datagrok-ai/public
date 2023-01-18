@@ -1,4 +1,6 @@
-<!-- TITLE: Frontend -->
+---
+title: "Frontend"
+---
 <!-- SUBTITLE: -->
 
 # Frontend track: exercises

@@ -1,4 +1,6 @@
-<!-- TITLE: Access data -->
+---
+title: "Access data"
+---
 <!-- SUBTITLE: -->
 
 # Data access

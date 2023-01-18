@@ -1,4 +1,6 @@
-<!-- TITLE: Impala -->
+---
+title: "Impala"
+---
 <!-- SUBTITLE: -->
 
 # Impala

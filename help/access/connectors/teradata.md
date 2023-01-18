@@ -1,4 +1,6 @@
-<!-- TITLE: Teradata -->
+---
+title: "Teradata"
+---
 <!-- SUBTITLE: -->
 
 # Teradata

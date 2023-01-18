@@ -1,4 +1,6 @@
-<!-- TITLE: Entities -->
+---
+title: "Entities"
+---
 <!-- SUBTITLE: -->
 
 # Entities

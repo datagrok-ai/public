@@ -1,4 +1,6 @@
-<!-- TITLE: Scaffold tree -->
+---
+title: "Scaffold tree"
+---
 <!-- SUBTITLE: -->
 
 # Scaffold Tree

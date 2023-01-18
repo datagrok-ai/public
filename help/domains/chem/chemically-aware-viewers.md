@@ -1,4 +1,6 @@
-<!-- TITLE: Chemically-aware viewers -->
+---
+title: "Chemically-aware viewers"
+---
 <!-- SUBTITLE: -->
 
 # Chemically-aware viewers

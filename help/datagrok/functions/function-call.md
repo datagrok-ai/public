@@ -1,4 +1,6 @@
-<!-- TITLE: Function call -->
+---
+title: "Function call"
+---
 <!-- SUBTITLE: -->
 
 # Function call

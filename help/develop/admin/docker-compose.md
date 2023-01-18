@@ -1,4 +1,6 @@
-<!-- TITLE: Try Datagrok Locally -->
+---
+title: "Try Datagrok Locally"
+---
 <!-- SUBTITLE: -->
 
 # Try Datagrok Locally

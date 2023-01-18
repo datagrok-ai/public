@@ -1,4 +1,6 @@
-<!-- TITLE: Manage credentials -->
+---
+title: "Manage credentials"
+---
 
 # Working with credentials
 

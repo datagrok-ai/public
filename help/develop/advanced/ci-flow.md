@@ -1,4 +1,6 @@
-<!-- TITLE: CI/CD Flow -->
+---
+title: "CI/CD Flow"
+---
 <!-- SUBTITLE: -->
 
 # Continuous integration and delivery flow

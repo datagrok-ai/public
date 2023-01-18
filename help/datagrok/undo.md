@@ -1,4 +1,6 @@
-<!-- TITLE: Undo -->
+---
+title: "Undo"
+---
 
 # Undo
 

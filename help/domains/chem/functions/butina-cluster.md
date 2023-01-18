@@ -1,4 +1,6 @@
-<!-- TITLE: Butina cluster -->
+---
+title: "Butina cluster"
+---
 <!-- SUBTITLE: -->
 
 # Butina cluster

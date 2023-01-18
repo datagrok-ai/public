@@ -1,4 +1,6 @@
-<!-- TITLE: Molecular descriptors -->
+---
+title: "Molecular descriptors"
+---
 <!-- SUBTITLE: -->
 
 # Molecular descriptors

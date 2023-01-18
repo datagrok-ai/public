@@ -1,4 +1,6 @@
-<!-- TITLE: Develop column tooltips -->
+---
+title: "Develop column tooltips"
+---
 
 # Column tooltip
 

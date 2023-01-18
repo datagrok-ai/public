@@ -1,4 +1,6 @@
-<!-- TITLE: Chemical space using tSNE -->
+---
+title: "Chemical space using tSNE"
+---
 <!-- SUBTITLE: -->
 
 # Chemical space using tSNE

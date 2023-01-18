@@ -1,4 +1,6 @@
-<!-- TITLE: Predictive model information -->
+---
+title: "Predictive model information"
+---
 <!-- SUBTITLE: -->
 
 # Predictive model information

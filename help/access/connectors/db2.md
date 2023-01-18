@@ -1,4 +1,6 @@
-<!-- TITLE: DB2 -->
+---
+title: "DB2"
+---
 <!-- SUBTITLE: -->
 
 # DB2

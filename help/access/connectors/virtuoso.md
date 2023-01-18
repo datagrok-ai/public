@@ -1,4 +1,6 @@
-<!-- TITLE: Vertica -->
+---
+title: "Vertica"
+---
 <!-- SUBTITLE: -->
 
 # Virtuoso

@@ -1,4 +1,6 @@
-<!-- TITLE: Release History -->
+---
+title: "Release History"
+---
 <!-- SUBTITLE: -->
 
 # 2023-01-06 Dev build 1.11.2

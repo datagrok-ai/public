@@ -1,4 +1,6 @@
-<!-- TITLE: Column manager -->
+---
+title: "Column manager"
+---
 <!-- SUBTITLE: -->
 
 # Column manager

@@ -1,4 +1,6 @@
-<!-- TITLE: Select random rows -->
+---
+title: "Select random rows"
+---
 <!-- SUBTITLE: -->
 
 # Select random rows

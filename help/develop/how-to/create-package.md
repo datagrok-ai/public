@@ -1,4 +1,6 @@
-<!-- TITLE: Creating a package -->
+---
+title: "Creating a package"
+---
 
 # Simple package example
 

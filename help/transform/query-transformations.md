@@ -1,4 +1,6 @@
-<!-- TITLE: Query transformations -->
+---
+title: "Query transformations"
+---
 <!-- SUBTITLE: -->
 
 # Transformations

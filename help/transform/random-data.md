@@ -1,4 +1,6 @@
-<!-- TITLE: Random data -->
+---
+title: "Random data"
+---
 <!-- SUBTITLE: -->
 
 # Random data

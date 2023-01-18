@@ -1,4 +1,6 @@
-<!-- TITLE: MongoDB -->
+---
+title: "MongoDB"
+---
 <!-- SUBTITLE: -->
 
 # MongoDB

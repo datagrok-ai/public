@@ -1,4 +1,6 @@
-<!-- TITLE: Line chart -->
+---
+title: "Line chart"
+---
 <!-- SUBTITLE: -->
 
 # Line chart
