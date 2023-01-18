@@ -178,7 +178,10 @@ export class LogoSummary extends DG.JsViewer {
       if (cell.tableColumn?.name == 'WebLogo') {
         this.webLogoDfPlot[currentRowIdx]
           .fromType('WebLogo', {maxHeight: cell.grid.props.rowHeight - 5, positionHeight: this.webLogoMode})
-          .then((viewer) => cell.element = viewer.root);
+          .then((viewer) => {
+            cell.element = viewer.root;
+            cell.style.element.style.margin = '0 auto!important';
+          });
       } else if (cell.tableColumn?.name == 'Distribution') {
         const viewerRoot = this.distributionDfPlot[currentRowIdx].histogram({
           filteringEnabled: false,

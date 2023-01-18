@@ -9,7 +9,7 @@ import * as rxjs from 'rxjs';
 
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {calculateSelected, extractMonomerInfo, scaleActivity} from './utils/misc';
+import {calculateSelected, extractMonomerInfo, scaleActivity, wrapDistroAndStatsDefault} from './utils/misc';
 import {MonomerPosition, MostPotentResiduesViewer} from './viewers/sar-viewer';
 import * as CR from './utils/cell-renderer';
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
@@ -790,9 +790,11 @@ export class PeptidesModel {
     }
 
     const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
-    const distroStatsElem = getDistributionAndStats(distributionTable, stats, `${position} : ${aar}`, 'Other', true);
+    const das = getDistributionAndStats(distributionTable, stats, `${position} : ${aar}`, 'Other', true);
+    const resultMap: {[key: string]: any} = {...das.tableMap, ...colResults};
+    const distroStatsElem = wrapDistroAndStatsDefault(das.labels, das.histRoot, resultMap);
 
-    ui.tooltip.show(ui.divV([distroStatsElem, ui.tableFromMap(colResults)]), x, y);
+    ui.tooltip.show(distroStatsElem, x, y);
 
     return distroStatsElem;
   }
@@ -812,7 +814,8 @@ export class PeptidesModel {
     if (!stats.count)
       return null;
 
-    const tooltip = getDistributionAndStats(distDf, stats, `Cluster: ${clusterName}`, 'Other', true, splitCol.name);
+    const das = getDistributionAndStats(distDf, stats, `Cluster: ${clusterName}`, 'Other', true, splitCol.name);
+    const tooltip = wrapDistroAndStatsDefault(das.labels, das.histRoot, das.tableMap, true);
 
     ui.tooltip.show(tooltip, x, y);
 
