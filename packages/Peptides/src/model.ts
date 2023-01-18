@@ -726,6 +726,9 @@ export class PeptidesModel {
             CR.drawLogoInBounds(ctx, bounds, stats, sortedStatsOrder, this.df.rowCount, this.cp, this.headerSelectedMonomers[col.name]);
           gcArgs.preventDefault();
         }
+      } catch (e) {
+        console.warn(`PeptidesHeaderLogoError: couldn't render WebLogo for column \`${col!.name}\`. See original error below.`);
+        console.warn(e);
       } finally {
         ctx.restore();
       }
