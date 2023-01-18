@@ -27,7 +27,7 @@
   width: 100%;
   background-color: transparent;
   position: relative;
-  z-index: 0;
+  z-index: 1;
   resize: none;
   height: 22px; /* Fine tuned value to avoid "jumping" of the textarea upon autoresize */
 }
@@ -54,7 +54,7 @@
   position: absolute;
   pointer-events: none;
   cursor: text;
-  z-index: 1;
+  z-index: 0;
   max-width: 100%;
   padding: 2px;
   font-family: 'Roboto Mono';
