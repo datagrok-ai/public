@@ -3,7 +3,7 @@
  * */
 
 import * as DG from 'datagrok-api/dg';
-import {drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
+import {drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {isMolBlock} from '../utils/convert-notation-utils';
 
@@ -193,16 +193,7 @@ M  END
       drawRdKitMoleculeToOffscreenCanvas(rdKitMol, width, height, canvas, highlightScaffold ? substruct : null);
     else {
       // draw a crossed rectangle
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = '#EFEFEF';
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(width, height);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(width, 0);
-      ctx.lineTo(0, height);
-      ctx.stroke();
+      drawErrorCross(ctx, width, height);
     }
 
     return ctx.getImageData(0, 0, width, height);
