@@ -66,6 +66,10 @@ export {
 } from './src/trees';
 
 export {
+  NO_NAME_ROOT
+} from './src/trees/phylocanvas';
+
+export {
   ITreeHelper,
   getTreeHelper
 } from './src/trees/tree-helper';
