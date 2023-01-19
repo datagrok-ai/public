@@ -33,6 +33,7 @@ export class TreeHelper implements ITreeHelper {
     let i = 0;
 
     const obj = parseNewick(newick);
+    if (obj.name == NO_NAME_ROOT) obj.name = `${nodePrefixV}${NO_NAME_ROOT}`;
 
     const nodes: string[] = [];
     const parents: (string | null)[] = [];
