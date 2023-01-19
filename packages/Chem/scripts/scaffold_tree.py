@@ -26,14 +26,13 @@ def find_nodes(tree, nodes, scaffold):
     scaffold_nodes = []
     for i in range(len(nodes)):
         predecessors = list(nx.bfs_tree(tree, nodes[i], reverse=True))
-        if predecessors[1] == scaffold:
+        if len(predecessors) > 1 and predecessors[1] == scaffold:
             scaffold_nodes.append(nodes[i])
     return scaffold_nodes
 
 #function that returns the scaffold parent
 def get_parent(tree, scaffold):
     return ''.join(tree.get_parent_scaffolds(scaffold, max_levels=1))
-
 
 #function that returns the right order of scaffolds
 def get_sorted_scaffolds(tree, nodes):
