@@ -58,6 +58,7 @@ import {_importSmi} from './file-importers/smi-importer';
 
 //script api
 import {generateScaffoldTree} from "./scripts-api";
+import { RDKitReactionRenderer } from './rendering/rdkit-reaction-renderer';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const DEFAULT_SKETCHER = 'openChemLibSketcher';
@@ -168,6 +169,15 @@ export function getCLogP(smiles: string): number {
 //meta.chemRendererName: RDKit
 export async function rdKitCellRenderer(): Promise<RDKitCellRenderer> {
   return new RDKitCellRenderer(getRdKitModule());
+}
+
+//name: chemCellRenderer
+//tags: cellRenderer, cellRenderer-ChemicalReaction
+//meta.cellType: ChemicalReaction
+//meta-cell-renderer-sem-type: ChemicalReaction
+//output: grid_cell_renderer result
+export async function rdKitReactionRenderer(): Promise<RDKitReactionRenderer> {
+  return new RDKitReactionRenderer(getRdKitModule());
 }
 
 //name: chemCellRenderer
