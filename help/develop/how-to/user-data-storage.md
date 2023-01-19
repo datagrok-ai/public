@@ -1,9 +1,6 @@
 ---
 title: "User storage"
 ---
-<!-- SUBTITLE: -->
-
-# User storage
 
 It is often the case that certain settings or inputs/outputs need to be shared between different applications or
 different instances of the same application. This functionality is implemented in the form of user data storage — a

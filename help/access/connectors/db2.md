@@ -1,9 +1,6 @@
 ---
 title: "DB2"
 ---
-<!-- SUBTITLE: -->
-
-# DB2
 
 Provides access to [IBM Db2](https://www.ibm.com/analytics/db2) service using
 SQL queries via JDBC driver.
@@ -12,10 +9,10 @@ SQL queries via JDBC driver.
 
 ```json
 {
-    "server": "",
-    "port": "",
-    "db": "",
-    "connString": ""
+  "server": "",
+  "port": "",
+  "db": "",
+  "connString": ""
 }
 ```
 

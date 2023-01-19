@@ -1,21 +1,18 @@
 ---
 title: "SAP HANA"
 ---
-<!-- SUBTITLE: -->
-
-# SAP HANA
 
 Provides access to the
-[SAP HANA]( https://www.sap.com/products/technology-platform/hana/what-is-sap-hana.html)
- database using SQL queries via JDBC driver.
+[SAP HANA](https://www.sap.com/products/technology-platform/hana/what-is-sap-hana.html)
+database using SQL queries via JDBC driver.
 
 ## Connection parameters
 
 ```json
 {
-    "server": "",
-    "port": "",
-    "db": ""
+  "server": "",
+  "port": "",
+  "db": ""
 }
 ```
 

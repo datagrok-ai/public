@@ -1,9 +1,6 @@
 ---
 title: "Aggregation functions"
 ---
-<!-- SUBTITLE: -->
-
-# Aggregation functions
 
 The same set of aggregation functions is used across the whole platform in different context
 (["Aggregate Rows" dialog](aggregate-rows.md), transformations, [markup](../datagrok/markup.md))

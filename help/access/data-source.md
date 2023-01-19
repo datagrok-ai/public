@@ -1,9 +1,6 @@
 ---
 title: "Data source"
 ---
-<!-- SUBTITLE: -->
-
-# Data source
 
 ## Files
 

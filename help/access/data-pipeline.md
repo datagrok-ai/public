@@ -1,9 +1,6 @@
 ---
 title: "Data preparation pipeline"
 ---
-<!-- SUBTITLE: -->
-
-# Data preparation pipeline
 
 DPP is a core component of the Datagrok platform designed to let end users define jobs that would get data from
 disparate data sources, clean or merge the data if needed, run transformations, build interactive dashboards based on

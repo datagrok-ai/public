@@ -1,14 +1,11 @@
 ---
 title: "Entities"
 ---
-<!-- SUBTITLE: -->
-
-# Entities
 
 Certain classes of objects in Datagrok have a common set of operations and features applicable to them. We call these
 objects _entities_. Here they are:
 
-* [Function](functions/function.md)
+* [Function](functions/functions.md)
 * [Function Call](functions/function-call.md)
 * [Data Pipeline](../access/data-pipeline.md)
 * [Data Connection](../access/data-connection.md)

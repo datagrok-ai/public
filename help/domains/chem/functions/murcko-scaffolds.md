@@ -1,9 +1,6 @@
 ---
 title: "Murcko Scaffolds"
 ---
-<!-- SUBTITLE: -->
-
-# Murcko scaffolds
 
 The scaffold concept is widely applied in medicinal chemistry. Scaffolds are mostly used to represent core structures of
 bioactive compounds. Although the scaffold concept has limitations and is often viewed differently from a chemical and

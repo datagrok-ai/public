@@ -1,9 +1,6 @@
 ---
 title: "Versioning policy"
 ---
-<!-- SUBTITLE: -->
-
-# Versioning policy
 
 ## Docker Image Versioning policy
 

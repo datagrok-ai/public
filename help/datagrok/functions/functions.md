@@ -1,9 +1,7 @@
 ---
 title: "Functions"
+sidebar_position: 0
 ---
-<!-- SUBTITLE: -->
-
-# Functions
 
 Grok platform provides first-class support for functions, which is an incredibly powerful concept. Pretty much anything
 that can be executed within the platform is a function. Here are some examples of the different types of functions:

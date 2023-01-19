@@ -1,9 +1,6 @@
 ---
 title: "Batch edit"
 ---
-<!-- SUBTITLE: -->
-
-# Batch edit
 
 Allows to view or edit specified attributes for the specified subsets of rows in the current table. If all of the values
 in the column are the same, that value is shown in the corresponding field.

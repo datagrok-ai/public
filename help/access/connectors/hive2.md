@@ -1,9 +1,6 @@
 ---
 title: "Hive2"
 ---
-<!-- SUBTITLE: -->
-
-# Hive2
 
 Provides access to [Apache Hive](https://hive.apache.org/) NoSQL database using
 SQL queries via HiveSever2 JDBC driver.
@@ -12,10 +9,10 @@ SQL queries via HiveSever2 JDBC driver.
 
 ```json
 {
-    "server": "",
-    "port": "",
-    "db": "",
-    "connString": ""
+  "server": "",
+  "port": "",
+  "db": "",
+  "connString": ""
 }
 ```
 

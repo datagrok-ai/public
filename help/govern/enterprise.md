@@ -1,9 +1,6 @@
 ---
 title: "Datagrok for Enterprise IT"
 ---
-<!-- SUBTITLE: -->
-
-# Datagrok for Enterprise IT
 
 Software is eating the world, and IT has become a critical competence in all businesses. Datagrok enables IT to become a
 partner with business by solving business problems, while at the same time providing enterprise-grade security,

@@ -1,9 +1,6 @@
 ---
 title: "Smart search"
 ---
-<!-- SUBTITLE: -->
-
-# Smart search
 
 Use the free-text input that lets define complex queries. Smart search supports AND and OR operators and parenthesis, so
 you can combine filters. If you type single string - search engine will treat it as filter by name. Tags filtering is

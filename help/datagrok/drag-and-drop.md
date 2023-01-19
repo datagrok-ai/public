@@ -1,9 +1,6 @@
 ---
 title: "Drag-and-drop"
 ---
-<!-- SUBTITLE: -->
-
-# Drag-and-drop
 
 Datagrok lets almost all objects be drag-and-dropped, which makes a lot of interactions more intuitive. As soon as a
 user starts dragging an object, all possible drop zones get highlighed.

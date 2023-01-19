@@ -2,8 +2,6 @@
 title: "Acknowledgments"
 ---
 
-# Acknowledgments
-
 We are using a number of great open-source projects in our platform. Here they are, in no particular order:
 
 ## Data science

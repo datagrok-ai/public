@@ -1,9 +1,6 @@
 ---
 title: "Select missing values"
 ---
-<!-- SUBTITLE: -->
-
-# Select missing values
 
 Selects missing values in the specified columns.
 

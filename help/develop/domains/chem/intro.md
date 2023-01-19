@@ -1,9 +1,6 @@
 ---
 title: "Cheminformatics concepts"
 ---
-<!-- SUBTITLE: -->
-
-# Cheminformatics
 
 Please see the
 20-minute [cheminformatics introduction video](https://www.youtube.com/watch?v=yM0ums_ur78&ab_channel=JeremyYang-Datascience%2Cetc)

@@ -1,9 +1,6 @@
 ---
 title: "Developer qualifications"
 ---
-<!-- SUBTITLE: -->
-
-# Datagrok developer qualifications
 
 ## Platform user track
 

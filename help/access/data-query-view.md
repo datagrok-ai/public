@@ -1,9 +1,6 @@
 ---
 title: "Query View"
 ---
-<!-- SUBTITLE: -->
-
-# Query View
 
 An integrated environment for working with [data queries](data-query.md).
 
@@ -18,10 +15,10 @@ below:
 | Data source          | Query      |
 |----------------------|------------|
 | Relational databases | SQL        |
-| File share           | Filename  |
+| File share           | Filename   |
 | Excel file           | Sheet name |
 | Linked data          | SPARQL     |
-| Box                  | Filename  |
+| Box                  | Filename   |
 
 ![Add query](../uploads/gifs/query-add.gif "Add query")
 

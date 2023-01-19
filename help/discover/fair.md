@@ -2,8 +2,6 @@
 title: "FAIR Principles"
 ---
 
-# FAIR principles
-
 Datagrok's mission is to connect data, algorithms, models, analysis, and visualizations all together.
 
 _From [go-fair.org](https://www.go-fair.org/fair-principles/): In 2016, the

@@ -2,8 +2,6 @@
 title: "Test packages"
 ---
 
-# Package testing
-
 Testing is an essential part of development process. You should ensure that your product works properly at each stage of
 it's lifecycle. For instance, when developing a new version of a package you should perform regression testing and
 confirm that new changes haven't affected previous functionality. Each package should include a bunch of unit tests

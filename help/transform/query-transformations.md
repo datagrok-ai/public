@@ -1,9 +1,6 @@
 ---
 title: "Query transformations"
 ---
-<!-- SUBTITLE: -->
-
-# Transformations
 
 After the data is retrieved from the data provider, it can be transformed using functions.
 

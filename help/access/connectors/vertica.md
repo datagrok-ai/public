@@ -1,9 +1,6 @@
 ---
 title: "Vertica"
 ---
-<!-- SUBTITLE: -->
-
-# Vertica
 
 Provides access to [Vertica](https://www.vertica.com/overview/) database using
 SQL queries via JDBC driver.
@@ -12,10 +9,10 @@ SQL queries via JDBC driver.
 
 ```json
 {
-    "server": "",
-    "port": "",
-    "db": "",
-    "connString": ""
+  "server": "",
+  "port": "",
+  "db": "",
+  "connString": ""
 }
 ```
 

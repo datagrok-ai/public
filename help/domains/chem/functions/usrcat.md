@@ -1,9 +1,6 @@
 ---
 title: "USRCAT"
 ---
-<!-- SUBTITLE: -->
-
-# USRCAT
 
 Ligand-based virtual screening using molecular shape is an important tool for researchers who wish to find novel
 chemical scaffolds in compound libraries. The Ultrafast Shape Recognition (USR)

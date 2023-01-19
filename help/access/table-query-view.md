@@ -1,9 +1,6 @@
 ---
 title: "Query View"
 ---
-<!-- SUBTITLE: -->
-
-# DB query
 
 To define a column to be used as a key, add it to the "Rows" section (unique values will become row identifiers). To do
 so, either use "+" sign. More than one column can be used as a key.

@@ -2,8 +2,6 @@
 title: "Authentication"
 ---
 
-# Authentication
-
 Out-of-the-box, Datagrok offers many authentication methods, including popular methods such as SSO and OAuth.
 
 To accommodate any enterprise needs, we can develop a customer-specific integration.

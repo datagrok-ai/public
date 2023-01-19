@@ -1,9 +1,6 @@
 ---
 title: "Tile viewer"
 ---
-<!-- SUBTITLE: -->
-
-# Tile viewer
 
 Visualizes rows as a collection of forms that are positioned as tiles.
 

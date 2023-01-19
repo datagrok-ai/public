@@ -1,9 +1,6 @@
 ---
 title: "Extract RegExp"
 ---
-<!-- SUBTITLE: -->
-
-# Extract regular expression
 
 Matches the specified regular expression against the content of the specified column.
 

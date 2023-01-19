@@ -1,9 +1,6 @@
 ---
 title: "Table Manager"
 ---
-<!-- SUBTITLE: -->
-
-# Table Manager
 
 Table Manager, available via **View | Tables**, contains a list of currently open tables. Use it to navigate between
 tables, select them, or perform batch actions. It also allows to view metadata on multiple tables in a tabular format.

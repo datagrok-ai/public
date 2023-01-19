@@ -1,9 +1,6 @@
 ---
 title: "Info panels"
 ---
-<!-- SUBTITLE: -->
-
-# Info panels
 
 Info panels provide additional information about the current context (which can be a table, a column, or pretty much any
 other [object](../datagrok/objects.md)). Info panels are meant to be easily developed by the users of the platform, and

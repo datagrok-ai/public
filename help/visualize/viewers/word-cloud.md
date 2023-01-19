@@ -1,9 +1,6 @@
 ---
 title: "Word cloud"
 ---
-<!-- SUBTITLE: -->
-
-# Word cloud
 
 Word cloud (a tag cloud) shows the frequency of individual words using font size
 and color. Use it to see the most popular concepts, highlight important textual
@@ -39,6 +36,6 @@ can use it to filter other viewers.
 
 ## See also
 
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [Table View](../../datagrok/table-view.md)
 * [JS API: Word cloud](https://public.datagrok.ai/js/samples/ui/viewers/types/word-cloud)

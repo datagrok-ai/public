@@ -1,9 +1,6 @@
 ---
 title: "Gasteiger Partial Charges"
 ---
-<!-- SUBTITLE: -->
-
-# Gasteiger partial charges
 
 Visualizes atomic charges in a molecule.
 

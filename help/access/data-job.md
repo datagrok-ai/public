@@ -1,9 +1,6 @@
 ---
 title: "Data job"
 ---
-<!-- SUBTITLE: -->
-
-# Data job
 
 Data job defines all actions that are needed to produce a dashboard.
 

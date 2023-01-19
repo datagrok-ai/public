@@ -1,9 +1,6 @@
 ---
 title: "Chat"
 ---
-<!-- SUBTITLE: -->
-
-# Composing a message
 
 Use [Markdown](../datagrok/markdown.md) for rich formatting.
 

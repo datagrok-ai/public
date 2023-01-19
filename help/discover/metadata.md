@@ -1,9 +1,6 @@
 ---
 title: "Metadata"
 ---
-<!-- SUBTITLE: -->
-
-# Metadata
 
 Any [entity](../datagrok/objects.md) can be annotated with metadata, which can be used for searching. In Datagrok, there
 are three kinds of metadata: tags, parameters, and properties.

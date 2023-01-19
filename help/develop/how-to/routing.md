@@ -2,8 +2,6 @@
 title: "Routing"
 ---
 
-# Routing
-
 Sometimes it is useful to share a link with a colleague or business executive that opens an app in a specific state
 depending on the URI and points to the important information that the one would like to share. Datagrok provides routing
 support for package developers to achieve this.

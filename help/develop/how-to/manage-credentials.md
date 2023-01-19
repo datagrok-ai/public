@@ -2,8 +2,6 @@
 title: "Manage credentials"
 ---
 
-# Working with credentials
-
 [Security credentials](../../govern/security.md#credentials) are used to gain access to external resources. For example,
 database connections typically require a pair of login and password, whereas web services normally expect a token or an
 access key. You can associate such data with two types of [entities](../../datagrok/objects.md) within the

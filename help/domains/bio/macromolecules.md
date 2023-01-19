@@ -2,8 +2,6 @@
 title: "Macromolecules"
 ---
 
-# Datagrok for Macromolecules
-
 ## Datagrok, the Swiss Army knife for data gets a new blade for macromolecules
 
 Datagrok is a platform of choice for analyzing assay data in a few big pharma companies and in several smaller biotech
@@ -228,7 +226,7 @@ See also: [Scientific computing in Datagrok](https://github.com/datagrok-ai/publ
 
 For data retrieval, Datagrok offers high-performance, manageable [connectors](../../access/data-connection.md) to all
 popular relational databases. The built-in spreadsheet is designed
-for [interactive analysis](../../visualize/viewers.md) of vast amounts of scientific data. The system could be extended
+for [interactive analysis](../../visualize/viewers/viewers.md) of vast amounts of scientific data. The system could be extended
 with plugins that provide support for cheminformatics/bioinformatics, or for custom cell renderers for molecules,
 sequences, or dose-response curves.
 

@@ -2,8 +2,6 @@
 title: "Show formula lines"
 ---
 
-# How to show formula lines
-
 Dataframe and viewer can contain information about lines and bands.
 
 These figures are used by some viewers to draw additional lines on the charts. These can be reference lines,

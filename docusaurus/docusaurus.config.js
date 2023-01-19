@@ -10,8 +10,8 @@ const config = {
   tagline: 'Datagrok: Swiss Army Knife for Data',
   url: 'https://datagrok.ai',
   baseUrl: '/',
-  onBrokenLinks: 'warn',
-  onBrokenMarkdownLinks: 'warn',
+  onBrokenLinks: 'throw',
+  onBrokenMarkdownLinks: 'throw',
   favicon: 'favicon/favicon.ico',
   staticDirectories: ['static'],
 
@@ -61,10 +61,11 @@ const config = {
       {
         id: 'api',
         path: '../js-api/docs',
-        routeBasePath: '/api',
+        routeBasePath: '/js-api',
       }
     ],
   ],
+  themes: ['docusaurus-theme-search-typesense'],
 
   presets: [
     [
@@ -76,75 +77,84 @@ const config = {
           editUrl: 'https://github.com/datagrok-ai/public/tree/master/help',
           path: '../help',
           routeBasePath: 'help',
-          exclude: ['**/_*/**', '_*/**', '**/_*', '**/*-test.md']
-        },
-        theme: {
-          customCss: [
-            require.resolve('./css/datagrok.css'),
-            require.resolve('./css/pyramid.css'),
-            require.resolve('./css/sidebar.css'),
-            require.resolve('./css/signup_login.css'),
-            require.resolve('./static/font/font-awesome/css/all.css')],
+          exclude: ['**/_*/**', '_*/**', '**/_*', '**/*-test.md'],
         },
       }),
     ],
   ],
 
-  themeConfig:
-    /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
-    ({
-      navbar: {
-        title: 'Datagrok',
-        logo: {
-          alt: 'Datagrok',
-          src: 'img/logo.svg',
-        },
-        items: [
-          {
-            type: 'doc',
-            docId: 'home',
-            position: 'left',
-            label: 'Help',
-          },
-          {
-            to: 'api',
-            label: 'API',
-            position: 'left',
-          },
-          {
-            href: 'https://public.datagrok.ai',
-            label: 'Launch',
-            position: 'right',
-          },
-        ],
+  themeConfig: {
+    navbar: {
+      title: 'Datagrok',
+      logo: {
+        alt: 'Datagrok',
+        src: 'img/logo.svg',
       },
-      footer: {
-        style: 'dark',
-        links: [
+      items: [
+        {
+          type: 'doc',
+          docId: 'home',
+          position: 'left',
+          label: 'Help',
+        },
+        {
+          to: 'js-api',
+          label: 'API',
+          position: 'left',
+        },
+        {
+          href: 'https://public.datagrok.ai',
+          label: 'Launch',
+          position: 'right',
+        },
+      ],
+    },
+    footer: {
+      style: 'dark',
+      links: [
+        {
+          label: 'Help',
+          to: '/help/home',
+        },
+        {
+          label: 'API Docs',
+          to: '/js-api',
+        },
+        {
+          label: 'Community',
+          to: 'https://community.datagrok.ai',
+        },
+        {
+          label: 'Contact Us',
+          to: 'mailto:info@datagrok.ai',
+        }
+      ],
+      copyright: `Copyright © ${new Date().getFullYear()} Datagrok, Inc.`,
+    },
+    prism: {
+      theme: lightCodeTheme,
+      darkTheme: darkCodeTheme,
+    },
+    typesense: {
+      typesenseCollectionName: 'Datagrok',
+      typesenseServerConfig: {
+        nodes: [
           {
-            label: 'Help',
-            to: '/help/home',
-          },
-          {
-            label: 'API Docs',
-            to: '/api',
-          },
-          {
-            label: 'Community',
-            to: 'https://community.datagrok.ai',
-          },
-          {
-            label: 'Contact Us',
-            to: 'mailto:info@datagrok.ai',
+            host: 'typesense.datagrok.ai',
+            port: 443,
+            protocol: 'https',
           }
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Datagrok, Inc.`,
+        apiKey: 'Rz8p0rIafhF08kKZ4whBq4HBzlMAyRsG',
       },
-      prism: {
-        theme: lightCodeTheme,
-        darkTheme: darkCodeTheme,
-      },
-    }),
+
+      // Optional: Typesense search parameters: https://typesense.org/docs/0.21.0/api/search.md#search-parameters
+      typesenseSearchParameters: {},
+
+      // Optional
+      contextualSearch: true,
+    }
+  }
 };
 
 module.exports = config;

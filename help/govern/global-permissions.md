@@ -1,9 +1,6 @@
 ---
 title: "Global permissions"
 ---
-<!-- SUBTITLE: -->
-
-# Global permissions
 
 To add permission to group or user find user or group using search string, select permission and click OK, or ADD, if
 you want to add another permission.

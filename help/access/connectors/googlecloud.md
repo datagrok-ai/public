@@ -1,9 +1,6 @@
 ---
 title: "Google Cloud"
 ---
-<!-- SUBTITLE: -->
-
-# Google Cloud
 
 Provides access to [Google Cloud](https://cloud.google.com/) service as [file share](files.md).
 
@@ -12,7 +9,7 @@ Provides access to [Google Cloud](https://cloud.google.com/) service as [file sh
 ```json
 {
   "project": "",
-  "credentials" : "",
+  "credentials": "",
   "bucket": "",
   "dir": ""
 }

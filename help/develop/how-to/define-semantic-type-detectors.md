@@ -2,8 +2,6 @@
 title: "Define semantic type detectors"
 ---
 
-# Defining semantic type detectors
-
 Datagrok helps you get the most out of your data by encoding its meaning into
 [semantic types](../../discover/semantic-types.md). In addition to the types that
 are [automatically detected](../../discover/semantic-types.md#automatic-semantic-type-detection)

@@ -1,9 +1,6 @@
 ---
 title: "Integration"
 ---
-<!-- SUBTITLE: -->
-
-# Overview
 
 Datagrok was designed to be as extensible and customizable as possible. The platform exposes a number of integration
 points, allowing you to customize it according to your organization's needs, and integrate with existing systems.
@@ -51,7 +48,7 @@ application could be useful for testing and debug purposes.
 
 Datagrok integrates with [OpenAPI](../access/open-api.md) really well, automatically mapping
 OpenAPI's [paths](https://swagger.io/docs/specification/basic-structure/) to
-Grok's [functions](../datagrok/functions/function.md). This has many benefits:
+Grok's [functions](../datagrok/functions/functions.md). This has many benefits:
 
 * Ability to easily call that web method from:
   * [Console](../datagrok/navigation.md#console)

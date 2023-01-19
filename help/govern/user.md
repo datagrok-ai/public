@@ -1,9 +1,6 @@
 ---
 title: "User"
 ---
-<!-- SUBTITLE: -->
-
-# User
 
 Represents the identity of a person, and is used for [group](group.md) and role management.
 

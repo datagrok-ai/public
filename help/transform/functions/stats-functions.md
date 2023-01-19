@@ -1,9 +1,6 @@
 ---
 title: "Statistical functions"
 ---
-<!-- SUBTITLE: -->
-
-# Statistical functions
 
 This type of function assumes working with whole columns or a set of numbers.
 

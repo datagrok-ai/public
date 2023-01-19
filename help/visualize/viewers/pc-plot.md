@@ -1,9 +1,6 @@
 ---
 title: "Parallel coordinates plot"
 ---
-<!-- SUBTITLE: -->
-
-# Parallel coordinates plot
 
 Parallel coordinates is a common way of visualizing high-dimensional geometry and analyzing multivariate data. To show a
 set of points in an n-dimensional space, a backdrop is drawn consisting of n parallel lines, typically vertical and
@@ -31,6 +28,6 @@ General:
 
 See also:
 
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [Table view](../../datagrok/table-view.md)
 * [JS API: PC plot](https://public.datagrok.ai/js/samples/ui/viewers/types/pc-plot)

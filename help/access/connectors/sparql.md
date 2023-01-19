@@ -1,9 +1,6 @@
 ---
 title: "SPARQL"
 ---
-<!-- SUBTITLE: -->
-
-# SPARQL
 
 A semantic query language for databases.
 

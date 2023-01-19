@@ -1,9 +1,6 @@
 ---
 title: "Select random rows"
 ---
-<!-- SUBTITLE: -->
-
-# Select random rows
 
 Selects the specified number of rows randomly.
 
@@ -15,4 +12,4 @@ following commands:
 
 ![Select random rows](../uploads/gifs/select-random-rows.gif "Select random rows")
 
-* # {x.CmdExtractSelectedRows}
+* `#{x.CmdExtractSelectedRows}`

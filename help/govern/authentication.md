@@ -1,9 +1,6 @@
 ---
 title: "Authentication"
 ---
-<!-- SUBTITLE: -->
-
-# Authentication
 
 Out-of-the-box, Datagrok offers the following authentication methods:
 

@@ -1,9 +1,6 @@
 ---
 title: "Selection to column"
 ---
-<!-- SUBTITLE: -->
-
-# Selection to column
 
 Saves currently selected rows as a column.
 

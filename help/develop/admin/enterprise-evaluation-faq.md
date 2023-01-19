@@ -1,9 +1,6 @@
 ---
 title: "Enterprise evaluation FAQ"
 ---
-<!-- SUBTITLE: -->
-
-# FAQ
 
 * [Architecture](architecture.md)
   * Data flows

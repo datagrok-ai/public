@@ -1,9 +1,6 @@
 ---
 title: "Firebird"
 ---
-<!-- SUBTITLE: -->
-
-# Firebird
 
 Provides access to [FirebirdSQL](https://firebirdsql.org/) database using SQL
 queries via JDBC driver.
@@ -12,10 +9,10 @@ queries via JDBC driver.
 
 ```json
 {
-    "server": "",
-    "port": "",
-    "db": "",
-    "connString": ""
+  "server": "",
+  "port": "",
+  "db": "",
+  "connString": ""
 }
 ```
 

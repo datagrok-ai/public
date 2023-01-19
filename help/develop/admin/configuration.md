@@ -1,9 +1,6 @@
 ---
 title: "Datagrok Server Configuration"
 ---
-<!-- SUBTITLE: -->
-
-# Configuration
 
 Datagrok supports several deployment schemas which can be configured using `GROK_MODE` and `GROK_PARAMETERS` environment
 variables.

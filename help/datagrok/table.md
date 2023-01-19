@@ -2,8 +2,6 @@
 title: "Table"
 ---
 
-# Table
-
 Table (also known as a dataframe) is a two-dimensional structure with named columns of different types. Supported types
 are: `string`, `bool`, `int`, `bigint`, `double`, `qnum`, `datetime`.
 

@@ -2,8 +2,6 @@
 title: "Debugging"
 ---
 
-# Debugging
-
 Essentially, Datagrok packages are either regular webpack packages, or sets JS source files.
 
 We recommend you the practices below with debugging your package code.

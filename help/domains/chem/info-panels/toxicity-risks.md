@@ -2,8 +2,6 @@
 title: "Toxicity risks"
 ---
 
-# Toxicity risks
-
 From [openmolecules](https://www.openmolecules.org/properties/properties.html#tox):
 _The toxicity risk assessment tries to locate substructures within the chemical structure being indicative of a toxicity
 risk within one of four major toxicity classes. Risk alerts are by no means meant to be a fully reliable toxicity

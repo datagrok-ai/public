@@ -1,9 +1,6 @@
 ---
 title: "Audit"
 ---
-<!-- SUBTITLE: -->
-
-# Audit
 
 Audit system is intended to store all users activity for future analysis.
 

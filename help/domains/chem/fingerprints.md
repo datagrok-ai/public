@@ -1,9 +1,6 @@
 ---
 title: "Molecular fingerprints"
 ---
-<!-- SUBTITLE: -->
-
-# Molecular fingerprints
 
 Fingerprints are a very abstract representation of certain structural features of a molecule.
 

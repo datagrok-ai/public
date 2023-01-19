@@ -1,9 +1,6 @@
 ---
 title: "Mutate"
 ---
-<!-- SUBTITLE: -->
-
-# Mutate
 
 Mutate molecules using different mechanisms:
 

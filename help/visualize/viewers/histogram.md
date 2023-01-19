@@ -1,9 +1,6 @@
 ---
 title: "Histogram"
 ---
-<!-- SUBTITLE: -->
-
-# Histogram
 
 A histogram is a graphical representation of the distribution of numerical data.
 
@@ -25,6 +22,6 @@ General:
 
 See also:
 
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [Table View](../../datagrok/table-view.md)
 * [JS API: Histogram](https://public.datagrok.ai/js/samples/ui/viewers/types/histogram)

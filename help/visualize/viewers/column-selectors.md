@@ -1,9 +1,6 @@
 ---
 title: "Column Selector"
 ---
-<!-- SUBTITLE: -->
-
-# Column Selector
 
 A combo box for selecting a column
 
@@ -16,5 +13,5 @@ A combo box for selecting a column
 
 See also:
 
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [Table View](../../datagrok/table-view.md)

@@ -1,9 +1,6 @@
 ---
 title: "Cheminformatics"
 ---
-<!-- SUBTITLE: -->
-
-# Cheminformatics development
 
 In addition to being a general-purpose extensible platform for scientific computing, Datagrok provides multiple options
 for developing cheminformatics solutions on top of it. Depending on your needs, use one or more of the following ones,

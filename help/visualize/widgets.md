@@ -1,9 +1,6 @@
 ---
 title: "Widgets"
 ---
-<!-- SUBTITLE: -->
-
-# Widgets
 
 Widgets are various Datagrok UI elements that together comprise the platform's user interface. For instance, an
 Accordion pane on the left of the screen, a menu, a Balloon tooltip, or a Progress indicator are all widgets.

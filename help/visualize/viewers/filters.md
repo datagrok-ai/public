@@ -1,9 +1,6 @@
 ---
 title: "Filters"
 ---
-<!-- SUBTITLE: -->
-
-# Filters
 
 A set of controls for quick filtering, selection, and visual assessment of column values.
 
@@ -70,6 +67,6 @@ Drag-and-drop columns right from the grid to add the corresponding filters:
 
 See also:
 
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [Table View](../../datagrok/table-view.md)
 * [JS API: Filters](https://public.datagrok.ai/js/samples/ui/viewers/types/filters)

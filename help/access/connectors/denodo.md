@@ -1,9 +1,6 @@
 ---
 title: "Denodo"
 ---
-<!-- SUBTITLE: -->
-
-# Denodo
 
 Provides access to [Denodo](https://www.denodo.com/) database virtualization
 platform via JDBC driver.
@@ -12,10 +9,10 @@ platform via JDBC driver.
 
 ```json
 {
-    "server": "",
-    "port": "",
-    "db": "",
-    "connString": ""
+  "server": "",
+  "port": "",
+  "db": "",
+  "connString": ""
 }
 ```
 

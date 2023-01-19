@@ -2,8 +2,6 @@
 title: "Contribute to Help documentation"
 ---
 
-# Contribute to Help documentation
-
 All Datagrok knowledge base is collected on [Help wiki pages](https://datagrok.ai/help). The source code is located in
 the help directory in the [public repository](https://github.com/datagrok-ai/public/tree/master/help). Any commit to the
 help directory will trigger help pages GitHub Actions workflow.

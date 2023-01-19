@@ -1,9 +1,6 @@
 ---
 title: "Search data"
 ---
-<!-- SUBTITLE: -->
-
-# Search data
 
 Press Ctrl+F to search data. Additional controls appear once search gets focus.
 

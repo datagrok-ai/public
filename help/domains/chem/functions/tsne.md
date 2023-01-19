@@ -1,9 +1,6 @@
 ---
 title: "Chemical space using tSNE"
 ---
-<!-- SUBTITLE: -->
-
-# Chemical space using tSNE
 
 t-distributed Stochastic Neighbor Embedding (tSNE) is a tool to visualize high-dimensional data. It converts
 similarities between data points to joint probabilities and tries to minimize the Kullback-Leibler divergence between

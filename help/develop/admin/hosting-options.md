@@ -1,9 +1,6 @@
 ---
 title: "Hosting options"
 ---
-<!-- SUBTITLE: -->
-
-# Hosting options
 
 Depending on the needs of your organizations, choose the option that works best for your organization.
 

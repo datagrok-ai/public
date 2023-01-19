@@ -1,9 +1,6 @@
 ---
 title: "Compare tables"
 ---
-<!-- SUBTITLE: -->
-
-# Compare tables
 
 Compares the content of two tables.
 

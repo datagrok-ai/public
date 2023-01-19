@@ -2,8 +2,6 @@
 title: "Custom package settings editors"
 ---
 
-# Custom package settings editors
-
 Datagrok provides a convenient way to define [package settings](../develop.md#package-settings). You only need to define
 the properties in the package.json file, and the platform takes care of the rest: the UI gets automatically generated,
 and settings could be edited either individually or in a centralized manner.

@@ -1,9 +1,6 @@
 ---
 title: "Security"
 ---
-<!-- SUBTITLE: -->
-
-# Security
 
 Datagrok was designed with security as one of the primary objectives. The platform gives users complete control of their
 data, letting them decide exactly what is shared with whom, and using the best security practices across the solution.

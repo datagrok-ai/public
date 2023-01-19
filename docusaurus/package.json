@@ -28,6 +28,7 @@
     "@droppedcode/typedoc-plugin-copy-assets": "^1.0.6",
     "@tsconfig/docusaurus": "^1.0.6",
     "docusaurus-plugin-typedoc": "^0.18.0",
+    "docusaurus-theme-search-typesense": "^0.8.0",
     "typedoc": "^0.23.24",
     "typedoc-plugin-markdown": "^3.14.0",
     "typedoc-plugin-replace-text": "2.0.0",

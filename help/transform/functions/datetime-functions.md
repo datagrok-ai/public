@@ -1,9 +1,6 @@
 ---
 title: "Date and Time functions"
 ---
-<!-- SUBTITLE: -->
-
-# Date and time functions
 
 *Function List:*
 

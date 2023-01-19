@@ -1,9 +1,6 @@
 ---
 title: "Categorize data"
 ---
-<!-- SUBTITLE: -->
-
-# Categorize data
 
 Evaluate multiple patterns against the dataset, and assign categories to the rows, based on the conditions (patterns).
 

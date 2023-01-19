@@ -2,8 +2,6 @@
 title: "Develop custom cell renderers"
 ---
 
-# Cell renderers
-
 Datagrok provides an opportunity to use custom visualization for cells in data
 [grid/table](../../visualize/viewers/grid.md). This could be done by defining a function annotated with special
 comments. It should take no args, return an instance of class derived from DG.GridCellRenderer, and have at least

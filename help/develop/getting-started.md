@@ -1,7 +1,6 @@
-<!-- TITLE: &#8203;Getting started-->
-<!-- SUBTITLE: -->
-
-# Getting started
+---
+title: "Getting started"
+---
 
 Welcome to Datagrok, the next-generation data platform! This document provides a step-by-step instruction to help you
 start using Datagrok as an engineer.

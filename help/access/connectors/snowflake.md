@@ -1,9 +1,6 @@
 ---
 title: "Snowflake"
 ---
-<!-- SUBTITLE: -->
-
-# Snowflake
 
 Provides access to [Snowflake](https://www.snowflake.com/) database using SQL
 queries via a JDBC driver.
@@ -12,10 +9,10 @@ queries via a JDBC driver.
 
 ```json
 {
-    "server": "",
-    "port": "",
-    "db": "",
-    "connString": ""
+  "server": "",
+  "port": "",
+  "db": "",
+  "connString": ""
 }
 ```
 

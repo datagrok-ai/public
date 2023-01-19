@@ -1,9 +1,6 @@
 ---
 title: "Git"
 ---
-<!-- SUBTITLE: -->
-
-# Git
 
 Provides access to [Git](https://git-scm.com/) repository as [file share](files.md). Works with any Git repository.
 

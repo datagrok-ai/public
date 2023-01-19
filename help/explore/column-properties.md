@@ -1,13 +1,10 @@
 ---
 title: "Column properties"
 ---
-<!-- SUBTITLE: -->
-
-# Column properties
 
 Dialog allows to change column properties.
 
-# Properties
+## Properties
 
 | Property         | Description                                        |
 |------------------|----------------------------------------------------|
@@ -23,10 +20,10 @@ Dialog allows to change column properties.
 | Custom Format    | Custom Format                                      |
 | Cell Type        | Cell Type                                          |
 
-# Edit category colors
+## Edit category colors
 
 Allows to edit category colors. Available only for categorical columns.
 
-# Change type
+## Change type
 
 Opens change type dialog.

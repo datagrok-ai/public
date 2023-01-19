@@ -1,9 +1,6 @@
 ---
 title: "Data export"
 ---
-<!-- SUBTITLE: -->
-
-# Data export
 
 When working on the Datagrok platform, you can always save the currently open data to a file or a set of files in your
 local environment.
@@ -41,4 +38,4 @@ See also:
 
 * [Projects](../datagrok/project.md)
 * [Layout](../visualize/view-layout.md)
-* [Viewers](../visualize/viewers.md)
+* [Viewers](../visualize/viewers/viewers.md)

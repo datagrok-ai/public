@@ -1,9 +1,6 @@
 ---
 title: "Upload data"
 ---
-<!-- SUBTITLE: -->
-
-# Dataframe
 
 To upload a CSV file to the user storage, make the following POST request with the CSV content as body:
 
@@ -31,7 +28,7 @@ To apply a layout, use the `?layout` parameter in the following way:
 
 ![upload-data-layout](upload-data-layout.png)
 
-# Example
+## Example
 
 ```curl
 curl --location --request POST 'http://localhost:8080/api/files/alex.aprm/uploads/from_excel/test.csv?layout=alexaprm.superlayout' \

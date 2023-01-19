@@ -1,9 +1,6 @@
 ---
 title: "Architecture"
 ---
-<!-- SUBTITLE: -->
-
-# Architecture
 
 ## Goals
 

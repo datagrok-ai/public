@@ -2,8 +2,6 @@
 title: "Publish packages"
 ---
 
-# Publish package
-
 To make your package publicly available, you need to publish a package to NPM. Then you will be able to install it to
 any Datagrok instance using the package manager.
 

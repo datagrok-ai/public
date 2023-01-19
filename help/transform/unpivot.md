@@ -1,9 +1,6 @@
 ---
 title: "Unpivoting"
 ---
-<!-- SUBTITLE: -->
-
-# Unpivoting
 
 Unpivoting transforms data from a short/wide to a tall/skinny format.
 

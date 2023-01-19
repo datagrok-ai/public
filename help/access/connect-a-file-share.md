@@ -1,9 +1,6 @@
 ---
 title: "File shares"
 ---
-<!-- SUBTITLE: -->
-
-# Connecting to file shares
 
 File shares are a popular choice for storing datasets due to its ubiquitousness, ease of use, and hierarchical
 structure. Datagrok provides an easy way to connect to it and use files in a secure, manageable way.

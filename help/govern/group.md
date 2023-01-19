@@ -1,9 +1,6 @@
 ---
 title: "User group"
 ---
-<!-- SUBTITLE: -->
-
-# User group
 
 Datagrok has a flexible mechanism for grouping users together:
 ![Group members and memberships](./groups.gif "Group members and memberships")

@@ -2,8 +2,6 @@
 title: "Add package tests"
 ---
 
-# How to add package tests
-
 Packages developed for the platform should be tested. Datagrok supports several
 mechanisms for testing purposes. This article provides instructions for
 utilizing these mechanisms in the package code.
@@ -82,7 +80,7 @@ test('Skipped', async () => {
 
 ## Testing functions
 
-Every package utilizes the concept of [functions](../../datagrok/functions/function.md).
+Every package utilizes the concept of [functions](../../datagrok/functions/functions.md).
 Tests cases can be added directly to a function's annotation. Afterwards, the metadata
 is used to test package functions automatically. Use the `test` parameter to add
 test cases. A test is essentially any [grok script](../../datagrok/grok-script.md)

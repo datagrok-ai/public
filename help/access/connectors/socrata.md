@@ -1,9 +1,6 @@
 ---
 title: "Socrata"
 ---
-<!-- SUBTITLE: -->
-
-# Socrata
 
 Provides access to various data sources based on [Socrata](https://www.tylertech.com/products/socrata)
 server using [Socrata Query](../edit-socrata-query.md).

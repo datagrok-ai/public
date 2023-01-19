@@ -1,11 +1,9 @@
 ---
 title: "Files"
 ---
-<!-- SUBTITLE: -->
 
-# Files
-
-Once a file share is mounted as a network drive on a server and registered within the platform, its content gets automatically
+Once a file share is mounted as a network drive on a server and registered within the platform, its content gets
+automatically
 [indexed](../../access/files-indexer.md) and can be browsed.
 
 ## Connection parameters

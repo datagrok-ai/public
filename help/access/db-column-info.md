@@ -1,9 +1,6 @@
 ---
 title: "Database table column"
 ---
-<!-- SUBTITLE: -->
-
-# Database table column
 
 This column resides in the database. To see quick summary of this column, expand the 'Inspect' pane in
 the [property panel](../datagrok/navigation.md#properties).

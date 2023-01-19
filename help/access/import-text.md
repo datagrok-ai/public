@@ -1,9 +1,6 @@
 ---
 title: "Import text"
 ---
-<!-- SUBTITLE: -->
-
-# Import text
 
 Use this feature for finer control of the import options, as well as text editing.
 

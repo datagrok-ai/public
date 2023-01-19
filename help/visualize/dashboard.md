@@ -1,9 +1,6 @@
 ---
 title: "Dashboard"
 ---
-<!-- SUBTITLE: -->
-
-# Dashboard
 
 Use dashboard to visually present data in a pre-specified way. In contrast to
 [table views](../datagrok/table-view.md) that excel at

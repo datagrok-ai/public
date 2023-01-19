@@ -1,9 +1,6 @@
 ---
 title: "Grid"
 ---
-<!-- SUBTITLE: -->
-
-# Grid
 
 ## Selection
 
@@ -165,6 +162,6 @@ element, you will see the row it represents in the grid.
 
 See also:
 
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [Table View](../../datagrok/table-view.md)
 * [JS API: Grid](https://public.datagrok.ai/js/samples/ui/viewers/types/grid)

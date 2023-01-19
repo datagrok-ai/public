@@ -1,9 +1,6 @@
 ---
 title: "Google Map viewer"
 ---
-<!-- SUBTITLE: -->
-
-# Google Map viewer
 
 Google Map Viewer overlays latitude/longitude data from the corresponding table on top of the Google Map.
 
@@ -28,6 +25,6 @@ See also:
 * \#{cmd(AddressToCoordinates)}
 * \#{cmd(IpToCoordinates)}
 * \#{cmd(AddressToCoordinates)}
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [Table View](../../datagrok/table-view.md)
 * [JS API: Google Map](https://public.datagrok.ai/js/samples/ui/viewers/types/google-map)

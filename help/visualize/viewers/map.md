@@ -1,9 +1,6 @@
 ---
 title: "Map viewer"
 ---
-<!-- SUBTITLE: -->
-
-# Map viewer
 
 Map viewer shows geospatial data on a map as either markers, or a heat map.
 
@@ -57,5 +54,5 @@ The system provides interaction with files of the following extensions:
 
 ## See also
 
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [Globe](globe.md)

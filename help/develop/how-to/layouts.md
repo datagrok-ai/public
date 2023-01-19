@@ -2,8 +2,6 @@
 title: "Use Layouts"
 ---
 
-# Layouts
-
 [Layouts](../../visualize/view-layout.md) define the way visualizations are positioned in a table view, allowing to
 reuse them for different datasets. Layouts contain viewer settings, positions, and relevant metadata that determine
 where a layout can be further suggested.
@@ -137,7 +135,7 @@ See also:
 - [JavaScript API Samples: Layout permissions and metadata](https://public.datagrok.ai/js/samples/dapi/layouts-and-permissions)
 - [JavaScript API Samples: Saving layouts to user data storage](https://public.datagrok.ai/js/samples/ui/views/layouts)
 
-# Saving data with layouts using the REST API
+## Saving data with layouts using the REST API
 
 To create a dashboard consisting of a dataset that resides externally, and a pre-created layout
 (common case for visualizing a dataset created as a result of a data pipeline), use

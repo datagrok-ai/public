@@ -1,9 +1,6 @@
 ---
 title: "Stable Releases"
 ---
-<!-- SUBTITLE: -->
-
-# Stable Releases
 
 This page contains the most recent stable releases of Datagrok components
 
