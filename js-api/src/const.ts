@@ -192,6 +192,7 @@ export const SEMTYPE = {
   MONEY: 'Money',
   IMAGE: 'Image',
   FILE: 'File',
+  CHEMICAL_REACTION: 'ChemicalReaction'
 }
 
 export const UNITS = {
