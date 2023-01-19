@@ -28,9 +28,9 @@ public class SessionHandler {
 
     int queryMessages = 0;
     static String okResponse = "DATAFRAME PART OK";
-    static String endMessage = "the end";
+    static String endMessage = "EOF";
     static String sizeRecievedMessage = "DATAFRAME PART SIZE RECEIVED";
-    static String logRecievedMessage = "LOG RECIEVED";
+    static String logRecievedMessage = "LOG RECEIVED";
 
     SessionHandler(Session session) {
         this.session = session;
@@ -124,7 +124,7 @@ public class SessionHandler {
 
     static String socketErrorMessage(Throwable th) {
         Gson gson = new GsonBuilder().create();
-        return "Error: ".concat(gson.toJson(GrokConnect.printError(th), new TypeToken<Map<String, String>>() { }.getType()));
+        return "ERROR: ".concat(gson.toJson(GrokConnect.printError(th), new TypeToken<Map<String, String>>() { }.getType()));
     }
 
     static String socketLogMessage(String s) {
