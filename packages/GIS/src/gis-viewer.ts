@@ -667,16 +667,19 @@ export class GisViewer extends DG.JsViewer {
         //TODO: this style of switching visibility is a bad but temporary decision
         this.ol.olHeatmapLayer?.setVisible(true);
         this.ol.olMarkersLayerGL?.setVisible(false);
+        this.ol.panelLayersList.updateLayersList();
       } else if (this.renderType === 'markers') {
         //render markers map
         this.renderMarkersBatch(this.features);
         this.ol.olHeatmapLayer?.setVisible(false);
         this.ol.olMarkersLayerGL?.setVisible(true);
+        this.ol.panelLayersList.updateLayersList();
       } else if (this.renderType === 'both') {
         //render markers map
         this.renderMarkersBatch(this.features);
         this.ol.olHeatmapLayer?.setVisible(true);
         this.ol.olMarkersLayerGL?.setVisible(true);
+        this.ol.panelLayersList.updateLayersList();
       }
 
       if (fit) {
