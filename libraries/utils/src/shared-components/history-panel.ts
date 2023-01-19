@@ -8,6 +8,53 @@ import {defaultUsersIds} from '../function-view';
 import {historyUtils} from '../history-utils';
 import '../../css/history-panel.css';
 
+class HistoryPanelStore {
+  filteringOptions = {text: ''} as {
+    text: string,
+    author?: DG.User,
+    startedAfter?: dayjs.Dayjs,
+  };
+
+  allRuns = new BehaviorSubject<DG.FuncCall[]>([]);
+
+  get myRuns() {
+    return this.allRuns.value.filter((run) => run.author.id === grok.shell.user.id);
+  }
+
+  get favoriteRuns() {
+    return this.allRuns.value.filter((run) => run.options['isFavorite'] && !run.options['isImported']);
+  }
+
+  get sharedRuns() {
+    return this.allRuns.value.filter((run) => run.options['isShared']);
+  }
+
+  get filteredMyRuns() {
+    return this.myRuns.filter((val) => (this.filteringOptions.startedAfter ? val.started > this.filteringOptions.startedAfter : true));
+  }
+
+  get filteredFavoriteRuns() {
+    return this.favoriteRuns.filter((val) => {
+      const startedAfter = (this.filteringOptions.startedAfter ? val.started > this.filteringOptions.startedAfter : true);
+      const titleContainsText = (!this.filteringOptions.text.length) ? true : (!!val.options['title']) ? val.options['title'].includes(this.filteringOptions.text): false;
+      const descContainsText = (!this.filteringOptions.text.length) ? true : (!!val.options['description']) ? val.options['description'].includes(this.filteringOptions.text): false;
+
+      return (titleContainsText || descContainsText) && startedAfter;
+    });
+  }
+
+  get filteredSharedRuns() {
+    return this.sharedRuns.filter((val) => {
+      const isAuthored = this.filteringOptions.author ? val.author.id === this.filteringOptions.author.id: true;
+      const startedAfter = (this.filteringOptions.startedAfter ? val.started > this.filteringOptions.startedAfter : true);
+      const titleContainsText = (!this.filteringOptions.text.length) ? true : (!!val.options['title']) ? val.options['title'].includes(this.filteringOptions.text): false;
+      const descContainsText = (!this.filteringOptions.text.length) ? true : (!!val.options['description']) ? val.options['description'].includes(this.filteringOptions.text): false;
+
+      return (titleContainsText || descContainsText) && startedAfter && isAuthored;
+    });
+  }
+}
+
 export class HistoryPanel {
   // Emitted when FuncCall should is chosen. Contains FuncCall ID
   public onRunChosen = new Subject<string>();
@@ -42,31 +89,13 @@ export class HistoryPanel {
   // Emitted when FuncCall is deleted
   public afterRunDeleted = new Subject<string>();
 
-  private store = {
-    filteringOptions: {text: ''} as {
-      text: string,
-      author?: DG.User,
-      startedAfter?: dayjs.Dayjs,
-    },
-    allRuns: new Subject<DG.FuncCall[]>(),
-
-    myRuns: new BehaviorSubject<DG.FuncCall[]>([]),
-    favoriteRuns: new BehaviorSubject<DG.FuncCall[]>([]),
-    sharedRuns: new BehaviorSubject<DG.FuncCall[]>([]),
-
-    filteredMyRuns: new BehaviorSubject<DG.FuncCall[]>([]),
-    filteredFavoriteRuns: new BehaviorSubject<DG.FuncCall[]>([]),
-    filteredSharedRuns: new BehaviorSubject<DG.FuncCall[]>([]),
-  };
+  private store = new HistoryPanelStore();
 
   private myRunsFilter = new Subject<true>();
   private favRunsFilter = new Subject<true>();
   private sharedRunsFilter = new Subject<true>();
 
   public allRunsFetch = new Subject<true>();
-  public myRunsFetch = new Subject<true>();
-  public favRunsFetch = new Subject<true>();
-  public sharedRunsFetch = new Subject<true>();
 
   historyTab = ui.div();
   favTab = ui.div();
@@ -157,75 +186,11 @@ export class HistoryPanel {
     this.filterPane = newFilterPane;
   };
 
-  showAddToFavoritesDialog(funcCall: DG.FuncCall) {
-    let title = funcCall.options['title'] ?? '';
-    let annotation = funcCall.options['annotation'] ?? '';
-    const titleInput = ui.stringInput('Title', title, (s: string) => {
-      title = s;
-      if (s.length === 0) {
-        titleInput.setTooltip('Title cannot be empty');
-        setTimeout(() => titleInput.input.classList.add('d4-invalid'), 100);
-      } else {
-        titleInput.setTooltip('');
-        setTimeout(() => titleInput.input.classList.remove('d4-invalid'), 100);
-      }
-    });
-
-    ui.dialog({title: 'Add to favorites'})
-      .add(ui.form([
-        titleInput,
-        ui.stringInput('Annotation', annotation, (s: string) => { annotation = s; }),
-      ]))
-      .onOK(async () => {
-        if (title.length > 0) {
-          funcCall = await historyUtils.loadRun(funcCall.id, true);
-          funcCall.options['title'] = title;
-          funcCall.options['annotation'] = annotation;
-          this.beforeRunAddToFavorites.next(funcCall);
-        } else {
-          grok.shell.warning('Title cannot be empty');
-        }
-      })
-      .show({center: true});
-  };
-
   showDeleteRunDialog(funcCall: DG.FuncCall) {
     ui.dialog({title: 'Delete run'})
       .add(ui.divText('The deleted run is impossible to restore. Are you sure?'))
       .onOK(async () => {
         this.beforeRunDeleted.next(funcCall.id);
-      })
-      .show({center: true});
-  };
-
-  showAddToSharedDialog(funcCall: DG.FuncCall) {
-    let title = funcCall.options['title'] ?? '';
-    let annotation = funcCall.options['annotation'] ?? '';
-    const titleInput = ui.stringInput('Title', title, (s: string) => {
-      title = s;
-      if (s.length === 0) {
-        titleInput.setTooltip('Title cannot be empty');
-        setTimeout(() => titleInput.input.classList.add('d4-invalid'), 100);
-      } else {
-        titleInput.setTooltip('');
-        setTimeout(() => titleInput.input.classList.remove('d4-invalid'), 100);
-      }
-    });
-
-    ui.dialog({title: 'Add to shared'})
-      .add(ui.form([
-        titleInput,
-        ui.stringInput('Annotation', annotation, (s: string) => { annotation = s; }),
-      ]))
-      .onOK(async () => {
-        if (title.length > 0) {
-          funcCall = await historyUtils.loadRun(funcCall.id);
-          funcCall.options['title'] = title;
-          funcCall.options['annotation'] = annotation;
-          this.beforeRunAddToShared.next(funcCall);
-        } else {
-          grok.shell.warning('Title cannot be empty');
-        }
       })
       .show({center: true});
   };
@@ -248,150 +213,144 @@ export class HistoryPanel {
     this.historyTab = newTab;
   };
 
-  renderFavoriteCards(funcCalls: DG.FuncCall[]) {
-    this.favoriteCards = funcCalls.map((funcCall) => {
-      const unstarIcon = ui.iconFA('star', async (ev) => {
-        ev.stopPropagation();
-        this.beforeRunRemoveFromFavorites.next(funcCall.id);
-      }, 'Unfavorite the run');
-      unstarIcon.classList.add('fas');
+  renderCard(funcCall: DG.FuncCall) {
+    const icon = funcCall.author.picture as HTMLElement;
+    icon.style.width = '25px';
+    icon.style.height = '25px';
+    icon.style.fontSize = '20px';
+    const cardLabel = ui.label(funcCall.options['title'] ?? funcCall.author.friendlyName, {style: {'color': 'var(--blue-1)'}});
+    ui.bind(funcCall.author, icon);
 
-      const shareIcon = ui.iconFA('eye', async (ev) => {
-        ev.stopPropagation();
-        this.showAddToSharedDialog(funcCall);
-      }, 'Add to shared');
-      shareIcon.classList.add('fal');
-
-      const card = ui.divH([
-        ui.divV([
-          ui.divText(funcCall.options['title'] ?? 'Default title', 'title'),
-          ...(funcCall.options['annotation']) ? [ui.divText(funcCall.options['annotation'], 'description')]: [],
-          ui.divH([ui.render(funcCall.author), ui.span([new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})], 'date')]),
-        ], 'cv-card-content'),
-        ui.divH([
-          shareIcon,
-          ui.iconFA('pen', async (ev) => {
-            ev.stopPropagation();
-            this.showAddToFavoritesDialog(funcCall);
-          }, 'Edit run metadata'),
-          unstarIcon
-        ], 'cv-funccall-card-icons')
-      ], 'cv-funccall-card');
-
-      card.addEventListener('click', async () => {
-        this.onRunChosen.next(funcCall.id);
-        card.classList.add('clicked');
-      });
-      return card;
+    const editIcon = ui.iconFA('edit', (ev) => {
+      ev.stopPropagation();
+      this.showEditDialog(funcCall);
     });
+    editIcon.classList.add('cv-funccall-card-hover-icon');
 
-    const allCards = [...this.myCards, ...this.favoriteCards, ...this.sharedCards];
-    allCards.forEach((card) => card.addEventListener('click', () => allCards.forEach((c) => c.classList.remove('clicked'))));
+    const deleteIcon = ui.iconFA('trash-alt', async (ev) => {
+      ev.stopPropagation();
+      this.showDeleteRunDialog(funcCall);
+    }, 'Delete the run');
+    deleteIcon.classList.add('cv-funccall-card-hover-icon');
 
+    const favoritedIcon = ui.iconFA('star', null, 'Unfavorite the run');
+    favoritedIcon.classList.add('fas', 'cv-funccall-card-def-icon');
+
+    const sharedIcon = ui.iconFA('share-alt', null, 'Add to shared');
+    sharedIcon.classList.add('fas', 'cv-funccall-card-def-icon');
+    sharedIcon.style.color = 'var(--blue-1)';
+
+    const dateStarted = new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
+
+    const card = ui.divH([
+      ui.divH([
+        icon,
+        ui.divV([
+          cardLabel,
+          ui.span([dateStarted]),
+          ...(funcCall.options['description']) ? [ui.divText(funcCall.options['description'], 'description')]: [],
+        ], 'cv-card-content'),
+      ]),
+      ui.divH([
+        editIcon, deleteIcon,
+        ...(funcCall.options['isFavorite']) ? [favoritedIcon] : [],
+        ...(funcCall.options['isShared']) ? [sharedIcon]: [],
+      ])
+    ], 'cv-funccall-card');
+
+    card.addEventListener('click', async () => {
+      this.onRunChosen.next(funcCall.id);
+
+      const allCards = [...this.myCards, ...this.favoriteCards, ...this.sharedCards];
+      allCards.forEach((c) => c.classList.remove('clicked'));
+
+      card.classList.add('clicked');
+    });
+    ui.tooltip.bind(card, () => ui.tableFromMap({
+      Author: grok.shell.user.toMarkup(),
+      Date: dateStarted,
+      ...(funcCall.options['title']) ? {'Title': funcCall.options['title']}:{},
+      ...(funcCall.options['description']) ? {'Description': funcCall.options['description']}:{},
+    }));
+    return card;
+  }
+
+  showEditDialog(funcCall: DG.FuncCall) {
+    const dlg = ui.dialog({title: 'Edit run'});
+
+    let title = funcCall.options['title'] ?? '';
+    let description = funcCall.options['description'] ?? '';
+    const titleInput = ui.stringInput('Title', title, (s: string) => {
+      title = s;
+      if (s.length === 0) {
+        titleInput.setTooltip('Title cannot be empty');
+        setTimeout(() => titleInput.input.classList.add('d4-invalid'), 100);
+        dlg.getButton('OK').disabled = true;
+      } else {
+        titleInput.setTooltip('');
+        setTimeout(() => titleInput.input.classList.remove('d4-invalid'), 100);
+        dlg.getButton('OK').disabled = false;
+      }
+    });
+    let isShared = funcCall.options['isShared'] ?? false;
+    let isFavorite = funcCall.options['isFavorite'] ?? false;
+
+    dlg.add(ui.form([
+      titleInput,
+      ui.stringInput('Description', description, (s: string) => { description = s; }),
+      ui.boolInput('Favorites', isFavorite, (b: boolean) => isFavorite = b),
+      ui.boolInput('Share', isShared, (b: boolean) => isShared = b),
+    ]))
+      .onOK(async () => {
+        funcCall = await historyUtils.loadRun(funcCall.id);
+        funcCall.options['title'] = title;
+        funcCall.options['description'] = description;
+
+        if (isShared === funcCall.options['isShared'] && isFavorite === funcCall.options['isFavorite']) {
+          await historyUtils.saveRun(funcCall);
+
+          const editedRun = this.store.allRuns.value.find((call) => call.id === funcCall.id);
+          editedRun!.options['title'] = funcCall.options['title'];
+          editedRun!.options['description'] = funcCall.options['description'];
+
+          this.store.allRuns.next(this.store.allRuns.value);
+          return;
+        }
+
+        if (isShared && !funcCall.options['isShared']) {
+          funcCall.options['isShared'] = isShared;
+          this.beforeRunAddToShared.next(funcCall);
+        }
+        if (!isShared && funcCall.options['isShared']) {
+          funcCall.options['isShared'] = isShared;
+          this.beforeRunRemoveFromShared.next(funcCall.id);
+        }
+
+        if (isFavorite && !funcCall.options['isFavorite']) {
+          funcCall.options['isFavorite'] = isFavorite;
+          this.beforeRunAddToFavorites.next(funcCall);
+        }
+        if (!isFavorite && funcCall.options['isFavorite']) {
+          funcCall.options['isFavorite'] = isFavorite;
+          this.beforeRunRemoveFromFavorites.next(funcCall.id);
+        }
+      })
+      .show({center: true});
+    titleInput.fireChanged();
+  }
+
+  renderFavoriteCards(funcCalls: DG.FuncCall[]) {
+    this.favoriteCards = funcCalls.map((funcCall) => this.renderCard(funcCall));
     return ui.divV(this.favoriteCards);
   };
 
   renderSharedCards(funcCalls: DG.FuncCall[]) {
-    this.sharedCards = funcCalls.map((funcCall) => {
-      const unshareIcon = ui.iconFA('eye-slash', async (ev) => {
-        ev.stopPropagation();
-        this.beforeRunRemoveFromShared.next(funcCall.id);
-      }, 'Hide from shared');
-
-      const card = ui.divH([
-        ui.divV([
-          ui.divText(funcCall.options['title'] ?? 'Default title', 'title'),
-          ...(funcCall.options['annotation']) ? [ui.divText(funcCall.options['annotation'], 'description')]: [],
-          ui.divH([ui.render(funcCall.author), ui.span([new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})], 'date')]),
-        ], 'cv-card-content'),
-        ui.divH([
-          ui.iconFA('link', async (ev) => {
-            ev.stopPropagation();
-            await navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?id=${funcCall.id}`);
-          }, 'Copy link to the run'),
-          ...(funcCall.author.id === grok.shell.user.id) ? [
-            ui.iconFA('pen', async (ev) => {
-              ev.stopPropagation();
-              this.showAddToSharedDialog(funcCall);
-            }, 'Edit run metadata'),
-            unshareIcon]: [],
-        ], 'cv-funccall-card-icons')
-      ], 'cv-funccall-card');
-
-      card.addEventListener('click', async () => {
-        this.onRunChosen.next(funcCall.id);
-        card.classList.add('clicked');
-      });
-      return card;
-    });
-
-
-    const allCards = [...this.myCards, ...this.favoriteCards, ...this.sharedCards];
-    allCards.forEach((card) => card.addEventListener('click', () => allCards.forEach((c) => c.classList.remove('clicked'))));
-
+    this.sharedCards = funcCalls.map((funcCall) => this.renderCard(funcCall));
     return ui.divV(this.sharedCards);
   };
 
   renderHistoryCards(funcCalls: DG.FuncCall[]) {
-    this.myCards = funcCalls.map((funcCall) => {
-      const icon = funcCall.author.picture as HTMLElement;
-      icon.style.width = '25px';
-      icon.style.height = '25px';
-      icon.style.fontSize = '20px';
-      icon.style.marginRight = '3px';
-      icon.style.alignSelf = 'center';
-      const userLabel = ui.label(funcCall.author.friendlyName, 'd4-link-label');
-      ui.bind(funcCall.author, icon);
-
-      const shareIcon = ui.iconFA('eye', async (ev) => {
-        ev.stopPropagation();
-        this.showAddToSharedDialog(funcCall);
-      }, 'Add to shared');
-      shareIcon.classList.add('fal');
-
-      const unshareIcon = ui.iconFA('eye-slash', async (ev) => {
-        ev.stopPropagation();
-        this.beforeRunRemoveFromShared.next(funcCall.id);
-      }, 'Hide from shared');
-
-      const unstar = ui.iconFA('star', async (ev) => {
-        ev.stopPropagation();
-        this.beforeRunRemoveFromFavorites.next(funcCall.id);
-      }, 'Unfavorite the run');
-      unstar.classList.add('fas');
-
-      const card = ui.divH([
-        ui.divH([
-          icon,
-          ui.divV([
-            userLabel,
-            ui.span([new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})])
-          ], 'cv-card-content'),
-        ]),
-        ui.divH([
-          ...(funcCall.options['isShared']) ? [unshareIcon]: [shareIcon],
-          ...(funcCall.options['isFavorite']) ? [unstar] : [ui.iconFA('star', async (ev) => {
-            ev.stopPropagation();
-            this.showAddToFavoritesDialog(funcCall);
-          }, 'Add to favorites')],
-          ui.iconFA('trash-alt', async (ev) => {
-            ev.stopPropagation();
-            this.showDeleteRunDialog(funcCall);
-          }, 'Delete the run'),
-        ], 'cv-funccall-card-icons')
-      ], 'cv-funccall-card');
-
-      card.addEventListener('click', async () => {
-        this.onRunChosen.next(funcCall.id);
-        card.classList.add('clicked');
-      });
-
-      return card;
-    });
-
-    const allCards = [...this.myCards, ...this.favoriteCards, ...this.sharedCards];
-    allCards.forEach((card) => card.addEventListener('click', () => allCards.forEach((c) => c.classList.remove('clicked'))));
-
+    this.myCards = funcCalls.map((funcCall) => this.renderCard(funcCall));
     return ui.divV(this.myCards, {style: {height: '100%'}});
   };
 
@@ -401,50 +360,14 @@ export class HistoryPanel {
     this.tabs.root.style.width = '100%';
     this.tabs.root.style.height = '100%';
 
-    this.store.myRuns.subscribe((myRuns) => this.store.filteredMyRuns.next(myRuns));
-    this.store.favoriteRuns.subscribe((favoriteRuns) => this.store.filteredFavoriteRuns.next(favoriteRuns));
-    this.store.sharedRuns.subscribe((sharedRuns) => this.store.filteredSharedRuns.next(sharedRuns));
+    this.myRunsFilter.subscribe(() => this.updateMyPane(this.store.filteredMyRuns));
+    this.favRunsFilter.subscribe(() => this.updateFavoritesPane(this.store.filteredFavoriteRuns));
+    this.sharedRunsFilter.subscribe(() => this.updateSharedPane(this.store.filteredSharedRuns));
 
-    this.store.filteredMyRuns.subscribe((myRuns) => this.updateMyPane(myRuns));
-    this.store.filteredFavoriteRuns.subscribe((newFavoriteRuns) => this.updateFavoritesPane(newFavoriteRuns));
-    this.store.filteredSharedRuns.subscribe((sharedRuns) => this.updateSharedPane(sharedRuns));
-
-    this.myRunsFilter.subscribe(() => {
-      const filteredMyRuns = this.store.myRuns.value.filter((val) => {
-        const startedAfter = (this.store.filteringOptions.startedAfter ? val.started > this.store.filteringOptions.startedAfter : true);
-
-        return startedAfter;
-      });
-      this.store.filteredMyRuns.next(filteredMyRuns);
-    });
-
-    this.favRunsFilter.subscribe(() => {
-      const filteredFavRuns = this.store.favoriteRuns.value.filter((val) => {
-        const startedAfter = (this.store.filteringOptions.startedAfter ? val.started > this.store.filteringOptions.startedAfter : true);
-        const titleContainsText = (this.store.filteringOptions.text.length && !!val.options['title']) ? val.options['title'].includes(this.store.filteringOptions.text): true;
-        const descContainsText = (this.store.filteringOptions.text.length && !!val.options['description']) ? val.options['description'].includes(this.store.filteringOptions.text): true;
-
-        return (titleContainsText || descContainsText) && startedAfter;
-      });
-      this.store.filteredFavoriteRuns.next(filteredFavRuns);
-    });
-
-    this.sharedRunsFilter.subscribe(() => {
-      const filteredSharedRuns = this.store.sharedRuns.value.filter((val) => {
-        const isAuthored = this.store.filteringOptions.author ? val.author.id === this.store.filteringOptions.author.id: true;
-        const startedAfter = (this.store.filteringOptions.startedAfter ? val.started > this.store.filteringOptions.startedAfter : true);
-        const titleContainsText = (this.store.filteringOptions.text.length && !!val.options['title']) ? val.options['title'].includes(this.store.filteringOptions.text): true;
-        const descContainsText = (this.store.filteringOptions.text.length && !!val.options['description']) ? val.options['description'].includes(this.store.filteringOptions.text): true;
-
-        return (titleContainsText || descContainsText) && startedAfter && isAuthored;
-      });
-      this.store.filteredSharedRuns.next(filteredSharedRuns);
-    });
-
-    this.store.allRuns.subscribe((allRuns) => {
-      this.store.myRuns.next(allRuns.filter((run) => run.author.id === grok.shell.user.id));
-      this.store.favoriteRuns.next(allRuns.filter((run) => run.options['isFavorite'] && !run.options['isImported']));
-      this.store.sharedRuns.next(allRuns.filter((run) => run.options['isShared']));
+    this.store.allRuns.subscribe(() => {
+      this.updateMyPane(this.store.filteredMyRuns);
+      this.updateFavoritesPane(this.store.filteredFavoriteRuns);
+      this.updateSharedPane(this.store.filteredSharedRuns);
     });
 
     this.allRunsFetch.subscribe(async () => {
@@ -452,71 +375,45 @@ export class HistoryPanel {
       this.store.allRuns.next(allRuns);
     });
 
-    this.myRunsFetch.subscribe(async () => {
-      ui.setUpdateIndicator(this.tabs.root, true);
-      const myRuns = (await historyUtils.pullRunsByName(this.func.name, [{author: grok.shell.user}], {order: 'started'}, ['session.user', 'options'])).reverse();
-      this.store.myRuns.next(myRuns);
-      ui.setUpdateIndicator(this.tabs.root, false);
-    });
-
-    this.favRunsFetch.subscribe(async () => {
-      ui.setUpdateIndicator(this.tabs.root, true);
-      const myRuns = (await historyUtils.pullRunsByName(this.func.name, [{author: grok.shell.user}], {order: 'started'}, ['session.user', 'options'])).reverse();
-      this.store.favoriteRuns.next(myRuns.filter((run) => run.options['isFavorite'] && !run.options['isImported']));
-      ui.setUpdateIndicator(this.tabs.root, false);
-    });
-
-    this.sharedRunsFetch.subscribe(async () => {
-      const sharedRuns = (await historyUtils.pullRunsByName(this.func.name, [], {order: 'started'}, ['session.user', 'options'])).reverse();
-      this.store.sharedRuns.next(sharedRuns.filter((run) => run.options['isShared']));
-      ui.setUpdateIndicator(this.tabs.root, false);
-    });
-
+    const clearMetadata = (funcCall: DG.FuncCall) => {
+      if (!funcCall.options['isFavorite'] && !funcCall.options['isShared']) {
+        funcCall.options['title'] = null;
+        funcCall.options['description'] = null;
+      }
+    };
 
     this.afterRunAddToFavorites.subscribe((added) => {
-      const editedRun = this.store.myRuns.value.find((call) => call.id === added.id);
-      editedRun!.options['isFavorite'] = true;
+      const editedRun = this.store.allRuns.value.find((call) => call.id === added.id);
       editedRun!.options['title'] = added.options['title'];
       editedRun!.options['description'] = added.options['description'];
-      this.store.myRuns.next(this.store.myRuns.value);
-
-      this.store.favoriteRuns.next([...this.store.favoriteRuns.value, editedRun!]);
+      editedRun!.options['isFavorite'] = true;
+      this.store.allRuns.next(this.store.allRuns.value);
     });
 
     this.afterRunAddToShared.subscribe((added) => {
-      const editedRun = this.store.myRuns.value.find((call) => call.id === added.id);
-      editedRun!.options['isShared'] = true;
+      const editedRun = this.store.allRuns.value.find((call) => call.id === added.id);
       editedRun!.options['title'] = added.options['title'];
       editedRun!.options['description'] = added.options['description'];
-      this.store.myRuns.next(this.store.myRuns.value);
-
-      this.store.sharedRuns.next([...this.store.sharedRuns.value, editedRun!]);
+      editedRun!.options['isShared'] = true;
+      this.store.allRuns.next(this.store.allRuns.value);
     });
 
     this.afterRunRemoveFromFavorites.subscribe((id) => {
-      this.store.favoriteRuns.next(this.store.favoriteRuns.value.filter((call) => call.id !== id));
-
-      const editedRun = this.store.myRuns.value.find((call) => call.id === id);
-      editedRun!.options['title'] = null;
-      editedRun!.options['description'] = null;
-      editedRun!.options['isFavorite'] = false;
-      this.store.myRuns.next(this.store.myRuns.value);
+      const editedRun = this.store.allRuns.value.find((call) => call.id === id)!;
+      editedRun.options['isFavorite'] = false;
+      clearMetadata(editedRun);
+      this.store.allRuns.next(this.store.allRuns.value);
     });
 
     this.afterRunRemoveFromShared.subscribe((id) => {
-      this.store.sharedRuns.next(this.store.sharedRuns.value.filter((call) => call.id !== id));
-
-      const editedRun = this.store.myRuns.value.find((call) => call.id === id);
-      editedRun!.options['title'] = null;
-      editedRun!.options['description'] = null;
-      editedRun!.options['isShared'] = false;
-      this.store.myRuns.next(this.store.myRuns.value);
+      const editedRun = this.store.allRuns.value.find((call) => call.id === id)!;
+      editedRun.options['isShared'] = false;
+      clearMetadata(editedRun);
+      this.store.allRuns.next(this.store.allRuns.value);
     });
 
     this.afterRunDeleted.subscribe((id) => {
-      this.store.myRuns.next(this.store.myRuns.value.filter((call) => call.id !== id));
-      this.store.favoriteRuns.next(this.store.favoriteRuns.value.filter((call) => call.id !== id));
-      this.store.sharedRuns.next(this.store.sharedRuns.value.filter((call) => call.id !== id));
+      this.store.allRuns.next(this.store.allRuns.value.filter((call) => call.id !== id));
     });
 
     this.allRunsFetch.next();

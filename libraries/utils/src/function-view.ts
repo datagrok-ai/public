@@ -317,7 +317,7 @@ export abstract class FunctionView extends DG.ViewBase {
  */
   public async removeRunFromFavorites(callToUnfavorite: DG.FuncCall): Promise<DG.FuncCall> {
     callToUnfavorite.options['title'] = null;
-    callToUnfavorite.options['annotation'] = null;
+    callToUnfavorite.options['description'] = null;
     callToUnfavorite.options['isFavorite'] = false;
     await this.onBeforeRemoveRunFromFavorites(callToUnfavorite);
     const favoriteSave = await grok.dapi.functions.calls.allPackageVersions().save(callToUnfavorite);
@@ -357,7 +357,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
   public async removeRunFromShared(callToUnshare: DG.FuncCall): Promise<DG.FuncCall> {
     callToUnshare.options['title'] = null;
-    callToUnshare.options['annotation'] = null;
+    callToUnshare.options['description'] = null;
     callToUnshare.options['isShared'] = false;
     await this.onBeforeRemoveRunFromFavorites(callToUnshare);
     const savedShared = await grok.dapi.functions.calls.allPackageVersions().save(callToUnshare);
@@ -428,7 +428,6 @@ export abstract class FunctionView extends DG.ViewBase {
     await this.onBeforeSaveRun(callToSave);
     const savedCall = await historyUtils.saveRun(callToSave);
     savedCall.options['isHistorical'] = false;
-    console.log(savedCall);
     this.linkFunccall(savedCall);
     this.buildHistoryBlock();
     this.path = `?id=${savedCall.id}`;

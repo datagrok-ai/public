@@ -348,8 +348,9 @@ export class RichFunctionView extends FunctionView {
 
           inputs.append(t.root);
         } else {
+          // FIX ME: .toDart added to prevent bug of tables initial non-rendering
           const t = prop.propertyType === DG.TYPE.DATA_FRAME ?
-            ui.tableInput(prop.name, null, grok.shell.tables):
+            ui.tableInput(prop.name, null, grok.shell.tables.map(DG.toDart)):
             ui.input.forProperty(prop);
 
           t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
