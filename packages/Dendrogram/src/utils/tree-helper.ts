@@ -9,6 +9,7 @@ import {
   ITreeHelper,
   NodeCuttedType,
   NodeType,
+  NO_NAME_ROOT,
   parseNewick,
 } from '@datagrok-libraries/bio';
 
@@ -21,58 +22,51 @@ export const enum TAGS {
   DF_NEWICK_LEAF_COL_NAME = '.newickLeafColumn',
 }
 
-/** Implements ITreeHelper from bio lib */
+/** Implements ITreeHelper from bio lib
+ * Common expected behavior: parseNewick and newickToDf returns name '[root]' for no-root-name newick string.
+ * Because root node can have branch_length and root node name and parent node name for these row should be different.
+ */
 export class TreeHelper implements ITreeHelper {
-  newickToDf(
-    newick: string, dfName?: string, nodePrefix?: string, skipEmptyParentRoot?: boolean
-  ): DG.DataFrame {
+  newickToDf(newick: string, dfName?: string, nodePrefix?: string): DG.DataFrame {
     const nodePrefixV: string = nodePrefix ?? '';
-    const skipEmptyParentRootV: boolean = skipEmptyParentRoot ?? false;
 
-    let parent: string | null = null;
     let i = 0;
 
     const obj = parseNewick(newick);
 
     const nodes: string[] = [];
-    const parents: string[] = [];
+    const parents: (string | null)[] = [];
     const leafs: boolean[] = [];
     const distances: (number | null)[] = [];
     const annotations: any[] = [];
 
-    function traverse(obj: NodeType) {
+    function traverse(obj: NodeType, parent: NodeType | null) {
       if (obj === null || typeof obj != 'object') return;
 
-      const isRoot: boolean = obj.name == 'root';
+      const isRoot: boolean = parent == null;
 
       let name: string = obj.name;
       if (!name) {
         name = obj.name = `${nodePrefixV}node-${i}`;
         ++i;
-      } else if (isRoot) {
-        name = `${nodePrefixV}root`;
+      } else if (isRoot && obj.name == NO_NAME_ROOT) {
+        name = `${nodePrefixV}${NO_NAME_ROOT}`;
       }
 
-      if (!isRoot || !skipEmptyParentRootV) {
-        nodes.push(name);
-        distances.push(obj.branch_length ? obj.branch_length : null);
-        // annotations.push(obj.annotation);
-        parents.push(parent!);
-        leafs.push(!obj.children || obj.children.length == 0);
-      }
+      nodes.push(name);
+      distances.push(obj.branch_length ? obj.branch_length : null);
+      // annotations.push(obj.annotation);
+      parents.push(parent ? parent!.name : null);
+      leafs.push(!obj.children || obj.children.length == 0);
 
       if (!obj.children) return;
       const childrenNum = obj.children.length;
-      const prevParent = parent;
-      parent = name;
 
-      for (let i = 0; i < childrenNum; i++) {
-        traverse(obj.children[i]);
-        if (i === childrenNum - 1) parent = prevParent;
-      }
+      for (let i = 0; i < childrenNum; i++)
+        traverse(obj.children[i], obj);
     }
 
-    traverse(obj);
+    traverse(obj, null);
 
     const nodeCol: DG.Column = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'node', nodes);
     const parentCol: DG.Column = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'parent', parents);
