@@ -8,9 +8,9 @@ import 'echarts-gl';
 type AxisArray = {data: number[], min: number, max: number, type: string}
 
 export class SurfacePlot extends EChartViewer {
-  X: string;
-  Y: string;
-  Z: string;
+  XColumnName: string;
+  YColumnName: string;
+  ZColumnName: string;
   projection: string;
   bkgcolor: string | number;
   visualMapComponent: boolean;
@@ -54,9 +54,9 @@ export class SurfacePlot extends EChartViewer {
     super();
     this.initCommonProperties();
 
-    this.X = this.string('XColumnName', null);
-    this.Y = this.string('YColumnName', null);
-    this.Z = this.string('ZColumnName', null);
+    this.XColumnName = this.string('XColumnName', null);
+    this.YColumnName = this.string('YColumnName', null);
+    this.ZColumnName = this.string('ZColumnName', null);
     this.projection = this.string('projection', 'perspective', {choices: ['perspective', 'orthographic']});
     this.bkgcolor = this.int('backgroundColor', 0xFFF);
     this.visualMapComponent = this.bool('legendVisualMapComponent', false);
@@ -119,6 +119,14 @@ export class SurfacePlot extends EChartViewer {
         },
       ],
     };
+
+    this.chart.on('click', (params: any) => {
+      this.dataFrame.selection.handleClick((i) => {
+        return this.XArr.data[i] === params.data[0] &&
+          this.YArr.data[i] === params.data[1] &&
+          this.ZArr.data[i] === params.data[2];
+      }, params.event.event);
+    });
   }
 
   onTableAttached() {
@@ -147,13 +155,13 @@ export class SurfacePlot extends EChartViewer {
       else this.colsDict[c.name] = {data: c.toList(), min: c.min, max: c.max, type: type};
     });
 
-    this.X = Object.keys(this.colsDict)[0];
-    this.Y = Object.keys(this.colsDict)[1];
-    this.Z = Object.keys(this.colsDict)[2];
+    this.XColumnName = Object.keys(this.colsDict)[0];
+    this.YColumnName = Object.keys(this.colsDict)[1];
+    this.ZColumnName = Object.keys(this.colsDict)[2];
 
-    this.XArr = this.colsDict[this.X];
-    this.YArr = this.colsDict[this.Y];
-    this.ZArr = this.colsDict[this.Z];
+    this.XArr = this.colsDict[this.XColumnName];
+    this.YArr = this.colsDict[this.YColumnName];
+    this.ZArr = this.colsDict[this.ZColumnName];
 
     this.render(true, false);
   }
@@ -165,15 +173,15 @@ export class SurfacePlot extends EChartViewer {
       const col = this.colsDict[newVal];
       switch (property.name) {
       case 'XColumnName':
-        this.X = newVal;
+        this.XColumnName = newVal;
         this.XArr = col;
         break;
       case 'YColumnName':
-        this.Y = newVal;
+        this.YColumnName = newVal;
         this.YArr = col;
         break;
       case 'ZColumnName':
-        this.Z = newVal;
+        this.ZColumnName = newVal;
         this.ZArr = col;
         break;
       }
@@ -214,9 +222,9 @@ export class SurfacePlot extends EChartViewer {
     if (computeData) {
       this.option.visualMap.min = this.ZArr.min;
       this.option.visualMap.max = this.ZArr.max;
-      this.option.xAxis3D.name = this.X;
-      this.option.yAxis3D.name = this.Y;
-      this.option.zAxis3D.name = this.Z;
+      this.option.xAxis3D.name = this.XColumnName;
+      this.option.yAxis3D.name = this.YColumnName;
+      this.option.zAxis3D.name = this.ZColumnName;
       this.option.xAxis3D.type = this.XArr.type;
       this.option.yAxis3D.type = this.YArr.type;
       this.option.zAxis3D.type = this.ZArr.type;
