@@ -126,14 +126,14 @@ Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/covid-19-cases.csv>
 
 ![](./img/globe.gif)
 
-## Substituent analysis
+## Group analysis
 
-The `Substituent analysis` viewer is used to group data by different options.
+The `Group analysis` viewer is used to group data by different options.
 
 Status: `experimental`.
 Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
 
-![](./img/substituent-analysis.gif)
+![](./img/group-analysis.gif)
 
 ## Sunburst
 
