@@ -1,7 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as d3 from 'd3';
+
 import cloud from 'd3-cloud';
+import $ from 'cash-dom';
 
 
 export class WordCloudViewer extends DG.JsViewer {

@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
+import $ from 'cash-dom';
 import {drag} from 'd3-drag';
 import {ScaleOrdinal, scaleOrdinal} from 'd3-scale';
 import {select} from 'd3-selection';
