@@ -5,6 +5,9 @@ on:
   push:
     paths:
       - 'help/**'
+      - 'docusaurus/**'
+      - 'js-api/**'
+
 jobs:
   lint:
     name: Lint
@@ -61,6 +64,7 @@ jobs:
         working-directory: ./docusaurus
       - name: Check anchors
         id: anchors
+        working-directory: ./docusaurus
         continue-on-error: true
         run: |
             hyperlink --check-anchors build/ --sources ../help/ >  help/anchor-check-report.md 2>&1
