@@ -236,6 +236,25 @@ export async function ptmFilterApp(): Promise<void> {
   }
 }
 
+//name: dbGetListVersion
+//description: Test query database
+//output: dataframe result
+export async function dbGetListVersion(): Promise<DG.DataFrame> {
+  const t1: number = Date.now();
+  const df: DG.DataFrame = await catchToLog( // this call checks database connection also
+    'MLB: database query \'getListVersion\': ',
+    async () => {
+      const funcCall: DG.FuncCall = await _mlbQueries['getListVersion'].prepare().call();
+      const res: DG.DataFrame = funcCall.getOutputParamValue() as DG.DataFrame;
+      return res;
+    });
+  const t2: number = Date.now();
+  console.debug(`MLB: dbGetListVersion() ET: ${((t2 - t1) / 1000)} s`);
+
+  // grok.shell.addTableView(df);
+  return df;
+}
+
 // --
 
 /* WebLogo viewer is registered in Bio package */

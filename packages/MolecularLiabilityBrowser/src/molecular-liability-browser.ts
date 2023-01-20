@@ -26,29 +26,22 @@ import {MlbEvents} from './const';
 import {Tree3Browser} from './tree3';
 
 import {_package} from './package';
-import {
-  ALIGNMENT,
-  ALPHABET,
-  DistanceMatrix,
-  getPhylocanvasGlService,
-  getTreeHelper,
-  IDendrogramService,
-  getDendrogramService,
-  ITreeHelper,
-  IVdRegionsViewer,
-  NodeType,
-  NOTATION,
-  parseNewick,
-  PhylocanvasGlServiceBase,
-  Shapes,
-  TAGS as bioTAGS,
-  VdRegion
-} from '@datagrok-libraries/bio';
+import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
-import {MlbVrSpaceBrowser} from './mlb-vr-space-browser';
+import {MlbVrSpaceBrowser, VrSpaceMethodName} from './mlb-vr-space-browser';
 import {FilterDesc} from './types';
 import {TreeDataFrame, MlbDataFrame, AntigenDataFrame} from './types/dataframe';
+import {
+  getPhylocanvasGlService,
+  PhylocanvasGlServiceBase
+} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
+import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {getDendrogramService, IDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
+import {IVdRegionsViewer, VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
+import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
+import {parseNewick, Shapes} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 
 const TREE_GRID_ROW_HEIGHT: number = 100;
@@ -71,6 +64,7 @@ export class MolecularLiabilityBrowser {
   schemeName: string;
   cdrName: string;
   treeName?: string;
+  vrSpaceMethodName?: VrSpaceMethodName;
 
   schemeChoices: string[] = [];
   cdrChoices: string[] = [];
@@ -122,6 +116,7 @@ export class MolecularLiabilityBrowser {
   treePopupDiv: HTMLElement;
   treeGrid: DG.Grid;
   hideShowIcon: HTMLElement;
+  vrSpaceMethodInput: DG.InputBase;
 
   constructor(dataLoader: DataLoader) {
     this.dataLoader = dataLoader;
@@ -166,6 +161,12 @@ export class MolecularLiabilityBrowser {
       this.treeName = ((): string | undefined => {
         const treeUrlParam: string | undefined = this.urlParams.get('tree') ?? undefined;
         return treeUrlParam;
+      })();
+
+      this.vrSpaceMethodName = ((): VrSpaceMethodName => {
+        const vrSpaceMethodParam: VrSpaceMethodName | undefined =
+          this.urlParams.get('vrSpaceMethod') as VrSpaceMethodName ?? undefined;
+        return vrSpaceMethodParam ?? Object.values(VrSpaceMethodName)[0];
       })();
 
       this.vids = this.dataLoader.vids;
@@ -330,6 +331,14 @@ export class MolecularLiabilityBrowser {
     return this.treeInput;
   }
 
+  setVrSpaceMethodInput(): DG.InputBase {
+    this.vrSpaceMethodInput = ui.choiceInput('VR space method',
+      this.vrSpaceMethodName ?? VrSpaceMethodName, Object.values(VrSpaceMethodName),
+      () => { this.onVrSpaceMethodChanged(this.vrSpaceMethodInput.value); });
+
+    return this.vrSpaceMethodInput;
+  }
+
   setHideShowIcon(): void {
     this.hideShowIcon = ui.tooltip.bind(ui.iconFA('eye', () => {
       if (this.hideShowIcon.classList.value.includes('fa-eye-slash'))
@@ -359,6 +368,7 @@ export class MolecularLiabilityBrowser {
     this.setCdrInput();
     this.setTreeInput();
     this.setHideShowIcon();
+    this.setVrSpaceMethodInput();
 
     this.mlbView!.setRibbonPanels([
       [this.reloadIcon],
@@ -370,6 +380,8 @@ export class MolecularLiabilityBrowser {
       [this.treeInput.root],
       [],
       [this.hideShowIcon],
+      [],
+      [this.vrSpaceMethodInput.root],
     ]);
   }
 
@@ -482,7 +494,7 @@ export class MolecularLiabilityBrowser {
       // emptyParentRootSkip = false prevents generating this row
       const clonePrefix: string = `clone-${srcClone}`;
       const cloneDf: DG.DataFrame = th.newickToDf(
-        srcTreeNwk, `CLONE: ${srcClone}`, `${clonePrefix}-`, true);
+        srcTreeNwk, `CLONE: ${srcClone}`, `${clonePrefix}-`);
       cloneDf.set('parent', 0, clonePrefix);
       cloneDf.columns.add(DG.Column.fromStrings('CLONE', Array<string>(cloneDf.rowCount).fill(srcClone)), false);
 
@@ -756,7 +768,8 @@ export class MolecularLiabilityBrowser {
     // this.mlbView.dockManager.rootNode.removeChild(this.filterViewDn);
 
     if (this.vrSpaceBrowser) {
-      this.vrSpaceBrowser.setData(null, null, []);
+      await this.vrSpaceBrowser.setData(MlbDataFrame.Empty, TreeDataFrame.Empty, [],
+        Object.values(VrSpaceMethodName)[0]);
     }
 
     if (this.networkDiagram) {
@@ -979,7 +992,8 @@ export class MolecularLiabilityBrowser {
 
     this.updateViewTreeBrowser();
 
-    await this.vrSpaceBrowser.setData(this.mlbDf, this.treeDf, this.regions);
+    await this.vrSpaceBrowser.setData(this.mlbDf, this.treeDf, this.regions,
+      this.vrSpaceMethodName ?? Object.values(VrSpaceMethodName)[0]);
 
     console.debug('MLB: MolecularLiabilityBrowser.updateView() end,' +
       `${((Date.now() - _startInit) / 1000).toString()} s`);
@@ -1108,6 +1122,23 @@ export class MolecularLiabilityBrowser {
     this.mlbView!.path = this.mlbView!.basePath = path;
 
     this.updateViewTreeBrowser();
+  }
+
+  onVrSpaceMethodChanged(vrSpaceMethodName: VrSpaceMethodName): void {
+    this.vrSpaceMethodName = vrSpaceMethodName;
+    if (this.vrSpaceMethodInput.value != this.vrSpaceMethodName)
+      this.vrSpaceMethodInput.value = this.vrSpaceMethodName;
+
+    this.urlParams!.set('vrSpaceMethod', this.vrSpaceMethodName);
+    window.setTimeout(async () => {
+      try {
+        await this.vrSpaceBrowser.setData(this.mlbDf, this.treeDf, this.regions,
+          this.vrSpaceMethodName ?? Object.values(VrSpaceMethodName)[0]);
+      } catch (err: any) {
+        const errMsg = errorToConsole(err);
+        grok.shell.error(errMsg);
+      }
+    }, 0 /* next event cycle */);
   }
 
   onVidChanged(vid: string): void {

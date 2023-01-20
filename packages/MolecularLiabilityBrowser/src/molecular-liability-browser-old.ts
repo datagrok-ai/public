@@ -14,9 +14,7 @@ import {
 } from './utils/data-loader';
 import {DataLoaderFiles} from './utils/data-loader-files';
 import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
-import {IVdRegionsViewer} from '@datagrok-libraries/bio/src/viewers/vd-regions-viewer';
-
-// import {WebLogo} from '@datagrok-libraries/bio';
+import {IVdRegionsViewer} from '@datagrok-libraries/bio/src/vd-regions';
 
 
 export class MolecularLiabilityBrowserOld {
@@ -568,7 +566,8 @@ export class MolecularLiabilityBrowserOld {
     if (this.mlbView) {
       const tempDf: DG.DataFrame = DG.DataFrame.fromObjects([{}])!;
       this.regionsViewer = (await tempDf.plot.fromType(
-        'VdRegions', {skipEmptyPositions: true
+        'VdRegions', {
+          skipEmptyPositions: true
         })) as unknown as IVdRegionsViewer;
       await this.regionsViewer.init();
     }

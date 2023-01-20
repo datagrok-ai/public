@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {TreeAnalyzer, mlbTreeNodeRe} from './utils/tree-stats';
 import {PhylocanvasGL} from '@phylocanvas/phylocanvas.gl';
-import {PhylocanvasTreeNode, Shapes, TreeTypes} from '@datagrok-libraries/bio';
+import {PhylocanvasTreeNode, Shapes, TreeTypes} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 export class TreeBrowserOld {// extends DG.JsViewer {
   static treeGridColumnsNameMapping: { [key: string]: { name: string, dType: string } } = {
