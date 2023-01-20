@@ -5,9 +5,11 @@ import * as DG from 'datagrok-api/dg';
 import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
 import {TreeHelper} from '../utils/tree-helper';
-import {ITreeHelper, NodeType, parseNewick} from '@datagrok-libraries/bio';
 import {_package} from '../package-test';
 import {viewsTests} from './utils/views-tests';
+import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
+import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 category('GridWithTree', viewsTests((ctx: { dfList: DG.DataFrame[], vList: DG.ViewBase[] }) => {
   test('open', async () => {

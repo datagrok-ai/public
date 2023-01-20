@@ -6,9 +6,11 @@ import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 
 import {TAGS, TreeHelper} from '../utils/tree-helper';
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
-import {ITreeHelper, NodeType, parseNewick} from '@datagrok-libraries/bio';
+import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 import {_package} from '../package';
 import {markupNode} from '../viewers/tree-renderers/markup';
+import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
 
 export class TreeForGridCutApp {
   private th!: ITreeHelper;

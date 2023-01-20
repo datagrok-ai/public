@@ -14,8 +14,10 @@ import {
 } from '@datagrok-libraries/utils/src/test';
 
 import {_package} from '../../src/package-test';
-import {ITreeHelper, NodeType, NO_NAME_ROOT, parseNewick} from '@datagrok-libraries/bio';
 import {TreeHelper} from '../utils/tree-helper';
+import {NO_NAME_ROOT, parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
+import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
 
 const enum Tests {
   nwk1 = 'nwk1',

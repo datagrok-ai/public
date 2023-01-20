@@ -7,7 +7,7 @@ import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import {_package} from '../package';
 import {TAGS} from '../utils/tree-helper';
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
-import {parseNewick} from '@datagrok-libraries/bio';
+import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 import {TreeCutOptions} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {NodeType} from '@datagrok-libraries/bio/src/trees';
 

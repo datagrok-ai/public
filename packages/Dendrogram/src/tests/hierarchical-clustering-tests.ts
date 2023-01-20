@@ -7,8 +7,11 @@ import {hierarchicalClusteringUI} from '../utils/hierarchical-clustering';
 import {_package} from '../package-test';
 import {viewsTests} from './utils/views-tests';
 import {DistanceMetric} from '@datagrok-libraries/utils/src/type-declarations';
-import {DistanceMatrix, ITreeHelper, NodeType, parseNewick} from '@datagrok-libraries/bio';
 import {TreeHelper} from '../utils/tree-helper';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
+import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
+import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
 
 /*
 https://onecompiler.com/python
