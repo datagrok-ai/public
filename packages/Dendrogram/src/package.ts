@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {Dendrogram, MyViewer} from './viewers/dendrogram';
 import {TreeHelper} from './utils/tree-helper';
 import {DendrogramApp} from './apps/dendrogram-app';
-import {IDendrogramService, ITreeHelper, NodeType, TreeCutOptions} from '@datagrok-libraries/bio';
+import {ITreeHelper} from '@datagrok-libraries/bio';
 import {HierarchicalClusteringApp} from './apps/hierarchical-clustering-app';
 import {hierarchicalClusteringUI} from './utils/hierarchical-clustering';
 import {TreeForGridApp} from './apps/tree-for-grid-app';
@@ -15,6 +15,8 @@ import {TreeForGridCutApp} from './apps/tree-for-grid-cut-app';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import {injectTreeForGridUI2} from './viewers/inject-tree-for-grid2';
 import {DendrogramService} from './utils/dendrogram-service';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
+import {IDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 
 export const _package = new DG.Package();
 
