@@ -21,6 +21,7 @@
 #include <list>
 #include <deque>
 #include <iostream>
+#include <fstream>
 
 #include "../../../Eigen/Eigen/Dense"
 using namespace Eigen;
@@ -388,6 +389,8 @@ namespace ode {
 		VecType yScale(dim);
 		bool flag = true;
 
+		unsigned counter = 1;
+
 		// compute numerical solution
 		while (flag)
 		{
@@ -410,12 +413,17 @@ namespace ode {
 			if (resultCode != NO_ERRORS)
 				return resultCode;
 
+			//counter++;
+
 			// store results
 			times.push_back(t);
 			solutions.push_back(y);
 
 			h = hNext;
 		} // while
+
+		/*cout << "\nTotal number of the vector found: " << counter << endl;
+		cin.get();*/
 
 		return NO_ERRORS;
 	} // adaptiveStepSolver
@@ -583,13 +591,175 @@ namespace ode {
 
 		//std::cout << "\nNumber of times: " << times.size() << "\n";
 
+		/*ArgType mad = static_cast<ArgType>(0.0);
+		ArgType tMax = 0.0;
+
+		ofstream file("FAE_errors.csv", ios::out);
+		if (file)
+		{
+			cout << "\nEvaluating errors ...\n";
+
+			file << "t, FFox, KKox, FFred, KKred, Ffree, Kfree, FKred, FKox, MEAthiol_t, CO2, yO2P, Cystamine, VL\n";
+
+			unsigned N = times.size() - 1;
+			for (unsigned i = 1; i < N; i++)
+			{
+				auto t = times[i];
+				auto twoEps = times[i + 1] - times[i - 1];
+				auto yPlusEps = solutions[i + 1];
+				auto yMinusEps = solutions[i - 1];
+				auto y = solutions[i];
+				auto errVec = (yPlusEps - yMinusEps) / twoEps - f(t, y);
+				auto err = errVec.cwiseAbs().maxCoeff();
+
+				if (mad < err)
+				{
+					tMax = t;
+					mad = err;
+				}
+				
+				file << t;
+				for (int i = 0; i < dim; i++)
+					file << "," << errVec(i);
+				file << endl;
+			}
+
+			cout << "\nMAD-error: " << mad
+				<< "\nt(max error) = " << tMax << endl;
+		}
+
+		file.close();*/
+
 		// interpolation of results
 		resultCode = linearInterpolation(_t0, _t1, _hInitial, dataFrame, rowCount, colCount, times, solutions);
 
 		return resultCode;
 	} // solve
 
+	
+	/*  Solver of the initial ODE problem dy/dt = f(t,y), y(t0) = y0.	    
+		Solves the problem on the segment [t0, t1], and linearly interpolated are stored in the dataframe.
+		Spatial complexity reduction is applied: additional memory costs are O(1).
+		  f - right part of the equation;
+		  t0 - initial point;
+		  t1 - end point;
+		  step - step;
+		  y0 - initial value of the solution, i.e. y(t0);
+		  tol - overall tolerance level;
+		  dataframe - array that contains values of (t, y(t));
+		  rowCount - number of rows;
+		  colCount - number of columns.
 
+		REMARK. Solution is a vector-function y(t) = (y_1(t), ..., y_n(t)), where n = colCount - 1.
+				The array dataframe has the following structure:
+				   dataframe[0, ..., rowCount - 1] contains times, i.e. values {t0, t0 + h, t0 + 2h, ... , t1};
+				   dataframe[rowCount, ..., 2 * rowCount - 1] contains values of {y_1(t0), y_1(t0 + h), ..., y_1(t1)};
+				   dataframe[2 * rowCount, ..., 3 * rowCount - 1] contains values of {y_2(t0), y_2(t0 + h), ..., y_2(t1)};
+				   . . .
+				   dataframe[n * rowCount, ..., (n + 1) * rowCount - 1] contains values of {y_n(t0), y_n(t0 + h), ..., y_n(t1)};
+	*/
+	template<typename DataType, typename ArgType, typename VecType>
+	int solveODElight(VecType(*f)(ArgType, VecType&),
+		DataType t0, DataType t1, const DataType step, DataType* y0, DataType tol,
+		DataType* dataFrame, int rowCount, int colCount)
+	{
+		// Here, Cash-Karp method is implemented (see [2] for more details).
+
+		// dimension of solution
+		int dim = colCount - 1;
+
+		// operating variables
+		ArgType _t0 = static_cast<ArgType>(t0);
+		ArgType _t1 = static_cast<ArgType>(t1);
+		ArgType h = static_cast<ArgType>(step);
+		ArgType hDataframe = static_cast<ArgType>(step);
+		ArgType tolerance = static_cast<ArgType>(tol);
+
+		// vector - initial value of y, i.e. y0
+		VecType yInitial(dim);
+		for (int i = 0; i < dim; i++)
+			yInitial(i) = y0[i];
+				
+		// method routine
+		VecType tiny = VecType::Ones(dim) * 1e-20;
+		ArgType timeDataframe = _t0 + hDataframe;
+
+		ArgType t = _t0;
+		ArgType tPrev = _t0;
+		ArgType hNext = 0.0;
+		VecType y = yInitial;
+		VecType yPrev = yInitial;
+		VecType dydt(dim);
+		VecType yScale(dim);
+		bool flag = true;
+		int index = 1;
+
+		// 1. solution at the point t0
+		dataFrame[0] = t0;
+
+		for (int i = 1; i <= dim; i++)
+			dataFrame[i * rowCount] = y0[i - 1];
+
+		// compute numerical solution for the points from the interval (t0, t1)
+		while (flag)
+		{
+			// compute derivative
+			dydt = f(t, y);
+
+			// compute scale vector
+			yScale = y.cwiseAbs() + (dydt * h).cwiseAbs() + tiny;
+
+			// check end point
+			if (t + h > t1) {
+				h = t1 - t;
+				flag = false;
+			}
+
+			// perform one step of R.-K. Cash-Karp method
+			int resultCode = adaptiveRKCK(f, y, dydt, t, h, yScale, hNext, tolerance);
+
+			// check result of one step
+			if (resultCode != NO_ERRORS)
+				return resultCode;
+						
+			//cout << "  " << t << " <--> " << y.transpose() << endl;
+
+			// compute lineraly interpolated results and store them in dataframe
+			while (timeDataframe < t)
+			{
+				ArgType cLeft = (t - timeDataframe) / (t - tPrev);
+				ArgType cRight = 1.0 - cLeft;
+
+				dataFrame[index] = static_cast<DataType>(timeDataframe);
+
+				for (int j = 1; j < colCount; j++)
+				{
+					dataFrame[index + j * rowCount]
+						= static_cast<DataType>(cRight * y(j - 1)
+							+ cLeft * yPrev(j - 1));
+				}
+
+				//cout << timeDataframe << "   " << step << endl;
+
+				timeDataframe += hDataframe;
+				index++;
+			}
+			
+
+			h = hNext;
+
+			tPrev = t;
+			yPrev = y;
+		} // while	
+
+		// 3. solution at the point t1
+		dataFrame[rowCount - 1] = t1;
+
+		for (int i = 1; i <= dim; i++)
+			dataFrame[(i + 1) * rowCount - 1] = static_cast<DataType>(y(i - 1));
+
+		return NO_ERRORS;
+	} // solveODElight
 }; // ode
 
 
