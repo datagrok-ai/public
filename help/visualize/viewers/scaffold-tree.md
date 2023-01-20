@@ -1,7 +1,6 @@
-<!-- TITLE: Scaffold tree -->
-<!-- SUBTITLE: -->
-
-# Scaffold Tree
+---
+title: "Scaffold tree"
+---
 
 Scaffold tree allows to organize large molecular data sets by arranging sets of
 molecules into a unique tree hierarchy based on their scaffolds, with scaffolds

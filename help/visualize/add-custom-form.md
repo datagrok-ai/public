@@ -1,7 +1,6 @@
-<!-- TITLE: Add custom form -->
-<!-- SUBTITLE: -->
-
-# Add custom form
+---
+title: "Add custom form"
+---
 
 Adds new column with forms based on [Markup](../datagrok/markup.md).
 

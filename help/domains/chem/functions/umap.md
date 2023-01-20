@@ -1,7 +1,6 @@
-<!-- TITLE: Chemical Space Using UMAP -->
-<!-- SUBTITLE: -->
-
-# Chemical space using UMAP
+---
+title: "Chemical Space Using UMAP"
+---
 
 Uniform Manifold Approximation and Projection (UMAP) is a dimension reduction technique that can be used for
 visualisation similarly to [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html), but

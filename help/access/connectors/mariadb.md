@@ -1,7 +1,6 @@
-<!-- TITLE: MariaDB -->
-<!-- SUBTITLE: -->
-
-# MariaDB
+---
+title: "MariaDB"
+---
 
 Provides access to [MariaDB](https://mariadb.org/) database using SQL queries
 via JDBC driver.
@@ -10,10 +9,10 @@ via JDBC driver.
 
 ```json
 {
-    "server": "",
-    "port": "",
-    "db": "",
-    "connString": ""
+  "server": "",
+  "port": "",
+  "db": "",
+  "connString": ""
 }
 ```
 

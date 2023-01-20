@@ -1,7 +1,6 @@
-<!-- TITLE: Link tables -->
-<!-- SUBTITLE: -->
-
-# Link tables
+---
+title: "Link tables"
+---
 
 Links two tables based on the key columns. The link type determines which records should be synchronized between the
 datasets (current record, filter, selection, and mouse-over record), which gives us the following combinations:

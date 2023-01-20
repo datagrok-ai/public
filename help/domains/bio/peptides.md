@@ -1,7 +1,6 @@
-<!-- TITLE: Peptide sequences -->
-<!-- SUBTITLE: -->
-
-# Exploring peptides
+---
+title: "Peptide sequences"
+---
 
 "Peptides" is a Datagrok feature which aims to deal with peptide sequences and associated activities. From the
 computational and analytical point of view peptides are considered as an intermediate case between small molecules and

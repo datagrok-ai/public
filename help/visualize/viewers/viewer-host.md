@@ -1,6 +1,5 @@
-<!-- TITLE: Viewers host -->
-<!-- SUBTITLE: -->
-
-# Viewers host
+---
+title: "Viewers host"
+---
 
 Allows to combine Cards on one view.

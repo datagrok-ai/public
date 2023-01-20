@@ -1,4 +1,6 @@
-# Proposal
+---
+title: Versioning policy proposal
+---
 
 ## Versioning policy
 

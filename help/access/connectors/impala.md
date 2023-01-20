@@ -1,7 +1,6 @@
-<!-- TITLE: Impala -->
-<!-- SUBTITLE: -->
-
-# Impala
+---
+title: "Impala"
+---
 
 Provides access to [Impala](https://impala.apache.org/) database using SQL queries via JDBC driver.
 
@@ -14,9 +13,9 @@ Provides access to [Impala](https://impala.apache.org/) database using SQL queri
     "port": 21050,
     "db": "",
     "schema": "",
-    "connString": "",
+    "connString": ""
   },
-  "credentials" : {
+  "credentials": {
     "parameters": {
       "login": "",
       "password": ""

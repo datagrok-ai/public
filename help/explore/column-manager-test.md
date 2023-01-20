@@ -63,7 +63,8 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
    to ["Aggregate Rows"](../transform/aggregate-rows.md) dialog fields
 
 * ["Aggregate Rows"](../transform/aggregate-rows.md) dialog fields are filled with dragged columns
-* In the same way, test the ability to drag and drop into all dialogs and [viewers](../visualize/viewers.md) that it
+* In the same way, test the ability to drag and drop into all dialogs and [viewers](../visualize/viewers/viewers.md)
+  that it
   supports
 
 1. Test non-functional features (help, navigation, working with window, etc.)

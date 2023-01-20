@@ -1,4 +1,6 @@
-# Writing style
+---
+title: "Writing style"
+---
 
 Use fewer words, better. Don't overwhelm users with information. [Use concise and clear language](#language-and-grammar)
 and follow the guidelines for [content types](content-types.md). Rather than repeating information from another topic,

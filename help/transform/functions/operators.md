@@ -1,7 +1,6 @@
-<!-- TITLE: Operators -->
-<!-- SUBTITLE: -->
-
-# Operators
+---
+title: "Operators"
+---
 
 All operators have analogs among [functions](math-functions.md). In each case you can use the most appropriate option.
 

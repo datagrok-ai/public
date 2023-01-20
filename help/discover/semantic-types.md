@@ -1,6 +1,6 @@
-<!-- TITLE: Semantic types -->
-
-# Data types vs semantic types
+---
+title: "Semantic types"
+---
 
 Unlike Excel, table columns in Datagrok are strongly-typed, meaning all cells are of one of the predefined data
 types (`string`, `int`, `bigint`, `qnum`, `double`, `datetime`, `bool`). In addition to that, a column might also have

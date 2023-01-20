@@ -1,7 +1,6 @@
-<!-- TITLE: Data query -->
-<!-- SUBTITLE: -->
-
-# Data query
+---
+title: "Data query"
+---
 
 Data query defines which data should be extracted from the data source. For databases, that would typically be the SQL
 query; for Excel file, that would be sheet name, etc.
@@ -25,10 +24,10 @@ For more details, see [Parameterized queries](parameterized-queries.md) section.
 Data queries are first-class entities in the Datagrok platform, and as such are subjects to the standard checks and
 routines performed against them whenever they are used in the specific context. Some of the most popular privileges are:
 
-* can_create
-* can_edit
-* can_delete
-* can_query
+* can\_create
+* can\_edit
+* can\_delete
+* can\_query
 
 Those privileges can be given to individuals or to groups (which can be defined via dynamic filters)
 . For more information on the access privilege model, refer to the Datagrok - Access Privileges page.

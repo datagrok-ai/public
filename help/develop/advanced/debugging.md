@@ -1,6 +1,6 @@
-<!-- TITLE: Debugging -->
-
-# Debugging
+---
+title: "Debugging"
+---
 
 Essentially, Datagrok packages are either regular webpack packages, or sets JS source files.
 
