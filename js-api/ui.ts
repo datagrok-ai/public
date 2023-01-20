@@ -744,7 +744,7 @@ export function columnsInput(name: string, table: DataFrame, onValueChanged: (co
 }
 
 export function tableInput(name: string, table: DataFrame | null, tables: DataFrame[] = grok.shell.tables, onValueChanged: Function | null = null): InputBase<DataFrame | null> {
-  return new InputBase(api.grok_TableInput(name, table, tables), onValueChanged);
+  return new InputBase(api.grok_TableInput(name, table?.dart, tables.map(toDart)), onValueChanged);
 }
 
 export function textInput(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
