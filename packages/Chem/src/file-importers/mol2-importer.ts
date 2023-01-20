@@ -42,10 +42,8 @@ type Bonds = {
 export function _importTripos(bytes: Uint8Array): DG.DataFrame[] {
   const str = new TextDecoder().decode(bytes);
 
-  const parser = new TriposParser(str);
+  const parser = new TriposToMolfileConverter(str);
 
-  // const molfileArray = new Array<string>(parser.getNumberOfMols());
-  // todo: consider the above alternative
   const molfileArray: string[] = [];
   
   while (parser.next())
@@ -61,7 +59,7 @@ export function _importTripos(bytes: Uint8Array): DG.DataFrame[] {
 
 /** Class for parsing a TRIPOS string into an array of MDL MOLFILEs. Currently,
  * only the atoms/bonds record types are supported */
-class TriposParser {
+class TriposToMolfileConverter {
   /** The content of mol2 file  */
   private _str: string;
   /** Index of the molecule being currently parsed, always points to some actual
@@ -77,27 +75,24 @@ class TriposParser {
   constructor(str: string) {
     this._str = str;
 
+    this._currentIdx = 0;
     this._currentMolIdx = 0;
-    //this._currentMolIdx = this.getNextMolIdx();
     if (!this.next()) // check for existence of molecular data
       throw new Error('The mol2 file does not contain a molecule');
 
-    this._currentIdx = 0;
     this._hydrogenIndices = new Set<number>();
   }
 
   /** Get index of the next molecule block  */
   private getNextMolIdx(): number {
-    const begin = (this._currentIdx === 0) ? 0 : this._currentIdx + 1;
-    const idx = this._str.indexOf(TRIPOS_MOLECULE_LINE, begin);
-    this._currentIdx = idx;
-    return idx;
+    const begin = (this._currentIdx === 0) ? 0 : this._currentMolIdx + 1;
+    return this._str.indexOf(TRIPOS_MOLECULE_LINE, begin);
   }
 
   /** Returns the idx of the atom block for current molecule, or throws if
    * none */
   private getCurrentAtomBlockIdx(): number {
-    const value = this._str.indexOf(TRIPOS_ATOM_LINE, this._currentIdx);
+    const value = this._str.indexOf(TRIPOS_ATOM_LINE, this._currentMolIdx);
     if (value !== -1)
       return value;
     else
@@ -107,7 +102,7 @@ class TriposParser {
   /** Returns the idx of the bond block for current molecule, or throws if
    * none */
   private getCurrentBondBlockIdx(): number {
-    const value = this._str.indexOf(TRIPOS_BOND_LINE, this._currentIdx);
+    const value = this._str.indexOf(TRIPOS_BOND_LINE, this._currentMolIdx);
     if (value !== -1)
       return value;
     else
@@ -128,26 +123,27 @@ class TriposParser {
   }
 
   public getNextMolFile(): string {
+    this._hydrogenIndices = new Set<number>();
+    this._currentMolIdx = this.getNextMolIdx();
     const {atomCount, bondCount} = this.parseAtomAndBondCounts();
     const atoms = this.parseAtoms(atomCount);
     const bonds = this.parseBonds(bondCount, atoms);
 
     const molfile = this.getMolFile(atoms, bonds);
 
-    //this._currentMolIdx = this.getNextMolIdx();
-
     return molfile;
   }
 
   private parseAtomAndBondCounts(): {atomCount: number, bondCount: number} {
     // position at the molecule line
-   // this._currentIdx = this._currentMolIdx;
+    this._currentIdx = this._currentMolIdx;
+
     for (let i = 0; i < 2; ++i) {
       if (this._str.at(this._currentIdx) !== '\n') // incorporates empty lines
         this.jumpToNextLine();
     }
 
-    if (this._str.at(this._currentIdx) === ' ')
+    if (this.isWhitespace(this._currentIdx))
       this.jumpToNextColumn(); // in case the atom number is padded with whitespace
     const atomCount = this.parseIntValue();
     this.jumpToNextColumn();
@@ -222,7 +218,6 @@ class TriposParser {
       V3K_END,
     ];
     const resultingMolfile = molfileParts.join('');
-    // console.log(resultingMolfile);
 
     return resultingMolfile;
   }
@@ -344,11 +339,6 @@ class TriposParser {
     }
   }
 
-  // private atBondLine(): boolean {
-  //   const end = this._str.indexOf('\n', this._currentIdx);
-  //   return this._str.substring(this._currentIdx, end) === TRIPOS_BOND_LINE;
-  // }
-
   /** Jumps to atom type column and parses it. Some mol2 files contain numbers
    * immedately after the element name, in this case, discards the number */
   private parseAtomType(): string {
@@ -408,20 +398,5 @@ class TriposParser {
   /** Check if a character is whitespace including '\t'  */
   private isWhitespace(idx: number): boolean {
     return /\s/.test(this._str.at(idx)!);
-  }
-
-  // todo: remove as unnecessary?
-  /** Get the total number of molecules in a mol2 file */
-  public getNumberOfMols(): number {
-    const initIdx = this._currentMolIdx;
-    this._currentMolIdx = 0;
-    let numOfMols = 0;
-    while (this.next()) {
-      numOfMols++;
-      this._currentMolIdx = this.getNextMolIdx();
-    }
-    this._currentMolIdx = initIdx;
-
-    return numOfMols;
   }
 }
