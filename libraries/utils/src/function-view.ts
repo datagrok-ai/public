@@ -3,7 +3,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import wu from 'wu';
 import {historyUtils} from './history-utils';
 import {UiUtils} from './shared-components/ui-utils';
 
@@ -28,22 +27,6 @@ export const passErrorToShell = () => {
 };
 
 export const INTERACTIVE_CSS_CLASS = 'cv-interactive';
-
-export const defaultUsersIds = {
-  'Test': 'ca1e672e-e3be-40e0-b79b-d2c68e68d380',
-  'Admin': '878c42b0-9a50-11e6-c537-6bf8e9ab02ee',
-  'System': '3e32c5fa-ac9c-4d39-8b4b-4db3e576b3c3',
-};
-
-export const defaultGroupsIds = {
-  'All users': 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6',
-  'Developers': 'ba9cd191-9a50-11e6-9cc9-910bf827f0ab',
-  'Need to create': '00000000-0000-0000-0000-000000000000',
-  'Test': 'ca1e672e-e3be-40e0-b79b-8546b8bf62e6',
-  'Admin': 'a4b45840-9a50-11e6-c537-6bf8e9ab02ee',
-  'System': 'a4b45840-ac9c-4d39-8b4b-4db3e576b3c3',
-  'Administrators': '1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5',
-};
 
 export abstract class FunctionView extends DG.ViewBase {
   protected _funcCall?: DG.FuncCall;
@@ -202,60 +185,6 @@ export abstract class FunctionView extends DG.ViewBase {
 
     newHistoryBlock.onRunChosen.subscribe(async (id) => this.linkFunccall(await this.loadRun(id)));
 
-    newHistoryBlock.beforeRunAddToFavorites.subscribe(async (funcCall) => {
-      ui.setUpdateIndicator(newHistoryBlock.historyTab, true);
-      ui.setUpdateIndicator(newHistoryBlock.favTab, true);
-
-      funcCall = await this.addRunToFavorites(funcCall);
-
-      newHistoryBlock.afterRunAddToFavorites.next(funcCall);
-
-      ui.setUpdateIndicator(newHistoryBlock.historyTab, false);
-      ui.setUpdateIndicator(newHistoryBlock.favTab, false);
-    });
-    newHistoryBlock.beforeRunAddToShared.subscribe(async (funcCall) => {
-      ui.setUpdateIndicator(newHistoryBlock.historyTab, true);
-      ui.setUpdateIndicator(newHistoryBlock.sharedTab, true);
-
-      funcCall = await this.addRunToShared(funcCall);
-
-      newHistoryBlock.afterRunAddToShared.next(funcCall);
-
-      ui.setUpdateIndicator(newHistoryBlock.sharedTab, false);
-      ui.setUpdateIndicator(newHistoryBlock.historyTab, false);
-    });
-
-    newHistoryBlock.beforeRunDeleted.subscribe(async (id) => {
-      ui.setUpdateIndicator(newHistoryBlock.tabs.root, true);
-      await this.deleteRun(await historyUtils.loadRun(id, true));
-
-      newHistoryBlock.afterRunDeleted.next(id);
-      ui.setUpdateIndicator(newHistoryBlock.tabs.root, false);
-    });
-
-    newHistoryBlock.beforeRunRemoveFromFavorites.subscribe(async (id) => {
-      ui.setUpdateIndicator(newHistoryBlock.historyTab, true);
-      ui.setUpdateIndicator(newHistoryBlock.favTab, true);
-      await this.removeRunFromFavorites(await historyUtils.loadRun(id, true));
-
-      newHistoryBlock.afterRunRemoveFromFavorites.next(id);
-
-      ui.setUpdateIndicator(newHistoryBlock.favTab, false);
-      ui.setUpdateIndicator(newHistoryBlock.historyTab, false);
-    });
-
-    newHistoryBlock.beforeRunRemoveFromShared.subscribe(async (id) => {
-      ui.setUpdateIndicator(newHistoryBlock.historyTab, true);
-      ui.setUpdateIndicator(newHistoryBlock.sharedTab, true);
-
-      await this.removeRunFromShared(await historyUtils.loadRun(id, true));
-
-      newHistoryBlock.afterRunRemoveFromShared.next(id);
-
-      ui.setUpdateIndicator(newHistoryBlock.historyTab, false);
-      ui.setUpdateIndicator(newHistoryBlock.sharedTab, false);
-    });
-
     ui.empty(this.historyRoot);
     this.historyRoot.style.removeProperty('justify-content');
     this.historyRoot.style.width = '100%';
@@ -303,103 +232,6 @@ export abstract class FunctionView extends DG.ViewBase {
  */
   public buildRibbonMenu() {
 
-  }
-
-  public async onBeforeRemoveRunFromFavorites(callToFavorite: DG.FuncCall) { }
-
-  public async onAfterRemoveRunFromFavorites(favoriteCall: DG.FuncCall) { }
-
-  /**
-   * Saves the run as usual run
-   * @param callToUnfavorite FuncCall object to remove from favorites
-   * @returns Saved FuncCall
-   * @stability Experimental
- */
-  public async removeRunFromFavorites(callToUnfavorite: DG.FuncCall): Promise<DG.FuncCall> {
-    callToUnfavorite.options['title'] = null;
-    callToUnfavorite.options['description'] = null;
-    callToUnfavorite.options['isFavorite'] = false;
-    await this.onBeforeRemoveRunFromFavorites(callToUnfavorite);
-    const favoriteSave = await grok.dapi.functions.calls.allPackageVersions().save(callToUnfavorite);
-    await this.onAfterRemoveRunFromFavorites(favoriteSave);
-    return favoriteSave;
-  }
-
-  public async onBeforeAddingToFavorites(callToAddToFavorites: DG.FuncCall) { }
-
-  public async onAfterAddingToFavorites(favoriteCall: DG.FuncCall) { }
-
-  /**
-   * Saves the run as favorite
-   * @param callToFavorite FuncCall object to add to favorites
-   * @returns Saved FuncCall
-   * @stability Experimental
- */
-
-  public async addRunToFavorites(callToFavorite: DG.FuncCall): Promise<DG.FuncCall> {
-    callToFavorite.options['isFavorite'] = true;
-    await this.onBeforeAddingToFavorites(callToFavorite);
-    const savedFavorite = await grok.dapi.functions.calls.allPackageVersions().save(callToFavorite);
-    await this.onAfterAddingToFavorites(savedFavorite);
-    return savedFavorite;
-  }
-
-  public async onBeforeRemoveRunFromShared(callToShare: DG.FuncCall) { }
-
-  public async onAfterRemoveRunFromSahred(sharedCall: DG.FuncCall) { }
-
-  /**
-   * Removes run from shared
-   * @param callToUnshare FuncCall object to remove from shared
-   * @returns Saved FuncCall
-   * @stability Experimental
- */
-
-  public async removeRunFromShared(callToUnshare: DG.FuncCall): Promise<DG.FuncCall> {
-    callToUnshare.options['title'] = null;
-    callToUnshare.options['description'] = null;
-    callToUnshare.options['isShared'] = false;
-    await this.onBeforeRemoveRunFromFavorites(callToUnshare);
-    const savedShared = await grok.dapi.functions.calls.allPackageVersions().save(callToUnshare);
-    await this.onAfterRemoveRunFromFavorites(savedShared);
-    return savedShared;
-  }
-
-  public async onBeforeAddingToShared(callToAddToShared: DG.FuncCall) { }
-
-  public async onAfterAddingToShared(sharedCall: DG.FuncCall) { }
-
-  /**
-   * Saves the run as shared
-   * @param callToShare FuncCall object to add to shared
-   * @returns Saved FuncCall
-   * @stability Experimental
- */
-
-  public async addRunToShared(callToShare: DG.FuncCall): Promise<DG.FuncCall> {
-    callToShare.options['isShared'] = true;
-    await this.onBeforeAddingToShared(callToShare);
-
-    const allGroup = await grok.dapi.groups.find(defaultGroupsIds['All users']);
-
-    const dfOutputs = wu(callToShare.outputParams.values() as DG.FuncCallParam[])
-      .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
-
-    for (const output of dfOutputs) {
-      const df = callToShare.outputs[output.name] as DG.DataFrame;
-      await grok.dapi.permissions.grant(df.getTableInfo(), allGroup, false);
-    }
-
-    const dfInputs = wu(callToShare.inputParams.values() as DG.FuncCallParam[])
-      .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
-    for (const input of dfInputs) {
-      const df = callToShare.inputs[input.name] as DG.DataFrame;
-      await grok.dapi.permissions.grant(df.getTableInfo(), allGroup, false);
-    }
-
-    const savedShared = await grok.dapi.functions.calls.allPackageVersions().save(callToShare);
-    await this.onAfterAddingToShared(savedShared);
-    return savedShared;
   }
 
   /**

@@ -3,10 +3,26 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
+import wu from 'wu';
 import {BehaviorSubject, Subject} from 'rxjs';
-import {defaultUsersIds} from '../function-view';
 import {historyUtils} from '../history-utils';
 import '../../css/history-panel.css';
+
+export const defaultUsersIds = {
+  'Test': 'ca1e672e-e3be-40e0-b79b-d2c68e68d380',
+  'Admin': '878c42b0-9a50-11e6-c537-6bf8e9ab02ee',
+  'System': '3e32c5fa-ac9c-4d39-8b4b-4db3e576b3c3',
+};
+
+export const defaultGroupsIds = {
+  'All users': 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6',
+  'Developers': 'ba9cd191-9a50-11e6-9cc9-910bf827f0ab',
+  'Need to create': '00000000-0000-0000-0000-000000000000',
+  'Test': 'ca1e672e-e3be-40e0-b79b-8546b8bf62e6',
+  'Admin': 'a4b45840-9a50-11e6-c537-6bf8e9ab02ee',
+  'System': 'a4b45840-ac9c-4d39-8b4b-4db3e576b3c3',
+  'Administrators': '1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5',
+};
 
 class HistoryPanelStore {
   filteringOptions = {text: ''} as {
@@ -66,10 +82,10 @@ export class HistoryPanel {
   public beforeRunAddToShared = new Subject<DG.FuncCall>();
 
   // Emitted when FuncCall is removed from favorites
-  public beforeRunRemoveFromFavorites = new Subject<string>();
+  public beforeRunRemoveFromFavorites = new Subject<DG.FuncCall>();
 
   // Emitted when FuncCall is removed from shared
-  public beforeRunRemoveFromShared = new Subject<string>();
+  public beforeRunRemoveFromShared = new Subject<DG.FuncCall>();
 
   // Emitted when FuncCall is deleted
   public beforeRunDeleted = new Subject<string>();
@@ -81,10 +97,10 @@ export class HistoryPanel {
   public afterRunAddToShared = new Subject<DG.FuncCall>();
 
   // Emitted when FuncCall is removed from favorites
-  public afterRunRemoveFromFavorites = new Subject<string>();
+  public afterRunRemoveFromFavorites = new Subject<DG.FuncCall>();
 
   // Emitted when FuncCall is removed from shared
-  public afterRunRemoveFromShared = new Subject<string>();
+  public afterRunRemoveFromShared = new Subject<DG.FuncCall>();
 
   // Emitted when FuncCall is deleted
   public afterRunDeleted = new Subject<string>();
@@ -319,20 +335,30 @@ export class HistoryPanel {
 
         if (isShared && !funcCall.options['isShared']) {
           funcCall.options['isShared'] = isShared;
-          this.beforeRunAddToShared.next(funcCall);
+          ui.setUpdateIndicator(this.tabs.root, true);
+          await this.addRunToShared(funcCall);
+          ui.setUpdateIndicator(this.tabs.root, false);
         }
+
         if (!isShared && funcCall.options['isShared']) {
           funcCall.options['isShared'] = isShared;
-          this.beforeRunRemoveFromShared.next(funcCall.id);
+          ui.setUpdateIndicator(this.tabs.root, true);
+          await this.removeRunFromShared(funcCall);
+          ui.setUpdateIndicator(this.tabs.root, false);
         }
 
         if (isFavorite && !funcCall.options['isFavorite']) {
           funcCall.options['isFavorite'] = isFavorite;
-          this.beforeRunAddToFavorites.next(funcCall);
+          ui.setUpdateIndicator(this.tabs.root, true);
+          await this.addRunToFavorites(funcCall);
+          ui.setUpdateIndicator(this.tabs.root, false);
         }
+
         if (!isFavorite && funcCall.options['isFavorite']) {
           funcCall.options['isFavorite'] = isFavorite;
-          this.beforeRunRemoveFromFavorites.next(funcCall.id);
+          ui.setUpdateIndicator(this.tabs.root, true);
+          await this.removeRunFromFavorites(funcCall);
+          ui.setUpdateIndicator(this.tabs.root, false);
         }
       })
       .show({center: true});
@@ -398,15 +424,15 @@ export class HistoryPanel {
       this.store.allRuns.next(this.store.allRuns.value);
     });
 
-    this.afterRunRemoveFromFavorites.subscribe((id) => {
-      const editedRun = this.store.allRuns.value.find((call) => call.id === id)!;
+    this.afterRunRemoveFromFavorites.subscribe((removed) => {
+      const editedRun = this.store.allRuns.value.find((call) => call.id === removed.id)!;
       editedRun.options['isFavorite'] = false;
       clearMetadata(editedRun);
       this.store.allRuns.next(this.store.allRuns.value);
     });
 
-    this.afterRunRemoveFromShared.subscribe((id) => {
-      const editedRun = this.store.allRuns.value.find((call) => call.id === id)!;
+    this.afterRunRemoveFromShared.subscribe((removed) => {
+      const editedRun = this.store.allRuns.value.find((call) => call.id === removed.id)!;
       editedRun.options['isShared'] = false;
       clearMetadata(editedRun);
       this.store.allRuns.next(this.store.allRuns.value);
@@ -420,7 +446,66 @@ export class HistoryPanel {
     this.updateFilterPane();
   }
 
-  get root() {
+  private async addRunToFavorites(callToFavorite: DG.FuncCall): Promise<DG.FuncCall> {
+    callToFavorite.options['isFavorite'] = true;
+
+    this.beforeRunAddToFavorites.next(callToFavorite);
+    const savedFavorite = await grok.dapi.functions.calls.allPackageVersions().save(callToFavorite);
+    this.afterRunAddToFavorites.next(savedFavorite);
+    return savedFavorite;
+  }
+
+  private async removeRunFromFavorites(callToUnfavorite: DG.FuncCall): Promise<DG.FuncCall> {
+    callToUnfavorite.options['title'] = null;
+    callToUnfavorite.options['description'] = null;
+    callToUnfavorite.options['isFavorite'] = false;
+
+    this.beforeRunRemoveFromFavorites.next(callToUnfavorite);
+    const favoriteSave = await grok.dapi.functions.calls.allPackageVersions().save(callToUnfavorite);
+    this.afterRunRemoveFromFavorites.next(favoriteSave);
+    return favoriteSave;
+  }
+
+  private async addRunToShared(callToShare: DG.FuncCall): Promise<DG.FuncCall> {
+    callToShare.options['isShared'] = true;
+
+    this.beforeRunAddToShared.next(callToShare);
+
+    const allGroup = await grok.dapi.groups.find(defaultGroupsIds['All users']);
+
+    const dfOutputs = wu(callToShare.outputParams.values() as DG.FuncCallParam[])
+      .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
+
+    for (const output of dfOutputs) {
+      const df = callToShare.outputs[output.name] as DG.DataFrame;
+      await grok.dapi.permissions.grant(df.getTableInfo(), allGroup, false);
+    }
+
+    const dfInputs = wu(callToShare.inputParams.values() as DG.FuncCallParam[])
+      .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
+    for (const input of dfInputs) {
+      const df = callToShare.inputs[input.name] as DG.DataFrame;
+      await grok.dapi.permissions.grant(df.getTableInfo(), allGroup, false);
+    }
+
+    const savedShared = await grok.dapi.functions.calls.allPackageVersions().save(callToShare);
+
+    this.afterRunAddToShared.next(savedShared);
+    return savedShared;
+  }
+
+  private async removeRunFromShared(callToUnshare: DG.FuncCall): Promise<DG.FuncCall> {
+    callToUnshare.options['title'] = null;
+    callToUnshare.options['description'] = null;
+    callToUnshare.options['isShared'] = false;
+
+    this.beforeRunRemoveFromShared.next(callToUnshare);
+    const savedShared = await grok.dapi.functions.calls.allPackageVersions().save(callToUnshare);
+    this.afterRunRemoveFromShared.next(savedShared);
+    return savedShared;
+  }
+
+  public get root() {
     return this._root;
   }
 }
