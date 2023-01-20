@@ -1,4 +1,4 @@
-//name: Default simple script
+//name: Default simple script JS
 //description: Shows that default view works (or not)
 //language: javascript
 //tags: bioreactor
