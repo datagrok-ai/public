@@ -5,13 +5,16 @@ import * as DG from 'datagrok-api/dg';
 import {toRgba} from '@datagrok-libraries/utils/src/color';
 import {reduceDimensinalityWithNormalization} from '@datagrok-libraries/ml/src/sequence-space';
 import {StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-import {getTreeHelper, isLeaf, ITreeHelper, NodeType, parseNewick, VdRegion} from '@datagrok-libraries/bio';
 import {Unsubscribable} from 'rxjs';
 import {ScatterPlotViewer} from 'datagrok-api/dg';
 import {getVId} from './utils/tree-stats';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {cleanMlbNewick} from './mlb-tree';
 import {MlbDataFrame, TreeDataFrame} from './types/dataframe';
+import {isLeaf, NodeType} from '@datagrok-libraries/bio/src/trees';
+import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
+import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 enum COLUMN_NAMES {
   X = 'Embed_X',
@@ -68,6 +71,10 @@ export function getZoomCoordinates(W0: number, H0: number, x1: number, y1: numbe
 //   return closestLine;
 // }
 
+export enum VrSpaceMethodName {
+  UMAP = 'UMAP',
+  tSNE = 't-SNE'
+}
 
 /**  */
 export class MlbVrSpaceBrowser {
@@ -83,6 +90,9 @@ export class MlbVrSpaceBrowser {
 
   private _regions: VdRegion[] = [];
   get regions(): VdRegion[] { return this._regions; }
+
+  private _method: VrSpaceMethodName = Object.values(VrSpaceMethodName)[0];
+  get method(): VrSpaceMethodName { return this._method; }
 
   private scatterPlot: DG.ScatterPlotViewer;
   private context: CanvasRenderingContext2D;
@@ -114,7 +124,9 @@ export class MlbVrSpaceBrowser {
     const k = 11;
   }
 
-  async setData(mlbDf: DG.DataFrame | null, treeDf: DG.DataFrame | null, regions: VdRegion[]): Promise<void> {
+  async setData(
+    mlbDf: MlbDataFrame | null, treeDf: TreeDataFrame | null, regions: VdRegion[], method: VrSpaceMethodName
+  ): Promise<void> {
     if (this.viewed) {
       await this.destroyView();
       this.viewed = false;
@@ -123,6 +135,7 @@ export class MlbVrSpaceBrowser {
     this._mlbDf = mlbDf != null ? mlbDf : MlbVrSpaceBrowser.emptyMlbDf;
     this._treeDf = treeDf != null ? treeDf : MlbVrSpaceBrowser.emptyTreeDf;
     this._regions = regions;
+    this._method = method;
 
     this.viewSubs = [];
 
@@ -162,13 +175,15 @@ export class MlbVrSpaceBrowser {
         const seqList = MlbVrSpaceBrowser.getSeqList(this.mlbDf, seqCols, this.regions);
 
         const redDimRes = await reduceDimensinalityWithNormalization(
-          seqList, 'UMAP', StringMetricsNames.Manhattan, {});
+          seqList, this.method, StringMetricsNames.Manhattan, {});
         for (let embedI: number = 0; embedI < EMBED_LIST.length; embedI++) {
           const embedColData: Float32Array = redDimRes.embedding[embedI];
           const embedColName: string = EMBED_LIST[embedI];
           const embedCol: DG.Column | null = this.mlbDf.col(embedColName);
           if (embedCol) {
-            embedCol.setRawData(embedColData);
+            // TODO: User DG.Column.setRawData()
+            // embedCol.setRawData(embedColData);
+            embedCol.init((rowI) => { return embedColData[rowI]; });
           } else {
             // Notification is required to reflect added data frame Embed_<X> columns to grid columns
             // MolecularLiabilityBrowser.setView() corrects grid columns' names with .replace('_', ' ');
@@ -196,6 +211,7 @@ export class MlbVrSpaceBrowser {
 
         this.scatterPlot.dataFrame = this.mlbDf;
       }
+      this.scatterPlot.props.title = `VR space (method: ${this.method})`;
       this.viewSubs.push(this.treeDf.onMouseOverRowChanged.subscribe(this.treeDfOnMouseOverRowChanged.bind(this)));
       this.viewSubs.push(this.treeDf.onCurrentRowChanged.subscribe(this.treeDfOnCurrentRowChanged.bind(this)));
     } catch (err: any) {

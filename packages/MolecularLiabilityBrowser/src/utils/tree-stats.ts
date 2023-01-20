@@ -1,5 +1,5 @@
-import {parseNewick, PhylocanvasTreeNode} from '@datagrok-libraries/bio';
 import {Utils} from '@phylocanvas/phylocanvas.gl';
+import {parseNewick, PhylocanvasTreeNode} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 export const mlbTreeNodeRe = /([^|,:()]+)\|([^|,:()]+)\|([^|,:()]+)\|([^|,:()]+)/g;
 

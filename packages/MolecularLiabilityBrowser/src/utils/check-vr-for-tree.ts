@@ -5,9 +5,11 @@ import * as DG from 'datagrok-api/dg';
 import {DataLoader} from './data-loader';
 import {TreeDataFrame, MlbDataFrame} from '../types/dataframe';
 import {cleanMlbNewick} from '../mlb-tree';
-import {getTreeHelper, ITreeHelper, NodeType, parseNewick} from '@datagrok-libraries/bio';
 import {getVId} from './tree-stats';
 import {ProgressIndicator, TaskBarProgressIndicator} from 'datagrok-api/dg';
+import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
+import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 /** Opens TableView with dataframe containing VR ids presented in tree but not in MLB */
 export async function checkVrForTreeUI(dl: DataLoader, pi: ProgressIndicator): Promise<void> {
