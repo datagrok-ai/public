@@ -46,6 +46,12 @@ export class RadarViewer extends DG.JsViewer {
 
   init() {
     option.radar.indicator = [];
+
+    const columnNames: string[] = [];
+    for (const column of this.dataFrame.columns.numerical)
+      columnNames.push(column.name);
+    this.valuesColumnNames = columnNames;
+
     const columns = this.getColumns();
     for (const c of columns) {
       let minimalVal = 0;
@@ -71,8 +77,16 @@ export class RadarViewer extends DG.JsViewer {
     this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/help/visualize/viewers/radar-viewer.md';
   }
 
+  initChartEventListeners() {
+    this.dataFrame.onRowsFiltered.subscribe((_) => {
+      this.checkConditions();
+      this.render();
+    });
+  }
+
   onTableAttached() {
     this.init();
+    this.initChartEventListeners();
     this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.onCurrentRowChanged.subscribe((_) => {
@@ -259,11 +273,19 @@ export class RadarViewer extends DG.JsViewer {
   getColumns() : DG.Column<any>[] {
     let columns: DG.Column<any>[] = [];
     const numericalColumns: DG.Column<any>[] = Array.from(this.dataFrame.columns.numerical);
+
     if (this.valuesColumnNames?.length > 0) {
       const selectedColumns = this.dataFrame.columns.byNames(this.valuesColumnNames);
       for (let i = 0; i < selectedColumns.length; ++i) {
-        if (numericalColumns.includes(selectedColumns[i]))
-          columns.push(selectedColumns[i]);
+        if (numericalColumns.includes(selectedColumns[i])) {
+          const filteredIndexList = this.dataFrame.filter.getSelectedIndexes();
+          const columnValues: Array<number> = new Array<number>(filteredIndexList.length);
+          for (let j = 0; j < filteredIndexList.length; j++)
+            columnValues[j] = selectedColumns[i].get(filteredIndexList[j]);
+
+          const column = DG.Column.fromList(selectedColumns[i].type, selectedColumns[i].name, columnValues);
+          columns.push(column);
+        }
       }
     } else
       columns = numericalColumns.slice(0, 20);
