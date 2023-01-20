@@ -1095,12 +1095,32 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
   if (resize && items.length > 1){
     items.forEach((v, i) => {
       let divider = box();
+      divider.className='ui-split-v-divider';
       $(b).addClass('ui-split-v').append(box(v))
       if (i != items.length - 1) {
         $(b).append(divider)
         spliterResize(divider, items[i], items[i + 1])
       }
-    })
+    });
+    tools.handleResize(b, (w,h)=>{
+      let totalHeigh = 0;
+      let childs = 0;
+      for (let i = 0; i < b.children.length; i++){
+        if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
+          childs++;
+        }
+        totalHeigh = totalHeigh + $(b.childNodes[i]).height();
+      } 
+
+      for (let i = 0; i < b.children.length; i++){
+          if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
+            $(b.childNodes[i]).css('max-height', (h-totalHeigh)/childs+$(b.childNodes[i]).height());
+          } else {
+            $(b.childNodes[i]).css('height', 4);
+          }
+      } 
+
+    });
   } else {
     $(b).addClass('ui-split-v').append(items.map(item => box(item)))
   }
@@ -1110,15 +1130,38 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
 /** Div flex-box container that positions child elements horizontally. */
 export function splitH(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
   let b = box(null, options);
+
   if (resize && items.length > 1) {
+
     items.forEach((v, i) => {
       let divider = box();
+      divider.className='ui-split-h-divider';
       $(b).addClass('ui-split-h').append(box(v))
       if (i != items.length - 1) {
         $(b).append(divider)
-        spliterResize(divider, items[i], items[i + 1], true)
+        spliterResize(divider, items[i], items[i + 1], true);     
       }
     })
+
+    tools.handleResize(b, (w,h)=>{
+      let totalWidth = 0;
+      let childs = 0;
+      for (let i = 0; i < b.children.length; i++){
+        if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
+          childs++;
+        }
+        totalWidth = totalWidth + $(b.childNodes[i]).width();
+      } 
+
+      for (let i = 0; i < b.children.length; i++){
+          if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
+            $(b.childNodes[i]).css('max-width', (w-totalWidth)/childs+$(b.childNodes[i]).width());
+          } else {
+            $(b.childNodes[i]).css('width', 4);
+          }
+        }
+    });
+
   } else {
     $(b).addClass('ui-split-h').append(items.map(item => box(item)))
   }
@@ -1133,12 +1176,16 @@ function spliterResize(divider: HTMLElement, previousSibling: HTMLElement, nextS
     divider.style.cssText = `
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 8 3 h 10 M 8 6 h 10 M 8 9 h 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
     max-width: 4px;
+    width: 4px;
+    min-width: 4px;
     cursor: col-resize;`
   }
   else {
     divider.style.cssText = `
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 2 5 v 10 M 5 5 v 10 M 8 5 v 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
     max-height: 4px;
+    height: 4px;
+    min-height: 4px;
     cursor: row-resize;`
   }
 
@@ -1152,15 +1199,16 @@ function spliterResize(divider: HTMLElement, previousSibling: HTMLElement, nextS
     if (!previousSibling.classList.contains('ui-box'))
       previousSibling = previousSibling.parentElement!;
 
-    md = {
-      e,
-      offsetLeft: divider.offsetLeft,
-      offsetTop: divider.offsetTop,
-      topHeight: previousSibling.offsetHeight,
-      bottomHeight: nextSibling.offsetHeight,
-      leftWidth: previousSibling.offsetWidth,
-      rightWidth: nextSibling.offsetWidth
-    };
+      md = {
+        e,
+        offsetLeft: divider.offsetLeft,
+        offsetTop: divider.offsetTop,
+        topHeight: previousSibling.offsetHeight,
+        bottomHeight: nextSibling.offsetHeight,
+        leftWidth: previousSibling.offsetWidth,
+        rightWidth: nextSibling.offsetWidth
+      };
+
     divider.style.backgroundColor = 'var(--grey-2)';
     document.onmousemove = onMouseMove;
     document.onmouseup = () => {
@@ -1170,16 +1218,16 @@ function spliterResize(divider: HTMLElement, previousSibling: HTMLElement, nextS
   }
 
   function onMouseMove(e: any) {
-    const delta = {x: e.clientX - md.e.clientX, y: e.clientY - md.e.clientY};
-    if (horizontal) {
-      delta.x = Math.min(Math.max(delta.x, -md.leftWidth), md.rightWidth);
-      previousSibling.style.maxWidth = (md.leftWidth + delta.x) + "px";
-      nextSibling.style.maxWidth = (md.rightWidth - delta.x) + "px";
-    } else {
-      delta.x = Math.min(Math.max(delta.y, -md.topHeight), md.bottomHeight);
-      previousSibling.style.maxHeight = (md.topHeight + delta.y) + "px";
-      nextSibling.style.maxHeight = (md.bottomHeight - delta.y) + "px";
-    }
+      const delta = {x: e.clientX - md.e.clientX, y: e.clientY - md.e.clientY};
+      if (horizontal) {
+        delta.x = Math.min(Math.max(delta.x, - md.leftWidth), md.rightWidth);
+        previousSibling.style.maxWidth = (md.leftWidth + delta.x) + "px";
+        nextSibling.style.maxWidth = (md.rightWidth - delta.x) + "px";
+      } else {
+        delta.x = Math.min(Math.max(delta.y, - md.topHeight), md.bottomHeight);
+        previousSibling.style.maxHeight = (md.topHeight + delta.y) + "px";
+        nextSibling.style.maxHeight = (md.bottomHeight - delta.y) + "px";
+      }
   }
 }
 
