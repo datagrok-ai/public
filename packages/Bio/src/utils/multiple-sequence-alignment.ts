@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
-import {TAGS as bioTAGS} from '@datagrok-libraries/bio';
+import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 //@ts-ignore
 import Aioli from '@biowasm/aioli';
 

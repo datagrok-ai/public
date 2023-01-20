@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {after, before, category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
 
 import {checkInputColumn, multipleSequenceAlignmentAny} from '../package';
-import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio';
+import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 category('checkInputColumn', () => {
   const csv = `seq

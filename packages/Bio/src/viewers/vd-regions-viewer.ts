@@ -2,7 +2,8 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {IVdRegionsViewer, PositionHeight, VdRegion, VdRegionType, WebLogoViewer} from '@datagrok-libraries/bio';
+import {PositionHeight, WebLogoViewer} from '@datagrok-libraries/bio/src/viewers/web-logo-viewer';
+import {IVdRegionsViewer, VdRegion, VdRegionType} from '@datagrok-libraries/bio/src/vd-regions';
 
 const vrt = VdRegionType;
 

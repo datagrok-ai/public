@@ -4,7 +4,8 @@ import * as grok from 'datagrok-api/grok';
 
 import $ from 'cash-dom';
 import {Subscription} from 'rxjs';
-import {NOTATION, NotationConverter} from '@datagrok-libraries/bio';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
 
 
 let convertDialog: DG.Dialog | null = null;

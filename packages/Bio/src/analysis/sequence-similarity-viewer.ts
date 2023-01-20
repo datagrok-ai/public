@@ -8,7 +8,7 @@ import * as C from '../utils/constants';
 import {createDifferenceCanvas, createDifferencesWithPositions} from './sequence-activity-cliffs';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
-import {getSplitter} from '@datagrok-libraries/bio';
+import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   hotSearch: boolean;
