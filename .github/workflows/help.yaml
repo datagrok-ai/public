@@ -170,13 +170,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Load requirements
-        id: load
-        run: |
-          echo "config=$(cat docusaurus/docsearch.json | jq -r tostring)" >> $GITHUB_OUTPUT
       - name: Update the DocSearch index
-        id: check
-        uses: docker://typesense/docsearch-scraper:0.23.1
-        continue-on-error: true
-        env:
-          CONFIG: ${{ steps.load.outputs.config }}
+        uses: celsiusnarhwal/typesense-scraper@v2
+        with:
+          api-key: ${{ secrets.TYPESENSE_API_KEY }}
+          host: ${{ secrets.TYPESENSE_HOST }}
+          port: ${{ secrets.TYPESENSE_PORT }}
+          protocol: ${{ secrets.TYPESENSE_PROTOCOL }}
+          config: docusaurus/docsearch.json
