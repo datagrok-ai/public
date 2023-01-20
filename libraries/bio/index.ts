@@ -79,9 +79,12 @@ export {
   getPdbHelper
 } from './src/pdb/pdb-helper';
 
-export {
-  TreeCutOptions,
+export type {
   IDendrogramService,
+  TreeCutOptions
+} from './src/trees/dendrogram';
+
+export {
   getDendrogramService
 } from './src/trees/dendrogram';
 
