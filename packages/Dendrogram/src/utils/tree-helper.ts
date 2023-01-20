@@ -3,15 +3,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
-import {
-  DistanceMatrix,
-  isLeaf,
-  ITreeHelper,
-  NodeCuttedType,
-  NodeType,
-  NO_NAME_ROOT,
-  parseNewick,
-} from '@datagrok-libraries/bio';
+import {isLeaf, NodeCuttedType, NodeType} from '@datagrok-libraries/bio/src/trees';
+import {NO_NAME_ROOT, parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
+import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
+import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 
 type TreeLeafDict = { [nodeName: string]: NodeType };
 type DataNodeDict = { [nodeName: string]: number };

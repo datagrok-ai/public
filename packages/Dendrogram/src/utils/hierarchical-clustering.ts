@@ -3,8 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
-import {NodeType, parseNewick} from '@datagrok-libraries/bio';
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
+import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 /** Custom UI form for hierarchical clustering */
 export async function hierarchicalClusteringUI2(df: DG.DataFrame): Promise<void> {

@@ -6,9 +6,8 @@ import $ from 'cash-dom';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import {TreeHelper} from '../../src/utils/tree-helper';
 import {GridTreeRendererBase} from './tree-renderers/grid-tree-renderer-base';
-import {ITreeHelper, NodeCuttedType} from '@datagrok-libraries/bio';
 import {LeafRangeGridTreeRenderer} from '../../src/viewers/tree-renderers/grid-tree-renderer';
-import {NodeType} from '@datagrok-libraries/bio/src/trees';
+import {NodeCuttedType, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {TreeCutOptions} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {markupNode, MarkupNodeType} from './tree-renderers/markup';
 import {attachDivToGrid} from '../utils';
@@ -26,6 +25,7 @@ import {RectangleTreeHoverType} from './tree-renderers/rectangle-tree-placer';
 import {GridTreePlacer} from './tree-renderers/grid-tree-placer';
 import {Unsubscribable} from 'rxjs';
 import {render} from 'datagrok-api/ui';
+import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 
 export function injectTreeForGridUI2(
   grid: DG.Grid, treeRoot: NodeType | null, leafColName?: string, neighborWidth: number = 100, cut?: TreeCutOptions

@@ -3,8 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
-
-import {isLeaf, NodeType} from '@datagrok-libraries/bio';
+import {isLeaf, NodeType} from '@datagrok-libraries/bio/src/trees';
 
 /** Markup node for node and its subtree place on axis of leaves. */
 export type MarkupNodeType = NodeType & {

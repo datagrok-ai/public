@@ -4,7 +4,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {category, test, expect, expectArray, expectObject} from '@datagrok-libraries/utils/src/test';
 import {TreeHelper} from '../utils/tree-helper';
-import {ITreeHelper, NodeCuttedType, NodeType} from '@datagrok-libraries/bio';
+import {NodeCuttedType, NodeType} from '@datagrok-libraries/bio/src/trees';
+import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 
 
 /*
