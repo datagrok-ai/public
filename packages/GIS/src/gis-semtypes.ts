@@ -196,7 +196,7 @@ export class GisAreaHandler extends DG.ObjectHandler {
       return ui.div([canvas]);
     });
 
-    const panelProperties = ui.divV([ui.divText(`Properties for GisObject`), acc.root]);
+    const panelProperties = ui.divV([ui.divText(`Object`), acc.root]);
     return panelProperties;
   }
 
@@ -300,7 +300,7 @@ export class GisPointHandler extends DG.ObjectHandler {
   renderTooltip(obj: GisPoint) { return ui.divText(`[${obj.x} ; ${obj.y}]`); }
   renderProperties(obj: GisPoint) {
     const panelProperties = ui.divV([]);
-    panelProperties.appendChild(ui.divText(`Properties for Point`));
+    panelProperties.appendChild(ui.divText(`Point`));
     panelProperties.appendChild(ui.divText(`[${obj.x} ; ${obj.y}]`));
     return panelProperties;
   }
