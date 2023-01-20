@@ -2,7 +2,6 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {TreeViewer} from './viewers/tree/tree-viewer';
-import {TreeMapViewer} from './viewers/tree-map/tree-map-viewer';
 import {SunburstViewer} from './viewers/sunburst/sunburst-viewer';
 import {RadarViewer} from './viewers/radar/radar-viewer';
 import {TimelinesViewer} from './viewers/timelines/timelines-viewer';
@@ -54,13 +53,6 @@ export function radarViewerDemo() {
 //output: viewer result
 export function _TreeViewer() {
   return new TreeViewer();
-}
-
-//name: TreeMapViewer
-//tags: viewer
-//output: viewer result
-export function _TreeMapViewer() {
-  return new TreeMapViewer();
 }
 
 //name: SunburstViewer
