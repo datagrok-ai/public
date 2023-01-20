@@ -930,7 +930,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       }
     });
 
-    this.tree.onNodeMouseEnter.subscribe(async(node: DG.TreeViewNode) => {
+    this.tree.onNodeMouseEnter.subscribe((node: DG.TreeViewNode) => {
       if (node.value === null)
         return;
 
@@ -939,12 +939,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       rows.highlight((idx: number) => bitset.get(idx));
     });
 
-    this.tree.onNodeMouseLeave.subscribe(async(node: DG.TreeViewNode) => {
-      if (node.value === null)
-        return;
-
-      const bitset = (node.value as any).bitset;
-      dataFrame.mouseOverRowIdx = -1;
+    this.tree.onNodeMouseLeave.subscribe((node: DG.TreeViewNode) => {
+      // @ts-ignore
+      dataFrame.rows.highlight(null);
     });
 
     this.subs.push(dataFrame.onRowsFiltering.subscribe(() => {
