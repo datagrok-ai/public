@@ -29,7 +29,7 @@ const config = {
       {
         entryPoints: ['../js-api/dg.ts', '../js-api/ui.ts', '../js-api/grok.ts'],
         tsconfig: '../js-api/tsconfig.json',
-        entryDocument: '../help/develop/js-api.md',
+        readme: '../help/develop/js-api.md',
         out: '../../js-api/docs',
         plugin: ['typedoc-plugin-replace-text'],
         replaceText: {
