@@ -1,9 +1,10 @@
 declare module 'NGL' {
   export type LoaderParameters = {
-    ext: string,
+    ext?: string,
     compressed?: boolean,
     binary?: boolean,
-    name?: string
+    name?: string,
+    defaultRepresentation?: boolean
   };
 
   export class ColormakerRegistryClass {

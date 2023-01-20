@@ -18,15 +18,16 @@ import {NglViewerApp} from './apps/ngl-viewer-app';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
 import {PdbHelper} from './utils/pdb-helper';
 import {PdbApp} from './apps/pdb-app';
+import {nglViewUI, nglWidgetUI} from './viewers/ngl-ui';
 
 export const _package = new DG.Package();
 
 //name: pdbCellRenderer
 //tags: cellRenderer
-//meta.cellType: xray
-//meta.columnTags: quality=xray
+//meta.cellType: Molecule3D
+//meta.columnTags: quality=Molecule3D
 //output: grid_cell_renderer result
-export function xRayCellRenderer(): PdbRenderer {
+export function Molecule3dCellRenderer(): PdbRenderer {
   return new PdbRenderer();
 }
 
@@ -96,6 +97,46 @@ export async function importPdb(fileContent: string): Promise<DG.DataFrame[]> {
   return [];
 }
 
+// -- File (pre)viewers --
+
+//tags: fileViewer, fileViewer-mol, fileViewer-cif, fileViewer-mcif, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-ent, fileViewer-pqr, fileViewer-mmtf, fileViewer-mtl, fileViewer-sd
+//input: file file
+//output: view v
+export function molecule3dNglView1(file: any): DG.View {
+  return nglViewUI(file);
+}
+
+//tags: fileViewer, fileViewer-ply, fileViewer-obj
+//input: file file
+//output: view v
+export function molecule3dNglView2(file: any): DG.View {
+  return nglViewUI(file);
+}
+
+//tags: fileViewer, fileViewer-prmtop, fileViewer-parm7, fileViewer-psf, fileViewer-top
+//input: file file
+//output: view v
+export function molecule3dNglView3(file: any): DG.View {
+  return nglViewUI(file);
+}
+
+//tags: fileViewer, fileViewer-dsn6, fileViewer-brix, fileViewer-cube, fileViewer-cub, fileViewer-dx, fileViewer-dxbin, fileViewer-xplor, fileViewer-cns, fileViewer-mrc, fileViewer-map, fileViewer-ccp4
+//input: file file
+//output: view v
+export function molecule3dNglView4(file: any): DG.View {
+  return nglViewUI(file);
+}
+
+// -- Panel widgets --
+
+//name: PDB id viewer
+//tags: panel
+//input: string pdbId {semType: PDB_ID}
+//output: widget w
+export function pdbIdNglPanelWidget(pdbId: string): DG.Widget {
+  return nglWidgetUI(pdbId);
+}
+
 // -- Test apps --
 
 //name: nglForGridTestApp
@@ -134,54 +175,7 @@ export function nglViewer(): DG.JsViewer {
 
 // -- Top menu --
 
-// //name: PDB Viewer
-// //description: 3D structure data for large biological molecules (proteins, DNA, and RNA)
-// //top-menu: Bio | PDB ...
-// //output: viewer result
-// export async function pdbViewer(): Promise<void> {
-//   const view: DG.TableView = grok.shell.tv;
-//   const pdbTag = view.dataFrame.getTag(pdbTAGS.PDB);
-//   if (pdbTag) {
-//     const viewer = (await view.dataFrame.plot.fromType('NglViewer', {})) as DG.JsViewer;
-//     view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'NGL viewer', 0.4);
-//   } else {
-//     const bsView: DG.TableView = grok.shell.tv;
-//
-//     const ligandSelection = {};
-//     let ligands = ['R', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'S', 'T', 'U', 'V', 'W'];
-//     for (let i = 0; i < ligands.length; i++)
-//       ligandSelection[ligands[i]] = [false, 400 + i];
-//
-//     return new Promise<void>((resolve, reject) => {
-//       const fileBrowser = ui.fileBrowser({path: `System:AppData/${_package.name}/samples`});
-//       const dlg: DG.Dialog = ui.dialog({title: 'Open PDB file'})
-//         .add(fileBrowser.root)
-//         .addButton('OK', () => {
-//           setTimeout(async () => {
-//             const filePath: string = fileBrowser.props.file;
-//             const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create('PDB Viewer');
-//             try {
-//               const pdbStr: string = await grok.dapi.files.readAsText(filePath);
-//
-//               const viewer: DG.JsViewer = (await view.dataFrame.plot.fromType('NglViewer',
-//                 {[nglPROPS.pdb]: pdbStr})) as DG.JsViewer;
-//               view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'NGL viewer', 0.4);
-//
-//               resolve();
-//             } catch (err: any) {
-//               const errMsg: string = errorToConsole(err);
-//               console.error(errMsg);
-//               reject(err.toString());
-//             } finally {
-//               pi.close();
-//               dlg.close();
-//             }
-//           }, 0 /* next event cycle */);
-//         })
-//         .show();
-//     });
-//   }
-// }
+// code pdbViewer moved to utils/pdb-viewer.ts because of annotations in comments
 
 // -- Utils --
 
