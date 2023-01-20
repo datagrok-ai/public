@@ -67,7 +67,7 @@ jobs:
         working-directory: ./docusaurus
         continue-on-error: true
         run: |
-            hyperlink --check-anchors build/ --sources ../help/ >  help/anchor-check-report.md 2>&1
+            hyperlink --check-anchors build/ --sources ../help/ >  ../help/anchor-check-report.md 2>&1
             echo "result=success" >> $GITHUB_OUTPUT
       - name: Set summary
         run: |
@@ -147,3 +147,24 @@ jobs:
           REMOTE_HOST: ${{ secrets.HELP_HOST }}
           REMOTE_USER: ${{ secrets.HELP_USER }}
           TARGET: ${{ secrets.WIKI_DOCS_TARGET }}
+
+  scrape:
+    name: Scrape
+    needs: deploy
+    environment: Help
+    concurrency:
+      group: help-scrape-${{ github.ref }}
+      cancel-in-progress: true
+    #    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Load requirements
+        id: load
+        run: |
+          echo "config=$(cat docsearch.json | jq -r tostring)" >> $GITHUB_OUTPUT
+      - name: Update the DocSearch index
+        id: check
+        uses: docker://typesense/docsearch-scraper:latest
+        continue-on-error: true
+        env:
+          CONFIG: ${{ steps.load.outputs.config }}
