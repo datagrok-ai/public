@@ -1,5 +1,5 @@
-import { EChartViewer } from '../echart/echart-viewer';
-import { TreeUtils } from '../../utils/tree-utils';
+import { EChartViewer } from '../../../viewers/echart/echart-viewer';
+import { TreeUtils } from '../../../utils/tree-utils';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 export class TreeMapViewer extends EChartViewer {

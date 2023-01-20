@@ -154,7 +154,7 @@ Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
 
 ![](./img/surface-plot.gif)
 
-## TreeMap
+<!-- ## TreeMap
 
 The `TreeMap` viewer is used to display hierarchical data with rectangles of
 decreasing sizes.
@@ -162,7 +162,7 @@ decreasing sizes.
 Status: `experimental`.
 Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
 
-![](./img/tree-map.gif)
+![](./img/tree-map.gif) -->
 
 ## TreeViewer
 
