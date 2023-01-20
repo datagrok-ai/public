@@ -51,6 +51,16 @@ jobs:
           cache-dependency-path: |
             docusaurus/package-lock.json
             js-api/package-lock.json
+      - name: Cache Docusaurus
+        uses: actions/cache@v3
+        with:
+          path: docusaurus/.docusaurus
+          key: ${{ github.ref }}-docusaurus
+      - name: Cache Docusaurus build
+        uses: actions/cache@v3
+        with:
+          path: docusaurus/build
+          key: ${{ github.ref }}-docusaurus-build
       - name: Install anchor-check
         run: npm install -g @untitaker/hyperlink
       - name: Install dependencies
@@ -67,8 +77,8 @@ jobs:
         working-directory: ./docusaurus
         continue-on-error: true
         run: |
-            hyperlink --check-anchors build/ --sources ../help/ >  ../help/anchor-check-report.md 2>&1
-            echo "result=success" >> $GITHUB_OUTPUT
+          hyperlink --check-anchors build/ --sources ../help/ >  ../help/anchor-check-report.md 2>&1
+          echo "result=success" >> $GITHUB_OUTPUT
       - name: Set summary
         run: |
           echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
@@ -158,13 +168,15 @@ jobs:
     #    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Load requirements
         id: load
         run: |
-          echo "config=$(cat docsearch.json | jq -r tostring)" >> $GITHUB_OUTPUT
+          echo "config=$(cat docusaurus/docsearch.json | jq -r tostring)" >> $GITHUB_OUTPUT
       - name: Update the DocSearch index
         id: check
-        uses: docker://typesense/docsearch-scraper:latest
+        uses: docker://typesense/docsearch-scraper:0.23.1
         continue-on-error: true
         env:
           CONFIG: ${{ steps.load.outputs.config }}

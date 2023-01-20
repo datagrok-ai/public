@@ -89,6 +89,7 @@ const config = {
       logo: {
         alt: 'Datagrok',
         src: 'img/logo.svg',
+        href: 'https://datagrok.ai', // Default to `siteConfig.baseUrl`.
       },
       items: [
         {
