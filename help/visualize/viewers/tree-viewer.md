@@ -1,7 +1,6 @@
-<!-- TITLE: Tree viewer -->
-<!-- SUBTITLE: -->
-
-# Tree viewer
+---
+title: "Tree viewer"
+---
 
 Tree viewer shows the hierarchical structure of categorical data. It groups
 table rows into nodes by categories in columns. Each column forms a new
@@ -61,7 +60,7 @@ the node.
 
 ## See also
 
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [Network viewer](network-diagram.md)
 * BiostructureViewer
 * PhyloTreeViewer

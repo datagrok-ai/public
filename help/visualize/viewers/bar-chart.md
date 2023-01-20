@@ -1,7 +1,6 @@
-<!-- TITLE: Bar chart -->
-<!-- SUBTITLE: -->
-
-# Bar chart
+---
+title: "Bar chart"
+---
 
 A bar chart presents grouped data as rectangular bars with lengths proportional to the values that they represent.
 Unlike histograms which you can apply to display the distribution of numerical data, bar charts are primarily designed
@@ -9,7 +8,7 @@ for categorical values.
 
 |                |                                   |
 |----------------|-----------------------------------|
-| Click on a bar | [Select or filter](../viewers.md) |
+| Click on a bar | [Select or filter](../viewers/viewers.md) |
 | Right click    | Context menu                      |
 | Double-click   | Reset View                        |
 | Alt+drag       | Zoom                              |
@@ -40,5 +39,5 @@ See also:
 
 * [Column selectors](column-selectors.md)
 * [Table View](../../datagrok/table-view.md)
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [JS API: Bar Chart](https://public.datagrok.ai/js/samples/ui/viewers/types/bar-chart)

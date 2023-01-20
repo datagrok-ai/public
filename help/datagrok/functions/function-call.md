@@ -1,11 +1,10 @@
-<!-- TITLE: Function call -->
-<!-- SUBTITLE: -->
-
-# Function call
+---
+title: "Function call"
+---
 
 Function Call is a result of executing a [Data Job](../../access/data-job.md)
 , [Data Query](../../access/data-query.md),
-[Script](../../compute/scripting.md) or any other [Function](function.md).
+[Script](../../compute/scripting.md) or any other [Function](functions.md).
 
 ## Data
 
@@ -33,18 +32,18 @@ Those privileges can be given to individuals or to groups (which can be defined 
 
 You can use these fields to filter action runs with [smart search](../smart-search.md):
 
-| Field       | Description                                        |
-|-------------|----------------------------------------------------|
-| ID          |                                                    |
-| name        |                                                    |
-| action      | [Func](function.md) object                         |
-| childRuns   | list of [FuncCall](function-call.md) object        |
-| parentRun   | [FuncCall](function-call.md) object                |
-| status      |                                                    |
-| started     |                                                    |
-| finished    |                                                    |
-| createdOn   |                                                    |
-| updatedOn   |                                                    |
+| Field       | Description                                 |
+|-------------|---------------------------------------------|
+| ID          |                                             |
+| name        |                                             |
+| action      | [Func](functions.md) object                 |
+| childRuns   | list of [FuncCall](function-call.md) object |
+| parentRun   | [FuncCall](function-call.md) object         |
+| status      |                                             |
+| started     |                                             |
+| finished    |                                             |
+| createdOn   |                                             |
+| updatedOn   |                                             |
 
 See also:
 

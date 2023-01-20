@@ -1,7 +1,6 @@
-<!-- TITLE: Deployment on AWS EC2 -->
-<!-- SUBTITLE: -->
-
-# Deployment on AWS EC2
+---
+title: "Deployment on AWS EC2"
+---
 
 Datagrok consist of Docker containers, [database](infrastructure.md#database)
 and [persistent file storage](infrastructure.md#storage).

@@ -1,7 +1,6 @@
-<!-- TITLE: Change type -->
-<!-- SUBTITLE: -->
-
-# Change type
+---
+title: "Change type"
+---
 
 Use this dialog to change the data type of a column.
 

@@ -1,7 +1,6 @@
-<!-- TITLE: Architecture -->
-<!-- SUBTITLE: -->
-
-# Architecture
+---
+title: "Architecture"
+---
 
 ## Goals
 

@@ -1,4 +1,6 @@
-# Word list
+---
+title: "Word list"
+---
 
 ## allow, enable
 

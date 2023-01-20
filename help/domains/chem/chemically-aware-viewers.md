@@ -1,7 +1,6 @@
-<!-- TITLE: Chemically-aware viewers -->
-<!-- SUBTITLE: -->
-
-# Chemically-aware viewers
+---
+title: "Chemically-aware viewers"
+---
 
 Many of the viewers on the Datagrok platform are capable of recognizing and rendering chemical structures.
 
@@ -43,4 +42,4 @@ Molecules in the [form](../../visualize/viewers/form.md).
 
 See also:
 
-* [Viewers](../../visualize/viewers.md)
+* [Viewers](../../visualize/viewers/viewers.md)

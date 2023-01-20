@@ -1,6 +1,6 @@
-<!-- TITLE: Neo4j -->
-
-# Neo4j
+---
+title: "Neo4j"
+---
 
 This is a [connector](../data-connection.md#connectors) that provides access to the [Neo4j](https://neo4j.com/) graph
 database via JDBC driver. Allows to query Neo4j using [Cypher](https://neo4j.com/developer/cypher-query-language)
@@ -23,7 +23,7 @@ debugging); once you are satisfied with the results, press SAVE to save it on th
 
 Note that you can introduce [parameters](../parameterized-queries.md) to the query. This is an incredibly powerful
 concept that allows Cypher queries to be used as
-[functions](../../datagrok/functions/function.md), or become info panels.
+[functions](../../datagrok/functions/functions.md), or become info panels.
 
 See [query editor](../data-query-view.md) for details.
 
@@ -31,7 +31,8 @@ See [query editor](../data-query-view.md) for details.
 
 ## Using a query
 
-A query is a [function](../../datagrok/functions/function.md), and therefore could be used for multiple purposes in many
+A query is a [function](../../datagrok/functions/functions.md), and therefore could be used for multiple purposes in
+many
 different contexts. Here are some of them:
 
 * Executed manually

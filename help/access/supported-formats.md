@@ -1,7 +1,6 @@
-<!-- TITLE: File -->
-<!-- SUBTITLE: -->
-
-# Supported formats
+---
+title: "File"
+---
 
 Datagrok supports the following formats.
 

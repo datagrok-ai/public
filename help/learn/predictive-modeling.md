@@ -1,7 +1,6 @@
-<!-- TITLE: Predictive modeling -->
-<!-- SUBTITLE: -->
-
-# Predictive modeling
+---
+title: "Predictive modeling"
+---
 
 Predictive modeling uses statistics to predict outcomes.
 
