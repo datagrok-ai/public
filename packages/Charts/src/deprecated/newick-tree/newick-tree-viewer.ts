@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import * as d3 from 'd3';
+import $ from 'cash-dom';
 
 
 export class NewickTreeViewer extends DG.JsViewer {
