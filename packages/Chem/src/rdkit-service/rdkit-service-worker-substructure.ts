@@ -1,6 +1,8 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {isMolBlock} from '../utils/convert-notation-utils';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+//import {aromatizeMolBlock} from "../utils/aromatic-utils";
+
 
 function syncQueryAromatics_1(molBlock: string,  bonds2Change: Array<number> | null = null) : string | Array<number> {
   let curPos = 0;
@@ -88,7 +90,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             const molBlockAroma = molTmp!.get_aromatic_form();
             molTmp!.delete();
             const newQueryMolString = syncQueryAromatics_2(molBlockAroma, queryMolString);
-            queryMol = this.getQMol(newQueryMolString);
+            //const newQueryMolString = aromatizeMolBlock(queryMolString);
+            queryMol = this.getQMol(newQueryMolString)
           }
         }
         else {

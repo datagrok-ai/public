@@ -6,6 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {isMolBlock} from '../utils/convert-notation-utils';
+import {aromatizeMolBlock} from "../utils/aromatic-utils";
 
 interface IMolInfo {
   mol: RDMol | null; // null when molString is invalid?
@@ -80,8 +81,10 @@ M  END
     let mol: RDMol | null = null;
     let substruct = {};
     try {
-      if((details as any).isSubstructure == true)
-        mol = this.rdKitModule.get_qmol(molString);
+      if ((details as any).isSubstructure) {
+        const aromaMolString = aromatizeMolBlock(molString)
+        mol = this.rdKitModule.get_qmol(aromaMolString);
+     }
       else
         mol = this.rdKitModule.get_mol(molString, JSON.stringify(details));
       if (!mol.is_valid()) {
