@@ -28,7 +28,7 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
 
     get name(): string { return 'RDKit reaction renderer'; }
     get cellType(): string { return 'ChemicalReaction'; }
-    get defaultWidth() { return 400; }
+    get defaultWidth() { return 600; }
     get defaultHeight() { return 150; }
 
     _fetchRxnGetOrCreate(reactionString: string, details: object = {}): Reaction | null {
@@ -84,7 +84,17 @@ export class RDKitReactionRenderer extends DG.GridCellRenderer {
         x = r * x; y = r * y;
         w = r * w; h = r * h;
 
-        this._drawReaction(x, y, w, h, g.canvas, reactionString);
+        const reactionParts = reactionString.length > 130 ? reactionString.split('>>') : [reactionString];
+        if (reactionParts.length > 1) {
+            reactionParts[0] = `${reactionParts[0]}>>`;
+            reactionParts[1] = `>>${reactionParts[1]}`;
+            h = h/2;
+        }
+        let yUpdated = y;
+        reactionParts.forEach((part: string) => {
+            this._drawReaction(x, yUpdated, w, h, g.canvas, part);
+            yUpdated = yUpdated + h;
+        });
     }
 
 
