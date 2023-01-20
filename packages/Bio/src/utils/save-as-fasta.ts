@@ -3,7 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import wu from 'wu';
-import {splitterAsFasta, SplitterFunc, UnitsHandler} from '@datagrok-libraries/bio';
+import {splitterAsFasta, SplitterFunc} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 const FASTA_LINE_WIDTH = 60;
 

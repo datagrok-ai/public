@@ -6,7 +6,7 @@ import {after, before, category, test, expect, expectArray, expectObject} from '
 import * as C from '../utils/constants';
 import {splitToMonomers, _package, getHelmMonomers} from '../package';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
-import {splitterAsFasta, splitterAsHelm} from '@datagrok-libraries/bio';
+import {splitterAsFasta, splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 
 category('splitters', () => {
