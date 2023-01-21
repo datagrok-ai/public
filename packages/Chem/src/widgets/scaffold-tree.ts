@@ -200,7 +200,7 @@ function processUnits(molPBlok : string): string {
   }
 
   let curPosAdd = curPos;
-  for (let idx_bond =0; idx_bond < bondCount; ++idx_bond) {
+  for (let bondIdx =0; bondIdx < bondCount; ++bondIdx) {
     let s = "";
     if ((s = molPBlok.substring(curPosAdd + 8, curPosAdd + 9)) === '4') {
       let endStr = molPBlok.substring(curPosAdd + 9);
@@ -316,7 +316,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       userEditable: this.molColumns.length > 0
     });
 
-    this.threshold = this.float('threshold', 0, {min: 0, max: 0.2});
+    this.threshold = this.float('threshold', 0, {
+      min: 0,
+      max: 20,
+      description: 'Hide scaffolds that match less then the specified percentage of molecules'
+    });
 
     this.ringCutoff = this.int('ringCutoff', 10, {
       category: 'Scaffold Generation',
@@ -333,9 +337,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.helpUrl = '/help/visualize/viewers/scaffold-tree.md';
   }
 
-  get treeRoot() {
-    return this.tree
-  }
+  get treeRoot(): DG.TreeViewGroup { return this.tree }
 
   private get message(): string {
     return this._message?.innerHTML as string;
@@ -537,7 +539,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.wrapper.show();
   }
 
-  private openAddSketcher(group: TreeViewGroup) {
+  openAddSketcher(group: TreeViewGroup) {
     const v = value(group);
     const molStr = v === null ? "" : v.smiles;
     if (this.wrapper !== null) {
@@ -813,7 +815,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   filterTree(hitsThresh: number) : void {
     this.clearOrphanFolders(this.tree);
-    filterNodesIter(this.tree, this.molColumn!.length, hitsThresh);
+    filterNodesIter(this.tree, this.molColumn!.length, hitsThresh / 100);
     buildOrphans(this.tree);
     this.appendOrphanFolders(this.tree);
     this.updateSizes();
