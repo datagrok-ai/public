@@ -895,8 +895,13 @@ export async function callChemDiversitySearch(
 
 //name: getScaffoldTree
 //input: dataframe data
+//input: int ringCutoff = 10 [Ignore molecules with # rings > N]
+//input: bool dischargeAndDeradicalize = false [Remove charges and radicals from scaffolds]
 //output: string result
-export async function getScaffoldTree(data: DG.DataFrame): Promise<string>{
+export async function getScaffoldTree(data: DG.DataFrame,
+                                      ringCutoff: number = 0,
+                                      dischargeAndDeradicalize: boolean = false
+                                      ): Promise<string> {
   const molColumn = data.columns.bySemType(DG.SEMTYPE.MOLECULE);
   const invalid: number[] = new Array<number>(data.columns.length);
   const smiles = molColumn?.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES;
@@ -916,6 +921,6 @@ export async function getScaffoldTree(data: DG.DataFrame): Promise<string>{
   const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
   smilesColumn.name = data.columns.getUnusedName(smilesColumn.name);
   data.columns.add(smilesColumn);
-  const scriptRes = await generateScaffoldTree(data, smilesColumn!.name);
+  const scriptRes = await generateScaffoldTree(data, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
   return scriptRes;
 }

@@ -279,6 +279,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   molColumns: Array<DG.Column> = [];
   molColumnIdx: number = -1;
   threshold: number;
+  ringCutoff: number = 10;
+  dischargeAndDeradicalize: boolean = false;
 
   checkBoxesUpdateInProgress: boolean = false;
   treeEncodeUpdateInProgress: boolean = false;
@@ -313,16 +315,27 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       category: 'Data',
       userEditable: this.molColumns.length > 0
     });
+
     this.threshold = this.float('threshold', 0, {min: 0, max: 0.2});
-    this.threshold = 0;
-    this.treeEncode = this.string('TreeEncode', '[]', {category: 'Data', userEditable: false});
+
+    this.ringCutoff = this.int('ringCutoff', 10, {
+      category: 'Scaffold Generation',
+      description: 'Ignore molecules with # rings > N'
+    });
+
+    this.dischargeAndDeradicalize = this.bool('dischargeAndDeradicalize', false, {
+      category: 'Scaffold Generation',
+      description: 'Remove charges and radicals from scaffolds'
+    });
+
+    this.treeEncode = this.string('TreeEncode', '[]', {userEditable: false});
 
     this.helpUrl = '/help/visualize/viewers/scaffold-tree.md';
   }
 
   get treeRoot() {
     return this.tree
-  };
+  }
 
   private get message(): string {
     return this._message?.innerHTML as string;
@@ -363,14 +376,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const maxMolCount = 750;
 
     let length = this.molColumn.length;
-    let valid_count = 0;
+    let validCount = 0;
     for (let n = 0; n < length; ++n) {
       if (this.molColumn.get(n).includes('V3000'))
         continue;
-      ++valid_count;
+      ++validCount;
     }
 
-    if (valid_count === 0) {
+    if (validCount === 0) {
       ui.setUpdateIndicator(this.root, false);
       this.progressBar.update(50, 'Build failed');
       this.progressBar.close();
@@ -402,7 +415,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     let jsonStr = null;
     try {
-      jsonStr = await getScaffoldTree(dataFrame);
+      jsonStr = await getScaffoldTree(dataFrame, this.ringCutoff, this.dischargeAndDeradicalize);
     } catch (e) {
       console.error(e);
       ui.setUpdateIndicator(this.root, false);

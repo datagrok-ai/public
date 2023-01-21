@@ -3,7 +3,9 @@
 #language: python
 #environment: channels: [conda-forge], dependencies: [python=3.8, rdkit, {pip: [ScaffoldGraphDG, networkx]}]
 #input: dataframe data [Input data table]
-#input: string smiles
+#input: string smilesColumn
+#input: int ringCutoff = 10 [Ignore molecules with # rings > N]
+#input: bool dischargeAndDeradicalize = false [Remove charges and radicals from scaffolds]
 #output: string result
 
 import scaffoldgraph as sg
@@ -128,7 +130,12 @@ def get_json_representation(tree):
     return json_list
 
 tree = sg.ScaffoldTree.from_dataframe(
-    data, smiles_column=smiles, name_column=smiles, progress=True,
+    data,
+    smiles_column=smilesColumn,
+    name_column=smilesColumn,
+    progress=True,
+    ring_cutoff=ringCutoff,
+    discharge_and_deradicalize=dischargeAndDeradicalize,
 )
 
 res = get_json_representation(tree)
