@@ -1043,6 +1043,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       ui.iconFA('filter', () => thisViewer.clearFilters(), 'Clear Filter'),
       ui.iconFA('folder-open', () => this.loadTree(), 'Open saved tree'),
       ui.iconFA('arrow-to-bottom', () => this.saveTree(), "Save this tree to disk"),
+      ui.divText(' '),
       this._iconDelete = ui.iconFA('trash-alt', () => thisViewer.clear(), 'Drop All Trees')
     ], 'chem-scaffold-tree-toolbar');
     this.root.appendChild(iconHost);
