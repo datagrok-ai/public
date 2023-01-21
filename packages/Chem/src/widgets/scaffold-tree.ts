@@ -15,8 +15,8 @@ const CELL_HEIGHT = 120;
 const CELL_WIDTH = 200;
 
 interface INode {
-  scaffold: string;
-  child_nodes: INode[];
+  scaffold?: string;
+  child_nodes?: INode[];
 }
 
 interface ITreeNode {
@@ -77,12 +77,11 @@ function buildOrphans(rootGroup: TreeViewGroup) {
     const bitsetThis = v.bitset!;
     let bitsetOrphans = bitsetThis.clone();
     let bitsetChildrenTmp = DG.BitSet.create(bitsetThis.length);
-    let bitsetChild = null;
     for (let n = 0; n < rootGroup.children.length; ++n) {
       if (isOrphans(rootGroup.children[n]) || isNodeFiltered(rootGroup.children[n]))
         continue;
 
-      bitsetChild = value(rootGroup.children[n]).bitset!;
+      let bitsetChild = value(rootGroup.children[n]).bitset!;
       bitsetChildrenTmp = bitsetChildrenTmp.or(bitsetChild, false);
     }
     if (bitsetChildrenTmp.trueCount > 0)
@@ -181,7 +180,7 @@ function processUnits(molPBlok : string): string {
 
   //32 33 34 N O S -> 55-57
   const aromaticAtoms = [];
-  for (let atomIdx=0; atomIdx < atomCount; ++atomIdx) {
+  for (let atomIdx = 0; atomIdx < atomCount; ++atomIdx) {
     let idxElem = curPos + 31;
     let str = molPBlok.substring(idxElem, idxElem + 3);
     if (str === "N  " || str === "O  " || str === 'S  '){
@@ -212,7 +211,7 @@ function processUnits(molPBlok : string): string {
 }
 
 function renderMolecule(molStr: string, width: number, height: number, skipDraw: boolean = false): HTMLDivElement {
-  if(offscreen === null) {
+  if (offscreen === null) {
     offscreen = new OffscreenCanvas(CELL_WIDTH, CELL_HEIGHT);
     gOffscreen = offscreen.getContext('2d', {willReadFrequently : true});
   }
@@ -304,6 +303,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.tree.root.classList.add('d4-tree-view-lines');
     const dataFrame = grok.shell.tv.dataFrame;
     this.molColumns = dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
+    this.helpUrl = '/help/visualize/viewers/scaffold-tree.md';
+
     const molColNames = new Array(this.molColumns.length);
     for (let n = 0; n < molColNames.length; ++n) {
       molColNames[n] = this.molColumns[n].name;
@@ -334,22 +335,48 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.treeEncode = this.string('TreeEncode', '[]', {userEditable: false});
 
-    this.helpUrl = '/help/visualize/viewers/scaffold-tree.md';
+    this._initMenu();
   }
 
   get treeRoot(): DG.TreeViewGroup { return this.tree }
 
-  private get message(): string {
+  get message(): string {
     return this._message?.innerHTML as string;
   }
 
-  private set message(msg: string | null) {
+  set message(msg: string | null) {
     if (this._message === undefined || this._message === null)
       return;
 
     this._message.style.visibility = msg === null ? 'hidden' : 'visible';
     // @ts-ignore
     this._message.innerHTML = msg ?? '';
+  }
+
+  _initMenu(): void {
+    this.root.oncontextmenu = (e) => {
+      grok.shell.info('foo');
+      DG.Menu.popup()
+        .item('Save tree', () => this.saveTree())
+        .item('Load tree', () => this.loadTree())
+        .show();
+
+      e.preventDefault();
+    };
+  }
+
+  /** Saves sketched tree to disk (under Downloads) */
+  saveTree(): void {
+    let s = JSON.stringify(ScaffoldTreeViewer.serializeTree(this.tree));
+    DG.Utils.download('scaffold-tree.tree', s);
+  }
+
+  /** Loads previously saved tree. See also {@link saveTree} */
+  loadTree(): void {
+    DG.Utils.openFile({
+      accept: '.tree',
+      open: async (file) => this.loadTreeStr(await file.text())
+    });
   }
 
   async generateTree() {
@@ -427,35 +454,38 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
 
-    if (jsonStr !== null) {
-      const json = JSON.parse(jsonStr);
-      console.log(json);
+    if (jsonStr != null)
+      await this.loadTreeStr(jsonStr);
 
-      this.progressBar.update(50, 'Initializing Tree..: 50% completed');
-
-      const thisViewer = this;
-      ScaffoldTreeViewer.deserializeTrees(json, this.tree, (molStr: string, rootGroup: TreeViewGroup) => {
-        return thisViewer.createGroup(molStr, rootGroup, false);
-      });
-
-      await updateVisibleNodesHits(this); //first visible N nodes
-      ui.setUpdateIndicator(this.root, false);
-      this.progressBar.update(100, 'Tree is ready');
-
-      this.updateSizes();
-      this.updateUI();
-
-      if(this.tree.children.length > 1) {
-        for (let n = 0; n < this.tree.children.length; ++n) {
-          (this.tree.children[n] as TreeViewGroup).expanded = false;
-        }
-      }
-
-      updateAllNodesHits(this, () => thisViewer.filterTree(thisViewer.threshold)); //this will run asynchronously
-    }
     //this.root.style.visibility = 'visible';
     this.progressBar.close();
     this.progressBar = null;
+  }
+
+  async loadTreeStr(jsonStr: string) {
+    const json = JSON.parse(jsonStr);
+
+    this.progressBar?.update(50, 'Initializing Tree..: 50% completed');
+
+    const thisViewer = this;
+    ScaffoldTreeViewer.deserializeTrees(json, this.tree, (molStr: string, rootGroup: TreeViewGroup) => {
+      return thisViewer.createGroup(molStr, rootGroup, false);
+    });
+
+    await updateVisibleNodesHits(this); //first visible N nodes
+    ui.setUpdateIndicator(this.root, false);
+    this.progressBar?.update(100, 'Tree is ready');
+
+    this.updateSizes();
+    this.updateUI();
+
+    if (this.tree.children.length > 1) {
+      for (let n = 0; n < this.tree.children.length; ++n) {
+        (this.tree.children[n] as TreeViewGroup).expanded = false;
+      }
+    }
+
+    updateAllNodesHits(this, () => thisViewer.filterTree(thisViewer.threshold)); //this will run asynchronously
   }
 
   get molColumn(): DG.Column | null {
@@ -1008,9 +1038,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   render() {
     const thisViewer = this;
-    this._iconAdd = ui.iconFA('plus', () => {
-      thisViewer.openAddSketcher(thisViewer.tree);
-    }, 'Add New Root Structure');
+    this._iconAdd = ui.iconFA('plus', () => thisViewer.openAddSketcher(thisViewer.tree), 'Add New Root Structure');
     this._iconAdd.style.color = "#2083d5";
     this._iconAdd.style.textAlign = "left";
     this._iconAdd.style.position = "absolute";
@@ -1018,9 +1046,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this._iconAdd.style.fontSize = "20px";
     this.root.appendChild(this._iconAdd);
 
-    this._iconDelete = ui.iconFA('trash-alt', () => {
-      thisViewer.clear();
-    }, 'Drop All Trees');
+    this._iconDelete = ui.iconFA('trash-alt', () => thisViewer.clear(), 'Drop All Trees');
     this._iconDelete.style.color = "#2083d5";
     this._iconDelete.style.textAlign = "left";
     this._iconDelete.style.position = "absolute";
@@ -1029,9 +1055,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this._iconDelete.style.visibility = "hidden";
     this.root.appendChild(this._iconDelete);
 
-    const iconClearFilter = ui.iconFA('filter', () => {
-      thisViewer.clearFilters();
-    }, "Clear Filter");
+    const iconClearFilter = ui.iconFA('filter', () => thisViewer.clearFilters(), "Clear Filter");
     iconClearFilter.classList.add('grok-icon-filter');
     iconClearFilter.style.color = "red";
     iconClearFilter.style.textAlign = "left";
@@ -1041,26 +1065,19 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     iconClearFilter.style.visibility = "hidden";
     this.root.appendChild(iconClearFilter);
 
-    /*
-    const iconOpenFile = ui.iconFA('folder-open', () => {
-      //thisViewer.clearFilters();
-      const a = ui.dialog({title: 'Open tree'})
-        //@ts-ignore
-        .add(ui.fileBrowser({path: 'System:AppData/Bio/libraries'}).root)
-        .addButton('OK', () => a.close())
-        .show();
-    }, "Open saved tree");
-
-    iconOpenFile.style.color = "red";
+    const iconOpenFile = ui.iconFA('folder-open', () => this.loadTree(), "Open saved tree");
     iconOpenFile.style.textAlign = "left";
     iconOpenFile.style.position = "absolute";
     iconOpenFile.style.marginLeft = "120px";
     iconOpenFile.style.fontSize = "17px";
-    //iconOpenFile.style.visibility = "hidden";
     this.root.appendChild(iconOpenFile);
-   */
 
-
+    const iconSaveFile = ui.iconFA('arrow-to-bottom', () => this.saveTree(), "Save this tree to disk");
+    iconSaveFile.style.textAlign = "left";
+    iconSaveFile.style.position = "absolute";
+    iconSaveFile.style.marginLeft = "140px";
+    iconSaveFile.style.fontSize = "17px";
+    this.root.appendChild(iconSaveFile);
 
     this.tree.root.style.position = "absolute";
     this.tree.root.style.top = "25px";
@@ -1101,13 +1118,13 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   static serializeTree(rootGroup: TreeViewGroup): INode {
-    const jsonNode = {
-      scaffold: value(rootGroup).smiles,
-      child_nodes: new Array(rootGroup.children.length)
-    };
+    const jsonNode: INode = {};
+    if (value(rootGroup))
+      jsonNode.scaffold = value(rootGroup).smiles;
+    jsonNode.child_nodes = new Array(rootGroup.children.length)
 
-    for (let n = 0; n < rootGroup.children.length; ++n)
-      jsonNode.child_nodes[n] = ScaffoldTreeViewer.serializeTree(rootGroup.children[n] as TreeViewGroup);
+    for (let i = 0; i < rootGroup.children.length; ++i)
+      jsonNode.child_nodes[i] = ScaffoldTreeViewer.serializeTree(rootGroup.children[i] as TreeViewGroup);
 
     return jsonNode;
   }
