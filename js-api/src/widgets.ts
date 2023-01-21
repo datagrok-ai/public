@@ -1415,7 +1415,7 @@ export class Color {
 /** Tree view node.
  * Sample: {@link https://public.datagrok.ai/js/samples/ui/tree-view}
  * */
-export class TreeViewNode {
+export class TreeViewNode<T = any> {
   dart: any;
 
   /** @constructs {TreeView} from the Dart object */
@@ -1451,8 +1451,8 @@ export class TreeViewNode {
   get text(): string { return api.grok_TreeViewNode_Text(this.dart); }
 
   /** Node value */
-  get value(): object { return api.grok_TreeViewNode_Get_Value(this.dart); };
-  set value(v: object) { api.grok_TreeViewNode_Set_Value(this.dart, v); };
+  get value(): T { return api.grok_TreeViewNode_Get_Value(this.dart); };
+  set value(v: T) { api.grok_TreeViewNode_Set_Value(this.dart, v); };
 
   /** Enables checkbox */
   enableCheckBox(checked: boolean = false): void {
