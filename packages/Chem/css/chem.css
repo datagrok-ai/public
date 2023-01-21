@@ -86,6 +86,15 @@
   cursor: pointer;
 }
 
+.d4-scaffold-tree .d4-tree-view-root {
+  padding: 1px;
+}
+
+.d4-scaffold-tree .d4-tree-view-node {
+  border: 1px solid var(--grey-2);
+  margin-top: -1px;
+}
+
 .chem-scaffold-tree-generate-hint {
   text-align: center;
   position: absolute;
@@ -119,7 +128,7 @@
 }
 
 .d4-scaffold-tree .fa-trash-alt {
-  color: var(--red-4); !important;
+  color: var(--red-4) !important;
 }
 
 .icon-fill {
