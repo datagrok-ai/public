@@ -306,6 +306,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     super();
 
     this.tree = ui.tree();
+    this.tree.root.classList.add('d4-tree-view-lines');
     const dframe = grok.shell.tv.dataFrame;
     this.molColumns = dframe.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
     const molColNames = new Array(this.molColumns.length);
