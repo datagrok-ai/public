@@ -1039,7 +1039,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   render() {
     const thisViewer = this;
     const iconHost = ui.divH([
-      this._iconAdd        = ui.iconFA('plus', () => thisViewer.openAddSketcher(thisViewer.tree), 'Add New Root Structure'),
+      this._iconAdd = ui.iconFA('plus', () => thisViewer.openAddSketcher(thisViewer.tree), 'Add New Root Structure'),
       ui.iconFA('filter', () => thisViewer.clearFilters(), 'Clear Filter'),
       ui.iconFA('folder-open', () => this.loadTree(), 'Open saved tree'),
       ui.iconFA('arrow-to-bottom', () => this.saveTree(), "Save this tree to disk"),

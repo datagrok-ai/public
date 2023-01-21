@@ -111,9 +111,6 @@
   position: absolute;
   left: 10px;
   gap: 10px;
-}
-
-.chem-scaffold-tree-toolbar i {
   font-size: 18px;
 }
 
@@ -122,7 +119,7 @@
 }
 
 .d4-scaffold-tree .fa-trash-alt {
-  color: var(--red-4);
+  color: var(--red-4); !important;
 }
 
 .icon-fill {
