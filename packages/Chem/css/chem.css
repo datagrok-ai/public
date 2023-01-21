@@ -106,9 +106,23 @@
   visibility: hidden;
 }
 
+.chem-scaffold-tree-toolbar {
+  color: #2083d5;
+  position: absolute;
+  left: 10px;
+  gap: 10px;
+}
+
+.chem-scaffold-tree-toolbar i {
+  font-size: 18px;
+}
 
 .d4-scaffold-tree .d4-tree-view-group-host .d4-tree-view-group-host {
   margin-left: 30px;
+}
+
+.d4-scaffold-tree .fa-trash-alt {
+  color: var(--red-4);
 }
 
 .icon-fill {

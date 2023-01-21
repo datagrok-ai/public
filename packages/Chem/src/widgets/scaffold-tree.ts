@@ -1038,53 +1038,16 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   render() {
     const thisViewer = this;
-    this._iconAdd = ui.iconFA('plus', () => thisViewer.openAddSketcher(thisViewer.tree), 'Add New Root Structure');
-    this._iconAdd.style.color = "#2083d5";
-    this._iconAdd.style.textAlign = "left";
-    this._iconAdd.style.position = "absolute";
-    this._iconAdd.style.marginLeft = "15px";
-    this._iconAdd.style.fontSize = "20px";
-    this.root.appendChild(this._iconAdd);
+    const iconHost = ui.divH([
+      this._iconAdd        = ui.iconFA('plus', () => thisViewer.openAddSketcher(thisViewer.tree), 'Add New Root Structure'),
+      ui.iconFA('filter', () => thisViewer.clearFilters(), 'Clear Filter'),
+      ui.iconFA('folder-open', () => this.loadTree(), 'Open saved tree'),
+      ui.iconFA('arrow-to-bottom', () => this.saveTree(), "Save this tree to disk"),
+      this._iconDelete = ui.iconFA('trash-alt', () => thisViewer.clear(), 'Drop All Trees')
+    ], 'chem-scaffold-tree-toolbar');
+    this.root.appendChild(iconHost);
 
-    this._iconDelete = ui.iconFA('trash-alt', () => thisViewer.clear(), 'Drop All Trees');
-    this._iconDelete.style.color = "#2083d5";
-    this._iconDelete.style.textAlign = "left";
-    this._iconDelete.style.position = "absolute";
-    this._iconDelete.style.marginLeft = "45px";
-    this._iconDelete.style.fontSize = "19px";
-    this._iconDelete.style.visibility = "hidden";
-    this.root.appendChild(this._iconDelete);
-
-    const iconClearFilter = ui.iconFA('filter', () => thisViewer.clearFilters(), "Clear Filter");
-    iconClearFilter.classList.add('grok-icon-filter');
-    iconClearFilter.style.color = "red";
-    iconClearFilter.style.textAlign = "left";
-    iconClearFilter.style.position = "absolute";
-    iconClearFilter.style.marginLeft = "80px";
-    iconClearFilter.style.fontSize = "17px";
-    iconClearFilter.style.visibility = "hidden";
-    this.root.appendChild(iconClearFilter);
-
-    const iconOpenFile = ui.iconFA('folder-open', () => this.loadTree(), "Open saved tree");
-    iconOpenFile.style.textAlign = "left";
-    iconOpenFile.style.position = "absolute";
-    iconOpenFile.style.marginLeft = "120px";
-    iconOpenFile.style.fontSize = "17px";
-    this.root.appendChild(iconOpenFile);
-
-    const iconSaveFile = ui.iconFA('arrow-to-bottom', () => this.saveTree(), "Save this tree to disk");
-    iconSaveFile.style.textAlign = "left";
-    iconSaveFile.style.position = "absolute";
-    iconSaveFile.style.marginLeft = "140px";
-    iconSaveFile.style.fontSize = "17px";
-    this.root.appendChild(iconSaveFile);
-
-    this.tree.root.style.position = "absolute";
-    this.tree.root.style.top = "25px";
-    this.tree.root.style.width = '100%';
-    this.tree.root.style.height = '100%';
-    this.root.appendChild(this.tree.root);
-
+    ui.tools.setHoverVisibility(this.root, [iconHost, this._iconDelete]);
 
     this._message = ui.divText('', 'chem-scaffold-tree-generate-message-hint');
     this.root.appendChild(this._message);
