@@ -855,9 +855,10 @@ export class PeptidesModel {
     const selection = this.df.selection;
     const filter = this.df.filter;
     const clusterCol = this.df.col(this.settings.clustersColumnName!);
-    const clusterColData = clusterCol?.getRawData();
 
     const changeSelectionBitset = (currentBitset: DG.BitSet): void => {
+      const clusterColData = clusterCol?.getRawData();
+
       const edfSelection = this.edf?.selection;
       if (this.isPeptideSpaceChangingBitset) {
         if (edfSelection == null)
