@@ -49,12 +49,28 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
           continue;
 
         for (const aar of aarList) {
+          const indexes: number[] = [];
           aarStr = `${position} : ${aar}`;
-          const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, rowCount).init((i) => posCol.get(i) == aar);
+          const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, rowCount).init((i) => {
+            const flag = posCol.get(i) == aar;
+            if (flag)
+              indexes.push(i);
+          });
           const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
+
+          const colResults: {[colName: string]: number} = {};
+          for (const [col, agg] of Object.entries(model.settings.columns || {})) {
+            const currentCol = model.df.getCol(col);
+            const currentColData = currentCol.getRawData();
+            const tempCol = DG.Column.float('', indexes.length);
+            tempCol.init((i) => currentColData[indexes[i]]);
+            colResults[`${agg}(${col})`] = tempCol.stats[agg as keyof DG.Stats] as number;
+          }
+
           const stats = model.monomerPositionStats[position][aar];
           const das = getDistributionAndStats(distributionTable, stats, aarStr, otherStr, true);
-          const distributionRoot = wrapDistroAndStatsDefault(das.labels, das.histRoot, das.tableMap);
+          const resultMap: {[key: string]: any} = {...das.tableMap, ...colResults};
+          const distributionRoot = wrapDistroAndStatsDefault(das.labels, das.histRoot, resultMap);
           $(distributionRoot).addClass('d4-flex-col');
 
           res.push(distributionRoot);
@@ -81,8 +97,20 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         const stats = getStats(activityScaledData, maskInfo);
         const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
         const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
+
+        const indexes = mask.getSelectedIndexes();
+        const colResults: {[colName: string]: number} = {};
+        for (const [col, agg] of Object.entries(model.settings.columns || {})) {
+          const currentCol = model.df.getCol(col);
+          const currentColData = currentCol.getRawData();
+          const tempCol = DG.Column.float('', indexes.length);
+          tempCol.init((i) => currentColData[indexes[i]]);
+          colResults[`${agg}(${col})`] = tempCol.stats[agg as keyof DG.Stats] as number;
+        }
+
         const das = getDistributionAndStats(distributionTable, stats, aarStr, otherStr, true);
-        const distributionRoot = wrapDistroAndStatsDefault(das.labels, das.histRoot, das.tableMap);
+        const resultMap: {[key: string]: any} = {...das.tableMap, ...colResults};
+        const distributionRoot = wrapDistroAndStatsDefault(das.labels, das.histRoot, resultMap);
         $(distributionRoot).addClass('d4-flex-col');
 
         res.push(distributionRoot);
@@ -125,8 +153,20 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         const stats = getStats(activityScaledData, maskInfo);
         const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
         const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
+
+        const indexes = mask.getSelectedIndexes();
+        const colResults: {[colName: string]: number} = {};
+        for (const [col, agg] of Object.entries(model.settings.columns || {})) {
+          const currentCol = model.df.getCol(col);
+          const currentColData = currentCol.getRawData();
+          const tempCol = DG.Column.float('', indexes.length);
+          tempCol.init((i) => currentColData[indexes[i]]);
+          colResults[`${agg}(${col})`] = tempCol.stats[agg as keyof DG.Stats] as number;
+        }
+
         const das = getDistributionAndStats(distributionTable, stats, aarStr, otherStr, true);
-        const distributionRoot = wrapDistroAndStatsDefault(das.labels, das.histRoot, das.tableMap);
+        const resultMap: {[key: string]: any} = {...das.tableMap, ...colResults};
+        const distributionRoot = wrapDistroAndStatsDefault(das.labels, das.histRoot, resultMap);
         $(distributionRoot).addClass('d4-flex-col');
 
         res.push(distributionRoot);
@@ -153,6 +193,17 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         }
 
         const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
+
+        const indexes = table.selection.getSelectedIndexes();
+        const colResults: {[colName: string]: number} = {};
+        for (const [col, agg] of Object.entries(model.settings.columns || {})) {
+          const currentCol = model.df.getCol(col);
+          const currentColData = currentCol.getRawData();
+          const tempCol = DG.Column.float('', indexes.length);
+          tempCol.init((i) => currentColData[indexes[i]]);
+          colResults[`${agg}(${col})`] = tempCol.stats[agg as keyof DG.Stats] as number;
+        }
+
         const maskInfo: MaskInfo = {
           mask: table.selection.getBuffer(),
           trueCount: table.selection.trueCount,
@@ -160,7 +211,8 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         };
         const stats = getStats(activityScaledCol.getRawData(), maskInfo);
         const das = getDistributionAndStats(distributionTable, stats, aarStr, otherStr);
-        const distributionRoot = wrapDistroAndStatsDefault(das.labels, das.histRoot, das.tableMap);
+        const resultMap: {[key: string]: any} = {...das.tableMap, ...colResults};
+        const distributionRoot = wrapDistroAndStatsDefault(das.labels, das.histRoot, resultMap);
         $(distributionRoot).addClass('d4-flex-col');
 
         res.push(distributionRoot);
