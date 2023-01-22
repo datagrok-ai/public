@@ -38,8 +38,23 @@ function syncQueryAromatics_2(molBlockAroma: string, molBlock : string) : string
 }
 
 export function aromatizeMolBlock(molString: string) : string {
-  const molTmp = _rdKitModule.get_mol(molString, '{"mergeQueryHs":true, "kekulize": true}');
-  const molBlockAroma = molTmp!.get_aromatic_form();
+  let molTmp = null;
+  try { molTmp = _rdKitModule.get_mol(molString); }
+  catch(e) {
+    if (molTmp !== null && molTmp.is_valid())
+      molTmp.delete();
+
+    try { molTmp = _rdKitModule.get_qmol(molString); }
+    catch(e) {
+      return molString;
+    }
+  }
+  let molBlockAroma = null;
+  try { molBlockAroma = molTmp!.get_aromatic_form(); }
+  catch(e) {
+    molBlockAroma = molString;
+  }
+
   molTmp!.delete();
   const newQueryMolString = syncQueryAromatics_2(molBlockAroma, molString);
   return newQueryMolString;

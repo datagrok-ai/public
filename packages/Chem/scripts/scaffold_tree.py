@@ -1,7 +1,7 @@
 #name: GenerateScaffoldTree
 #description: generation scaffold tree from dataset
 #language: python
-#environment: channels: [conda-forge], dependencies: [python=3.8, rdkit, {pip: [ScaffoldGraphDG, networkx]}]
+#environment: channels: [conda-forge], dependencies: [python=3.8, rdkit, {pip: [ScaffoldGraphDG==1.1.8, networkx]}]
 #input: dataframe data [Input data table]
 #input: string smilesColumn
 #input: int ringCutoff = 10 [Ignore molecules with # rings > N]
