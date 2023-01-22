@@ -10,6 +10,8 @@ import Sketcher = chem.Sketcher;
 import {chemSubstructureSearchLibrary} from "../chem-searches";
 import {getScaffoldTree} from "../package";
 import {drawRdKitMoleculeToOffscreenCanvas} from "../utils/chem-common-rdkit";
+import {aromatizeMolBlock} from "../utils/aromatic-utils";
+import {RDMol} from "@datagrok-libraries/chem-meta/src/rdkit-api";
 
 const CELL_HEIGHT = 120;
 const CELL_WIDTH = 200;
@@ -35,6 +37,60 @@ interface ITreeNode {
 
 function value(node: TreeViewNode): ITreeNode {
   return node.value as ITreeNode;
+}
+
+function getMol(molString : string) : RDMol | null {
+  let mol = null;
+  try { mol = _rdKitModule.get_mol(molString, '{"mergeQueryHs":true, "kekulize": true}'); }
+  catch(e) {
+    if (mol !== null && mol.is_valid())
+      mol.delete();
+    try { mol = _rdKitModule.get_qmol(molString); }
+    catch(e) {
+      return null;
+    }
+    return mol;
+  }
+  return mol;
+}
+
+function processUnits(molPBlok : string) {
+  let curPos = 0;
+  curPos = molPBlok.indexOf('\n', curPos) + 1;
+  curPos = molPBlok.indexOf('\n', curPos) + 1;
+  curPos = molPBlok.indexOf('\n', curPos) + 1;
+  const atomCount = parseInt(molPBlok.substring(curPos, curPos + 3));
+  const bondCount = parseInt(molPBlok.substring(curPos + 3, curPos + 6));
+  curPos = molPBlok.indexOf('\n', curPos) + 1;
+
+  //32 33 34 N O S -> 55-57
+  const arom_atoms = new Array();
+  for (let idx_atom=0; idx_atom < atomCount; ++idx_atom) {
+    let idxElem = curPos + 31;
+    let str = molPBlok.substring(idxElem, idxElem + 3);
+    if (str === "N  " || str === "O  " || str === 'S  '){
+      let idxMark = curPos + 55;
+      let strTmp = molPBlok.substring(idxMark +1, idxMark + 2);
+      let numTmp = parseInt(strTmp);
+      if (numTmp === 1) {
+        if (str === "O  " || str === 'S  ') {
+          arom_atoms.unshift({elem: str, atom_index: idx_atom + 1})
+        } else arom_atoms.push({elem: str, atom_index: idx_atom + 1})
+      }
+    }
+    curPos = molPBlok.indexOf('\n', curPos) + 1;
+  }
+
+  let curPosAdd = curPos;
+  for(let idx_bond =0; idx_bond < bondCount; ++idx_bond) {
+    let s = "";
+    if ((s = molPBlok.substring(curPosAdd + 8, curPosAdd + 9)) === '4') {
+      let endStr = molPBlok.substring(curPosAdd + 9);
+      molPBlok = molPBlok.substring(0, curPosAdd + 6) + "  6" + endStr;
+    }
+    curPosAdd = molPBlok.indexOf('\n', curPosAdd) + 1;
+  }
+  return molPBlok;
 }
 
 function enableNodeExtendArrow(group: TreeViewGroup, enable: boolean): void {
@@ -80,12 +136,14 @@ function buildOrphans(rootGroup: TreeViewGroup) {
     const bitsetThis = v.bitset!;
     let bitsetOrphans = bitsetThis.clone();
     let bitsetChildrenTmp = DG.BitSet.create(bitsetThis.length);
+    let bitsetChild = null;
     for (let n = 0; n < rootGroup.children.length; ++n) {
       if (isOrphans(rootGroup.children[n]) || isNodeFiltered(rootGroup.children[n]))
         continue;
 
-      let bitsetChild = value(rootGroup.children[n]).bitset!;
+      bitsetChild = value(rootGroup.children[n]).bitset!;
       bitsetChildrenTmp = bitsetChildrenTmp.or(bitsetChild, false);
+      //console.log(n + " " + bitsetChild.trueCount + " " + bitsetChildrenTmp.trueCount);
     }
     if (bitsetChildrenTmp.trueCount > 0)
       bitsetOrphans = bitsetOrphans.xor(bitsetChildrenTmp, false);
@@ -172,46 +230,6 @@ async function _initWorkers(molColumn: DG.Column) : Promise<DG.BitSet> {
 let offscreen : OffscreenCanvas | null = null;
 let gOffscreen : OffscreenCanvasRenderingContext2D | null = null;
 
-function processUnits(molPBlok : string): string {
-  let curPos = 0;
-  curPos = molPBlok.indexOf('\n', curPos) + 1;
-  curPos = molPBlok.indexOf('\n', curPos) + 1;
-  curPos = molPBlok.indexOf('\n', curPos) + 1;
-  const atomCount = parseInt(molPBlok.substring(curPos, curPos + 3));
-  const bondCount = parseInt(molPBlok.substring(curPos + 3, curPos + 6));
-  curPos = molPBlok.indexOf('\n', curPos) + 1;
-
-  //32 33 34 N O S -> 55-57
-  const aromaticAtoms = [];
-  for (let atomIdx = 0; atomIdx < atomCount; ++atomIdx) {
-    let idxElem = curPos + 31;
-    let str = molPBlok.substring(idxElem, idxElem + 3);
-    if (str === "N  " || str === "O  " || str === 'S  '){
-      let idxMark = curPos + 55;
-      let strTmp = molPBlok.substring(idxMark +1, idxMark + 2);
-      let numTmp = parseInt(strTmp);
-      if (numTmp === 1) {
-        if (str === "O  " || str === 'S  ') {
-          aromaticAtoms.unshift({elem: str, atomIndex: atomIdx + 1})
-        }
-        else
-          aromaticAtoms.push({elem: str, atomIndex: atomIdx + 1})
-      }
-    }
-    curPos = molPBlok.indexOf('\n', curPos) + 1;
-  }
-
-  let curPosAdd = curPos;
-  for (let bondIdx =0; bondIdx < bondCount; ++bondIdx) {
-    let s = "";
-    if ((s = molPBlok.substring(curPosAdd + 8, curPosAdd + 9)) === '4') {
-      let endStr = molPBlok.substring(curPosAdd + 9);
-      molPBlok = molPBlok.substring(0, curPosAdd + 6) + "  6" + endStr;
-    }
-    curPosAdd = molPBlok.indexOf('\n', curPosAdd) + 1;
-  }
-  return molPBlok;
-}
 
 function renderMolecule(molStr: string, width: number, height: number, skipDraw: boolean = false): HTMLDivElement {
   if (offscreen === null) {
@@ -229,25 +247,12 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
     const fontHeight = Math.abs(tm.actualBoundingBoxAscent) + tm.actualBoundingBoxDescent
     const lineWidth = tm.width;
     g!.fillText(text, Math.floor((width - lineWidth) / 2), Math.floor((height - fontHeight) / 2));
-  }
-  else {
-    let mol = null;
-    try {
-      mol = _rdKitModule.get_mol(molStr);
+  } else {
+    molStr = processUnits(molStr);
+    const mol = getMol(molStr);
+    if (mol !== null) {
       drawRdKitMoleculeToOffscreenCanvas(mol, CELL_CANVAS_WIDTH, CELL_CANVAS_HEIGHT, offscreen, null);
       mol.delete();
-    }
-    catch(e) {
-      console.error("Mol ERROR");
-      molStr = processUnits(molStr);
-
-      try { mol = _rdKitModule.get_qmol(molStr);
-        drawRdKitMoleculeToOffscreenCanvas(mol, CELL_CANVAS_WIDTH, CELL_CANVAS_HEIGHT, offscreen, null);
-        mol.delete();
-      }
-      catch(e) {
-        console.error("Mol ERROR ERROR");
-      }
     }
   }
 
@@ -410,20 +415,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const maxMolCount = 750;
 
     let length = this.molColumn.length;
-    let validCount = 0;
-    for (let n = 0; n < length; ++n) {
-      if (this.molColumn.get(n).includes('V3000'))
-        continue;
-      ++validCount;
-    }
-
-    if (validCount === 0) {
-      ui.setUpdateIndicator(this.root, false);
-      this.progressBar.update(50, 'Build failed');
-      this.progressBar.close();
-      this.message = 'The dataset contains molecular blocks in the V3000 standard which is not currently supported.';
-      return;
-    }
+    let valid_count = 0;
+    let molcreate_errorcount = 0;
+    let convert_errorcount = 0;
+    let mol = null;
 
     let step = 1;
     if (this.molColumn.length > maxMolCount) {
@@ -432,15 +427,28 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       length = maxMolCount;
     }
 
+    let molStr = null;
+    let mTmp = null;
     const ar = new Array(length);
     for (let n = 0, m = 0; n < length; ++n, m += step) {
-      if (this.molColumn.get(m).includes('V3000')) {
-        const mTmp = _rdKitModule.get_mol(this.molColumn.get(m));
-        ar[n] = mTmp.get_smiles();
-        mTmp.delete();
+      molStr = this.molColumn.get(m);
+      if (molStr.includes('V3000')) {
+        mTmp = null;
+        try {mTmp = _rdKitModule.get_mol(molStr);}
+        catch(e) {
+          if (mTmp !== null && mTmp.is_valid())
+            mTmp.delete();
+          try {mTmp = _rdKitModule.get_qmol(molStr);}
+          catch(e) {
+            ar[n] = molStr;
+          }
+        }
+        if (mTmp !== null && mTmp.is_valid()) {
+          ar[n] = mTmp.get_smiles();
+          mTmp.delete();
+        }
         continue;
-      }
-      ar[n] = this.molColumn.get(m);
+      } else ar[n] = molStr;
     }
 
     const molCol: DG.Column = DG.Column.fromStrings('smiles', ar);
@@ -683,15 +691,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     if (checkedNodes.length === 1) {
       const molStr = value(checkedNodes[0]).smiles;
-      if (molStr !== undefined) {
-        const mol = _rdKitModule.get_mol(molStr);
-        const molFile = mol.get_molblock();
-        mol.delete();
+      if(molStr !== undefined) {
+        const molFile = aromatizeMolBlock(molStr);
         this.molColumn.temp['chem-scaffold-filter'] = molFile;
       }
-    }
-    else
-      delete this.molColumn.temp['chem-scaffold-filter'];
+    } else delete this.molColumn.temp['chem-scaffold-filter'];
 
     if (this.bitset === null)
       this.bitset = DG.BitSet.create(this.molColumn.length);
@@ -708,10 +712,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   private async filterByStruct(strMol: string) {
     if (this.molColumn != null && strMol !== null) {
-      const mol = _rdKitModule.get_mol(strMol);
-      const molFile = mol.get_molblock();
-      mol.delete();
-      this.molColumn.temp['chem-scaffold-filter'] = molFile;
+      const mol = getMol(strMol);
+      if (mol !== null) {
+        const molFile = mol.get_molblock();
+        mol.delete();
+        this.molColumn.temp['chem-scaffold-filter'] = molFile;
+      }
       const bitset = await chemSubstructureSearchLibrary(this.molColumn, strMol, '');
       if (this.bitset === null)
         this.bitset = bitset;
@@ -719,7 +725,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         this.bitset.setAll(false, false);
         this.bitset = this.bitset.or(bitset);
       }
-
       this.dataFrame.rows.requestFilter();
       this.updateUI();
     }
@@ -1063,8 +1068,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   static validateNodes(childSmiles: string, parentSmiles: string): boolean {
-    const parentMol = _rdKitModule.get_mol(parentSmiles);
-    const parentCld = _rdKitModule.get_mol(childSmiles);
+    const parentMol = getMol(parentSmiles);
+    const parentCld = getMol(childSmiles);
+    if (parentMol === null || parentCld === null)
+      return false;
 
     const match: string = parentCld.get_substruct_match(parentMol);
     parentMol.delete();
