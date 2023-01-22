@@ -85,11 +85,14 @@ export class LogoSummary extends DG.JsViewer {
     const originalClustersColLength = originalClustersColData.length;
 
     const customClustersColumnsList = wu(this.model.customClusters).toArray();
+    const getAggregatedColName = (aggF: string, colName: string) => `${aggF}(${colName})`;
 
     let summaryTableBuilder = this.dataFrame.groupBy([clustersColName]);
     const aggregateColumnsEntries = Object.entries(this.model.settings.columns ?? {});
-    for (const [colName, aggregationFunc] of aggregateColumnsEntries)
-      summaryTableBuilder = summaryTableBuilder.add(aggregationFunc as any, colName, `${aggregationFunc}(${colName})`);
+    for (const [colName, aggregationFunc] of aggregateColumnsEntries) {
+      summaryTableBuilder = summaryTableBuilder.add(
+        aggregationFunc as any, colName, getAggregatedColName(aggregationFunc, colName));
+    }
 
     const tempSummaryTable = summaryTableBuilder.aggregate();
     const tempSummaryTableLength = tempSummaryTable.rowCount;
@@ -119,7 +122,7 @@ export class LogoSummary extends DG.JsViewer {
     const ratioColData = summaryTableCols.addNewFloat(C.LST_COLUMN_NAMES.RATIO).getRawData();
 
     for (const [colName, aggregationFunc] of aggregateColumnsEntries) {
-      const tempSummaryTableCol = tempSummaryTable.getCol(`${aggregationFunc}(${colName})`);
+      const tempSummaryTableCol = tempSummaryTable.getCol(getAggregatedColName(aggregationFunc, colName));
       const summaryTableCol = summaryTableCols.addNew(tempSummaryTableCol.name, tempSummaryTableCol.type);
       summaryTableCol.init((i) => i < tempSummaryTableLength ? tempSummaryTableCol.get(i) : null);
     }
@@ -173,14 +176,14 @@ export class LogoSummary extends DG.JsViewer {
       if (!isOriginalCluster) {
         for (const [colName, aggregationFunc] of aggregateColumnsEntries) {
           const arrayBuffer = this.dataFrame.getCol(colName).getRawData();
-          const clusterMask = DG.BitSet.fromBytes(arrayBuffer, arrayBuffer.byteLength);
+          const clusterMask = DG.BitSet.fromBytes(arrayBuffer.buffer, arrayBuffer.byteLength / 4);
           const subDf = this.dataFrame.clone(clusterMask, [colName]);
-          const newColName = `${aggregationFunc}(${colName})`;
+          const newColName = getAggregatedColName(aggregationFunc, colName);
           const aggregatedDf = subDf.groupBy()
             .add(aggregationFunc as any, colName, newColName)
             .aggregate();
           const value = aggregatedDf.get(newColName, 0);
-          summaryTable.set(colName, summaryTableRowIndex, value);
+          summaryTable.set(newColName, summaryTableRowIndex, value);
         }
       }
     }
