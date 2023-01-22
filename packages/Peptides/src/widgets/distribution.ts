@@ -8,6 +8,7 @@ import * as C from '../utils/constants';
 import {getStats, MaskInfo, Stats} from '../utils/statistics';
 import {PeptidesModel} from '../model';
 import {wrapDistroAndStatsDefault} from '../utils/misc';
+import wu from 'wu';
 
 const allConst = 'All';
 const otherConst = 'Other';
@@ -22,8 +23,12 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
     const clustersRawObject = model.logoSummarySelection;
     const clustersColCategories = table.getCol(model.settings.clustersColumnName!).categories;
     clustersProcessedObject = new Array(clustersRawObject.length);
-    for (let i = 0; i < clustersRawObject.length; ++i)
-      clustersProcessedObject[i] = clustersColCategories[clustersRawObject[i]];
+    const customClustersColumns = wu(model.customClusters).toArray();
+    for (let i = 0; i < clustersRawObject.length; ++i) {
+      const clusterIdx = clustersRawObject[i];
+      clustersProcessedObject[i] = clusterIdx - clustersColCategories.length < 0 ? clustersColCategories[clusterIdx] :
+        customClustersColumns[clusterIdx - clustersColCategories.length].name;
+    }
   }
   const positions = Object.keys(selectionObject);
   const positionsLen = positions.length;
