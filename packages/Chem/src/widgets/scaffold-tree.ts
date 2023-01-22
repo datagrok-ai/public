@@ -1037,6 +1037,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   render() {
+    this.root.appendChild(this.tree.root);
     const thisViewer = this;
     const iconHost = ui.divH([
       this._iconAdd = ui.iconFA('plus', () => thisViewer.openAddSketcher(thisViewer.tree), 'Add New Root Structure'),
