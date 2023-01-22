@@ -6,8 +6,8 @@ Scaffold tree organizes molecular data sets by arranging molecules into
 a tree hierarchy based on their scaffolds. This hierarchy can then be used 
 for filtering or selecting the corresponding rows in the dataset.
 
-To open Scaffold Tree, open a dataset with molecules and then  
-click on the **Chem | Scaffold Tree** from the top menu.
+To open Scaffold Tree, open a dataset with molecules and then select **Chem | Scaffold Tree** 
+from the top menu.
 
 A hierarchy can be either generated automatically, or sketched manually.
 When Scaffold Tree is initially created, a tree is generated automatically. You can also 
