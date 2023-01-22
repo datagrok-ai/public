@@ -733,7 +733,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   addIcons(molHost: HTMLDivElement, label: string, group: TreeViewGroup): void {
     const iconsDiv = ui.divV([
       ui.iconFA('plus', () => this.openAddSketcher(group), 'Add new scaffold'),
-      ui.iconFA('edit', () => this.openEditSketcher(group), 'Edit scaffold'),
+      ui.iconFA('pencil', () => this.openEditSketcher(group), 'Edit scaffold'),
       ui.divText(''),
       ui.iconFA('check-square', () => this.selectTableRows(group, true), 'Select rows'),
       ui.iconFA('square', () => this.selectTableRows(group, false), 'Unselect rows'),
@@ -1018,7 +1018,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const nodes = this.root.getElementsByClassName('d4-tree-view-node');
     for (let n = 0; n < nodes.length; ++n) {
       (nodes[n] as HTMLElement).style.height = CELL_HEIGHT + 'px';
-      (nodes[n] as HTMLElement).style.width = '295px';
+      (nodes[n] as HTMLElement).style.width = '280px';
     }
   }
 
