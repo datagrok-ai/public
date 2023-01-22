@@ -54,7 +54,7 @@ function getMol(molString : string) : RDMol | null {
   return mol;
 }
 
-function processUnits(molPBlok : string) {
+function processUnits(molPBlok : string): string {
   let curPos = 0;
   curPos = molPBlok.indexOf('\n', curPos) + 1;
   curPos = molPBlok.indexOf('\n', curPos) + 1;
@@ -64,8 +64,8 @@ function processUnits(molPBlok : string) {
   curPos = molPBlok.indexOf('\n', curPos) + 1;
 
   //32 33 34 N O S -> 55-57
-  const arom_atoms = new Array();
-  for (let idx_atom=0; idx_atom < atomCount; ++idx_atom) {
+  const aromaticAtoms = [];
+  for (let atomIdx = 0; atomIdx < atomCount; ++atomIdx) {
     let idxElem = curPos + 31;
     let str = molPBlok.substring(idxElem, idxElem + 3);
     if (str === "N  " || str === "O  " || str === 'S  '){
@@ -74,15 +74,17 @@ function processUnits(molPBlok : string) {
       let numTmp = parseInt(strTmp);
       if (numTmp === 1) {
         if (str === "O  " || str === 'S  ') {
-          arom_atoms.unshift({elem: str, atom_index: idx_atom + 1})
-        } else arom_atoms.push({elem: str, atom_index: idx_atom + 1})
+          aromaticAtoms.unshift({elem: str, atomIndex: atomIdx + 1})
+        }
+        else
+          aromaticAtoms.push({elem: str, atomIndex: atomIdx + 1})
       }
     }
     curPos = molPBlok.indexOf('\n', curPos) + 1;
   }
 
   let curPosAdd = curPos;
-  for(let idx_bond =0; idx_bond < bondCount; ++idx_bond) {
+  for (let bondIdx =0; bondIdx < bondCount; ++bondIdx) {
     let s = "";
     if ((s = molPBlok.substring(curPosAdd + 8, curPosAdd + 9)) === '4') {
       let endStr = molPBlok.substring(curPosAdd + 9);
