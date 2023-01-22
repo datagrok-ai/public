@@ -893,6 +893,14 @@ export async function callChemDiversitySearch(
   return await chemDiversitySearch(col, similarityMetric[metricName], limit, fingerprint as Fingerprint);
 }
 
+
+//top-menu: Chem | Scaffold Tree...
+//name: addScaffoldTree
+export function addScaffoldTree(): void {
+  grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
+}
+
+
 //name: getScaffoldTree
 //input: dataframe data
 //input: int ringCutoff = 10 [Ignore molecules with # rings > N]

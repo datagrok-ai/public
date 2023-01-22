@@ -275,6 +275,8 @@ const GENERATE_ERROR_MSG = 'Generating tree failed...Please check the dataset';
 const NO_MOL_COL_ERROR_MSG = 'There is no molecule column available';
 
 export class ScaffoldTreeViewer extends DG.JsViewer {
+  static TYPE: string = 'Scaffold Tree';
+
   tree: DG.TreeViewGroup;
   bitset: DG.BitSet | null = null;
   wrapper: SketcherDialogWrapper | null = null;
@@ -729,7 +731,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       ui.iconFA('edit', () => this.openEditSketcher(group), 'Edit scaffold'),
       ui.divText(''),
       ui.iconFA('check-square', () => this.selectTableRows(group, true), 'Select rows'),
-      ui.iconFA('square', () => this.selectTableRows(group, false), 'Unselect rows')
+      ui.iconFA('square', () => this.selectTableRows(group, false), 'Unselect rows'),
     ], 'chem-mol-box-info-buttons');
     iconsDiv.onclick = (e) => e.stopImmediatePropagation();
     iconsDiv.onmousedown = (e) => e.stopImmediatePropagation();
