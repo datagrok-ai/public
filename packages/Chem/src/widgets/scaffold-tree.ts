@@ -370,7 +370,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   /** Saves sketched tree to disk (under Downloads) */
   saveTree(): void {
-    let s = JSON.stringify(ScaffoldTreeViewer.serializeTree(this.tree));
+    let s = JSON.stringify(ScaffoldTreeViewer.serializeTrees(this.tree));
     DG.Utils.download('scaffold-tree.tree', s);
   }
 
@@ -466,6 +466,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   async loadTreeStr(jsonStr: string) {
+    this.clear();
     const json = JSON.parse(jsonStr);
 
     this.progressBar?.update(50, 'Initializing Tree..: 50% completed');
