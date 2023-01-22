@@ -2,11 +2,6 @@
 
 }
 
-.chem-mol-box {
-  position: relative;
-  width: min-content;
-}
-
 .chem-mol-box:hover .chem-mol-view-icon {
   visibility: visible;
 }
@@ -77,12 +72,12 @@
 
 .d4-scaffold-tree .grok-icon {
   color: var(--blue-1) !important;
-  font-size: large;
-  margin: 1px;
+  font-size: 16px;
 }
 
 .d4-scaffold-tree .grok-icon:hover {
-  color: var(--blue-2) !important;
+  filter: brightness(1.2);
+  -webkit-filter: brightness(1.2);
   cursor: pointer;
 }
 
@@ -92,7 +87,12 @@
 
 .d4-scaffold-tree .d4-tree-view-node {
   border: 1px solid var(--grey-2);
-  margin-top: -1px;
+  padding: 0;
+}
+
+.d4-scaffold-tree .d4-tree-view-node .d4-tree-view-group-label,
+.d4-scaffold-tree .d4-tree-view-node .d4-tree-view-group-label > .chem-mol-box {
+  flex-grow: 1;
 }
 
 .chem-scaffold-tree-generate-hint {
@@ -115,14 +115,6 @@
   visibility: hidden;
 }
 
-.chem-scaffold-tree-toolbar {
-  color: #2083d5;
-  position: absolute;
-  left: 10px;
-  gap: 10px;
-  font-size: 18px;
-}
-
 .d4-scaffold-tree .d4-tree-view-group-host .d4-tree-view-group-host {
   margin-left: 30px;
 }
@@ -141,4 +133,53 @@
 .d4-update-shadow {
   background-color: white;
   opacity: 1.0;
+}
+
+.chem-scaffold-tree-toolbar {
+  max-height: 24px;
+  margin: 0 0 2px 2px;
+  visibility: hidden;
+}
+
+.chem-scaffold-tree-toolbar .grok-icon {
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  width: 32px;
+  box-sizing: border-box;
+}
+
+.d4-viewer.d4-scaffold-tree:hover .chem-scaffold-tree-toolbar {
+  visibility: visible;
+}
+
+.d4-viewer.d4-scaffold-tree .chem-mol-box-info {
+  display: flex;
+  flex-direction: column;
+  align-items: end;
+  margin: 6px 6px 0 auto;
+  /* box-sizing: content-box; */
+}
+
+.d4-viewer.d4-scaffold-tree .chem-mol-box-info .chem-mol-box-info-buttons {
+  visibility: hidden;
+  margin: 12px 0;
+  justify-content: space-between;
+  flex-grow: 1;
+}
+
+.d4-viewer.d4-scaffold-tree .d4-tree-view-node:hover > .d4-tree-view-group-label > .chem-mol-box .chem-mol-box-info .chem-mol-box-info-buttons {
+  visibility: visible;
+}
+
+
+/* temporary fixes */
+.d4-tree-view-node .grok-icon.fal, .d4-tree-view-node .grok-icon.far, .d4-tree-view-node .grok-icon.fab, .d4-tree-view-node .grok-icon.fas {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.d4-viewer.d4-scaffold-tree .d4-tree-view-group {
+  align-self: initial;
 }

@@ -14,6 +14,9 @@ import {drawRdKitMoleculeToOffscreenCanvas} from "../utils/chem-common-rdkit";
 const CELL_HEIGHT = 120;
 const CELL_WIDTH = 200;
 
+const CELL_CANVAS_HEIGHT = CELL_HEIGHT * window.devicePixelRatio;
+const CELL_CANVAS_WIDTH = CELL_WIDTH * window.devicePixelRatio;
+
 interface INode {
   scaffold?: string;
   child_nodes?: INode[];
@@ -212,7 +215,7 @@ function processUnits(molPBlok : string): string {
 
 function renderMolecule(molStr: string, width: number, height: number, skipDraw: boolean = false): HTMLDivElement {
   if (offscreen === null) {
-    offscreen = new OffscreenCanvas(CELL_WIDTH, CELL_HEIGHT);
+    offscreen = new OffscreenCanvas(CELL_CANVAS_WIDTH, CELL_CANVAS_HEIGHT);
     gOffscreen = offscreen.getContext('2d', {willReadFrequently : true});
   }
 
@@ -231,7 +234,7 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
     let mol = null;
     try {
       mol = _rdKitModule.get_mol(molStr);
-      drawRdKitMoleculeToOffscreenCanvas(mol, CELL_WIDTH, CELL_HEIGHT, offscreen, null);
+      drawRdKitMoleculeToOffscreenCanvas(mol, CELL_CANVAS_WIDTH, CELL_CANVAS_HEIGHT, offscreen, null);
       mol.delete();
     }
     catch(e) {
@@ -239,7 +242,7 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
       molStr = processUnits(molStr);
 
       try { mol = _rdKitModule.get_qmol(molStr);
-        drawRdKitMoleculeToOffscreenCanvas(mol, CELL_WIDTH, CELL_HEIGHT, offscreen, null);
+        drawRdKitMoleculeToOffscreenCanvas(mol, CELL_CANVAS_WIDTH, CELL_CANVAS_HEIGHT, offscreen, null);
         mol.delete();
       }
       catch(e) {
@@ -253,11 +256,11 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
   $(moleculeHost).addClass('chem-canvas');
 
   const r = window.devicePixelRatio;
-  moleculeHost.width = width;
-  moleculeHost.height = height;
-  moleculeHost.style.width = (width / r).toString() + 'px';
-  moleculeHost.style.height= (height / r).toString() + 'px';
-  moleculeHost.getContext('2d')!.drawImage(bitmap, 0,0,CELL_WIDTH,CELL_HEIGHT);
+  moleculeHost.width = width * r;
+  moleculeHost.height = height * r;
+  moleculeHost.style.width = width.toString() + 'px';
+  moleculeHost.style.height = height.toString() + 'px';
+  moleculeHost.getContext('2d')!.drawImage(bitmap, 0, 0, moleculeHost.width, moleculeHost.height);
 
   return ui.divH([moleculeHost], 'chem-mol-box');
 }
@@ -300,7 +303,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     super();
 
     this.tree = ui.tree();
-    this.tree.root.classList.add('d4-tree-view-lines');
+    // this.tree.root.classList.add('d4-tree-view-lines');
     const dataFrame = grok.shell.tv.dataFrame;
     this.molColumns = dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
     this.helpUrl = '/help/visualize/viewers/scaffold-tree.md';
@@ -726,14 +729,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       ui.divText(''),
       ui.iconFA('check-square', () => this.selectTableRows(group, true), 'Select rows'),
       ui.iconFA('square', () => this.selectTableRows(group, false), 'Unselect rows')
-    ]);
+    ], 'chem-mol-box-info-buttons');
     iconsDiv.onclick = (e) => e.stopImmediatePropagation();
     iconsDiv.onmousedown = (e) => e.stopImmediatePropagation();
-    iconsDiv.style.justifyContent = 'center';
 
     const flagIcon = ui.iconFA('circle', () => this.openEditSketcher(group), 'The scaffold was edited');
     flagIcon.style.fontSize = '8px';
-    flagIcon.style.marginLeft = '5px';
     //flagIcon.style.color = 'hotpink !important';
     flagIcon.style.visibility = 'hidden';
     flagIcon.classList.remove('fal');
@@ -748,7 +749,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
 
     let labelDiv = null;
-    const iconsInfo = ui.divH([labelDiv = ui.divText(label), flagIcon]);
+    const iconsInfo = ui.divH([flagIcon, labelDiv = ui.divText(label)]);
     value(group).labelDiv = labelDiv;
 
     const c = molHost.getElementsByTagName('CANVAS')
@@ -757,8 +758,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     iconsInfo.onclick = (e) => e.stopImmediatePropagation();
     iconsInfo.onmousedown = (e) => e.stopImmediatePropagation();
-    molHost.appendChild(ui.divV([iconsInfo, iconsDiv]));
-    ui.tools.setHoverVisibility(molHost, [iconsDiv]);
+    molHost.appendChild(ui.divV([iconsInfo, iconsDiv], 'chem-mol-box-info'));
   }
 
 
@@ -785,15 +785,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   createOrphansGroup(rootGroup: TreeViewGroup, label: string) : DG.TreeViewGroup {
     const divFolder = ui.iconFA('folder');
     divFolder.style.fontSize = '66px';
-    divFolder.style.width = '200px';
-    divFolder.style.height = '120px';
-    divFolder.style.top = '33px'; //0.5 from the height
+    divFolder.style.width = `${CELL_WIDTH}px`;
+    divFolder.style.height = `${CELL_HEIGHT}px`;
     divFolder.style.cssText += 'color: hsla(0, 0%, 0%, 0) !important';
     divFolder.classList.remove('fal');
     divFolder.classList.add('fas', 'icon-fill');
 
     const labelDiv = ui.divText(label);
-    const divHost =  ui.divH([divFolder, labelDiv]);
+    const divHost = ui.divH([divFolder, ui.divV([labelDiv], 'chem-mol-box-info')], {style: {'flex-grow': 1}});
 
     const group = rootGroup.group(divHost, {orphans: true});
     if (group.children.length === 0)
@@ -1026,7 +1025,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
 
     const itemCount = this.tree.items.length;
-    this._iconDelete!.style.visibility = itemCount > 0 ? 'visible' : 'hidden';
+    this._iconDelete!.style.display = itemCount > 0 ? 'flex' : 'none';
     this._generateLink!.style.visibility = itemCount > 0 ? 'hidden' : 'visible';
     this._message!.style.visibility = itemCount > 0 ? 'hidden' : 'visible';
 
@@ -1037,25 +1036,22 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   render() {
-    this.root.appendChild(this.tree.root);
     const thisViewer = this;
-    const iconHost = ui.divH([
+    const iconHost = ui.box(ui.divH([
       this._iconAdd = ui.iconFA('plus', () => thisViewer.openAddSketcher(thisViewer.tree), 'Add New Root Structure'),
       ui.iconFA('filter', () => thisViewer.clearFilters(), 'Clear Filter'),
       ui.iconFA('folder-open', () => this.loadTree(), 'Open saved tree'),
-      ui.iconFA('arrow-to-bottom', () => this.saveTree(), "Save this tree to disk"),
+      ui.iconFA('arrow-to-bottom', () => this.saveTree(), 'Save this tree to disk'),
       ui.divText(' '),
-      this._iconDelete = ui.iconFA('trash-alt', () => thisViewer.clear(), 'Drop All Trees')
-    ], 'chem-scaffold-tree-toolbar');
-    this.root.appendChild(iconHost);
-
-    ui.tools.setHoverVisibility(this.root, [iconHost, this._iconDelete]);
+      this._iconDelete = ui.iconFA('trash-alt', () => thisViewer.clear(), 'Drop All Trees'),
+    ]), 'chem-scaffold-tree-toolbar');
+    this.root.appendChild(ui.splitV([iconHost, this.tree.root]));
 
     this._message = ui.divText('', 'chem-scaffold-tree-generate-message-hint');
     this.root.appendChild(this._message);
 
     this._generateLink = ui.link('Generate',
-      async() => await thisViewer.generateTree(),
+      async () => await thisViewer.generateTree(),
       'Generates Scaffold Tree',
       'chem-scaffold-tree-generate-hint');
     this.root.appendChild(this._generateLink);
