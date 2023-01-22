@@ -17,8 +17,7 @@ export class LogoSummary extends DG.JsViewer {
   initialized: boolean = false;
   webLogoMode: string;
   membersRatioThreshold: number;
-  newClusterNum = 0;
-  newClusterName = 'New cluster';
+  newClusterName: string;
   webLogoDfPlot: DG.DataFramePlotHelper[] = [];
   distributionDfPlot: DG.DataFramePlotHelper[] = [];
 
@@ -28,6 +27,7 @@ export class LogoSummary extends DG.JsViewer {
     this.webLogoMode = this.string('webLogoMode', PositionHeight.full,
       {choices: [PositionHeight.full, PositionHeight.Entropy]});
     this.membersRatioThreshold = this.float('membersRatioThreshold', 0.7, {min: 0, max: 1.0});
+    this.newClusterName = this.string('newClusterName', 'New cluster');
   }
 
   onTableAttached(): void {
@@ -283,7 +283,6 @@ export class LogoSummary extends DG.JsViewer {
     const viewerDfColsLength = viewerDfCols.length;
     const newClusterVals = new Array(viewerDfCols.length);
 
-    const newClusterName = `${this.newClusterName}${this.newClusterNum != 0 ? ` ${this.newClusterNum}` : ''}`;
     const activityScaledCol = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     const maskInfo: MaskInfo = {
       mask: selection.getBuffer(),
@@ -312,6 +311,17 @@ export class LogoSummary extends DG.JsViewer {
     this.webLogoDfPlot.push(webLogoTable.plot);
     this.distributionDfPlot.push(distributionTable.plot);
 
+    const colCategories = viewerDfCols.byName(this.model.settings.clustersColumnName!).categories;
+    let newClusterName = this.newClusterName;
+    let clusterNum = 1;
+    const getString = !isNaN(parseInt(newClusterName)) ? () => `${parseInt(newClusterName) + 1}` :
+      newClusterName == '' ? () => `${clusterNum++}` :
+        () => `${this.newClusterName} ${clusterNum++}`;
+    while (colCategories.includes(newClusterName))
+      newClusterName = getString();
+
+    this.getProperty('newClusterName')?.set(this, getString());
+
     for (let i = 0; i < viewerDfColsLength; ++i) {
       const col = viewerDfCols.byIndex(i);
       newClusterVals[i] = col.name == this.model.settings.clustersColumnName! ? newClusterName :
@@ -324,7 +334,6 @@ export class LogoSummary extends DG.JsViewer {
         console.warn(`PeptidesLSTWarn: value for column ${col.name} is undefined`)! || null;
     }
     viewerDf.rows.addNew(newClusterVals);
-    this.newClusterNum++;
 
     this.model.clusterStats.push(stats);
     this.model.addNewCluster(newClusterName);
