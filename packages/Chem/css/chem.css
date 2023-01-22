@@ -88,6 +88,7 @@
 .d4-scaffold-tree .d4-tree-view-node {
   border: 1px solid var(--grey-2);
   padding: 0;
+  margin-bottom: -1px;
 }
 
 .d4-scaffold-tree .d4-tree-view-node .d4-tree-view-group-label,
@@ -172,7 +173,6 @@
   visibility: visible;
 }
 
-
 /* temporary fixes */
 .d4-tree-view-node .grok-icon.fal, .d4-tree-view-node .grok-icon.far, .d4-tree-view-node .grok-icon.fab, .d4-tree-view-node .grok-icon.fas {
   margin: 0;
@@ -180,6 +180,7 @@
   align-items: center;
   justify-content: center;
 }
+
 .d4-viewer.d4-scaffold-tree .d4-tree-view-group {
   align-self: initial;
 }

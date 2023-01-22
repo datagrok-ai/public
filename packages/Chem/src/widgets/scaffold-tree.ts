@@ -13,8 +13,8 @@ import {drawRdKitMoleculeToOffscreenCanvas} from "../utils/chem-common-rdkit";
 import {aromatizeMolBlock} from "../utils/aromatic-utils";
 import {RDMol} from "@datagrok-libraries/chem-meta/src/rdkit-api";
 
-const CELL_HEIGHT = 120;
-const CELL_WIDTH = 200;
+const CELL_HEIGHT = 100;
+const CELL_WIDTH = 180;
 
 const CELL_CANVAS_HEIGHT = CELL_HEIGHT * window.devicePixelRatio;
 const CELL_CANVAS_WIDTH = CELL_WIDTH * window.devicePixelRatio;
