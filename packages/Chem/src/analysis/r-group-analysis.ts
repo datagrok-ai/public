@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {findMCS, findRGroups} from '../scripts-api';
-import {getRdKitModule} from '../package';
+import {convertMolNotation, getRdKitModule} from '../package';
 import {MolNotation} from '../utils/convert-notation-utils';
 
 export function convertToRDKit(smiles: string | null): string | null {
@@ -33,7 +33,7 @@ export function rGroupAnalysis(col: DG.Column): void {
       let molCol = col.dataFrame.columns.byName(columnInput.value!);
       const smiles: string = await findMCS(molCol.name, molCol.dataFrame);
       ui.setUpdateIndicator(sketcher.root, false);
-      sketcher.setSmiles(smiles);
+      sketcher.setMolFile(convertMolNotation(smiles, MolNotation.Smiles, MolNotation.MolBlock));
     } catch (e: any) {
       grok.shell.error(e);
       dlg.close();
@@ -62,7 +62,7 @@ export function rGroupAnalysis(col: DG.Column): void {
         grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');
         return;
       }
-      const core = sketcher.getSmiles();
+      const core = sketcher.getMolFile();
       if (!core) {
         grok.shell.error('No core was provided');
         return;
