@@ -101,7 +101,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     const accIcon = ui.element('i');
     accIcon.className = 'grok-icon svg-icon svg-view-layout';
     acc.addTitle(ui.span([accIcon, ui.label(`Similarity search`)]));
-    acc.addPane('Differeces', () => propPanel, true);
+    acc.addPane('Differences', () => propPanel, true);
     grok.shell.o = acc.root;
   }
 }
