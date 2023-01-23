@@ -299,9 +299,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   _message?: HTMLElement | null = null;
   _iconAdd: HTMLElement | null = null;
   _iconDelete: HTMLElement | null = null;
-
-  dirtyFlag: boolean = false;
-
   skipAutoGenerate: boolean = false;
   workersInit: boolean = false;
   progressBar: DG.TaskBarProgressIndicator | null = null;
@@ -398,7 +395,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
      return;
     }
 
-    this.dirtyFlag = false;
     this.message = null;
     this.clear();
 
@@ -471,6 +467,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       await this.loadTreeStr(jsonStr);
 
     //this.root.style.visibility = 'visible';
+    this.treeEncodeUpdateInProgress = true;
+    this.treeEncode = JSON.stringify(ScaffoldTreeViewer.serializeTrees(this.tree));
+    this.treeEncodeUpdateInProgress = false;
+
     this.progressBar.close();
     this.progressBar = null;
   }
@@ -540,7 +540,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       thisViewer.updateSizes();
       thisViewer.updateUI();
       thisViewer.updateFilters();
-      thisViewer.dirtyFlag = true;
       thisViewer.treeEncodeUpdateInProgress = true;
       thisViewer.treeEncode = JSON.stringify(ScaffoldTreeViewer.serializeTrees(thisViewer.tree));
       thisViewer.treeEncodeUpdateInProgress = false;
@@ -615,7 +614,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       thisViewer.updateFilters();
       thisViewer.wrapper?.close();
       thisViewer.wrapper = null;
-      thisViewer.dirtyFlag = true;
       thisViewer.treeEncodeUpdateInProgress = true;
       thisViewer.treeEncode = JSON.stringify(ScaffoldTreeViewer.serializeTrees(thisViewer.tree));
       thisViewer.treeEncodeUpdateInProgress = false;
