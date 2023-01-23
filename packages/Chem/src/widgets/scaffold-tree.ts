@@ -671,6 +671,19 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.updateUI();
   }
 
+  resetFilters(): void {
+    if (this.molColumn === null)
+      return;
+
+    if (this.bitset === null)
+      this.bitset = DG.BitSet.create(this.molColumn.length);
+
+    delete this.molColumn.temp['chem-scaffold-filter'];
+    this.bitset!.setAll(false, false);
+    this.dataFrame.rows.requestFilter();
+    this.updateUI();
+  }
+
   selectTableRows(group: TreeViewGroup, flag: boolean): void {
     const bitset = value(group).bitset!;
     if (flag)
@@ -933,6 +946,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         thisViewer.checkBoxesUpdateInProgress = true;
         this.selectGroup(node);
         thisViewer.checkBoxesUpdateInProgress = false;
+        thisViewer.resetFilters();
         thisViewer.updateFilters();
       }
       //update the sketcher if open
