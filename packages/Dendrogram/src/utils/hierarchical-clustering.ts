@@ -47,7 +47,23 @@ export async function hierarchicalClusteringUI(
   }
   // TODO: Filter rows with nulls in selected columns
   const preparedDf = DG.DataFrame.fromColumns(
-    filteredDf.columns.toList().filter((col) => colNameSet.has(col.name)));
+    filteredDf.columns.toList()
+      .filter((col) => colNameSet.has(col.name))
+      .map((col) => {
+        let res: DG.Column;
+        switch (col.type) {
+        case DG.COLUMN_TYPE.DATE_TIME:
+          // column of type 'datetime' getRawData() returns Float64Array
+          const colData: Float64Array = col.getRawData() as Float64Array;
+          res = DG.Column.float(col.name, col.length).init((rowI) => {
+            return !col.isNone(rowI) ? colData[rowI] : null;
+          });
+          break;
+        default:
+          res = col;
+        }
+        return res;
+      }));
 
   const newickStr: string = await hierarchicalClusteringExec(preparedDf, distance, linkage);
   const newickRoot: NodeType = parseNewick(newickStr);

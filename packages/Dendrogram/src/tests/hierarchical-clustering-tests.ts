@@ -86,7 +86,7 @@ category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vL
     ctx.vList.push(tv);
     ctx.dfList.push(dataDf);
 
-    hierarchicalClusteringUI(dataDf, ['HEIGHT'], 'euclidean', 'average');
+    await hierarchicalClusteringUI(dataDf, ['HEIGHT'], 'euclidean', 'average');
   });
 
   test('hierarchicalClustering1', async () => {
