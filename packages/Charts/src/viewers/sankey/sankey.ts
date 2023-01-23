@@ -2,9 +2,11 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import $ from 'cash-dom';
+
 import {drag} from 'd3-drag';
 import {ScaleOrdinal, scaleOrdinal} from 'd3-scale';
 import {select} from 'd3-selection';
+
 import {
   sankey,
   sankeyLinkHorizontal,
@@ -26,11 +28,6 @@ interface Link {
   value: number,
 }
 
-// interface Graph {
-//   nodes: Node[],
-//   links: Link[],
-// }
-
 interface Margin {
   top: number,
   right: number,
@@ -49,10 +46,8 @@ export class SankeyViewer extends DG.JsViewer {
   sourceColumnName: string;
   targetColumnName: string;
   valueColumnName: string;
-  // alignment: string;
   initialized: boolean;
 
-  //graph?: Graph | null;
   graph: any;
   margin?: Margin;
   alignMethod?: AlignMethod;
@@ -60,8 +55,6 @@ export class SankeyViewer extends DG.JsViewer {
   nodeWidth?: number;
   nodePadding?: number;
 
-  strColumns?: DG.Column[];
-  numColumns?: DG.Column[];
   sourceCol?: DG.Column;
   targetCol?: DG.Column;
 
@@ -71,8 +64,6 @@ export class SankeyViewer extends DG.JsViewer {
     this.sourceColumnName = this.string('sourceColumnName');
     this.targetColumnName = this.string('targetColumnName');
     this.valueColumnName = this.string('valueColumnName');
-    // this.alignment = this.string('alignment', 'justify');
-    // this.getProperty('alignment')!.choices = ['justify', 'left', 'right', 'center'];
 
     this.initialized = false;
   }
@@ -92,21 +83,20 @@ export class SankeyViewer extends DG.JsViewer {
   }
 
   onTableAttached() {
-    this.init();
-
-    const columns = this.dataFrame.columns.toList();
-    this.strColumns = columns.filter((col) => col.type === 'string');
-    this.numColumns = columns.filter((col) => ['double', 'int'].includes(col.type));
-
-    this.sourceColumnName = this.strColumns[0].name;
-    this.targetColumnName = this.strColumns[1].name;
-    this.valueColumnName = this.numColumns[0].name;
-    this.prepareData();
-
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
 
+    this.init();
+
+    const columns = this.dataFrame.columns.toList();
+    const strColumns = columns.filter((col) => col.type === 'string');
+    const numColumns = columns.filter((col) => ['double', 'int'].includes(col.type));
+    this.sourceColumnName = strColumns[0].name;
+    this.targetColumnName = strColumns[1].name;
+    this.valueColumnName = numColumns[0].name;
+
+    this.prepareData();
     this.render();
   }
 
