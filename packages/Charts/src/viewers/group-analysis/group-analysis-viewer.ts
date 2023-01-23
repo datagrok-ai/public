@@ -80,6 +80,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
 
   async onTableAttached(): Promise<void> {
     this.init();
+    this.initChartEventListeners();
     this.totalColumns = this.dataFrame.columns.names().concat(['']);
     this.groupByColumns ??= [this.totalColumns[0]];
     this.updateColumnChoices(this.groupByColumns, 'Group by', this.grouppingColsDiv);
@@ -90,6 +91,12 @@ export class GroupAnalysisViewer extends DG.JsViewer {
     this.mainView.append(this.grouppedGridDiv);
     this.root.append(this.mainView);
     this.updateGrid();
+  }
+
+  initChartEventListeners() {
+    this.dataFrame.onRowsFiltered.subscribe((_) => {
+      this.updateGrid();
+    });
   }
 
   onPropertyChanged(p: DG.Property) {
@@ -187,7 +194,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
   }
 
   getAggregateCols(columnList: IAnalyzedColumn[]): DG.Column[] {
-    let grouppedDfQuery = this.dataFrame.groupBy(this.groupByColumns);
+    let grouppedDfQuery = this.dataFrame.groupBy(this.groupByColumns).whereRowMask(this.dataFrame.filter);
     for (const col of columnList)
       grouppedDfQuery = (COL_TYPES[AGGR_TYPE] as any)[col.typeName](grouppedDfQuery, col.colName);
     try {
@@ -238,7 +245,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
 
 
   updateGrid() {
-    this.grouppedDf = this.dataFrame.groupBy(this.groupByColumns).aggregate();
+    this.grouppedDf = this.dataFrame.groupBy(this.groupByColumns).whereRowMask(this.dataFrame.filter).aggregate();
     this.grid = this.grouppedDf.plot.grid();
     const aggregateCols = this.analyzedColumns.filter((it) => it.type === AGGR_TYPE);
     const chartAndStatCols = this.analyzedColumns.filter((it) => it.type !== AGGR_TYPE);
@@ -327,8 +334,10 @@ export class GroupAnalysisViewer extends DG.JsViewer {
 
   extractGroupAndAnalyzedColFromInitialDf(colToAnalyzeName: string): DG.DataFrame {
     const colList = [];
-    this.groupByColumns.forEach((col) => colList.push(this.dataFrame.col(col)!));
-    colList.push(this.dataFrame.col(colToAnalyzeName)!);
+    const filteredDf = this.dataFrame.groupBy(this.dataFrame.columns.names()).
+      whereRowMask(this.dataFrame.filter).aggregate();
+    this.groupByColumns.forEach((col) => colList.push(filteredDf.col(col)!));
+    colList.push(filteredDf.col(colToAnalyzeName)!);
     const df = DG.DataFrame.fromColumns(colList);
     return df;
   }
