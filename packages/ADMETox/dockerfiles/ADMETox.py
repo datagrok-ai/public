@@ -106,10 +106,16 @@ import numpy as np
 import pandas as pd
 import csv
 import os
+import io
 import rdkit
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import MACCSkeys
+import boto3
+import botocore
+from botocore import UNSIGNED
+from botocore.config import Config
+
 #from pychem import pychem
 #from pychem.pychem import PyChem2d
 
@@ -176,6 +182,12 @@ dict_bits_desc = {
                  'AWeight', 'QCss', 'EstateVSA9', 'Hy', 'S16', 'IC0', 'S30']
 }
 
+models_to_download = ["Pgp-Inhibitor/Pgp-Inhibitor", "Pgp-Substrate/Pgp-Substrate", "HIA", 
+"F(20%)", "F(30%)", "Ames", "SkinSen", "BBB/BBB", "CYP1A2-Inhibitor/CYP1A2-Inhibitor",
+"CYP1A2-Substrate", "CYP3A4-Inhibitor/CYP3A4-Inhibitor", "CYP3A4-Substrate", 
+"CYP2C19-Inhibitor/CYP2C19-Inhibitor", "CYP2C19-Substrate", "CYP2C9-Inhibitor/CYP2C9-Inhibitor",
+"CYP2C9-Substrate", "CYP2D6-Inhibitor", "CYP2D6-Substrate"]
+
 #def calculate_descriptors(smile):
     #"""Calculate descriptors for the input smile
 
@@ -231,6 +243,36 @@ def getECFP(smiles, radius, nBits):
         result.append(fpECFP)
     return result
 
+def download_s3_folder(bucket_name, s3_folder, local_dir=None):
+    """
+    Download the contents of a folder directory
+    Args:
+        bucket_name: the name of the s3 bucket
+        s3_folder: the folder path in the s3 bucket
+        local_dir: a relative or absolute directory path in the local file system
+    """
+    s3 = boto3.resource('s3', config=Config(signature_version=UNSIGNED))
+    bucket = s3.Bucket(bucket_name)
+    for obj in bucket.objects.filter(Prefix=s3_folder):
+        target = obj.key if local_dir is None \
+            else os.path.join(local_dir, os.path.relpath(obj.key, s3_folder))
+        if not os.path.exists(os.path.dirname(target)):
+            os.makedirs(os.path.dirname(target))
+        if obj.key[-1] == '/':
+            continue
+        bucket.download_file(obj.key, target)
+
+def download_all_files(bucket_name, s3_folder):
+    s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
+    for model in models_to_download:
+        if '/' in model:
+            download_s3_folder(bucket_name, s3_folder + model.split('/')[0], model.split('/')[0])
+        else:
+            s3.download_file(bucket_name, s3_folder + model + '.pkl', model + '.pkl')
+
+
+downloaded = 0
+
 def handle_uploaded_file(f, models):
     """Calculate ADMET properties
 
@@ -238,6 +280,11 @@ def handle_uploaded_file(f, models):
     :param models: list of models to be used for calculation
     :return: zip(predict_label, predict_proba)
     """
+
+    global downloaded
+    if downloaded == 0:
+        download_all_files('datagrok-data', 'models/admetox/')
+        downloaded += 1
     smiles = [list(row.values()) for row in f]
     encoded_smiles = [smile[0].encode('utf8') for smile in smiles]
     current_path = os.path.split(os.path.realpath(__file__))[0]
@@ -265,7 +312,8 @@ def handle_uploaded_file(f, models):
         result = np.concatenate([ result, np.array(predicts).reshape(len(encoded_smiles),1)], axis=1)
     res_df = pd.DataFrame(result, columns=models_res)
     #res_df.insert(0, 'smiles', encoded_smiles, True)
-    return res_df.to_csv(index=False, quoting=csv.QUOTE_NONNUMERIC)
+    res_str = res_df.to_csv(index=False, quoting=csv.QUOTE_NONNUMERIC)
+    return res_str
 
 from django.conf.urls import url, include 
 #from django.contrib import admin

@@ -3,9 +3,9 @@ export const properties: any = {
         "name": "Absorption",
         "description": "Models to predict absorbtion",
         "models": [
-        {
+        /*{
             "name": "Caco-2",
-        },
+        },*/
         {
             "name": "Pgp-Inhibitor",
         },
@@ -26,12 +26,12 @@ export const properties: any = {
         "name": "Distribution",
         "description": "Models to predict distribution",
         "models": [
-        {
+        /*{
             "name": "PPB",
         },
         {
             "name": "VD",
-        },
+        },*/
         {
             "name": "BBB",
         }]
@@ -71,7 +71,7 @@ export const properties: any = {
             "name": "CYP2D6-Substrate",
         }]
     },
-    "Excretion": {
+    /*"Excretion": {
         "name": "Excretion",
         "description": "Models to predict excretion",
         "models": [
@@ -81,25 +81,25 @@ export const properties: any = {
         {
             "name": "T1/2",
         }]
-    },
+    },*/
     "Toxicity": {
         "name": "Toxicity",
         "description": "Models to predict toxicity",
         "models": [
-        {
+        /*{
             "name": "hERG",
         },
         {
+            "name": "LD50 of acute toxicity",
+        }
+        {
             "name": "H-HT",
-        },
+        },*/
         {
             "name": "Ames",
         },
         {
             "name": "SkinSen",
-        },
-        {
-            "name": "LD50 of acute toxicity",
         }]
     }
 }

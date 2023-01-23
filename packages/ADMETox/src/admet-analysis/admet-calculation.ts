@@ -6,27 +6,36 @@ import { properties } from './const';
 const _STORAGE_NAME = 'admet_models';
 const _KEY = 'selected';
 
-async function accessServer(url: string, csvString: string) {
+async function accessServer(csvString: string, queryParams: string) {
+  const dockerId = (await grok.dapi.dockerfiles.filter('admetox').first()).id;
   const params: RequestInit = {
     method: 'POST',
     headers: {
       'Accept': 'text/csv',
       'Content-type': 'text/csv'
     },
+    //body: DG.DataFrame.fromColumns([smilesCol]).toCsv()
     body: csvString
   };
-  const response = await fetch(url, params);
-  const csv = await response.text();
-  return csv;
+  const path = `/smiles/df_upload/?models=${queryParams}`;
+  const response = await grok.dapi.dockerfiles.request(dockerId, path, params);
+  return response;
 }
-
 export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFrame): Promise<void> {
   openModelsDialog(await getSelected(), async (selected: any) => {
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
     selected = await getSelected();
     const queryParams = selected.join(',');
     const pi = DG.TaskBarProgressIndicator.create('Evaluating predictions...');
-    const csvString = await accessServer(`http://localhost:1111/smiles/df_upload/?models=${queryParams}`, DG.DataFrame.fromColumns([smilesCol]).toCsv());
+    let csvString: string | null = '';
+    try {
+      csvString = await accessServer(DG.DataFrame.fromColumns([smilesCol]).toCsv(), queryParams);
+    } catch (e) {
+      console.error(e);
+      grok.shell.warning('Dataset contains malformed data!');
+      pi.update(100, 'Evaluation failed...');
+      pi.close();
+    }
     const table = processCsv(csvString);
     addResultColumns(table, viewTable);
     pi.close();
@@ -44,8 +53,8 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
   }
 }
 
-function processCsv(csvString: string): DG.DataFrame {
-  csvString = csvString.replaceAll('"', '');
+function processCsv(csvString: string | null): DG.DataFrame {
+  csvString = csvString!.replaceAll('"', '');
   let table = DG.DataFrame.fromCsv(csvString);
   table.rows.removeAt(table.rowCount - 1);
   const modelNames: string[] = [];
@@ -77,10 +86,14 @@ export function getModelsSingle(smiles: string): DG.Widget {
     result.appendChild(ui.loader());
     getSelected().then((selected) => {
       const queryParams = selected.join(',');
-      accessServer(`http://localhost:1111/smiles/df_upload/?models=${queryParams}`,
+      accessServer(
        `smiles
-        ${smiles}`
-      ).then((csvString: any) => {
+        ${smiles}`,
+        queryParams
+      ).catch((e) => {
+        console.log(e);
+        grok.shell.warning('Dataset contains malformed data!');
+      }).then((csvString: any) => {
         removeChildren(result);
         const table = processCsv(csvString);
         const map: { [_: string]: any } = {};
@@ -133,6 +146,12 @@ function openModelsDialog(selected: any, onOK: any): void {
 
     group.checkBox!.onchange = (_e) => {
       countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
+      if (group.checked) 
+        selectedModels[group.text] = group.text;
+      group.items.filter((i) => {
+        if (i.checked) 
+          selectedModels[i.text] = group.text;
+      })
     };
 
     for (const property of properties[groupName]['models']) {
@@ -163,16 +182,32 @@ function openModelsDialog(selected: any, onOK: any): void {
     const keys: string[] = Object.keys(history);
     for (const key of keys) {
       groups[history[key]].items.filter(function (i: any) {
-        if (i.text === key) {
+        if (i.text === key) 
           i.checked = true;
-        }
       })
+      if (key === history[key])
+        groups[history[key]].checked = true;
     }
+    countLabel.textContent = `${keys.length} checked`;
   }
 
-  ui.dialog('ADME/Tox')
-    .add(ui.divH([selectAll, selectNone, countLabel]))
+  let dlg = ui.dialog('ADME/Tox');
+  dlg.add(ui.divH([selectAll, selectNone, countLabel]))
     .add(tree.root)
+    .addButton('Form', async () => {
+      const pi = DG.TaskBarProgressIndicator.create('Creating a form...');
+      dlg.close();
+      let queryParams = 'Pgp-Inhibitor,Pgp-Substrate,HIA,F(20%),F(30%),BBB,CYP1A2-Inhibitor,CYP1A2-Substrate,CYP3A4-Inhibitor,CYP3A4-Substrate,CYP2C19-Inhibitor,CYP2C19-Substrate,CYP2C9-Inhibitor,CYP2C9-Substrate,CYP2D6-Inhibitor,CYP2D6-Substrate,Ames,SkinSen';
+      const df = grok.shell.tv.grid.dataFrame;
+      const col = df.columns.bySemType(DG.SEMTYPE.MOLECULE)
+      if (col) {
+        const csvString = await accessServer(DG.DataFrame.fromColumns([col]).toCsv(), queryParams);
+        const table = processCsv(csvString);
+        addResultColumns(table, df);
+        pi.close();
+        grok.shell.tv.addViewer(DG.Viewer.fromType('Form', df));
+      }
+    })
     .onOK(() => onOK(items.filter((i) => i.checked).map((i: any) => i.value['name'])))
     .show()
     .history(

@@ -41,7 +41,10 @@ export async function testDocker() {
     c1cc(O)ccc1`
   };
   
-  const path = '/smiles/df_upload/?models=F(20%)';
+  const path = '/smiles/df_upload/?models=Ames';
   const response = await grok.dapi.dockerfiles.request(dockerId, path, params);
   console.log(response);
+  if (response) {
+    grok.shell.addTableView(DG.DataFrame.fromCsv(response));
+  }
 }
