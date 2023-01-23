@@ -345,7 +345,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       description: 'Remove charges and radicals from scaffolds'
     });
 
-    this.treeEncode = this.string('TreeEncode', '[]', {userEditable: false});
+    this.treeEncode = this.string('treeEncode', '[]', {userEditable: false});
 
     this._initMenu();
   }
@@ -367,12 +367,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   _initMenu(): void {
     this.root.oncontextmenu = (e) => {
-      grok.shell.info('foo');
       DG.Menu.popup()
         .item('Save tree', () => this.saveTree())
         .item('Load tree', () => this.loadTree())
         .show();
-
       e.preventDefault();
     };
   }
@@ -873,7 +871,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
       //this.molColumn = this.dataFrame.columns.byName(this.MoleculeColumn);
       //console.log('Property changed: ' + p.name);
-    } else if (p.name === 'TreeEncode') {
+    } else if (p.name === 'treeEncode') {
       if (this.treeEncodeUpdateInProgress)
         return;
 
