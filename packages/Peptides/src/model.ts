@@ -1021,6 +1021,9 @@ export class PeptidesModel {
 
   async createNewView(dfName: string): Promise<void> {
     const rowMask = this.df.selection.clone().and(this.df.filter);
+    if (!rowMask.anyTrue)
+      return grok.shell.warning('Cannot create a new view, there are no visible selected rows in your dataset');
+
     const newDf = this.df.clone(rowMask);
     for (const [tag, value] of newDf.tags)
       newDf.setTag(tag, tag == C.TAGS.SETTINGS ? value : '');
