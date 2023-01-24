@@ -9,17 +9,17 @@ type MaximumIndicator = '75' | '90' | '95' | '99';
 
 // Based on this example: https://echarts.apache.org/examples/en/editor.html?c=radar
 export class RadarViewer extends DG.JsViewer {
-  myChart: echarts.ECharts;
+  chart: echarts.ECharts;
   min: MinimalIndicator;
   max: MaximumIndicator;
   showCurrentRow: boolean;
   showTooltip: boolean;
   showAllRows: boolean;
-  backgroundMinColor: number;
-  backgroundMaxColor: number;
   showMin: boolean;
   showMax: boolean;
   showValues: boolean;
+  backgroundMinColor: number;
+  backgroundMaxColor: number;
   valuesColumnNames: string[];
 
   constructor() {
@@ -40,8 +40,8 @@ export class RadarViewer extends DG.JsViewer {
 
     const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
-    this.myChart = echarts.init(chartDiv);
-    this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => this.myChart.resize()));
+    this.chart = echarts.init(chartDiv);
+    this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => this.chart.resize()));
   }
 
   init() {
@@ -55,14 +55,14 @@ export class RadarViewer extends DG.JsViewer {
     const columns = this.getColumns();
     for (const c of columns) {
       let minimalVal = 0;
-      c.min < 0 ? minimalVal = c.min : minimalVal = 0;
+      minimalVal = c.min < 0 ? c.min : 0;
       option.radar.indicator.push({name: c.name, max: c.max, min: minimalVal});
     }
     this.updateMin();
     this.updateMax();
     this.updateRow();
-    //@ts-ignore
-    this.myChart.on('mouseover', function(params) {
+
+    this.chart.on('mouseover', function(params: any) {
       if (params.componentType === 'series') {
         if (params.seriesIndex === 2) {
           const divs: HTMLElement[] = [];
@@ -73,7 +73,7 @@ export class RadarViewer extends DG.JsViewer {
         }
       }
     });
-    this.myChart.on('mouseout', () => ui.tooltip.hide());
+    this.chart.on('mouseout', () => ui.tooltip.hide());
     this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/help/visualize/viewers/radar-viewer.md';
   }
 
@@ -91,18 +91,18 @@ export class RadarViewer extends DG.JsViewer {
     this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.onCurrentRowChanged.subscribe((_) => {
       this.updateRow();
-      this.myChart.setOption(option);
+      this.chart.setOption(option);
     }));
     this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((_) => {
       this.init();
-      this.myChart.setOption(option);
+      this.chart.setOption(option);
     }));
     this.render();
   }
 
   public override onPropertyChanged(property: DG.Property): void {
-    const columns = this.getColumns();
     super.onPropertyChanged(property);
+    const columns = this.getColumns();
     switch (property.name) {
     case 'min':
       if (this.showMin === true)
@@ -298,7 +298,7 @@ export class RadarViewer extends DG.JsViewer {
   }
 
   render() {
-    this.myChart.setOption(option);
+    this.chart.setOption(option);
   }
 
   /* Going to be replaced with perc in stats */
