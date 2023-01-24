@@ -467,6 +467,12 @@ Resources:
         IpProtocol: TCP
         SourceSecurityGroupId:
           Ref: DatagrokSecurityGroup
+      - Description: Allow internal connections to HTTP
+        FromPort: 80
+        ToPort: 80
+        IpProtocol: TCP
+        SourceSecurityGroupId:
+          Ref: DatagrokSecurityGroup    
       - Description: Allow internal connections from Datagrok to H2O
         FromPort: 54321
         ToPort: 54321
