@@ -1,22 +1,9 @@
 package grok_connect.handlers;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.sql.ResultSet;
 
 import org.eclipse.jetty.websocket.api.*;
 import org.eclipse.jetty.websocket.api.annotations.*;
-import org.joda.time.*;
-import com.google.gson.*;
-import com.mysql.cj.xdevapi.Result;
-
-import org.apache.log4j.*;
-
-import serialization.*;
-import grok_connect.utils.*;
-import grok_connect.GrokConnect;
-import grok_connect.connectors_info.*;
-import grok_connect.providers.JdbcDataProvider;
 
 // TODO add logger
 

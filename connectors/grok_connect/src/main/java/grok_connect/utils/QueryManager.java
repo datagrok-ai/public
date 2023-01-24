@@ -13,7 +13,6 @@ import serialization.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.log4j.Logger;
-import org.joda.time.DateTime;
 
 public class QueryManager {
     JdbcDataProvider provider;
