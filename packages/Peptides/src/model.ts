@@ -973,7 +973,7 @@ export class PeptidesModel {
 
     if (!this.isRibbonSet && this.df.getTag('setRibbon') != '0') {
       //TODO: don't pass model, pass parameters instead
-      const settingsButton = ui.bigButton('Settings', () => getSettingsDialog(this), 'Peptides analysis settings');
+      const settingsButton = ui.iconFA('wrench', () => getSettingsDialog(this), 'Peptides analysis settings');
       const newViewName = ui.stringInput('', 'New peptides view');
       const newViewButton = ui.bigButton('New view', async () => {
         const tv = wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame.name == newViewName.stringValue);
