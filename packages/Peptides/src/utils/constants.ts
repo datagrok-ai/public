@@ -45,3 +45,5 @@ export enum SEM_TYPES {
 export const EMBEDDING_STATUS = 'embeddingStatus';
 
 export const PEPTIDES_ANALYSIS = 'isPeptidesAnalysis';
+export const MULTIPLE_VIEWS = 'isMultipleViews';
+export const NEW_ANALYSIS = 'newAnalysis';
