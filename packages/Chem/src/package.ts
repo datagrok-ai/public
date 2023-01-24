@@ -672,7 +672,15 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
   ui.dialog()
     .add(sketcher)
     .onOK(() => {
-      cell.cell.value = unit == DG.chem.Notation.Smiles ? sketcher.getSmiles() : sketcher.getMolFile();
+      if (unit === DG.chem.Notation.Smiles) {
+        //set new cell value only in case smiles has been edited (to avoid undesired molecule orientation change)
+        const newValue = sketcher.getSmiles();
+        const mol = checkMoleculeValid(cell.cell.value);
+        if (!checkMolEqualSmiles(mol, newValue))
+          cell.cell.value = newValue;
+        mol?.delete();
+      } else 
+        cell.cell.value = sketcher.getMolFile();
       Sketcher.addToCollection(Sketcher.RECENT_KEY, sketcher.getMolFile());
     })
     .show();
