@@ -1,5 +1,5 @@
 .sketch-link {
-    border: 1px solid #dbdcdf;
+    border: 1px solid var(--grey-2);
     height: 25px;
     display: flex;
     justify-content: center;
