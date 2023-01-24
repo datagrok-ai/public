@@ -369,6 +369,11 @@ export class PeptidesModel {
     const acc = ui.accordion();
     acc.root.style.width = '100%';
     acc.addTitle(ui.h1(`${this.df.selection.trueCount} selected rows`));
+    acc.addPane('Actions', () => {
+      const newViewButton = ui.button('New view', async () => await this.createNewView(),
+        'Creates a new view from current selection');
+      return ui.div([newViewButton]);
+    });
     acc.addPane('Mutation Cliff pairs', () => mutationCliffsWidget(this.df, this).root);
     acc.addPane('Distribution', () => getDistributionWidget(this.df, this).root);
 
@@ -977,9 +982,7 @@ export class PeptidesModel {
     if (!this.isRibbonSet && this.df.getTag(C.MULTIPLE_VIEWS) != '1') {
       //TODO: don't pass model, pass parameters instead
       const settingsButton = ui.iconFA('wrench', () => getSettingsDialog(this), 'Peptides analysis settings');
-      const newViewButton = ui.bigButton('New view', async () => await this.createNewView(),
-      'Creates a new view from current selection');
-      this.analysisView.setRibbonPanels([[settingsButton], [newViewButton]], false);
+      this.analysisView.setRibbonPanels([[settingsButton]], false);
       this.isRibbonSet = true;
       this.df.setTag(C.PEPTIDES_ANALYSIS, '1');
     }
