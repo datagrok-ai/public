@@ -203,11 +203,16 @@ async function updateVisibleNodesHits(thisViewer: ScaffoldTreeViewer) {
   if (end >= visibleNodes.length)
     end = visibleNodes.length - 1;
 
-  updateNodesHitsImpl(thisViewer, visibleNodes, start, end);
+  await updateNodesHitsImpl(thisViewer, visibleNodes, start, end);
 }
 
 async function updateNodesHitsImpl(thisViewer: ScaffoldTreeViewer, visibleNodes : Array<TreeViewNode>, start: number, end: number) {
   for (let n = start; n <= end; ++n) {
+    if (thisViewer.cancelled) {
+      console.log('Cancelled ' + start + " " + end);
+      return;
+    }
+
     let group = visibleNodes[n];
     let v = value(group);
     if (v.init || v.orphans)
@@ -291,7 +296,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   threshold: number;
   ringCutoff: number = 10;
   dischargeAndDeradicalize: boolean = false;
-
+  cancelled: boolean = false;
   checkBoxesUpdateInProgress: boolean = false;
   treeEncodeUpdateInProgress: boolean = false;
   _generateLink?: HTMLElement;
@@ -394,6 +399,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
      return;
     }
 
+    this.cancelled = false;
     this.message = null;
     this.clear();
 
@@ -401,6 +407,21 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     ui.setUpdateIndicator(this.root, true);
     this.progressBar = DG.TaskBarProgressIndicator.create('Generating Scaffold Tree...');
     this.progressBar.update(0, 'Installing ScaffoldGraph..: 0% completed');
+
+    const c = this.root.getElementsByClassName('d4-update-shadow');
+    if (c.length > 0) {
+      const eProgress = c[0];
+      let eCancel : HTMLAnchorElement;
+      eCancel = ui.link('Cancel', () => {
+        this.cancelled = true;
+        eCancel.innerHTML = 'Cancelling... Please Wait...';
+        eCancel.style.pointerEvents = 'none';
+        eCancel.style.color = 'gray';
+        eCancel.style.opacity = '90%';
+      }, 'Cancel Tree build', 'chem-scaffold-tree-cancel-hint');
+      eProgress.appendChild(eCancel);
+    }
+
     if (!this.workersInit) {
       await _initWorkers(this.molColumn);
       this.workersInit = true;
@@ -410,11 +431,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const maxMolCount = 750;
 
     let length = this.molColumn.length;
-    let valid_count = 0;
-    let molcreate_errorcount = 0;
-    let convert_errorcount = 0;
-    let mol = null;
-
     let step = 1;
     if (this.molColumn.length > maxMolCount) {
       step = Math.floor(this.molColumn.length / maxMolCount);
@@ -462,8 +478,25 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
 
+    if (this.cancelled) {
+      ui.setUpdateIndicator(this.root, false);
+      this.progressBar.update(100, 'Build Cancelled');
+      this.progressBar.close();
+      this.progressBar = null;
+      return;
+    }
+
     if (jsonStr != null)
       await this.loadTreeStr(jsonStr);
+
+    if (this.cancelled) {
+      this.clear();
+      ui.setUpdateIndicator(this.root, false);
+      this.progressBar.update(100, 'Build Cancelled');
+      this.progressBar.close();
+      this.progressBar = null;
+      return;
+    }
 
     //this.root.style.visibility = 'visible';
     this.treeEncodeUpdateInProgress = true;
@@ -588,6 +621,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.wrapper.node = group;
       return;
     }
+
+    this.cancelled = false;
     const thisViewer = this;
     this.wrapper = SketcherDialogWrapper.create("Add New Scaffold...", "Add", group,async (molStrSketcher: string, parent: TreeViewGroup, errorMsg: string | null) => {
       const child = thisViewer.createGroup(molStrSketcher, parent);
@@ -905,7 +940,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     const thisViewer = this;
     this.tree.root.onscroll = async (e) => await updateVisibleNodesHits(thisViewer)
-    this.tree.onChildNodeExpandedChanged.subscribe((group: TreeViewGroup) => updateVisibleNodesHits(thisViewer));
     this.tree.onNodeContextMenu.subscribe((args: any) => {
       const menu: DG.Menu = args.args.menu;
       const node: TreeViewGroup = args.args.item;
@@ -1003,6 +1037,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   detach(): void {
+    this.cancelled = true;
+
     if (this.wrapper !== null) {
       this.wrapper.close()
       this.wrapper = null;
@@ -1062,7 +1098,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       ui.iconFA('folder-open', () => this.loadTree(), 'Open saved tree'),
       ui.iconFA('arrow-to-bottom', () => this.saveTree(), 'Save this tree to disk'),
       ui.divText(' '),
-      this._iconDelete = ui.iconFA('trash-alt', () => thisViewer.clear(), 'Drop All Trees'),
+      this._iconDelete = ui.iconFA('trash-alt', () => { thisViewer.cancelled = true; thisViewer.clear();}, 'Drop All Trees'),
     ]), 'chem-scaffold-tree-toolbar');
     this.root.appendChild(ui.splitV([iconHost, this.tree.root]));
 
