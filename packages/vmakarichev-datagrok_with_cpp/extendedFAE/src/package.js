@@ -16,12 +16,13 @@ import { callWasm } from '../wasm/callWasm';
 export async function init() {
   await initODEsolver();
 }
-// ORIGINAL VALUES ARE DELETED!
+
+// ALL ORIGINAL VALUES ARE REMOVED
 
 //name: fullFAE
-//input: double t0 = 0 {units: minutes; caption: initial; category: Time}
+//input: double t0 =  {units: minutes; caption: initial; category: Time}
 //input: double t1 =  {units: minutes; caption: final; category: Time}
-//input: double h =  {units: minutes; caption: step; category: Time}
+//input: double h = 0.01 {units: minutes; caption: step; category: Time}
 //input: double FFox =  {caption: FFox; category: Initial values}
 //input: double KKox =  {caption: KKox; category: Initial values}
 //input: double FFred =  {caption: FFred; category: Initial values}
@@ -42,7 +43,7 @@ export async function init() {
 //input: double HVal =  {caption: H; category: Parameters}
 //input: double TVal =  {caption: T; category: Parameters}
 //input: double RVal =  {caption: R; category: Parameters}
-//input: double PVal =  {caption: P; category: Parameters} 
+//input: double PVal =  {caption: P; category: Parameters}
 //output: dataframe solution {caption: Solution; viewer: Line chart(x: "t, time (minutes)", sharex: "true", multiAxis: "true", yGlobalScale: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
 //editor: Compute:RichFunctionViewEditor
 export async function fullFAE(t0, t1, h, FFox, KKox, FFred, KKred, Ffree, Kfree, FKred, 
@@ -55,4 +56,44 @@ export async function fullFAE(t0, t1, h, FFox, KKox, FFred, KKred, Ffree, Kfree,
   return callWasm(ODEsolver, 'fullFAE', 
     [t0, t1, h, FFox, KKox, FFred, KKred, Ffree, Kfree, FKred, FKox, MEAthiol, CO2, yO2P, Cystamine, VL, 
      qinVal, percentO2saturationVal, yO2inVal, pKa2MEAVal, HVal, TVal, RVal, PVal, timesCount, varsCount]);
+}
+
+
+//name: fullFAEbdf
+//input: double t0 =  {units: minutes; caption: initial; category: Time}
+//input: double t1 =  {units: minutes; caption: final; category: Time}
+//input: double h =  {units: minutes; caption: step; category: Time}
+//input: double FFox =  {caption: FFox; category: Initial values}
+//input: double KKox =  {caption: KKox; category: Initial values}
+//input: double FFred =  {caption: FFred; category: Initial values}
+//input: double KKred =  {caption: KKred; category: Initial values}
+//input: double Ffree =  {caption: Ffree; category: Initial values}
+//input: double Kfree =  {caption: Kfree; category: Initial values}
+//input: double FKred =  {caption: FKred; category: Initial values}
+//input: double FKox =  {caption: FKox; category: Initial values}
+//input: double MEAthiol =  {caption: MEAthiol; category: Initial values}
+//input: double CO2 =  {caption: CO2; category: Initial values}
+//input: double yO2P =  {caption: yO2P; category: Initial values}
+//input: double Cystamine =  {caption: Cystamine; category: Initial values}
+//input: double VL =  {caption: VL; category: Initial values}
+//input: double qinVal =  {caption: qin; category: Parameters}
+//input: double percentO2saturationVal =  {caption: percentO2saturation; category: Parameters}
+//input: double yO2inVal =  {caption: yO2in; category: Parameters}
+//input: double pKa2MEAVal =  {caption: pKa2MEA; category: Parameters}
+//input: double HVal =  {caption: H; category: Parameters}
+//input: double TVal = {caption: T; category: Parameters}
+//input: double RVal =  {caption: R; category: Parameters}
+//input: double PVal = {caption: P; category: Parameters}
+//output: dataframe solution {caption: Solution; viewer: Line chart(x: "t, time (minutes)", sharex: "true", multiAxis: "true", yGlobalScale: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
+//editor: Compute:RichFunctionViewEditor
+export async function fullFAEbdf(t0, t1, h, FFox, KKox, FFred, KKred, Ffree, Kfree, FKred, 
+  FKox, MEAthiol, CO2, yO2P, Cystamine, VL, 
+  qinVal, percentO2saturationVal, yO2inVal, pKa2MEAVal, HVal, TVal, RVal, PVal) {
+
+    let timesCount = Math.trunc((t1 - t0) / h) + 1;
+    let varsCount = 14;
+
+  return callWasm(ODEsolver, 'fullFAEbdf', [t0, t1, h, FFox, KKox, FFred, KKred, Ffree, Kfree, FKred, 
+    FKox, MEAthiol, CO2, yO2P, Cystamine, VL, qinVal, percentO2saturationVal, yO2inVal, pKa2MEAVal, 
+    HVal, TVal, RVal, PVal, timesCount, varsCount]);
 }
