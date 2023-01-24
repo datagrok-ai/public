@@ -17,6 +17,7 @@ import {
 import {MlbDatabase} from './mlb-database';
 import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
 import {packageName} from '../package';
+import {AntigenDataFrame, TreeDataFrame, MlbDataFrame} from '../types/dataframe';
 
 export class DataLoaderFiles extends DataLoader {
   private _startInit: number;
@@ -37,7 +38,7 @@ export class DataLoaderFiles extends DataLoader {
 
   private _schemes: string[];
   private _cdrs: string[];
-  private _antigens: DG.DataFrame;
+  private _antigens: AntigenDataFrame;
   private _vids: string[];
   private _vidsObsPtm: string[];
   private _filterProperties: FilterPropertiesType;
@@ -52,7 +53,7 @@ export class DataLoaderFiles extends DataLoader {
 
   get cdrs(): string[] { return this._cdrs; }
 
-  get antigens(): DG.DataFrame { return this._antigens; }
+  get antigens(): AntigenDataFrame { return this._antigens; }
 
   get vids(): string[] { return this._vids; }
 
@@ -119,11 +120,11 @@ export class DataLoaderFiles extends DataLoader {
     return this._dlQueries.getLayoutBySchemeCdr(scheme, cdr);
   }
 
-  async getMlbByAntigen(antigen: string): Promise<DG.DataFrame> {
+  async getMlbByAntigen(antigen: string): Promise<MlbDataFrame> {
     return this._dlQueries.getMlbByAntigen(antigen);
   }
 
-  async getTreeByAntigen(antigen: string): Promise<DG.DataFrame> {
+  async getTreeByAntigen(antigen: string): Promise<TreeDataFrame> {
     return this._dlQueries.getTreeByAntigen(antigen);
   }
 
@@ -132,24 +133,25 @@ export class DataLoaderFiles extends DataLoader {
   }
 
   async loadMlbDf(): Promise<DG.DataFrame> {
-    const dfTxt: string = await grok.dapi.files
-      .readAsText(`System:AppData/${packageName}/${DataLoaderFiles._files.mlb}`);
-    const df: DG.DataFrame = DG.DataFrame.fromCsv(dfTxt);
-
-    // 'ngl' column have been removed from query 2022-04
-    df.columns.remove('ngl');
-
-    // Convert 'antigen ncbi id' to string as it is a column with lists of ids
-    // TODO: Convert column type does not work as expected
-    /* Examples: text -> loaded -> converted
-       "3592,51561,3593" -> 3592515613593 -> "3592515613593.00"
-       "952" -> 952 -> "952.00"
-       "3553,3590,335,4045,105805883,102116898,3543,27132,100423062,389812,10892,9080,5284,3904,8740"
-         -> Infinity -> "Infinity"
-     */
-    // df.changeColumnType('antigen_ncbi_id', DG.COLUMN_TYPE.STRING);
-
-    return df;
+    // const dfTxt: string = await grok.dapi.files
+    //   .readAsText(`System:AppData/${packageName}/${DataLoaderFiles._files.mlb}`);
+    // const df: DG.DataFrame = DG.DataFrame.fromCsv(dfTxt);
+    //
+    // // 'ngl' column have been removed from query 2022-04
+    // df.columns.remove('ngl');
+    //
+    // // Convert 'antigen ncbi id' to string as it is a column with lists of ids
+    // // TODO: Convert column type does not work as expected
+    // /* Examples: text -> loaded -> converted
+    //    "3592,51561,3593" -> 3592515613593 -> "3592515613593.00"
+    //    "952" -> 952 -> "952.00"
+    //    "3553,3590,335,4045,105805883,102116898,3543,27132,100423062,389812,10892,9080,5284,3904,8740"
+    //      -> Infinity -> "Infinity"
+    //  */
+    // // df.changeColumnType('antigen_ncbi_id', DG.COLUMN_TYPE.STRING);
+    //
+    // return df;
+    return this._dlQueries.loadMlbDf(); // all records from mlb.mlb_main
   }
 
   /** deprecated */

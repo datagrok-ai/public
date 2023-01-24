@@ -1,7 +1,6 @@
-<!-- TITLE: Dropbox -->
-<!-- SUBTITLE: -->
-
-# Dropbox
+---
+title: "Dropbox"
+---
 
 Provides access to [Dropbox](https://www.dropbox.com) storage as [file share](files.md).
 

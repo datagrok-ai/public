@@ -1,7 +1,6 @@
-<!-- TITLE: Community forum -->
-<!-- SUBTITLE: -->
-
-# Community forum
+---
+title: "Community forum"
+---
 
 A place to socialize and ask either generic questions, or questions related to particular entities, such as queries or
 projects. In the latter case, entity owner will get notified that someone asked for help.

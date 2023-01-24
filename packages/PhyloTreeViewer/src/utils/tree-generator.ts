@@ -1,4 +1,4 @@
-import {NodeType} from '@datagrok-libraries/bio';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
 
 export function generateTree(size: number): NodeType {
   function placeNode(currentNode: NodeType, newNode: NodeType): void {

@@ -1,7 +1,6 @@
-<!-- TITLE: Predictive model information -->
-<!-- SUBTITLE: -->
-
-# Predictive model information
+---
+title: "Predictive model information"
+---
 
 Predictive model parameters description.
 

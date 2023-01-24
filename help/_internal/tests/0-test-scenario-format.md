@@ -1,7 +1,7 @@
 <-- TEST SCENARIO NAME should match the tested functionality name. In all other cases create a meaningful name -->
 <-- The name of the test scenario should describe which part of the platform it is testing -->
 
-# Manual Test: <TEST SCENARIO NAME>
+# Manual Test: `<TEST SCENARIO NAME>`
 
 ## Target functionality
 

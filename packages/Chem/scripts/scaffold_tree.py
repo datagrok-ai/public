@@ -1,9 +1,11 @@
 #name: GenerateScaffoldTree
 #description: generation scaffold tree from dataset
 #language: python
-#environment: channels: [conda-forge], dependencies: [python=3.8, rdkit, {pip: [ScaffoldGraphDG, networkx]}]
+#environment: channels: [conda-forge], dependencies: [python=3.8, rdkit, {pip: [ScaffoldGraphDG==1.1.8, networkx]}]
 #input: dataframe data [Input data table]
-#input: string smiles 
+#input: string smilesColumn
+#input: int ringCutoff = 10 [Ignore molecules with # rings > N]
+#input: bool dischargeAndDeradicalize = false [Remove charges and radicals from scaffolds]
 #output: string result
 
 import scaffoldgraph as sg
@@ -13,7 +15,7 @@ from rdkit.Chem import MolToMolBlock, MolFromSmiles
 
 #function that recursively adds child_nodes to hierarchies depending on the prev_scaffold value
 def recurs_append_nodes(key, value, node, obj):
-    if key in obj: 
+    if key in obj:
         if obj[key] == value:
             obj['child_nodes'].insert(0, node)
             return obj
@@ -26,14 +28,13 @@ def find_nodes(tree, nodes, scaffold):
     scaffold_nodes = []
     for i in range(len(nodes)):
         predecessors = list(nx.bfs_tree(tree, nodes[i], reverse=True))
-        if predecessors[1] == scaffold:
+        if len(predecessors) > 1 and predecessors[1] == scaffold:
             scaffold_nodes.append(nodes[i])
     return scaffold_nodes
 
 #function that returns the scaffold parent
 def get_parent(tree, scaffold):
     return ''.join(tree.get_parent_scaffolds(scaffold, max_levels=1))
-
 
 #function that returns the right order of scaffolds
 def get_sorted_scaffolds(tree, nodes):
@@ -68,17 +69,15 @@ def get_mols(sorted_scaffolds):
             if scaffolds[i][0] == scaffold:
                 result.append(scaffolds[i][1]['realmolecule'])
     return result
-    
 
 #function that returns dict for each hierarchy depending on the input data
 def get_hierarchy_dict(scaffold_str, smiles_str, child_nodes_list):
     hierarchy_dict = {
-        'scaffold': scaffold_str, 
+        'scaffold': scaffold_str,
         'smiles': smiles_str,
         'child_nodes': child_nodes_list
     }
     return hierarchy_dict
-
 
 #function that returns first hierarchy scaffolds
 def get_first_hierarchy(tree, scaffolds):
@@ -131,7 +130,12 @@ def get_json_representation(tree):
     return json_list
 
 tree = sg.ScaffoldTree.from_dataframe(
-    data, smiles_column=smiles, name_column=smiles, progress=True,
+    data,
+    smiles_column=smilesColumn,
+    name_column=smilesColumn,
+    progress=True,
+    ring_cutoff=ringCutoff,
+    discharge_and_deradicalize=dischargeAndDeradicalize,
 )
 
 res = get_json_representation(tree)

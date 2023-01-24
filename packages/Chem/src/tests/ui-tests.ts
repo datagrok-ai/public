@@ -2,13 +2,18 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 //import * as ui from 'datagrok-api/ui';
 
-import {category, after, expect, test, delay, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {category, before, after, expect, test, delay, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {setDialogInputValue, isColumnPresent} from './gui-utils';
 
 
 category('UI', () => {
   let v: DG.TableView;
   let smiles: DG.DataFrame;
+
+  before(async () => {
+    DG.Dialog.getOpenDialogs().forEach((d) => d.close());
+    grok.shell.windows.showProperties = true;
+  });
 
   test('similarity search', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -29,18 +34,13 @@ category('UI', () => {
       .getElementsByClassName('ui-label')[0] as HTMLElement;
     if (similarityLable.innerText != '0.22')
       throw 'Expected Similarity Lable for 2nd molecule does not match the "Dice" metric';
-    
-    // const protpertiesBtn = document.getElementsByClassName('panel-titlebar disable-selection panel-titlebar-tabhost')[0]
-    //   .getElementsByClassName('grok-icon grok-font-icon-settings')[0] as HTMLElement;
-    // protpertiesBtn.click();
-    // await awaitCheck(() => document.getElementsByClassName('property-grid-base property-grid-disable-selection').length > 0,
-    //   'properties table does not open', 3000);
 
     const closeBtn = document.getElementsByClassName('panel-titlebar disable-selection panel-titlebar-tabhost')[0]
       .getElementsByClassName('grok-icon grok-font-icon-close')[0] as HTMLElement;
     closeBtn.click();
     await awaitCheck(() => Array.from(v.viewers).length === 1, 'SimilaritySearch viewer was not closed', 1000);
     v.close();
+    grok.shell.o = document.createElement('div');
   });
   
   test('diversity search', async () => {
@@ -59,6 +59,7 @@ category('UI', () => {
     dsv!.props.limit = 5;    
     await awaitCheck(() => dsvRoot.querySelectorAll('.chem-canvas').length === 5, 'molecules number != 5', 3000);
     v.close();
+    grok.shell.o = document.createElement('div');
   });
   
   test('descriptors', async () => {
@@ -103,7 +104,8 @@ category('UI', () => {
     isColumnPresent(smiles.columns, 'NumRotatableBonds');
     isColumnPresent(smiles.columns, 'RingCount');
     v.close();
-  }, {skipReason: '#1183'});
+    grok.shell.o = document.createElement('div');
+  });
 
   test('info panel: gasteiger', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -133,7 +135,8 @@ category('UI', () => {
     await delay(50);
     gpc.click();
     v.close();
-  }, {skipReason: '#1183'});
+    grok.shell.o = document.createElement('div');
+  });
 
   test('info panel: identifiers', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -158,6 +161,7 @@ category('UI', () => {
     }
     ih.click(); await delay(10);
     v.close();
+    grok.shell.o = document.createElement('div');
   }); 
 
   test('info panel: structure2D', async () => {
@@ -179,6 +183,7 @@ category('UI', () => {
       'canvas with structure was not rendered in the panel', 3000);
     s2d.click(); await delay(10);
     v.close();
+    grok.shell.o = document.createElement('div');
   });
 
   test('info panel: structure3D', async () => {
@@ -200,6 +205,7 @@ category('UI', () => {
       'canvas with structure was not rendered in the panel', 10000);
     s3d.click(); await delay(10);
     v.close();
+    grok.shell.o = document.createElement('div');
   });
 
   test('info panel: properties', async () => {
@@ -221,6 +227,7 @@ category('UI', () => {
       'table with properties was not rendered in the panel', 3000);
     p.click(); await delay(10);
     v.close();
+    grok.shell.o = document.createElement('div');
   });
 
   test('info panel: toxicity', async () => {
@@ -242,6 +249,7 @@ category('UI', () => {
       'table with toxicity was not rendered in the panel', 3000);
     t.click(); await delay(10);
     v.close();
+    grok.shell.o = document.createElement('div');
   });
 
   test('info panel: drug likeness', async () => {
@@ -263,6 +271,7 @@ category('UI', () => {
       'number of displayed canvases with molecules does not match the expected', 5000);
     dl.click(); await delay(10);
     v.close();
+    grok.shell.o = document.createElement('div');
   });
 
   test('info panel: structural alerts', async () => {
@@ -285,7 +294,8 @@ category('UI', () => {
       'number of displayed canvases with molecules does not match the expected', 5000);
     sa.click(); await delay(10);
     v.close();
-  }, {skipReason: 'need to clear property panel'});
+    grok.shell.o = document.createElement('div');
+  }, {skipReason: '#1454'});
 
   test('chem inputs', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -295,7 +305,7 @@ category('UI', () => {
     grok.shell.topMenu.find('Chem').find('Mutate...').click();
     await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot find Mutate dialog', 1000);
     const dialog = DG.Dialog.getOpenDialogs()[0];
-    expect(dialog.input('Smiles').stringValue, 'CN1C(CC(O)C1=O)C1=CN=CC=C1');
+    expect(dialog.input('Molecule').stringValue, 'CN1C(CC(O)C1=O)C1=CN=CC=C1');
 
     const okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
     okButton!.click();
@@ -304,7 +314,8 @@ category('UI', () => {
     grok.shell.v.close();
     grok.shell.closeTable(grok.shell.t);
     v.close();
-  }, {skipReason: '#1183'});
+    grok.shell.o = document.createElement('div');
+  });
 
   test('map identifiers', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -321,7 +332,7 @@ category('UI', () => {
     await awaitCheck(() => {
       return Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
         .find((el) => el.textContent === 'Details') !== undefined;
-    }, 'cannot load Smiles column properties', 5000);
+    }, 'cannot load Smiles column properties', 10000);
 
     const actions = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Actions') as HTMLElement;
@@ -351,6 +362,7 @@ category('UI', () => {
     okButton!.click();
     await awaitCheck(() => grok.shell.t.columns.contains('pubchem'), 'cannot find pubchem column', 10000);
     v.close();
+    grok.shell.o = document.createElement('div');
 
     async function callDialog() {
       const mi = Array.from(pp.querySelectorAll('.d4-link-action'))
@@ -358,7 +370,7 @@ category('UI', () => {
       mi.click();
       await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot find Chem Map Identifiers dialog', 1000);
     }
-  }, {skipReason: 'need to clear property panel'});
+  }, {skipReason: '#1183'});
 
   after(async () => {
     grok.shell.closeAll();

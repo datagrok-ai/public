@@ -33,7 +33,7 @@ export class ComputationView extends FunctionView {
     super();
 
     this.parentCall = grok.functions.getCurrentCall();
-    this.parentView = grok.functions.getCurrentCall().parentCall.aux['view'];
+    this.parentView = grok.functions.getCurrentCall()?.parentCall.aux['view'];
     this.basePath = `/${grok.functions.getCurrentCall()?.func.name}`;
 
     ui.setUpdateIndicator(this.root, true);
@@ -113,6 +113,8 @@ export class ComputationView extends FunctionView {
    * @stability Stable
   */
   override buildRibbonMenu() {
+    this.ribbonMenu.clear();
+
     super.buildRibbonMenu();
 
     if (!this.exportConfig && !this.reportBug && !this.requestFeature && !this.getHelp && !this.getMocks && !this.getTemplates) return;

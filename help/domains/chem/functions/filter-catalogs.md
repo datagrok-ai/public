@@ -1,7 +1,6 @@
-<!-- TITLE: Filter by catalogs -->
-<!-- SUBTITLE: -->
-
-# Filter by catalogs
+---
+title: "Filter by catalogs"
+---
 
 Filter by Catalogs give the ability to screen out or reject undesireable molecules based on various criteria.
 

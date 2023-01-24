@@ -16,6 +16,7 @@ import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
 import {MlbDatabase} from '../../utils/mlb-database';
 import {packageName} from '../../package';
 import {DataLoaderDb} from '../../utils/data-loader-db';
+import {AntigenDataFrame, TreeDataFrame, MlbDataFrame} from '../../types/dataframe';
 
 export class DataLoaderTest extends DataLoader {
   static Files = class {
@@ -60,7 +61,7 @@ export class DataLoaderTest extends DataLoader {
 
   private _schemes: string[];
   private _cdrs: string[];
-  private _antigens: DG.DataFrame;
+  private _antigens: AntigenDataFrame;
   private _vids: string[];
   private _vidsObsPtm: string[];
   private _filterProperties: FilterPropertiesType;
@@ -75,7 +76,7 @@ export class DataLoaderTest extends DataLoader {
 
   get cdrs(): string[] { return this._cdrs; }
 
-  get antigens(): DG.DataFrame { return this._antigens; }
+  get antigens(): AntigenDataFrame { return this._antigens; }
 
   get vids(): string[] { return this._vids; }
 
@@ -111,7 +112,7 @@ export class DataLoaderTest extends DataLoader {
     this._cdrs = ['chothia', 'aroop'];
 
     //load antigen list
-    this._antigens = DG.DataFrame.fromCsv(
+    this._antigens = AntigenDataFrame.wrap(DG.DataFrame.fromCsv(
       `id,antigen,antigen_ncbi_id,antigen_gene_symbol,clones
 1,A1,1130001,gene1,0
 2,A2,1130002,gene2,0
@@ -123,7 +124,7 @@ export class DataLoaderTest extends DataLoader {
 8,A8,1130004,gene4,0
 9,A9,1130004,gene4,0
 10,A10,1130004,gene4,0
-`);
+`));
 
     // load available vids
     this._vids = ['VR000000008', 'VR000000043', 'VR000000044'];
@@ -158,8 +159,8 @@ export class DataLoaderTest extends DataLoader {
       });
   }
 
-  async getMlbByAntigen(antigen: string): Promise<DG.DataFrame> {
-    return catchToLog<Promise<DG.DataFrame>>(
+  async getMlbByAntigen(antigen: string): Promise<MlbDataFrame> {
+    return catchToLog<Promise<MlbDataFrame>>(
       'MLB: DataLoaderTest.getMlbByAntigen()',
       async () => {
         const csv: string = await this._dlFiles.readAsText(DataLoaderTest.Files.mlbByAntigen);
@@ -168,12 +169,12 @@ export class DataLoaderTest extends DataLoader {
         const dfRes: DG.DataFrame = df.clone(DG.BitSet.create(df.rowCount, (rowI: number) => {
           return antigenCol.get(rowI) == antigen;
         }));
-        return dfRes;
+        return MlbDataFrame.wrap(dfRes, antigen);
       });
   }
 
-  getTreeByAntigen(antigen: string): Promise<DG.DataFrame> {
-    return catchToLog<Promise<DG.DataFrame>>(
+  getTreeByAntigen(antigen: string): Promise<TreeDataFrame> {
+    return catchToLog<Promise<TreeDataFrame>>(
       'MLB: DataLoaderTest.getTreeByAntigen()',
       async () => {
         const csv: string = await this._dlFiles.readAsText(DataLoaderTest.Files.treeByAntigen);
@@ -182,7 +183,7 @@ export class DataLoaderTest extends DataLoader {
         const dfRes: DG.DataFrame = df.clone(DG.BitSet.create(df.rowCount, (rowI) => {
           return antigenCol.get(rowI) == antigen;
         }));
-        return dfRes;
+        return TreeDataFrame.wrap(dfRes, antigen);
       });
   }
 

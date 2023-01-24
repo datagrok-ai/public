@@ -1,7 +1,6 @@
-<!-- TITLE: Try Datagrok Locally -->
-<!-- SUBTITLE: -->
-
-# Try Datagrok Locally
+---
+title: "Try Datagrok Locally"
+---
 
 This document contains instructions for running Datagrok on a machine
 via [Docker Compose](https://docs.docker.com/compose/).

@@ -1,7 +1,6 @@
-<!-- TITLE: Server Settings-->
-<!-- SUBTITLE: -->
-
-# Server settings
+---
+title: Server Settings
+---
 
 Server settings are controlled by platform's [administrators](../govern/security.md). To edit client settings,
 open `Tools | Settings`, and click on the corresponding panes on the left side.

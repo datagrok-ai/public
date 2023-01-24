@@ -6,7 +6,7 @@ import * as C from '../utils/constants';
 import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {delay} from '@datagrok-libraries/utils/src/test';
-import {NOTATION} from '@datagrok-libraries/bio';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export const MONOMER_MOLS_COL = 'monomeric-mols';
 

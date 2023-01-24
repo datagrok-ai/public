@@ -1,7 +1,6 @@
-<!-- TITLE: OData -->
-<!-- SUBTITLE: -->
-
-# OData
+---
+title: "OData"
+---
 
 Provides access to [OData](https://www.odata.org/) based service.
 

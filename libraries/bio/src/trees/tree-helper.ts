@@ -12,7 +12,7 @@ export interface ITreeHelper {
    * @param {string} nodePrefix            Prefix for nodes with auto generated name   *
    * @param {bool}   emptyParentRootSkip   Skip row with root node and empty parent (for Network Diagram)
    */
-  newickToDf(newick: string, name: string, nodePrefix?: string, emptyParentRootSkip?: boolean): DG.DataFrame;
+  newickToDf(newick: string, name: string, nodePrefix?: string): DG.DataFrame;
 
   toNewick(node: NodeType | null): string;
 

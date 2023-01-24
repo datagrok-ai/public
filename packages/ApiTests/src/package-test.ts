@@ -56,6 +56,7 @@ import './scripts/scripts-params';
 import './gui/dialogs';
 import './gui/files';
 import './gui/grid';
+import './gui/data-science';
 import './gui/project-upload';
 import './gui/viewers/bar-chart';
 import './gui/viewers/box-plot';

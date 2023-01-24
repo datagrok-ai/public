@@ -1,6 +1,6 @@
-<!-- TITLE: Authentication -->
-
-# Authentication
+---
+title: "Authentication"
+---
 
 Out-of-the-box, Datagrok offers many authentication methods, including popular methods such as SSO and OAuth.
 

@@ -13,8 +13,8 @@ import {helmSubstructureSearch, linearSubstructureSearch} from '../substructure-
 import {Subject, Subscription} from 'rxjs';
 import * as C from '../utils/constants';
 import {updateDivInnerHTML} from '../utils/ui-utils';
-import {NOTATION} from '@datagrok-libraries/bio';
-import { delay } from '@datagrok-libraries/utils/src/test';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {delay} from '@datagrok-libraries/utils/src/test';
 
 export class BioSubstructureFilter extends DG.Filter {
   bioFilter: FastaFilter | SeparatorFilter | HelmFilter | null = null;

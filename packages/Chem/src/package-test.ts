@@ -14,7 +14,7 @@ import './tests/substructure-search-tests';
 import './tests/rendering-tests';
 import './tests/sketcher-tests';
 
-// import './tests/ui-tests';
+import './tests/ui-tests';
 import './tests/detector-tests';
 import './tests/api-based-tests';
 import './tests/notation-converter-tests';

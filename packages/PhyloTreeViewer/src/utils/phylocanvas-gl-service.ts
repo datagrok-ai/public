@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {Observable, Subject} from 'rxjs';
 import {PhylocanvasGL} from '@phylocanvas/phylocanvas.gl';
-import {PhylocanvasGlServiceBase, PhylocanvasGlTask} from '@datagrok-libraries/bio';
+import {PhylocanvasGlServiceBase, PhylocanvasGlTask} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
 
 
 export class PhylocanvasGlService implements PhylocanvasGlServiceBase {

@@ -1,0 +1,6 @@
+molregno,smiles
+1480014,CC(C(=O)OCCCc1cccnc1)c2cccc(c2)C(=O)c3ccccc3
+1480015,COc1ccc2cc(ccc2c1)C(C)C(=O)Oc3ccc(C)cc3OC
+1480223,COC(=O)[C@]1(C)CCC[C@@]2(C)[C@H]1CC(=O)c3cc(c(Nc4ccc(OC)cc4)cc23)[N+](=O)[O-]
+1480224,COC(=O)[C@]1(C)CCC[C@@]2(C)[C@H]1CC(=O)c3cc(c(Nc4ccc(C)cc4)cc23)[N+](=O)[O-]
+1480325,OC(CNC1CCCCC1)CN2C(=O)c3ccccc3C2=O

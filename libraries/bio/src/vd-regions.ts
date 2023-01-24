@@ -1,3 +1,7 @@
+import * as DG from 'datagrok-api/dg';
+
+import {IViewer} from './viewers/viewer';
+
 // Data structures for V-Domain regions of antibodies
 
 export enum VdRegionType {
@@ -35,4 +39,11 @@ export class VdRegion {
     this.positionStartName = positionStartName;
     this.positionEndName = positionEndName;
   }
+}
+
+/** Interface for VdRegionsViewer from @datagrok/bio to unbind dependency to Bio package */
+export interface IVdRegionsViewer extends IViewer {
+  init(): Promise<void>;
+
+  setDf(mlbDf: DG.DataFrame, regions: VdRegion[]): Promise<void>;
 }

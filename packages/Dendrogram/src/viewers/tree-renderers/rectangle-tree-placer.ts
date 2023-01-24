@@ -5,7 +5,7 @@ import * as rxjs from 'rxjs';
 
 import {HoverType, ITreePlacer, MarkupNodeType} from './markup';
 import {Subject} from 'rxjs';
-import {isLeaf, NodeType} from '@datagrok-libraries/bio';
+import {isLeaf, NodeType} from '@datagrok-libraries/bio/src/trees';
 
 export type RectangleTreeHoverType<TNode extends NodeType> = HoverType<TNode> & {
   /** Node position along height axis */

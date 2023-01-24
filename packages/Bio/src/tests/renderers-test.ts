@@ -8,7 +8,8 @@ import {convertDo} from '../utils/convert';
 import {SEM_TYPES, TAGS} from '../utils/constants';
 import {generateLongSequence, generateManySequences, performanceTest} from './utils/sequences-generators';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
-import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS, UnitsHandler} from '@datagrok-libraries/bio';
+import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 category('renderers', () => {
   let tvList: DG.TableView[];
@@ -20,8 +21,9 @@ category('renderers', () => {
   });
 
   after(async () => {
-    dfList.forEach((df: DG.DataFrame) => { grok.shell.closeTable(df); });
-    tvList.forEach((tv: DG.TableView) => tv.close());
+    // Closing viewes and data frames leads to exception
+    // dfList.forEach((df: DG.DataFrame) => { grok.shell.closeTable(df); });
+    // tvList.forEach((tv: DG.TableView) => tv.close());
   });
 
   test('long sequence performance ', async () => {

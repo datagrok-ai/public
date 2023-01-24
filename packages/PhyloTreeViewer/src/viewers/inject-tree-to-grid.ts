@@ -7,8 +7,10 @@ import {interval, Unsubscribable} from 'rxjs';
 
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import $ from 'cash-dom';
-import {getTreeHelper, ITreeHelper, NodeType, parseNewick} from '@datagrok-libraries/bio';
 import {PhylocanvasGL} from '@phylocanvas/phylocanvas.gl';
+import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
 
 // const getBranchScaleOld = PhylocanvasGL.prototype.getBranchScale;
 // PhylocanvasGL.prototype.getBranchScale = function(...args) {

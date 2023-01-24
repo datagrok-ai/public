@@ -6,6 +6,7 @@ import {ALPHABET, getSplitter, NOTATION, SplitterFunc, TAGS} from '../utils/macr
 // import {UnitsHandler} from '../utils/units-handler';
 import {NotationConverter} from '../utils/notation-converter';
 import {Monomer} from '../types';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 // constants for parsing molfile V2000
 const V2K_RGP_SHIFT = 8;
@@ -136,13 +137,13 @@ export async function _toAtomicLevel(
   // determine the polymer type according to HELM specifications
   let polymerType;
   // todo: an exception from dart comes before this check if the alphabet is UN
-  if (alphabet === ALPHABET.PT) {
+  if (alphabet === ALPHABET.PT || alphabet === ALPHABET.UN) {
     polymerType = HELM_POLYMER_TYPE.PEPTIDE;
   } else if (alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA) {
     polymerType = HELM_POLYMER_TYPE.RNA;
   } else {
     grok.shell.warning(
-      `Only PT, DNA and RNA alphabets are supported, while the selected column has ${polymerType} alphabet`
+      `Unexpected column's '${macroMolCol.name}' alphabet '${alphabet}'.`
     );
     return;
   }
@@ -244,8 +245,17 @@ async function getMonomersDictFromLib(
 
   for (let row = 0; row < monomerSequencesArray.length; ++row) {
     const monomerSeq: string[] = monomerSequencesArray[row];
-    for (const sym of monomerSeq)
-      updateMonomersDict(monomersDict, sym, formattedMonomerLib, moduleRdkit, polymerType);
+    for (const sym of monomerSeq) {
+      if (sym === '') continue; // Skip gap/empty monomer for MSA
+      try {
+        updateMonomersDict(monomersDict, sym, formattedMonomerLib, moduleRdkit, polymerType);
+      } catch (err: any) {
+        const errTxt = errorToConsole(err);
+        console.error(`bio lib: getMonomersDictFromLib() sym='${sym}', error:\n` + errTxt);
+        const errMsg = `can't get monomer '${sym}' from library: ${errTxt}`; // Text for Datagrok error baloon
+        throw new Error(errMsg);
+      }
+    }
   }
   // console.log(monomersDict);
 
@@ -1312,6 +1322,7 @@ function getResultingAtomBondCounts(
 
   // sum up all the atoms/nodes provided by the sequence
   for (const monomerSymbol of monomerSeq) {
+    if (monomerSymbol === '') continue; // Skip for gap/empty monomer in MSA
     const monomer = monomersDict.get(monomerSymbol)!;
     atomCount += monomer.atoms.x.length;
     bondCount += monomer.bonds.bondTypes.length;

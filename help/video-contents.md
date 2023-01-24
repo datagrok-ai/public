@@ -1,6 +1,7 @@
-<!-- TITLE: Videos. Interesting topics. -->
+---
+title: "Videos. Interesting topics."
+---
 
-# Datagrok videos
 
 This document provides a list of videos that describe various aspects of using Datagrok. View the most interesting
 topics to familiarize yourself with Datagrok.
