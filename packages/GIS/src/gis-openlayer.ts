@@ -1043,7 +1043,9 @@ export class OpenLayers {
       // here we can invoke properties panel for our selected object (comment: it if don't need)
       setTimeout(() => {
         // grok.shell.o = DG.SemanticValue.fromValueType(gisObj, gisObj.semtype);
-        grok.shell.o = gisObj;
+
+        // don't show GIS property panel
+        //grok.shell.o = gisObj;
         grok.shell.windows.showProperties = true;
       }, 50);
     }
