@@ -349,16 +349,14 @@ export class LogoSummary extends DG.JsViewer {
     const viewerClustersCol = viewerDf.getCol(this.model.settings.clustersColumnName!);
     const originalClusterAmount = this.dataFrame.getCol(this.model.settings.clustersColumnName!).categories.length;
 
-    let anyRemoved = false;
     const removeClusterIndexesList = lss.filter((clusterId) => clusterId + 1 > originalClusterAmount);
-    for (const clusterId of removeClusterIndexesList) {
-      lss.splice(clusterId, 1);
-      this.dataFrame.columns.remove(viewerClustersCol.get(clusterId));
-      anyRemoved = true;
-    }
-
-    if (!anyRemoved)
+    if (removeClusterIndexesList.length == 0)
       return grok.shell.info('Nothing removed. Please select a created cluster to remove');
+
+    for (const clusterId of removeClusterIndexesList) {
+      lss.splice(lss.indexOf(clusterId), 1);
+      this.dataFrame.columns.remove(viewerClustersCol.get(clusterId));
+    }
 
     this.model.logoSummarySelection = lss;
     this.model.clusterStats = this.model.calculateClusterStatistics();
