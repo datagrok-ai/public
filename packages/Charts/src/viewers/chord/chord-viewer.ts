@@ -11,8 +11,8 @@ import {layoutConf, topSort} from './utils';
 export class ChordViewer extends DG.JsViewer {
   fromColumnName: string | null;
   toColumnName: string | null;
-  aggType: string;
   chordLengthColumnName: string;
+  aggType: string;
   colorBy: string;
   sortBy: string;
   direction: string;
@@ -44,8 +44,6 @@ export class ChordViewer extends DG.JsViewer {
   strColumns?: DG.Column[];
   numColumns?: DG.Column[];
 
-  aggregatedTable?: DG.DataFrame;
-
   distinctCols?: boolean;
 
   fromColumnAggr?: DG.Column;
@@ -54,7 +52,6 @@ export class ChordViewer extends DG.JsViewer {
   rowCountAggr?: number;
   categories?: string[];
 
-  indexes?: Int32Array;
   freqMap?: any;
 
   fromColumn?: DG.Column;
@@ -161,22 +158,22 @@ export class ChordViewer extends DG.JsViewer {
   }
 
   _aggregate() {
-    this.aggregatedTable = this.dataFrame
+    let aggregatedTable = this.dataFrame
       .groupBy([this.fromColumnName!, (this.distinctCols) ? this.toColumnName! : ''])
       .whereRowMask(this.dataFrame.filter)
       .add(this.aggType as DG.AggregationType, this.chordLengthColumnName, 'result')
       .aggregate();
 
     if (!this.includeNulls) {
-      this.aggregatedTable = this.aggregatedTable.rows
+      aggregatedTable = aggregatedTable.rows
         .match(`${this.fromColumnName} regex .+ and ${this.toColumnName} regex .+`)
         .toDataFrame();
     }
 
-    this.fromColumnAggr = this.aggregatedTable!.getCol(this.fromColumnName!);
-    this.toColumnAggr = this.aggregatedTable!.getCol(this.toColumnName!);
-    this.chordWeights = this.aggregatedTable!.getCol('result').getRawData();
-    this.rowCountAggr = this.aggregatedTable!.rowCount;
+    this.fromColumnAggr = aggregatedTable!.getCol(this.fromColumnName!);
+    this.toColumnAggr = aggregatedTable!.getCol(this.toColumnName!);
+    this.chordWeights = aggregatedTable!.getCol('result').getRawData();
+    this.rowCountAggr = aggregatedTable!.rowCount;
 
     this.categories = Array.from(new Set(this.fromColumnAggr.categories.concat(this.toColumnAggr.categories)));
   }
@@ -204,8 +201,8 @@ export class ChordViewer extends DG.JsViewer {
     this.data.length = 0;
     this.distinctCols = this.fromColumnName !== this.toColumnName;
 
-    this.indexes = this.dataFrame.filter.getSelectedIndexes();
-    this.freqMap = this._getFrequencies(this.fromColumn!, this.toColumn!, this.indexes);
+    const indexes = this.dataFrame.filter.getSelectedIndexes();
+    this.freqMap = this._getFrequencies(this.fromColumn!, this.toColumn!, indexes);
 
     this.conf.events = {
       mouseover: (datum: any, index: number, nodes: any, event: MouseEvent) => {
