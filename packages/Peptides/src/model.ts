@@ -164,14 +164,17 @@ export class PeptidesModel {
 
   get analysisView(): DG.TableView {
     const shell = grok.shell;
-    if (this.df.getTag('newAnalysis') !== '1') {
+    if (this.df.getTag(C.NEW_ANALYSIS) != '1') {
       this._analysisView = wu(shell.tableViews)
-        .find(({dataFrame}) => dataFrame.tags[C.PEPTIDES_ANALYSIS] === '1' && dataFrame.name == this.df.name)!;
-      grok.shell.v = this._analysisView;
+        .find(({dataFrame}) =>
+          (dataFrame.getTag(C.PEPTIDES_ANALYSIS) == '1' || dataFrame.getTag(C.MULTIPLE_VIEWS) == '1')
+            && dataFrame.name == this.df.name)!;
+      if (this.df.getTag(C.PEPTIDES_ANALYSIS))
+        grok.shell.v = this._analysisView;
     }
 
     this._analysisView ??= shell.addTableView(this.df);
-    this.df.setTag('newAnalysis', '');
+    this.df.setTag(C.NEW_ANALYSIS, '');
     return this._analysisView;
   }
 
@@ -971,22 +974,15 @@ export class PeptidesModel {
       return;
     this.isInitialized = true;
 
-    if (!this.isRibbonSet && this.df.getTag('setRibbon') != '0') {
+    if (!this.isRibbonSet && this.df.getTag(C.MULTIPLE_VIEWS) != '1') {
       //TODO: don't pass model, pass parameters instead
       const settingsButton = ui.iconFA('wrench', () => getSettingsDialog(this), 'Peptides analysis settings');
-      const newViewName = ui.stringInput('', 'New peptides view');
-      const newViewButton = ui.bigButton('New view', async () => {
-        const tv = wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame.name == newViewName.stringValue);
-        if (tv)
-          return grok.shell.warning('View with this name already exists!');
-        await this.createNewView(newViewName.stringValue);
-      },
+      const newViewButton = ui.bigButton('New view', async () => await this.createNewView(),
       'Creates a new view from current selection');
-      this.analysisView.setRibbonPanels([[settingsButton], [newViewName.root, newViewButton]], false);
+      this.analysisView.setRibbonPanels([[settingsButton], [newViewButton]], false);
       this.isRibbonSet = true;
+      this.df.setTag(C.PEPTIDES_ANALYSIS, '1');
     }
-
-    this.df.tags[C.PEPTIDES_ANALYSIS] = '1';
 
     this.updateDefault();
 
@@ -1019,7 +1015,7 @@ export class PeptidesModel {
     this.analysisView.grid.col(newClusterCol.name)!.visible = false;
   }
 
-  async createNewView(dfName: string): Promise<void> {
+  async createNewView(): Promise<void> {
     const rowMask = this.df.selection.clone().and(this.df.filter);
     if (!rowMask.anyTrue)
       return grok.shell.warning('Cannot create a new view, there are no visible selected rows in your dataset');
@@ -1027,8 +1023,8 @@ export class PeptidesModel {
     const newDf = this.df.clone(rowMask);
     for (const [tag, value] of newDf.tags)
       newDf.setTag(tag, tag == C.TAGS.SETTINGS ? value : '');
-    newDf.name = dfName;
-    newDf.setTag('setRibbon', '0');
+    newDf.setTag(C.PEPTIDES_ANALYSIS, '0');
+    newDf.setTag(C.MULTIPLE_VIEWS, '1');
     const view = grok.shell.addTableView(newDf);
     view.addViewer('logo-summary-viewer');
     grok.shell.v = view;

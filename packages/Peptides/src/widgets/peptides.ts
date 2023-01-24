@@ -183,7 +183,7 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     }
 
     newDf.setTag('monomerType', monomerType);
-    newDf.setTag('newAnalysis', '1');
+    newDf.setTag(C.NEW_ANALYSIS, '1');
     model = PeptidesModel.getInstance(newDf);
     await model.addViewers();
   } else
