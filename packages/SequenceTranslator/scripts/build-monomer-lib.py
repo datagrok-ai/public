@@ -163,30 +163,36 @@ def cli():
               help='Output library (HELM format) file.',
               type=click.File('wb', 'utf-8'))
 @click.option('--add',
-              'add_f_list',
-              multiple=True,
+              'monomer_files_list',
+              multiple=False,
               help='Additional libraries to build.',
               type=click.File('r', 'utf-8'))
 def main(ctx, initial_f: TextIOWrapper, lib_f: TextIOWrapper,
-         add_f_list: list[TextIOWrapper]):
+         monomer_files_list: TextIOWrapper):
     initial_json_str = initial_f.read()
 
     initial_json = orjson.loads(initial_json_str)
 
     monomers: dict[str, Monomer] = codes2monomers(initial_json)
 
-    for add_f in add_f_list:
-        add_json_str = add_f.read()
-        add_json = orjson.loads(add_json_str)
-        for add_m in add_json:
-            m = Monomer.from_json(add_m)
-            monomers[m.name] = m
+    monomer_file_list = list(
+        filter(lambda string: string != '',
+               monomer_files_list.read().split('\n')))
+
+    print(monomer_file_list)
+
+    for file in monomer_file_list:
+        with open(file, 'r') as f:
+            add_json_str = f.read()
+            add_json = orjson.loads(add_json_str)
+            for add_m in add_json:
+                m = Monomer.from_json(add_m)
+                monomers[m.name] = m
 
     add_json = [m.to_json() for m in monomers.values()]
 
     lib_json_txt = orjson.dumps(add_json, option=orjson.OPT_INDENT_2)
     lib_f.write(lib_json_txt)
-    k = 11
 
 
 if __name__ == '__main__':
