@@ -30,7 +30,7 @@ export async function drawMolecule(
     drawMolfileOnCanvas(canvas, molfile);
 
     // Dialog with zoomed-in molecule
-    $(canvas).on('click', drawZoomedInMolecule);
+    $(canvas).on('click', async () => { await drawZoomedInMolecule(molfile); });
     $(canvas).on('mouseover', () => $(canvas).css('cursor', 'grab')); // for some reason 'zoom-in' value wouldn't work
     $(canvas).on('mouseout', () => $(canvas).css('cursor', 'default'));
 
