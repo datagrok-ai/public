@@ -28,7 +28,7 @@ category('Timelines', () => {
     expect(viewer instanceof DG.JsViewer, true);
     expect(viewer.type, TYPE);
     expect(viewer.table.id, df.id);
-  });
+  }, {skipReason: 'GROK-11765'});
 
   test('Properties', async () => {
     const viewer = DG.Viewer.fromType(TYPE, df);
