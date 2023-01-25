@@ -69,7 +69,8 @@ async function perfromPepseaMSA(col: DG.Column<string>, method: string, gapOpen:
   }
 
   const dockerfileId = (await grok.dapi.dockerfiles.filter('bio').first()).id;
-  const alignedSequencesCol = DG.Column.string('Aligned', peptideCount);
+  const newColName = 'Aligned';
+  const alignedSequencesCol = DG.Column.string(newColName, peptideCount);
 
   for (const body of bodies) { // getting aligned sequences for each cluster
     const alignedObject = await requestAlignedObjects(dockerfileId, body, method, gapOpen, gapExtend);
@@ -82,6 +83,11 @@ async function perfromPepseaMSA(col: DG.Column<string>, method: string, gapOpen:
   const semType = await grok.functions.call('Bio:detectMacromolecule', {col: alignedSequencesCol}) as string;
   if (semType)
     alignedSequencesCol.semType = semType;
+
+  const exisitingColumns = col.dataFrame.columns.names();
+  let counter = 0;
+  while (exisitingColumns.includes(alignedSequencesCol.name))
+    alignedSequencesCol.name = `${newColName} ${counter++}`;
 
   col.dataFrame.columns.add(alignedSequencesCol);
 }
