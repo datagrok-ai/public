@@ -1,7 +1,6 @@
-<!-- TITLE: DB exploration -->
-<!-- SUBTITLE: -->
-
-# DB exploration
+---
+title: "DB exploration"
+---
 
 Grok supports visual exploration of relational databases for some of the database providers, including PostgreSQL,
 MySQL, MS SQL, Maria DB, and Oracle. If a provider supports it, you'll see '

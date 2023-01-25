@@ -1,7 +1,6 @@
-<!-- TITLE: Math functions -->
-<!-- SUBTITLE: -->
-
-# Math functions
+---
+title: "Math functions"
+---
 
 This type of function includes math, trigonometric, and logic functions.
 

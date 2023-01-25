@@ -366,6 +366,20 @@ export class TestManager extends DG.ViewBase {
     iconDiv.append(icon);
   }
 
+  updateIconUnhandled(category: ICategory) {
+    let icon;
+    const subcats = Object.keys(category.subcategories).sort((a, b) => a.localeCompare(b));
+    if (subcats.length > 0) for (const subcat of subcats) this.updateIconUnhandled(category.subcategories[subcat]);
+    for (const t of category.tests) {
+      icon = t.resultDiv.firstChild;
+      if (icon === null || icon.className.includes('times')) return;
+      icon.style.color = 'var(--orange-2)';
+    }
+    icon = category.resultDiv.firstChild;
+    if (icon === null || icon.className.includes('times')) return;
+    icon.style.color = 'var(--orange-2)';
+  }
+
   async runTest(t: IPackageTest): Promise<boolean> {
     let runSkipped = false;
     const skipReason = t.test.options?.skipReason;
@@ -425,6 +439,7 @@ export class TestManager extends DG.ViewBase {
 
   async runAllTests(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
     this.testManagerView.path = '/' + this.testManagerView.name.replace(' ', '');
+    let catsValuesSorted: ICategory[];
     switch (nodeType) {
     case NODE_TYPE.PACKAGE: {
       const progressBar = DG.TaskBarProgressIndicator.create(tests.package.name);
@@ -433,7 +448,7 @@ export class TestManager extends DG.ViewBase {
       this.testInProgress(packageTests.resultDiv, true);
       await this.collectPackageTests(node as DG.TreeViewGroup, tests);
       const cats = packageTests.categories;
-      const catsValuesSorted = Object.keys(cats).sort((a, b) => a.localeCompare(b)).map((cat) => cats[cat]);
+      catsValuesSorted = Object.keys(cats).sort((a, b) => a.localeCompare(b)).map((cat) => cats[cat]);
       let completedTestsNum = 0;
       for (const cat of catsValuesSorted) {
         this.testInProgress(packageTests.resultDiv, true);
@@ -464,9 +479,22 @@ export class TestManager extends DG.ViewBase {
     }
     }
     await delay(1000);
-    if (grok.shell.lastError.length > 0)
+    if (grok.shell.lastError.length > 0) {
       grok.shell.error(`Unhandled exception: ${grok.shell.lastError}`);
-
+      switch (nodeType) {
+      case NODE_TYPE.PACKAGE:
+        catsValuesSorted.forEach((cat) => this.updateIconUnhandled(cat));
+        break;
+      case NODE_TYPE.CATEGORY:
+        this.updateIconUnhandled(tests);
+        break;
+      case NODE_TYPE.TEST: {
+        if (tests.resultDiv.innerHTML === '') return;
+        (tests.resultDiv.firstChild as HTMLElement).style.color = 'var(--orange-2)';
+        break;
+      }
+      }
+    }
     grok.shell.closeAll();
     setTimeout(() => {
       grok.shell.o = this.getTestsInfoPanel(node, tests, nodeType,

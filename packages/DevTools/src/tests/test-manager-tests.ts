@@ -33,7 +33,7 @@ category('Test manager', () => {
     expect(testManager.testsResultsDf.get('package', 0), 'DevTools');
     expect(testManager.testsResultsDf.get('category', 0), 'FSE exists');
     expect(testManager.testsResultsDf.get('name', 0), 'FSE button exists');
-  });
+  }, { skipReason: 'GROK-11733' });
 
 
   after(async () => {

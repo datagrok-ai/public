@@ -113,6 +113,8 @@ export class ComputationView extends FunctionView {
    * @stability Stable
   */
   override buildRibbonMenu() {
+    this.ribbonMenu.clear();
+
     super.buildRibbonMenu();
 
     if (!this.exportConfig && !this.reportBug && !this.requestFeature && !this.getHelp && !this.getMocks && !this.getTemplates) return;

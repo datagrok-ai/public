@@ -12,6 +12,7 @@ export class PdbApp {
 
   constructor() {}
 
+  /** {@link df} created with pdbToDf() */
   async init(df?: DG.DataFrame, funcName: string = 'pdbApp'): Promise<void> {
     this._funcName = funcName;
     await this.loadData(df);
@@ -20,8 +21,27 @@ export class PdbApp {
   async loadData(df?: DG.DataFrame): Promise<void> {
     const ph = new PdbHelper();
     if (!df) {
-      const ph: IPdbHelper = getPdbHelper();
-
+      console.warn('BsV: PdbApp.loadData() no df.');
     }
+    await this.setData(df);
+  }
+
+  async setData(df: DG.DataFrame): Promise<void> {
+    this.df = df;
+
+    await this.buildView();
+  }
+
+  private df: DG.DataFrame;
+
+  // -- View --
+
+  private view: DG.TableView;
+
+  async buildView(): Promise<void> {
+    this.view = grok.shell.addTableView(this.df);
+
+    const viewer: DG.JsViewer = (await this.view.dataFrame.plot.fromType('NglViewer', {})) as DG.JsViewer;
+    this.view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'NGL', 0.4);
   }
 }

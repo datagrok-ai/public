@@ -1,7 +1,6 @@
-<!-- TITLE: Routing -->
-<!-- SUBTITLE: -->
-
-# Routing
+---
+title: "Routing"
+---
 
 In this article, we will consider in which cases the Datagrok platform retains the state in which it was before
 refreshing the browser page. Routing allows you to quickly share something by simply copying a URL and sending it to
@@ -22,7 +21,7 @@ The platform has browsers for the following entities:
 | [Files](../access/connect-a-file-share.md)              | [https://public.datagrok.ai/files](https://public.datagrok.ai/files)               |
 | [Queries](../access/data-query.md)             | [https://public.datagrok.ai/queries](https://public.datagrok.ai/queries)           |
 | [Scripts](../compute/scripting.md)             | [https://public.datagrok.ai/scripts](https://public.datagrok.ai/scripts)           |
-| [Functions](functions/function.md)             | [https://public.datagrok.ai/functions](https://public.datagrok.ai/functions)       |
+| [Functions](functions/functions.md)             | [https://public.datagrok.ai/functions](https://public.datagrok.ai/functions)       |
 | [Applications](../develop/develop.md)          | [https://public.datagrok.ai/apps](https://public.datagrok.ai/apps)                 |
 | [Models](../learn/predictive-modeling.md)      | [https://public.datagrok.ai/models](https://public.datagrok.ai/models)             |
 | [Notebooks](../compute/jupyter-notebook.md)    | [https://public.datagrok.ai/notebooks](https://public.datagrok.ai/notebooks)       |

@@ -6,11 +6,9 @@ import {after, before, category, test, expect, expectObject, delay} from '@datag
 import {
   ALPHABET,
   NOTATION,
-  PositionInfo,
-  PositionMonomerInfo,
-  TAGS as bioTAGS,
-  WebLogoViewer
-} from '@datagrok-libraries/bio';
+  TAGS as bioTAGS
+} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {PositionInfo, PositionMonomerInfo, WebLogoViewer} from '@datagrok-libraries/bio/src/viewers/web-logo-viewer';
 
 category('WebLogo-positions', () => {
   let tvList: DG.TableView[];

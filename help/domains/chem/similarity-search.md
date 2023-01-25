@@ -1,7 +1,6 @@
-<!-- TITLE: Similarity search -->
-<!-- SUBTITLE: -->
-
-# Similarity search
+---
+title: "Similarity search"
+---
 
 We have implemented few tools that help scientists analyze a collection of molecules in terms of molecular similarity.
 Both tools are based on applying different distance metrics

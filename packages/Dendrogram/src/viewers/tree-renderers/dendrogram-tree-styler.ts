@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {MarkupNodeType, TreeStylerBase} from './markup';
-import {isLeaf} from '@datagrok-libraries/bio';
 
 
 export class DendrogramTreeStyler extends TreeStylerBase<MarkupNodeType> {

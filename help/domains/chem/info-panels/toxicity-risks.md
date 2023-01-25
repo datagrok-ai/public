@@ -1,6 +1,6 @@
-<!-- TITLE: Toxicity risks -->
-
-# Toxicity risks
+---
+title: "Toxicity risks"
+---
 
 From [openmolecules](https://www.openmolecules.org/properties/properties.html#tox):
 _The toxicity risk assessment tries to locate substructures within the chemical structure being indicative of a toxicity

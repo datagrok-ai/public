@@ -1,13 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {NodeType} from '@datagrok-libraries/bio';
-
 import {ITreeStyler, markupNode, MarkupNodeType, TreeStylerBase} from './markup';
 import {toRgba, setAlpha} from '@datagrok-libraries/utils/src/color';
 import {GridTreeRendererBase} from './grid-tree-renderer-base';
 import {LINE_WIDTH, NODE_SIZE, TreeColorNames, TreeDefaultPalette} from '../dendrogram';
 import {GridTreePlacer} from './grid-tree-placer';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
 
 const TRANS_ALPHA = 0.7;
 

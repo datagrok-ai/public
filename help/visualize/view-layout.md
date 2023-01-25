@@ -1,9 +1,8 @@
-<!-- TITLE: View layout -->
-<!-- SUBTITLE: -->
+---
+title: "View layout"
+---
 
-# View layout
-
-View Layout contains relative positions of [viewers](../visualize/viewers.md) in
+View Layout contains relative positions of [viewers](../visualize/viewers/viewers.md) in
 a [table view](../datagrok/table-view.md), along with the viewers' properties. By separating layouts from the actual
 data displayed, we now can save current layout (**View | Layout | Save to Gallery**)
 and later apply it to a different dataset
@@ -12,9 +11,10 @@ and later apply it to a different dataset
 To clone current view, either do **View | Layout | Clone**, or click on the plus sign on the view header strip, and
 choose **Clone**.
 
-# Viewer layout
+## Viewer layout
 
-Similarly to view layout, it is possible to reuse the settings of individual [viewers](../visualize/viewers.md). Under
+Similarly to view layout, it is possible to reuse the settings of individual [viewers](../visualize/viewers/viewers.md).
+Under
 the 'Viewer' menu (either right-click on the viewer, or click on the 'hamburger' menu on the top left), you will find
 the following layout-specific commands:
 
@@ -23,7 +23,7 @@ the following layout-specific commands:
 
 To open a gallery containing viewer and view layout suggestions: **View | Layout | Open Gallery**
 
-## Layout suggestions
+### Layout suggestions
 
 Moreover, the platform will proactively suggest layouts (even created by other users) to be applied to your data, if a
 previously saved layout can be used for visualizing currently opened dataset. The suggestions are based on
@@ -33,7 +33,7 @@ previously observed actions.
 To check layouts applicable to the current table, open 'Layouts' pane on the left. Alternatively, open the specialized
 view/viewer layout suggestion panel: **View | Layout | Open Gallery**
 
-## Layout applicability
+### Layout applicability
 
 When a view layout is saved, the visual arrangement of the viewers along with the metadata of the layout data columns (
 columns selected on viewers, such as "X" column on a scatter plot) gets saved. Metadata includes column name, type,

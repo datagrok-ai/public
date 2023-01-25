@@ -186,12 +186,15 @@ export const SEMTYPE = {
   IP_ADDRESS: 'IP Address',
   MOLECULE: 'Molecule',
   MACROMOLECULE: 'Macromolecule',
+  MOLECULE3D: 'Molecule3D',
+  PDB_ID: 'PDB_ID',
   NEWICK: 'Newick',
   HELM: 'HELM',
   SUBSTRUCTURE: 'Substructure',
   MONEY: 'Money',
   IMAGE: 'Image',
   FILE: 'File',
+  CHEMICAL_REACTION: 'ChemicalReaction'
 }
 
 export const UNITS = {

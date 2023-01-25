@@ -1393,7 +1393,7 @@ export class RowList {
   }
 
   /** Highlights the corresponding rows. */
-  highlight(indexPredicate: IndexPredicate): void {
+  highlight(indexPredicate: IndexPredicate | null): void {
     api.grok_RowList_Highlight(this.dart, indexPredicate);
   }
 

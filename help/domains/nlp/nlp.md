@@ -1,7 +1,7 @@
-<!-- TITLE: Natural language processing -->
-<!-- SUBTITLE: -->
-
-# Natural language processing
+---
+title: "Natural language processing"
+sidebar_position: 0
+---
 
 The Datagrok platform has a plugin designed for natural language processing. This feature
 can be applied to comfortably work with [files](../../access/file-browser-and-file-shares.md) with text content.

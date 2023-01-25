@@ -1,7 +1,6 @@
-<!-- TITLE: Datagrok UI -->
-<!-- SUBTITLE: -->
-
-# Datagrok UI
+---
+title: "Datagrok UI"
+---
 
 This article describes the routines for building a user interface in Datagrok.
 See [JS API class reference](https://datagrok.ai/js-api/modules/ui) for details.
@@ -11,16 +10,16 @@ The UI library provides primitives (buttons, dialogs, accordions, popups, etc), 
 [spreadsheets](ui.md#grid), and viewers such as [scatter plots](../../visualize/viewers/scatter-plot.md).
 See [UI class reference](https://datagrok.ai/js-api/modules/ui) for details.
 
-## Live examples
+### Live examples
 
 The following code examples are available from the code editor within
 Datagrok. [See API Examples](https://public.datagrok.ai/js/samples/ui)
 
-## Design toolkit
+### Design toolkit
 
 Figma Datagrok UIKit available on [Figma Community](https://www.figma.com/@datagrok)
 
-## Table of contents
+### Table of contents
 
 <details>
 <summary>Layouts</summary>
@@ -130,9 +129,9 @@ Figma Datagrok UIKit available on [Figma Community](https://www.figma.com/@datag
 
 </details>
 
-# Layouts
+## Layouts
 
-## Starting point
+### Starting point
 
 To start building a layout you need either a [View](#simple-view) (in most cases) or a [Dialog](#dialogs). Every View or
 Dialog is a [panel container](#panels).
@@ -145,7 +144,7 @@ d.add(ui.h1('Hello World'));
 d.show();
 ```
 
-## Containers
+### Containers
 
 This is a simple container. It can contain any elements, such as inputs, images, text, etc. It doesn't have own height.
 The container height depends on its children.
@@ -159,7 +158,7 @@ ui.div([ui.h1('Header'), ui.p('Paragraph text'), 'just text', DG.Viewer.scatterP
 If you place a container within a [box container](#boxes) , it will inherit the box size and show scroll bars
 automatically.
 
-## Boxes
+### Boxes
 
 This is a fixed-size container. It doesn't depend on children element sizes, but shrinks them to certain size.
 
@@ -174,7 +173,7 @@ $(box).css('border', 'solid');
 ui.div([ui.h1('Header'), box])
 ```
 
-## Panels
+### Panels
 
 The panel is a simple container similar to the [Containers](#containers). It has full available wide and its height
 depends on its children. Also, panels have 10px paddings for all sides.
@@ -185,7 +184,7 @@ depends on its children. Also, panels have 10px paddings for all sides.
  ui.panel([ui.h1('Header'), ui.p('Paragraph text'), 'just text', DG.Viewer.scatterPlot(grok.data.demo.demog())])
  ```
 
-## Blocks
+### Blocks
 
 The block layout is divided into horizontal sections, which take on the full width of the available screen. Their screen
 height is determined by their inner content. The width of sections can also be set to the following predefined ratios:
@@ -223,7 +222,7 @@ Use the block layout if you want to display section-based content by placing ele
  ui.block25([ui.h1('Block 25%')]);
  ```
 
-## Flexbox grid
+### Flexbox grid
 
 Flexbox grid allow to divide a layout into multiple columns and rows. The Flexbox container take the full available
 width, and their height is determined by their inner content. A Flexbox layout has a direction in which child elements
@@ -237,7 +236,7 @@ are laid out. The main axis is defined by rows or columns.
  ui.divV([ui.span('Item'), ui.divH([ui.span('Item 2'), ui.span('Item 3')])]); // Combined row and column
  ```
 
-## Splitters
+### Splitters
 
 Splitters - help to build the layout that contains several content areas. Each splitter contains
 the [box container](#boxes) which shrinks the content to a certain size.
@@ -257,9 +256,9 @@ the same time, splitters need to be nested.
  ])
  ```
 
-# Views
+## Views
 
-## Table view
+### Table view
 
 Table view - a view container with a grid table that contains a set of data that is structured in rows and columns. It
 allows the user to scroll in both directions and can contain large numbers of items and columns.
@@ -269,7 +268,7 @@ let table = grok.data.demo.demog();
 let view = grok.shell.addTableView(table);
 ```
 
-## Simple view
+### Simple view
 
 Simple view is an empty view container that can contain any kind of elements.
 
@@ -277,13 +276,13 @@ Simple view is an empty view container that can contain any kind of elements.
 let view = grok.shell.newView('Simple View');
 ```
 
-## Viewers
+### Viewers
 
 A viewer is a visual component associated with a table.Viewers belonging to the same view all share the same row
 selection and filter. Viewers are saved as part of the project. Also, it is possible to save viewers and views
 individually, and reuse them.
 
-### Bar chart
+#### Bar chart
 
 A bar chart presents grouped data as rectangular bars with lengths proportional to the values that they represent.
 Unlike histograms which you can apply to display the distribution of numerical data, bar charts are primarily designed
@@ -298,7 +297,7 @@ valueAggrType: 'avg'
 });
 ```
 
-### Box plot
+#### Box plot
 
 The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the
 five number summary: minimum, first quartile, median, third quartile, and maximum.
@@ -308,7 +307,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.boxPlot();
 ```
 
-### Calendar
+#### Calendar
 
 Calendar lets you analyze longitudinal data. It needs at least one column of type DateTime.
 
@@ -317,7 +316,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.calendar();
 ```
 
-### Correlation plot
+#### Correlation plot
 
 A quick way to assess correlations between all columns at once. Cells are color-coded by the Pearson correlation
 coefficient. Histograms along the diagonal show the corresponding distribution. Hover over the cell to see the
@@ -331,7 +330,7 @@ view.corrPlot({
 });
 ```
 
-### Density plot
+#### Density plot
 
 Unlike [Scatter plot](#scatter-plot) that visualizes each individual data point, density plot splits 2D area by bins,
 and color-codes it depending on the number of points that fall within this bin. The darker the color, the more points it
@@ -342,7 +341,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.densityPlot();
 ```
 
-### Filters
+#### Filters
 
 A set of controls for quick filtering, selection, and visual assessment of column values.
 
@@ -351,7 +350,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.filters();
 ```
 
-### Form
+#### Form
 
 Form allows you to customize the appearance of the row by manually positioning the fields, and adding other visual
 elements, such as pictures or panels. A form can be used either as a stand-alone viewer, or as a row template of
@@ -362,7 +361,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.form();
 ```
 
-### Globe
+#### Globe
 
 Visualizes magnitude and color for data on a 3D globe using latitude and longitude.
 
@@ -372,7 +371,7 @@ grok.data.getDemoTable('geo/world_pop_1990.csv').then((t) => {
 });
 ```
 
-### Google map viewer
+#### Google map viewer
 
 Google Map Viewer overlays latitude/longitude data from the corresponding table on top of the Google Map.
 
@@ -381,7 +380,7 @@ let view = grok.shell.addTableView(grok.data.demo.geo());
 view.googleMap();
 ```
 
-### Grid
+#### Grid
 
 A grid table contains a set of data that is structured in rows and columns. It allows the user to scroll in both
 directions and can handle large numbers of items and columns.
@@ -393,7 +392,7 @@ view.grid.setOptions({
 });
 ```
 
-### Heat map
+#### Heat map
 
 A Heat Map is a graphical representation of table where each cell value is represented as color. It is based on grid, so
 all of the grid's features are applicable to the heat map as well.
@@ -404,7 +403,7 @@ view.heatMap();
 });
 ```
 
-### Histogram
+#### Histogram
 
 A histogram is a graphical representation of the distribution of numerical data.
 
@@ -415,7 +414,7 @@ view.histogram({
 });
 ```
 
-### Line chart
+#### Line chart
 
 Line chart displays information as a series of data points connected by a line.
 
@@ -424,7 +423,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.lineChart();
 ```
 
-### Markup viewer
+#### Markup viewer
 
 Use this viewer to host any text, arbitrary HTML content, or markdown-formatted text. In most cases, the viewer will
 auto-detect content type. Use the "mode" property to explicitly specify it.
@@ -443,7 +442,7 @@ examples that illustrate most important concepts:
 view.markup({content: markup});
 ```
 
-### Matrix plot
+#### Matrix plot
 
 Use Matrix Plot to assess the relationship among many pairs of columns at the same time.
 
@@ -452,7 +451,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.matrixPlot();
 ```
 
-### Network diagram
+#### Network diagram
 
 Network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become
 edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply
@@ -463,7 +462,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.networkDiagram();
 ```
 
-### Parallel coordinates plot
+#### Parallel coordinates plot
 
 Parallel coordinates is a common way of visualizing high-dimensional geometry and analyzing multivariate data.
 
@@ -480,7 +479,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.pcPlot();
 ```
 
-### Scatter plot 3D
+#### Scatter plot 3D
 
 Use 3D scatter plot to plot data points on three axes to show the relationship between three variables. Each row in the
 data table is represented by a marker whose position depends on its values in the columns set on the X, Y, and Z axes.
@@ -491,7 +490,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.scatterPlot3d();
 ```
 
-### Scatter plot
+#### Scatter plot
 
 A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or
 mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the
@@ -514,7 +513,7 @@ plot.setOptions({
 });
 ```
 
-### Shape map
+#### Shape map
 
 Shows a map that is applicable for the specified dataset. Typically, it would represent a geographical area (countries,
 states, counties, etc), but it also supports arbitrary shapes (such as a store floor plan, brain regions, or EEG
@@ -529,7 +528,7 @@ grok.data.loadTable('https://public.datagrok.ai/demo//earnings-by-state.csv').th
 });
 ```
 
-### Statistics
+#### Statistics
 
 Provides specified descriptive statistics for the chosen columns.
 
@@ -538,7 +537,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.statistics();
 ```
 
-### Tile viewer
+#### Tile viewer
 
 Visualizes rows as a collection of forms that are positioned as tiles.
 
@@ -547,7 +546,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.tileViewer();
 ```
 
-### Tree map
+#### Tree map
 
 Tree maps display hierarchical (tree-structured) data as a set of nested rectangles. Each branch of the tree is given a
 rectangle, which is then tiled with smaller rectangles representing sub- branches. A leaf node's rectangle has an area
@@ -558,7 +557,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.treeMap();
 ```
 
-### Word cloud
+#### Word cloud
 
 A word cloud is a graphical representation of word frequency. Any other aggregation function can be used as well for
 representing size or color of the particular word. On the example of the demographics dataset, to visualize races by
@@ -569,7 +568,7 @@ let view = grok.shell.addTableView(grok.data.demo.demog());
 view.wordCloud();
 ```
 
-## Ribbon
+### Ribbon
 
 Ribbon is a layout container that appears in the header of the view.
 
@@ -595,7 +594,7 @@ elements. Each collection with elements will be divided by a separator and evenl
   .item('element 1');
  ```
 
-## Toolbox
+### Toolbox
 
 The toolbox is a container that appears in the left side of the view. It mostly used as a placement for UI controls and
 can contain any kind of elements such as buttons, fields, icons, links, dropdown menus, accordions, etc.
@@ -607,7 +606,7 @@ can contain any kind of elements such as buttons, fields, icons, links, dropdown
  view.toolbox = acc.root;
  ```
 
-# Dialogs
+## Dialogs
 
 The dialog is a control that informs about the task or contain some necessary information and requires decisions. The
 dialog contains the following sections and options:
@@ -625,7 +624,7 @@ There are three types of dialogs:
 
 For each dialog, you can set the position by viewport by the X and Y axes.
 
-## Standard dialog
+### Standard dialog
 
 ```javascript
 // Standard dialog
@@ -637,7 +636,7 @@ ui.dialog('Standard dialog')
   .show({x: 300, y: 300});
 ```
 
-## Modal dialog
+### Modal dialog
 
 ```javascript
 // Modal dialog
@@ -647,7 +646,7 @@ ui.dialog('Modal dialog')
   .showModal();
 ```
 
-## Fullscreen modal dialog
+### Fullscreen modal dialog
 
 ```javascript
 // Fullscreen modal dialog
@@ -657,9 +656,9 @@ ui.dialog('Modal dialog')
   .showModal(true);
 ```
 
-# Elements
+## Elements
 
-## Colors
+### Colors
 
 Color palette is a predefined set of colors. The colors are fixed and do not change.
 
@@ -681,11 +680,11 @@ v.appendAll([
 ]);
 ```
 
-## Typography
+### Typography
 
 Typography sets default styles for headings, paragraphs, spans, and divs elements.
 
-### Headers
+#### Headers
 
 ```javascript
 ui.h1('Header 1');
@@ -693,19 +692,19 @@ ui.h2('Header 2');
 ui.h3('Header 3');
 ```
 
-### Paragraphs
+#### Paragraphs
 
 ```javascript
 ui.p('Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.');
 ```
 
-### Spans
+#### Spans
 
 ```javascript
 ui.span(['span element']);
 ```
 
-### Label
+#### Label
 
 A label is the name or title of a control or group of related controls.
 
@@ -713,7 +712,7 @@ A label is the name or title of a control or group of related controls.
 ui.label('label text');
 ```
 
-### Link
+#### Link
 
 Link is a clickable text element than can be used for navigation or to trigger an event.
 
@@ -722,19 +721,19 @@ ui.link('datagrok','https://datagrok.ai','tooltip message'),
 ui.link('Hello',()=>{grok.shell.info('hello')},'tooltip message')
 ```
 
-### Inline text
+#### Inline text
 
 ```javascript
   ui.inlineText(['Inline ',ui.link('text',()=>{grok.shell.info('')},'click me','')])
 ```
 
-### Text blocks
+#### Text blocks
 
 ```javascript
 ui.divText('Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.');
 ```
 
-## Tables
+### Tables
 
 Table - display information in a grid-like format of rows and columns. Table can contain interactive components such as
 buttons.
@@ -754,7 +753,7 @@ ui.tableFromMap({
 })
 ```
 
-## Lists
+### Lists
 
 ```javascript
 ui.list([
@@ -764,7 +763,7 @@ ui.list([
       ])
 ```
 
-## Buttons
+### Buttons
 
 Buttons allow users to trigger an action. There are 2 button types:
 
@@ -778,7 +777,7 @@ ui.button(ui.iconFA('info'));
 ui.bigButton('Big button');
 ```
 
-## Forms
+### Forms
 
 A form is used to present UI controls and allow to enter data in a structured way.
 
@@ -793,7 +792,7 @@ ui.inputs([
 ]);
 ```
 
-### Inputs
+#### Inputs
 
 Input field allows users to enter and edit text or numeric values in one line. There are two types of input fields:
 
@@ -820,7 +819,7 @@ let myIcon = ui.iconFA('');
 ui.stringInput('', '', null, {icon: myIcon, clearIcon: true});
 ```
 
-### Text area
+#### Text area
 
 The text area is an input control that allows the user to enter several lines of text.
 
@@ -828,7 +827,7 @@ The text area is an input control that allows the user to enter several lines of
 ui.textInput('Label', 'Text area text data');
 ```
 
-### Dropdown selection
+#### Dropdown selection
 
 The select control is used to select an item from a predefined list.
 
@@ -836,7 +835,7 @@ The select control is used to select an item from a predefined list.
 ui.choiceInput('Label', 'Value 1', ['Value 1', 'Value 2']);
 ```
 
-### Selection
+#### Selection
 
 The select control let's option to set a binary value (true/false). When the user clicks the selection control, it
 toggles between checked and unchecked.
@@ -845,7 +844,7 @@ toggles between checked and unchecked.
 ui.boolInput('Name', false);
 ```
 
-### Group selection
+#### Group selection
 
 Group selection is commonly used to select one or more option from the predefined list.
 
@@ -853,7 +852,7 @@ Group selection is commonly used to select one or more option from the predefine
 ui.multiChoiceInput('Group label', ['Value 1', 'Value 2'], ['Value 3', 'Value 4']);
 ```
 
-### Switch
+#### Switch
 
 The toggle switch allows users to set individual features to either active or inactive.
 
@@ -861,7 +860,7 @@ The toggle switch allows users to set individual features to either active or in
 ui.switchInput('Active', true);
 ```
 
-### Range slider
+#### Range slider
 
 Range slider is a UI control that enables to select a value range within a predefined interval.
 
@@ -869,7 +868,7 @@ Range slider is a UI control that enables to select a value range within a prede
 ui.rangeSlider(0, 10, 2, 5);
 ```
 
-### Color picker
+#### Color picker
 
 UI element that lets a user specify a color, either by using a visual color picker interface or by entering the color
 into a text field in hexadecimal format.
@@ -878,7 +877,7 @@ into a text field in hexadecimal format.
 ui.colorInput('Hair color', '#ff0000');
 ```
 
-## Icons
+### Icons
 
 The icon control displays the icon from the FontAwesome library. Icon can used as a button control. Use FontAwesome
 without 'fa' prefix.
@@ -887,7 +886,7 @@ without 'fa' prefix.
 ui.iconFA('question',()=>{})
 ```
 
-## Image
+### Image
 
 Image control is a visual component that integrates images into your app. It could have an external link and a specific
 size.
@@ -896,9 +895,9 @@ size.
 ui.image('https://datagrok.ai/help/visualize/viewers-interaction-main.gif',400,200,{target:'https://datagrok.ai/help/visualize/viewers'});
 ```
 
-# Components
+## Components
 
-## Accordions
+### Accordions
 
 The accordion control is a container for grouping elements into panes. Each pane can collapse or expand and can contain
 any UI elements.
@@ -912,7 +911,7 @@ acc.addPane('Pane label', () => ui.div([
 );
 ```
 
-## Await (loading indicator)
+### Await (loading indicator)
 
 Await informs the user about an ongoing operation.
 
@@ -923,7 +922,7 @@ ui.wait(async () => {
 })
 ```
 
-## Drag and drop
+### Drag and drop
 
 Drag and drop is an option for elements in which the user selects the element by "grabbing" it and dragging it to a
 droppable place.
@@ -943,7 +942,7 @@ ui.makeDraggable(dragElement, {
 });
 ```
 
-## Cards
+### Cards
 
 A card is used to display content composed of different elements whose size or supported actions can vary.
 
@@ -956,7 +955,7 @@ ui.card(
   ]))
 ```
 
-## Combo popup
+### Combo popup
 
 The combo box control allows users to select an item from a predefined list.
 
@@ -967,12 +966,12 @@ ui.div([ui.comboPopupItems('Combo popup label', {
   })]);
 ```
 
-## Markdown
+### Markdown
 
 Markdown is a control that renders Markdown documents into your app.
 
 ```javascript
-let document = `# Intro
+let document = `## Intro
 Datagrok unlocks the value of the complex data by empowering non-technical users to: \n
   * [Discover](/help/discover/fair).
   * [Cleanse](/help/transform/data-wrangling).
@@ -987,7 +986,7 @@ grok.shell.newView('Markdown example',[
 ]);
 ```
 
-## Popup menu (context menu)
+### Popup menu (context menu)
 
 Menus appear upon interaction with a button, action, or other control. They display a list of choices, with one choice
 per lin. Menu can also have a multilevel list of choices.
@@ -1005,7 +1004,7 @@ let text = ui.divText("Clickable element");
 text.addEventListener("click", showMenu);
 ```
 
-## Property panel
+### Property panel
 
 Property panel is the right sidebar panel that used for showing the active item properties.
 
@@ -1013,7 +1012,7 @@ Property panel is the right sidebar panel that used for showing the active item 
 grok.shell.o = ui.h1('Property panel');
 ```
 
-## Sidebar
+### Sidebar
 
 Sidebar control is a left side container that can contain items with toolbox pane.
 
@@ -1021,7 +1020,7 @@ Sidebar control is a left side container that can contain items with toolbox pan
 grok.shell.sidebar.addPane('FIRST', () => ui.divText('A panel'), ui.iconFA('smile'));
 ```
 
-## Tabs
+### Tabs
 
 Tab control organize and allow navigation between a different content area or view.
 
@@ -1032,7 +1031,7 @@ ui.tabControl({
   })
 ```
 
-## Tag editor
+### Tag editor
 
 Tag editor is control that are small tag items that mainly serve to visualize selected items. Tags can be added,
 removed.
@@ -1044,7 +1043,7 @@ editor.addTag('test');
 editor.addTag(1234);
 ```
 
-## Taskbar progress
+### Taskbar progress
 
 Taskbar informs the user about loading progress at the bottom bar.
 
@@ -1055,7 +1054,7 @@ setTimeout(() => {
 }, 3000);
 ```
 
-## Toasts
+### Toasts
 
 A message toast is a small popup for success or error messages that disappears automatically after a few seconds. There
 are two types of message toast:
@@ -1069,7 +1068,7 @@ grok.shell.warning('Warning message');
 grok.shell.error('Error message');
 ```
 
-## Top menu (ribbon menu)
+### Top menu (ribbon menu)
 
 ```javascript
 let view = grok.shell.newView('Demo View');
@@ -1078,7 +1077,7 @@ view.ribbonMenu = DG.Menu.create()
   .item('Item label', () => {});
 ```
 
-## Tooltips
+### Tooltips
 
 Tooltip control display informative text when user hover over an element.
 
@@ -1086,7 +1085,7 @@ Tooltip control display informative text when user hover over an element.
 ui.tooltip.bind(ui.label('Label'), 'Tooltip message');
 ```
 
-## Tree view
+### Tree view
 
 A tree view control presents a hierarchical view of information. Each item can have a number of subitems. One of the
 main use case is to display the hierarchically structured and to selecting one or more items out of a set of
@@ -1115,7 +1114,7 @@ let items = group1.items.slice()
   .concat(group2.items);
 ```
 
-## Iframe
+### Iframe
 
 Iframe a nested browsing context embedding another HTML page into the current one.
 
@@ -1123,7 +1122,7 @@ Iframe a nested browsing context embedding another HTML page into the current on
 ui.iframe( { src: 'https://en.m.wikipedia.org/wiki', width: '400', height: '200' });
 ```
 
-## Info bars
+### Info bars
 
 Info bar allows adding assisting information to views, typically at their top area.
 
@@ -1133,7 +1132,7 @@ grok.shell.newView('View', [
 ]);
 ```
 
-## Update indicator
+### Update indicator
 
 Update indicator allow to show the updating state for each UI or View.
 

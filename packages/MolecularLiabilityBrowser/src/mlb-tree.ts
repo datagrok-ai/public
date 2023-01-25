@@ -7,16 +7,15 @@ import {TreeAnalyzer, getVId} from './utils/tree-stats';
 import {Subscription, Unsubscribable} from 'rxjs';
 import {PickingInfo} from '@deck.gl/core/typed';
 import {MjolnirPointerEvent} from 'mjolnir.js';
+import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {
-  getTreeHelper,
   IPhylocanvasGlViewer,
-  ITreeHelper,
   NodeStyleType,
-  NodeType,
-  PhylocanvasTreeNode,
-  Shapes,
   TreeTypesNames
-} from '@datagrok-libraries/bio';
+} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
+import {PhylocanvasTreeNode, Shapes} from '@datagrok-libraries/bio/src/trees/phylocanvas';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
+
 
 export function cleanMlbNewick(nwkTxt: string): string {
   const treeClosePos: number = nwkTxt.substring(0, nwkTxt.length - 2).lastIndexOf(')');

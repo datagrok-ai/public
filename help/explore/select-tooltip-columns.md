@@ -1,7 +1,6 @@
-<!-- TITLE: Select tooltip columns -->
-<!-- SUBTITLE: -->
-
-# Select tooltip columns
+---
+title: "Select tooltip columns"
+---
 
 Select columns that should be put on a tooltip when the mouse cursor is over a data point. By default, all columns are
 shown, if the table contains less than 21 columns, and no columns are shown, if a table contains 21 columns or more.
@@ -32,4 +31,4 @@ will be shown in a tooltip.
 
 See also
 
-* [Viewers](../visualize/viewers.md)
+* [Viewers](../visualize/viewers/viewers.md)

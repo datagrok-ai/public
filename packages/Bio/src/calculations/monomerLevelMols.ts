@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import * as C from '../utils/constants';
 import {getHelmMonomers} from '../package';
-import {getSplitter, getStats} from '@datagrok-libraries/bio';
+import {getSplitter, getStats} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 const V2000_ATOM_NAME_POS = 31;
 

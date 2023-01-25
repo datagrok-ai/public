@@ -1,6 +1,6 @@
-<!-- TITLE: Dataframe -->
-
-# DataFrame
+---
+title: "Dataframe"
+---
 
 DataFrame is a tabular structure with strongly-typed columns of various types. A dataframe class
 [DG.DataFrame](https://datagrok.ai/js-api/classes/dg.DataFrame)
@@ -638,7 +638,7 @@ property setter).
 
 [101]: #dataframe-design "Dataframe design"
 
-[102]: ../../visualize/viewers.md "Datagrok Viewers"
+[102]: ../../visualize/viewers/viewers.md "Datagrok Viewers"
 
 [103]: https://github.com/datagrok-ai/public/blob/c4b913ef931e457144f773b1d8c55430c509657e/js-api/src/const.ts#L50 "DG.COLUMN_TYPE"
 

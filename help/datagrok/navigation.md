@@ -1,7 +1,6 @@
-<!-- TITLE: Navigation -->
-<!-- SUBTITLE: -->
-
-# Navigation
+---
+title: "Navigation"
+---
 
 This article is designed to help you navigate the Datagrok platform. We will introduce core concepts and walk you
 through the fundamentals of working with our platform.
@@ -183,7 +182,7 @@ detection rules.
 
 ### Console
 
-Console can be used to call [functions](functions/function.md) and record [macros](functions/function.md#macros).
+Console can be used to call [functions](functions/functions.md) and record [macros](functions/functions.md#macros).
 
 #### Controls
 
@@ -298,6 +297,6 @@ is provided in the toolbox of the help icon.
 
 See also:
 
-* [Functions](functions/function.md)
+* [Functions](functions/functions.md)
 * [Info panels](../discover/info-panels.md)
 * [Entities](objects.md)

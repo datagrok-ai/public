@@ -83,6 +83,9 @@ export interface Reaction {
   get_svg_with_highlights(options?: string): string;
   draw_to_canvas_with_offset(): string;
   draw_to_canvas(canvas: HTMLCanvasElement, width: number, height: number): string;
-  draw_to_canvas_with_highlights(): string;
+  draw_to_canvas_with_highlights(canvas: HTMLCanvasElement, details: string): string;
+  
+   /** Reclaims the memory used for that molecule. */
+   delete(): void;
 }
 

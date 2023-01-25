@@ -1,7 +1,6 @@
-<!-- TITLE: Molecular descriptors -->
-<!-- SUBTITLE: -->
-
-# Molecular descriptors
+---
+title: "Molecular descriptors"
+---
 
 The molecular descriptor is the final result of a logic and mathematical procedure which transforms chemical information
 encoded within a symbolic representation of a molecule into a useful number or the result of some standardized

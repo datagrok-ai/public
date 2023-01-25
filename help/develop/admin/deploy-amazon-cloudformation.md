@@ -1,7 +1,6 @@
-<!-- TITLE: Deployment on AWS ECS using CloudFormation -->
-<!-- SUBTITLE: -->
-
-# Deployment on AWS ECS using CloudFormation
+---
+title: "Deployment on AWS ECS using CloudFormation"
+---
 
 Datagrok consists of Docker containers, [database](infrastructure.md#database)
 and [persistent file storage](infrastructure.md#storage).
