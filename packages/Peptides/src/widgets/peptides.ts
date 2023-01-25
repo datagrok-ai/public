@@ -97,6 +97,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
   };
   const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState);
   const clustersColumnChoice = ui.columnInput('Clusters', df, null);
+  clustersColumnChoice.nullable = true;
   activityColumnChoice.fireChanged();
   activityScalingMethod.fireChanged();
 
