@@ -21,13 +21,14 @@
     "datagrok-api": "^1.6.0",
     "file-loader": "^6.2.0",
     "rxjs": "^6.5.5",
-    "wu": "latest"
+    "wu": "latest",
+    "uuid": "latest"
   },
   "devDependencies": {
-    "@types/jquery": "^3.5.6",
     "@types/js-yaml": "^4.0.5",
     "@types/node-fetch": "^2.6.2",
     "@types/wu": "latest",
+    "@types/uuid": "latest",
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",
     "css-loader": "^5.2.4",
