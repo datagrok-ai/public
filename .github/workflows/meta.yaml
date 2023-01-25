@@ -89,10 +89,11 @@ jobs:
           echo "list=${packages}" >> $GITHUB_OUTPUT
       - name: Bump Meta package
         if: steps.packages.outputs.bump == 'yes'
+        id: upgrade
         working-directory: packages/Meta
         run: |
           git pull
-          if [ -n "$(git status -s packages/Meta/package.json)" ]; then
+          if [ -n "$(git status -s package.json)" ]; then
             current_version=$(jq .version package.json | sed -E 's/(^"|"$)//g')
             patch=$(cut -d. -f3 <<<$current_version)
             minor=$(cut -d. -f2 <<<$current_version)
@@ -105,10 +106,11 @@ jobs:
               upgrade='major'
             fi
             npm version $upgrade
+            echo "changed=yes" >> $GITHUB_OUTPUT
           fi
       - name: Commit Meta package.json
         id: git
-        if: steps.packages.outputs.bump == 'yes'
+        if: steps.upgrade.outputs.changed == 'yes'
         run: |
           git pull
           continue=false
