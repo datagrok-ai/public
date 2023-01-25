@@ -1,12 +1,16 @@
 {
 	"name": "fittingtools",
 	"friendlyName": "FittingTools",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"author": {
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
   },
 	"description": "",
+	"sources": [
+    "vendor/lbfgs.js",
+    "vendor/numeric-1.2.6.min.js"
+  ],
 	"dependencies": {
 		"datagrok-api": "latest",
 		"cash-dom": "latest",
