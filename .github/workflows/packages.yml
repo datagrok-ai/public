@@ -10,8 +10,6 @@ on:
     paths:
       - 'packages/**'
 
-concurrency: packages-${{ github.ref }}
-
 jobs:
   matrix:
     name: Check changes
@@ -156,11 +154,11 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
-          node-version: '18.12'
+          node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
           scope: '@datagrok'
       - name: Upgrade npm
-        run: npm install -g npm@9.x
+        run: npm install -g npm@x
       - name: npm version
         run: npm version
       - run: npm install
@@ -308,40 +306,6 @@ jobs:
           push: true
           tags: datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}
 
-      - name: Get package information
-        id: info
-        if: steps.publish.outcome == 'success' && matrix.package != 'Meta'
-        working-directory: packages/${{ matrix.package }}
-        run: |
-          dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' package.json)"          
-          deps=''
-          if [[ "${{ matrix.install_jsapi }}" == "true" ]]; then
-            deps+="datagrok-api:$(jq '."datagrok-api"' <<<$dependencies | sed -E 's/(^"|"$)//g') "
-          fi
-          mkdir gh-cache
-          echo "$(jq .name package.json | sed -E -e 's/(^"|"$)//g' -e 's,@datagrok/,,g')" >> gh-cache/${{ matrix.package }}.name.txt
-          echo "$(jq .description package.json | sed -E 's/(^"|"$)//g')" >> gh-cache/${{ matrix.package }}.description.txt
-          echo "$(jq '. | select( has("repository") == true ).repository' package.json)" >> gh-cache/${{ matrix.package }}.repository.txt
-          echo "$(jq '. | select( has("category") == true ).category' package.json | sed -E 's/(^"|"$)//g')" >> gh-cache/${{ matrix.package }}.category.txt
-          echo "$(jq .version package.json | sed -E 's/(^"|"$)//g')" >> gh-cache/${{ matrix.package }}.version.txt
-          echo "${deps}" >> gh-cache/${{ matrix.package }}.dependencies.txt
-          echo "push=yes" >> $GITHUB_OUTPUT
-
-      - name: Upload artifact with package information
-        id: cache
-        if: steps.info.outcome == 'success'
-        uses: actions/upload-artifact@v3
-        with:
-          name: info-${{ matrix.package }}
-          path: |
-            packages/${{ matrix.package }}/gh-cache/${{ matrix.package }}.name.txt
-            packages/${{ matrix.package }}/gh-cache/${{ matrix.package }}.description.txt
-            packages/${{ matrix.package }}/gh-cache/${{ matrix.package }}.version.txt
-            packages/${{ matrix.package }}/gh-cache/${{ matrix.package }}.dependencies.txt
-            packages/${{ matrix.package }}/gh-cache/${{ matrix.package }}.repository.txt
-            packages/${{ matrix.package }}/gh-cache/${{ matrix.package }}.category.txt
-          retention-days: 1
-
       - name: Commit package-lock.json
         id: git
         continue-on-error: true
@@ -372,114 +336,4 @@ jobs:
                 exit $exit
               fi
             done
-          fi
-
-  metadata:
-    name: Upgrade Meta package
-    needs:
-      - publish
-    if: needs.publish.outputs.push == 'yes'
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Set branch parameter
-        id: branch
-        run: |
-          branch=$(echo ${GITHUB_REF#refs/heads/})
-          echo "branch=${branch}" >> $GITHUB_OUTPUT
-      - uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.WRITE_TOKEN }}
-          branch: ${{ steps.branch.outputs.branch }}
-      - name: Download all workflow run artifacts
-        id: download
-        uses: actions/download-artifact@v3
-        with:
-          path: gh-cache
-      - name: Setup Node
-        uses: actions/setup-node@v2
-        with:
-          node-version: '12.x'
-          registry-url: 'https://registry.npmjs.org'
-          scope: '@datagrok'
-      - name: Upgrade npm
-        run: npm install -g npm@8.x
-      - name: npm version
-        run: npm version
-      - name: Bump Meta package
-        working-directory: packages/Meta
-        run: |
-          current_version=$(jq .version package.json | sed -E 's/(^"|"$)//g')
-          patch=$(cut -d. -f3 <<<$current_version)
-          minor=$(cut -d. -f2 <<<$current_version)
-          major=$(cut -d. -f1 <<<$current_version)
-          upgrade='patch'
-          if [ "${patch}" -gt "98" ]; then
-            upgrade='minor'
-          fi
-          if [ "${minor}" -gt "98" ]; then
-            upgrade='major'
-          fi
-          npm version $upgrade
-      - name: Build Meta package
-        working-directory: packages/Meta
-        run: |
-          npm install
-          npm run build
-      - name: Add new packages to Meta package
-        id: add
-        working-directory: packages/Meta
-        run: |
-          packages=$(find $GITHUB_WORKSPACE/gh-cache -mindepth 1 -maxdepth 1 -type d -name info-* -printf '%P '| sed 's/info-//g')
-          echo "packages=$packages" >> $GITHUB_OUTPUT
-          for package in $packages; do
-            path="$GITHUB_WORKSPACE/gh-cache/info-${package}"
-            name=$(cat ${path}/${package}.name.txt)
-            description="$(cat ${path}/${package}.description.txt)"
-            version=$(cat ${path}/${package}.version.txt)
-            repository=$(cat ${path}/${package}.repository.txt)
-            category=$(cat ${path}/${package}.category.txt)
-            grok_args=(add --package "${name}" --description "${description}" --ver "${version}" --category "${category}" --repository "${repository}")
-            dependencies=$(cat ${path}/${package}.dependencies.txt)
-            if [ -z "${dependencies}" ]; then
-               bin/grok-meta.js "${grok_args[@]}"
-            else
-              for d in ${dependencies}; do
-                dep=$(cut -d: -f1 <<<$d)
-                depver=$(cut -d: -f2 <<<$d)
-                dep_args=(--dep "$dep" --depver "$depver")
-                bin/grok-meta.js "${grok_args[@]}" "${dep_args[@]}"
-              done
-            fi
-          done
-
-      - name: Commit Meta package.json
-        id: git
-        run: |
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'github_actions@datagrok.ai'
-          git pull
-          continue=false
-          if [ -n "$(git status -s packages/Meta/package.json)" ]; then
-            git add packages/Meta/package.json
-            git add packages/Meta/package-lock.json
-            git commit -m "GitHub Actions: Bump Meta package version for ${{ steps.add.outputs.packages }}"
-            continue=true
-          fi
-          if [[ "${continue}" == "true" ]]; then
-            count=0
-            retries=10
-            until git push; do
-              exit=$?
-              wait=$((2 ** count))
-              count=$((count + 1))
-              if [ $count -lt "$retries" ]; then
-                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
-                sleep $wait
-                git pull --rebase
-              else
-                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
-                exit $exit
-              fi
-            done
-            echo "push=yes" >> $GITHUB_OUTPUT
           fi
