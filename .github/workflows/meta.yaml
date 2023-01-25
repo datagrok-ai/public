@@ -82,7 +82,7 @@ jobs:
                     done
                   fi
                   echo "bump=yes" >> $GITHUB_OUTPUT
-                  packages+=" ${name}"
+                  packages+=" ${PACKAGE}"
                 fi
               fi
             fi
