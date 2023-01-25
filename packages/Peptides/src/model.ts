@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
 import * as rxjs from 'rxjs';
+import * as uuid from 'uuid';
 
 import * as C from './utils/constants';
 import * as type from './utils/types';
@@ -172,18 +173,12 @@ export class PeptidesModel {
   }
 
   get analysisView(): DG.TableView {
-    const shell = grok.shell;
-    if (this.df.getTag(C.NEW_ANALYSIS) != '1') {
-      this._analysisView = wu(shell.tableViews)
-        .find(({dataFrame}) =>
-          (dataFrame.getTag(C.PEPTIDES_ANALYSIS) == '1' || dataFrame.getTag(C.MULTIPLE_VIEWS) == '1')
-          && dataFrame.name == this.df.name)!;
-      if (this.df.getTag(C.PEPTIDES_ANALYSIS))
-        grok.shell.v = this._analysisView;
-    }
+    this._analysisView ??= 
+      wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame.getTag(C.TAGS.UUID) == this.df.getTag(C.TAGS.UUID)) ??
+        grok.shell.addTableView(this.df);
+    if (this.df.getTag(C.MULTIPLE_VIEWS) != '1')
+      grok.shell.v = this._analysisView;
 
-    this._analysisView ??= shell.addTableView(this.df);
-    this.df.setTag(C.NEW_ANALYSIS, '');
     return this._analysisView;
   }
 
@@ -994,7 +989,6 @@ export class PeptidesModel {
       const settingsButton = ui.iconFA('wrench', () => getSettingsDialog(this), 'Peptides analysis settings');
       this.analysisView.setRibbonPanels([[settingsButton]], false);
       this.isRibbonSet = true;
-      this.df.setTag(C.PEPTIDES_ANALYSIS, '1');
     }
 
     this.updateDefault();
@@ -1036,8 +1030,9 @@ export class PeptidesModel {
     const newDf = this.df.clone(rowMask);
     for (const [tag, value] of newDf.tags)
       newDf.setTag(tag, tag == C.TAGS.SETTINGS ? value : '');
-    newDf.setTag(C.PEPTIDES_ANALYSIS, '0');
+    newDf.name = 'Peptides Multiple Views';
     newDf.setTag(C.MULTIPLE_VIEWS, '1');
+    newDf.setTag(C.TAGS.UUID, uuid.v4());
     const view = grok.shell.addTableView(newDf);
     view.addViewer('logo-summary-viewer');
     grok.shell.v = view;
