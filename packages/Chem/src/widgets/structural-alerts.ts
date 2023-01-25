@@ -18,7 +18,7 @@ export async function getStructuralAlerts(molecule: string): Promise<number[]> {
   molecule =  _convertMolNotation(molecule, 'unknown', 'smiles', rdKitModule);
 
   const alerts: number[] = [];
-  const mol = getRdKitModule().get_mol(molecule);
+  const mol = rdKitModule.get_mol(molecule);
   //TODO: use SustructLibrary and count_matches instead. Currently throws an error on rule id 221
   // const lib = new _structuralAlertsRdKitModule.SubstructLibrary();
   // lib.add_smiles(smiles);
@@ -38,19 +38,21 @@ async function loadSADataset(): Promise<void> {
   const path = getRdKitWebRoot() + 'files/alert-collection.csv';
   alertsDf = await grok.data.loadTable(path);
   const smartsCol = alertsDf.getCol('smarts');
+  rdKitModule ??= getRdKitModule();
 
   for (let i = 0; i < smartsCol.length; i++) {
     const currentSmarts = smartsCol.get(i);
-    _smartsMap.set(currentSmarts, getRdKitModule().get_qmol(currentSmarts));
+    _smartsMap.set(currentSmarts, rdKitModule.get_qmol(currentSmarts));
   }
 }
 
 export async function structuralAlertsWidget(molecule: string): Promise<DG.Widget> {
-  rdKitModule = getRdKitModule();
+  rdKitModule ??= getRdKitModule();
   let alerts = [];
   try {
     alerts = await getStructuralAlerts(molecule);
   } catch (e) {
+    console.warn(e);
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
   if (alerts.length == 0)
