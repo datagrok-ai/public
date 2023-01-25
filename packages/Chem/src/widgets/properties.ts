@@ -10,7 +10,8 @@ import {getRdKitModule} from '../utils/chem-common-rdkit';
 import { MOL_FORMAT } from '../constants';
 
 async function getIUPACName(smiles: string): Promise<string> {
-  const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${smiles}/property/IUPACName/JSON`;
+  const preparedSmiles = smiles.replaceAll(`#`, `%23`); // need to escape # sign (triple bond) in URL
+  const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${preparedSmiles}/property/IUPACName/JSON`;
   const response = await fetch(url);
   const responseJson = await response.json();
   const result = responseJson.PropertyTable?.Properties;
