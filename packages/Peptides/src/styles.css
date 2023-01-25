@@ -55,7 +55,8 @@
   align-self: end;
 }
 
-.pep-lst-button {
-  height: 23px;
-  margin-top: unset;
+.pep-help-icon {
+  position: absolute;
+  left: 5px;
+  top: 1px;
 }
