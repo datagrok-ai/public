@@ -111,8 +111,6 @@ jobs:
         id: git
         if: steps.packages.outputs.bump == 'yes'
         run: |
-#          git config --global user.name 'GitHub Actions'
-#          git config --global user.email 'github_actions@datagrok.ai'
           git pull
           continue=false
           if [ -n "$(git status -s packages/Meta/package.json)" ]; then
