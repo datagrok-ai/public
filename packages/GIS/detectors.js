@@ -99,7 +99,7 @@ class GisPackageDetectors extends DG.Package {
   //output: string semType
   //description: detector of ZIP codes for different countries
   detectGisZipcode(col) {
-    if ((col.type !== DG.COLUMN_TYPE.STRING)) // || (col.type !== DG.COLUMN_TYPE.INT))
+    if ((col.type !== DG.COLUMN_TYPE.STRING) && (col.type !== DG.COLUMN_TYPE.INT))
       return null;
     let estCoeff = 0; //coefficient of estimation [0 - >100] the more value - the more probability
 
