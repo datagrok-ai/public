@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { properties } from './const';
+import { properties, models } from './const';
 
 const _STORAGE_NAME = 'admet_models';
 const _KEY = 'selected';
@@ -44,10 +44,12 @@ export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFra
 
 function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
   if (table.columns.length > 0) {
-    const models: string[] = table.columns.names()
-    for (let i = 0; i < models.length; ++i) {
-      const column: DG.Column = table.columns.byName(models[i]);
-      column.name = viewTable.columns.getUnusedName(models[i]);
+    const modelNames: string[] = table.columns.names()
+    for (let i = 0; i < modelNames.length; ++i) {
+      let column: DG.Column = table.columns.byName(modelNames[i]);
+      column.name = viewTable.columns.getUnusedName(modelNames[i]);
+      column.setTag(column.name, models[column.name]);
+      column = column.convertTo("double");
       viewTable.columns.add(column);
     }
   }

@@ -290,7 +290,6 @@ def handle_uploaded_file(f, models):
     current_path = os.path.split(os.path.realpath(__file__))[0]
     models_res = [model.encode('utf8') for model in models.split(",")]
     result = np.zeros((len(encoded_smiles),0), float)
-    #result = np.concatenate([ result, np.array(encoded_smiles).reshape(len(encoded_smiles),1)], axis=1)
     for j in range(len(models_res)):
         res = [key for key in dict_bits_desc.keys() if models_res[j] in key]
         cf = sklearn.externals.joblib.load(current_path + '/' + res[0] + '.pkl')
@@ -304,14 +303,13 @@ def handle_uploaded_file(f, models):
             y_predict_proba = cf.predict_proba(des_list)
             for i in range(len(encoded_smiles)):
                 predict = y_predict_proba[i]
-                predicts.append(predict[y_predict_label[i]])
+                predicts.append(predict[y_predict_label[1]])    
         except:
             for i in range(len(encoded_smiles)):
                 predicts.append(y_predict_label[i])
 
         result = np.concatenate([ result, np.array(predicts).reshape(len(encoded_smiles),1)], axis=1)
     res_df = pd.DataFrame(result, columns=models_res)
-    #res_df.insert(0, 'smiles', encoded_smiles, True)
     res_str = res_df.to_csv(index=False, quoting=csv.QUOTE_NONNUMERIC)
     return res_str
 
