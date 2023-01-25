@@ -10,7 +10,7 @@ import {MonomerPosition, MostPotentResiduesViewer} from './viewers/sar-viewer';
 
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {LogoSummary} from './viewers/logo-summary';
-import {MonomerWorks} from '@datagrok-libraries/bio';
+import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 
 export let monomerWorks: MonomerWorks | null;
 

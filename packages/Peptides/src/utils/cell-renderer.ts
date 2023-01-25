@@ -3,7 +3,8 @@ import * as DG from 'datagrok-api/dg';
 import * as C from './constants';
 import * as types from './types';
 import {PositionStats, SummaryStats, MonomerPositionStats} from '../model';
-import {monomerToShort, SeqPalette} from '@datagrok-libraries/bio';
+import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
+import {monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 function renderCellSelection(canvasContext: CanvasRenderingContext2D, bound: DG.Rect): void {
   canvasContext.strokeStyle = '#000';
