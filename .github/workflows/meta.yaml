@@ -20,7 +20,7 @@ jobs:
         with:
           fetch-depth: 1
       - name: Setup Node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
@@ -57,7 +57,6 @@ jobs:
             CHANGED_PACKAGES="${{ github.event.inputs.packages }}"
           fi
 
-          packages=''
           for PACKAGE in $(echo ${CHANGED_PACKAGES} | sort -u); do
             DIR="packages/${PACKAGE}"
             if [ -f "${DIR}/package.json" ]; then
@@ -74,23 +73,23 @@ jobs:
                   name=$(sed 's,@datagrok/,,g' <<<$full_name)
                   description="$(jq -r .description "${DIR}/package.json")"
                   version=${current_version}
-                  repository=$(jq '. | select( has("repository") == true ).repository)
-                  category=$(jq -r '. | select( has("category") == true ).category)
+                  repository=$(jq '. | select( has("repository") == true ).repository' "${DIR}/package.json")
+                  category=$(jq -r '. | select( has("category") == true ).category' "${DIR}/package.json")
                   grok_args=(add --package "${name}" --description "${description}" --ver "${version}" --category "${category}" --repository "${repository}")
                   
-                  dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' package.json)"          
+                  dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"          
                   deps=''
                   if [ ! -z "$(jq  '. | select( has("datagrok-api") == true )' <<< "$dependencies")" ]; then
                     deps+="datagrok-api:$(jq -r '."datagrok-api"' <<<$dependencies) "
                   fi
                   if [ -z "${deps}" ]; then
-                     bin/grok-meta.js "${grok_args[@]}"
+                     "${DIR}/Meta/bin/grok-meta.js" "${grok_args[@]}"
                   else
                     for d in ${deps}; do
                       dep=$(cut -d: -f1 <<<$d)
                       depver=$(cut -d: -f2 <<<$d)
                       dep_args=(--dep "$dep" --depver "$depver")
-                      bin/grok-meta.js "${grok_args[@]}" "${dep_args[@]}"
+                      "${DIR}/Meta/bin/grok-meta.js" "${grok_args[@]}" "${dep_args[@]}"
                     done
                   fi
                 fi
