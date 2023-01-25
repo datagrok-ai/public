@@ -2,8 +2,6 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
-
 import wu from 'wu';
 import * as rxjs from 'rxjs';
 
@@ -19,8 +17,11 @@ import {LogoSummary} from './viewers/logo-summary';
 import {getSettingsDialog} from './widgets/settings';
 import {getMonomerWorks} from './package';
 import {findMutations} from './utils/algorithms';
-import {IMonomerLib, MonomerWorks, pickUpPalette, SeqPalette, TAGS as bioTAGS} from '@datagrok-libraries/bio';
-import {DataFrame} from 'datagrok-api/dg';
+import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
+import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
+import {pickUpPalette, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export type SummaryStats = {
   minCount: number, maxCount: number,
@@ -28,8 +29,8 @@ export type SummaryStats = {
   minPValue: number, maxPValue: number,
   minRatio: number, maxRatio: number,
 };
-export type PositionStats = {[monomer: string]: Stats} & {general: SummaryStats};
-export type MonomerPositionStats = {[position: string]: PositionStats} & {general: SummaryStats};
+export type PositionStats = { [monomer: string]: Stats } & { general: SummaryStats };
+export type MonomerPositionStats = { [position: string]: PositionStats } & { general: SummaryStats };
 
 export class PeptidesModel {
   static modelName = 'peptidesModel';
@@ -67,8 +68,8 @@ export class PeptidesModel {
   initBitset: DG.BitSet;
   isInvariantMapTrigger: boolean = false;
   headerSelectedMonomers: type.MonomerSelectionStats = {};
-  webLogoBounds: {[positon: string]: {[monomer: string]: DG.Rect}} = {};
-  cachedWebLogoTooltip: {bar: string; tooltip: HTMLDivElement | null;} = {bar: '', tooltip: null};
+  webLogoBounds: { [positon: string]: { [monomer: string]: DG.Rect } } = {};
+  cachedWebLogoTooltip: { bar: string; tooltip: HTMLDivElement | null; } = {bar: '', tooltip: null};
   _monomerPositionDf?: DG.DataFrame;
   _alphabet?: string;
   _mostPotentResiduesDf?: DG.DataFrame;
@@ -90,6 +91,7 @@ export class PeptidesModel {
     this._monomerPositionDf ??= this.createMonomerPositionDf();
     return this._monomerPositionDf;
   }
+
   set monomerPositionDf(df: DG.DataFrame) {
     this._monomerPositionDf = df;
   }
@@ -98,6 +100,7 @@ export class PeptidesModel {
     this._monomerPositionStats ??= this.calculateMonomerPositionStatistics();
     return this._monomerPositionStats;
   }
+
   set monomerPositionStats(mps: MonomerPositionStats) {
     this._monomerPositionStats = mps;
   }
@@ -106,6 +109,7 @@ export class PeptidesModel {
     this._matrixDf ??= this.buildMatrixDf();
     return this._matrixDf;
   }
+
   set matrixDf(df: DG.DataFrame) {
     this._matrixDf = df;
   }
@@ -114,6 +118,7 @@ export class PeptidesModel {
     this._splitSeqDf ??= this.buildSplitSeqDf();
     return this._splitSeqDf;
   }
+
   set splitSeqDf(df: DG.DataFrame) {
     this._splitSeqDf = df;
   }
@@ -122,6 +127,7 @@ export class PeptidesModel {
     this._mostPotentResiduesDf ??= this.createMostPotentResiduesDf();
     return this._mostPotentResiduesDf;
   }
+
   set mostPotentResiduesDf(df: DG.DataFrame) {
     this._mostPotentResiduesDf = df;
   }
@@ -142,6 +148,7 @@ export class PeptidesModel {
     this._substitutionsInfo = findMutations(scaledActivityCol.getRawData(), monomerColumns, this.settings);
     return this._substitutionsInfo;
   }
+
   set substitutionsInfo(si: type.SubstitutionsInfo) {
     this._substitutionsInfo = si;
   }
@@ -150,6 +157,7 @@ export class PeptidesModel {
     this._clusterStats ??= this.calculateClusterStatistics();
     return this._clusterStats;
   }
+
   set clusterStats(clusterStats: Stats[]) {
     this._clusterStats = clusterStats;
   }
@@ -158,6 +166,7 @@ export class PeptidesModel {
     this._cp ??= pickUpPalette(this.df.getCol(this.settings.sequenceColumnName!));
     return this._cp;
   }
+
   set cp(_cp: SeqPalette) {
     this._cp = _cp;
   }
@@ -168,7 +177,7 @@ export class PeptidesModel {
       this._analysisView = wu(shell.tableViews)
         .find(({dataFrame}) =>
           (dataFrame.getTag(C.PEPTIDES_ANALYSIS) == '1' || dataFrame.getTag(C.MULTIPLE_VIEWS) == '1')
-            && dataFrame.name == this.df.name)!;
+          && dataFrame.name == this.df.name)!;
       if (this.df.getTag(C.PEPTIDES_ANALYSIS))
         grok.shell.v = this._analysisView;
     }
@@ -266,7 +275,7 @@ export class PeptidesModel {
   }
 
   get customClusters(): Iterable<DG.Column<boolean>> {
-    const query: {[key: string]: string} = {};
+    const query: { [key: string]: string } = {};
     query[C.TAGS.CUSTOM_CLUSTER] = '1';
     return this.df.columns.byTags(query);
   }
@@ -275,6 +284,7 @@ export class PeptidesModel {
     this._settings ??= JSON.parse(this.df.getTag('settings') || '{}');
     return this._settings;
   }
+
   set settings(s: type.PeptidesSettings) {
     const newSettingsEntries = Object.entries(s);
     const updateVars: Set<string> = new Set();
@@ -286,9 +296,9 @@ export class PeptidesModel {
         updateVars.add('mutationCliffs');
         updateVars.add('stats');
         break;
-      // case 'columns':
-      //   updateVars.add('grid');
-      //   break;
+        // case 'columns':
+        //   updateVars.add('grid');
+        //   break;
       case 'maxMutations':
       case 'minActivityDelta':
         updateVars.add('mutationCliffs');
@@ -473,14 +483,14 @@ export class PeptidesModel {
 
   calculateMonomerPositionStatistics(): MonomerPositionStats {
     const positionColumns = this.splitSeqDf.columns.toList();
-    const monomerPositionObject = {general: {}} as MonomerPositionStats & {general: SummaryStats};
+    const monomerPositionObject = {general: {}} as MonomerPositionStats & { general: SummaryStats };
     const activityColData = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData();
     const sourceDfLen = activityColData.length;
 
     for (const posCol of positionColumns) {
       const posColData = posCol.getRawData();
       const currentMonomerSet = posCol.categories;
-      const currentPositionObject = {general: {}} as PositionStats & {general: SummaryStats};
+      const currentPositionObject = {general: {}} as PositionStats & { general: SummaryStats };
 
       for (const [categoryIndex, monomer] of currentMonomerSet.entries()) {
         if (monomer == '')
@@ -788,7 +798,7 @@ export class PeptidesModel {
 
       return sameMonomer;
     });
-    const colResults: {[colName: string]: number} = {};
+    const colResults: { [colName: string]: number } = {};
     for (const [col, agg] of Object.entries(this.settings.columns || {})) {
       const currentCol = this.df.getCol(col);
       const currentColData = currentCol.getRawData();
@@ -799,7 +809,7 @@ export class PeptidesModel {
 
     const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
     const das = getDistributionAndStats(distributionTable, stats, `${position} : ${aar}`, 'Other', true);
-    const resultMap: {[key: string]: any} = {...das.tableMap, ...colResults};
+    const resultMap: { [key: string]: any } = {...das.tableMap, ...colResults};
     const distroStatsElem = wrapDistroAndStatsDefault(das.labels, das.histRoot, resultMap);
 
     ui.tooltip.show(distroStatsElem, x, y);

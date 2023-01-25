@@ -8,7 +8,7 @@ import {startAnalysis} from '../widgets/peptides';
 import {PeptidesModel} from '../model';
 import * as C from '../utils/constants';
 import {scaleActivity} from '../utils/misc';
-import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio';
+import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 category('Core', () => {
   let simpleTable: DG.DataFrame;

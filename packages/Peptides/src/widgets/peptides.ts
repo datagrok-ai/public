@@ -8,7 +8,7 @@ import * as type from '../utils/types';
 import {PeptidesModel} from '../model';
 import $ from 'cash-dom';
 import {scaleActivity} from '../utils/misc';
-import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio';
+import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 /** Peptide analysis widget.
  *
