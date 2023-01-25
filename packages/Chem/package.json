@@ -39,7 +39,9 @@
   ],
   "sources": [
     "common/ngl_viewer/ngl.js",
-    "common/openchemlib-full.js"
+    "common/openchemlib-full.js",
+    "vendor/lbfgs.js",
+    "vendor/numeric-1.2.6.min.js"
   ],
   "dependencies": {
     "datagrok-api": "^1.11.2",
