@@ -83,13 +83,13 @@ jobs:
                     deps+="datagrok-api:$(jq -r '."datagrok-api"' <<<$dependencies) "
                   fi
                   if [ -z "${deps}" ]; then
-                     "${DIR}/Meta/bin/grok-meta.js" "${grok_args[@]}"
+                     "packages/Meta/bin/grok-meta.js" "${grok_args[@]}"
                   else
                     for d in ${deps}; do
                       dep=$(cut -d: -f1 <<<$d)
                       depver=$(cut -d: -f2 <<<$d)
                       dep_args=(--dep "$dep" --depver "$depver")
-                      "${DIR}/Meta/bin/grok-meta.js" "${grok_args[@]}" "${dep_args[@]}"
+                      "packages/Meta/bin/grok-meta.js" "${grok_args[@]}" "${dep_args[@]}"
                     done
                   fi
                 fi
