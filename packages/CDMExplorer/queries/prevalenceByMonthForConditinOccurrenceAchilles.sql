@@ -1,5 +1,5 @@
 --name: PrevalenceByMonthForConditionOccurrenceAchilles
---connection: Demo:test_queries:PostgresNetCDM
+--connection: Demo:test_queries:PostgresCDM
 --input: string conceptId
 SELECT 
   concept_id                                                AS concept_id,

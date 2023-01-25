@@ -8,10 +8,19 @@ import {default as newickParser} from 'phylotree/src/formats/newick';
 import {PhylotreeNode} from 'phylotree';
 
 
-export function newickToDf(newick: string, dfName: string): DG.DataFrame {
+export function newickToDf(
+  newick: string, dfName?: string, nodePrefix?: string, skipEmptyParentRoot?: boolean
+): DG.DataFrame {
+  const nodePrefixV: string = nodePrefix ?? '';
+  const skipEmptyParentRootV: boolean = skipEmptyParentRoot ?? false;
+
   let parent: string | null = null;
   let i = 0;
+
   const parsedNewick = newickParser(newick);
+  if (parsedNewick.error)
+    throw parsedNewick.error;
+
   const obj = parsedNewick.json;
 
   const nodes: string[] = [];
@@ -23,17 +32,23 @@ export function newickToDf(newick: string, dfName: string): DG.DataFrame {
   function traverse(obj: PhylotreeNode) {
     if (obj === null || typeof obj != 'object') return;
 
+    const isRoot: boolean = obj.name == 'root';
+
     let name: string = obj.name;
     if (!name) {
-      name = obj.name = `node-${i}`;
+      name = obj.name = `${nodePrefixV}node-${i}`;
       ++i;
+    } else if (isRoot) {
+      name = `${nodePrefixV}root`;
     }
 
-    nodes.push(name);
-    distances.push(obj.attribute ? parseFloat(obj.attribute) : null);
-    annotations.push(obj.annotation);
-    parents.push(parent!);
-    leafs.push(!obj.children || obj.children.length == 0);
+    if (!isRoot || !skipEmptyParentRootV) {
+      nodes.push(name);
+      distances.push(obj.attribute ? parseFloat(obj.attribute) : null);
+      annotations.push(obj.annotation);
+      parents.push(parent!);
+      leafs.push(!obj.children || obj.children.length == 0);
+    }
 
     if (!obj.children) return;
     const childrenNum = obj.children.length;
@@ -44,7 +59,6 @@ export function newickToDf(newick: string, dfName: string): DG.DataFrame {
       traverse(obj.children[i]);
       if (i === childrenNum - 1) parent = prevParent;
     }
-
   }
 
   traverse(obj);
@@ -57,22 +71,22 @@ export function newickToDf(newick: string, dfName: string): DG.DataFrame {
   parentCol.semType = 'id';
   const columns = [nodeCol, parentCol, leafCol];
 
-  if (distances.some(d => d !== null)) {
+  if (distances.some((d) => d !== null))
     columns.push(DG.Column.fromList('double', 'distance', distances));
-  }
 
-  if (annotations.some(a => !!a)) {
+  if (annotations.some((a) => !!a))
     columns.push(DG.Column.fromList('string', 'annotation', annotations));
-  }
 
   const df = DG.DataFrame.fromColumns(columns);
 
-  df.name = `df-${dfName}`;
+  if (dfName)
+    df.name = `df-${dfName}`;
+
   df.setTag('.newick', newick);
   df.setTag('.newickJson', JSON.stringify(parsedNewick));
 
   return df;
-};
+}
 
 // https://stackoverflow.com/questions/5525071/how-to-wait-until-an-element-exists
 export function waitForElm(id: string, checkFrequency = 100, timeout = 1000) {
@@ -85,9 +99,9 @@ export function waitForElm(id: string, checkFrequency = 100, timeout = 1000) {
         return resolve(element);
       } else {
         setTimeout(() => {
-          if ((Date.now() - startTime) > timeout) {
-            reject('Timeout');
-          }
+          if ((Date.now() - startTime) > timeout)
+            reject(new Error('Timeout'));
+
           loopSearch();
         }, checkFrequency);
       }

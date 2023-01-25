@@ -1,7 +1,6 @@
-<!-- TITLE: BigQuery -->
-<!-- SUBTITLE: -->
-
-# BigQuery
+---
+title: "BigQuery"
+---
 
 Provides access to [Google BigQuery](https://cloud.google.com/bigquery/) database using SQL queries via JDBC driver.
 
@@ -13,7 +12,7 @@ Provides access to [Google BigQuery](https://cloud.google.com/bigquery/) databas
     "connString": "",
     "projectId": ""
   },
-  "credentials" : {
+  "credentials": {
     "parameters": {
       "login": "",
       "password": ""

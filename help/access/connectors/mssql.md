@@ -1,7 +1,6 @@
-<!-- TITLE: MS SQL -->
-<!-- SUBTITLE: -->
-
-# MS SQL
+---
+title: "MS SQL"
+---
 
 Provides access to [Microsoft SQL](https://www.microsoft.com/en-us/sql-server) database using SQL queries via JDBC
 driver.
@@ -10,10 +9,10 @@ driver.
 
 ```json
 {
-    "server": "",
-    "port": "",
-    "db": "",
-    "connString": ""
+  "server": "",
+  "port": "",
+  "db": "",
+  "connString": ""
 }
 ```
 

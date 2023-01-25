@@ -1,16 +1,16 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import {newickToDf} from '../utils';
 import {Unsubscribable} from 'rxjs';
+import {IPhylocanvasGlViewer} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
 
 export class GridWithTreeViewer extends DG.JsViewer {
   nodeNameColumnName: string | null;
 
   grid: DG.Grid | null = null;
-  tree: bio.IPhylocanvasGlViewer | DG.JsViewer | null = null;
+  tree: IPhylocanvasGlViewer | DG.JsViewer | null = null;
 
   _newick: string | null = null;
   _nwkDf: DG.DataFrame | null = null;

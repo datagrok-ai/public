@@ -1,7 +1,6 @@
-<!-- TITLE: Cassandra -->
-<!-- SUBTITLE: -->
-
-# Cassandra
+---
+title: "Cassandra"
+---
 
 Provides access to [Apache Cassandra](https://cassandra.apache.org/) database
 using SQL queries via JDBC driver.
@@ -10,10 +9,10 @@ using SQL queries via JDBC driver.
 
 ```json
 {
-    "server": "",
-    "port": "",
-    "db": "",
-    "connString": ""
+  "server": "",
+  "port": "",
+  "db": "",
+  "connString": ""
 }
 ```
 

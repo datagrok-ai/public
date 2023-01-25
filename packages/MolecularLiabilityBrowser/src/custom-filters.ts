@@ -8,6 +8,7 @@ import wu from 'wu';
 import {_startInit} from './package';
 import {MlbEvents} from './const';
 import {Subscription, Unsubscribable} from 'rxjs';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 type ChainTypeType = 'L' | 'H';
 
@@ -145,14 +146,22 @@ export class PtmFilter extends DG.Filter {
 
       console.debug(`MLB: PtmFilter.attach() start, ${((Date.now() - _startInit) / 1000).toString()}`);
       super.attach(dataFrame);
-    } catch (err: unknown) {
-      console.error(err instanceof Error ? err.message : (err as Object).toString());
+    } catch (err: any) {
+      const errStr = errorToConsole(err);
+      console.error('MLB: MolecularLiabilityBrowser.attach()\n' + errStr);
+      throw err;
     } finally {
       console.debug(`MLB: PtmFilter.attach() end, ${((Date.now() - _startInit) / 1000).toString()}`);
     }
   }
 
   applyState(state: any) {
+    // if (typeof state.column == 'string' || state.column instanceof String) {
+    //   const columnName: string = state.column;
+    //   delete state.column;
+    //   state.columnName = columnName;
+    // }
+
     super.applyState(state);
 
     // OnPropertyChanged() is not called when setting a property in TableView.filters() argument,
@@ -266,8 +275,10 @@ export class PtmFilter extends DG.Filter {
       filter.fireChanged();
 
       console.debug('MLB: PtmFilter.applyFilter() end');
-    } catch (err: unknown) {
-      console.error(err instanceof Error ? err.message : (err as Object).toString());
+    } catch (err: any) {
+      const errStr = errorToConsole(err);
+      console.error(errStr);
+      throw err;
     } finally {
       const t2 = Date.now();
       console.debug('MLB: PtmFilter.applyFilter() ET, ' + `${((t2 - t1) / 1000).toString()} sec.`);
@@ -305,8 +316,10 @@ export class PtmFilter extends DG.Filter {
         ui.element('hr'),
       ]);
       this.root.style.margin = '10px';
-    } catch (err: unknown) {
-      console.error(err instanceof Error ? err.message : (err as Object).toString());
+    } catch (err: any) {
+      const errStr = errorToConsole(err);
+      console.error(errStr);
+      throw err;
     } finally {
       console.debug(`MLB: PtmFilter.render() end, ${((Date.now() - _startInit) / 1000).toString()}`);
     }
@@ -369,6 +382,8 @@ export class PtmFilter extends DG.Filter {
     const header = ui.divText(probabilityText);
     header.style.marginTop = '7px';
     header.style.marginBottom = '5px';
+
+    console.debug('MLB: PtmFilter.buildProbabilityInput() ' + `cMin = ${cMin}, cMax = ${cMax}`);
     const input = ui.rangeSlider(0, 1, cMin, cMax, false, 'thin_barbell');
 
     PtmFilter.adjustPtmProbabilityInput(input);

@@ -4,16 +4,19 @@ import * as DG from 'datagrok-api/dg';
 import {isMolBlock} from '../utils/convert-notation-utils';
 import $ from 'cash-dom';
 import {_properties, renderer} from '../package';
+import {RDKitCellRenderer} from './rdkit-cell-renderer';
+import {getRdKitModule} from '../utils/chem-common-rdkit';
 
 /** Renders the molecule and returns div with the canvas inside. */
 export function renderMolecule(
   molStr: string,
   options?: {renderer?: 'RDKit' | 'OpenChemLib',
-  width?: number, height?: number}): HTMLElement {
+  width?: number, height?: number, popupMenu?: boolean}): HTMLElement {
   options ??= {};
   options.renderer ??= _properties.Renderer as 'RDKit' | 'OpenChemLib' ?? 'RDKit';
   options.width ??= 200;
   options.height ??= 100;
+  options.popupMenu ??= true;
 
   //let mol: OCL.Molecule | RDMol | null = null;
   let molFile: string;
@@ -29,39 +32,49 @@ export function renderMolecule(
   moleculeHost.style.width = (options.width).toString() + 'px';
   moleculeHost.style.height = (options.height).toString() + 'px';
 
-  // @ts-ignore
-  renderer.render(moleculeHost.getContext('2d')!, 0, 0, options.width, options.height,
-    DG.GridCell.fromValue(molStr));
+  const renderFunctions = DG.Func.find({meta: {chemRendererName: options.renderer}});
+  if (renderFunctions.length > 0) {
+    renderFunctions[0].apply().then((rendndererObj) => {
+      rendndererObj.render(moleculeHost.getContext('2d')!, 0, 0, options!.width, options!.height,
+        DG.GridCell.fromValue(molStr));
+    });
+  }
 
-  const moreBtn = ui.iconFA(
-    'ellipsis-v',
-    () => {
-      const menu = DG.Menu.popup();
-      menu.item('Copy SMILES', () => {
-        navigator.clipboard.writeText(smiles);
-        grok.shell.info('SMILES copied to clipboard');
-      });
-      menu.item('Copy Molfile', () => {
-        navigator.clipboard.writeText(molFile);
-        grok.shell.info('Molfile copied to clipboard');
-      });
-      menu.item('Sketch', () => {
-        const sketcher = new DG.chem.Sketcher();
-        isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);
-        ui.dialog()
-          .add(sketcher)
-          .show();
-      });
-      menu.item('Explore', () => {
-        grok.shell.o = DG.SemanticValue.fromValueType(molStr, DG.SEMTYPE.MOLECULE);
-      });
-      menu.show();
-    },
-    'More',
-  );
-  $(moreBtn).addClass('chem-mol-view-icon pep-more-icon');
+  const div = ui.divV([], 'chem-mol-box');
 
-  return ui.divV([moreBtn, moleculeHost], 'chem-mol-box');
+  if (options.popupMenu) {
+    const moreBtn = ui.iconFA(
+      'ellipsis-v',
+      () => {
+        const menu = DG.Menu.popup();
+        menu.item('Copy SMILES', () => {
+          navigator.clipboard.writeText(smiles);
+          grok.shell.info('SMILES copied to clipboard');
+        });
+        menu.item('Copy Molfile', () => {
+          navigator.clipboard.writeText(molFile);
+          grok.shell.info('Molfile copied to clipboard');
+        });
+        menu.item('Sketch', () => {
+          const sketcher = new DG.chem.Sketcher();
+          isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);
+          ui.dialog()
+            .add(sketcher)
+            .show();
+        });
+        menu.item('Explore', () => {
+          grok.shell.o = DG.SemanticValue.fromValueType(molStr, DG.SEMTYPE.MOLECULE);
+        });
+        menu.show();
+      },
+      'More',
+    );
+    $(moreBtn).addClass('chem-mol-view-icon pep-more-icon');
+    div.append(moreBtn);
+  }
+  div.append(moleculeHost);
+
+  return div;
 }
 
 export function _svgDiv(mol: any): HTMLDivElement {

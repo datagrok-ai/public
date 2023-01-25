@@ -1,16 +1,14 @@
-<!-- TITLE: Develop custom viewers -->
-<!-- SUBTITLE: -->
-
-# Custom viewers
+---
+title: "Develop custom viewers"
+---
 
 Developers can extend Datagrok with special visual components bound to data, which are called
-[viewers](../../visualize/viewers.md). There are two major alternatives for developing viewers on Datagrok. The first
+[viewers](../../visualize/viewers/viewers.md). There are two ways to develop viewers on Datagrok. The first
 one is JavaScript-based development, which lets you create interactive viewers
-via [Datagrok JavaScript API](../js-api.md). The second option would be utilizing visualizations available for popular
+via [Datagrok JavaScript API](../js-api.md). The second option uses visualizations available for popular
 programming languages, such as Python, R, or Julia. This implementation uses
-[scripting](../../compute/scripting.md) internally, so the code runs on the server, which slightly affects
-interactivity. Nonetheless, both options are applicable and support the essential functionality, such as data filtering
-and selection.
+[scripting](../../compute/scripting.md) internally, so the code runs on the server, which makes it less
+interactive. Both options support data filtering and selection.
 
 Typically, development starts with [package](../develop.md#packages) creation. Packages are convenient units for
 distributing content within the platform. Using them you can extend Datagrok with your widgets, applications, plugins,
@@ -60,7 +58,7 @@ Now we will start adding new functionality to this template. If you have
 [datagrok-tools](https://www.npmjs.com/package/datagrok-tools) installed and want to follow along, you can obtain the
 starter code with these commands:
 
-```
+```js
 grok create AwesomePackage --js
 grok add viewer AwesomeViewer
 ```
@@ -91,11 +89,33 @@ package's [webpack configuration](../develop.md#webpack.config.js). This means t
 bundle file of your package. The platform provides them in its environment, so if you use such a library, it will be
 taken from there.
 
+### Filter, selection, and highlighting
+
+For a viewer to be fully interactive, it has to synchronize with the dataframe's filter, selection, highlighting,
+current and mouse-over rows. The simplest way to do that is to subscribe to dataframe events, and re-render
+the scene when anything changes.
+
+When a viewer is closed, we no longer want to receive events from the associated dataframe. This is achieved
+by adding the subscription object to the `subs` field. The `detach` method (that is called automatically when
+the viewer is closed) unsubscribes from them.
+
+```javascript
+  onTableAttached() {
+    this.init();
+
+  // Stream subscriptions
+    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
+  }
+```
+
 ### Properties
 
-First and foremost, let's take a look at how we can define properties of a viewer. They will include all the parameters
-you want users to be able to tweak from the UI in the [property panel](../../datagrok/navigation.md#properties), be it
-data to display, a color scheme, or some numeric values. We need to set a couple of properties for our bar chart:
+Viewer properties include all the parameters you want users to edit via
+the [property panel](../../datagrok/navigation.md#properties). They get persisted with the viewer layout.
+
+In this case, we want to set a couple of properties for our bar chart:
 
 ```javascript
 import {axisBottom, axisLeft, scaleBand, scaleLinear, select} from 'd3';
@@ -366,7 +386,8 @@ corresponding category, and will be able to select them on click (pay attention 
 example). Plus, other open viewers will highlight the elements that represent the respective row group as you move the
 mouse pointer over the current viewer (you don't need to configure anything, read more about Datagrok's efficient
 visualizations
-[here](../../visualize/viewers.md)). This also works the other way around: you can show a selected portion of the data
+[here](../../visualize/viewers/viewers.md)). This also works the other way around: you can show a selected portion of
+the data
 in your viewer. To do that, you need to know which rows the user selected so that you can narrow the data set for
 rendering accordingly. And this is fairly simple: the method
 `dataFrame.filter.getSelectedIndexes()` gives you exactly the data you need.
@@ -475,14 +496,18 @@ import {AwesomeViewer} from './awesome-viewer.js'
 //description: Creates an awesome viewer
 //tags: viewer
 //meta.icon: images/icon.svg
+//meta.toolbox: true
 //output: viewer result
 export function awesome() {
   return new AwesomeViewer();
 }
 ```
 
-The above way is typically preferred. The optional parameter `meta.icon`
-accepts a path to a viewer icon file in the package.
+The above way is typically preferred. Optional parameters, such as `meta.icon`
+and `meta.toolbox`, can be used. The `meta.icon` parameter accepts a path to a
+viewer icon file in the package and replaces the default icon with it in the UI.
+The `meta.toolbox` parameter, when enabled, adds your viewer to the toolbox in a
+table view.
 
 There is also a less common form to register a viewer:
 
@@ -516,16 +541,14 @@ You can find more inspiring examples in our [public repository](https://github.c
 
 * JavaScript-based viewers:
   * [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts): constructs graphs of various types
-      using the [Echarts](https://echarts.apache.org) framework
+    using the [Echarts](https://echarts.apache.org) framework
   * [Leaflet](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet): integrates with
-      the [Leaflet](https://leafletjs.com/) library to build interactive maps
-  * [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst): uses the [D3](https://d3js.org/)
-      library for a sunburst chart
+    the [Leaflet](https://leafletjs.com/) library to build interactive maps
   * [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers): showcases creating JavaScript
-      viewers using various visualization libraries
+    viewers using various visualization libraries
 * Scripting viewers (R, Python, Julia):
   * [ChaRPy](https://github.com/datagrok-ai/public/tree/master/packages/ChaRPy): translates a Datagrok viewer to
-      Python and R code using scripting viewers for the respective programming languages
+    Python and R code using scripting viewers for the respective programming languages
   * [DemoScripts]: demonstrates the scripting functionality, including visualizations, for Python, R, and Julia
 
   Most of these scripts are also available by the `viewers` tag in the script
@@ -539,9 +562,10 @@ You can find more inspiring examples in our [public repository](https://github.c
 See also:
 
 * [Datagrok JavaScript API](../js-api.md)
-* [JavaScript API Samples](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers)
+* [JS API Samples: custom viewers](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers)
+* [JS API Samples: viewers](https://public.datagrok.ai/js/samples/ui/viewers/create-viewers)
 * [JavaScript development](../develop.md)
-* [Viewers](../../visualize/viewers.md)
+* [Viewers](../../visualize/viewers/viewers.md)
 * [Scripting viewers](../../visualize/viewers/scripting-viewer.md)
 
-[DemoScripts]: https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/
+[DemoScripts]: https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts

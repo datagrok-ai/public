@@ -4,13 +4,13 @@ import * as grok from 'datagrok-api/grok';
 import { _package } from '../package-test';
 import * as DG from 'datagrok-api/dg';
 
-category('Scripts input\output Params', () => {
+category('Scripts Params', () => {
 
   const df = grok.data.demo.demog(20); 
   const col = df.col('sex');
   let colList:string[] = ['age', 'weight'];
 
-test('python.test', async () => {
+  test('python.test', async () => {
     let f = await grok.functions.eval(`${_package.name}:PythonParamsTest`);
 
     let call = f.prepare({i:10, d: -20.1, b: false, s: 'abc', dt:'1992-09-20 00:00:00', df:df, col:col});

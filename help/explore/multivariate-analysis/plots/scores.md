@@ -1,7 +1,6 @@
-<!-- TITLE: Scores -->
-<!-- SUBTITLE: -->
-
-# Scores
+---
+title: "Scores"
+---
 
 Scatter plot of PLS components (T-components) vs. scores of the response variable (U-components).
 

@@ -20,6 +20,7 @@ export async function dfFromColWithOneCategory(colName: string, value: string, l
 export async function createTableView(tableName: string): Promise<DG.TableView> {
   const df = await readDataframe(tableName);
   df.name = tableName.replace('.csv', '');
+  await grok.data.detectSemanticTypes(df);
   const view = grok.shell.addTableView(df);
   return view;
 }

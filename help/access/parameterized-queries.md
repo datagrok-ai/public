@@ -1,11 +1,11 @@
-<!-- TITLE: Parameterized queries -->
-
-# Parameterized queries
+---
+title: "Parameterized queries"
+---
 
 A parameterized query is a query with one or more parameters. When the query is executed from the UI, a user is prompted
 to enter parameters. It is also possible to run a query programmatically with the specified parameters
 (see this [code snippet](https://public.datagrok.ai/js/samples/data-access/parameterized-query)). See how it works
-in [this video](https://www.youtube.com/watch?v=sSJp5CXcYKQ&ab_channel=Datagrok).
+in [this video](https://www.youtube.com/watch?v=sSJp5CXcYKQ\&ab_channel=Datagrok).
 
 ## Creating a parameterized query
 
@@ -200,7 +200,7 @@ The query with such header parameter will output a string of the semantic type `
 Once the query is executed, you can copy the URL from the address bar and use it to execute the query with the specified
 parameters.
 
-When you share this URL, you share a link to the query output, not the actual data. You can _open_ the resulting
+When you share this URL, you share a link to the query output, not the actual data. You can *open* the resulting
 dataframe in Datagrok by following the link. From there, you can download the dataframe, add visualizations and create
 layouts, or save the dataframe by [uploading a project](../datagrok/create-project.md).
 
@@ -247,14 +247,14 @@ query on the backend.
 
 ## Videos
 
-[![Parameterized queries](../uploads/youtube/data_access.png "Open on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1980s)
+[![Parameterized queries](../uploads/youtube/data_access.png "Open on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8\&t=1980s)
 
-[YouTube: Datagrok database parameterized queries](https://www.youtube.com/watch?v=sSJp5CXcYKQ&ab_channel=Datagrok)
+[YouTube: Datagrok database parameterized queries](https://www.youtube.com/watch?v=sSJp5CXcYKQ\&ab_channel=Datagrok)
 
 See also:
 
 * [Data query](data-query.md)
 * [Search patterns](../explore/data-search-patterns.md)
-* [Function](../datagrok/functions/function.md)
+* [Function](../datagrok/functions/functions.md)
 * [Scripting](../compute/scripting.md)
 * [JavaScript API Samples](https://public.datagrok.ai/js/samples/data-access/parameterized-query)

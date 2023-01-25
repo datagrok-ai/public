@@ -1,7 +1,6 @@
-<!-- TITLE: Enterprise evaluation FAQ -->
-<!-- SUBTITLE: -->
-
-# FAQ
+---
+title: "Enterprise evaluation FAQ"
+---
 
 * [Architecture](architecture.md)
   * Data flows
@@ -10,8 +9,9 @@
 * Security
   * [Security overview](security.md)
   * [Authentication](../../govern/authentication.md)
-    and [authorization](../../govern/authorization.md)
-  * [Encryption at rest](#encryption-at-rest) and [encryption in transit](#encryption-in-transit)
+  and [authorization](../../govern/authorization.md)
+  * [Encryption at rest](#encryption-at-rest)
+  and [encryption in transit](#encryption-in-transit)
 
 * Enterprise Readiness
   * [Logging and monitoring](#logging-and-monitoring) (using standard AWS tools)
@@ -110,7 +110,8 @@ Docker-compose manifest is used to describe and deploy Datagrok applications.
 
 Also, there are multiple advanced options to deploy application:
 
-* [CloudFormation template](https://github.com/datagrok-ai/public/tree/master/develop/admin/deploy/cloudformation/cloudformation.json)
+* [CloudFormation template](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/cloudformation.json)
   to deploy to AWS ECS
-* [Terraform scripts](https://github.com/datagrok-ai/public/tree/master/develop/admin/deploy/terraform.tf) to deploy to
+* [Terraform scripts](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/terraform/terraform.tf)
+to deploy to
   AWS ECS

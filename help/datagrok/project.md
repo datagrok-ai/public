@@ -1,7 +1,6 @@
-<!-- TITLE: Project -->
-<!-- SUBTITLE: -->
-
-# Project
+---
+title: "Project"
+---
 
 Project is a collection of entities along with the applied visualizations. Projects are used to group and share data and
 other assets with other users. One of the most common applications of projects are dashboards that consist of tables (
@@ -20,7 +19,7 @@ inside.
 
 ### Dynamic data
 
-Whenever a table is created by executing a [function](../datagrok/functions/function.md)
+Whenever a table is created by executing a [function](../datagrok/functions/functions.md)
 (such as a [database query](../access/data-query.md)), this information gets stored with the table as a "generation
 script". This serves multiple purposes:
 

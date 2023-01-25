@@ -1,7 +1,6 @@
-<!-- TITLE: Database substructure and similarity search -->
-<!-- SUBTITLE: -->
-
-# Database substructure and similarity search
+---
+title: "Database substructure and similarity search"
+---
 
 Efficient substructure and similarity searching in a database containing information about molecules is a key
 requirement for any chemical information management system. This is typically done by installing a so-called chemical

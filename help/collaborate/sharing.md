@@ -1,7 +1,6 @@
-<!-- TITLE: Sharing -->
-<!-- SUBTITLE: -->
-
-# Sharing
+---
+title: "Sharing"
+---
 
 Many types of objects within the Datagrok platform can be shared with other users or [groups](../govern/group.md). Such
 shareable objects are called [entities](../datagrok/objects.md). When an object is shared, you are essentially granting

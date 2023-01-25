@@ -23,17 +23,30 @@
       "error",
       120
     ],
+    "no-unused-vars": "warn",
     "require-jsdoc": "off",
+    "valid-jsdoc": "off",
     "spaced-comment": "off",
     "linebreak-style": "off",
     "curly": [
       "error",
-      "multi-or-nest"
+      "multi-or-nest",
+      "consistent"
     ],
     "brace-style": [
       "error",
       "1tbs",
-      { "allowSingleLine": true }
-    ]
+      {
+        "allowSingleLine": true
+      }
+    ],
+    "block-spacing": [2, "always"],
+    "comma-dangle": ["error", {
+      "arrays": "only-multiline",
+      "functions": "never",
+      "objects": "only-multiline",
+      "imports": "only-multiline"
+    }],
+    "guard-for-in": "off"
   }
 }

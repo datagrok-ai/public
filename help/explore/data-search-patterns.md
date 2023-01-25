@@ -1,7 +1,6 @@
-<!-- TITLE: Search patterns -->
-<!-- SUBTITLE: -->
-
-# Search patterns
+---
+title: "Search patterns"
+---
 
 Search patterns let you use a commonly accepted notation to specify conditions in free text. Use the same syntax to
 query in-memory datasets via the [search mechanism](data-search.md), and to query external databases

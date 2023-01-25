@@ -21,6 +21,11 @@ import './tests/notation-converter-tests';
 import './tests/screening-tools';
 
 import './tests/save-as-sdf-tests';
+import './tests/substructure-filter-tests';
+
+import './tests/viewers';
+
+import './tests/mol2-importer-tests';
 
 export const _package = new DG.Package();
 export {tests};

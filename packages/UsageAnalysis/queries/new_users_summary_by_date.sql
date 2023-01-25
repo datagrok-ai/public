@@ -1,6 +1,8 @@
 --name: NewUsersSummaryByDate
 --input: string days
 --connection: System:Datagrok
+--meta.cache: true
+--meta.invalidate: 0 0 * ? * * *
 select t.date::date, count(t.id) as user_count from (
 	select distinct on (date(e.event_time), u.id) u.id, e.event_time as date
 	from events e

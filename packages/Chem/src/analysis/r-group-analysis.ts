@@ -2,7 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {findMCS, findRGroups} from '../scripts-api';
-import { getRdKitModule } from '../package';
+import {convertMolNotation, getRdKitModule} from '../package';
+import {MolNotation} from '../utils/convert-notation-utils';
 
 export function convertToRDKit(smiles: string | null): string | null {
   if (smiles !== null) {
@@ -23,13 +24,22 @@ export function rGroupAnalysis(col: DG.Column): void {
   const columnPrefixInput = ui.stringInput('Column prefix', 'R');
   const visualAnalysisCheck = ui.boolInput('Visual analysis', true);
 
+  let molColNames = col.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).map((c) => c.name);
+  const columnInput = ui.choiceInput('Molecules', col.name, molColNames);
+
   const mcsButton = ui.button('MCS', async () => {
     ui.setUpdateIndicator(sketcher.root, true);
-    const smiles: string = await findMCS(col.name, col.dataFrame);
-    ui.setUpdateIndicator(sketcher.root, false);
-    sketcher.setSmiles(smiles);
+    try {
+      let molCol = col.dataFrame.columns.byName(columnInput.value!);
+      const smiles: string = await findMCS(molCol.name, molCol.dataFrame);
+      ui.setUpdateIndicator(sketcher.root, false);
+      sketcher.setMolFile(convertMolNotation(smiles, MolNotation.Smiles, MolNotation.MolBlock));
+    } catch (e: any) {
+      grok.shell.error(e);
+      dlg.close();
+    }
   });
-  ui.tooltip.bind(mcsButton, 'Most Common Substructure');
+  ui.tooltip.bind(mcsButton, 'Calculate Most Common Substructure');
   const mcsButtonHost = ui.div([mcsButton]);
   mcsButtonHost.style.display = 'flex';
   mcsButtonHost.style.justifyContent = 'center';
@@ -41,40 +51,60 @@ export function rGroupAnalysis(col: DG.Column): void {
     .add(ui.div([
       sketcher,
       mcsButtonHost,
+      columnInput,
       columnPrefixInput,
       visualAnalysisCheck,
     ]))
     .onOK(async () => {
-      const core = sketcher.getSmiles();
-      if (core !== null) {
+      col = col.dataFrame.columns.byName(columnInput.value!);
+      const re = new RegExp(`^${columnPrefixInput.value}\\d+$`, 'i');
+      if (col.dataFrame.columns.names().filter(((it) => it.match(re))).length) {
+        grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');
+        return;
+      }
+      const core = sketcher.getMolFile();
+      if (!core) {
+        grok.shell.error('No core was provided');
+        return;
+      }
+      try {
+        const progressBar = DG.TaskBarProgressIndicator.create(`RGroup analysis running...`);
         const res = await findRGroups(col.name, col.dataFrame, core, columnPrefixInput.value);
         const module = getRdKitModule();
-
+  
         for (const resCol of res.columns) {
-          const molsArray = new Array<string>(resCol.length)
-           for(let i = 0; i < resCol.length; i++) {
-            const mol = module.get_mol(resCol.get(i));
-            molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
-            mol.delete();
+          const molsArray = new Array<string>(resCol.length);
+          for (let i = 0; i < resCol.length; i++) {
+            const molStr = resCol.get(i);
+            try {
+              const mol = module.get_mol(molStr);
+              molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
+              mol.delete();
+            } catch (e) {
+              console.warn(`RGroupAnalysisWarning: skipping invalid molecule '${molStr}' at index ${i}`);
+            }
           }
           const rCol = DG.Column.fromStrings(resCol.name, molsArray);
-
+  
           rCol.semType = DG.SEMTYPE.MOLECULE;
-          rCol.setTag(DG.TAGS.UNITS, 'molblock')
+          rCol.setTag(DG.TAGS.UNITS, MolNotation.MolBlock);
           col.dataFrame.columns.add(rCol);
         }
         if (res.columns.length == 0)
           grok.shell.error('None R-Groups were found');
-
+  
         const view = grok.shell.getTableView(col.dataFrame.name);
         if (visualAnalysisCheck.value && view) {
           view.trellisPlot({
             xColumnNames: [res.columns.byIndex(0).name],
             yColumnNames: [res.columns.byIndex(1).name],
           });
-        }
-      } else
-        grok.shell.error('No core was provided');
+        } 
+        progressBar.close();
+      } catch (e: any) {
+        grok.shell.error(e);
+        dlg.close();
+      }
     });
   dlg.show();
   dlg.initDefaultHistory();

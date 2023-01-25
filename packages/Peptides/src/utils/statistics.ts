@@ -1,6 +1,5 @@
-import * as DG from 'datagrok-api/dg';
-
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
+import {RawData} from './types';
 
 export type Stats = {
   count: number,
@@ -9,21 +8,31 @@ export type Stats = {
   ratio: number,
 };
 
-type StatsData = Float32Array | Float64Array | Int32Array | Uint32Array | number[];
+export type MaskInfo = {
+  trueCount: number,
+  falseCount: number,
+  mask: boolean[] | Int32Array,
+};
 
-export function getStats(data: StatsData, mask: DG.BitSet): Stats {
-  const selected = new Float32Array(mask.trueCount);
-  const rest = new Float32Array(mask.falseCount);
+export function getStats(data: RawData | number[], maskInfo: MaskInfo): Stats {
+  const selected = new Float32Array(maskInfo.trueCount);
+  const rest = new Float32Array(maskInfo.falseCount);
+
   let selectedIndex = 0;
   let restIndex = 0;
-  data.forEach((v, i) => mask.get(i) ? selected[selectedIndex++] = v : rest[restIndex++] = v);
+  for (let i = 0; i < data.length; ++i) {
+    if (maskInfo.mask[i])
+      selected[selectedIndex++] = data[i];
+    else
+      rest[restIndex++] = data[i];
+  }
 
   const testResult = tTest(selected, rest);
   const currentMeanDiff = testResult['Mean difference']!;
   return {
     count: selected.length,
-    pValue: testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less'],
-    meanDifference: currentMeanDiff,
+    pValue: testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less'] || 0,
+    meanDifference: currentMeanDiff || 0,
     ratio: selected.length / data.length,
   };
 }

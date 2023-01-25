@@ -30,7 +30,7 @@ export function manualAlignmentWidget(alignedSequenceCol: DG.Column<string>, cur
     grok.shell.o = null;
     grok.shell.o = temp;
 
-    const peptidesController = await PeptidesModel.getInstance(currentDf);
+    const peptidesController = PeptidesModel.getInstance(currentDf);
     peptidesController.updateDefault();
   });
 

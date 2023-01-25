@@ -24,6 +24,7 @@ export {time, timeAsync, Utils, HtmlUtils, LruCache, Paint} from './src/utils';
 export {ObjectHandler, EntityMetaDartProxy} from './ui';
 export * from './src/data';
 export * from './src/helpers';
+export * from './src/logger';
 
 export * from './src/chem';
 export * from './src/ml';
@@ -34,4 +35,14 @@ $(function () {
   (<any>window).$ = $;
   (<any>window).dayjs = dayjs;
   (<any>window).wu = wu;
+
+  window.addEventListener("error", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.error.message == '[object ProgressEvent]')
+      return;
+    (<any>window).grok_Unhandled_Error(e.error.message ?? e.error, e.error.stack);
+
+  });
+
 });

@@ -2,6 +2,9 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {getDescriptorsTree, getDescriptorsPy} from '../scripts-api';
+import {isMolBlock} from 'datagrok-api/dg';
+import {getRdKitModule} from '../utils/chem-common-rdkit';
+import {_convertMolNotation} from '../utils/convert-notation-utils';
 
 const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
@@ -23,6 +26,13 @@ export async function addDescriptors(smilesCol: DG.Column, viewTable: DG.DataFra
 
 /** Calculates descriptors for single entry*/
 export function getDescriptorsSingle(smiles: string): DG.Widget {
+  const rdKitModule = getRdKitModule();
+  try {
+    smiles = _convertMolNotation(smiles, 'unknown', 'smiles', rdKitModule);
+  } catch (e) {
+    return new DG.Widget(ui.divText('Molecule is possibly malformed'));
+  }
+  const molecule = isMolBlock(smiles) ? `\"${smiles}\"` : smiles;
   const widget = new DG.Widget(ui.div());
   const result = ui.div();
   const selectButton = ui.bigButton('SELECT', async () => {
@@ -38,7 +48,7 @@ export function getDescriptorsSingle(smiles: string): DG.Widget {
     result.appendChild(ui.loader());
     getSelected().then((selected) => {
       getDescriptorsPy(
-        'smiles', DG.DataFrame.fromCsv(`smiles\n${smiles}`), 'selected',
+        'smiles', DG.DataFrame.fromCsv(`smiles\n${molecule}`), 'selected',
         DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selected)]),
       ).then((table: any) => {
         removeChildren(result);

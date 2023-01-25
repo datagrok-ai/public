@@ -5,13 +5,12 @@
 #sample: chem/smiles_coordinates.csv
 #tags: demo, chem, rdkit
 #input: dataframe data [Input data table]
-#input: column smiles {type:categorical, semType: Molecule} [Molecules, in SMILES format]
-#output: dataframe clusters {action:join(data)} [Clusters]
+#input: column molecules {semType: Molecule} [Molecules, in SMILES and MolBlock format]
+#output: dataframe clusters [Clusters]
 
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem import AllChem
-
 
 def cluster_fingerprints(fingerprints, cutoff=0.2):
     from rdkit import DataStructs
@@ -25,8 +24,12 @@ def cluster_fingerprints(fingerprints, cutoff=0.2):
 
     return Butina.ClusterData(dists, length, cutoff, isDistData=True)
 
-smiles = data[smiles]
-mols = [Chem.MolFromSmiles(smile) for smile in smiles if smile is not None]
+molecules = data[molecules]
+mols = []
+for m in molecules:
+  mol = Chem.MolFromSmiles(m, sanitize = True) if m is not None and "M  END" not in m else Chem.MolFromMolBlock(m, sanitize = True)
+  mols.append(Chem.Mol()) if mol is None else mols.append(mol)
+
 fingerprints = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, 1024) for mol in mols]
 groups = cluster_fingerprints(fingerprints, cutoff=0.4)
 
@@ -36,4 +39,5 @@ for n in range(0, len(groups)):
     clusters[idxs] = np.ones(len(idxs)) * n
 
 # Convert to Pandas DataFrame
-clusters = pd.DataFrame(clusters, columns=['clusters'])
+clustersDf = pd.DataFrame(clusters, columns=['clusters'])
+clusters = pd.concat([data, clustersDf], axis=1)

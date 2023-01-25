@@ -25,24 +25,28 @@ export async function retrieveKeys() {
 
     const createApiTokenResponse = await alationApi.createAPIAccessToken(tokenMap.refreshToken, tokenMap.userId);
 
-    await updateApiToken(createApiTokenResponse.api_access_token);
+    updateApiToken(createApiTokenResponse.api_access_token);
     tokenMap = await getAllTokensFromStorage();
   }
 
   return tokenMap;
 }
 
-async function getAllTokensFromStorage() {
+async function getAllTokensFromStorage(): Promise<{userId: number, refreshToken: string, apiToken: string}> {
   const creds = await getPackage().getCredentials();
   const credParams = creds.parameters;
-  return {userId: parseInt(credParams[constants.USER_ID]), refreshToken: credParams[constants.REFRESH_TOKEN_KEY],
-    apiToken: localStorage.getItem(constants.API_TOKEN_KEY) ?? ''};
+  return {
+    userId: parseInt(credParams[constants.USER_ID]),
+    refreshToken: credParams[constants.REFRESH_TOKEN_KEY],
+    apiToken: getApiToken(),
+  };
 }
 
-function updateApiToken(apiToken: string) {
+function updateApiToken(apiToken: string): void {
   localStorage.setItem(constants.API_TOKEN_KEY, apiToken);
 }
 
 export function getApiToken(): string {
-  return localStorage.getItem(constants.API_TOKEN_KEY) ?? '';
+  const apiToken = localStorage.getItem(constants.API_TOKEN_KEY);
+  return apiToken ?? '';
 }

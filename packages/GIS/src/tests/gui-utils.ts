@@ -1,6 +1,24 @@
 /* eslint-disable no-throw-literal */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import {delay} from '@datagrok-libraries/utils/src/test';
+import {_package} from '../package-test';
+
+// export default ;
+
+export interface Indexable { [key: string]: any }
+
+export async function loadFileAsText(name: string): Promise<string> {
+  return await _package.files.readAsText(name);
+}
+
+export async function getOptions(viewer: DG.Viewer): Promise<Indexable> {
+  await delay(100);
+  const options = (viewer.getOptions(true) as {id: string, type: string, look: Indexable}).look;
+  delete options['#type'];
+  delete options.table;
+  return options;
+}
 
 export function isExceptionElement(action: string):void {
   const exceptionElement = document.getElementsByClassName('grok-global-exception');

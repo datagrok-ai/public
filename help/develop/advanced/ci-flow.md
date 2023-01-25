@@ -1,7 +1,6 @@
-<!-- TITLE: CI/CD Flow -->
-<!-- SUBTITLE: -->
-
-# Continuous integration and delivery flow
+---
+title: "CI/CD Flow"
+---
 
 Datagrok application is an incredibly powerful platform. With great power comes great responsibility. Which is why we
 created an automated flow to build, scan, test and publish our application. This way we prevent any vulnerable or broken

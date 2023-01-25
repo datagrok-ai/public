@@ -1,31 +1,33 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {drugBankSimilaritySearch, drugBankSubstructureSearch} from './searches';
 
 import * as OCL from 'openchemlib/full';
-import {drugBankSearchTypes, getTooltip} from './utils';
+import {findSimilar, searchSubstructure} from './searches';
 
-export async function drugBankSearchWidget(
-  molString: string, searchType: drugBankSearchTypes, dbdf: DG.DataFrame): Promise<DG.Widget> {
+export async function searchWidget(molString: string, searchType: 'similarity' | 'substructure', dbdf: DG.DataFrame,
+): Promise<DG.Widget> {
   const headerHost = ui.div();
   const compsHost = ui.divV([]);
-  const panel = ui.divV([compsHost]);
+  const panel = ui.divV([headerHost, compsHost]);
 
   let table: DG.DataFrame | null;
-  switch (searchType) {
-  case 'similarity':
-    table = await drugBankSimilaritySearch(molString, 20, 0, dbdf);
-    break;
-  case 'substructure':
-    table = await drugBankSubstructureSearch(molString, dbdf);
-    break;
-  default:
-    throw new Error(`DrugBankSearch: No such search type ${searchType}`);
+  try {
+    switch (searchType) {
+    case 'similarity':
+      table = await findSimilar(molString, 20, 0, dbdf);
+      break;
+    case 'substructure':
+      table = await searchSubstructure(molString, dbdf);
+      break;
+    default:
+      throw new Error(`DrugBankSearch: No such search type ${searchType}`);
+    }
+  } catch (e) {
+    return new DG.Widget(ui.divText('Error occurred during search. Molecule is possible malformed'));
   }
 
   compsHost.firstChild?.remove();
-  // compsHost.removeChild(compsHost.firstChild!);
   if (table === null || table.filter.trueCount === 0) {
     compsHost.appendChild(ui.divText('No matches'));
     return new DG.Widget(panel);
@@ -37,7 +39,7 @@ export async function drugBankSearchWidget(
   const moleculeCol: DG.Column<string> = table.getCol('molecule');
   const idCol: DG.Column<string> = table.getCol('DRUGBANK_ID');
   const nameCol: DG.Column<string> = table.getCol('COMMON_NAME');
-  // const linkCol: DG.Column<string> = table.getCol('link');
+
   for (let n = 0; n < iterations; n++) {
     const piv = bitsetIndexes[n];
     const molHost = ui.canvas();
@@ -45,8 +47,7 @@ export async function drugBankSearchWidget(
     const molecule = OCL.Molecule.fromMolfile(molfile);
     OCL.StructureView.drawMolecule(molHost, molecule, {'suppressChiralText': true});
 
-    ui.tooltip.bind(molHost, () => getTooltip(nameCol.get(piv)!));
-    // molHost.addEventListener('click', () => window.open(linkCol.get(piv)!, '_blank'));
+    ui.tooltip.bind(molHost, () => ui.divText(`Common name: ${nameCol.get(piv)!}\nClick to open in DrugBank Online`));
     molHost.addEventListener('click', () => window.open(`https://go.drugbank.com/drugs/${idCol.get(piv)}`, '_blank'));
     compsHost.appendChild(molHost);
   }
@@ -57,11 +58,16 @@ export async function drugBankSearchWidget(
   return new DG.Widget(panel);
 }
 
-export function drugNameMoleculeWidget(id: string, dbdf: DG.DataFrame): string | null {
-  const drugName = id.slice(3);
-  for (var i = 0; i < dbdf.rowCount; i++) {
-    if (dbdf.get('SYNONYMS', i).toLowerCase().includes(drugName))
-      return dbdf.get('Smiles', i);
+export function drugNameMoleculeConvert(id: string, dbdfRowCount: number, synonymsCol: DG.Column<string>,
+  smilesCol: DG.Column<string>): string {
+  const drugName = id.slice(3).toLowerCase();
+  //TODO: consider using raw data instead of .get or column iterator (see ApiSamples)
+  //TODO: benchmark it
+  for (let i = 0; i < dbdfRowCount; i++) {
+    const currentSynonym = synonymsCol.get(i)!.toLowerCase();
+    //TODO: check why .includes & consider using hash-map
+    if (currentSynonym.includes(drugName))
+      return smilesCol.get(i)!;
   }
-  return null;
+  return '';
 }

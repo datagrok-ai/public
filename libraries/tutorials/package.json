@@ -4,7 +4,7 @@
 		"access": "public"
 	},
 	"friendlyName": "Tutorials",
-	"version": "1.0.0",
+	"version": "1.0.2",
 	"description": "Helpers for creating tutorials",
 	"dependencies": {
 		"cash-dom": "^8.1.1",
@@ -23,6 +23,7 @@
 	"scripts": {
 		"link": "npm link",
 		"link-api": "npm link datagrok-api",
+		"link-all": "npm link datagrok-api",
 		"build": "tsc",
 		"lint": "eslint src --ext .ts",
 		"lint-fix": "eslint src --ext .ts --fix"

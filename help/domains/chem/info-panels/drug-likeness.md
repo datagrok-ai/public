@@ -1,6 +1,6 @@
-<!-- TITLE: Drug likeness -->
-
-# Drug likeness
+---
+title: "Drug likeness"
+---
 
 From [openmolecules](https://www.openmolecules.org/properties/properties.html#druglikeness):
 _There are many approaches around that assess a compound's druglikeness partially based on topological descriptors,

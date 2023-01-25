@@ -1,5 +1,5 @@
 --name: measurementByConceptId
---connection: Demo:test_queries:PostgresNetCDM
+--connection: Demo:test_queries:PostgresCDM
 --input: int measurement_conc_id
 select person_id, value_as_number as measurement_value, measurement_datetime, measurement_concept_id,
 EXTRACT(YEAR FROM measurement_datetime) m_year, 

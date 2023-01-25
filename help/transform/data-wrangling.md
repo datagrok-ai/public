@@ -1,7 +1,6 @@
-<!-- TITLE: Data wrangling -->
-<!-- SUBTITLE: -->
-
-# Data wrangling
+---
+title: "Data wrangling"
+---
 
 _Data wrangling, also known as data munging or data cleaning, is the process of transforming and mapping data from one "
 raw" data form into another format with the intent of making it more appropriate and valuable for a variety of

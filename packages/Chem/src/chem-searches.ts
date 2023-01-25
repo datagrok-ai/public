@@ -9,11 +9,12 @@ import {
   rdKitFingerprintToBitArray,
 } from './utils/chem-common';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {tanimotoSimilarity, getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {assure} from '@datagrok-libraries/utils/src/test';
 import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
+import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
-const enum FING_COL_TAGS{
+const enum FING_COL_TAGS {
   invalidatedForVersion = '.invalideted.for.version',
 }
 
@@ -64,7 +65,7 @@ function _chemGetDiversities(limit: number, molStringsColumn: DG.Column, fingerp
   limit = Math.min(limit, fingerprints.length);
   const indexes = ArrayUtils.indexesOf(fingerprints, (f) => f != null);
 
-  const diverseIndexes = getDiverseSubset(indexes.length, limit,
+  const diverseIndexes = getDiverseSubset(fingerprints, indexes.length, limit,
     (i1, i2) => 1 - tanimotoSimilarity(fingerprints[indexes[i1]], fingerprints[indexes[i2]]));
 
   const molIds: number[] = [];

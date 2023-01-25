@@ -1,5 +1,5 @@
 --name: drugExposure
---connection: Demo:test_queries:PostgresNetCDM
+--connection: Demo:test_queries:PostgresCDM
 select t1.person_id, t1.drug_exposure_start_date, t1.drug_exposure_end_date, t2.concept_name as drug
 from cdm_synthea_1.drug_exposure t1
 join cdm_synthea_1.concept t2

@@ -176,7 +176,7 @@ export class Utils {
 }
 
 
-/** A proxy to a Dart List<T>. */
+/** A proxy to a Dart `List<T>`. */
 export class DartList<T> implements Iterable<T> {
   dart: any;
 

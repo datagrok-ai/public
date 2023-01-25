@@ -1,9 +1,18 @@
+/* eslint-disable max-len */
 /* eslint-disable valid-jsdoc */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
-import {DateOptions, FilterOptions} from './function-view';
+
+type DateOptions = 'Any time' | 'Today' | 'Yesterday' | 'This week' | 'Last week' | 'This month' | 'Last month' | 'This year' | 'Last year';
+
+type FilterOptions = {
+  text?: string,
+  date?: DateOptions,
+  author?: DG.User,
+  isShared?: boolean,
+};
 
 const getSearchStringByPattern = (datePattern: DateOptions) => {
   switch (datePattern) {
@@ -29,22 +38,31 @@ const getSearchStringByPattern = (datePattern: DateOptions) => {
 };
 
 export namespace historyUtils {
-  export async function loadRun(funcCallId: string) {
+  const scriptsCache = {} as Record<string, DG.Script>;
+
+  export async function loadRun(funcCallId: string, skipDfLoad = false) {
     const pulledRun = await grok.dapi.functions.calls.allPackageVersions()
       .include('inputs, outputs, session.user').find(funcCallId);
+
+    const id = pulledRun.func.id;
     // FIX ME: manually get script since pulledRun contains empty Func
-    const script = await grok.dapi.functions.allPackageVersions().find(pulledRun.func.id);
+    const script = scriptsCache[id] ?? await grok.dapi.functions.allPackageVersions().find(id);
+
+    if (!scriptsCache[id]) scriptsCache[id] = script;
     pulledRun.func = script;
     pulledRun.options['isHistorical'] = true;
-    const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
-      .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
-    for (const output of dfOutputs)
-      pulledRun.outputs[output.name] = await grok.dapi.tables.getTable(pulledRun.outputs[output.name]);
 
-    const dfInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
-      .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
-    for (const input of dfInputs)
-      pulledRun.inputs[input.name] = await grok.dapi.tables.getTable(pulledRun.inputs[input.name]);
+    if (!skipDfLoad) {
+      const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
+        .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
+      for (const output of dfOutputs)
+        pulledRun.outputs[output.name] = await grok.dapi.tables.getTable(pulledRun.outputs[output.name]);
+
+      const dfInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
+        .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
+      for (const input of dfInputs)
+        pulledRun.inputs[input.name] = await grok.dapi.tables.getTable(pulledRun.inputs[input.name]);
+    }
 
     return pulledRun;
   }
@@ -60,11 +78,12 @@ export namespace historyUtils {
     for (const input of dfInputs)
       await grok.dapi.tables.uploadDataFrame(callToSave.inputs[input.name]);
 
-    return await grok.dapi.functions.calls.save(callToSave);
+
+    return await grok.dapi.functions.calls.allPackageVersions().save(callToSave);
   }
 
   export async function deleteRun(callToDelete: DG.FuncCall) {
-    await grok.dapi.functions.calls.delete(callToDelete);
+    await grok.dapi.functions.calls.allPackageVersions().delete(callToDelete);
   }
 
   /**
@@ -135,7 +154,10 @@ export namespace historyUtils {
         .list(listOptions);
 
     for (const pulledRun of result) {
-      const script = await grok.dapi.functions.allPackageVersions().find(pulledRun.func.id);
+      const id = pulledRun.func.id;
+      const script = scriptsCache[id] ?? await grok.dapi.functions.allPackageVersions().find(id);
+
+      if (!scriptsCache[id]) scriptsCache[id] = script;
       pulledRun.func = script;
     }
 

@@ -1,16 +1,16 @@
-<!-- TITLE: Create custom file viewers -->
-
-# Create custom file viewers
+---
+title: "Create custom file viewers"
+---
 
 Datagrok provides a way to define custom file viewers that are used by the
 [file share browser](../../access/connect-a-file-share.md). This could be done by defining a function annotated in a
 special way. It should take a single argument of type `file`, return a `view`, and have at least two tags: `fileViewer`
 and `fileViewer-<extension>` (specify the extension here). This is it!
 
-The following example defines a file viewer for .mol, .sdf, and .cif files by visualizing them with the NglViewer. This
+The following example defines a file viewer for .mol, .sdf, and .cif files by visualizing them with the NglViewer.
+<!--This
 is real code from
-the ["NglViewer" public package](https://github.com/datagrok-ai/public/blob/master/packages/NglViewer/package.js)
-.
+the ["NglViewer" public package](https://github.com/datagrok-ai/public/blob/master/packages/NglViewer).-->
 
 ```js
 //tags: fileViewer, fileViewer-mol, fileViewer-sdf, fileViewer-cif

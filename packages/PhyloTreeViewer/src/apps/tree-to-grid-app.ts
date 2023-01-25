@@ -7,7 +7,7 @@ import {GridWithTreeViewer} from '../viewers/grid-with-tree-viewer';
 import {injectTreeToGridUI} from '../viewers/inject-tree-to-grid';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import {_package} from '../package';
-import {TAGS} from '../utils/tree-helper';
+import {TAGS as treeTAGS} from '@datagrok-libraries/bio/src/trees';
 
 class AppView extends DG.ViewBase {
 
@@ -48,8 +48,8 @@ export class TreeToGridApp {
     // const leafColName = 'Leaf';
 
     const dataDf = DG.DataFrame.fromCsv(csv);
-    dataDf.setTag(TAGS.DF_NEWICK, newick);
-    dataDf.setTag(TAGS.DF_NEWICK_LEAF_COL_NAME, leafColName);
+    dataDf.setTag(treeTAGS.NEWICK, newick);
+    dataDf.setTag(treeTAGS.NEWICK_LEAF_COL_NAME, leafColName);
 
     await this.setData(dataDf, newick);
   }
@@ -61,9 +61,9 @@ export class TreeToGridApp {
     }
 
     this._dataDf = dataDf;
-    const leafColName = dataDf.getTag(TAGS.DF_NEWICK_LEAF_COL_NAME);
+    const leafColName = dataDf.getTag(treeTAGS.NEWICK_LEAF_COL_NAME);
     if (!leafColName)
-      throw new Error(`Specify leaf column name in DataFrame tag '${TAGS.DF_NEWICK_LEAF_COL_NAME}'.`);
+      throw new Error(`Specify leaf column name in DataFrame tag '${treeTAGS.NEWICK_LEAF_COL_NAME}'.`);
     this._leafCol = dataDf.getCol(leafColName);
     this._newickStr = newickStr;
 
@@ -101,9 +101,9 @@ export class TreeToGridApp {
       //this.tableView.path = this.tableView.basePath = 'apps/PhyloTreeViewer/GridWithTree';
 
       // TODO: No cluster mark
-      this.dataDf.columns.addNewInt('Cluster').init((rowI: number) => { return 0;});
+      this.dataDf.columns.addNewInt('Cluster').init((rowI: number) => { return 0; });
 
-      this.gridN = injectTreeToGridUI(
+      this.gridN = await injectTreeToGridUI(
         this.tableView.grid, this.newickStr, this.leafCol.name, 250,
         {min: 0, max: 1, clusterColName: 'Cluster'});
 

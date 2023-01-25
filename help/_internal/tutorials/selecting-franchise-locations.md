@@ -15,7 +15,7 @@ Features: creating project, accessing data, creating query, post-processing, Jup
 3. Get data from external source:
 
 * Open "Connect to Data" view (File | Connect to Data...)
-* Create new connection (Context menu on PostgresSQL or PostgresNet | Add connection
+* Create new connection (Context menu on PostgresSQL or Postgres | Add connection
     * Name: Starbucks
     * server: reddata.org
     * db: starbucks

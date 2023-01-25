@@ -6,12 +6,14 @@
 
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {chemSubstructureSearchLibrary} from '../chem-searches';
 import {initRdKitService} from '../utils/chem-common-rdkit';
 import {Subscription} from 'rxjs';
 import {debounceTime, filter} from 'rxjs/operators';
 import wu from 'wu';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
+import { chem } from 'datagrok-api/dg';
 
 export class SubstructureFilter extends DG.Filter {
   // @ts-ignore
@@ -28,8 +30,8 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   get isFiltering(): boolean {
-    return super.isFiltering &&
-    (!!this.sketcher?.getMolFile() && !(this.sketcher?.getMolFile().split('\n')[3].trimStart()[0] === '0'));
+    const molFile = this.sketcher?.getMolFile();
+    return super.isFiltering && (!!molFile && !chem.Sketcher.isEmptyMolfile(molFile));
   }
 
   get isReadyToApplyFilter(): boolean {
@@ -43,18 +45,19 @@ export class SubstructureFilter extends DG.Filter {
     this.calculating = false;
     this.root.appendChild(this.sketcher.root);
     this.root.appendChild(this.loader);
+    this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => { this.sketcher.setMolFile(DG.WHITE_MOLBLOCK); }));
   }
 
   get _debounceTime(): number {
     if (this.column == null)
       return 1000;
-    const sz = this.column.length;
-    const szMin = 500;
-    const szMax = 10000;
+    const length = this.column.length;
+    const minLength = 500;
+    const maxLength = 10000;
     const msecMax = 1000;
-    if (sz < szMin) return 0;
-    if (sz > szMax) return msecMax;
-    return Math.floor(msecMax * ((sz - szMin) / (szMax - szMin)));
+    if (length < minLength) return 0;
+    if (length > maxLength) return msecMax;
+    return Math.floor(msecMax * ((length - minLength) / (maxLength - minLength)));
   }
 
   attach(dataFrame: DG.DataFrame): void {
@@ -80,6 +83,10 @@ export class SubstructureFilter extends DG.Filter {
       this.sketcher.setMolFile(this.column?.temp['chem-scaffold-filter']);
   }
 
+  refresh() {
+    this.sketcher.sketcher?.refresh();
+  }
+
   detach() {
     super.detach();
     if (this.column?.temp['chem-scaffold-filter'])
@@ -89,6 +96,7 @@ export class SubstructureFilter extends DG.Filter {
   applyFilter(): void {
     if (this.bitset && !this.isDetached) {
       this.dataFrame?.filter.and(this.bitset);
+      this.dataFrame?.rows.addFilterState(this.saveState());
       this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile();
     }
   }
@@ -96,6 +104,7 @@ export class SubstructureFilter extends DG.Filter {
   /** Override to save filter state. */
   saveState(): any {
     const state = super.saveState();
+    state.type = 'Chem:substructureFilter';
     state.molBlock = this.sketcher.getMolFile();
     return state;
   }

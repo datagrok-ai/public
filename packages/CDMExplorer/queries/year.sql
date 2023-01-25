@@ -1,5 +1,5 @@
 --name: year
---connection: Demo:test_queries:PostgresNetCDM
+--connection: Demo:test_queries:PostgresCDM
 SELECT 
     stratum_1 AS year, 
     count_value AS countValue

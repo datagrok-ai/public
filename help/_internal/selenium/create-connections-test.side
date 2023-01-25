@@ -1134,10 +1134,10 @@
           "id": "691da0f4-7467-49e4-8cfb-9a14cef95c8e",
           "comment": "",
           "command": "click",
-          "target": "css=div[name=\"tree-PostgresNet\"] > div.d4-tree-view-group-label",
+          "target": "css=div[name=\"tree-Postgres\"] > div.d4-tree-view-group-label",
           "targets": [
             [
-              "css=div[name=\"tree-PostgresNet\"] > div.d4-tree-view-group-label",
+              "css=div[name=\"tree-Postgres\"] > div.d4-tree-view-group-label",
               "css"
             ],
             [

@@ -54,3 +54,7 @@
 .dt-snippet-inline-icon i {
   font-size: 13px;
 }
+
+.test-manager .d4-tree-view-group {
+  width: 100%;
+}

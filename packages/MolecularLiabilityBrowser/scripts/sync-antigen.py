@@ -460,7 +460,7 @@ def cli():
 @click.pass_context
 @click.option('--conn-str', 'conn_str',
               help="Database connection string .",
-              type=str)
+              type=click.STRING)
 @click.option('--ag', 'ag_f',
               help='CSV file with antigen list',
               type=click.File('r'))

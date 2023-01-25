@@ -1,6 +1,6 @@
-<!-- TITLE: Dataframe -->
-
-# DataFrame
+---
+title: "Dataframe"
+---
 
 DataFrame is a tabular structure with strongly-typed columns of various types. A dataframe class
 [DG.DataFrame](https://datagrok.ai/js-api/classes/dg.DataFrame)
@@ -14,7 +14,7 @@ Dataframe stores data as list of columns. Constructing, modifying and efficientl
 both [`DG.Column`][101] and [`DG.DataFrame`][100] classes. Event handling, visual aspects of working with dataframes,
 fast column selection, handy construction methods and row-based access are provided in
 [`DG.DataFrame`][100]. Instances of [`DG.ColumnList`][099], [`DG.RowList`][098],
-[`DG.Row`](https://datagrok.ai/js-api/classes/dg.Row) and [`DG.Cell`](https://datagrok.ai/js-api/classes/dg.cell) are
+[`DG.Row`](https://datagrok.ai/js-api/classes/dg.Row) and [`DG.Cell`](https://datagrok.ai/js-api/classes/dg.Cell) are
 used as related properties or functions return values of `DG.Column` and `DG.DataFrame`.
 
 ## Dataframe design
@@ -362,18 +362,18 @@ Dataframes may be obtained through the JavaSript or TypeScript code in various w
 
 A variety of in-place construction methods are available:
 
-* Construct from array of explicitly created columns, all same length: [link](
-  https://public.datagrok.ai/js/samples/data-frame/construction/create-from-arrays)
-* Specify number of rows in a dataframe at creation and later adding columns with this number of items: [link](
-  https://public.datagrok.ai/js/samples/data-frame/construction/create-from-columns)
-* Create from a string containing a CSV: [link](
-  https://public.datagrok.ai/js/samples/data-frame/construction/create-from-csv-format)
-* Create from a string containing a JSON: [link](
-  https://public.datagrok.ai/js/samples/data-frame/construction/create-from-json)
-* Create from JavaScript objects: [link](
-  https://public.datagrok.ai/js/samples/data-frame/construction/create-from-objects)
-* Create from JavaScript typed arrays: [link](
-  https://public.datagrok.ai/js/samples/data-frame/construction/create-from-typed-arrays)
+* Construct from array of explicitly created columns, all same length:
+[link](https://public.datagrok.ai/js/samples/data-frame/construction/create-from-arrays)
+* Specify number of rows in a dataframe at creation and later adding columns with this number of items:
+[link](https://public.datagrok.ai/js/samples/data-frame/construction/create-from-columns)
+* Create from a string containing a CSV:
+[link](https://public.datagrok.ai/js/samples/data-frame/construction/create-from-csv-format)
+* Create from a string containing a JSON:
+[link](https://public.datagrok.ai/js/samples/data-frame/construction/create-from-json)
+* Create from JavaScript objects:
+[link](https://public.datagrok.ai/js/samples/data-frame/construction/create-from-objects)
+* Create from JavaScript typed arrays:
+[link](https://public.datagrok.ai/js/samples/data-frame/construction/create-from-typed-arrays)
 
 #### Load a demo dataset
 
@@ -638,7 +638,7 @@ property setter).
 
 [101]: #dataframe-design "Dataframe design"
 
-[102]: ../../visualize/viewers.md "Datagrok Viewers"
+[102]: ../../visualize/viewers/viewers.md "Datagrok Viewers"
 
 [103]: https://github.com/datagrok-ai/public/blob/c4b913ef931e457144f773b1d8c55430c509657e/js-api/src/const.ts#L50 "DG.COLUMN_TYPE"
 

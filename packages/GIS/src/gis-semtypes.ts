@@ -1,81 +1,109 @@
 /* eslint-disable block-spacing */
 /* Do not change these import lines to match external modules in webpack configuration */
-import * as grok from 'datagrok-api/grok';
+//import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
+import {OpenLayers} from '../src/gis-openlayer';
 
 export const SEMTYPEGIS = {
   LONGITUDE: 'Longitude',
   LATIITUDE: 'Latitude',
   ALTITUDE: 'gis-altitude',
-  GISPOINT: 'gis-point',
-  GISAREA: 'gis-area',
-  GISOBJECT: 'gis-object',
   GISCOUNTRY: 'gis-country',
   GISSTATE: 'gis-state',
   GISADDRESS: 'gis-address',
   GISZIPCODE: 'gis-zipcode',
+
+  GISOBJECT: 'gis-object',
+  GISPOINT: 'gis-point',
+  GISAREA: 'gis-area',
 };
 
 export type gisCoordinate = [number, number, number?];
 export type gisFeatureProperties = {[x: string]: any};
+export type gisPolygonCoords = Array<gisCoordinate>;
+export type gisPolygon = Array<gisPolygonCoords>;
+export type gisPolygons = Array<gisPolygon>;
 
 export class GisArea {
   semtype: string = SEMTYPEGIS.GISAREA;
-  coordinates: Array<gisCoordinate>; //Array<[number, number, number?]>
+  // coordinates: Array<gisCoordinate>;
+  coordinates: gisPolygons;
   attributes: gisFeatureProperties = {};
-  constructor(coord: Array<gisCoordinate>, attr?: gisFeatureProperties) {
+  // mapreference: OpenLayers | null; //TODO: maybe we should reference to superclass (e.g. MapEngine above OpenLayers)
+
+  constructor(coord: gisPolygons, attr?: gisFeatureProperties, parentmap: OpenLayers | null = null) {
     this.coordinates = coord;
     if (attr)
       this.attributes = attr;
+    // this.maprefference = parentmap;
   }
 
   toString() {
     let strRes = '';
     strRes = JSON.stringify(this);
     return strRes;
-    // return 'Gis Area Object';
   }
 }
 
 function drawContourByCoords(g: CanvasRenderingContext2D,
   x: number, y: number, w: number, h: number,
-  coordinates: Array<gisCoordinate>) {
-  if (coordinates.length == 0)
+  polygonsarray: gisPolygons) {
+  //coordinates for area polygons are stored in arrays like this
+  //[[polygon1:[outer contour:[...]], [inner contour:[...]],...], polygon1:[outer contour:[...]]]
+  if (polygonsarray.length === 0)
     return;
   //detect scale>>
-  let xMin = coordinates[0][0];
-  let xMax = coordinates[0][0];
-  let yMin = coordinates[0][1];
-  let yMax = coordinates[0][1];
-  for (let i = 0; i < coordinates.length; i++) {
-    xMin = Math.min(xMin, coordinates[i][0]);
-    xMax = Math.max(xMax, coordinates[i][0]);
-    yMin = Math.min(yMin, coordinates[i][1]);
-    yMax = Math.max(yMax, coordinates[i][1]);
+  let xMin = Number.MAX_SAFE_INTEGER;
+  let xMax = Number.MIN_SAFE_INTEGER;
+  let yMin = Number.MAX_SAFE_INTEGER;
+  let yMax = Number.MIN_SAFE_INTEGER;
+  let xScale = 1;
+  let yScale = 1;
+  for (let p = 0; p < polygonsarray.length; p++) {
+    const parray: gisPolygon = polygonsarray[p];
+    for (let i = 0; i < parray.length; i++) {
+      const coordarray: gisPolygonCoords = parray[i];
+      for (let k = 0; k < coordarray.length - 1; k++) {
+        for (let i = 0; i < coordarray.length; i++) {
+          xMin = Math.min(xMin, coordarray[i][0]);
+          xMax = Math.max(xMax, coordarray[i][0]);
+          yMin = Math.min(yMin, coordarray[i][1]);
+          yMax = Math.max(yMax, coordarray[i][1]);
+        }
+        xScale = (w - 10) / Math.abs(xMax - xMin);
+        yScale = (h - 10) / Math.abs(yMax - yMin);
+        if (yScale < xScale)
+          xScale = yScale;
+        else yScale = xScale;
+      }
+    }
   }
-  let xScale = (w - 10) / Math.abs(xMax - xMin);
-  let yScale = (h - 10) / Math.abs(yMax - yMin);
-  if (yScale < xScale)
-    xScale = yScale;
-  else yScale = xScale;
+
   //centering coefficients of contour for canvas
-  let xShift = ((w - 10) - Math.abs((xMax - xMin) * xScale)) / 2;
-  let yShift = ((h - 10) - Math.abs((yMax - yMin) * yScale)) / 2;
+  const xShift = ((w - 10) - Math.abs((xMax - xMin) * xScale)) / 2;
+  const yShift = ((h - 10) - Math.abs((yMax - yMin) * yScale)) / 2;
   //draw contour>>
-  g.fillStyle = '#FEEEEE';
-  g.strokeStyle = '#0000F0';
-  g.beginPath();
-  for (let i = 0; i < coordinates.length - 1; i++) {
-    const x1 = (x + 5 + xShift) + (coordinates[i][0] - xMin) * xScale;
-    const y1 = (y + h - 5 - yShift) - (coordinates[i][1] - yMin) * yScale;
-    const x2 = (x + 5 + xShift) + (coordinates[i+1][0] - xMin) * xScale;
-    const y2 = (y + h - 5 - yShift) - (coordinates[i+1][1] - yMin) * yScale;
-    g.moveTo(x1, y1);
-    g.lineTo(x2, y2);
-  }
-  g.closePath();
-  g.stroke();
+  for (let p = 0; p < polygonsarray.length; p++) {
+    const parray: gisPolygon = polygonsarray[p];
+    for (let i = 0; i < parray.length; i++) {
+      g.fillStyle = '#FEEEEE';
+      g.strokeStyle = '#0000F0';
+      g.beginPath();
+      const coordarray: gisPolygonCoords = parray[i];
+      for (let k = 0; k < coordarray.length - 1; k++) {
+        const x1 = (x + 5 + xShift) + (coordarray[k][0] - xMin) * xScale;
+        const y1 = (y + h - 5 - yShift) - (coordarray[k][1] - yMin) * yScale;
+        const x2 = (x + 5 + xShift) + (coordarray[k+1][0] - xMin) * xScale;
+        const y2 = (y + h - 5 - yShift) - (coordarray[k+1][1] - yMin) * yScale;
+        g.moveTo(x1, y1);
+        g.lineTo(x2, y2);
+      } //<<for contour coordinates
+      g.closePath();
+      g.stroke();
+    } //<<for polygon contours
+  } //<<for polygons
 }
 
 export class GisAreaCanvasRenderer extends DG.CanvasRenderer {
@@ -87,23 +115,6 @@ export class GisAreaCanvasRenderer extends DG.CanvasRenderer {
     obj: GisArea, context: any): void {
     drawContourByCoords(g, x, y, w, h, obj.coordinates);
   }
-  //<<end of GisAreaCanvasRenderer class
-}
-
-//name: gisAreaWidget
-//tags: panel, widgets
-//input: object gisArea {semType: gis-area}
-//output: widget result
-//condition: true
-export function gisAreaWidget(gisArea: any): DG.Widget | null {
-//this is temporary code - should be filled with usefull functionality
-  if ((!gisArea) || !(gisArea instanceof GisArea)) return null;
-
-  const strToAdd: string = (gisArea as GisArea).semtype;
-  let widgetStyle: DG.ElementOptions = { };
-  widgetStyle = {style: {'color': '#F55'}};
-
-  return new DG.Widget(ui.divText('gis Area widget ' + strToAdd, widgetStyle));
 }
 
 //name: gisAreaGridCellRenderer
@@ -172,6 +183,7 @@ export class GisAreaHandler extends DG.ObjectHandler {
       grid = DG.Viewer.fromType('Grid', coordsDF);
 
     const acc = ui.accordion();
+    acc.addTitle(ui.label(`Object`));
     acc.addPane('Details', () => ui.tableFromMap(obj.attributes));
     acc.addPane('Coordinates', () => {
       if (!grid)
@@ -185,7 +197,7 @@ export class GisAreaHandler extends DG.ObjectHandler {
       return ui.div([canvas]);
     });
 
-    const panelProperties = ui.divV([ui.divText(`Properties for GisObject`), acc.root]);
+    const panelProperties = ui.divV([acc.root]);
     return panelProperties;
   }
 
@@ -288,9 +300,14 @@ export class GisPointHandler extends DG.ObjectHandler {
   renderIcon() { return ui.iconFA('bullseye'); }
   renderTooltip(obj: GisPoint) { return ui.divText(`[${obj.x} ; ${obj.y}]`); }
   renderProperties(obj: GisPoint) {
-    const panelProperties = ui.divV([]);
-    panelProperties.appendChild(ui.divText(`Properties for Point`));
-    panelProperties.appendChild(ui.divText(`[${obj.x} ; ${obj.y}]`));
+    const acc = ui.accordion();
+    acc.addTitle(ui.label(`Point`));
+    acc.addPane('Coordinates', () => ui.tableFromMap({
+      latitude: obj.x,
+      longitude: obj.y,
+    }));
+
+    const panelProperties = ui.divV([acc.root]);
     return panelProperties;
   }
 

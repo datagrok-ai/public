@@ -54,4 +54,10 @@ category('chem exported', () => {
       bitsetArray[trueIndices[k]] = '0';
     }
   });
+
+  test('mcs', async () => {
+    // const df = DG.DataFrame.fromCsv(testCsv);
+    // const mcs = await grok.chem.mcs(df, 'smiles');
+    // expect(mcs, 'C:CCC1:C:C:C:C:C:1');
+  });
 });

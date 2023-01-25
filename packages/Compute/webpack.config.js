@@ -18,7 +18,7 @@ module.exports = {
     ],
   },
   devtool: 'inline-source-map',
-  externals: {
+  externals: {                    // external modules won't be loaded to the output, but taken from the environment
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
     'datagrok-api/ui': 'ui',
@@ -28,6 +28,8 @@ module.exports = {
     'cash-dom': '$',
     'dayjs': 'dayjs',
     'wu': 'wu',
+    'exceljs': 'ExcelJS',
+    'html2canvas': 'html2canvas'
   },
   output: {
     filename: '[name].js',

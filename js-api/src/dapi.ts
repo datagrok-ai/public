@@ -22,13 +22,11 @@ import {
   FileInfo, HistoryEntry, ProjectOpenOptions, Func
 } from "./entities";
 import {ViewLayout} from "./views/view";
-import {toDart, toJs} from "./wrappers";
+import {toJs} from "./wrappers";
 import {_propsToDart} from "./utils";
 import {FuncCall} from "./functions";
 
 let api = <any>window;
-
-type LoggerPutCallback = (logRecord: {message: string, params: object, type: string}) => void;
 
 /**
  * Exposes Datagrok's server-side functionality.
@@ -177,7 +175,7 @@ export class Dapi {
    * @param {string} url
    * @param {Object} headers
    * @param {Object} body
-   * @returns {Promise<Object>} */
+   * @returns `{Promise<Object>}` */
   async proxyFetch(method: string, url: string, headers: Record<string, string>, body: object = {}): Promise<object> {
     headers['Accept'] = 'application/json';
     headers['original-url'] = `${url}`;
@@ -193,7 +191,7 @@ export class Dapi {
   /** Proxies URL request via Datagrok server with same interface as "fetch".
    * @param {String} url
    * @param {Object} params
-   * @returns {Promise<Object>} */
+   * @returns `{Promise<Object>}` */
   async fetchProxy(url: string, params?: RequestInit): Promise<Response> {
     if (params == null)
       params = {};
@@ -259,8 +257,15 @@ export class HttpDataSource<T> {
     return new Promise((resolve, reject) => api.grok_DataSource_List(this.dart, (q: any) => resolve(q.map(toJs)), (e: any) => reject(e)));
   }
 
+  /** Counts entities that satisfy the filtering criteria (see {@link filter}).
+   *  See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
+   *  Smart filter: {@link https://datagrok.ai/help/datagrok/smart-search} */
+  count(): Promise<number> {
+    return new Promise((resolve, reject) => api.grok_DataSource_Count(this.dart, (q: number) => resolve(q), (e: any) => reject(e)));
+  }
+
   /** Returns fist entity that satisfies the filtering criteria (see {@link filter}).
-   *  @returns Promise<object>  */
+   *  @returns `Promise<object>`  */
   first(): Promise<T> {
     return new Promise((resolve, reject) => api.grok_DataSource_First(this.dart, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
   }
@@ -269,7 +274,7 @@ export class HttpDataSource<T> {
    *  Throws an exception if an entity does not exist, or is not accessible in the current context.
    *  Sample: {@link https://public.datagrok.ai/js/samples/data-access/save-and-load-df}
    *  @param {string} id - GUID of the corresponding object
-   *  @returns {Promise<object>} - entity. */
+   *  @returns `{Promise<object>}` - entity. */
   find(id: string): Promise<T> {
     return new Promise((resolve, reject) => api.grok_DataSource_Find(this.dart, id, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
   }
@@ -614,7 +619,11 @@ export class PermissionsDataSource {
     return data;
   }
 
-  check(e: Entity, permission: 'Edit' | 'View' | 'Share' | 'Delete' ): Promise<boolean> {
+  /** Checks if current user has permission {permission} for entity {e}
+   * @param {Entity} e Entity to check permission for
+   * @param {'Edit' | 'View' | 'Share' | 'Delete'} permission Permission type
+   * @returns {boolean} Result */
+  check(e: Entity, permission: 'Edit' | 'View' | 'Share' | 'Delete'): Promise<boolean> {
     return api.grok_Dapi_Check_Permissions(e.dart, permission);
   }
 
@@ -751,7 +760,7 @@ export class TablesDataSource extends HttpDataSource<TableInfo> {
    * @param {DataFrame} dataFrame
    * @returns {Promise<string>} */
   uploadDataFrame(dataFrame: DataFrame): Promise<string> {
-    return api.grok_Dapi_TablesDataSource_UploadDataFrame(dataFrame.dart);
+    return api.grok_Dapi_TablesDataSource_UploadDataFrame(this.dart, dataFrame.dart);
   }
 
   /** Loads a dataframe by id.
@@ -759,7 +768,7 @@ export class TablesDataSource extends HttpDataSource<TableInfo> {
    * @param {string} id - dataframe id
    * @returns {Promise<DataFrame>} */
   getTable(id: string): Promise<DataFrame> {
-    return api.grok_Dapi_TablesDataSource_GetTable(id);
+    return api.grok_Dapi_TablesDataSource_GetTable(this.dart, id);
   }
 }
 
@@ -863,7 +872,6 @@ export class FileSource {
    * @returns {Promise<String>} */
   readAsText(file: FileInfo | string): Promise<string> {
     file = this.setRoot(file);
-
     return api.grok_Dapi_UserFiles_ReadAsText(file);
   }
 
@@ -877,7 +885,6 @@ export class FileSource {
    * @returns {Promise<Uint8Array>} */
   readAsBytes(file: FileInfo | string): Promise<Uint8Array> {
     file = this.setRoot(file);
-
     return api.grok_Dapi_UserFiles_ReadAsBytes(file);
   }
 
@@ -886,8 +893,7 @@ export class FileSource {
    * @returns {Promise<DataFrame[]>} */
   async readBinaryDataFrames(file: FileInfo | string): Promise<DataFrame[]> {
     file = this.setRoot(file);
-    const dfList = await api.grok_Dapi_UserFiles_ReadBinaryDataFrames(file);
-    return dfList.map((t: any) => new DataFrame(t));
+    return api.grok_Dapi_UserFiles_ReadBinaryDataFrames(file);
   }
 
   /** Writes a file.
@@ -908,28 +914,5 @@ export class FileSource {
     file = this.setRoot(file);
 
     return api.grok_Dapi_UserFiles_WriteAsText(file, data);
-  }
-}
-
-export class Logger {
-  putCallback?: LoggerPutCallback;
-
-  constructor(putCallback?: LoggerPutCallback) {
-    this.putCallback = putCallback;
-  }
-
-  /** Saves audit record to Datagrok back-end
-   * @param {string} message
-   * @param {object} params
-   * @param {string} type = 'log'
-   * */
-  log(message: string, params: object, type?: string): void {
-    if (type == null)
-      type = 'log';
-    let msg = {message: message, params: params, type: type};
-    if (this.putCallback != null)
-      this.putCallback(msg);
-
-    api.grok_Audit(msg.type, msg.message, toDart(msg.params));
   }
 }

@@ -4,9 +4,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FunctionView} from './function-view';
-import '../css/computation-view.css';
+import dayjs from 'dayjs';
 import {historyUtils} from './history-utils';
 
+const url = new URL(grok.shell.startUri);
 /**
  * Base class for handling Compute models (see https://github.com/datagrok-ai/public/blob/master/help/compute/compute.md).
  * In most cases, the computation is a simple {@link Func}
@@ -28,13 +29,11 @@ export class ComputationView extends FunctionView {
     * @stability Stable
   */
   constructor(funcName?: string) {
-    const url = new URL(grok.shell.startUri);
     const runId = url.searchParams.get('id');
-
     super();
 
     this.parentCall = grok.functions.getCurrentCall();
-    this.parentView = grok.functions.getCurrentCall().parentCall.aux['view'];
+    this.parentView = grok.functions.getCurrentCall()?.parentCall.aux['view'];
     this.basePath = `/${grok.functions.getCurrentCall()?.func.name}`;
 
     ui.setUpdateIndicator(this.root, true);
@@ -43,12 +42,13 @@ export class ComputationView extends FunctionView {
         await this.init();
         const urlRun = await historyUtils.loadRun(runId);
         this.linkFunccall(urlRun);
+        await this.getPackageUrls();
         this.build();
         await this.onBeforeLoadRun();
         this.linkFunccall(urlRun);
         await this.onAfterLoadRun(urlRun);
-        this.setRunViewReadonly();
         ui.setUpdateIndicator(this.root, false);
+        url.searchParams.delete('id');
       }, 0);
     } else {
       if (funcName) {
@@ -56,6 +56,7 @@ export class ComputationView extends FunctionView {
           const funccall = func.prepare({});
           this.linkFunccall(funccall);
           await this.init();
+          await this.getPackageUrls();
           this.build();
         }).finally(() => {
           ui.setUpdateIndicator(this.root, false);
@@ -63,6 +64,7 @@ export class ComputationView extends FunctionView {
       } else {
         setTimeout(async () => {
           await this.init();
+          await this.getPackageUrls();
           this.build();
           this.buildRibbonPanels();
           ui.setUpdateIndicator(this.root, false);
@@ -91,14 +93,31 @@ export class ComputationView extends FunctionView {
   */
   reportBug: (() => Promise<void>) | null = null;
 
+  /** Override to customize feature request feature
+    * @stability Stable
+  */
+  requestFeature: (() => Promise<void>) | null = null;
+
+  /** Override to customize "about" info obtaining feature.
+    * @stability Experimental
+  */
+  getAbout: (() => Promise<string>) | null = async () => {
+    const pack = (await grok.dapi.packages.list()).find((pack) => pack.id === this.func?.package.id);
+    return pack ? `${pack.friendlyName} v.${pack.version}.\nLast updated on ${dayjs(pack.updatedOn).format('YYYY MMM D, HH:mm')}`: `No package info was found`;
+  };
+
+  public buildIO(): HTMLElement { return ui.div(); }
+
   /**
    * Looks for {@link reportBug}, {@link getHelp} and {@link exportConfig} members and creates model menus
    * @stability Stable
   */
   override buildRibbonMenu() {
+    this.ribbonMenu.clear();
+
     super.buildRibbonMenu();
 
-    if (!this.exportConfig && !this.reportBug && !this.getHelp && !this.getMocks && !this.getTemplates) return;
+    if (!this.exportConfig && !this.reportBug && !this.requestFeature && !this.getHelp && !this.getMocks && !this.getTemplates) return;
 
     const ribbonMenu = this.ribbonMenu.group('Model');
 
@@ -136,7 +155,32 @@ export class ComputationView extends FunctionView {
     if (this.reportBug)
       ribbonMenu.item('Report a bug', () => this.reportBug!());
 
+    if (this.requestFeature)
+      ribbonMenu.item('Request a feature', () => this.requestFeature!());
+
     if (this.getHelp)
       ribbonMenu.item('Help', () => this.getHelp!());
+
+    if (this.getAbout) {
+      ribbonMenu.item('About', async () => {
+        const dialog = ui.dialog('Current version');
+        (await this.getAbout!()).split('\n').forEach((line) => dialog.add(ui.label(line)));
+        dialog.onOK(() => {});
+        dialog.getButton('CANCEL').style.display = 'none';
+        dialog.show({center: true});
+      });
+    }
+  }
+
+  private async getPackageUrls() {
+    const pack = (await grok.dapi.packages.list()).find((pack) => pack.id === this.parentCall?.func.package.id);
+
+    const reportBugUrl = (await pack?.getProperties() as any).REPORT_BUG_URL;
+    if (reportBugUrl && !this.reportBug)
+      this.reportBug = async () => { window.open(reportBugUrl, '_blank'); };
+
+    const reqFeatureUrl = (await pack?.getProperties() as any).REQUEST_FEATURE_URL;
+    if (reqFeatureUrl && !this.requestFeature)
+      this.requestFeature = async () => { window.open(reqFeatureUrl, '_blank'); };
   }
 }

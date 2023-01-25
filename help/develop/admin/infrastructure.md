@@ -1,7 +1,6 @@
-<!-- TITLE: Infrastructure -->
-<!-- SUBTITLE: -->
-
-# Infrastructure
+---
+title: "Infrastructure"
+---
 
 Datagrok server installation consists of two big blocks:
 
@@ -32,7 +31,9 @@ or on a regular machine.
 There are different requirements for every application. In general:
 
 * Datagrok components require 2 vCPU and 4 GB RAM.
+  * For the active usage of Datagrok we would recommend: 4 vCPU and 8 GB RAM
 * Compute components require 4 vCPU and 8 GB RAM.
+  * For the active usage of Datagrok we would recommend: 8 vCPU and 32 GB RAM
 
 ## Deployment
 
@@ -156,7 +157,7 @@ data analysis, interactive visualizations, and machine learning.
 
 #### Viewers
 
-Just like the in-memory database, our [viewers](../../visualize/viewers.md)
+Just like the in-memory database, our [viewers](../../visualize/viewers/viewers.md)
 were built from scratch to be able to work with millions of data points at once interactively. All of them make heavy
 use of the in-memory database. The ability to use that engine unlocks unique possibilities for viewers, such as easy
 data aggregations or passing data to web workers for multithreaded rendering. All viewers access the same data, so no

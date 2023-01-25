@@ -14,8 +14,8 @@ public class PostgresDataProvider extends JdbcDataProvider {
         driverClassName = "org.postgresql.Driver";
 
         descriptor = new DataSource();
-        descriptor.type = "PostgresNet";
-        descriptor.description = "Query PostgresNet database";
+        descriptor.type = "Postgres";
+        descriptor.description = "Query Postgres database";
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
@@ -52,7 +52,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
     }
 
     public String getSchemasSql(String db) {
-        return "SELECT DISTINCT table_schema FROM information_schema.columns ORDER BY table_schema";
+        return "SELECT DISTINCT table_schema FROM information_schema.columns";
     }
 
     public String getSchemaSql(String db, String schema, String table)

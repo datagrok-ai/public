@@ -1,7 +1,6 @@
-<!-- TITLE: &#8203;Getting started-->
-<!-- SUBTITLE: -->
-
-# Getting started
+---
+title: "Getting started"
+---
 
 Welcome to Datagrok, the next-generation data platform! This document provides a step-by-step instruction to help you
 start using Datagrok as an engineer.
@@ -102,8 +101,6 @@ extensions.
 
 [datagrok-tools overview (part 2)]: https://www.youtube.com/watch?v=0QxzllnBreI&t=4657s
 
-[//]: # ([Building a UI]: ./ui.md)
-
 [VS Code Integration]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=870s
 
 [Data access]: ../video-contents.md#data-access
@@ -124,7 +121,7 @@ extensions.
 
 [//]: # ([Natural Language Processing]: https://github.com/datagrok-ai/public/tree/master/packages/NLP)
 
-[Cell renderers]:https://github.com/datagrok-ai/public/blob/master/packages/Chem/src/rdkit-api.ts
+[Cell renderers]:https://github.com/datagrok-ai/public/blob/master/libraries/chem-meta/src/rdkit-api.ts
 
 [viewers]: https://github.com/datagrok-ai/public/tree/master/packages/Viewers
 

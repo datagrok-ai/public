@@ -1,6 +1,6 @@
-<!-- TITLE: Manage credentials -->
-
-# Working with credentials
+---
+title: "Manage credentials"
+---
 
 [Security credentials](../../govern/security.md#credentials) are used to gain access to external resources. For example,
 database connections typically require a pair of login and password, whereas web services normally expect a token or an
@@ -70,7 +70,7 @@ the full cycle of adding and reading credentials, have a look at the
 public [NLP](https://github.com/datagrok-ai/public/tree/master/packages/NLP) package. It illustrates how to set new
 credentials, e.g. access keys, in
 a [Python script](https://github.com/datagrok-ai/public/blob/master/packages/NLP/aws/nlp-user.py)
-and reach them later from the [main file](https://github.com/datagrok-ai/public/blob/master/packages/NLP/src/package.js)
+and reach them later from the [main file](https://github.com/datagrok-ai/public/blob/master/packages/NLP/src/package.ts)
 of the package.
 
 ## Database connection credentials

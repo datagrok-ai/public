@@ -1,7 +1,6 @@
-<!-- TITLE: Matrix plot -->
-<!-- SUBTITLE: -->
-
-# Matrix plot
+---
+title: "Matrix plot"
+---
 
 Use Matrix Plot to assess the relationship among many pairs of columns at the same time.
 
@@ -19,6 +18,6 @@ General:
 
 See also:
 
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [Table view](../../datagrok/table-view.md)
 * [JS API: Matrix plot](https://public.datagrok.ai/js/samples/ui/viewers/types/matrix-plot)

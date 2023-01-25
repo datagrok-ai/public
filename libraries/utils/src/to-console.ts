@@ -4,7 +4,9 @@ import * as DG from 'datagrok-api/dg';
 
 
 export function errorToConsole(err: any): string {
-  if ('$thrownJsError' in err) {
+  if (typeof err === 'string' || err instanceof String) {
+    return err as string;
+  } else if ((typeof err == 'object' || err instanceof Object) && '$thrownJsError' in err) {
     return errorToConsole(err['$thrownJsError']);
   } else if (err instanceof Error) {
     return (err as Error).stack ?? (err as Error).message;

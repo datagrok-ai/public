@@ -3,6 +3,8 @@ import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full';
 import {renderDescription} from '../utils/chem-common-ocl';
 import {oclMol} from '../utils/chem-common-ocl';
+import {getRdKitModule} from '../utils/chem-common-rdkit';
+import {_convertMolNotation} from '../utils/convert-notation-utils';
 
 const riskTypes: {[index: number]: string} = {
   0: 'Mutagenicity',
@@ -39,7 +41,18 @@ export function getRisks(molStr: string): {[index: string]: string} {
 }
 
 export function toxicityWidget(molStr: string): DG.Widget {
-  const risks = getRisks(molStr);
+  const rdKitModule = getRdKitModule();
+  try {
+    molStr = _convertMolNotation(molStr, 'unknown', 'smiles', rdKitModule);
+  } catch (e) {
+    return new DG.Widget(ui.divText('Molecule is possibly malformed'));
+  }
+  let risks: {[key: string]: string};
+  try {
+    risks = getRisks(molStr);
+  } catch (e) {
+    return new DG.Widget(ui.divText('Could not analyze toxicity'));
+  }
 
   const risksTable: {[index: string]: HTMLDivElement} = {};
   for (const [type, risk] of Object.entries(risks)) {

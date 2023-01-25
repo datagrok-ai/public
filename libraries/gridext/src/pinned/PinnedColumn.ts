@@ -840,7 +840,7 @@ export class PinnedColumn {
       return;
 
     this.m_nResizeRowGridMoving = -1;
-    const bAddToSel : boolean = e.ctrlKey || e.shiftKey;
+    const bAddToSel : boolean = e.ctrlKey || e.shiftKey || e.metaKey;
 
     let nRowGrid = bAddToSel ? -1 : PinnedColumn.hitTestRows(eCanvasThis, grid, e, true, undefined);
     if (nRowGrid >= 0) {
@@ -934,7 +934,7 @@ export class PinnedColumn {
 
     if(this.m_nRowGridDragging >= 0) {
       const dframe = grid.dataFrame;
-      const bCtrl = e.ctrlKey;
+      const bCtrl = e.ctrlKey || e.metaKey;
       const bRangeSel = e.shiftKey;
 
       let bSel = true;
@@ -958,21 +958,31 @@ export class PinnedColumn {
         }
         if(cellRH !== null) {
           const nRowTable : any = cellRH.tableRowIndex;
-          if(nRowTable !== null)
+          if(nRowTable !== null) {
+
+            if(this.m_colGrid.name === '') {
+              dframe.selection.set(nRowTable, true, true);
+              if(dframe.currentRow.idx >= 0)
+                dframe.selection.set(dframe.currentRow.idx, false, true);
+            }
+
             dframe.currentRow = nRowTable;
+          }
         }
       }
       else
       {
         const bitsetSel = dframe.selection;
 
-        let nRowMin = this.m_nRowGridDragging < nRowGrid ? this.m_nRowGridDragging : nRowGrid;
-        let nRowMax = this.m_nRowGridDragging > nRowGrid ? this.m_nRowGridDragging : nRowGrid;
+        let nRowGridMin = this.m_nRowGridDragging < nRowGrid ? this.m_nRowGridDragging : nRowGrid;
+        let nRowGridMax = this.m_nRowGridDragging > nRowGrid ? this.m_nRowGridDragging : nRowGrid;
 
         if(bCtrl) {
-          nRowMin = nRowGrid;
-          nRowMax = nRowGrid;
-          let bCurSel = bitsetSel.get(nRowGrid);
+          nRowGridMin = nRowGrid;
+          nRowGridMax = nRowGrid;
+          const cellGrid = grid.cell("", nRowGridMin);
+          const nRowTable = cellGrid.tableRowIndex;
+          const bCurSel = nRowTable === null ? false : bitsetSel.get(nRowTable);
           bSel = !bCurSel;
         }
         else if(bRangeSel) {
@@ -980,12 +990,15 @@ export class PinnedColumn {
           if(nRowGridActive === null)
             nRowGridActive = 0;
 
-          if(nRowMin == nRowMax) {
-            bitsetSel.setAll(false, true);
+          if(nRowGridMin === nRowGridMax) {
+            bitsetSel.setAll(false, false);
 
-            nRowMin = nRowGridActive < nRowGrid ? nRowGridActive : nRowGrid;
-            nRowMax = nRowGridActive > nRowGrid ? nRowGridActive : nRowGrid;
+            nRowGridMin = nRowGridActive < nRowGrid ? nRowGridActive : nRowGrid;
+            nRowGridMax = nRowGridActive > nRowGrid ? nRowGridActive : nRowGrid;
           }
+        }
+        else {
+          bitsetSel.setAll(false, false);
         }
 
 
@@ -994,7 +1007,7 @@ export class PinnedColumn {
 
         let cellRH = null;
         let nRowTable = -1;
-        for(let nRow=nRowMin; nRow<=nRowMax; ++nRow) {
+        for(let nRow=nRowGridMin; nRow<=nRowGridMax; ++nRow) {
 
           try {
             cellRH = grid.cell("", nRow);

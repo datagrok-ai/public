@@ -2,13 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {findMCS} from '../scripts-api';
-import {drawMoleculeToCanvas} from '../utils/chem-common-rdkit';
+import {drawMoleculeToCanvas, getRdKitModule} from '../utils/chem-common-rdkit';
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 
 const canvasWidth = 200;
 const canvasHeight = 100;
 
-export async function findMcsAndUpdateDrawings(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
+export function findMcsAndUpdateDrawings(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
   if (!params.cashedData[params.line.id])
     drawMoleculesWithMcsAsync(params, hosts);
 
@@ -31,7 +31,19 @@ function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
     imageHost.height = canvasHeight * r;
     imageHost.style.width = (canvasWidth).toString() + 'px';
     imageHost.style.height = (canvasHeight).toString() + 'px';
-    drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, params.seqCol.get(mol), params.cashedData[params.line.id]);
+    let molecule = params.seqCol.get(mol);
+    if (params.seqCol.tags[DG.TAGS.UNITS] === DG.chem.SMILES) {
+      //convert to molFile to draw in coordinates similar to dataframe cell
+      const rdmol = getRdKitModule().get_mol(molecule, '{"mergeQueryHs":true}');
+      if (!rdmol.has_coords())
+        rdmol.set_new_coords();
+      rdmol.normalize_depiction(1);
+      rdmol.straighten_depiction(false);
+      molecule = rdmol.get_molblock();
+      rdmol?.delete();
+    }
+    drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, molecule, params.cashedData[params.line.id],
+      { normalizeDepiction: false, straightenDepiction: false });
     ui.empty(hosts[index]);
     if (!params.cashedData[params.line.id])
       hosts[index].append(ui.divText('MCS loading...'));
@@ -40,85 +52,86 @@ function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
 }
 
 export function createTooltipElement(params: ITooltipAndPanelParams): HTMLDivElement {
-  const tooltipElement = ui.divH([]);
-  const columnNames = ui.divV([
-    ui.divText(params.seqCol.name),
-    ui.divText(params.activityCol.name),
-  ]);
-  columnNames.style.fontWeight = 'bold';
-  columnNames.style.display = 'flex';
-  columnNames.style.justifyContent = 'space-between';
-  tooltipElement.append(columnNames);
-  const hosts: HTMLDivElement[] = [];
-  params.line.mols.forEach((molIdx: number, idx: number) => {
-    const activity = ui.divText(params.activityCol.get(molIdx).toFixed(2));
-    activity.style.display = 'flex';
-    activity.style.justifyContent = 'left';
-    activity.style.paddingLeft = '30px';
-    const molHost = ui.div();
-    tooltipElement.append(ui.divV([
-      molHost,
-      activity,
-    ]));
-    hosts.push(molHost);
-  });
-  findMcsAndUpdateDrawings(params, hosts);
-  return tooltipElement;
+  return createElementTemplate(params, drawTooltipElement, true, true);
+}
+
+function drawTooltipElement(params: ITooltipAndPanelParams, element: HTMLDivElement,
+  hosts: HTMLDivElement[], molIdx: number, idx: number) {
+  const activity = ui.divText(params.activityCol.get(molIdx).toFixed(2));
+  activity.style.display = 'flex';
+  activity.style.justifyContent = 'left';
+  activity.style.paddingLeft = '30px';
+  const molHost = ui.div();
+  element.append(ui.divV([
+    molHost,
+    activity,
+  ]));
+  hosts.push(molHost);
 }
 
 function moleculeInfo(df: DG.DataFrame, idx: number, seqColName: string): HTMLElement {
-  let dict: {[key: string]: string} = {};
-  for (let col of df.columns) {
-    if(col.name !== seqColName) {
+  const dict: {[key: string]: string} = {};
+  for (const col of df.columns) {
+    if (col.name !== seqColName) 
       dict[col.name] = df.get(col.name, idx);
-    }
   }
   return ui.tableFromMap(dict);
 }
 
-
-export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivElement {
-  const propPanel = ui.divV([]);
-  const columnNames = ui.divH([
-    ui.divText(params.seqCol.name),
-    ui.divText(params.activityCol.name),
-  ]);
+function createElementTemplate(params: ITooltipAndPanelParams,
+  drawFunc: (params: ITooltipAndPanelParams, element: HTMLDivElement, hosts: HTMLDivElement[], molIdx: number, idx: number) => void,
+  vertical: boolean, flexColNames: boolean, colNameStyle?: any) {
+  const element = vertical ? ui.divH([]) : ui.divV([]);
+  const columnNames = vertical ? ui.divV([]) : ui.divH([]);
+  columnNames.append(colNameStyle ? ui.divText(params.seqCol.name, colNameStyle) : ui.divText(params.seqCol.name));
+  columnNames.append(ui.divText(params.activityCol.name));
   columnNames.style.fontWeight = 'bold';
   columnNames.style.justifyContent = 'space-between';
-  propPanel.append(columnNames);
+  if (flexColNames) columnNames.style.display = 'flex';
+  element.append(columnNames);
   const hosts: HTMLDivElement[] = [];
-  params.line.mols.forEach((molIdx: number, hostIdx: number) => {
-    const activity = ui.divText(params.activityCol.get(molIdx).toFixed(2));
-    activity.style.paddingLeft = '15px';
-    activity.style.paddingLeft = '10px';
-    const molHost = ui.div();
-    if (params.df.currentRowIdx === molIdx) {
-      molHost.style.border = 'solid 1px lightgrey';
-    }
-    ui.tooltip.bind(molHost, () => moleculeInfo(params.df, molIdx, params.seqCol.name));
-    molHost.onclick = () => {
-      const obj = grok.shell.o;
-      molHost.style.border = 'solid 1px lightgrey';
-      params.df.currentRowIdx = molIdx;
-      hosts.forEach((h, i) => {
-        if (i !== hostIdx) {
-          h.style.border = '';
-        }
-      })
-      setTimeout(() => {
-        grok.shell.o = obj
-      }, 1000);
-    };
-    propPanel.append(ui.divH([
-      molHost,
-      activity,
-    ]));
-    hosts.push(molHost);
+  params.line.mols.forEach((molIdx: number, idx: number) => {
+    drawFunc(params, element, hosts, molIdx, idx);
   });
   findMcsAndUpdateDrawings(params, hosts);
+  return element;
+}
+
+
+export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivElement {
+  const propPanel = createElementTemplate(params, drawPropPanelElement, false, false, {style: {minWigth: `${canvasWidth}px`}});
   propPanel.append(ui.divH([
     ui.divText(`Cliff: `, {style: {fontWeight: 'bold', paddingRight: '5px'}}),
-    ui.divText(params.sali!.toFixed(2))
+    ui.divText(params.sali!.toFixed(2)),
   ]));
   return propPanel;
+}
+
+function drawPropPanelElement(params: ITooltipAndPanelParams, element: HTMLDivElement,
+  hosts: HTMLDivElement[], molIdx: number, idx: number) {
+  const activity = ui.divText(params.activityCol.get(molIdx).toFixed(2));
+  activity.style.paddingLeft = '15px';
+  activity.style.paddingLeft = '10px';
+  const molHost = ui.div();
+  if (params.df.currentRowIdx === molIdx) 
+    molHost.style.border = 'solid 1px lightgrey';
+    
+  ui.tooltip.bind(molHost, () => moleculeInfo(params.df, molIdx, params.seqCol.name));
+  molHost.onclick = () => {
+    const obj = grok.shell.o;
+    molHost.style.border = 'solid 1px lightgrey';
+    params.df.currentRowIdx = molIdx;
+    hosts.forEach((h, i) => {
+      if (i !== idx) 
+        h.style.border = '';
+    });
+    setTimeout(() => {
+      grok.shell.o = obj;
+    }, 1000);
+  };
+  element.append(ui.divH([
+    molHost,
+    activity,
+  ]));
+  hosts.push(molHost);
 }

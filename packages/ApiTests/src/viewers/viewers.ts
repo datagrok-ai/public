@@ -1,16 +1,29 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, expect, test, delay} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, test, delay, testViewer} from '@datagrok-libraries/utils/src/test';
 import {TestViewerForProperties} from './test-viewer-for-properties';
-import {waitForElement} from '../gui/gui-utils';
+
+
+category('Viewers: Core Viewers', () => {
+  const df = grok.data.demo.demog(100);
+  const regViewers = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID);
+  const JsViewers = DG.Func.find({tags: ['viewer']}).map((f) => f.friendlyName);
+  const coreViewers = regViewers.filter((x) => !JsViewers.includes(x));
+  //@ts-ignore
+  coreViewers.push('Leaflet', 'distributionProfiler');
+  for (const v of coreViewers) {
+    test(v, async () => {
+      await testViewer(v, df.clone());
+    });
+  }
+});
 
 
 category('Viewers', () => {
   let df: DG.DataFrame;
   let tv: DG.TableView;
   let coreViewerTypes: string[];
-
   let viewerList: DG.JsViewer[];
 
   before(async () => {
@@ -20,9 +33,9 @@ category('Viewers', () => {
       v != DG.VIEWER.SCATTER_PLOT_3D &&
       v != DG.VIEWER.GOOGLE_MAP &&
       v != DG.VIEWER.SHAPE_MAP);
+    // v != DG.VIEWER.SURFACE_PLOT);
     df = grok.data.demo.demog();
     tv = grok.shell.addTableView(df);
-
     viewerList = [];
   });
 
@@ -32,7 +45,7 @@ category('Viewers', () => {
         console.log(`Adding ${viewerType}`);
         const viewer = await addViewerAndWait(tv, viewerType);//tv.addViewer(viewerType);
         if (!(viewer instanceof DG.Viewer))
-          throw `TableView.addViewer('${viewerType}') should add a Viewer instance`;
+          throw new Error(`TableView.addViewer('${viewerType}') should add a Viewer instance`);
         await delay(200);
 
         viewer.removeFromView();
@@ -74,7 +87,7 @@ category('Viewers', () => {
     for (const viewerType of coreViewerTypes) {
       const viewer = DG.Viewer.fromType(viewerType, df);
       if (!(viewer instanceof DG.Viewer))
-        throw `Viewer.fromType('${viewerType}', df) should add a Viewer instance`;
+        throw new Error(`Viewer.fromType('${viewerType}', df) should add a Viewer instance`);
       expect(viewer.table.id, df.id);
     }
   });
@@ -116,7 +129,7 @@ category('Viewers', () => {
     expect(viewer.onTableAttachedCounter, 2);
 
     // TODO: Check onTableAttached has been called
-  });
+  }, {skipReason: 'GROK-11484'});
 
   test('setPropertyStringWithNumber', async () => {
     // const v: TestViewerForProperties = tv.addViewer('TestViewerForProperties', {}) as TestViewerForProperties;
@@ -137,10 +150,11 @@ category('Viewers', () => {
     const propValueFromObject = viewer.testPropertyString;
 
     // Silent type cast or exception expected
-    if ((typeof propValueFromObject !== typeof 'str' || typeof propValueFromProps !== typeof 'str') && !exCaught)
+    if ((typeof propValueFromObject !== typeof 'str' || typeof propValueFromProps !== typeof 'str') && !exCaught) {
       throw new Error('JsViewer string property assigned with number value ' +
         `become value of type '${typeof propValueFromObject}' without an exception or type conversion.`);
-  });
+    }
+  }, {skipReason: 'GROK-11485'});
 
   test('setPropertyIntWithString', async () => {
     // const v: TestViewerForProperties = tv.addViewer('TestViewerForProperties', {}) as TestViewerForProperties;
@@ -161,45 +175,11 @@ category('Viewers', () => {
     const propValueFromObject = viewer.testPropertyInt;
 
     // Silent type cast or exception expected
-    if ((typeof propValueFromObject !== typeof 1 || typeof propValueFromProps !== typeof 1) && !exCaught)
+    if ((typeof propValueFromObject !== typeof 1 || typeof propValueFromProps !== typeof 1) && !exCaught) {
       throw new Error('JsViewer int property assigned with string value ' +
         `become value of type '${typeof propValueFromObject}' without an exception or type conversion.`);
-  });
-
-
-  test('testViewersLayout', async () => {
-    let viewers = DG.Viewer.getViewerTypes().filter(vt => !vt.toLowerCase().includes('widget'));
-    const skipViewers = ['3d scatter plot', 'Google map', 'Network diagram', 'Sankey'];
-    let layout, res, errorViewers = [], i = 0;
-    
-    for (let v of viewers) {
-      if (skipViewers.includes(v)) continue;
-      res = [];
-      try { 
-        tv.addViewer(v);
-        await delay(100);
-        res.push(Array.from(tv.viewers).length);
-        layout = tv.saveLayout();
-        tv.resetLayout();
-        res.push(Array.from(tv.viewers).length);
-        tv.loadLayout(layout);
-        await delay(1000);
-        res.push(Array.from(tv.viewers).length);
-        await testBoolProps();
-      } catch (e: any) {
-        errorViewers.push([v, e.message]);
-      } finally {
-        i++;
-        console.log(v, i);
-        if (!(res[0] === 2 && res[1] === 1 && res[2] === 2)) errorViewers.push([v, res]);
-        tv.resetLayout();
-      }
     }
-
-    grok.shell.info(`Tested ${i} viewers of ${viewers.length}, skipped ${skipViewers.length}, error in ${errorViewers.length}`);
-    if (errorViewers.length !== 0) throw `Error viewers: ${errorViewers}`;
-  }, {skipReason: 'too long execution'});
-
+  }, {skipReason: 'GROK-11485'});
 
   after(async () => {
     tv.close();
@@ -238,15 +218,4 @@ function addViewerAndWait(tv: DG.TableView, viewerType: string | DG.Viewer): Pro
       reject('timeout');
     }, 100);
   });
-}
-
-async function testBoolProps() {
-  const params = document.querySelectorAll('.grok-font-icon-settings')[2] as HTMLElement;
-  params.click();
-  await delay(1000);
-  const checkboxes = Array.from(document.querySelectorAll('.property-grid-item-editor-checkbox'));
-  for (let cb of checkboxes) {
-    (cb as HTMLElement).click();
-    await delay(50);
-  }
 }

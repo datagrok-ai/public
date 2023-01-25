@@ -1,10 +1,11 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import {newickToDf} from '../utils';
 import {Unsubscribable} from 'rxjs';
+import {_package} from '../package';
+import {IPhylocanvasGlViewer} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
 
 
 export class PhylocanvasGlViewerApp {
@@ -14,7 +15,7 @@ export class PhylocanvasGlViewerApp {
   // private ptv!: DG.Viewer; // PhyloTreeViewer
 
   treeHost!: HTMLDivElement | null;
-  treeViewer!: bio.IPhylocanvasGlViewer | DG.JsViewer | null; // PhylocanvasGL
+  treeViewer!: IPhylocanvasGlViewer | DG.JsViewer | null; // PhylocanvasGL
   treeDn!: DG.DockNode | null;
 
   _treeDf!: DG.DataFrame;
@@ -33,7 +34,7 @@ export class PhylocanvasGlViewerApp {
     if (df) {
       await this.setData(df);
     } else {
-      const newickStr: string = await grok.dapi.files.readAsText('System:AppData/PhylotreeViewer/data/tree95.nwk');
+      const newickStr: string = await _package.files.readAsText('data/tree95.nwk');
       const treeDf: DG.DataFrame = newickToDf(newickStr, 'tree95');
       await this.setData(treeDf);
     }
@@ -53,7 +54,7 @@ export class PhylocanvasGlViewerApp {
     }
   }
 
-  //#region -- View --
+  // -- View --
 
   viewSubs: Unsubscribable[] = [];
 
@@ -122,6 +123,4 @@ export class PhylocanvasGlViewerApp {
       //this.treeViewerDn = this.tv.dockManager.dock(this.treeViewer, DOCK_TYPE.LEFT);
     }
   }
-
-  //#endregion -- View --
 }

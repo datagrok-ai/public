@@ -1,9 +1,10 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {isMolBlock} from '../utils/convert-notation-utils';
+import {isMolBlock, _convertMolNotation} from '../utils/convert-notation-utils';
 import {oclMol} from '../utils/chem-common-ocl';
 import '../../css/chem.css';
+import {getRdKitModule} from '../utils/chem-common-rdkit';
 
 export function getPanelElements(molStr: string): [HTMLButtonElement, HTMLButtonElement, DG.InputBase] {
   const molfileStr = isMolBlock(molStr) ? molStr : oclMol(molStr).toMolfile();
@@ -31,6 +32,12 @@ export function getPanelElements(molStr: string): [HTMLButtonElement, HTMLButton
 }
 
 export function molfileWidget(molStr: string): DG.Widget {
+  const rdKitModule = getRdKitModule();
+  try {
+    molStr = _convertMolNotation(molStr, 'unknown', 'molblock', rdKitModule);
+  } catch (e) {
+    return new DG.Widget(ui.divText('Molecule is possible malformed'));
+  }
   const panelElements: any[] = getPanelElements(molStr);
   panelElements[2] = panelElements[2].root;
   return new DG.Widget(ui.divV(panelElements, 'chem-textarea-box'));

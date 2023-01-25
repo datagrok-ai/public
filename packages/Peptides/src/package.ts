@@ -2,12 +2,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as C from './utils/constants';
 
 import {analyzePeptidesUI} from './widgets/peptides';
 import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
-import {MutationCliffsViewer, MostPotentResiduesViewer} from './viewers/sar-viewer';
+import {MonomerPosition, MostPotentResiduesViewer} from './viewers/sar-viewer';
 
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {LogoSummary} from './viewers/logo-summary';
@@ -19,7 +18,7 @@ export const _package = new DG.Package();
 let currentTable: DG.DataFrame;
 let alignedSequenceColumn: DG.Column;
 
-export function getMonomerWorks() {
+export function getMonomerWorks(): MonomerWorks | null {
   return monomerWorks;
 };
 
@@ -41,7 +40,7 @@ export async function Peptides(): Promise<void> {
   const wikiLink = ui.link('wiki', 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md');
   const textLink = ui.inlineText(['For more details, see our ', wikiLink, '.']);
   if (monomerWorks == null) {
-    let lib = await grok.functions.call('Bio:getBioLib');
+    const lib = await grok.functions.call('Bio:getBioLib');
     monomerWorks = new MonomerWorks(lib);
   }
   const appDescription = ui.info(
@@ -82,10 +81,13 @@ export async function Peptides(): Promise<void> {
 
 //top-menu: Bio | Peptides...
 //name: Bio Peptides
-export async function peptidesDialog(): Promise<DG.Dialog> {
-  const analyzeObject = await analyzePeptidesUI(grok.shell.t);
-  const dialog = ui.dialog('Analyze Peptides').add(analyzeObject.host).onOK(analyzeObject.callback);
-  dialog.show();
+export function peptidesDialog(): DG.Dialog {
+  const analyzeObject = analyzePeptidesUI(grok.shell.t);
+  const dialog = ui.dialog('Analyze Peptides').add(analyzeObject.host).onOK(async () => {
+    const startSuccess = analyzeObject.callback();
+    if (!startSuccess)
+      dialog.show();
+  });
   return dialog.show();
 }
 
@@ -93,9 +95,9 @@ export async function peptidesDialog(): Promise<DG.Dialog> {
 //tags: panel, widgets
 //input: column col {semType: Macromolecule}
 //output: widget result
-export async function peptidesPanel(col: DG.Column): Promise<DG.Widget> {
+export function peptidesPanel(col: DG.Column): DG.Widget {
   [currentTable, alignedSequenceColumn] = getOrDefine(col.dataFrame, col);
-  const analyzeObject = await analyzePeptidesUI(currentTable, alignedSequenceColumn);
+  const analyzeObject = analyzePeptidesUI(currentTable, alignedSequenceColumn);
   return new DG.Widget(analyzeObject.host);
 }
 
@@ -103,8 +105,8 @@ export async function peptidesPanel(col: DG.Column): Promise<DG.Widget> {
 //description: Peptides SAR Viewer
 //tags: viewer
 //output: viewer result
-export function sar(): MutationCliffsViewer {
-  return new MutationCliffsViewer();
+export function sar(): MonomerPosition {
+  return new MonomerPosition();
 }
 
 //name: peptide-sar-viewer-vertical
@@ -150,10 +152,11 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
   return widget.draw();
 }
 
-//name: Get Peptides Structure
-//tags: panel, widgets
-//input: column col {semType: Macromolecule}
-//output: widget result
+/*
+name: Get Peptides Structure
+tags: panel, widgets
+input: column col {semType: Macromolecule}
+output: widget result
 export function getPeptidesStructure(col: DG.Column): DG.Widget {
   const getButtonTooltip = 'Retrieves peptides structure from customer database by special id column';
   const getButton = ui.button('Get structure', async () => {
@@ -171,11 +174,11 @@ export function getPeptidesStructure(col: DG.Column): DG.Widget {
   }, getButtonTooltip);
   return new DG.Widget(getButton);
 }
+*/
 
 function getOrDefine(dataframe?: DG.DataFrame, column?: DG.Column | null): [DG.DataFrame, DG.Column] {
   dataframe ??= grok.shell.t;
-  // column ??= dataframe.columns.bySemType(C.SEM_TYPES.MACROMOLECULE);
-  column ??= dataframe.getCol(C.COLUMNS_NAMES.MACROMOLECULE);
+  column ??= dataframe.columns.bySemType(DG.SEMTYPE.MACROMOLECULE)!;
   if (column === null)
     throw new Error('Table does not contain aligned sequence columns');
 

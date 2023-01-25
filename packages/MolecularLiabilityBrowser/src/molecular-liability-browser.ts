@@ -1,8 +1,8 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
-import * as u from '@datagrok-libraries/utils';
+
+import $ from 'cash-dom';
 import {PickingInfo} from '@deck.gl/core/typed';
 import {TooltipContent} from '@deck.gl/core/typed/lib/tooltip';
 
@@ -17,7 +17,7 @@ import {
   PdbType
 } from './utils/data-loader';
 import {Subscription, Unsubscribable} from 'rxjs';
-import {TreeBrowser} from './mlb-tree';
+import {cleanMlbNewick, TreeBrowser} from './mlb-tree';
 import {getVId, TreeAnalyzer} from './utils/tree-stats';
 import {MiscMethods} from './viewers/misc';
 import {TwinPviewer} from './viewers/twin-p-viewer';
@@ -26,8 +26,23 @@ import {MlbEvents} from './const';
 import {Tree3Browser} from './tree3';
 
 import {_package} from './package';
+import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import {MlbVrSpaceBrowser, VrSpaceMethodName} from './mlb-vr-space-browser';
+import {FilterDesc} from './types';
+import {TreeDataFrame, MlbDataFrame, AntigenDataFrame} from './types/dataframe';
+import {
+  getPhylocanvasGlService,
+  PhylocanvasGlServiceBase
+} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
+import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {getDendrogramService, IDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
+import {IVdRegionsViewer, VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
+import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
+import {parseNewick, Shapes} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
-type FilterDesc = { type: string, column?: string, label?: string, [p: string]: any };
 
 const TREE_GRID_ROW_HEIGHT: number = 100;
 const TREE_GRID_COL_TREE_WIDTH: number = 300;
@@ -35,19 +50,21 @@ const TREE_GRID_COL_TREE_WIDTH: number = 300;
 
 export class MolecularLiabilityBrowser {
   dataLoader: DataLoader;
-  //newickHelper: bio.INewickHelper | null;
-  phylocanvasGlSvc: bio.PhylocanvasGlServiceBase | null = null;
+  phylocanvasGlSvc: PhylocanvasGlServiceBase | null = null;
+  th: ITreeHelper;
+  dendrogramSvc: IDendrogramService;
 
   // uriParser: HTMLAnchorElement;
   baseUri: string = '/apps/MolecularLiabilityBrowser/MolecularLiabilityBrowser/';
   urlParams: URLSearchParams = new URLSearchParams();
 
-  antigenDf: DG.DataFrame;
+  antigenDf: AntigenDataFrame;
   pf: FilterPropertiesType;
   antigenName: string;
   schemeName: string;
   cdrName: string;
   treeName?: string;
+  vrSpaceMethodName?: VrSpaceMethodName;
 
   schemeChoices: string[] = [];
   cdrChoices: string[] = [];
@@ -71,13 +88,21 @@ export class MolecularLiabilityBrowser {
   mlbView: DG.TableView | null = null;
   mlbGrid: DG.Grid;
   mlbGridDn: DG.DockNode;
+  mlbGridTreeNeighbor: GridNeighbor | null;
   filterHost: HTMLElement;
   filterHostDn: DG.DockNode;
   filterView: DG.FilterGroup | null = null;
   filterViewDn: DG.DockNode | null = null;
-  regionsViewer: bio.IVdRegionsViewer;
+  regionsViewer: IVdRegionsViewer;
   treeBrowser: TreeBrowser;
   treeBrowserDn: DG.DockNode;
+
+  networkDiagram: DG.Viewer;
+  networkDiagramDn: DG.DockNode;
+
+  vrSpaceBrowser: MlbVrSpaceBrowser;
+  vrSpaceBrowserDn: DG.DockNode;
+
   tree3Browser: Tree3Browser;
   twinPviewer: TwinPviewer;
 
@@ -91,6 +116,7 @@ export class MolecularLiabilityBrowser {
   treePopupDiv: HTMLElement;
   treeGrid: DG.Grid;
   hideShowIcon: HTMLElement;
+  vrSpaceMethodInput: DG.InputBase;
 
   constructor(dataLoader: DataLoader) {
     this.dataLoader = dataLoader;
@@ -98,9 +124,8 @@ export class MolecularLiabilityBrowser {
 
   async init(urlParams: URLSearchParams) {
     try {
-      //this.newickHelper = (await grok.functions.call('PhyloTreeViewer:getNewickHelper')) as bio.INewickHelper;
-      this.phylocanvasGlSvc = await bio.getPhylocanvasGlService();
-
+      this.phylocanvasGlSvc = await getPhylocanvasGlService();
+      [this.th, this.dendrogramSvc] = await Promise.all([getTreeHelper(), getDendrogramService()]);
 
       //remove
       this.urlParams = urlParams;
@@ -121,7 +146,7 @@ export class MolecularLiabilityBrowser {
         const antigenUrlParam = this.urlParams.get('antigen');
         // By default, if antigen is not specified in the url
         // we display the beautiful one 'IAPW8' (with a spreading tree)
-        return antigenUrlParam || (_properties['DataSource']) == DataLoaderType.Test ? 'A1' : 'IAPW8';
+        return antigenUrlParam ?? ((_properties['DataSource']) == DataLoaderType.Test ? 'A1' : 'IAPW8');
       })();
 
       this.schemeName = ((): string => {
@@ -136,6 +161,12 @@ export class MolecularLiabilityBrowser {
       this.treeName = ((): string | undefined => {
         const treeUrlParam: string | undefined = this.urlParams.get('tree') ?? undefined;
         return treeUrlParam;
+      })();
+
+      this.vrSpaceMethodName = ((): VrSpaceMethodName => {
+        const vrSpaceMethodParam: VrSpaceMethodName | undefined =
+          this.urlParams.get('vrSpaceMethod') as VrSpaceMethodName ?? undefined;
+        return vrSpaceMethodParam ?? Object.values(VrSpaceMethodName)[0];
       })();
 
       this.vids = this.dataLoader.vids;
@@ -166,11 +197,10 @@ export class MolecularLiabilityBrowser {
       await this.setViewTwinPViewer();
       t2 = Date.now();
       console.debug(`MLB: TwinP set, ${((t2 - t1) / 1000).toString()} s`);
-    } catch (err: unknown) {
-      if (err instanceof Error)
-        console.error(err);
-      else
-        console.error((err as Object).toString());
+    } catch (err: any) {
+      const errStr = errorToConsole(err);
+      console.error('MLB: MolecularLiabilityBrowser.init() error:\n' + errStr);
+      throw err;
     } finally {
       grok.events.onViewRemoved.subscribe((v) => {
         if (v.type === DG.VIEW_TYPE.TABLE_VIEW && (v as DG.TableView).dataFrame.id === this.mlbDf.id)
@@ -189,15 +219,12 @@ export class MolecularLiabilityBrowser {
     return this.reloadIcon;
   }
 
-  setAntigenInput(agDf: DG.DataFrame): DG.InputBase {
+  setAntigenInput(agDf: AntigenDataFrame): DG.InputBase {
     this.antigenInput = ui.stringInput('AG', '', null,
       {clearIcon: true, escClears: true, placeholder: this.antigenName ?? 'antigen filter'});
     this.antigenClonesInput = ui.boolInput('clones', false);
     ui.tooltip.bind(this.antigenClonesInput.root, 'Filter antigens with clones');
 
-    const agCol: DG.Column = agDf.getCol('antigen');
-    const gsCol: DG.Column = agDf.getCol('antigen_gene_symbol');
-    const clonesCol: DG.Column = agDf.getCol('clones');
     const agDfGrid: DG.Grid = agDf.plot.grid({
       allowEdit: false,
       allowRowSelection: false,
@@ -211,6 +238,7 @@ export class MolecularLiabilityBrowser {
     const agGCol: DG.GridColumn = agDfGrid.col('antigen')!;
     const ncbiGCol: DG.GridColumn = agDfGrid.col('antigen_ncbi_id')!;
     const gsGCol: DG.GridColumn = agDfGrid.col('antigen_gene_symbol')!;
+    const vrsGCol: DG.GridColumn = agDfGrid.col('vrs')!;
     const clonesGCol: DG.GridColumn = agDfGrid.col('clones')!;
     agGCol.name = 'Antigen';
     agGCol.width = 90;
@@ -218,16 +246,18 @@ export class MolecularLiabilityBrowser {
     gsGCol.width = 120;
     idGCol.visible = false;
     ncbiGCol.visible = false;
-    clonesGCol.name = 'Cl';
-    clonesGCol.width = 20;
-    agDfGrid.root.style.setProperty('width', '240px');
+    vrsGCol.name = 'VRs';
+    vrsGCol.width = 45;
+    clonesGCol.name = 'Clones';
+    clonesGCol.width = 50;
+    agDfGrid.root.style.setProperty('width', '315px');
     this.antigenPopup = ui.div([agDfGrid.root]);
 
     // Do not push to this.viewSubs to prevent unsubscribe on this.destroyView()
     this.subs.push(agDf.onCurrentRowChanged.subscribe(() => {
       this.antigenPopup!.hidden = true;
 
-      const antigenName: string = agCol.get(agDf.currentRow.idx);
+      const antigenName: string = agDf.antigenCol.get(agDf.currentRow.idx);
       // window.setTimeout is used to adapt call async loadData() from handler (not async)
       this.onAntigenChanged(antigenName);
     }));
@@ -246,9 +276,9 @@ export class MolecularLiabilityBrowser {
       /* Here we filter dataframe with antigens */
       agDf.filter.init((iRow: number) => {
         return (
-          agCol.get(iRow).includes(antigenInputValue) ||
-          gsCol.get(iRow).includes(antigenInputValue)
-        ) && (!antigenClonesInputValue || clonesCol.get(iRow) > 0);
+          agDf.antigenCol.get(iRow).includes(antigenInputValue) ||
+          agDf.antigenGsCol.get(iRow).includes(antigenInputValue)
+        ) && (!antigenClonesInputValue || agDf.clonesCol.get(iRow) > 0);
       });
     };
     this.subs.push(this.antigenInput.onInput(antigenFilterCallback));
@@ -301,6 +331,14 @@ export class MolecularLiabilityBrowser {
     return this.treeInput;
   }
 
+  setVrSpaceMethodInput(): DG.InputBase {
+    this.vrSpaceMethodInput = ui.choiceInput('VR space method',
+      this.vrSpaceMethodName ?? VrSpaceMethodName, Object.values(VrSpaceMethodName),
+      () => { this.onVrSpaceMethodChanged(this.vrSpaceMethodInput.value); });
+
+    return this.vrSpaceMethodInput;
+  }
+
   setHideShowIcon(): void {
     this.hideShowIcon = ui.tooltip.bind(ui.iconFA('eye', () => {
       if (this.hideShowIcon.classList.value.includes('fa-eye-slash'))
@@ -330,6 +368,7 @@ export class MolecularLiabilityBrowser {
     this.setCdrInput();
     this.setTreeInput();
     this.setHideShowIcon();
+    this.setVrSpaceMethodInput();
 
     this.mlbView!.setRibbonPanels([
       [this.reloadIcon],
@@ -341,6 +380,8 @@ export class MolecularLiabilityBrowser {
       [this.treeInput.root],
       [],
       [this.hideShowIcon],
+      [],
+      [this.vrSpaceMethodInput.root],
     ]);
   }
 
@@ -354,9 +395,9 @@ export class MolecularLiabilityBrowser {
   }
 
   static prepareDataMlbDf(
-    df: DG.DataFrame, hChainDf: DG.DataFrame, lChainDf: DG.DataFrame,
+    df: MlbDataFrame, hChainDf: DG.DataFrame, lChainDf: DG.DataFrame,
     antigen: string, numberingScheme: string, pf: FilterPropertiesType
-  ): DG.DataFrame {
+  ): MlbDataFrame {
     console.debug('MLB: MolecularLiabilityBrowser.prepareDataMlbDf() start, ' +
       `${((Date.now() - _startInit) / 1000).toString()} s`);
 
@@ -424,7 +465,7 @@ export class MolecularLiabilityBrowser {
     return df;
   }
 
-  static prepareDataTreeDf(df: DG.DataFrame, treeColumnName: string = 'TREE') {
+  static prepareDataTreeDf(df: TreeDataFrame, treeColumnName: string = 'TREE'): TreeDataFrame {
     function _modifyTreeNodeIds(nwk: string): string {
       // shortening tree leaf id on fly is incorrect, or it should/can be performed on data level
       // if (TreeAnalyzer.newickRegEx.test(nwk.trim()))
@@ -438,6 +479,43 @@ export class MolecularLiabilityBrowser {
     (df.columns as DG.ColumnList).replace(treeColumnName, DG.Column.fromStrings(treeColumnName, trees));
 
     return df;
+  }
+
+  static prepareDataTreeNodesDf(srcTreeDf: DG.DataFrame, th: ITreeHelper, treeColumnName: string = 'TREE') {
+    const treeCount: number = srcTreeDf.rowCount;
+    const srcTreeCol: DG.Column = srcTreeDf.getCol('TREE');
+    const srcCloneCol: DG.Column = srcTreeDf.getCol('CLONE');
+    const treeNodesDfList: DG.DataFrame[] = wu.count(0).take(treeCount).map((rowI) => {
+      const srcTreeNwk: string = cleanMlbNewick(srcTreeCol.get(rowI));
+      const srcClone: string = srcCloneCol.get(rowI);
+
+      // There is the root node with an empty parent field,
+      // which causes all trees to stick together in an undistinctive heap.
+      // emptyParentRootSkip = false prevents generating this row
+      const clonePrefix: string = `clone-${srcClone}`;
+      const cloneDf: DG.DataFrame = th.newickToDf(
+        srcTreeNwk, `CLONE: ${srcClone}`, `${clonePrefix}-`);
+      cloneDf.set('parent', 0, clonePrefix);
+      cloneDf.columns.add(DG.Column.fromStrings('CLONE', Array<string>(cloneDf.rowCount).fill(srcClone)), false);
+
+      return cloneDf;
+    }).toArray();
+    // const totalRowCount = treeNodesDfList.map((df) => df.rowCount).reduce((a, b) => a + b, 0);
+
+    const nodeCol: DG.Column = DG.Column.string('node');
+    const parentCol: DG.Column = DG.Column.string('parent');
+    const leafCol: DG.Column = DG.Column.bool('leaf');
+    const distanceCol: DG.Column = DG.Column.float('distance');
+    const annotationCol: DG.Column = DG.Column.string('annotation');
+    const vidCol: DG.Column = DG.Column.string('vid');
+
+    const resDf: DG.DataFrame = DG.DataFrame.fromColumns(
+      [nodeCol, parentCol, leafCol, distanceCol, annotationCol, vidCol]);
+
+    for (const cloneTreeNodesDf of treeNodesDfList)
+      resDf.append(cloneTreeNodesDf, true);
+
+    return resDf;
   }
 
   /** Builds multiple alignment sequences from monomers in positions
@@ -461,10 +539,10 @@ export class MolecularLiabilityBrowser {
       (i: number) => positionColumns.map((v) => df.get(v, i)).join('')
     );
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    seqCol.setTag(DG.TAGS.UNITS, bio.NOTATION.FASTA);
-    seqCol.setTag(bio.TAGS.alphabet, bio.ALPHABET.PT);
-    seqCol.setTag(bio.TAGS.aligned, bio.ALIGNMENT.SEQ_MSA);
-    seqCol.setTag(bio.TAGS.separator, '');
+    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    seqCol.setTag(bioTAGS.alphabet, ALPHABET.PT);
+    seqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
+    seqCol.setTag(bioTAGS.separator, '');
     seqCol.setTag('gap.symbol', '-');
 
     const positionNamesTxt = positionNames.join(', '); /* Spaces are for word wrap */
@@ -475,26 +553,29 @@ export class MolecularLiabilityBrowser {
 
   // -- View --
 
-  private _mlbDf: DG.DataFrame = DG.DataFrame.fromObjects([])!;
-  private _regions: bio.VdRegion[] = [];
-  private _treeDf: DG.DataFrame = DG.DataFrame.fromObjects([])!;
+  private _mlbDf: MlbDataFrame = MlbDataFrame.Empty;
+  private _regions: VdRegion[] = [];
+  private _treeDf: TreeDataFrame = TreeDataFrame.Empty;
+  private _treeNodesDf: DG.DataFrame = DG.DataFrame.fromObjects([])!;
   private _predictedPtmDf: DG.DataFrame;
   private _observedPtmDf: DG.DataFrame;
 
   private viewSubs: Unsubscribable[] = [];
 
-  get mlbDf(): DG.DataFrame { return this._mlbDf; }
+  get mlbDf(): MlbDataFrame { return this._mlbDf; }
 
-  get regions(): bio.VdRegion[] { return this._regions; }
+  get regions(): VdRegion[] { return this._regions; }
 
-  get treeDf(): DG.DataFrame { return this._treeDf; }
+  get treeDf(): TreeDataFrame { return this._treeDf; }
+
+  get treeNodesDf(): DG.DataFrame { return this._treeNodesDf; }
 
   get predictedPtmDf(): DG.DataFrame { return this._predictedPtmDf; }
 
   get observedPtmDf(): DG.DataFrame { return this._observedPtmDf; }
 
   async setData(
-    mlbDf: DG.DataFrame, treeDf: DG.DataFrame, regions: bio.VdRegion[],
+    mlbDf: MlbDataFrame, treeDf: TreeDataFrame, treeNodesDf: DG.DataFrame, regions: VdRegion[],
     predictedPtmDf: DG.DataFrame, observedPtmDf: DG.DataFrame
   ): Promise<void> {
     console.debug(`MLB: MolecularLiabilityBrowser.setData() start, ${((Date.now() - _startInit) / 1000).toString()} s`);
@@ -502,6 +583,7 @@ export class MolecularLiabilityBrowser {
     this._mlbDf = mlbDf;
 
     this._treeDf = treeDf;
+    this._treeNodesDf = treeNodesDf;
     this._regions = regions;
     this._predictedPtmDf = predictedPtmDf;
     this._observedPtmDf = observedPtmDf;
@@ -513,53 +595,64 @@ export class MolecularLiabilityBrowser {
 
   /** Sets controls' layout. Called once from init(). */
   async setView(): Promise<void> {
-    grok.shell.windows.showProperties = false;
-    grok.shell.windows.showHelp = false;
+    try {
+      grok.shell.windows.showProperties = false;
+      grok.shell.windows.showHelp = false;
 
-    this.mlbView!.name = 'Molecular Liability Browser';
-    for (const column of this.mlbDf.columns) {
-      const gridColumn: DG.GridColumn = this.mlbView!.grid.columns.byName(column.name)!;
-      gridColumn.name = column.name.replaceAll('_', ' ');
-    }
+      this.mlbView!.name = 'Molecular Liability Browser';
+      for (const column of this.mlbDf.columns) {
+        const gridColumn: DG.GridColumn = this.mlbGrid.columns.byName(column.name)!;
+        if (!gridColumn) throw new Error(`Grid missed column ${column.name} existing in mlbDf.`);
+        gridColumn.name = column.name.replaceAll('_', ' ');
+      }
 
-    this.mlbView!.grid.columns.byName('v id')!.width = 120;
-    this.mlbView!.grid.columns.byName('v id')!.cellType = 'html';
+      this.mlbGrid.columns.byName('v id')!.width = 120;
+      this.mlbGrid.columns.byName('v id')!.cellType = 'html';
 
-    //table visual polishing
-    this.subs.push(
-      this.mlbView!.grid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => {
-        if (args.cell.isColHeader) {
-          if (args.cell.gridColumn.visible) {
-            const textSize = args.g.measureText(args.cell.gridColumn.name);
-            args.g.fillText(args.cell.gridColumn.name, args.bounds.x +
-              (args.bounds.width - textSize.width) / 2, args.bounds.y +
-              (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent));
-            args.g.fillStyle = '#4b4b4a';
+      //table visual polishing
+      this.subs.push(
+        this.mlbGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => {
+          if (args.cell.isColHeader) {
+            if (args.cell.gridColumn.visible) {
+              const textSize = args.g.measureText(args.cell.gridColumn.name);
+              args.g.fillText(args.cell.gridColumn.name, args.bounds.x +
+                (args.bounds.width - textSize.width) / 2, args.bounds.y +
+                (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent));
+              args.g.fillStyle = '#4b4b4a';
+            }
+            args.preventDefault(); // this is required to prevent drawing headers of hidden columns
           }
-          args.preventDefault(); // this is required to prevent drawing headers of hidden columns
-        }
-      }));
+        }));
 
-    this.mlbView!.grid.onCellPrepare((gc) => {
-      if (gc.isTableCell && gc.gridColumn.name === 'v id') {
-        if (this.vids.includes(gc.cell.value.toString())) {
-          gc.style.element = ui.divV(
-            [ui.link(gc.cell.value.toString(), () => {
+      this.mlbGrid.onCellPrepare((gc) => {
+        if (gc.isTableCell && gc.gridColumn.name === 'v id') {
+          const fontSize = this.mlbGrid.props.defaultCellFont.split(',')[0].split(' ')[0];
+          const elStyle: {} = {
+            position: 'absolute', top: 'calc(50% - 8px)', left: '5px', fontSize: fontSize
+          };
+          if (this.vids.includes(gc.cell.value.toString())) {
+            const vIdLink: HTMLAnchorElement = ui.link(gc.cell.value.toString(), () => {
               this.vid = gc.cell.value;
               this.changeVid();
-            })],
-            {style: {position: 'absolute', top: 'calc(50% - 8px)', left: '5px'}});
-        } else {
-          gc.style.element = ui.divV([ui.label(gc.cell.value.toString())],
-            {style: {position: 'absolute', top: 'calc(50% - 8px)', left: '5px'}});
+            });
+            gc.style.element = ui.divV([vIdLink],
+              {style: elStyle});
+          } else {
+            gc.style.element = ui.divV([ui.label(gc.cell.value.toString())],
+              {style: {...elStyle, ...{pointerEvents: 'none'}}});
+          }
         }
-      }
-    });
+      });
 
-    // set width for columns of properties filter
-    for (const pfName of this.pf.names) {
-      const gc: DG.GridColumn | null = this.mlbGrid.col(pfName);
-      if (gc) gc.width = 150;
+      // set width for columns of properties filter
+      for (const pfName of this.pf.names) {
+        const gc: DG.GridColumn | null = this.mlbGrid.col(pfName);
+        if (gc) gc.width = 150;
+      }
+    } catch (err: any) {
+      const errMsg: string = errorToConsole(err);
+      console.error('MLB: MolecularLiabilityBrowser.setView() error: \n' + errMsg);
+      throw err;
     }
   }
 
@@ -612,7 +705,8 @@ export class MolecularLiabilityBrowser {
       filterList.push({type: 'histogram', column: pfName});
 
     filterList.push({
-      type: 'MolecularLiabilityBrowser:ptmFilter',
+      column: 'v id',
+      type: `${_package.name}:ptmFilter`,
       currentCdr: cdrName,
       predictedPtm: predictedPtmCsv,
       observedPtm: observedPtmCsv
@@ -673,6 +767,20 @@ export class MolecularLiabilityBrowser {
 
     // this.mlbView.dockManager.rootNode.removeChild(this.filterViewDn);
 
+    if (this.vrSpaceBrowser) {
+      await this.vrSpaceBrowser.setData(MlbDataFrame.Empty, TreeDataFrame.Empty, [],
+        Object.values(VrSpaceMethodName)[0]);
+    }
+
+    if (this.networkDiagram) {
+      //this.networkDiagram.dataFrame = null;
+    }
+
+    if (this.mlbGridTreeNeighbor) {
+      this.mlbGridTreeNeighbor.close();
+      this.mlbGridTreeNeighbor = null;
+    }
+
     if (this.filterView !== null && this.filterViewDn != null) {
       try {
         this.filterView.close();
@@ -712,6 +820,7 @@ export class MolecularLiabilityBrowser {
         this.mlbDf.name = 'Molecular Liability Browser'; // crutch for window/tab name support
         this.mlbView = grok.shell.addTableView(this.mlbDf);
         this.mlbGrid = this.mlbView.grid;
+        this.mlbGrid.setOptions({showAddNewRowIcon: false, addNewRowOnLastRowEdit: false});
 
         this.mlbGridDn = this.mlbView.dockManager.findNode(this.mlbGrid.root);
         this.filterHost = ui.box();
@@ -733,8 +842,10 @@ export class MolecularLiabilityBrowser {
         //this.mlbView?.dockManager.dock(this.treeGrid, DG.DOCK_TYPE.DOWN, this.treeBrowserDn, 'treeGrid', 0.35);
 
         this.treeBrowser = (await this.treeDf.plot.fromType('MlbTree', {})) as unknown as TreeBrowser;
-        this.treeBrowserDn = this.mlbView.dockManager.dock(this.treeBrowser.root, DG.DOCK_TYPE.FILL, this.mlbGridDn, 'Clone');
+        this.treeBrowserDn = this.mlbView.dockManager.dock(
+          this.treeBrowser.root, DG.DOCK_TYPE.FILL, this.mlbGridDn, 'Clone');
         //TODO: check the await
+        this.viewSubs.push(this.treeDf.onCurrentRowChanged.subscribe(this.treeDfOnCurrentRowChanged.bind(this)));
         await this.treeBrowser.setData(this.treeDf, this.mlbDf);// fires treeDfOnCurrentRowChanged
         //this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.RIGHT, null, 'Clone', 0.5);
 
@@ -743,10 +854,24 @@ export class MolecularLiabilityBrowser {
         this.regionsViewer = (await tempDf.plot.fromType(
           'VdRegions', {
             skipEmptyPositions: true
-          })) as unknown as bio.IVdRegionsViewer;
+          })) as unknown as IVdRegionsViewer;
         const t2: number = Date.now();
         console.debug('MLB: MolecularLiabilityBrowser.buildView(), create regionsViewer ' +
           `ET: ${((t2 - t1) / 1000).toString()} s`);
+
+        this.networkDiagram = await this.treeNodesDf.plot.fromType(DG.VIEWER.NETWORK_DIAGRAM, {
+          node1: 'node',
+          node2: 'parent',
+          mergeNodes: false,
+          showColumnSelector: false,
+        }) as DG.Viewer;
+        this.networkDiagramDn = this.mlbView.dockManager.dock(
+          this.networkDiagram.root, DG.DOCK_TYPE.FILL, this.mlbGridDn, 'Trees');
+
+        this.vrSpaceBrowser = new MlbVrSpaceBrowser();
+        await this.vrSpaceBrowser.init();
+        this.vrSpaceBrowserDn = this.mlbView.dockManager.dock(
+          this.vrSpaceBrowser.root, DG.DOCK_TYPE.RIGHT, this.mlbGridDn, 'VR Space');
 
         this.setRibbonPanels();
       } else {
@@ -757,9 +882,27 @@ export class MolecularLiabilityBrowser {
 
         this.treeGrid.dataFrame = this.treeDf;
 
+        this.networkDiagram.dataFrame = this.treeNodesDf;
+        this.networkDiagram.setOptions({
+          node1: 'node',
+          node2: 'parent',
+          mergeNodes: false,
+          showColumnSelector: false,
+        });
+
+        this.viewSubs.push(this.treeDf.onCurrentRowChanged.subscribe(this.treeDfOnCurrentRowChanged.bind(this)));
         //TODO: check the await
         await this.treeBrowser.setData(this.treeDf, this.mlbDf);
       }
+
+      this.mlbGridTreeNeighbor = await this.buildViewMlbGridTree();
+
+      $(this.mlbGrid.root).find('div.d4-grid-vert-scroll').get()[0].style.zIndex = `${12}`;
+      $(this.mlbGrid.root).find('div.d4-grid-horz-scroll').get()[0].style.zIndex = `${12}`;
+      this.mlbGridTreeNeighbor.root!.style.zIndex = `${10}`;
+
+      if (this.treeDf.rowCount == 0 && this.treeInput.value)
+        this.onTreeChanged('');
 
       // adjust treeGrid columns
       const treeGridFirstColumns: string[] = ['CLONE', 'NSEQ', 'TREE'];
@@ -772,9 +915,9 @@ export class MolecularLiabilityBrowser {
       //treeGCol.cellType = 'html';
       treeGCol.width = TREE_GRID_COL_TREE_WIDTH;
 
-      const treeGridFirstColumnWidth: number = wu.count(1).take(4)
+      const treeGridFirstColumnsWidth: number = wu.count(0).take(4)
         .map((colI) => this.treeGrid.columns.byIndex(colI)!.width).reduce((a, b) => a + b);
-      const popupWidth = treeGridFirstColumnWidth + 11;
+      const popupWidth = treeGridFirstColumnsWidth + 11;
       const popupHeight = Math.min(
         Math.floor(this.mlbView!.root.clientHeight * 0.85),
         this.treeDf.rowCount * this.treeGrid.props.rowHeight + this.treeGrid.colHeaderHeight + 11);
@@ -793,8 +936,6 @@ export class MolecularLiabilityBrowser {
       // const newFilterViewDn: DG.DockNode = this.mlbView.dockManager.dock(newFilterView, DG.DOCK_TYPE.LEFT,
       //   this.mlbGridDn, 'Filters', 0.18);
       this.filterView.dataFrame = this.mlbDf;
-
-      this.viewSubs.push(this.treeDf.onCurrentRowChanged.subscribe(this.treeDfOnCurrentRowChanged.bind(this)));
 
       // if (this.tree3Browser === null) {
       //   //let path = _package.webRoot +
@@ -815,8 +956,11 @@ export class MolecularLiabilityBrowser {
       await this.updateView();
 
       this.viewSubs.push(this.mlbDf.onCurrentRowChanged.subscribe(this.onMLBGridCurrentRowChanged.bind(this)));
-    } catch (err: unknown) {
-      console.error(err instanceof Error ? err.message : (err as Object).toString());
+      this.viewSubs.push(this.treeNodesDf.onSelectionChanged.subscribe(this.onTreeNodesDfSelectionChanged.bind(this)));
+    } catch (err: any) {
+      const errStr = errorToConsole(err);
+      console.error('MLB: MolecularLiabilityBrowser.buildView() error:\n' + errStr);
+      throw err;
     } finally {
       console.debug('MLB: MolecularLiabilityBrowser.buildView() end, ' +
         `${((Date.now() - _startInit) / 1000).toString()} s`);
@@ -838,19 +982,44 @@ export class MolecularLiabilityBrowser {
       ...['antigen list', 'antigen ncbi id', 'antigen gene symbol'],
       ...['Heavy chain sequence', 'Light chain sequence'],
     ];
-    for (let colI = 0; colI < this.mlbView!.grid.columns.length; colI++) {
-      const gridColumn: DG.GridColumn = this.mlbView!.grid.columns.byIndex(colI)!;
+    for (let colI = 0; colI < this.mlbGrid.columns.length; colI++) {
+      const gridColumn: DG.GridColumn = this.mlbGrid.columns.byIndex(colI)!;
       if (gridColumn.column !== null && mlbColumnsToHide.includes(gridColumn.column.name))
         gridColumn.visible = false;
     }
 
     //adjust column in treeGrid
 
-
     this.updateViewTreeBrowser();
+
+    await this.vrSpaceBrowser.setData(this.mlbDf, this.treeDf, this.regions,
+      this.vrSpaceMethodName ?? Object.values(VrSpaceMethodName)[0]);
 
     console.debug('MLB: MolecularLiabilityBrowser.updateView() end,' +
       `${((Date.now() - _startInit) / 1000).toString()} s`);
+  }
+
+  async buildViewMlbGridTree(): Promise<GridNeighbor> {
+    const chainList: string[] = ['Heavy', 'Light'];
+
+    const rowCount: number = this.mlbDf.rowCount;
+    let treeRoot: NodeType | null = null;
+    if (rowCount > 0) {
+      const seqCols: { [chain: string]: DG.Column } = Object.assign({}, ...['Heavy', 'Light']
+        .map((chain) => ({[chain]: this.mlbDf.getCol(`${chain} chain sequence`)})));
+      const seqList: string [] = MlbVrSpaceBrowser.getSeqList(this.mlbDf, seqCols, this.regions);
+
+      const distance: DistanceMatrix = DistanceMatrix.calc(seqList, (aSeq: string, bSeq: string) => {
+        if (aSeq.length != bSeq.length) throw new Error('Arguments aSeq and bSeq must be of the same length.');
+        let distanceAcc: number = 0;
+        for (let pos = 0; pos < aSeq.length; pos++)
+          distanceAcc += aSeq[pos] != bSeq[pos] ? 1 : 0;
+        return distanceAcc / aSeq.length;
+      });
+      treeRoot = await this.th.hierarchicalClusteringByDistance(distance, 'ward');
+    }
+    return this.dendrogramSvc.injectTreeForGrid(
+      this.mlbGrid, treeRoot, undefined, 300, undefined);
   }
 
   updateViewTreeBrowser() {
@@ -867,6 +1036,29 @@ export class MolecularLiabilityBrowser {
     this.vid = this.mlbDf.currentRow['v id'];
     // window.setTimeout is used to adapt call async changeVid() from handler (not async)
     window.setTimeout(async () => { await this.changeVid(true); }, 0 /* next event cycle */);
+  }
+
+  onTreeNodesDfSelectionChanged(args: any) {
+    const nodeCol: DG.Column = this.treeNodesDf.getCol('node');
+
+    const selectedCount: number = this.treeNodesDf.selection.trueCount;
+    const selectedNodeList: string[] = new Array<string>(selectedCount);
+    const selectedVIdList: string[] = new Array<string>(selectedCount);
+    const selectedIndexes: Int32Array = this.treeNodesDf.selection.getSelectedIndexes();
+    for (let selI = 0; selI < selectedNodeList.length; selI++) {
+      const rowI: number = selectedIndexes[selI];
+      selectedNodeList[selI] = nodeCol.get(rowI);
+      selectedVIdList[selI] = getVId(selectedNodeList[selI]);
+    }
+    const selectedVIdSet: Set<string> = new Set(selectedVIdList);
+
+    const vidCol: DG.Column = this.mlbDf.getCol('v id');
+    this.mlbDf.selection.init((mlbI) => { return selectedVIdSet.has(vidCol.get(mlbI)); });
+
+    if (selectedVIdSet.size == 1) {
+      this.vid = [...selectedVIdSet][0];
+      window.setTimeout(async () => { await this.changeVid(true); }, 0 /* next event cycle */);
+    }
   }
 
   onAntigenChanged(antigenName: string): void {
@@ -917,16 +1109,36 @@ export class MolecularLiabilityBrowser {
 
   onTreeChanged(treeName: string): void {
     this.treeName = treeName;
-    if (this.treeInput!.value != this.treeName)
-      this.treeInput!.value = this.treeName;
+    if (this.treeInput && this.treeInput.value != this.treeName)
+      this.treeInput.value = this.treeName;
 
-    this.urlParams!.set('tree', this.treeName);
+    if (this.treeName)
+      this.urlParams!.set('tree', this.treeName);
+    else
+      this.urlParams.delete('tree');
 
     const path = MolecularLiabilityBrowser.getViewPath(this.urlParams, this.baseUri);
     console.debug('MLB: MolecularLiabilityBrowser.onTreeChange() mlbView.path <- ' + `${path}`);
     this.mlbView!.path = this.mlbView!.basePath = path;
 
     this.updateViewTreeBrowser();
+  }
+
+  onVrSpaceMethodChanged(vrSpaceMethodName: VrSpaceMethodName): void {
+    this.vrSpaceMethodName = vrSpaceMethodName;
+    if (this.vrSpaceMethodInput.value != this.vrSpaceMethodName)
+      this.vrSpaceMethodInput.value = this.vrSpaceMethodName;
+
+    this.urlParams!.set('vrSpaceMethod', this.vrSpaceMethodName);
+    window.setTimeout(async () => {
+      try {
+        await this.vrSpaceBrowser.setData(this.mlbDf, this.treeDf, this.regions,
+          this.vrSpaceMethodName ?? Object.values(VrSpaceMethodName)[0]);
+      } catch (err: any) {
+        const errMsg = errorToConsole(err);
+        grok.shell.error(errMsg);
+      }
+    }, 0 /* next event cycle */);
   }
 
   onVidChanged(vid: string): void {
@@ -944,7 +1156,7 @@ export class MolecularLiabilityBrowser {
     try {
       const t1 = Date.now();
       const [mlbDf, hChainDf, lChainDf, treeDf, regions, predictedPtmDf, observedPtmDf]:
-        [DG.DataFrame, DG.DataFrame, DG.DataFrame, DG.DataFrame, bio.VdRegion[], DG.DataFrame, DG.DataFrame] =
+        [MlbDataFrame, DG.DataFrame, DG.DataFrame, TreeDataFrame, VdRegion[], DG.DataFrame, DG.DataFrame] =
         await Promise.all([
           this.dataLoader.getMlbByAntigen(this.antigenName),
           this.dataLoader.getAnarci(this.schemeName, 'heavy', this.antigenName),
@@ -965,6 +1177,7 @@ export class MolecularLiabilityBrowser {
         MolecularLiabilityBrowser.prepareDataMlbDf(mlbDf, hChainDf, lChainDf,
           this.antigenName, this.schemeName, this.pf),
         MolecularLiabilityBrowser.prepareDataTreeDf(treeDf),
+        MolecularLiabilityBrowser.prepareDataTreeNodesDf(treeDf, this.th),
         regions,
         predictedPtmDf,
         observedPtmDf
@@ -972,11 +1185,10 @@ export class MolecularLiabilityBrowser {
 
       const t3 = Date.now();
       console.debug(`MLB: MolecularLiabilityBrowser.loadData() prepare ET, ${((t3 - t2) / 1000).toString()} s`);
-    } catch (err: unknown) {
-      if (err instanceof Error)
-        console.error(err);
-      else
-        console.error((err as Object).toString());
+    } catch (err: any) {
+      const errStr = errorToConsole(err);
+      console.error('MLB: MolecularLiabilityBrowser.loadData() error:\n' + errStr);
+      throw err;
     } finally {
       pi.close();
     }
@@ -1041,67 +1253,67 @@ export class MolecularLiabilityBrowser {
     this.onTreeChanged(treeName);
   }
 
-//   treeGridOnCellPrepare(cell: DG.GridCell) {
-//     if (cell.isTableCell && cell.tableColumn?.name === 'TREE' && !cell.element) {
-//       console.debug('MLB: MolecularLiabilityBrowser.treeGridOnCellPrepare() ');
-//       const nwkStr: string = cell.cell.value;
-//       const nwkDf: DG.DataFrame = this.newickHelper!.newickToDf(nwkStr, '');
-//       // nwkDf.plot.fromType('PhylocanvasGL', {
-//       //   interactive: false,
-//       //   showLabels: true,
-//       //   showLeafLabels: true,
-//       //   treeToCanvasRation: 0.99,
-//       //   nodeSize: 5,
-//       //   nodeShape: bio.Shapes.Circle,
-//       //   padding: 1,
-//       // })
-//       //   .then((viewer: DG.Widget) => {
-//       //     cell.element = viewer.root;
-//       //   })
-//       //   .catch((err) => {
-//       //     console.error('MLB: MolecularLiabilityBrowser.treeGridOnCellPrepare() plot.fromType() ' +
-//       //       `Error: ${u.errorToConsoleString(err)}`);
-//       //   });
-//
-//       const csv = `seq
-// ATTTCG
-// ATTGCG
-// ATATCA`;
-//       const df = DG.DataFrame.fromCsv(csv);
-//       const seqCol = df.getCol('seq');
-//       seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-//       seqCol.setTag(DG.TAGS.UNITS, bio.NOTATION.FASTA);
-//       seqCol.setTag(bio.TAGS.alphabet, bio.ALPHABET.DNA);
-//       seqCol.setTag(bio.TAGS.aligned, bio.ALIGNMENT.SEQ_MSA);
-//
-//       df.plot.fromType('WebLogo', {
-//         maxHeight: 50,
-//         sequenceColumnName: 'seq',
-//       })
-//         .then((viewer) => {
-//           //cell.element = viewer.root;
-//           cell.element = viewer.root;
-//         })
-//         .catch((err) => {
-//           console.error('MLB: MolecularLiabilityBrowser.treeGridOnCellPrepare() plot.fromType() ' +
-//             `Error: ${u.errorToConsoleString(err)}`);
-//         });
-//     }
-//   }
+  //   treeGridOnCellPrepare(cell: DG.GridCell) {
+  //     if (cell.isTableCell && cell.tableColumn?.name === 'TREE' && !cell.element) {
+  //       console.debug('MLB: MolecularLiabilityBrowser.treeGridOnCellPrepare() ');
+  //       const nwkStr: string = cell.cell.value;
+  //       const nwkDf: DG.DataFrame = this.newickHelper!.newickToDf(nwkStr, '');
+  //       // nwkDf.plot.fromType('PhylocanvasGL', {
+  //       //   interactive: false,
+  //       //   showLabels: true,
+  //       //   showLeafLabels: true,
+  //       //   treeToCanvasRation: 0.99,
+  //       //   nodeSize: 5,
+  //       //   nodeShape: bio.Shapes.Circle,
+  //       //   padding: 1,
+  //       // })
+  //       //   .then((viewer: DG.Widget) => {
+  //       //     cell.element = viewer.root;
+  //       //   })
+  //       //   .catch((err) => {
+  //       //     console.error('MLB: MolecularLiabilityBrowser.treeGridOnCellPrepare() plot.fromType() ' +
+  //       //       `Error: ${u.errorToConsoleString(err)}`);
+  //       //   });
+  //
+  //       const csv = `seq
+  // ATTTCG
+  // ATTGCG
+  // ATATCA`;
+  //       const df = DG.DataFrame.fromCsv(csv);
+  //       const seqCol = df.getCol('seq');
+  //       seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
+  //       seqCol.setTag(DG.TAGS.UNITS, bio.NOTATION.FASTA);
+  //       seqCol.setTag(bio.TAGS.alphabet, bio.ALPHABET.DNA);
+  //       seqCol.setTag(bio.TAGS.aligned, bio.ALIGNMENT.SEQ_MSA);
+  //
+  //       df.plot.fromType('WebLogo', {
+  //         maxHeight: 50,
+  //         sequenceColumnName: 'seq',
+  //       })
+  //         .then((viewer) => {
+  //           //cell.element = viewer.root;
+  //           cell.element = viewer.root;
+  //         })
+  //         .catch((err) => {
+  //           console.error('MLB: MolecularLiabilityBrowser.treeGridOnCellPrepare() plot.fromType() ' +
+  //             `Error: ${u.errorToConsoleString(err)}`);
+  //         });
+  //     }
+  //   }
 
   treeGridOnCellRender(args: DG.GridCellRenderArgs): void {
     const gCell = args.cell;
-    if (gCell.isTableCell && gCell.gridColumn.column && gCell.gridColumn.column.name == 'TREE'
-      // && [0, 2, 4].includes(gCell.gridRow)
+    if (gCell.isTableCell && gCell.gridColumn.column && gCell.gridColumn.column.name == 'TREE' /* &&
+      [0, 2, 4].includes(gCell.gridRow) /**/
     ) {
       try {
         const bd = args.bounds;
         const gCtx: CanvasRenderingContext2D = args.g;
 
-        const nwkStr: string = TreeBrowser.cleanMlbNewick(gCell.cell.value);
-        const nwkRoot: bio.NodeType = bio.Newick.parse_newick(nwkStr);
+        const nwkStr: string = cleanMlbNewick(gCell.cell.value);
+        const nwkRoot: NodeType = parseNewick(nwkStr);
 
-        const nodeShape: string = bio.Shapes.Circle;
+        const nodeShape: string = Shapes.Circle;
         this.phylocanvasGlSvc!.render({
           name: '',
           backColor: gCell.grid.props.backColor,
@@ -1116,7 +1328,6 @@ export class MolecularLiabilityBrowser {
             this.phylocanvasGlSvc?.renderOnGridCell(gCtx, bd, gCell, canvas);
           }
         }, gCell.tableRow?.idx);
-
       } finally {
         args.preventDefault();
       }

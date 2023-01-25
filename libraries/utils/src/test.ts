@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable, Subscription} from 'rxjs';
+import Timeout = NodeJS.Timeout;
 
 export const tests: {
   [key: string]: {
@@ -61,7 +62,8 @@ export class Test {
   }
 }
 
-export async function testEvent<T>(event: Observable<T>, handler: (args: T) => void, trigger: () => void, ms: number = 0): Promise<string> {
+export async function testEvent<T>(event: Observable<T>,
+  handler: (args: T) => void, trigger: () => void, ms: number = 0): Promise<string> {
   let sub: Subscription;
   return new Promise((resolve, reject) => {
     sub = event.subscribe((args) => {
@@ -160,7 +162,8 @@ export function after(after: () => Promise<void>): void {
 
 
 export async function runTests(options?: { category?: string, test?: string, testContext?: TestContext }) {
-  const results: { category?: string, name?: string, success: boolean, result: string, ms: number, skipped: boolean }[] = [];
+  const results: { category?: string, name?: string, success: boolean,
+                   result: string, ms: number, skipped: boolean }[] = [];
   const packageName = grok.functions.getCurrentCall()?.func?.package;
   console.log(`Running tests`);
   options ??= {};
@@ -208,16 +211,16 @@ export async function runTests(options?: { category?: string, test?: string, tes
   }
   if (options.testContext.report) {
     const logger = new DG.Logger();
-    const successful = results.filter(r => r.success).length;
-    const skipped = results.filter(r => r.skipped).length;
-    const failed = results.filter(r => !r.success);
+    const successful = results.filter((r) => r.success).length;
+    const skipped = results.filter((r) => r.skipped).length;
+    const failed = results.filter((r) => !r.success);
     const description = 'Package @package tested: @successful successful, @skipped skipped, @failed failed tests';
     const params = {
       successful: successful,
       skipped: skipped,
       failed: failed.length,
       package: packageName
-    }
+    };
     for (const r of failed) Object.assign(params, {[`${r.category} | ${r.name}`]: r.result});
     logger.log(description, params, 'package-tested');
   }
@@ -257,25 +260,20 @@ export async function delay(ms: number) {
   await new Promise((r) => setTimeout(r, ms));
 }
 
-export async function awaitCheck(checkHandler: () => boolean): Promise<void> {
+export async function awaitCheck(checkHandler: () => boolean,
+  error: string = 'Timeout exceeded', wait: number = 500): Promise<void> {
   return new Promise((resolve, reject) => {
-    let stop: boolean = false;
     setTimeout(() => {
-      stop = true;
-      // eslint-disable-next-line prefer-promise-reject-errors
-      reject('Timeout exceeded');
-    }, 500);
-
-    function check() {
+      clearInterval(interval);
+      reject(new Error(error));
+    }, wait);
+    // @ts-ignore
+    const interval: Timeout = setInterval(() => {
       if (checkHandler()) {
-        stop = false;
+        clearInterval(interval);
         resolve();
       }
-      if (!stop)
-        setTimeout(check, 50);
-    }
-
-    check();
+    }, 50);
   });
 }
 
@@ -285,4 +283,43 @@ export function isDialogPresent(dialogTitle: string): boolean {
       return true;
   }
   return false;
+}
+
+export async function testViewer(v: string, df: DG.DataFrame, detectSemanticTypes: boolean = false): Promise<void> {
+  if (detectSemanticTypes) await grok.data.detectSemanticTypes(df);
+  const tv = grok.shell.addTableView(df);
+  const viewerName = `[name=viewer-${v.replace(/\s+/g, '-')} i]`;
+  const selector = `${viewerName} canvas,${viewerName} svg,${viewerName} img,
+    ${viewerName} input,${viewerName} h1,${viewerName} a`;
+  const res = [];
+  try {
+    let viewer = tv.addViewer(v);
+    await awaitCheck(() => document.querySelector(selector) !== null,
+      'cannot load viewer', 3000);
+    res.push(Array.from(tv.viewers).length);
+    Array.from(df.row(0).cells).forEach((c) => c.value = null);
+    df.rows.select((row) => row.idx > 1 && row.idx < 7);
+    for (let i = 7; i < 12; i++) df.filter.set(i, false);
+    df.currentRowIdx = 1;
+    const props = viewer.getOptions(true).look;
+    const newProps: Record<string, boolean> = {};
+    Object.keys(props).filter((k) => typeof props[k] === 'boolean').forEach((k) => newProps[k] = !props[k]);
+    viewer.setOptions(newProps);
+    await delay(250);
+    const layout = tv.saveLayout();
+    const oldProps = viewer.getOptions().look;
+    tv.resetLayout();
+    res.push(Array.from(tv.viewers).length);
+    tv.loadLayout(layout);
+    await awaitCheck(() => document.querySelector(selector) !== null,
+      'cannot load viewer from layout', 3000);
+    await delay(250);
+    res.push(Array.from(tv.viewers).length);
+    viewer = Array.from(tv.viewers).find((v) => v.type !== 'Grid')!;
+    expectArray(res, [2, 1, 2]);
+    expect(JSON.stringify(viewer.getOptions().look), JSON.stringify(oldProps));
+  } finally {
+    tv.close();
+    grok.shell.closeTable(df);
+  }
 }

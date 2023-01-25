@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+
 import {after, before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import {getOptions} from './utils';
 
@@ -34,7 +35,7 @@ category('TreeViewer', () => {
       layout: 'orthogonal',
       orient: 'LR',
       expandAndCollapse: true,
-      initialTreeDepth: 2,
+      initialTreeDepth: 3,
       edgeShape: 'curve',
       symbol: 'emptyCircle',
       symbolSize: 7,

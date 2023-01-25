@@ -1,33 +1,28 @@
 {
 	"name": "@datagrok/compute",
 	"friendlyName": "Compute",
-	"version": "0.9.7",
+	"version": "0.13.2",
 	"author": {
 		"name": "Aufar Zakiev",
-		"email": "aufar.zakiev@arcadia.spb.ru"
+		"email": "aufar.zakiev@softwarecountry.com"
 	},
 	"description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md)",
 	"repository": {
-    "type": "git",
-    "url": "https://github.com/datagrok-ai/public.git",
-    "directory": "packages/Compute"
-  },
+		"type": "git",
+		"url": "https://github.com/datagrok-ai/public.git",
+		"directory": "packages/Compute"
+	},
 	"dependencies": {
-		"@datagrok-libraries/utils": "^1.15.4",
+		"@datagrok-libraries/utils": "^2.3.0",
 		"cash-dom": "latest",
-		"codemirror": "^5.64.0",
 		"datagrok-api": "latest",
 		"dayjs": "latest",
-		"exceljs": "^4.3.0",
-		"file-saver": "^2.0.5",
-		"rxjs": "^7.4.0",
+		"rxjs": "^6.5.5",
 		"ts-loader": "latest",
 		"typescript": "latest",
 		"wu": "latest"
 	},
 	"devDependencies": {
-		"@types/codemirror": "^5.60.5",
-		"@types/file-saver": "^2.0.3",
 		"@types/wu": "latest",
 		"@typescript-eslint/eslint-plugin": "^5.1.0",
 		"@typescript-eslint/parser": "^5.1.0",
@@ -56,6 +51,10 @@
 		"debug-compute-compose": "grok publish compose",
 		"release-compute-compose": "grok publish compose --release"
 	},
+	"sources": [
+		"common/exceljs.min.js",
+		"common/html2canvas.min.js"
+	],
 	"canEdit": [
 		"Developers"
 	],

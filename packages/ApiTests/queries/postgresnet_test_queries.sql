@@ -1,59 +1,59 @@
---name: PostgresNetAll
---connection: PostgresNetTest
+--name: PostgresAll
+--connection: PostgresTest
 --meta.testExpectedRows: 830
 select * from orders;
 --end
 
---name: PostgresNetByInt
---connection: PostgresNetTest
+--name: PostgresByInt
+--connection: PostgresTest
 --input: int orderid = 10330
 --meta.testExpectedRows: 1
 select * from orders where orderid = @orderid;
 --end
 
---name: PostgresNetByStringPatternInt
---connection: PostgresNetTest
+--name: PostgresByStringPatternInt
+--connection: PostgresTest
 --input: string shipVia = '>2' {pattern: int}
 --meta.testExpectedRows: 255
 SELECT * FROM orders WHERE @shipVia(shipVia);
 --end
 
---name: PostgresNetByDouble
---connection: PostgresNetTest
+--name: PostgresByDouble
+--connection: PostgresTest
 --input: double freight = 100.1
 --meta.testExpectedRows: 187
 SELECT * FROM orders WHERE freight >= @freight;
 --end
 
---name: PostgresNetByStringChoices
---connection: PostgresNetTest
+--name: PostgresByStringChoices
+--connection: PostgresTest
 --input: string shipCountry = 'France' {choices: ["France", "Germany", "USA", "Finland"]}
 --meta.testExpectedRows: 77
 SELECT * FROM orders WHERE shipCountry = @shipCountry;
 --end
 
---name: PostgresNetByStringPatternString
---connection: PostgresNetTest
+--name: PostgresByStringPatternString
+--connection: PostgresTest
 --input: string shipCity = 'contains ran' {pattern: string}
 --meta.testExpectedRows: 33
 SELECT * FROM orders WHERE @shipCity(shipCity);
 --end
 
---name: PostgresNetByBool
---connection: PostgresNetTest
+--name: PostgresByBool
+--connection: PostgresTest
 --input: bool freightLess100 = true
 --meta.testExpectedRows: 643
 SELECT * FROM orders WHERE ((freight < 100) OR NOT @freightLess100);
 --end
 
---name: PostgresNetByDatetime
---connection: PostgresNetTest
+--name: PostgresByDatetime
+--connection: PostgresTest
 --input: datetime requiredDate
 SELECT * FROM orders WHERE requiredDate >= @requiredDate;
 --end
 
---name: PostgresNetByStringPatternDatetime
---connection: PostgresNetTest
+--name: PostgresByStringPatternDatetime
+--connection: PostgresTest
 --input: string orderDate {pattern: datetime}
 SELECT * FROM orders WHERE @orderDate(orderDate);
 --end

@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {category, expect, expectFloat, test} from '@datagrok-libraries/utils/src/test';
 
-import {_testSearchSubstructure, _testSearchSubstructureAllParameters, _testSearchSubstructureSARSmall} from './utils';
+import {readDataframe, _testSearchSubstructure, _testSearchSubstructureAllParameters, _testSearchSubstructureSARSmall} from './utils';
 
 export const testSubstructure = 'C1CC1';
 //csv with C1CC1 as substructure in pos 0 and 2
@@ -82,5 +82,66 @@ category('substructure search', () => {
     df.columns.add(col);
     await _testSearchSubstructure(df, 'smiles', testSubstructure, [0, 2]);
     await _testSearchSubstructure(df, 'smiles1', testSubstructure, [1, 4]);
+  });
+
+  test('searchSubstructureExplicitHydrogen', async () => {
+    const df = await readDataframe('tests/explicit_h_test.csv');
+    await _testSearchSubstructure(df, 'smiles', `
+  MJ201900                      
+
+  5  5  0  0  0  0  0  0  0  0999 V2000
+    -0.1562   -0.7750    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+    -0.8707   -0.3625    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    -0.8707    0.4625    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.5582    0.4625    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.5582   -0.3625    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0  0  0  0
+  1  5  1  0  0  0  0
+  2  3  2  0  0  0  0
+  3  4  1  0  0  0  0
+  4  5  2  0  0  0  0
+M  END`, [0, 1, 2, 3]);
+
+    await _testSearchSubstructure(df, 'smiles', `
+  MJ201900                      
+
+  6  6  0  0  0  0  0  0  0  0999 V2000
+    0.5357    0.1401    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+    -0.1787    0.5526    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    -0.1787    1.3776    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.2501    1.3776    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.2501    0.5526    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.5357   -0.6848    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0  0  0  0
+  1  5  1  0  0  0  0
+  2  3  2  0  0  0  0
+  3  4  1  0  0  0  0
+  4  5  2  0  0  0  0
+  1  6  1  0  0  0  0
+M  END
+  `, [2, 3]);
+  });
+
+
+  test('searchSubstructureAromaticBond', async () => {
+    const df = await readDataframe('tests/aromatic_bond_test.csv');
+    await _testSearchSubstructure(df, 'smiles', `
+  MJ201900                      
+
+  6  6  0  0  0  0  0  0  0  0999 V2000
+    -1.3616    0.4008    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    -2.0761   -0.0116    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    -2.0761   -0.8367    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    -1.3616   -1.2491    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    -0.6471   -0.8367    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    -0.6471   -0.0116    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0  0  0  0
+  1  6  1  0  0  0  0
+  2  3  1  0  0  0  0
+  3  4  1  0  0  0  0
+  4  5  1  0  0  0  0
+  5  6  4  0  0  0  0
+M  END
+`, [2, 3]);
   });
 });

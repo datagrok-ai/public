@@ -1,6 +1,6 @@
-<!-- TITLE: Routing -->
-
-# Routing
+---
+title: "Routing"
+---
 
 Sometimes it is useful to share a link with a colleague or business executive that opens an app in a specific state
 depending on the URI and points to the important information that the one would like to share. Datagrok provides routing
@@ -128,6 +128,5 @@ function setSelection(tableView: DG.TableView, label: string) {
 
 See also:
 
-* [Discovery package](https://github.com/datagrok-ai/public/tree/master/packages/Discovery)
 * [How-to: Build an application](./build-an-app.md)
 * [Routing](../../datagrok/routing.md)

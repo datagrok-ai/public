@@ -5,7 +5,7 @@ import * as DG from "datagrok-api/dg";
 
 export let _package = new DG.Package();
 
-//top-menu: DSP | Filters | SMA Filter
+//top-menu: Tools | DSP Filters | SMA Filter
 //name: Moving Average Filter
 //input: dataframe dataframe [Input data table]
 //input: column column [Signal to Filter]
@@ -25,7 +25,7 @@ export async function SMA_filter(dataframe, column, windowSize) {
   DSPModule._free(dataHeap.byteOffset);
 }
 
-//top-menu: DSP | Filters | Exponential Filter
+//top-menu: Tools | DSP Filters | Exponential Filter
 //name: Exponential Filter
 //input: dataframe dataframe [Input data table]
 //input: column column [Signal to Filter]
@@ -44,7 +44,7 @@ export async function Exp_filter(dataframe, column, filterRatio) {
   DSPModule._free(dataHeap.byteOffset);
 }
 
-//top-menu: DSP | Filters | Kalmam Filter
+//top-menu: Tools | DSP Filters | Kalmam Filter
 //name: Kalman Filter
 //input: dataframe dataframe [Input data table]
 //input: column column [Signal to Filter]
@@ -65,7 +65,7 @@ export async function Kalman_filter(dataframe, column, Q, R, P) {
   DSPModule._free(dataHeap.byteOffset);
 }
 
-//top-menu: DSP | Preprocess | Min-Max
+//top-menu: Tools | DSP Preprocess | Min-Max
 //name: Min Max Normalization
 //input: dataframe dataframe [Input data table]
 //input: column column [Signal to Filter]
@@ -83,7 +83,7 @@ export async function MinMax_transform(dataframe, column) {
   DSPModule._free(dataHeap.byteOffset);
 }
 
-//top-menu: DSP | Preprocess | Z-score
+//top-menu: Tools | DSP Preprocess | Z-score
 //name: Z-score Normalization
 //input: dataframe dataframe [Input data table]
 //input: column column [Signal to Filter]
@@ -101,7 +101,7 @@ export async function Zscore_transform(dataframe, column) {
   DSPModule._free(dataHeap.byteOffset);
 }
 
-//top-menu: DSP | Preprocess | Box Cox
+//top-menu: Tools | DSP Preprocess | Box Cox
 //name: Box Cox Transform
 //input: dataframe dataframe [Input data table]
 //input: column column [Signal to Filter]
@@ -121,7 +121,7 @@ export async function box_cox_transform(dataframe, column, lambda, offset) {
   DSPModule._free(dataHeap.byteOffset);
 }
 
-//top-menu: DSP | Preprocess | Get Trend
+//top-menu: Tools | DSP Preprocess | Get Trend
 //name: Get Trend
 //input: dataframe dataframe [Input Dataframe]
 //input: column column [Column]
@@ -139,7 +139,7 @@ export async function get_trend(dataframe, column) {
   DSPModule._free(dataHeap.byteOffset);
 }
 
-//top-menu: DSP | Preprocess | Detrend
+//top-menu: Tools | DSP Preprocess | Detrend
 //name: Detrend
 //input: dataframe dataframe [Input Dataframe]
 //input: column column [Column]
@@ -157,7 +157,7 @@ export async function remove_trend(dataframe, column) {
   DSPModule._free(dataHeap.byteOffset);
 }
 
-//top-menu: DSP | Filters | Fourier Filter
+//top-menu: Tools | DSP Filters | Fourier Filter
 //name: Fourier Filter
 //input: dataframe dataframe [Input data table]
 //input: column column [Signal to Filter]
@@ -182,7 +182,7 @@ export async function fourier_filter(dataframe, column, lowcut, hicut, observati
 }
 
 
-//top-menu: DSP | Preprocess | Spectral Density
+//top-menu: Tools | DSP Preprocess | Spectral Density
 //name: Spectral Density
 //input: dataframe dataframe [Input Dataframe]
 //input: column column [Column]
@@ -218,7 +218,7 @@ export async function spectral_density(dataframe, column, observationTime) {
   DSPModule._free(dataHeap.byteOffset);
 }
 
-//top-menu: DSP | Preprocess | Subsample
+//top-menu: Tools | DSP Preprocess | Subsample
 //name: Subsample
 //input: dataframe dataframe [Input Dataframe]
 //input: column column [Column]
@@ -256,7 +256,7 @@ export async function subsample(dataframe, column, subsampleSize, offset) {
   }
 }
 
-//top-menu: DSP | Preprocess | Averaging Downsampling
+//top-menu: Tools | DSP Preprocess | Averaging Downsampling
 //name: Averaging Downsampling
 //input: dataframe dataframe [Input Dataframe]
 //input: column col [Column]

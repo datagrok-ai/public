@@ -1,9 +1,19 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
+import {
+  getAlphabetSimilarity,
+  getStats,
+  monomerToShort,
+  pickUpPalette,
+  splitterAsFasta,
+  splitterAsHelm,
+} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {Nucleotides, NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucleotides';
+import {AminoacidsPalettes} from '@datagrok-libraries/bio/src/aminoacids';
+import {UnknownSeqPalette} from '@datagrok-libraries/bio/src/unknown';
 
 category('bio', () => {
   const csvDfN1: string = `seq
@@ -53,7 +63,7 @@ PEPTIDE1{meI}$$$$
 `;
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
     const seqCol: DG.Column = df.getCol('seq')!;
-    const stats = bio.getStats(seqCol, 1, bio.splitterAsHelm);
+    const stats = getStats(seqCol, 1, splitterAsHelm);
 
     expectObject(stats.freq, {
       'meI': 1
@@ -72,19 +82,19 @@ PEPTIDE1{meI}$$$$
 
 category('WebLogo.monomerToShort', () => {
   test('longMonomerSingle', async () => {
-    await expect(bio.monomerToShort('S', 5), 'S');
+    await expect(monomerToShort('S', 5), 'S');
   });
   test('longMonomerShort', async () => {
-    await expect(bio.monomerToShort('Short', 5), 'Short');
+    await expect(monomerToShort('Short', 5), 'Short');
   });
   test('longMonomerLong56', async () => {
-    await expect(bio.monomerToShort('Long56', 5), 'Long5…');
+    await expect(monomerToShort('Long56', 5), 'Long5…');
   });
   test('longMonomerComplexFirstPartShort', async () => {
-    await expect(bio.monomerToShort('Long-long', 5), 'Long…');
+    await expect(monomerToShort('Long-long', 5), 'Long…');
   });
   test('longMonomerComplexFirstPartLong56', async () => {
-    await expect(bio.monomerToShort('Long56-long', 5), 'Long5…');
+    await expect(monomerToShort('Long56-long', 5), 'Long5…');
   });
 });
 
@@ -92,7 +102,7 @@ category('WebLogo.monomerToShort', () => {
 export async function _testGetStats(csvDfN1: string) {
   const dfN1: DG.DataFrame = DG.DataFrame.fromCsv(csvDfN1);
   const seqCol: DG.Column = dfN1.col('seq')!;
-  const stats = bio.getStats(seqCol, 5, bio.splitterAsFasta);
+  const stats = getStats(seqCol, 5, splitterAsFasta);
 
   expectObject(stats.freq, {
     'A': 4,
@@ -111,8 +121,8 @@ export async function _testGetAlphabetSimilarity() {
     'T': 2048,
     '-': 1000
   };
-  const alphabet: Set<string> = new Set(Object.keys(bio.Nucleotides.Names));
-  const res = bio.getAlphabetSimilarity(freq, alphabet);
+  const alphabet: Set<string> = new Set(Object.keys(Nucleotides.Names));
+  const res = getAlphabetSimilarity(freq, alphabet);
 
   expect(res > 0.6, true);
 }
@@ -120,39 +130,38 @@ export async function _testGetAlphabetSimilarity() {
 export async function _testPickupPaletteN1(csvDfN1: string) {
   const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDfN1);
   const col: DG.Column = df.col('seq')!;
-  const cp = bio.pickUpPalette(col);
+  const cp = pickUpPalette(col);
 
-  expect(cp instanceof bio.NucleotidesPalettes, true);
+  expect(cp instanceof NucleotidesPalettes, true);
 }
 
 export async function _testPickupPaletteN1e(csvDfN1e: string) {
   const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDfN1e);
   const col: DG.Column = df.col('seq')!;
-  const cp = bio.pickUpPalette(col);
+  const cp = pickUpPalette(col);
 
-  expect(cp instanceof bio.NucleotidesPalettes, true);
+  expect(cp instanceof NucleotidesPalettes, true);
 }
 
 export async function _testPickupPaletteAA1(csvDfAA1: string) {
   const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDfAA1);
   const col: DG.Column = df.col('seq')!;
-  const cp = bio.pickUpPalette(col);
+  const cp = pickUpPalette(col);
 
-  expect(cp instanceof bio.AminoacidsPalettes, true);
+  expect(cp instanceof AminoacidsPalettes, true);
 }
 
 export async function _testPickupPaletteX(csvDfX: string) {
   const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDfX);
   const col: DG.Column = df.col('seq')!;
-  const cp = bio.pickUpPalette(col);
+  const cp = pickUpPalette(col);
 
-  expect(cp instanceof bio.UnknownSeqPalette, true);
+  expect(cp instanceof UnknownSeqPalette, true);
 }
 
 export async function _testPickupPaletteAA2(dfAA2: DG.DataFrame) {
   const seqCol: DG.Column = dfAA2.col('seq')!;
-  const cp = bio.pickUpPalette(seqCol);
+  const cp = pickUpPalette(seqCol);
 
-  expect(cp instanceof bio.AminoacidsPalettes, true);
+  expect(cp instanceof AminoacidsPalettes, true);
 }
-

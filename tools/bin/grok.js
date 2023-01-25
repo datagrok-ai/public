@@ -8,7 +8,10 @@ const commands = {
   check: require('./commands/check').check,
   config: require('./commands/config').config,
   create: require('./commands/create').create,
+  link: require('./commands/link').link,
+  unlink: require('./commands/link').unlink,
   publish: require('./commands/publish').publish,
+  test: require('./commands/test').test,
 };
 
 const command = argv['_'][0];

@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 
 export class ChemSearchBaseViewer extends DG.JsViewer {
@@ -10,8 +10,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   limit: number;
   fingerprint: string;
   metricsProperties = ['distanceMetric', 'fingerprint'];
-  fingerprintChoices = ['Morgan', 'RDKit', 'Pattern'];
-  sizesMap = {
+  fingerprintChoices = ['Morgan'];
+  sizesMap: {[key: string]: {[key: string]: number}} = {
     'small': {height: 60, width: 120},
     'normal': {height: 100, width: 200},
     'large': {height: 150, width: 300}};
@@ -53,6 +53,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       this.moleculeColumn = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
       this.moleculeColumnName = this.moleculeColumn?.name!;
       this.getProperty('limit')!.fromOptions({min: 1, max: this.dataFrame.rowCount});
+      if (this.limit > this.dataFrame.rowCount)
+        this.limit = this.dataFrame.rowCount;
     }
     await this.render();
   }
@@ -71,14 +73,13 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.render();
   }
 
-  updateMetricsLink(metricsDiv: HTMLDivElement, object: any, options: any): void {
+  updateMetricsLink(metricsDiv: HTMLDivElement, object: any, options: {[key: string]: string}): void {
     const metricsButton = ui.button(`${this.distanceMetric}/${this.fingerprint}`, () => {
       if (!grok.shell.windows.showProperties)
         grok.shell.windows.showProperties = true;
       grok.shell.o = object;
     });
-    //@ts-ignore
-    Object.keys(options).forEach((it) => metricsButton.style[it] = options[it]);
+    Object.keys(options).forEach((it: any) => metricsButton.style[it] = options[it]);
     updateDivInnerHTML(metricsDiv, metricsButton);
   }
 
