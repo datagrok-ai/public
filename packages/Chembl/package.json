@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/chembl",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "description": "Chembl integration, commonly used queries and browser",
   "author": {
     "name": "Leonid Stolbov",
