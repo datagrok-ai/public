@@ -19,10 +19,15 @@ export function pepseaDialog(): void {
       if (col.getTag(DG.TAGS.UNITS) != 'helm' || col.semType != DG.SEMTYPE.MACROMOLECULE)
         grok.shell.info('Sequence column must contain sequences in HELM notation!');
     });
+  colInput.setTooltip('Sequences column to use for alignment');
   const methodInput = ui.choiceInput('Method', 'ginsi', methods);
+  methodInput.setTooltip('Alignment method');
   const gapOpenInput = ui.floatInput('Gap open', 1.53);
+  gapOpenInput.setTooltip('Gap opening penalty at group-to-group alignment');
   const gapExtendInput = ui.floatInput('Gap extend', 0.0);
+  gapExtendInput.setTooltip('Gap extension penalty to skip the alignment');
   const clusterColInput = ui.columnInput('Clusters', table, null);
+  clusterColInput.setTooltip('Clusters column to perform in-cluster alignment');
 
   ui.dialog('PepSeA Multiple Sequence Alignment')
     .add(colInput)
