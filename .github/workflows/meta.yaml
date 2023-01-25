@@ -5,14 +5,17 @@ on:
       packages:
         description: 'Packages separated by spaces'
         type: string
-  schedule:
-    - cron:  '* * * * *'
+  workflow_run:
+    workflows: [Packages]
+    types: [completed]
+    branches: [master]
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
   metadata:
     name: Upgrade Meta package
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -76,7 +79,6 @@ jobs:
                   repository=$(jq '. | select( has("repository") == true ).repository' "${DIR}/package.json")
                   category=$(jq -r '. | select( has("category") == true ).category' "${DIR}/package.json")
                   grok_args=(add --package "${name}" --description "${description}" --ver "${version}" --category "${category}" --repository "${repository}")
-                  
                   dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"          
                   deps=''
                   if [ ! -z "$(jq  '. | select( has("datagrok-api") == true )' <<< "$dependencies")" ]; then
