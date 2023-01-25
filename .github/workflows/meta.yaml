@@ -92,24 +92,27 @@ jobs:
         if: steps.packages.outputs.bump == 'yes'
         working-directory: packages/Meta
         run: |
-          current_version=$(jq .version package.json | sed -E 's/(^"|"$)//g')
-          patch=$(cut -d. -f3 <<<$current_version)
-          minor=$(cut -d. -f2 <<<$current_version)
-          major=$(cut -d. -f1 <<<$current_version)
-          upgrade='patch'
-          if [ "${patch}" -gt "98" ]; then
-            upgrade='minor'
+          git pull
+          if [ -n "$(git status -s packages/Meta/package.json)" ]; then
+            current_version=$(jq .version package.json | sed -E 's/(^"|"$)//g')
+            patch=$(cut -d. -f3 <<<$current_version)
+            minor=$(cut -d. -f2 <<<$current_version)
+            major=$(cut -d. -f1 <<<$current_version)
+            upgrade='patch'
+            if [ "${patch}" -gt "98" ]; then
+              upgrade='minor'
+            fi
+            if [ "${minor}" -gt "98" ]; then
+              upgrade='major'
+            fi
+            npm version $upgrade
           fi
-          if [ "${minor}" -gt "98" ]; then
-            upgrade='major'
-          fi
-          npm version $upgrade
       - name: Commit Meta package.json
         id: git
         if: steps.packages.outputs.bump == 'yes'
         run: |
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'github_actions@datagrok.ai'
+#          git config --global user.name 'GitHub Actions'
+#          git config --global user.email 'github_actions@datagrok.ai'
           git pull
           continue=false
           if [ -n "$(git status -s packages/Meta/package.json)" ]; then
