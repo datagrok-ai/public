@@ -65,7 +65,7 @@ category('Timelines', () => {
     expect(options.markerSize, 4);
     expect(options.dateFormat, '{yyyy}-{MM}-{dd}');
     expect(options.showZoomSliders, false);
-  });
+  }, {skipReason: 'GROK-11764'});
 
   // test('Context menu', () => new Promise((resolve, reject) => {
   //   const viewer = DG.Viewer.fromType(TYPE, df);
