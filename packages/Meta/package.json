@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.1.72",
+  "version": "3.1.73",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -2164,6 +2164,9 @@
         },
         "1.1.4": {
           "datagrok-api": "^1.6.6"
+        },
+        "1.1.5": {
+          "datagrok-api": "^1.12.0"
         }
       },
       "description": "Alation is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
