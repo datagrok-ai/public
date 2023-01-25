@@ -76,6 +76,8 @@ export class PeptidesModel {
   _mostPotentResiduesDf?: DG.DataFrame;
   _matrixDf?: DG.DataFrame;
   _splitSeqDf?: DG.DataFrame;
+  _onNewCluster = new rxjs.Subject();
+  _onRemoveCluster = new rxjs.Subject();
 
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
@@ -188,6 +190,14 @@ export class PeptidesModel {
 
   get onSettingsChanged(): rxjs.Observable<type.PeptidesSettings> {
     return this.settingsSubject.asObservable();
+  }
+
+  get onNewCluster(): rxjs.Observable<unknown> {
+    return this._onNewCluster.asObservable();
+  }
+
+  get onRemoveCluster(): rxjs.Observable<unknown> {
+    return this._onRemoveCluster.asObservable();
   }
 
   get mutationCliffsSelection(): type.PositionToAARList {
@@ -374,11 +384,17 @@ export class PeptidesModel {
     const acc = ui.accordion();
     acc.root.style.width = '100%';
     acc.addTitle(ui.h1(`${this.df.selection.trueCount} selected rows`));
-    acc.addPane('Actions', () => {
-      const newViewButton = ui.button('New view', async () => await this.createNewView(),
-        'Creates a new view from current selection');
-      return ui.div([newViewButton]);
-    });
+    if (this.df.selection.anyTrue) {
+      acc.addPane('Actions', () => {
+        const newViewButton = ui.button('New view', async () => await this.createNewView(),
+          'Creates a new view from current selection');
+        const newCluster = ui.button('New cluster', () => this._onNewCluster.next(),
+          'Creates a new cluster from selection');
+        const removeCluster = ui.button('Remove cluster', () => this._onRemoveCluster.next(),
+          'Removes currently selected custom cluster');
+        return ui.divV([newViewButton, newCluster, removeCluster]);
+      });
+    }
     acc.addPane('Mutation Cliff pairs', () => mutationCliffsWidget(this.df, this).root);
     acc.addPane('Distribution', () => getDistributionWidget(this.df, this).root);
 

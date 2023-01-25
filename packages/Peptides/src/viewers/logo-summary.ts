@@ -40,6 +40,8 @@ export class LogoSummary extends DG.JsViewer {
       this.createLogoSummaryGrid();
       this.render();
     }));
+    this.subs.push(this.model.onNewCluster.subscribe(() => this.clusterFromSelection()));
+    this.subs.push(this.model.onRemoveCluster.subscribe(() => this.removeCluster()));
 
     this.createLogoSummaryGrid();
     this.initialized = true;
@@ -59,13 +61,7 @@ export class LogoSummary extends DG.JsViewer {
         return;
       }
       this.viewerGrid.root.style.width = 'auto';
-      const newClusterBtn = ui.button(ui.iconFA('plus'), () => this.clusterFromSelection(),
-        'Creates a new cluster from selection');
-      $(newClusterBtn).addClass('pep-lst-button');
-      const removeClusterBtn = ui.button(ui.iconFA('trash'), () => this.removeCluster(),
-        'Removes currently selected custom cluster');
-      $(removeClusterBtn).addClass('pep-lst-button');
-      this.root.appendChild(ui.divV([ui.divH([this._titleHost, ui.divH([newClusterBtn, removeClusterBtn])]), this.viewerGrid.root]));
+      this.root.appendChild(ui.divV([this._titleHost, this.viewerGrid.root]));
       this.viewerGrid.invalidate();
     }
   }
