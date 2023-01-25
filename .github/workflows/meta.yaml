@@ -1,0 +1,131 @@
+name: Packages
+on:
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: 'Packages separated by spaces'
+        required: true
+        type: string
+  schedule:
+    - cron:  '* * * * *'
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  metadata:
+    name: Upgrade Meta package
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@datagrok'
+      - name: Upgrade npm
+        run: npm install -g npm@x
+      - name: npm version
+        run: npm version
+      - name: Bump Meta package
+        working-directory: packages/Meta
+        run: |
+          current_version=$(jq .version package.json | sed -E 's/(^"|"$)//g')
+          patch=$(cut -d. -f3 <<<$current_version)
+          minor=$(cut -d. -f2 <<<$current_version)
+          major=$(cut -d. -f1 <<<$current_version)
+          upgrade='patch'
+          if [ "${patch}" -gt "98" ]; then
+            upgrade='minor'
+          fi
+          if [ "${minor}" -gt "98" ]; then
+            upgrade='major'
+          fi
+          npm version $upgrade
+      - name: Build Meta package
+        working-directory: packages/Meta
+        run: |
+          npm install
+          npm run build
+      - name: Add new packages to Meta package
+        run: |
+          if [[ "${{ github.event.inputs.packages }}" == "" ]]; then
+            CHANGED_PACKAGES="$(find packages -name package.json -maxdepth 2 | xargs -I {} dirname {} | awk -F'/' '{print $2}')"
+          else
+            CHANGED_PACKAGES="${{ github.event.inputs.packages }}"
+          fi
+
+          packages=''
+          for PACKAGE in $(echo ${CHANGED_PACKAGES} | sort -u); do
+            DIR="packages/${PACKAGE}"
+            if [ -f "${DIR}/package.json" ]; then
+              current_version="$(jq -r .version "${DIR}/package.json")"
+              if [ "$(awk -F. '{print $1}' <<<$current_version)" -le "0" ]; then
+                echo "::notice title=${PACKAGE}::Version ${current_version} is under 1.0.0. Won't add."
+              else
+                full_name="$(jq -r .name "${DIR}/package.json")"
+                npm_json="$(curl --retry 3 -s "https://registry.npmjs.org/${full_name}/${current_version}")"
+
+                if [[ $npm_json == "\"version not found: ${current_version}\"" ]] || [[ $npm_json == "\"Not Found\"" ]]; then
+                  echo "::warning title=${PACKAGE}::Version ${current_version} is not published yet. Won't add."
+                else
+                  name=$(sed 's,@datagrok/,,g' <<<$full_name)
+                  description="$(jq -r .description "${DIR}/package.json")"
+                  version=${current_version}
+                  repository=$(jq '. | select( has("repository") == true ).repository)
+                  category=$(jq -r '. | select( has("category") == true ).category)
+                  grok_args=(add --package "${name}" --description "${description}" --ver "${version}" --category "${category}" --repository "${repository}")
+                  
+                  dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' package.json)"          
+                  deps=''
+                  if [ ! -z "$(jq  '. | select( has("datagrok-api") == true )' <<< "$dependencies")" ]; then
+                    deps+="datagrok-api:$(jq -r '."datagrok-api"' <<<$dependencies) "
+                  fi
+                  if [ -z "${deps}" ]; then
+                     bin/grok-meta.js "${grok_args[@]}"
+                  else
+                    for d in ${deps}; do
+                      dep=$(cut -d: -f1 <<<$d)
+                      depver=$(cut -d: -f2 <<<$d)
+                      dep_args=(--dep "$dep" --depver "$depver")
+                      bin/grok-meta.js "${grok_args[@]}" "${dep_args[@]}"
+                    done
+                  fi
+                fi
+              fi
+            fi
+          done
+      - name: Commit Meta package.json
+        id: git
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'github_actions@datagrok.ai'
+          git pull
+          continue=false
+          if [ -n "$(git status -s packages/Meta/package.json)" ]; then
+            git add packages/Meta/package.json
+            git add packages/Meta/package-lock.json
+            git commit -m "GitHub Actions: Bump Meta package version for ${{ steps.add.outputs.packages }}"
+            continue=true
+          fi
+          if [[ "${continue}" == "true" ]]; then
+            count=0
+            retries=10
+            until git push; do
+              exit=$?
+              wait=$((2 ** count))
+              count=$((count + 1))
+              if [ $count -lt "$retries" ]; then
+                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
+                sleep $wait
+                git pull --rebase
+              else
+                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
+                exit $exit
+              fi
+            done
+            echo "push=yes" >> $GITHUB_OUTPUT
+          fi
