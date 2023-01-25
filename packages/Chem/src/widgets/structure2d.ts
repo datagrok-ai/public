@@ -9,7 +9,7 @@ export function structure2dWidget(molecule: string): DG.Widget {
   try {
     _convertMolNotation(molecule, 'unknown', 'smiles', rdKitModule);
   } catch (e) {
-    return new DG.Widget(ui.divText('Molecule is possible malformed'));
+    return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
   const width = 200;
   const height = 100;

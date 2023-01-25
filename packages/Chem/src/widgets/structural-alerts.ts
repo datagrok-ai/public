@@ -51,7 +51,7 @@ export async function structuralAlertsWidget(molecule: string): Promise<DG.Widge
   try {
     alerts = await getStructuralAlerts(molecule);
   } catch (e) {
-    return new DG.Widget(ui.divText('Molecule is possible malformed'));
+    return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
   if (alerts.length == 0)
     return new DG.Widget(ui.divText('No alerts'));

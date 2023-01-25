@@ -17,7 +17,7 @@ export function drugLikenessWidget(molString: string): DG.Widget {
   try {
     molString = _convertMolNotation(molString, 'unknown', 'smiles', rdKitModule);
   } catch (e) {
-    return new DG.Widget(ui.divText('Molecule is possible malformed'));
+    return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
   let score: number;
   let description: OCL.IParameterizedString[];
