@@ -4,7 +4,6 @@ on:
     inputs:
       packages:
         description: 'Packages separated by spaces'
-        required: true
         type: string
   schedule:
     - cron:  '* * * * *'
