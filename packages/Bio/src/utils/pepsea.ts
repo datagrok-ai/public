@@ -22,23 +22,19 @@ export function pepseaDialog(): void {
   const methodInput = ui.choiceInput('Method', 'ginsi', methods);
   const gapOpenInput = ui.floatInput('Gap open', 1.53);
   const gapExtendInput = ui.floatInput('Gap extend', 0.0);
-  const clusterColInput = ui.columnInput('Clusters', table, table.columns.byIndex(1));
-  const alignByClusterInput = ui.boolInput('Use clusters?', false,
-    () => clusterColInput.root.hidden = !alignByClusterInput.value!);
-  alignByClusterInput.fireChanged();
+  const clusterColInput = ui.columnInput('Clusters', table, null);
 
   ui.dialog('PepSeA Multiple Sequence Alignment')
     .add(colInput)
     .add(methodInput)
     .add(gapOpenInput)
     .add(gapExtendInput)
-    .add(alignByClusterInput)
     .add(clusterColInput)
     .onOK(async () => {
       const progress = DG.TaskBarProgressIndicator.create('Performing MSA...');
       try {
         await perfromPepseaMSA(colInput.value!, methodInput.stringValue, gapOpenInput.value, gapExtendInput.value,
-          alignByClusterInput.value ? clusterColInput.value : null);
+          clusterColInput.value);
       } catch (e) {
         grok.shell.error('PepseaMsaError: Could not perform alignment. See console for details.');
         console.error(e);
