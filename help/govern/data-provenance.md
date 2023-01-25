@@ -1,7 +1,6 @@
-<!-- TITLE: Data provenance -->
-<!-- SUBTITLE: -->
-
-# Data provenance
+---
+title: "Data provenance"
+---
 
 Data provenance is the ability to fully understand everything that the result depends upon. This includes queries that
 were used to retrieve the initial raw data, transformations applied to the data, scripts that were executed, predictive
@@ -10,7 +9,7 @@ models that were used, datasets on which these models were trained, etc.
 Data provenance enables data scientists to reason about results, especially when they do not work in isolation. It also
 makes debugging the pipelines a lot easier, since you can go back and see how a particular change impacted the result.
 
-# Self-documented data flows
+## Self-documented data flows
 
 Since Datagrok already has a lot of information related to the data flows, in many cases there is no need to create and
 maintain documentation for the data flows. Datagrok offers several out-of-the-box jobs that build visual representations

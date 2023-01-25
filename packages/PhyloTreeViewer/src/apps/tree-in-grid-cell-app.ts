@@ -2,18 +2,13 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {PickingInfo} from '@deck.gl/core/typed';
-import {TooltipContent} from '@deck.gl/core/typed/lib/tooltip';
-import {Rect} from '@deck.gl/core/typed/passes/layers-pass';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {
   getPhylocanvasGlService,
-  NodeType,
-  parseNewick,
-  PhylocanvasGlServiceBase,
-  Shapes,
-  TreeTypes
-} from '@datagrok-libraries/bio';
-import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+  PhylocanvasGlServiceBase
+} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
+import {parseNewick, Shapes, TreeTypes} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 // //@ts-ignore
 // const oldInit = bio.PhylocanvasGL.prototype.init;

@@ -1,12 +1,11 @@
-<!-- TITLE: Scripting viewer -->
-<!-- SUBTITLE: -->
-
-# Scripting viewer
+---
+title: "Scripting viewer"
+---
 
 **Scripting viewers** are viewers implemented in R, Python, or Julia. Internally, they
 use [scripting](../../compute/scripting.md) for integration with the Datagrok platform.
 
-While not as interactive as the core Datagrok [viewers](../viewers.md), they allow to easily use thousands of
+While not as interactive as the core Datagrok [viewers](../viewers/viewers.md), they allow to easily use thousands of
 visualizations already developed for these languages.
 
 To add an existing viewer to a table view, select it from the
@@ -62,4 +61,4 @@ scripting viewer usage for time series decomposition.
 See also:
 
 * [Scripting](../../compute/scripting.md)
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)

@@ -2,10 +2,10 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {isLeaf, NodeType} from '@datagrok-libraries/bio';
 import * as rxjs from 'rxjs';
 import {Unsubscribable} from 'rxjs';
 import {HoverType} from './markup';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
 
 export type TreeRendererEventArgsType<TNode extends NodeType, THover extends HoverType<TNode>> = {
   target: TreeRendererBase<TNode, THover>,

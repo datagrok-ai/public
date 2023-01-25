@@ -2,14 +2,13 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {TreeViewer} from './viewers/tree/tree-viewer';
-import {TreeMapViewer} from './viewers/tree-map/tree-map-viewer';
 import {SunburstViewer} from './viewers/sunburst/sunburst-viewer';
 import {RadarViewer} from './viewers/radar/radar-viewer';
 import {TimelinesViewer} from './viewers/timelines/timelines-viewer';
 import {SankeyViewer} from './viewers/sankey/sankey';
 import {ChordViewer} from './viewers/chord/chord-viewer';
 import {WordCloudViewer} from './viewers/word-cloud/word-cloud-viewer';
-import {SubstituentAnalysisViewer} from './viewers/substituent-analysis/substituent-analysis-viewer';
+import {GroupAnalysisViewer} from './viewers/group-analysis/group-analysis-viewer';
 import {SurfacePlot} from './viewers/surface-plot/surface-plot';
 import {GlobeViewer} from './viewers/globe/globe-viewer';
 
@@ -56,13 +55,6 @@ export function _TreeViewer() {
   return new TreeViewer();
 }
 
-//name: TreeMapViewer
-//tags: viewer
-//output: viewer result
-export function _TreeMapViewer() {
-  return new TreeMapViewer();
-}
-
 //name: SunburstViewer
 //tags: viewer
 //output: viewer result
@@ -105,11 +97,11 @@ export function _SurfacePlot() {
   return new SurfacePlot();
 }
 
-//name: SubstituentAnalysisViewer
+//name: GroupAnalysisViewer
 //tags: viewer
 //output: viewer result
-export function _SubstituentAnalysisViewer() {
-  return new SubstituentAnalysisViewer();
+export function _GroupAnalysisViewer() {
+  return new GroupAnalysisViewer();
 }
 
 //name: radarViewerDemo

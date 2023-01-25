@@ -8,7 +8,7 @@ import * as C from '../utils/constants';
 import {createDifferenceCanvas, createDifferencesWithPositions} from './sequence-activity-cliffs';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
-import {getSplitter} from '@datagrok-libraries/bio';
+import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   hotSearch: boolean;
@@ -101,7 +101,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     const accIcon = ui.element('i');
     accIcon.className = 'grok-icon svg-icon svg-view-layout';
     acc.addTitle(ui.span([accIcon, ui.label(`Similarity search`)]));
-    acc.addPane('Differeces', () => propPanel, true);
+    acc.addPane('Differences', () => propPanel, true);
     grok.shell.o = acc.root;
   }
 }

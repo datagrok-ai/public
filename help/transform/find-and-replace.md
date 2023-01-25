@@ -1,7 +1,6 @@
-<!-- TITLE: Find and replace -->
-<!-- SUBTITLE: -->
-
-# Find and replace
+---
+title: "Find and replace"
+---
 
 This is the typical "Find and Replace" dialog that you see in every text editor, except that it supports specifying the
 columns to run against, and [search patterns](../explore/data-search-patterns.md)

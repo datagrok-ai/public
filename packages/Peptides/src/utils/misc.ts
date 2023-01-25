@@ -1,3 +1,5 @@
+import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as C from './constants';
 import * as type from './types';
@@ -66,4 +68,13 @@ export function extractMonomerInfo(col: DG.Column<string>): type.RawColumn {
     cat: col.categories,
     rawData: col.getRawData(),
   };
+}
+
+export function wrapDistroAndStatsDefault(labels: HTMLDivElement, histRoot: HTMLElement, tableMap: StringDictionary,
+  isTooltip: boolean = false): HTMLDivElement {
+  const result = ui.divV([labels, histRoot, ui.tableFromMap(tableMap)]);
+  result.style.minWidth = '200px';
+  if (isTooltip)
+    histRoot.style.maxHeight = '150px';
+  return result;
 }

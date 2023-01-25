@@ -1,6 +1,6 @@
-<!-- TITLE: SMTP configuration -->
-
-# Email service
+---
+title: "SMTP configuration"
+---
 
 Datagrok supports [Mailgun email delivery platform](https://www.mailgun.com/) and different SMTP servers,
 including [Amazon SES](https://aws.amazon.com/ses/). Configure a local SMTP server or use a cloud solution based on your

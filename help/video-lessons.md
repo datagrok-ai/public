@@ -1,7 +1,6 @@
-<!-- TITLE: Video lessons -->
-<!-- SUBTITLE: -->
-
-# Video lessons
+---
+title: "Video lessons"
+---
 
 Check out our [YouTube channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6Ji-iOBYg) for more videos.
 

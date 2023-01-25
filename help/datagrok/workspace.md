@@ -1,7 +1,6 @@
-<!-- TITLE: Workspace -->
-<!-- SUBTITLE: -->
-
-# Workspace
+---
+title: "Workspace"
+---
 
 Workspace is a collection of currently opened projects.
 

@@ -56,6 +56,6 @@ export class HierarchicalClusteringApp {
       this.tv = grok.shell.addTableView(this.df, DG.DOCK_TYPE.FILL);
 
     this.tv.path = this.tv.basePath = `/func/${_package.name}.hierarchicalClusteringApp`;
-    hierarchicalClusteringUI(this.df, ['HEIGHT'], 'euclidean', 'ward');
+    await hierarchicalClusteringUI(this.df, ['HEIGHT'], 'euclidean', 'ward');
   }
 }

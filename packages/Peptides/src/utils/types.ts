@@ -40,3 +40,5 @@ export type StatsInfo = {
 }
 
 export type RawColumn = {name: string, rawData: RawData, cat?: string[]};
+
+export type CustomClusters = {[clusterName: string]: number[] | Int32Array};

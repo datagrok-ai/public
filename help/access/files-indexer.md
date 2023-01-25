@@ -1,7 +1,6 @@
-<!-- TITLE: Indexing File Shares -->
-<!-- SUBTITLE: -->
-
-# Indexing file shares
+---
+title: "Indexing File Shares"
+---
 
 For data sources that support file access, the Datagrok platform provides a file indexing feature. File indexer is a
 data job with hourly recurrence that indexes files with

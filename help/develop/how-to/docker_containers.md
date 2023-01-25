@@ -1,6 +1,6 @@
-<!-- TITLE: Creating a docker container -->
-
-# Docker containers
+---
+title: "Creating a docker container"
+---
 
 This document explains how to create a package that is capable of running docker containers on the Datagrok instance.
 

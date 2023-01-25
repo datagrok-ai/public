@@ -4,17 +4,16 @@ import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
 import {
-  AminoacidsPalettes,
   getAlphabetSimilarity,
   getStats,
   monomerToShort,
-  Nucleotides,
-  NucleotidesPalettes,
   pickUpPalette,
   splitterAsFasta,
   splitterAsHelm,
-  UnknownSeqPalette
-} from '@datagrok-libraries/bio';
+} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {Nucleotides, NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucleotides';
+import {AminoacidsPalettes} from '@datagrok-libraries/bio/src/aminoacids';
+import {UnknownSeqPalette} from '@datagrok-libraries/bio/src/unknown';
 
 category('bio', () => {
   const csvDfN1: string = `seq
