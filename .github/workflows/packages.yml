@@ -138,11 +138,14 @@ jobs:
         run: |
           commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
-
+          grok_deps="$(jq  -r '. | select( has("grokDependencies") == true ).grokDependencies | to_entries[] | .key' packages/${{ matrix.package }}/package.json)"
           profiles='--profile datagrok --profile db --profile grok_spawner'
-          if [[ "${{ matrix.package }}" == "Chem" ]] || \
-             [[ "${{ matrix.package }}" == "SimPKPD" ]] || \
-             [[ "${{ matrix.package }}" == "Dendrogram" ]]; then
+          if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "simpkpd" ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "dendrogram" ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"simpkpd"* ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"dendrogram"* ]]; then
             profiles+=' --profile cvm'
           fi
 
