@@ -445,14 +445,13 @@ export function rGroupsAnalysisMenu(): void {
   rGroupAnalysis(col);
 }
 
-//top-menu: Chem | Substituent Analysis...
-//name: substituentAnalysis
-//input: dataframe table
-export function substituentAnalysisMenu(table: DG.DataFrame): void {
-  const packageExists = checkPackage('Charts', '_SubstituentAnalysisViewer');
+//top-menu: Chem | Group Analysis...
+//name: groupAnalysis
+export function groupAnalysisMenu(): void {
+  const packageExists = checkPackage('Charts', '_GroupAnalysisViewer');
   if (packageExists) {
-    const substituentAnalysisViewer = DG.Viewer.fromType('SubstituentAnalysisViewer', table, {});
-    grok.shell.tv.addViewer(substituentAnalysisViewer);
+    const groupAnalysisViewer = DG.Viewer.fromType('GroupAnalysisViewer', grok.shell.tv.dataFrame, {});
+    grok.shell.tv.addViewer(groupAnalysisViewer);
   } else {
     grok.shell.warning('Charts package is not installed');
   }
