@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.1.76",
+  "version": "3.1.75",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -147,9 +147,6 @@
           "datagrok-api": "^1.6.0"
         },
         "1.3.27": {
-          "datagrok-api": "^1.6.0"
-        },
-        "1.3.29": {
           "datagrok-api": "^1.6.0"
         }
       },
@@ -675,9 +672,6 @@
         },
         "1.1.4": {
           "datagrok-api": "^1.9.1"
-        },
-        "1.1.5": {
-          "datagrok-api": "^1.9.1"
         }
       },
       "description": "",
@@ -905,9 +899,6 @@
         },
         "1.0.1": {
           "datagrok-api": "^1.0.0"
-        },
-        "1.0.8": {
-          "datagrok-api": "^1.11.1"
         }
       },
       "description": "DrugBank is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
@@ -916,7 +907,7 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/DrugBank"
       },
-      "category": "Cheminformatics"
+      "category": "Health"
     },
     "grok-scripts": {
       "dependencies": {
@@ -1069,7 +1060,7 @@
     "charpy": {
       "dependencies": {
         "1.0.4": {
-          "datagrok-api": "^1.0.0"
+          "datagrok-api": "^0.94.10"
         }
       },
       "description": "ChaRPy package extends Datagrok viewers with two commands 'To Python script' and 'To R script', which translate a selected viewer to Python or R code, respectively, along with executing this code for displaying the resulting plot. The two commands are available via a hamburger menu (a top-left button in a viewer's header), and supported for most of the viewers in Datagrok.",
@@ -1196,9 +1187,6 @@
           "datagrok-api": "^1.6.0"
         },
         "1.0.18": {
-          "datagrok-api": "^1.11.0"
-        },
-        "1.0.19": {
           "datagrok-api": "^1.11.0"
         }
       },
@@ -2312,9 +2300,6 @@
         },
         "1.0.2": {
           "datagrok-api": "^1.6.0"
-        },
-        "1.0.3": {
-          "datagrok-api": "^1.11.1"
         }
       },
       "description": "PKPD simulations tools",
@@ -2372,17 +2357,6 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/labs.git",
         "directory": "packages/ChemDraw"
-      }
-    },
-    "gridextdemo": {
-      "dependencies": {
-        "1.0.0": {}
-      },
-      "description": "Demos of Grid Extensions",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/gridextdemo"
       }
     }
   }
