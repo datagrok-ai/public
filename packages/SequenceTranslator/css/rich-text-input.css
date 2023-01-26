@@ -1,0 +1,27 @@
+.rich-text > textarea {
+  width: 100%;
+  -webkit-text-fill-color: transparent;
+  background-color: transparent;
+  position: relative;
+  z-index: 1;
+  resize: none;
+  height: 22px; /* Fine tuned value to avoid "jumping" of the textarea upon autoresize */
+}
+
+.rich-text > div {
+  /* The values here are fine tuned to those of the ui.input textarea in order
+   * to achieve precise overlap */
+  overflow: auto;
+  position: absolute;
+  pointer-events: none;
+  cursor: text;
+  z-index: 0;
+  max-width: 100%;
+  padding: 2px;
+  line-height: normal;
+  font-family: 'Roboto Mono', 'Roboto Mono Local', monospace;
+  font-size: 12px;
+  color: transparent;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}

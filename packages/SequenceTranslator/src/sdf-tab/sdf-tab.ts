@@ -14,14 +14,13 @@ import {sequenceToMolV3000} from '../utils/structures-works/from-monomers';
 import {linkStrandsV3000} from '../utils/structures-works/mol-transformations';
 import {isValidSequence} from './sequence-codes-tools';
 import {drawMolecule} from '../utils/structures-works/draw-molecule';
+import {RichTextInput, demoColorizer} from '../utils/rich-text-input';
 
 /** Data associated with strands */
 type StrandData = {
   strand: string,
   invert: boolean
 }
-
-const debugHighlight = true;
 
 /** Get a molfile for a single strand */
 function getMolfileForStrand(strand: string, invert: boolean): string {
@@ -115,60 +114,14 @@ export function getSdfTab(): HTMLDivElement {
   let invertAS2 = false;
 
   // text inputs
-  const ssInput = ui.textInput('', '', () => { onInput.next(); });
-  const asInput = ui.textInput('', '', () => { onInput.next(); });
-  const as2Input = ui.textInput('', '', () => { onInput.next(); });
+  const ssInputBase = ui.textInput('', '', () => { onInput.next(); });
+  const asInputBase = ui.textInput('', '', () => { onInput.next(); });
+  const as2InputBase = ui.textInput('', '', () => { onInput.next(); });
 
-  // auto resizeable text areas
-  [ssInput, asInput, as2Input].forEach(
-    (inputBase) => {
-      inputBase.onInput(
-        () => {
-          const textArea = inputBase.root.getElementsByTagName('textarea').item(0);
-          $(textArea).css('height', 0);
-          $(textArea).css('height', (textArea!.scrollHeight) + 'px');
-        }
-      );
-    }
-  );
+  const ssRichInput = new RichTextInput(ssInputBase, demoColorizer);
+  const asRichInput = new RichTextInput(asInputBase, demoColorizer);
+  const as2RichInput = new RichTextInput(as2InputBase, demoColorizer);
 
-  // highlight malformed inputs
-  [ssInput, asInput, as2Input].forEach(
-    (inputBase) => {
-      const transparent = ui.span([]);
-      const highlights = ui.div([transparent]);
-      $(highlights).addClass('sdf-highlights');
-      inputBase.root.appendChild(highlights);
-
-      inputBase.onInput(() => {
-        if (debugHighlight) {
-          const inputValue = inputBase.value;
-
-          // validate sequence
-          const cutoff = isValidSequence(inputValue, null).indexOfFirstNotValidChar;
-          const isValid = cutoff < 0 || inputValue === '';
-
-          // add red highlighted area in case the sequence is invalid
-          if (!isValid) {
-            const mark = highlights.getElementsByTagName('mark').item(0);
-            const transparent = highlights.getElementsByTagName('span').item(0)!;
-            const highlighted = mark === null ? false : true;
-            const transparentText = inputBase.value.slice(0, cutoff);
-            const highlightedText = inputBase.value.slice(cutoff);
-            transparent.innerHTML = transparentText;
-            if (highlighted)
-              mark!.innerHTML = highlightedText;
-            else
-              highlights.innerHTML = highlights.innerHTML + '<mark>' + highlightedText + '</mark>';
-          } else {
-            highlights.innerHTML = '';
-            transparent.innerHTML = '';
-            highlights.appendChild(transparent);
-          }
-        }
-      });
-    }
-  );
 
   // bool inputs
   const saveEntity = ui.boolInput('Save as one entity', true);
@@ -206,11 +159,11 @@ export function getSdfTab(): HTMLDivElement {
     ['ss', 'as1', 'as2'], (row, index) => {
       switch (row) {
       case 'ss':
-        return [ssLabel, ssInput.root, ssDirection.root];
+        return [ssLabel, ssRichInput.root, ssDirection.root];
       case 'as1':
-        return [asLabel, asInput.root, asDirection.root];
+        return [asLabel, asRichInput.root, asDirection.root];
       case 'as2':
-        return [as2Label, as2Input.root, as2Direction.root];
+        return [as2Label, as2RichInput.root, as2Direction.root];
       }
     }, ['', '', '']
   );
@@ -225,7 +178,7 @@ export function getSdfTab(): HTMLDivElement {
   for (const item of [ssDirection.root, asDirection.root, as2Direction.root])
     item.parentElement!.classList.add('sdf-input-form', 'sdf-choice-input-label');
 
-  for (const item of [ssInput, asInput, as2Input]) {
+  for (const item of [ssInputBase, asInputBase, as2InputBase]) {
     // text area's parent td
     item.root.parentElement!.classList.add('sdf-text-input-td');
   }
@@ -238,9 +191,9 @@ export function getSdfTab(): HTMLDivElement {
     let molfile = '';
     try {
       molfile = getLinkedMolfile(
-        {strand: ssInput.value, invert: invertSS},
-        {strand: asInput.value, invert: invertAS},
-        {strand: as2Input.value, invert: invertAS2}, useChiralInput.value!
+        {strand: ssInputBase.value, invert: invertSS},
+        {strand: asInputBase.value, invert: invertAS},
+        {strand: as2InputBase.value, invert: invertAS2}, useChiralInput.value!
       );
     } catch (err) {
       const errStr = errorToConsole(err);
@@ -257,9 +210,9 @@ export function getSdfTab(): HTMLDivElement {
   const saveButton = ui.buttonsInput([
     ui.bigButton('Save SDF', () =>
       saveSdf(
-        {strand: ssInput.value, invert: invertSS},
-        {strand: asInput.value, invert: invertAS},
-        {strand: as2Input.value, invert: invertAS2},
+        {strand: ssInputBase.value, invert: invertSS},
+        {strand: asInputBase.value, invert: invertAS},
+        {strand: as2InputBase.value, invert: invertAS2},
         useChiralInput.value!,
         saveEntity.value!
       )

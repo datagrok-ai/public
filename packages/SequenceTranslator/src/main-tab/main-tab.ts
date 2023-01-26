@@ -180,7 +180,6 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
     downloadMolFileIcon,
     copySmilesIcon,
     viewMonomerLibIcon,
-    // switchInput.root, // todo: remove from top panel
   ];
 
   const v = grok.shell.v;
