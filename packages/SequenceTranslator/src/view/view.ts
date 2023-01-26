@@ -27,6 +27,9 @@ export class SequenceTranslatorUI {
 
     // top panel icons
     const viewMonomerLibIcon = ui.iconFA('book', viewMonomerLib, 'View monomer library');
+    // const viewHint = ui.iconFA('lightbulb', () => {}, 'hhh');
+    // const appHint = ui.iconFA('circle-question', () => {}, 'About the app');
+    // const info = ui.iconFA('circle-info', () => {}, 'About the app');
     this._topPanel = [viewMonomerLibIcon];
     this._view.setRibbonPanels([this._topPanel]);
 
