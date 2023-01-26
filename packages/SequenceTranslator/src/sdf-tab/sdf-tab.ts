@@ -118,8 +118,24 @@ export function getSdfTab(): HTMLDivElement {
   const asInputBase = ui.textInput('', '', () => { onInput.next(); });
   const as2InputBase = ui.textInput('', '', () => { onInput.next(); });
 
-  const ssRichInput = new RichTextInput(ssInputBase, demoColorizer);
-  const asRichInput = new RichTextInput(asInputBase, demoColorizer);
+  const invalidSubsequenceColorizer = function(input: string): HTMLSpanElement[] {
+    // validate sequence
+    const cutoff = isValidSequence(input, null).indexOfFirstNotValidChar;
+    const isValid = cutoff < 0 || input === '';
+    const greyTextSpan = ui.span([]);
+    $(greyTextSpan).css('-webkit-text-fill-color', 'var(--grey-6)');
+    const redTextSpan = ui.span([]);
+    $(redTextSpan).css('-webkit-text-fill-color', 'red');
+
+    if (!isValid) {
+      greyTextSpan.innerHTML = input.slice(0, cutoff);
+      redTextSpan.innerHTML = input.slice(cutoff);
+    } else { greyTextSpan.innerHTML = input; }
+    return [greyTextSpan, redTextSpan];
+  };
+
+  const ssRichInput = new RichTextInput(ssInputBase, invalidSubsequenceColorizer);
+  const asRichInput = new RichTextInput(asInputBase, invalidSubsequenceColorizer);
   const as2RichInput = new RichTextInput(as2InputBase, demoColorizer);
 
 
