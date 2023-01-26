@@ -13,8 +13,9 @@ import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 // inner dependencies
 import {isValidSequence} from '../sdf-tab/sequence-codes-tools';
 import {drawMolecule} from '../utils/structures-works/draw-molecule';
-import {RichTextInput, demoColorizer} from '../utils/rich-text-input';
-import {getLinkedMolfile, getMolfileForStrand, saveSdf} from '../sdf-tab/sdf-tab';
+import {invalidSubsequencePainter, demoPainter} from './input-painters';
+import {getLinkedMolfile, saveSdf} from '../sdf-tab/sdf-tab';
+import {ColoredTextInput} from '../utils/colored-text-input';
 
 export class SdfTabUI {
   constructor() {
@@ -42,27 +43,9 @@ function getSdfTab(): HTMLDivElement {
   const asInputBase = ui.textInput('', '', () => { onInput.next(); });
   const as2InputBase = ui.textInput('', '', () => { onInput.next(); });
 
-  // todo: port to another place
-  const invalidSubsequenceColorizer = function(input: string): HTMLSpanElement[] {
-    // validate sequence
-    const cutoff = isValidSequence(input, null).indexOfFirstNotValidChar;
-    const isValid = cutoff < 0 || input === '';
-    const greyTextSpan = ui.span([]);
-    $(greyTextSpan).css('-webkit-text-fill-color', 'var(--grey-6)');
-    const redTextSpan = ui.span([]);
-    $(redTextSpan).css('-webkit-text-fill-color', 'red');
-
-    if (!isValid) {
-      greyTextSpan.innerHTML = input.slice(0, cutoff);
-      redTextSpan.innerHTML = input.slice(cutoff);
-    } else { greyTextSpan.innerHTML = input; }
-    return [greyTextSpan, redTextSpan];
-  };
-
-  const ssRichInput = new RichTextInput(ssInputBase, invalidSubsequenceColorizer);
-  const asRichInput = new RichTextInput(asInputBase, invalidSubsequenceColorizer);
-  const as2RichInput = new RichTextInput(as2InputBase, demoColorizer);
-
+  const ssColoredInput = new ColoredTextInput(ssInputBase, invalidSubsequencePainter);
+  const asColoredInput = new ColoredTextInput(asInputBase, demoPainter);
+  const as2ColoredInput = new ColoredTextInput(as2InputBase, demoPainter);
 
   // bool inputs
   const saveEntity = ui.boolInput('Save as one entity', true);
@@ -100,11 +83,11 @@ function getSdfTab(): HTMLDivElement {
     ['ss', 'as1', 'as2'], (row, index) => {
       switch (row) {
       case 'ss':
-        return [ssLabel, ssRichInput.root, ssDirection.root];
+        return [ssLabel, ssColoredInput.root, ssDirection.root];
       case 'as1':
-        return [asLabel, asRichInput.root, asDirection.root];
+        return [asLabel, asColoredInput.root, asDirection.root];
       case 'as2':
-        return [as2Label, as2RichInput.root, as2Direction.root];
+        return [as2Label, as2ColoredInput.root, as2Direction.root];
       }
     }, ['', '', '']
   );

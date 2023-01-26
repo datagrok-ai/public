@@ -174,8 +174,6 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
     ).then(() => grok.shell.info(SEQUENCE_COPIED_MSG));
   }, 'Copy SMILES');
 
-  const viewMonomerLibIcon = ui.iconFA('book', viewMonomerLib, 'View monomer library');
-
   const mainTabBody = ui.box(
     ui.splitH([
       ui.splitV([

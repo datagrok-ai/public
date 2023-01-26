@@ -3,19 +3,23 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import '../../css/rich-text-input.css';
-
+// external modules dependencies
 import $ from 'cash-dom';
 
-/** Class for colorizing input in textarea  */
-export class RichTextInput {
+// inner dependencies
+import '../../css/colored-text-input.css';
+
+
+/** Class for colorizing input in textarea.  */
+export class ColoredTextInput {
   constructor(
     textInputBase: DG.InputBase<string>,
-    colorizer: (str: string) => HTMLSpanElement[],
+    painter: (str: string) => HTMLSpanElement[],
+    /** Resize, no scrolls  */
     resizeable: boolean = true
   ) {
     this.textInputBase = textInputBase;
-    this.colorizer = colorizer;
+    this.painter = painter;
     $(this.root).addClass('rich-text');
     if (resizeable) {
       // make input field automatically resizeable
@@ -34,7 +38,8 @@ export class RichTextInput {
 
   private textInputBase: DG.InputBase<string>;
   private highlights: HTMLDivElement;
-  private colorizer: (str: string) => HTMLSpanElement[];
+  /** Divide input value into an array of spans, each with its own text color, use -webkit-text-fill-color. */
+  private painter: (str: string) => HTMLSpanElement[];
 
   get textArea() {
     return this.textInputBase.root.getElementsByTagName('textarea').item(0);
@@ -43,22 +48,8 @@ export class RichTextInput {
   get root() { return this.textInputBase.root; };
 
   private colorize() {
-    const spans = this.colorizer(this.textInputBase.value);
+    const spans = this.painter(this.textInputBase.value);
     this.highlights.innerHTML = '';
     spans.forEach((span: HTMLSpanElement) => this.highlights.appendChild(span));
   }
-}
-
-export function demoColorizer(input: string): HTMLSpanElement[] {
-  const colors = ['red', 'blueviolet', 'chartreuse',
-    'aquamarine', 'darkcyan', 'gold', 'green', 'aqua', 'orange',
-    'blue'];
-  const spans: HTMLSpanElement[] = [];
-  for (let i = 0; i < input.length; ++i) {
-    const span = ui.span([input.at(i)]);
-    // $(span).css('-webkit-text-fill-color', colors.at(Math.round(Math.random() * colors.length))!);
-    $(span).css('-webkit-text-fill-color', colors.at(i % colors.length)!);
-    spans.push(span);
-  }
-  return spans;
 }

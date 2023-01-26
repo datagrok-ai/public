@@ -9,13 +9,7 @@ import {OligoSdFileApp} from './apps/oligo-sd-file-app';
 
 // three tabs of the app's view
 
-import {LIB_PATH, DEFAULT_LIB_FILENAME} from './utils/const';
 import {SequenceTranslatorUI} from './view/view';
-const MAIN = 'MAIN';
-const AXOLABS = 'AXOLABS';
-const SDF = 'SDF';
-const SEQUENCE_TRANSLATOR = 'Sequence Translator';
-const DEFAULT_SEQUENCE = 'fAmCmGmAmCpsmU';
 
 export const _package = new DG.Package();
 
