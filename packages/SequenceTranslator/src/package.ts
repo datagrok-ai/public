@@ -2,14 +2,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+// datagrok libraries dependencies
 import {IMonomerLib, MonomerWorks, readLibrary} from '@datagrok-libraries/bio';
 
+// inner dependencies
 import {autostartOligoSdFileSubscription} from './autostart/registration';
 import {OligoSdFileApp} from './apps/oligo-sd-file-app';
-
-// three tabs of the app's view
-
 import {SequenceTranslatorUI} from './view/view';
+import {LIB_PATH, DEFAULT_LIB_FILENAME} from './utils/const';
 
 export const _package = new DG.Package();
 
@@ -24,20 +24,16 @@ export function getMonomerLib() {
   return monomerLib;
 }
 
+
 //name: Sequence Translator
 //tags: app
 export async function sequenceTranslator(): Promise<void> {
-  // monomerLib = await readLibrary(LIB_PATH, DEFAULT_LIB_FILENAME);
-  // const pathParts: string[] = window.location.pathname.split('/');
-  // // here the value is '' and ''
+  monomerLib = await readLibrary(LIB_PATH, DEFAULT_LIB_FILENAME);
+  const pathParts: string[] = window.location.pathname.split('/');
+  // here the value is '' and ''
 
-  // if (monomerWorks === null)
-  //   monomerWorks = new MonomerWorks(monomerLib);
-
-  // const windows = grok.shell.windows;
-  // windows.showProperties = false;
-  // windows.showToolbox = false;
-  // windows.showHelp = false;
+  if (monomerWorks === null)
+    monomerWorks = new MonomerWorks(monomerLib);
 
   // let urlParams = new URLSearchParams(window.location.search);
 

@@ -10,7 +10,7 @@ import $ from 'cash-dom';
 import '../../css/colored-text-input.css';
 
 
-/** Class for colorizing input in textarea.  */
+/** Class for colorizing input in the textarea of DG.InputBase.  */
 export class ColoredTextInput {
   constructor(
     textInputBase: DG.InputBase<string>,
