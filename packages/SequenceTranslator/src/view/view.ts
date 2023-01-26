@@ -8,6 +8,7 @@ import {MAIN_TAB, AXOLABS_TAB, SDF_TAB} from './view-const';
 import {MainTabUI} from './main-tab-ui';
 import {SdfTabUI} from './sdf-tab-ui';
 import {AxolabsTabUI} from './axolabs-tab-ui';
+import {viewMonomerLib} from '../utils/monomer-lib-viewer';
 
 /** Class responsible for the UI of the application */
 export class SequenceTranslatorUI {
@@ -24,33 +25,23 @@ export class SequenceTranslatorUI {
     windows.showToolbox = false;
     windows.showHelp = false;
 
-    // const mainTab = new MainTabUI(
-    //   (seq) => {
-    //     mainTab.inputSequence = seq;
-    //     urlParams = new URLSearchParams();
-    //     urlParams.set('seq', mainSeq);
-    //     this.updatePath();
-    //   });
+    // top panel icons
+    const viewMonomerLibIcon = ui.iconFA('book', viewMonomerLib, 'View monomer library');
+    this._topPanel = [viewMonomerLibIcon];
+    this._view.setRibbonPanels([this._topPanel]);
 
     this._tabs = new TabLayout(
-      new MainTabUI((seq) => {}), new AxolabsTabUI, new SdfTabUI
+      new MainTabUI((seq: string) => {}), new AxolabsTabUI(), new SdfTabUI()
     );
-
-    this._tabs.onTabChanged.subscribe(() => {
-      // if (this._tabs.currentTab !== MAIN_TAB)
-      //   urlParams.delete('seq');
-      // else
-      //   urlParams.set('seq', this.inputSequence);
-      // this.updatePath();
-    });
 
     this._view.append(this._tabs.control);
   }
 
   /** Master view containing app's main interface elements */
   private readonly _view: DG.View;
-  /** Control for 3 tabs: Main, Axolabs, SDF */
+  /** Control for 3 master tabs: Main, Axolabs, SDF */
   private readonly _tabs: TabLayout;
+  private readonly _topPanel: HTMLElement[];
   private readonly _router: URLRouter;
 
   get view() { return this._view; };

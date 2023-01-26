@@ -8,9 +8,6 @@ import {autostartOligoSdFileSubscription} from './autostart/registration';
 import {OligoSdFileApp} from './apps/oligo-sd-file-app';
 
 // three tabs of the app's view
-import {getMainTab} from './main-tab/main-tab';
-import {getAxolabsTab} from './axolabs-tab/axolabs-tab';
-import {getSdfTab} from './sdf-tab/sdf-tab';
 
 import {LIB_PATH, DEFAULT_LIB_FILENAME} from './utils/const';
 import {SequenceTranslatorUI} from './view/view';
