@@ -177,8 +177,10 @@ export function test(args: TestArgs): boolean {
       if (r.failed) {
         console.log(r.failReport);
         color.fail('Tests failed.');
+        testUtils.exitWithCode(1);
       } else {
         color.success('Tests passed.');
+        testUtils.exitWithCode(0);
       }
     
       //@ts-ignore

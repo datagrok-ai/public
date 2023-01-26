@@ -1,0 +1,135 @@
+.sidebar {
+    position: fixed;
+    left:0;
+    top:70px;
+    bottom:0;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    width: 0;
+    transition: all 0.26s ease;
+    background-color: white;
+    z-index: 1000;
+}
+
+body.sidebar-shown .sidebar {
+    width: 300px;
+    transition: all 0.26s ease;
+}
+
+@media (min-width: 992px) {
+    body.sidebar-shown {
+        padding-left: 300px;
+        transition: padding-left 0.26s ease;
+    }
+}
+
+body {
+    padding-left: 0;
+    transition: padding-left 0.26s ease;
+}
+
+.tree-menu {
+    padding: 12px;
+    width: 300px;
+}
+
+.tree-menu ul {
+    flex-direction: column;
+    display: flex;
+    padding-left: 0;
+    margin-bottom: 0;
+    list-style: none;
+}
+
+.tree-menu ul li {
+}
+
+.tree-menu li > ul {
+    padding-left: 16px;
+}
+
+.tree-menu li > label {
+    margin: 0;
+    cursor: pointer;
+    width: 100%;
+    padding: 4px;
+}
+
+.tree-menu li > label:hover {
+    background-color: #F0F0F3;}
+
+.tree-menu li > a {
+    display: flex;
+    width: 100%;
+    padding: 4px;
+    margin-left: 20px;
+    position: relative;
+}
+
+.tree-menu li > a.active {
+    font-weight: bold;
+}
+
+.tree-menu li > label:before {
+    font-family: "Font Awesome 5 Pro";
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+    display: inline-block;
+    font-style: normal;
+    font-variant: normal;
+    text-rendering: auto;
+    line-height: 1;
+    content: "\f054";
+    width: 20px;
+    text-align: center;
+    font-size: 10px;
+    transition: all 0.26s ease;
+    top: -1px;
+    position: relative;
+}
+
+.tree-menu a.d4-link-external:after {
+    top: 7px;
+    margin-left: 6px!important;
+    position: absolute!important;
+    left: -18px;
+}
+
+.tree-menu.search li:not(.expanded-search) {
+    display: none;
+}
+
+
+.tree-menu li.expanded > label:before,
+.tree-menu li.expanded-current > label:before,
+.tree-menu li.expanded-search > label:before {
+    transform: rotate(90deg);
+    transition: all 0.26s ease;
+}
+
+.tree-menu li > ul  {
+    display: none;
+ /*   //transition: all 0.26s ease;*/
+    overflow: hidden;
+
+}
+
+.tree-menu li.expanded > ul,
+.tree-menu li.expanded-current > ul,
+.tree-menu li.expanded-search > ul {
+    margin-bottom: 8px;
+    display: flex;
+   /* transition: all 0.26s ease;*/
+
+}
+
+
+nav .fa-folder-tree {
+    color: #566C90;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+nav .fa-folder-tree:hover {
+    -webkit-filter: contrast(90%) brightness(110%);
+}

@@ -2,8 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import { filter, map } from 'rxjs/operators';
-import { Tutorial } from "../../../tutorial";
-import { _package } from '../../../package';
+import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 import { interval } from 'rxjs';
 import wu from "wu";
 

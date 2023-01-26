@@ -8,7 +8,7 @@ import { da } from './tracks/data-access';
 import { ml } from './tracks/ml';
 import { TutorialWidget } from './widget';
 import '../css/tutorial.css';
-import { Track } from './track';
+import { Track } from '@datagrok-libraries/tutorials/src/track';
 
 
 export const _package = new DG.Package();

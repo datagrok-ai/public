@@ -50,7 +50,7 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
               ui.tooltip.bind(
                 ui.divText(sequence.slice(indexOfFirstNotValidChar), {style: {color: 'red'}}),
                 'Expected format: ' + JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).synthesizer +
-                '. See tables with valid codes on the right',
+                '. See tables with valid codes on the right'
               ),
             ]) : //@ts-ignore
             ui.link(outputSequenceObj[key], () => navigator.clipboard.writeText(outputSequenceObj[key])
@@ -113,7 +113,7 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
       {'Name': 'rC', 'BioSpring': '', 'Janssen GCRS': 'rC'},
       {'Name': 'rG', 'BioSpring': '', 'Janssen GCRS': 'rG'},
       {'Name': 'rU', 'BioSpring': '', 'Janssen GCRS': 'rU'},
-    ])!, {showRowHeader: false, showCellTooltip: false, allowEdit: false},
+    ])!, {showRowHeader: false, showCellTooltip: false, allowEdit: false}
   );
 
   const omeAndFluoroGrid = DG.Viewer.grid(
@@ -127,13 +127,13 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
       {'Name': '2\'OMe-rC', 'BioSpring': '7', 'Axolabs': 'c', 'Janssen GCRS': 'mC'},
       {'Name': '2\'OMe-rG', 'BioSpring': '8', 'Axolabs': 'g', 'Janssen GCRS': 'mG'},
       {'Name': 'ps linkage', 'BioSpring': '*', 'Axolabs': 's', 'Janssen GCRS': 'ps'},
-    ])!, {showRowHeader: false, showCellTooltip: false, allowEdit: false},
+    ])!, {showRowHeader: false, showCellTooltip: false, allowEdit: false}
   );
 
   const overhangModificationsGrid = DG.Viewer.grid(
     DG.DataFrame.fromColumns([
       DG.Column.fromStrings('Name', Object.keys(MODIFICATIONS)),
-    ])!, {showRowHeader: false, showCellTooltip: false, allowEdit: false},
+    ])!, {showRowHeader: false, showCellTooltip: false, allowEdit: false}
   );
   updateTableAndMolecule(DEFAULT_INPUT);
 
@@ -158,7 +158,7 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
   $(codesTablesDiv).hide();
   const switchInput = ui.switchInput('Codes', false, (v: boolean) => (v) ?
     $(codesTablesDiv).show() :
-    $(codesTablesDiv).hide(),
+    $(codesTablesDiv).hide()
   );
 
   const downloadMolFileIcon = ui.iconFA('download', async () => {
@@ -180,7 +180,6 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
     downloadMolFileIcon,
     copySmilesIcon,
     viewMonomerLibIcon,
-    switchInput.root, // todo: remove from top panel
   ];
 
   const v = grok.shell.v;
@@ -190,11 +189,11 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
   });
   v.setRibbonPanels([topPanel]);
 
-  return ui.box(
+  const mainTabBody = ui.box(
     ui.splitH([
       ui.splitV([
         ui.panel([
-          appMainDescription,
+          // appMainDescription,
           ui.div([
             ui.h1('Input sequence'),
             ui.div([], 'input-base'),
@@ -209,6 +208,8 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
         ], 'main-sequence'),
       ]),
       codesTablesDiv,
-    ], {style: {height: '100%', width: '100%'}}),
+    ], {style: {height: '100%', width: '100%'}})
   );
+
+  return mainTabBody;
 }

@@ -49,6 +49,7 @@ export class SARViewerBase extends DG.JsViewer {
     if (!refreshOnly) {
       $(this.root).empty();
       let switchHost = ui.divText('Most Potent Residues', {id: 'pep-viewer-title'});
+      let tips: HTMLDivElement = ui.div();
       if (this.name == 'MC') {
         const mutationCliffsMode = ui.boolInput('', this.isMutationCliffsMode === '1');
         mutationCliffsMode.root.addEventListener('click', () => {
@@ -78,10 +79,14 @@ export class SARViewerBase extends DG.JsViewer {
 
         switchHost = ui.divH([mutationCliffsMode.root, invariantMapMode.root], {id: 'pep-viewer-title'});
         $(switchHost).css('width', 'auto').css('align-self', 'center');
+        const colorTip = ui.divText('Color intensity - p-value', {style: {fontSize: '11px'}});
+        const radiusTip = ui.divText('Circle size - Mean difference', {style: {fontSize: '11px'}});
+        tips = ui.divV([colorTip, radiusTip], {style: {position: 'absolute', right: '0'}});
       }
       const viewerRoot = this.viewerGrid.root;
       viewerRoot.style.width = 'auto';
-      this.root.appendChild(ui.divV([switchHost, viewerRoot]));
+      const header = ui.divH([switchHost, tips], {style: {alignSelf: 'center', lineHeight: 'normal'}});
+      this.root.appendChild(ui.divV([header, viewerRoot]));
     }
     this.viewerGrid?.invalidate();
   }

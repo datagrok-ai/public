@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 
 import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import {saveAsFastaDo, wrapSequence} from '../utils/save-as-fasta';
-import {splitterAsFasta} from '@datagrok-libraries/bio';
+import {splitterAsFasta} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 type SaveAsFastaTestArgs = { srcCsv: string, idCols: string [], seqCol: string, lineWidth: number, tgtFasta: string };
 

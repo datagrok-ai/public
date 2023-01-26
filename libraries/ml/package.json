@@ -4,10 +4,10 @@
     "access": "public"
   },
   "friendlyName": "Datagrok ML library",
-  "version": "6.3.7",
+  "version": "6.3.10",
   "description": "Machine learning supporting utilities",
   "dependencies": {
-    "datagrok-api": "^1.6.7",
+    "datagrok-api": "^1.10.2",
     "@datagrok-libraries/utils": "^1.6.2",
     "cash-dom": "latest",
     "dayjs": "latest",
@@ -20,6 +20,7 @@
   "devDependencies": {
     "typescript": "^4.2.3",
     "ts-loader": "^9.2.6",
+    "css-loader": "latest",
     "webpack": "latest",
     "webpack-cli": "latest",
     "@typescript-eslint/eslint-plugin": "^4.29.1",

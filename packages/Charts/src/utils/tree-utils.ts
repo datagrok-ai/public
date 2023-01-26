@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+
 import * as utils from './utils';
 
 
@@ -136,7 +137,6 @@ export class TreeUtils {
     if (aggregations.length > 0)
       aggregateParentNodes();
 
-    console.log(JSON.stringify(data));
     markSelectedNodes(data);
 
     return data;
@@ -147,17 +147,18 @@ export class TreeUtils {
     return tree.children;
   }
 
-  static mapRowsToObjects(columnValues: Array<string[] | number[]>,
+  static mapRowsToObjects(dataFrame: DG.DataFrame, columnNames: string[],
     objectKeys: string[] | null = null): {[key: string]: any}[] {
+    const columns = dataFrame.columns.byNames(columnNames);
     if (objectKeys === null)
-      objectKeys = ['source', 'target', 'value'];
+      objectKeys = columnNames;
 
     const result = [];
-    const columnLength = columnValues[0].length;
-    for (let i = 0; i < columnLength; i++) {
+    const rowIndexes = dataFrame.filter.getSelectedIndexes();
+    for (let i = 0; i < rowIndexes.length; i++) {
       const object: {[key: string]: any} = {};
-      for (let j = 0; j < objectKeys.length; j++)
-        object[objectKeys[j]] = columnValues[j][i];
+      for (let j = 0; j < columns.length; j++)
+        object[objectKeys[j]] = columns[j].get(rowIndexes[i]);
       result.push(object);
     }
     return result;

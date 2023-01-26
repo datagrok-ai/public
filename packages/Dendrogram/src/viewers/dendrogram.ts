@@ -6,15 +6,15 @@ import wu from 'wu';
 import * as rxjs from 'rxjs';
 
 import {Unsubscribable} from 'rxjs';
-import {TAGS as treeTAGS} from '@datagrok-libraries/bio/src/trees';
+import {isLeaf, TAGS as treeTAGS} from '@datagrok-libraries/bio/src/trees';
 import {HoverType, ITreePlacer, ITreeStyler, markupNode, MarkupNodeType, TreeStylerBase} from './tree-renderers/markup';
 import {CanvasTreeRenderer} from './tree-renderers/canvas-tree-renderer';
-import {TreeRendererBase} from './tree-renderers/tree-renderer-base';
-import {isLeaf, ITreeHelper, parseNewick} from '@datagrok-libraries/bio';
 import {RectangleTreeHoverType, RectangleTreePlacer} from './tree-renderers/rectangle-tree-placer';
 import {TreeHelper} from '../utils/tree-helper';
 import {toRgba, setAlpha} from '@datagrok-libraries/utils/src/color';
 import {DendrogramColorCodingTreeStyler, DendrogramTreeStyler} from './tree-renderers/dendrogram-tree-styler';
+import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
+import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 
 export const LINE_WIDTH = 2;
 export const NODE_SIZE = 4;
@@ -230,7 +230,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
     super.detach();
   }
 
-  override onPropertyChanged(property: DG.Property | null) {
+  override onPropertyChanged(property: DG.Property | null): void {
     super.onPropertyChanged(property);
 
     if (!property) {
@@ -372,7 +372,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
     this.root.appendChild(this.treeDiv);
 
     const treeRoot: MarkupNodeType = parseNewick(this.treeNewick!) as MarkupNodeType;
-    markupNode(treeRoot);
+    if (treeRoot) markupNode(treeRoot);
     const totalLength: number = treeRoot.subtreeLength!;
     this.mainStylerOnTooltipShowSub = this.mainStyler.onTooltipShow.subscribe(this.stylerOnTooltipShow.bind(this));
     this._placer = new RectangleTreePlacer<MarkupNodeType>(
@@ -674,7 +674,7 @@ export class MyViewer extends DG.JsViewer {
     this.propMax = this.float('propMax', 16);
   }
 
-  onPropertyChanged(property: DG.Property | null) {
+  override onPropertyChanged(property: DG.Property | null): void {
     super.onPropertyChanged(property);
 
     if (property) {

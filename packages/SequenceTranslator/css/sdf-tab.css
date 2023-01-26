@@ -23,15 +23,6 @@
   width: 100%;
 }
 
-.sdf-text-input-td textarea {
-  width: 100%;
-  background-color: transparent;
-  position: relative;
-  z-index: 1;
-  resize: none;
-  height: 22px; /* Fine tuned value to avoid "jumping" of the textarea upon autoresize */
-}
-
 .sdf-mol-img {
   margin-right: 30px;
   float: right;
@@ -45,27 +36,4 @@
 .sdf-bottom {
   flex-direction: row-reverse;
   padding-top: 20px;
-}
-
-.sdf-backdrop {
-  font-family: 'Roboto Mono';
-  overflow: auto;
-  position: absolute;
-  z-index: 0;
-  margin-top: 3px;
-  color: transparent;
-  margin-left: 1.75px; /* fine-tuned value */
-  max-width: 100%;
-}
-
-.sdf-highlights {
-  white-space: pre-wrap;
-  color: inherit;
-  word-wrap: break-word;
-}
-
-mark {
-  border-radius: 3px;
-  background-color: tomato;
-  color: inherit;
 }

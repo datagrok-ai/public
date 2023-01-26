@@ -52,4 +52,10 @@
   color: #4D5261;
   text-align: center;
   width: 100%;
+  align-self: end;
+}
+
+.pep-lst-button {
+  height: 23px;
+  margin-top: unset;
 }

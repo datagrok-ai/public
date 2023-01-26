@@ -1,10 +1,10 @@
 {
 	"name": "@datagrok/compute",
 	"friendlyName": "Compute",
-	"version": "0.12.4",
+	"version": "0.13.2",
 	"author": {
 		"name": "Aufar Zakiev",
-		"email": "aufar.zakiev@arcadia.spb.ru"
+		"email": "aufar.zakiev@softwarecountry.com"
 	},
 	"description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md)",
 	"repository": {
@@ -13,7 +13,7 @@
 		"directory": "packages/Compute"
 	},
 	"dependencies": {
-		"@datagrok-libraries/utils": "^2.0.5",
+		"@datagrok-libraries/utils": "^2.3.0",
 		"cash-dom": "latest",
 		"datagrok-api": "latest",
 		"dayjs": "latest",

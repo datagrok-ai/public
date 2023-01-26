@@ -1,6 +1,6 @@
-<!-- TITLE: Add package tests -->
-
-# How to add package tests
+---
+title: "Add package tests"
+---
 
 Packages developed for the platform should be tested. Datagrok supports several
 mechanisms for testing purposes. This article provides instructions for
@@ -80,7 +80,7 @@ test('Skipped', async () => {
 
 ## Testing functions
 
-Every package utilizes the concept of [functions](../../datagrok/functions/function.md).
+Every package utilizes the concept of [functions](../../datagrok/functions/functions.md).
 Tests cases can be added directly to a function's annotation. Afterwards, the metadata
 is used to test package functions automatically. Use the `test` parameter to add
 test cases. A test is essentially any [grok script](../../datagrok/grok-script.md)
@@ -101,19 +101,19 @@ export function square(x: number): number {
 Functions with the following input/output parameter types can be tested using
 the `test` annotation:
 
-| Parameter type | Support | Input/output example                         |
-|----------------|---------|----------------------------------------------|
-| int            | &check; | `test: f(123) == 246`                        |
-| double         | &check; | `test: 10 < f(12.5) && f(12.5) < 20`         |
-| bool           | &check; | `test: f(true)`,<br>`test: returnsBool()`    |
-| string         | &check; | `test: f("a") == "b"` (use `""` for strings) |
-| datetime       | &check; | `test: f("1/1/2020") == Date(2020, 1, 1)`,<br>`test: DateDiff(DateTime(2020, 1, 1, 3, 0, 0, 0), "2020-01-01") == 10800000` |
-| map            | &check; | `f({"a": 10, "b": "c"})`,<br>`test: f("abc").testparam == "abc"` |
-| dataframe      | * | Works via an additional function call<br>`f(getDataframe())` |
-| column_list    | * | Requires a dataframe parameter<br>`f(getDataframe(), ["colname1", "colname2"])`|
-| column         | * | Works via an additional function call |
-| file           | * | Works via an additional function call |
-| blob           | * | Works via an additional function call |
+| Parameter type | Support | Input/output example                                                                                                       |
+|----------------|---------|----------------------------------------------------------------------------------------------------------------------------|
+| int            | &check; | `test: f(123) == 246`                                                                                                      |
+| double         | &check; | `test: 10 < f(12.5) && f(12.5) < 20`                                                                                       |
+| bool           | &check; | `test: f(true)`,<br />`test: returnsBool()`                                                                                  |
+| string         | &check; | `test: f("a") == "b"` (use `""` for strings)                                                                               |
+| datetime       | &check; | `test: f("1/1/2020") == Date(2020, 1, 1)`,<br />`test: DateDiff(DateTime(2020, 1, 1, 3, 0, 0, 0), "2020-01-01") == 10800000` |
+| map            | &check; | `f({"a": 10, "b": "c"})`,<br />`test: f("abc").testparam == "abc"`                                                           |
+| dataframe      | *       | Works via an additional function call<br />`f(getDataframe())`                                                               |
+| column_list    | *       | Requires a dataframe parameter<br />`f(getDataframe(), ["colname1", "colname2"])`                                            |
+| column         | *       | Works via an additional function call                                                                                      |
+| file           | *       | Works via an additional function call                                                                                      |
+| blob           | *       | Works via an additional function call                                                                                      |
 
 See also:
 

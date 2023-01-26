@@ -1,9 +1,0 @@
-{
-  "dataSource": "S3",
-  "parameters": {
-    "dir": "/packages/demoxl/projects",
-    "region": "us-east-2",
-    "bucket": "datagrok-data",
-    "anonymous": true
-  }
-}

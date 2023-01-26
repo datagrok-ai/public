@@ -414,7 +414,10 @@ export namespace chem {
               window.localStorage.setItem(SKETCHER_LOCAL_STORAGE, this.selectedSketcher!.name);
               this.setSketcher(this.getMolFile());
             },
-            {isChecked: (item) => item === this.selectedSketcher?.friendlyName, toString: item => item})
+            {
+              isChecked: (item) => item === this.selectedSketcher?.friendlyName, toString: item => item,
+              radioGroup: 'sketcher type'
+            })
           .show();
       });
       $(optionsIcon).addClass('d4-input-options');

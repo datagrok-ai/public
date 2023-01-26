@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import { filter } from 'rxjs/operators';
-import { Tutorial } from '../../../tutorial';
+import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 
 
 export class DataConnectorsTutorial extends Tutorial {
@@ -13,7 +13,7 @@ export class DataConnectorsTutorial extends Tutorial {
   get description() {
     return 'Direct connection to data sources and databases using the connector server';
   }
-  get steps() { return 11; }
+  get steps() { return 13; }
   
   demoTable: string = '';
   helpUrl: string = '';
@@ -33,22 +33,25 @@ export class DataConnectorsTutorial extends Tutorial {
       DG.View.DATABASES, this.getSidebarHints('Data', DG.View.DATABASES), dbViewInfo
     );
 
-    const dlg = await this.openDialog('Create a connection to PostgreSQL server',
-      'Add new connection', $('.d4-tree-view-group')
-        .filter((idx, el) => {
-          let label = $(el).find('.d4-tree-view-group-label')[0];
-          return label?.textContent === 'PostgresDart' || label?.textContent === 'PostgreSQL';
-        })[0],
-      'Open the context menu on the PostgreSQL connector and click "Add connection..."');
+    const providerRoot = $('.d4-tree-view-group').filter((idx, el) => {
+      const label = $(el).find('.d4-tree-view-group-label')[0];
+      return (label?.textContent ?? '').startsWith('Postgres');
+    })[0];
 
-    await this.dlgInputAction(dlg, 'Set "Name" to "Starbucks"','Name', 'Starbucks');
-    await this.dlgInputAction(dlg, 'Set "server" to "localhost"','Server', 'localhost');
-    await this.dlgInputAction(dlg, 'Set "db" to "starbucks"', 'Db','starbucks');
-    await this.dlgInputAction(dlg, 'Set "login" to "starbucks"', 'Login', 'starbucks');
-    await this.dlgInputAction(dlg, 'Set "password" to "starbucks"', 'Password', 'starbucks');
+    const dlg = await this.openDialog('Create a connection to PostgreSQL server', 'Add new connection',
+      providerRoot, 'Open the context menu on the PostgreSQL connector and click "Add connection..."');
+
+    await this.dlgInputAction(dlg, 'Set "Name" to "Starbucks"', 'Name', 'Starbucks');
+    await this.dlgInputAction(dlg, 'Set "Server" to "db.datagrok.ai"', 'Server', 'db.datagrok.ai');
+    await this.dlgInputAction(dlg, 'Set "Port" to "54324"', 'Port', '54324');
+    await this.dlgInputAction(dlg, 'Set "Db" to "starbucks"', 'Db','starbucks');
+    await this.dlgInputAction(dlg, 'Set "Login" to "datagrok"', 'Login', 'datagrok');
+    await this.dlgInputAction(dlg, 'Set "Password" to "datagrok"', 'Password', 'datagrok');
+    await this.action('Click "OK"', dlg.onClose, $(dlg.root).find('button.ui-btn.ui-btn-ok')[0]);
 
     const dqv = await this.openViewByType('Create a data query to the "Starbucks" data connection',
-      'DataQueryView', null,
+      'DataQueryView', $(providerRoot).find('div.d4-tree-view-group-label').filter((idx, el) =>
+        el.textContent === 'Starbucks')[0],
       'Open the context menu on PostgreSQL | Starbucks and click "Add query..."');
 
     // UI generation delay
@@ -57,7 +60,7 @@ export class DataConnectorsTutorial extends Tutorial {
 
     await this.action('Add "select * from starbucks_us" to the editor and hit "Play"',
       grok.functions.onAfterRunAction.pipe(filter((call) => {
-        const res = call.outputs.get('GetStarbucksUS');
+        const res = call.outputs.get('result');
         return call.func.name === 'GetStarbucksUS' &&
           res instanceof DG.DataFrame && res?.rowCount === 13509;
       })), null,

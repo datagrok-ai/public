@@ -1,8 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import $ from 'cash-dom';
+import $, { Cash } from 'cash-dom';
 import { filter } from 'rxjs/operators';
-import { Tutorial } from '../../../tutorial';
+import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 import wu from 'wu';
 
 
@@ -18,6 +18,15 @@ export class FiltersTutorial extends Tutorial {
   get steps() { return 18; }
 
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers/filters';
+
+  findFilterHeaderByColName(columnName: string) {
+    return $('div.d4-flex-row.d4-filter-header').filter((idx, el) => $(el)
+      .find('label.d4-filter-column-name')[0]?.textContent === columnName);
+  }
+
+  findIndicator(filterHeader: Cash): HTMLElement | null {
+    return filterHeader.find('div.d4-filter-indicator')[0] ?? null;
+  }
   
   protected async _run() {
     this.header.textContent = this.name;
@@ -69,9 +78,7 @@ export class FiltersTutorial extends Tutorial {
         const filters = this.t!.rows.filters;
         return filters.length === 1 &&
           filters.get(0) === 'DIS_POP: AS, Indigestion, PsA, Psoriasis, UC';
-      })), $('div.d4-flex-row.d4-filter-header').filter((idx, el) => $(el)
-        .find('label.d4-filter-column-name')[0]?.textContent === 'DIS_POP')
-        .find('div.d4-filter-indicator')[0],
+      })), this.findIndicator(this.findFilterHeaderByColName('DIS_POP')),
       indicatorInfo);
 
     const rowCountSelect = 'When you click on a row count, the corresponding rows ' +
@@ -98,8 +105,8 @@ export class FiltersTutorial extends Tutorial {
 
     await this.action('Reset the filter',
       this.t!.onFilterChanged.pipe(filter((_) => this.t!.filter.trueCount === this.t!.rowCount)),
-      $(filters.root).find('i.grok-icon.fa-sync')[0],
-      'Press <b>Esc</b> or click on <i class="grok-icon fal fa-sync"></i> at the top of the filter panel.');
+      $(filters.root).find('i.grok-icon.fa-arrow-rotate-left')[0],
+      'Press <b>Esc</b> or click on <i class="grok-icon fal fa-arrow-rotate-left"></i> at the top of the filter panel.');
 
     this.title('Numerical filters');
 
@@ -119,13 +126,12 @@ export class FiltersTutorial extends Tutorial {
 
     const rangeInputInfo = 'When the mouse is over a histogram, a range slider appears at the bottom. ' +
       'By dragging the handles at the edges of the slider or panning it, you can define the range of ' +
-      'the values that pass filter. For more accurate results, use the <i class="grok-icon fal fa-keyboard"></i> ' +
-      'icon in the numeric filter header. It toggles the range inputs.';
+      'the values that pass filter. For more accurate results, click on the indicator next to the filter ' +
+      'name in the header to open the menu, then enable <b>Min / max</b> option and use input fields ' +
+      'to specify the exact values for the filter.';
     await this.action('Find records for people aged 40 to 60',
       this.t!.onFilterChanged.pipe(filter(() => wu(this.t!.rows.filters).some((s) => s === 'AGE: [40,60]'))),
-      $('div.d4-flex-row.d4-filter-header').filter((idx, el) => $(el)
-        .find('label.d4-filter-column-name')[0]?.textContent === 'AGE')
-        .find('i.grok-icon.fa-keyboard')[0],
+      this.findIndicator(this.findFilterHeaderByColName('AGE')),
       rangeInputInfo);
 
     this.title('Saving filter state');
@@ -142,8 +148,8 @@ export class FiltersTutorial extends Tutorial {
 
     await this.action('Reset the filter',
       this.t!.onFilterChanged.pipe(filter((_) => this.t!.filter.trueCount === this.t!.rowCount)),
-      $(filters.root).find('i.grok-icon.fa-sync')[0],
-      'Press <b>Esc</b> or click on <i class="grok-icon fal fa-sync"></i> at the top of the filter panel.');
+      $(filters.root).find('i.grok-icon.fa-arrow-rotate-left')[0],
+      'Press <b>Esc</b> or click on <i class="grok-icon fal fa-arrow-rotate-left"></i> at the top of the filter panel.');
 
     await this.contextMenuAction('Restore the filter state', 'AGE: [40,60]', null,
       'Find the saved filter state in <b>Save or apply</b> and click on its name. You should ' +

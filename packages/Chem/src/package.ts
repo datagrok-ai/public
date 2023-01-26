@@ -58,7 +58,7 @@ import {_importSmi} from './file-importers/smi-importer';
 
 //script api
 import {generateScaffoldTree} from "./scripts-api";
-import {setupScaffold} from './scripts-api';
+import { RDKitReactionRenderer } from './rendering/rdkit-reaction-renderer';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const DEFAULT_SKETCHER = 'openChemLibSketcher';
@@ -169,6 +169,15 @@ export function getCLogP(smiles: string): number {
 //meta.chemRendererName: RDKit
 export async function rdKitCellRenderer(): Promise<RDKitCellRenderer> {
   return new RDKitCellRenderer(getRdKitModule());
+}
+
+//name: chemCellRenderer
+//tags: cellRenderer, cellRenderer-ChemicalReaction
+//meta.cellType: ChemicalReaction
+//meta-cell-renderer-sem-type: ChemicalReaction
+//output: grid_cell_renderer result
+export async function rdKitReactionRenderer(): Promise<RDKitReactionRenderer> {
+  return new RDKitReactionRenderer(getRdKitModule());
 }
 
 //name: chemCellRenderer
@@ -487,8 +496,10 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
   const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molCol);
   let columnNames: string[] = [];
 
-  if (invalid.length > 0)
+  if (invalid.filter((el) => el !== null).length > 0) {
     console.log(`Invalid rows ${invalid.map((i) => i.toString()).join(', ')}`);
+    grok.shell.warning('Dataset contains malformed data!');
+  }
 
   for (let elName of elementsTable) {
     const value = elements.get(elName);
@@ -882,10 +893,23 @@ export async function callChemDiversitySearch(
   return await chemDiversitySearch(col, similarityMetric[metricName], limit, fingerprint as Fingerprint);
 }
 
+
+//top-menu: Chem | Scaffold Tree...
+//name: addScaffoldTree
+export function addScaffoldTree(): void {
+  grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
+}
+
+
 //name: getScaffoldTree
 //input: dataframe data
+//input: int ringCutoff = 10 [Ignore molecules with # rings > N]
+//input: bool dischargeAndDeradicalize = false [Remove charges and radicals from scaffolds]
 //output: string result
-export async function getScaffoldTree(data: DG.DataFrame): Promise<string>{
+export async function getScaffoldTree(data: DG.DataFrame,
+                                      ringCutoff: number = 0,
+                                      dischargeAndDeradicalize: boolean = false
+                                      ): Promise<string> {
   const molColumn = data.columns.bySemType(DG.SEMTYPE.MOLECULE);
   const invalid: number[] = new Array<number>(data.columns.length);
   const smiles = molColumn?.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES;
@@ -905,11 +929,6 @@ export async function getScaffoldTree(data: DG.DataFrame): Promise<string>{
   const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
   smilesColumn.name = data.columns.getUnusedName(smilesColumn.name);
   data.columns.add(smilesColumn);
-  const scriptRes = await generateScaffoldTree(data, smilesColumn!.name);
+  const scriptRes = await generateScaffoldTree(data, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
   return scriptRes;
-}
-
-//name: installScaffoldGraph
-export async function installScaffoldGraph() : Promise<void> {
-  await setupScaffold();
 }

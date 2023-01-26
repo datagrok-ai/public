@@ -1,6 +1,6 @@
-<!-- TITLE: Context actions -->
-
-# Registering context actions
+---
+title: "Context actions"
+---
 
 To register a context-specific action that would get offered to a user when right-clicking
 on the item or expanding the **Actions** pane, add the following tags to the function:

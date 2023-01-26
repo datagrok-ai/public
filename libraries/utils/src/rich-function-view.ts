@@ -80,18 +80,16 @@ export class RichFunctionView extends FunctionView {
     this.funcCallReplaced.next(true);
 
     if (funcCall.options['isHistorical']) {
-      if (!isPreviousHistorical) {
+      if (!isPreviousHistorical)
         this.name = `${this.name} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`;
-        this.setRunViewReadonly();
-      } else {
+      else
         this.name = `${this.name.substring(0, this.name.indexOf(' — '))} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`;
-      }
+
 
       // FIX ME: view name does not change in models
       document.querySelector('div.d4-ribbon-name')?.replaceChildren(ui.span([this.name]));
       this.path = `?id=${this._funcCall.id}`;
     } else {
-      this.setRunViewEditable();
       this.path = ``;
 
       if (isPreviousHistorical)
@@ -350,8 +348,9 @@ export class RichFunctionView extends FunctionView {
 
           inputs.append(t.root);
         } else {
+          // FIX ME: .toDart added to prevent bug of tables initial non-rendering
           const t = prop.propertyType === DG.TYPE.DATA_FRAME ?
-            ui.tableInput(prop.name, null, grok.shell.tables):
+            ui.tableInput(prop.name, null, grok.shell.tables.map(DG.toDart)):
             ui.input.forProperty(prop);
 
           t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));

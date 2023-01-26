@@ -1,7 +1,6 @@
-<!-- TITLE: HBase -->
-<!-- SUBTITLE: -->
-
-# HBase
+---
+title: "HBase"
+---
 
 Provides access to [Apache HBase](https://hbase.apache.org/) NoSQL database
 using SQL queries via JDBC driver.
@@ -10,10 +9,10 @@ using SQL queries via JDBC driver.
 
 ```json
 {
-    "server": "",
-    "port": "",
-    "db": "",
-    "connString": ""
+  "server": "",
+  "port": "",
+  "db": "",
+  "connString": ""
 }
 ```
 

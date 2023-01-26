@@ -3,7 +3,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import wu from 'wu';
 import {historyUtils} from './history-utils';
 import {UiUtils} from './shared-components/ui-utils';
 
@@ -28,22 +27,6 @@ export const passErrorToShell = () => {
 };
 
 export const INTERACTIVE_CSS_CLASS = 'cv-interactive';
-
-export const defaultUsersIds = {
-  'Test': 'ca1e672e-e3be-40e0-b79b-d2c68e68d380',
-  'Admin': '878c42b0-9a50-11e6-c537-6bf8e9ab02ee',
-  'System': '3e32c5fa-ac9c-4d39-8b4b-4db3e576b3c3',
-};
-
-export const defaultGroupsIds = {
-  'All users': 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6',
-  'Developers': 'ba9cd191-9a50-11e6-9cc9-910bf827f0ab',
-  'Need to create': '00000000-0000-0000-0000-000000000000',
-  'Test': 'ca1e672e-e3be-40e0-b79b-8546b8bf62e6',
-  'Admin': 'a4b45840-9a50-11e6-c537-6bf8e9ab02ee',
-  'System': 'a4b45840-ac9c-4d39-8b4b-4db3e576b3c3',
-  'Administrators': '1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5',
-};
 
 export abstract class FunctionView extends DG.ViewBase {
   protected _funcCall?: DG.FuncCall;
@@ -149,22 +132,19 @@ export abstract class FunctionView extends DG.ViewBase {
     this._funcCall = funcCall;
 
     if (funcCall.options['isHistorical']) {
-      if (!isPreviousHistorical) {
+      if (!isPreviousHistorical)
         this.name = `${this.name} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`;
-        this.setRunViewReadonly();
-      } else {
+      else
         this.name = `${this.name.substring(0, this.name.indexOf(' — '))} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`;
-      }
+
 
       // FIX ME: view name does not change in models
       document.querySelector('div.d4-ribbon-name')?.replaceChildren(ui.span([this.name]));
       this.path = `?id=${this._funcCall.id}`;
     } else {
-      this.setRunViewEditable();
       this.path = ``;
 
-      if (isPreviousHistorical)
-        this.name = `${this.name.substring(0, this.name.indexOf(' — '))}`;
+      this.name = `${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)}`;
     }
     this.buildRibbonPanels();
   }
@@ -183,7 +163,6 @@ export abstract class FunctionView extends DG.ViewBase {
   public build(): void {
     ui.empty(this.root);
     this.root.appendChild(this.buildIO());
-    this.root.appendChild(this.overlayDiv);
 
     this.buildHistoryBlock();
     this.buildRibbonMenu();
@@ -205,35 +184,6 @@ export abstract class FunctionView extends DG.ViewBase {
     const newHistoryBlock = UiUtils.historyPanel(this.func!);
 
     newHistoryBlock.onRunChosen.subscribe(async (id) => this.linkFunccall(await this.loadRun(id)));
-    newHistoryBlock.onRunAddToFavorites.subscribe(async (funcCall) => {
-      await this.addRunToFavorites(funcCall);
-
-      newHistoryBlock.myRunsFetch.next();
-      newHistoryBlock.favRunsFetch.next();
-    });
-    newHistoryBlock.onRunAddToShared.subscribe(async (funcCall) => {
-      await this.addRunToShared(funcCall);
-
-      newHistoryBlock.myRunsFetch.next();
-      newHistoryBlock.sharedRunsFetch.next();
-    });
-
-    newHistoryBlock.onRunDeleted.subscribe(async (id) => {
-      await this.deleteRun(await historyUtils.loadRun(id));
-      newHistoryBlock.allRunsFetch.next();
-    });
-
-    newHistoryBlock.onRunRemoveFromFavorites.subscribe(async (id) => {
-      await this.removeRunFromFavorites(await historyUtils.loadRun(id));
-      newHistoryBlock.myRunsFetch.next();
-      newHistoryBlock.favRunsFetch.next();
-    });
-
-    newHistoryBlock.onRunRemoveFromShared.subscribe(async (id) => {
-      await this.removeRunFromShared(await historyUtils.loadRun(id));
-      newHistoryBlock.myRunsFetch.next();
-      newHistoryBlock.sharedRunsFetch.next();
-    });
 
     ui.empty(this.historyRoot);
     this.historyRoot.style.removeProperty('justify-content');
@@ -267,13 +217,8 @@ export abstract class FunctionView extends DG.ViewBase {
       historyButton.classList.add('d4-toggle-button');
       if (grok.shell.windows.showProperties) historyButton.classList.add('d4-current');
 
-      const cloneRunBtn = ui.button('Clone', async () => {
-        await this.cloneRunAsCurrent();
-      }, 'Clone the run');
-
       newRibbonPanels.push([
-        historyButton,
-        ...this.funcCall?.options['isHistorical']? [cloneRunBtn]: [],
+        historyButton
       ]);
     }
 
@@ -287,103 +232,6 @@ export abstract class FunctionView extends DG.ViewBase {
  */
   public buildRibbonMenu() {
 
-  }
-
-  public async onBeforeRemoveRunFromFavorites(callToFavorite: DG.FuncCall) { }
-
-  public async onAfterRemoveRunFromFavorites(favoriteCall: DG.FuncCall) { }
-
-  /**
-   * Saves the run as usual run
-   * @param callToUnfavorite FuncCall object to remove from favorites
-   * @returns Saved FuncCall
-   * @stability Experimental
- */
-  public async removeRunFromFavorites(callToUnfavorite: DG.FuncCall): Promise<DG.FuncCall> {
-    callToUnfavorite.options['title'] = null;
-    callToUnfavorite.options['annotation'] = null;
-    callToUnfavorite.options['isFavorite'] = false;
-    await this.onBeforeRemoveRunFromFavorites(callToUnfavorite);
-    const favoriteSave = await historyUtils.saveRun(callToUnfavorite);
-    await this.onAfterRemoveRunFromFavorites(favoriteSave);
-    return favoriteSave;
-  }
-
-  public async onBeforeAddingToFavorites(callToAddToFavorites: DG.FuncCall) { }
-
-  public async onAfterAddingToFavorites(favoriteCall: DG.FuncCall) { }
-
-  /**
-   * Saves the run as favorite
-   * @param callToFavorite FuncCall object to add to favorites
-   * @returns Saved FuncCall
-   * @stability Experimental
- */
-
-  public async addRunToFavorites(callToFavorite: DG.FuncCall): Promise<DG.FuncCall> {
-    callToFavorite.options['isFavorite'] = true;
-    await this.onBeforeAddingToFavorites(callToFavorite);
-    const savedFavorite = await grok.dapi.functions.calls.allPackageVersions().save(callToFavorite);
-    await this.onAfterAddingToFavorites(savedFavorite);
-    return savedFavorite;
-  }
-
-  public async onBeforeRemoveRunFromShared(callToShare: DG.FuncCall) { }
-
-  public async onAfterRemoveRunFromSahred(sharedCall: DG.FuncCall) { }
-
-  /**
-   * Removes run from shared
-   * @param callToUnshare FuncCall object to remove from shared
-   * @returns Saved FuncCall
-   * @stability Experimental
- */
-
-  public async removeRunFromShared(callToUnshare: DG.FuncCall): Promise<DG.FuncCall> {
-    callToUnshare.options['title'] = null;
-    callToUnshare.options['annotation'] = null;
-    callToUnshare.options['isShared'] = false;
-    await this.onBeforeRemoveRunFromFavorites(callToUnshare);
-    const savedShared = await grok.dapi.functions.calls.allPackageVersions().save(callToUnshare);
-    await this.onAfterRemoveRunFromFavorites(savedShared);
-    return savedShared;
-  }
-
-  public async onBeforeAddingToShared(callToAddToShared: DG.FuncCall) { }
-
-  public async onAfterAddingToShared(sharedCall: DG.FuncCall) { }
-
-  /**
-   * Saves the run as shared
-   * @param callToShare FuncCall object to add to shared
-   * @returns Saved FuncCall
-   * @stability Experimental
- */
-
-  public async addRunToShared(callToShare: DG.FuncCall): Promise<DG.FuncCall> {
-    callToShare.options['isShared'] = true;
-    await this.onBeforeAddingToShared(callToShare);
-
-    const allGroup = await grok.dapi.groups.find(defaultGroupsIds['All users']);
-
-    const dfOutputs = wu(callToShare.outputParams.values() as DG.FuncCallParam[])
-      .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
-
-    for (const output of dfOutputs) {
-      const df = callToShare.outputs[output.name] as DG.DataFrame;
-      await grok.dapi.permissions.grant(df.getTableInfo(), allGroup, false);
-    }
-
-    const dfInputs = wu(callToShare.inputParams.values() as DG.FuncCallParam[])
-      .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
-    for (const input of dfInputs) {
-      const df = callToShare.inputs[input.name] as DG.DataFrame;
-      await grok.dapi.permissions.grant(df.getTableInfo(), allGroup, false);
-    }
-
-    const savedShared = await grok.dapi.functions.calls.allPackageVersions().save(callToShare);
-    await this.onAfterAddingToShared(savedShared);
-    return savedShared;
   }
 
   /**
@@ -411,6 +259,8 @@ export abstract class FunctionView extends DG.ViewBase {
   public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
     await this.onBeforeSaveRun(callToSave);
     const savedCall = await historyUtils.saveRun(callToSave);
+    savedCall.options['isHistorical'] = false;
+    this.linkFunccall(savedCall);
     this.buildHistoryBlock();
     this.path = `?id=${savedCall.id}`;
     await this.onAfterSaveRun(savedCall);
@@ -469,81 +319,7 @@ export abstract class FunctionView extends DG.ViewBase {
     await this.onBeforeLoadRun();
     const pulledRun = await historyUtils.loadRun(funcCallId);
     await this.onAfterLoadRun(pulledRun);
-    this.setRunViewReadonly();
     return pulledRun;
-  }
-
-  public async onBeforeCloneRunAsCurrent() { }
-
-  public async onAfterCloneRunAsCurrent() { }
-
-
-  public async cloneRunAsCurrent() {
-    if (!this.funcCall) throw new Error('Current Funccall is not set');
-
-    await this.onBeforeCloneRunAsCurrent();
-    const clonedFunccall = this.funcCall.clone();
-    clonedFunccall.newId();
-    clonedFunccall.options['isHistorical'] = false;
-    this.linkFunccall(clonedFunccall);
-    this.overlayDiv.focus();
-    await this.onAfterCloneRunAsCurrent();
-  }
-
-  private overlayDiv = ui.div([], {style: {
-    'background-color': 'gray',
-    'opacity': '0.07',
-    'position': 'absolute',
-    'bottom': '0',
-    'left': '0',
-    'right': '0',
-    'top': '0',
-    'display': 'none',
-    'cursor': 'not-allowed',
-    'z-index': '1',
-  }});
-
-  private rootReadonlyEventListeners = [
-    (ev: MouseEvent)=> {
-      ev.preventDefault();
-      ev.stopPropagation();
-      this.overlayDiv.style.pointerEvents = 'auto';
-    },
-    () => {
-      this.overlayDiv.style.pointerEvents = 'none';
-    },
-    () => {
-      grok.shell.warning('Clone the run to edit it');
-    },
-  ];
-
-  private interactiveEventListeners = [
-    () =>this.root.removeEventListener('click', this.rootReadonlyEventListeners[2]),
-    () =>setTimeout(() => this.root.addEventListener('click', this.rootReadonlyEventListeners[2]), 100)
-  ];
-
-  protected setRunViewReadonly(): void {
-    this.overlayDiv.style.removeProperty('display');
-    this.root.addEventListener('click', this.rootReadonlyEventListeners[2]);
-    this.root.addEventListener('mousedown', this.rootReadonlyEventListeners[0]);
-    this.root.addEventListener('mouseup', this.rootReadonlyEventListeners[1]);
-    this.root.querySelectorAll(`.${INTERACTIVE_CSS_CLASS}`).forEach((el) => {
-      (el as HTMLElement).style.zIndex = '2';
-      (el as HTMLElement).addEventListener('mousedown', this.interactiveEventListeners[0]);
-      (el as HTMLElement).addEventListener('mouseup', this.interactiveEventListeners[1]);
-    });
-  }
-
-  protected setRunViewEditable(): void {
-    this.overlayDiv.style.display = 'none';
-    this.root.removeEventListener('click', this.rootReadonlyEventListeners[2]);
-    this.root.removeEventListener('mousedown', this.rootReadonlyEventListeners[0]);
-    this.root.removeEventListener('mouseup', this.rootReadonlyEventListeners[1]);
-    this.root.querySelectorAll(`.${INTERACTIVE_CSS_CLASS}`).forEach((el) => {
-      (el as HTMLElement).style.removeProperty('z-index');
-      (el as HTMLElement).removeEventListener('mousedown', this.interactiveEventListeners[0]);
-      (el as HTMLElement).removeEventListener('mouseup', this.interactiveEventListeners[1]);
-    });
   }
 
   /**

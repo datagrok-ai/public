@@ -1,7 +1,6 @@
-<!-- TITLE: Query Builder -->
-<!-- SUBTITLE: -->
-
-# Query Builder
+---
+title: "Query Builder"
+---
 
 This tool allows to build a query for multiple tables using visual interface.
 
@@ -12,7 +11,7 @@ There is an option to save the query as well.
 
 ## Videos
 
-[![Query Builder](../uploads/youtube/query_builder.png "Open on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1688s)
+[![Query Builder](../uploads/youtube/query_builder.png "Open on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8\&t=1688s)
 
 See also:
 

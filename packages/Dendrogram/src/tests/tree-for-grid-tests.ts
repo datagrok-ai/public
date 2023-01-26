@@ -4,8 +4,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {category, test, expect, expectArray, expectObject} from '@datagrok-libraries/utils/src/test';
 
-import {NodeType} from '@datagrok-libraries/bio';
 import {markupNode, MarkupNodeType} from '../viewers/tree-renderers/markup';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
 
 category('treeForGrid', () => {
   const enum Tests {

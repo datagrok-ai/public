@@ -1,7 +1,6 @@
-<!-- TITLE: Binning functions -->
-<!-- SUBTITLE: -->
-
-# Binning functions
+---
+title: "Binning functions"
+---
 
 Binning is a way to group a number of more or less continuous values into a smaller number of "bins"
 . For example, if you have data about a group of people, you might want to arrange their ages into a smaller number of

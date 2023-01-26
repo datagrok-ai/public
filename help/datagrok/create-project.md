@@ -1,7 +1,6 @@
-<!-- TITLE: Create project -->
-<!-- SUBTITLE: -->
-
-# Create project
+---
+title: "Create project"
+---
 
 A project is a collection of different objects that you want to use together. A project can contain tables, views,
 queries, connections, data jobs, Jupyter notebooks, predictive models, and resources such as files.

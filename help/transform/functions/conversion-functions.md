@@ -1,7 +1,6 @@
-<!-- TITLE: Conversion functions -->
-<!-- SUBTITLE: -->
-
-# Conversion functions
+---
+title: "Conversion functions"
+---
 
 *Function List:*
 

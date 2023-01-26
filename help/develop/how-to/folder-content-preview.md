@@ -1,6 +1,6 @@
-<!-- TITLE: Custom folder content preview -->
-
-# Folder content preview
+---
+title: "Custom folder content preview"
+---
 
 To provide custom folder content preview, register a function tagged as `folderViewer` that takes two
 parameters `folder` and `files`, inspects them and returns a widget if a custom preview could be provided, or null

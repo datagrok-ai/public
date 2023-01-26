@@ -55,6 +55,7 @@ module.exports = {
     'dayjs': 'dayjs',
     'wu': 'wu',
     'exceljs': 'ExcelJS',
+    'NGL': 'NGL',
   },
   output: {
     filename: '[name].js',

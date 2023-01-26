@@ -57,7 +57,7 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
   }
 
   constructor(
-    treeRoot: TNode, placer: RectangleTreePlacer<TNode>,
+    treeRoot: TNode | null, placer: RectangleTreePlacer<TNode>,
     mainStyler: ITreeStyler<TNode>, lightStyler: ITreeStyler<TNode>,
     currentStyler: ITreeStyler<TNode>, mouseOverStyler: ITreeStyler<TNode>, selectionStyler: ITreeStyler<TNode>
   ) {
@@ -97,11 +97,14 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
     const t1: number = Date.now();
     ctx.save();
     try {
-      (function clearNodeDesc(node: TNode) {
-        node.desc = '';
-        for (const childNode of (node.children ?? []))
-          clearNodeDesc(childNode as TNode);
-      })(this.treeRoot);
+      if (this.treeRoot) {
+        (function clearNodeDesc(node: TNode) { // function name for recursive call
+          if (!node) return;
+          node.desc = '';
+          for (const childNode of (node.children ?? []))
+            clearNodeDesc(childNode as TNode);
+        })(this.treeRoot);
+      }
 
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -121,65 +124,66 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
       console.debug(`*** ${this.renderCounter} Dendrogram: CanvasTreeRenderer.render(), ` +
         `main & light, traceback hover & selection, ` +
         `purpose '${purpose}'.`);
-      const styler: ITreeStyler<TNode> = !this.mouseOver ? this._mainStyler : this.lightStyler;
-      const selectionTraceList: TraceTargetType<TNode>[] = this.selections.map(
-        (sel) => { return {target: sel.node, styler: this.selectionStyler}; });
-      renderNode(
-        {
-          ctx: ctx, firstRowIndex: this.placer.top, lastRowIndex: this.placer.bottom,
-          leftPadding: this.placer.padding.left, lengthRatio: lengthRatio, stepRatio: stepRatio,
-          totalLength: this.placer.totalLength, styler: styler,
-        },
-        this.treeRoot, 0, [...selectionTraceList]);
-
-      for (const selection of this.selections) {
+      if (this.treeRoot) {
+        const styler: ITreeStyler<TNode> = !this.mouseOver ? this._mainStyler : this.lightStyler;
+        const selectionTraceList: TraceTargetType<TNode>[] = this.selections.map(
+          (sel) => { return {target: sel.node, styler: this.selectionStyler}; });
         renderNode(
           {
             ctx: ctx, firstRowIndex: this.placer.top, lastRowIndex: this.placer.bottom,
             leftPadding: this.placer.padding.left, lengthRatio: lengthRatio, stepRatio: stepRatio,
-            styler: this.selectionStyler, totalLength: this.placer.totalLength
+            totalLength: this.placer.totalLength, styler: styler,
           },
-          selection.node, selection.nodeHeight, []);
-      }
+          this.treeRoot, 0, [...selectionTraceList]);
 
-      if (this.current) {
-        const currentTraceList: TraceTargetType<TNode>[] = [{target: this.current.node, styler: this.currentStyler}];
-        renderNode(
-          {
-            ctx: ctx, firstRowIndex: this.placer.top, lastRowIndex: this.placer.bottom,
-            leftPadding: this.placer.padding.left, lengthRatio: lengthRatio, stepRatio: stepRatio,
-            totalLength: this.placer.totalLength, styler: invisibleStyler,
-          },
-          this.treeRoot, 0, [...currentTraceList]);
+        for (const selection of this.selections) {
+          renderNode(
+            {
+              ctx: ctx, firstRowIndex: this.placer.top, lastRowIndex: this.placer.bottom,
+              leftPadding: this.placer.padding.left, lengthRatio: lengthRatio, stepRatio: stepRatio,
+              styler: this.selectionStyler, totalLength: this.placer.totalLength
+            },
+            selection.node, selection.nodeHeight, []);
+        }
 
-        // children
-        // renderNode(ctx, this.current.node,
-        //   this.placer.top, this.placer.bottom,
-        //   this.placer.padding.left, lengthRatio, stepRatio, this.currentStyler,
-        //   this.placer.totalLength, this.current.nodeHeight,
-        //   []);
-      }
+        if (this.current) {
+          const currentTraceList: TraceTargetType<TNode>[] = [{target: this.current.node, styler: this.currentStyler}];
+          renderNode(
+            {
+              ctx: ctx, firstRowIndex: this.placer.top, lastRowIndex: this.placer.bottom,
+              leftPadding: this.placer.padding.left, lengthRatio: lengthRatio, stepRatio: stepRatio,
+              totalLength: this.placer.totalLength, styler: invisibleStyler,
+            },
+            this.treeRoot, 0, [...currentTraceList]);
 
-      if (this.mouseOver) {
-        const mouseOverTraceList: TraceTargetType<TNode>[] = [
-          {target: this.mouseOver.node, styler: this.mouseOverStyler}];
-        renderNode(
-          {
-            ctx: ctx, firstRowIndex: this.placer.top, lastRowIndex: this.placer.bottom,
-            leftPadding: this.placer.padding.left, lengthRatio: lengthRatio, stepRatio: stepRatio,
-            totalLength: this.placer.totalLength, styler: invisibleStyler,
-          },
-          this.treeRoot, 0, [...mouseOverTraceList]);
+          // children
+          // renderNode(ctx, this.current.node,
+          //   this.placer.top, this.placer.bottom,
+          //   this.placer.padding.left, lengthRatio, stepRatio, this.currentStyler,
+          //   this.placer.totalLength, this.current.nodeHeight,
+          //   []);
+        }
 
-        // children
-        renderNode(
-          {
-            ctx: ctx, firstRowIndex: this.placer.top, lastRowIndex: this.placer.bottom,
-            leftPadding: this.placer.padding.left, lengthRatio: lengthRatio, stepRatio: stepRatio,
-            totalLength: this.placer.totalLength, styler: this.mouseOverStyler,
-          },
-          this.mouseOver.node, this.mouseOver.nodeHeight,
-          []);
+        if (this.mouseOver) {
+          const mouseOverTraceList: TraceTargetType<TNode>[] = [
+            {target: this.mouseOver.node, styler: this.mouseOverStyler}];
+          renderNode(
+            {
+              ctx: ctx, firstRowIndex: this.placer.top, lastRowIndex: this.placer.bottom,
+              leftPadding: this.placer.padding.left, lengthRatio: lengthRatio, stepRatio: stepRatio,
+              totalLength: this.placer.totalLength, styler: invisibleStyler,
+            },
+            this.treeRoot, 0, [...mouseOverTraceList]);
+
+          // children
+          renderNode(
+            {
+              ctx: ctx, firstRowIndex: this.placer.top, lastRowIndex: this.placer.bottom,
+              leftPadding: this.placer.padding.left, lengthRatio: lengthRatio, stepRatio: stepRatio,
+              totalLength: this.placer.totalLength, styler: this.mouseOverStyler,
+            },
+            this.mouseOver.node, this.mouseOver.nodeHeight, []);
+        }
       }
 
       console.debug('');
@@ -296,7 +300,7 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
       });
     } else {
       // console.debug('CanvasTreeRender.onMouseMove() --- getNode() ---');
-      this.mouseOver = this.placer.getNode(
+      this.mouseOver = !this.treeRoot ? null : this.placer.getNode(
         this.treeRoot, canvasPoint, this._mainStyler.lineWidth, this._mainStyler.nodeSize,
         (canvasP: DG.Point): DG.Point => { return treeToCanvasPoint(canvasP, this.canvas!, this.placer); });
 

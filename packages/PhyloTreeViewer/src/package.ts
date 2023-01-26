@@ -13,7 +13,7 @@ import {TreeInGridCellApp} from './apps/tree-in-grid-cell-app';
 import {PhylocanvasGlService} from './utils/phylocanvas-gl-service';
 import {TreeCutAsTreeApp} from './apps/tree-cut-as-tree-app';
 import {findNewick} from './scripts-api';
-import {ITreeHelper, NodeType, PhylocanvasGlServiceBase} from '@datagrok-libraries/bio';
+import {PhylocanvasGlServiceBase} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
 
 
 export const _package = new DG.Package();

@@ -11,9 +11,14 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/DSP"
-  },
+    },
 	"dependencies": {
 		"datagrok-api": "^1.0.0"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest",
+		"puppeteer": "^13.7.0"
 	},
 	"scripts": {
 		"debug-dsp": "grok publish",

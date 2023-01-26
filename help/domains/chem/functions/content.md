@@ -1,7 +1,6 @@
-<!-- TITLE: Content -->
-<!-- SUBTITLE: -->
-
-# Content
+---
+title: "Content"
+---
 
 * [Filter by catalogs](filter-catalogs.md)
 * [Gasteiger partial charges](gasteiger-charges.md)
