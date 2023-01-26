@@ -243,8 +243,8 @@ export function getSdfTab(): HTMLDivElement {
   const bottomDiv = ui.divH([boolInputsAndButton, moleculeImgDiv]);
   $(bottomDiv).addClass('sdf-bottom');
 
-  const body = ui.divV([tableLayout, bottomDiv]);
-  $(body).addClass('sdf-body');
+  const sdfTabBody = ui.divV([tableLayout, bottomDiv]);
+  $(sdfTabBody).addClass('sdf-body');
 
-  return body;
+  return sdfTabBody;
 }
