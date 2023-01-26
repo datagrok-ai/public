@@ -58,7 +58,7 @@ const categoricalPaletteList: string[] = [
   'rgb(158,218,229)'];
 
 export enum PROPS_CATS {
-  APPEARANCE = 'Appearance',
+  STYLE = 'Style',
   BEHAVIOR = 'Behavior',
   LAYOUT = 'Layout',
   DATA = 'Data',
@@ -72,7 +72,7 @@ export enum PROPS {
   colorColumnName = 'colorColumnName',
   colorAggrType = 'colorAggrType',
 
-  // -- Appearance --
+  // -- Style --
   lineWidth = 'lineWidth',
   nodeSize = 'nodeSize',
   mainColor = 'mainColor',
@@ -109,7 +109,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
   [PROPS.colorColumnName]: string;
   [PROPS.colorAggrType]: string;
 
-  // -- Appearance --
+  // -- Style --
   [PROPS.lineWidth]: number;
   [PROPS.nodeSize]: number;
   [PROPS.showGrid]: boolean;
@@ -152,36 +152,36 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
       {category: PROPS_CATS.DATA, choices: [DG.AGG.AVG, DG.AGG.MIN, DG.AGG.MAX, DG.AGG.MED, DG.AGG.TOTAL_COUNT]});
 
     this.lineWidth = this.float(PROPS.lineWidth, LINE_WIDTH,
-      {category: PROPS_CATS.APPEARANCE, editor: 'slider', min: 0, max: 16, step: 0.1});
+      {category: PROPS_CATS.STYLE, editor: 'slider', min: 0, max: 16, step: 0.1});
     this.nodeSize = this.float(PROPS.nodeSize, NODE_SIZE,
-      {category: PROPS_CATS.APPEARANCE, editor: 'slider', min: 0, max: 16, step: 0.1});
+      {category: PROPS_CATS.STYLE, editor: 'slider', min: 0, max: 16, step: 0.1});
 
-    this.showGrid = this.bool(PROPS.showGrid, false, {category: PROPS_CATS.APPEARANCE});
+    this.showGrid = this.bool(PROPS.showGrid, false, {category: PROPS_CATS.STYLE});
 
     this.mainColor = this.int(PROPS.mainColor, TreeDefaultPalette[TreeColorNames.Main],
-      {category: PROPS_CATS.APPEARANCE});
+      {category: PROPS_CATS.STYLE});
 
     this.lightColor = this.int(PROPS.lightColor, TreeDefaultPalette[TreeColorNames.Light],
-      {category: PROPS_CATS.APPEARANCE});
+      {category: PROPS_CATS.STYLE});
 
     this.currentColor = this.int(PROPS.currentColor, TreeDefaultPalette[TreeColorNames.Current],
-      {category: PROPS_CATS.APPEARANCE});
+      {category: PROPS_CATS.STYLE});
 
     this.mouseOverColor = this.int(PROPS.mouseOverColor, TreeDefaultPalette[TreeColorNames.MouseOver],
-      {category: PROPS_CATS.APPEARANCE});
+      {category: PROPS_CATS.STYLE});
 
     this.selectionsColor = this.int(PROPS.selectionsColor, TreeDefaultPalette[TreeColorNames.Selection],
-      {category: PROPS_CATS.APPEARANCE});
+      {category: PROPS_CATS.STYLE});
 
-    this.showLabels = this.bool(PROPS.showLabels, false, {category: PROPS_CATS.APPEARANCE});
+    this.showLabels = this.bool(PROPS.showLabels, false, {category: PROPS_CATS.STYLE});
 
-    this.font = this.string(PROPS.font, 'monospace 10pt', {category: PROPS_CATS.APPEARANCE});
+    this.font = this.string(PROPS.font, 'monospace 10pt', {category: PROPS_CATS.STYLE});
 
     this.stepZoom = this.float(PROPS.stepZoom, 0,
       {category: PROPS_CATS.BEHAVIOR, editor: 'slider', min: -4, max: 4, step: 0.1});
 
     this.step = this.float(PROPS.step, 28,
-      {category: PROPS_CATS.APPEARANCE, editor: 'slider', min: 0, max: 64, step: 0.1});
+      {category: PROPS_CATS.STYLE, editor: 'slider', min: 0, max: 64, step: 0.1});
 
     this.mainStyler = this.getMainStyler();
     this.lightStyler = new DendrogramTreeStyler('light',
@@ -234,7 +234,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
     super.onPropertyChanged(property);
 
     if (!property) {
-      console.warn('Dendrogram: PhylocanvasGlViewer.onPropertyChanged() No property value');
+      console.warn('Dendrogram: PhylocanvasGlViewer.onPropertyChanged() property is null');
       return;
     }
 
