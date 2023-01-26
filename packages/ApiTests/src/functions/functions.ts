@@ -17,4 +17,7 @@ category('Functions: General', () => {
     let dfList: DG.DataFrame[] = await grok.functions.call('OpenServerFile', {'fullPath': 'System:AppData/ApiTests/datasets/demog.csv'});
     expect(dfList[0].columns instanceof DG.ColumnList, true);
   });
+  test('Def param', async () => {
+      await grok.functions.call('AddNewColumn', {table: grok.data.demo.demog(), expression: 'test', name: 'test'});
+  });
 });
