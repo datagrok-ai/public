@@ -698,7 +698,7 @@ export class Dialog extends DartWidget {
   /** @returns {Dialog}
    * @param {boolean} fullScreen  */
   showModal(fullScreen: boolean): Dialog {
-    api.grok_Dialog_Show(this.dart, true, null, fullScreen, false, null, null, null, null, null, null);
+    api.grok_Dialog_Show(this.dart, true, null, fullScreen, false, null, null, null, null, null, null, null);
     return this;
   }
 
