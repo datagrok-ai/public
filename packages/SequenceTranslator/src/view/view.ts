@@ -3,12 +3,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+// inner dependencies
 import {MAIN_TAB, AXOLABS_TAB, SDF_TAB} from './view-const';
-
 import {MainTabUI} from './main-tab-ui';
 import {SdfTabUI} from './sdf-tab-ui';
 import {AxolabsTabUI} from './axolabs-tab-ui';
 import {viewMonomerLib} from '../utils/monomer-lib-viewer';
+
 
 /** Class responsible for the UI of the application */
 export class SequenceTranslatorUI {
