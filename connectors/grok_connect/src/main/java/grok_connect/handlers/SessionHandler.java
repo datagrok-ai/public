@@ -2,11 +2,15 @@ package grok_connect.handlers;
 
 import org.eclipse.jetty.websocket.api.Session;
 
+import java.time.format.DateTimeFormatter;  
+import java.time.LocalDateTime;    
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.concurrent.*;
 
 import grok_connect.GrokConnect;
 import grok_connect.utils.*;
@@ -14,11 +18,14 @@ import serialization.DataFrame;
 
 public class SessionHandler {
     static int rowsPerChunk = 10000;
-    
+    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSS");  
     Session session;
+    ExecutorService threadpool = Executors.newCachedThreadPool();
+    Future<DataFrame> fdf;
     DataFrame dataFrame;
 
     Boolean firstTry = true;
+    LocalDateTime starTime;
 
     Boolean oneDfSent = false;
 
@@ -59,6 +66,8 @@ public class SessionHandler {
                     return;
                 } else if (message.startsWith(sizeRecievedMessage)) {
                     System.out.print("sending bytes");
+                    fdf = threadpool.submit(() -> qm.getSubDF(rowsPerChunk));
+                    starTime = LocalDateTime.now();
                     session.getRemote().sendBytes(ByteBuffer.wrap(bytes));
                     return;
                 } else {
@@ -72,9 +81,12 @@ public class SessionHandler {
                     }
                     else {
                         System.out.print("ok response?" + message);
+                        LocalDateTime end = LocalDateTime.now();  
+                        qm.query.log += "GROK_CONNECT_SEND_DF, " + dtf.format(starTime) + ", " + dtf.format(end) + '\n';
                         firstTry = true;
                         oneDfSent = true;
-                        dataFrame = qm.getSubDF(rowsPerChunk);
+                        dataFrame = fdf.get();
+                        // dataFrame = qm.getSubDF(rowsPerChunk);
                     }
                 }
                 System.out.println("sending df info");
@@ -89,14 +101,13 @@ public class SessionHandler {
                     System.out.println("df empty, end");
                     qm.closeConnection();
 
-                    if (qm.query.debugQuery) {
+                    if (true) {
                         session.getRemote().sendString(socketLogMessage(qm.query.log));
                         return;
                     }
                     
                     session.getRemote().sendString(endMessage);
                     session.close();
-                    
                 }
 
             } catch (Throwable ex) {
