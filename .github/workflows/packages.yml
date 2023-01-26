@@ -311,8 +311,8 @@ jobs:
         continue-on-error: true
         if: steps.publish.outcome == 'success'
         run: |
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'github_actions@datagrok.ai'
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git pull
           continue=false
           if [ -n "$(git status -s packages/${{ matrix.package }}/package-lock.json)" ]; then
