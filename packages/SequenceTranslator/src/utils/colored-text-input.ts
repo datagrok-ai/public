@@ -20,17 +20,18 @@ export class ColoredTextInput {
   ) {
     this.textInputBase = textInputBase;
     this.painter = painter;
-    $(this.root).addClass('rich-text');
+    $(this.root).addClass('colored-text-input');
     if (resizeable) {
       // make input field automatically resizeable
       this.textInputBase.onInput(
         () => {
+          // necessary for the field to be squeezable, not only expandable
           $(this.textArea).css('height', 0);
           $(this.textArea).css('height', (this.textArea!.scrollHeight) + 'px');
         }
       );
     }
-    this.highlights = ui.div([] );
+    this.highlights = ui.div([]);
     this.root.appendChild(this.highlights);
 
     this.textInputBase.onInput(() => this.colorize());
