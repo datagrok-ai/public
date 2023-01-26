@@ -42,6 +42,7 @@ import {IVdRegionsViewer, VdRegion} from '@datagrok-libraries/bio/src/vd-regions
 import {NodeType} from '@datagrok-libraries/bio/src/trees';
 import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
 import {parseNewick, Shapes} from '@datagrok-libraries/bio/src/trees/phylocanvas';
+import {MlbVdRegionsBrowser} from './mlb-vd-regions-browser';
 
 
 const TREE_GRID_ROW_HEIGHT: number = 100;
@@ -93,7 +94,8 @@ export class MolecularLiabilityBrowser {
   filterHostDn: DG.DockNode;
   filterView: DG.FilterGroup | null = null;
   filterViewDn: DG.DockNode | null = null;
-  regionsViewer: IVdRegionsViewer;
+  vdRegionsBrowser: MlbVdRegionsBrowser;
+  vdRegionsBrowserDn: DG.DockNode;
   treeBrowser: TreeBrowser;
   treeBrowserDn: DG.DockNode;
 
@@ -768,8 +770,13 @@ export class MolecularLiabilityBrowser {
     // this.mlbView.dockManager.rootNode.removeChild(this.filterViewDn);
 
     if (this.vrSpaceBrowser) {
-      await this.vrSpaceBrowser.setData(MlbDataFrame.Empty, TreeDataFrame.Empty, [],
-        Object.values(VrSpaceMethodName)[0]);
+      const defaultVrSpaceMethod = Object.values(VrSpaceMethodName)[0];
+      await this.vrSpaceBrowser.setData(null, null, [], defaultVrSpaceMethod);
+    }
+
+    if (this.vdRegionsBrowser) {
+      //
+      await this.vdRegionsBrowser.setData(MlbDataFrame.Empty, []); // MLB.destroyView
     }
 
     if (this.networkDiagram) {
@@ -851,10 +858,10 @@ export class MolecularLiabilityBrowser {
 
         const tempDf: DG.DataFrame = DG.DataFrame.fromObjects([{}])!;
         const t1: number = Date.now();
-        this.regionsViewer = (await tempDf.plot.fromType(
-          'VdRegions', {
-            skipEmptyPositions: true
-          })) as unknown as IVdRegionsViewer;
+        this.vdRegionsBrowser = new MlbVdRegionsBrowser();
+        await this.vdRegionsBrowser.init();
+        this.vdRegionsBrowserDn = this.mlbView.dockManager.dock(
+          this.vdRegionsBrowser.root, DG.DOCK_TYPE.DOWN, this.mlbGridDn, 'Regions', 0.3);
         const t2: number = Date.now();
         console.debug('MLB: MolecularLiabilityBrowser.buildView(), create regionsViewer ' +
           `ET: ${((t2 - t1) / 1000).toString()} s`);
@@ -948,11 +955,6 @@ export class MolecularLiabilityBrowser {
       //   //await this.treeBrowser.setData(this.treeDf, this.mlbDf);
       // }
 
-      // regionsViewer
-      this.mlbView.dockManager.dock(this.regionsViewer.root, DG.DOCK_TYPE.DOWN, this.mlbGridDn, 'Regions', 0.3);
-      //TODO: check the await
-      await this.regionsViewer.setDf(this.mlbDf, this.regions);
-
       await this.updateView();
 
       this.viewSubs.push(this.mlbDf.onCurrentRowChanged.subscribe(this.onMLBGridCurrentRowChanged.bind(this)));
@@ -991,6 +993,8 @@ export class MolecularLiabilityBrowser {
     //adjust column in treeGrid
 
     this.updateViewTreeBrowser();
+
+    await this.vdRegionsBrowser.setData(this.mlbDf, this.regions); // MLB.buildView
 
     await this.vrSpaceBrowser.setData(this.mlbDf, this.treeDf, this.regions,
       this.vrSpaceMethodName ?? Object.values(VrSpaceMethodName)[0]);
