@@ -119,7 +119,7 @@ jobs:
           if [ -n "$(git status -s packages/Meta/package.json)" ]; then
             git add packages/Meta/package.json
             git add packages/Meta/package-lock.json
-            git commit -m "GitHub Actions: Bump Meta package version for ${{ steps.packages.outputs.list }}"
+            git commit -m "GitHub Actions: Bump Meta package version"
             continue=true
           fi
           if [[ "${continue}" == "true" ]]; then
