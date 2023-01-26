@@ -330,7 +330,8 @@ export class GroupAnalysisViewer extends DG.JsViewer {
                 });
             }
           }
-          gc.element = this.viewersStorage[gc.gridColumn.name][gc.gridRow].root;
+          if (!(Object.keys(this.viewersStorage[gc.gridColumn.name]).length === 0))
+            gc.element = this.viewersStorage[gc.gridColumn.name][gc.gridRow].root;
         }
       }
     });
