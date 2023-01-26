@@ -124,7 +124,7 @@
 }
 
 .similarity-prop-label {
-  width: 100px;
+  min-width: 100px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -133,7 +133,8 @@
 
 .similarity-prop-value {
   padding-left: 10px;
-  max-width: 200px; 
+  padding-right: 5px;
+  width: 100%; 
   overflow-wrap: break-word;
   color: var(--grey-5);
 }
