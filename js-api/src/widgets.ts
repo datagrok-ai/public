@@ -114,8 +114,8 @@ export class ObjectPropertyBag {
     return this.getProperties().findIndex((p) => p.name === name) !== -1;
   }
 
-  /** Sets the current state of viewer properties as the default configuration used to
-  * create new viewer instances of this type. Equivalent to the "Pick Up Style" context menu command.
+  /** Sets the current state of viewer properties as the default configuration used to create new viewer
+  * instances of this type. Equivalent to the "Pick Up / Apply | Set as Default" context menu command.
   * Read more about viewer commands: {@link https://datagrok.ai/help/visualize/viewers/#common-actions}
   * @param data indicates if data settings should be copied.
   * @param style indicates if style (non-data) settings should be copied. */
