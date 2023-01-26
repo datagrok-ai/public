@@ -7,6 +7,7 @@ import '../../css/rich-text-input.css';
 
 import $ from 'cash-dom';
 
+/** Class for colorizing input in textarea  */
 export class RichTextInput {
   constructor(
     textInputBase: DG.InputBase<string>,
