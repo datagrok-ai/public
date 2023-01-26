@@ -2,10 +2,10 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {isLeaf, NodeType} from '@datagrok-libraries/bio';
 import * as rxjs from 'rxjs';
 import {Unsubscribable} from 'rxjs';
 import {HoverType} from './markup';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
 
 export type TreeRendererEventArgsType<TNode extends NodeType, THover extends HoverType<TNode>> = {
   target: TreeRendererBase<TNode, THover>,
@@ -17,10 +17,12 @@ export type TreeRendererEventArgsType<TNode extends NodeType, THover extends Hov
 export abstract class TreeRendererBase<TNode extends NodeType, THover extends HoverType<TNode>> {
   public view?: HTMLElement;
 
-  private _treeRoot: TNode;
-  get treeRoot(): TNode { return this._treeRoot; }
+  private _treeRoot: TNode | null;
 
-  set treeRoot(value: TNode) {
+  /** null for an empty tree */
+  get treeRoot(): TNode | null { return this._treeRoot; }
+
+  set treeRoot(value: TNode | null) {
     this._treeRoot = value;
 
     this._current = null;
@@ -106,7 +108,7 @@ export abstract class TreeRendererBase<TNode extends NodeType, THover extends Ho
 
   protected subs: Unsubscribable[] = [];
 
-  protected constructor(treeRoot: TNode) {
+  protected constructor(treeRoot: TNode | null) {
     this._treeRoot = treeRoot;
 
     this._onAfterRender = new rxjs.Subject<TreeRendererEventArgsType<TNode, THover>>();

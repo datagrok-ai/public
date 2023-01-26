@@ -1,7 +1,6 @@
-<!-- TITLE: Text functions -->
-<!-- SUBTITLE: -->
-
-# Text functions
+---
+title: "Text functions"
+---
 
 As parameters of the function, you can pass a regular string or a column name. To pass a regular string, it must be
 enclosed in double quotes, like `"my string"` or in apostrophes, like  `'my string'`. To pass a column cell, you can use

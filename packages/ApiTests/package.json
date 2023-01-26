@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/api-tests",
   "friendlyName": "API Tests",
-  "version": "1.5.6",
+  "version": "1.5.7",
   "author": {
     "name": "Alexander Paramonov",
     "email": "aparamonov@datagrok.ai"

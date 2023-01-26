@@ -1,7 +1,6 @@
-<!-- TITLE: Filter to column -->
-<!-- SUBTITLE: -->
-
-# Filter to column
+---
+title: "Filter to column"
+---
 
 Saves currently filtered rows as a column.
 

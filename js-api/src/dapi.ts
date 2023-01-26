@@ -175,7 +175,7 @@ export class Dapi {
    * @param {string} url
    * @param {Object} headers
    * @param {Object} body
-   * @returns {Promise<Object>} */
+   * @returns `{Promise<Object>}` */
   async proxyFetch(method: string, url: string, headers: Record<string, string>, body: object = {}): Promise<object> {
     headers['Accept'] = 'application/json';
     headers['original-url'] = `${url}`;
@@ -191,7 +191,7 @@ export class Dapi {
   /** Proxies URL request via Datagrok server with same interface as "fetch".
    * @param {String} url
    * @param {Object} params
-   * @returns {Promise<Object>} */
+   * @returns `{Promise<Object>}` */
   async fetchProxy(url: string, params?: RequestInit): Promise<Response> {
     if (params == null)
       params = {};
@@ -265,7 +265,7 @@ export class HttpDataSource<T> {
   }
 
   /** Returns fist entity that satisfies the filtering criteria (see {@link filter}).
-   *  @returns Promise<object>  */
+   *  @returns `Promise<object>`  */
   first(): Promise<T> {
     return new Promise((resolve, reject) => api.grok_DataSource_First(this.dart, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
   }
@@ -274,7 +274,7 @@ export class HttpDataSource<T> {
    *  Throws an exception if an entity does not exist, or is not accessible in the current context.
    *  Sample: {@link https://public.datagrok.ai/js/samples/data-access/save-and-load-df}
    *  @param {string} id - GUID of the corresponding object
-   *  @returns {Promise<object>} - entity. */
+   *  @returns `{Promise<object>}` - entity. */
   find(id: string): Promise<T> {
     return new Promise((resolve, reject) => api.grok_DataSource_Find(this.dart, id, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
   }

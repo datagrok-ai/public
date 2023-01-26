@@ -1,7 +1,6 @@
-<!-- TITLE: Stress testing results -->
-<!-- SUBTITLE: -->
-
-# Stress testing
+---
+title: "Stress testing results"
+---
 
 Stress testing is an important part of the [Quality Assurance](quality-assurance.md#stress-testing)
 process. To make sure the platform is stable under heavy load (either many users working simultaneously, or executing

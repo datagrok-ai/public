@@ -3,14 +3,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
-import {
-  DistanceMatrix,
-  isLeaf,
-  ITreeHelper,
-  NodeCuttedType,
-  NodeType,
-  parseNewick,
-} from '@datagrok-libraries/bio';
+import {isLeaf, NodeCuttedType, NodeType} from '@datagrok-libraries/bio/src/trees';
+import {NO_NAME_ROOT, parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
+import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
+import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 
 type TreeLeafDict = { [nodeName: string]: NodeType };
 type DataNodeDict = { [nodeName: string]: number };
@@ -21,58 +17,52 @@ export const enum TAGS {
   DF_NEWICK_LEAF_COL_NAME = '.newickLeafColumn',
 }
 
-/** Implements ITreeHelper from bio lib */
+/** Implements ITreeHelper from bio lib
+ * Common expected behavior: parseNewick and newickToDf returns name '[root]' for no-root-name newick string.
+ * Because root node can have branch_length and root node name and parent node name for these row should be different.
+ */
 export class TreeHelper implements ITreeHelper {
-  newickToDf(
-    newick: string, dfName?: string, nodePrefix?: string, skipEmptyParentRoot?: boolean
-  ): DG.DataFrame {
+  newickToDf(newick: string, dfName?: string, nodePrefix?: string): DG.DataFrame {
     const nodePrefixV: string = nodePrefix ?? '';
-    const skipEmptyParentRootV: boolean = skipEmptyParentRoot ?? false;
 
-    let parent: string | null = null;
     let i = 0;
 
     const obj = parseNewick(newick);
+    if (obj.name == NO_NAME_ROOT) obj.name = `${nodePrefixV}${NO_NAME_ROOT}`;
 
     const nodes: string[] = [];
-    const parents: string[] = [];
+    const parents: (string | null)[] = [];
     const leafs: boolean[] = [];
     const distances: (number | null)[] = [];
     const annotations: any[] = [];
 
-    function traverse(obj: NodeType) {
+    function traverse(obj: NodeType, parent: NodeType | null) {
       if (obj === null || typeof obj != 'object') return;
 
-      const isRoot: boolean = obj.name == 'root';
+      const isRoot: boolean = parent == null;
 
       let name: string = obj.name;
       if (!name) {
         name = obj.name = `${nodePrefixV}node-${i}`;
         ++i;
-      } else if (isRoot) {
-        name = `${nodePrefixV}root`;
+      } else if (isRoot && obj.name == NO_NAME_ROOT) {
+        name = `${nodePrefixV}${NO_NAME_ROOT}`;
       }
 
-      if (!isRoot || !skipEmptyParentRootV) {
-        nodes.push(name);
-        distances.push(obj.branch_length ? obj.branch_length : null);
-        // annotations.push(obj.annotation);
-        parents.push(parent!);
-        leafs.push(!obj.children || obj.children.length == 0);
-      }
+      nodes.push(name);
+      distances.push(obj.branch_length ? obj.branch_length : null);
+      // annotations.push(obj.annotation);
+      parents.push(parent ? parent!.name : null);
+      leafs.push(!obj.children || obj.children.length == 0);
 
       if (!obj.children) return;
       const childrenNum = obj.children.length;
-      const prevParent = parent;
-      parent = name;
 
-      for (let i = 0; i < childrenNum; i++) {
-        traverse(obj.children[i]);
-        if (i === childrenNum - 1) parent = prevParent;
-      }
+      for (let i = 0; i < childrenNum; i++)
+        traverse(obj.children[i], obj);
     }
 
-    traverse(obj);
+    traverse(obj, null);
 
     const nodeCol: DG.Column = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'node', nodes);
     const parentCol: DG.Column = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'parent', parents);
@@ -121,8 +111,8 @@ export class TreeHelper implements ITreeHelper {
     return !node ? ';' : `${toNewickInt(node)};`;
   }
 
-  getLeafList<TNode extends NodeType>(node: TNode): TNode[] {
-    if (node == null) return [];
+  getLeafList<TNode extends NodeType>(node: TNode | null): TNode[] {
+    if (!node) return [];
 
     if (isLeaf(node)) {
       return [node]; // node is a leaf
@@ -132,7 +122,9 @@ export class TreeHelper implements ITreeHelper {
     }
   }
 
-  getNodeList<TNode extends NodeType>(node: TNode): TNode[] {
+  getNodeList<TNode extends NodeType>(node: TNode | null): TNode[] {
+    if (!node) return [];
+
     if (isLeaf(node)) {
       return [node]; // node is a leaf
     } else {
@@ -157,8 +149,9 @@ export class TreeHelper implements ITreeHelper {
     return res;
   }
 
-  filterTreeByLeaves(node: NodeType, leaves: { [name: string]: any }): NodeType | null {
+  filterTreeByLeaves(node: NodeType | null, leaves: { [name: string]: any }): NodeType | null {
     // copy node because phylocanvas.gl changes data structure completely
+    if (!node) return null;
     const resNode = Object.assign({}, node); // shallow copy
 
     if (isLeaf(resNode)) {
@@ -173,7 +166,9 @@ export class TreeHelper implements ITreeHelper {
   }
 
   /***/
-  getNodesByLeaves<TNode extends NodeType>(node: TNode, leaves: { [name: string]: any }): TNode[] {
+  getNodesByLeaves<TNode extends NodeType>(node: TNode | null, leaves: { [name: string]: any }): TNode[] {
+    if (!node) return [];
+
     if (isLeaf(node)) {
       return node.name in leaves ? [node] : [];
     } else {
@@ -242,7 +237,7 @@ export class TreeHelper implements ITreeHelper {
 
   /** Sets grid's row order and returns tree (root node) of nodes presented in data */
   setGridOrder(
-    tree: NodeType, grid: DG.Grid, leafColName?: string,
+    tree: NodeType | null, grid: DG.Grid, leafColName?: string,
     removeMissingDataRows: boolean = false
   ): [NodeType, string[]] {
     console.debug('Dendrogram.setGridOrder() start');
@@ -307,12 +302,10 @@ export class TreeHelper implements ITreeHelper {
     const order: number[] = new Array<number>(resTreeLeafList.length); // rowCount filtered for leaves
     for (let leafI = 0; leafI < resTreeLeafList.length; ++leafI) {
       const leafNodeName = resTreeLeafList[leafI].name;
-      if (leafNodeName in dataNodeDict) {
+      if (leafNodeName in dataNodeDict)
         order[leafI] = dataNodeDict[leafNodeName];
-      } else {
+      else
         missedDataNodeList.push(leafNodeName);
-        // TODO: consider to add empty row with leaf name
-      }
     }
 
     grid.setRowOrder(order);
@@ -360,9 +353,7 @@ export class TreeHelper implements ITreeHelper {
         const dataRowI = dataNodeDict[leafName];
         clusterCol.set(dataRowI, clusterI, false);
       }
-      let k = 9;
     }
-    let k = 11;
   }
 
   buildClusters(tree: NodeCuttedType, clusterDf: DG.DataFrame, clusterColName: string, leafColName?: string): void {

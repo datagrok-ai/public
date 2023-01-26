@@ -1,6 +1,6 @@
-<!-- TITLE: Customize a grid -->
-
-# Grid customization
+---
+title: "Customize a grid"
+---
 
 Whenever users open a spreadsheet on the platform, they see it presented in a [grid](../../visualize/viewers/grid.md).
 This view can be altered in many ways, both from the user interface and programmatically. The aspects subject to change

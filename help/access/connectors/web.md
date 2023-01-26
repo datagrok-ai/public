@@ -1,7 +1,6 @@
-<!-- TITLE: Web -->
-<!-- SUBTITLE: -->
-
-# Web
+---
+title: "Web"
+---
 
 Provides access to data sources via REST API based on
 [OpenAPI 2.0 (Swagger API)](https://swagger.io/).

@@ -669,8 +669,8 @@ export class Dialog extends DartWidget {
   /** @returns {Dialog}
    * @param {{modal: boolean, fullScreen: boolean, center: boolean, centerAt: Element, x: number, y: number, width: number, height: number}|{}} options
    * */
-  show(options?: { modal?: boolean; resizable?: boolean; fullScreen?: boolean; center?: boolean; centerAt?: Element; x?: number; y?: number; width?: number; height?: number; backgroundColor?: string; }): Dialog {
-    api.grok_Dialog_Show(this.dart, options?.modal, options?.resizable, options?.fullScreen, options?.center, options?.centerAt, options?.x, options?.y, options?.width, options?.height, options?.backgroundColor);
+  show(options?: { modal?: boolean; resizable?: boolean; fullScreen?: boolean; center?: boolean; centerAt?: Element; x?: number; y?: number; width?: number; height?: number; backgroundColor?: string; showNextTo?: HTMLElement}): Dialog {
+    api.grok_Dialog_Show(this.dart, options?.modal, options?.resizable, options?.fullScreen, options?.center, options?.centerAt, options?.x, options?.y, options?.width, options?.height, options?.backgroundColor, options?.showNextTo);
     return this;
   }
 
@@ -1055,15 +1055,18 @@ export abstract class JsInputBase<T = any> extends InputBase<T> {
 }
 
 
-export class DateInput extends InputBase<dayjs.Dayjs> {
+export class DateInput extends InputBase<dayjs.Dayjs | null> {
   dart: any;
 
   constructor(dart: any, onChanged: any = null) {
     super(dart, onChanged);
   }
 
-  get value(): dayjs.Dayjs { return dayjs(api.grok_DateInput_Get_Value(this.dart)); }
-  set value(x: dayjs.Dayjs) { toDart(api.grok_DateInput_Set_Value(this.dart, x.valueOf())); }
+  get value(): dayjs.Dayjs | null { 
+    const date = api.grok_DateInput_Get_Value(this.dart);
+    return date == null ? date : dayjs(date);
+  }
+  set value(x: dayjs.Dayjs | null) { toDart(api.grok_DateInput_Set_Value(this.dart, x?.valueOf())); }
 }
 
 export class ProgressIndicator {
@@ -1412,7 +1415,7 @@ export class Color {
 /** Tree view node.
  * Sample: {@link https://public.datagrok.ai/js/samples/ui/tree-view}
  * */
-export class TreeViewNode {
+export class TreeViewNode<T = any> {
   dart: any;
 
   /** @constructs {TreeView} from the Dart object */
@@ -1448,8 +1451,8 @@ export class TreeViewNode {
   get text(): string { return api.grok_TreeViewNode_Text(this.dart); }
 
   /** Node value */
-  get value(): object { return api.grok_TreeViewNode_Get_Value(this.dart); };
-  set value(v: object) { api.grok_TreeViewNode_Set_Value(this.dart, v); };
+  get value(): T { return api.grok_TreeViewNode_Get_Value(this.dart); };
+  set value(v: T) { api.grok_TreeViewNode_Set_Value(this.dart, v); };
 
   /** Enables checkbox */
   enableCheckBox(checked: boolean = false): void {

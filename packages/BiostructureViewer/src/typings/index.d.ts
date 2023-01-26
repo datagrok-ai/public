@@ -1,9 +1,10 @@
 declare module 'NGL' {
   export type LoaderParameters = {
-    ext: string,
-    compressed: boolean,
-    binary: boolean,
-    name: string
+    ext?: string,
+    compressed?: boolean,
+    binary?: boolean,
+    name?: string,
+    defaultRepresentation?: boolean
   };
 
   export class ColormakerRegistryClass {
@@ -21,9 +22,11 @@ declare module 'NGL' {
   }
 
   export class Component {
-    addRepresentation(type: string, object: object, params?: RepresentationParameters): RepresentationComponent
+    addRepresentation(type: string, object: object, params?: RepresentationParameters): RepresentationComponent;
 
-    autoView();
+    autoView(duration?: number): undefined;
+
+    removeAllRepresentations(): undefined;
   }
 
   export class RepresentationComponent extends Component {
@@ -33,10 +36,17 @@ declare module 'NGL' {
   export class Stage {
     get compList(): Component[];
 
+    //TODO: Find out is host arg mandatory
     constructor(host: HTMLElement);
+
+    handleResize(): undefined;
+
+    removeComponent(component: Component): undefined;
 
     removeAllComponents(type?: string): undefined;
 
     async loadFile(path: String | File | Blob, params: LoaderParameters): Promise<void>;
+
+    dispose(): undefined;
   }
 }

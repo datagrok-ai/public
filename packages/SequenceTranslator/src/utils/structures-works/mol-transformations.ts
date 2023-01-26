@@ -141,7 +141,7 @@ export function linkStrandsV3000(
 
     natom += true ? numbers.natom : numbers.natom - 1;
     nbond += numbers.nbond;
-    xShift += Math.max(...coordinates.x) + 1;//twoChains ? 0 : coordinates.x[numbers.natom - 1] - coordinates.x[0];
+    xShift += Math.max(...coordinates.x) + 5;//twoChains ? 0 : coordinates.x[numbers.natom - 1] - coordinates.x[0];
   }
 
   const entries = 4;
@@ -219,7 +219,7 @@ export function linkV3000(molBlocks: string[], useChirality: boolean = true): st
         indexEnd = molBlocks[i].indexOf(' ', index);
         let atomNumber = 0;
         if (isBoundary) {
-          atomNumber = parseInt(molBlocks[i].substring(index, indexEnd))
+          atomNumber = parseInt(molBlocks[i].substring(index, indexEnd));
           if (atomNumber === 1)
             atomNumber = specLength;
           else if (atomNumber === specLength)
@@ -275,7 +275,7 @@ export function linkV3000(molBlocks: string[], useChirality: boolean = true): st
       indexEnd = molBlocks[i].indexOf(' ', index);
       let atomNumber = 0;
       if (isBoundary) {
-        atomNumber = parseInt(molBlocks[i].substring(index, indexEnd))
+        atomNumber = parseInt(molBlocks[i].substring(index, indexEnd));
         if (atomNumber === 1)
           atomNumber = specLength;
         else if (atomNumber === specLength)
@@ -290,7 +290,7 @@ export function linkV3000(molBlocks: string[], useChirality: boolean = true): st
       indexEnd = Math.min(molBlocks[i].indexOf('\n', index), molBlocks[i].indexOf(' ', index));
       atomNumber = 0;
       if (isBoundary) {
-        atomNumber = parseInt(molBlocks[i].substring(index, indexEnd))
+        atomNumber = parseInt(molBlocks[i].substring(index, indexEnd));
         if (atomNumber === 1)
           atomNumber = specLength;
         else if (atomNumber === specLength)
@@ -364,8 +364,7 @@ export function linkV3000(molBlocks: string[], useChirality: boolean = true): st
     macroMolBlock += 'M  V30 BEGIN COLLECTION\n';
     macroMolBlock += collectionBlock;
     macroMolBlock += 'M  V30 END COLLECTION\n';
-  } else
-    macroMolBlock = macroMolBlock.replace(/ CFG=\d/g, ' ');
+  } else { macroMolBlock = macroMolBlock.replace(/ CFG=\d/g, ' '); }
 
   macroMolBlock += 'M  V30 END CTAB\n';
   macroMolBlock += 'M  END';
@@ -396,15 +395,11 @@ function rotateNucleotidesV3000(molecule: string): string {
   }
 
   let angle = 0;
-  if (coordinates.x[indexFivePrime] === 0)
-    angle = coordinates.y[indexFivePrime] > coordinates.y[indexThreePrime] ? Math.PI / 2 : 3 * Math.PI / 2;
-  else if (coordinates.y[indexFivePrime] === 0)
-    angle = coordinates.x[indexFivePrime] > coordinates.x[indexThreePrime] ? Math.PI : 0;
-  else {
+  if (coordinates.x[indexFivePrime] === 0) { angle = coordinates.y[indexFivePrime] > coordinates.y[indexThreePrime] ? Math.PI / 2 : 3 * Math.PI / 2; } else if (coordinates.y[indexFivePrime] === 0) { angle = coordinates.x[indexFivePrime] > coordinates.x[indexThreePrime] ? Math.PI : 0; } else {
     const derivative = coordinates.y[indexFivePrime] / coordinates.x[indexFivePrime];
-    angle = derivative > 0
-      ? (coordinates.x[indexFivePrime] > 0 ? Math.PI - Math.atan(derivative) : Math.PI * 2 - Math.atan(derivative))
-      : (coordinates.x[indexFivePrime] > 0 ? -Math.PI - Math.atan(derivative) : Math.atan(derivative));
+    angle = derivative > 0 ?
+      (coordinates.x[indexFivePrime] > 0 ? Math.PI - Math.atan(derivative) : Math.PI * 2 - Math.atan(derivative)) :
+      (coordinates.x[indexFivePrime] > 0 ? -Math.PI - Math.atan(derivative) : Math.atan(derivative));
   }
 
   const cos = Math.cos(angle);

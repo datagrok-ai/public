@@ -1,7 +1,6 @@
-<!-- TITLE: Markup -->
-<!-- SUBTITLE: -->
-
-# Markup
+---
+title: "Markup"
+---
 
 A powerful mechanism that allows to embed platform-specific visual elements right into the HTML document. Simply embed
 the expression like that: `#{expression}`
@@ -254,7 +253,7 @@ t.stats.<statistics>(<column name>)
 
 ### Chart
 
-Chart markup allows to embed any of [Viewers](../visualize/viewers.md) into page.
+Chart markup allows to embed any of [Viewers](../visualize/viewers/viewers.md) into page.
 
 Format:
 

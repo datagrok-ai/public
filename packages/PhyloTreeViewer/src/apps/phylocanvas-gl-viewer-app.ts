@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {newickToDf} from '../utils';
 import {Unsubscribable} from 'rxjs';
 import {_package} from '../package';
-import { IPhylocanvasGlViewer } from '@datagrok-libraries/bio';
+import {IPhylocanvasGlViewer} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
 
 
 export class PhylocanvasGlViewerApp {

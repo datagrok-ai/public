@@ -125,6 +125,11 @@ export enum TYPE {
   NOTEBOOK = 'Notebook'
 }
 
+/** Commonly used options on the function level */
+export enum FUNC_OPTIONS {
+  DEMO_PATH = 'demoPath',    // Demo path, such as 'Viewers | Radar'
+}
+
 // export type FILTER_TYPE =
 //   'histogram' | 'categorical' | 'multi-value' | 'bool-columns' |
 //   'free-text' | 'column-free-text' | 'Chem:substructureFilter';
@@ -181,12 +186,15 @@ export const SEMTYPE = {
   IP_ADDRESS: 'IP Address',
   MOLECULE: 'Molecule',
   MACROMOLECULE: 'Macromolecule',
+  MOLECULE3D: 'Molecule3D',
+  PDB_ID: 'PDB_ID',
   NEWICK: 'Newick',
   HELM: 'HELM',
   SUBSTRUCTURE: 'Substructure',
   MONEY: 'Money',
   IMAGE: 'Image',
   FILE: 'File',
+  CHEMICAL_REACTION: 'ChemicalReaction'
 }
 
 export const UNITS = {
@@ -370,6 +378,7 @@ export enum VIEWER {
   TRELLIS_PLOT = 'Trellis plot',
   WORD_CLOUD = 'Word cloud',
   TIMELINES = 'TimelinesViewer',
+  RADAR_VIEWER = 'RadarViewer',
   SURFACE_PLOT = 'SurfacePlot'
 }
 

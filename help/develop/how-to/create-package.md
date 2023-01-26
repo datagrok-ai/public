@@ -1,6 +1,6 @@
-<!-- TITLE: Creating a package -->
-
-# Simple package example
+---
+title: "Creating a package"
+---
 
 This documents explains how to create a simple package that contains an
 [info panel](add-info-panel.md) displaying some simple statistics for a text in a selected grid cell.

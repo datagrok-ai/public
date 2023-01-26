@@ -9,11 +9,11 @@ import {
   getPaletteByType,
   getSplitter,
   monomerToShort,
-  SeqPalette,
   SplitterFunc,
   TAGS as bioTAGS,
-  UnknownSeqPalettes
-} from '@datagrok-libraries/bio';
+} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
+import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
 
 const undefinedColor = 'rgb(100,100,100)';
 const monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = monomerToShort;

@@ -1,7 +1,6 @@
-<!-- TITLE: Add new column -->
-<!-- SUBTITLE: -->
-
-# Adding new columns
+---
+title: "Add new column"
+---
 
 Adds a column of the specified type to the current table, and initializes it using the specified expression (
 mathematical function, constants, platform objects properties and functions).
@@ -53,5 +52,5 @@ corresponding sections of the help system:
 See also:
 
 - [Scripting](../datagrok/grok-script.md)
-- [Function](../datagrok/functions/function.md)
+- [Function](../datagrok/functions/functions.md)
 - [Column selectors](../visualize/viewers/column-selectors.md)

@@ -3,7 +3,11 @@
   "parameters": {
     "dir": "/packages/clinical-case",
     "region": "us-east-2",
-    "bucket": "datagrok-data",
-    "anonymous": true
+    "bucket": "datagrok-data"
+  },
+  "credentials": {
+    "parameters": {
+      "anonymous": true
+    }
   }
 }

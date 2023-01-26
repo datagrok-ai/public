@@ -1,8 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import $ from 'cash-dom';
-import {Subscription} from 'rxjs';
+//import $ from 'cash-dom';
+
 import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {Subscription} from 'rxjs';
 import {getOptions} from './utils';
 
 
@@ -11,7 +12,7 @@ category('Timelines', () => {
   let df: DG.DataFrame;
   let tv: DG.TableView;
   const subs: Subscription[] = [];
-  
+
   before(async () => {
     df = DG.DataFrame.fromCsv(
       `USUBJID, AESTDY, AEENDY, SEX, AGE

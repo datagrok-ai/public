@@ -1,4 +1,4 @@
-import { Track } from '../../track';
+import { Track } from '@datagrok-libraries/tutorials/src/track';
 import { DashboardTutorial } from './tutorials/dashboard';
 import { FiltersTutorial } from './tutorials/filters';
 import { ScatterPlotTutorial } from './tutorials/scatter-plot';
