@@ -9,7 +9,7 @@ import {DEFAULT_INPUT_MAIN_TAB} from './view-const';
 import {getMainTab} from '../main-tab/main-tab';
 
 export class MainTabUI {
-  constructor(onInputChanged: (newInput: string) => void) {
+  constructor(onInputChanged: (input: string) => void) {
     this._inputSequence = DEFAULT_INPUT_MAIN_TAB;
     this._htmlDivElement = ui.wait(() => getMainTab(onInputChanged));
   }
