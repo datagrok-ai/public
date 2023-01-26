@@ -1,11 +1,11 @@
 import * as ui from 'datagrok-api/ui';
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
-import {WebLogoViewer} from '../viewers/web-logo-viewer';
+import {FilterSources, WebLogoViewer, PROPS as wlPROPS} from '../viewers/web-logo-viewer';
 import {IVdRegionsViewer, VdRegion, VdRegionType} from '@datagrok-libraries/bio/src/vd-regions';
 import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {Unsubscribable} from 'rxjs';
 
 const vrt = VdRegionType;
 
@@ -199,13 +199,21 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   private viewPromise: Promise<void> = Promise.resolve();
 
   private host: HTMLElement | null = null;
+  private filterSourceInput: DG.InputBase<boolean | null> | null = null;
   private mainLayout: HTMLTableElement | null = null;
   private logos: { [chain: string]: WebLogoViewer }[] = [];
+
+  private viewSubs: Unsubscribable[] = [];
 
   private async destroyView(purpose: string): Promise<void> {
     // TODO: Unsubscribe from and remove all view elements
     console.debug(`Bio: VdRegionsViewer.destroyView( mainLayout = ${!this.mainLayout ? 'none' : 'value'} ), ` +
       `purpose = '${purpose}'`);
+    if (this.filterSourceInput) {
+      //
+      ui.empty(this.filterSourceInput.root);
+    }
+
     if (this.mainLayout != null) {
       // this.root.removeChild(this.host);
       this.mainLayout.remove();
@@ -213,6 +221,8 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
       this.host = null;
       this.mainLayout = null;
     }
+
+    for (const sub of this.viewSubs) sub.unsubscribe();
   }
 
   private async buildView(purpose: string): Promise<void> {
@@ -290,8 +300,14 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     // this.mainLayout.style.height = '100%';
     // this.mainLayout.style.border = '1px solid black';
 
+    this.filterSourceInput = ui.boolInput('', false, this.filterSourceInputOnValueChanged.bind(this));
+    this.filterSourceInput.root.style.position = 'absolute';
+    this.filterSourceInput.root.style.left = '10px';
+    this.filterSourceInput.root.style.top = '-3px';
+    ui.tooltip.bind(this.filterSourceInput.root, 'Check to filter sequences for selected VRs');
+
     const color: string = `#ffbb${Math.ceil(Math.random() * 255).toString(16)}`;
-    this.host = ui.box(this.mainLayout,
+    this.host = ui.div([this.mainLayout, this.filterSourceInput!.root],
       {/*style: {backgroundColor: color}*/});
     this.root.appendChild(this.host);
     this.root.style.overflowX = 'auto';
@@ -326,5 +342,18 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   private rootOnMouseMove(e: MouseEvent) {
     // ui.tooltip.show('text', e.x + 8, e.y + 8,);
     // console.log(`onMouseMoveRoot.( x: ${e.x}, y: ${e.y} )`);
+  }
+
+  private filterSourceInputOnValueChanged(): void {
+    const filterSource: FilterSources = this.filterSourceInput!.value == true ?
+      FilterSources.Selected : FilterSources.Filtered;
+
+    for (let orderI = 0; orderI < this.logos.length; orderI++) {
+      for (let chainI = 0; chainI < this.chains.length; chainI++) {
+        const chain: string = this.chains[chainI];
+        const wl: DG.JsViewer = this.logos[orderI][chain];
+        wl.setOptions({[wlPROPS.filterSource]: filterSource});
+      }
+    }
   }
 }
