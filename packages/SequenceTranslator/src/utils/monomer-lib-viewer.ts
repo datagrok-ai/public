@@ -68,18 +68,17 @@ function formatMonomerObject(sourceObj: ExtendedMonomer): FormattedMonomer {
   for (const synthesizer of Object.values(EXTENDED_SYNTHESIZERS)) {
     const fieldName = synthesizer;
     const valuesList = [];
-    const technologySet = new Set();
+    // const technologySet = new Set();
     for (const technology of Object.values(EXTENDED_TECHNOLOGIES)) {
       if (codes[synthesizer] !== undefined) {
         if (codes[synthesizer][technology] !== undefined) {
           valuesList.push(codes[synthesizer][technology].toString());
-          technologySet.add(technology);
+          // technologySet.add(technology);
         }
       }
     }
-    formattedObject['technologies'] = [...technologySet].toString();
+    // formattedObject['technologies'] = [...technologySet].toString();
     formattedObject[fieldName] = valuesList.toString();
   }
-  console.log('formatted:', formattedObject);
   return formattedObject;
 }
