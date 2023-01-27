@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
-import {parseNewick} from '@datagrok-libraries/bio';
+import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 category('newickParser_phylocanvas', () => {
   const nwk0 = `;`;

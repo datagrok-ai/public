@@ -72,7 +72,7 @@ category('Viewers: Line Chart', () => {
       throw 'barSortOrder property (default) has not been set';
     if (lineChart.props.barSortType != 'by value')
       throw 'barSortType property (default) has not been set';   
-  }, {skipReason: 'need fix'});
+  }, {skipReason: 'GROK-11670'});
 
   // Does not work through Test Manager
   test('lineChart.serialization', async () => {
@@ -99,7 +99,7 @@ category('Viewers: Line Chart', () => {
       throw 'barSortOrder property (default) has not been set';
     if (lineChart!.props.barSortType != 'by value')
       throw 'barSortType property (default) has not been set';   
-  }, {skipReason: 'need previous test'});
+  }, {skipReason: 'GROK-11670'});
 
   after(async () => {
     grok.shell.closeAll();

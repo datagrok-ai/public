@@ -1,7 +1,6 @@
-<!-- TITLE: Diversity search -->
-<!-- SUBTITLE: -->
-
-# Diversity search
+---
+title: "Diversity search"
+---
 
 We have implemented few tools that help scientists analyze a collection of molecules in terms of molecular similarity.
 Both tools are based on applying different distance metrics

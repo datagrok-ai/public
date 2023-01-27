@@ -1,7 +1,6 @@
-<!-- TITLE: Molecule sketcher -->
-<!-- SUBTITLE: -->
-
-# Molecule sketcher
+---
+title: "Molecule sketcher"
+---
 
 Sketch a molecule using the built-in editor, or retrieve one by entering compound identifier. The following compound
 identifiers are natively understood since they have a prefix that uniquely identifies source system:

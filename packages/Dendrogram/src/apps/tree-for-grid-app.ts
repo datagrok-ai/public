@@ -7,7 +7,9 @@ import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import {_package} from '../package';
 import {TAGS} from '../utils/tree-helper';
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
-import {NodeType, parseNewick, TreeCutOptions} from '@datagrok-libraries/bio';
+import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
+import {TreeCutOptions} from '@datagrok-libraries/bio/src/trees/dendrogram';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
 
 export class TreeForGridApp {
   private viewed: boolean = false;
@@ -86,8 +88,9 @@ export class TreeForGridApp {
       const dataDf: DG.DataFrame = this.dataDf;
       dataDf.columns.addNewInt('Cluster').init((rowI) => { return null; });
 
+      const clusterColName: string = 'Cluster';
       const clusterDf: DG.DataFrame = DG.DataFrame.create(0);
-      clusterDf.columns.addNewInt('Cluster');
+      clusterDf.columns.addNewInt(clusterColName);
       clusterDf.columns.addNewString(this.leafCol.name);
       clusterDf.columns.addNewInt(`${this.leafCol.name}_Count`);
 
@@ -95,7 +98,7 @@ export class TreeForGridApp {
       this.tableView.path = this.tableView.basePath = `/func/${_package.name}.treeForGridApp`;
 
       const cutOpts: TreeCutOptions = {
-        min: 0, max: 20, clusterColName: 'Cluster',
+        clusterColName: clusterColName,
         dataDf: dataDf, clusterDf: clusterDf
       };
       this.gridN = injectTreeForGridUI2(

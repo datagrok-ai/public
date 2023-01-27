@@ -1,7 +1,6 @@
-<!-- TITLE: Multivariate analysis based on partial least squares (PLS) -->
-<!-- SUBTITLE: -->
-
-# Multivariate analysis based on partial least squares (pls)
+---
+title: "Multivariate analysis based on partial least squares (PLS)"
+---
 
 Multivariate analysis (MVA) is based on the statistical principle of multivariate statistics, which involves observation
 and analysis of more than one statistical outcome variable at a time.

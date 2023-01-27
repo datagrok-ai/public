@@ -1,7 +1,6 @@
-<!-- TITLE: Cheminformatics -->
-<!-- SUBTITLE: -->
-
-# Cheminformatics
+---
+title: "Cheminformatics"
+---
 
 Cheminformatics (see also the [Wikipedia](https://en.wikipedia.org/wiki/Cheminformatics) article) is the application of
 computer and information science methods to a wide range of problems in chemistry. The associated _in silico_
@@ -523,7 +522,7 @@ See [DB Substructure and similarity search](db-substructure-similarity-search.md
 
 ## Functions
 
-The following cheminformatics-related [functions](../../datagrok/functions/function.md) are exposed:
+The following cheminformatics-related [functions](../../datagrok/functions/functions.md) are exposed:
 
 * \#{x.ChemSubstructureSearch}
 * \#{x.ChemFindMCS}
@@ -547,7 +546,7 @@ Lot of chemical analysis is implemented using [scripting](../../compute/scriptin
 * \#{x.ChemScripts:ChemicalSpaceUsingUMAP}
 * \#{x.ChemScripts:USRCAT}
 
-# Performance
+## Performance
 
 | Function                              | Molecules | Execution time, s |
 |---------------------------------------|-----------|-------------------|
@@ -565,7 +564,7 @@ Lot of chemical analysis is implemented using [scripting](../../compute/scriptin
 | ChemSmilesToInChIKey                  | 1M        | 389               |
 | ChemSmilesToCanonical                 | 1M        | 331               |
 
-# Videos
+## Videos
 
 [![Cheminformatics](../../uploads/youtube/cheminformatics.png "Open on Youtube")](https://www.youtube.com/watch?v=k1NVdTRpYOM)
 

@@ -7,6 +7,7 @@ import java.math.*;
 import java.text.*;
 import java.util.regex.*;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.text.StringEscapeUtils;
 import org.joda.time.DateTime;
 import serialization.*;
@@ -213,18 +214,20 @@ public abstract class JdbcDataProvider extends DataProvider {
                             queryBuffer.append(interpolateString(param));
                             break;
                         case Types.LIST: //todo: extract submethod
-                            Object[] value = ((Object[])param.value);
-                             for (int i = 0; i < value.length; i++) {
-                              switch (param.propertySubType) {
+                            switch (param.propertySubType) {
                                 case Types.STRING:
-                                    queryBuffer.append(interpolateString(param));
+                                    @SuppressWarnings (value="unchecked")
+                                    ArrayList<String> value = ((ArrayList<String>)param.value);
+                                    for (int i = 0; i < value.size(); i++) {
+                                        queryBuffer.append(String.format("'%s'", value.get(i)));
+                                        if (i < value.size() - 1)
+                                            queryBuffer.append(",");
+                                    }
                                     break;
+                                //todo: implement other types
                                 default:
-                                    queryBuffer.append(value[i].toString());
-                                }
-                                if (i < value.length - 1)
-                                    queryBuffer.append(",");
-                              }
+                                    throw new NotImplementedException("Non-string lists are not implemented for manual param interpolation providers");
+                            }
                             break;
                         default:
                             queryBuffer.append(param.value.toString());

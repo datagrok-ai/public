@@ -54,7 +54,8 @@ export class ObjectPropertyBag {
         return true;
       },
       get(target: any, name: any) {
-        const own = ['__proto__', 'hasProperty', 'getProperty', 'getProperties', 'get', 'set', 'setAll', 'apply'];
+        const own = ['__proto__', 'hasProperty', 'getProperty', 'getProperties',
+          'get', 'set', 'setAll', 'apply', 'setDefault', 'resetDefault'];
         if (own.includes(name) || props.hasOwnProperty(name))
           // @ts-ignore
           return props[name];
@@ -111,6 +112,26 @@ export class ObjectPropertyBag {
    * @returns {boolean} */
   hasProperty(name: string): boolean {
     return this.getProperties().findIndex((p) => p.name === name) !== -1;
+  }
+
+  /** Sets the current state of viewer properties as the default configuration used to create new viewer
+  * instances of this type. Equivalent to the "Pick Up / Apply | Set as Default" context menu command.
+  * Read more about viewer commands: {@link https://datagrok.ai/help/visualize/viewers/#common-actions}
+  * @param data indicates if data settings should be copied.
+  * @param style indicates if style (non-data) settings should be copied. */
+  setDefault(data: boolean = false, style: boolean = true) {
+    if (this.source instanceof DG.Viewer)
+      api.grok_Viewer_Props_SetDefault(this.source.dart, data, style);
+    else
+      throw 'Call failed: object is not Viewer instance';
+  }
+
+  /** Clears the previously remembered default settings for viewers of this type. See also: [setDefault] */
+  resetDefault() {
+    if (this.source instanceof DG.Viewer)
+      api.grok_Viewer_Props_ResetDefault(this.source.dart);
+    else
+      throw 'Call failed: object is not Viewer instance';
   }
 }
 
@@ -669,15 +690,15 @@ export class Dialog extends DartWidget {
   /** @returns {Dialog}
    * @param {{modal: boolean, fullScreen: boolean, center: boolean, centerAt: Element, x: number, y: number, width: number, height: number}|{}} options
    * */
-  show(options?: { modal?: boolean; resizable?: boolean; fullScreen?: boolean; center?: boolean; centerAt?: Element; x?: number; y?: number; width?: number; height?: number; backgroundColor?: string; }): Dialog {
-    api.grok_Dialog_Show(this.dart, options?.modal, options?.resizable, options?.fullScreen, options?.center, options?.centerAt, options?.x, options?.y, options?.width, options?.height, options?.backgroundColor);
+  show(options?: { modal?: boolean; resizable?: boolean; fullScreen?: boolean; center?: boolean; centerAt?: Element; x?: number; y?: number; width?: number; height?: number; backgroundColor?: string; showNextTo?: HTMLElement}): Dialog {
+    api.grok_Dialog_Show(this.dart, options?.modal, options?.resizable, options?.fullScreen, options?.center, options?.centerAt, options?.x, options?.y, options?.width, options?.height, options?.backgroundColor, options?.showNextTo);
     return this;
   }
 
   /** @returns {Dialog}
    * @param {boolean} fullScreen  */
   showModal(fullScreen: boolean): Dialog {
-    api.grok_Dialog_Show(this.dart, true, null, fullScreen, false, null, null, null, null, null, null);
+    api.grok_Dialog_Show(this.dart, true, null, fullScreen, false, null, null, null, null, null, null, null);
     return this;
   }
 
@@ -1055,15 +1076,18 @@ export abstract class JsInputBase<T = any> extends InputBase<T> {
 }
 
 
-export class DateInput extends InputBase<dayjs.Dayjs> {
+export class DateInput extends InputBase<dayjs.Dayjs | null> {
   dart: any;
 
   constructor(dart: any, onChanged: any = null) {
     super(dart, onChanged);
   }
 
-  get value(): dayjs.Dayjs { return dayjs(api.grok_DateInput_Get_Value(this.dart)); }
-  set value(x: dayjs.Dayjs) { toDart(api.grok_DateInput_Set_Value(this.dart, x.valueOf())); }
+  get value(): dayjs.Dayjs | null { 
+    const date = api.grok_DateInput_Get_Value(this.dart);
+    return date == null ? date : dayjs(date);
+  }
+  set value(x: dayjs.Dayjs | null) { toDart(api.grok_DateInput_Set_Value(this.dart, x?.valueOf())); }
 }
 
 export class ProgressIndicator {
@@ -1412,7 +1436,7 @@ export class Color {
 /** Tree view node.
  * Sample: {@link https://public.datagrok.ai/js/samples/ui/tree-view}
  * */
-export class TreeViewNode {
+export class TreeViewNode<T = any> {
   dart: any;
 
   /** @constructs {TreeView} from the Dart object */
@@ -1448,8 +1472,8 @@ export class TreeViewNode {
   get text(): string { return api.grok_TreeViewNode_Text(this.dart); }
 
   /** Node value */
-  get value(): object { return api.grok_TreeViewNode_Get_Value(this.dart); };
-  set value(v: object) { api.grok_TreeViewNode_Set_Value(this.dart, v); };
+  get value(): T { return api.grok_TreeViewNode_Get_Value(this.dart); };
+  set value(v: T) { api.grok_TreeViewNode_Set_Value(this.dart, v); };
 
   /** Enables checkbox */
   enableCheckBox(checked: boolean = false): void {

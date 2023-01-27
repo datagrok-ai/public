@@ -1,7 +1,6 @@
-<!-- TITLE: File browsing and sharing -->
-<!-- SUBTITLE: -->
-
-# File browser and file shares
+---
+title: "File browsing and sharing"
+---
 
 * [Overview](#overview)
 * [File shares](#file-shares)
@@ -38,7 +37,7 @@ By default, Datagrok creates the root **Home** folder in the File Browser, but y
 Put simply, a **File share** is a shared folder in the File Browser. Any folder in the File Browser can become a File
 Share.
 
-> **Advanced Info**: In Datagrok, a file share is a [data connection] &mdash; a set of configurations that define how
+> **Advanced Info**: In Datagrok, a file share is a [data connection] — a set of configurations that define how
 > you access data in a particular data source. Each supported data connection has its own configurations.
 
 ## Security
@@ -54,8 +53,8 @@ in an Excel file that resides within a .zip file.
 
 ![Files Browser](./connectors/files-browser.gif "Files Browser")
 
-It's also possible to search for tables based on [metadata] that was extracted from the file during indexing. For
-example, you can search for tables that were created in the last month and have at least two columns &mdash; one column
+It's also possible to search for tables based on \[metadata] that was extracted from the file during indexing. For
+example, you can search for tables that were created in the last month and have at least two columns — one column
 containing molecules and another column named "activity". More than that, you can search across all or specified data
 providers at once.
 
@@ -71,7 +70,7 @@ when [adding a file share](#adding-a-file-share). You can also turn on indexing 
 
 1. In the File Browser, right-click a file share, and then select **Edit**.
    > **Note**: You can turn on indexing only for a file share, not for a folder inside a file share.
-   ![Edit File Browser](file-browser-and-file-shares-10.png)
+   > ![Edit File Browser](file-browser-and-file-shares-10.png)
 
 2. In the **Edit Connection** dialog, select **Index Files**, and then select **OK**.
    ![Index Files File Browser](file-browser-and-file-shares-11.png)
@@ -117,7 +116,7 @@ To create a new file share:
    **OK**.
    > **NOTE**: To verify if Datagrok has established the connection to the selected data source, select **Test**. In the
    > dedicated dialog, Datagrok will show if the connection was created.
-   ![New File Share Data Source](file-browser-and-file-shares-2.png)
+   > ![New File Share Data Source](file-browser-and-file-shares-2.png)
 
 Datagrok will add a new folder, and you can then create additional folders in it to structure your files.
 
@@ -157,7 +156,7 @@ ways to share a file:
   another user, and Datagrok will send a direct link to the file in the folder. When the user follows the link, the file
   data will be loaded from the server.
 
-> **Note**: Datagrok doesn't share a file directly &mdash; you need to share a connection (a file share or a folder within
+> **Note**: Datagrok doesn't share a file directly — you need to share a connection (a file share or a folder within
 > a file share) that contains the file. Avoid sharing the root **Home** folder, because the other Datagrok user will be
 > able to access any files that you uploaded to Datagrok if you shared at least one file from **Home**.
 > Instead, it's best to create a file share next to or under the root **Home**, upload files to that file share, and
@@ -177,7 +176,7 @@ To share a file:
    description (3), and then select **OK** (4).
    > You can optionally select **Send notifications** so that the user or group will receive a message in Datagrok after
    > you shared a connection with them.
-   ![Share folder as a new connection](file-browser-and-file-shares-5.png)
+   > ![Share folder as a new connection](file-browser-and-file-shares-5.png)
 
 ### Sharing a file as a table (dataframe)
 
@@ -193,12 +192,12 @@ To share a file as table:
 
 2. In the side panel on the left, select the **Share** icon, and then select **Data**.
    > **Note**: If you need to share your file as a data table, select the *Data* option.
-   ![Share File Data](file-browser-and-file-shares-6.png)
+   > ![Share File Data](file-browser-and-file-shares-6.png)
 
 3. In the **Upload project** dialog, select **OK**.
    > **Note**: You can also enter an optional description, remove the sheets or pages that you don't need to share, and
    > turn on **Data sync**.
-   ![Upload project](file-browser-and-file-shares-7.png)
+   > ![Upload project](file-browser-and-file-shares-7.png)
 
 4. In the **Share {document type}** dialog, enter the email or name of the user or group (1) you will share the file
    with, select the **Can view** or **Can edit** permission (2), enter an optional description of the file share (3),
@@ -207,7 +206,7 @@ To share a file as table:
 
 ## Videos
 
-[![File Browser](../uploads/youtube/data_access.png "Open on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8&t=417s)
+[![File Browser](../uploads/youtube/data_access.png "Open on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8\&t=417s)
 
 ## Related topics
 

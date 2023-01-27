@@ -70,6 +70,9 @@ export type PhylocanvasTreeNode = NodeType & {
   visibleLeaves: number,
 }
 
+/** Default name for root node to use for newick strings with no name root */
+export const NO_NAME_ROOT = '[root]';
+
 /** Based on phylocanvas.gl */
 export function parseNewick(s: string): NodeType {
   const ancestors = [];
@@ -104,5 +107,6 @@ export function parseNewick(s: string): NodeType {
         tree.branch_length = parseFloat(token);
     }
   }
+  if (!tree.name) tree.name = NO_NAME_ROOT; // Fix for consistency with TreeHelper at Dendrogram
   return tree;
 }

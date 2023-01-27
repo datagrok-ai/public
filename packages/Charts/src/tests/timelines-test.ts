@@ -1,8 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import $ from 'cash-dom';
-import {Subscription} from 'rxjs';
+//import $ from 'cash-dom';
+
 import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {Subscription} from 'rxjs';
 import {getOptions} from './utils';
 
 
@@ -11,7 +12,7 @@ category('Timelines', () => {
   let df: DG.DataFrame;
   let tv: DG.TableView;
   const subs: Subscription[] = [];
-  
+
   before(async () => {
     df = DG.DataFrame.fromCsv(
       `USUBJID, AESTDY, AEENDY, SEX, AGE
@@ -27,7 +28,7 @@ category('Timelines', () => {
     expect(viewer instanceof DG.JsViewer, true);
     expect(viewer.type, TYPE);
     expect(viewer.table.id, df.id);
-  });
+  }, {skipReason: 'GROK-11765'});
 
   test('Properties', async () => {
     const viewer = DG.Viewer.fromType(TYPE, df);
@@ -64,7 +65,7 @@ category('Timelines', () => {
     expect(options.markerSize, 4);
     expect(options.dateFormat, '{yyyy}-{MM}-{dd}');
     expect(options.showZoomSliders, false);
-  });
+  }, {skipReason: 'GROK-11764'});
 
   // test('Context menu', () => new Promise((resolve, reject) => {
   //   const viewer = DG.Viewer.fromType(TYPE, df);

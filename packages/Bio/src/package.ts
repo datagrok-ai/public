@@ -21,7 +21,8 @@ import {
 import {
   createJsonMonomerLibFromSdf,
   encodeMonomers,
-  getMolfilesFromSeq
+  getMolfilesFromSeq,
+  readLibrary
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {HELM_CORE_LIB_FILENAME} from '@datagrok-libraries/bio/src/utils/const';
 import {getMacroMol} from './utils/atomic-works';
@@ -42,11 +43,13 @@ import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {getMonomericMols} from './calculations/monomerLevelMols';
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {from, Observable, Subject} from 'rxjs';
-import {
-  TAGS as bioTAGS,
-  Monomer, IMonomerLib, MonomerWorks, MonomerLib, readLibrary,
-  SeqPalette, UnitsHandler, WebLogoViewer, getStats, splitterAsHelm
-} from '@datagrok-libraries/bio';
+import {getStats, splitterAsHelm, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {pepseaDialog} from './utils/pepsea';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
+import {MonomerLib} from '@datagrok-libraries/bio/src/monomer-works/monomer-lib';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {WebLogoViewer} from './viewers/web-logo-viewer';
 
 const STORAGE_NAME = 'Libraries';
 const LIB_PATH = 'System:AppData/Bio/libraries';
@@ -665,4 +668,11 @@ export function saveAsFasta() {
 //meta.semType: Macromolecule
 export function bioSubstructureFilter(): BioSubstructureFilter {
   return new BioSubstructureFilter();
+}
+
+//name: PepSeA MSA...
+//top-menu: Bio | PepSeA MSA...
+//description: Perform Multiple sequence alignment using PepSeA
+export function pepseaMSA(): void {
+  pepseaDialog();
 }

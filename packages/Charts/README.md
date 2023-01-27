@@ -2,7 +2,9 @@
 
 Charts is a [package](https://datagrok.ai/help/develop/develop#packages) for the
 [Datagrok](https://datagrok.ai) platform. It provides visualizations built using
-the [ECharts](https://echarts.apache.org/en/index.html) library.
+the [ECharts](https://echarts.apache.org/en/index.html) and [D3.js](https://d3js.org/)
+libraries. Individual data visualizations use Javascript libraries, such as
+[Circos](https://github.com/nicgirault/circosJS) and [three.js](https://threejs.org/).
 
 ## Timelines
 
@@ -90,33 +92,77 @@ Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/beer.csv>
 
 ## Chord
 
-Status: `experimental`
+The `Chord` viewer is used to visualize weighted relationships between several entities.
+
+Status: `experimental`.
 Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/energy_uk.csv>
 
 ![](./img/chord.gif)
 
-See also the `Chord` viewer in the [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers) package.
+The [D3.js](https://d3js.org/) version of the chart was used instead of
+[ECharts](https://echarts.apache.org/en/index.html) version due to better
+performance of the first one.
 
 ## Sankey
 
-Status: `experimental`
+The `Sankey` viewer is used to depict a flow from one set of values to another.
+
+Status: `experimental`.
 Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/energy_uk.csv>
 
 ![](./img/sankey.gif)
 
+The [D3.js](https://d3js.org/) version of the chart was used instead of
+[ECharts](https://echarts.apache.org/en/index.html) version due to better
+performance of the first one.
+
+## Globe
+
+The `Globe` viewer is used to represent data visualization layers on a
+3-dimensional globe in a spherical projection (e.g., earthquakes, sickness cases).
+
+Status: `experimental`.
+Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/covid-19-cases.csv>
+
+![](./img/globe.gif)
+
+## Group analysis
+
+The `Group analysis` viewer is used to group data by different options.
+
+Status: `experimental`.
+Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
+
+![](./img/group-analysis.gif)
+
 ## Sunburst
 
-Status: `experimental`
+The `Sunburst` viewer is used to display hierarchical data.
+
+Status: `experimental`.
 Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
 
 ![](./img/sunburst.gif)
 
-## TreeMap
+## Surface plot
 
-Status: `experimental`
+The `Surface plot` viewer is used to display a set of three-dimensional data
+as a mesh surface.
+
+Status: `experimental`.
 Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
 
-![](./img/tree-map.gif)
+![](./img/surface-plot.gif)
+
+<!-- ## TreeMap
+
+The `TreeMap` viewer is used to display hierarchical data with rectangles of
+decreasing sizes.
+
+Status: `experimental`.
+Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
+
+![](./img/tree-map.gif) -->
 
 ## TreeViewer
 
@@ -158,6 +204,11 @@ Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
 
 ## WordCloud
 
+The `WordCloud` viewer is used to visualize unstructured text data.
+
+Status: `experimental`.
+Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
+
 ![](./img/word-cloud.gif)
 
 ## Common properties
@@ -176,5 +227,10 @@ Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
 See also:
 
 - [ECharts](https://echarts.apache.org/en/index.html)
+- [D3](https://d3js.org/)
+- [Circos](https://github.com/nicgirault/circosJS)
+- [Three.js](https://threejs.org/)
+- [Datagrok JavaScript API](https://datagrok.ai/help/develop/js-api)
+- [Packages](https://datagrok.ai/help/develop/develop#packages)
 - [Viewers](https://datagrok.ai/help/visualize/viewers)
 - [How to Develop Custom Viewers](https://datagrok.ai/help/develop/how-to/develop-custom-viewer)

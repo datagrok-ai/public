@@ -3,9 +3,10 @@
  * */
 
 import * as DG from 'datagrok-api/dg';
-import {drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
+import {drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {isMolBlock} from '../utils/convert-notation-utils';
+import {aromatizeMolBlock} from "../utils/aromatic-utils";
 
 interface IMolInfo {
   mol: RDMol | null; // null when molString is invalid?
@@ -80,7 +81,16 @@ M  END
     let mol: RDMol | null = null;
     let substruct = {};
     try {
-      mol = this.rdKitModule.get_mol(molString, JSON.stringify(details));
+      if ((details as any).isSubstructure) {
+        if (molString.includes(' H ') || molString.includes('V3000')) {
+          mol = this.rdKitModule.get_mol(molString, '{"mergeQueryHs":true}');
+        } else {
+          const aromaMolString = aromatizeMolBlock(molString)
+          mol = this.rdKitModule.get_qmol(aromaMolString);
+        }
+     }
+      else
+        mol = this.rdKitModule.get_mol(molString, JSON.stringify(details));
       if (!mol.is_valid()) {
         mol.delete();
         mol = null;
@@ -114,7 +124,7 @@ M  END
           let molHasOwnCoords = mol.has_coords();
           const scaffoldIsMolBlock = isMolBlock(scaffoldMolString);
           if (scaffoldIsMolBlock) {
-            const rdKitScaffoldMol = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false, {mergeQueryHs: true}).mol;
+            const rdKitScaffoldMol = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false, {mergeQueryHs: true, isSubstructure: true}).mol;
             if (rdKitScaffoldMol && rdKitScaffoldMol.is_valid()) {
               rdKitScaffoldMol.normalize_depiction(0);
               if (molHasOwnCoords)
@@ -193,16 +203,7 @@ M  END
       drawRdKitMoleculeToOffscreenCanvas(rdKitMol, width, height, canvas, highlightScaffold ? substruct : null);
     else {
       // draw a crossed rectangle
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = '#EFEFEF';
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(width, height);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(width, 0);
-      ctx.lineTo(0, height);
-      ctx.stroke();
+      drawErrorCross(ctx, width, height);
     }
 
     return ctx.getImageData(0, 0, width, height);

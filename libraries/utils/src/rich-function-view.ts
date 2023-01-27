@@ -46,6 +46,12 @@ export class RichFunctionView extends FunctionView {
   // emitted when after a new FuncCall is linked
   private funcCallReplaced = new Subject<true>();
 
+  // emitted when runButton disability should be checked
+  private checkDisability = new Subject();
+
+  // stores the running state
+  private isRunning = false;
+
   constructor(funcCall: DG.FuncCall) {
     super();
 
@@ -74,18 +80,16 @@ export class RichFunctionView extends FunctionView {
     this.funcCallReplaced.next(true);
 
     if (funcCall.options['isHistorical']) {
-      if (!isPreviousHistorical) {
+      if (!isPreviousHistorical)
         this.name = `${this.name} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`;
-        this.setRunViewReadonly();
-      } else {
+      else
         this.name = `${this.name.substring(0, this.name.indexOf(' — '))} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`;
-      }
+
 
       // FIX ME: view name does not change in models
       document.querySelector('div.d4-ribbon-name')?.replaceChildren(ui.span([this.name]));
       this.path = `?id=${this._funcCall.id}`;
     } else {
-      this.setRunViewEditable();
       this.path = ``;
 
       if (isPreviousHistorical)
@@ -133,7 +137,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public buildInputBlock(): HTMLElement {
-    const formDiv = this.renderRunSection(this.funcCall!);
+    const formDiv = this.renderRunSection();
 
     return formDiv;
   }
@@ -310,16 +314,25 @@ export class RichFunctionView extends FunctionView {
     return map;
   }
 
-  private renderRunSection(call: DG.FuncCall): HTMLElement {
+  private renderRunSection(): HTMLElement {
     const runButton = ui.bigButton('Run', async () => {
-      runButton.disabled = true;
+      this.isRunning = true;
+      this.checkDisability.next();
       try {
         await this.run();
       } catch (e: any) {
         grok.shell.error(e);
       } finally {
-        runButton.disabled = false;
+        this.isRunning = false;
+        this.checkDisability.next();
       }
+    });
+    const buttonWrapper = ui.div(runButton);
+    ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
+
+    this.checkDisability.subscribe(() => {
+      const isValid = (wu(this.funcCall!.inputs.values()).every((v) => v !== null)) && !this.isRunning;
+      runButton.disabled = isValid ? false : true;
     });
 
     const inputs = ui.divV([], 'ui-form');
@@ -335,8 +348,9 @@ export class RichFunctionView extends FunctionView {
 
           inputs.append(t.root);
         } else {
+          // FIX ME: .toDart added to prevent bug of tables initial non-rendering
           const t = prop.propertyType === DG.TYPE.DATA_FRAME ?
-            ui.tableInput(prop.name, null, grok.shell.tables):
+            ui.tableInput(prop.name, null, grok.shell.tables.map(DG.toDart)):
             ui.input.forProperty(prop);
 
           t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
@@ -349,8 +363,7 @@ export class RichFunctionView extends FunctionView {
             this.funcCall!.inputs[val.name] = t.value;
             if (t.value === null) setTimeout(() => t.input.classList.add('d4-invalid'), 100); else t.input.classList.remove('d4-invalid'); ;
 
-            const isValid = (wu(this.funcCall!.inputs.values()).every((v) => v !== null));
-            runButton.disabled = isValid ? false : true;
+            this.checkDisability.next();
           });
           if (prop.category !== prevCategory)
             inputs.append(ui.h2(prop.category));
@@ -360,9 +373,12 @@ export class RichFunctionView extends FunctionView {
         }
         prevCategory = prop.category;
       });
-    const buttons = ui.buttonsInput([runButton]);
+    // @ts-ignore
+    const buttons = ui.buttonsInput([buttonWrapper]);
     inputs.append(buttons);
     inputs.classList.remove('ui-panel');
+    inputs.style.paddingTop = '0px';
+    inputs.style.paddingLeft = '0px';
 
     return ui.div([inputs]);
   }

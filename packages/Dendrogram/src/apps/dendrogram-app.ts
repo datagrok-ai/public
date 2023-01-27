@@ -23,8 +23,8 @@ export class DendrogramApp {
   }
 
   async loadData(df?: DG.DataFrame): Promise<void> {
-    const th = new TreeHelper();
     if (!df) {
+      const th = new TreeHelper();
       const newickStr: string = await _package.files.readAsText('data/tree95.nwk');
       df = th.newickToDf(newickStr, 'tree95');
     }

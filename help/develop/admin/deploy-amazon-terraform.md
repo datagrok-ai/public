@@ -1,7 +1,6 @@
-<!-- TITLE: Deployment on AWS ECS using Terraform -->
-<!-- SUBTITLE: -->
-
-# Deployment on AWS ECS using Terraform
+---
+title: "Deployment on AWS ECS using Terraform"
+---
 
 Datagrok consist of Docker containers, [database](infrastructure.md#database)
 and [persistent file storage](infrastructure.md#storage).

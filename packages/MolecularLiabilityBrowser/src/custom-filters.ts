@@ -148,7 +148,7 @@ export class PtmFilter extends DG.Filter {
       super.attach(dataFrame);
     } catch (err: any) {
       const errStr = errorToConsole(err);
-      console.error(errStr);
+      console.error('MLB: MolecularLiabilityBrowser.attach()\n' + errStr);
       throw err;
     } finally {
       console.debug(`MLB: PtmFilter.attach() end, ${((Date.now() - _startInit) / 1000).toString()}`);
@@ -156,6 +156,12 @@ export class PtmFilter extends DG.Filter {
   }
 
   applyState(state: any) {
+    // if (typeof state.column == 'string' || state.column instanceof String) {
+    //   const columnName: string = state.column;
+    //   delete state.column;
+    //   state.columnName = columnName;
+    // }
+
     super.applyState(state);
 
     // OnPropertyChanged() is not called when setting a property in TableView.filters() argument,
@@ -376,6 +382,8 @@ export class PtmFilter extends DG.Filter {
     const header = ui.divText(probabilityText);
     header.style.marginTop = '7px';
     header.style.marginBottom = '5px';
+
+    console.debug('MLB: PtmFilter.buildProbabilityInput() ' + `cMin = ${cMin}, cMax = ${cMax}`);
     const input = ui.rangeSlider(0, 1, cMin, cMax, false, 'thin_barbell');
 
     PtmFilter.adjustPtmProbabilityInput(input);

@@ -9,8 +9,8 @@ export enum MolNotation {
   Unknown = 'unknown',
 }
 
-export function isMolBlock(s: string) {
-  return s.includes('M  END');
+export function isMolBlock(molString: string) : boolean {
+  return molString.includes('M  END');
 }
 
 /**

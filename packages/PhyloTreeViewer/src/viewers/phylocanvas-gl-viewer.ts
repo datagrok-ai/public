@@ -5,13 +5,14 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 
 import * as rxjs from 'rxjs';
+import $ from 'cash-dom';
 import {TREE_TAGS} from '../consts';
 import {Observable, Subject, Unsubscribable} from 'rxjs';
-import $ from 'cash-dom';
 import {PickingInfo} from '@deck.gl/core/typed';
 import {MjolnirPointerEvent} from 'mjolnir.js';
-import {IPhylocanvasGlViewer, parseNewick, Shapes, TreeTypes, TreeTypesNames} from '@datagrok-libraries/bio';
 import {PhylocanvasGL} from '@phylocanvas/phylocanvas.gl';
+import {IPhylocanvasGlViewer, TreeTypesNames} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
+import {parseNewick, Shapes, TreeTypes} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 // TODO: add test for these properties existing.
 

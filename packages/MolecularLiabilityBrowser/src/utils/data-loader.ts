@@ -6,6 +6,7 @@ import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
 import {_package, packageName} from '../package';
 import {MlbDatabase} from './mlb-database';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import {AntigenDataFrame, TreeDataFrame, MlbDataFrame} from '../types/dataframe';
 
 export type DataQueryDict = { [name: string]: DG.DataQuery };
 
@@ -413,15 +414,15 @@ export class QueriesForDataLoader {
     return df.getCol('cdr').toList();
   };
 
-  async listAntigens(): Promise<DG.DataFrame> {
-    const df: DG.DataFrame = await this._cache.getDataFrame('antigen',
+  async listAntigens(): Promise<AntigenDataFrame> {
+    const df: AntigenDataFrame = AntigenDataFrame.wrap(await this._cache.getDataFrame('antigen',
       () => catchToLog<Promise<DG.DataFrame>>(
         'MLB: QueriesForDataLoader.listAntigens()',
         async () => {
           const funcCall: DG.FuncCall = await this._mlbQueries['listAntigens'].prepare().call();
           const df: DG.DataFrame = funcCall.getOutputParamValue();
           return df;
-        }));
+        })));
     return df;
   }
 
@@ -464,40 +465,43 @@ export class QueriesForDataLoader {
       });
   }
 
-  async getMlbByAntigen(antigen: string): Promise<DG.DataFrame> {
-    return catchToLog<Promise<DG.DataFrame>>(
+  async getMlbByAntigen(antigen: string): Promise<MlbDataFrame> {
+    return catchToLog<Promise<MlbDataFrame>>(
       'MLB: QueriesForDataLoader.getMlbByAntigen()',
       async () => {
         // const df: DG.DataFrame = await grok.functions.call(`${this._pName}:getMlbByAntigen`, {antigen: antigen});
         const funcCall: DG.FuncCall = await this._mlbQueries['getMlbByAntigen']
           .prepare({antigen: antigen}).call();
         const df: DG.DataFrame = funcCall.getOutputParamValue();
-        return df;
+        return MlbDataFrame.wrap(df, antigen);
       });
   }
 
-  async getTreeByAntigen(antigen: string): Promise<DG.DataFrame> {
+  async getTreeByAntigen(antigen: string): Promise<TreeDataFrame> {
     // const df: DG.DataFrame = await grok.functions.call(`${this._pName}:getTreeByAntigen`, {antigen: antigen});
-    return catchToLog<Promise<DG.DataFrame>>(
+    return catchToLog<Promise<TreeDataFrame>>(
       'MLB: QueriesForDataLoader.getTreeByAntigen()',
       async () => {
         const funcCall: DG.FuncCall = await this._mlbQueries['getTreeByAntigen']
           .prepare({antigen: antigen}).call();
         const df: DG.DataFrame = funcCall.getOutputParamValue();
-        return df;
+        return TreeDataFrame.wrap(df, antigen);
       });
   }
 
   async getAnarci(scheme: string, chain: string, antigen: string): Promise<DG.DataFrame> {
+    // There is a problem with using underscore symbols in query names.
+    const scheme2: string = scheme.charAt(0).toUpperCase() + scheme.slice(1);
+    const chain2: string = chain.charAt(0).toUpperCase() + chain.slice(1);
+    const funcName: string = `getAnarci${scheme2}${chain2}`;
+
     return catchToLog<Promise<DG.DataFrame>>(
-      'MLB: QueriesForDataLoader.getAnarci()',
+      `MLB: QueriesForDataLoader.getAnarci() ${funcName}( antigen = '${antigen}' )`,
       async () => {
-        // There is a problem with using underscore symbols in query names.
-        const scheme2: string = scheme.charAt(0).toUpperCase() + scheme.slice(1);
-        const chain2: string = chain.charAt(0).toUpperCase() + chain.slice(1);
         // const df: DG.DataFrame = await grok.functions
         //   .call(`${packageName}:getAnarci${scheme2}${chain2}`, {antigen: antigen}) as DG.DataFrame;
-        const funcCall: DG.FuncCall = await this._mlbQueries[`getAnarci${scheme2}${chain2}`]
+
+        const funcCall: DG.FuncCall = await this._mlbQueries[funcName]
           .prepare({antigen: antigen}).call();
         const df: DG.DataFrame = funcCall.getOutputParamValue();
         return df;
@@ -509,7 +513,7 @@ export class QueriesForDataLoader {
     return catchToLog<Promise<DG.DataFrame>>(
       'MLB: QueriesForDataLoader.loadMlbDf() getMolecularLiabilityBrowser',
       async () => {
-        const funcCall: DG.FuncCall = await this._mlbQueries['getMolecularLiabilityBrowser'].prepare();
+        const funcCall: DG.FuncCall = await this._mlbQueries['getMolecularLiabilityBrowser'].prepare().call();
         const df: DG.DataFrame = funcCall.getOutputParamValue();
         // 'ngl' column have been removed from query 2022-04
         df.columns.remove('ngl');
@@ -556,7 +560,7 @@ export abstract class DataLoader {
 
   abstract get cdrs(): string[];
 
-  abstract get antigens(): DG.DataFrame;
+  abstract get antigens(): AntigenDataFrame;
 
   abstract get vids(): string[];
 
@@ -594,9 +598,9 @@ export abstract class DataLoader {
 
   abstract getLayoutBySchemeCdr(scheme: string, cdr: string): Promise<VdRegion[]>;
 
-  abstract getMlbByAntigen(antigen: string): Promise<DG.DataFrame>;
+  abstract getMlbByAntigen(antigen: string): Promise<MlbDataFrame>;
 
-  abstract getTreeByAntigen(antigen: string): Promise<DG.DataFrame>;
+  abstract getTreeByAntigen(antigen: string): Promise<TreeDataFrame>;
 
   abstract getAnarci(scheme: string, chain: string, antigen: string): Promise<DG.DataFrame>;
 

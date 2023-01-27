@@ -10,7 +10,7 @@ import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
 import * as C from '../utils/constants';
 import {GridColumn} from 'datagrok-api/dg';
 import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
-import {getSplitter} from '@datagrok-libraries/bio';
+import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export async function getDistances(col: DG.Column, seq: string): Promise<Array<number>> {
   const stringArray = col.toList();

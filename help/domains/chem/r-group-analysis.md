@@ -1,7 +1,6 @@
-<!-- TITLE: R-group analysis -->
-<!-- SUBTITLE: -->
-
-# R-group analysis
+---
+title: "R-group analysis"
+---
 
 R-Group Analysis is a common function in chemistry. Typically, it involves R-group decomposition, followed by the visual
 analysis of the obtained R-groups. Grok's chemically-aware

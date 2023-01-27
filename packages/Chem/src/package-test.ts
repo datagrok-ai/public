@@ -14,7 +14,7 @@ import './tests/substructure-search-tests';
 import './tests/rendering-tests';
 import './tests/sketcher-tests';
 
-// import './tests/ui-tests';
+import './tests/ui-tests';
 import './tests/detector-tests';
 import './tests/api-based-tests';
 import './tests/notation-converter-tests';
@@ -24,6 +24,8 @@ import './tests/save-as-sdf-tests';
 import './tests/substructure-filter-tests';
 
 import './tests/viewers';
+
+import './tests/mol2-importer-tests';
 
 export const _package = new DG.Package();
 export {tests};

@@ -1,7 +1,6 @@
-<!-- TITLE: Usage Analysis -->
-<!-- SUBTITLE: -->
-
-# Usage analysis
+---
+title: "Usage Analysis"
+---
 
 Datagrok is a universal data platform that enables users to perform broad range of tasks, ranging from the self-service
 data analytics to using custom applications on top of the platform. In this environment, it is important to understand
@@ -33,7 +32,7 @@ analysis of event parameters (See the following tables: `events`, `event_types`,
 Due to the unique technology used in Datagrok (such
 as [in-memory database](../develop/advanced/performance.md#in-memory-database))
 , a significant part of the users activity happens completely on the client side, not using the server at all. This
-includes things like opening local files, aggregating tables, adding [viewers](../visualize/viewers.md), etc. Still,
+includes things like opening local files, aggregating tables, adding [viewers](../visualize/viewers/viewers.md), etc. Still,
 each action a user performs generates an internal named event in the platform. These events are used for multiple
 purposes:
 

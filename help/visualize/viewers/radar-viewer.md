@@ -1,7 +1,6 @@
-<!-- TITLE: Radar viewer -->
-<!-- SUBTITLE: -->
-
-# Radar viewer
+---
+title: "Radar viewer"
+---
 
 Radar viewer (a spider chart) compares multivariate data across several
 dimensions. It plots numerical values of the table columns on axes that radiate
@@ -60,7 +59,7 @@ filters.
 
 ## See also
 
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [PC plot](pc-plot.md)
 * [Bar chart](bar-chart.md)
 * Pie bar chart

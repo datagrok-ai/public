@@ -10,7 +10,7 @@ import {MonomerPosition, MostPotentResiduesViewer} from './viewers/sar-viewer';
 
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {LogoSummary} from './viewers/logo-summary';
-import {MonomerWorks} from '@datagrok-libraries/bio';
+import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 
 export let monomerWorks: MonomerWorks | null;
 
@@ -152,10 +152,11 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
   return widget.draw();
 }
 
-//name: Get Peptides Structure
-//tags: panel, widgets
-//input: column col {semType: Macromolecule}
-//output: widget result
+/*
+name: Get Peptides Structure
+tags: panel, widgets
+input: column col {semType: Macromolecule}
+output: widget result
 export function getPeptidesStructure(col: DG.Column): DG.Widget {
   const getButtonTooltip = 'Retrieves peptides structure from customer database by special id column';
   const getButton = ui.button('Get structure', async () => {
@@ -173,6 +174,7 @@ export function getPeptidesStructure(col: DG.Column): DG.Widget {
   }, getButtonTooltip);
   return new DG.Widget(getButton);
 }
+*/
 
 function getOrDefine(dataframe?: DG.DataFrame, column?: DG.Column | null): [DG.DataFrame, DG.Column] {
   dataframe ??= grok.shell.t;

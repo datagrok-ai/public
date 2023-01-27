@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {TreeAnalyzer, mlbTreeNodeRe} from './utils/tree-stats';
 import {PhylocanvasGL} from '@phylocanvas/phylocanvas.gl';
-import {PhylocanvasTreeNode, Shapes, TreeTypes} from '@datagrok-libraries/bio';
+import {PhylocanvasTreeNode, Shapes, TreeTypes} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 /** Code of tree browser before using Phylocanvas from lstolbov 2022-06-22 */
 export class TreeBrowserOld2 {// extends DG.JsViewer {

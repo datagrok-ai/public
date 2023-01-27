@@ -1,4 +1,6 @@
-# File shares. File Manager
+---
+title: File shares. File Manager
+---
 
 **File Manager** lets you work with files and directories on your system from the convenience of your web browser. You
 can browse, preview, open, create, delete, rename, download, clone, and share files and directories.
@@ -46,6 +48,7 @@ You can connect to files and folders located on a remote server or a mapped driv
 connectors to the following data sources:
 
 * [An Amazon Simple Storage Service (S3) bucket](connectors/s3.md)
+
 * [Windows and Linux network shares](connectors/files.md)
 
   > Note: Connecting to an SMB file share (that is, a file share mounted on a server, such as Linux or Windows network
@@ -53,7 +56,9 @@ connectors to the following data sources:
   > (public.datagrok.ai).
 
 * [Dropbox](connectors/dropbox.md)
+
 * [Git](connectors/git.md)
+
 * [Google Drive](connectors/googlecloud.md)
 
 > Developers: You can [create custom connectors](../develop/how-to/access-data.md/#connections).
@@ -234,6 +239,7 @@ Datagrok has multiple tools to help you find information you need precisely when
 
 * You can browse and preview the content of individual files in [30+ formats](supported-formats.md). What you see is
   dynamically adjusted based on the file type. For example:
+
   * You can view the content of ZIP files just like regular folders.
   * View and edit Markdown for HTML files.
   * View image data in cell output and as files preview.
@@ -249,15 +255,15 @@ Datagrok has multiple tools to help you find information you need precisely when
 
 * You can get on-demand information about folders and files, and data within these files:
   * Hover over objects to see context-driven tooltips.
+
   * Select an object and navigate to **Data Explorer** on the left to see all applicable [info
     panels](../discover/info-panels.md) (for example, **Details** shows basic metadata about files and folders, **Stats**
     shows summary column statistics for tabular datasets, and **Chem** lets you quickly find molecules of interest using
     sketcher).
-
   > Developers: You can augment file preview with custom metadata and [create organization-specific file
   > viewers](../develop/how-to/create-custom-file-viewers.md).
   >
-  >![Cell image segmentation](Cell-image-segmentation.gif)
+  > ![Cell image segmentation](Cell-image-segmentation.gif)
   >
   >In the example above, a Python script is invoked against the JPEG and JPG files, cells are automatically segmented in
   > file preview, and the number of detected cell segments is displayed on the info panel.
@@ -288,6 +294,9 @@ pipeline](data-pipeline.md)
 See also:
 
 <!--* [Databases](link)-->
+
 <!--* [Web services](link)-->
+
 <!--*[Data explorer](link)-->
+
 <!--*[Indexing](link)-->

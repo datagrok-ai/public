@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import { filter, map } from 'rxjs/operators';
-import { Tutorial } from '../../../tutorial';
+import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 import { interval } from 'rxjs';
 
 
@@ -72,6 +72,6 @@ export class EmbeddedViewersTutorial extends Tutorial {
         filter((name: string | undefined) => name === 'AGE')),
       $(trellis!.root).find('.grok-font-icon-settings.d4-viewer-icon')[0],
       'Click on the gear icon to edit the scatter plot properties. ' +
-      'Find the <b>Color</b> property within the <b>Data</b> section.');
+      'Find the <b>Color</b> property within the <b>Color</b> section.');
   }
 }
