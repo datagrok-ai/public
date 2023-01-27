@@ -2,9 +2,6 @@ package grok_connect.handlers;
 
 import org.eclipse.jetty.websocket.api.Session;
 
-import java.time.format.DateTimeFormatter;  
-import java.time.LocalDateTime;    
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -18,14 +15,12 @@ import serialization.DataFrame;
 
 public class SessionHandler {
     static int rowsPerChunk = 10000;
-    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSS");  
     Session session;
     ExecutorService threadpool = Executors.newCachedThreadPool();
     Future<DataFrame> fdf;
     DataFrame dataFrame;
 
     Boolean firstTry = true;
-    LocalDateTime starTime;
 
     Boolean oneDfSent = false;
 
@@ -67,7 +62,6 @@ public class SessionHandler {
                 } else if (message.startsWith(sizeRecievedMessage)) {
                     System.out.print("sending bytes");
                     fdf = threadpool.submit(() -> qm.getSubDF(rowsPerChunk));
-                    starTime = LocalDateTime.now();
                     session.getRemote().sendBytes(ByteBuffer.wrap(bytes));
                     return;
                 } else {
@@ -81,8 +75,6 @@ public class SessionHandler {
                     }
                     else {
                         System.out.print("ok response?" + message);
-                        LocalDateTime end = LocalDateTime.now();  
-                        qm.query.log += "GROK_CONNECT_SEND_DF, " + dtf.format(starTime) + ", " + dtf.format(end) + '\n';
                         firstTry = true;
                         oneDfSent = true;
                         dataFrame = fdf.get();
@@ -101,7 +93,7 @@ public class SessionHandler {
                     System.out.println("df empty, end");
                     qm.closeConnection();
 
-                    if (true) {
+                    if (qm.query.debugQuery) {
                         session.getRemote().sendString(socketLogMessage(qm.query.log));
                         return;
                     }

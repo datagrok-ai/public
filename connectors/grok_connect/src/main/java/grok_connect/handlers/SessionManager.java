@@ -22,7 +22,8 @@ public class SessionManager {
         sessions.get(s).onError(error);
     }
 
-    static void delete(Session s) {
+    static void delete(Session s) throws Throwable {
+        sessions.get(s).qm.closeConnection();
         sessions.remove(s);
     }
 }

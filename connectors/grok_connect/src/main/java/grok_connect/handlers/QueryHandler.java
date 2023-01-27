@@ -16,7 +16,7 @@ public class QueryHandler {
     }
 
     @OnWebSocketClose
-    public void closed(Session session, int statusCode, String reason) {
+    public void closed(Session session, int statusCode, String reason) throws Throwable {
         SessionManager.delete(session);
     }
 

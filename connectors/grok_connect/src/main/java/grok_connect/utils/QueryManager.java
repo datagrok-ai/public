@@ -6,9 +6,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-import java.time.format.DateTimeFormatter;  
-import java.time.LocalDateTime;    
-
 import grok_connect.GrokConnect;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.providers.JdbcDataProvider;
@@ -63,18 +60,12 @@ public class QueryManager {
     }
 
     public DataFrame getSubDF(int maxIterations) throws IOException, SQLException, QueryCancelledByUser {
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSS");  
-        LocalDateTime start = LocalDateTime.now();  
-
         List<Column> columns = schemeInfo.columns;
         for (int i = 0; i < columns.size(); i++) {
             columns.get(i).empty();
         }
 
         DataFrame df = provider.getResultSetSubDf(query, resultSet, columns, schemeInfo.supportedType, schemeInfo.initColumn, maxIterations);
-        LocalDateTime end = LocalDateTime.now();  
-        query.log += "GROK_CONNECT_GET_DF, " + dtf.format(start) + ", " + dtf.format(end) + '\n';
-
         return df;
     }
 
