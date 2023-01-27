@@ -9,10 +9,13 @@ import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer} from './chem-search-base-viewer';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 
+const BACKGROUND = 'background';
+const TEXT = 'text';
+
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   isEditedFromSketcher: boolean = false;
   hotSearch: boolean;
-  sketchButton: HTMLButtonElement;
+  sketchButton: HTMLElement;
   sketchedMolecule: string = '';
   curIdx: number = 0;
   molCol: DG.Column | null = null;
@@ -22,6 +25,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   gridSelect: boolean = false;
   targetMoleculeIdx: number = 0;
   moleculeProperties: string[];
+  applyColorTo
 
   get targetMolecule(): string {
     return this.isEditedFromSketcher ?
@@ -33,8 +37,9 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     super('similarity');
     this.cutoff = this.float('cutoff', 0.01, {min: 0, max: 1});
     this.moleculeProperties = this.columnList('moleculeProperties', []);
+    this.applyColorTo = this.string('applyColorTo', BACKGROUND, {choices: [BACKGROUND, TEXT]});
     this.hotSearch = this.bool('hotSearch', true);
-    this.sketchButton = ui.button('Sketch', () => {
+    this.sketchButton = ui.button(ui.icons.edit(() => {}), () => {
       const sketcher = new grok.chem.Sketcher();
       const savedMolecule = this.targetMolecule;
       sketcher.setMolecule(this.targetMolecule);
@@ -47,16 +52,14 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             grok.shell.error(`Empty molecule cannot be used for similarity search`);
             this.sketchedMolecule = savedMolecule;
           } else {
-            this.sketchedMolecule = sketcher.getMolFile();         
+            this.sketchedMolecule = sketcher.getMolFile();
+            this.gridSelect = false; 
             this.render();
           }
         })
         .show();
-    });
-    this.sketchButton.id = 'reference';
-    this.sketchButton.style.width = '40px';
-    this.sketchButton.style.height = '10px';
-    this.sketchButton.style.marginLeft = '15px';
+    })
+    this.sketchButton.classList.add('similarity-search-edit');
     this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', height: '10px'});
   }
 
@@ -71,8 +74,6 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       return;
     if (this.moleculeColumn) {   
       const progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
-      if (!this.gridSelect && this.curIdx != this.dataFrame!.currentRowIdx)
-        this.isEditedFromSketcher = false;
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
@@ -95,20 +96,18 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       if (this.molCol && this.idxs && this.scores) {
         if (this.isEditedFromSketcher) {
           const label = this.sketchButton;
-          const molProps = this.createMoleculePropertiesDiv(this.targetMoleculeIdx);
           const grid = ui.div([
             renderMolecule(
               this.targetMolecule, {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
-            label,
-            molProps],
-          {style: {margin: '5px'}},
+            label],
+          {style: {margin: '5px', padding: '3px', position: 'relative'}},
           );
           let divClass = 'd4-flex-col';
           divClass += ' d4-current';
-          grid.style.borderStyle = 'solid';
-          grid.style.borderWidth = 'thin';
+          grid.style.boxShadow = '0px 0px 1px var(--grey-6)';
           $(grid).addClass(divClass);
           grids[cnt2++] = grid;
+          this.isEditedFromSketcher = false;
         }
         for (let i = 0; i < this.molCol.length; ++i) {
           const idx = this.idxs.get(i);
@@ -121,7 +120,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
               this.molCol?.get(i), {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
             label,
             molProps],
-          {style: {margin: '5px'}},
+          {style: {margin: '5px', padding: '3px', position: 'relative'}},
           );
           let divClass = 'd4-flex-col';
           if (idx == this.curIdx) {
@@ -130,8 +129,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           }
           if (idx == this.targetMoleculeIdx && !this.isEditedFromSketcher) {
             divClass += ' d4-current';
-            grid.style.borderStyle = 'solid';
-            grid.style.borderWidth = 'thin';
+            grid.style.boxShadow = '0px 0px 1px var(--grey-6)';
           }
           if (this.dataFrame!.selection.get(idx)) {
             divClass += ' d4-selected';
@@ -201,9 +199,10 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     if (similarity)
       propsDict['similarity'] = {val: similarity};
     for (const col of this.moleculeProperties) {        
-        propsDict[col] = {val: this.moleculeColumn!.dataFrame.get(col, idx), 
-          color: grid.cell(col, idx).color,
-          valColor: grid.cell(col, idx).style.textColor};
+        propsDict[col] = {val: this.moleculeColumn!.dataFrame.get(col, idx)};
+        if (this.moleculeColumn!.dataFrame.col(col)!.tags[DG.TAGS.COLOR_CODING_TYPE]) {
+            propsDict[col].color = grid.cell(col, idx).color;
+        }
     }
     const div = ui.divV([]);
     for (const key of Object.keys(propsDict)) {
@@ -212,8 +211,11 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       const value = ui.divText(`${propsDict[key].val}`, 'similarity-prop-value');
       if (propsDict[key].color) {
         const bgColor = DG.Color.toHtml(propsDict[key].color);
-        value.style.backgroundColor = bgColor,
-        value.style.color = this.pickTextColorBasedOnBgColor(bgColor, '#FFFFFF', '#000000');;
+        if (this.applyColorTo === BACKGROUND) {
+          value.style.backgroundColor = bgColor,
+          value.style.color = this.pickTextColorBasedOnBgColor(bgColor, '#FFFFFF', '#000000');;
+        } else
+          value.style.color = bgColor;
       }
       const item = ui.divH([
         label,

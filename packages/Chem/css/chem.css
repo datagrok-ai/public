@@ -125,6 +125,7 @@
 
 .similarity-prop-label {
   min-width: 100px;
+  max-width: 100px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -140,5 +141,12 @@
 }
 
 .similarity-prop-item {
-  padding-top: 10px
+  padding-top: 5px;
+}
+
+.similarity-search-edit {
+  position: absolute;
+  margin: 0px!important;
+  height: 14px!important;
+  padding-left: 2px!important;
 }
