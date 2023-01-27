@@ -137,14 +137,13 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       if (queryMol !== null) {
         const mol = this.getMol(queryMolString);
         if (mol !== null) { // check the qmol is proper
-          const match = mol.get_substruct_match(queryMol!);
+          const match = mol.get_substruct_match(queryMol);
           if (match === '{}') {
-            //queryMol!.delete();
             queryMol = mol;
           } else mol.delete();
         } // else, this looks to be a real SMARTS
       } else { // failover to queryMolBlockFailover
-        queryMol = this.getMol(queryMolBlockFailover);
+        queryMol = this.getMol(queryMolBlockFailover); // possibly get rid of fall-over in future
       }
     }
 
