@@ -136,8 +136,7 @@ export class PeptidesModel {
   }
 
   get alphabet(): string {
-    const col = this.settings.sequenceColumnName ? this.df.getCol(this.settings.sequenceColumnName) :
-      this.df.columns.bySemType(DG.SEMTYPE.MACROMOLECULE)!;
+    const col = this.df.getCol(this.settings.sequenceColumnName!);
     return col.getTag(bioTAGS.alphabet);
   }
 
@@ -175,7 +174,7 @@ export class PeptidesModel {
   }
 
   get analysisView(): DG.TableView {
-    this._analysisView ??= 
+    this._analysisView ??=
       wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame.getTag(C.TAGS.UUID) == this.df.getTag(C.TAGS.UUID)) ??
         grok.shell.addTableView(this.df);
     if (this.df.getTag(C.MULTIPLE_VIEWS) != '1')
