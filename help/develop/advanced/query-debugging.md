@@ -1,7 +1,6 @@
-<!-- TITLE: Query debugging -->
-<!-- SUBTITLE: -->
-
-# Query debugging
+---
+title: "Query debugging"
+---
 
 To debug and troubleshoot the database queries, use the built-in tool
 that allows you to see the following information about the query:

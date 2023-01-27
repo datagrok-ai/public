@@ -9,6 +9,14 @@ const fetch = require('node-fetch');
 const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
 
+export const defaultLaunchParameters: utils.Indexable = {
+  args: [
+    '--disable-dev-shm-usage',
+    '--disable-features=site-per-process',
+  ],
+  ignoreHTTPSErrors: true,
+};
+
 export async function getToken(url: string, key: string) {
   let response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
   let json = await response.json();
@@ -44,7 +52,7 @@ export function getDevKey(hostKey: string): {url: string, key: string} {
   return {url, key};
 }
 
-export async function getBrowserPage(puppeteer: any): Promise<{browser: any, page: any}> {
+export async function getBrowserPage(puppeteer: any, params: {} = defaultLaunchParameters): Promise<{browser: any, page: any}> {
   let url:string = process.env.HOST ?? '';
   let cfg = getDevKey(url);
   url = cfg.url;
@@ -54,10 +62,7 @@ export async function getBrowserPage(puppeteer: any): Promise<{browser: any, pag
   url = await getWebUrl(url, token);
   console.log(`Using web root: ${url}`);
 
-  let browser = await puppeteer.launch({
-    args: ['--disable-dev-shm-usage', '--disable-features=site-per-process'],
-    ignoreHTTPSErrors: true,
-  });
+  let browser = await puppeteer.launch(params);
 
   let page = await browser.newPage();
   await page.setDefaultNavigationTimeout(0);
@@ -74,4 +79,18 @@ export async function getBrowserPage(puppeteer: any): Promise<{browser: any, pag
     throw error;
   }
   return {browser, page};
+}
+
+export function runWithTimeout(timeout: number, f: () => any): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    const timeoutId = setTimeout(() => reject(`Timeout exceeded: ${timeout} ms`), timeout);
+    const resolveValue = await f();
+    clearTimeout(timeoutId);
+    resolve(resolveValue);
+  });
+}
+
+export function exitWithCode(code: number): void {
+  console.log(`Exiting with code ${code}`);
+  process.exit(code);
 }

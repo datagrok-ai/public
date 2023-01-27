@@ -1,7 +1,6 @@
-<!-- TITLE: Datagrok for life sciences -->
-<!-- SUBTITLE: -->
-
-# Datagrok for life sciences
+---
+title: "Datagrok for life sciences"
+---
 
 Datagrok is a great tool for working with tabular data of any origin. It will retrieve, analyze, visualize and transform
 traditional business data, such as sales, inventory, or marketing data as well as any other system (but of course

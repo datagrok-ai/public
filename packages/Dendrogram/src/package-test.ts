@@ -7,7 +7,7 @@ import './tests/grid-with-tree-tests';
 import './tests/hierarchical-clustering-tests';
 import './tests/tree-cut-tests';
 import './tests/tree-for-grid-tests';
-import './tests/tree-helpers-tests';
+import './tests/tree-helper-tests';
 
 export const _package = new DG.Package();
 export {tests};

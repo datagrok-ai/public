@@ -1,7 +1,6 @@
-<!-- TITLE: Filters -->
-<!-- SUBTITLE: -->
-
-# Filters
+---
+title: "Filters"
+---
 
 A set of controls for quick filtering, selection, and visual assessment of column values.
 
@@ -57,7 +56,7 @@ To set the column tag value via the UI:
 To set the column tag value programmatically:
 
 ```javascript
-column.tags['.structure-filter-type'] = 'Categorical';
+column.tags[DG.TAGS.STRUCTURE_FILTER_TYPE] = 'Categorical';
 ```
 
 ## Drag-and-drop
@@ -68,6 +67,6 @@ Drag-and-drop columns right from the grid to add the corresponding filters:
 
 See also:
 
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [Table View](../../datagrok/table-view.md)
 * [JS API: Filters](https://public.datagrok.ai/js/samples/ui/viewers/types/filters)

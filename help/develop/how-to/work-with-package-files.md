@@ -1,6 +1,6 @@
-<!-- TITLE: Work with package files -->
-
-# How to work with package files
+---
+title: "Work with package files"
+---
 
 There are multiple ways to access your data in the Datagrok platform. To learn more about them,
 please refer to the [main article](access-data.md) covering this topic. Here we will focus on

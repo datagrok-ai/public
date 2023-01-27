@@ -1,7 +1,7 @@
-<!-- TITLE: &#8204;JavaScript development-->
-<!-- SUBTITLE: -->
-
-# JavaScript development
+---
+title: "JavaScript development"
+sidebar_position: 0
+---
 
 JavaScript or TypeScript-based development is the preferred way to develop user-facing applications on top of the
 platform. Use the [JS API](js-api.md) to control pretty much anything within Datagrok,
@@ -24,7 +24,7 @@ This article describes what a [package](#packages) is, as well as techniques for
 A package is a versionable unit of content distribution within Datagrok. Essentially, it is a folder with files in it. A
 package might contain different things:
 
-* JavaScript [functions](../datagrok/functions/function.md), [viewers](../visualize/viewers.md)
+* JavaScript [functions](../datagrok/functions/functions.md), [viewers](../visualize/viewers/viewers.md)
   , [widgets](../visualize/widgets.md), [applications](../develop/how-to/build-an-app.md)
 * [Scripts](../compute/scripting.md) written in R, Python, Octave, Grok, Julia, JavaScript, NodeJS, or Java
 * [Queries](../access/data-query.md) and [connections](../access/data-connection.md)
@@ -49,11 +49,11 @@ A simplest JavaScript package consists of the following files:
 In addition to that, it might contain the following folders:
 
 * `environments`: [environment configurations](../compute/scripting.md#environments)
-  for [scripts](../compute/scripting.md). Examples: [DemoScripts]
+  for [scripts](../compute/scripting.md).
+  Examples: [DemoScripts]
 * `scripts`: a collection of [scripts](../compute/scripting.md) used for computations.
   Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
   , [DemoScripts]
-  <!--, [Impute](https://github.com/datagrok-ai/public/tree/master/packages/Impute)-->
 * `swaggers`: REST APIs in [Swagger/OpenAPI](../access/open-api.md) format.
   Examples: [EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore)
   , [Swaggers](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers)
@@ -122,7 +122,7 @@ file. If you choose to include other files, such as CSS, in your package, import
 
 During the [publishing step](#publishing), the contents of `package.js` get parsed, and functions with the properly
 formatted
-[headers](../compute/scripting.md#header) are registered as Grok [functions](../datagrok/functions/function.md)
+[headers](../compute/scripting.md#header) are registered as Grok [functions](../datagrok/functions/functions.md)
 . By annotating functions in a specific way, it is possible to register custom viewers, widgets, renderers, converters,
 validators, suggestions, info panels, and semantic type detectors. If function has more than one output, it must return
 JS object `{param1: value, param2: value}`:
@@ -450,4 +450,4 @@ See also:
 * [Packages from our GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages)
 * [How Developers Use API Documentation: An Observation Study](https://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf)
 
-[DemoScripts]: https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/
+[DemoScripts]: https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts

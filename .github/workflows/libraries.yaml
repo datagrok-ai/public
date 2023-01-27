@@ -118,7 +118,6 @@ jobs:
       - run: npm run test
         working-directory: libraries/${{ matrix.project }}
         if: ${{ matrix.test == 'true' }}
-        continue-on-error: true
       - run: npm run build
         working-directory: libraries/${{ matrix.project }}
         if: ${{ matrix.build == 'true' }}
@@ -155,6 +154,7 @@ jobs:
       - name: Test packages compatibility
         if: ${{ matrix.packages != '' }}
         id: test-packages
+        continue-on-error: true
         run: |
           crnt=$(pwd)
           for package in ${{ matrix.packages }}; do
@@ -165,7 +165,6 @@ jobs:
             if [[ $failed == "true" ]]; then
               old_version=$(jq '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies) | ."@datagrok-libraries/${{ matrix.project }}"' package.json | sed 's/"//g')
               echo "::warning title=$package library ${{ matrix.project }}::Changed rule for ${{ matrix.project }} in $package: $old_version --> $(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies) | ."@datagrok-libraries/${{ matrix.project }}"' "package.json" | sed 's/"//g')"
-              echo "::set-output name=changes::yes"
             fi
             cd $crnt
           done

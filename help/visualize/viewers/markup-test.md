@@ -51,5 +51,5 @@ width="100%" height="100%">
 
 See also:
 
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [Viewers test](viewers-test.md)

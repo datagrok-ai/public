@@ -12,9 +12,8 @@ import {injectTreeToGridUI} from './viewers/inject-tree-to-grid';
 import {TreeInGridCellApp} from './apps/tree-in-grid-cell-app';
 import {PhylocanvasGlService} from './utils/phylocanvas-gl-service';
 import {TreeCutAsTreeApp} from './apps/tree-cut-as-tree-app';
-import {DendrogramApp} from './apps/dendrogram-app';
 import {findNewick} from './scripts-api';
-import {ITreeHelper, NodeType, PhylocanvasGlServiceBase} from '@datagrok-libraries/bio';
+import {PhylocanvasGlServiceBase} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
 
 
 export const _package = new DG.Package();
@@ -80,23 +79,6 @@ export function phyloTreeViewer(): PhyloTreeViewer {
 
 // -- apps for tests --
 
-//name: dendrogramApp
-//description: Test/demo app for Dendrogram
-export async function dendrogramApp(): Promise<void> {
-  const pi = DG.TaskBarProgressIndicator.create('open Dendrogram app');
-  try {
-    const app = new DendrogramApp();
-    await app.init();
-  } catch (err: unknown) {
-    const msg: string = 'PhyloTreeViewer dendrogramApp() error: ' +
-      `${err instanceof Error ? err.message : (err as Object).toString()}`;
-    grok.shell.error(msg);
-    console.error(msg);
-  } finally {
-    pi.close();
-  }
-}
-
 //name: phylocanvasGlViewerApp
 //description: Test/demo app for PhylocanvasGlViewer
 export async function phylocanvasGlViewerApp() {
@@ -146,7 +128,6 @@ export async function treeCutAsTreeApp(): Promise<void> {
   }
 }
 
-
 //name: TreeInGridCell
 //description: Test/demo app for TreeInGridCell
 export async function treeInGridCellApp(): Promise<void> {
@@ -167,25 +148,6 @@ export async function treeInGridCellApp(): Promise<void> {
   }
 }
 
-// -- File handlers --
-
-//name: importNwk
-//description: Opens Newick file
-//tags: file-handler
-//meta.ext: nwk, newick
-//input: string fileContent
-//output: list tables
-export async function importNewick(fileContent: string): Promise<DG.DataFrame[]> {
-  const df: DG.DataFrame = newickToDf(fileContent, '');
-
-  // const app = new PhylocanvasGlViewerApp();
-  // await app.init(df);
-
-  const app = new DendrogramApp();
-  await app.init(df);
-
-  return [];
-}
 
 // -- Custom helpers --
 
@@ -219,7 +181,6 @@ export function getPhylocanvasGlService(): PhylocanvasGlServiceBase {
 
   return window.$phylocanvasGlService;
 }
-
 
 //name: newickRepresentation
 //input: dataframe data

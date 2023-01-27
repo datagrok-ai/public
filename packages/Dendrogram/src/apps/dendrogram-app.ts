@@ -23,8 +23,8 @@ export class DendrogramApp {
   }
 
   async loadData(df?: DG.DataFrame): Promise<void> {
-    const th = new TreeHelper();
     if (!df) {
+      const th = new TreeHelper();
       const newickStr: string = await _package.files.readAsText('data/tree95.nwk');
       df = th.newickToDf(newickStr, 'tree95');
     }
@@ -81,7 +81,7 @@ export class DendrogramApp {
       // filter for leafs only, to align tree with grid
 
       this.tv = grok.shell.addTableView(this.treeDf, DG.DOCK_TYPE.FILL);
-      this.tv.path = this.tv.basePath = `/func/Dendrogram.${this._funcName}`;
+      this.tv.path = this.tv.basePath = `/func/${_package.name}.${this._funcName}`;
     }
 
     if (!this.treeViewer) {

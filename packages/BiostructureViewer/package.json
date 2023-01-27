@@ -5,7 +5,7 @@
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
   },
-  "version": "0.2.6",
+  "version": "0.2.8",
   "description": "BiostructureViewer is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
   "repository": {
     "type": "git",
@@ -21,36 +21,37 @@
     "css/molstar.css"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.15.1",
-    "@datagrok-libraries/utils": "^1.15.5",
+    "@datagrok-libraries/bio": "^5.16.4",
+    "@datagrok-libraries/utils": "^2.0.5",
     "cash-dom": "latest",
     "datagrok-api": "^1.0.0",
     "dayjs": "latest",
-    "molstar": "^3.0.0-dev.4"
+    "molstar": "^3.0.0-dev.4",
+    "rxjs": "^6.5.5",
+    "wu": "latest"
   },
   "devDependencies": {
-    "typescript": "^4.4.4",
+    "@types/js-yaml": "^4.0.5",
+    "@types/node-fetch": "^2.6.2",
     "@typescript-eslint/eslint-plugin": "^4.29.1",
     "@typescript-eslint/parser": "^4.29.1",
+    "css-loader": "^6.5.1",
     "eslint": "^7.32.0",
     "eslint-config-google": "^0.14.0",
-    "ts-loader": "^9.2.5",
     "file-loader": "^6.2.0",
-    "css-loader": "^6.5.1",
-    "sass-loader": "^12.4.0",
-    "mini-css-extract-plugin": "^2.5.2",
-    "sass": "^1.49.0",
-    "webpack": "latest",
-    "webpack-cli": "latest",
-    "jest-html-reporter": "^3.5.0",
-    "jest": "^27.0.0",
-    "@types/jest": "^27.0.0",
-    "ts-jest": "^27.0.0",
-    "puppeteer": "^13.7.0",
-    "@types/js-yaml": "^4.0.5",
     "js-yaml": "^4.1.0",
-    "@types/node-fetch": "^2.6.2",
-    "node-fetch": "^2.6.7"
+    "mini-css-extract-plugin": "^2.5.2",
+    "node-fetch": "^2.6.7",
+    "puppeteer": "^13.7.0",
+    "sass": "^1.49.0",
+    "sass-loader": "^12.4.0",
+    "ts-loader": "^9.2.5",
+    "typescript": "^4.4.4",
+    "webpack": "latest",
+    "webpack-cli": "latest"
+  },
+  "grokDependencies": {
+    "@datagrok/ngl-viewer": "1.0.1"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
@@ -68,9 +69,9 @@
     "release-biostructureviewer-local": "grok publish local --release",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
-    "test": "jest",
-    "test-dev": "set HOST=dev && jest",
-    "test-localhost": "set HOST=localhost && jest"
+    "test": "grok test",
+    "test-dev": "grok test --host dev",
+    "test-localhost": "grok test --host localhost"
   },
   "canEdit": [
     "Developers"

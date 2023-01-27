@@ -36,12 +36,10 @@ import dayjs from "dayjs";
 let api = <any>window;
 declare let grok: any;
 
-/**
- * Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
+/** Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
  * @param {string} tagName The name of an element.
  * @param {string | null} className
- * @returns {HTMLElement}
- */
+ * @returns {HTMLElement} */
 export function element(tagName: string, className: string | null = null): HTMLElement & any {
   let x = document.createElement(tagName);
   if (className !== null)
@@ -110,8 +108,7 @@ export function _backColor(x: HTMLElement, s: string): HTMLElement {
 /**
  * @param {number} height
  * @param {number} width
- * @returns {HTMLCanvasElement}
- * */
+ * @returns {HTMLCanvasElement} */
 export function canvas(width: number | null = null, height: number | null = null): HTMLCanvasElement {
   let result = element('CANVAS');
   if (height != null && width != null) {
@@ -313,8 +310,7 @@ export function inlineText(objects: any[]): HTMLElement {
 /**
  * @param {object[]} children
  * @param {string | ElementOptions} options
- * @returns {HTMLDivElement}
- * */
+ * @returns {HTMLDivElement} */
 export function div(children: any[] | string | HTMLElement = [], options: string | ElementOptions | null = null): HTMLDivElement {
   if (!Array.isArray(children))
     children = [children];
@@ -391,8 +387,7 @@ export function setUpdateIndicator(element: HTMLElement, updating: boolean = tru
  * @param {string | Element | Array<string | Element>} content
  * @param {Function} handler
  * @param {string} tooltip
- * @returns {HTMLButtonElement}
- * */
+ * @returns {HTMLButtonElement} */
 export function button(content: string | Element | (string | Element)[], handler: Function, tooltip: string | null = null): HTMLButtonElement {
   return api.grok_UI_Button(content, handler, tooltip);
 }
@@ -407,8 +402,7 @@ export function bigButton(text: string, handler: Function, tooltip: string | nul
  * @param {Array<string>} items
  * @param {Function} handler (item) => {...}
  * @param {Function} renderer (item) => {...}
- * @returns {HTMLElement}
- * */
+ * @returns {HTMLElement} */
 export function comboPopup(caption: string | HTMLElement, items: string[], handler: (item: any) => void, renderer?: ((item: any) => HTMLElement) | null): HTMLElement {
   return api.grok_UI_ComboPopup(caption, items, handler, renderer ? (item: any) => renderer(toJs(item)) : null);
 }
@@ -417,8 +411,7 @@ export function comboPopup(caption: string | HTMLElement, items: string[], handl
  * Creates a combo popup with the specified icons and items
  * @param {string | HTMLElement} caption
  * @param {Map<string>} items
- * @returns {HTMLElement}
- * */
+ * @returns {HTMLElement} */
 export function comboPopupItems(caption: string | HTMLElement, items: { [key: string]: Function }): HTMLElement {
   return api.grok_UI_ComboPopup(caption, Object.keys(items), (key: string) => items[key](), null);
 }
@@ -440,12 +433,12 @@ export function table<T>(items: T[], renderer: ((item: T, ind: number) => any) |
   return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames)).root;
 }
 
-/** Waits for Future<Element> function to complete and collect its result.*/
+/** Waits for `Future<Element>` function to complete and collect its result.*/
 export function wait(getElement: () => Promise<HTMLElement>): any {
   return toJs(api.grok_UI_Wait(getElement));
 }
 
-/** Waits for Future<Element> function to complete and collect its result as a ui.box.*/
+/** Waits for `Future<Element>` function to complete and collect its result as a ui.box.*/
 export function waitBox(getElement: () => Promise<HTMLElement>): any {
   return toJs(api.grok_UI_WaitBox(getElement));
 }
@@ -504,7 +497,7 @@ export function image(src: string, width: number, height: number, options?: {tar
   return image;
 }
 
-/** Creates an <a> element. */
+/** Creates an `<a>` element. */
 export function link(
     text: string,
     target: string | Function | object,
@@ -562,8 +555,7 @@ export function rangeSlider(minRange: number, maxRange: number, min: number, max
  * @param {Function} renderer
  * @param {boolean} verticalScroll - vertical or horizontal scrolling
  * @param {number} maxColumns - maximum number of items on the non-scrolling axis
- * @returns {VirtualView}
- */
+ * @returns {VirtualView} */
 export function virtualView(length: number, renderer: Function, verticalScroll: boolean = true, maxColumns: number = 1000): VirtualView {
   let view = VirtualView.create(verticalScroll, maxColumns);
   view.setData(length, renderer);
@@ -726,8 +718,8 @@ export function floatInput(name: string, value: number | null, onValueChanged: F
   return new InputBase(api.grok_FloatInput(name, value), onValueChanged);
 }
 
-export function dateInput(name: string, value: dayjs.Dayjs, onValueChanged: Function | null = null): DateInput {
-  return new DateInput(api.grok_DateInput(name, value.valueOf()), onValueChanged);
+export function dateInput(name: string, value: dayjs.Dayjs | null, onValueChanged: Function | null = null): DateInput {
+  return new DateInput(api.grok_DateInput(name, value?.valueOf()), onValueChanged);
 }
 
 export function boolInput(name: string, value: boolean, onValueChanged: Function | null = null): InputBase<boolean | null> {
@@ -752,7 +744,7 @@ export function columnsInput(name: string, table: DataFrame, onValueChanged: (co
 }
 
 export function tableInput(name: string, table: DataFrame | null, tables: DataFrame[] = grok.shell.tables, onValueChanged: Function | null = null): InputBase<DataFrame | null> {
-  return new InputBase(api.grok_TableInput(name, table, tables), onValueChanged);
+  return new InputBase(api.grok_TableInput(name, table?.dart, tables.map(toDart)), onValueChanged);
 }
 
 export function textInput(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
@@ -930,8 +922,7 @@ let _objectHandlerSubject = new rxjs.Subject<ObjectHandlerResolutionArgs>();
  *
  * TODO: search, destructuring to properties
  *
- * Samples: {@link https://public.datagrok.ai/js/samples/ui/meta/meta}
- * */
+ * Samples: {@link https://public.datagrok.ai/js/samples/ui/meta/meta} */
 export class ObjectHandler {
 
   /** Type of the object that this meta handles. */
@@ -953,8 +944,7 @@ export class ObjectHandler {
   /**
    * Override this method to check whether this meta class should handle the specified object.
    * @param x - specified object.
-   * @returns {boolean}
-   * */
+   * @returns {boolean} */
   isApplicable(x: any): boolean {
     throw 'Not defined.';
   }
@@ -1105,12 +1095,32 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
   if (resize && items.length > 1){
     items.forEach((v, i) => {
       let divider = box();
+      divider.className='ui-split-v-divider';
       $(b).addClass('ui-split-v').append(box(v))
       if (i != items.length - 1) {
         $(b).append(divider)
         spliterResize(divider, items[i], items[i + 1])
       }
-    })
+    });
+    tools.handleResize(b, (w,h)=>{
+      let totalHeigh = 0;
+      let childs = 0;
+      for (let i = 0; i < b.children.length; i++){
+        if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
+          childs++;
+        }
+        totalHeigh = totalHeigh + $(b.childNodes[i]).height();
+      } 
+
+      for (let i = 0; i < b.children.length; i++){
+          if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
+            $(b.childNodes[i]).css('max-height', (h-totalHeigh)/childs+$(b.childNodes[i]).height());
+          } else {
+            $(b.childNodes[i]).css('height', 4);
+          }
+      } 
+
+    });
   } else {
     $(b).addClass('ui-split-v').append(items.map(item => box(item)))
   }
@@ -1120,15 +1130,38 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
 /** Div flex-box container that positions child elements horizontally. */
 export function splitH(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
   let b = box(null, options);
+
   if (resize && items.length > 1) {
+
     items.forEach((v, i) => {
       let divider = box();
+      divider.className='ui-split-h-divider';
       $(b).addClass('ui-split-h').append(box(v))
       if (i != items.length - 1) {
         $(b).append(divider)
-        spliterResize(divider, items[i], items[i + 1], true)
+        spliterResize(divider, items[i], items[i + 1], true);     
       }
     })
+
+    tools.handleResize(b, (w,h)=>{
+      let totalWidth = 0;
+      let childs = 0;
+      for (let i = 0; i < b.children.length; i++){
+        if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
+          childs++;
+        }
+        totalWidth = totalWidth + $(b.childNodes[i]).width();
+      } 
+
+      for (let i = 0; i < b.children.length; i++){
+          if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
+            $(b.childNodes[i]).css('max-width', (w-totalWidth)/childs+$(b.childNodes[i]).width());
+          } else {
+            $(b.childNodes[i]).css('width', 4);
+          }
+        }
+    });
+
   } else {
     $(b).addClass('ui-split-h').append(items.map(item => box(item)))
   }
@@ -1143,12 +1176,16 @@ function spliterResize(divider: HTMLElement, previousSibling: HTMLElement, nextS
     divider.style.cssText = `
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 8 3 h 10 M 8 6 h 10 M 8 9 h 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
     max-width: 4px;
+    width: 4px;
+    min-width: 4px;
     cursor: col-resize;`
   }
   else {
     divider.style.cssText = `
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 2 5 v 10 M 5 5 v 10 M 8 5 v 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
     max-height: 4px;
+    height: 4px;
+    min-height: 4px;
     cursor: row-resize;`
   }
 
@@ -1162,15 +1199,16 @@ function spliterResize(divider: HTMLElement, previousSibling: HTMLElement, nextS
     if (!previousSibling.classList.contains('ui-box'))
       previousSibling = previousSibling.parentElement!;
 
-    md = {
-      e,
-      offsetLeft: divider.offsetLeft,
-      offsetTop: divider.offsetTop,
-      topHeight: previousSibling.offsetHeight,
-      bottomHeight: nextSibling.offsetHeight,
-      leftWidth: previousSibling.offsetWidth,
-      rightWidth: nextSibling.offsetWidth
-    };
+      md = {
+        e,
+        offsetLeft: divider.offsetLeft,
+        offsetTop: divider.offsetTop,
+        topHeight: previousSibling.offsetHeight,
+        bottomHeight: nextSibling.offsetHeight,
+        leftWidth: previousSibling.offsetWidth,
+        rightWidth: nextSibling.offsetWidth
+      };
+
     divider.style.backgroundColor = 'var(--grey-2)';
     document.onmousemove = onMouseMove;
     document.onmouseup = () => {
@@ -1180,16 +1218,16 @@ function spliterResize(divider: HTMLElement, previousSibling: HTMLElement, nextS
   }
 
   function onMouseMove(e: any) {
-    const delta = {x: e.clientX - md.e.clientX, y: e.clientY - md.e.clientY};
-    if (horizontal) {
-      delta.x = Math.min(Math.max(delta.x, -md.leftWidth), md.rightWidth);
-      previousSibling.style.maxWidth = (md.leftWidth + delta.x) + "px";
-      nextSibling.style.maxWidth = (md.rightWidth - delta.x) + "px";
-    } else {
-      delta.x = Math.min(Math.max(delta.y, -md.topHeight), md.bottomHeight);
-      previousSibling.style.maxHeight = (md.topHeight + delta.y) + "px";
-      nextSibling.style.maxHeight = (md.bottomHeight - delta.y) + "px";
-    }
+      const delta = {x: e.clientX - md.e.clientX, y: e.clientY - md.e.clientY};
+      if (horizontal) {
+        delta.x = Math.min(Math.max(delta.x, - md.leftWidth), md.rightWidth);
+        previousSibling.style.maxWidth = (md.leftWidth + delta.x) + "px";
+        nextSibling.style.maxWidth = (md.rightWidth - delta.x) + "px";
+      } else {
+        delta.x = Math.min(Math.max(delta.y, - md.topHeight), md.bottomHeight);
+        previousSibling.style.maxHeight = (md.topHeight + delta.y) + "px";
+        nextSibling.style.maxHeight = (md.bottomHeight - delta.y) + "px";
+      }
   }
 }
 
@@ -1357,5 +1395,66 @@ export namespace labels {
   /** Minor details to show using the smaller font */
   export function details(s: string): HTMLDivElement {
     return divText(s, 'ui-label-details');
+  }
+}
+
+/** Visual hints attached to an element. They can be used to introduce a new app to users. */
+export namespace hints {
+
+  /** Adds a hint indication to the provided element and returns it. */
+  export function addHint(el: HTMLElement): HTMLElement {
+    el.classList.add('ui-hint-target');
+    const hintIndicator = div([], 'ui-hint-blob');
+    el.append(hintIndicator);
+
+    const closeIcon = iconFA('times', () => {
+      remove(el);
+      // fire an event?
+    }, 'Remove hints');
+    closeIcon.classList.add('ui-hint-close-btn');
+    el.append(closeIcon);
+
+    const width = el ? el.clientWidth : 0;
+    const height = el ? el.clientHeight : 0;
+
+    const hintNode = el.getBoundingClientRect();
+    const indicatorNode = hintIndicator.getBoundingClientRect();
+
+    const hintPosition = $(el).css('position') ?? 'static';
+
+    function setDefaultStyles() {
+      $(hintIndicator).css('position', 'absolute');
+      $(hintIndicator).css('left', '0');
+      $(hintIndicator).css('top', '0');
+    };
+
+    const positions = {
+      static: () => {
+        $(hintIndicator).css('position', 'absolute');
+        $(hintIndicator).css('margin-left', hintNode.left + 1 == indicatorNode.left ? 0 : -width);
+        $(hintIndicator).css('margin-top', hintNode.top + 1 == indicatorNode.top ? 0 : -height);
+      },
+      relative: setDefaultStyles,
+      fixed: setDefaultStyles,
+      absolute: setDefaultStyles,
+      sticky: setDefaultStyles,
+    };
+
+    //@ts-ignore
+    positions[hintPosition]();
+
+    if ($(el).hasClass('d4-ribbon-item')){
+      $(hintIndicator).css('margin-left', '0px')
+    }
+
+    return el;
+  }
+
+  /** Removes the hint indication from the provided element and returns it. */
+  export function remove(el: HTMLElement): HTMLElement {
+    $(el).find('div.ui-hint-blob')[0]?.remove();
+    $(el).find('i.fa-times')[0]?.remove();
+    el.classList.remove('ui-hint-target');
+    return el;
   }
 }

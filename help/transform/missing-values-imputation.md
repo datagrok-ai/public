@@ -1,7 +1,6 @@
-<!-- TITLE: Missing values imputation -->
-<!-- SUBTITLE: -->
-
-# Missing values imputation
+---
+title: "Missing values imputation"
+---
 
 Imputation is the process of replacing missing data with substituted values.
 

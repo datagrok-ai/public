@@ -16,7 +16,16 @@ public class PIDataProvider extends JdbcDataProvider {
         descriptor = new DataSource();
         descriptor.type = "PI";
         descriptor.description = "Query PI database";
-        descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
+        descriptor.connectionTemplate = new ArrayList<Property>() {{
+                                                add(new Property(Property.STRING_TYPE, DbCredentials.ACCESS_SERVER));
+                                                add(new Property(Property.STRING_TYPE, DbCredentials.SERVER));
+                                                add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
+                                                add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
+                                                        DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
+                                                add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
+                                                add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
+                                                add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
+                                            }};
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.nameBrackets = "\"";
 
@@ -33,6 +42,10 @@ public class PIDataProvider extends JdbcDataProvider {
             put("#varchar.*", Types.STRING);
             put("text", Types.STRING);
         }};
+    }
+
+    public String getConnectionStringImpl(DataConnection conn) {
+        return "jdbc:pioledb://" + conn.parameters.get(DbCredentials.ACCESS_SERVER) + "/Data Source=" + conn.getServer() + ";Initial Catalog=" + conn.getDb() + ";Integrated Security=SSPI";
     }
 
     public Properties getProperties(DataConnection conn) {

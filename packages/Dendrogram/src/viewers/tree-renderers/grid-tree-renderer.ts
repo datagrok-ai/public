@@ -1,20 +1,20 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {NodeType} from '@datagrok-libraries/bio';
-
 import {ITreeStyler, markupNode, MarkupNodeType, TreeStylerBase} from './markup';
 import {toRgba, setAlpha} from '@datagrok-libraries/utils/src/color';
 import {GridTreeRendererBase} from './grid-tree-renderer-base';
 import {LINE_WIDTH, NODE_SIZE, TreeColorNames, TreeDefaultPalette} from '../dendrogram';
 import {GridTreePlacer} from './grid-tree-placer';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
 
 const TRANS_ALPHA = 0.7;
 
 /** Draws only nodes/leaves visible in leaf range */
 export class LeafRangeGridTreeRenderer extends GridTreeRendererBase<MarkupNodeType> {
+  /** treeRoot can be null in case of the grid.dataFrame.rowCount is zero */
   constructor(
-    grid: DG.Grid, tree: MarkupNodeType, placer: GridTreePlacer<MarkupNodeType>,
+    grid: DG.Grid, tree: MarkupNodeType | null, placer: GridTreePlacer<MarkupNodeType>,
     mainStyler: ITreeStyler<MarkupNodeType>, lightStyler: ITreeStyler<MarkupNodeType>,
     currentStyler: ITreeStyler<MarkupNodeType>, mouseOverStyler: ITreeStyler<MarkupNodeType>,
     selectionStyler: ITreeStyler<MarkupNodeType>
@@ -33,8 +33,9 @@ export class LeafRangeGridTreeRenderer extends GridTreeRendererBase<MarkupNodeTy
 
   // --
 
+  /** treeRoot can be null in case of the grid.dataFrame.rowCount is zero */
   public static create(
-    grid: DG.Grid, tree: NodeType, placer: GridTreePlacer<MarkupNodeType>
+    grid: DG.Grid, treeRoot: NodeType | null, placer: GridTreePlacer<MarkupNodeType>
   ): GridTreeRendererBase<MarkupNodeType> {
     const mainStyler = new TreeStylerBase<MarkupNodeType>('main',
       LINE_WIDTH, NODE_SIZE, true,
@@ -72,7 +73,7 @@ export class LeafRangeGridTreeRenderer extends GridTreeRendererBase<MarkupNodeTy
 
     // TODO: Attach Dendrogram properties to grid (type or object?)
 
-    return new LeafRangeGridTreeRenderer(grid, tree as MarkupNodeType, placer,
+    return new LeafRangeGridTreeRenderer(grid, treeRoot as MarkupNodeType, placer,
       mainStyler, lightStyler, currentStyler, mouseOverStyler, selectionStyler);
   }
 }

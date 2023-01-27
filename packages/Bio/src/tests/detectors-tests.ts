@@ -5,7 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
 
 import {importFasta} from '../package';
-import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS, UnitsHandler} from '@datagrok-libraries/bio';
+import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 /*
 // snippet to list df columns of semType='Macromolecule' (false positive)

@@ -6,14 +6,14 @@ import * as DG from 'datagrok-api/dg';
 import {GisViewer} from '../src/gis-viewer';
 import * as GisTypes from '../src/gis-semtypes';
 //OpenLayers functionality import
-import {OpenLayers} from '../src/gis-openlayer';
+import {OpenLayers, getKMZData} from '../src/gis-openlayer';
 import {useGeographic} from 'ol/proj';
 
 //GIS semantic types import
 import {SEMTYPEGIS} from '../src/gis-semtypes';
 
 //ZIP utilities
-import JSZip from 'jszip';
+//import JSZip from 'jszip';
 import {DataFrame, InputBase} from 'datagrok-api/dg';
 
 //USEFUL
@@ -131,6 +131,7 @@ async function fetchCensus() {
     censusRes = await (await grok.dapi.fetchProxy(url)).json();
   } catch (e: any) {
     grok.shell.error(`Census fetch error: ${e.message}`);
+    censusRes = '';
   } finally {
     return censusRes;
   }
@@ -205,10 +206,12 @@ export async function getCensusInfo() {
     if (variables) {
       const varList = [];
       for (const v in variables['variables']) {
-        const varObj = variables['variables'][v];
-        varObj.varname = v;
-        varObj.use = false;
-        varList.push(varObj);
+        if (variables['variables'].hasOwnProperty(v)) {
+          const varObj = variables['variables'][v];
+          varObj.varname = v;
+          varObj.use = false;
+          varList.push(varObj);
+        }
       }
       // const df = DG.DataFrame.fromJson(JSON.stringify(variables));
       const df = DG.DataFrame.fromObjects(varList);
@@ -362,16 +365,6 @@ export async function gisBatchGeocoding(address: string): Promise<string> {
 export function gisViewer(): GisViewer {
   // setTimeout(() => {grok.shell.windows.showProperties = true;}, 500);
   return new GisViewer();
-}
-
-async function getKMZData(buffer: any): Promise<string> {
-  const zip = new JSZip();
-  let kmlData = '';
-  await zip.loadAsync(buffer);
-  const kmlFile = zip.file(/.kml$/i)[0];
-  if (kmlFile)
-    kmlData = await kmlFile.async('string');
-  return kmlData;
 }
 
 //name: gisKMZAndKMLFileViewer

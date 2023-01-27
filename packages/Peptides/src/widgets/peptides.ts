@@ -119,12 +119,14 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
     return false;
   };
 
+  let bottomHeight = 'auto';
   const inputElements: HTMLElement[] = [ui.inputs(inputsList)];
   $(inputElements[0]).find('label').css('width', 'unset');
   if (typeof col !== 'undefined') {
     const startBtn = ui.button('Launch SAR', startAnalysisCallback);
     startBtn.style.alignSelf = 'center';
     inputElements.push(startBtn);
+    bottomHeight = '215px';
   }
 
   $(logoHost).empty().append(ui.wait(async () => {
@@ -138,7 +140,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
     ui.splitH([
       ui.splitV(inputElements),
       histogramHost,
-    ], {style: {height: '215px'}}),
+    ], {style: {height: bottomHeight}}),
   ]);
   mainHost.style.maxWidth = '400px';
   return {host: mainHost, callback: startAnalysisCallback};

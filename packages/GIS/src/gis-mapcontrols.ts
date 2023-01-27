@@ -1,10 +1,12 @@
 //Base import
+import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
-import $ from 'cash-dom';
+//import $ from 'cash-dom';
 import {OpenLayers} from '../src/gis-openlayer';
-import {Control, defaults as defaultControls} from 'ol/control'; //Attribution include?
+import {Control} from 'ol/control'; //Attribution include?
+import VectorLayer from 'ol/layer/Vector';
+import {SEMTYPEGIS} from './gis-semtypes';
 
 
 export class PanelLayersControl extends Control {
@@ -92,8 +94,22 @@ export class PanelLayersControl extends Control {
           const col = gc.grid.table.columns.byName('layerid');
           if (col) {
             const layerId = col.get(gc.tableRowIndex);
-            // if (layerId)
-            //   this.ol.removeLayerById(layerId);
+            if (layerId) {
+              const layer = this.ol.getLayerById(layerId) as VectorLayer<any>;
+              const arrPreparedToDF: any[] = this.ol.exportLayerToArray(layer);
+              if (arrPreparedToDF.length) {
+                const df = DG.DataFrame.fromObjects(arrPreparedToDF);
+                if (df) {
+                  const gisCol = df.col('gisObject');
+                  if (gisCol)
+                    gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
+                  df.name = layer.get('layerName');
+
+                  // this.view.addTableView(df as DG.DataFrame);
+                  grok.shell.addTableView(df);
+                }
+              }
+            }
             this.updateLayersList();
           }
         }
@@ -204,4 +220,4 @@ export class BtnLayersControl extends Control {
   }
 }
 
-lPanel: PanelLayersControl;
+//lPanel: PanelLayersControl;

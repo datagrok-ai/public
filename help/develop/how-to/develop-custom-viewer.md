@@ -1,10 +1,9 @@
-<!-- TITLE: Develop custom viewers -->
-<!-- SUBTITLE: -->
-
-# Custom viewers
+---
+title: "Develop custom viewers"
+---
 
 Developers can extend Datagrok with special visual components bound to data, which are called
-[viewers](../../visualize/viewers.md). There are two ways to develop viewers on Datagrok. The first
+[viewers](../../visualize/viewers/viewers.md). There are two ways to develop viewers on Datagrok. The first
 one is JavaScript-based development, which lets you create interactive viewers
 via [Datagrok JavaScript API](../js-api.md). The second option uses visualizations available for popular
 programming languages, such as Python, R, or Julia. This implementation uses
@@ -387,7 +386,8 @@ corresponding category, and will be able to select them on click (pay attention 
 example). Plus, other open viewers will highlight the elements that represent the respective row group as you move the
 mouse pointer over the current viewer (you don't need to configure anything, read more about Datagrok's efficient
 visualizations
-[here](../../visualize/viewers.md)). This also works the other way around: you can show a selected portion of the data
+[here](../../visualize/viewers/viewers.md)). This also works the other way around: you can show a selected portion of
+the data
 in your viewer. To do that, you need to know which rows the user selected so that you can narrow the data set for
 rendering accordingly. And this is fairly simple: the method
 `dataFrame.filter.getSelectedIndexes()` gives you exactly the data you need.
@@ -541,14 +541,14 @@ You can find more inspiring examples in our [public repository](https://github.c
 
 * JavaScript-based viewers:
   * [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts): constructs graphs of various types
-      using the [Echarts](https://echarts.apache.org) framework
+    using the [Echarts](https://echarts.apache.org) framework
   * [Leaflet](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet): integrates with
-      the [Leaflet](https://leafletjs.com/) library to build interactive maps
+    the [Leaflet](https://leafletjs.com/) library to build interactive maps
   * [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers): showcases creating JavaScript
-      viewers using various visualization libraries
+    viewers using various visualization libraries
 * Scripting viewers (R, Python, Julia):
   * [ChaRPy](https://github.com/datagrok-ai/public/tree/master/packages/ChaRPy): translates a Datagrok viewer to
-      Python and R code using scripting viewers for the respective programming languages
+    Python and R code using scripting viewers for the respective programming languages
   * [DemoScripts]: demonstrates the scripting functionality, including visualizations, for Python, R, and Julia
 
   Most of these scripts are also available by the `viewers` tag in the script
@@ -565,7 +565,7 @@ See also:
 * [JS API Samples: custom viewers](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers)
 * [JS API Samples: viewers](https://public.datagrok.ai/js/samples/ui/viewers/create-viewers)
 * [JavaScript development](../develop.md)
-* [Viewers](../../visualize/viewers.md)
+* [Viewers](../../visualize/viewers/viewers.md)
 * [Scripting viewers](../../visualize/viewers/scripting-viewer.md)
 
-[DemoScripts]: https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/
+[DemoScripts]: https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts

@@ -2,8 +2,8 @@
 #description: Returns the newick representation of the tree for given dataset
 #language: python
 #input: dataframe data [Input data table]
-#input: string distance_name = 'euclidean' {choices: ['euclidean', 'manhattan']}
-#input: string linkage_name = 'ward' {choices: ['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward']}
+#input: string distance_name = 'euclidean' {choices: ['euclidean', 'manhattan']} [Distance metric]
+#input: string linkage_name = 'ward' {choices: ['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward']} [Linkage metric]
 #output: string newick
 
 import numpy as np
@@ -25,9 +25,8 @@ def get_newick(node, parent_dist, leaf_names, newick='') -> str:
         return newick
 
 column_array = data[data.columns].to_numpy()
-dist_matrix = cdist(column_array, column_array)
-one_dimension = pdist(dist_matrix, distance_name)
-link_matrix = linkage(one_dimension, linkage_name)
-leaf_names = list(range(0, len(column_array)))
+dist_list = pdist(column_array, distance_name)
+link_matrix = linkage(dist_list, linkage_name)
+leaf_names = list(range(0, len(data.index)))
 tree = to_tree(link_matrix, False)
 newick = get_newick(tree, tree.dist, leaf_names)

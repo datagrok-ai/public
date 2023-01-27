@@ -1,7 +1,6 @@
-<!-- TITLE: Anonymize data -->
-<!-- SUBTITLE: -->
-
-# Anonymize data
+---
+title: "Anonymize data"
+---
 
 Sometimes, a need arises to prepare a dataset that conveys an idea of the structure in the data along with the patterns
 in it, but does not contain the real data points. This is what 'Anonymize Data' functionality is for.

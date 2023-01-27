@@ -140,7 +140,9 @@ jobs:
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
 
           profiles='--profile datagrok --profile db --profile grok_spawner'
-          if [[ "${{ matrix.package }}" == "Chem" ]]; then
+          if [[ "${{ matrix.package }}" == "Chem" ]] || \
+             [[ "${{ matrix.package }}" == "SimPKPD" ]] || \
+             [[ "${{ matrix.package }}" == "Dendrogram" ]]; then
             profiles+=' --profile cvm'
           fi
 
@@ -151,11 +153,11 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
-          node-version: '12.x'
+          node-version: '18.12'
           registry-url: 'https://registry.npmjs.org'
           scope: '@datagrok'
       - name: Upgrade npm
-        run: npm install -g npm@8.x
+        run: npm install -g npm@9.x
       - name: npm version
         run: npm version
       - run: npm install
@@ -214,13 +216,7 @@ jobs:
         continue-on-error: ${{ matrix.package == 'ApiTests' }}
         timeout-minutes: 15
         id: test-package
-        run: npm run test -- --verbose=false
-        env:
-          JEST_HTML_REPORTER_PAGE_TITLE: "${{ matrix.package }} Test Report. Datagrok version datagrok/datagrok:bleeding-edge SHA=${{ steps.datagrok-image.outputs.docker_sha }}. Commit ${{ steps.datagrok-image.outputs.commit_sha }}."
-          JEST_HTML_REPORTER_OUTPUT_PATH: "./test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html"
-          JEST_HTML_REPORTER_INCLUDE_FAILURE_MSG: true
-          JEST_HTML_REPORTER_INCLUDE_CONSOLE_LOG: true
-          JEST_HTML_REPORTER_INCLUDE_SUITE_FAILURE: true
+        run: npm run test -- --skip-build --skip-publish
         working-directory: packages/${{ matrix.package }}
       - name: Create error notification
         if: failure() && steps.test-package.outcome == 'failure'

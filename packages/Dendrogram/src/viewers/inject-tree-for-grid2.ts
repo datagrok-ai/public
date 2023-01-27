@@ -6,8 +6,9 @@ import $ from 'cash-dom';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import {TreeHelper} from '../../src/utils/tree-helper';
 import {GridTreeRendererBase} from './tree-renderers/grid-tree-renderer-base';
-import {ITreeHelper, NodeCuttedType, NodeType} from '@datagrok-libraries/bio';
 import {LeafRangeGridTreeRenderer} from '../../src/viewers/tree-renderers/grid-tree-renderer';
+import {NodeCuttedType, NodeType} from '@datagrok-libraries/bio/src/trees';
+import {TreeCutOptions} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {markupNode, MarkupNodeType} from './tree-renderers/markup';
 import {attachDivToGrid} from '../utils';
 import {
@@ -24,10 +25,10 @@ import {RectangleTreeHoverType} from './tree-renderers/rectangle-tree-placer';
 import {GridTreePlacer} from './tree-renderers/grid-tree-placer';
 import {Unsubscribable} from 'rxjs';
 import {render} from 'datagrok-api/ui';
+import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 
 export function injectTreeForGridUI2(
-  grid: DG.Grid, newickRoot: NodeType, dataDf: DG.DataFrame, clusterDf: DG.DataFrame, leafColName: string | null,
-  neighborWidth: number = 100, cut?: { min: number, max: number, clusterColName: string }
+  grid: DG.Grid, treeRoot: NodeType | null, leafColName?: string, neighborWidth: number = 100, cut?: TreeCutOptions
 ): GridNeighbor {
   const th: ITreeHelper = new TreeHelper();
 
@@ -39,15 +40,15 @@ export function injectTreeForGridUI2(
   // treeRoot.style.setProperty('overflow-y', 'hidden', 'important');
 
   // TODO: adapt tree: bio.NodeType to MarkupNodeType
-  markupNode(newickRoot);
-  const totalLength: number = (newickRoot as MarkupNodeType).subtreeLength!;
+  if (treeRoot) markupNode(treeRoot);
+  const totalLength: number = treeRoot ? (treeRoot as MarkupNodeType).subtreeLength! : 1;
   if (Number.isNaN(totalLength))
     throw new Error('Can not calculate totalLength for the tree.');
 
   const placer: GridTreePlacer<MarkupNodeType> = new GridTreePlacer<MarkupNodeType>(grid, totalLength);
 
   const renderer: GridTreeRendererBase<MarkupNodeType> =
-    LeafRangeGridTreeRenderer.create(grid, newickRoot, placer);
+    LeafRangeGridTreeRenderer.create(grid, treeRoot, placer);
   renderer.attach(treeNb.root!);
 
   renderer.onAfterRender.subscribe(({target, context, lengthRatio}) => {
@@ -71,7 +72,7 @@ export function injectTreeForGridUI2(
   if (cut) {
     // TODO: Get max from tree height
     //@ts-ignore
-    const treeHeight: number = (newickRoot as MarkupNodeType).subtreeLength;
+    const treeHeight: number = (treeRoot as MarkupNodeType).subtreeLength;
     cutSlider = ui.sliderInput('', 0, 0, treeHeight);
     $(cutSlider.root).find('input').each((_, el) => {
       el.setAttribute('step', '0.01');
@@ -89,15 +90,15 @@ export function injectTreeForGridUI2(
       // th.cutTreeToGrid(newickRoot, cutSlider!.value!, grid.dataFrame, leafColName, 'Cluster');
 
       const t1 = Date.now();
-      th.treeCutAsTree(newickRoot, cutSlider!.value!, true);
+      th.treeCutAsTree(treeRoot, cutSlider!.value!, true);
       const t2 = Date.now();
       console.debug('Dendrogram: injectTreeForGrid() cutSlider.onChanged() treeCutAsTree() ' +
         `ET: ${((t2 - t1) / 1000).toString()}`);
 
-      const newickRootCopy = JSON.parse(JSON.stringify(newickRoot));
+      const newickRootCopy = JSON.parse(JSON.stringify(treeRoot));
       const newickRootCutted = th.treeCutAsTree(newickRootCopy, cutSlider!.value!);
-      th.markClusters(newickRootCutted as NodeCuttedType, dataDf, leafColName, cut.clusterColName);
-      th.buildClusters(newickRootCutted as NodeCuttedType, clusterDf, cut.clusterColName, leafColName);
+      th.markClusters(newickRootCutted as NodeCuttedType, cut.dataDf, leafColName ?? null, cut.clusterColName);
+      th.buildClusters(newickRootCutted as NodeCuttedType, cut.clusterDf, cut.clusterColName, leafColName);
 
       markupNode(newickRootCutted!);
       renderer.treeRoot = newickRootCutted as MarkupNodeType;
@@ -105,8 +106,8 @@ export function injectTreeForGridUI2(
   }
 
   function alignGridWithTree(): void {
-    const [viewedRoot] = th.setGridOrder(newickRoot, grid, leafColName);
-    markupNode(viewedRoot);
+    const [viewedRoot] = th.setGridOrder(treeRoot, grid, leafColName);
+    if (viewedRoot) markupNode(viewedRoot);
     const source = viewedRoot ? {type: 'biojs', data: viewedRoot} :
       {type: 'biojs', data: {name: 'NONE', branch_length: 1, children: []}};
 
@@ -188,9 +189,8 @@ export function injectTreeForGridUI2(
           newMouseOverRowIdx = parseInt(mouseOverLeaf.name);
         }
       }
-      if (newMouseOverRowIdx != oldMouseOverRowIdx) {
+      if (newMouseOverRowIdx != oldMouseOverRowIdx)
         grid.dataFrame.mouseOverRowIdx = newMouseOverRowIdx;
-      }
     });
   }
 
@@ -246,7 +246,7 @@ export function injectTreeForGridUI2(
     const currentLeafName: string | null = idx == -1 ? null : !!leafCol ? leafCol.get(idx) : `${idx}`;
 
     const th: ITreeHelper = new TreeHelper();
-    const currentLeaf: MarkupNodeType | null = th.getNodeList(renderer.treeRoot)
+    const currentLeaf: MarkupNodeType | null = !renderer.treeRoot ? null : th.getNodeList(renderer.treeRoot)
       .find((leaf) => currentLeafName == leaf.name) ?? null;
     const current: RectangleTreeHoverType<MarkupNodeType> | null = currentLeaf ? {
       node: currentLeaf,

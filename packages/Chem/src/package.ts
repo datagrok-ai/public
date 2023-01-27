@@ -14,7 +14,6 @@ import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import Sketcher = DG.chem.Sketcher;
 import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
-import {setupScaffold} from './scripts-api';
 import {elementsTable} from './constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
@@ -56,7 +55,10 @@ import {rGroupAnalysis} from './analysis/r-group-analysis';
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
 import {_importSmi} from './file-importers/smi-importer';
+
+//script api
 import {generateScaffoldTree} from "./scripts-api";
+import { RDKitReactionRenderer } from './rendering/rdkit-reaction-renderer';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const DEFAULT_SKETCHER = 'openChemLibSketcher';
@@ -96,11 +98,17 @@ export async function initChem(): Promise<void> {
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
   const lastSelectedSketcher = _properties.Sketcher ? SKETCHER_FUNCTIONS_ALIASES[_properties.Sketcher]:
       await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
-  if (DG.Func.find({tags: ['moleculeSketcher']}).find(e => e.name == lastSelectedSketcher) || !lastSelectedSketcher)
+  const sketcherFucntions = DG.Func.find({tags: ['moleculeSketcher']});
+  if (sketcherFucntions.find(e => e.name == lastSelectedSketcher) || !lastSelectedSketcher)
     window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, lastSelectedSketcher);
   else {
-    grok.shell.warning(`Package with ${lastSelectedSketcher} function is not installed. Switching to ${DEFAULT_SKETCHER}.`);
-    window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, DEFAULT_SKETCHER);
+    const funcByFriendlyName = sketcherFucntions.find(e => e.friendlyName == lastSelectedSketcher);
+    if (funcByFriendlyName) {
+      window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, funcByFriendlyName.name);
+    } else {
+      grok.shell.warning(`Package with ${lastSelectedSketcher} function is not installed. Switching to ${DEFAULT_SKETCHER}.`);
+      window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, DEFAULT_SKETCHER);
+    }
   }
   _renderers = new Map();
 }
@@ -111,6 +119,7 @@ export async function initChemAutostart(): Promise<void> { }
 //name: Scaffold Tree
 //tags: viewer
 //meta.trellisable: true
+//meta.icon: files/icons/scaffold-tree-icon.svg
 //output: viewer result
 export function scaffoldTreeViewer() : ScaffoldTreeViewer {
  return new ScaffoldTreeViewer();
@@ -160,6 +169,15 @@ export function getCLogP(smiles: string): number {
 //meta.chemRendererName: RDKit
 export async function rdKitCellRenderer(): Promise<RDKitCellRenderer> {
   return new RDKitCellRenderer(getRdKitModule());
+}
+
+//name: chemCellRenderer
+//tags: cellRenderer, cellRenderer-ChemicalReaction
+//meta.cellType: ChemicalReaction
+//meta-cell-renderer-sem-type: ChemicalReaction
+//output: grid_cell_renderer result
+export async function rdKitReactionRenderer(): Promise<RDKitReactionRenderer> {
+  return new RDKitReactionRenderer(getRdKitModule());
 }
 
 //name: chemCellRenderer
@@ -306,6 +324,10 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
   similarity: number, methodName: string) {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
+    return;
+  }
+  if (activities.type !== DG.TYPE.INT && activities.type !== DG.TYPE.BIG_INT && activities.type !== DG.TYPE.FLOAT) {
+    grok.shell.error(`Column ${activities.name} is not numeric`);
     return;
   }
   const axesNames = getEmbeddingColsNames(df);
@@ -474,8 +496,10 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
   const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molCol);
   let columnNames: string[] = [];
 
-  if (invalid.length > 0)
+  if (invalid.filter((el) => el !== null).length > 0) {
     console.log(`Invalid rows ${invalid.map((i) => i.toString()).join(', ')}`);
+    grok.shell.warning('Dataset contains malformed data!');
+  }
 
   for (let elName of elementsTable) {
     const value = elements.get(elName);
@@ -580,19 +604,19 @@ export async function structuralAlerts(smiles: string): Promise<DG.Widget> {
 //name: Structure 2D
 //description: 2D molecule representation
 //tags: panel, chem, widgets
-//input: string smiles { semType: Molecule }
+//input: string molecule { semType: Molecule }
 //output: widget result
-export function structure2d(smiles: string): DG.Widget {
-  return smiles ? structure2dWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
+export function structure2d(molecule: string): DG.Widget {
+  return molecule ? structure2dWidget(molecule) : new DG.Widget(ui.divText('Molecule is empty'));
 }
 
 //name: Structure 3D
 //description: 3D molecule representation
 //tags: panel, chem, widgets
-//input: string smiles { semType: Molecule }
+//input: string molecule { semType: Molecule }
 //output: widget result
-export async function structure3d(smiles: string): Promise<DG.Widget> {
-  return smiles ? structure3dWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
+export async function structure3d(molecule: string): Promise<DG.Widget> {
+  return molecule ? structure3dWidget(molecule) : new DG.Widget(ui.divText('Molecule is empty'));
 }
 
 //name: Toxicity
@@ -778,8 +802,8 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
   if (tv == null)
     throw 'Requires an open table view.';
 
+  const molCol = value.cell.column;
   const mol = value.value;
-  const molCol = tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
   if (molCol == null)
     throw 'Molecule column not found.';
 
@@ -869,10 +893,23 @@ export async function callChemDiversitySearch(
   return await chemDiversitySearch(col, similarityMetric[metricName], limit, fingerprint as Fingerprint);
 }
 
+
+//top-menu: Chem | Scaffold Tree...
+//name: addScaffoldTree
+export function addScaffoldTree(): void {
+  grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
+}
+
+
 //name: getScaffoldTree
 //input: dataframe data
+//input: int ringCutoff = 10 [Ignore molecules with # rings > N]
+//input: bool dischargeAndDeradicalize = false [Remove charges and radicals from scaffolds]
 //output: string result
-export async function getScaffoldTree(data: DG.DataFrame): Promise<string>{
+export async function getScaffoldTree(data: DG.DataFrame,
+                                      ringCutoff: number = 0,
+                                      dischargeAndDeradicalize: boolean = false
+                                      ): Promise<string> {
   const molColumn = data.columns.bySemType(DG.SEMTYPE.MOLECULE);
   const invalid: number[] = new Array<number>(data.columns.length);
   const smiles = molColumn?.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES;
@@ -892,11 +929,6 @@ export async function getScaffoldTree(data: DG.DataFrame): Promise<string>{
   const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
   smilesColumn.name = data.columns.getUnusedName(smilesColumn.name);
   data.columns.add(smilesColumn);
-  const scriptRes = await generateScaffoldTree(data, smilesColumn!.name);
+  const scriptRes = await generateScaffoldTree(data, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
   return scriptRes;
-}
-
-//name: installScaffoldGraph
-export async function installScaffoldGraph() : Promise<void> {
-  await setupScaffold();
 }

@@ -5,7 +5,9 @@ import * as grok from 'datagrok-api/grok';
 import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 
 import {ConverterFunc} from './types';
-import {NOTATION, NotationConverter, UnitsHandler} from '@datagrok-libraries/bio';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 // import {mmSemType} from '../const';
 // import {importFasta} from '../package';

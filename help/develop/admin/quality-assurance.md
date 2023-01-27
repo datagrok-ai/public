@@ -1,7 +1,6 @@
-<!-- TITLE: Quality assurance -->
-<!-- SUBTITLE: -->
-
-# Quality assurance
+---
+title: "Quality assurance"
+---
 
 Datagrok is an incredibly powerful platform. To give users the best possible performance, we have created a number of
 unique, proprietary technologies such as [in-memory columnar database](architecture.md#data-engine) and fast
@@ -24,7 +23,7 @@ around the proactive identification of defects.
 
 Here are some of the main components of our development infrastructure:
 
-# Continuous integration system
+## Continuous integration system
 
 Whenever a new code is checked into our source code repository, several tasks get executed automatically:
 
@@ -45,7 +44,7 @@ Every time docker image is built, tasks get executed:
 We use Jenkins for continuous integration. This is how our control panel looks like:
 ![CI](continuous-integration.png)
 
-## Unit tests
+### Unit tests
 
 Our core libraries contain more than 2,000 [unit tests](https://en.wikipedia.org/wiki/Unit_testing)
 that serve two primary purposes. First of all, they are produced and get used in the process of the
@@ -54,7 +53,7 @@ automatically as part of the continuous integration process, thus helping us ide
 
 Results of the unit tests are kept in the [test tracking system](#test-tracking-system).
 
-## Integration tests
+### Integration tests
 
 Integration tests are very similar to unit tests. While unit tests tend to address isolated modules, integration tests
 cover interactions between different modules. Typically, they are a lot heavier and much slower, so they are not used as
@@ -62,7 +61,7 @@ frequently by developers.
 
 Results of the integration tests are kept in the [test tracking system](#test-tracking-system).
 
-## JS API tests
+### JS API tests
 
 A separate suite of tests is devoted for the [JS API](../js-api.md). These tests are executed automatically on a server
 using a headless browser mode. The test suite is written in TypeScript, and is a regular Datagrok package. It is
@@ -70,7 +69,7 @@ open-sourced and located [here](https://github.com/datagrok-ai/public/tree/maste
 ; additions are welcome. Results are reported to the
 [test tracking system](#test-tracking-system)
 
-## UI tests
+### UI tests
 
 For automated testing of the platform, we use Selenium, which works by emulating user input, and then checking for the
 expected result. We have over 100 complex UI tests, and the number is proliferating. Each one is associated with a
@@ -86,7 +85,7 @@ will be caught by that system.
 
 Results of the UI tests are kept in the [test tracking system](#test-tracking-system).
 
-## Structured manual tests
+### Structured manual tests
 
 Certain UI tests are so complex that it's impractical to develop and maintain corresponding scripts. In such cases, we
 still write the story for it just like in [UI tests](#ui-tests).
@@ -94,12 +93,12 @@ still write the story for it just like in [UI tests](#ui-tests).
 Our QA engineer executes structured UI tests, and results are reported to the
 [test tracking system](#test-tracking-system).
 
-## Unstructured manual tests
+### Unstructured manual tests
 
 In addition to the testing outlined above, each release is manually tested by our QA engineer on a separate release
 environment. The amount of testing depends on the magnitude of the release.
 
-## Test tracking system
+### Test tracking system
 
 In order to keep track of test execution results, we have built a unique application on top of the Datagrok platform. It
 lets us not only visualize the current state of the application but also allows the QA engineer to efficiently work with
@@ -109,12 +108,12 @@ quickly navigate to the corresponding JIRA issues (integration with JIRA was don
 
 ![Test Tracking System](test-tracking-system.png)
 
-## Performance benchmarks
+### Performance benchmarks
 
 We consider performance a critical feature of Datagrok, so we keep track of it. We run performance benchmarks as part of
 the build, and keep track of the results to make sure the platform only gets better with time.
 
-## Stress testing
+### Stress testing
 
 To make sure the platform is stable under heavy load (either many users working simultaneously or executing
 CPU-intensive computations), we perform automated

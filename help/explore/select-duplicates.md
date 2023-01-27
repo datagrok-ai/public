@@ -1,7 +1,6 @@
-<!-- TITLE: Select duplicates -->
-<!-- SUBTITLE: -->
-
-# Select duplicates
+---
+title: "Select duplicates"
+---
 
 Selects rows with duplicate values, comparing them by the selected key columns.
 

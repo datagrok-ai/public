@@ -1,6 +1,6 @@
-<!-- TITLE: Develop custom filters -->
-
-# Filters
+---
+title: "Develop custom filters"
+---
 
 Developers can extend Datagrok with custom filters. This could be done by defining a class that extends
 [DG.Filter](https://datagrok.ai/js-api/classes/dg.Filter) class. An

@@ -55,7 +55,7 @@ export class HierarchicalClusteringApp {
     if (!this.tv)
       this.tv = grok.shell.addTableView(this.df, DG.DOCK_TYPE.FILL);
 
-    this.tv.path = this.tv.basePath = '/func/Dendrogram.hierarchicalClusteringApp';
-    hierarchicalClusteringUI(this.df, ['HEIGHT'], 'euclidean', 'ward');
+    this.tv.path = this.tv.basePath = `/func/${_package.name}.hierarchicalClusteringApp`;
+    await hierarchicalClusteringUI(this.df, ['HEIGHT'], 'euclidean', 'ward');
   }
 }

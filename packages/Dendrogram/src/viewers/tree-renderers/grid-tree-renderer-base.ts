@@ -2,13 +2,11 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import {ITreeHelper, NodeType} from '@datagrok-libraries/bio';
-
 import {TreeHelper} from '../../utils/tree-helper';
 import {CanvasTreeRenderer} from './canvas-tree-renderer';
 import {ITreeStyler, MarkupNodeType} from './markup';
 import {GridTreePlacer} from './grid-tree-placer';
-import {Mouse} from 'puppeteer';
+import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 
 export abstract class GridTreeRendererBase<TNode extends MarkupNodeType> extends CanvasTreeRenderer<TNode> {
   protected _leftPadding: number = 6;
@@ -22,8 +20,9 @@ export abstract class GridTreeRendererBase<TNode extends MarkupNodeType> extends
 
   get rightPadding(): number { return this._rightPadding; }
 
+  /** treeRoot can be null in case of the grid.dataFrame.rowCount is zero */
   protected constructor(
-    grid: DG.Grid, treeRoot: TNode, placer: GridTreePlacer<TNode>,
+    grid: DG.Grid, treeRoot: TNode | null, placer: GridTreePlacer<TNode>,
     mainStyler: ITreeStyler<TNode>, lightStyler: ITreeStyler<TNode>,
     currentStyler: ITreeStyler<TNode>, mouseOverStyler: ITreeStyler<TNode>, selectionStyler: ITreeStyler<TNode>
   ) {

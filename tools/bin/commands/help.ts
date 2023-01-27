@@ -77,13 +77,12 @@ grok create <name>  Create a package in a folder with the specified name
 Please note that the package name may only include letters, numbers, underscores, or hyphens
 
 Options:
-[--eslint] [--ide] [--js|--ts] [--jest]
+[--eslint] [--ide] [--js|--ts]
 
 --eslint    Add a configuration for eslint
 --ide       Add an IDE-specific configuration for debugging (vscode)
 --js        Create a JavaScript package
 --ts        Create a TypeScript package (default)
---jest      Add a configuration for jest
 `;
 
 const HELP_PUBLISH = `
@@ -112,9 +111,13 @@ const HELP_TEST = `
 Usage: grok test
 
 Options:
-[--host]
+[--host] [--csv]
 
---host       Host alias as in the config file
+--host           Host alias as in the config file
+--csv            Save the test report in a CSV file
+--gui            Launch graphical interface (non-headless mode)
+--skip-build     Skip the package build step
+--skip-publish   Skip the package publication step
 
 Run package tests
 

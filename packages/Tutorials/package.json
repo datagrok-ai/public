@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/tutorials",
   "friendlyName": "Tutorials",
-  "version": "1.1.8",
+  "version": "1.2.1",
   "author": {
     "name": "Diana Onufriienko",
     "email": "donufriienko@datagrok.ai"
@@ -13,15 +13,15 @@
     "directory": "packages/Tutorials"
   },
   "dependencies": {
+    "@datagrok-libraries/tutorials": "^1.0.2",
     "@datagrok-libraries/utils": "^1.15.5",
     "cash-dom": "^8.1.0",
-    "datagrok-api": "^1.0.0",
+    "datagrok-api": "^1.12.0",
     "dayjs": "^1.10.6",
     "rxjs": "6.6.7",
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@types/jest": "^27.0.0",
     "@types/js-yaml": "^4.0.5",
     "@types/node-fetch": "^2.6.2",
     "@types/wu": "^2.1.42",
@@ -30,13 +30,10 @@
     "css-loader": "^6.7.1",
     "eslint": "^7.32.0",
     "eslint-config-google": "^0.14.0",
-    "jest": "^27.0.0",
-    "jest-html-reporter": "^3.5.0",
     "js-yaml": "^4.1.0",
     "node-fetch": "^2.6.7",
     "puppeteer": "^13.7.0",
     "style-loader": "^3.3.1",
-    "ts-jest": "^27.0.0",
     "ts-loader": "^9.3.1",
     "typescript": "^4.7.4",
     "webpack": "^5.50.0",
@@ -59,9 +56,9 @@
     "release-tutorials-local": "grok publish local --release",
     "debug-tutorials-localhost": "grok publish localhost",
     "release-tutorials-localhost": "grok publish localhost --release",
-    "test": "jest",
-    "test-dev": "set HOST=dev && jest",
-    "test-local": "set HOST=localhost && jest"
+    "test": "grok test",
+    "test-dev": "grok test --host dev",
+    "test-local": "grok test --host localhost"
   },
   "properties": [
     {

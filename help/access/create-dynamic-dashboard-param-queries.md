@@ -1,4 +1,6 @@
-# Create dynamic dashboards for query results
+---
+title: "Create dynamic dashboards for query results"
+---
 
 Follow the steps below to convert a parameterized query output into a dynamic dashboard.
 

@@ -6,8 +6,10 @@ import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 
 import {TAGS, TreeHelper} from '../utils/tree-helper';
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
-import {ITreeHelper, NodeType, parseNewick} from '@datagrok-libraries/bio';
 import {_package} from '../package';
+import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
+import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 export class TreeForGridFilterApp {
   private th!: ITreeHelper;
@@ -94,16 +96,11 @@ export class TreeForGridFilterApp {
       const dataDf: DG.DataFrame = this.dataDf;
       dataDf.columns.addNewInt('Cluster').init((rowI) => { return null; });
 
-      const clusterDf: DG.DataFrame = DG.DataFrame.create(0);
-      clusterDf.columns.addNewInt('Cluster');
-      clusterDf.columns.addNewString(this.leafCol.name);
-      clusterDf.columns.addNewInt(`${this.leafCol.name}_Count`);
-
       this.tableView = grok.shell.addTableView(dataDf);
       this.tableView.path = this.tableView.basePath = `/func/${_package.name}.treeForGridFilterApp`;
 
       this.gridN = injectTreeForGridUI2(
-        this.tableView.grid, this.newickRoot, dataDf, clusterDf, this.leafCol.name, 300);
+        this.tableView.grid, this.newickRoot, this.leafCol.name, 300);
 
       // const activityCol = this.dataDf.col('Activity');
       // if (activityCol) {

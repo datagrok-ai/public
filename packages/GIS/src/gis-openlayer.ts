@@ -1,7 +1,7 @@
 //base import
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
+//import * as ui from 'datagrok-api/ui';
 
 import * as GisTypes from '../src/gis-semtypes';
 import {GisViewer} from './gis-viewer';
@@ -19,7 +19,7 @@ import LayerRenderer from 'ol/renderer/Layer';
 import OSM from 'ol/source/OSM';
 import BingMaps from 'ol/source/BingMaps';
 import VectorSource from 'ol/source/Vector';
-import XYZ from 'ol/source/XYZ';
+//import XYZ from 'ol/source/XYZ';
 import {StyleLike} from 'ol/style/Style';
 //Projections working itilities
 import * as OLProj from 'ol/proj';
@@ -38,13 +38,14 @@ import * as OLEventsCondition from 'ol/events/condition';
 //import processors
 import {GPX, GeoJSON, IGC, KML, TopoJSON} from 'ol/format';
 import Source from 'ol/source/Source';
-import {Control, defaults as defaultControls} from 'ol/control';
+//import {Control} from 'ol/control';
+import {defaults as defaultControls} from 'ol/control';
 
 import {PanelLayersControl, BtnLayersControl} from './gis-mapcontrols';
 
 //for test func
 import TileWMS from 'ol/source/TileWMS';
-import ImageLayer from 'ol/layer/Image';
+//import ImageLayer from 'ol/layer/Image';
 
 //ZIP utilities
 import JSZip from 'jszip';
@@ -65,7 +66,7 @@ let OLG: OpenLayers; //TODO: remove this terrible stuff!
 let renderTime: number = 0; //temporary code for benchmarking
 
 
-function toStringColor(num : number, opacity?: number) : string {
+export function toStringColor(num : number, opacity?: number) : string {
   num >>>= 0;
   const b = num & 0xFF;
   const g = (num & 0xFF00) >>> 8;
@@ -81,9 +82,9 @@ function rgbToHex(color: string): string {
 }
 
 // Define a KMZ format class by subclassing ol/format/KML
-async function getKMLData(buffer: any): Promise<string> {
+export async function getKMZData(buffer: any): Promise<string> {
   const zip = new JSZip();
-  let kmlData: string = '';
+  let kmlData = '';
   await zip.loadAsync(buffer);
   const kmlFile = zip.file(/.kml$/i)[0];
   if (kmlFile)
@@ -101,11 +102,11 @@ export class KMZ extends KML {
     return 'arraybuffer'; // @typedef {'arraybuffer' | 'json' | 'text' | 'xml'} Type
   }
   readFeature(source: any, options: any) {
-    const kmlData = getKMLData(source);
+    const kmlData = getKMZData(source);
     return super.readFeature(kmlData, options);
   }
   readFeatures(source: any, options: any) {
-    const kmlData = getKMLData(source);
+    const kmlData = getKMZData(source);
     return super.readFeatures(kmlData, options);
   }
 }
@@ -565,6 +566,11 @@ export class OpenLayers {
 
     if (recreate) {
       let previousLayer = this.olMarkersLayerGL;
+      if (previousLayer) {
+        this.olMap.removeLayer(previousLayer);
+        previousLayer.dispose();
+      }
+
       let src = this.olMarkersLayerGL?.getSource();
       this.olMarkersLayerGL = new WebGLPointsLayer({
         source: src ? src : this.olMarkersSource,
@@ -573,12 +579,13 @@ export class OpenLayers {
       this.olMarkersLayerGL.set('layerName', 'Markers GL');
       this.addLayer(this.olMarkersLayerGL);
 
+      //prepare markers selection layer
+      previousLayer = this.olMarkersSelLayerGL;
       if (previousLayer) {
         this.olMap.removeLayer(previousLayer);
         previousLayer.dispose();
       }
-      //prepare markers selection layer
-      previousLayer = this.olMarkersSelLayerGL;
+
       src = this.olMarkersSelLayerGL?.getSource();
       this.olMarkersSelLayerGL = new WebGLPointsLayer({
         source: src ? src : this.olMarkersSelSource,
@@ -588,11 +595,6 @@ export class OpenLayers {
       this.olMarkersSelLayerGL.set('layerName', 'Markers GL Selection');
       this.addLayer(this.olMarkersSelLayerGL);
       this.olMarkersSelLayerGL.setZIndex(100);
-
-      if (previousLayer) {
-        this.olMap.removeLayer(previousLayer);
-        previousLayer.dispose();
-      }
     } //<<if recreate
   }
 

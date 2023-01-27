@@ -11,26 +11,16 @@ import * as DG from 'datagrok-api/dg';
 import {SEMTYPEGIS} from '../src/gis-semtypes';
 
 //OpenLayers functionality import
-import {OLCallbackParam} from '../src/gis-openlayer';
-import {OpenLayers} from '../src/gis-openlayer';
-import {Coordinate} from '../src/gis-openlayer';
+import {OLCallbackParam, OpenLayers, Coordinate, toStringColor} from '../src/gis-openlayer';
 import VectorLayer from 'ol/layer/Vector';
 import * as OLProj from 'ol/proj';
 import Feature from 'ol/Feature';
-import {Circle, Point} from 'ol/geom';
+//import {Circle} from 'ol/geom';
+import {Point} from 'ol/geom';
 // import { numberSafeCompareFunction } from 'ol/array';
 
 //release mode flag: set to true to hide all experimental UI features
 const releaseMode = false;
-
-function toStringColor(num : number, opacity?: number) : string {
-  num >>>= 0;
-  const b = num & 0xFF;
-  const g = (num & 0xFF00) >>> 8;
-  const r = (num & 0xFF0000) >>> 16;
-  const a = opacity ? opacity : 1;
-  return 'rgba(' + [r, g, b, a].join(',') + ')';
-}
 
 export class GisViewer extends DG.JsViewer {
   currentLayer: string;
@@ -677,16 +667,19 @@ export class GisViewer extends DG.JsViewer {
         //TODO: this style of switching visibility is a bad but temporary decision
         this.ol.olHeatmapLayer?.setVisible(true);
         this.ol.olMarkersLayerGL?.setVisible(false);
+        this.ol.panelLayersList.updateLayersList();
       } else if (this.renderType === 'markers') {
         //render markers map
         this.renderMarkersBatch(this.features);
         this.ol.olHeatmapLayer?.setVisible(false);
         this.ol.olMarkersLayerGL?.setVisible(true);
+        this.ol.panelLayersList.updateLayersList();
       } else if (this.renderType === 'both') {
         //render markers map
         this.renderMarkersBatch(this.features);
         this.ol.olHeatmapLayer?.setVisible(true);
         this.ol.olMarkersLayerGL?.setVisible(true);
+        this.ol.panelLayersList.updateLayersList();
       }
 
       if (fit) {

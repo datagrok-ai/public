@@ -1,7 +1,6 @@
-<!-- TITLE: Principal component analysis -->
-<!-- SUBTITLE: -->
-
-# Principal component analysis
+---
+title: "Principal component analysis"
+---
 
 Principal component analysis (PCA) is a statistical procedure that uses an orthogonal transformation to convert a set of
 observations of possibly correlated variables

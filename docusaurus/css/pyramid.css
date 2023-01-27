@@ -1,0 +1,322 @@
+
+.pyramid {
+    width: 100%;
+    color: #697FA3;
+    font-size: 18px;
+}
+
+.pyramid a {
+    color: #697FA3;
+}
+
+@media (max-width: 400px) {
+    .pyramid {
+        font-size: 12px;
+    }
+}
+
+.pyramid-part {
+    width: 100%;
+    position: absolute;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    top: 0;
+    bottom: 0;
+    justify-content: center;
+    padding-right: 14%;
+    user-select: none;
+    padding-bottom: 0.1%;
+}
+
+.pyramid-part.pyramid-6 {
+    background-color: #bad0f4;
+}
+
+.pyramid-part.pyramid-5 {
+    background-color: #c4dafe;
+}
+
+.pyramid-part.pyramid-4 {
+    background-color: #cee4ff;
+}
+
+.pyramid-part.pyramid-3 {
+    background-color: #d8eeff;
+}
+
+.pyramid-part.pyramid-2 {
+    background-color: #d9f3ff;
+}
+
+.pyramid-part.pyramid-1 {
+    background-color: #d7f2fd;
+    background-position-y: 83%;
+    background-image: url(/img/logo.svg);
+    background-repeat: no-repeat;
+    background-position-x: 42.7%;
+    background-size: 4%;
+    transition: all 0.2s;
+}
+
+.pyramid-part-container:hover .pyramid-part.pyramid-1 {
+    transition-delay: 0.3s;
+    background-position-x: 48%;
+    background-position-y: 52%;
+    background-size: 8%;
+}
+
+.pyramid-part.pyramid-6:after {
+    border-right-color: #a6bce0;
+}
+
+.pyramid-part.pyramid-5:after {
+    border-right-color: #b0c6ea;
+}
+
+.pyramid-part.pyramid-4:after {
+    border-right-color: #bad0eb;
+}
+
+.pyramid-part.pyramid-3:after {
+    border-right-color: #c4daeb;
+}
+
+.pyramid-part.pyramid-2:after {
+    border-right-color: #c5dfeb;
+}
+
+.pyramid-part.pyramid-1:after {
+    border-right-color: #c3dde9;
+}
+
+.pyramid-part-container:after {
+    content: "";
+    border-style: solid;
+    border-width: 0 420px 480px 0;
+    border-color: transparent white transparent transparent;
+    top: 0;
+    position: absolute;
+}
+
+.pyramid-part:before {
+    content: "";
+    border-style: solid;
+    border-width: 480px 320px 0 0;
+    border-color: white transparent transparent transparent;
+    top: 0;
+    margin-left: -320px;
+    position: absolute;
+}
+
+.pyramid-part:after {
+    content: "";
+    border-style: solid;
+    top: 0;
+    position: absolute;
+    border-width: 0 320px 480px 0;
+    border-bottom-color: transparent;
+    border-top-color: transparent;
+    border-left-color: transparent;
+}
+
+.pyramid-part.pyramid-1:before {
+    left: 42.8568%;
+}
+
+.pyramid-part.pyramid-2:before {
+    left: 35.714%;
+}
+
+.pyramid-part.pyramid-3:before {
+    left: 28.5712%;
+}
+
+.pyramid-part.pyramid-4:before {
+    left: 21.4284%;
+}
+
+.pyramid-part.pyramid-5:before {
+    left: 14.2856%;
+}
+
+.pyramid-part.pyramid-6:before {
+    left: 7.1428%;
+}
+
+.pyramid-part.pyramid-1:after {
+    left: 42.8568%;
+}
+
+.pyramid-part.pyramid-2:after {
+    left: 49.9996%;
+}
+
+.pyramid-part.pyramid-3:after {
+    left: 57.1424%;
+}
+
+.pyramid-part.pyramid-4:after {
+    left: 64.2852%;
+}
+
+.pyramid-part.pyramid-5:after {
+    left: 71.428%;
+}
+
+.pyramid-part.pyramid-6:after {
+    left: 78.5708%;
+}
+
+.pyramid-part-container.pyramid-1:after {
+    left: 42.8568%;
+}
+
+.pyramid-part-container.pyramid-2:after {
+    left: 52.2318%;
+}
+
+.pyramid-part-container.pyramid-3:after {
+    left: 61.6068%;
+}
+
+.pyramid-part-container.pyramid-4:after {
+    left: 70.9818%;
+}
+
+.pyramid-part-container.pyramid-5:after {
+    left: 80.3568%;
+}
+
+.pyramid-part-container.pyramid-6:after {
+    left: 89.7318%;
+}
+
+.pyramid-part-container.pyramid-1 .pyramid-arrow {
+    left: 42.8568%;
+}
+
+.pyramid-part-container.pyramid-2 .pyramid-arrow {
+    left: 52.2318%;
+}
+
+.pyramid-part-container.pyramid-3 .pyramid-arrow {
+    left: 61.6068%;
+}
+
+.pyramid-part-container.pyramid-4 .pyramid-arrow {
+    left: 70.9818%;
+}
+
+.pyramid-part-container.pyramid-5 .pyramid-arrow {
+    left: 80.3568%;
+}
+
+.pyramid-part-container.pyramid-6 .pyramid-arrow {
+    left: 89.7318%;
+    transition: all 0.5s;
+    transition-delay: 0.2s;
+}
+
+.pyramid-part-container.moving-arrow:hover.pyramid-6 .pyramid-arrow {
+    left: 84.7318%;
+    transition: all 0.2s;
+    transition-delay: 0.1s;
+}
+
+.pyramid-part-container + .pyramid-part-container {
+    margin-top: 1%;
+}
+
+.pyramid-part-container {
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    padding-bottom: 10.71%;
+    cursor: pointer;
+}
+
+.pyramid-arrow {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    margin-left: 15%;
+    background-color: white;
+    z-index: 3;
+}
+
+.pyramid-arrow::before {
+    content: " ";
+    top: 50%;
+    left: 0;
+    margin-top: -80px;
+    margin-left: -80px;
+    border: 80px solid white;
+    border-left: 80px solid transparent;
+    position: absolute;
+}
+
+.pyramid-part-container {
+    transition: all 0.5s;
+}
+
+.pyramid:hover .pyramid-part-container {
+    opacity: 0.7;
+}
+
+.pyramid-part-container:hover {
+    opacity: 1 !important;
+}
+
+.pyramid-part::after {
+    transition: all 0.5s;
+    transition-delay: 0.2s;
+}
+
+.pyramid-part-container::after {
+    transition: all 0.5s;
+    transition-delay: 0s;
+}
+
+.pyramid-part-container.moving-arrow:hover .pyramid-part::after {
+    transform: translateX(200px);
+    transition-delay: 0s;
+}
+
+.pyramid-part-container.moving-arrow:hover::after {
+    transform: translateX(150px);
+    transition: all 0.5s;
+    transition-delay: 0.2s;
+}
+
+.pyramid-part-container.moving-arrow:hover .pyramid-part {
+    font-size: 1.5em;
+    transition: all 0.2s;
+    transition-delay: 0.3s;
+}
+
+.pyramid-part-container.moving-arrow .pyramid-part {
+    transition: all 0.2s;
+    transition-delay: 0s;
+}
+
+.pyramid-part-container.moving-arrow:hover.pyramid-2 .pyramid-part {
+    padding-left: 20%;
+}
+
+.pyramid-part-container.moving-arrow:hover.pyramid-3 .pyramid-part {
+    padding-left: 30%;
+}
+
+.pyramid-part-container.moving-arrow:hover.pyramid-4 .pyramid-part {
+    padding-left: 50%;
+}
+
+.pyramid-part-container.moving-arrow:hover.pyramid-5 .pyramid-part {
+    padding-left: 70%;
+}
+
+
+

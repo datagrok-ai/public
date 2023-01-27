@@ -12,6 +12,7 @@ interface ITestManagerUI {
   runAllButton: HTMLButtonElement;
   debugButton: DG.InputBase<boolean>;
   benchmarkButton: DG.InputBase<boolean>;
+  runSkippedButton: DG.InputBase<boolean>;
   ribbonPanelDiv: HTMLDivElement;
 }
 
@@ -55,9 +56,13 @@ export function addView(view: DG.ViewBase): DG.ViewBase {
   return view;
 }
 
+// eslint-disable-next-line no-unused-vars
 enum NODE_TYPE {
+  // eslint-disable-next-line no-unused-vars
   PACKAGE = 'Package',
+  // eslint-disable-next-line no-unused-vars
   CATEGORY = 'Category',
+  // eslint-disable-next-line no-unused-vars
   TEST = 'TEST'
 }
 
@@ -70,6 +75,7 @@ export class TestManager extends DG.ViewBase {
   nodeDict: { [id: string]: any } = {};
   debugMode = false;
   benchmarkMode = false;
+  runSkippedMode = true;
   tree: DG.TreeViewGroup;
   autoTestsCatName = 'Auto Tests';
   ribbonPanelDiv = undefined;
@@ -157,9 +163,11 @@ export class TestManager extends DG.ViewBase {
           }
         });
         let testsNumInPack = 0;
-        Object.keys(packageTestsFinal).forEach((cat) => {
-          testsNumInPack += this.addCategoryRecursive(packageNode, packageTestsFinal[cat], testFromUrl);
-        });
+        Object.keys(packageTestsFinal)
+          .sort((a, b) => a.localeCompare(b))
+          .forEach((cat) => {
+            testsNumInPack += this.addCategoryRecursive(packageNode, packageTestsFinal[cat], testFromUrl);
+          });
         const selectedPackage = this.packagesTests.filter((pt) => pt.name === f.package.name)[0];
         selectedPackage.categories = packageTestsFinal;
         selectedPackage.totalTests = testsNumInPack;
@@ -192,7 +200,7 @@ export class TestManager extends DG.ViewBase {
     if (testFromUrl && testFromUrl.catName === category.fullName)
       this.selectedNode = subnode;
 
-    const subcats = Object.keys(category.subcategories);
+    const subcats = Object.keys(category.subcategories).sort((a, b) => a.localeCompare(b));
     if (subcats.length > 0) {
       subcats.forEach((subcat) => {
         category.totalTests += this.addCategoryRecursive(subnode, category.subcategories[subcat], testFromUrl);
@@ -217,7 +225,6 @@ export class TestManager extends DG.ViewBase {
     category.totalTests += category.tests.length;
     return category.totalTests;
   }
-
 
   async createTestManagerUI(testFromUrl: ITestFromUrl): Promise<ITestManagerUI> {
     this.tree = ui.tree();
@@ -252,15 +259,17 @@ export class TestManager extends DG.ViewBase {
       });
     }
 
-    const {runAll, run, debug, benchmark} = this.createButtons();
-    const {runAll: runAll1, run: run1, debug: debug1, benchmark: benchmark1} = this.createButtons();
+    const {runAll, run, debug, benchmark, runSkipped} = this.createButtons();
+    const {runAll: runAll1, run: run1, debug: debug1,
+      benchmark: benchmark1, runSkipped: runSkipped1} = this.createButtons();
 
-    const ribbonPanelDiv = ui.divH([runAll1, run1, debug1.root, benchmark1.root],
-      {style: {minHeight: '50px', maxHeight: '50px', alignItems: 'Center', borderBottom: '1px solid var(--grey-1)', paddingLeft: '5px'}});
+    const ribbonPanelDiv = ui.divH([runAll1, run1, debug1.root, benchmark1.root, runSkipped1.root],
+      {style: {minHeight: '50px', maxHeight: '50px', alignItems: 'Center',
+        borderBottom: '1px solid var(--grey-1)', paddingLeft: '5px'}});
     ribbonPanelDiv.classList.add('test');
 
     return {runAllButton: runAll, runButton: run, testsTree: this.tree,
-      debugButton: debug, benchmarkButton: benchmark, ribbonPanelDiv: ribbonPanelDiv};
+      debugButton: debug, benchmarkButton: benchmark, runSkippedButton: runSkipped, ribbonPanelDiv: ribbonPanelDiv};
   }
 
   createButtons() {
@@ -289,7 +298,13 @@ export class TestManager extends DG.ViewBase {
     benchmarkButton.captionLabel.style.marginLeft = '5px';
     benchmarkButton.root.style.marginLeft = '5px';
 
-    return {runAll: runAllButton, run: runTestsButton, debug: debugButton, benchmark: benchmarkButton};
+    const runSkippedButton = ui.boolInput('Run skipped', true, () => {this.runSkippedMode = !this.runSkippedMode;});
+    runSkippedButton.captionLabel.style.order = '1';
+    runSkippedButton.captionLabel.style.marginLeft = '5px';
+    runSkippedButton.root.style.marginLeft = '5px';
+
+    return {runAll: runAllButton, run: runTestsButton, debug: debugButton,
+      benchmark: benchmarkButton, runSkipped: runSkippedButton};
   }
 
   async runTestsForSelectedNode() {
@@ -322,9 +337,8 @@ export class TestManager extends DG.ViewBase {
     this.nodeDict[Object.keys(this.nodeDict).length] = {tests: tests, nodeType: nodeType};
   }
 
-
-  updateTestResultsIcon(resultDiv: HTMLElement, success?: boolean) {
-    success === undefined ? resultDiv.innerHTML = '' : this.updateIcon(success, resultDiv);
+  updateTestResultsIcon(resultDiv: HTMLElement, success?: boolean, skipped?: boolean) {
+    success === undefined ? resultDiv.innerHTML = '' : this.updateIcon(success, resultDiv, skipped);
   }
 
   testInProgress(resultDiv: HTMLElement, running: boolean) {
@@ -339,17 +353,40 @@ export class TestManager extends DG.ViewBase {
       resultDiv.innerHTML = '';
   }
 
-  updateIcon(passed: boolean, iconDiv: Element) {
-    const icon = passed ? ui.iconFA('check') : ui.iconFA('times');
+  updateIcon(passed: boolean, iconDiv: Element, skipped: boolean) {
+    let icon: HTMLElement;
+    if (skipped) icon = ui.iconFA('forward');
+    else icon = passed ? ui.iconFA('check') : ui.iconFA('times');
     icon.style.fontWeight = '500';
     icon.style.paddingLeft = '2px';
     icon.style.marginTop = '2px';
-    icon.style.color = passed ? 'var(--green-2)' : 'var(--red-3)';
+    if (skipped) icon.style.color = 'var(--orange-2)';
+    else icon.style.color = passed ? 'var(--green-2)' : 'var(--red-3)';
     iconDiv.innerHTML = '';
     iconDiv.append(icon);
   }
 
+  updateIconUnhandled(category: ICategory) {
+    let icon;
+    const subcats = Object.keys(category.subcategories).sort((a, b) => a.localeCompare(b));
+    if (subcats.length > 0) for (const subcat of subcats) this.updateIconUnhandled(category.subcategories[subcat]);
+    for (const t of category.tests) {
+      icon = t.resultDiv.firstChild;
+      if (icon === null || icon.className.includes('times')) return;
+      icon.style.color = 'var(--orange-2)';
+    }
+    icon = category.resultDiv.firstChild;
+    if (icon === null || icon.className.includes('times')) return;
+    icon.style.color = 'var(--orange-2)';
+  }
+
   async runTest(t: IPackageTest): Promise<boolean> {
+    let runSkipped = false;
+    const skipReason = t.test.options?.skipReason;
+    if (this.runSkippedMode && skipReason) {
+      t.test.options.skipReason = undefined;
+      runSkipped = true;
+    }
     if (this.debugMode)
       debugger;
     this.testInProgress(t.resultDiv, true);
@@ -370,6 +407,7 @@ export class TestManager extends DG.ViewBase {
       res.columns.addNewString('funcTest').init((i) => '');
       testSucceeded = res.get('success', 0);
     }
+    if (runSkipped) t.test.options.skipReason = skipReason;
     const time = Date.now() - start;
     if (!this.testsResultsDf) {
       this.testsResultsDf = res;
@@ -384,7 +422,7 @@ export class TestManager extends DG.ViewBase {
       this.removeTestRow(t.packageName, t.test.category, t.test.name);
       this.testsResultsDf = this.testsResultsDf.append(res);
     }
-    this.updateTestResultsIcon(t.resultDiv, testSucceeded);
+    this.updateTestResultsIcon(t.resultDiv, testSucceeded, skipReason && !runSkipped);
     return testSucceeded;
   }
 
@@ -401,6 +439,7 @@ export class TestManager extends DG.ViewBase {
 
   async runAllTests(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
     this.testManagerView.path = '/' + this.testManagerView.name.replace(' ', '');
+    let catsValuesSorted: ICategory[];
     switch (nodeType) {
     case NODE_TYPE.PACKAGE: {
       const progressBar = DG.TaskBarProgressIndicator.create(tests.package.name);
@@ -409,8 +448,9 @@ export class TestManager extends DG.ViewBase {
       this.testInProgress(packageTests.resultDiv, true);
       await this.collectPackageTests(node as DG.TreeViewGroup, tests);
       const cats = packageTests.categories;
+      catsValuesSorted = Object.keys(cats).sort((a, b) => a.localeCompare(b)).map((cat) => cats[cat]);
       let completedTestsNum = 0;
-      for (const cat of Object.values(cats)) {
+      for (const cat of catsValuesSorted) {
         this.testInProgress(packageTests.resultDiv, true);
         const res = await this.runTestsRecursive(cat, progressBar,
           packageTests.totalTests, completedTestsNum, tests.package.name);
@@ -439,12 +479,26 @@ export class TestManager extends DG.ViewBase {
     }
     }
     await delay(1000);
-    if (grok.shell.lastError.length > 0)
+    if (grok.shell.lastError.length > 0) {
       grok.shell.error(`Unhandled exception: ${grok.shell.lastError}`);
-
+      switch (nodeType) {
+      case NODE_TYPE.PACKAGE:
+        catsValuesSorted.forEach((cat) => this.updateIconUnhandled(cat));
+        break;
+      case NODE_TYPE.CATEGORY:
+        this.updateIconUnhandled(tests);
+        break;
+      case NODE_TYPE.TEST: {
+        if (tests.resultDiv.innerHTML === '') return;
+        (tests.resultDiv.firstChild as HTMLElement).style.color = 'var(--orange-2)';
+        break;
+      }
+      }
+    }
     grok.shell.closeAll();
     setTimeout(() => {
-      grok.shell.o = this.getTestsInfoPanel(node, tests, nodeType);
+      grok.shell.o = this.getTestsInfoPanel(node, tests, nodeType,
+        grok.shell.lastError.length ? grok.shell.lastError : '');
     }, 30);
   }
 
@@ -456,7 +510,7 @@ export class TestManager extends DG.ViewBase {
     progressInfo: string): Promise<any> {
     let testsSucceded = true;
     this.testInProgress(category.resultDiv, true);
-    const subcats = Object.keys(category.subcategories);
+    const subcats = Object.keys(category.subcategories).sort((a, b) => a.localeCompare(b));
     if (subcats.length > 0) {
       for (const subcat of subcats) {
         this.testInProgress(category.subcategories[subcat].resultDiv, true);
@@ -497,12 +551,12 @@ export class TestManager extends DG.ViewBase {
     }
   }
 
-  getTestsInfoPanel(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
+  getTestsInfoPanel(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE, unhandled?: string) {
     const acc = ui.accordion();
     const accIcon = ui.element('i');
     accIcon.className = 'grok-icon svg-icon svg-view-layout';
     acc.addTitle(ui.span([accIcon, ui.label(`Tests details`)]));
-    const grid = this.getTestsInfoGrid(this.resultsGridFilterCondition(tests, nodeType), nodeType);
+    const grid = this.getTestsInfoGrid(this.resultsGridFilterCondition(tests, nodeType), nodeType, false, unhandled);
     acc.addPane('Details', () => ui.div(this.testDetails(node, tests, nodeType)), true);
     acc.addPane('Results', () => ui.div(grid), true);
     return acc.root;
@@ -529,8 +583,7 @@ export class TestManager extends DG.ViewBase {
     ]);
   }
 
-
-  getTestsInfoGrid(condition: string, nodeType: NODE_TYPE, isTooltip?: boolean) {
+  getTestsInfoGrid(condition: string, nodeType: NODE_TYPE, isTooltip?: boolean, unhandled?: string) {
     let info = ui.divText('No tests have been run');
     if (this.testsResultsDf) {
       const testInfo = this.testsResultsDf
@@ -544,10 +597,16 @@ export class TestManager extends DG.ViewBase {
         const time = testInfo.get('time, ms', 0);
         const result = testInfo.get('result', 0);
         const resColor = testInfo.get('success', 0) ? 'var(--green-2)' : 'var(--red-3)';
-        info = ui.divV([
-          ui.divText(result, {style: {color: resColor, userSelect: 'text'}}),
+        const infoMain = [
+          ui.divText(result,
+            {style: {color: testInfo.get('skipped', 0) ? 'var(--orange-2)' : resColor, userSelect: 'text'}}),
           ui.divText(`Time, ms: ${time}`),
-        ]);
+        ];
+        if (unhandled) {
+          infoMain.unshift(ui.divText(`Test caused an Unhandled exception: ${unhandled}`,
+            {style: {color: 'var(--red-3)', userSelect: 'text'}}));
+        }
+        info = ui.divV(infoMain);
         if (cat === this.autoTestsCatName)
           info.append(`Function: ${testInfo.get('funcTest', 0)}`);
         if (nodeType !== NODE_TYPE.TEST)
@@ -556,12 +615,17 @@ export class TestManager extends DG.ViewBase {
           info.append(ui.divText(`Category: ${cat}`));
       } else {
         if (!isTooltip) {
-          info = ui.divV([
+          const infoMain = [
             ui.button('Add to workspace', () => {
               grok.shell.addTableView(testInfo);
             }),
             testInfo.plot.grid().root,
-          ]);
+          ];
+          if (unhandled) {
+            infoMain.unshift(ui.divText(`One of the tests caused an Unhandled exception: ${unhandled}`,
+              {style: {color: 'var(--red-3)', userSelect: 'text'}}));
+          }
+          info = ui.divV(infoMain);
         } else
           return null;
       }

@@ -18,6 +18,8 @@ import {MlbDatabase} from './mlb-database';
 import {channel} from 'diagnostics_channel';
 import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
 import {packageName} from '../package';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import {AntigenDataFrame, TreeDataFrame, MlbDataFrame} from '../types/dataframe';
 
 export class DataLoaderDb extends DataLoader {
   static _files = class {
@@ -32,7 +34,7 @@ export class DataLoaderDb extends DataLoader {
 
   private _schemes: string[];
   private _cdrs: string[];
-  private _antigens: DG.DataFrame;
+  private _antigens: AntigenDataFrame;
   private _vids: string[];
   private _vidsObsPtm: string[];
   private _filterProperties: FilterPropertiesType;
@@ -47,7 +49,7 @@ export class DataLoaderDb extends DataLoader {
 
   get cdrs(): string[] { return this._cdrs; }
 
-  get antigens(): DG.DataFrame { return this._antigens; }
+  get antigens(): AntigenDataFrame { return this._antigens; }
 
   get vids(): string[] { return this._vids; }
 
@@ -110,11 +112,11 @@ export class DataLoaderDb extends DataLoader {
     return this._dlQueries.getLayoutBySchemeCdr(scheme, cdr);
   }
 
-  async getMlbByAntigen(antigen: string): Promise<DG.DataFrame> {
+  async getMlbByAntigen(antigen: string): Promise<MlbDataFrame> {
     return this._dlQueries.getMlbByAntigen(antigen);
   }
 
-  async getTreeByAntigen(antigen: string): Promise<DG.DataFrame> {
+  async getTreeByAntigen(antigen: string): Promise<TreeDataFrame> {
     return this._dlQueries.getTreeByAntigen(antigen);
   }
 
@@ -161,9 +163,9 @@ export class DataLoaderDb extends DataLoader {
       const obsPtmValue: ObsPtmType = obsPtmTxt ? JSON.parse(obsPtmTxt)['ptm_observed'] : null;
 
       return [jsonValue, pdbValue, realNumsValue, obsPtmValue];
-    } catch (err: unknown) {
-      const errMsg: string = err instanceof Error ? err.message : (err as Object).toString();
-      console.error(`MLB: query get3D('${vid}' error: ${errMsg}`);
+    } catch (err: any) {
+      const errStr = errorToConsole(err);
+      console.error(`MLB: query get3D('${vid}' error: ${errStr}`);
       throw err;
     }
   }

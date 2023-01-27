@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {NodeCuttedType, NodeType} from './index';
-
+import {DistanceMatrix} from './distance-matrix';
 
 export interface ITreeHelper {
   /** Generates data frame with row per node, parent relation, distance, annotation
@@ -12,32 +12,33 @@ export interface ITreeHelper {
    * @param {string} nodePrefix            Prefix for nodes with auto generated name   *
    * @param {bool}   emptyParentRootSkip   Skip row with root node and empty parent (for Network Diagram)
    */
-  newickToDf(newick: string, name: string, nodePrefix?: string, emptyParentRootSkip?: boolean): DG.DataFrame;
+  newickToDf(newick: string, name: string, nodePrefix?: string): DG.DataFrame;
 
   toNewick(node: NodeType | null): string;
 
-  getLeafList<TNode extends NodeType>(node: TNode): TNode[];
+  getLeafList<TNode extends NodeType>(node: TNode | null): TNode[];
 
-  getNodeList<TNode extends NodeType>(node: TNode): TNode[];
+  getNodeList<TNode extends NodeType>(node: TNode | null): TNode[];
 
   /** Filters tree by leaves (by set).
    * An internal node will be eliminated only if all its subs (children/leaves) are filtered out by {link @leaves}.
    */
-  filterTreeByLeaves(node: NodeType, leaves: { [name: string]: any }): NodeType | null;
+  filterTreeByLeaves(node: NodeType | null, leaves: { [name: string]: any }): NodeType | null;
 
   /** Collects nodes by leaves (by set).
    * Node will be returned only if all its subs (children/leaves) are present in {@link leaves}.
    */
-  getNodesByLeaves<TNode extends NodeType>(node: TNode, leaves: { [name: string]: any }): TNode[];
+  getNodesByLeaves<TNode extends NodeType>(node: TNode | null, leaves: { [name: string]: any }): TNode[];
 
-  treeCutAsLeaves(node: NodeType, cutHeight: number, currentHeight?: number): NodeType[];
+  treeCutAsLeaves(node: NodeType | null, cutHeight: number, currentHeight?: number): NodeType[];
 
-  treeCutAsTree(node: NodeType, cutHeight: number, keepShorts?: boolean, currentHeight?: number): NodeType | null;
+  treeCutAsTree(
+    node: NodeType | null, cutHeight: number, keepShorts?: boolean, currentHeight?: number): NodeType | null;
 
   /** Reorder the grid's rows according to the leaves' order in the tree.
    * @param {string|null} leafColName Column name for leaf name in newick, null - use row index
    */
-  setGridOrder(tree: NodeType, grid: DG.Grid, leafColName: string | null): [NodeType, string[]];
+  setGridOrder(tree: NodeType | null, grid: DG.Grid, leafColName?: string): [NodeType, string[]];
 
   markClusters(tree: NodeCuttedType,
     dataDf: DG.DataFrame, leafColName: string | null, clusterColName: string, na?: any): void;
@@ -45,8 +46,7 @@ export interface ITreeHelper {
   /**
    * @param {string|null} leafColName Column name for leaf name in newick, null - use row index
    */
-  buildClusters(tree: NodeCuttedType,
-    clusterDf: DG.DataFrame, clusterColName: string, leafColName: string | null): void;
+  buildClusters(tree: NodeCuttedType, clusterDf: DG.DataFrame, clusterColName: string, leafColName?: string): void;
 
   /** Modifies the tree ({@link node}) cutting at {@link cutHeight} creating extra nodes.
    * @param {string|null} leafColName Column name for leaf name in newick, null - use row index
@@ -56,6 +56,10 @@ export interface ITreeHelper {
 
   /** Generate tree structures with {@link size} nodes number (counting internal).*/
   generateTree(size: number): NodeType;
+
+  hierarchicalClustering(df: DG.DataFrame, distance: string, linkage: string): Promise<NodeType>;
+
+  hierarchicalClusteringByDistance(distance: DistanceMatrix, linkage: string): Promise<NodeType>;
 }
 
 export async function getTreeHelper(): Promise<ITreeHelper> {

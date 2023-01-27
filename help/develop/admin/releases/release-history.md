@@ -1,5 +1,40 @@
-<!-- TITLE: Release History -->
+---
+title: "Release History"
+---
 <!-- SUBTITLE: -->
+
+# 2023-01-06 Dev build 1.11.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.11.2`
+* [Docker-Compose](https://datagrok.ai/help/develop/admin/docker-compose)
+
+## Addressed Issues
+
+* Save table linking to project 
+* #1412 column selector dialog position in prop panel 
+* closes #1344 Legend for continuous colorColumn 
+* Scatter plot coloured by numerical or date column: some data is missing after re-applying saved layout #1411 Workaround 
+* Fixed connections leakage 
+* Merge 
+* Fixed shapes test 
+* Datlas: Test: Fix paths to tests in test.all.dart 
+* Revert "closes #1344 Legend for continuous colorColumn" 
+
+
+# 2022-12-23 Dev build 1.11.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.11.1`
+* [Docker-Compose](https://datagrok.ai/help/develop/admin/docker-compose)
+
+## Addressed Issues
+
+
 
 # 2022-12-22 Dev build 1.11.0
 
@@ -14931,13 +14966,13 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 
 ### New scripting demos
 
-* [image classification](https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/projects/python/scripts/image_classification.py)
-* [cell imaging segmentation](https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/projects/python/scripts/cell_imaging_segmentation.py)
+* [image classification](https://github.com/datagrok-ai/public/blob/master/packages/Demo/scripts/python/image_classification.py)
+* [cell imaging segmentation](https://github.com/datagrok-ai/public/blob/master/packages/Demo/scripts/python/cell_imaging_segmentation.py)
 
 ### File metadata extractors
 
 * [Tika](https://github.com/datagrok-ai/public/tree/master/packages/Tika)
-* [EXIF](https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/projects/python/scripts/exif.py)
+* [EXIF](https://github.com/datagrok-ai/public/blob/master/packages/Demo/scripts/python/exif.py)
 
 ### First class support of command-line Interface tools for Linux in scripting:
 

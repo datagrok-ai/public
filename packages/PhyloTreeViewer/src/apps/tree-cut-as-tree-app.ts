@@ -2,12 +2,11 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {Unsubscribable} from 'rxjs';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
+import {NodeType, TAGS as treeTAGS} from '@datagrok-libraries/bio/src/trees';
+import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 import {_package} from '../package';
-import {NodeType, parseNewick} from '@datagrok-libraries/bio';
-import {TAGS as treeTAGS} from '@datagrok-libraries/bio/src/trees';
 
 export class TreeCutAsTreeApp {
   private viewed: boolean = false;
