@@ -3,7 +3,7 @@
   "name": "PostgresTest",
   "friendlyName": "NorthwindTest",
   "parameters": {
-    "server": "dev.datagrok.ai",
+    "server": "db.datagrok.ai",
     "port": 54322,
     "db": "northwind"
   },
