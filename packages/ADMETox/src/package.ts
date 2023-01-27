@@ -25,11 +25,13 @@ export function admetWidget(smiles: string): DG.Widget<any> {
 export async function admetoxCalculators(col: DG.Column) {
   let table = col.dataFrame;
   addPredictions(col, table).then(() => {
-    table.onMetadataChanged.subscribe((_) => {
+    table.onCurrentColChanged.subscribe((_) => {
       let column = table.currentCol;
-      if (column.colors.getType() === 'Conditional') {
-        column.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"0-0.5":"#f1b6b4","0.5-1":"#b4f1bc"}`;
-      }
+      table.onMetadataChanged.subscribe((_) => {
+        if (column.colors.getType() === 'Conditional') {
+          column.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"0-0.5":"#f1b6b4","0.5-1":"#b4f1bc"}`;
+        }
+      })
     })
   });
 }

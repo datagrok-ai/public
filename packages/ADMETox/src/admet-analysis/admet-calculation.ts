@@ -6,7 +6,7 @@ import { properties, models } from './const';
 const _STORAGE_NAME = 'admet_models';
 const _KEY = 'selected';
 
-async function accessServer(csvString: string, queryParams: string) {
+export async function accessServer(csvString: string, queryParams: string) {
   const dockerId = (await grok.dapi.dockerfiles.filter('admetox').first()).id;
   const params: RequestInit = {
     method: 'POST',
@@ -38,6 +38,18 @@ export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFra
     }
     const table = processCsv(csvString);
     addResultColumns(table, viewTable);
+    if (await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, 'Form') === 'true') 
+      grok.shell.tv.addViewer(DG.Viewer.fromType('Form', viewTable)); 
+    if (await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, 'RadarGrid') === 'true') {
+      let gc = grok.shell.tv.grid.columns.add({gridColumnName: 'predictsRadar', cellType: 'radar'});
+      gc.settings = {columnNames: table.columns.names()};
+    }
+    /*if (await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, 'RadarView', true) === 'true') {
+      let radarViewer = DG.Viewer.fromType('RadarViewer', table, {
+        valuesColumnNames: table.columns.names(),
+      });
+      grok.shell.tv.addViewer(radarViewer);
+    }*/
     pi.close();
   });
 }
@@ -193,13 +205,33 @@ function openModelsDialog(selected: any, onOK: any): void {
     countLabel.textContent = `${keys.length} checked`;
   }
 
+  let bIForm = ui.boolInput('Form', false);
+  bIForm.onChanged(async () => {
+    await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, 'Form', bIForm.value!.toString());
+  });
+  
+  let bIRadarGrid = ui.boolInput('RadarGrid', false);
+  bIRadarGrid.onChanged(async () => {
+    await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, 'RadarGrid', bIRadarGrid.value!.toString());
+  });
+
+  /*let bIRadarView = ui.boolInput('RadarView', false);
+  bIRadarView.onChanged(async () => {
+    await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, 'RadarView', bIRadarView.value!.toString(), true);
+  })*/
+  tree.root.appendChild(bIForm.root);
+  tree.root.appendChild(bIRadarGrid.root);
+  //tree.root.appendChild(bIRadarView.root);
+
+  //tree.root.appendChild(ui.boolInput('Radar', false).root);
+
   let dlg = ui.dialog('ADME/Tox');
   dlg.add(ui.divH([selectAll, selectNone, countLabel]))
     .add(tree.root)
     .addButton('Form', async () => {
       const pi = DG.TaskBarProgressIndicator.create('Creating a form...');
       dlg.close();
-      let queryParams = 'Pgp-Inhibitor,Pgp-Substrate,HIA,F(20%),F(30%),BBB,CYP1A2-Inhibitor,CYP1A2-Substrate,CYP3A4-Inhibitor,CYP3A4-Substrate,CYP2C19-Inhibitor,CYP2C19-Substrate,CYP2C9-Inhibitor,CYP2C9-Substrate,CYP2D6-Inhibitor,CYP2D6-Substrate,Ames,SkinSen';
+      let queryParams = Object.keys(models).toString();
       const df = grok.shell.tv.grid.dataFrame;
       const col = df.columns.bySemType(DG.SEMTYPE.MOLECULE)
       if (col) {
