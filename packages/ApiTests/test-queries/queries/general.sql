@@ -1,11 +1,11 @@
 --name: WithOption
---connection: PostgresNorthwind
+--connection: PostgresTest
 --meta.cache: false
 select 1;
 --end
 
 --name: BatchMode
---connection: PostgresNorthwind
+--connection: PostgresTest
 --meta.batchMode: true
 select 1;
 --batch
