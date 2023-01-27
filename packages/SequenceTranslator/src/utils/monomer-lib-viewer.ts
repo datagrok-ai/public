@@ -26,10 +26,6 @@ type FormattedMonomer = {
   [key: string]: string
 }
 
-const EXTENDED_SYNTHESIZERS = Object.assign({}, SYNTHESIZERS, {'Modification': 'Modification'});
-
-const EXTENDED_TECHNOLOGIES = Object.assign({}, TECHNOLOGIES, {'modification': 'modification'});
-
 const enum RELEVANT_FIELD {
   NAME = 'name',
   MOLFILE = 'molfile',
@@ -65,11 +61,11 @@ function formatMonomerObject(sourceObj: ExtendedMonomer): FormattedMonomer {
   formattedObject[RELEVANT_FIELD.NAME] = sourceObj[RELEVANT_FIELD.NAME];
   formattedObject[RELEVANT_FIELD.MOLFILE] = sourceObj[RELEVANT_FIELD.MOLFILE];
   const codes = sourceObj[RELEVANT_FIELD.CODES] as CodesField;
-  for (const synthesizer of Object.values(EXTENDED_SYNTHESIZERS)) {
+  for (const synthesizer of Object.values(SYNTHESIZERS)) {
     const fieldName = synthesizer;
     const valuesList = [];
     // const technologySet = new Set();
-    for (const technology of Object.values(EXTENDED_TECHNOLOGIES)) {
+    for (const technology of Object.values(TECHNOLOGIES)) {
       if (codes[synthesizer] !== undefined) {
         if (codes[synthesizer][technology] !== undefined) {
           valuesList.push(codes[synthesizer][technology].toString());
