@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.1.79",
+  "version": "3.1.80",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1738,26 +1738,6 @@
         "directory": "packages/Bio"
       },
       "category": "Bioinformatics"
-    },
-    "viewers": {
-      "dependencies": {
-        "0.0.2": {
-          "datagrok-api": ">0.94.10"
-        },
-        "0.0.3": {
-          "datagrok-api": ">0.94.10"
-        },
-        "0.0.4": {
-          "datagrok-api": "^1.0.0"
-        }
-      },
-      "description": "Set of custom JavaScript viewers",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/Viewers"
-      },
-      "category": "Visualizations"
     },
     "sunburst": {
       "dependencies": {
