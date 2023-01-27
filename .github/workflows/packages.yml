@@ -152,7 +152,7 @@ jobs:
           echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
           echo "::notice title=${{ matrix.package }}::datagrok/datagrok:bleeding-edge SHA=$docker_sha docker version was used for tests"
       - name: Setup Node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
