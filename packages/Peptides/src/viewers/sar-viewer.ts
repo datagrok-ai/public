@@ -89,7 +89,7 @@ export class SARViewerBase extends DG.JsViewer {
           ui.divText('Circle size - Mean difference'),
         ]), ev.clientX, ev.clientY);
       });
-      $(tips).addClass('pep-help-icon')
+      $(tips).addClass('pep-help-icon');
 
       const viewerRoot = this.viewerGrid.root;
       viewerRoot.style.width = 'auto';
