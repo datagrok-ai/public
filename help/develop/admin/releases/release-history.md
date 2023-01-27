@@ -3,6 +3,22 @@ title: "Release History"
 ---
 <!-- SUBTITLE: -->
 
+# 2023-01-27 Dev build 1.12.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.12.1`
+* [Docker-Compose](https://datagrok.ai/help/develop/admin/docker-compose)
+
+## Addressed Issues
+
+* (Bug) File Shares: Mount Windows shares (WIP)
+* (Bug) FuncCall.options can't be saved to DB 
+* (Bug) Package can't be installed with npm proxy specified  
+* (Bug) AddNewColumn without passing column type causes the exeption 
+
+
 # 2023-01-24 Dev build 1.12.0
 
 ## Latest Docker Images
