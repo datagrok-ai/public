@@ -98,6 +98,24 @@ Radar chart can be visualized in 2 ways:
 
 ![](help/radar-chart-view.gif)
 
+## Similarity search
+Toll that help scientists analyze a collection of molecules in terms of molecular similarity. It is based on applying different distance metrics (such as Tanimoto) to fingerprints.
+
+To run Similarity search select Chem | Similarity search from the top menu.
+
+![](help/similarity_search.png)
+
+To change target molecule select the row with required molecule in the initial dataframe. Similarities will be recalculated.
+Target molecule can be also changed by using `edit` button in the top left corner of the molecule pane.
+
+![](help/similarity_search_sketch_target.gif)
+
+Using property panel you can change search metrics like similarity cut off, fingerprints type or distance metric.
+
+By selecting columns from `Molecule Properties` field you can add any fields present in your dataframe to similarity panes. Please note that if color coding is applied to a selected column it will be copied on a similarity pane. You can select to highlight background or text in the corresponding field. Ability to add fields to similarity panes simplifies analysis since multiple molecules characteristics can be easily assesed at once.
+
+![](help/similarity_search_add_fields.gif)
+
 
 See also: 
   * [Cheminformatics predictive modeling](https://datagrok.ai/help/domains/chem/chem-predictive-modeling)
