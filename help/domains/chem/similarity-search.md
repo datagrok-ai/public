@@ -15,18 +15,20 @@ the 'Similar structures' window.
 
 To run Similarity search select Chem | Similarity search from the top menu.
 
-![](img/similarity_search.png)
+![similarity_search](img/similarity_search.png)
 
 To change target molecule select the row with required molecule in the initial dataframe. Similarities will be recalculated.
 Target molecule can be also changed using `edit` button in the top left corner of the molecule pane.
 
-![](img/similarity_search_sketch_target.gif)
+![similarity_search_sketch_target](img/similarity_search_sketch_target.gif)
 
 Use property panel to change search metrics like similarity cutoff, fingerprints type or distance metric.
 
-You can add any fields from your dataframe to similarity panes by selecting columns from `Molecule Properties` field. If color coding is applied to a selected column it will be saved on a similarity pane. To apply highlighting to background or text use `Apply Color To` field. Ability to add fields to similarity panes simplifies analysis since multiple molecules characteristics can be easily assessed at once.
+You can add any fields from your dataframe to similarity panes by selecting columns from `Molecule Properties` field. 
+If color coding is applied to a selected column it will be saved on a similarity pane. To apply highlighting to background or text use `Apply Color To` field. 
+Ability to add fields to similarity panes simplifies analysis since multiple molecules characteristics can be easily assessed at once.
 
-![](img/similarity_search_add_fields.gif)
+![similarity_search_add_fields](img/similarity_search_add_fields.gif)
 
 ## Videos
 
