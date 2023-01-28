@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {NOTATION, TAGS as bioTAGS, ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 const methods = ['mafft --auto', 'mafft', 'linsi', 'ginsi', 'einsi', 'fftns', 'fftnsi', 'nwns', 'nwnsi'];
 type PepseaRepsonse = {
@@ -91,9 +92,10 @@ export async function runPepsea(col: DG.Column<string>, method: typeof methods[n
 
   const newColName = col.dataFrame.columns.getUnusedName(`msa(${col.name})`);
   const alignedSequencesCol: DG.Column<string> = DG.Column.fromStrings(newColName, alignedSequences);
-  const semType = await grok.functions.call('Bio:detectMacromolecule', {col: alignedSequencesCol}) as string;
-  if (semType)
-    alignedSequencesCol.semType = semType;
+  alignedSequencesCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+  alignedSequencesCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
+  alignedSequencesCol.setTag(bioTAGS.alphabet, ALPHABET.PT);
+  alignedSequencesCol.semType = DG.SEMTYPE.MACROMOLECULE;
 
   return alignedSequencesCol;
 }
