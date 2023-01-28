@@ -390,7 +390,6 @@ export class TestManager extends DG.ViewBase {
     if (this.debugMode)
       debugger;
     this.testInProgress(t.resultDiv, true);
-    const start = Date.now();
     let res;
     let testSucceeded;
     if (t.test.category === this.autoTestsCatName) {
@@ -408,15 +407,11 @@ export class TestManager extends DG.ViewBase {
       testSucceeded = res.get('success', 0);
     }
     if (runSkipped) t.test.options.skipReason = skipReason;
-    const time = Date.now() - start;
     if (!this.testsResultsDf) {
       this.testsResultsDf = res;
-      if (t.test.category !== this.autoTestsCatName)
-        this.addTimeInfo(this.testsResultsDf, time);
+
       this.addPackageInfo(this.testsResultsDf, t.packageName);
     } else {
-      if (t.test.category !== this.autoTestsCatName)
-        this.addTimeInfo(res, time);
       if (res.col('package') == null)
         this.addPackageInfo(res, t.packageName);
       this.removeTestRow(t.packageName, t.test.category, t.test.name);
@@ -431,6 +426,7 @@ export class TestManager extends DG.ViewBase {
     resDf.columns.addNewBool('success').init((i) => Object.values(res)[i].output === true);
     resDf.columns.addNewString('result').init((i) => Object.values(res)[i].output === true ? 'OK' : 'Failed');
     resDf.columns.addNewInt('ms').init((i) => Object.values(res)[i].time);
+    resDf.columns.addNewBool('skipped').init((i) => false);
     resDf.columns.addNewString('category').init((i) => this.autoTestsCatName);
     resDf.columns.addNewString('name').init((i) => funcName);
     resDf.columns.addNewString('funcTest').init((i) => Object.keys(res)[i]);
@@ -488,17 +484,17 @@ export class TestManager extends DG.ViewBase {
       case NODE_TYPE.CATEGORY:
         this.updateIconUnhandled(tests);
         break;
-      case NODE_TYPE.TEST: {
+      case NODE_TYPE.TEST:
         if (tests.resultDiv.innerHTML === '') return;
         (tests.resultDiv.firstChild as HTMLElement).style.color = 'var(--orange-2)';
         break;
-      }
       }
     }
     grok.shell.closeAll();
     setTimeout(() => {
       grok.shell.o = this.getTestsInfoPanel(node, tests, nodeType,
         grok.shell.lastError.length ? grok.shell.lastError : '');
+      grok.shell.lastError = '';
     }, 30);
   }
 
@@ -535,10 +531,6 @@ export class TestManager extends DG.ViewBase {
 
   addPackageInfo(df: DG.DataFrame, pack: string) {
     df.columns.addNewString('package').init(() => pack);
-  }
-
-  addTimeInfo(df: DG.DataFrame, time: number) {
-    df.columns.addNewInt('time, ms').init(() => time);
   }
 
   removeTestRow(pack: string, cat: string, test: string) {
@@ -590,24 +582,24 @@ export class TestManager extends DG.ViewBase {
         .groupBy(this.testsResultsDf.columns.names())
         .where(condition)
         .aggregate();
+      if (unhandled) {
+        testInfo.rows.addNew([false, unhandled, 0, false, 'Unhandled exceptions',
+          'exceptions', null, testInfo.get('package', 0)]);
+      }
       if (testInfo.rowCount === 1 && testInfo.col('name').isNone(0))
         return info;
       const cat = testInfo.get('category', 0);
       if (testInfo.rowCount === 1 && !testInfo.col('name').isNone(0)) {
-        const time = testInfo.get('time, ms', 0);
+        const isAutoTests = cat === this.autoTestsCatName;
+        const time = testInfo.get('ms', 0);
         const result = testInfo.get('result', 0);
         const resColor = testInfo.get('success', 0) ? 'var(--green-2)' : 'var(--red-3)';
-        const infoMain = [
-          ui.divText(result,
-            {style: {color: testInfo.get('skipped', 0) ? 'var(--orange-2)' : resColor, userSelect: 'text'}}),
+        info = ui.divV([
+          ui.divText(result, {style: {color: (!isAutoTests && testInfo.get('skipped', 0)) ?
+            'var(--orange-2)' : resColor, userSelect: 'text'}}),
           ui.divText(`Time, ms: ${time}`),
-        ];
-        if (unhandled) {
-          infoMain.unshift(ui.divText(`Test caused an Unhandled exception: ${unhandled}`,
-            {style: {color: 'var(--red-3)', userSelect: 'text'}}));
-        }
-        info = ui.divV(infoMain);
-        if (cat === this.autoTestsCatName)
+        ]);
+        if (isAutoTests)
           info.append(`Function: ${testInfo.get('funcTest', 0)}`);
         if (nodeType !== NODE_TYPE.TEST)
           info.append(ui.divText(`Test: ${testInfo.get('name', 0)}`));
@@ -615,17 +607,12 @@ export class TestManager extends DG.ViewBase {
           info.append(ui.divText(`Category: ${cat}`));
       } else {
         if (!isTooltip) {
-          const infoMain = [
+          info = ui.divV([
             ui.button('Add to workspace', () => {
               grok.shell.addTableView(testInfo);
             }),
             testInfo.plot.grid().root,
-          ];
-          if (unhandled) {
-            infoMain.unshift(ui.divText(`One of the tests caused an Unhandled exception: ${unhandled}`,
-              {style: {color: 'var(--red-3)', userSelect: 'text'}}));
-          }
-          info = ui.divV(infoMain);
+          ]);
         } else
           return null;
       }
