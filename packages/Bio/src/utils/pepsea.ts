@@ -38,8 +38,12 @@ export function pepseaDialog(): void {
     .onOK(async () => {
       const progress = DG.TaskBarProgressIndicator.create('Performing MSA...');
       try {
-        await perfromPepseaMSA(colInput.value!, methodInput.stringValue, gapOpenInput.value, gapExtendInput.value,
-          clusterColInput.value);
+        const msaCol = await runPepsea(colInput.value!, methodInput.stringValue, gapOpenInput.value,
+          gapExtendInput.value, clusterColInput.value);
+        table.columns.add(msaCol);
+
+        // This call is required to enable cell renderer activation
+        await grok.data.detectSemanticTypes(table);
       } catch (e) {
         grok.shell.error('PepseaMsaError: Could not perform alignment. See console for details.');
         console.error(e);
@@ -49,8 +53,9 @@ export function pepseaDialog(): void {
     .show();
 }
 
-async function perfromPepseaMSA(col: DG.Column<string>, method: string, gapOpen: number | null,
-  gapExtend: number | null, clustersCol: DG.Column<string | number> | null): Promise<void> {
+export async function runPepsea(col: DG.Column<string>, method: typeof methods[number] = 'ginsi',
+  gapOpen: number | null = 1.53, gapExtend: number | null = 0.0, clustersCol: DG.Column<string | number> | null = null,
+  ): Promise<DG.Column<string>> {
   const peptideCount = col.length;
   gapOpen ??= 1.53;
   gapExtend ??= 0.0;
@@ -64,7 +69,7 @@ async function perfromPepseaMSA(col: DG.Column<string>, method: string, gapOpen:
   // Grouping data by clusters
   for (let rowIndex = 0; rowIndex < peptideCount; ++rowIndex) {
     const cluster = clustersCol.get(rowIndex) as string;
-    if (cluster === '')
+    if (cluster == '')
       continue;
 
     const clusterId = clusters.indexOf(cluster);
@@ -74,31 +79,27 @@ async function perfromPepseaMSA(col: DG.Column<string>, method: string, gapOpen:
   }
 
   const dockerfileId = (await grok.dapi.dockerfiles.filter('bio').first()).id;
-  const newColName = 'Aligned';
-  const alignedSequencesCol = DG.Column.string(newColName, peptideCount);
 
+  const alignedSequences: string[] = new Array(peptideCount);
   for (const body of bodies) { // getting aligned sequences for each cluster
     const alignedObject = await requestAlignedObjects(dockerfileId, body, method, gapOpen, gapExtend);
     const alignments = alignedObject.Alignment;
 
     for (const alignment of alignments) // filling alignedSequencesCol
-      alignedSequencesCol.set(parseInt(alignment.ID), alignment.AlignedSubpeptide);
+      alignedSequences[parseInt(alignment.ID)] = alignment.AlignedSubpeptide;
   }
 
+  const newColName = col.dataFrame.columns.getUnusedName(`msa(${col.name})`);
+  const alignedSequencesCol: DG.Column<string> = DG.Column.fromStrings(newColName, alignedSequences);
   const semType = await grok.functions.call('Bio:detectMacromolecule', {col: alignedSequencesCol}) as string;
   if (semType)
     alignedSequencesCol.semType = semType;
 
-  const exisitingColumns = col.dataFrame.columns.names();
-  let counter = 0;
-  while (exisitingColumns.includes(alignedSequencesCol.name))
-    alignedSequencesCol.name = `${newColName} ${counter++}`;
-
-  col.dataFrame.columns.add(alignedSequencesCol);
+  return alignedSequencesCol;
 }
 
-async function requestAlignedObjects(dockerfileId: string, body: PepseaBodyUnit[], method: string,
-  gapOpen: number | null, gapExtend: number | null): Promise<PepseaRepsonse> {
+async function requestAlignedObjects(dockerfileId: string, body: PepseaBodyUnit[], method: string, gapOpen: number,
+  gapExtend: number): Promise<PepseaRepsonse> {
   const params = {
     method: 'POST',
     headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},

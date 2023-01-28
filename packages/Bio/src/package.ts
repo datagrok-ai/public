@@ -37,8 +37,8 @@ import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {getMonomericMols} from './calculations/monomerLevelMols';
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {from, Observable, Subject} from 'rxjs';
-import {getStats, splitterAsHelm, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {pepseaDialog} from './utils/pepsea';
+import {getStats, NOTATION, splitterAsHelm, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {pepseaDialog, runPepsea} from './utils/pepsea';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
@@ -412,18 +412,20 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
 //top-menu: Bio | MSA...
 //name: MSA
 //input: dataframe table
-//input: column sequence { semType: Macromolecule, units: ['fasta'], alphabet: ['DNA', 'RNA', 'PT'] }
+//input: column sequence { semType: Macromolecule, units: ['fasta', 'helm'], alphabet: ['DNA', 'RNA', 'PT'] }
 //output: column result
-export async function multipleSequenceAlignmentAny(
-  table: DG.DataFrame, sequence: DG.Column
+export async function multipleSequenceAlignmentAny(table: DG.DataFrame, sequenceCol: DG.Column<string>,
 ): Promise<DG.Column | null> {
   const func: DG.Func = DG.Func.find({package: 'Bio', name: 'multipleSequenceAlignmentAny'})[0];
 
-  if (!checkInputColumnUi(sequence, 'MSA', ['fasta'], ['DNA', 'RNA', 'PT']))
+  const unUsedName = table.columns.getUnusedName(`msa(${sequenceCol.name})`);
+  let msaCol: DG.Column<string>;
+  if (checkInputColumnUi(sequenceCol, 'MSA', [NOTATION.FASTA], ['DNA', 'RNA', 'PT']))
+    msaCol = await runKalign(sequenceCol, false, unUsedName);
+  else if (checkInputColumnUi(sequenceCol, 'MSA', [NOTATION.HELM]))
+    msaCol = await runPepsea(sequenceCol);
+  else
     return null;
-
-  const unUsedName = table.columns.getUnusedName(`msa(${sequence.name})`);
-  const msaCol = await runKalign(sequence, false, unUsedName);
   table.columns.add(msaCol);
 
   // This call is required to enable cell renderer activation
