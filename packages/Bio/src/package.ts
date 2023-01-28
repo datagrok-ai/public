@@ -412,12 +412,10 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
 //top-menu: Bio | MSA...
 //name: MSA
 //input: dataframe table
-//input: column sequence { semType: Macromolecule, units: ['fasta', 'helm'], alphabet: ['DNA', 'RNA', 'PT'] }
+//input: column sequenceCol { semType: Macromolecule, units: ['fasta', 'helm'], alphabet: ['DNA', 'RNA', 'PT'] }
 //output: column result
 export async function multipleSequenceAlignmentAny(table: DG.DataFrame, sequenceCol: DG.Column<string>,
 ): Promise<DG.Column | null> {
-  const func: DG.Func = DG.Func.find({package: 'Bio', name: 'multipleSequenceAlignmentAny'})[0];
-
   const unUsedName = table.columns.getUnusedName(`msa(${sequenceCol.name})`);
   let msaCol: DG.Column<string>;
   if (checkInputColumnUi(sequenceCol, 'MSA', [NOTATION.FASTA], ['DNA', 'RNA', 'PT']))
