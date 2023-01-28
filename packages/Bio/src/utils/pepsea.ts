@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {NOTATION, TAGS as bioTAGS, ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 const methods = ['mafft --auto', 'mafft', 'linsi', 'ginsi', 'einsi', 'fftns', 'fftnsi', 'nwns', 'nwnsi'];
+const alignmentObjectMetaKeys = ['AlignedSeq', 'AlignedSubpeptide', 'HELM', 'ID', 'PolymerID'];
 type PepseaRepsonse = {
   Alignment: {
     PolymerID: string, AlignedSubpeptide: string, HELM: string, ID: string, AlignedSeq: string, [key: string]: string,
@@ -86,8 +87,12 @@ export async function runPepsea(col: DG.Column<string>, method: typeof methods[n
     const alignedObject = await requestAlignedObjects(dockerfileId, body, method, gapOpen, gapExtend);
     const alignments = alignedObject.Alignment;
 
-    for (const alignment of alignments) // filling alignedSequencesCol
-      alignedSequences[parseInt(alignment.ID)] = alignment.AlignedSubpeptide;
+    for (const alignment of alignments) {  // filling alignedSequencesCol
+      alignedSequences[parseInt(alignment.ID)] = Object.entries(alignment)
+        .filter((v) => !alignmentObjectMetaKeys.includes(v[0]))
+        .map((v) => v[1])
+        .join('.');
+    }
   }
 
   const newColName = col.dataFrame.columns.getUnusedName(`msa(${col.name})`);
