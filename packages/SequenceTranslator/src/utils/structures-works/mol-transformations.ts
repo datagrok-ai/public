@@ -29,9 +29,6 @@ export function linkStrandsV3000(
   let nbond = 0;
   let xShift = 0;
 
-  // if (twoChains && molBlocks.length > 1)
-  //   molBlocks[1] = invertNucleotidesV3000(molBlocks[1]);
-
   if (strands.antiStrands.length > 0) {
     for (let i = 0; i < strands.antiStrands.length; i++)
       strands.antiStrands[i] = invertNucleotidesV3000(strands.antiStrands[i]);
@@ -39,25 +36,35 @@ export function linkStrandsV3000(
 
   let inverted = false;
   const molBlocks = strands.senseStrands.concat(strands.antiStrands);
+  /** Minimal value of AS and AS2 shift  */
+  let ssYShift = 0;
 
   for (let i = 0; i < molBlocks.length; i++) {
-    if (i >= strands.senseStrands.length && inverted === false) {
-      inverted = true;
-      xShift = 0;
-    }
-
     molBlocks[i] = molBlocks[i].replaceAll('(-\nM  V30 ', '(')
       .replaceAll('-\nM  V30 ', '').replaceAll(' )', ')');
     const numbers = extractAtomsBondsNumbersV3000(molBlocks[i]);
     const coordinates = extractAtomDataV3000(molBlocks[i]);
 
+    if (i >= strands.senseStrands.length) {
+      if (inverted === false) {
+        // AS strand
+        inverted = true;
+        xShift = 0;
+      }
+    } else {
+      // SS strands
+      ssYShift = Math.min(ssYShift, Math.min(
+        ...coordinates.y.filter((item) => item < 0)
+      ));
+    }
+
     if (inverted) {
       const xShiftRight = Math.min(...coordinates.x) - xShift;
-      const yShift = !inverted ? Math.min(...coordinates.y) - 1 : Math.max(...coordinates.y) + 15;
+      const yShift = Math.max(...coordinates.y) + 5;
       for (let j = 0; j < coordinates.x.length; j++)
         coordinates.x[j] -= xShiftRight;
       for (let j = 0; j < coordinates.y.length; j++)
-        coordinates.y[j] -= yShift;
+        coordinates.y[j] -= yShift - ssYShift;
     }
 
     let indexAtoms = molBlocks[i].indexOf('M  V30 BEGIN ATOM'); // V3000 index for atoms coordinates

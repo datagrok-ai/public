@@ -43,8 +43,8 @@ function getSdfTab(): HTMLDivElement {
   const as2InputBase = ui.textInput('', '', () => { onInput.next(); });
 
   const ssColoredInput = new ColoredTextInput(ssInputBase, highlightInvalidSubsequence);
-  const asColoredInput = new ColoredTextInput(asInputBase, demoPainter);
-  const as2ColoredInput = new ColoredTextInput(as2InputBase, demoPainter);
+  const asColoredInput = new ColoredTextInput(asInputBase, highlightInvalidSubsequence);
+  const as2ColoredInput = new ColoredTextInput(as2InputBase, highlightInvalidSubsequence);
 
   // bool inputs
   const saveEntity = ui.boolInput('Save as one entity', true);
