@@ -409,7 +409,6 @@ export class TestManager extends DG.ViewBase {
     if (runSkipped) t.test.options.skipReason = skipReason;
     if (!this.testsResultsDf) {
       this.testsResultsDf = res;
-
       this.addPackageInfo(this.testsResultsDf, t.packageName);
     } else {
       if (res.col('package') == null)
