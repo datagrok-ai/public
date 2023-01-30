@@ -11,9 +11,8 @@ import $ from 'cash-dom';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 // inner dependencies
-import {isValidSequence} from '../sdf-tab/sequence-codes-tools';
 import {drawMolecule} from '../utils/structures-works/draw-molecule';
-import {invalidSubsequencePainter, demoPainter} from './input-painters';
+import {highlightInvalidSubsequence, demoPainter} from './input-painters';
 import {getLinkedMolfile, saveSdf} from '../sdf-tab/sdf-tab';
 import {ColoredTextInput} from '../utils/colored-text-input';
 
@@ -43,7 +42,7 @@ function getSdfTab(): HTMLDivElement {
   const asInputBase = ui.textInput('', '', () => { onInput.next(); });
   const as2InputBase = ui.textInput('', '', () => { onInput.next(); });
 
-  const ssColoredInput = new ColoredTextInput(ssInputBase, invalidSubsequencePainter);
+  const ssColoredInput = new ColoredTextInput(ssInputBase, highlightInvalidSubsequence);
   const asColoredInput = new ColoredTextInput(asInputBase, demoPainter);
   const as2ColoredInput = new ColoredTextInput(as2InputBase, demoPainter);
 
@@ -115,9 +114,9 @@ function getSdfTab(): HTMLDivElement {
     let molfile = '';
     try {
       molfile = getLinkedMolfile(
-        {strand: ssInputBase.value, invert: invertSS},
-        {strand: asInputBase.value, invert: invertAS},
-        {strand: as2InputBase.value, invert: invertAS2}, useChiralInput.value!
+        {strand: ssInputBase.value.replace(/\s*/g, ''), invert: invertSS},
+        {strand: asInputBase.value.replace(/\s*/g, ''), invert: invertAS},
+        {strand: as2InputBase.value.replace(/\s*/g, ''), invert: invertAS2}, useChiralInput.value!
       );
     } catch (err) {
       const errStr = errorToConsole(err);
