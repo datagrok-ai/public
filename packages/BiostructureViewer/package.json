@@ -2,10 +2,10 @@
   "name": "@datagrok/biostructure-viewer",
   "friendlyName": "BiostructureViewer",
   "author": {
-    "name": "Leonid Stolbov",
-    "email": "lstolbov@datagrok.ai"
+    "name": "Aleksandr Tanas",
+    "email": "atanas@datagrok.ai"
   },
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "BiostructureViewer is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
   "repository": {
     "type": "git",
@@ -51,7 +51,6 @@
     "webpack-cli": "latest"
   },
   "grokDependencies": {
-    "@datagrok/ngl-viewer": "1.0.1"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
