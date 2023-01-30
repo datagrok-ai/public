@@ -75,7 +75,7 @@ export async function structuralAlertsWidget(molecule: string): Promise<DG.Widge
     const host = ui.div([description, imageHost], 'd4-flex-col');
     host.style.margin = '5px';
     return host;
-  }), 'd4-flex-wrap');
+  }), {classes: 'd4-flex-wrap', style: {overflow: 'hidden', 'max-height': '400px'}});
 
-  return new DG.Widget(list);
+  return new DG.Widget(ui.box(list));
 }
