@@ -268,23 +268,3 @@ export async function dbGetListVersion(): Promise<DG.DataFrame> {
 export function MlbTreeViewer() {
   return new TreeBrowser();
 }
-
-// -- Database checks --
-//name: checkVrForTree
-//description: Gets all trees and check for all VR ids in 'mlb' table
-export async function checkVrForTree(): Promise<void> {
-  const pi = TaskBarProgressIndicator.create('check VR for tree');
-  try {
-    await initDataLoader(); // at checkVrForTrees()
-    if (!dl)
-      throw new Error(`MLB: checkVrForTree() data loader does not exist`);
-
-    await checkVrForTreeUI(dl!, pi);
-  } catch (err: any) {
-    const errMsg: string = errorToConsole(err);
-    grok.shell.error(errMsg);
-    console.error(errMsg);
-  } finally {
-    pi.close();
-  }
-}

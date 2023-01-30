@@ -116,7 +116,7 @@ jobs:
     concurrency:
       group: help-deploy-${{ github.ref }}
       cancel-in-progress: true
-#    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
     environment: Help
     steps:
@@ -165,7 +165,7 @@ jobs:
     concurrency:
       group: help-scrape-${{ github.ref }}
       cancel-in-progress: true
-    #    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout

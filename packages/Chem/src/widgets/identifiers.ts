@@ -137,7 +137,7 @@ export async function identifiersWidget(smiles: string): Promise<DG.Widget> {
   try {
     smiles = _convertMolNotation(smiles, 'unknown', 'smiles', rdKitModule);
   } catch (e) {
-    return new DG.Widget(ui.divText('Molecule is possible malformed'));
+    return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
   let idMap: {[k: string]: any} | null = null;
   try {

@@ -82,8 +82,12 @@ M  END
     let substruct = {};
     try {
       if ((details as any).isSubstructure) {
-        const aromaMolString = aromatizeMolBlock(molString)
-        mol = this.rdKitModule.get_qmol(aromaMolString);
+        if (molString.includes(' H ') || molString.includes('V3000')) {
+          mol = this.rdKitModule.get_mol(molString, '{"mergeQueryHs":true}');
+        } else {
+          const aromaMolString = aromatizeMolBlock(molString)
+          mol = this.rdKitModule.get_qmol(aromaMolString);
+        }
      }
       else
         mol = this.rdKitModule.get_mol(molString, JSON.stringify(details));

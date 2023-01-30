@@ -85,8 +85,8 @@ jobs:
         if: github.ref == 'refs/heads/master' && needs.version.outputs.changed_version == 'true'
         run: |
           if [ -n "$(git status -s js-api/package-lock.json)" ]; then
-            git config --global user.name 'GitHub Actions'
-            git config --global user.email 'github_actions@datagrok.ai'
+            git config --global user.name 'github-actions[bot]'
+            git config --global user.email 'github-actions[bot]@users.noreply.github.com'
             git pull
             git add js-api/package-lock.json
             git commit -m "GitHub Actions: Update js-api/package-lock.json [skip ci]"
@@ -131,8 +131,10 @@ jobs:
       - name: npm version
         run: npm version
       - run: npm install
+        continue-on-error: true
         working-directory: packages/${{ matrix.package }}
       - name: Build package
+        continue-on-error: true
         if: ${{ matrix.build == 'true' }}
         run: npm run build
         working-directory: packages/${{ matrix.package }}

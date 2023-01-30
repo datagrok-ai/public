@@ -16,12 +16,10 @@ import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree
 import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
 import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
-enum COLUMN_NAMES {
+enum EMBED_COL_NAMES {
   X = 'Embed_X',
   Y = 'Embed_Y'
 }
-
-const EMBED_LIST: string[] = [COLUMN_NAMES.X, COLUMN_NAMES.Y];
 
 /**  */
 type LineType = { a: DG.Point, b: DG.Point };
@@ -82,11 +80,11 @@ export class MlbVrSpaceBrowser {
 
   private th: ITreeHelper;
 
-  private _mlbDf: DG.DataFrame;
-  get mlbDf(): DG.DataFrame { return this._mlbDf; }
+  private _mlbDf: MlbDataFrame;
+  get mlbDf(): MlbDataFrame { return this._mlbDf; }
 
-  private _treeDf: DG.DataFrame;
-  get treeDf(): DG.DataFrame { return this._treeDf; }
+  private _treeDf: TreeDataFrame;
+  get treeDf(): TreeDataFrame { return this._treeDf; }
 
   private _regions: VdRegion[] = [];
   get regions(): VdRegion[] { return this._regions; }
@@ -107,14 +105,16 @@ export class MlbVrSpaceBrowser {
 
   get root(): HTMLElement { return this.scatterPlot!.root; }
 
-  constructor() { }
+  constructor() {}
 
   async init(): Promise<void> {
     this.th = await getTreeHelper();
 
-    this.scatterPlot = await MlbVrSpaceBrowser.emptyMlbDf.plot.fromType(DG.VIEWER.SCATTER_PLOT, {
-      'xColumnName': COLUMN_NAMES.X,
-      'yColumnName': COLUMN_NAMES.Y
+    this._mlbDf = MlbVrSpaceBrowser.emptyMlbDf;
+    this.scatterPlot = await this._mlbDf.plot.fromType(DG.VIEWER.SCATTER_PLOT, {
+      'xColumnName': EMBED_COL_NAMES.X,
+      'yColumnName': EMBED_COL_NAMES.Y,
+      'lassoTool': true,
     }) as DG.ScatterPlotViewer;
     const canvas: HTMLCanvasElement = this.scatterPlot.getInfo()['canvas'];
     this.context = canvas.getContext('2d')!;
@@ -124,6 +124,12 @@ export class MlbVrSpaceBrowser {
     const k = 11;
   }
 
+  /**
+   * @param mlbDf null for default empty data frame with VRs/MLB
+   * @param treeDf null for default empty data frame with Trees
+   * @param regions
+   * @param method
+   */
   async setData(
     mlbDf: MlbDataFrame | null, treeDf: TreeDataFrame | null, regions: VdRegion[], method: VrSpaceMethodName
   ): Promise<void> {
@@ -147,15 +153,15 @@ export class MlbVrSpaceBrowser {
 
   // -- View --
 
-  private static emptyMlbDf: MlbDataFrame = MlbDataFrame.Empty;
-  private static emptyTreeDf: TreeDataFrame = TreeDataFrame.Empty;
-
   private viewSubs: Unsubscribable[] = [];
 
   async destroyView(): Promise<void> {
     for (const sub of this.viewSubs) sub.unsubscribe();
 
-    this.scatterPlot!.dataFrame = MlbVrSpaceBrowser.emptyMlbDf;
+    if (this.scatterPlot) {
+      checkEmbedCols(Object.values(EMBED_COL_NAMES), MlbVrSpaceBrowser.emptyMlbDf);
+      this.scatterPlot.dataFrame = MlbVrSpaceBrowser.emptyMlbDf;
+    }
 
     this.vrRows = {};
     this.embedCols = {};
@@ -176,9 +182,10 @@ export class MlbVrSpaceBrowser {
 
         const redDimRes = await reduceDimensinalityWithNormalization(
           seqList, this.method, StringMetricsNames.Manhattan, {});
-        for (let embedI: number = 0; embedI < EMBED_LIST.length; embedI++) {
+        const embedColNameList = Object.values(EMBED_COL_NAMES);
+        for (let embedI: number = 0; embedI < embedColNameList.length; embedI++) {
           const embedColData: Float32Array = redDimRes.embedding[embedI];
-          const embedColName: string = EMBED_LIST[embedI];
+          const embedColName: string = embedColNameList[embedI];
           const embedCol: DG.Column | null = this.mlbDf.col(embedColName);
           if (embedCol) {
             // TODO: User DG.Column.setRawData()
@@ -187,7 +194,7 @@ export class MlbVrSpaceBrowser {
           } else {
             // Notification is required to reflect added data frame Embed_<X> columns to grid columns
             // MolecularLiabilityBrowser.setView() corrects grid columns' names with .replace('_', ' ');
-            const notify: boolean = embedI == EMBED_LIST.length - 1; // notify on adding last Embed_<X> column
+            const notify: boolean = embedI == embedColNameList.length - 1; // notify on adding last Embed_<X> column
             this.mlbDf.columns.add(DG.Column.fromFloat32Array(embedColName, embedColData), notify);
           }
         }
@@ -201,16 +208,16 @@ export class MlbVrSpaceBrowser {
         }
 
         this.embedCols = {};
-        for (const embedName of EMBED_LIST) {
-          const embedCol: DG.Column = this.mlbDf.getCol(embedName);
-          this.embedCols[embedName] = embedCol;
+        for (const embedColName of Object.values(EMBED_COL_NAMES)) {
+          const embedCol: DG.Column = this.mlbDf.getCol(embedColName);
+          this.embedCols[embedColName] = embedCol;
         }
 
         const treeCol: DG.Column = this.treeDf.getCol('TREE');
         this.treeList = MlbVrSpaceBrowser.buildTreeList(this.th, treeCol, this.vrRows, this.embedCols);
-
-        this.scatterPlot.dataFrame = this.mlbDf;
       }
+      checkEmbedCols(Object.values(EMBED_COL_NAMES), this.mlbDf);
+      this.scatterPlot.dataFrame = this.mlbDf;
       this.scatterPlot.props.title = `VR space (method: ${this.method})`;
       this.viewSubs.push(this.treeDf.onMouseOverRowChanged.subscribe(this.treeDfOnMouseOverRowChanged.bind(this)));
       this.viewSubs.push(this.treeDf.onCurrentRowChanged.subscribe(this.treeDfOnCurrentRowChanged.bind(this)));
@@ -312,12 +319,14 @@ export class MlbVrSpaceBrowser {
   private static buildTreeList(
     th: ITreeHelper, treeCol: DG.Column, vrRows: { [vId: string]: number }, embedCols: { [embed: string]: DG.Column }
   ): PointNodeType[] {
+    const embedColNameList = Object.values(EMBED_COL_NAMES);
+
     function markupNode(node: PointNodeType): void {
       if (isLeaf(node)) {
         node.vId = getVId(node.name);
         const vrRowIdx = vrRows[node.vId];
         node.point = !vrRowIdx ? undefined :
-          new DG.Point(embedCols[EMBED_LIST[0]].get(vrRowIdx), embedCols[EMBED_LIST[1]].get(vrRowIdx));
+          new DG.Point(embedCols[embedColNameList[0]].get(vrRowIdx), embedCols[embedColNameList[1]].get(vrRowIdx));
       } else {
         for (const childNode of node.children!) markupNode(childNode as PointNodeType);
 
@@ -381,6 +390,16 @@ export class MlbVrSpaceBrowser {
 
     return resSeqList;
   }
+
+  // -- Static --
+
+  static readonly emptyTreeDf: TreeDataFrame = TreeDataFrame.Empty;
+
+  static readonly emptyMlbDf: MlbDataFrame = (() => {
+    const res: MlbDataFrame = MlbDataFrame.Empty.clone();
+    for (const embedColName of Object.values(EMBED_COL_NAMES)) res.columns.addNewFloat(embedColName);
+    return res;
+  })();
 }
 
 /** Updates screen coords and renders {@link node} on {@link ctx} */
@@ -405,6 +424,13 @@ function renderAndUpdateNode(
       }
     }
   }
+}
+
+function checkEmbedCols(embedColNameList: string[], df: DG.DataFrame): void {
+  const missedList = embedColNameList
+    .filter((embedColName) => !df.columns.names().includes(embedColName));
+  if (missedList.length > 0)
+    throw new Error(`Missed embed columns ${JSON.stringify(missedList)}.`);
 }
 
 class EdgeStyler {

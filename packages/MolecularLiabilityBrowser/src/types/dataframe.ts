@@ -40,6 +40,12 @@ export class MlbDataFrame extends DG.DataFrame {
     this.setTag('antigen', this.antigen);
   }
 
+  public clone(
+    rowMask: DG.BitSet | null = null, columnIds: string[] | null = null, saveSelection: boolean = false
+  ): MlbDataFrame {
+    return MlbDataFrame.wrap(super.clone(rowMask, columnIds, saveSelection), this.antigen);
+  }
+
   public static wrap(df: DG.DataFrame, antigen: string): MlbDataFrame {
     return new MlbDataFrame(df.dart, antigen);
   }

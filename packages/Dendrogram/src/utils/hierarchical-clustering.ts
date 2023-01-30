@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
-import {NodeType} from '@datagrok-libraries/bio/src/trees';
+import {isLeaf, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 /** Custom UI form for hierarchical clustering */
@@ -38,7 +38,8 @@ export async function hierarchicalClusteringUI(
   df: DG.DataFrame, colNameList: string[], distance: string, linkage: string
 ): Promise<void> {
   const colNameSet: Set<string> = new Set(colNameList);
-  const filteredDf: DG.DataFrame = hierarchicalClusteringFilterDfForNulls(df, colNameSet);
+  const [filteredDf, filteredIndexList]: [DG.DataFrame, Int32Array] =
+    hierarchicalClusteringFilterDfForNulls(df, colNameSet);
 
   let tv: DG.TableView = grok.shell.getTableView(df.name);
   if (filteredDf.rowCount != df.rowCount) {
@@ -65,10 +66,27 @@ export async function hierarchicalClusteringUI(
         return res;
       }));
 
-  const newickStr: string = await hierarchicalClusteringExec(preparedDf, distance, linkage);
+  const hcPromise: Promise<string> = hierarchicalClusteringExec(preparedDf, distance, linkage);
+
+  // Replace rows indexes with filtered
+  // newickStr returned with row indexes after filtering, so we need reversed dict { [fltIdx: number]: number}
+  const fltRowIndexes: { [fltIdx: number]: number } = {};
+  const fltRowCount: number = filteredDf.rowCount;
+  for (let fltRowIdx: number = 0; fltRowIdx < fltRowCount; fltRowIdx++)
+    fltRowIndexes[fltRowIdx] = filteredIndexList[fltRowIdx];
+
+  const newickStr: string = await hcPromise;
   const newickRoot: NodeType = parseNewick(newickStr);
   // Fix branch_length for root node as required for hierarchical clustering result
   newickRoot.branch_length = 0;
+  (function replaceNodeName(node: NodeType, fltRowIndexes: { [fltIdx: number]: number }) {
+    const nodeFilteredIdx: number = parseInt(node.name);
+    const nodeIdx: number = fltRowIndexes[nodeFilteredIdx];
+    if (!isLeaf(node)) {
+      for (const childNode of node.children!)
+        replaceNodeName(childNode, fltRowIndexes);
+    }
+  })(newickRoot, fltRowIndexes);
 
   // empty clusterDf to stub injectTreeForGridUI2
   const clusterDf = DG.DataFrame.fromColumns([
@@ -76,16 +94,18 @@ export async function hierarchicalClusteringUI(
   injectTreeForGridUI2(tv.grid, newickRoot, undefined, 300);
 }
 
-export function hierarchicalClusteringFilterDfForNulls(df: DG.DataFrame, colNameSet: Set<string>): DG.DataFrame {
+export function hierarchicalClusteringFilterDfForNulls(
+  df: DG.DataFrame, colNameSet: Set<string>
+): [DG.DataFrame, Int32Array] {
   // filteredNullsDf to open new table view
-  const colList: DG.Column[] = df.columns.toList()
-    .filter((col) => colNameSet.has(col.name));
-  const filteredDf: DG.DataFrame = df.clone(DG.BitSet.create(df.rowCount, (rowI: number) => {
+  const colList: DG.Column[] = df.columns.toList().filter((col) => colNameSet.has(col.name));
+  const filter: DG.BitSet = DG.BitSet.create(df.rowCount, (rowI: number) => {
     // TODO: Check nulls in columns of colNameList
     return colList.every((col) => !col.isNone(rowI));
-  }));
-
-  return filteredDf;
+  });
+  const filteredDf: DG.DataFrame = df.clone(filter);
+  const filteredIndexList: Int32Array = filter.getSelectedIndexes();
+  return [filteredDf, filteredIndexList];
 }
 
 /** Runs script and returns newick result
