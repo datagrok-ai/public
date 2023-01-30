@@ -9,7 +9,6 @@ import { ErrorsView } from './views/errors-view';
 import { FunctionErrorsView } from './views/function-errors-view';
 import { UsersView } from './views/users-view';
 import { DataView } from './views/data-view';
-import {ViewBase} from "datagrok-api/dg";
 
 const APP_PREFIX: string = `/apps/UsageAnalysis/`;
 export class ViewHandler {
@@ -24,8 +23,7 @@ export class ViewHandler {
       return ViewHandler.instance;
   }
 
-  private constructor() {
-  }
+  private constructor() { }
 
   async init() {
     let pathSplits = decodeURI(window.location.pathname).split('/');
@@ -33,60 +31,31 @@ export class ViewHandler {
 
     let toolbox = await UaToolbox.construct();
 
-    let overviewView = new OverviewView(toolbox);
-  
-    let views = [
-      overviewView,
-      new EventsView(toolbox),
-      new ErrorsView(toolbox),
-      new FunctionErrorsView(toolbox),
-      new UsersView(toolbox),
-      new DataView(toolbox)
-    ];
-  
-    let neededViews = [...views];
-  
-    for (let v of grok.shell.views) {
-      if (!(v instanceof UaView))
-        continue;
-      
-  
-      for(let i = 0; i < neededViews.length; i++) {
-        if (v.name === neededViews[i].name){
-          neededViews.splice(i, 1);
-  
-          if (v instanceof OverviewView)
-            overviewView = v;
-        }
-      }
-      
-    }
-  
-    for (let v of neededViews) {
-      grok.shell.addView(v);
-    }
+    const tabs = ui.tabControl();
+    tabs.root.style.width = 'inherit';
+    tabs.root.style.height = 'inherit';
 
-    let onCurrentViewChanged = (view: ViewBase, urlParams: Map<string, string>) => {
-      if (view instanceof UaView) {
-        view.tryToinitViewers();
-        view.path = `${APP_PREFIX}${grok.shell.v.name}`;
-        if (urlParams.size > 0)
-          view.path += `?${Array.from(urlParams, ([k, v]) => `${k}=${v}`).join('&')}`
-      }
-    };
+    let viewConstructors = [OverviewView, EventsView, ErrorsView, FunctionErrorsView, UsersView, DataView];
+
+    const views = ['Overview', 'Events', 'Errors', 'Functions', 'Users', 'Data'];
+  
+    for (let i = 0; i < viewConstructors.length; ++i) {
+      tabs.addPane(views[i], () => {
+        const currentView = new viewConstructors[i](toolbox);
+        currentView.tryToinitViewers();
+        return currentView.root;
+      });
+    }
 
     if (pathSplits.length > 3 &&  pathSplits[3] != '') {
       let viewName = pathSplits[3];
 
-      for (let v of views) {
-        if (v.name === viewName) {
-          grok.shell.v = v;
-          break;
-        }
-      }
-    }
-    else
-      grok.shell.v = overviewView;
+      if (tabs.panes.map(p => p.name).includes(viewName))
+        tabs.currentPane = tabs.getPane(viewName);
+      else
+        tabs.currentPane = tabs.getPane(views[0]);
+    } else
+      tabs.currentPane = tabs.getPane(views[0]);
 
     let paramsHaveDate = params.has('date');
     let paramsHaveUsers = params.has('users');
@@ -103,13 +72,8 @@ export class ViewHandler {
 
       await toolbox.applyFilter();
     }
-
-    onCurrentViewChanged(grok.shell.v, params);
-
-    if (grok.shell.v instanceof UaView)
-      grok.shell.v.handleUrlParams(params);
-
-    grok.events.onEvent('d4-current-view-changed').subscribe(() => onCurrentViewChanged(grok.shell.v, this.urlParams));
+  
+    grok.shell.newView('Usage Analysis', [tabs]);
   }
 
   getSearchParameters() : Map<string, string> {
