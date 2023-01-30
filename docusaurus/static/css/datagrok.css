@@ -881,8 +881,11 @@ div.spacer {
   }
 
 .btn-primary {
-    font-weight: regular;
     color: #fff;
     background-color: #50A9C5;
     border-color: #50A9C5;
+}
+.btn-primary:hover, .btn-primary:focus {
+    background-color: #60b4d0;
+    border-color: #60b4d0;
 }
