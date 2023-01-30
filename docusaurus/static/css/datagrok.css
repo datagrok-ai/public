@@ -877,7 +877,7 @@ div.spacer {
     background-image: url("../img/bg-map.png");
     background-size: contain;
     background-repeat: no-repeat;
-    background-position: center;
+    background-position-x: center;
   }
 
 .btn-primary {
