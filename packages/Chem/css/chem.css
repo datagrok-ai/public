@@ -157,6 +157,33 @@
   opacity: 1.0;
 }
 
+.similarity-prop-label {
+  min-width: 100px;
+  max-width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--grey-4)
+}
+
+.similarity-prop-value {
+  padding-left: 10px;
+  padding-right: 5px;
+  width: 100%; 
+  overflow-wrap: break-word;
+  color: var(--grey-5);
+}
+
+.similarity-prop-item {
+  padding-top: 5px;
+}
+
+.similarity-search-edit {
+  position: absolute;
+  margin: 0px!important;
+  height: 14px!important;
+  padding-left: 2px!important;
+}
 .chem-scaffold-tree-toolbar {
   max-height: 24px;
   margin: 0 0 2px 2px;

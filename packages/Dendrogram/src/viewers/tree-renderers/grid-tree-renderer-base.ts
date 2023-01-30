@@ -68,16 +68,40 @@ export abstract class GridTreeRendererBase<TNode extends MarkupNodeType> extends
     this.render('gridOnChanged');
   }
 
-  canvasOnWheel(e: WheelEvent): void {
+  override canvasOnWheel(e: WheelEvent): void {
+    console.debug('Dendrogram: GridTreeRendererBase.canvasOnWheel()');
+    // Intercept wheel event handling to prevent CanvasTreeRender.canvasOnWheel() handler zooming the tree
+    //super.canvasOnWheel(e);
+    e.preventDefault();
+
+    if (!this.canvas) return;
+
+    // @ts-ignore // for wheelDelta property
+    const delta = 5 * e.wheelDelta / -168;
+    //TODO: Use RangeSlider.scrollBy() method
+    //this.grid.vertScroll.scrollBy(delta);
+    this.grid.vertScroll.scrollTo(this.grid.vertScroll.min + delta);
+  }
+
+
+  override canvasOnMouseDown(e: MouseEvent): void {
+    console.debug('Dendrogram: GridTreeRendererBase.canvasOnMouseDown()');
+    // Intercept to prevent handling drag mode
+    // super.canvasOnMouseDown();
     e.preventDefault();
   }
 
-  protected override canvasOnMouseDown(e: MouseEvent): void {
+  override canvasOnMouseUp(e: MouseEvent): void {
+    console.debug('Dendrogram: GridTreeRendererBase.canvasOnMouseUp()');
+    // Intercept to prevent handling drag mode
+    // super.canvasOnMouseDown();
     e.preventDefault();
   }
 
-  protected override canvasOnMouseUp(e: MouseEvent): void {
-    e.preventDefault();
+  override canvasOnMouseMove(e: MouseEvent): void {
+    console.debug('Dendrogram: GridTreeRendererBase.canvasOnMouseMove()');
+
+    super.canvasOnMouseMove(e); // super handler is required to handle mouse over on nodes
   }
 }
 

@@ -1440,7 +1440,6 @@ export namespace hints {
       sticky: setDefaultStyles,
     };
 
-    //@ts-ignore
     positions[hintPosition]();
 
     if ($(el).hasClass('d4-ribbon-item')){

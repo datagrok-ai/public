@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 category('Dapi: packages', () => {
   test('list', async () => {
     const list = (await grok.dapi.packages.list());
-    expect(list.some((pack) => pack.name === 'Demo'), true);
+    expect(list.some((pack) => pack.name === 'ApiTests'), true);
   });
   
   test('find', async () => {

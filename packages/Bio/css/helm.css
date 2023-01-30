@@ -1,3 +1,13 @@
 .d4-g-cell[semType="Macromolecule"] * {
     pointer-events: none !important;
 }
+
+.helm-substructure-filter {
+    border: 1px solid var(--grey-2);
+    height: 25px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-left: 0px;
+    margin-left: 0px;
+}

@@ -19,26 +19,27 @@ export function pepseaDialog(): void {
       if (col.getTag(DG.TAGS.UNITS) != 'helm' || col.semType != DG.SEMTYPE.MACROMOLECULE)
         grok.shell.info('Sequence column must contain sequences in HELM notation!');
     });
+  colInput.setTooltip('Sequences column to use for alignment');
   const methodInput = ui.choiceInput('Method', 'ginsi', methods);
+  methodInput.setTooltip('Alignment method');
   const gapOpenInput = ui.floatInput('Gap open', 1.53);
+  gapOpenInput.setTooltip('Gap opening penalty at group-to-group alignment');
   const gapExtendInput = ui.floatInput('Gap extend', 0.0);
-  const clusterColInput = ui.columnInput('Clusters', table, table.columns.byIndex(1));
-  const alignByClusterInput = ui.boolInput('Use clusters?', false,
-    () => clusterColInput.root.hidden = !alignByClusterInput.value!);
-  alignByClusterInput.fireChanged();
+  gapExtendInput.setTooltip('Gap extension penalty to skip the alignment');
+  const clusterColInput = ui.columnInput('Clusters', table, null);
+  clusterColInput.setTooltip('Clusters column to perform in-cluster alignment');
 
   ui.dialog('PepSeA Multiple Sequence Alignment')
     .add(colInput)
     .add(methodInput)
     .add(gapOpenInput)
     .add(gapExtendInput)
-    .add(alignByClusterInput)
     .add(clusterColInput)
     .onOK(async () => {
       const progress = DG.TaskBarProgressIndicator.create('Performing MSA...');
       try {
         await perfromPepseaMSA(colInput.value!, methodInput.stringValue, gapOpenInput.value, gapExtendInput.value,
-          alignByClusterInput.value ? clusterColInput.value : null);
+          clusterColInput.value);
       } catch (e) {
         grok.shell.error('PepseaMsaError: Could not perform alignment. See console for details.');
         console.error(e);
@@ -73,7 +74,8 @@ async function perfromPepseaMSA(col: DG.Column<string>, method: string, gapOpen:
   }
 
   const dockerfileId = (await grok.dapi.dockerfiles.filter('bio').first()).id;
-  const alignedSequencesCol = DG.Column.string('Aligned', peptideCount);
+  const newColName = 'Aligned';
+  const alignedSequencesCol = DG.Column.string(newColName, peptideCount);
 
   for (const body of bodies) { // getting aligned sequences for each cluster
     const alignedObject = await requestAlignedObjects(dockerfileId, body, method, gapOpen, gapExtend);
@@ -86,6 +88,11 @@ async function perfromPepseaMSA(col: DG.Column<string>, method: string, gapOpen:
   const semType = await grok.functions.call('Bio:detectMacromolecule', {col: alignedSequencesCol}) as string;
   if (semType)
     alignedSequencesCol.semType = semType;
+
+  const exisitingColumns = col.dataFrame.columns.names();
+  let counter = 0;
+  while (exisitingColumns.includes(alignedSequencesCol.name))
+    alignedSequencesCol.name = `${newColName} ${counter++}`;
 
   col.dataFrame.columns.add(alignedSequencesCol);
 }
