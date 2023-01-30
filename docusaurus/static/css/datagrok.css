@@ -2,7 +2,7 @@ html {
     font-size: 15px;
 }
 
-h1, h2, h3, h4, h5 {
+h1, h2, h3, h4, h5, .display-1, .display-2, .display-3, .display-4, .display-5, .display-6 {
     font-family: 'Nunito', sans-serif;
     margin-top: 1.5em;
 }
@@ -872,4 +872,17 @@ div.spacer {
     top:initial!important;
     bottom:0;
 
+}
+.bg-map {
+    background-image: url("../img/bg-map.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+
+.btn-primary {
+    font-weight: regular;
+    color: #fff;
+    background-color: #50A9C5;
+    border-color: #50A9C5;
 }
