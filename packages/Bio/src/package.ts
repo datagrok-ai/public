@@ -49,7 +49,7 @@ import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {MonomerLib} from '@datagrok-libraries/bio/src/monomer-works/monomer-lib';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {WebLogoViewer} from '@datagrok-libraries/bio/src/viewers/web-logo-viewer';
+import {WebLogoViewer} from './viewers/web-logo-viewer';
 
 const STORAGE_NAME = 'Libraries';
 const LIB_PATH = 'System:AppData/Bio/libraries';

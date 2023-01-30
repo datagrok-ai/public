@@ -42,13 +42,14 @@ export class LeafRangeGridTreeRenderer extends GridTreeRendererBase<MarkupNodeTy
       toRgba(setAlpha(TreeDefaultPalette[TreeColorNames.Main], TRANS_ALPHA)),
       toRgba(setAlpha(TreeDefaultPalette[TreeColorNames.Main], TRANS_ALPHA)));
     mainStyler.onTooltipShow.subscribe(({node, e}) => {
-      if (node) {
-        const tooltip = ui.divV([
-          ui.div(`${node.name}`)]);
-        ui.tooltip.show(tooltip, e.clientX + 16, e.clientY + 16);
-      } else {
-        ui.tooltip.hide();
-      }
+      // Do not show tooltips on nodes of injected tree
+      // if (node) {
+      //   const tooltip = ui.divV([
+      //     ui.div(`${node.name}`)]);
+      //   ui.tooltip.show(tooltip, e.clientX + 16, e.clientY + 16);
+      // } else {
+      //   ui.tooltip.hide();
+      // }
     });
 
     const lightStyler = new TreeStylerBase<MarkupNodeType>('light',

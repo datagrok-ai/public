@@ -49,7 +49,6 @@ export class SARViewerBase extends DG.JsViewer {
     if (!refreshOnly) {
       $(this.root).empty();
       let switchHost = ui.divText('Most Potent Residues', {id: 'pep-viewer-title'});
-      let tips: HTMLDivElement = ui.div();
       if (this.name == 'MC') {
         const mutationCliffsMode = ui.boolInput('', this.isMutationCliffsMode === '1');
         mutationCliffsMode.root.addEventListener('click', () => {
@@ -81,8 +80,17 @@ export class SARViewerBase extends DG.JsViewer {
         $(switchHost).css('width', 'auto').css('align-self', 'center');
         const colorTip = ui.divText('Color intensity - p-value', {style: {fontSize: '11px'}});
         const radiusTip = ui.divText('Circle size - Mean difference', {style: {fontSize: '11px'}});
-        tips = ui.divV([colorTip, radiusTip], {style: {position: 'absolute', right: '0'}});
+        // tips = ui.divV([colorTip, radiusTip], {style: {position: 'absolute', right: '0'}});
       }
+      const tips: HTMLElement = ui.iconFA('question');
+      tips.addEventListener('mouseover', (ev: MouseEvent) => {
+        ui.tooltip.show(ui.divH([
+          ui.divText('Color intensity - p-value'),
+          ui.divText('Circle size - Mean difference'),
+        ]), ev.clientX, ev.clientY);
+      });
+      $(tips).addClass('pep-help-icon');
+
       const viewerRoot = this.viewerGrid.root;
       viewerRoot.style.width = 'auto';
       const header = ui.divH([switchHost, tips], {style: {alignSelf: 'center', lineHeight: 'normal'}});

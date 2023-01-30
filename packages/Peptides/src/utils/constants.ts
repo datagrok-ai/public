@@ -35,6 +35,7 @@ export enum TAGS {
   VISIBLE = 'visible',
   SETTINGS = 'settings',
   CUSTOM_CLUSTER = 'customCluster',
+  UUID = 'pep-uuid',
 }
 
 export enum SEM_TYPES {
@@ -44,6 +45,4 @@ export enum SEM_TYPES {
 
 export const EMBEDDING_STATUS = 'embeddingStatus';
 
-export const PEPTIDES_ANALYSIS = 'isPeptidesAnalysis';
 export const MULTIPLE_VIEWS = 'isMultipleViews';
-export const NEW_ANALYSIS = 'newAnalysis';

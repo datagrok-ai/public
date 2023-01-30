@@ -36,7 +36,7 @@ export function molfileWidget(molStr: string): DG.Widget {
   try {
     molStr = _convertMolNotation(molStr, 'unknown', 'molblock', rdKitModule);
   } catch (e) {
-    return new DG.Widget(ui.divText('Molecule is possible malformed'));
+    return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
   const panelElements: any[] = getPanelElements(molStr);
   panelElements[2] = panelElements[2].root;

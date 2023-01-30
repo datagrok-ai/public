@@ -121,9 +121,9 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
       const invisibleStyler = new TreeStylerBase<TNode>('invisible', 0, 0, false, '#00000000', '#00000000');
 
       this.renderCounter++;
-      console.debug(`*** ${this.renderCounter} Dendrogram: CanvasTreeRenderer.render(), ` +
-        `main & light, traceback hover & selection, ` +
-        `purpose '${purpose}'.`);
+      // console.debug(`*** ${this.renderCounter} Dendrogram: CanvasTreeRenderer.render(), ` +
+      //   `main & light, traceback hover & selection, ` +
+      //   `purpose '${purpose}'.`);
       if (this.treeRoot) {
         const styler: ITreeStyler<TNode> = !this.mouseOver ? this._mainStyler : this.lightStyler;
         const selectionTraceList: TraceTargetType<TNode>[] = this.selections.map(
@@ -186,15 +186,16 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
         }
       }
 
-      console.debug('');
-      console.debug('');
+      // console.debug('');
+      // console.debug('');
     } catch (err: any) {
-      errorToConsole(err);
+      const errMsg = errorToConsole(err);
+      console.error('Dendrogram: CanvasTreeRenderer.render() error:\n' + errMsg);
       throw err;
     } finally {
       ctx.restore();
       const t2: number = Date.now();
-      console.debug('Dendrogram: CanvasTreeRenderer.render(), ' + `ET: ${((t2 - t1) / 1000).toFixed(3)}`);
+      // console.debug('Dendrogram: CanvasTreeRenderer.render(), ' + `ET: ${((t2 - t1) / 1000).toFixed(3)}`);
       this._onAfterRender.next({target: this, context: ctx, lengthRatio});
     }
   }
@@ -261,7 +262,7 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
 
     const pos = canvasToTreePoint(new DG.Point(e.offsetX, e.offsetY), this.canvas, this.placer);
 
-    // @ts-ignore
+    // @ts-ignore // for wheelDelta property
     const delta: number = e.wheelDelta / -168;
     const newTop = pos.y - (pos.y - this.placer.top) * (1 + 0.2 * delta);
     const newBottom = pos.y + (this.placer.bottom - pos.y) * (1 + 0.2 * delta);

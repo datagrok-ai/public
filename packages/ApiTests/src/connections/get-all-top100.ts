@@ -12,9 +12,9 @@ category('Connections', () => {
     try {
       const mng: DG.TabPane = grok.shell.sidebar.getPane('Manage');
       await (mng.content.querySelector('[data-view=connections]') as HTMLElement).click();
-      await awaitCheck(() => document.querySelector('[data-link="/e/ApiTests.PostgreSQLNorthwind"]') !== null,
+      await awaitCheck(() => document.querySelector('[data-link="/e/ApiTests.PostgreSQLTest"]') !== null,
         'cannot find Northwind connection', 3000);
-      const nw = document.querySelector('[data-link="/e/ApiTests.PostgreSQLNorthwind"]');
+      const nw = document.querySelector('[data-link="/e/ApiTests.PostgreSQLTest"]');
       v = grok.shell.v;
       nw!.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true}));
       await delay(50);

@@ -2,13 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import * as uuid from 'uuid';
+
 import '../styles.css';
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
 import {PeptidesModel} from '../model';
 import $ from 'cash-dom';
 import {scaleActivity} from '../utils/misc';
-import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio';
+import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 /** Peptide analysis widget.
  *
@@ -95,6 +97,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
   };
   const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState);
   const clustersColumnChoice = ui.columnInput('Clusters', df, null);
+  clustersColumnChoice.nullable = true;
   activityColumnChoice.fireChanged();
   activityScalingMethod.fireChanged();
 
@@ -181,9 +184,9 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
       const alphabet = peptidesCol.tags[C.TAGS.ALPHABET];
       monomerType = alphabet == 'DNA' || alphabet == 'RNA' ? 'HELM_BASE' : 'HELM_AA';
     }
-
+    const dfUuid = uuid.v4();
+    newDf.setTag(C.TAGS.UUID, dfUuid);
     newDf.setTag('monomerType', monomerType);
-    newDf.setTag(C.NEW_ANALYSIS, '1');
     model = PeptidesModel.getInstance(newDf);
     await model.addViewers();
   } else

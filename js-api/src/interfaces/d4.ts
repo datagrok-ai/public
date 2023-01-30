@@ -140,6 +140,14 @@ export interface IHistogramLookSettings {
   /// A categorical column to split data on (each bar represents a category)
   splitColumnName: string;
 
+  /// Whether the distribution should be rendered as bars or as a spline.
+  /// When *Split* is defined, histogram always shows splines.
+  spline: boolean;
+
+  /// Whether the area below the spline should be filled with the corresponding color.
+  /// Only applicable when *spline* is true and *split* is empty
+  fillSpline: boolean;
+
   showYAxis: boolean;
 
   showColumnSelector: boolean;
@@ -238,6 +246,8 @@ export interface IFiltersLookSettings {
 
   showHistogram: boolean;
 
+  showMinMax: boolean;
+
   showSearchBox: boolean;
 
   /// Show a filter that represents all boolean columns in the table.
@@ -277,16 +287,16 @@ export interface IScatterPlotLookSettings {
   /// When true, filtered out points are rendered using *Filtered Out Rows Color*.
   showFilteredOutPoints: boolean;
 
+  /// When true, scatter plot will zoom to an area defined by the range filters for X and Y columns,
+  /// even if *Zoom And Filter* property is not set to "Zoom by Filter".
+  axesFollowFilter: boolean;
+
   /// Determines the relationship between table filter and scatter plot area:
   /// * No action: they are disconnected
   /// * Filter by zoom: scatter plot acts as a filter; as you zoom in, points get filtered out
   /// * Zoom by filter: scatter plot focuses on the filtered points as the filter changes
   /// * Zoom by filter: removes filtered out categories and focuses on the filtered points as the filter changes.
   zoomAndFilter: string;
-
-  /// When true, scatter plot will zoom to an area defined by the range filters for X and Y columns,
-  /// even if *Zoom And Filter* property is not set to "Zoom by Filter".
-  axesFollowFilter: boolean;
 
   /// A column to use on the X axis. Could be numerical or categorical.
   xColumnName: string;
@@ -336,7 +346,6 @@ export interface IScatterPlotLookSettings {
 
   showSizeSelector: boolean;
 
-  /// Determines the rows shown on the scatter plot.
   /// A categorical column that determines the shape of the markers.
   markersColumnName: string;
 
@@ -361,6 +370,7 @@ export interface IScatterPlotLookSettings {
   /// Labels to show next to the markers.
   labelsColumnName: string;
 
+  /// Determines the rows shown on the scatter plot.
   labelColorAsMarker: boolean;
 
   /// Regression line visibility (toggle by pressing R)
@@ -832,6 +842,12 @@ export interface IBoxPlotLookSettings {
 
   showStatistics: boolean;
 
+  categoryColumnName: string;
+
+  showCategoryAxis: boolean;
+
+  showCategorySelector: boolean;
+
   valueColumnName: string;
 
   invertYAxis: boolean;
@@ -839,12 +855,6 @@ export interface IBoxPlotLookSettings {
   showValueAxis: boolean;
 
   showValueSelector: boolean;
-
-  categoryColumnName: string;
-
-  showCategoryAxis: boolean;
-
-  showCategorySelector: boolean;
 
   /// Column to color-code boxes (Q2-Q3 region).
   /// See also *Bin Color Aggr Type*.
@@ -1085,19 +1095,13 @@ export interface IGridLookSettings {
 
   rowHeight: number;
 
+  /// Indicates mouse-over row by drawing a vertical stripe on the row header
+  showMouseOverRowIndicator: boolean;
+
   /// Indicates current row with the *Current Row Color*.
   showCurrentRowIndicator: boolean;
 
   pinnedRows: Array<number>;
-
-  /// Indicates the way colors are sampled in the heatmap mode when there is not enough
-  /// pixels on the screen for each row:
-  /// True: each row is draws (but the result is blended and the resulting color might not represent any row)
-  /// False: a row is sampled and then drawn as one pixel (but non-sampled rows do not get drawn at all)
-  drawEveryRow: boolean;
-
-  /// Indicates mouse-over row by drawing a vertical stripe on the row header
-  showMouseOverRowIndicator: boolean;
 
   /// Indicates whether the control is in the grid or heatmap mode.
   /// Typically, you don't need to change it manually.
@@ -1158,6 +1162,12 @@ export interface IGridLookSettings {
 
   /// Resize rows by dragging the border between rows on a row header
   allowRowResizing: boolean;
+
+  /// Indicates the way colors are sampled in the heatmap mode when there is not enough
+  /// pixels on the screen for each row:
+  /// True: each row is draws (but the result is blended and the resulting color might not represent any row)
+  /// False: a row is sampled and then drawn as one pixel (but non-sampled rows do not get drawn at all)
+  drawEveryRow: boolean;
 
   /// Whether the context menu is shown
   showContextMenu: boolean;
