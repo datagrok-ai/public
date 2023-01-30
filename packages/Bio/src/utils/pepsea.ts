@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {NOTATION, TAGS as bioTAGS, ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
-const methods = ['mafft --auto', 'mafft', 'linsi', 'ginsi', 'einsi', 'fftns', 'fftnsi', 'nwns', 'nwnsi'];
+export const pepseaMethods = ['mafft --auto', 'mafft', 'linsi', 'ginsi', 'einsi', 'fftns', 'fftnsi', 'nwns', 'nwnsi'];
 const alignmentObjectMetaKeys = ['AlignedSeq', 'AlignedSubpeptide', 'HELM', 'ID', 'PolymerID'];
 type PepseaRepsonse = {
   Alignment: {
@@ -22,7 +22,7 @@ export function pepseaDialog(): void {
         grok.shell.info('Sequence column must contain sequences in HELM notation!');
     });
   colInput.setTooltip('Sequences column to use for alignment');
-  const methodInput = ui.choiceInput('Method', 'ginsi', methods);
+  const methodInput = ui.choiceInput('Method', 'ginsi', pepseaMethods);
   methodInput.setTooltip('Alignment method');
   const gapOpenInput = ui.floatInput('Gap open', 1.53);
   gapOpenInput.setTooltip('Gap opening penalty at group-to-group alignment');
@@ -55,7 +55,7 @@ export function pepseaDialog(): void {
     .show();
 }
 
-export async function runPepsea(col: DG.Column<string>, method: typeof methods[number] = 'ginsi',
+export async function runPepsea(col: DG.Column<string>, method: typeof pepseaMethods[number] = 'ginsi',
   gapOpen: number | null = 1.53, gapExtend: number | null = 0.0, clustersCol: DG.Column<string | number> | null = null,
   ): Promise<DG.Column<string>> {
   const peptideCount = col.length;

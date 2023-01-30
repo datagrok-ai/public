@@ -145,7 +145,7 @@ category('renderers', () => {
     expect(srcSeqCol.getTag(bioTAGS.alphabet), ALPHABET.PT);
     expect(srcSeqCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
 
-    const msaSeqCol: DG.Column = (await multipleSequenceAlignmentAny(df, srcSeqCol!))!;
+    const msaSeqCol: DG.Column = (await multipleSequenceAlignmentAny(srcSeqCol!))!;
     tv.grid.invalidate();
 
     expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);

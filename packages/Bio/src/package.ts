@@ -38,7 +38,7 @@ import {getMonomericMols} from './calculations/monomerLevelMols';
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {from, Observable, Subject} from 'rxjs';
 import {getStats, NOTATION, splitterAsHelm, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {pepseaDialog, runPepsea} from './utils/pepsea';
+import {pepseaDialog, pepseaMethods, runPepsea} from './utils/pepsea';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
@@ -206,11 +206,10 @@ export function macromoleculeDifferenceCellRenderer(): MacromoleculeDifferenceCe
 }
 
 
-function checkInputColumnUi(
-  col: DG.Column, name: string, allowedNotations: string[] = [], allowedAlphabets: string[] = []
-): boolean {
+function checkInputColumnUi(col: DG.Column, name: string, allowedNotations: string[] = [],
+  allowedAlphabets: string[] = [], notify: boolean = true): boolean {
   const [res, msg]: [boolean, string] = checkInputColumn(col, name, allowedNotations, allowedAlphabets);
-  if (!res)
+  if (notify && !res)
     grok.shell.warning(msg);
   return res;
 }
@@ -411,35 +410,65 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
 
 //top-menu: Bio | MSA...
 //name: MSA
-//input: dataframe table
-//input: column sequenceCol { semType: Macromolecule, units: ['fasta', 'helm'], alphabet: ['DNA', 'RNA', 'PT'] }
-//output: column result
-export async function multipleSequenceAlignmentAny(table: DG.DataFrame, sequenceCol: DG.Column<string>,
-): Promise<DG.Column | null> {
-  const unUsedName = table.columns.getUnusedName(`msa(${sequenceCol.name})`);
-  let msaCol: DG.Column<string>;
-  if (checkInputColumnUi(sequenceCol, 'MSA', [NOTATION.FASTA], ['DNA', 'RNA', 'PT']))
-    msaCol = await runKalign(sequenceCol, false, unUsedName);
-  else if (checkInputColumnUi(sequenceCol, 'MSA', [NOTATION.HELM]))
-    msaCol = await runPepsea(sequenceCol);
-  else
-    return null;
-  table.columns.add(msaCol);
+export async function multipleSequenceAlignmentAny(col?: DG.Column<string>): Promise<void> {
+  let performAlignment: () => Promise<DG.Column<string> | null> = async () => null; 
 
-  // This call is required to enable cell renderer activation
-  await grok.data.detectSemanticTypes(table);
+  const table = grok.shell.t;
+  const methodInput = ui.choiceInput('Method', pepseaMethods[0], pepseaMethods);
+  const gapOpenInput = ui.floatInput('Gap open', 1.53);
+  const gapExtendInput = ui.floatInput('Gap extend', 0);
 
-  // const tv: DG.TableView = grok.shell.tv;
-  // tv.grid.invalidate();
-  return msaCol;
+  const inputRootStyles = [methodInput.root.style, gapOpenInput.root.style, gapExtendInput.root.style];
+
+  const colInput: DG.InputBase<DG.Column<string> | null> = ui.columnInput('Sequence', table,
+    col ?? table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE), () => {
+      const potentialCol = colInput.value;
+      if (potentialCol == null) {
+        performAlignment = async () => null;
+        return;
+      }
+
+      const unUsedName = table.columns.getUnusedName(`msa(${potentialCol.name})`);
+      if (checkInputColumnUi(potentialCol, 'MSA', [NOTATION.FASTA], ['DNA', 'RNA', 'PT'], false)) {
+        for (const inputRootStyle of inputRootStyles)
+          inputRootStyle.display = 'none';
+
+        performAlignment = () => runKalign(potentialCol, false, unUsedName);
+      } else if (checkInputColumnUi(potentialCol, 'MSA', [NOTATION.HELM], [], false)) {
+        for (const inputRootStyle of inputRootStyles)
+          inputRootStyle.display = 'initial';
+
+        performAlignment = () => runPepsea(potentialCol, methodInput.value!, gapOpenInput.value, gapExtendInput.value);
+      } else {
+        for (const inputRootStyle of inputRootStyles)
+          inputRootStyle.display = 'none';
+
+        performAlignment = async () => null;
+      }
+    });
+    colInput.fireChanged();
+
+  ui.dialog('MSA')
+    .add(colInput)
+    .add(methodInput)
+    .add(gapOpenInput)
+    .add(gapExtendInput)
+    .onOK(async () => {
+      const msaCol = await performAlignment();
+      if (msaCol == null)
+        return grok.shell.warning('Wrong column format');
+
+      table.columns.add(msaCol);
+      await grok.data.detectSemanticTypes(table);
+    })
+    .show();
 }
 
 //name: Bio | MSA
 //tags: bio, panel
 //input: column sequence { semType: Macromolecule }
-//output: column result
-export async function panelMSA(sequence: DG.Column): Promise<DG.Column | null> {
-  return multipleSequenceAlignmentAny(sequence.dataFrame, sequence);
+export async function panelMSA(sequence: DG.Column): Promise<void> {
+  return multipleSequenceAlignmentAny(sequence);
 }
 
 //name: Composition Analysis
