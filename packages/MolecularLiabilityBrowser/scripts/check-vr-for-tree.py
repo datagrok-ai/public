@@ -234,7 +234,7 @@ def main(ctx, conn_str, out_f):
                 missed_ag_count = len(ag_res_df[ag_res_df['in_antigen'] == 0])
                 missed_all_count = len(ag_res_df[ag_res_df['in_all'] == 0])
                 sys.stderr.write(
-                    ("Antigen '{0}': total {total}, " +
+                    ("Antigen '{0}': total VRs {total}, " +
                      "missed with antigen {missed_ag_count}, missed at all {missed_all_count}\n")
                     .format(ag_name, total=ag_vid_count,
                             missed_ag_count=missed_ag_count, missed_all_count=missed_all_count))
