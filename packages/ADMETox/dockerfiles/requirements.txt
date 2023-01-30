@@ -1,3 +1,5 @@
+https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/pychem/pychem-1.0.zip
+pybel
 Django==1.11.29
 django-cors-headers==3.0.2
 djangorestframework==3.9.4
