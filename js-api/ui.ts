@@ -1420,7 +1420,8 @@ export namespace hints {
     const hintNode = el.getBoundingClientRect();
     const indicatorNode = hintIndicator.getBoundingClientRect();
 
-    const hintPosition = $(el).css('position') ?? 'static';
+    type elementPosition = 'static' | 'relative' | 'absolute' | 'fixed' | 'sticky';
+    const hintPosition = <elementPosition>($(el).css('position') ?? 'static');
 
     function setDefaultStyles() {
       $(hintIndicator).css('position', 'absolute');
