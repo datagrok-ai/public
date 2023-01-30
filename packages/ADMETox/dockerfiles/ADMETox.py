@@ -179,7 +179,17 @@ dict_bits_desc = {
                  'bcutp1', 'bcutm9', 'SIC1', 'MRVSA6', 'IC1', 'QNmax', 'CIC0', 'PEOEVSA6', 'MATSe4',
                  'VSAEstate8', 'Geto', 'EstateVSA3', 'MRVSA5', 'LogP2', 'Tnc', 'S7', 'SPP', 'QOmin',
                  'EstateVSA7', 'LogP', 'QNmin', 'MRVSA9', 'S19', 'MATSv2', 'nsulph', 'S17', 'S9', 'ndb',
-                 'AWeight', 'QCss', 'EstateVSA9', 'Hy', 'S16', 'IC0', 'S30']
+                 'AWeight', 'QCss', 'EstateVSA9', 'Hy', 'S16', 'IC0', 'S30'],
+    "logD/logD": ['MATSe5', 'PEOEVSA9', 'EstateVSA7', 'S13', 'EstateVSA0', 'Chiv4', 'S28', 'AW',
+             'QOmax', 'bcutp2', 'EstateVSA4', 'MATSe1', 'PC6', 'Hatov', 'S24', 'CIC0', 'QCmax',
+             'QCss', 'Geto', 'TPSA', 'Getov', 'bcutm11', 'CIC2', 'J', 'S34', 'PEOEVSA5', 'Hy',
+             'SPP', 'S36', 'S9', 'S16', 'MRVSA4', 'LogP2', 'QOmin', 'LogP'],
+    "logS/logS": ['MATSm2', 'TIAC', 'GMTIV', 'IC1', 'naro', 'MATSm1', 'nsulph', 'Tpc', 'slogPVSA7',
+                  'bcutp1', 'AWeight', 'Tnc', 'MRVSA9', 'bcutp3', 'IC0', 'AW', 'Hy', 'bcutv10',
+                  'MRVSA6', 'PC6', 'bcutm1', 'bcutm8', 'slogPVSA1', 'IDET', 'Chi10', 'TPSA', 'Weight',
+                  'Rnc', 'naccr', 'bcutp5', 'Chiv4', 'bcutm2', 'Chiv1', 'bcutm3', 'Chiv9', 'ncarb',
+                  'bcutm4', 'PEOEVSA5', 'LogP2', 'LogP'],
+    "logP": ['LogP']
 }
 
 models_to_download = ["Pgp-Inhibitor/Pgp-Inhibitor", "Pgp-Substrate/Pgp-Substrate", "HIA", 
@@ -188,31 +198,31 @@ models_to_download = ["Pgp-Inhibitor/Pgp-Inhibitor", "Pgp-Substrate/Pgp-Substrat
 "CYP2C19-Inhibitor/CYP2C19-Inhibitor", "CYP2C19-Substrate", "CYP2C9-Inhibitor/CYP2C9-Inhibitor",
 "CYP2C9-Substrate", "CYP2D6-Inhibitor", "CYP2D6-Substrate"]
 
-#def calculate_descriptors(smile):
-    #"""Calculate descriptors for the input smile
+def calculate_descriptors(smile):
+    """Calculate descriptors for the input smile
 
-    #:param smile: input smile
-    #:return: dict with calculated descriptors (key=descriptor name, value=calculated descriptor value)
-    #"""
-    #alldes = {}
-    #drug = PyChem2d()
-    #drug.ReadMolFromSmile(smile)
-    #alldes.update(drug.GetAllDescriptor())
-    #return alldes
+    :param smile: input smile
+    :return: dict with calculated descriptors (key=descriptor name, value=calculated descriptor value)
+    """
+    alldes = {}
+    drug = PyChem2d()
+    drug.ReadMolFromSmile(smile)
+    alldes.update(drug.GetAllDescriptor())
+    return alldes
 
-#def get_descriptor_vector(smiles, desc_names):
-    #"""Calculate descriptor vectors for some excretion, toxicity and distribution models
+def get_descriptor_vector(smiles, desc_names):
+    """Calculate descriptor vectors for some excretion, toxicity and distribution models
 
-    #:param smiles: list of smiles
-    #:param desc_names: list of descriptor names that need to be calculated
-    #:return: list with calculated descriptors for each smile
-    #"""
-    #desc_vector = []
-    #for smile in smiles:
-        #desc_dict = calculate_descriptors(smile)
-        #esc_vector_smile = [desc_dict[name] for name in desc_names]
-        #desc_vector.append(desc_vector_smile)
-    #return desc_vector
+    :param smiles: list of smiles
+    :param desc_names: list of descriptor names that need to be calculated
+    :return: list with calculated descriptors for each smile
+    """
+    desc_vector = []
+    for smile in smiles:
+        desc_dict = calculate_descriptors(smile)
+        desc_vector_smile = [desc_dict[name] for name in desc_names]
+        desc_vector.append(desc_vector_smile)
+    return desc_vector
 
 def getMACCS(smiles):
     """Calculate MACCS fingerprints for the list of smiles
@@ -262,6 +272,9 @@ def download_s3_folder(bucket_name, s3_folder, local_dir=None):
             continue
         bucket.download_file(obj.key, target)
 
+def flatten(l):
+    return [item for sublist in l for item in sublist]
+
 def download_all_files(bucket_name, s3_folder):
     s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
     for model in models_to_download:
@@ -293,35 +306,44 @@ def handle_uploaded_file(f, models):
     if downloaded == 0:
         download_all_files('datagrok-data', 'models/admetox/')
         downloaded += 1
-    if len(smiles_global) == 0:
-        smiles = [list(row.values()) for row in f]
-        smiles_global = [smile[0].encode('utf8') for smile in smiles]
+    smiles = [list(row.values()) for row in f]
+    encoded_smiles = [smile[0].encode('utf8') for smile in smiles]
+    if len(smiles_global) == 0 or smiles_global != encoded_smiles:
+        smiles_global = encoded_smiles
         Maccs = np.array(getMACCS(smiles_global))
         Ecfp2 = np.array(getECFP(smiles_global, 1, 2048))
         Ecfp4 = np.array(getECFP(smiles_global, 2, 1024))
     current_path = os.path.split(os.path.realpath(__file__))[0]
     models_res = [model.encode('utf8') for model in models.split(",")]
-    result = np.zeros((len(smiles_global),0), float)
-    for model in models_res:
-        res = [key for key in dict_bits_desc.keys() if model in key]
+    result = np.zeros((len(encoded_smiles),0), float)
+    for j in range(len(models_res)):
+        if models_res[j] == 'logP':
+            result = np.concatenate([result, np.array(flatten(get_descriptor_vector(encoded_smiles, dict_bits_desc[models_res[j]]))).reshape(len(encoded_smiles), 1)], axis=1)
+            break
+        res = [key for key in dict_bits_desc.keys() if models_res[j] in key]
         cf = sklearn.externals.joblib.load(current_path + '/' + res[0] + '.pkl')
-        bits = dict_bits_desc[res[0]]
         fingerprint_content = lambda bits: Maccs if bits == 167 \
-                              else (Ecfp2 if bits == 2048 \
-                              else Ecfp4)
+            else (Ecfp2 if bits == 2048 \
+            else (Ecfp4 if bits == 1024 \
+            else get_descriptor_vector(encoded_smiles, dict_bits_desc[models_res[j]])))
+        des_list = np.array(fingerprint_content(dict_bits_desc[res[0]]))
         predicts = []
-        y_predict_label = cf.predict(fingerprint_content(bits))
-        y_predict_proba = cf.predict_proba(fingerprint_content(bits))
-        for i in range(len(smiles_global)):
-            predict = y_predict_proba[i]
-            predicts.append(predict[y_predict_label[1]])    
-        result = np.concatenate([ result, np.array(predicts).reshape(len(smiles_global),1)], axis=1)
+        y_predict_label = cf.predict(des_list)
+        try:
+            y_predict_proba = cf.predict_proba(des_list)
+            for i in range(len(encoded_smiles)):
+                predict = y_predict_proba[i]
+                predicts.append(predict[y_predict_label[1]])
+        except:
+            for i in range(len(encoded_smiles)):
+                predicts.append(y_predict_label[i])
+
+        result = np.concatenate([ result, np.array(predicts).reshape(len(encoded_smiles),1)], axis=1)
     res_df = pd.DataFrame(result, columns=models_res)
     res_str = res_df.to_csv(index=False, quoting=csv.QUOTE_NONNUMERIC)
     return res_str
 
 from django.conf.urls import url, include 
-#from django.contrib import admin
 from rest_framework import routers
 
 router = routers.DefaultRouter()
@@ -329,7 +351,6 @@ router.register(r'smiles', SmilesViewSet)
 
 urlpatterns = [
     url(r'^', include(router.urls)),
-    #url(r'^admin/', admin.site.urls),
 ]
 
 # CLI
