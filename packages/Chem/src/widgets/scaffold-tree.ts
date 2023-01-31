@@ -385,9 +385,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   /** Loads previously saved tree. See also {@link saveTree} */
   loadTree(): void {
+    const thisViewer = this;
     DG.Utils.openFile({
       accept: '.tree',
-      open: async (file) => this.loadTreeStr(await file.text())
+      open: async (file) => {
+        thisViewer.cancelled = false;
+        await this.loadTreeStr(await file.text());}
     });
   }
 
