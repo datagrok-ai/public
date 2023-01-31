@@ -152,7 +152,7 @@ a {
 .navbar-brand {
     font-size: 24px;
     padding-left: 48px;
-    background-image: url(/img/logo.svg);
+    background-image: url(/docusaurus_img/logo.svg);
     background-repeat: no-repeat;
     background-size: 30px;
     background-position-y: center;
@@ -257,12 +257,12 @@ a {
 }
 
 .section-grey.grad-dark-alt {
-    background:url('/img/chem-background.png') center fixed, radial-gradient(circle, #5C5C6F 5%,#281625 100%) 0 -138px fixed;
+    background:url('/docusaurus_img/chem-background.png') center fixed, radial-gradient(circle, #5C5C6F 5%,#281625 100%) 0 -138px fixed;
     color: white;
     background-blend-mode: exclusion;
 }
 .section-grey.grad-dark-macromolecules {
-    background:url('/img/macromolecules-bg.png') center fixed, radial-gradient(circle, #5C5C6F 5%,#161828 100%) 0 -138px fixed;
+    background:url('/docusaurus_img/macromolecules-bg.png') center fixed, radial-gradient(circle, #5C5C6F 5%,#161828 100%) 0 -138px fixed;
     background-blend-mode: overlay;
     color: white;
     background-size: cover;
@@ -324,7 +324,7 @@ p {
 }
 
 div.computer-padding {
-    background-image: url('/img/computer.png');
+    background-image: url('/docusaurus_img/computer.png');
     background-position: center;
     background-repeat: no-repeat;
     background-size: contain;
@@ -377,7 +377,7 @@ div.computer-image img {
 .section-white div.logo-circled {
     height: 72px;
     width: 72px;
-    background-image: url('/img/logo.svg');
+    background-image: url('/docusaurus_img/logo.svg');
     background-color: #ECF0F4;
     background-position: center;
     background-repeat: no-repeat;
@@ -477,7 +477,7 @@ hr {
 }
 
 .heinlein-img {
-    background-image: url('/img/heinlein.jpg');
+    background-image: url('/docusaurus_img/heinlein.jpg');
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
