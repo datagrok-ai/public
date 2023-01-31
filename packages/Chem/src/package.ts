@@ -307,7 +307,7 @@ export function descriptorsApp(): void {
 //tags: fileExporter
 export async function saveAsSdf(): Promise<void> {
   const progressIndicator = DG.TaskBarProgressIndicator.create('Saving as SDF...');
-  await saveAsSdfDialog();
+  saveAsSdfDialog();
   progressIndicator.close();
 }
 
