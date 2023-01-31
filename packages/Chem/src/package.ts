@@ -318,7 +318,7 @@ export function similaritySearchViewer(): ChemSimilarityViewer {
   return new ChemSimilarityViewer();
 }
 
-//top-menu: Chem | Base | Similarity Search...
+//top-menu: Chem | Search | Similarity Search...
 //name: similaritySearch
 //description: finds the most similar molecule
 export function similaritySearchTopMenu(): void {
@@ -332,14 +332,14 @@ export function diversitySearchViewer(): ChemDiversityViewer {
   return new ChemDiversityViewer();
 }
 
-//top-menu: Chem | Base | Diversity Search...
+//top-menu: Chem | Search | Diversity Search...
 //name: diversitySearch
 //description: finds the most diverse molecules
 export function diversitySearchTopMenu() {
   (grok.shell.v as DG.TableView).addViewer('DiversitySearchViewer');
 }
 
-//top-menu: Chem | Analysis | Chemical Space...
+//top-menu: Chem | Analyze Structure | Chemical Space...
 //name: Chem Space
 //input: dataframe table
 //input: column molecules { semType: Molecule }
@@ -423,31 +423,7 @@ export async function getChemSimilaritiesMatrix(dim: number, col: DG.Column,
   return await getSimilaritiesMarix(dim, col, df, colName, simArr);
 }
 
-//name: R-Groups Analysis
-//top-menu: Chem | Analysis | R-Groups Analysis...
-
-export function rGroupsAnalysisMenu(): void {
-  const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  if (col === null) {
-    grok.shell.error('Current table does not contain molecules');
-    return;
-  }
-  rGroupAnalysis(col);
-}
-
-//top-menu: Chem | Analysis | Substituent Analysis...
-//name: groupAnalysis
-export function groupAnalysisMenu(): void {
-  const packageExists = checkPackage('Charts', '_GroupAnalysisViewer');
-  if (packageExists) {
-    const groupAnalysisViewer = DG.Viewer.fromType('GroupAnalysisViewer', grok.shell.tv.dataFrame, {});
-    grok.shell.tv.addViewer(groupAnalysisViewer);
-  } else {
-    grok.shell.warning('Charts package is not installed');
-  }
-}
-
-//top-menu: Chem | Analysis | Elemental Analysis...
+//top-menu: Chem | Analyze Structure | Elemental Analysis...
 //name: Elemental analysis
 //description: function that implements elemental analysis
 //input: dataframe table
@@ -504,7 +480,31 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
   }
 }
 
-//top-menu: Chem | SAR | Activity Cliffs...
+//name: R-Groups Analysis
+//top-menu: Chem | Analyze SAR | R-Groups Analysis...
+
+export function rGroupsAnalysisMenu(): void {
+  const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+  if (col === null) {
+    grok.shell.error('Current table does not contain molecules');
+    return;
+  }
+  rGroupAnalysis(col);
+}
+
+//top-menu: Chem | Analyze SAR | Group Analysis...
+//name: groupAnalysis
+export function groupAnalysisMenu(): void {
+  const packageExists = checkPackage('Charts', '_GroupAnalysisViewer');
+  if (packageExists) {
+    const groupAnalysisViewer = DG.Viewer.fromType('GroupAnalysisViewer', grok.shell.tv.dataFrame, {});
+    grok.shell.tv.addViewer(groupAnalysisViewer);
+  } else {
+    grok.shell.warning('Charts package is not installed');
+  }
+}
+
+//top-menu: Chem | Analyze SAR | Activity Cliffs...
 //name: Activity Cliffs
 //description: detect activity cliffs
 //input: dataframe table [Input data table]
@@ -541,7 +541,7 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
   }
 }
 
-//top-menu: Chem | SAR | Structural alerts
+//top-menu: Chem | Analyze SAR | Structural alerts
 //name: Structural Alerts...
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}
@@ -881,7 +881,7 @@ export async function callChemDiversitySearch(
 }
 
 
-//top-menu: Chem | Base | Scaffold Tree...
+//top-menu: Chem | Analyze Structure | Scaffold Tree...
 //name: addScaffoldTree
 export function addScaffoldTree(): void {
   grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
