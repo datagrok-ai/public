@@ -142,10 +142,6 @@ export namespace chem {
     }
 
     getSmiles(): string {
-      const smilesFromSmartsWarning = () => {
-        grok.shell.warning(`Smarts cannot be converted to smiles`);
-        return this._smarts!;
-      }
       return this.sketcher?.isInitialized ? this.sketcher.smiles : this._smiles === null ?
         this._molfile !== null ? convert(this._molfile, Notation.MolBlock, Notation.Smiles) :
         this._smarts !== null ? smilesFromSmartsWarning() : '' : this._smiles;
@@ -690,6 +686,11 @@ export namespace chem {
     funcCall.callSync();
     const resultMolecule = funcCall.getOutputParamValue();
     return resultMolecule;
+  }
+
+  export function smilesFromSmartsWarning(): string {
+    grok.shell.warning(`Smarts cannot be converted to smiles`);
+    return '';
   }
   
 }
