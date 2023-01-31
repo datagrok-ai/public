@@ -31,11 +31,13 @@ category('saveAsSdf', async () => {
 
   test('saveSmilesColumn', async () => {
     const savedColumn = inputDf.col('Smiles')!;
-    expect(getSdfString(inputDf, savedColumn), fileWithSavedSmiles);
+    const sdfString = await getSdfString(inputDf, savedColumn);
+    expect(sdfString.replace(/\r/g, ''), fileWithSavedSmiles);
   });
 
   test('saveMolblockColumn', async () => {
     const savedColumn = inputDf.col('Scaffold')!;
-    expect(getSdfString(inputDf, savedColumn).replace(/\r/g, ''), fileWithSavedMolblock);
+    const sdfString = await getSdfString(inputDf, savedColumn);
+    expect(sdfString.replace(/\r/g, ''), fileWithSavedMolblock);
   });
 });

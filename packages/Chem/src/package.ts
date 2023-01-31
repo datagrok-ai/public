@@ -303,10 +303,12 @@ export function descriptorsApp(): void {
 }
 
 //name: saveAsSdf
-//description: Save as SDF
+//description: As SDF
 //tags: fileExporter
-export function saveAsSdf(): void {
-  saveAsSdfDialog();
+export async function saveAsSdf(): Promise<void> {
+  const progressIndicator = DG.TaskBarProgressIndicator.create('Saving as SDF...');
+  await saveAsSdfDialog();
+  progressIndicator.close();
 }
 
 //#region Top menu
