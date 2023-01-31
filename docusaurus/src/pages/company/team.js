@@ -186,7 +186,7 @@ export default function root() {
                                 name: 'Andrew Skalkin',
                                 id: 'andrew-skalkin',
                                 position: 'Chief Executive Officer',
-                                avatar: '/img/team/as.jpeg',
+                                avatar: '/docusaurus_img/team/as.jpeg',
                                 description: `Software architect, data scientist, and entrepreneur with broad experience in building analytical solutions that apply techniques of data management, high-performance computing, data analysis, modeling, machine learning, usability, and efficient data visualization to enable knowledge discovery and decision support. Proven ability to deliver elegant and simple solutions to complex problems.
                                 Past work includes architecting platforms in the areas of exploratory data analysis, data integration, data management, chemoinformatics, health informatics, LIMS, bioinformatics, biomarker research, drug development and manufacturing, statistical process control, and biosensor data integration.
                                 Passionate about data science, performance, usability, visualizations, algorithms.`,
@@ -198,7 +198,7 @@ export default function root() {
                                 name: 'Larisa Bankurova',
                                 id: 'larisa-bankurova',
                                 position: 'Chief Financial Officer',
-                                avatar: '/img/team/lb.jpeg',
+                                avatar: '/docusaurus_img/team/lb.jpeg',
                                 description: 'Specializing in working with high-growth technology companies operating in the global marketplace. Strong competency in US GAAP and IFRS; hands-on IPO experience; private, pre-IPO, and public company experience; M&A transaction support and international tax structures; SOX, financial infrastructure redesign and systems implementation. Result-driven and team-oriented professional with 15 years of combined experience in finance, accounting and financial reporting, and audit and assurance.',
                                 linkedin: 'lbankurova'
                             })}
@@ -207,16 +207,16 @@ export default function root() {
                                 name: 'Alex Paramonov',
                                 id: 'alex-paramonov',
                                 position: 'Software Architect',
-                                avatar: '/img/team/ap.jpeg',
+                                avatar: '/docusaurus_img/team/ap.jpeg',
                                 description: `I've wrote my first program in Basic when I was 6, and since then I'm completely fascinated with computers.
                                 I really love all the electronic and digital devices, and my master's degree is engeneer of radio-electronic.
                                 When I first took a programming side-job when I was 15, I've noticed how cool it is, and it's not even a job, since I was really happy doing this.
                                 These days I work in Datagrok and I'm responsible for the architecture and Datagrok backend features, making applied developers and data-scientists experience smooth and productive.
                                 My life-credo is to make people's life easier, and leave things better than they were before me.
                                 When I'm not working, I usually make various electronic devices, compose music or play the electric guitar.
-                                
+
                                 I really like to make things faster. When I worked on commercial banks, we used to make tools that completely automate processes usually taking days to seconds. Also, it's always exciting to participate in real-world problem solution projects, such as autism spectrum disorder research. I'm really proud that I took part in data processing pipeline development for this project.
-                                
+
                                 I think, working in Datagrok requires you to really love computer science and have a holistic understanding of how computers work, together with the wish to make the world a better and more understandable place.`,
                                 linkedin: 'alexaprm',
                                 github: 'alex-aprm'
@@ -226,7 +226,7 @@ export default function root() {
                                 name: 'Sofiia Podolskaia',
                                 id: 'sofiia-podolskaia',
                                 position: 'DevOps Architect, Scrum Master',
-                                avatar: '/img/team/sp.jpeg',
+                                avatar: '/docusaurus_img/team/sp.jpeg',
                                 linkedin: 'sofiia-podolskaia',
                             })}
 
@@ -234,7 +234,7 @@ export default function root() {
                                 name: 'Leonid Stolbov',
                                 id: 'leonid-stolbov',
                                 position: 'Research Scientist',
-                                avatar: '/img/team/ls.jpeg',
+                                avatar: '/docusaurus_img/team/ls.jpeg',
                                 linkedin: 'leonid-s-436742216',
                                 github: 'StLeonidas'
                             })}
@@ -243,7 +243,7 @@ export default function root() {
                                 name: 'Diana Onufriienko',
                                 id: 'diana-onufriienko',
                                 position: 'Software Engineer',
-                                avatar: '/img/team/od.jpeg',
+                                avatar: '/docusaurus_img/team/od.jpeg',
                                 linkedin: 'diana-onufriienko',
                                 github: 'onuf'
                             })}
@@ -252,7 +252,7 @@ export default function root() {
                                 name: 'Konstantin Doncov',
                                 id: 'konstantin-doncov',
                                 position: 'Data Scientist',
-                                avatar: '/img/team/kd.jpeg',
+                                avatar: '/docusaurus_img/team/kd.jpeg',
                                 linkedin: 'konstantin-doncov-252064159',
                                 github: 'konstantin-doncov'
                             })}
@@ -261,7 +261,7 @@ export default function root() {
                                 name: 'Oleksii Sakhniuk',
                                 id: 'oleksii-sakhniuk',
                                 position: 'Quality Assurance Engineer',
-                                avatar: '/img/team/os.jpeg',
+                                avatar: '/docusaurus_img/team/os.jpeg',
                                 linkedin: 'osakhniuk',
                                 github: 'osakhniuk'
                             })}
@@ -270,7 +270,7 @@ export default function root() {
                                 name: 'Aleksandr Tanas',
                                 id: 'aleksandr-tanas',
                                 position: 'Software Developer',
-                                avatar: '/img/team/at.jpeg',
+                                avatar: '/docusaurus_img/team/at.jpeg',
                                 description:`Programming was my hobby back in my school days. My first degree was as an industrial electronics engineer. When graduated I worked as a professional software developer for about 8 years. Then I fall for genetics and studied bioinformatics at Yandex data analysis school simaltenoisly working on my PhD thesis in the field of molecular genetics DNA methylation screening methods. After the defence, I work at Research Centre for Medical Genetics studying mainly abnormal DNA methylation markers in cancer, maintaining the IT infrastructure of the laboratory, and developing scientific as well as management software. But war ruined everything and now I search for a job preferably as a software engineer.`,
                                 linkedin: 'aleksandr-tanas',
                                 github: 'tanas80'
@@ -280,7 +280,7 @@ export default function root() {
                                 name: 'Dmitry Illarionov',
                                 id: 'dmitry-illarionov',
                                 position: 'User Experience Engineer',
-                                avatar: '/img/team/di.jpeg',
+                                avatar: '/docusaurus_img/team/di.jpeg',
                                 linkedin: 'illdm',
                                 github: 'illarionow'
                             })}
@@ -289,7 +289,7 @@ export default function root() {
                                 name: 'Kostiantyn Rudik',
                                 id: 'kstiantyn-rudik',
                                 position: 'Talent Manager',
-                                avatar: '/img/team/kr.jpeg',
+                                avatar: '/docusaurus_img/team/kr.jpeg',
                                 linkedin: '%D0%BA%D0%BE%D0%BD%D1%81%D1%82%D0%B0%D0%BD%D1%82%D0%B8%D0%BD-%D1%80%D1%83%D0%B4%D0%B8%D0%BA/',
                             })}
 
@@ -297,7 +297,7 @@ export default function root() {
                                 name: 'Elena Zhuravskaya',
                                 id: 'elena-zhuravskaya',
                                 position: 'Junior Recruiter',
-                                avatar: '/img/team/ez.jpeg',
+                                avatar: '/docusaurus_img/team/ez.jpeg',
                                 linkedin: 'elena-zhuravskaya-2b2bb014a',
                             })}
 
@@ -305,7 +305,7 @@ export default function root() {
                                 name: 'Volodymyr Dyma',
                                 id: 'volodymyr-dyma',
                                 position: 'Junior Data Scientist',
-                                avatar: '/img/team/vd.jpeg',
+                                avatar: '/docusaurus_img/team/vd.jpeg',
                                 linkedin: 'vdyma',
                                 github: 'vdyma'
                             })}
@@ -314,7 +314,7 @@ export default function root() {
                                 name: 'Denis Kryvchuk',
                                 id: 'denis-kryvchuk',
                                 position: 'Junior Developer',
-                                avatar: '/img/team/dk.jpeg',
+                                avatar: '/docusaurus_img/team/dk.jpeg',
                                 linkedin: 'denis-kryvchuk-2959801b5',
                                 github: 'dionissqq'
                             })}
@@ -323,7 +323,7 @@ export default function root() {
                                 name: 'Oleksandra Serhiienko',
                                 id: 'oleksandra-serhiienko',
                                 position: 'Junior Developer',
-                                avatar: '/img/team/ss.jpeg',
+                                avatar: '/docusaurus_img/team/ss.jpeg',
                                 linkedin: '%D0%B0%D0%BB%D0%B5%D0%BA%D1%81%D0%B0%D0%BD%D0%B4%D1%80%D0%B0-%D1%81%D0%B5%D1%80%D0%B3%D0%B8%D0%B5%D0%BD%D0%BA%D0%BE-674ab6239/',
                                 github: 'Aleksashka11'
                             })}
