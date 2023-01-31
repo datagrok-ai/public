@@ -17,7 +17,7 @@ const config = {
 
   stylesheets: [
     {
-      href: '/static/css/datagrok.css',
+      href: '/docusaurus_css/datagrok.css',
       type: 'text/css',
     },
   ],

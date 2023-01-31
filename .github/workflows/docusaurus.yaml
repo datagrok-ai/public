@@ -1,4 +1,4 @@
-name: Help
+name: Docusaurus
 
 on:
   workflow_dispatch: { }
