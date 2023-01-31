@@ -212,7 +212,7 @@ export class MostPotentResiduesViewer extends SARViewerBase {
     pValGridCol.format = '#.000';
     pValGridCol.name = 'P-value';
     const monomerCol = this.model.mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.MONOMER);
-    const positionCol = this.model.mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.POSITION);
+    const positionCol: DG.Column<number> = this.model.mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.POSITION);
 
     // Setting Monomer column renderer
     CR.setAARRenderer(monomerCol, this.model.alphabet);
@@ -226,7 +226,7 @@ export class MostPotentResiduesViewer extends SARViewerBase {
       const tableRowIdx = gridCell!.tableRowIndex!;
       const position = positionCol.get(tableRowIdx);
       const aar = monomerCol.get(tableRowIdx);
-      chooseAction(aar, position, ev.shiftKey, false, this.model);
+      chooseAction(aar, position!.toFixed(), ev.shiftKey, false, this.model);
       this.viewerGrid.invalidate();
       this.model.fireBitsetChanged();
     });
@@ -269,7 +269,7 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
   const gridTable = cell.grid.table;
   const currentMonomer: string = gridTable.get(C.COLUMNS_NAMES.MONOMER, tableRowIndex);
   const currentPosition: string = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ? tableColName :
-    gridTable.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
+    gridTable.get(C.COLUMNS_NAMES.POSITION, tableRowIndex).toFixed();
   const currentPosStats = model.monomerPositionStats[currentPosition];
 
   if (!currentPosStats[currentMonomer]) {
@@ -318,7 +318,7 @@ function showTooltip(cell: DG.GridCell, x: number, y: number, model: PeptidesMod
       model.showMonomerTooltip(currentAAR, x, y);
     else if (renderColNames.includes(tableColName!)) {
       const currentPosition = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ? tableColName :
-        table.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
+        table.get(C.COLUMNS_NAMES.POSITION, tableRowIndex).toFixed();
 
       model.showTooltipAt(currentAAR, currentPosition, x, y);
     }
