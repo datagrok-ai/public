@@ -21,6 +21,22 @@ export async function accessServer(csvString: string, queryParams: string) {
   const response = await grok.dapi.dockerfiles.request(dockerId, path, params);
   return response;
 }
+
+function addTooltip() {
+  const tableView = grok.shell.tv;
+  tableView.grid.onCellTooltip(function (cell, x, y) {
+    const col = cell.tableColumn!.name;
+    if (cell.isTableCell && Object.keys(models).includes(col)) {
+      const rowValue = tableView.dataFrame.get(cell.gridColumn.name, cell.gridRow);
+      let val: any = rowValue <= 0.5 ? Object.values(models[col])[0] : Object.values(models[col])[1];
+      ui.tooltip.show(ui.divV([
+        ui.div(val.toString())
+      ]), x, y);
+      return true;
+    }
+  });
+}
+
 export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFrame): Promise<void> {
   openModelsDialog(await getSelected(), async (selected: any) => {
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
@@ -38,17 +54,12 @@ export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFra
     }
     const table = processCsv(csvString);
     addResultColumns(table, viewTable);
+    addTooltip();
     if (await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, 'Form') === 'true') 
       grok.shell.tv.addViewer(DG.Viewer.fromType('Form', viewTable)); 
-    if (await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, 'RadarGrid') === 'true') {
+    /*if (await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, 'RadarGrid') === 'true') {
       let gc = grok.shell.tv.grid.columns.add({gridColumnName: 'predictsRadar', cellType: 'radar'});
       gc.settings = {columnNames: table.columns.names()};
-    }
-    /*if (await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, 'RadarView', true) === 'true') {
-      let radarViewer = DG.Viewer.fromType('RadarViewer', table, {
-        valuesColumnNames: table.columns.names(),
-      });
-      grok.shell.tv.addViewer(radarViewer);
     }*/
     pi.close();
   });
@@ -84,47 +95,53 @@ function processCsv(csvString: string | null): DG.DataFrame {
   return table;
 }
 
-export function getModelsSingle(smiles: string): DG.Widget {
-  const widget = new DG.Widget(ui.div());
-  const result = ui.div();
-  const selectButton = ui.bigButton('SELECT', async () => {
+export function getModelsSingle(smiles: string): DG.Accordion {
+  const acc = ui.accordion();
+  const accIcon = ui.element('i');
+  for (const property of Object.keys(properties)) {
+    const result = ui.div();
+    acc.addPane(property, () => {
+      update(result, property);
+      return result;
+    }, false);
+  }
+  /*const selectButton = ui.bigButton('SELECT', async () => {
     openModelsDialog(await getSelected(), async (selected: any) => {
       await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
       update();    
     });
   });
-  selectButton.style.marginTop = '20px';
-  
-  const update = () => {
-    removeChildren(result);
+  selectButton.style.marginTop = '20px';*/
+  const update = (result: HTMLDivElement, modelName: string) => {
+    let queryParams: string[] = [];
+    let model = properties[modelName]['models']
+    for (let i = 0; i < model.length; ++i) 
+      queryParams[i] = model[i]['name'];
     result.appendChild(ui.loader());
-    getSelected().then((selected) => {
-      const queryParams = selected.join(',');
-      accessServer(
-       `smiles
-        ${smiles}`,
-        queryParams
-      ).catch((e) => {
-        console.log(e);
-        grok.shell.warning('Dataset contains malformed data!');
-      }).then((csvString: any) => {
-        removeChildren(result);
-        const table = processCsv(csvString);
-        const map: { [_: string]: any } = {};
-        for (const model of selected)
-          map[model] = table.col(model)?.get(0);
+    accessServer(
+      `smiles
+      ${smiles}`,
+      queryParams.toString()
+    ).catch((e) => {
+      console.log(e);
+      grok.shell.warning('Dataset contains malformed data!');
+    }).then((csvString: any) => {
+      removeChildren(result);
+      const table = processCsv(csvString);
+      const map: { [_: string]: any } = {};
+      for (const model of queryParams)
+        map[model] = table.col(model)?.get(0);
 
         result.appendChild(ui.tableFromMap(map));
-      });
     });
   };
 
-  widget.root.appendChild(result);
+  /*widget.root.appendChild(result);
   widget.root.appendChild(selectButton);
 
-  update();
+  update();*/
 
-  return widget;
+  return acc;
 }
 
 function openModelsDialog(selected: any, onOK: any): void {
@@ -210,17 +227,17 @@ function openModelsDialog(selected: any, onOK: any): void {
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, 'Form', bIForm.value!.toString());
   });
   
-  let bIRadarGrid = ui.boolInput('RadarGrid', false);
+  /*let bIRadarGrid = ui.boolInput('RadarGrid', false);
   bIRadarGrid.onChanged(async () => {
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, 'RadarGrid', bIRadarGrid.value!.toString());
-  });
+  });*/
 
   /*let bIRadarView = ui.boolInput('RadarView', false);
   bIRadarView.onChanged(async () => {
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, 'RadarView', bIRadarView.value!.toString(), true);
   })*/
   tree.root.appendChild(bIForm.root);
-  tree.root.appendChild(bIRadarGrid.root);
+  //tree.root.appendChild(bIRadarGrid.root);
   //tree.root.appendChild(bIRadarView.root);
 
   //tree.root.appendChild(ui.boolInput('Radar', false).root);
@@ -228,20 +245,6 @@ function openModelsDialog(selected: any, onOK: any): void {
   let dlg = ui.dialog('ADME/Tox');
   dlg.add(ui.divH([selectAll, selectNone, countLabel]))
     .add(tree.root)
-    .addButton('Form', async () => {
-      const pi = DG.TaskBarProgressIndicator.create('Creating a form...');
-      dlg.close();
-      let queryParams = Object.keys(models).toString();
-      const df = grok.shell.tv.grid.dataFrame;
-      const col = df.columns.bySemType(DG.SEMTYPE.MOLECULE)
-      if (col) {
-        const csvString = await accessServer(DG.DataFrame.fromColumns([col]).toCsv(), queryParams);
-        const table = processCsv(csvString);
-        addResultColumns(table, df);
-        pi.close();
-        grok.shell.tv.addViewer(DG.Viewer.fromType('Form', df));
-      }
-    })
     .onOK(() => onOK(items.filter((i) => i.checked).map((i: any) => i.value['name'])))
     .show()
     .history(
