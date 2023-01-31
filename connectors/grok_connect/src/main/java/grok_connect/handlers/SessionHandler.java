@@ -60,13 +60,11 @@ public class SessionHandler {
                     session.close();
                     return;
                 } else if (message.startsWith(sizeRecievedMessage)) {
-                    System.out.print("sending bytes");
                     fdf = threadpool.submit(() -> qm.getSubDF(rowsPerChunk));
                     session.getRemote().sendBytes(ByteBuffer.wrap(bytes));
                     return;
                 } else {
                     if (!message.equals(okResponse)) {
-                        System.out.print("not ok response?" + message);
                         if (!firstTry)
                             throw new QueryChunkNotSent();
                         else {
@@ -74,23 +72,17 @@ public class SessionHandler {
                         }
                     }
                     else {
-                        System.out.print("ok response?" + message);
                         firstTry = true;
                         oneDfSent = true;
                         dataFrame = fdf.get();
                         // dataFrame = qm.getSubDF(rowsPerChunk);
                     }
                 }
-                System.out.println("sending df info");
-                if (dataFrame != null && (dataFrame.rowCount != 0 || !oneDfSent)) {
-                    
-                    System.out.println("rows: ");
-                    System.out.println(dataFrame.rowCount);
+                if (dataFrame != null && (dataFrame.rowCount != 0 || !oneDfSent)) {   
                     bytes = dataFrame.toByteArray();
                     session.getRemote().sendString(checksumMessage(bytes.length));
                     return;
                 } else {
-                    System.out.println("df empty, end");
                     qm.closeConnection();
 
                     if (qm.query.debugQuery) {

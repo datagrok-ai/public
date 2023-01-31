@@ -44,9 +44,9 @@ public class GrokConnect {
             connectorsModule();
 
             logger.info("grok_connect with Hikari pool");
-            System.out.printf("grok_connect: Running on %s\n", uri);
-            System.out.println("grok_connect: Connectors: " + String.join(", ",
-                    providerManager.getAllProvidersTypes()));
+            logger.info("grok_connect: Running on %s\n" + uri);
+            logger.info("grok_connect: Connectors: " + String.join(", ",
+            providerManager.getAllProvidersTypes()));
         } catch (Throwable ex) {
             System.out.println("ERROR: " + ex.toString());
             System.out.print("STACK TRACE: ");
