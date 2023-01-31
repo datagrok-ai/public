@@ -100,7 +100,7 @@ const config = {
       title: 'Datagrok',
       logo: {
         alt: 'Datagrok',
-        src: 'img/logo.svg',
+        src: 'docusaurus_img/logo.svg',
         href: 'https://datagrok.ai', // Default to `siteConfig.baseUrl`.
       },
       items: [
