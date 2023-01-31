@@ -6,8 +6,14 @@ import {convertToRDKit} from '../analysis/r-group-analysis';
 import rdKitLibVersion from '../rdkit_lib_version';
 //@ts-ignore
 import initRDKitModule from '../RDKit_minimal.js';
+//@ts-ignore
 import {RDModule, RDMol, Reaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {isMolBlock} from '../utils/convert-notation-utils';
+
+export interface IMolKekulize {
+  mol: RDMol | null; // null when molString is invalid
+  kekulize: boolean;
+}
 
 export let _rdKitModule: RDModule;
 export let _rdKitService: RdKitService;
@@ -92,6 +98,45 @@ export function drawErrorCross(ctx: OffscreenCanvasRenderingContext2D, width: nu
       ctx.stroke();
 }
 
+export function getMolSafe(molString: string, details: object = {}, rdKitModule: RDModule | null = null): IMolKekulize {
+  let kekulize: boolean = true;
+  let mol: RDMol | null = null;
+  if (!rdKitModule) {
+    rdKitModule = getRdKitModule();
+  }
+  try {
+    mol = rdKitModule.get_mol(molString, JSON.stringify(details));
+    if (!mol.is_valid()) {
+      mol.delete();
+      mol = null;
+    }
+  } catch (e) { }
+  if (!mol) {
+    kekulize = false;
+    try {
+      mol = rdKitModule.get_mol(molString, JSON.stringify({ ...details, kekulize }));
+      if (!mol.is_valid()) {
+        mol.delete();
+        mol = null;
+      }
+    } catch (e2) { }
+  }
+  if (!mol) {
+    try {
+      mol = rdKitModule.get_qmol(molString);
+      if (!mol.is_valid()) {
+        mol.delete();
+        mol = null;
+      }
+    } catch (e3) {
+      console.error(
+        'Chem | In getMolSafe: RDKit.get_mol crashes on a molString: `' + molString + '`');
+      mol = null;
+    }
+  }
+  return { mol, kekulize };
+}
+
 function createRenderingOpts(addSettings: {[key: string]: any}): {[key: string]: any} {
   const opts: {[key: string]: any} = {};
   Object.keys(RDKIT_COMMON_RENDER_OPTS).forEach((key: string) => opts[key] = RDKIT_COMMON_RENDER_OPTS[key]);
@@ -100,12 +145,14 @@ function createRenderingOpts(addSettings: {[key: string]: any}): {[key: string]:
 }
 
 export function drawRdKitMoleculeToOffscreenCanvas(
-  rdKitMol: RDMol, w: number, h: number, offscreenCanvas: OffscreenCanvas, substruct: Object | null) {
+  rdKitMol: RDMol, w: number, h: number, offscreenCanvas: OffscreenCanvas, substruct: Object | null, kekulize: boolean) {
   const opts = createRenderingOpts({width: Math.floor(w), height: Math.floor(h)});
   const g = offscreenCanvas.getContext('2d', {willReadFrequently : true});
   g?.clearRect(0,0, w, h);
   if (substruct)
     Object.assign(opts, substruct);
+  if (!kekulize)
+    Object.assign(opts, { kekulize });
   rdKitMol.draw_to_canvas_with_highlights((offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(opts));
   // we need the offscreen canvas first to not let the molecule scaffold skew on a real canvas
 }
@@ -124,33 +171,40 @@ export function drawMoleculeToCanvas(
   options = {normalizeDepiction: true, straightenDepiction: true}
 ) {
   let mol = null;
+  let kekulize = null;
+  const offscreenCanvas = new OffscreenCanvas(w, h);
   try {
-    const isMol: boolean = isMolBlock(molString);
-    mol = isMol ? getRdKitModule().get_mol(molString) : getRdKitModule().get_mol(convertToRDKit(molString)!);
+    const hasCoords: boolean = isMolBlock(molString);
+    ({ mol, kekulize } = hasCoords ? getMolSafe(molString) : getMolSafe(convertToRDKit(molString)!));
 
-    if (!isMol)
-      mol.set_new_coords(true);
+    if (mol && mol.is_valid()) {
+      if (!hasCoords)
+        mol.set_new_coords(true);
 
-    if (options.normalizeDepiction ?? true)
-      !isMol ? mol.normalize_depiction(1) : mol.normalize_depiction(0);
+      if (options.normalizeDepiction ?? true)
+        !hasCoords ? mol.normalize_depiction(1) : mol.normalize_depiction(0);
 
-    if (options.straightenDepiction ?? true)
-      !isMol ? mol.straighten_depiction(false) : mol.straighten_depiction(true); 
+      if (options.straightenDepiction ?? true)
+        !hasCoords ? mol.straighten_depiction(false) : mol.straighten_depiction(true);
 
-    const scaffoldMol = scaffoldMolString == null ? null :
-      (isMolBlock(scaffoldMolString) ? getRdKitModule().get_qmol(scaffoldMolString) : getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!));
-    let substructJson = '{}';
-    if (scaffoldMol) {
-      substructJson = mol.get_substruct_match(scaffoldMol);
-      if (substructJson === '')
-        substructJson = '{}';
+      const scaffoldMol = scaffoldMolString == null ? null :
+        (isMolBlock(scaffoldMolString) ? getRdKitModule().get_qmol(scaffoldMolString) : getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!));
+      let substructJson = '{}';
+      if (scaffoldMol) {
+        substructJson = mol.get_substruct_match(scaffoldMol);
+        if (substructJson === '')
+          substructJson = '{}';
+      }
+      const substruct = JSON.parse(substructJson);
+      drawRdKitMoleculeToOffscreenCanvas(mol, w, h, offscreenCanvas, substruct, kekulize);
+      const image = offscreenCanvas!.getContext('2d')!.getImageData(0, 0, w, h);
+      const context = onscreenCanvas.getContext('2d')!;
+      context.putImageData(image, x, y);
+    } else {
+      const ctx = offscreenCanvas.getContext('2d');
+      if (ctx)
+        drawErrorCross(ctx, w, h);
     }
-    const substruct = JSON.parse(substructJson);
-    const offscreenCanvas = new OffscreenCanvas(w, h);
-    drawRdKitMoleculeToOffscreenCanvas(mol, w, h, offscreenCanvas, substruct);
-    const image = offscreenCanvas!.getContext('2d')!.getImageData(0, 0, w, h);
-    const context = onscreenCanvas.getContext('2d')!;
-    context.putImageData(image, x, y);
   } finally {
     mol?.delete();
   }

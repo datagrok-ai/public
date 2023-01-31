@@ -3,13 +3,14 @@
  * */
 
 import * as DG from 'datagrok-api/dg';
-import {drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
+import {drawErrorCross, drawRdKitMoleculeToOffscreenCanvas, getMolSafe, IMolKekulize} from '../utils/chem-common-rdkit';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {isMolBlock} from '../utils/convert-notation-utils';
 import {aromatizeMolBlock} from "../utils/aromatic-utils";
 
 interface IMolInfo {
   mol: RDMol | null; // null when molString is invalid?
+  kekulize: boolean;
   substruct: any;
   molString: string;
   scaffoldMolString: string;
@@ -79,44 +80,22 @@ M  END
   _fetchMolGetOrCreate(molString: string, scaffoldMolString: string,
     molRegenerateCoords: boolean, details: object = {}): IMolInfo {
     let mol: RDMol | null = null;
+    let kekulize = false;
     let substruct = {};
-    try {
-      if ((details as any).isSubstructure) {
+    if ((details as any).isSubstructure) {
+      try {
         if (molString.includes(' H ') || molString.includes('V3000')) {
-          mol = this.rdKitModule.get_mol(molString, '{"mergeQueryHs":true}');
+          ({ mol, kekulize } = getMolSafe(molString, {mergeQueryHs: true}, this.rdKitModule));
         } else {
           const aromaMolString = aromatizeMolBlock(molString)
           mol = this.rdKitModule.get_qmol(aromaMolString);
         }
-     }
-      else
-        mol = this.rdKitModule.get_mol(molString, JSON.stringify(details));
-      if (!mol.is_valid()) {
-        mol.delete();
-        mol = null;
-      }
-    } catch (e) { }
-    if (!mol) {
-      try {
-        mol = this.rdKitModule.get_mol(molString, JSON.stringify({...details, kekulize: false}));
-        if (!mol.is_valid()) {
-          mol.delete();
-          mol = null;
-        }
-      } catch (e2) { }
-    }
-    if (!mol) {
-      try {
-        mol = this.rdKitModule.get_qmol(molString);
-        if (!mol.is_valid()) {
-          mol.delete();
-          mol = null;
-        }
-      } catch (e3) {
-        console.error(
-          'Chem | In _fetchMolGetOrCreate: RDKit .get_mol crashes on a molString: `' + molString + '`');
-        mol = null;
-      }
+      } catch (e) { }
+    } else
+      ({ mol, kekulize } = getMolSafe(molString, details, this.rdKitModule));
+    if (mol && !mol.is_valid()) {
+      mol.delete();
+      mol = null;
     }
     if (mol) {
       try {
@@ -147,7 +126,7 @@ M  END
                 if (molHasOwnCoords) {
                   mol.straighten_depiction(true);
                 }
-              } else 
+              } else
                 substruct = JSON.parse(substructJson);
             }
           }
@@ -175,6 +154,7 @@ M  END
 
     return {
       mol: mol,
+      kekulize: kekulize,
       substruct: substruct,
       molString: molString,
       scaffoldMolString: scaffoldMolString,
@@ -199,9 +179,10 @@ M  END
     const canvas = this.ensureCanvasSize(width, height);//new OffscreenCanvas(width, height);
     const ctx = canvas.getContext('2d', {willReadFrequently : true})!;
     this.canvasCounter++;
-    if (rdKitMol != null)
-      drawRdKitMoleculeToOffscreenCanvas(rdKitMol, width, height, canvas, highlightScaffold ? substruct : null);
-    else {
+    if (rdKitMol != null) {
+      const { kekulize } = fetchMolObj;
+      drawRdKitMoleculeToOffscreenCanvas(rdKitMol, width, height, canvas, highlightScaffold ? substruct : null, kekulize);
+    } else {
       // draw a crossed rectangle
       drawErrorCross(ctx, width, height);
     }

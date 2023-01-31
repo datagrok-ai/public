@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import $ from "cash-dom";
-import {_rdKitModule} from '../utils/chem-common-rdkit';
+import {_rdKitModule, getMolSafe} from '../utils/chem-common-rdkit';
 import {isMolBlock} from "../utils/convert-notation-utils";
 import {chem} from "datagrok-api/grok";
 import {toJs, TreeViewGroup, TreeViewNode} from "datagrok-api/dg";
@@ -256,9 +256,9 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
     g!.fillText(text, Math.floor((width - lineWidth) / 2), Math.floor((height - fontHeight) / 2));
   } else {
     molStr = processUnits(molStr);
-    const mol = getMol(molStr);
+    const { mol, kekulize } = getMolSafe(molStr);
     if (mol !== null) {
-      drawRdKitMoleculeToOffscreenCanvas(mol, CELL_CANVAS_WIDTH, CELL_CANVAS_HEIGHT, offscreen, null);
+      drawRdKitMoleculeToOffscreenCanvas(mol, CELL_CANVAS_WIDTH, CELL_CANVAS_HEIGHT, offscreen, null, kekulize);
       mol.delete();
     }
   }
