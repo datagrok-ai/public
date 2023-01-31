@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../package';
-import {NglGlServiceBase, NglGlTask} from '@datagrok-libraries/bio';
 import * as NGL from 'NGL';
+import {NglGlServiceBase, NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 
 
 export class NglGlService implements NglGlServiceBase {

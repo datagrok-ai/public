@@ -3,26 +3,22 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {PdbHelper} from '../utils/pdb-helper';
-import {IPdbHelper} from '@datagrok-libraries/bio';
-import {getPdbHelper} from '../package';
+import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 
+/** The app for .pdb file handler */
 export class PdbApp {
-
   private _funcName: string = '';
 
   constructor() {}
 
   /** {@link df} created with pdbToDf() */
-  async init(df?: DG.DataFrame, funcName: string = 'pdbApp'): Promise<void> {
+  async init(df: DG.DataFrame, funcName: string = 'pdbApp'): Promise<void> {
     this._funcName = funcName;
     await this.loadData(df);
   }
 
-  async loadData(df?: DG.DataFrame): Promise<void> {
-    const ph = new PdbHelper();
-    if (!df) {
-      console.warn('BsV: PdbApp.loadData() no df.');
-    }
+  async loadData(df: DG.DataFrame): Promise<void> {
+    const ph: IPdbHelper = new PdbHelper();
     await this.setData(df);
   }
 
