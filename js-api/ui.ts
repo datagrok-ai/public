@@ -31,6 +31,7 @@ import { CanvasRenderer, GridCellRenderer, SemanticValue } from './src/grid';
 import {Entity, Property} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
+import { Wizard, WizardPage } from './src/ui/wizard';
 
 
 let api = <any>window;
@@ -1450,11 +1451,27 @@ export namespace hints {
     return el;
   }
 
+  export function addTextHint(el: HTMLElement, options?: {title?: string, helpUrl?: string, pages?: WizardPage[]}): Wizard {
+    el.classList.add('ui-text-hint-target');
+    $('#rootDiv').addClass('ui-grayed-out-block');
+    const wizard = new Wizard({title: options?.title, helpUrl: options?.helpUrl});
+    if (options?.pages) {
+      options.pages.forEach((p) => wizard.page(p));
+    }
+    wizard.onClose.subscribe(() => remove(el));
+    wizard.show({width: 250, height: 200, showNextTo: el});
+    const leftPos = $(wizard.root).css('left');
+    if (leftPos) 
+      $(wizard.root).css('left', parseInt(leftPos) + 10);
+    return wizard;
+  }
+
   /** Removes the hint indication from the provided element and returns it. */
   export function remove(el: HTMLElement): HTMLElement {
     $(el).find('div.ui-hint-blob')[0]?.remove();
     $(el).find('i.fa-times')[0]?.remove();
-    el.classList.remove('ui-hint-target');
+    el.classList.remove('ui-hint-target', 'ui-text-hint-target');
+    $('#rootDiv').removeClass('ui-grayed-out-block');
     return el;
   }
 }

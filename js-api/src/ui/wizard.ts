@@ -4,7 +4,7 @@ import {Dialog} from "../widgets";
 let api = <any>window;
 
 /** EXPERIMENTAL - USE AT YOUR OWN RISK - API might change */
-interface WizardPage {
+export interface WizardPage {
 
   root: HTMLDivElement;
 
