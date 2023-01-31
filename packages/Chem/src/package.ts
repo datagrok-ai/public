@@ -87,36 +87,29 @@ export let _properties: any;
 let _rdRenderer: RDKitCellRenderer;
 export let renderer: GridCellRendererProxy;
 let _renderers: Map<string, DG.GridCellRenderer>;
-let _init: Promise<void>;
 
 //tags: init
 export async function initChem(): Promise<void> {
-  if (_init !== undefined) //temporary solution for bug
-    return _init;
-  _init = new Promise<void>(async (resolve, reject) => {
-    chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
-    await chemCommonRdKit.initRdKitModuleLocal();
-    _properties = await _package.getProperties();
-    _rdRenderer = new RDKitCellRenderer(getRdKitModule());
-    renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
-    const lastSelectedSketcher = _properties.Sketcher ? SKETCHER_FUNCTIONS_ALIASES[_properties.Sketcher]:
-        await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
-    const sketcherFucntions = DG.Func.find({tags: ['moleculeSketcher']});
-    if (sketcherFucntions.find(e => e.name == lastSelectedSketcher) || !lastSelectedSketcher)
-      window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, lastSelectedSketcher);
-    else {
-      const funcByFriendlyName = sketcherFucntions.find(e => e.friendlyName == lastSelectedSketcher);
-      if (funcByFriendlyName) {
-        window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, funcByFriendlyName.name);
-      } else {
-        grok.shell.warning(`Package with ${lastSelectedSketcher} function is not installed. Switching to ${DEFAULT_SKETCHER}.`);
-        window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, DEFAULT_SKETCHER);
-      }
+  chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+  await chemCommonRdKit.initRdKitModuleLocal();
+  _properties = await _package.getProperties();
+  _rdRenderer = new RDKitCellRenderer(getRdKitModule());
+  renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
+  const lastSelectedSketcher = _properties.Sketcher ? SKETCHER_FUNCTIONS_ALIASES[_properties.Sketcher]:
+      await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
+  const sketcherFucntions = DG.Func.find({tags: ['moleculeSketcher']});
+  if (sketcherFucntions.find(e => e.name == lastSelectedSketcher) || !lastSelectedSketcher)
+    window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, lastSelectedSketcher);
+  else {
+    const funcByFriendlyName = sketcherFucntions.find(e => e.friendlyName == lastSelectedSketcher);
+    if (funcByFriendlyName) {
+      window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, funcByFriendlyName.name);
+    } else {
+      grok.shell.warning(`Package with ${lastSelectedSketcher} function is not installed. Switching to ${DEFAULT_SKETCHER}.`);
+      window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, DEFAULT_SKETCHER);
     }
-    _renderers = new Map();
-    resolve();
-  });
-  return _init;
+  }
+  _renderers = new Map();
 }
 
 //tags: autostart
