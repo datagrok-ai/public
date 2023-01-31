@@ -874,7 +874,7 @@ div.spacer {
 
 }
 .bg-map {
-    background-image: url("../img/bg-map.png");
+    background-image: url("../docusaurus_img/bg-map.png");
     background-size: contain;
     background-repeat: no-repeat;
     background-position-x: center;
