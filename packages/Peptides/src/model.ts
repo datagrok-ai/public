@@ -622,7 +622,7 @@ export class PeptidesModel {
     const monomerPositionStatsEntries = Object.entries(this.monomerPositionStats) as [string, PositionStats][];
     const mprDf = DG.DataFrame.create(monomerPositionStatsEntries.length - 1); // Subtract 'general' entry from mp-stats
     const mprDfCols = mprDf.columns;
-    const posCol = mprDfCols.addNewString(C.COLUMNS_NAMES.POSITION);
+    const posCol = mprDfCols.addNewInt(C.COLUMNS_NAMES.POSITION);
     const monomerCol = mprDfCols.addNewString(C.COLUMNS_NAMES.MONOMER);
     const mdCol = mprDfCols.addNewFloat(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
     const pValCol = mprDfCols.addNewFloat(C.COLUMNS_NAMES.P_VALUE);
@@ -649,7 +649,7 @@ export class PeptidesModel {
           maxEntry = [monomer, monomerStats];
       }
 
-      posCol.set(i, position);
+      posCol.set(i, parseInt(position));
       monomerCol.set(i, maxEntry![0]);
       mdCol.set(i, maxEntry![1].meanDifference);
       pValCol.set(i, maxEntry![1].pValue);
