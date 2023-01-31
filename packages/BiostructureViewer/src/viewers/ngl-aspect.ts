@@ -7,11 +7,12 @@ import * as NGL from 'NGL';
 
 // export let _package = new DG.Package();
 
-const getCircularReplacer = () => {
+const getCircularReplacer = (): (this: any, key: string, value: any) => any => {
   const seen = new WeakSet();
-  return (key, value) => {
+  return (key: string, value: any) => {
     if (typeof value === 'object' && value !== null) {
       if (seen.has(value)) {
+        //
         return;
       }
       seen.add(value);
@@ -57,13 +58,13 @@ export class NglAspect {
     // .bind(this);
 
     const originalRender = this.stage.viewer.render;
-    this.stage.viewer.render = function() {
+    this.stage.viewer.render = () => {
       //@ts-ignore
       originalRender.bind(this.stage.viewer)();
       console.debug('ABABABABABABABABABABAB');
-      // console.debug('JSON stage: ' + JSON.stringify(this.stage, getCircularReplacer()));
-    }
-      .bind(this);
+      //Getting JSON causes circular reference exception
+      //console.debug('JSON stage: ' + JSON.stringify(this.stage, getCircularReplacer()));
+    };
 
     // let listener = () => {
     //   let va = this.stage;

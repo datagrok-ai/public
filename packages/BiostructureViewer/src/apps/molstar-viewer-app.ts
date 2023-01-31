@@ -3,9 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../package';
-import {PROPS as pdbPROPS} from '../viewers/ngl-viewer';
+import {PROPS as msPROPS} from '../viewers/molstar-viewer';
 
-export class NglViewerApp {
+export class MolstarViewerApp {
   private readonly appFuncName: string;
 
   constructor(appFuncName: string) {
@@ -17,6 +17,7 @@ export class NglViewerApp {
   }
 
   async loadData(): Promise<void> {
+    // TODO: Call platform file read function
     const sdfBytes: Uint8Array = await _package.files.readAsBytes('samples/mol1K.sdf');
     const df: DG.DataFrame = (await grok.functions.call(
       'Chem:importSdf', {bytes: sdfBytes}))[0];
@@ -24,15 +25,18 @@ export class NglViewerApp {
     await this.setData(df);
   }
 
+  // -- Data --
+
+  private df: DG.DataFrame;
+
   async setData(df: DG.DataFrame): Promise<void> {
     this.df = df;
 
     await this.buildView();
   }
 
-  private df: DG.DataFrame;
-
   // -- View --
+  private void: DG.TableView;
 
   private view: DG.TableView;
 
@@ -42,10 +46,9 @@ export class NglViewerApp {
 
     const pdbStr: string = await _package.files.readAsText('samples/protease.pdb');
 
-    const viewer: DG.JsViewer = (await this.view.dataFrame.plot.fromType('NglViewer', {
-      [pdbPROPS.pdb]: pdbStr,
-      [pdbPROPS.ligandColumnName]: 'molecule',
+    const viewer: DG.JsViewer = (await this.view.dataFrame.plot.fromType('MolstarViewer', {
+      [msPROPS.pdb]: pdbStr,
     })) as DG.JsViewer;
-    this.view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'NGL', 0.4);
+    this.view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Molstar', 0.4);
   }
 }
