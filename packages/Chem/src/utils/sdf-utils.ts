@@ -7,13 +7,13 @@ import {isMolBlock} from './convert-notation-utils';
 import $ from 'cash-dom';
 
 /**  Dialog for SDF file exporter */
-export function saveAsSdfDialog() {
+export async function saveAsSdfDialog() {
   const table = grok.shell.t;
   const cols = table.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
   if (cols.length === 0)
     grok.shell.warning(`This table does not contain ${DG.SEMTYPE.MOLECULE} columns, unable to save as SDF`);
   else if (cols.length === 1)
-    _saveAsSdf(table, cols[0]);
+    await _saveAsSdf(table, cols[0]);
   else {
     const sdfDialog = ui.dialog({title: 'Save as SDF'});
     sdfDialog.root.style.width = '250px';
@@ -21,9 +21,9 @@ export function saveAsSdfDialog() {
     const colsInput = ui.columnInput('Molecules', colsChoiceDF, cols[0]);
 
     sdfDialog.add(colsInput)
-      .onOK(() => {
+      .onOK(async () => {
         const structureColumn = colsInput.value;
-        _saveAsSdf(table, structureColumn!);
+        await _saveAsSdf(table, structureColumn!);
       });
     if (cols.length > 1) {
       const text = ui.divText(`Other ${DG.SEMTYPE.MOLECULE} colums saved as SMILES`);
@@ -37,10 +37,10 @@ export function saveAsSdfDialog() {
   }
 }
 
-export function getSdfString(
+export async function getSdfString(
   table: DG.DataFrame,
   structureColumn: DG.Column, // non-null
-): string {
+): Promise<string> {
   let result = '';
   for (let i = 0; i < table.rowCount; i++) {
     const molecule: string = structureColumn.get(i);
@@ -66,23 +66,16 @@ export function getSdfString(
   return result;
 }
 
-export function _saveAsSdf(
+export async function _saveAsSdf(
   table: DG.DataFrame,
   structureColumn: DG.Column,
-): void {
+): Promise<void> {
   //todo: load OpenChemLib (or use RDKit?)
   //todo: UI for choosing columns with properties
-
-  const pi = DG.TaskBarProgressIndicator.create('Saving as SDF...');
 
   if (structureColumn == null)
     return;
 
-  let result = '';
-  try {
-    result = getSdfString(table, structureColumn);
-    DG.Utils.download(table.name + '.sdf', result);
-  } finally {
-    pi.close();
-  }
+  const result = await getSdfString(table, structureColumn);
+  DG.Utils.download(table.name + '.sdf', result);
 }
