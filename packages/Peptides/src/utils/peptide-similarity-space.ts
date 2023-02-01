@@ -188,7 +188,7 @@ export class PeptideSimilaritySpaceWidget {
   }
 
   /**
-   * Draws a viewer on property panel.
+   * Draws a viewer on context panel.
    *
    * @return {Promise<DG.Widget>} The corresponding widget.
    * @memberof PeptideSimilaritySpaceWidget

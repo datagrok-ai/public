@@ -216,7 +216,7 @@ Once its Swagger file is imported (which takes a second), the following connecti
 
 ![AirNow connection](../uploads/features/open-api-airnow-connection.png "AirNow")
 
-Click on the query to bring up its details in the property panel on the right:
+Click on the query to bring up its details in the context panel on the right:
 
 ![AirNow query](../uploads/features/open-api-airnow-query.png "AirNow")
 

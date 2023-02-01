@@ -342,7 +342,7 @@ export abstract class Filter extends Widget {
   /** Whether a filter is ready to apply the filtering mask synchronously. */
   get isReadyToApplyFilter(): boolean { return true; }
 
-  /** Override to provide short filter summary that might be shown on viewers or in the property panel. */
+  /** Override to provide short filter summary that might be shown on viewers or in the context panel. */
   abstract get filterSummary(): string;
 
   /** Override to filter the dataframe.

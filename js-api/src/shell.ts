@@ -77,7 +77,7 @@ export class Shell {
     return toJs(api.grok_User());
   }
 
-  /** Current object (rendered in the property panel) */
+  /** Current object (rendered in the context panel) */
   get o(): any {
     return toJs(api.grok_Get_CurrentObject(), false);
   }
@@ -330,8 +330,8 @@ export class Windows {
   set showProperties(x: boolean) { api.grok_Windows_Set_ShowProperties(x); }
 
   /** Controls the visibility of the context pane. */
-  get showContextPane(): boolean { return api.grok_Windows_Get_ShowProperties(); }
-  set showContextPane(x: boolean) { api.grok_Windows_Set_ShowProperties(x); }
+  get showContextPanel(): boolean { return api.grok_Windows_Get_ShowProperties(); }
+  set showContextPanel(x: boolean) { api.grok_Windows_Set_ShowProperties(x); }
 
   /** Controls the visibility of the variables window. */
   get showVariables(): boolean { return api.grok_Windows_Get_ShowVariables(); }

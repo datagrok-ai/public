@@ -78,7 +78,7 @@ predictive models, integration with the external utilities, data augmentation, a
 
 * via the [Functions](https://dev.datagrok.ai/functions?q=info) view
 * via the [Packages](https://dev.datagrok.ai/packages?) menu (find your package, click on it and run `info()`
-  from the `Functions` pane in the property panel on the left)
+  from the `Functions` pane in the context panel on the left)
 * via the [console](../../datagrok/navigation.md#console): press `~` key anywhere inside Datagrok, the Console will
   appear to the right; execute `<loginName>Sequence:info()` there. The identifier used as package name (before ':') will
   be obtained by transformation kebab style of folder name to camel style, or can be specified directly with
@@ -485,7 +485,7 @@ database that Microsoft often uses for showcasing its technology). The database 
 from our server.
 
 1. Navigate to the `Data | Databases | PostgreSQL | northwind | Schemas | public | orders` table
-2. Make this table current by left-clicking on it, and explore its property panels on the right. The
+2. Make this table current by left-clicking on it, and explore its context panel on the right. The
    `Content` pane should be showing first 50 rows of that table.
 3. Right-click on the table, and choose `New SQL Query...`
 4. Execute the query and make sure it returns results.
@@ -565,21 +565,21 @@ First, let's explore how scripting viewer works.
    for `Color`. After checking this you should see a nice scatter plot for `WEIGHT` and `HEIGHT`
    with the color corresponding to `AGE`:
    ![exercises-scripting-viewer](exercises-scripting-viewer.png)
-7. In the property panel, proceed to modify the value of the "Script" field by clicking on a "..."
+7. In the context panel, proceed to modify the value of the "Script" field by clicking on a "..."
    icon in the text field.
 8. The Python code you see is what renders the scatter plot form p.6 on the Datagrok server. Let's walkthrough this
    code.
     * The script takes as inputs the original dataframe and the three columns. Remember form p.6 there were selectors
-      for `X`, `Y`, and `Color` in the property panel. In fact, these three property names are declared with the
+      for `X`, `Y`, and `Color` in the context panel. In fact, these three property names are declared with the
       notation `<propertyName>ColumnName` in the names of the three `#input` columns.
     * The script produces an `#output` of type `graphics`. It is important the graphics appear in the end of the Python
       script. This is exactly what happens with the `plt.show()` in the last line of the script.
 
 9. Modify the name of `colorColumnName` to a `temperatureColumnName`, hit `Apply` in the bottom of the window, and check
-   what happens to the `Color` field in the property panel.
+   what happens to the `Color` field in the context panel.
 10. Add another input parameter to the script with a name `Title`. Hit `Apply` and check what appears in the property
     panel.
-11. Add another input column to the script with a name `SEX`. Hit `Apply` and check what appears in the property panel.
+11. Add another input column to the script with a name `SEX`. Hit `Apply` and check what appears in the context panel.
 12. Now there's all you need to create a Python scripting viewer for our amino acid histogram task. Open a demo file
     with nucleotide sequences. It is located at `Data | Files | Demo Files | bio | sars-cov-2.csv`.
     `Data` corresponds to the first button from the top on the Datagrok sidebar.

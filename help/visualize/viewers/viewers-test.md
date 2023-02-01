@@ -130,7 +130,7 @@ scenarios common to all viewers were identified:
 
 7. Open properties for [Scatter Plot](../viewers/scatter-plot.md)
 
-    * Viewer properties are displayed on [Property Panel](../../datagrok/navigation.md#properties)
+    * Viewer properties are displayed on [Context Panel](../../datagrok/navigation.md#context-panel)
 
 8. Check performance and impact of changing properties on [Scatter Plot](../viewers/scatter-plot.md)
 

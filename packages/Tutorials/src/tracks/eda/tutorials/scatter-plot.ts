@@ -39,7 +39,7 @@ export class ScatterPlotTutorial extends Tutorial {
       'The easiest way to do this is to click on the column selector on the viewer. ' +
       'Alternatively, you can drag the column right from the spreadsheet, or from ' +
       'the column list (Windows | Columns, or Alt+C). Also, you can make this choice ' +
-      'from the property panel on the right (Windows | Properties, or F4). ' +
+      'from the context panel on the right (Windows | Properties, or F4). ' +
       'Please try different ways in the next steps.';
     await this.action('Set X to HEIGHT', columnCheck(info.xColSelector, 'HEIGHT'), info.xColSelector.root, colSelection);
     await this.action('Set Y to WEIGHT',  columnCheck(info.yColSelector, 'WEIGHT'), info.yColSelector.root);
