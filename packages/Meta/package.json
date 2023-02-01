@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.1.88",
+  "version": "3.1.89",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -258,7 +258,7 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Tutorials"
       },
-      "category": "Development"
+      "category": "General"
     },
     "chem": {
       "dependencies": {
@@ -622,7 +622,7 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/PowerPack"
       },
-      "category": "Development"
+      "category": "General"
     },
     "clinical-case": {
       "dependencies": {
@@ -2273,7 +2273,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/GIS"
-      }
+      },
+      "category": "Visualizations"
     },
     "demoxl": {
       "dependencies": {
