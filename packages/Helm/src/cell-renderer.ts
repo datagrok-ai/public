@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {findMonomers, parseHelm, getParts} from './utils';
-import {printLeftOrCentered} from '@datagrok-libraries/bio';
+import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 
 
 export class HelmCellRenderer extends DG.GridCellRenderer {
