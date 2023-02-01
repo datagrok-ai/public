@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.1.86",
+  "version": "3.1.87",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1783,27 +1783,6 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/VDJtools"
-      },
-      "category": "Bioinformatics"
-    },
-    "ngl-viewer": {
-      "dependencies": {
-        "0.1.0": {
-          "datagrok-api": "^0.151.6"
-        },
-        "0.1.1": {
-          "datagrok-api": "^0.151.6"
-        },
-        "0.1.2": {},
-        "1.0.1": {
-          "datagrok-api": "^1.5.0"
-        }
-      },
-      "description": "Web-based 3D molecular graphics. Supports the following file formats: .PDB, .CIF, SDF, MOL",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/NglViewer"
       },
       "category": "Bioinformatics"
     },
