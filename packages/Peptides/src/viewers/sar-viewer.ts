@@ -78,17 +78,11 @@ export class SARViewerBase extends DG.JsViewer {
 
         switchHost = ui.divH([mutationCliffsMode.root, invariantMapMode.root], {id: 'pep-viewer-title'});
         $(switchHost).css('width', 'auto').css('align-self', 'center');
-        const colorTip = ui.divText('Color intensity - p-value', {style: {fontSize: '11px'}});
-        const radiusTip = ui.divText('Circle size - Mean difference', {style: {fontSize: '11px'}});
-        // tips = ui.divV([colorTip, radiusTip], {style: {position: 'absolute', right: '0'}});
       }
       const tips: HTMLElement = ui.iconFA('question');
-      tips.addEventListener('mouseover', (ev: MouseEvent) => {
-        ui.tooltip.show(ui.divH([
-          ui.divText('Color intensity - p-value'),
-          ui.divText('Circle size - Mean difference'),
-        ]), ev.clientX, ev.clientY);
-      });
+      ui.tooltip.bind(tips,
+        () => ui.divV([ui.divText('Color intensity - p-value'), ui.divText('Circle size - Mean difference')]));
+
       $(tips).addClass('pep-help-icon');
 
       const viewerRoot = this.viewerGrid.root;
