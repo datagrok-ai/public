@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {delay, Test, TestContext} from '@datagrok-libraries/utils/src/test';
-import {c, testFunc} from './package';
+import {delay, Test, TestContext, initAutoTests} from '@datagrok-libraries/utils/src/test';
+import {c} from './package';
 import {Menu} from 'datagrok-api/dg';
 import '../css/styles.css';
 
@@ -77,7 +77,6 @@ export class TestManager extends DG.ViewBase {
   benchmarkMode = false;
   runSkippedMode = true;
   tree: DG.TreeViewGroup;
-  autoTestsCatName = 'Auto Tests';
   ribbonPanelDiv = undefined;
   dockLeft;
 
@@ -106,7 +105,6 @@ export class TestManager extends DG.ViewBase {
     this.runTestsForSelectedNode();
   }
 
-
   async collectPackages(packageName?: string): Promise<any[]> {
     let testFunctions = DG.Func.find({name: 'Test', meta: {file: 'package-test.js'}});
     testFunctions = testFunctions.sort((a, b) => a.package.friendlyName.localeCompare(b.package.friendlyName));
@@ -121,18 +119,13 @@ export class TestManager extends DG.ViewBase {
       const testModule = f.package.getModule(f.options.file);
       if (!testModule)
         console.error(`Error getting tests from '${f.package.name}/${f.options.file}' module.`);
-
+      await initAutoTests(f.package.id, testModule);
       const allPackageTests = testModule ? testModule.tests : undefined;
-      this.collectPackageAutoTests(f.package.name, allPackageTests);
       const packageTestsFinal: { [cat: string]: ICategory } = {};
       if (allPackageTests) {
         Object.keys(allPackageTests).forEach((cat) => {
           const tests: IPackageTest[] = allPackageTests[cat].tests.map((t) => {
-            if (cat === this.autoTestsCatName) {
-              const func = DG.Func.find({package: f.package.name, name: t.name})[0];
-              return {test: t, packageName: f.package.name, func: func};
-            } else
-              return {test: t, packageName: f.package.name};
+            return {test: t, packageName: f.package.name};
           });
           const subcats = cat.split(':');
           let subcatsFromUrl = [];
@@ -172,22 +165,6 @@ export class TestManager extends DG.ViewBase {
         selectedPackage.categories = packageTestsFinal;
         selectedPackage.totalTests = testsNumInPack;
       };
-    }
-  }
-
-  collectPackageAutoTests(packName: string, allPackageTests: any) {
-    const packFunctions = DG.Func.find({package: packName});
-    const autoTestsArray = [];
-    for (const f of packFunctions) {
-      const funcAutoTests = f.options['test'];
-      if (funcAutoTests && Array.isArray(funcAutoTests) && funcAutoTests.length) {
-        autoTestsArray.push(
-          new Test(this.autoTestsCatName, f.name, null));
-      }
-    };
-    if (autoTestsArray.length) {
-      allPackageTests[this.autoTestsCatName] = {};
-      allPackageTests[this.autoTestsCatName].tests = autoTestsArray;
     }
   }
 
@@ -390,22 +367,13 @@ export class TestManager extends DG.ViewBase {
     if (this.debugMode)
       debugger;
     this.testInProgress(t.resultDiv, true);
-    let res;
-    let testSucceeded;
-    if (t.test.category === this.autoTestsCatName) {
-      res = await testFunc(t.func);
-      testSucceeded = Object.values(res as {[key: string]: {output: any, time: number}}).every((t) => t.output);
-      res = this.createResultsDfForAutotests(res, t.func.name);
-    } else {
-      res = await grok.functions.call(
-        `${t.packageName}:test`, {
-          'category': t.test.category,
-          'test': t.test.name,
-          'testContext': new TestContext(false),
-        });
-      res.columns.addNewString('funcTest').init((i) => '');
-      testSucceeded = res.get('success', 0);
-    }
+    const res = await grok.functions.call(
+      `${t.packageName}:test`, {
+        'category': t.test.category,
+        'test': t.test.name,
+        'testContext': new TestContext(false),
+      });
+    const testSucceeded = res.get('success', 0);
     if (runSkipped) t.test.options.skipReason = skipReason;
     if (!this.testsResultsDf) {
       this.testsResultsDf = res;
@@ -418,18 +386,6 @@ export class TestManager extends DG.ViewBase {
     }
     this.updateTestResultsIcon(t.resultDiv, testSucceeded, skipReason && !runSkipped);
     return testSucceeded;
-  }
-
-  createResultsDfForAutotests(res: {[key: string]: {output: any, time: number}}, funcName: string) {
-    const resDf = DG.DataFrame.create(Object.keys(res).length);
-    resDf.columns.addNewBool('success').init((i) => Object.values(res)[i].output === true);
-    resDf.columns.addNewString('result').init((i) => Object.values(res)[i].output === true ? 'OK' : 'Failed');
-    resDf.columns.addNewInt('ms').init((i) => Object.values(res)[i].time);
-    resDf.columns.addNewBool('skipped').init((i) => false);
-    resDf.columns.addNewString('category').init((i) => this.autoTestsCatName);
-    resDf.columns.addNewString('name').init((i) => funcName);
-    resDf.columns.addNewString('funcTest').init((i) => Object.keys(res)[i]);
-    return resDf;
   }
 
   async runAllTests(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
@@ -589,17 +545,14 @@ export class TestManager extends DG.ViewBase {
         return info;
       const cat = testInfo.get('category', 0);
       if (testInfo.rowCount === 1 && !testInfo.col('name').isNone(0)) {
-        const isAutoTests = cat === this.autoTestsCatName;
         const time = testInfo.get('ms', 0);
         const result = testInfo.get('result', 0);
         const resColor = testInfo.get('success', 0) ? 'var(--green-2)' : 'var(--red-3)';
         info = ui.divV([
-          ui.divText(result, {style: {color: (!isAutoTests && testInfo.get('skipped', 0)) ?
+          ui.divText(result, {style: {color: testInfo.get('skipped', 0) ?
             'var(--orange-2)' : resColor, userSelect: 'text'}}),
           ui.divText(`Time, ms: ${time}`),
         ]);
-        if (isAutoTests)
-          info.append(`Function: ${testInfo.get('funcTest', 0)}`);
         if (nodeType !== NODE_TYPE.TEST)
           info.append(ui.divText(`Test: ${testInfo.get('name', 0)}`));
         if (nodeType === NODE_TYPE.PACKAGE)
