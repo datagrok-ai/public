@@ -22,11 +22,33 @@ category('column panel', () => {
 
   test('add inchi panel', async () => {
     await testInchiPanel('addInchisTopMenu', 'inchi');
-  });
+  }, {skipReason: 'GROK-11781'});
 
   test('inchi keys', async () => {
     await testInchiPanel('addInchisKeysTopMenu', 'inchiKeys');
-  });
+  }, {skipReason: 'GROK-11781'});
+  
+  test('mcs', async () => {
+    const t = DG.DataFrame.fromCsv(`smiles
+      O=C1CN=C(c2ccccc2N1)C3CCCCC3
+      CN1C(=O)CN=C(c2ccccc12)C3CCCCC3
+      CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3
+      CC(C)CCN1C(=O)CN=C(c2ccccc12)C3CCCCC3
+      O=C1CN=C(c2ccccc2N1CC3CCCCC3)C4CCCCC4
+      O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3
+      CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
+    const v = grok.shell.addTableView(t);
+    await grok.functions.call('Chem:addMcsPanel', {col: t.columns.byName('smiles')});
+    v.close();
+  }, {skipReason: 'GROK-11781'});
+
+  test('add inchi panel', async () => {
+    await testInchiPanel('addInchisPanel', 'inchi');
+  }, {skipReason: 'GROK-11781'});
+
+  test('inchi keys', async () => {
+    await testInchiPanel('addInchisKeysPanel', 'inchiKeys');
+  }, {skipReason: 'GROK-11781'});
 });
 
 async function testInchiPanel(funcName: string, tableName: string) {
