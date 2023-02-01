@@ -52,7 +52,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
 
           const colResults: {[colName: string]: number} = {};
           for (const [col, agg] of Object.entries(model.settings.columns || {})) {
-            const currentCol = model.df.getCol(col);
+            const currentCol = table.getCol(col);
             const currentColData = currentCol.getRawData();
             const tempCol = DG.Column.float('', indexes.length);
             tempCol.init((i) => currentColData[indexes[i]]);
@@ -93,7 +93,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         const indexes = mask.getSelectedIndexes();
         const colResults: {[colName: string]: number} = {};
         for (const [col, agg] of Object.entries(model.settings.columns || {})) {
-          const currentCol = model.df.getCol(col);
+          const currentCol = table.getCol(col);
           const currentColData = currentCol.getRawData();
           const tempCol = DG.Column.float('', indexes.length);
           tempCol.init((i) => currentColData[indexes[i]]);
@@ -149,7 +149,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         const indexes = mask.getSelectedIndexes();
         const colResults: {[colName: string]: number} = {};
         for (const [col, agg] of Object.entries(model.settings.columns || {})) {
-          const currentCol = model.df.getCol(col);
+          const currentCol = table.getCol(col);
           const currentColData = currentCol.getRawData();
           const tempCol = DG.Column.float('', indexes.length);
           tempCol.init((i) => currentColData[indexes[i]]);
@@ -185,12 +185,12 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         }
 
         const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
-        distributionTable.filter.copyFrom(table.filter);
+        // distributionTable.filter.copyFrom(table.filter);
 
         const indexes = model.getCompoundBitest().getSelectedIndexes();
         const colResults: {[colName: string]: number} = {};
         for (const [col, agg] of Object.entries(model.settings.columns || {})) {
-          const currentCol = model.df.getCol(col);
+          const currentCol = table.getCol(col);
           const currentColData = currentCol.getRawData();
           const tempCol = DG.Column.float('', indexes.length);
           tempCol.init((i) => currentColData[indexes[i]]);
