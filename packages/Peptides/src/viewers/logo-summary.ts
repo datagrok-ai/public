@@ -168,7 +168,7 @@ export class LogoSummary extends DG.JsViewer {
         };
         stats = getStats(activityColData, maskInfo);
       } else
-        stats = this.model.clusterStats[currentClusterCategoryIndex];
+        stats = this.model.clusterStats[currentCluster];
 
       const tCol = DG.Column.string('peptides', stats.count);
       let tColIdx = 0;
@@ -362,7 +362,7 @@ export class LogoSummary extends DG.JsViewer {
     }
     viewerDf.rows.addNew(newClusterVals);
 
-    this.model.clusterStats.push(stats);
+    this.model.clusterStats[newClusterName] = stats;
     this.model.addNewCluster(newClusterName);
   }
 
