@@ -10,8 +10,8 @@ Performs conversion from smiles to InChi and InChi key formats
 1. Open *"smiles"* table
 
 1. Convert *smiles* column to InChi from its context menu - **Chem | To InChi**
-   (or **Chem | To InChi** action in *"Actions"* tab on [Context Panel](../../datagrok/navigation.md#context-panel)) for *
-   smiles* column)
+   (or **Chem | To InChi** action in *"Actions"* tab on [Context
+   Panel](../../datagrok/navigation.md#context-panel)) for *smiles* column)
 
 * Process bar shows conversion process
 * New column *InChI* added to table
