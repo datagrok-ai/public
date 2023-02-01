@@ -19,7 +19,7 @@ category('UI', () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
-    grok.shell.topMenu.find('Chem').find('Similarity Search...').click();
+    grok.shell.topMenu.find('Chem').group('Search').find('Similarity Search...').click();
     await awaitCheck(() => document.querySelector('.d4-similaritysearchviewer') !== null, 'cannot load Similarity Search viewer', 2000);
     const similarityViewer = Array.from(v.viewers)[1];
     await awaitCheck(() => similarityViewer.root.querySelectorAll('.chem-canvas').length === 10,
@@ -47,7 +47,7 @@ category('UI', () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
-    grok.shell.topMenu.find('Chem').find('Diversity Search...').click();
+    grok.shell.topMenu.find('Chem').group('Search').find('Diversity Search...').click();
     await awaitCheck(() => document.querySelector('.d4-diversitysearchviewer') !== null, 'cannot load Diversity Search viewer', 2000);
     const dsvRoot = document.querySelector('.d4-diversitysearchviewer') as HTMLElement;
     await awaitCheck(() => dsvRoot.querySelectorAll('.chem-canvas').length === 10, 'molecules number != 10', 3000);
@@ -302,7 +302,7 @@ category('UI', () => {
     v = grok.shell.addTableView(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
 
-    grok.shell.topMenu.find('Chem').find('Mutate...').click();
+    grok.shell.topMenu.find('Chem').group('Transform').find('Mutate...').click();
     await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot find Mutate dialog', 1000);
     const dialog = DG.Dialog.getOpenDialogs()[0];
     expect(dialog.input('Molecule').stringValue, 'CN1C(CC(O)C1=O)C1=CN=CC=C1');
