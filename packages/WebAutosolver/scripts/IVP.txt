@@ -1,15 +1,16 @@
-#name: example
+#name: TestExample
 #method: implicit
 #differential equations:
   d(x)/dt = coef1 * y
 
-  dy/dt = coef2 
-  * x
+  dy/d(t) = coef2 
+   * x
 
 #expressions:
   coef1 = const1 + param1
   coef2 = const2 
-  + param2
+   + param2
+   + 0.0
 
 #argument: t (Time, minutes)
   initial = 0.0
@@ -21,8 +22,8 @@
   y = 0.0 (y y.o.)
 
 #constants:
-  const1 = 1.0
-  const2 = 3.0
+  const1 = 1.0 (const1 y.o.)
+  const2 = 3.0 (const1 y.o.)
 
 #parameters:
   param1 = 1.0 (param1 y.o.)

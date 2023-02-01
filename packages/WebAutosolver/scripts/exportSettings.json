@@ -1,0 +1,1 @@
+{"folder": "../wasm", "emscripten": "emscripten.h", "eigen": "../../../Eigen/Eigen/Dense", "optimizationMode": "-O3", "packageFile": "../src/package.js", "packageJsonFile": "../package.json", "runtimeSystemFile": "../wasm/callWasm.js", "totalMemory": "268435456", "name": "TestExample", "source": ["TestExample.cpp"]}
