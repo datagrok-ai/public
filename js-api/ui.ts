@@ -1033,7 +1033,7 @@ export class ObjectHandler {
   /**
    * Registers a function that takes applicable objects as the only argument.
    * It will be suggested to run in the context menu for that object, and
-   * also in the "Actions" pane on the property panel.
+   * also in the "Actions" pane on the context panel.
    *
    * Samples: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
    *

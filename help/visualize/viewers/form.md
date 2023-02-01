@@ -14,7 +14,7 @@ To edit values via the form, click on the 'edit' icon on top.
 
 To reposition the fields, click on the 'presentation' icon, and then drag-and-drop fields to the new locations. To
 change visual properties of an element, click on it while in the designer mode; properties will appear in
-the [property panel](../../datagrok/navigation.md#properties)
+the [context panel](../../datagrok/navigation.md#context-panel)
 on the right.
 
 Field color-coding and format are picked up from the corresponding grid, if possible.

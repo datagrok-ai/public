@@ -11,14 +11,14 @@ Browse schema' command for the corresponding connection:
 ![DB Schema Browser Menu](../uploads/features/db-schema-browser-menu.png "DB Schema Browser Menu")
 
 Schema browser visualizes all tables with all columns at once, giving you a high-level overview of the database. Click
-on a table to see its details in the property panel; it is also a good starting point for drill-downs and further
+on a table to see its details in the context panel; it is also a good starting point for drill-downs and further
 exploration. The following quick actions are there:
 
 ## Hierarchy browser
 
 Grok lets you visually explore both database schema and database content. Simply click on the item (
 such as connection, table, or column) in the "File | Connect to data" pane to bring up item's properties in
-the [property panel](../datagrok/navigation.md#properties).
+the [context panel](../datagrok/navigation.md#context-panel).
 
 ![DB Hierarchy Browser](../uploads/features/db-hierarchy-browser.gif "DB Hierarchy Browser")
 
@@ -27,7 +27,7 @@ the [property panel](../datagrok/navigation.md#properties).
 ### Context actions for db columns
 
 In case you want to retrieve only some of the columns, select them (Shift+click) in the schema, and then use context
-actions that appear in the property panel
+actions that appear in the context panel
 
 ![Get Columns](db-exploration-get-columns.png)
 

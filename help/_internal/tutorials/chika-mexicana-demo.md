@@ -15,13 +15,13 @@ Goal: Based on the restaurant sales data, analyze how time of day affects sales.
 * Open *"Tables"* window from *"View"* menu
 * Select all tables (hold down ```Shift``` key and select all 13 tables)
 * In the context menu for selected tables, select **(13 tables | Append)** (or click on **Append**
-  in *"Commands"* tab on Property Panel )
+  in *"Commands"* tab on Context Panel )
 
 1. Delete empty rows from "result" table
 
 * Click on empty cell in table
 * Press the combination ```Shift + Enter``` from the keyboard
-* Click on **Delete Rows** in *"Actions"* tab on Property Panel (or ```Shift + Delete```)
+* Click on **Delete Rows** in *"Actions"* tab on Context Panel (or ```Shift + Delete```)
 
 1. Extract hours from  *"Item Created Date"* column to new column
 
@@ -40,7 +40,7 @@ Goal: Based on the restaurant sales data, analyze how time of day affects sales.
 
 * Hold down ```Shift```, select the area on [Line Chart](../../visualize/viewers/line-chart.md)
   that corresponds to the price value equal to zero
-* Click on **Delete Rows** in *"Actions"* tab on Property Panel (or ```Shift + Delete```)
+* Click on **Delete Rows** in *"Actions"* tab on Context Panel (or ```Shift + Delete```)
 
 1. Now you can visually evaluate the peaks of sales in terms of time of day
 

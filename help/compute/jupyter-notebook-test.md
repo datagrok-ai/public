@@ -10,9 +10,9 @@ equations, visualizations and narrative text.
 
 1. Open "smiles_coordinates.csv" table
 
-1. Select "smiles_coordinates.csv" table on [Property Panel](../datagrok/navigation.md#properties)
+1. Select "smiles_coordinates.csv" table on [Context Panel](../datagrok/navigation.md#context-panel)
 
-1. Click "Open in Jupyter" in "Actions" tab on [Property Panel](../datagrok/navigation.md#properties)
+1. Click "Open in Jupyter" in "Actions" tab on [Context Panel](../datagrok/navigation.md#context-panel)
 
 * "smiles_coordinates.csv" table open in Jupyter
 * Jupyter Notebook open in new tab
@@ -80,10 +80,10 @@ equations, visualizations and narrative text.
 * Actions "Open", "Edit", "Delete", "Save as JSON", "Rename" are available from context menu
 * Notebook can be applied to "smiles_cordinates" table from context menu
 
-1. Choose "Chemical Space Using tSNE" notebook for [Properties Panel](../datagrok/navigation.md#properties)
+1. Choose "Chemical Space Using tSNE" notebook for [context panel](../datagrok/navigation.md#context-panel)
 
 * Tabs "Details", "Projects", "Activity", "Actions" and "Chats" are present
-  on [Properties Panel](../datagrok/navigation.md#properties)
+  on [context panel](../datagrok/navigation.md#context-panel)
 
 1. Click on "Created by me" filter on [Toolbox](../datagrok/navigation.md#toolbox)
 

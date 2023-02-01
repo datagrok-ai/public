@@ -204,7 +204,7 @@ It returns an array of `Property` objects, which are used to construct descripti
 property:
 
 - `choices`: an array of predefined values that a property accepts, e.g., all possible aggregation functions you can
-  use for the `Value` column in a bar chart; choices are given in a drop-down list in the property panel
+  use for the `Value` column in a bar chart; choices are given in a drop-down list in the context panel
 - `columnFilter`: an indication of allowed data types, it is only relevant to column properties, e.g., the `Value`
   column of a box plot has a *numerical* filter; acceptable values are *numerical*
   , *categorical*, and an individual data type (use `DG.COLUMN_TYPE` to refer to it)

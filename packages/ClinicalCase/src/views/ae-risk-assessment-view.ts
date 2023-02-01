@@ -40,7 +40,7 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
     this.volcanoPlotXAxis = RISK_DIFFERENCE;
     this.volcanoPlotMarkerSize = Object.values(this.sizeOptions)[0];
     this.treatmentArmOptions = study.domains.dm.col(VIEWS_CONFIG[this.name][TRT_ARM_FIELD]).categories;
-    this.initialGuide = ui.info('Please select values for treatment/placebo arms in a property panel', '', false);
+    this.initialGuide = ui.info('Please select values for treatment/placebo arms in a context panel', '', false);
     updateDivInnerHTML(this.riskAssessmentDiv, this.initialGuide);
     this.root.append(this.riskAssessmentDiv);
     grok.data.linkTables(study.domains.dm, this.aeDf,

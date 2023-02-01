@@ -102,7 +102,7 @@ an [example](https://public.datagrok.ai/js/samples/grid/color-coding-conditional
 
 ## Formula
 
-Formula used for creating a derived column. Edit it in the "Formula" section on the property panel to recalculate. Note
+Formula used for creating a derived column. Edit it in the "Formula" section on the context panel to recalculate. Note
 that changing the `formula` tag does not cause recalculation.
 
 ## Layout-id

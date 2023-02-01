@@ -29,7 +29,7 @@ clicks on that button.
 
 ## Form designer
 
-* Click on an object to select it; its properties appear in [property panel](../datagrok/navigation.md#properties)
+* Click on an object to select it; its properties appear in [context panel](../datagrok/navigation.md#context-panel)
 * Click-and-drag to select multiple objects at once
 
 See also:

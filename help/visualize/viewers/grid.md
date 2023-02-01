@@ -147,7 +147,7 @@ highlights it in green. This indication is a neat and lightweight way to update 
 and lets users explore and compare rows with ease.
 
 To make a row current, simply click on it, or navigate up and down the grid using the cursor up and down keys. Info
-panels in the property panel get synchronized with the current cell.
+panels in the context panel get synchronized with the current cell.
 
 It is also integrated into Datagrok's visualizations and cheminformatics functionality, e.g., similarity search, so as
 you move from one row to another you immediately see where the row values belong on the chart or which molecules have
