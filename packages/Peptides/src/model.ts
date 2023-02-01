@@ -38,6 +38,9 @@ export class PeptidesModel {
 
   settingsSubject: rxjs.Subject<type.PeptidesSettings> = new rxjs.Subject();
   _mutatinCliffsSelectionSubject: rxjs.Subject<undefined> = new rxjs.Subject();
+  _newClusterSubject: rxjs.Subject<undefined>  = new rxjs.Subject();
+  _removeClusterSubject: rxjs.Subject<undefined>  = new rxjs.Subject();
+  _filterChangedSubject: rxjs.Subject<undefined>  = new rxjs.Subject();
 
   _isUpdating: boolean = false;
   isBitsetChangedInitialized = false;
@@ -76,8 +79,6 @@ export class PeptidesModel {
   _mostPotentResiduesDf?: DG.DataFrame;
   _matrixDf?: DG.DataFrame;
   _splitSeqDf?: DG.DataFrame;
-  _onNewCluster = new rxjs.Subject();
-  _onRemoveCluster = new rxjs.Subject();
 
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
@@ -191,12 +192,16 @@ export class PeptidesModel {
     return this.settingsSubject.asObservable();
   }
 
-  get onNewCluster(): rxjs.Observable<unknown> {
-    return this._onNewCluster.asObservable();
+  get onNewCluster(): rxjs.Observable<undefined> {
+    return this._newClusterSubject.asObservable();
   }
 
-  get onRemoveCluster(): rxjs.Observable<unknown> {
-    return this._onRemoveCluster.asObservable();
+  get onRemoveCluster(): rxjs.Observable<undefined> {
+    return this._removeClusterSubject.asObservable();
+  }
+
+  get onFilterChanged(): rxjs.Observable<undefined> {
+    return this._filterChangedSubject.asObservable();
   }
 
   get mutationCliffsSelection(): type.PositionToAARList {
@@ -387,9 +392,9 @@ export class PeptidesModel {
       acc.addPane('Actions', () => {
         const newViewButton = ui.button('New view', async () => await this.createNewView(),
           'Creates a new view from current selection');
-        const newCluster = ui.button('New cluster', () => this._onNewCluster.next(),
+        const newCluster = ui.button('New cluster', () => this._newClusterSubject.next(),
           'Creates a new cluster from selection');
-        const removeCluster = ui.button('Remove cluster', () => this._onRemoveCluster.next(),
+        const removeCluster = ui.button('Remove cluster', () => this._removeClusterSubject.next(),
           'Removes currently selected custom cluster');
         return ui.divV([newViewButton, newCluster, removeCluster]);
       });
@@ -596,7 +601,7 @@ export class PeptidesModel {
         (i: number) => clusterIdx == originalClustersColData[i] :
         (i: number) => customClusterColData[i];
 
-      const mask = new Array(activityColLen);
+      const mask: boolean[] = new Array(activityColLen);
       let trueCount = 0;
       for (let maskIdx = 0; maskIdx < activityColLen; ++maskIdx) {
         mask[maskIdx] = isAcitvityIdxValid(maskIdx);
@@ -940,6 +945,8 @@ export class PeptidesModel {
 
       const temp = invariantMapBitset.and(this.initBitset);
       filter.init((i) => temp.get(i), false);
+
+      this._filterChangedSubject.next();
     });
     this.isBitsetChangedInitialized = true;
   }
