@@ -337,7 +337,7 @@ export function diversitySearchViewer(): ChemDiversityViewer {
 //top-menu: Chem | Search | Diversity Search...
 //name: diversitySearch
 //description: finds the most diverse molecules
-export function diversitySearchTopMenu() {
+export function diversitySearchTopMenu(): void {
   (grok.shell.v as DG.TableView).addViewer('DiversitySearchViewer');
 }
 
@@ -555,16 +555,16 @@ export async function getStructuralAlerts(col: DG.Column<string>): Promise<void>
 //name: To InchI...
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}
-export function addInchisTopMenu(col: DG.Column): void {
-  addInchis(col);
+export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column): void {
+  addInchis(table, col);
 }
 
 //top-menu: Chem | Calculate | To InchI Keys
 //name: To InchI Keys...
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}
-export function addInchisKeysTopMenu(col: DG.Column): void {
-  addInchiKeys(col);
+export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void {
+  addInchiKeys(table, col);
 }
 
 //#endregion
