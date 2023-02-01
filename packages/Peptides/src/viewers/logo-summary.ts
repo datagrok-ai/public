@@ -251,15 +251,14 @@ export class LogoSummary extends DG.JsViewer {
     });
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const cell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
-      if (!cell || !cell.isTableCell)
+      if (!cell || !cell.isTableCell || cell.tableColumn?.name != clustersColName)
         return;
 
       summaryTable.currentRowIdx = -1;
-      const cluster = clustersColCategories[clustersColData[cell.tableRowIndex!]];
       if (ev.shiftKey)
-        this.model.modifyClusterSelection(cluster);
+        this.model.modifyClusterSelection(cell.cell.value);
       else
-        this.model.initClusterSelection(cluster);
+        this.model.initClusterSelection(cell.cell.value);
       this.viewerGrid.invalidate();
     });
     this.viewerGrid.onCellRender.subscribe((gridCellArgs) => {

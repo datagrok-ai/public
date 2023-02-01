@@ -409,8 +409,9 @@ export class PeptidesModel {
         return ui.divV([newViewButton, newCluster, removeCluster]);
       });
     }
+    const table = trueModel.df.filter.anyFalse ? trueModel.df.clone(trueModel.df.filter, null, true) : trueModel.df;
     acc.addPane('Mutation Cliff pairs', () => mutationCliffsWidget(trueModel.df, trueModel).root);
-    acc.addPane('Distribution', () => getDistributionWidget(trueModel.df, trueModel).root);
+    acc.addPane('Distribution', () => getDistributionWidget(table, trueModel).root);
 
     return acc;
   }
@@ -620,7 +621,7 @@ export class PeptidesModel {
 
       const stats = getStats(activityColData, maskInfo);
       const clusterName = customClusterIdx < 0 ? originalClustersColCategories[clusterIdx] :
-        customClustersColumnsList[clusterIdx].name;
+        customClustersColumnsList[customClusterIdx].name;
       resultStats[clusterName] = stats;
     }
 
@@ -936,8 +937,9 @@ export class PeptidesModel {
           if (this.mutationCliffsSelection[position].includes(positionCol.get(i)!))
             return true;
         }
-        return typeof clusterColData != 'undefined' && typeof clusterColCategories != 'undefined' &&
-          this.logoSummarySelection.includes(clusterColCategories![clusterColData![i]]);
+        return (typeof clusterColData != 'undefined' && typeof clusterColCategories != 'undefined' &&
+          this.logoSummarySelection.includes(clusterColCategories![clusterColData![i]])) ||
+          this.logoSummarySelection.some((cluster) => this.df.columns.contains(cluster) && this.df.get(cluster, i));
       };
       currentBitset.init((i) => getBitAt(i), false);
 
