@@ -21,7 +21,7 @@ export interface INglViewer {
 
 const enum PROPS_CATS {
   DATA = 'Data',
-  APPEARANCE = 'Appearance',
+  STYLE = 'Style',
 }
 
 export const enum PROPS {
@@ -30,7 +30,7 @@ export const enum PROPS {
   pdbTag = 'pdbTag',
   ligandColumnName = 'ligandColumnName',
 
-  // -- Appearance --
+  // -- Style --
   representation = 'representation',
 }
 
@@ -57,7 +57,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   [PROPS.pdbTag]: string;
   [PROPS.ligandColumnName]: string;
 
-  // -- Appearance --
+  // -- Style --
   [PROPS.representation]: string;
 
   private twinPviewer: TwinPviewer;
@@ -73,9 +73,9 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     this.ligandColumnName = this.string(PROPS.ligandColumnName, null,
       {category: PROPS_CATS.DATA, semType: DG.SEMTYPE.MOLECULE});
 
-    // -- Appearance --
+    // -- Style --
     this.representation = this.string(PROPS.representation, RepresentationType.Cartoon,
-      {category: PROPS_CATS.APPEARANCE, choices: Object.values(RepresentationType)});
+      {category: PROPS_CATS.STYLE, choices: Object.values(RepresentationType)});
 
     // --
     this.root.style.textAlign = 'center';
@@ -84,6 +84,11 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
 
   override onPropertyChanged(property: DG.Property | null): void {
     super.onPropertyChanged(property);
+
+    if (!property) {
+      console.warn('BiostructureViewer: NglViewer.onPropertyChanged() property is null');
+      return;
+    }
 
     switch (property.name) {
     case PROPS.representation:
@@ -102,7 +107,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   // effective PDB value (to plot)
   private pdbStr: string | null = null;
 
-  override onTableAttached() {
+  override onTableAttached(): void {
     super.onTableAttached();
 
     // -- Editors --
@@ -113,7 +118,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     this.setData();
   }
 
-  override detach() {
+  override detach(): void {
     super.detach();
 
     if (this.viewed) {
@@ -123,8 +128,6 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   }
 
   // -- Data --
-
-  private;
 
   setData(): void {
     if (this.viewed) {
@@ -151,10 +154,12 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     }
   }
 
-  private nglDiv: HTMLDivElement;
-  private stage: NGL.Stage;
+  // -- View --
 
-  private splashDiv: HTMLDivElement;
+  private nglDiv?: HTMLDivElement;
+  private stage?: NGL.Stage;
+
+  private splashDiv?: HTMLDivElement;
 
   private viewSubs: Unsubscribable[] = [];
 
@@ -175,6 +180,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   }
 
   private buildView(): void {
+    console.debug('BiostructureViewer: NglViewer.buildView() ');
     if (this.pdbStr) {
       if (!this.nglDiv) {
         this.nglDiv = ui.div([], {
@@ -186,7 +192,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
         this.stage = new NGL.Stage(this.nglDiv);
       }
 
-      const stage: NGL.Stage = this.stage;
+      const stage: NGL.Stage = this.stage!;
       const representation: string = this.representation;
       const pdbStr: string = this.pdbStr;
       window.setTimeout(async () => {
@@ -195,6 +201,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
           await stage.loadFile(pdbBlob, {ext: 'pdb', compressed: false, binary: false, name: '<Name>'});
 
           //highlights in NGL
+          // eslint-disable-next-line camelcase, prefer-const
           let scheme_buffer: string[][] = [];
 
           //TODO: remove - demo purpose only
@@ -209,13 +216,14 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
           const repComp = stage.compList[0].addRepresentation(representation, {});
           stage.compList[0].autoView();
 
-          this.viewSubs.push(this.dataFrame.onCurrentRowChanged.subscribe(this.dataFrameOnCurrentRowChanged.bind(this)));
+          this.viewSubs.push(this.dataFrame.onCurrentRowChanged
+            .subscribe(this.dataFrameOnCurrentRowChanged.bind(this)));
         }
       }, 0 /* next event cycle */);
     } else {
       // preventing recreate nglDiv once again because of GL nature
       if (this.nglDiv) {
-        this.stage.dispose();
+        this.stage!.dispose();
         delete this.stage;
         $(this.nglDiv).empty();
         delete this.nglDiv;
@@ -226,19 +234,19 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
       fileEl.style.display = 'none';
       fileEl.addEventListener('change', async (event) => {
         const k = 11;
-        const pdbStr: string = await fileEl.files[0].text();
-        this.pdb = pdbStr;
-        this.setData();
+        if (fileEl.files != null && fileEl.files.length == 1) {
+          const pdbStr: string = await fileEl.files[0]!.text();
+          this.pdb = pdbStr;
+          this.setData();
+        }
       });
-
-      this.splashDiv = ui.div([
-          ui.link('Open...', null, '', {
-            onClick: (node) => {
-              const k = 11;
-              $(fileEl).trigger('click');
-            }
-          }),
-          fileEl],
+      const fileLink = ui.link('Open...', '', '', {
+        onClick: (node) => {
+          const k = 11;
+          $(fileEl).trigger('click');
+        }
+      });
+      this.splashDiv = ui.div([fileLink, fileEl],
         {style: {width: '100%', height: '100%', verticalAlign: 'middle', fontSize: 'larger'}});
       this.root.appendChild(this.splashDiv);
     }
@@ -275,7 +283,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
 
     const dataFrame: DG.DataFrame = this.dataFrame;
     const ligandColumnName: string = this.ligandColumnName;
-    const stage: NGL.Stage = this.stage;
+    const stage: NGL.Stage = this.stage!;
     window.setTimeout(async () => {
       if (!ligandColumnName || dataFrame.currentRowIdx == -1) return;
 

@@ -1,6 +1,16 @@
 import * as DG from 'datagrok-api/dg';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import MolNotation = DG.chem.Notation;
+
+// datagrok libraries dependencies
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+
+
+const MALFORMED_MOL_V2000 = `
+Malformed
+
+  0  0  0  0  0  0  0  0  0  0999 V2000
+M  END`;
 
 
 /**
@@ -22,8 +32,10 @@ export function _convertMolNotation(
 ): string {
   if (sourceNotation === targetNotation)
     throw new Error(`Convert molecule notation: source and target notations must differ: "${sourceNotation}"`);
-  const mol = rdKitModule.get_mol(moleculeString);
+  let result = MALFORMED_MOL_V2000;
+  let mol: RDMol | null = null;
   try {
+    mol = rdKitModule.get_mol(moleculeString);
     if (targetNotation === MolNotation.MolBlock) {
       //when converting from smiles set coordinates and rendering parameters
       if (sourceNotation === MolNotation.Smiles) {
@@ -35,16 +47,18 @@ export function _convertMolNotation(
       return mol.get_molblock();
     }
     if (targetNotation === MolNotation.Smiles)
-      return mol.get_smiles();
+      result = mol.get_smiles();
     if (targetNotation === MolNotation.V3KMolBlock)
-      return mol.get_v3Kmolblock();
+      result = mol.get_v3Kmolblock();
     if (targetNotation === MolNotation.Smarts)
-      return mol.get_smarts();
+      result = mol.get_smarts();
     // if (targetNotation === MolNotation.Inchi)
     //   return mol.get_inchi();
-    throw new Error(`Failed to convert molucule notation, target notation unknown: ${targetNotation}`);
+  } catch (err) {
+    console.error(errorToConsole(err));
   } finally {
     mol?.delete();
+    return result;
   }
 }
 

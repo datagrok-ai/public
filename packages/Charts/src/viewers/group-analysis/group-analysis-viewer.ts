@@ -23,6 +23,45 @@ const COL_TYPES = {
     'count': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => {
       return query.count(resColName);
     },
+    'med': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => {
+      return query.med(colName, resColName);
+    },
+    'first': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => {
+      return query.first(colName, resColName);
+    },
+    'key': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => {
+      return query.key(colName, resColName);
+    },
+    'missingValueCount': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => {
+      return query.missingValueCount(colName, resColName);
+    },
+    'pivot': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => {
+      return query.pivot(colName, resColName);
+    },
+    'q1': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => {
+      return query.q1(colName, resColName);
+    },
+    'q2': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => {
+      return query.q2(colName, resColName);
+    },
+    'q3': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => {
+      return query.q3(colName, resColName);
+    },
+    'stdev': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => {
+      return query.stdev(colName, resColName);
+    },
+    'sum': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => {
+      return query.sum(colName, resColName);
+    },
+    'uniqueCount': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => {
+      return query.uniqueCount(colName, resColName);
+    },
+    'valueCount': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => {
+      return query.valueCount(colName, resColName);
+    },
+    'variance': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => {
+      return query.variance(colName, resColName);
+    },
   },
   [CHART_TYPE]: {
     histogram: {viewer: DG.VIEWER.HISTOGRAM, params: {split: 'group', marginTop: 5, marginBottom: 5}},
@@ -291,7 +330,8 @@ export class GroupAnalysisViewer extends DG.JsViewer {
                 });
             }
           }
-          gc.element = this.viewersStorage[gc.gridColumn.name][gc.gridRow].root;
+          if (!(Object.keys(this.viewersStorage[gc.gridColumn.name]).length === 0))
+            gc.element = this.viewersStorage[gc.gridColumn.name][gc.gridRow].root;
         }
       }
     });

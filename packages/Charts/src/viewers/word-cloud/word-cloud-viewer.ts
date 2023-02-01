@@ -11,6 +11,7 @@ export class WordCloudViewer extends DG.JsViewer {
   strColumnName: string;
   shape: string;
   minTextSize: number;
+  maxTextSize: any;
   minRotationDegree: number;
   maxRotationDegree: number;
   roationStep: number;
@@ -21,7 +22,6 @@ export class WordCloudViewer extends DG.JsViewer {
   strColumns: DG.Column[];
   initialized: boolean;
   chart: any; //echarts.EChartsType
-  maxTextSize: any;
 
   constructor() {
     super();
@@ -60,6 +60,10 @@ export class WordCloudViewer extends DG.JsViewer {
   }
 
   onTableAttached() {
+    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
+
     this.init();
 
     const columns = this.dataFrame.columns.toList();
@@ -69,11 +73,6 @@ export class WordCloudViewer extends DG.JsViewer {
       this.strColumnName = this.strColumns.reduce((prev, curr) =>
         prev.categories.length < curr.categories.length ? prev : curr).name;
     }
-
-
-    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
 
     this.render();
   }
@@ -155,7 +154,6 @@ export class WordCloudViewer extends DG.JsViewer {
 
     this.chart
       .on('mouseover', (d: echarts.SeriesOption) => ui.tooltip.showRowGroup(table, (i) => {
-        console.log(d);
         return d.name === strColumn.get(i);
       }, 10, 10))
       .on('mouseout', () => ui.tooltip.hide())

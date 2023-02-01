@@ -104,13 +104,13 @@ jobs:
             exit 1
           fi
       - name: Setup Node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
-          node-version: '12.x'
+          node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
           scope: '@datagrok-libraries'
       - name: Upgrade npm
-        run: npm install -g npm@8.x
+        run: npm install -g npm@x
       - name: npm version
         run: npm version
       - run: npm install
@@ -127,11 +127,12 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Commit package-lock.json
+        continue-on-error: true
         if: ${{ matrix.changed_version == 'true' }}
         run: |
           if [ -n "$(git status -s libraries/${{ matrix.project }}/package-lock.json)" ]; then
-            git config --global user.name 'GitHub Actions'
-            git config --global user.email 'github_actions@datagrok.ai'
+            git config --global user.name 'github-actions[bot]'
+            git config --global user.email 'github-actions[bot]@users.noreply.github.com'
             git pull
             git add libraries/${{ matrix.project }}/package-lock.json
             git commit -m "GitHub Actions: Update libraries/${{ matrix.project }}/package-lock.json [skip ci]"

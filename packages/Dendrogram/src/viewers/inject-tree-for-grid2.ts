@@ -128,7 +128,7 @@ export function injectTreeForGridUI2(
         let k = 11;
       },
       1);
-    lineWidthProperty.category = `Dendrogram ${D_PROPS_CATS.APPEARANCE}`;
+    lineWidthProperty.category = `Dendrogram ${D_PROPS_CATS.STYLE}`;
     DG.Property.registerAttachedProperty('GridLook', lineWidthProperty);
   } catch (err: any) {
     console.warn(err);

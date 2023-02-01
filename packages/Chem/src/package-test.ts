@@ -25,6 +25,8 @@ import './tests/substructure-filter-tests';
 
 import './tests/viewers';
 
+import './tests/mol2-importer-tests';
+
 export const _package = new DG.Package();
 export {tests};
 

@@ -31,9 +31,6 @@ export class GlobeViewer extends DG.JsViewer {
   camera?: THREE.PerspectiveCamera;
   orbControls?: OrbitControls;
 
-  magnitudeColumn?: DG.Column;
-  numColumns?: DG.Column[];
-
   constructor() {
     super();
     // Properties
@@ -92,11 +89,11 @@ export class GlobeViewer extends DG.JsViewer {
 
     this.latitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE)!.name;
     this.longitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE)!.name;
-    this.magnitudeColumn = this.dataFrame.columns.bySemType('Magnitude')!;
-    if (this.magnitudeColumn !== null) this.magnitudeColumnName = this.magnitudeColumn.name;
+    const magnitudeColumn = this.dataFrame.columns.bySemType('Magnitude')!;
+    if (magnitudeColumn !== null) this.magnitudeColumnName = magnitudeColumn.name;
     else {
-      this.numColumns = this.dataFrame.columns.toList().filter((col) => ['double', 'int'].includes(col.type));
-      this.magnitudeColumnName = this.numColumns[0].name;
+      const numColumns = this.dataFrame.columns.toList().filter((col) => ['double', 'int'].includes(col.type));
+      this.magnitudeColumnName = numColumns[0].name;
     }
     // By default, beam color and size depend on the same column
     this.colorByColumnName = this.magnitudeColumnName;

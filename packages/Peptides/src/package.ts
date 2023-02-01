@@ -10,19 +10,23 @@ import {MonomerPosition, MostPotentResiduesViewer} from './viewers/sar-viewer';
 
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {LogoSummary} from './viewers/logo-summary';
-import {MonomerWorks} from '@datagrok-libraries/bio';
+import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
+import {PeptidesModel} from './model';
 
-export let monomerWorks: MonomerWorks | null;
+let monomerWorks: MonomerWorks | null = null;
 
 export const _package = new DG.Package();
-let currentTable: DG.DataFrame;
-let alignedSequenceColumn: DG.Column;
 
 export function getMonomerWorks(): MonomerWorks | null {
   return monomerWorks;
-};
+}
 
-async function main(chosenFile: string): Promise<void> {
+//tags: init
+export async function initPeptides(): Promise<void> {
+  monomerWorks ??= new MonomerWorks(await grok.functions.call('Bio:getBioLib'));
+}
+
+async function openDemoData(chosenFile: string): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Loading Peptides');
   const path = _package.webRoot + 'files/' + chosenFile;
   const peptides = await grok.data.loadTable(path);
@@ -36,13 +40,10 @@ async function main(chosenFile: string): Promise<void> {
 
 //name: Peptides
 //tags: app
-export async function Peptides(): Promise<void> {
+export function Peptides(): void {
   const wikiLink = ui.link('wiki', 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md');
   const textLink = ui.inlineText(['For more details, see our ', wikiLink, '.']);
-  if (monomerWorks == null) {
-    const lib = await grok.functions.call('Bio:getBioLib');
-    monomerWorks = new MonomerWorks(lib);
-  }
+
   const appDescription = ui.info(
     [
       ui.list([
@@ -72,9 +73,9 @@ export async function Peptides(): Promise<void> {
     appDescription,
     ui.info([textLink]),
     ui.divH([
-      ui.button('Simple demo', () => main('aligned.csv'), ''),
-      ui.button('Complex demo', () => main('aligned_2.csv'), ''),
-      ui.button('HELM demo', () => main('aligned_3.csv'), ''),
+      ui.button('Simple demo', () => openDemoData('aligned.csv'), ''),
+      ui.button('Complex demo', () => openDemoData('aligned_2.csv'), ''),
+      ui.button('HELM demo', () => openDemoData('aligned_3.csv'), ''),
     ]),
   ]);
 }
@@ -96,8 +97,7 @@ export function peptidesDialog(): DG.Dialog {
 //input: column col {semType: Macromolecule}
 //output: widget result
 export function peptidesPanel(col: DG.Column): DG.Widget {
-  [currentTable, alignedSequenceColumn] = getOrDefine(col.dataFrame, col);
-  const analyzeObject = analyzePeptidesUI(currentTable, alignedSequenceColumn);
+  const analyzeObject = analyzePeptidesUI(col.dataFrame, col);
   return new DG.Widget(analyzeObject.host);
 }
 
@@ -137,9 +137,14 @@ export function peptideSpace(): PeptideSpaceViewer {
 //input: string _monomer {semType: Monomer}
 //output: widget result
 export function manualAlignment(_monomer: string): DG.Widget {
-  [currentTable, alignedSequenceColumn] = getOrDefine();
   //TODO: recalculate Molfile and Molecule panels on sequence update
-  return manualAlignmentWidget(alignedSequenceColumn, currentTable);
+  const df = grok.shell.t;
+  const model: PeptidesModel | null = df.temp[PeptidesModel.modelName];
+  if (!model)
+    return new DG.Widget(ui.divText('Manual alignment works with peptides analysis'));
+
+  const col = df.getCol(model.settings.sequenceColumnName!);
+  return manualAlignmentWidget(col, df);
 }
 
 //name: Peptide Space
@@ -147,40 +152,6 @@ export function manualAlignment(_monomer: string): DG.Widget {
 //input: column col {semType: Macromolecule}
 //output: widget result
 export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
-  [currentTable, alignedSequenceColumn] = getOrDefine(col.dataFrame, col);
   const widget = new PeptideSimilaritySpaceWidget(col, grok.shell.v as DG.TableView);
   return widget.draw();
-}
-
-/*
-name: Get Peptides Structure
-tags: panel, widgets
-input: column col {semType: Macromolecule}
-output: widget result
-export function getPeptidesStructure(col: DG.Column): DG.Widget {
-  const getButtonTooltip = 'Retrieves peptides structure from customer database by special id column';
-  const getButton = ui.button('Get structure', async () => {
-    const progress = DG.TaskBarProgressIndicator.create('Getting structure...');
-    try {
-      const params = {peptidesTable: col.dataFrame};
-      const result = await grok.functions.call('Customerextensions:getPeptidesStructure', params);
-      const text = result ? 'Structure retreived' : 'Structure retreivial is not possible';
-      grok.shell.info(text);
-    } catch (e) {
-      console.warn(e);
-    } finally {
-      progress.close();
-    }
-  }, getButtonTooltip);
-  return new DG.Widget(getButton);
-}
-*/
-
-function getOrDefine(dataframe?: DG.DataFrame, column?: DG.Column | null): [DG.DataFrame, DG.Column] {
-  dataframe ??= grok.shell.t;
-  column ??= dataframe.columns.bySemType(DG.SEMTYPE.MACROMOLECULE)!;
-  if (column === null)
-    throw new Error('Table does not contain aligned sequence columns');
-
-  return [dataframe, column];
 }

@@ -81,10 +81,10 @@ export class MlbVrSpaceBrowser {
   private th: ITreeHelper;
 
   private _mlbDf: MlbDataFrame;
-  get mlbDf(): DG.DataFrame { return this._mlbDf; }
+  get mlbDf(): MlbDataFrame { return this._mlbDf; }
 
   private _treeDf: TreeDataFrame;
-  get treeDf(): DG.DataFrame { return this._treeDf; }
+  get treeDf(): TreeDataFrame { return this._treeDf; }
 
   private _regions: VdRegion[] = [];
   get regions(): VdRegion[] { return this._regions; }
@@ -113,7 +113,8 @@ export class MlbVrSpaceBrowser {
     this._mlbDf = MlbVrSpaceBrowser.emptyMlbDf;
     this.scatterPlot = await this._mlbDf.plot.fromType(DG.VIEWER.SCATTER_PLOT, {
       'xColumnName': EMBED_COL_NAMES.X,
-      'yColumnName': EMBED_COL_NAMES.Y
+      'yColumnName': EMBED_COL_NAMES.Y,
+      'lassoTool': true,
     }) as DG.ScatterPlotViewer;
     const canvas: HTMLCanvasElement = this.scatterPlot.getInfo()['canvas'];
     this.context = canvas.getContext('2d')!;
@@ -123,6 +124,12 @@ export class MlbVrSpaceBrowser {
     const k = 11;
   }
 
+  /**
+   * @param mlbDf null for default empty data frame with VRs/MLB
+   * @param treeDf null for default empty data frame with Trees
+   * @param regions
+   * @param method
+   */
   async setData(
     mlbDf: MlbDataFrame | null, treeDf: TreeDataFrame | null, regions: VdRegion[], method: VrSpaceMethodName
   ): Promise<void> {
@@ -151,7 +158,10 @@ export class MlbVrSpaceBrowser {
   async destroyView(): Promise<void> {
     for (const sub of this.viewSubs) sub.unsubscribe();
 
-    this.scatterPlot!.dataFrame = MlbVrSpaceBrowser.emptyMlbDf;
+    if (this.scatterPlot) {
+      checkEmbedCols(Object.values(EMBED_COL_NAMES), MlbVrSpaceBrowser.emptyMlbDf);
+      this.scatterPlot.dataFrame = MlbVrSpaceBrowser.emptyMlbDf;
+    }
 
     this.vrRows = {};
     this.embedCols = {};
@@ -205,9 +215,9 @@ export class MlbVrSpaceBrowser {
 
         const treeCol: DG.Column = this.treeDf.getCol('TREE');
         this.treeList = MlbVrSpaceBrowser.buildTreeList(this.th, treeCol, this.vrRows, this.embedCols);
-
-        this.scatterPlot.dataFrame = this.mlbDf;
       }
+      checkEmbedCols(Object.values(EMBED_COL_NAMES), this.mlbDf);
+      this.scatterPlot.dataFrame = this.mlbDf;
       this.scatterPlot.props.title = `VR space (method: ${this.method})`;
       this.viewSubs.push(this.treeDf.onMouseOverRowChanged.subscribe(this.treeDfOnMouseOverRowChanged.bind(this)));
       this.viewSubs.push(this.treeDf.onCurrentRowChanged.subscribe(this.treeDfOnCurrentRowChanged.bind(this)));
@@ -293,7 +303,9 @@ export class MlbVrSpaceBrowser {
           const vp = this.scatterPlot.viewport;
           const {zoomLeft, zoomRight, zoomTop, zoomBottom} = getZoomCoordinates(
             vp.width, vp.height, minX, minY, maxX, maxY);
-          this.scatterPlot.zoom(zoomLeft, zoomTop, zoomRight, zoomBottom);
+          window.setTimeout(() => {
+            this.scatterPlot.zoom(zoomLeft, zoomTop, zoomRight, zoomBottom);
+          }, 0 /* next event cycle */);
         }
       }
     } catch (err: any) {
@@ -414,6 +426,13 @@ function renderAndUpdateNode(
       }
     }
   }
+}
+
+function checkEmbedCols(embedColNameList: string[], df: DG.DataFrame): void {
+  const missedList = embedColNameList
+    .filter((embedColName) => !df.columns.names().includes(embedColName));
+  if (missedList.length > 0)
+    throw new Error(`Missed embed columns ${JSON.stringify(missedList)}.`);
 }
 
 class EdgeStyler {

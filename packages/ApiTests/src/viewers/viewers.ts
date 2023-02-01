@@ -92,6 +92,33 @@ category('Viewers', () => {
     }
   });
 
+  test('Reset default properties', async () => {
+    try {
+      const options = {
+        colorColumnName: 'sex',
+        backColor: DG.Color.lightBlue,
+      };
+
+      testDefaultSettings(tv, true, true, false);
+      const sp1 = tv.scatterPlot();
+      expect(sp1.props.colorColumnName, options.colorColumnName);
+      expect(sp1.props.backColor, options.backColor);
+
+      sp1.props.resetDefault();
+      const sp2 = tv.scatterPlot();
+      expect(sp2.props.colorColumnName == options.colorColumnName, false);
+      expect(sp2.props.backColor == options.backColor, false);
+    } finally {      
+      closeViewers(tv);
+    }
+  });
+
+  test('Set default style properties', async () => testDefaultSettings(tv, false, true));
+
+  test('Set default data properties', async () => testDefaultSettings(tv, true, false));
+
+  test('Set default style and data properties', async () => testDefaultSettings(tv, true, true));
+
   test('ScatterPlotViewer.zoom', async () => {
     const sp = DG.Viewer.scatterPlot(df);
     tv.addViewer(sp);
@@ -218,4 +245,38 @@ function addViewerAndWait(tv: DG.TableView, viewerType: string | DG.Viewer): Pro
       reject('timeout');
     }, 100);
   });
+}
+
+function testDefaultSettings(tv: DG.TableView, dataFields: boolean, styleFields: boolean, reset: boolean = true) {
+  const options = {
+    colorColumnName: 'sex',
+    backColor: DG.Color.lightBlue,
+  };
+  let sp1: DG.Viewer;
+
+  try {
+    sp1 = tv.scatterPlot();
+    expect(sp1.props.colorColumnName == options.colorColumnName, false);
+    expect(sp1.props.backColor == options.backColor, false);
+    sp1.setOptions(options);
+
+    expect(sp1.props.colorColumnName, options.colorColumnName);
+    expect(sp1.props.backColor, options.backColor);
+    sp1.props.setDefault(dataFields, styleFields);
+
+    const sp2 = tv.scatterPlot();
+    if (dataFields)
+      expect(sp2.props.colorColumnName, options.colorColumnName);
+    else
+      expect(sp2.props.colorColumnName == options.colorColumnName, false);
+
+    if (styleFields)
+      expect(sp2.props.backColor, options.backColor);
+    else
+      expect(sp2.props.backColor == options.backColor, false);
+  } finally {      
+    closeViewers(tv);
+    if (reset)
+      sp1!.props.resetDefault();
+  }
 }
