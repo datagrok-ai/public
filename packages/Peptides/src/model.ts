@@ -847,7 +847,13 @@ export class PeptidesModel {
     const clusterCol = filteredDf.getCol(this.settings.clustersColumnName!);
     const clusterColData = clusterCol.getRawData();
     let splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
-    splitCol.init((i) => clusterColData[i] == cluster);
+    const indexes: number[] = [];
+    splitCol.init((i) => {
+      const result = clusterColData[i] == cluster;
+      if (result)
+        indexes.push(i);
+      return result;
+    });
     if (splitCol.max == 0)
       splitCol = filteredDf.getCol(clusterName);
     const distDf = DG.DataFrame.fromColumns([activityCol, splitCol]);
@@ -867,8 +873,18 @@ export class PeptidesModel {
     if (!stats.count)
       return null;
 
+    const colResults: {[colName: string]: number} = {};
+    for (const [col, agg] of Object.entries(this.settings.columns || {})) {
+      const currentCol = filteredDf.getCol(col);
+      const currentColData = currentCol.getRawData();
+      const tempCol = DG.Column.float('', indexes.length);
+      tempCol.init((i) => currentColData[indexes[i]]);
+      colResults[`${agg}(${col})`] = tempCol.stats[agg as keyof DG.Stats] as number;
+    }
+
     const das = getDistributionAndStats(distDf, stats, `Cluster: ${clusterName}`, 'Other', true, splitCol.name);
-    const tooltip = wrapDistroAndStatsDefault(das.labels, das.histRoot, das.tableMap, true);
+    const resultMap: {[key: string]: any} = {...das.tableMap, ...colResults};
+    const tooltip = wrapDistroAndStatsDefault(das.labels, das.histRoot, resultMap, true);
 
     ui.tooltip.show(tooltip, x, y);
 
