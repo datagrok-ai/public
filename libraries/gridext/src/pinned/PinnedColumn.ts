@@ -417,6 +417,8 @@ export class PinnedColumn {
           headerThis.paint(g, grid);
         }
     );
+    const g = eCanvasThis.getContext('2d');
+    headerThis.paint(g, grid);
   }
 
   isPinned() : boolean {
