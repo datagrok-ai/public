@@ -581,7 +581,7 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 
 //name: Chem
 //input: column molColumn {semType: Molecule}
-//tags: panel
+//tags: panel, exclude-actions-panel
 //output: widget result
 export function molColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
   return getMolColumnPropertyPanel(molColumn);
