@@ -50,7 +50,7 @@ export class PeptidesModel {
   _clusterStats?: Stats[];
   _mutationCliffsSelection!: type.PositionToAARList;
   _invariantMapSelection!: type.PositionToAARList;
-  _logoSummarySelection!: number[];
+  _logoSummarySelection!: string[];
   _substitutionsInfo?: type.SubstitutionsInfo;
   isInitialized = false;
   _analysisView?: DG.TableView;
@@ -226,12 +226,12 @@ export class PeptidesModel {
     this.analysisView.grid.invalidate();
   }
 
-  get logoSummarySelection(): number[] {
+  get logoSummarySelection(): string[] {
     this._logoSummarySelection ??= JSON.parse(this.df.tags[C.TAGS.CLUSTER_SELECTION] || '[]');
     return this._logoSummarySelection;
   }
 
-  set logoSummarySelection(selection: number[]) {
+  set logoSummarySelection(selection: string[]) {
     this._logoSummarySelection = selection;
     this.df.tags[C.TAGS.CLUSTER_SELECTION] = JSON.stringify(selection);
     this.fireBitsetChanged();
@@ -660,7 +660,7 @@ export class PeptidesModel {
     return mprDf;
   }
 
-  modifyClusterSelection(cluster: number): void {
+  modifyClusterSelection(cluster: string): void {
     const tempSelection = this.logoSummarySelection;
     const idx = tempSelection.indexOf(cluster);
     if (idx !== -1)
@@ -671,7 +671,7 @@ export class PeptidesModel {
     this.logoSummarySelection = tempSelection;
   }
 
-  initClusterSelection(cluster: number): void {
+  initClusterSelection(cluster: string): void {
     this.logoSummarySelection = [cluster];
   }
 
@@ -885,6 +885,7 @@ export class PeptidesModel {
     const clusterCol = this.df.col(this.settings.clustersColumnName!);
 
     const changeSelectionBitset = (currentBitset: DG.BitSet): void => {
+      const clusterColCategories = clusterCol?.categories;
       const clusterColData = clusterCol?.getRawData();
 
       const edfSelection = this.edf?.selection;
@@ -911,9 +912,8 @@ export class PeptidesModel {
           if (this.mutationCliffsSelection[position].includes(positionCol.get(i)!))
             return true;
         }
-        if (clusterColData && this.logoSummarySelection.includes(clusterColData[i]))
-          return true;
-        return false;
+        return typeof clusterColData != 'undefined' && typeof clusterColCategories != 'undefined' &&
+          this.logoSummarySelection.includes(clusterColCategories![clusterColData![i]]);
       };
       currentBitset.init((i) => getBitAt(i), false);
 
