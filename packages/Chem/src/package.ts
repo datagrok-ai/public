@@ -773,6 +773,7 @@ export async function oclCellRenderer(): Promise<OCLCellRenderer> {
 
 //name: Sort by similarity
 //description: Sorts a molecular column by similarity
+//tags: exclude-actions-panel
 //meta.action: Sort by similarity
 //input: semantic_value value { semType: Molecule }
 export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
@@ -799,6 +800,7 @@ export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
 
 //name: Use as filter
 //description: Adds this structure as a substructure filter
+//tags: exclude-actions-panel
 //meta.action: Use as filter
 //input: semantic_value value { semType: Molecule }
 export function useAsSubstructureFilter(value: DG.SemanticValue): void {
