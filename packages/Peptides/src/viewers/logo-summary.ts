@@ -304,22 +304,24 @@ export class LogoSummary extends DG.JsViewer {
   }
 
   clusterFromSelection(): void {
-    const selection = this.dataFrame.selection;
+    const filteredDf = this.dataFrame.filter.anyFalse ? this.dataFrame.clone(this.dataFrame.filter, null, true) :
+      this.dataFrame;
+    const selection = filteredDf.selection;
     const viewerDf = this.viewerGrid.dataFrame;
     const viewerDfCols = viewerDf.columns;
     const viewerDfColsLength = viewerDfCols.length;
     const newClusterVals = new Array(viewerDfCols.length);
 
-    const activityScaledCol = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    const activityScaledCol = filteredDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     const maskInfo: MaskInfo = {
       mask: selection.getBuffer(),
       trueCount: selection.trueCount,
       falseCount: selection.falseCount,
     };
     const stats = getStats(activityScaledCol.getRawData(), maskInfo);
-    const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, this.model.splitCol]);
+    const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, filteredDf.getCol(this.model.splitCol.name)]);
 
-    const peptideCol: DG.Column<string> = this.dataFrame.getCol(this.model.settings.sequenceColumnName!);
+    const peptideCol: DG.Column<string> = filteredDf.getCol(this.model.settings.sequenceColumnName!);
     const peptideColData = peptideCol.getRawData();
     const peptideColCategories = peptideCol.categories;
     const peptideColTags = peptideCol.tags;

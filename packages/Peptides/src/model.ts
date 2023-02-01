@@ -1063,7 +1063,7 @@ export class PeptidesModel {
   }
 
   addNewCluster(clusterName: string): void {
-    const newClusterCol = DG.Column.fromBitSet(clusterName, this.df.selection);
+    const newClusterCol = DG.Column.fromBitSet(clusterName, this.getCompoundBitest());
     newClusterCol.setTag(C.TAGS.CUSTOM_CLUSTER, '1');
     this.df.columns.add(newClusterCol);
     this.analysisView.grid.col(newClusterCol.name)!.visible = false;
