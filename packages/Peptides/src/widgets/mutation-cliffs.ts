@@ -6,6 +6,7 @@ import {PeptidesModel} from '../model';
 import {getSeparator} from '../utils/misc';
 
 export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
+  const currentFilter = table.filter.getSelectedIndexes();
   const substInfo = model.substitutionsInfo;
   const currentCell = model.mutationCliffsSelection;
   const positions = Object.keys(currentCell);
@@ -28,12 +29,15 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
 
       const posCol = table.getCol(pos);
       for (const [referenceIdx, indexArray] of substitutionsMap.entries()) {
-        const forbiddentIndexes = seenIndexes.has(referenceIdx) ? seenIndexes.get(referenceIdx)! : [];
+        if (!currentFilter.includes(referenceIdx))
+          continue;
+
+        const forbiddentIndexes = seenIndexes.get(referenceIdx) ?? [];
         const baseSequence = alignedSeqCol.get(referenceIdx);
         const baseActivity = activityScaledCol.get(referenceIdx);
 
         for (const subIdx of indexArray) {
-          if (forbiddentIndexes.includes(subIdx))
+          if (forbiddentIndexes.includes(subIdx) || !currentFilter.includes(subIdx))
             continue;
 
           if (!seenIndexes.has(subIdx))
