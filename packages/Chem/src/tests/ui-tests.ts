@@ -31,7 +31,7 @@ category('UI', () => {
       'molecules number inside Similarity viewer is different than expected after change "Limit" property', 3000);
 
     const similarityLable = document.getElementsByClassName('d4-layout-root d4-root d4-viewer d4-similaritysearchviewer ui-box')[0]
-      .getElementsByClassName('ui-label')[0] as HTMLElement;
+      .getElementsByClassName('similarity-prop-value')[1] as HTMLElement;
     if (similarityLable.innerText != '0.22')
       throw 'Expected Similarity Lable for 2nd molecule does not match the "Dice" metric';
 
