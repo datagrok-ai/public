@@ -17,4 +17,4 @@ Read the table from the top, do not skip any steps until it is intentional, and 
 |    2     | Use search to find the "demog" project | The example popup appears | Project "demog" displayed in the project browser        |                           |
 |    3     | Open "Share" dialog for the "demog" project from its context menu  | "Share" dialog is open"                                 |                           |
 |    4     | Check "Details" for the "demog" project from its context menu      | "Details" view for "demog" projectc is open             |                           |
-|    5     | Check all tabs on Property Panel for "demog" project               | Tabs content is correct and there are no errors in them |                           |
+|    5     | Check all tabs in the context panel for "demog" project               | Tabs content is correct and there are no errors in them |                           |

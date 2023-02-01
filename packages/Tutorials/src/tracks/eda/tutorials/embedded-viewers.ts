@@ -64,7 +64,7 @@ export class EmbeddedViewersTutorial extends Tutorial {
         map((_) => trellis.props.viewerType),
         filter((t: string) => t === DG.VIEWER.SCATTER_PLOT)),
       $(trellis!.root).find('.d4-combo-popup')[0], 'This time, use the viewer type selector ' +
-      'in the opened Trellis plot. You can also set it from the property panel.');
+      'in the opened Trellis plot. You can also set it from the context panel.');
 
     await this.action('Open the inner plot properties and set Color to AGE',
       interval(1000).pipe(

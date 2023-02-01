@@ -115,7 +115,7 @@ Figma Datagrok UIKit available on [Figma Community](https://www.figma.com/@datag
 * [Cards](#cards)
 * [Combo Popup](#combo-popup)
 * [Markdown](#markdown)
-* [Property Panel](#property-panel)
+* [Context Panel](#context-panel)
 * [Sidebar](#sidebar)
 * [Tabs](#tabs)
 * [Tag Editor](#tag-editor)
@@ -1004,12 +1004,12 @@ let text = ui.divText("Clickable element");
 text.addEventListener("click", showMenu);
 ```
 
-### Property panel
+### Context panel
 
-Property panel is the right sidebar panel that used for showing the active item properties.
+Context panel is the right sidebar panel that used for showing the active item properties.
 
 ```javascript
-grok.shell.o = ui.h1('Property panel');
+grok.shell.o = ui.h1('Context panel');
 ```
 
 ### Sidebar

@@ -285,7 +285,7 @@ export const FUNC_TYPES = {
     * Signature: app() */
   APP: 'app',
 
-  /** Context-specific widget that appears on the property panel
+  /** Context-specific widget that appears on the context panel
     * Signature: panel(x: any): Widget */
   PANEL: 'panel',
 

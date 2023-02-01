@@ -18,7 +18,7 @@ Actions can be set for:
 
 ## Prediction
 
-Predicts parameter using predicted model selected in "Model" parameter. Description of model available on Property panel
+Predicts parameter using predicted model selected in "Model" parameter. Description of model available on Context panel
 after selection.
 
 ## Demographics statistics

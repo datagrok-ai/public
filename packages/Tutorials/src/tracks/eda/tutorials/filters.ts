@@ -48,7 +48,7 @@ export class FiltersTutorial extends Tutorial {
 
     const catFilterInfo = 'Only rows that have this value in the <b>DIS_POP</b> column ' +
       'will pass the filter. You can see the number of filtered rows and the applied filter ' +
-      'description in the property panel on the right. In categorical filters, the blue ' +
+      'description in the context panel on the right. In categorical filters, the blue ' +
       'background, as well as the counts on the right, indicates the ratio of rows for that ' +
       'category that pass the current filter. We have just filtered the dataset by disease ' +
       'type, so naturally the rest of categories have zero row counts. Note that this is ' +

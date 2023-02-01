@@ -86,7 +86,7 @@ The following HitTriage-related advanced analytics functionality is available ou
 
 In addition, the solution takes advantage of the built-in data augmentation system. Whenever a user clicks on a
 structure, the relevant information (assays, projects, dose-response curves, etc)
-gets shown in the property panel on the right.
+gets shown in the context panel on the right.
 
 ## Visualization and Reporting Outcomes
 

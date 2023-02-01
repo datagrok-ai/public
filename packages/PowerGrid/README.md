@@ -12,7 +12,7 @@ chart types: `sparklines`, `bar chart`, `pie chart` and `radar chart`.
 
 To add a sparkline column, open `Add | Summary Columns | ...` from the grid's popup menu.
 
-To customize a sparkline column, click on its header and expand the `Renderer` pane in the property panel.
+To customize a sparkline column, click on its header and expand the `Renderer` pane in the context panel.
 
 ![](../../help/develop/how-to/custom-cell-renderers-sparklines-and-settings.gif "Sparklines and settings")
 

@@ -44,7 +44,7 @@ Available hypothesis tests:
 
 Return p-values.
 
-Test are available on Property Panel in "Commands" section for two selected numerical columns without missing values. Or
+Tests are available on Context Panel in "Commands" section for two selected numerical columns without missing values. Or
 from Functions browser "Help | Actions", see "Math or Statistics"
 sections.
 
@@ -55,7 +55,7 @@ Available normalizations:
 * [min-max](https://en.wikipedia.org/wiki/Feature_scaling)
 * [z-scores](https://en.wikipedia.org/wiki/Standard_score)
 
-Any numerical columns can be normalized via Property Panel in "Commands" section. Or from Functions browser "Help |
+Any numerical columns can be normalized via Context Panel in "Commands" section. Or from Functions browser "Help |
 Actions", see "Math" section.
 
 ## Interactive methods

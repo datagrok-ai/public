@@ -109,7 +109,7 @@ There are multiple ways you can run tests:
 - by right clicking on package, category, or test and selecting `Run` from context menu
 - by selecting package, category, or test and pushing `Enter`
 - by selecting package, category, or test and pushing `Run` on a ribbon panel
-- by selecting package, category, or test and pushing `Run` on a property panel
+- by selecting package, category, or test and pushing `Run` on a context panel
 - individual tests can be run by double click
 - you can run all tests at once using `Run all` button on the ribbon
 - package, category, or test can be run by putting the corresponding url into address bar of the browser. The format is
@@ -125,7 +125,7 @@ Progress bar on the bottom of the page shows the percentage of completed tests.
 
 ### Reviewing results
 
-Information about test results is available via tooltip or in the property panel. Selected test, category, or package to
+Information about test results is available via tooltip or in the context panel. Selected test, category, or package to
 explore results. In case category/package contain multiple tests results are shown as a grid which can be added to
 workspace for further exploration.
 
