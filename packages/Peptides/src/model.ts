@@ -1016,7 +1016,7 @@ export class PeptidesModel {
     }
 
     this.updateGrid();
-    this.fireBitsetChanged();
+    this.fireBitsetChanged(false, true);
     this.analysisView.grid.invalidate();
   }
 
