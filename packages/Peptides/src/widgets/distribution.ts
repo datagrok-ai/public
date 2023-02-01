@@ -187,7 +187,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
         distributionTable.filter.copyFrom(table.filter);
 
-        const indexes = table.selection.clone().and(table.filter).getSelectedIndexes();
+        const indexes = model.getCompoundBitest().getSelectedIndexes();
         const colResults: {[colName: string]: number} = {};
         for (const [col, agg] of Object.entries(model.settings.columns || {})) {
           const currentCol = model.df.getCol(col);
