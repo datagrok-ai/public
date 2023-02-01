@@ -226,7 +226,7 @@ export class PeptidesModel {
     this._invariantMapSelection = selection;
     this.df.tags[C.TAGS.FILTER] = JSON.stringify(selection);
     this.isInvariantMapTrigger = true;
-    this.df.filter.fireChanged();
+    this.fireBitsetChanged(false, true);
     this.isInvariantMapTrigger = false;
     this.analysisView.grid.invalidate();
   }
@@ -384,35 +384,31 @@ export class PeptidesModel {
     return splitSeqDf;
   }
 
-  createAccordion(): DG.Accordion {
+  createAccordion(): DG.Accordion | null {
+    const trueModel: PeptidesModel | undefined = grok.shell.t.temp[PeptidesModel.modelName];
+    if (!trueModel)
+      return null;
+
     const acc = ui.accordion();
     acc.root.style.width = '100%';
-    acc.addTitle(ui.h1(`${this.df.selection.trueCount} selected rows`));
-    if (this.df.selection.anyTrue) {
+    const filterAndSelectionBs = trueModel.df.selection.clone().and(trueModel.df.filter);
+    const filteredTitlePart = trueModel.df.filter.anyFalse ? ` among ${trueModel.df.filter.trueCount} filtered` : '';
+    acc.addTitle(ui.h1(`${filterAndSelectionBs.trueCount} selected rows${filteredTitlePart}`));
+    if (filterAndSelectionBs.anyTrue) {
       acc.addPane('Actions', () => {
-        const newViewButton = ui.button('New view', async () => await this.createNewView(),
+        const newViewButton = ui.button('New view', async () => await trueModel.createNewView(),
           'Creates a new view from current selection');
-        const newCluster = ui.button('New cluster', () => this._newClusterSubject.next(),
+        const newCluster = ui.button('New cluster', () => trueModel._newClusterSubject.next(),
           'Creates a new cluster from selection');
-        const removeCluster = ui.button('Remove cluster', () => this._removeClusterSubject.next(),
+        const removeCluster = ui.button('Remove cluster', () => trueModel._removeClusterSubject.next(),
           'Removes currently selected custom cluster');
         return ui.divV([newViewButton, newCluster, removeCluster]);
       });
     }
-    acc.addPane('Mutation Cliff pairs', () => mutationCliffsWidget(this.df, this).root);
-    acc.addPane('Distribution', () => getDistributionWidget(this.df, this).root);
+    acc.addPane('Mutation Cliff pairs', () => mutationCliffsWidget(trueModel.df, trueModel).root);
+    acc.addPane('Distribution', () => getDistributionWidget(trueModel.df, trueModel).root);
 
     return acc;
-  }
-
-  updateDefault(): void {
-    if (!this._isUpdating || !this.isInitialized) {
-      this._isUpdating = true;
-      this.updateGrid();
-
-      this.analysisView.grid.invalidate();
-      this._isUpdating = false;
-    }
   }
 
   updateGrid(): void {
@@ -951,15 +947,21 @@ export class PeptidesModel {
     this.isBitsetChangedInitialized = true;
   }
 
-  fireBitsetChanged(isPeptideSpaceSource: boolean = false): void {
+  fireBitsetChanged(isPeptideSpaceSource: boolean = false, fireFilterChanged: boolean = false): void {
     this.isPeptideSpaceChangingBitset = isPeptideSpaceSource;
     this.df.selection.fireChanged();
+    if (fireFilterChanged)
+      this.df.filter.fireChanged();
     this.modifyOrCreateSplitCol();
     this.headerSelectedMonomers = calculateSelected(this.df);
+
     const acc = this.createAccordion();
-    grok.shell.o = acc.root;
-    for (const pane of acc.panes)
-      pane.expanded = true;
+    if (acc != null) {
+      grok.shell.o = acc.root;
+      for (const pane of acc.panes)
+        pane.expanded = true;
+    }
+
     this.isPeptideSpaceChangingBitset = false;
   }
 
@@ -1013,8 +1015,8 @@ export class PeptidesModel {
       this.isRibbonSet = true;
     }
 
-    this.updateDefault();
-
+    this.updateGrid();
+    this.fireBitsetChanged();
     this.analysisView.grid.invalidate();
   }
 
@@ -1057,6 +1059,5 @@ export class PeptidesModel {
     newDf.setTag(C.TAGS.UUID, uuid.v4());
     const view = grok.shell.addTableView(newDf);
     view.addViewer('logo-summary-viewer');
-    grok.shell.v = view;
   }
 }
