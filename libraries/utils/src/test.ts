@@ -10,10 +10,11 @@ export const tests: {
   }
 } = {};
 
+const autoTestsCatName = 'Auto Tests';
+const wasRegistered: {[key: string]: boolean} = {};
 export let currentCategory: string;
 
 export namespace assure {
-
   export function notNull(value: any, name?: string) {
     if (value == null)
       throw new Error(`${name == null ? 'Value' : name} not defined`);
@@ -160,11 +161,40 @@ export function after(after: () => Promise<void>): void {
   tests[currentCategory].after = after;
 }
 
+function addNamespace(s: string, f: DG.Func): string {
+  return s.replace(new RegExp(f.name, 'gi'), f.nqName);
+}
 
-export async function runTests(options?: { category?: string, test?: string, testContext?: TestContext }) {
+export async function initAutoTests(packageId: string, module?: any) {
+  if (wasRegistered[packageId]) return;
+  const moduleTests = module ? module.tests : tests;
+  if (moduleTests[autoTestsCatName] !== undefined) {
+    wasRegistered[packageId] = true;
+    return;
+  }
+  const moduleAutoTests = [];
+  const packFunctions = await grok.dapi.functions.filter(`package.id = "${packageId}"`).list();
+  for (const f of packFunctions) {
+    const tests: string[] = f.options['test'];
+    if (!(tests && Array.isArray(tests) && tests.length)) continue;
+    for (let i = 0; i < tests.length; i++) {
+      moduleAutoTests.push(new Test(autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
+        const res = await grok.functions.eval(addNamespace(tests[i], f));
+        // eslint-disable-next-line no-throw-literal
+        if (res !== true) throw `Failed: ${tests[i]}`;
+      }));
+    }
+  }
+  wasRegistered[packageId] = true;
+  if (!moduleAutoTests.length) return;
+  moduleTests[autoTestsCatName] = {tests: moduleAutoTests};
+}
+
+export async function runTests(options?: {category?: string, test?: string, testContext?: TestContext}) {
+  const package_ = grok.functions.getCurrentCall()?.func?.package;
+  await initAutoTests(package_.id);
   const results: { category?: string, name?: string, success: boolean,
                    result: string, ms: number, skipped: boolean }[] = [];
-  const packageName = grok.functions.getCurrentCall()?.func?.package;
   console.log(`Running tests`);
   options ??= {};
   options!.testContext ??= new TestContext();
@@ -185,7 +215,6 @@ export async function runTests(options?: { category?: string, test?: string, tes
     const res = [];
     for (let i = 0; i < t.length; i++)
       res.push(await execTest(t[i], options?.test));
-
     const data = (await Promise.all(res)).filter((d) => d.result != 'skipped');
     try {
       if (value.after)
@@ -219,7 +248,7 @@ export async function runTests(options?: { category?: string, test?: string, tes
       successful: successful,
       skipped: skipped,
       failed: failed.length,
-      package: packageName
+      package: package_
     };
     for (const r of failed) Object.assign(params, {[`${r.category} | ${r.name}`]: r.result});
     logger.log(description, params, 'package-tested');
@@ -235,7 +264,6 @@ async function execTest(t: Test, predicate: string | undefined) {
   if (!skip)
     console.log(`Started ${t.category} ${t.name}`);
   const start = new Date();
-
   try {
     if (skip)
       r = {success: true, result: skipReason!, ms: 0, skipped: true};
@@ -249,7 +277,6 @@ async function execTest(t: Test, predicate: string | undefined) {
   r.ms = stop - start;
   if (!skip)
     console.log(`Finished ${t.category} ${t.name} for ${r.ms} ms`);
-
   r.category = t.category;
   r.name = t.name;
   return r;
