@@ -50,7 +50,7 @@ This release introduces new features and capabilities, such as custom clustering
 ##### Dendrogram
 
 We separated **Dendrogram** from [**PhyloTreeViewer**](https://github.com/datagrok-ai/public/tree/master/packages/PhyloTreeViewer). And now it’s a [package](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram) for the Datagrok platform for phylogenetic tree visualization. Dendrogram supports the Newick tree format.
-For details, see [Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram#dendrogram)
+For details, see [Dendrogram](https://community.datagrok.ai/t/dendrogram/721)
 
 ![Dendrogram properties](../../../uploads/gifs/dendrogram-properties-1.gif)
 
