@@ -19,17 +19,9 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   const selectionObject = model.mutationCliffsSelection;
   const clustersColName = model.settings.clustersColumnName;
   let clustersProcessedObject: string[] = [];
-  if (clustersColName) {
-    const clustersRawObject = model.logoSummarySelection;
-    const clustersColCategories = table.getCol(model.settings.clustersColumnName!).categories;
-    clustersProcessedObject = new Array(clustersRawObject.length);
-    const customClustersColumns = wu(model.customClusters).toArray();
-    for (let i = 0; i < clustersRawObject.length; ++i) {
-      const clusterIdx = clustersRawObject[i];
-      clustersProcessedObject[i] = clusterIdx - clustersColCategories.length < 0 ? clustersColCategories[clusterIdx] :
-        customClustersColumns[clusterIdx - clustersColCategories.length].name;
-    }
-  }
+  if (clustersColName)
+    clustersProcessedObject = model.logoSummarySelection;
+
   const positions = Object.keys(selectionObject);
   const positionsLen = positions.length;
   let aarStr = allConst;

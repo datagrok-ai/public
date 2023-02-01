@@ -230,10 +230,11 @@ export class LogoSummary extends DG.JsViewer {
         return;
 
       summaryTable.currentRowIdx = -1;
+      const cluster = clustersColCategories[clustersColData[cell.tableRowIndex!]];
       if (ev.shiftKey)
-        this.model.modifyClusterSelection(cell.tableRowIndex!);
+        this.model.modifyClusterSelection(cluster);
       else
-        this.model.initClusterSelection(cell.tableRowIndex!);
+        this.model.initClusterSelection(cluster);
       this.viewerGrid.invalidate();
     });
     this.viewerGrid.onCellRender.subscribe((gridCellArgs) => {
@@ -246,7 +247,7 @@ export class LogoSummary extends DG.JsViewer {
       canvasContext.beginPath();
       canvasContext.rect(bound.x, bound.y, bound.width, bound.height);
       canvasContext.clip();
-      CR.renderLogoSummaryCell(canvasContext, gc.cell.value, gc.cell.rowIndex, this.model.logoSummarySelection, bound);
+      CR.renderLogoSummaryCell(canvasContext, gc.cell.value, this.model.logoSummarySelection, bound);
       gridCellArgs.preventDefault();
       canvasContext.restore();
     });
@@ -342,18 +343,15 @@ export class LogoSummary extends DG.JsViewer {
 
   removeCluster(): void {
     const lss = this.model.logoSummarySelection;
+    const dfCols = this.dataFrame.columns;
 
-    const viewerDf = this.viewerGrid.dataFrame;
-    const viewerClustersCol = viewerDf.getCol(this.model.settings.clustersColumnName!);
-    const originalClusterAmount = this.dataFrame.getCol(this.model.settings.clustersColumnName!).categories.length;
-
-    const removeClusterIndexesList = lss.filter((clusterId) => clusterId + 1 > originalClusterAmount);
+    const removeClusterIndexesList = lss.filter((cluster) => dfCols.contains(cluster));
     if (removeClusterIndexesList.length == 0)
       return grok.shell.info('Nothing removed. Please select a created cluster to remove');
 
-    for (const clusterId of removeClusterIndexesList) {
-      lss.splice(lss.indexOf(clusterId), 1);
-      this.dataFrame.columns.remove(viewerClustersCol.get(clusterId));
+    for (const cluster of removeClusterIndexesList) {
+      lss.splice(lss.indexOf(cluster), 1);
+      dfCols.remove(cluster);
     }
 
     this.model.logoSummarySelection = lss;
