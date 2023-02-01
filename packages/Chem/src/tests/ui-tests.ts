@@ -374,6 +374,7 @@ category('UI', () => {
 
   after(async () => {
     grok.shell.closeAll();
-    grok.shell.closeTable(smiles);
+    if (smiles)
+      grok.shell.closeTable(smiles);
   });
 });
