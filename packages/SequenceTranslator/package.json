@@ -20,7 +20,6 @@
     "datagrok-api": "^1.8.2",
     "datagrok-tools": "^4.1.2",
     "npm": "^8.11.0",
-    "openchemlib": "6.0.1",
     "save-svg-as-png": "^1.4.17",
     "style-loader": "^3.3.1",
     "ts-loader": "^9.3.1",
@@ -57,8 +56,5 @@
     "test-dev": "grok test --host dev",
     "test-local": "grok test --host localhost"
   },
-  "sources": [
-    "vendors/openchemlib-full.js"
-  ],
   "category": "Bioinformatics"
 }
