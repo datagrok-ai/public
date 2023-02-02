@@ -379,9 +379,7 @@ export function linkV3000(molBlocks: string[], useChirality: boolean = true): st
   return macroMolBlock;
 }
 
-function rotateNucleotidesV3000(molecule: string): string {
-  // @ts-ignore
-  let molBlock = molecule.includes('M  END') ? molecule : OCL.Molecule.fromSmiles(molecule).toMolfileV3();
+function rotateNucleotidesV3000(molBlock: string): string {
   const coordinates = extractAtomDataV3000(molBlock);
   const natom = coordinates.atomIndex.length;
 
@@ -402,7 +400,11 @@ function rotateNucleotidesV3000(molecule: string): string {
   }
 
   let angle = 0;
-  if (coordinates.x[indexFivePrime] === 0) { angle = coordinates.y[indexFivePrime] > coordinates.y[indexThreePrime] ? Math.PI / 2 : 3 * Math.PI / 2; } else if (coordinates.y[indexFivePrime] === 0) { angle = coordinates.x[indexFivePrime] > coordinates.x[indexThreePrime] ? Math.PI : 0; } else {
+  if (coordinates.x[indexFivePrime] === 0) {
+    angle = coordinates.y[indexFivePrime] > coordinates.y[indexThreePrime] ? Math.PI / 2 : 3 * Math.PI / 2;
+  } else if (coordinates.y[indexFivePrime] === 0) {
+    angle = coordinates.x[indexFivePrime] > coordinates.x[indexThreePrime] ? Math.PI : 0;
+  } else {
     const derivative = coordinates.y[indexFivePrime] / coordinates.x[indexFivePrime];
     angle = derivative > 0 ?
       (coordinates.x[indexFivePrime] > 0 ? Math.PI - Math.atan(derivative) : Math.PI * 2 - Math.atan(derivative)) :
