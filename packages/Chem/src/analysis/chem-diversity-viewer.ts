@@ -21,7 +21,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
   }
 
 
-  async render(computeData = true): Promise<void> {
+  async render(computeData = false): Promise<void> {
     if (!this.beforeRender())
       return;
     if (this.dataFrame && this.moleculeColumn) {
@@ -43,11 +43,14 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
 
       panel[cnt++] = this.metricsDiv;
       for (let i = 0; i < this.limit; ++i) {
+        const molProps = this.createMoleculePropertiesDiv(this.renderMolIds[i]);
         const grid = ui.div([
           renderMolecule(
             this.moleculeColumn!.get(this.renderMolIds[i]),
             {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
-        ], {style: {margin: '5px'}});
+          molProps],
+        {style: {margin: '5px', padding: '3px', position: 'relative'}},
+        );
 
         let divClass = 'd4-flex-col';
 
