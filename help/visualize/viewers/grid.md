@@ -109,6 +109,13 @@ layout serialization).
 
 ![Copy column color coding](pick-up-apply-commands-color-coding.gif "Copy column color coding")
 
+By default, color coding is applied to the column background. Optionaly you can apply it to the text:
+
+1. Right-click the column’s  header and select **Color coding > Edit**. A dialog opens.
+2. In the dialog, set the **Apply to** setting to `text`.
+
+This option is available for all linear, categorical, and conditional schemas.
+
 ## Row summary columns
 
 Summary columns is a way to visualize multiple values numerical across the row. This feature is useful for quick visual
