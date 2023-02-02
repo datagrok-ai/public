@@ -19,6 +19,7 @@ import {download} from '../../utils/helpers';
 import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, DEFAULT_INPUT} from '../../view/const/main-tab-const';
 
 
+/** Interface for 'Main' tab UI  */
 export class MainTabUI {
   constructor(onInputChanged: (input: string) => void) {
     this._inputSequence = DEFAULT_INPUT;
@@ -101,6 +102,7 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
       pi.close();
     }
   }
+
   const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
 
   const inputFormatChoiceInput = ui.choiceInput('Input format: ', 'Janssen GCRS Codes', Object.keys(map));
@@ -117,18 +119,24 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
     onSequenceChanged(sequence);
   });
 
-  const downloadMolFileIcon = ui.iconFA('download', async () => {
-    const clearSequence = inputSequenceField.value.replace(/\s/g, '');
-    const result = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, false,
-      inputFormatChoiceInput.value!);
-    download(clearSequence + '.mol', encodeURIComponent(result));
-  }, 'Save .mol file');
+  const downloadMolfileButton = ui.bigButton(
+    'Download Molfile',
+    async () => {
+      const clearSequence = inputSequenceField.value.replace(/\s/g, '');
+      const result = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, false,
+        inputFormatChoiceInput.value!);
+      download(clearSequence + '.mol', encodeURIComponent(result));
+    },
+    'Save .mol file');
 
-  const copySmilesIcon = ui.iconFA('copy', () => {
-    navigator.clipboard.writeText(
-      sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''), false, inputFormatChoiceInput.value!)
-    ).then(() => grok.shell.info(SEQUENCE_COPIED_MSG));
-  }, 'Copy SMILES');
+  const copySmilesButton = ui.bigButton(
+    'Copy SMILES',
+    () => {
+      navigator.clipboard.writeText(
+        sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''), false, inputFormatChoiceInput.value!)
+      ).then(() => grok.shell.info(SEQUENCE_COPIED_MSG));
+    },
+    'Copy SMILES');
 
   const moleculeImgDiv = ui.block([]);
   const outputTableDiv = ui.div([]);
@@ -140,6 +148,8 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
         ui.panel([
           // appMainDescription,
           ui.div([
+            downloadMolfileButton,
+            copySmilesButton,
             ui.h1('Input sequence'),
             ui.div([], 'input-base'),
             inputSequenceField.root,
@@ -152,7 +162,6 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
           moleculeImgDiv,
         ], 'main-sequence'),
       ]),
-      // codesTablesDiv,
     ], {style: {height: '100%', width: '100%'}})
   );
 

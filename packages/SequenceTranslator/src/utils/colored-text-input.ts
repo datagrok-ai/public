@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 
 // inner dependencies
-import '../../css/colored-text-input.css';
+import '../view/css/colored-text-input.css';
 
 
 /** Class for colorizing input in the textarea of DG.InputBase.  */
