@@ -97,70 +97,6 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
     onSequenceChanged(sequence);
   });
 
-  const asoGapmersGrid = DG.Viewer.grid(
-    DG.DataFrame.fromObjects([
-      {'Name': '2\'MOE-5Me-rU', 'BioSpring': '5', 'Janssen GCRS': 'moeT'},
-      {'Name': '2\'MOE-rA', 'BioSpring': '6', 'Janssen GCRS': 'moeA'},
-      {'Name': '2\'MOE-5Me-rC', 'BioSpring': '7', 'Janssen GCRS': 'moe5mC'},
-      {'Name': '2\'MOE-rG', 'BioSpring': '8', 'Janssen GCRS': 'moeG'},
-      {'Name': '5-Methyl-dC', 'BioSpring': '9', 'Janssen GCRS': '5mC'},
-      {'Name': 'ps linkage', 'BioSpring': '*', 'Janssen GCRS': 'ps'},
-      {'Name': 'dA', 'BioSpring': 'A', 'Janssen GCRS': 'A, dA'},
-      {'Name': 'dC', 'BioSpring': 'C', 'Janssen GCRS': 'C, dC'},
-      {'Name': 'dG', 'BioSpring': 'G', 'Janssen GCRS': 'G, dG'},
-      {'Name': 'dT', 'BioSpring': 'T', 'Janssen GCRS': 'T, dT'},
-      {'Name': 'rA', 'BioSpring': '', 'Janssen GCRS': 'rA'},
-      {'Name': 'rC', 'BioSpring': '', 'Janssen GCRS': 'rC'},
-      {'Name': 'rG', 'BioSpring': '', 'Janssen GCRS': 'rG'},
-      {'Name': 'rU', 'BioSpring': '', 'Janssen GCRS': 'rU'},
-    ])!, {showRowHeader: false, showCellTooltip: false, allowEdit: false}
-  );
-
-  const omeAndFluoroGrid = DG.Viewer.grid(
-    DG.DataFrame.fromObjects([
-      {'Name': '2\'-fluoro-U', 'BioSpring': '1', 'Axolabs': 'Uf', 'Janssen GCRS': 'fU'},
-      {'Name': '2\'-fluoro-A', 'BioSpring': '2', 'Axolabs': 'Af', 'Janssen GCRS': 'fA'},
-      {'Name': '2\'-fluoro-C', 'BioSpring': '3', 'Axolabs': 'Cf', 'Janssen GCRS': 'fC'},
-      {'Name': '2\'-fluoro-G', 'BioSpring': '4', 'Axolabs': 'Gf', 'Janssen GCRS': 'fG'},
-      {'Name': '2\'OMe-rU', 'BioSpring': '5', 'Axolabs': 'u', 'Janssen GCRS': 'mU'},
-      {'Name': '2\'OMe-rA', 'BioSpring': '6', 'Axolabs': 'a', 'Janssen GCRS': 'mA'},
-      {'Name': '2\'OMe-rC', 'BioSpring': '7', 'Axolabs': 'c', 'Janssen GCRS': 'mC'},
-      {'Name': '2\'OMe-rG', 'BioSpring': '8', 'Axolabs': 'g', 'Janssen GCRS': 'mG'},
-      {'Name': 'ps linkage', 'BioSpring': '*', 'Axolabs': 's', 'Janssen GCRS': 'ps'},
-    ])!, {showRowHeader: false, showCellTooltip: false, allowEdit: false}
-  );
-
-  const overhangModificationsGrid = DG.Viewer.grid(
-    DG.DataFrame.fromColumns([
-      DG.Column.fromStrings('Name', Object.keys(MODIFICATIONS)),
-    ])!, {showRowHeader: false, showCellTooltip: false, allowEdit: false}
-  );
-  updateTableAndMolecule(DEFAULT_INPUT);
-
-  const codesTablesDiv = ui.splitV([
-    ui.box(ui.h2('ASO Gapmers'), {style: {maxHeight: '40px'}}),
-    asoGapmersGrid.root,
-    ui.box(ui.h2('2\'-OMe and 2\'-F siRNA'), {style: {maxHeight: '40px'}}),
-    omeAndFluoroGrid.root,
-    ui.box(ui.h2('Overhang modifications'), {style: {maxHeight: '40px'}}),
-    overhangModificationsGrid.root,
-  ], {style: {maxWidth: '350px'}});
-
-  const appMainDescription = ui.info([
-    ui.divText('How to convert one sequence:', {style: {'font-weight': 'bolder'}}),
-    ui.divText('Paste sequence into the text field below'),
-    ui.divText('\n How to convert many sequences:', {style: {'font-weight': 'bolder'}}),
-    ui.divText('1. Drag & drop an Excel or CSV file with sequences into Datagrok'),
-    ui.divText('2. Right-click on the column header, then see the \'Convert\' menu'),
-    ui.divText('This will add the result column to the right of the table'),
-  ], 'Convert oligonucleotide sequences between Nucleotides, BioSpring, Axolabs, Mermade 12 and GCRS representations.');
-
-  $(codesTablesDiv).hide();
-  const switchInput = ui.switchInput('Codes', false, (v: boolean) => (v) ?
-    $(codesTablesDiv).show() :
-    $(codesTablesDiv).hide()
-  );
-
   const downloadMolFileIcon = ui.iconFA('download', async () => {
     const clearSequence = inputSequenceField.value.replace(/\s/g, '');
     const result = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, false,
@@ -192,7 +128,7 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
           moleculeImgDiv,
         ], 'main-sequence'),
       ]),
-      codesTablesDiv,
+      // codesTablesDiv,
     ], {style: {height: '100%', width: '100%'}})
   );
 

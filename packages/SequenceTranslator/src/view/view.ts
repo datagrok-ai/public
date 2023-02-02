@@ -10,7 +10,6 @@ import {SdfTabUI} from './sdf-tab-ui';
 import {AxolabsTabUI} from './axolabs-tab-ui';
 import {viewMonomerLib} from '../utils/monomer-lib-viewer';
 
-
 /** Class responsible for the UI of the application */
 export class SequenceTranslatorUI {
   constructor() {
@@ -28,17 +27,15 @@ export class SequenceTranslatorUI {
 
     // top panel icons
     const viewMonomerLibIcon = ui.iconFA('book', viewMonomerLib, 'View monomer library');
-    // const viewHint = ui.iconFA('lightbulb', () => {}, 'hhh');
-    // const appHint = ui.iconFA('circle-question', () => {}, 'About the app');
-    // const info = ui.iconFA('circle-info', () => {}, 'About the app');
-    this._topPanel = [viewMonomerLibIcon];
+    const viewHint = ui.iconFA('lightbulb', () => {}, 'About the app');
+    this._topPanel = [viewMonomerLibIcon, viewHint];
     this._view.setRibbonPanels([this._topPanel]);
 
     this._tabs = new TabLayout(
-      new MainTabUI((seq: string) => {}), new AxolabsTabUI(), new SdfTabUI()
+      new MainTabUI((seq: string) => {}),
+      new AxolabsTabUI(),
+      new SdfTabUI()
     );
-
-    this._view.append(this._tabs.control);
   }
 
   /** Master view containing app's main interface elements */
@@ -48,37 +45,60 @@ export class SequenceTranslatorUI {
   private readonly _topPanel: HTMLElement[];
   private readonly _router: URLRouter;
 
-  get view() { return this._view; };
+  // private updatePath() {
+  //   this._view.path = this._router.urlParamsString;
+  // }
 
-  private updatePath() {
-    this._view.path = this._router.urlParamsString;
+  /** Create master layout of the app  */
+  public async createLayout(): Promise<void> {
+    const tabControl = await this._tabs.getControl();
+    // at this point we should perform the manipulations with the tab control
+
+    this._view.append(tabControl);
+    grok.shell.addView(this._view);
   }
-
-  public addView(): void { grok.shell.addView(this._view); }
 };
 
 class TabLayout {
-  constructor(mainTab: MainTabUI, axolabsTab: AxolabsTabUI, sdfTab: SdfTabUI) {
-    this._control = ui.tabControl({
-      [MAIN_TAB]: mainTab.htmlDivElement,
-      [AXOLABS_TAB]: axolabsTab.htmlDivElement,
-      [SDF_TAB]: sdfTab.htmlDivElement,
-    });
-
-    // todo: all tab tooltips to be defined here
-    const sdfPane = this._control.getPane(SDF_TAB);
-    ui.tooltip.bind(sdfPane.header, 'Get atomic-level structure for SS + AS/AS2 and save SDF');
+  constructor(
+    mainTab: MainTabUI,
+    axolabsTab: AxolabsTabUI,
+    sdfTab: SdfTabUI
+    // onTabChanged: () => void
+  ) {
+    this._mainTab = mainTab;
+    this._axolabsTab = axolabsTab;
+    this._sdfTab = sdfTab;
+    // this._onTabChanged = onTabChanged;
   }
 
-  private readonly _control: DG.TabControl;
-  // todo: port to main tab object
-  // private inputSequence: string;
+  private readonly _mainTab: MainTabUI;
+  private readonly _axolabsTab: AxolabsTabUI;
+  private readonly _sdfTab: SdfTabUI;
+  // private readonly _onTabChanged: () => void;
 
-  get control(): DG.TabControl { return this._control; }
+  async getControl(): Promise<DG.TabControl> {
+    const control = ui.tabControl({
+      [MAIN_TAB]: await this._mainTab.getHtmlElement(),
+      [AXOLABS_TAB]: this._axolabsTab.htmlDivElement,
+      [SDF_TAB]: this._sdfTab.htmlDivElement,
+    });
 
-  get currentTab(): string { return this._control.currentPane.name; }
+    // bind tooltips to each tab
+    // todo: bind tooltips to Main and Axolabs
+    const sdfPane = control.getPane(SDF_TAB);
+    ui.tooltip.bind(sdfPane.header, 'Get atomic-level structure for SS + AS/AS2 and save SDF');
 
-  get onTabChanged() { return this._control.onTabChanged; }
+    // control.onTabChanged.subscribe(() => {
+    //   if (control.currentPane.name !== MAIN_TAB)
+    //     urlParams.delete('seq');
+    //   else
+    //     urlParams.set('seq', mainSeq);
+    //   updatePath();
+    // });
+
+    return control;
+  }
 }
 
 class URLRouter {
@@ -96,4 +116,15 @@ class URLRouter {
         ([key, value]) => `${key}=${encodeURIComponent(value)}`
       ).join('&');
   }
+
+  // public updatePath(control: DG.TabControl) {
+  //   const urlParamsTxt: string = Object.entries(this._searchParams)
+  //     .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+  //   view.path = '/apps/SequenceTranslator' + `/${control.currentPane.name}/?${urlParamsTxt}`;
+  // }
+
+  // if (this._pathParts.length >= 4) {
+  //   const tabName: string = pathParts[3];
+  //   tabControl.currentPane = tabControl.getPane(tabName);
+  // }
 }
