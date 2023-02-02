@@ -1242,6 +1242,9 @@ export function ribbonPanel(items, options = null) {
       return render(itemBox)
     }))
   }
+  let wrapSpacer = document.createElement('div');
+  $(wrapSpacer).addClass('d4-ribbon-wrap-spacer');
+  $(root).prepend(wrapSpacer);
   return root;
 }
 
