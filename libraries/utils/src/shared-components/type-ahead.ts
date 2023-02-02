@@ -26,6 +26,7 @@ export namespace u2 {
         debounceRemote: debounceRemote,
       });
 
+      //get the typahead after modifying input
       const element = inputElement.root.getElementsByClassName('typeahead-standalone')[0];
       return ui.div([element]);
     }
