@@ -57,7 +57,7 @@ Here are some of the biggest improvements:
 
 #### [Chem](https://github.com/datagrok-ai/public/tree/7c62a0c018ec631d3b23760d538a17aaf4d4ca36/packages/Chem#readme)
 
-We've added new **Scaffold Tree** visualization that organizes molecular data sets by arranging molecules into a tree hierarchy based on their scaffolds. For details, see [Scaffold tree](help/domains/chem/scaffold-tree.md).
+We've added new **Scaffold Tree** visualization that organizes molecular data sets by arranging molecules into a tree hierarchy based on their scaffolds. For details, see [Scaffold tree](../../../domains/chem/scaffold-tree.md).
 * Improvements:
   * Added the package property to [set the default **Sketcher**](../../../../packages/Chem/README.md/#sketcher) so that users won’t have to switch on the first use manually.
   * Сhanged the result output for **Chem | Find MCS**. Now it returns a variable instead of a column.
