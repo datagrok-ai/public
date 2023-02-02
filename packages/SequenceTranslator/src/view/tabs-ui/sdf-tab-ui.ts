@@ -11,10 +11,10 @@ import $ from 'cash-dom';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 // inner dependencies
-import {drawMolecule} from '../utils/structures-works/draw-molecule';
-import {highlightInvalidSubsequence, demoPainter} from './input-painters';
-import {getLinkedMolfile, saveSdf} from '../sdf-tab/sdf-tab';
-import {ColoredTextInput} from '../utils/colored-text-input';
+import {drawMolecule} from '../../utils/structures-works/draw-molecule';
+import {highlightInvalidSubsequence, demoPainter} from '../input-painters';
+import {getLinkedMolfile, saveSdf} from '../../sdf-tab/sdf-tab';
+import {ColoredTextInput} from '../../utils/colored-text-input';
 
 export class SdfTabUI {
   constructor() {

@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {getAxolabsTab} from '../axolabs-tab/axolabs-tab';
+import {getAxolabsTab} from '../../axolabs-tab/axolabs-tab';
 
 export class AxolabsTabUI {
   constructor() {
