@@ -27,7 +27,7 @@ export function demoPainter(input: string): HTMLSpanElement[] {
 // todo: port to another place
 export function highlightInvalidSubsequence(input: string): HTMLSpanElement[] {
   // validate sequence
-  const cutoff = isValidSequence(input, null).indexOfFirstNotValidChar;
+  const cutoff = isValidSequence(input, null).indexOfFirstInvalidChar;
   const isValid = cutoff < 0 || input === '';
   const greyTextSpan = ui.span([]);
   $(greyTextSpan).css('-webkit-text-fill-color', 'var(--grey-6)');

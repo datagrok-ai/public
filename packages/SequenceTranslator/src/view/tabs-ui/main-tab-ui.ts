@@ -10,6 +10,7 @@ import * as rxjs from 'rxjs';
 
 /* internal dependencies */
 import {map} from '../../hardcode-to-be-eliminated/map';// todo: elminate completely
+// import {MODIFICATIONS} from '../../hardcode-to-be-eliminated/const';
 // todo: unify with lib bio monomers works
 import {sequenceToSmiles, sequenceToMolV3000} from '../../utils/structures-works/from-monomers';
 import {convertSequence, undefinedInputSequence, isValidSequence} from '../../sdf-tab/sequence-codes-tools';
@@ -45,8 +46,6 @@ export class MainTabUI {
 
 /** Produce HTML div for the 'main' tab */
 export async function getMainTab(onSequenceChanged: (seq: string) => void): Promise<HTMLDivElement> {
-  const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
-
   async function updateTableAndMolecule(sequence: string): Promise<void> {
     moleculeImgDiv.innerHTML = '';
     outputTableDiv.innerHTML = '';
@@ -60,19 +59,19 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
       const tableRows = [];
 
       for (const key of Object.keys(outputSequenceObj).slice(1)) {
-        const indexOfFirstNotValidChar = ('indexOfFirstNotValidChar' in outputSequenceObj) ?
-          JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).indexOfFirstNotValidChar :
+        const indexOfFirstInvalidChar = ('indexOfFirstInvalidChar' in outputSequenceObj) ?
+          JSON.parse(outputSequenceObj.indexOfFirstInvalidChar!).indexOfFirstInvalidChar :
           -1;
 
         tableRows.push({
           'key': key,
-          'value': ('indexOfFirstNotValidChar' in outputSequenceObj) ?
+          'value': ('indexOfFirstInvalidChar' in outputSequenceObj) ?
             ui.divH([
-              ui.divText(sequence.slice(0, indexOfFirstNotValidChar), {style: {color: 'grey'}}),
+              ui.divText(sequence.slice(0, indexOfFirstInvalidChar), {style: {color: 'grey'}}),
               ui.tooltip.bind(
-                ui.divText(sequence.slice(indexOfFirstNotValidChar), {style: {color: 'red'}}),
-                'Expected format: ' + JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).synthesizer +
-                '. See tables with valid codes on the right'
+                ui.divText(sequence.slice(indexOfFirstInvalidChar), {style: {color: 'red'}}),
+                'Expected format: ' + JSON.parse(outputSequenceObj.indexOfFirstInvalidChar!).synthesizer +
+                '. See tables with valid codes'
               ),
             ]) : //@ts-ignore
             ui.link(outputSequenceObj[key], () => navigator.clipboard.writeText(outputSequenceObj[key])
@@ -102,20 +101,19 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
       pi.close();
     }
   }
+  const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
 
   const inputFormatChoiceInput = ui.choiceInput('Input format: ', 'Janssen GCRS Codes', Object.keys(map));
-  inputFormatChoiceInput.onInput(() => {
-    updateTableAndMolecule(inputSequenceField.value.replace(/\s/g, ''));
+  inputFormatChoiceInput.onInput(async () => {
+    await updateTableAndMolecule(inputSequenceField.value.replace(/\s/g, ''));
   });
-  const moleculeImgDiv = ui.block([]);
-  const outputTableDiv = ui.div([]);
   const inputSequenceField = ui.textInput('', DEFAULT_INPUT, (sequence: string) => {
     // Send event to DG.debounce()
     onInput.next(sequence);
   });
 
-  DG.debounce<string>(onInput, 300).subscribe((sequence) => {
-    updateTableAndMolecule(sequence);
+  DG.debounce<string>(onInput, 300).subscribe(async (sequence) => {
+    await updateTableAndMolecule(sequence);
     onSequenceChanged(sequence);
   });
 
@@ -131,6 +129,10 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
       sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''), false, inputFormatChoiceInput.value!)
     ).then(() => grok.shell.info(SEQUENCE_COPIED_MSG));
   }, 'Copy SMILES');
+
+  const moleculeImgDiv = ui.block([]);
+  const outputTableDiv = ui.div([]);
+  await updateTableAndMolecule(DEFAULT_INPUT);
 
   const mainTabBody = ui.box(
     ui.splitH([
@@ -156,3 +158,5 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
 
   return mainTabBody;
 }
+
+
