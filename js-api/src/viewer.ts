@@ -457,6 +457,11 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotLookSetting
     super(dart);
   }
 
+  /** Rerender plot */
+  invalidateCanvas(): void{
+    api.grok_ScatterPlotViewer_InvalidateCanvas(this.dart);
+  }
+
   /** Row hit test using canvas coords */
   hitTest(x: number, y: number): number {
     return api.grok_ScatterPlotViewer_HitTest(this.dart, x, y);
