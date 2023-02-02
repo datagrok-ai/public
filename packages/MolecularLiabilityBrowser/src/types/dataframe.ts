@@ -1,6 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {BitSet} from 'datagrok-api/dg';
 
 export const EMPTY_ANTIGEN_NAME = '[none]';
 
@@ -134,5 +135,38 @@ export class TreeDataFrame extends DG.DataFrame {
       ]), EMPTY_ANTIGEN_NAME /* AntigenTreeDataFrame.Empty */);
     }
     return TreeDataFrame._empty;
+  }
+}
+
+/** Nodes/edges of all clones of an antigen */
+export class TreeNodesDataFrame extends DG.DataFrame {
+  public readonly antigen: string;
+
+  protected constructor(dart: any, antigen: string) {
+    super(dart);
+
+    this.antigen = antigen;
+    this.setTag('antigen', this.antigen);
+  }
+
+  public static wrap(df: DG.DataFrame, antigen: string): TreeNodesDataFrame {
+    return new TreeNodesDataFrame(df.dart, antigen);
+  }
+
+  private static _empty: TreeNodesDataFrame;
+
+  public static get Empty(): TreeNodesDataFrame {
+    if (!TreeNodesDataFrame._empty) {
+      TreeNodesDataFrame._empty = TreeNodesDataFrame.wrap(DG.DataFrame.fromColumns([
+        DG.Column.fromStrings('node', []),
+        DG.Column.fromStrings('parent', []),
+        DG.Column.fromBitSet('leaf', BitSet.create(0)),
+        DG.Column.fromFloat32Array('distance', new Float32Array(0)),
+        DG.Column.fromStrings('annotation', []),
+        DG.Column.fromStrings('vid', []),
+        DG.Column.fromStrings('CLONE', []),
+      ]), EMPTY_ANTIGEN_NAME);
+    }
+    return TreeNodesDataFrame._empty;
   }
 }

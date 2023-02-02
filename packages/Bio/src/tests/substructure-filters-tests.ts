@@ -69,5 +69,5 @@ category('substructureFilters', async () => {
     expect(filter.dataFrame!.filter.trueCount, 1);
     expect(filter.dataFrame!.filter.get(3), true);
     helmTableView.close();
-  }, {skipReason: '#1206'});
+  });
 });

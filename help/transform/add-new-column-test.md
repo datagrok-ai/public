@@ -62,7 +62,7 @@ expression (mathematical function, constants, platform objects properties and fu
 1. Add "Height" column to *"Formula"* field. Enter ```$``` to call drop-down list of columns or drag column from
    anywhere in platform ([Column Manager](../explore/column-manager.md)
    , [Table](../datagrok/table.md),
-   [Properties panel](../datagrok/navigation.md#properties))
+   [Context panel](../datagrok/navigation.md#context-panel))
 
 * Type of new column was automatically defined as *double* (*"Height"* column type)
 * Values of new column are equal to values of *"Height"* column in preview

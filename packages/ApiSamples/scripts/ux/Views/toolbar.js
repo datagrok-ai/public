@@ -40,24 +40,9 @@ let header = ui.block([
       grok.shell.bottomPanel.append(footer)
   })
   .separator()
-  .item('Toolbox', ()=> {
-    if (windows.showToolbox)
-      windows.showToolbox = false
-    else
-      windows.showToolbox = true
-  })
-  .item('Property panel', ()=> {
-    if (windows.showProperties)
-      windows.showProperties = false
-    else
-      windows.showProperties = true
-  })
-  .item('Context help', ()=> {
-    if (windows.showHelp)
-      windows.showHelp = false
-    else
-      windows.showHelp = true
-  })
+  .item('Toolbox', () => windows.showToolbox = !windows.showToolbox)
+  .item('Context panel', () => windows.showContextPanel = !windows.showContextPanel)
+  .item('Context help', () => windows.showHelp = !windows.showHelp)
   .separator()
   ribbonMenu.item('Hide all', ()=>{
     grok.shell.topPanel.innerHTML = '';

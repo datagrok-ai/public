@@ -44,7 +44,7 @@ reference the link rather than the entity itself. This fact becomes important in
 name suggests, they are the most common ones
 (that's what users create by default). Entities from such a project belong to the higher-level namespace, which means
 they are tied to the root project. To find out where an entity comes from, see `Links` in the `Details` tab of the
-property panel.
+context panel.
 
 Root projects are automatically created for users and packages. When the user uploads a project, it gets saved to their
 namespace. However, the existing entities will be available in the user's project via link. As for packages, each
@@ -60,7 +60,7 @@ Controls:
 
 |              |                        |
 |--------------|------------------------|
-| Click        | Show in property panel |
+| Click        | Show in context panel |
 | Right click  | Context menu           |
 | Double click | Open                   |
 

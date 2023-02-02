@@ -30,7 +30,6 @@ import {toxicityWidget} from './widgets/toxicity';
 
 //panels imports
 import {addInchiKeys, addInchis} from './panels/inchi';
-import {getMcs} from './panels/find-mcs';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import {checkForStructuralAlerts} from './panels/structural-alerts';
 
@@ -311,52 +310,45 @@ export function descriptorsApp(): void {
 }
 
 //name: saveAsSdf
-//description: Save as SDF
+//description: As SDF
 //tags: fileExporter
-export function saveAsSdf(): void {
+export async function saveAsSdf(): Promise<void> {
+  const progressIndicator = DG.TaskBarProgressIndicator.create('Saving as SDF...');
   saveAsSdfDialog();
+  progressIndicator.close();
 }
 
 //#region Top menu
 
-//top-menu: Chem | Activity Cliffs...
-//name: Activity Cliffs
-//description: detect activity cliffs
-//input: dataframe table [Input data table]
-//input: column molecules {type:categorical; semType: Molecule}
-//input: column activities
-//input: double similarity = 80 [Similarity cutoff]
-//input: string methodName { choices:["UMAP", "t-SNE"] }
-export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
-  similarity: number, methodName: string) {
-  if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
-    grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
-    return;
-  }
-  if (activities.type !== DG.TYPE.INT && activities.type !== DG.TYPE.BIG_INT && activities.type !== DG.TYPE.FLOAT) {
-    grok.shell.error(`Column ${activities.name} is not numeric`);
-    return;
-  }
-  const axesNames = getEmbeddingColsNames(df);
-  if (df.rowCount > 500) {
-    ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
-    Do you want to continue?`))
-      .onOK(async () => {
-        const progressBar = DG.TaskBarProgressIndicator.create(`Activity cliffs running...`);
-        await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, 'Tanimoto',
-          methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
-          createTooltipElement, createPropPanelElement);
-        progressBar.close();
-      })
-      .show();
-  } else {
-    await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, 'Tanimoto',
-      methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
-      createTooltipElement, createPropPanelElement);
-  }
+//name: SimilaritySearchViewer
+//tags: viewer
+//output: viewer result
+export function similaritySearchViewer(): ChemSimilarityViewer {
+  return new ChemSimilarityViewer();
 }
 
-//top-menu: Chem | Chemical Space...
+//top-menu: Chem | Search | Similarity Search...
+//name: similaritySearch
+//description: finds the most similar molecule
+export function similaritySearchTopMenu(): void {
+  (grok.shell.v as DG.TableView).addViewer('SimilaritySearchViewer');
+}
+
+//name: DiversitySearchViewer
+//tags: viewer
+//output: viewer result
+export function diversitySearchViewer(): ChemDiversityViewer {
+  return new ChemDiversityViewer();
+}
+
+//top-menu: Chem | Search | Diversity Search...
+//name: diversitySearch
+//description: finds the most diverse molecules
+export function diversitySearchTopMenu(): void {
+  (grok.shell.v as DG.TableView).addViewer('DiversitySearchViewer');
+}
+
+//top-menu: Chem | Analyze Structure | Chemical Space...
 //name: Chem Space
 //input: dataframe table
 //input: column molecules { semType: Molecule }
@@ -440,53 +432,7 @@ export async function getChemSimilaritiesMatrix(dim: number, col: DG.Column,
   return await getSimilaritiesMarix(dim, col, df, colName, simArr);
 }
 
-//name: R-Groups Analysis
-//top-menu: Chem | R-Groups Analysis...
-
-export function rGroupsAnalysisMenu(): void {
-  const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  if (col === null) {
-    grok.shell.error('Current table does not contain molecules');
-    return;
-  }
-  rGroupAnalysis(col);
-}
-
-//top-menu: Chem | Group Analysis...
-//name: groupAnalysis
-export function groupAnalysisMenu(): void {
-  const packageExists = checkPackage('Charts', '_GroupAnalysisViewer');
-  if (packageExists) {
-    const groupAnalysisViewer = DG.Viewer.fromType('GroupAnalysisViewer', grok.shell.tv.dataFrame, {});
-    grok.shell.tv.addViewer(groupAnalysisViewer);
-  } else {
-    grok.shell.warning('Charts package is not installed');
-  }
-}
-
-
-//#endregion
-
-//#region Molecule column property panel
-
-//name: Chem | Find MCS
-//friendly-name: Chem | Find MCS
-//tags: panel, chem
-//input: column col {semType: Molecule}
-//output: string mcs
-export async function addMcsPanel(col: DG.Column): Promise<string> {
-  return await getMcs(col);
-}
-
-//name: Chem | To InchI
-//friendly-name: Chem | To InchI
-//tags: panel, chem
-//input: column col {semType: Molecule}
-export function addInchisPanel(col: DG.Column): void {
-  addInchis(col);
-}
-
-//top-menu: Chem | Elemental Analysis...
+//top-menu: Chem | Analyze Structure | Elemental Analysis...
 //name: Elemental analysis
 //description: function that implements elemental analysis
 //input: dataframe table
@@ -543,19 +489,99 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
   }
 }
 
+//name: R-Groups Analysis
+//top-menu: Chem | Analyze SAR | R-Groups Analysis...
 
-//name: Chem | To InchI Keys
-//friendly-name: Chem | To InchI Keys
-//tags: panel, chem
-//input: column col {semType: Molecule}
-export function addInchisKeysPanel(col: DG.Column): void {
-  addInchiKeys(col);
+export function rGroupsAnalysisMenu(): void {
+  const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+  if (col === null) {
+    grok.shell.error('Current table does not contain molecules');
+    return;
+  }
+  rGroupAnalysis(col);
 }
+
+//top-menu: Chem | Analyze SAR | Group Analysis...
+//name: groupAnalysis
+export function groupAnalysisMenu(): void {
+  const packageExists = checkPackage('Charts', '_GroupAnalysisViewer');
+  if (packageExists) {
+    const groupAnalysisViewer = DG.Viewer.fromType('GroupAnalysisViewer', grok.shell.tv.dataFrame, {});
+    grok.shell.tv.addViewer(groupAnalysisViewer);
+  } else {
+    grok.shell.warning('Charts package is not installed');
+  }
+}
+
+//top-menu: Chem | Analyze SAR | Activity Cliffs...
+//name: Activity Cliffs
+//description: detect activity cliffs
+//input: dataframe table [Input data table]
+//input: column molecules {type:categorical; semType: Molecule}
+//input: column activities
+//input: double similarity = 80 [Similarity cutoff]
+//input: string methodName { choices:["UMAP", "t-SNE"] }
+export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
+  similarity: number, methodName: string) {
+  if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
+    grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
+    return;
+  }
+  if (activities.type !== DG.TYPE.INT && activities.type !== DG.TYPE.BIG_INT && activities.type !== DG.TYPE.FLOAT) {
+    grok.shell.error(`Column ${activities.name} is not numeric`);
+    return;
+  }
+  const axesNames = getEmbeddingColsNames(df);
+  if (df.rowCount > 500) {
+    ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
+    Do you want to continue?`))
+      .onOK(async () => {
+        const progressBar = DG.TaskBarProgressIndicator.create(`Activity cliffs running...`);
+        await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, 'Tanimoto',
+          methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
+          createTooltipElement, createPropPanelElement);
+        progressBar.close();
+      })
+      .show();
+  } else {
+    await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, 'Tanimoto',
+      methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
+      createTooltipElement, createPropPanelElement);
+  }
+}
+
+//top-menu: Chem | Analyze SAR | Structural alerts
+//name: Structural Alerts...
+//input: dataframe table [Input data table]
+//input: column molecules {type:categorical; semType: Molecule}
+export async function getStructuralAlerts(col: DG.Column<string>): Promise<void> {
+  await checkForStructuralAlerts(col);
+}
+
+//top-menu: Chem | Calculate | To InchI
+//name: To InchI...
+//input: dataframe table [Input data table]
+//input: column molecules {type:categorical; semType: Molecule}
+export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column): void {
+  addInchis(table, col);
+}
+
+//top-menu: Chem | Calculate | To InchI Keys
+//name: To InchI Keys...
+//input: dataframe table [Input data table]
+//input: column molecules {type:categorical; semType: Molecule}
+export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void {
+  addInchiKeys(table, col);
+}
+
+//#endregion
+
+//#region Molecule column property panel
 
 
 //name: Chem
 //input: column molColumn {semType: Molecule}
-//tags: panel
+//tags: panel, exclude-actions-panel
 //output: widget result
 export function molColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
   return getMolColumnPropertyPanel(molColumn);
@@ -670,34 +696,6 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
     .show();
 }
 
-//name: SimilaritySearchViewer
-//tags: viewer
-//output: viewer result
-export function similaritySearchViewer(): ChemSimilarityViewer {
-  return new ChemSimilarityViewer();
-}
-
-//top-menu: Chem | Similarity Search...
-//name: similaritySearch
-//description: finds the most similar molecule
-export function similaritySearchTopMenu(): void {
-  (grok.shell.v as DG.TableView).addViewer('SimilaritySearchViewer');
-}
-
-//name: DiversitySearchViewer
-//tags: viewer
-//output: viewer result
-export function diversitySearchViewer(): ChemDiversityViewer {
-  return new ChemDiversityViewer();
-}
-
-//top-menu: Chem | Diversity Search...
-//name: diversitySearch
-//description: finds the most diverse molecules
-export function diversitySearchTopMenu() {
-  (grok.shell.v as DG.TableView).addViewer('DiversitySearchViewer');
-}
-
 //name: Open Chem Sketcher
 //tags: moleculeSketcher
 //output: widget sketcher
@@ -775,6 +773,7 @@ export async function oclCellRenderer(): Promise<OCLCellRenderer> {
 
 //name: Sort by similarity
 //description: Sorts a molecular column by similarity
+//tags: exclude-actions-panel
 //meta.action: Sort by similarity
 //input: semantic_value value { semType: Molecule }
 export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
@@ -801,6 +800,7 @@ export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
 
 //name: Use as filter
 //description: Adds this structure as a substructure filter
+//tags: exclude-actions-panel
 //meta.action: Use as filter
 //input: semantic_value value { semType: Molecule }
 export function useAsSubstructureFilter(value: DG.SemanticValue): void {
@@ -856,14 +856,6 @@ export function detectSmiles(col: DG.Column, min: number) {
   }
 }
 
-//name: Chem | Structural Alerts...
-//tags: panel, chem
-//input: column col { semType: Molecule }
-export async function getStructuralAlerts(col: DG.Column<string>): Promise<void> {
-  await checkForStructuralAlerts(col);
-}
-
-
 //name: chemSimilaritySearch
 //input: dataframe df
 //input: column col
@@ -900,7 +892,7 @@ export async function callChemDiversitySearch(
 }
 
 
-//top-menu: Chem | Scaffold Tree...
+//top-menu: Chem | Analyze Structure | Scaffold Tree...
 //name: addScaffoldTree
 export function addScaffoldTree(): void {
   grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);

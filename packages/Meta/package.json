@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.1.82",
+  "version": "3.1.92",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -151,6 +151,9 @@
         },
         "1.3.29": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.3.30": {
+          "datagrok-api": "^1.6.0"
         }
       },
       "description": "DevTools is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. Its purpose is to simplify and assist in the development of platform extensions.",
@@ -255,7 +258,7 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Tutorials"
       },
-      "category": "Development"
+      "category": "General"
     },
     "chem": {
       "dependencies": {
@@ -410,6 +413,15 @@
           "datagrok-api": "^1.11.2"
         },
         "1.4.20": {
+          "datagrok-api": "^1.11.2"
+        },
+        "1.4.21": {
+          "datagrok-api": "^1.11.2"
+        },
+        "1.4.23": {
+          "datagrok-api": "^1.11.2"
+        },
+        "1.4.24": {
           "datagrok-api": "^1.11.2"
         }
       },
@@ -613,7 +625,7 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/PowerPack"
       },
-      "category": "Development"
+      "category": "General"
     },
     "clinical-case": {
       "dependencies": {
@@ -1777,27 +1789,6 @@
       },
       "category": "Bioinformatics"
     },
-    "ngl-viewer": {
-      "dependencies": {
-        "0.1.0": {
-          "datagrok-api": "^0.151.6"
-        },
-        "0.1.1": {
-          "datagrok-api": "^0.151.6"
-        },
-        "0.1.2": {},
-        "1.0.1": {
-          "datagrok-api": "^1.5.0"
-        }
-      },
-      "description": "Web-based 3D molecular graphics. Supports the following file formats: .PDB, .CIF, SDF, MOL",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/NglViewer"
-      },
-      "category": "Bioinformatics"
-    },
     "swaggers": {
       "dependencies": {
         "0.1.0": {
@@ -1977,6 +1968,9 @@
         },
         "1.1.12": {
           "datagrok-api": "^1.8.3"
+        },
+        "1.1.13": {
+          "datagrok-api": "^1.8.3"
         }
       },
       "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
@@ -2094,6 +2088,12 @@
           "datagrok-api": "^1.8.2"
         },
         "1.3.5": {
+          "datagrok-api": "^1.8.2"
+        },
+        "1.3.7": {
+          "datagrok-api": "^1.8.2"
+        },
+        "1.3.8": {
           "datagrok-api": "^1.8.2"
         }
       },
@@ -2258,6 +2258,9 @@
         },
         "2.1.1": {
           "datagrok-api": "^1.11.1"
+        },
+        "2.1.2": {
+          "datagrok-api": "^1.11.1"
         }
       },
       "description": "",
@@ -2279,7 +2282,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/GIS"
-      }
+      },
+      "category": "Visualizations"
     },
     "demoxl": {
       "dependencies": {

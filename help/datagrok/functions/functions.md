@@ -47,7 +47,7 @@ share it with your team.
 When enabled, a history of all changes made to the table is saved automatically, so that users will later be able to
 figure out how that particular table was produced, or to reproduce the process on a new table with the structure similar
 to the original one. To access it, open table's 'History' pane on
-the [property panel](../../datagrok/navigation.md#properties).
+the [context panel](../../datagrok/navigation.md#context-panel).
 
 ## Data flow
 

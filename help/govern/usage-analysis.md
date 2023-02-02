@@ -54,7 +54,7 @@ that this is an internal tool for developers.
 ## Server-related actions
 
 When an action does something on a server that modifies the server's state in any way, in addition to the log file it
-gets recorded in the audit. This is what you see under the "Activity" tab in the property panel.
+gets recorded in the audit. This is what you see under the "Activity" tab in the context panel.
 
 ![usage-analysis-pp-activity](usage-analysis-pp-activity.png)
 

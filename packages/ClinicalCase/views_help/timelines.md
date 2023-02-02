@@ -9,7 +9,7 @@ By zooming in and out you can drill down to particular patient and event or othe
 
 <img src="https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/img/timelines.gif" height="500" width='800'/>
 
-Information about particular event is available in tooltip on mouse hover or in a property panel by clicking on event. In case event is an AE you can go to Adverse event browser by clicking on AE name.
+Information about particular event is available in tooltip on mouse hover or in a context panel by clicking on event. In case event is an AE you can go to Adverse event browser by clicking on AE name.
 
 <img src="https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/img/timelines_prop_panel.gif" height="500" width='800'/>
 

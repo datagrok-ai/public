@@ -18,5 +18,5 @@ df.onMetadataChanged
     }
   });
 
-// Change the formula either programmatically or from the interface (tab 'Formula' in the property panel)
+// Change the formula either programmatically or from the interface (tab 'Formula' in the context panel)
 col.tags[DG.TAGS.FORMULA] = 'Avg($[x])';

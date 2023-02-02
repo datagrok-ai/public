@@ -48,7 +48,7 @@ Check out our [YouTube channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6
   <div class="card-body">
     <h2 class="card-title">Database Exploration</h2>
     <p class="card-text">We will learn how to create and share database connections, and interactively explore database content using a number of tools:
-                         • Property panel - for quick browsing
+                         • Context panel - for quick browsing
                          • Visual query - for interactive aggregation and pivoting
                          • Schema browser
     </p>

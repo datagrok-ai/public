@@ -104,13 +104,13 @@ jobs:
             exit 1
           fi
       - name: Setup Node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
-          node-version: '12.x'
+          node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
           scope: '@datagrok-libraries'
       - name: Upgrade npm
-        run: npm install -g npm@8.x
+        run: npm install -g npm@x
       - name: npm version
         run: npm version
       - run: npm install

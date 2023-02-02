@@ -15,6 +15,18 @@ const config = {
   favicon: 'favicon/favicon.ico',
   staticDirectories: ['static'],
 
+  stylesheets: [
+    {
+      href: '/docusaurus_css/datagrok.css',
+      type: 'text/css',
+    },
+  ],
+
+  scripts: [
+    'https://code.jquery.com/jquery-3.5.1.slim.min.js',
+    'https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js'
+  ],
+
   // Even if you don't use internalization, you can use this field to set useful
   // metadata like html lang. For example, if your site is Chinese, you may want
   // to replace "en" with "zh-Hans".
@@ -88,7 +100,7 @@ const config = {
       title: 'Datagrok',
       logo: {
         alt: 'Datagrok',
-        src: 'img/logo.svg',
+        src: 'docusaurus_img/logo.svg',
         href: 'https://datagrok.ai', // Default to `siteConfig.baseUrl`.
       },
       items: [

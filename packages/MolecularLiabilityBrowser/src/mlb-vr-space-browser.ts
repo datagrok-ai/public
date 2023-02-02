@@ -303,7 +303,9 @@ export class MlbVrSpaceBrowser {
           const vp = this.scatterPlot.viewport;
           const {zoomLeft, zoomRight, zoomTop, zoomBottom} = getZoomCoordinates(
             vp.width, vp.height, minX, minY, maxX, maxY);
-          this.scatterPlot.zoom(zoomLeft, zoomTop, zoomRight, zoomBottom);
+          window.setTimeout(() => {
+            this.scatterPlot.zoom(zoomLeft, zoomTop, zoomRight, zoomBottom);
+          }, 0 /* next event cycle */);
         }
       }
     } catch (err: any) {

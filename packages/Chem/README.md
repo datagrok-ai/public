@@ -110,7 +110,7 @@ Target molecule can be also changed by using `edit` button in the top left corne
 
 ![](help/similarity_search_sketch_target.gif)
 
-Using property panel you can change search metrics like similarity cut off, fingerprints type or distance metric.
+Using context panel you can change search metrics like similarity cut off, fingerprints type or distance metric.
 
 By selecting columns from `Molecule Properties` field you can add any fields present in your dataframe to similarity panes. Please note that if color coding is applied to a selected column it will be copied on a similarity pane. You can select to highlight background or text in the corresponding field. Ability to add fields to similarity panes simplifies analysis since multiple molecules characteristics can be easily assessed at once.
 

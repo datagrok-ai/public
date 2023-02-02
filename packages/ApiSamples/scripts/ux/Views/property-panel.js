@@ -1,5 +1,5 @@
 //tags: View
-//Property panel
+//Context panel
 
 let testData = {
     demog: grok.data.testData('demog'),
@@ -103,7 +103,7 @@ let testData = {
   let windows = grok.shell.windows;
   windows.showHelp = false;
   
-  let view = grok.shell.newView('Property panel');
+  let view = grok.shell.newView('Context panel');
   view.append(ui.divV([
     ui.panel([
       ui.h1('Datagrok test data'),

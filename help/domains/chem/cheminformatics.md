@@ -415,8 +415,8 @@ the console, use `chem:findMCS(tableName, columnName)` command.
 Chemical intelligence tools are natively integrated into the platform, so in most cases the appropriate functionality is
 automatically presented based on the user actions and context. For instance, when user clicks on a molecule, it becomes
 a current object, and its properties are shown in the
-[property panel](../../datagrok/navigation.md#properties). Click on a molecule to select it as a current object. This
-will bring up this molecule's properties to the property panel. The following panels are part of the 'chem' plugin:
+[context panel](../../datagrok/navigation.md#context-panel). Click on a molecule to select it as a current object. This
+will bring up this molecule's properties to the context panel. The following panels are part of the 'chem' plugin:
 
 * Identifiers - all known identifiers for the specified structure (UniChem)
 * Molfile – get a specified molecule .mol file
@@ -442,7 +442,7 @@ supported by the Grok platform. For example,`#{x.demo:demoscripts:GasteigerParti
 
 To see chemically-related actions applicable to the specified column, right-click on the column, and navigate to
 `Current column | Chem` and `Current column | Extract`. Alternatively, click on the column of interest, and expand the '
-Actions' section in the property panel<!--todo: provide pictorial examples-->.
+Actions' section in the context panel<!--todo: provide pictorial examples-->.
 
 <!--Update the list of functions-->
 

@@ -197,7 +197,7 @@ Event-related code snippets:
 To figure out what events are coming out of the platform, use the Inspector tool. Open it (Alt+I), go to the "Client
 Log" tab, and perform the action that you want to intercept. In the panel, you will see one or more of the events, click
 on them to inspect event parameters. To simplify the development process, we also generate JavaScript code for handling
-this particular event, copy-paste it from the property panel into your code if needed.
+this particular event, copy-paste it from the context panel into your code if needed.
 
 ![inspector-events](./tools/inspector-events.png)
 
