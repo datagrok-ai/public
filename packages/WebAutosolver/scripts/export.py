@@ -514,7 +514,7 @@ def addExportedFunctionsToPackageFile(settings, functionsData):
                 put('}\n\n')
 
 
-def main(nameOfSettingsFile="module.json"):
+def main(nameOfSettingsFile="exportSettings.json"):
     """
     The main script: 
         1) load export settings from json-file;

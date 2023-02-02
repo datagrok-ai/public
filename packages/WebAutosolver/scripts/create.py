@@ -208,7 +208,7 @@ def generateCppCode(ivp):
         line = SUBSPACE
 
         for name in ivp[INIT_VALS].keys():
-            line += f'{DATA_TYPE} {name}, '
+            line += f'{DATA_TYPE} _{name}Initial, '
 
         puts(line + '\n')
 
@@ -216,12 +216,17 @@ def generateCppCode(ivp):
         line = SUBSPACE
 
         for name in ivp[PARAMS].keys():
-            line += f'{DATA_TYPE} {name}, '
+            line += f'{DATA_TYPE} _{name}Val, '
 
         puts(line + '\n')
 
+        puts(SUBSPACE + f'int _{ivp[ARGUMENT]["name"]}Count, ')
+        puts('int _varsCount,\n')
 
-        puts(SUBSPACE + f'{DATA_TYPE} * result, int resultRowCount, int resultColCount) noexcept;\n')
+        # dataframe
+        puts(SUBSPACE + f'{DATA_TYPE} * {SOLVER_RESULT_NAME}, ')
+        puts(f'int {SOLVER_RESULT_ROW_COUNT_NAME}, ')
+        puts(f'int {SOLVER_RESULT_COL_COUNT_NAME}) noexcept;\n')
 
         puts('}\n')
 
@@ -229,25 +234,278 @@ def generateCppCode(ivp):
         """
         Puts C++-code specifying IVP.
         """
-        pass
+
+        # 1. PUT THE RIGHT PART OF ODEs
+
+        puts(f'\n\nnamespace {ivp[NAME]}\n')
+        puts('{\n')
+
+        puts(SPACE + '// tollerance\n')
+        puts(SPACE + f'{DATA_TYPE} {TOLLERANCE_NAME} = {TOLLERANCE_VALUE};\n\n')
+
+        puts(SPACE + '// dimension of solution\n')
+        puts(SPACE + f'const int {DIMENSION_NAME} = {len(ivp[INIT_VALS])};\n\n')
+
+        puts(SPACE + '// parameters\n')
+
+        # put parameters declaration
+        for name in ivp[PARAMS]:
+            puts(SPACE + f'{ARG_TYPE} {name} = {PARAMETERS_INIT_VALUE};\n')
+
+        # operating name of the argument, for example, t
+        argName = ivp['argument']['name']
+
+        puts(f'\n{SPACE}//the right part of the ODEs\n')
+        
+        # put ODEs right part header, for example, f(...)
+        puts(SPACE)
+        puts(f'{VEC_TYPE} {ODES_RIGHT_PART_NAME}({ARG_TYPE} {argName}, ')
+        puts(f'{VEC_TYPE} & {VEC_ARG_NAME}) noexcept\n')
+
+        # put body of the function
+        puts(SPACE + '{\n')
+
+        puts(SUBSPACE + f'{VEC_TYPE} {VEC_OUTPUT_NAME}({DIMENSION_NAME});\n\n')
+
+        puts(SUBSPACE + '// constants\n')
+
+        # put constants
+        for name in ivp[CONSTANTS]:
+            puts(SUBSPACE + f'const {ARG_TYPE} {name} = {ivp[CONSTANTS][name]["value"]};\n')
+      
+        index = 0
+        puts('\n' + SUBSPACE + '// extract variables\n')
+
+        # transform input vector coordinates to the current names
+        for name in ivp[DIF_EQUATIONS]:
+            puts(SUBSPACE + f'{ARG_TYPE} {name} = {VEC_ARG_NAME}({index});\n')
+            index += 1
+
+        puts('\n' + SUBSPACE + '// expressions\n')
+
+        # put expressions
+        for name in ivp[EXPRESSIONS]:
+            puts(SUBSPACE + f'{ARG_TYPE} {name} = {ivp[EXPRESSIONS][name]};\n')
+
+        puts('\n' + SUBSPACE + '// output computation\n')
+        index = 0
+
+        # computation lines
+        for name in ivp[DIF_EQUATIONS]:
+            puts(SUBSPACE + f'{VEC_OUTPUT_NAME}({index}) = {ivp[DIF_EQUATIONS][name]};\n')
+            index += 1        
+
+        puts('\n' + SUBSPACE + f'return {VEC_OUTPUT_NAME};\n')
+        
+        puts(SPACE + '}' + f' // {ODES_RIGHT_PART_NAME}\n\n')
+
+        # 1. PUT JACOBIAN
+
+        puts(SPACE + '// Jacobian (it is required, when applying implicit method)\n')
+
+        # header
+        puts(SPACE + f'{MATRIX_TYPE} {JACOBIAN_NAME}(')                
+        puts(f'{ARG_TYPE} {argName}, ')
+        puts(f'{VEC_TYPE} & {VEC_ARG_NAME}, ')
+        puts(f'{ARG_TYPE} {EPS_NAME}) noexcept\n')
+
+        # body
+        puts(SPACE + '{\n')
+
+        puts(SUBSPACE + f'{MATRIX_TYPE} {MAT_OUTPUT_NAME}({DIMENSION_NAME}, {DIMENSION_NAME});\n')
+
+        puts(SUBSPACE + f'{VEC_TYPE} {VAL_NAME} = {ODES_RIGHT_PART_NAME}')
+        puts(f'({argName}, {VEC_ARG_NAME});\n')
+
+        puts(SUBSPACE + f'{VEC_TYPE} {Y_DER_NAME} = {VEC_ARG_NAME};\n\n')
+
+        # put loop-block
+        puts(SUBSPACE + f'for (int i = 0; i < {DIMENSION_NAME}; i++)' + ' {\n')
+        puts(SUBSUBSPACE + f'{Y_DER_NAME}(i) += {EPS_NAME};\n')
+        puts(SUBSUBSPACE + f'{MAT_OUTPUT_NAME}.col(i) = (')
+        puts(f'{ODES_RIGHT_PART_NAME}({argName}, {Y_DER_NAME}) - ')
+        puts(f'{VAL_NAME}) / {EPS_NAME};\n')
+        puts(SUBSUBSPACE + f'{Y_DER_NAME}(i) -= {EPS_NAME};\n')
+
+        puts(SUBSPACE + '}\n\n')
+
+        puts(SUBSPACE + f'return {MAT_OUTPUT_NAME};\n')
+
+        puts(SPACE + '}' + f' // {JACOBIAN_NAME}\n\n')
+
+        # 3. PUT T-DERIVATIVE BLOCK
+
+        puts(SPACE + '// Derivative with respect to t (it is required, when applying implicit method)\n')
+
+        # header
+        puts(SPACE + f'{VEC_TYPE} {T_DERIVATIVE_NAME}(')                
+        puts(f'{ARG_TYPE} {argName}, ')
+        puts(f'{VEC_TYPE} & {VEC_ARG_NAME}, ')
+        puts(f'{ARG_TYPE} {EPS_NAME}) noexcept\n')
+
+        # body
+        puts(SPACE + '{\n')
+
+        puts(SUBSPACE + f'return ({ODES_RIGHT_PART_NAME}(')
+        puts(f'{argName} + {EPS_NAME}, {VEC_ARG_NAME}) - ')
+        puts(f'{ODES_RIGHT_PART_NAME}({argName}, {VEC_ARG_NAME}))')
+        puts(f' / {EPS_NAME};\n')
+
+        puts(SPACE + '}' + f' // {T_DERIVATIVE_NAME}\n\n')
+
+        puts('}; ' + f'// {ivp[NAME]}\n')
 
     def putAnnotation(puts, ivp):
         """
         Puts ReachFunctionView annotation.
         """
-        pass
+        
+        puts(f'\n//name: {SOLVER_PREFIX + ivp[NAME]}\n')
+
+        # 1. PUT ANNOTATION CONCERNING ARGUMENT
+
+        # initial value
+        puts(f'//input: {ANNOT_ARG_TYPE} {ivp[ARGUMENT]["initial"]["name"]}')
+        puts(f' = {ivp[ARGUMENT]["initial"]["value"]}')
+        puts(' {caption: ' + ivp[ARGUMENT]["initial"]["name"] + ';')
+        puts(f' category: {ivp[ARGUMENT]["title"]}' + '}\n')
+
+        # final value
+        puts(f'//input: {ANNOT_ARG_TYPE} {ivp[ARGUMENT]["final"]["name"]}')
+        puts(f' = {ivp[ARGUMENT]["final"]["value"]}')
+        puts(' {caption: ' + ivp[ARGUMENT]["final"]["name"] + ';')
+        puts(f' category: {ivp[ARGUMENT]["title"]}' + '}\n')
+
+         # step value
+        puts(f'//input: {ANNOT_ARG_TYPE} {ivp[ARGUMENT]["step"]["name"]}')
+        puts(f' = {ivp[ARGUMENT]["step"]["value"]}')
+        puts(' {caption: ' + ivp[ARGUMENT]["step"]["name"] + ';')
+        puts(f' category: {ivp[ARGUMENT]["title"]}' + '}\n')
+
+        # 2. INITIAL VALUES
+
+        # dict with initial values specification
+        data = ivp[INIT_VALS]
+
+        # put annotation
+        for name in data.keys():
+            puts(f'//input: {ANNOT_ARG_TYPE} _{name}Initial = {data[name]["value"]}')
+            puts(' {' + f'units: {data[name]["units"]};')
+            puts(f' caption: {name}; category: {INIT_VALS}' + '}\n')
+        
+        # 3. PARAMETERS
+
+        # dict with parameters specification
+        data = ivp[PARAMS]
+
+        # put annotation
+        for name in data.keys():
+            puts(f'//input: {ANNOT_ARG_TYPE} _{name}Val = {data[name]["value"]}')
+            puts(' {' + f'units: {data[name]["units"]};')
+            puts(f' caption: {name}; category: {PARAMS}' + '}\n')
+
+        # 4. SPECIAL INPUTS
+        puts(f'//input: int _{ivp[ARGUMENT]["name"]}Count\n')
+        puts(f'//input: int _varsCount\n')
+
+        # 5. OUTPUT COLUMNS
+        puts(f'//output: column_list {SOLVER_RESULT_NAME} ')
+        puts(f'[new(_{ivp[ARGUMENT]["name"]}Count, _varsCount)')
+
+        # create new columns names
+        line = "; '" + ivp[ARGUMENT]["name"] + "'"       
+
+        for name in ivp[DIF_EQUATIONS]:
+            line += "; '" + name + f'({ivp[ARGUMENT]["name"]})' + "'"
+
+        puts(line + ']\n')     
+
+        # 6. OUTPUT DATAFRAME
+        puts(f'//output: dataframe {DF_SOLUTION_NAME} [{SOLVER_RESULT_NAME}] {DF_OUTPUT_ANNOT}\n')
+
+        # 7. EDITOR
+        puts(EDITOR_LINE + '\n')
     
     def putSolverHeader(puts, ivp):
         """
         Puts IVP solving function header.
         """
-        pass
+        puts('EMSCRIPTEN_KEEPALIVE\n')
+
+        # name of solving function
+        puts(f'int {SOLVER_PREFIX}{ivp[NAME]}(')
+
+        # arguments
+        puts(f'{DATA_TYPE} {ivp[ARGUMENT]["initial"]["name"]},')
+        puts(f' {DATA_TYPE} {ivp[ARGUMENT]["final"]["name"]},')
+        puts(f' {DATA_TYPE} {ivp[ARGUMENT]["step"]["name"]},\n')
+
+        # initial values
+        line = SPACE
+
+        for name in ivp[INIT_VALS].keys():
+            line += f'{DATA_TYPE} _{name}Initial, '
+
+        puts(line + '\n')
+
+        # parameters
+        line = SPACE
+
+        for name in ivp[PARAMS].keys():
+            line += f'{DATA_TYPE} _{name}Val, '
+
+        puts(line + '\n')
+
+        puts(SPACE + f'int _{ivp[ARGUMENT]["name"]}Count, ')
+        puts('int _varsCount,\n')
+
+        # dataframe
+        puts(SPACE + f'{DATA_TYPE} * {SOLVER_RESULT_NAME}, ')
+        puts(f'int {SOLVER_RESULT_ROW_COUNT_NAME}, ')
+        puts(f'int {SOLVER_RESULT_COL_COUNT_NAME}) noexcept\n')
     
     def putSolverBody(puts, ivp):
         """
         Puts IVP solving function body.
         """
-        pass
+        puts('{\n')
+
+        puts(SPACE + f'using namespace {ivp[NAME]};\n\n')
+
+        puts(SPACE + f'{DATA_TYPE} {INIT_VALS_ARR_NAME}[DIM];\n\n')
+        
+        puts(SPACE + '// initial values\n')
+
+        index = 0
+
+        # put initial values 
+        for name in ivp[INIT_VALS]:
+            puts(SPACE + f'{INIT_VALS_ARR_NAME}[{index}] = _{name}Initial;\n')
+            index += 1
+
+        puts('\n' + SPACE + '// parameters\n')
+
+        # put parameters
+        for name in ivp[PARAMS]:
+            puts(SPACE + name + f' = _{name}Val;\n')
+
+        # return line
+        line = '\n' + SPACE + f'return solveODE({ODES_RIGHT_PART_NAME}, ' 
+
+        if ivp[METHOD] == 'implicit':
+            line += f'{T_DERIVATIVE_NAME}, {JACOBIAN_NAME}, '
+
+        line += f'{ivp[ARGUMENT]["initial"]["name"]}, '
+        line += f'{ivp[ARGUMENT]["final"]["name"]}, '
+        line += f'{ivp[ARGUMENT]["step"]["name"]}, '
+        line += f'{INIT_VALS_ARR_NAME}, {TOLLERANCE_NAME},\n' + SUBSUBSPACE
+        line += f'{SOLVER_RESULT_NAME}, _{ivp[ARGUMENT]["name"]}Count, _varsCount);\n'
+        
+        puts(line)
+        
+        puts('} //' + SOLVER_PREFIX + ivp[NAME])
+
+
     
     settings = {}
 
