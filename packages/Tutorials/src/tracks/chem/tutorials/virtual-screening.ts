@@ -119,7 +119,7 @@ export class VirtualScreeningTutorial extends Tutorial {
         })), null, outputComment);
 
       let ppColumn: DG.Accordion;
-      const ppDescription = 'In the property panel, you should now see all the actions ' +
+      const ppDescription = 'In the context panel, you should now see all the actions ' +
         'applicable to the column under the "Actions" section. Let\'s calculate some ' +
         'molecular descriptors for the given dataset.';
 
@@ -143,7 +143,7 @@ export class VirtualScreeningTutorial extends Tutorial {
         'are different types of descriptors, you can select them either by category or individually. We ' +
         'will combine the ones that describe molecular graph itself, as well as the surface of the whole ' +
         'molecule and its physico-chemical properties.';
-      const descriptorDlg = await this.openDialog('Click on "Chem | Descriptors..." action in the property panel',
+      const descriptorDlg = await this.openDialog('Click on "Chem | Descriptors..." action in the context panel',
         'Descriptors', descriptorsLabel, descDlg);
 
       const groupHints = $(descriptorDlg.root)

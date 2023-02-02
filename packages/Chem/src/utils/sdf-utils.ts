@@ -73,16 +73,9 @@ export function _saveAsSdf(
   //todo: load OpenChemLib (or use RDKit?)
   //todo: UI for choosing columns with properties
 
-  const pi = DG.TaskBarProgressIndicator.create('Saving as SDF...');
-
   if (structureColumn == null)
     return;
 
-  let result = '';
-  try {
-    result = getSdfString(table, structureColumn);
-    DG.Utils.download(table.name + '.sdf', result);
-  } finally {
-    pi.close();
-  }
+  const result = getSdfString(table, structureColumn);
+  DG.Utils.download(table.name + '.sdf', result);
 }

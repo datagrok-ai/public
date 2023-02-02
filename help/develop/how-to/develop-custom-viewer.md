@@ -113,7 +113,7 @@ the viewer is closed) unsubscribes from them.
 ### Properties
 
 Viewer properties include all the parameters you want users to edit via
-the [property panel](../../datagrok/navigation.md#properties). They get persisted with the viewer layout.
+the [context panel](../../datagrok/navigation.md#context-panel). They get persisted with the viewer layout.
 
 In this case, we want to set a couple of properties for our bar chart:
 
@@ -147,7 +147,7 @@ In the class `constructor`, you can create properties of the following data type
 * datetime `this.dateTime(propertyName[, defaultValue, options])`
 
 Follow the naming conventions for JavaScript variables (`lowerCamelCase` will do). Certainly, the names will be nicely
-displayed in the property panel: capitalized, with spaces between words (e.g.,
+displayed in the context panel: capitalized, with spaces between words (e.g.,
 `property` becomes `Property` and `propertyName` becomes `Property Name`). But for them to appear so, pay attention to
 the names you use in your code. Consistency in naming also ensures that property values are updated correctly. When you
 set a value of a property, either as default or within the class body as a result of assignment, the specified value
@@ -169,7 +169,7 @@ them:
 
 Some properties, such as `stringList` and `dateTime`, can only be used to represent columns and, therefore, require
 the `ColumnName` postfix. Let's proceed to our example. After defining the properties, we specify additional chart
-settings, which will not appear in the property panel, and initialize the viewer. The next step is to retrieve data for
+settings, which will not appear in the context panel, and initialize the viewer. The next step is to retrieve data for
 our visualization. This is typically done in the `onTableAttached` method where you can test if a viewer is applicable
 to the currently open table, select the most relevant columns, and so on. However, as we already provided the default
 column names, we use this method only to subscribe to events modifying the displayed data (selection and filtering) and

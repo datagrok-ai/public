@@ -180,7 +180,7 @@
                 "id": "07eb9e30-0b50-11e9-a39c-697a75384c2d",
                 "type": "Markup",
                 "look": {
-                  "content": "# EEG Viewer\n\nThe interactive depiction of the human head that you see on the right is not a custom control; \ninstead, it is a simple SVG file with the markup inserted to color-code electrode values. Right-click \non it, and choose \"Edit content...\" to see the source.\n\nBy the way, the same control is capable of rendering documents in the Markdown format. This text is\nan example of it, check out its source.\n\n## Info panels\n\nClick on the 'F3' column, and check out the spectrogram on the right in the property panel. "
+                  "content": "# EEG Viewer\n\nThe interactive depiction of the human head that you see on the right is not a custom control; \ninstead, it is a simple SVG file with the markup inserted to color-code electrode values. Right-click \non it, and choose \"Edit content...\" to see the source.\n\nBy the way, the same control is capable of rendering documents in the Markdown format. This text is\nan example of it, check out its source.\n\n## Info panels\n\nClick on the 'F3' column, and check out the spectrogram on the right in the context panel. "
                 }
               }
             },

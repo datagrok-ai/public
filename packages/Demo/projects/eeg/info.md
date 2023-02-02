@@ -9,4 +9,4 @@ an example of it, check out its source.
 
 ## Info panels
 
-Click on the 'F3' column, and check out the spectrogram on the right in the property panel. 
+Click on the 'F3' column, and check out the spectrogram on the right in the context panel. 

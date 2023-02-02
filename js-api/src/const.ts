@@ -285,7 +285,7 @@ export const FUNC_TYPES = {
     * Signature: app() */
   APP: 'app',
 
-  /** Context-specific widget that appears on the property panel
+  /** Context-specific widget that appears on the context panel
     * Signature: panel(x: any): Widget */
   PANEL: 'panel',
 
@@ -547,11 +547,11 @@ export type MarkerCodingType = `${MARKER_TYPE}`;
 export type DemoDatasetName = `${DEMO_DATASET}`;
 export type DockType = `${DOCK_TYPE}`;
 export type LegendPosition = `${LEGEND_POSITION}`;
-export type ColumnInfo = {name: string, type?: string, semType?: string};
+export type CsvImportColumnOptions = {name: string, type?: string, semType?: string};
 export type CsvImportOptions = {
   delimiter?: string, decimalSeparator?: string, thousandSeparator?: string, headerRow?: boolean,
   columnFilterNames?: string[], columnFilterRegexp?: string, mergeDelimiters?: boolean, maxRows?: number,
-  rowFilterTop?: number, rowFilterProb?: number, nullStrings?: string[], columnImportOptions?: ColumnInfo[]};
+  rowFilterTop?: number, rowFilterProb?: number, nullStrings?: string[], columnImportOptions?: CsvImportColumnOptions[]};
 export type IndexPredicate = (ind: number) => boolean;
 export type StringPredicate = (str: string) => boolean;
 export type ScriptLanguage = `${SCRIPT_LANGUAGE}`;

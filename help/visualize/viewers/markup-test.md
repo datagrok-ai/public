@@ -33,9 +33,9 @@ most casees, the viewer will auto-detect content type. Use the "mode" property t
 
 * New tab with Markup view added
 * There is sample text on view
-* Markup text shown on [Property Panel](../../datagrok/navigation.md#properties)
+* Markup text shown on [Context Panel](../../datagrok/navigation.md#context-panel)
 
-1. Enter markup text with the external viewer to [Property Panel](../../datagrok/navigation.md#properties) field *
+1. Enter markup text with the external viewer to [Context Panel](../../datagrok/navigation.md#context-panel) field *
 
 * Viewer from an external source displayed on markup view
 * All external viewer functionality is available inside the platform1. Return to view

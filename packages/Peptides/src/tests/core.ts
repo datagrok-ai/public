@@ -95,7 +95,7 @@ category('Core', () => {
     grok.shell.closeTable(d);
     await delay(500);
 
-    await grok.dapi.projects.open('Peptides project unique test');
+    await sp.open();
     v = grok.shell.getTableView('Peptides analysis');
     grok.shell.closeTable(v.dataFrame);
 

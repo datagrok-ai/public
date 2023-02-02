@@ -578,6 +578,20 @@ export class TableInfo extends Entity {
 
   get dataFrame(): DataFrame { return api.grok_TableInfo_Get_DataFrame(this.dart); }
 
+  get columns(): ColumnInfo[] { return api.grok_TableInfo_Get_Columns(this.dart); }
+}
+
+
+/** @extends Entity
+ * Represents a Column metadata
+ * */
+export class ColumnInfo extends Entity {
+
+  /** @constructs ColumnInfo */
+  constructor(dart: any) {
+    super(dart);
+  }
+
 }
 
 /** @extends Entity
@@ -984,7 +998,7 @@ export interface PropertyOptions {
   /** Custom editor (such as slider or text area) */
   editor?: string;
 
-  /** Corresponding category on the property panel */
+  /** Corresponding category on the context panel */
   category?: string;
 
   /** Value format */
@@ -1136,7 +1150,7 @@ export class Property {
   static fromOptions(options: PropertyOptions): Property { return Property.js(options.name!, options.type! as TYPE, options); }
 
   /** Registers the attached (dynamic) property for the specified type.
-   * It is editable via the property panel, and gets saved into the view layout as well.
+   * It is editable via the context panel, and gets saved into the view layout as well.
    * Property getter/setter typically uses Widget's "temp" property for storing the value. */
   static registerAttachedProperty(typeName: string, property: Property) {
     api.grok_Property_RegisterAttachedProperty(typeName, property.dart);

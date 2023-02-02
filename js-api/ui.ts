@@ -1033,7 +1033,7 @@ export class ObjectHandler {
   /**
    * Registers a function that takes applicable objects as the only argument.
    * It will be suggested to run in the context menu for that object, and
-   * also in the "Actions" pane on the property panel.
+   * also in the "Actions" pane on the context panel.
    *
    * Samples: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
    *
@@ -1420,7 +1420,8 @@ export namespace hints {
     const hintNode = el.getBoundingClientRect();
     const indicatorNode = hintIndicator.getBoundingClientRect();
 
-    const hintPosition = $(el).css('position') ?? 'static';
+    type elementPosition = 'static' | 'relative' | 'absolute' | 'fixed' | 'sticky';
+    const hintPosition = <elementPosition>($(el).css('position') ?? 'static');
 
     function setDefaultStyles() {
       $(hintIndicator).css('position', 'absolute');

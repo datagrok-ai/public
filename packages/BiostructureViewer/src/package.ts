@@ -4,21 +4,22 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {DockingApp} from './apps/docking-app';
-import {byId, byData} from './viewers/molstar-viewer';
+import {byId, byData, MolstarViewer} from './viewers/molstar-viewer';
 import {PdbRenderer} from './utils/cell-renderer';
 import {NglGlService} from './utils/ngl-gl-service';
 import {NglForGridTestApp} from './apps/ngl-for-grid-test-app';
 import {nglViewerGen as _nglViewerGen} from './utils/ngl-viewer-gen';
 
-import {IPdbHelper, NglGlServiceBase} from '@datagrok-libraries/bio';
 import {TwinPviewer} from './viewers/twin-p-viewer';
-import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {PROPS as nglPROPS, NglViewer} from './viewers/ngl-viewer';
 import {NglViewerApp} from './apps/ngl-viewer-app';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
 import {PdbHelper} from './utils/pdb-helper';
 import {PdbApp} from './apps/pdb-app';
 import {nglViewUI, nglWidgetUI} from './viewers/ngl-ui';
+import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
+import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
+import {MolstarViewerApp} from './apps/molstar-viewer-app';
 
 export const _package = new DG.Package();
 
@@ -99,6 +100,7 @@ export async function importPdb(fileContent: string): Promise<DG.DataFrame[]> {
 
 // -- File (pre)viewers --
 
+// eslint-disable-next-line max-len
 //tags: fileViewer, fileViewer-mol, fileViewer-cif, fileViewer-mcif, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-ent, fileViewer-pqr, fileViewer-mmtf, fileViewer-mtl, fileViewer-sd
 //input: file file
 //output: view v
@@ -120,6 +122,7 @@ export function molecule3dNglView3(file: any): DG.View {
   return nglViewUI(file);
 }
 
+// eslint-disable-next-line max-len
 //tags: fileViewer, fileViewer-dsn6, fileViewer-brix, fileViewer-cube, fileViewer-cub, fileViewer-dx, fileViewer-dxbin, fileViewer-xplor, fileViewer-cns, fileViewer-mrc, fileViewer-map, fileViewer-ccp4
 //input: file file
 //output: view v
@@ -163,6 +166,18 @@ export async function nglViewerApp() {
   }
 }
 
+//name: molstarViewerApp
+//description: Test app for MolstarViewer
+export async function molstarViewerApp() {
+  const pi = DG.TaskBarProgressIndicator.create('open molstarViewer app');
+  try {
+    const app = new MolstarViewerApp('molstarViewerApp');
+    await app.init();
+  } finally {
+    pi.close();
+  }
+}
+
 // -- Viewers --
 
 //name: NglViewer
@@ -171,6 +186,14 @@ export async function nglViewerApp() {
 //output: viewer result
 export function nglViewer(): DG.JsViewer {
   return new NglViewer();
+}
+
+//name: MolstarViewer
+//description: 3D structure molstar RCSB viewer for large biological molecules (proteins, DNA, and RNA)
+//tags: viewer, panel
+//output: viewer result
+export function molstarViewer(): DG.JsViewer {
+  return new MolstarViewer();
 }
 
 // -- Top menu --

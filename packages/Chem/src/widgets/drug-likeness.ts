@@ -26,5 +26,8 @@ export function drugLikenessWidget(molString: string): DG.Widget {
   } catch (e) {
     return new DG.Widget(ui.divText('Could not asses drug likeness'));
   }
-  return new DG.Widget(ui.divV([ui.label(`Score: ${score}`), renderDescription(description)]));
+  const descriptionHost = renderDescription(description);
+  descriptionHost.style.overflow = 'hidden';
+  descriptionHost.style.maxHeight = '400px';
+  return new DG.Widget(ui.divV([ui.label(`Score: ${score}`), descriptionHost], {classes: 'ui-box'}));
 }

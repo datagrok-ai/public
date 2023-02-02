@@ -17,7 +17,6 @@ export class NglViewerApp {
   }
 
   async loadData(): Promise<void> {
-    // const df: DG.DataFrame = await _package.files.readCsv('samples/mol1K.sdf');
     const sdfBytes: Uint8Array = await _package.files.readAsBytes('samples/mol1K.sdf');
     const df: DG.DataFrame = (await grok.functions.call(
       'Chem:importSdf', {bytes: sdfBytes}))[0];

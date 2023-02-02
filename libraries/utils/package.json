@@ -4,15 +4,16 @@
     "access": "public"
   },
   "fullName": "Utils",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "Common utilities",
   "dependencies": {
-    "fast-sha256": "^1.3.0",
     "cash-dom": "^8.1.1",
     "datagrok-api": "^1.8.1",
     "exceljs": "^4.3.0",
+    "fast-sha256": "^1.3.0",
     "html2canvas": "^1.4.1",
     "rxjs": "^6.5.5",
+    "typeahead-standalone": "^4.14.1",
     "wu": "latest"
   },
   "devDependencies": {
@@ -34,7 +35,7 @@
     "lint-fix": "eslint \"./src/**/*.ts\" --fix"
   },
   "sources": [
-		"common/html2canvas.min.js",
-		"common/exceljs.min.js"
-	]
+    "common/html2canvas.min.js",
+    "common/exceljs.min.js"
+  ]
 }

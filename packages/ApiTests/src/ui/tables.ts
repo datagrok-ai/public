@@ -57,7 +57,7 @@ category('UI: Tables', () => {
         if (pp.querySelector('.ui-label') !== null)
           return (pp.querySelector('.ui-label') as HTMLElement).innerText === 'age';
         return false;
-      }, 'cannot load property panel of age column', 5000);
+      }, 'cannot load context panel of age column', 5000);
       const actions = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
         .find((el) => el.textContent === 'Actions') as HTMLElement;
       if (!actions.classList.contains('expanded')) await actions.click();

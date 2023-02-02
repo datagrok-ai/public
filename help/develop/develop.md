@@ -392,7 +392,7 @@ Deploying such package locates it to the Datagrok host URI (such as `https://dev
 
 ## Package settings
 
-A package can have settings, which are either set programmatically or by users in the package's properties panel. Every
+A package can have settings, which are either set programmatically or by users in the package's context panel. Every
 user group has its own settings configuration. In the interface, users will be able to adjust the settings for each
 group they belong to. To include a settings editor into a package, add the list of properties to the `package.json`
 file:

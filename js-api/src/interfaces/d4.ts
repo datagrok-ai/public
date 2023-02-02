@@ -332,7 +332,7 @@ export interface IScatterPlotLookSettings {
 
   /// A column to be used for color-coding. Could be numerical or categorical.
   /// If not set, *Filtered Rows Color* is used for markers that pass the filter.
-  /// Color palettes could defined either for columns in the column properties panel,
+  /// Color palettes could defined either for columns in the column context panel,
   /// or via *Linear Color Scheme* and *Categorical Color Scheme* properties.
   colorColumnName: string;
 
@@ -1151,7 +1151,7 @@ export interface IGridLookSettings {
   /// Reordering columns by dragging the header
   allowColReordering: boolean;
 
-  /// Whether the current object (shown in the property panel) is changed
+  /// Whether the current object (shown in the context panel) is changed
   /// when you click on a column header.
   allowChangeCurrentObject: boolean;
 

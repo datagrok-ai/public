@@ -78,17 +78,11 @@ export class SARViewerBase extends DG.JsViewer {
 
         switchHost = ui.divH([mutationCliffsMode.root, invariantMapMode.root], {id: 'pep-viewer-title'});
         $(switchHost).css('width', 'auto').css('align-self', 'center');
-        const colorTip = ui.divText('Color intensity - p-value', {style: {fontSize: '11px'}});
-        const radiusTip = ui.divText('Circle size - Mean difference', {style: {fontSize: '11px'}});
-        // tips = ui.divV([colorTip, radiusTip], {style: {position: 'absolute', right: '0'}});
       }
       const tips: HTMLElement = ui.iconFA('question');
-      tips.addEventListener('mouseover', (ev: MouseEvent) => {
-        ui.tooltip.show(ui.divH([
-          ui.divText('Color intensity - p-value'),
-          ui.divText('Circle size - Mean difference'),
-        ]), ev.clientX, ev.clientY);
-      });
+      ui.tooltip.bind(tips,
+        () => ui.divV([ui.divText('Color intensity - p-value'), ui.divText('Circle size - Mean difference')]));
+
       $(tips).addClass('pep-help-icon');
 
       const viewerRoot = this.viewerGrid.root;
@@ -212,7 +206,7 @@ export class MostPotentResiduesViewer extends SARViewerBase {
     pValGridCol.format = '#.000';
     pValGridCol.name = 'P-value';
     const monomerCol = this.model.mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.MONOMER);
-    const positionCol = this.model.mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.POSITION);
+    const positionCol: DG.Column<number> = this.model.mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.POSITION);
 
     // Setting Monomer column renderer
     CR.setAARRenderer(monomerCol, this.model.alphabet);
@@ -226,7 +220,7 @@ export class MostPotentResiduesViewer extends SARViewerBase {
       const tableRowIdx = gridCell!.tableRowIndex!;
       const position = positionCol.get(tableRowIdx);
       const aar = monomerCol.get(tableRowIdx);
-      chooseAction(aar, position, ev.shiftKey, false, this.model);
+      chooseAction(aar, position!.toFixed(), ev.shiftKey, false, this.model);
       this.viewerGrid.invalidate();
       this.model.fireBitsetChanged();
     });
@@ -269,7 +263,7 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
   const gridTable = cell.grid.table;
   const currentMonomer: string = gridTable.get(C.COLUMNS_NAMES.MONOMER, tableRowIndex);
   const currentPosition: string = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ? tableColName :
-    gridTable.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
+    gridTable.get(C.COLUMNS_NAMES.POSITION, tableRowIndex).toFixed();
   const currentPosStats = model.monomerPositionStats[currentPosition];
 
   if (!currentPosStats[currentMonomer]) {
@@ -318,7 +312,7 @@ function showTooltip(cell: DG.GridCell, x: number, y: number, model: PeptidesMod
       model.showMonomerTooltip(currentAAR, x, y);
     else if (renderColNames.includes(tableColName!)) {
       const currentPosition = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ? tableColName :
-        table.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
+        table.get(C.COLUMNS_NAMES.POSITION, tableRowIndex).toFixed();
 
       model.showTooltipAt(currentAAR, currentPosition, x, y);
     }
