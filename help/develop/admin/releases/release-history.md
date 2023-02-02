@@ -29,10 +29,10 @@ title: "Release History"
 We've released a new version of the Datagrok platform (1.12.0). This release focuses on new features for visualization and usability and traditionally on platform stability.
 Here are some of the biggest improvements:
 
-* New [Scaffold Tree](release-history.md/#chem) visualization that organizes molecular data sets by arranging molecules into a tree hierarchy based on their scaffolds. For details, see [Scaffold tree](../../../domains/chem/scaffold-tree.md).
-* [Dendrogram](release-history.md/#dendrogram) for interactive exploration of the hierarchical clustering. For details, see [Dendrogram](https://community.datagrok.ai/t/dendrogram/721).
-* Brand new [Map](release-history.md/#gis). To learn more, see [Map viewer](https://community.datagrok.ai/t/visualization-related-updates/521/27)
-* [Peptides](release-history.md/#Peptides) new features and capabilities, such as custom clustering and multiple views, as well as a slightly redesigned user interface and improved application stability. To learn more, see [Macromolecules updates](https://community.datagrok.ai/t/macromolecules-updates/661/11)
+* New [Scaffold Tree](release-history.md/#enhancements-in-packages ) visualization that organizes molecular data sets by arranging molecules into a tree hierarchy based on their scaffolds. For details, see [Scaffold tree](../../../domains/chem/scaffold-tree.md).
+* [Dendrogram](release-history.md/#enhancements-in-packages) for interactive exploration of the hierarchical clustering. For details, see [Dendrogram](https://community.datagrok.ai/t/dendrogram/721).
+* Brand new [Map](release-history.md/#enhancements-in-packages). To learn more, see [Map viewer](https://community.datagrok.ai/t/visualization-related-updates/521/27)
+* [Peptides](release-history.md/#enhancements-in-packages) new features and capabilities, such as custom clustering and multiple views, as well as a slightly redesigned user interface and improved application stability. To learn more, see [Macromolecules updates](https://community.datagrok.ai/t/macromolecules-updates/661/11)
 
 ### Visualization and usability improvements
 
