@@ -14,9 +14,6 @@ import {GlobeViewer} from './viewers/globe/globe-viewer';
 
 import {FlagCellRenderer} from './renderers/flag-cell-renderer';
 
-import '../css/styles.css';
-import '../css/chord-viewer.css';
-import '../css/sankey.css';
 
 export const _package = new DG.Package();
 

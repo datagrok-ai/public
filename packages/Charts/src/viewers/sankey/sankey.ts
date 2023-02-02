@@ -17,6 +17,8 @@ import {
   SankeyNode,
 } from 'd3-sankey';
 
+import '../../../css/sankey-viewer.css';
+
 interface Node {
   node: number,
   name: string,
