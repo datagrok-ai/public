@@ -11,7 +11,7 @@ export class SARViewerBase extends DG.JsViewer {
   tempName!: string;
   _viewerGrid!: DG.Grid;
   sourceGrid!: DG.Grid;
-  model!: PeptidesModel;
+  _model!: PeptidesModel;
   isPropertyChanging: boolean = false;
   _isVertical = false;
 
@@ -28,10 +28,15 @@ export class SARViewerBase extends DG.JsViewer {
     this._viewerGrid = grid;
   }
 
+  get model(): PeptidesModel {
+    this._model ??= PeptidesModel.getInstance(this.dataFrame);
+    return this._model;
+  }
+
   onTableAttached(): void {
     super.onTableAttached();
     this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
-    this.model = PeptidesModel.getInstance(this.dataFrame);
+    // this.model = PeptidesModel.getInstance(this.dataFrame);
     this.subs.push(this.model.onMutationCliffsSelectionChanged.subscribe(() => this.viewerGrid.invalidate()));
     this.helpUrl = '/help/domains/bio/peptides.md';
   }
