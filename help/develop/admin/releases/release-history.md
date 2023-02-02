@@ -57,7 +57,7 @@ Here are some of the biggest improvements:
 
 #### [Chem](https://github.com/datagrok-ai/public/tree/7c62a0c018ec631d3b23760d538a17aaf4d4ca36/packages/Chem#readme)
 
-We added new **Scaffold Tree** visualization that organizes molecular data sets by arranging molecules into a tree hierarchy based on their scaffolds. For details, see [Scaffold tree](help/domains/chem/scaffold-tree.md).
+We've added new **Scaffold Tree** visualization that organizes molecular data sets by arranging molecules into a tree hierarchy based on their scaffolds. For details, see [Scaffold tree](help/domains/chem/scaffold-tree.md).
 * Improvements:
   * Added the package property to set the default **Sketcher** so that users won’t have to switch on the first use manually.
   * Сhanged the result output for **Chem | Find MCS**. Now it returns a variable instead of a column.
@@ -77,7 +77,7 @@ We added new **Scaffold Tree** visualization that organizes molecular data sets 
 
 #### [Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram#readme)
 
-We separated **Dendrogram** from [**PhyloTreeViewer**](https://github.com/datagrok-ai/public/tree/master/packages/PhyloTreeViewer). And now it’s a [package](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram) for the Datagrok platform for phylogenetic tree visualization. 
+We've separated **Dendrogram** from [**PhyloTreeViewer**](https://github.com/datagrok-ai/public/tree/master/packages/PhyloTreeViewer). And now it’s a [package](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram) for the Datagrok platform for phylogenetic tree visualization. 
 
 Use Dendrogram viewer to:
 * Display the Newick tree format files (NWK, NEWICK). 
@@ -87,7 +87,7 @@ For details, see [Dendrogram](https://community.datagrok.ai/t/dendrogram/721).
 
 #### [GIS](https://github.com/datagrok-ai/public/tree/master/packages/GIS)
 
-We retired Google Map viewer and implemented a Map viewer in
+We've retired Google Map viewer and implemented a Map viewer in
 the GIS package. It shows geospatial data on a map as either markers or a heatmap. It displays data in geographic formats, like GEOJSON, TOPOJSON, KML, and KMZ. You can also add a map viewer to your custom table. To learn more, see [Map viewer](https://community.datagrok.ai/t/visualization-related-updates/521/27).
 
 #### [Peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides#readme)
