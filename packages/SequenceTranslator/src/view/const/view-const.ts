@@ -6,4 +6,3 @@ import * as DG from 'datagrok-api/dg';
 export const MAIN_TAB = 'MAIN';
 export const AXOLABS_TAB = 'AXOLABS';
 export const SDF_TAB = 'SDF';
-export const MAIN_TAB_DEFAULT_INPUT = 'fAmCmGmAmCpsmU';

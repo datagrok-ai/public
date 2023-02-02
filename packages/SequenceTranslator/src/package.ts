@@ -29,53 +29,10 @@ export function getMonomerLib() {
 //tags: app
 export async function sequenceTranslator(): Promise<void> {
   monomerLib = await readLibrary(LIB_PATH, DEFAULT_LIB_FILENAME);
-  const pathParts: string[] = window.location.pathname.split('/');
-  // here the value is '' and ''
 
   if (monomerWorks === null)
     monomerWorks = new MonomerWorks(monomerLib);
 
-  // let urlParams = new URLSearchParams(window.location.search);
-
-  // let mainSeq: string = DEFAULT_SEQUENCE;
-  // const view = grok.shell.newView(SEQUENCE_TRANSLATOR, []);
-  // view.box = true;
-
-  // const tabControl = ui.tabControl({
-  //   [MAIN]: await getMainTab((seq) => {
-  //     mainSeq = seq;
-  //     urlParams = new URLSearchParams();
-  //     urlParams.set('seq', mainSeq);
-  //     updatePath();
-  //   }),
-  //   [AXOLABS]: getAxolabsTab(),
-  //   [SDF]: getSdfTab(),
-  // });
-
-  // const sdfPane = tabControl.getPane(SDF);
-  // ui.tooltip.bind(sdfPane.header, 'Get atomic-level structure for SS + AS/AS2 and save SDF');
-
-  // tabControl.onTabChanged.subscribe(() => {
-  //   if (tabControl.currentPane.name !== MAIN)
-  //     urlParams.delete('seq');
-  //   else
-  //     urlParams.set('seq', mainSeq);
-  //   updatePath();
-  // });
-
-  // function updatePath() {
-  //   const urlParamsTxt: string = Object.entries(urlParams)
-  //     .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
-  //   view.path = '/apps/SequenceTranslator' + `/${tabControl.currentPane.name}/?${urlParamsTxt}`;
-  // }
-
-  // if (pathParts.length >= 4) {
-  //   const tabName: string = pathParts[3];
-  //   tabControl.currentPane = tabControl.getPane(tabName);
-  // }
-
-  // view.append(tabControl);
-  
   const v = new SequenceTranslatorUI();
   await v.createLayout();
 }

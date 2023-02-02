@@ -1,24 +1,52 @@
+/* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+/* external dependencies */
 import * as rxjs from 'rxjs';
 
-// todo: elminate completely
-import {map} from '../hardcode-to-be-eliminated/map';
+/* datagrok dependencies */
 
+/* internal dependencies */
+import {map} from '../../hardcode-to-be-eliminated/map';// todo: elminate completely
 // todo: unify with lib bio monomers works
-import {sequenceToSmiles, sequenceToMolV3000} from '../utils/structures-works/from-monomers';
+import {sequenceToSmiles, sequenceToMolV3000} from '../../utils/structures-works/from-monomers';
+import {convertSequence, undefinedInputSequence, isValidSequence} from '../../sdf-tab/sequence-codes-tools';
+import {drawMolecule} from '../../utils/structures-works/draw-molecule';
+import {download} from '../../utils/helpers';
+import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, DEFAULT_INPUT} from '../../view/const/main-tab-const';
 
-import {convertSequence, undefinedInputSequence, isValidSequence} from '../sdf-tab/sequence-codes-tools';
-import {drawMolecule} from '../utils/structures-works/draw-molecule';
-import {download} from '../utils/helpers';
 
-import {DEFAULT_INPUT, SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG} from '../view/const/main-tab-const';
+export class MainTabUI {
+  constructor(onInputChanged: (input: string) => void) {
+    this._inputSequence = DEFAULT_INPUT;
+    this._onInputChanged = onInputChanged;
+  }
+
+  /** Sequence inserted on the Main tab to be translated  */
+  private _inputSequence: string;
+
+  private _onInputChanged: (input: string) => void;
+
+  get inputSequence() { return this._inputSequence; }
+
+  /** Get the HTMLElement of the tab, async because of the internal
+   * grok.functions.call() used to draw the sequence */
+  async getHtmlElement(): Promise<HTMLDivElement> {
+    return await getMainTab(this._onInputChanged);
+  }
+
+  // todo: add validation of the inserted sequence here!
+  set inputSequence(newSequence: string) {
+    this._inputSequence = newSequence;
+  }
+}
 
 /** Produce HTML div for the 'main' tab */
 export async function getMainTab(onSequenceChanged: (seq: string) => void): Promise<HTMLDivElement> {
-  /** Validate input and update */
+  const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
+
   async function updateTableAndMolecule(sequence: string): Promise<void> {
     moleculeImgDiv.innerHTML = '';
     outputTableDiv.innerHTML = '';
@@ -75,7 +103,6 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
     }
   }
 
-  const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
   const inputFormatChoiceInput = ui.choiceInput('Input format: ', 'Janssen GCRS Codes', Object.keys(map));
   inputFormatChoiceInput.onInput(() => {
     updateTableAndMolecule(inputSequenceField.value.replace(/\s/g, ''));

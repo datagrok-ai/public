@@ -4,10 +4,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 // inner dependencies
-import {MAIN_TAB, AXOLABS_TAB, SDF_TAB} from './view-const';
-import {MainTabUI} from './main-tab-ui';
-import {SdfTabUI} from './sdf-tab-ui';
-import {AxolabsTabUI} from './axolabs-tab-ui';
+import {MAIN_TAB, AXOLABS_TAB, SDF_TAB} from './const/view-const';
+import {MainTabUI} from './tabs-ui/main-tab-ui';
+import {SdfTabUI} from './tabs-ui/sdf-tab-ui';
+import {AxolabsTabUI} from './tabs-ui/axolabs-tab-ui';
 import {viewMonomerLib} from '../utils/monomer-lib-viewer';
 
 /** Class responsible for the UI of the application */
@@ -44,10 +44,6 @@ export class SequenceTranslatorUI {
   private readonly _tabs: TabLayout;
   private readonly _topPanel: HTMLElement[];
   private readonly _router: URLRouter;
-
-  // private updatePath() {
-  //   this._view.path = this._router.urlParamsString;
-  // }
 
   /** Create master layout of the app  */
   public async createLayout(): Promise<void> {
