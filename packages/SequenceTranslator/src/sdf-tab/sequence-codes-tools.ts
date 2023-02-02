@@ -49,8 +49,8 @@ export function getFormat(sequence: string): string | null {
     }
   });
 
-  const indexOfFirstNotValidChar = (outputIndex === sequence.length) ? -1 : outputIndex;
-  if (indexOfFirstNotValidChar !== -1)
+  const indexOfFirstInvalidChar = (outputIndex === sequence.length) ? -1 : outputIndex;
+  if (indexOfFirstInvalidChar !== -1)
     return possibleSynthesizers[0];
 
   const possibleTechnologies = getListOfPossibleTechnologiesByFirstMatchedCode(sequence, possibleSynthesizers[0]);
@@ -91,14 +91,14 @@ export function getFormat(sequence: string): string | null {
 
 
 export function isValidSequence(sequence: string, format: string | null): {
-  indexOfFirstNotValidChar: number,
+  indexOfFirstInvalidChar: number,
   synthesizer: string[] | null,
 } {
   const possibleSynthesizers = format === null ?
     getListOfPossibleSynthesizersByFirstMatchedCode(sequence) :
     [format];
   if (possibleSynthesizers.length === 0)
-    return {indexOfFirstNotValidChar: 0, synthesizer: null};//, technology: null};
+    return {indexOfFirstInvalidChar: 0, synthesizer: null};//, technology: null};
 
   const outputIndices = Array(possibleSynthesizers.length).fill(0);
 
@@ -130,16 +130,16 @@ export function isValidSequence(sequence: string, format: string | null): {
 
   const outputIndex = Math.max(...outputIndices);
   const synthesizer = possibleSynthesizers[outputIndices.indexOf(outputIndex)];
-  const indexOfFirstNotValidChar = (outputIndex === sequence.length) ? -1 : outputIndex;
-  if (indexOfFirstNotValidChar !== -1) {
+  const indexOfFirstInvalidChar = (outputIndex === sequence.length) ? -1 : outputIndex;
+  if (indexOfFirstInvalidChar !== -1) {
     return {
-      indexOfFirstNotValidChar: indexOfFirstNotValidChar,
+      indexOfFirstInvalidChar: indexOfFirstInvalidChar,
       synthesizer: [synthesizer],
     };
   }
 
   return {
-    indexOfFirstNotValidChar: indexOfFirstNotValidChar,
+    indexOfFirstInvalidChar: indexOfFirstInvalidChar,
     synthesizer: [synthesizer],
   };
 }
@@ -184,12 +184,12 @@ function getListOfPossibleTechnologiesByFirstMatchedCode(sequence: string, synth
 }
 
 export function convertSequence(sequence: string, output: {
-  indexOfFirstNotValidChar: number, synthesizer: string[] | null
+  indexOfFirstInvalidChar: number, synthesizer: string[] | null
 }) {
-  if (output.indexOfFirstNotValidChar !== -1) {
+  if (output.indexOfFirstInvalidChar !== -1) {
     return {
       // type: '',
-      indexOfFirstNotValidChar: JSON.stringify(output),
+      indexOfFirstInvalidChar: JSON.stringify(output),
       Error: undefinedInputSequence,
     };
   }

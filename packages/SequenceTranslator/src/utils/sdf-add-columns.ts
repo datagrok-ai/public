@@ -61,17 +61,17 @@ export function sdfAddColumns(
     let res: number = Number.NaN;
     try {
       if ([SEQUENCE_TYPES.SENSE_STRAND, SEQUENCE_TYPES.ANTISENSE_STRAND].includes(typeCol.get(i))) {
-        res = (isValidSequence(sequenceCol.get(i), null).indexOfFirstNotValidChar == -1) ?
+        res = (isValidSequence(sequenceCol.get(i), null).indexOfFirstInvalidChar == -1) ?
           molecularWeight(sequenceCol.get(i), weightsObj) :
           DG.FLOAT_NULL;
       } else if (typeCol.get(i) == SEQUENCE_TYPES.DUPLEX) {
         const obj = parseStrandsFromDuplexCell(sequenceCol.get(i));
-        res = (Object.values(obj).every((seq) => isValidSequence(seq, null).indexOfFirstNotValidChar == -1)) ?
+        res = (Object.values(obj).every((seq) => isValidSequence(seq, null).indexOfFirstInvalidChar == -1)) ?
           molecularWeight(obj.SS, weightsObj) + molecularWeight(obj.AS, weightsObj) :
           DG.FLOAT_NULL;
       } else if ([SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(typeCol.get(i))) {
         const obj = parseStrandsFromTriplexOrDimerCell(sequenceCol.get(i));
-        res = (Object.values(obj).every((seq) => isValidSequence(seq, null).indexOfFirstNotValidChar == -1)) ?
+        res = (Object.values(obj).every((seq) => isValidSequence(seq, null).indexOfFirstInvalidChar == -1)) ?
           molecularWeight(obj.SS, weightsObj) + molecularWeight(obj.AS1, weightsObj) +
           molecularWeight(obj.AS2, weightsObj) :
           DG.FLOAT_NULL;
