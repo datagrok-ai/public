@@ -14,34 +14,16 @@ import {GlobeViewer} from './viewers/globe/globe-viewer';
 
 import {FlagCellRenderer} from './renderers/flag-cell-renderer';
 
+import {Demo} from './demos/demo';
 
 export const _package = new DG.Package();
 
-
-//name: timelinesViewerDemo
-export function timelinesViewerDemo() {
-  const adverseEvents = DG.DataFrame.fromCsv(
-    `USUBJID, AESTDY, AEENDY, SEX, AGE
-    s1, 10/02/2018, 10/09/2018, F, 48
-    s2, 10/04/2018, 10/07/2018, M, 51
-    s3, 10/02/2018, 10/05/2018, F, 39
-    s4, 10/07/2018, 10/08/2018, M, 43`);
-
-  const view = grok.shell.addTableView(adverseEvents);
-  view.addViewer('TimelinesViewer');
-}
 
 //name: RadarViewer
 //tags: viewer
 //output: viewer result
 export function _RadarViewer() {
   return new RadarViewer();
-}
-
-//name: radarViewerDemo
-export function radarViewerDemo() {
-  const view = grok.shell.addTableView(grok.data.demo.demog(100));
-  view.addViewer('RadarViewer');
 }
 
 //name: TreeViewer
@@ -101,19 +83,6 @@ export function _GroupAnalysisViewer() {
   return new GroupAnalysisViewer();
 }
 
-//name: radarViewerDemo
-//meta.demoPath: Viewers | Radar
-export function _radarViewerDemo() {
-  radarViewerDemo();
-}
-
-//name: radarViewerDemo
-//meta.demoPath: Viewers | Timelines
-export function _timelinesViewerDemo() {
-  const tv = grok.shell.addTableView(grok.data.demo.demog());
-  tv.addViewer(DG.VIEWER.TIMELINES);
-}
-
 //name: GlobeViewer
 //description: Creates a globe viewer
 //tags: viewer
@@ -128,4 +97,50 @@ export function _GlobeViewer() {
 //output: grid_cell_renderer result
 export function flagCellRenderer() {
   return new FlagCellRenderer();
+}
+
+
+//name: radarViewerDemo
+//meta.demoPath: Viewers | Radar
+export function _radarViewerDemo() {
+  radarViewerDemo();
+}
+
+//name: radarViewerDemo
+//meta.demoPath: Viewers | Timelines
+export function _timelinesViewerDemo() {
+  const tv = grok.shell.addTableView(grok.data.demo.demog());
+  tv.addViewer(DG.VIEWER.TIMELINES);
+}
+
+//name: radarViewerDemo
+export function radarViewerDemo() {
+  const view = grok.shell.addTableView(grok.data.demo.demog(100));
+  view.addViewer('RadarViewer');
+}
+
+//name: timelinesViewerDemo
+export function timelinesViewerDemo() {
+  const adverseEvents = DG.DataFrame.fromCsv(
+    `USUBJID, AESTDY, AEENDY, SEX, AGE
+    s1, 10/02/2018, 10/09/2018, F, 48
+    s2, 10/04/2018, 10/07/2018, M, 51
+    s3, 10/02/2018, 10/05/2018, F, 39
+    s4, 10/07/2018, 10/08/2018, M, 43`);
+
+  const view = grok.shell.addTableView(adverseEvents);
+  view.addViewer('TimelinesViewer');
+}
+
+
+//name: chordViewerDemo
+//meta.demoPath: Viewers | Chord
+export function _chordViewerDemo() {
+  Demo.chordViewerDemo();
+}
+
+//name: globeViewerDemo
+//meta.demoPath: Viewers | Globe
+export function _globeViewerDemo() {
+  Demo.globeViewerDemo();
 }
