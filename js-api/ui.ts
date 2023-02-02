@@ -1231,6 +1231,20 @@ function spliterResize(divider: HTMLElement, previousSibling: HTMLElement, nextS
   }
 }
 
+export function ribbonPanel(items, options = null) {
+  let root = document.createElement('div');
+  $(root).addClass('d4-ribbon');
+  if (items != null) {
+    $(root).append(items.map(item => {
+      let itemBox = document.createElement('div');
+      $(itemBox).addClass('d4-ribbon-item');
+      $(itemBox).append(item);
+      return render(itemBox)
+    }))
+  }
+  return root;
+}
+
 export function block(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
   let c = div(items, options);
   $(c).addClass('ui-block');
