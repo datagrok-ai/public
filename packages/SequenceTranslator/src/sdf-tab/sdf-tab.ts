@@ -10,7 +10,7 @@ import {download} from '../utils/helpers';
 import {sequenceToMolV3000} from '../utils/structures-works/from-monomers';
 import {linkStrandsV3000} from '../utils/structures-works/mol-transformations';
 import {isValidSequence} from '../sdf-tab/sequence-codes-tools';
-import '../../css/sdf-tab.css';
+import '../view/css/sdf-tab.css';
 
 /** Data associated with strands */
 type StrandData = {
