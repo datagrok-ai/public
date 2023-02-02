@@ -578,6 +578,20 @@ export class TableInfo extends Entity {
 
   get dataFrame(): DataFrame { return api.grok_TableInfo_Get_DataFrame(this.dart); }
 
+  get columns(): ColumnInfo[] { return api.grok_TableInfo_Get_Columns(this.dart); }
+}
+
+
+/** @extends Entity
+ * Represents a Column metadata
+ * */
+export class ColumnInfo extends Entity {
+
+  /** @constructs ColumnInfo */
+  constructor(dart: any) {
+    super(dart);
+  }
+
 }
 
 /** @extends Entity
