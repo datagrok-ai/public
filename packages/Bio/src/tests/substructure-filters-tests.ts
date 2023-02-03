@@ -1,11 +1,33 @@
 import {after, before, category, test, expect, delay} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+
 import {readDataframe} from './utils';
 import {BioSubstructureFilter, HelmFilter, SeparatorFilter} from '../widgets/bio-substructure-filter';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {LIB_DEFAULT, LIB_STORAGE_NAME} from '../utils/monomer-lib';
 
 
 category('substructureFilters', async () => {
+  let monomerLibHelper: IMonomerLibHelper;
+  /** Backup actual user's monomer libraries settings */
+  let userLibrariesSettings: {};
+
+  before(async () => {
+    monomerLibHelper = await getMonomerLibHelper();
+    userLibrariesSettings = await grok.dapi.userDataStorage.get(LIB_STORAGE_NAME, true);
+
+    // Test 'helm' requires default monomer library loaded
+    await grok.dapi.userDataStorage.post(LIB_STORAGE_NAME, LIB_DEFAULT, true);
+    await monomerLibHelper.loadLibraries(true); // load default libraries
+  });
+
+  after(async () => {
+    // UserDataStorage.put() replaces existing data
+    await grok.dapi.userDataStorage.put(LIB_STORAGE_NAME, userLibrariesSettings, true);
+    await monomerLibHelper.loadLibraries(true); // load user settings libraries
+  });
+
   test('fasta', async () => {
     const fasta = await readDataframe('tests/filter_FASTA.csv');
     const filter = new BioSubstructureFilter();
