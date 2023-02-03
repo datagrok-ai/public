@@ -8,6 +8,7 @@ import {HelmWebEditor} from './helm-web-editor';
 import {HelmCellRenderer} from './cell-renderer';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
+import { findMonomers } from './utils';
 
 export const _package = new DG.Package();
 let monomerLib: IMonomerLib | null = null;
@@ -80,8 +81,11 @@ export function helmCellRenderer(): HelmCellRenderer {
 //description: Macromolecule
 //input: grid_cell cell
 export function editMoleculeCell(cell: DG.GridCell): void {
-  if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === 'helm')
+  const monomers = findMonomers(cell.cell.value);
+  if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === 'helm' && monomers.size === 0) 
     webEditor(cell);
+  else
+    grok.shell.warning(`Monomers ${Array.from(monomers).join(', ')} are absent!`);
 }
 
 //name: Open Helm Web Editor
