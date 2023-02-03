@@ -18,12 +18,6 @@ import {
   getChemSimilaritiesMarix,
   getSimilaritiesMarix
 } from './analysis/sequence-activity-cliffs';
-import {
-  createJsonMonomerLibFromSdf,
-  encodeMonomers,
-  getMolfilesFromSeq,
-  readLibrary
-} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {HELM_CORE_LIB_FILENAME} from '@datagrok-libraries/bio/src/utils/const';
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
@@ -47,15 +41,21 @@ import {getStats, splitterAsHelm, TAGS as bioTAGS} from '@datagrok-libraries/bio
 import {pepseaDialog} from './utils/pepsea';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
-import {MonomerLib} from '@datagrok-libraries/bio/src/monomer-works/monomer-lib';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
+import {createJsonMonomerLibFromSdf, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {LIB_PATH, LIB_STORAGE_NAME, MonomerLibHelper} from './utils/monomer-lib';
 
-const STORAGE_NAME = 'Libraries';
-const LIB_PATH = 'System:AppData/Bio/libraries';
-const LIBS_PATH = 'libraries/';
+// /** Avoid reassinging {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
+// let monomerLib: MonomerLib | null = null;
 
-let monomerLib: IMonomerLib | null = null;
+//name: getMonomerLibHelper
+//description:
+//output: object result
+export function getMonomerLibHelper(): IMonomerLibHelper {
+  return MonomerLibHelper.instance;
+}
+
 export let hydrophobPalette: SeqPaletteCustom | null = null;
 
 export class SeqPaletteCustom implements SeqPalette {
@@ -70,13 +70,18 @@ export class SeqPaletteCustom implements SeqPalette {
   }
 }
 
+// let loadLibrariesPromise: Promise<void> = Promise.resolve();
+
 //tags: init
 export async function initBio() {
-  await loadLibraries();
+  // loadLibrariesPromise = loadLibrariesPromise.then(() => {
+  await MonomerLibHelper.instance.loadLibraries(); // from initBio()
+  // });
+  // await loadLibrariesPromise;
+  const monomerLib = MonomerLibHelper.instance.getBioLib();
   const monomers: string[] = [];
   const logPs: number[] = [];
   const module = await grok.functions.call('Chem:getRdKitModule');
-
 
   const series = monomerLib!.getMonomerMolsByType('PEPTIDE')!;
   Object.keys(series).forEach((symbol) => {
@@ -98,29 +103,10 @@ export async function initBio() {
   hydrophobPalette = new SeqPaletteCustom(palette);
 }
 
-async function loadLibraries() {
-  //TODO handle if files are in place
-
-  const uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
-  if (uploadedLibraries.length == 0 && monomerLib == null)
-    monomerLib = new MonomerLib({});
-  for (let i = 0; i < uploadedLibraries.length; ++i)
-    await monomerManager(uploadedLibraries[i]);
-}
-
-//name: monomerManager
-//input: string value
-export async function monomerManager(value: string) {
-  if (monomerLib == null)
-    monomerLib = await readLibrary(LIB_PATH, value);
-  else
-    monomerLib!.update(await readLibrary(LIB_PATH, value));
-}
-
 //name: getBioLib
 //output: object monomerLib
-export function getBioLib(): IMonomerLib | null {
-  return monomerLib;
+export function getBioLib(): IMonomerLib {
+  return MonomerLibHelper.instance.getBioLib();
 }
 
 //name: manageFiles
@@ -140,24 +126,31 @@ export async function libraryPanel(seqColumn: DG.Column): Promise<DG.Widget> {
   //@ts-ignore
   const filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
   const divInputs: HTMLDivElement = ui.div();
-  const librariesList: string[] = (await _package.files.list(`${LIBS_PATH}`, false, ''))
+  const libFileNameList: string[] = (await grok.dapi.files.list(`${LIB_PATH}`, false, ''))
     .map((it) => it.fileName);
-  const uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
-  for (let i = 0; i < uploadedLibraries.length; ++i) {
-    const libraryName: string = uploadedLibraries[i];
-    divInputs.append(ui.boolInput(libraryName, true, async () => {
-      grok.dapi.userDataStorage.remove(STORAGE_NAME, libraryName, true);
-      await loadLibraries();
-    }).root);
+  const librariesUserSettingsSet: Set<string> = new Set<string>(Object.keys(
+    await grok.dapi.userDataStorage.get(LIB_STORAGE_NAME, true)));
+
+  let userStoragePromise: Promise<void> = Promise.resolve();
+  for (const libFileName of libFileNameList) {
+    const libInput: DG.InputBase<boolean | null> = ui.boolInput(libFileName, librariesUserSettingsSet.has(libFileName),
+      () => {
+        userStoragePromise = userStoragePromise.then(async () => {
+          if (libInput.value == true) {
+            // Save checked library to user settings 'Libraries'
+            await grok.dapi.userDataStorage.postValue(LIB_STORAGE_NAME, libFileName, libFileName, true);
+            await MonomerLibHelper.instance.loadLibraries(); // from libraryPanel()
+          } else {
+            // Remove unchecked library from user settings 'Libraries'
+            await grok.dapi.userDataStorage.remove(LIB_STORAGE_NAME, libFileName, true);
+            await MonomerLibHelper.instance.loadLibraries(true); // from libraryPanel()
+          }
+          grok.shell.info('Monomer library user settings saved.');
+        });
+      });
+    divInputs.append(libInput.root);
   }
-  const unusedLibraries: string[] = librariesList.filter((x) => !uploadedLibraries.includes(x));
-  for (let i = 0; i < unusedLibraries.length; ++i) {
-    const libraryName: string = unusedLibraries[i];
-    divInputs.append(ui.boolInput(libraryName, false, () => {
-      monomerManager(libraryName);
-      grok.dapi.userDataStorage.postValue(STORAGE_NAME, libraryName, libraryName, true);
-    }).root);
-  }
+
   return new DG.Widget(ui.splitV([
     divInputs,
     ui.divV([filesButton])
