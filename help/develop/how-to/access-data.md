@@ -183,7 +183,7 @@ next one begins. So safely omit the name of `connection` and/or the `end` tag if
 To use an existing connection in a query, specify its name along with the namespace in the `connection` parameter. For
 example, the above `chembl` connection that lives in the `Chembl`
 package has the following path: `chembl:chembl`. When browsing connections on the platform, you can identify such path
-by opening `Links` in the tab `Details` of the property panel.
+by opening `Links` in the tab `Details` of the context panel.
 
 You can find a list of header parameters and other details related to the query annotation
 in [this article](../../access/parameterized-queries.md). In addition to this, examples of data queries are available in

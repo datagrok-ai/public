@@ -5,8 +5,9 @@ import * as DG from 'datagrok-api/dg';
 
 import {WebEditorMonomer, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 import {HelmWebEditor} from './helm-web-editor';
-import {NotationConverter, IMonomerLib, Monomer} from '@datagrok-libraries/bio';
 import {HelmCellRenderer} from './cell-renderer';
+import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
+import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
 
 export const _package = new DG.Package();
 let monomerLib: IMonomerLib | null = null;

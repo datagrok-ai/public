@@ -31,7 +31,7 @@ import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {MlbVrSpaceBrowser, VrSpaceMethodName} from './mlb-vr-space-browser';
 import {FilterDesc} from './types';
-import {TreeDataFrame, MlbDataFrame, AntigenDataFrame} from './types/dataframe';
+import {TreeDataFrame, MlbDataFrame, AntigenDataFrame, TreeNodesDataFrame} from './types/dataframe';
 import {
   getPhylocanvasGlService,
   PhylocanvasGlServiceBase
@@ -483,7 +483,9 @@ export class MolecularLiabilityBrowser {
     return df;
   }
 
-  static prepareDataTreeNodesDf(srcTreeDf: DG.DataFrame, th: ITreeHelper, treeColumnName: string = 'TREE') {
+  static prepareDataTreeNodesDf(
+    srcTreeDf: TreeDataFrame, th: ITreeHelper, treeColumnName: string = 'TREE'
+  ): TreeNodesDataFrame {
     const treeCount: number = srcTreeDf.rowCount;
     const srcTreeCol: DG.Column = srcTreeDf.getCol('TREE');
     const srcCloneCol: DG.Column = srcTreeDf.getCol('CLONE');
@@ -517,7 +519,7 @@ export class MolecularLiabilityBrowser {
     for (const cloneTreeNodesDf of treeNodesDfList)
       resDf.append(cloneTreeNodesDf, true);
 
-    return resDf;
+    return TreeNodesDataFrame.wrap(resDf, srcTreeDf.antigen);
   }
 
   /** Builds multiple alignment sequences from monomers in positions
@@ -558,11 +560,12 @@ export class MolecularLiabilityBrowser {
   private _mlbDf: MlbDataFrame = MlbDataFrame.Empty;
   private _regions: VdRegion[] = [];
   private _treeDf: TreeDataFrame = TreeDataFrame.Empty;
-  private _treeNodesDf: DG.DataFrame = DG.DataFrame.fromObjects([])!;
+  private _treeNodesDf: TreeNodesDataFrame = TreeNodesDataFrame.Empty;
   private _predictedPtmDf: DG.DataFrame;
   private _observedPtmDf: DG.DataFrame;
 
   private viewSubs: Unsubscribable[] = [];
+  private networkDiagramInterval?: number;
 
   get mlbDf(): MlbDataFrame { return this._mlbDf; }
 
@@ -570,14 +573,14 @@ export class MolecularLiabilityBrowser {
 
   get treeDf(): TreeDataFrame { return this._treeDf; }
 
-  get treeNodesDf(): DG.DataFrame { return this._treeNodesDf; }
+  get treeNodesDf(): TreeNodesDataFrame { return this._treeNodesDf; }
 
   get predictedPtmDf(): DG.DataFrame { return this._predictedPtmDf; }
 
   get observedPtmDf(): DG.DataFrame { return this._observedPtmDf; }
 
   async setData(
-    mlbDf: MlbDataFrame, treeDf: TreeDataFrame, treeNodesDf: DG.DataFrame, regions: VdRegion[],
+    mlbDf: MlbDataFrame, treeDf: TreeDataFrame, treeNodesDf: TreeNodesDataFrame, regions: VdRegion[],
     predictedPtmDf: DG.DataFrame, observedPtmDf: DG.DataFrame
   ): Promise<void> {
     console.debug(`MLB: MolecularLiabilityBrowser.setData() start, ${((Date.now() - _startInit) / 1000).toString()} s`);
@@ -780,7 +783,13 @@ export class MolecularLiabilityBrowser {
     }
 
     if (this.networkDiagram) {
-      //this.networkDiagram.dataFrame = null;
+      //
+      this.networkDiagram.dataFrame = TreeDataFrame.Empty;
+    }
+
+    if (this.networkDiagramInterval) {
+      window.clearInterval(this.networkDiagramInterval);
+      delete this.networkDiagramInterval;
     }
 
     if (this.mlbGridTreeNeighbor) {
@@ -867,8 +876,8 @@ export class MolecularLiabilityBrowser {
           `ET: ${((t2 - t1) / 1000).toString()} s`);
 
         this.networkDiagram = await this.treeNodesDf.plot.fromType(DG.VIEWER.NETWORK_DIAGRAM, {
-          node1: 'node',
-          node2: 'parent',
+          node1ColumnName: 'node',
+          node2ColumnName: 'parent',
           mergeNodes: false,
           showColumnSelector: false,
         }) as DG.Viewer;
@@ -891,8 +900,8 @@ export class MolecularLiabilityBrowser {
 
         this.networkDiagram.dataFrame = this.treeNodesDf;
         this.networkDiagram.setOptions({
-          node1: 'node',
-          node2: 'parent',
+          node1ColumnName: 'node',
+          node2ColumnName: 'parent',
           mergeNodes: false,
           showColumnSelector: false,
         });
@@ -959,6 +968,18 @@ export class MolecularLiabilityBrowser {
 
       this.viewSubs.push(this.mlbDf.onCurrentRowChanged.subscribe(this.onMLBGridCurrentRowChanged.bind(this)));
       this.viewSubs.push(this.treeNodesDf.onSelectionChanged.subscribe(this.onTreeNodesDfSelectionChanged.bind(this)));
+      // TODO: Control network diagram data columns in a proper way
+      this.networkDiagramInterval = window.setInterval(() => {
+        const nd: DG.Viewer = this.networkDiagram;
+        if (nd.props.node1ColumnName != 'node' || nd.props.node2ColumnName != 'parent') {
+          this.networkDiagram.setOptions({
+            node1ColumnName: 'node',
+            node2ColumnName: 'parent',
+            mergeNodes: false,
+            showColumnSelector: false,
+          });
+        }
+      }, 200);
     } catch (err: any) {
       const errStr = errorToConsole(err);
       console.error('MLB: MolecularLiabilityBrowser.buildView() error:\n' + errStr);

@@ -36,7 +36,7 @@ which supports over [70 languages](https://docs.aws.amazon.com/translate/latest/
 
 To translate a text, navigate to the file browser and select one of the demo files.
 Alternatively, open your personal folder and drag-and-drop your file to the platform.
-Now, whenever you click on the file, you will see a suggestion to translate it in the property panel on the right.
+Now, whenever you click on the file, you will see a suggestion to translate it in the context panel on the right.
 
 ![Translate text files](./images/nlp-machine-translation.gif)
 

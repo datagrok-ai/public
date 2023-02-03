@@ -109,6 +109,13 @@ layout serialization).
 
 ![Copy column color coding](pick-up-apply-commands-color-coding.gif "Copy column color coding")
 
+By default, color coding is applied to the column background. Optionaly you can apply it to the text:
+
+1. Right-click the column’s  header and select **Color coding > Edit**. A dialog opens.
+2. In the dialog, set the **Apply to** setting to `text`.
+
+This option is available for all linear, categorical, and conditional schemas.
+
 ## Row summary columns
 
 Summary columns is a way to visualize multiple values numerical across the row. This feature is useful for quick visual
@@ -147,7 +154,7 @@ highlights it in green. This indication is a neat and lightweight way to update 
 and lets users explore and compare rows with ease.
 
 To make a row current, simply click on it, or navigate up and down the grid using the cursor up and down keys. Info
-panels in the property panel get synchronized with the current cell.
+panels in the context panel get synchronized with the current cell.
 
 It is also integrated into Datagrok's visualizations and cheminformatics functionality, e.g., similarity search, so as
 you move from one row to another you immediately see where the row values belong on the chart or which molecules have

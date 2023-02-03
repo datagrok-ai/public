@@ -18,7 +18,7 @@ non-natural monomers and complex attachment points.
 * Substructure search
 * Similarity search
 * Calculators (mol weight, mol formula, extinction coefficient, )
-* Data augmentation (show relevant information in the property panel)
+* Data augmentation (show relevant information in the context panel)
 
 ### Advanced features
 * Integration with the [HELM2WebService](https://github.com/PistoiaHELM/HELM2WebService) (calculations, images, etc)

@@ -74,7 +74,7 @@ Pre-requisites: Open table with molecules (e.g. "smiles.csv")
 
 1. Click on "hamburger" menu icon for column with molecules ("smiles" column) 
 
-* Properties panel for the "smiles" column will open
+* Context panel for the "smiles" column will open
 * "Filter" tab will be expanded
 * The "Filter" tab displays Sketcher for drawing a structure for filtering 
 
@@ -86,7 +86,7 @@ Pre-requisites: Open table with molecules (e.g. "smiles.csv")
 
 * Filtering is still applied for table
 
-4. Open the Property Panel for molecular column ("smiles" column). Click on its title and it will become the current object
+4. Open the Context Panel for molecular column ("smiles" column). Click on its title and it will become the current object
 
 5. Expand "Filter" tab on PP for molecular column
 

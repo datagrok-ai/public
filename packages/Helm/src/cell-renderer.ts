@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {findMonomers, parseHelm, getParts} from './utils';
-import {printLeftOrCentered} from '@datagrok-libraries/bio';
+import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 
 
 export class HelmCellRenderer extends DG.GridCellRenderer {
@@ -50,7 +50,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       if (monomers.has(allParts[i]))
         tooltipMessage[i] = ui.divV([
           ui.divText(`Monomer ${allParts[i]} not found.`),
-          ui.divText('Open the Property Panel, then expand Manage Libraries')
+          ui.divText('Open the Context Panel, then expand Manage Libraries')
         ]);
     }
     (((tooltipMessage[left]?.childNodes.length ?? 0) > 0))

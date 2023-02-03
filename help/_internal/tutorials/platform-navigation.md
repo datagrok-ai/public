@@ -6,9 +6,9 @@
 Owner: Andrey
 
 Goal: to demonstrate different ways of working with the platform Features: concept of views / viewers / view toolbox,
-workspace, current object, navigation, cloning property panel, splitting views (dragging them out), ‘+’ icon, welcome
+workspace, current object, navigation, cloning context panel, splitting views (dragging them out), ‘+’ icon, welcome
 screen, main menu, View… commands, search commands, help
-(algo how to reopen help or properties panels), context menu, drag-n-drop, selecting multiple objects. Tutorials.
+(algo how to reopen help or context panels), context menu, drag-n-drop, selecting multiple objects. Tutorials.
 Support forum and sending the feedback. Common features: favorites, chat, privileges, audit, notifications, tags, meta
 parameters
 
@@ -25,7 +25,7 @@ parameters
 * Open cars.csv
 * Check main menu (Note different sections. Note toolbar. Demo Ctrl+Q, “Select all”).
 * View | Tables (Note synchronization of tables)
-* View | Columns (Note synchronization of current and selected records. Note that property panel contains selected
+* View | Columns (Note synchronization of current and selected records. Note that context panel contains selected
   objects.)
 * Note that actions applicable to the selected objects are displayed. Select a bunch of columns in cars.csv and do
   ‘Correlation’

@@ -11,4 +11,4 @@ Domain, type of graph, value and visits thresholds can be selected in the ribbon
 
 <img src="https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/img/time_profile_1.gif" height="500" width='800'/>
 
-Each value on the graph is represented as distribution. By default points represent median, whiskers represent upper and lower quartiles. Type of distribution can also be changed in property panel. 
+Each value on the graph is represented as distribution. By default points represent median, whiskers represent upper and lower quartiles. Type of distribution can also be changed in context panel. 

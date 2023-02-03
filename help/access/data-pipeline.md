@@ -28,11 +28,11 @@ query before saving it to make sure it works as intended. It is also possible to
 provided by user, or provided by the parent data job. To browse all queries, open `Admin | Data Queries`.
 
 To run a query, double-click on it, or select **Run** from the context menu. To see information associated with the
-query, click on it to make it a current object, and then expand panels in the property panel on the right. The same
+query, click on it to make it a current object, and then expand panels in the context panel on the right. The same
 technique applies to other objects in the platform.
 
 Running a query yields a table. To incorporate custom processing into the query, click **Edit**
-under the 'Transformations' panel in the property panel. In addition to the basic data transformation routines, advanced
+under the 'Transformations' panel in the context panel. In addition to the basic data transformation routines, advanced
 functions are available as well. Examples of such transformations are R or Python scripts, applying predictive models,
 etc.
 

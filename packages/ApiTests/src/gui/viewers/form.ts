@@ -51,7 +51,7 @@ category('Viewers: Form', () => {
       .getElementsByClassName('grok-icon grok-font-icon-settings')[0] as HTMLElement;
     protpertiesBtn.click();
     await awaitCheck(() => document.querySelector('.property-grid-item-editor-checkbox') !== null,
-      'cannot find property panel', 3000);
+      'cannot find context panel', 3000);
     const checkboxes = Array.from(document.querySelectorAll('.property-grid-item-editor-checkbox'));
     for (const cb of checkboxes) {
       (cb as HTMLElement).click();

@@ -12,8 +12,8 @@ hydrophobic/hydrophilic regions and will generate a structure:
 
 ![Representation of sequence and peptide structure](../../uploads/peptides/Peptides_1.bmp "Representation of sequence and peptide structure")
 
-By clicking the column with peptide sequences the property panel will appear to provide options for the following
-analysis. The composition analysis for the whole dataset is also present in property panel:
+By clicking the column with peptide sequences the context panel will appear to provide options for the following
+analysis. The composition analysis for the whole dataset is also present in context panel:
 
 ![Sequence composition analysis](../../uploads/peptides/Peptides_2.bmp "Sequence composition analysis")
 
@@ -28,6 +28,6 @@ The analysis results are presented as a table with residuals in the rows and pos
 pairs [position, monomer] could be investigated to yield in activity difference with the whole dataset. Points in the
 results table show the mean difference in activity of subset with selected [position, monomer] and all other molecules.
 This difference is shown as a size of the point. The color of point responds to significance level of such difference.
-One may estimate this difference by comparing densities which are shown in property panel:
+One may estimate this difference by comparing densities which are shown in context panel:
 
 ![SAR for peptides](../../uploads/peptides/Peptides_4.bmp "SAR for peptides")

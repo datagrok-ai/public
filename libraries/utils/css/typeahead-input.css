@@ -1,0 +1,40 @@
+.typeahead-standalone {
+    display: flex;
+    position: relative;
+    flex-grow: 0;
+}
+.ui-form .ui-input-root > .typeahead-standalone {
+    flex-grow: 1;
+}
+.typeahead-standalone .ui-input-editor{
+    position: relative;
+    z-index: 1;
+    min-width: 30px;
+    flex-grow: 1;
+    padding: 0 4px;
+}
+.ui-input-list{
+    display: block;
+    position: absolute;
+    width: 100%;
+    left: 0px;
+    z-index: 4000;
+    background: white;
+    top: 28px;
+    box-shadow: 0px 2px 4px var(--grey-3);
+    transition: box-shadow 200ms ease-in-out;
+}
+.tt-suggestion {
+    background: white;
+    color: var(--grey-6);
+    padding: 4px;
+}
+.tt-suggestion:hover {
+    cursor: pointer;
+    background:var(--grey-1);
+    color: var(--grey-6);
+    padding: 4px;
+}
+.tt-hide {
+    display: none;
+}

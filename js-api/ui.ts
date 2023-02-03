@@ -1033,7 +1033,7 @@ export class ObjectHandler {
   /**
    * Registers a function that takes applicable objects as the only argument.
    * It will be suggested to run in the context menu for that object, and
-   * also in the "Actions" pane on the property panel.
+   * also in the "Actions" pane on the context panel.
    *
    * Samples: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
    *
@@ -1229,6 +1229,23 @@ function spliterResize(divider: HTMLElement, previousSibling: HTMLElement, nextS
         nextSibling.style.maxHeight = (md.bottomHeight - delta.y) + "px";
       }
   }
+}
+
+export function ribbonPanel(items, options = null) {
+  let root = document.createElement('div');
+  $(root).addClass('d4-ribbon');
+  if (items != null) {
+    $(root).append(items.map(item => {
+      let itemBox = document.createElement('div');
+      $(itemBox).addClass('d4-ribbon-item');
+      $(itemBox).append(item);
+      return render(itemBox)
+    }))
+  }
+  let wrapSpacer = document.createElement('div');
+  $(wrapSpacer).addClass('d4-ribbon-wrap-spacer');
+  $(root).prepend(wrapSpacer);
+  return root;
 }
 
 export function block(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
