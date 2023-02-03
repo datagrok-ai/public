@@ -51,8 +51,8 @@ export function getUniqueValues(df: DG.DataFrame, colName: string) {
   export function filterFloats(df: DG.DataFrame, colName: string) {
     let column = df.columns.byName(colName);
     let rowCount = df.rowCount;
-    for (let i = 0; i < rowCount; i++){
-        if(parseFloat(column.get(i)) === NaN){
+    for (let i = 0; i < rowCount; i++) {
+        if (Number.isNaN(parseFloat(column.get(i)))) {
             df.rows.removeAt(i);
             i--;
             rowCount-=1;

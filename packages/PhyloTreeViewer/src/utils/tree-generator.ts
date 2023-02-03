@@ -1,8 +1,7 @@
-import * as bio from '@datagrok-libraries/bio';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
 
-export function generateTree(size: number): bio.NodeType {
-
-  function placeNode(currentNode: bio.NodeType, newNode: bio.NodeType): void {
+export function generateTree(size: number): NodeType {
+  function placeNode(currentNode: NodeType, newNode: NodeType): void {
     if (currentNode.children!.length < 2) {
       currentNode.children!.push(newNode);
     } else {

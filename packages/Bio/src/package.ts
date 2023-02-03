@@ -19,11 +19,6 @@ import {
   getChemSimilaritiesMarix,
   getSimilaritiesMarix
 } from './analysis/sequence-activity-cliffs';
-import {
-  createJsonMonomerLibFromSdf,
-  encodeMonomers,
-  getMolfilesFromSeq
-} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {HELM_CORE_LIB_FILENAME} from '@datagrok-libraries/bio/src/utils/const';
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
@@ -43,17 +38,25 @@ import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {getMonomericMols} from './calculations/monomerLevelMols';
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {from, Observable, Subject} from 'rxjs';
-import {
-  TAGS as bio_TAGS,
-  Monomer, IMonomerLib, MonomerWorks, MonomerLib, readLibrary,
-  SeqPalette, UnitsHandler, WebLogoViewer, getStats, splitterAsHelm
-} from '@datagrok-libraries/bio';
+import {getStats, splitterAsHelm, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {pepseaDialog} from './utils/pepsea';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {WebLogoViewer} from './viewers/web-logo-viewer';
+import {createJsonMonomerLibFromSdf, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {LIB_PATH, LIB_STORAGE_NAME, MonomerLibHelper} from './utils/monomer-lib';
 
-const STORAGE_NAME = 'Libraries';
-const LIB_PATH = 'System:AppData/Bio/libraries';
-const LIBS_PATH = 'libraries/';
+// /** Avoid reassinging {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
+// let monomerLib: MonomerLib | null = null;
 
-let monomerLib: IMonomerLib | null = null;
+//name: getMonomerLibHelper
+//description:
+//output: object result
+export function getMonomerLibHelper(): IMonomerLibHelper {
+  return MonomerLibHelper.instance;
+}
+
 export let hydrophobPalette: SeqPaletteCustom | null = null;
 
 export class SeqPaletteCustom implements SeqPalette {
@@ -68,17 +71,21 @@ export class SeqPaletteCustom implements SeqPalette {
   }
 }
 
+// let loadLibrariesPromise: Promise<void> = Promise.resolve();
 
 //tags: init
 export async function initBio() {
-  await loadLibraries();
-  let monomers: string[] = [];
-  let logPs: number[] = [];
+  // loadLibrariesPromise = loadLibrariesPromise.then(() => {
+  await MonomerLibHelper.instance.loadLibraries(); // from initBio()
+  // });
+  // await loadLibrariesPromise;
+  const monomerLib = MonomerLibHelper.instance.getBioLib();
+  const monomers: string[] = [];
+  const logPs: number[] = [];
   const module = await grok.functions.call('Chem:getRdKitModule');
 
-
   const series = monomerLib!.getMonomerMolsByType('PEPTIDE')!;
-  Object.keys(series).forEach(symbol => {
+  Object.keys(series).forEach((symbol) => {
     monomers.push(symbol);
     const block = series[symbol].replaceAll('#R', 'O ');
     const mol = module.get_mol(block);
@@ -90,38 +97,17 @@ export async function initBio() {
   const sum = logPs.reduce((a, b) => a + b, 0);
   const avg = (sum / logPs.length) || 0;
 
-  let palette: { [monomer: string]: string } = {};
-  for (let i = 0; i < monomers.length; i++) {
+  const palette: { [monomer: string]: string } = {};
+  for (let i = 0; i < monomers.length; i++)
     palette[monomers[i]] = logPs[i] < avg ? '#4682B4' : '#DC143C';
-  }
 
   hydrophobPalette = new SeqPaletteCustom(palette);
 }
 
-async function loadLibraries() {
-  //TODO handle if files are in place
-
-  let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
-  if (uploadedLibraries.length == 0 && monomerLib == null)
-    monomerLib = new MonomerLib({});
-  for (let i = 0; i < uploadedLibraries.length; ++i)
-    await monomerManager(uploadedLibraries[i]);
-}
-
-//name: monomerManager
-//input: string value
-export async function monomerManager(value: string) {
-  if (monomerLib == null)
-    monomerLib = await readLibrary(LIB_PATH, value);
-  else {
-    monomerLib!.update(await readLibrary(LIB_PATH, value));
-  }
-}
-
 //name: getBioLib
 //output: object monomerLib
-export function getBioLib(): IMonomerLib | null {
-  return monomerLib;
+export function getBioLib(): IMonomerLib {
+  return MonomerLibHelper.instance.getBioLib();
 }
 
 //name: manageFiles
@@ -139,25 +125,33 @@ export async function manageFiles() {
 //output: widget result
 export async function libraryPanel(seqColumn: DG.Column): Promise<DG.Widget> {
   //@ts-ignore
-  let filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
-  let divInputs: HTMLDivElement = ui.div();
-  let librariesList: string[] = (await _package.files.list(`${LIBS_PATH}`, false, '')).map(it => it.fileName);
-  let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
-  for (let i = 0; i < uploadedLibraries.length; ++i) {
-    let libraryName: string = uploadedLibraries[i];
-    divInputs.append(ui.boolInput(libraryName, true, async () => {
-      grok.dapi.userDataStorage.remove(STORAGE_NAME, libraryName, true);
-      await loadLibraries();
-    }).root);
+  const filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
+  const divInputs: HTMLDivElement = ui.div();
+  const libFileNameList: string[] = (await grok.dapi.files.list(`${LIB_PATH}`, false, ''))
+    .map((it) => it.fileName);
+  const librariesUserSettingsSet: Set<string> = new Set<string>(Object.keys(
+    await grok.dapi.userDataStorage.get(LIB_STORAGE_NAME, true)));
+
+  let userStoragePromise: Promise<void> = Promise.resolve();
+  for (const libFileName of libFileNameList) {
+    const libInput: DG.InputBase<boolean | null> = ui.boolInput(libFileName, librariesUserSettingsSet.has(libFileName),
+      () => {
+        userStoragePromise = userStoragePromise.then(async () => {
+          if (libInput.value == true) {
+            // Save checked library to user settings 'Libraries'
+            await grok.dapi.userDataStorage.postValue(LIB_STORAGE_NAME, libFileName, libFileName, true);
+            await MonomerLibHelper.instance.loadLibraries(); // from libraryPanel()
+          } else {
+            // Remove unchecked library from user settings 'Libraries'
+            await grok.dapi.userDataStorage.remove(LIB_STORAGE_NAME, libFileName, true);
+            await MonomerLibHelper.instance.loadLibraries(true); // from libraryPanel()
+          }
+          grok.shell.info('Monomer library user settings saved.');
+        });
+      });
+    divInputs.append(libInput.root);
   }
-  let unusedLibraries: string[] = librariesList.filter(x => !uploadedLibraries.includes(x));
-  for (let i = 0; i < unusedLibraries.length; ++i) {
-    let libraryName: string = unusedLibraries[i];
-    divInputs.append(ui.boolInput(libraryName, false, () => {
-      monomerManager(libraryName);
-      grok.dapi.userDataStorage.postValue(STORAGE_NAME, libraryName, libraryName, true);
-    }).root);
-  }
+
   return new DG.Widget(ui.splitV([
     divInputs,
     ui.divV([filesButton])
@@ -294,9 +288,9 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
   };
   const tags = {
     'units': macroMolecule.getTag(DG.TAGS.UNITS),
-    'aligned': macroMolecule.getTag(bio_TAGS.aligned),
-    'separator': macroMolecule.getTag(bio_TAGS.separator),
-    'alphabet': macroMolecule.getTag(bio_TAGS.alphabet),
+    'aligned': macroMolecule.getTag(bioTAGS.aligned),
+    'separator': macroMolecule.getTag(bioTAGS.separator),
+    'alphabet': macroMolecule.getTag(bioTAGS.alphabet),
   };
   const sp = await getActivityCliffs(
     df,
@@ -328,7 +322,8 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
 //input: bool plotEmbeddings = true
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: string,
   similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean): Promise<DG.Viewer | undefined> {
-  //delay is required for initial function dialog to close before starting invalidating of molfiles. Otherwise dialog is freezing
+  // Delay is required for initial function dialog to close before starting invalidating of molfiles.
+  // Otherwise, dialog is freezing
   await delay(10);
   if (!checkInputColumnUi(macroMolecule, 'Sequence space'))
     return;
@@ -348,14 +343,13 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
   for (const col of embeddings) {
     const listValues = col.toList();
     emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
-    table.columns.add(DG.Column.float(col.name, table.rowCount).init((i)=> listValues[i]));
+    table.columns.add(DG.Column.float(col.name, table.rowCount).init((i) => listValues[i]));
   }
   if (plotEmbeddings) {
     return grok.shell
       .tableView(table.name)
       .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
   }
-  ;
 
   /*   const encodedCol = encodeMonomers(macroMolecule);
   if (!encodedCol)
@@ -670,3 +664,9 @@ export function bioSubstructureFilter(): BioSubstructureFilter {
   return new BioSubstructureFilter();
 }
 
+//name: PepSeA MSA...
+//top-menu: Bio | PepSeA MSA...
+//description: Perform Multiple sequence alignment using PepSeA
+export function pepseaMSA(): void {
+  pepseaDialog();
+}

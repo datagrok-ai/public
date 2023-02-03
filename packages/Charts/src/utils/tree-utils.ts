@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+
 import * as utils from './utils';
 
 
@@ -72,7 +73,7 @@ export class TreeUtils {
         for (let i = 0; i < rowCount; i++) {
           let path = '';
           const props: {[key: string]: number} = {};
-          for (let column of df.columns) {
+          for (const column of df.columns) {
             if (propNames.includes(column.name))
               props[column.name] = column.get(i);
             else
@@ -103,7 +104,8 @@ export class TreeUtils {
     for (let i = 0; i < aggregated.rowCount; i++) {
       const idx = i === 0 ? 0 : columns.findIndex((col) => col.get(i) !== col.get(i - 1));
       const value = countCol.get(i);
-      const aggrValues = aggrColumns.reduce((obj, col) => (obj[col.name] = col.get(i), obj), <{ [key: string]: number }>{});
+      const aggrValues = aggrColumns.reduce((obj, col) =>
+        (obj[col.name] = col.get(i), obj), <{ [key: string]: number }>{});
       if (aggregated.selection.get(i))
         selectedPaths.push(columns.map((col) => col.getString(i)).join(' | '));
 
@@ -135,7 +137,6 @@ export class TreeUtils {
     if (aggregations.length > 0)
       aggregateParentNodes();
 
-    console.log(JSON.stringify(data));
     markSelectedNodes(data);
 
     return data;
@@ -153,10 +154,11 @@ export class TreeUtils {
       objectKeys = columnNames;
 
     const result = [];
-    for (let i = 0; i < dataFrame.rowCount; i++) {
+    const rowIndexes = dataFrame.filter.getSelectedIndexes();
+    for (let i = 0; i < rowIndexes.length; i++) {
       const object: {[key: string]: any} = {};
       for (let j = 0; j < columns.length; j++)
-        object[objectKeys[j]] = columns[j].get(i);
+        object[objectKeys[j]] = columns[j].get(rowIndexes[i]);
       result.push(object);
     }
     return result;
@@ -175,5 +177,6 @@ export class TreeUtils {
   }
 }
 
-export type treeDataType = { name: string, value: number, path: null | string, children?: treeDataType[], itemStyle?: { color?: string }, [prop: string]: any };
+export type treeDataType = { name: string, value: number, path: null | string, children?: treeDataType[],
+  itemStyle?: { color?: string }, [prop: string]: any };
 export type aggregationInfo = { type: DG.AggregationType, columnName: string, propertyName: string };

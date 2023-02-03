@@ -4,20 +4,20 @@ import * as DG from 'datagrok-api/dg';
 import {
   siRnaBioSpringToGcrs, siRnaAxolabsToGcrs, gcrsToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12,
   siRnaNucleotidesToGcrs
-} from '../structures-works/converters';
-import {weightsObj, SYNTHESIZERS} from '../structures-works/map';
+} from '../hardcode-to-be-eliminated/converters';
+import {weightsObj, SYNTHESIZERS} from '../hardcode-to-be-eliminated/map';
 import {SEQUENCE_TYPES, COL_NAMES, GENERATED_COL_NAMES} from './constants';
 import {saltMass, saltMolWeigth, molecularWeight, batchMolWeight} from './calculations';
-import {isValidSequence} from '../structures-works/sequence-codes-tools';
-import {sequenceToMolV3000} from '../structures-works/from-monomers';
-import {linkStrandsV3000} from '../structures-works/mol-transformations';
-import {stringify, download, removeEmptyRows, differenceOfTwoArrays} from '../helpers';
+import {isValidSequence} from '../sdf-tab/sequence-codes-tools';
+import {sequenceToMolV3000} from '../utils/structures-works/from-monomers';
+import {linkStrandsV3000} from '../utils/structures-works/mol-transformations';
+import {stringify, download, removeEmptyRows, differenceOfTwoArrays} from '../utils/helpers';
 
-import {SALTS_CSV} from './salts';
-import {USERS_CSV} from './users';
-import {ICDS} from './ICDs';
-import {SOURCES} from './sources';
-import {IDPS} from './IDPs';
+import {SALTS_CSV} from '../hardcode-to-be-eliminated/salts';
+import {USERS_CSV} from '../hardcode-to-be-eliminated/users';
+import {ICDS} from '../hardcode-to-be-eliminated/ICDs';
+import {SOURCES} from '../hardcode-to-be-eliminated/sources';
+import {IDPS} from '../hardcode-to-be-eliminated/IDPs';
 
 import {sdfAddColumns} from '../utils/sdf-add-columns';
 import {sdfSaveTable} from '../utils/sdf-save-table';

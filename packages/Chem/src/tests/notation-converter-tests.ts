@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getRdKitModule} from '../package';
-import {_convertMolNotation, MolNotation} from '../utils/convert-notation-utils';
+import {_convertMolNotation} from '../utils/convert-notation-utils';
 
 category('converters', () => {
   before(async () => { // wait until RdKit module gets initialized
@@ -127,7 +127,7 @@ M  END
     // ],
   };
 
-  function _testConvert(srcNotation: MolNotation, tgtNotation: MolNotation) {
+  function _testConvert(srcNotation: DG.chem.Notation, tgtNotation: DG.chem.Notation) {
     const result = [];
     for (const mol of molecules[srcNotation])
       result.push(_convertMolNotation(mol, srcNotation, tgtNotation, getRdKitModule()));
@@ -139,25 +139,25 @@ M  END
   }
 
   test('testSmilesToMolfileV2000', async () => {
-    _testConvert(MolNotation.Smiles, MolNotation.MolBlock);
+    _testConvert(DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
   });
   test('testSmilesToSmarts', async () => {
-    _testConvert(MolNotation.Smiles, MolNotation.Smarts);
+    _testConvert(DG.chem.Notation.Smiles, DG.chem.Notation.Smarts);
   });
   test('testMolfileV2000ToSmiles', async () => {
-    _testConvert(MolNotation.MolBlock, MolNotation.Smiles);
+    _testConvert(DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
   });
   test('testMolfileV2000ToSmarts', async () => {
-    _testConvert(MolNotation.MolBlock, MolNotation.Smarts);
+    _testConvert(DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts);
   });
   test('testMolfileV2000ToV3000', async () => {
-    _testConvert(MolNotation.MolBlock, MolNotation.V3KMolBlock);
+    _testConvert(DG.chem.Notation.MolBlock, DG.chem.Notation.V3KMolBlock);
   });
   test('testMolfileV3000ToSmarts', async () => {
-    _testConvert(MolNotation.V3KMolBlock, MolNotation.Smarts);
+    _testConvert(DG.chem.Notation.V3KMolBlock, DG.chem.Notation.Smarts);
   });
   test('testMolfileV3000ToSmiles', async () => {
-    _testConvert(MolNotation.V3KMolBlock, MolNotation.Smiles);
+    _testConvert(DG.chem.Notation.V3KMolBlock, DG.chem.Notation.Smiles);
   });
   // test('testSmartsToSmiles', async () => {
   //   _testConvert(MolNotation.Smarts, MolNotation.Smiles);

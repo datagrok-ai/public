@@ -20,7 +20,7 @@ category('Algorithms', () => {
     ].map((col) => ({
       name: col.name,
       rawData: col.getRawData(),
-      categories: col.categories,
+      cat: col.categories,
     }));
     settings = {maxMutations: 1, minActivityDelta: 2};
   });

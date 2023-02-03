@@ -8,7 +8,6 @@ category('Grid: Color Coding', () => {
   let v: DG.TableView;
   let grid: DG.Grid;
   let demog = grok.data.demo.demog(1000);
-  demog.columns.byName('study').name = '~study';
   
   before(async () => {
     v = grok.shell.addTableView(demog);
@@ -29,9 +28,8 @@ category('Grid: Color Coding', () => {
     v.close();
     grok.shell.closeTable(demog);
     demog = grok.data.demo.demog(1000);
-    demog.columns.byName('study').name = '~study';
     v = grok.shell.addTableView(demog);
-    grid = v.grid;
+    //grid = v.grid;
     v.loadLayout(layout);
     testTags();
   });

@@ -1,7 +1,6 @@
-<!-- TITLE: Solubility prediction -->
-<!-- SUBTITLE: -->
-
-# Solubility prediction
+---
+title: "Solubility prediction"
+---
 
 Solubility is one of basic physical chemistry properties important for understanding how molecules interact with
 solvents. Following script allows to predict solubility by molecular

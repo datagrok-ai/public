@@ -2,10 +2,10 @@
   "name": "@datagrok/oligo-batch-calculator",
   "friendlyName": "Oligo Batch Calculator",
   "author": {
-    "name": "Vadym Kovadlo",
-    "email": "vkovadlo@datagrok.ai"
+    "name": "Alexey Chopovsky",
+    "email": "achopovsky@datagrok.ai"
   },
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Calculates the following oligonucleotide properties: Length, Optical Density, NMoles, Mass, Molecular Weight, Extinction Coefficient (using nearest neighbour method)",
   "repository": {
     "type": "git",
@@ -23,20 +23,11 @@
     "@typescript-eslint/parser": "^5.32.0",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
-    "@types/jest": "^27.0.0",
-    "jest": "^27.0.0",
-    "jest-html-reporter": "^3.5.0",
     "path": "^0.12.7",
-    "puppeteer": "^13.7.0",
-    "ts-jest": "^27.0.0",
     "ts-loader": "^9.2.6",
     "typescript": "^4.4.4",
     "webpack": "^5.59.1",
-    "webpack-cli": "^4.9.1",
-    "@types/js-yaml": "^4.0.5",
-    "js-yaml": "^4.1.0",
-    "@types/node-fetch": "^2.6.2",
-    "node-fetch": "^2.6.7"
+    "webpack-cli": "^4.9.1"
   },
   "scripts": {
     "debug-oligobatchcalculator": "grok publish",
@@ -47,9 +38,9 @@
     "release-oligobatchcalculator-public": "grok publish public --release",
     "debug-oligobatchcalculator-local": "grok publish local",
     "release-oligobatchcalculator-local": "grok publish local --release",
-    "test": "jest",
-    "test-dev": "set HOST=dev && jest",
-    "test-local": "set HOST=localhost && jest"
+    "test": "grok test",
+    "test-dev": "grok test --host dev",
+    "test-local": "grok test --host localhost"
   },
   "sources": [
     "css/style.css"

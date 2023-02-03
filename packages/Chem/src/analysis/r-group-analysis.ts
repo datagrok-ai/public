@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {findMCS, findRGroups} from '../scripts-api';
-import {getRdKitModule} from '../package';
-import {MolNotation} from '../utils/convert-notation-utils';
+import {convertMolNotation, getRdKitModule} from '../package';
+
 
 export function convertToRDKit(smiles: string | null): string | null {
   if (smiles !== null) {
@@ -33,7 +33,7 @@ export function rGroupAnalysis(col: DG.Column): void {
       let molCol = col.dataFrame.columns.byName(columnInput.value!);
       const smiles: string = await findMCS(molCol.name, molCol.dataFrame);
       ui.setUpdateIndicator(sketcher.root, false);
-      sketcher.setSmiles(smiles);
+      sketcher.setMolFile(convertMolNotation(smiles, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock));
     } catch (e: any) {
       grok.shell.error(e);
       dlg.close();
@@ -62,7 +62,7 @@ export function rGroupAnalysis(col: DG.Column): void {
         grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');
         return;
       }
-      const core = sketcher.getSmiles();
+      const core = sketcher.getMolFile();
       if (!core) {
         grok.shell.error('No core was provided');
         return;
@@ -75,14 +75,19 @@ export function rGroupAnalysis(col: DG.Column): void {
         for (const resCol of res.columns) {
           const molsArray = new Array<string>(resCol.length);
           for (let i = 0; i < resCol.length; i++) {
-            const mol = module.get_mol(resCol.get(i));
-            molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
-            mol.delete();
+            const molStr = resCol.get(i);
+            try {
+              const mol = module.get_mol(molStr);
+              molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
+              mol.delete();
+            } catch (e) {
+              console.warn(`RGroupAnalysisWarning: skipping invalid molecule '${molStr}' at index ${i}`);
+            }
           }
           const rCol = DG.Column.fromStrings(resCol.name, molsArray);
   
           rCol.semType = DG.SEMTYPE.MOLECULE;
-          rCol.setTag(DG.TAGS.UNITS, MolNotation.MolBlock);
+          rCol.setTag(DG.TAGS.UNITS, DG.chem.Notation.MolBlock);
           col.dataFrame.columns.add(rCol);
         }
         if (res.columns.length == 0)

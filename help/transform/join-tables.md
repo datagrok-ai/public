@@ -1,7 +1,6 @@
-<!-- TITLE: Join tables -->
-<!-- SUBTITLE: -->
-
-# Join tables
+---
+title: "Join tables"
+---
 
 Joins two tables, using the specified key columns.
 

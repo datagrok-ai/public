@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.4.4",
+  "version": "1.4.24",
   "author": {
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
@@ -23,6 +23,18 @@
       ],
       "defaultValue": "RDKit",
       "nullable": false
+    },
+    {
+      "name": "Sketcher",
+      "propertyType": "string",
+      "choices": [
+        "OpenChemLib",
+        "Ketcher",
+        "Marvin",
+        "ChemDraw"
+      ],
+      "defaultValue": "",
+      "nullable": true
     }
   ],
   "sources": [
@@ -30,10 +42,10 @@
     "common/openchemlib-full.js"
   ],
   "dependencies": {
-    "datagrok-api": "^1.10.2",
-    "@datagrok-libraries/chem-meta": "^1.0.1",
-    "@datagrok-libraries/ml": "^6.2.4",
-    "@datagrok-libraries/utils": "^1.15.5",
+    "datagrok-api": "^1.11.2",
+    "@datagrok-libraries/chem-meta": "^1.0.3",
+    "@datagrok-libraries/ml": "^6.3.10",
+    "@datagrok-libraries/utils": "^1.19.3",
     "cash-dom": "latest",
     "dayjs": "latest",
     "file-loader": "latest",
@@ -55,19 +67,9 @@
     "path": "^0.12.7",
     "webpack": "latest",
     "webpack-cli": "latest",
-    "workerloader-jest-transformer": "^0.0.5",
-    "jest-html-reporter": "^3.5.0",
-    "jest": "^27.0.0",
-    "@types/jest": "^27.0.0",
-    "ts-jest": "^27.0.0",
     "style-loader": "latest",
     "css-loader": "latest",
-    "ts-loader": "latest",
-    "puppeteer": "^13.7.0",
-    "@types/js-yaml": "^4.0.5",
-    "js-yaml": "^4.1.0",
-    "@types/node-fetch": "^2.6.2",
-    "node-fetch": "^2.6.7"
+    "ts-loader": "latest"
   },
   "browser": {
     "fs": false,
@@ -87,9 +89,9 @@
     "release-local": "grok publish local --release",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",
-    "test": "jest",
-    "test-dev": "set HOST=dev && jest",
-    "test-local": "set HOST=localhost && jest"
+    "test": "grok test",
+    "test-dev": "grok test --host dev",
+    "test-local": "grok test --host localhost"
   },
   "canEdit": [
     "Developers"

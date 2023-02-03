@@ -21,6 +21,7 @@ export abstract class Tutorial extends DG.Widget {
     return this._t;
   }
 
+  imageUrl: string = '';
   nextLink: HTMLAnchorElement = ui.link('next',
     '',
     'Go to the next tutorial', {
@@ -326,21 +327,25 @@ export abstract class Tutorial extends DG.Widget {
   _onClose: Subject<void> = new Subject();
   get onClose() { return this._onClose; }
 
+  private getElement(element: HTMLElement, selector: string,
+    filter: ((idx: number, el: Element) => boolean) | null = null): EleLoose | null {
+    const nodes = $(element).find(selector);
+    return (filter ? nodes.filter(filter) : nodes)[0] ?? null;
+  }
+
   protected get menuRoot(): HTMLElement {
     return grok.shell.windows.simpleMode ? grok.shell.v.ribbonMenu.root : grok.shell.topMenu.root;
   }
 
   protected getMenuItem(name: string): HTMLElement | null {
-    return $(this.menuRoot)
-      .find('div.d4-menu-item.d4-menu-group')
-      .filter((idx, el) => Array.from(el.children).some((c) => c.textContent === name))
-      .get(0) ?? null;
+    return this.getElement(this.menuRoot, 'div.d4-menu-item.d4-menu-group',
+      (idx, el) => Array.from(el.children).some((c) => c.textContent === name));
   }
 
   protected getSidebarHints(paneName: string, commandName: string): HTMLElement[] {
     const pane = grok.shell.sidebar.getPane(paneName);
-    const command = $(pane.content).find(`div.d4-toggle-button[data-view=${commandName}]`)[0] ??
-      $(pane.content).find('div.d4-toggle-button').filter((idx, el) => el.textContent === commandName)[0]!;
+    const command = this.getElement(pane.content, `div.d4-toggle-button[data-view=${commandName}]`) ??
+      this.getElement(pane.content, 'div.d4-toggle-button', (idx, el) => el.textContent === commandName)!;
     return [pane.header, command];
   }
 
@@ -350,8 +355,7 @@ export abstract class Tutorial extends DG.Widget {
     // TODO: Expand toolbox / accordion API coverage
     const getViewerIcon = (el: HTMLElement) => {
       const selector = name == 'filters' ? 'i.fa-filter' : `i.svg-${name.replace(' ', '-')}`;
-      const icon = $(el).find(selector);
-      return icon[0];
+      return this.getElement(el, selector);
     }
     const view = grok.shell.v as DG.View;
     let viewer: DG.Viewer;
@@ -383,7 +387,7 @@ export abstract class Tutorial extends DG.Widget {
           if (inp.stringValue === value) subscriber.next(inp.stringValue);
         });
       }),
-      historyHint ? $(dlg.root).find('i.fa-history.d4-command-bar-icon')[0]​ : inp.root,
+      historyHint ? this.getElement(dlg.root, 'i.fa-history.d4-command-bar-icon')​ : inp.root,
       description
     );
   }
@@ -391,11 +395,10 @@ export abstract class Tutorial extends DG.Widget {
   /** A helper method to access text inputs in a view. */
   protected async textInpAction(root: HTMLElement, instructions: string,
     caption: string, value: string, description: string = ''): Promise<void> {
-    const inputRoot = $(root)
-      .find('div.ui-input-root')
-      .filter((idx, inp) => $(inp).find('label.ui-label.ui-input-label')[0]?.textContent === caption)[0];
+    const inputRoot = this.getElement(root, 'div.ui-input-root', (idx, inp) =>
+      $(inp).find('label.ui-label.ui-input-label')[0]?.textContent === caption);
     if (inputRoot == null) return;
-    const input = $(inputRoot).find('input.ui-input-editor')[0] as HTMLInputElement;
+    const input = this.getElement(inputRoot, 'input.ui-input-editor') as HTMLInputElement;
     const source = fromEvent(input, 'input').pipe(map((_) => input.value), filter((val) => val === value));
     await this.action(instructions, source, inputRoot, description);
   }
@@ -408,7 +411,8 @@ export abstract class Tutorial extends DG.Widget {
     $(root).find('.ui-input-root .ui-input-label span').each((idx, el) => {
       if (el.innerText === caption) {
         inputRoot = el.parentElement?.parentElement;
-        select = $(inputRoot).find('select')[0] as HTMLSelectElement;
+        if (inputRoot)
+          select = this.getElement(inputRoot, 'select') as HTMLSelectElement;
       }
     });
     if (select! == null) return;
@@ -419,33 +423,32 @@ export abstract class Tutorial extends DG.Widget {
       inputRoot, description);
   };
 
+  private async prepareColumnInpAction(root: HTMLElement, instructions: string, caption: string, columnName: string,
+    description: string, inputSelector: string, valueSelector: string, intervalPeriod: number = 1000): Promise<void> {
+    const columnInput = this.getElement(root, inputSelector, (idx, inp) =>
+      this.getElement(inp as HTMLElement, 'label.ui-label.ui-input-label')?.textContent === caption);
+    if (columnInput == null) return;
+    const source = interval(intervalPeriod).pipe(
+      map((_) => this.getElement(columnInput, valueSelector)?.textContent),
+      filter((value) => value === columnName));
+    return this.action(instructions, source, columnInput, description);
+  }
+
   /** Prompts the user to choose a particular column in a column input with the specified caption. */
   protected async columnInpAction(root: HTMLElement, instructions: string, caption: string, columnName: string, description: string = '') {
-    const columnInput = $(root)
-      .find('div.ui-input-root.ui-input-column')
-      .filter((idx, inp) => $(inp).find('label.ui-label.ui-input-label')[0]?.textContent === caption)[0];
-    if (columnInput == null) return;
-    const source = interval(1000).pipe(
-      map((_) => $(columnInput).find('div.d4-column-selector-column')[0]?.textContent),
-      filter((value) => value === columnName));
-    await this.action(instructions, source, columnInput, description);
+    return this.prepareColumnInpAction(root, instructions, caption, columnName, description,
+      'div.ui-input-root.ui-input-column', 'div.d4-column-selector-column');
   };
 
   /** Prompts the user to choose particular columns in a column input with the specified caption.
    * Column names should be given in the following format: `(3) AGE, HEIGHT, WEIGHT`. */
   protected async columnsInpAction(root: HTMLElement, instructions: string, caption: string, columnNames: string, description: string = '') {
-    const columnsInput = $(root)
-      .find('div.ui-input-root.ui-input-columns')
-      .filter((idx, inp) => $(inp).find('label.ui-label.ui-input-label')[0]?.textContent === caption)[0];
-    if (columnsInput == null) return;
-    const source = interval(1000).pipe(
-      map((_) => $(columnsInput).find('div.ui-input-editor > div.ui-input-column-names')[0]?.textContent),
-      filter((value) => value === columnNames));
-    await this.action(instructions, source, columnsInput, description);
+    return this.prepareColumnInpAction(root, instructions, caption, columnNames, description,
+      'div.ui-input-root.ui-input-columns', 'div.ui-input-editor > div.ui-input-column-names');
   };
 
   protected async buttonClickAction(root: HTMLElement, instructions: string, caption: string, description: string = '') {
-    const btn = $(root).find('button.ui-btn').filter((idx, btn) => btn.textContent === caption)[0];
+    const btn = this.getElement(root, 'button.ui-btn', (idx, btn) => btn.textContent === caption);
     if (btn == null) return;
     const source = fromEvent(btn, 'click');
     await this.action(instructions, source, btn, description);
@@ -518,3 +521,5 @@ export abstract class Tutorial extends DG.Widget {
     await this.action(instructions, commandClick, hint, description);
   }
 }
+
+type EleLoose = HTMLElement & Element & Node;

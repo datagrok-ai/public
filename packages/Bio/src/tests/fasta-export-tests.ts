@@ -1,15 +1,14 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-import * as bio from '@datagrok-libraries/bio';
 
 import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import {saveAsFastaDo, wrapSequence} from '../utils/save-as-fasta';
+import {splitterAsFasta} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 type SaveAsFastaTestArgs = { srcCsv: string, idCols: string [], seqCol: string, lineWidth: number, tgtFasta: string };
 
 category('fastaExport', () => {
-
   enum WrapDataTest {
     single = 'single',
     multi = 'multi'
@@ -88,7 +87,7 @@ MRGGL
   });
 
   function _testWrapSequence(testKey: string, lineWidth: number = 10) {
-    const splitter = bio.splitterAsFasta;
+    const splitter = splitterAsFasta;
 
     const srcSeq: string = wrapData[testKey].src;
     const wrapRes: string[] = wrapSequence(srcSeq, splitter, lineWidth);

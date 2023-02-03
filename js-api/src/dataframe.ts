@@ -1393,7 +1393,7 @@ export class RowList {
   }
 
   /** Highlights the corresponding rows. */
-  highlight(indexPredicate: IndexPredicate): void {
+  highlight(indexPredicate: IndexPredicate | null): void {
     api.grok_RowList_Highlight(this.dart, indexPredicate);
   }
 
@@ -2243,10 +2243,19 @@ export class ColumnColorHelper {
     return DG.COLOR_CODING_TYPE.OFF;
   }
 
-  setLinear(range: ColorType[] | null = null): void {
+  /** Enables linear color-coding on a column.
+   * @param range - list of palette colors.
+   * @param options - list of additional parameters, such as the minimum/maximum value to be used for scaling.
+   * Use the same numeric representation as [Column.min] and [Column.max].
+   */
+  setLinear(range: ColorType[] | null = null, options: {min?: number, max?: number} | null = null): void {
     this.column.tags[DG.TAGS.COLOR_CODING_TYPE] = DG.COLOR_CODING_TYPE.LINEAR;
     if (range != null)
       this.column.tags[DG.TAGS.COLOR_CODING_LINEAR] = JSON.stringify(range);
+    if (options?.min != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_SCHEME_MIN] = `${options.min}`;
+    if (options?.max != null)
+      this.column.tags[DG.TAGS.COLOR_CODING_SCHEME_MAX] = `${options.max}`;
   }
 
   setCategorical(colorMap: {} | null = null): void {

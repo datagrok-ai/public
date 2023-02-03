@@ -1,7 +1,6 @@
-<!-- TITLE: Build an application -->
-<!-- SUBTITLE: -->
-
-# Applications
+---
+title: "Build an application"
+---
 
 Applications are built on top of the Datagrok platform and typically provide a fit-for-purpose solution for a particular
 problem. They are written in JavaScript or TypeScript, and use [JS API](../js-api.md) to control the platform, including
@@ -13,7 +12,7 @@ executing database queries, accessing web services, or running
 * [Enamine molecule browser](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore)
 <!--* [Chembl browser](https://github.com/datagrok-ai/public/tree/master/packages/ChemblBrowser)-->
 
-From the technical perspective, an app is a [function](../../datagrok/functions/function.md)
+From the technical perspective, an app is a [function](../../datagrok/functions/functions.md)
 that resides in a [package](../develop.md#packages) and is tagged with the `#app` tag. Similarly to the `main` function
 in C++, this is an entry point that gets executed when the app is [launched](#launching-applications).
 
@@ -25,7 +24,7 @@ directory:
 grok add app <name>
 ```
 
-# Launching applications
+## Launching applications
 
 Open `Functions | Apps`, or use a [direct link](https://public.datagrok.ai/apps)
 to see a list of available applications. Double-click on the app to launch it. To give a direct link to a particular
@@ -34,7 +33,7 @@ app:
 * `https://public.datagrok.ai/apps/<APP_NAME>` - if there is only one app in the package
 * `https://public.datagrok.ai/apps/<PACKAGE_NAME>/<APP_NAME>` - if there are several apps in the package
 
-## The entry point
+### The entry point
 
 The Datagrok platform is highly extensible. New functionality is delivered to a Datagrok instance as packages. A
 Datagrok [package](../develop.md#packages) might contain zero, one, or more Datagrok applications. These come along with
@@ -88,7 +87,7 @@ package, the corresponding URL is simply `https://public.datagrok.ai/apps/<APP>`
 This simple example concludes on the entry point. Yet, trivial popups aren't something one typically builds as an
 application. Let's look at a more UI-rich side of things.
 
-## The main view
+### The main view
 
 Most applications built on Datagrok start with a Datagrok's [view](custom-views.md). A view is a set of visualizations
 and controls grouped together. Typically, the view is associated with a particular [dataframe](#dataframes), in this
@@ -112,7 +111,7 @@ Read more on creating custom views [here](custom-views.md).
 [This example](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/viewers/create-viewers.js)
 shows how to add a [viewer](#visualizations) to a view.
 
-## Working with intellisense
+### Working with intellisense
 
 We recommend restoring the package dependencies before starting development with an IDE. After the package is created,
 simply invoke `npm install` inside the package folder. This will bring npm modules with the Datagrok API.
@@ -123,7 +122,7 @@ suitable when you develop a package which is a [part](https://github.com/datagro
 public repository. The folder `js-api` in the root of the public repository is a source of our JS API, that's how IDE
 discovers needed IntelliSense information.
 
-# Application development
+## Application development
 
 Starting with the above, there is pretty much anything you can further do inside the application, leveraging a full
 scale of platform capabilities. However, there are certain aspects of interest in almost any application:
@@ -139,7 +138,7 @@ The following chapter guides through these key development topics. Take it as a 
 development area, grasp the major building blocks, and proceed to the articles and samples referenced in the guide for
 the further details.
 
-## Code samples
+### Code samples
 
 We provide a diverse set of code snippets of the API use, and sample packages with viewers, applications, and so forth.
 
@@ -160,7 +159,7 @@ As some experience was shared to us, the samples above became a major source of 
 the platform. We recommend you to use these locations in resolving your daily technical questions, in addition to
 posting questions and suggestions on our [Community Forum](https://community.datagrok.ai/).
 
-## Data access
+### Data access
 
 There's a variety of data sources which Datagrok can handle out of the box:
 
@@ -179,7 +178,7 @@ file shares and servers is made by `grok.functions.eval('OpenServerFile("...")')
 When it comes to connections, we encourage you not to store their credentials directly inside your application packages.
 The chapter ["Managing privileges"](#managing-privileges) discusses credentials management in detail.
 
-### Accessing REST endpoints outside the host
+#### Accessing REST endpoints outside the host
 
 Web services provide endpoints that you can programmatically connect to. There are two main options for this: the first
 is to use
@@ -203,7 +202,7 @@ in detail.
 * [fetchProxy sample](https://public.datagrok.ai/js/samples/dapi/fetch)
 * [Access Data](access-data.md)
 
-### Working with databases
+#### Working with databases
 
 A comprehensive overview of programmatic database access is given [here](access-data.md), we highly recommend you to go
 through this text.
@@ -228,7 +227,7 @@ connections.
 
 * [Data Access](access-data.md)
 
-### Namespacing connections
+#### Namespacing connections
 
 Often one application is built per several customers. As part of per-customer tailoring there are in-house data sources.
 You typically don't want to mention connections to these data sources or their names in the shared code, as they are
@@ -257,11 +256,11 @@ a namespace for it.
    `NewNamespace` on the left side of the window, again, and select `Rename...`. Provide that both
    `Name` or `Function Name` are `NewNamespace`, and hit `Ok`.
 6. *Left*-click on the `<CONNECTION>` under the project's name (without leaving the `Projects`
-   section), and observe its property panel on the right. Find `Links...` and left-click on it. You should find that the
+   section), and observe its context panel on the right. Find `Links...` and left-click on it. You should find that the
    link to the connection is now suffixed by `NewNamespace:<CONNECTION>`.
 
 <!--
-### Pushing credentials to connections
+#### Pushing credentials to connections
 
 Another popular case is when you actually host the application's code in the customer's repository,
 but the credentials to proprietary data sources remain as what you won't put there along the code.
@@ -270,9 +269,9 @@ as part of the package deployment process.
 
 -->
 
-## Dataframes
+### Dataframes
 
-### Creating and working with dataframes
+#### Creating and working with dataframes
 
 Dataframes are at the heart of Datagrok. Dataframe is a high-performance, easy to use tabular structure with
 strongly-typed columns of different types. Supported types are: string, int, float, bool, DateTime, bigint and qualified
@@ -330,7 +329,7 @@ at [this link](https://datagrok.ai/js-api/classes/dg.DataFrame).
 * [Dataframe API reference](https://datagrok.ai/js-api/classes/dg.DataFrame)
 * [Datagrok JavaScript playground](https://public.datagrok.ai/js)
 
-### Iterating over a dataframe
+#### Iterating over a dataframe
 
 The means for dataframes iteration are summarized
 in [this sample](https://public.datagrok.ai/js/samples/data-frame/performance). Consider performance: run the sample to
@@ -340,7 +339,7 @@ Note that the `.values()` method is chosen over a possible `.values` property on
 heavy. Use it with caution, only in contexts where you need to pass a column to iterate over it with
 `for (... of ...)` once and outside of nested loops.
 
-### Semantic annotation and metadata
+#### Semantic annotation and metadata
 
 Most of the objects in Datagrok can be annotated with metadata (key-value pairs). The metadata could be set manually;
 additionally, some of it gets assigned automatically. Some keys affect the way an object (such as a column) interacts
@@ -353,7 +352,7 @@ tags and semantic types are of particular interest in application development an
 
 * [Metadata](../../discover/metadata.md)
 
-#### Column tags
+##### Column tags
 
 Each column in a Datagrok dataframe has a `.tags` property, which is a JS `Map` you can read and write to. You could use
 these `.tags` for any package-specific activity needed. For example, if you have a pair of columns containing smiles
@@ -368,7 +367,7 @@ Properties..." (or press F2 in the grid).
 
 * [Tags](../../discover/tags.md)
 
-#### Semantic types
+##### Semantic types
 
 Unlike in Excel, table columns in Datagrok are strongly-typed. In addition to that, a column might also have semantic
 type associated with it. Semantic type identifies the meaning of the data. For instance, a column could be of the data
@@ -386,9 +385,9 @@ automatically by column semantic type detectors, or set manually in the JavaScri
 
 * [Semantic Types](../../discover/semantic-types.md)
 
-### Aggregations and joining
+#### Aggregations and joining
 
-For those of you familiar with functional style in JavaScript (`.map`, `.filter`, etc), with LINQ in C# or other kinds
+For those of you familiar with functional style in JavaScript (`.map`, `.filter`, etc), with LINQ in C## or other kinds
 of fluent APIs, it should be straightforward to see what happens to a dataframe in this snippet:
 
 ```js
@@ -412,9 +411,9 @@ The whole set of functions available for `.add` is located [here](../../transfor
 
 * [Aggregation functions](../../transform/aggregation-functions.md)
 
-## Persisting data
+### Persisting data
 
-### User data storage
+#### User data storage
 
 Often application settings or its inputs/outputs need to be shared between different applications, different instances
 of the same application, or simply persisted for later use or autoload on application start. This functionality is
@@ -439,7 +438,7 @@ default.
 * User data
   storage [sample](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/misc/user-data-storage.js)
 
-### Storing dataframes
+#### Storing dataframes
 
 In addition to the user data storage, to where you can serialize dataframes or columns as JSONs, there is a facility for
 storing dataframes which appear in the Datagrok UI as "Tables". Check
@@ -453,9 +452,9 @@ Datagrok UI.
 
 * [Table save and load example](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/data-access/save-and-load-df.js)
 
-## Computations
+### Computations
 
-### Scripting
+#### Scripting
 
 Beside application logic enabled on the client-side (in the browser) with the Datagrok JavaScript API, Datagrok provides
 scripting, a mechanism for integration with languages for statistical/mathematical computing. Scripting combines fast
@@ -520,13 +519,13 @@ with a name, as we did [here](#the-entry-point), and a typed signature.
 * [Exercises](../exercises/exercises.md)
 * [Scripting](../../compute/scripting.md)
 
-### Datagrok functions
+#### Datagrok functions
 
 You could notice in ["Scripting"](../../compute/scripting.md) and ["Accessing databases"](access-data.md) that many
 entities in Datagrok are callable functions. In fact, everything in Datagrok is a function. This gives powerful
 compositionality. Let's see how this paradigm allows composing scripts in Datagrok applications.
 
-### Composing functions
+#### Composing functions
 
 Recall the `SimpleTestPython` script from the above. Let's create a JavaScript function in our application package which
 calls that script:
@@ -547,9 +546,9 @@ our `SimpleFunctionJS` in exact same way with `grok.functions.call`.
 *References:*
 
 * [Running a script](../../compute/scripting.md#running-a-script)
-* [Functions](../../datagrok/functions/function.md)
+* [Functions](../../datagrok/functions/functions.md)
 
-## Visualizations
+### Visualizations
 
 Datagrok provides for rich data visualization with more than 25+ viewers out of the box, including
 [Scatter Plot](../../visualize/viewers/scatter-plot.md)
@@ -575,16 +574,16 @@ shows how to add a viewer to a [view](#the-main-view).
 
 *References:*
 
-* [Viewers](../../visualize/viewers.md)
+* [Viewers](../../visualize/viewers/viewers.md)
 * [Scripting viewers](../../visualize/viewers/scripting-viewer.md)
 
-## Managing privileges
+### Managing privileges
 
 Datagrok has an enterprise-grade support for privileges management and secure deployment. In the context of Datagrok
 application development, this covers both fine-grained access control to all Datagrok entities and facilities, but also
 security patterns for storing credentials and authorized access to Datagrok using popular authentication protocols.
 
-### Authorization, groups and sharing
+#### Authorization, groups and sharing
 
 Datagrok has a flexible mechanism for grouping users together. A user can belong to more than one group. A group can be
 included in another group, which is useful for both reflecting organization hierarchy and implementing
@@ -606,7 +605,7 @@ and other package entities shared to the group.
 * [Security](../../govern/security.md)
 * [Authorization](../../govern/authorization.md)
 
-### Authentication
+#### Authentication
 
 Out-of-the-box, Datagrok offers authentication with login-password, OAuth (Google, Facebook, Github)
 , SSO (single sign-on) and Active Directory. Enterprise customers might prefer to use a custom SSO (
@@ -617,14 +616,14 @@ scheme. We can accommodate these needs by developing a customer-specific integra
 
 * [Authentification](../../govern/authentication.md)
 
-### Obtaining groups and users info
+#### Obtaining groups and users info
 
 It is possible to access groups info through Datagrok JavaScript API. The namespace `grok.dapi.groups`
 provides for it. Find code snippets for this topic in
 [/dapi/groups](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/dapi)
 part of our JS API samples.
 
-### Managing credentials
+#### Managing credentials
 
 We advise you not to store service credentials directly inside your application packages, whether they reside as a part
 of a connection string, a parameter inside a connection file in Datagrok, or just login and password used in a POST
@@ -632,7 +631,7 @@ request in your JS code. It's suitable if one stores credentials for a database 
 instance, of publicly available datasets like Chembl) right inside the package in a connection file. For other types of
 credentials, there are suitable means in Datagrok described below.
 
-#### Pushing credentials by the Server API
+##### Pushing credentials by the Server API
 
 It's possible to programmatically push credentials to Datagrok and deliver them to the package of interest. In such
 scenario, credentials are stored on a secured machine and delivered to Datagrok via a triggered bat/sh-script. This is
@@ -648,7 +647,7 @@ platform and sustain package versions updates.
 
 * [Database connection credentials](manage-credentials.md#database-connection-credentials)
 
-#### Storing credentials in Credentials Store
+##### Storing credentials in Credentials Store
 
 This is useful for credentials which are not part of Datagrok's OpenAPI web connection, database or file share
 connection, but instead are used programmatically in JavaScript code of the application to access third-party REST APIs
@@ -664,7 +663,7 @@ section.
 * [Package credentials](manage-credentials.md#package-credentials)
 * [Managing credentials](manage-credentials.md)
 
-## UI and UX
+### UI and UX
 
 Most of the UI capabilities Datagrok offers are described as samples in
 our [ApiSamples package](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples). You may view them all
@@ -691,7 +690,7 @@ catering for several typical application layouts, where the design has to do wit
 scrolling, fixed and dynamic sizing, and so forth. Soon there comes an updated piece of documentation and samples on the
 subject.
 
-## Subscribing to events
+### Subscribing to events
 
 We are exposing events coming out of the platform as a stream via the [Rx.JS](https://rxjs.dev) library that makes it
 easy to compose asynchronous or callback-based code. The API makes easy to subscribe to either global, or
@@ -721,7 +720,7 @@ ui.dialog('Windows')
 To figure out what events are coming out of the platform, use the Inspector tool. Open it (`Alt+I`), go to the "Client
 Log" tab, and perform the action that you want to intercept. In the panel, you will see one or more of the events, click
 on them to inspect event parameters. To simplify the development process, we also generate JavaScript code for handling
-this particular event, copy-paste it from the property panel into your code if needed.
+this particular event, copy-paste it from the context panel into your code if needed.
 
 Remember that the underlying UI controls in Datagrok are still DOM elements, so you can always subscribe to the regular
 events using `.addEventListener`:
@@ -748,9 +747,9 @@ Read more about Datagrok events [here](../js-api.md#events).
 * [Global events](https://public.datagrok.ai/js/samples/events/global-events)
 * [DataFrame events](https://public.datagrok.ai/js/samples/data-frame/events)
 
-## Working with packages
+### Working with packages
 
-### Structuring code
+#### Structuring code
 
 Perhaps, one of the main things to know about webpack is that it allows you to structure JavaScript code in a way
 similar to how you are used to it in enterprise-grade environments, such as Java or .NET.
@@ -809,16 +808,16 @@ That would be an overkill to structure these super-trivial apps this way, though
 anything real-life built for production use. Notice how we include parts of Datagrok API for the corresponding features
 in `src/test-app-01.js`. You may find this `datagrok-api` is a predefined location, as per `webpack.config.js`.
 
-## Application lifecycle
+### Application lifecycle
 
-There are two main [deployment modes](../develop.md#deployment-modes) for Datagrok packages: Debug and Release.
+There are two main [publishing modes](../develop.md#publishing-modes) for Datagrok packages: Debug and Release.
 
 * When you `grok publish`, the package is deployed to Datagrok in a Debug mode. This means only you see this deployed
   version of the package, all others with proper privileges keep seeing the older version if one existed before
 
 * When you `grok publish --release`, this replaces the currently installed version with the new one
 
-## Debugging applications
+### Debugging applications
 
 Debugging applications follows same principles as to other packages, described [here](../develop.md#debugging).
 

@@ -1,7 +1,6 @@
-<!-- TITLE: Correlation plot -->
-<!-- SUBTITLE: -->
-
-# Correlation plot
+---
+title: "Correlation plot"
+---
 
 A quick way to assess correlations between all columns at once. Cells are color-coded by the
 [Pearson correlation coefficient](https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient)
@@ -20,6 +19,6 @@ General:
 
 See also:
 
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [Table View](../../datagrok/table-view.md)
 * [JS API: Correlation plot](https://public.datagrok.ai/js/samples/ui/viewers/types/corr-plot)

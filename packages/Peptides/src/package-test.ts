@@ -4,6 +4,7 @@ import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 import './tests/core';
 import './tests/peptide-space-test';
 import './tests/algorithms';
+import './tests/viewers';
 
 export const _package = new DG.Package();
 export {tests};

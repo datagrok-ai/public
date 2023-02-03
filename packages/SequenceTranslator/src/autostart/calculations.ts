@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 
-import {sortByStringLengthInDescendingOrder} from '../helpers';
-import {MODIFICATIONS} from '../structures-works/map';
+import {sortByStringLengthInDescendingOrder} from '../utils/helpers';
+import {MODIFICATIONS} from '../hardcode-to-be-eliminated/map';
 
 export function saltMass(
   saltNames: string[], saltsMolWeightList: number[], equivalentsCol: DG.Column, i: number, saltCol: DG.Column

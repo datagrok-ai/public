@@ -61,7 +61,8 @@ export function createTree(
       item.root.addEventListener('dblclick', async () => {
         const progressIndicator = DG.TaskBarProgressIndicator.create('Opening table...');
         try {
-          await connectToDb(tableObject.ds_id, async (c: DG.DataConnection) => getTable(c, tableObject));
+          await connectToDb(tableObject.ds_id,
+            async (c: DG.DataConnection) => getTable(c, tableObject), tableObject.schema_name);
         } catch {
           grok.shell.error('Couldn\'t retrieve table');
         }
@@ -181,7 +182,7 @@ export async function runQuery(conn: DG.DataConnection, queryObject: types.query
 }
 
 export async function connectToDb(
-  dataSrouceId: number, handler: (conn: DG.DataConnection) => Promise<void>): Promise<void> {
+  dataSrouceId: number, handler: (conn: DG.DataConnection) => Promise<void>, schema: string = ''): Promise<void> {
   const dataSource = await alationApi.getDataSourceById(dataSrouceId);
   const connName = dataSource.title || dataSource.qualified_name || dataSource.dbname;
   const thisUser = await grok.dapi.users.current();
@@ -192,15 +193,20 @@ export async function connectToDb(
       return handler(conn);
   }
 
-  connectToDbDialog(dataSource, handler);
+  connectToDbDialog(dataSource, handler, schema);
 }
 
-function connectToDbDialog(dataSource: types.dataSource, func: (conn: DG.DataConnection) => Promise<void>) {
+function connectToDbDialog(
+  dataSource: types.dataSource, func: (conn: DG.DataConnection) => Promise<void>, schema: string = '') {
   let dbType: string | null = null;
-  for (const dsType of constants.DATA_SOURCE_TYPES) {
-    if (dataSource.dbtype === dsType.toLowerCase()) {
-      dbType = dsType;
-      break;
+  if (dataSource.dbtype == 'customdb')
+    dbType = 'Denodo';
+  else {
+    for (const dsType of constants.DATA_SOURCE_TYPES) {
+      if (dataSource.dbtype === dsType.toLowerCase()) {
+        dbType = dsType;
+        break;
+      }
     }
   }
 
@@ -232,6 +238,10 @@ function connectToDbDialog(dataSource: types.dataSource, func: (conn: DG.DataCon
         };
         let dsConnection = DG.DataConnection.create(connectionName, dcParams);
         dsConnection = await grok.dapi.connections.save(dsConnection);
+
+        if (dbType?.toLowerCase() == 'impala')
+          dsConnection.parameters['schema'] = schema;
+
         await func(dsConnection);
       } catch (e) {
         grok.shell.info('Could not connect to the data source. See console');

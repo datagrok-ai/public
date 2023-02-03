@@ -1,10 +1,9 @@
-<!-- TITLE: Develop custom viewers -->
-<!-- SUBTITLE: -->
-
-# Custom viewers
+---
+title: "Develop custom viewers"
+---
 
 Developers can extend Datagrok with special visual components bound to data, which are called
-[viewers](../../visualize/viewers.md). There are two ways to develop viewers on Datagrok. The first
+[viewers](../../visualize/viewers/viewers.md). There are two ways to develop viewers on Datagrok. The first
 one is JavaScript-based development, which lets you create interactive viewers
 via [Datagrok JavaScript API](../js-api.md). The second option uses visualizations available for popular
 programming languages, such as Python, R, or Julia. This implementation uses
@@ -114,7 +113,7 @@ the viewer is closed) unsubscribes from them.
 ### Properties
 
 Viewer properties include all the parameters you want users to edit via
-the [property panel](../../datagrok/navigation.md#properties). They get persisted with the viewer layout.
+the [context panel](../../datagrok/navigation.md#context-panel). They get persisted with the viewer layout.
 
 In this case, we want to set a couple of properties for our bar chart:
 
@@ -148,7 +147,7 @@ In the class `constructor`, you can create properties of the following data type
 * datetime `this.dateTime(propertyName[, defaultValue, options])`
 
 Follow the naming conventions for JavaScript variables (`lowerCamelCase` will do). Certainly, the names will be nicely
-displayed in the property panel: capitalized, with spaces between words (e.g.,
+displayed in the context panel: capitalized, with spaces between words (e.g.,
 `property` becomes `Property` and `propertyName` becomes `Property Name`). But for them to appear so, pay attention to
 the names you use in your code. Consistency in naming also ensures that property values are updated correctly. When you
 set a value of a property, either as default or within the class body as a result of assignment, the specified value
@@ -170,7 +169,7 @@ them:
 
 Some properties, such as `stringList` and `dateTime`, can only be used to represent columns and, therefore, require
 the `ColumnName` postfix. Let's proceed to our example. After defining the properties, we specify additional chart
-settings, which will not appear in the property panel, and initialize the viewer. The next step is to retrieve data for
+settings, which will not appear in the context panel, and initialize the viewer. The next step is to retrieve data for
 our visualization. This is typically done in the `onTableAttached` method where you can test if a viewer is applicable
 to the currently open table, select the most relevant columns, and so on. However, as we already provided the default
 column names, we use this method only to subscribe to events modifying the displayed data (selection and filtering) and
@@ -387,7 +386,8 @@ corresponding category, and will be able to select them on click (pay attention 
 example). Plus, other open viewers will highlight the elements that represent the respective row group as you move the
 mouse pointer over the current viewer (you don't need to configure anything, read more about Datagrok's efficient
 visualizations
-[here](../../visualize/viewers.md)). This also works the other way around: you can show a selected portion of the data
+[here](../../visualize/viewers/viewers.md)). This also works the other way around: you can show a selected portion of
+the data
 in your viewer. To do that, you need to know which rows the user selected so that you can narrow the data set for
 rendering accordingly. And this is fairly simple: the method
 `dataFrame.filter.getSelectedIndexes()` gives you exactly the data you need.
@@ -496,14 +496,18 @@ import {AwesomeViewer} from './awesome-viewer.js'
 //description: Creates an awesome viewer
 //tags: viewer
 //meta.icon: images/icon.svg
+//meta.toolbox: true
 //output: viewer result
 export function awesome() {
   return new AwesomeViewer();
 }
 ```
 
-The above way is typically preferred. The optional parameter `meta.icon`
-accepts a path to a viewer icon file in the package.
+The above way is typically preferred. Optional parameters, such as `meta.icon`
+and `meta.toolbox`, can be used. The `meta.icon` parameter accepts a path to a
+viewer icon file in the package and replaces the default icon with it in the UI.
+The `meta.toolbox` parameter, when enabled, adds your viewer to the toolbox in a
+table view.
 
 There is also a less common form to register a viewer:
 
@@ -537,14 +541,14 @@ You can find more inspiring examples in our [public repository](https://github.c
 
 * JavaScript-based viewers:
   * [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts): constructs graphs of various types
-      using the [Echarts](https://echarts.apache.org) framework
+    using the [Echarts](https://echarts.apache.org) framework
   * [Leaflet](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet): integrates with
-      the [Leaflet](https://leafletjs.com/) library to build interactive maps
+    the [Leaflet](https://leafletjs.com/) library to build interactive maps
   * [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers): showcases creating JavaScript
-      viewers using various visualization libraries
+    viewers using various visualization libraries
 * Scripting viewers (R, Python, Julia):
   * [ChaRPy](https://github.com/datagrok-ai/public/tree/master/packages/ChaRPy): translates a Datagrok viewer to
-      Python and R code using scripting viewers for the respective programming languages
+    Python and R code using scripting viewers for the respective programming languages
   * [DemoScripts]: demonstrates the scripting functionality, including visualizations, for Python, R, and Julia
 
   Most of these scripts are also available by the `viewers` tag in the script
@@ -561,7 +565,7 @@ See also:
 * [JS API Samples: custom viewers](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers)
 * [JS API Samples: viewers](https://public.datagrok.ai/js/samples/ui/viewers/create-viewers)
 * [JavaScript development](../develop.md)
-* [Viewers](../../visualize/viewers.md)
+* [Viewers](../../visualize/viewers/viewers.md)
 * [Scripting viewers](../../visualize/viewers/scripting-viewer.md)
 
-[DemoScripts]: https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/
+[DemoScripts]: https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts

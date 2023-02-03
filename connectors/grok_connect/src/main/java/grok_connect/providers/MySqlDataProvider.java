@@ -67,7 +67,7 @@ public class MySqlDataProvider extends JdbcDataProvider {
     }
 
     public String getSchemasSql(String db) {
-        return "SELECT DISTINCT table_schema FROM information_schema.columns ORDER BY table_schema";
+        return "SELECT DISTINCT table_schema FROM information_schema.columns";
     }
 
     public String getSchemaSql(String db, String schema, String table) {

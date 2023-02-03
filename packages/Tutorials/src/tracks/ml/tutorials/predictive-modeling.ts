@@ -2,8 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
-import { filter, map } from 'rxjs/operators';
-import { Tutorial } from '../../../tutorial';
+import { delay, filter, map } from 'rxjs/operators';
+import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
+import { interval } from 'rxjs';
 
 
 export class PredictiveModelingTutorial extends Tutorial {
@@ -13,7 +14,7 @@ export class PredictiveModelingTutorial extends Tutorial {
   get description() {
     return 'Predictive modeling is a statistical technique used to predict outcomes based on historical data.';
   }
-  get steps() { return 23; }
+  get steps() { return 26; }
 
   helpUrl: string = 'https://datagrok.ai/help/learn/predictive-modeling';
 
@@ -51,10 +52,11 @@ export class PredictiveModelingTutorial extends Tutorial {
         'that some of the columns contain missing values, and suggests two ways to address this. ' +
         'Let\'s use missing values imputation.';
       await this.columnsInpAction(pmv.root, 'Set "Features" to ["AGE", "HEIGHT", "WEIGHT"]',
-        'Features', '(3) AGE, HEIGHT, WEIGHT', hasNulls ? missingValuesWarning : '');
+        'Features', '(3) AGE, HEIGHT, WEIGHT');
 
       if (hasNulls) {
-        const dlg = await this.openDialog('Click on "Missing values imputation"', 'Missing Values Imputation');
+        const dlg = await this.openDialog('Click on "Missing values imputation"', 'Missing Values Imputation',
+          $(pmv.root).find('label.d4-link-label.d4-validator-helper-link')[0], missingValuesWarning);
 
         await this.dlgInputAction(dlg, 'Set "Table" to "demog"', 'Table', 'demog');
         await this.dlgInputAction(dlg, 'Choose ["AGE", "HEIGHT", "WEIGHT"] for "Impute"', 'Impute', 'AGE,HEIGHT,WEIGHT');
@@ -69,10 +71,13 @@ export class PredictiveModelingTutorial extends Tutorial {
 
       await this.choiceInputAction(pmv.root, `Set "Method" to "${method}"`, 'Method', method);
       await this.buttonClickAction(pmv.root, 'Click the "Train" button', 'TRAIN');
+
+      await delay(1500); // model training delay
     };
 
     this.title('Train a model');
-    await trainModel('Distributed Random Forest');
+    const method = 'Distributed Random Forest';
+    await trainModel(method);
 
     this.title('Model performance, application, and sharing');
 
@@ -85,16 +90,20 @@ export class PredictiveModelingTutorial extends Tutorial {
     await this.openViewByType('Click on "Functions | Models" to open the Models Browser',
       DG.View.MODELS, funcPaneHints, pmBrowserDescription);
 
-    const ppDescription = 'Search for the model you trained (applicable models are always at the ' +
-      'top of the list, also, you can search for it by the previously defined name). Now, select ' +
-      'the model by clicking on it and open "Performance" at the property panel on the right.';
+    let modelPP: DG.Accordion;
+    const modelName = `Predict SEX by AGE, HEIGHT, WEIGHT using ${method}`;
+    const modelsViewInfo = 'Search for the model you trained (applicable models are always ' +
+      'at the top of the list, also, you can search for it by the previously defined name). ' +
+      'Now, select the model by clicking on it.';
+    await this.action('Find your model', grok.events.onAccordionConstructed.pipe(
+      map((acc) => {
+        modelPP = acc;
+        return acc.context;
+      }), filter((model) => model instanceof DG.Model && model.friendlyName === modelName)),
+      null, modelsViewInfo);
 
-    await this.action('Find model performance data',
-      // TODO: check if acc.context instanceof DG.Model && acc.context?.name === modelName
-      grok.events.onAccordionConstructed.pipe(
-        map((acc) => acc.getPane('Performance')?.expanded),
-        filter((v) => v === true)),
-      null, ppDescription);
+    await this.action('Expand the "Performance" pane in the context panel',
+      interval(1000).pipe(filter(() => modelPP?.getPane('Performance')?.expanded)));
 
     await this.contextMenuAction('Right-click on the trained model and select "Apply to | ' +
       `${this.t!.toString()}"`, this.t!.toString(), null, 'The result will be available in ' +
@@ -114,6 +123,6 @@ export class PredictiveModelingTutorial extends Tutorial {
       grok.events.onViewAdded.pipe(filter((view) => view.name == 'Compare models')),
       $('div.d4-accordion-pane-header').filter((idx, el) => el.textContent == 'Commands')[0],
       'Search for the trained models and select them holding <b>Shift</b>. ' +
-      'Then run the "Compare" command given at the property panel.');
+      'Then run the "Compare" command given at the context panel.');
   }
 }

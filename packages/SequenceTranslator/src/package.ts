@@ -1,12 +1,24 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {autostartOligoSdFileSubscription} from './autostart/registration';
-import {defineAxolabsPattern} from './axolabs/define-pattern';
-import {saveSenseAntiSense} from './structures-works/save-sense-antisense';
-import {mainView} from './main/main-view';
-import {IMonomerLib, MonomerWorks, readLibrary} from '@datagrok-libraries/bio';
 import {OligoSdFileApp} from './apps/oligo-sd-file-app';
+
+// three tabs of the app's view
+import {getMainTab} from './main-tab/main-tab';
+import {getAxolabsTab} from './axolabs-tab/axolabs-tab';
+import {getSdfTab} from './sdf-tab/sdf-tab';
+
+const MAIN = 'MAIN';
+const AXOLABS = 'AXOLABS';
+const SDF = 'SDF';
+
+const SEQUENCE_TRANSLATOR = 'Sequence Translator';
+const DEFAULT_SEQUENCE = 'fAmCmGmAmCpsmU';
+const DEFAULT_LIB_FILENAME = 'helmLib.json';
+
+import {IMonomerLib, MonomerWorks, readLibrary} from '@datagrok-libraries/bio';
 
 export const _package = new DG.Package();
 
@@ -26,9 +38,9 @@ export function getMonomerLib() {
 //name: Sequence Translator
 //tags: app
 export async function sequenceTranslator(): Promise<void> {
-  monomerLib = await readLibrary(LIB_PATH, 'helmLib.json');
+  monomerLib = await readLibrary(LIB_PATH, DEFAULT_LIB_FILENAME);
 
-  if (monomerWorks == null)
+  if (monomerWorks === null)
     monomerWorks = new MonomerWorks(monomerLib);
 
   const windows = grok.shell.windows;
@@ -36,22 +48,25 @@ export async function sequenceTranslator(): Promise<void> {
   windows.showToolbox = false;
   windows.showHelp = false;
 
-  let urlParams: URLSearchParams = new URLSearchParams(window.location.search);
-  let mainSeq: string = 'fAmCmGmAmCpsmU';
-  const v = grok.shell.newView('Sequence Translator', []);
-  v.box = true;
-  const tc = ui.tabControl({
-    'MAIN': await mainView((seq) => {
+  let urlParams = new URLSearchParams(window.location.search);
+
+  let mainSeq: string = DEFAULT_SEQUENCE;
+  const view = grok.shell.newView(SEQUENCE_TRANSLATOR, []);
+  view.box = true;
+
+  const tabControl = ui.tabControl({
+    [MAIN]: await getMainTab((seq) => {
       mainSeq = seq;
       urlParams = new URLSearchParams();
       urlParams.set('seq', mainSeq);
       updatePath();
     }),
-    'AXOLABS': defineAxolabsPattern(),
-    'SDF': saveSenseAntiSense(),
+    [AXOLABS]: getAxolabsTab(),
+    [SDF]: getSdfTab(),
   });
-  tc.onTabChanged.subscribe((value) => {
-    if (tc.currentPane.name != 'MAIN')
+
+  tabControl.onTabChanged.subscribe(() => {
+    if (tabControl.currentPane.name !== MAIN)
       urlParams.delete('seq');
     else
       urlParams.set('seq', mainSeq);
@@ -61,17 +76,17 @@ export async function sequenceTranslator(): Promise<void> {
   function updatePath() {
     const urlParamsTxt: string = Object.entries(urlParams)
       .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
-    v.path = '/apps/SequenceTranslator/SequenceTranslator' + `/${tc.currentPane.name}/?${urlParamsTxt}`;
+    view.path = '/apps/SequenceTranslator/SequenceTranslator' + `/${tabControl.currentPane.name}/?${urlParamsTxt}`;
   }
 
   const pathParts: string[] = window.location.pathname.split('/');
   if (pathParts.length >= 5) {
     const tabName: string = pathParts[5];
-    tc.currentPane = tc.getPane(tabName);
+    tabControl.currentPane = tabControl.getPane(tabName);
   }
 
-  v.append(tc);
-  console.debug('SequenceTranslator: app sequenceTranslator() ' + `v.path='${v.path}', v.basePath='${v.basePath}'.`);
+  view.append(tabControl);
+  // console.debug('SequenceTranslator: app sequenceTranslator() ' + `view.path='${view.path}', view.basePath='${view.basePath}'.`);
 }
 
 //tags: autostart
@@ -82,7 +97,7 @@ export async function autostartST() {
 //name: oligoSdFileApp
 //description: Test/demo app for oligoSdFile
 export async function oligoSdFileApp() {
-  console.debug('SequenceTranslator: package.ts oligoSdFileApp()');
+  // console.debug('SequenceTranslator: package.ts oligoSdFileApp()');
 
   const pi = DG.TaskBarProgressIndicator.create('open oligoSdFile app');
   try {

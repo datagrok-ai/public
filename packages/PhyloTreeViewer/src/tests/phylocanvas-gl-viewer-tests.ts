@@ -1,15 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import {after, before, category, test, expect, expectArray, expectObject} from '@datagrok-libraries/utils/src/test';
-import {_package} from '../package-test';
 import {newickToDf} from '../utils';
-import {PhylocanvasGlViewer} from '../viewers/phylocanvas-gl-viewer';
+import {IPhylocanvasGlViewer} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
+
+import {_package} from '../package-test';
 
 category('phylocanvasGlViewer', () => {
-
   let viewList: DG.ViewBase[];
   let dfList: DG.DataFrame[];
   let currentView: DG.ViewBase;
@@ -24,7 +23,6 @@ category('phylocanvasGlViewer', () => {
     viewList.forEach((v) => { v.close(); });
     dfList.forEach((df) => { grok.shell.closeTable(df); });
     grok.shell.v = currentView;
-
   });
 
   test('open', async () => {
@@ -37,14 +35,14 @@ category('phylocanvasGlViewer', () => {
 
     const tv = grok.shell.addTableView(treeDf, DG.DOCK_TYPE.FILL);
 
-    const viewer: bio.IPhylocanvasGlViewer = (await treeDf.plot.fromType('PhylocanvasGl', {
+    const viewer: IPhylocanvasGlViewer = (await treeDf.plot.fromType('PhylocanvasGl', {
       interactive: true,
       alignLabels: true,
       showLabels: true,
       showLeafLabels: true,
       padding: 0,
       treeToCanvasRatio: 1,
-    })) as unknown as bio.IPhylocanvasGlViewer;
+    })) as unknown as IPhylocanvasGlViewer;
 
     const viewerOnAfterRenderPromise = new Promise<void>((resolve, reject) => {
       try {

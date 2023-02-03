@@ -11,29 +11,47 @@ category('Dapi: functions.calls', async () => {
   test('save', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();
-
+    funcCall.newId();
     const savedFuncCall = await GDF.calls.save(funcCall);
     expect(savedFuncCall.inputs['x'], funcCall.inputs['x']);
+  });
+
+  test('save options', async () => {
+    const func: DG.Func = await grok.functions.eval('Sin');
+    const funcCall = await func.prepare({x: xValue}).call();
+    funcCall.newId();
+    funcCall.options['testName'] = 'testValue';
+    const savedFuncCall = await GDF.calls.save(funcCall);
+    expect(savedFuncCall.options['testName'], 'testValue');
   });
 
   test('list', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();
-
+    funcCall.newId();
     await GDF.calls.save(funcCall);
     const loadedFuncCalls = await GDF.calls.filter(`func.id="${funcCall.func.id}"`).list();
     expect(loadedFuncCalls.some((loadedCall) => loadedCall.id === funcCall.id), true);
   });
 
-  test('load', async () => {
+  test('find', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();
-
+    funcCall.newId();
     await GDF.calls.save(funcCall);
     const loadedFuncCall = await GDF.calls.find(funcCall.id);
     expect(loadedFuncCall.inputs['x'], xValue);
   });
 
+  test('find options', async () => {
+    const func: DG.Func = await grok.functions.eval('Sin');
+    const funcCall = await func.prepare({x: xValue}).call();
+    funcCall.newId();
+    funcCall.options['testName'] = 'testValue';
+    await GDF.calls.save(funcCall);
+    const loadedFuncCall = await GDF.calls.include('options').find(funcCall.id);
+    expect(loadedFuncCall.options['testName'], 'testValue');
+  });
 
   test('delete', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');

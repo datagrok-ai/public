@@ -6,13 +6,12 @@ import $ from 'cash-dom';
 import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
 import {PeptidesModel} from '../model';
-import {isGridCellInvalid} from '../utils/misc';
 
 export class SARViewerBase extends DG.JsViewer {
   tempName!: string;
   _viewerGrid!: DG.Grid;
   sourceGrid!: DG.Grid;
-  model!: PeptidesModel;
+  _model!: PeptidesModel;
   isPropertyChanging: boolean = false;
   _isVertical = false;
 
@@ -29,10 +28,15 @@ export class SARViewerBase extends DG.JsViewer {
     this._viewerGrid = grid;
   }
 
+  get model(): PeptidesModel {
+    this._model ??= PeptidesModel.getInstance(this.dataFrame);
+    return this._model;
+  }
+
   onTableAttached(): void {
     super.onTableAttached();
     this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
-    this.model = PeptidesModel.getInstance(this.dataFrame);
+    // this.model = PeptidesModel.getInstance(this.dataFrame);
     this.subs.push(this.model.onMutationCliffsSelectionChanged.subscribe(() => this.viewerGrid.invalidate()));
     this.helpUrl = '/help/domains/bio/peptides.md';
   }
@@ -80,9 +84,16 @@ export class SARViewerBase extends DG.JsViewer {
         switchHost = ui.divH([mutationCliffsMode.root, invariantMapMode.root], {id: 'pep-viewer-title'});
         $(switchHost).css('width', 'auto').css('align-self', 'center');
       }
+      const tips: HTMLElement = ui.iconFA('question');
+      ui.tooltip.bind(tips,
+        () => ui.divV([ui.divText('Color intensity - p-value'), ui.divText('Circle size - Mean difference')]));
+
+      $(tips).addClass('pep-help-icon');
+
       const viewerRoot = this.viewerGrid.root;
       viewerRoot.style.width = 'auto';
-      this.root.appendChild(ui.divV([switchHost, viewerRoot]));
+      const header = ui.divH([switchHost, tips], {style: {alignSelf: 'center', lineHeight: 'normal'}});
+      this.root.appendChild(ui.divV([header, viewerRoot]));
     }
     this.viewerGrid?.invalidate();
   }
@@ -143,13 +154,14 @@ export class MonomerPosition extends SARViewerBase {
     this.viewerGrid.onCellTooltip((cell: DG.GridCell, x: number, y: number) => showTooltip(cell, x, y, this.model));
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
-      if (isGridCellInvalid(gridCell) || gridCell!.tableColumn!.name == C.COLUMNS_NAMES.MONOMER)
+      if (!gridCell?.isTableCell || gridCell?.tableColumn?.name == C.COLUMNS_NAMES.MONOMER)
         return;
 
       const position = gridCell!.tableColumn!.name;
       const aar = monomerCol.get(gridCell!.tableRowIndex!);
       chooseAction(aar, position, ev.shiftKey, this.model.isInvariantMap, this.model);
       this.viewerGrid.invalidate();
+      this.model.fireBitsetChanged();
     });
     this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(this.model.monomerPositionDf, this.model));
 
@@ -199,7 +211,7 @@ export class MostPotentResiduesViewer extends SARViewerBase {
     pValGridCol.format = '#.000';
     pValGridCol.name = 'P-value';
     const monomerCol = this.model.mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.MONOMER);
-    const positionCol = this.model.mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.POSITION);
+    const positionCol: DG.Column<number> = this.model.mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.POSITION);
 
     // Setting Monomer column renderer
     CR.setAARRenderer(monomerCol, this.model.alphabet);
@@ -207,14 +219,15 @@ export class MostPotentResiduesViewer extends SARViewerBase {
     this.viewerGrid.onCellTooltip((cell: DG.GridCell, x: number, y: number) => showTooltip(cell, x, y, this.model));
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
-      if (isGridCellInvalid(gridCell) || gridCell!.tableColumn!.name != C.COLUMNS_NAMES.MEAN_DIFFERENCE)
+      if (!gridCell?.isTableCell || gridCell!.tableColumn!.name != C.COLUMNS_NAMES.MEAN_DIFFERENCE)
         return;
 
       const tableRowIdx = gridCell!.tableRowIndex!;
       const position = positionCol.get(tableRowIdx);
       const aar = monomerCol.get(tableRowIdx);
-      chooseAction(aar, position, ev.shiftKey, false, this.model);
+      chooseAction(aar, position!.toFixed(), ev.shiftKey, false, this.model);
       this.viewerGrid.invalidate();
+      this.model.fireBitsetChanged();
     });
     this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(this.model.mostPotentResiduesDf, this.model));
     const mdCol: DG.GridColumn = this.viewerGrid.col(C.COLUMNS_NAMES.MEAN_DIFFERENCE)!;
@@ -227,7 +240,7 @@ export class MostPotentResiduesViewer extends SARViewerBase {
 function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvariantMap?: boolean,
   colorCol?: DG.Column<number>, colorAgg?: DG.AggregationType): void {
   const renderColNames = [...model.splitSeqDf.columns.names(), C.COLUMNS_NAMES.MEAN_DIFFERENCE];
-  const mdCol = model.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
+  // const mdCol = model.monomerPositionStats.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
   const canvasContext = args.g;
   const bound = args.bounds;
 
@@ -241,49 +254,52 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
   if (cell.isRowHeader && cell.gridColumn.visible) {
     cell.gridColumn.visible = false;
     args.preventDefault();
+    canvasContext.restore();
     return;
   }
 
   const tableColName = cell.tableColumn?.name;
   const tableRowIndex = cell.tableRowIndex!;
-  if (cell.isTableCell && tableColName && tableRowIndex !== null && renderColNames.indexOf(tableColName) !== -1) {
-    const cellValue: number | null = cell.cell.value;
-
-    if (cellValue && cellValue !== DG.INT_NULL && cellValue !== DG.FLOAT_NULL) {
-      const gridTable = cell.grid.table;
-      const currentPosition: string = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ?
-        tableColName : gridTable.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
-      const currentAAR: string = gridTable.get(C.COLUMNS_NAMES.MONOMER, tableRowIndex);
-
-      if (isInvariantMap) {
-        const value: number = model.monomerPositionStatsDf
-          .groupBy([C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.MONOMER, C.COLUMNS_NAMES.COUNT])
-          .where(`${C.COLUMNS_NAMES.POSITION} = ${currentPosition} and ${C.COLUMNS_NAMES.MONOMER} = ${currentAAR}`)
-          .aggregate().get(C.COLUMNS_NAMES.COUNT, 0);
-        const positionCol = model.df.getCol(currentPosition);
-        const positionColData = positionCol.getRawData();
-        const positionColCategories = positionCol.categories;
-
-        const colorColData = colorCol!.getRawData();
-        const colorDataList: number[] = [];
-        for (let i = 0; i < positionColData.length; ++i) {
-          if (positionColCategories[positionColData[i]] === currentAAR)
-            colorDataList.push(colorColData[i]);
-        }
-        const cellColorDataCol = DG.Column.fromList('double', '', colorDataList);
-        const colorColStats = colorCol!.stats;
-
-        const color = DG.Color.scaleColor(cellColorDataCol.aggregate(colorAgg!), colorColStats.min, colorColStats.max);
-        CR.renderInvaraintMapCell(
-          canvasContext, currentAAR, currentPosition, model.invariantMapSelection, value, bound, color);
-      } else {
-        CR.renderMutationCliffCell(canvasContext, currentAAR, currentPosition, model.monomerPositionStatsDf,
-          mdCol, bound, cellValue, model.mutationCliffsSelection, model.substitutionsInfo,
-          model.settings.isBidirectional);
-      }
-    }
-    args.preventDefault();
+  if (!cell.isTableCell || renderColNames.indexOf(tableColName!) == -1) {
+    canvasContext.restore();
+    return;
   }
+
+  const gridTable = cell.grid.table;
+  const currentMonomer: string = gridTable.get(C.COLUMNS_NAMES.MONOMER, tableRowIndex);
+  const currentPosition: string = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ? tableColName :
+    gridTable.get(C.COLUMNS_NAMES.POSITION, tableRowIndex).toFixed();
+  const currentPosStats = model.monomerPositionStats[currentPosition];
+
+  if (!currentPosStats[currentMonomer]) {
+    args.preventDefault();
+    canvasContext.restore();
+    return;
+  }
+
+  if (isInvariantMap) {
+    const value = currentPosStats[currentMonomer].count;
+    const positionCol = model.df.getCol(currentPosition);
+    const positionColData = positionCol.getRawData();
+    const positionColCategories = positionCol.categories;
+
+    const colorColData = colorCol!.getRawData();
+    const colorDataList: number[] = [];
+    for (let i = 0; i < positionColData.length; ++i) {
+      if (positionColCategories[positionColData[i]] === currentMonomer)
+        colorDataList.push(colorColData[i]);
+    }
+    const cellColorDataCol = DG.Column.fromList('double', '', colorDataList);
+    const colorColStats = colorCol!.stats;
+
+    const color = DG.Color.scaleColor(cellColorDataCol.aggregate(colorAgg!), colorColStats.min, colorColStats.max);
+    CR.renderInvaraintMapCell(
+      canvasContext, currentMonomer, currentPosition, model.invariantMapSelection, value, bound, color);
+  } else {
+    CR.renderMutationCliffCell(canvasContext, currentMonomer, currentPosition, model.monomerPositionStats, bound,
+      model.mutationCliffsSelection, model.substitutionsInfo, model.settings.isBidirectional);
+  }
+  args.preventDefault();
   canvasContext.restore();
 }
 
@@ -299,9 +315,9 @@ function showTooltip(cell: DG.GridCell, x: number, y: number, model: PeptidesMod
 
     if (tableCol.semType == C.SEM_TYPES.MONOMER)
       model.showMonomerTooltip(currentAAR, x, y);
-    else if (cell.cell.value && renderColNames.includes(tableColName!)) {
+    else if (renderColNames.includes(tableColName!)) {
       const currentPosition = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ? tableColName :
-        table.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
+        table.get(C.COLUMNS_NAMES.POSITION, tableRowIndex).toFixed();
 
       model.showTooltipAt(currentAAR, currentPosition, x, y);
     }

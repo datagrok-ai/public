@@ -7,7 +7,7 @@ SELECT v_id,
        surface_cdr_hydrophobicity,
        positive_cdr_charge,
        negative_cdr_charge,
-       SFvCSP
+       "SFvCSP"
 FROM mlb.mlb_main
 --end
 
@@ -70,10 +70,9 @@ SELECT ag.id,
        ag.antigen,
        ag.antigen_ncbi_id,
        ag.antigen_gene_symbol,
+       (SELECT count(*) FROM mlb.antibody2antigen as ab2ag WHERE ab2ag.antigen = ag.antigen)                  as vrs,
        (SELECT count(*) FROM mlb.tree2 as tr2 WHERE tr2.antigen = ag.antigen AND tr2."CLONE" <> 'REPERTOIRE') as clones
-FROM mlb.antigen as ag
-         JOIN mlb.antibody2antigen as ab2ag ON ab2ag.antigen = ag.antigen
-GROUP BY ag.id, ag.antigen;
+FROM mlb.antigen as ag;
 --end
 
 --name: listSchemes

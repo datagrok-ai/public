@@ -1,7 +1,6 @@
-<!-- TITLE: OpenAPI -->
-<!-- SUBTITLE: -->
-
-# OpenAPI
+---
+title: "OpenAPI"
+---
 
 [OpenAPI](https://swagger.io/docs/specification/about/), also known as swagger, is a popular format that describes the
 structure of the server APIs so that machines can read the document and use the service.
@@ -10,7 +9,7 @@ Datagrok integrates with OpenAPI really well. Once a swagger file is imported
 (you can simply drag-and-drop a `yaml` or `json` file into the app), its content gets translated to
 [data connections](data-connection.md),
 [queries](data-query.md), and
-[functions](../datagrok/functions/function.md). All of them may be combined and used in [data jobs](data-job.md),
+[functions](../datagrok/functions/functions.md). All of them may be combined and used in [data jobs](data-job.md),
 [calculations](../compute/compute.md),
 [info panels](../discover/info-panels.md), executed from [console](../datagrok/navigation.md#console), etc.
 
@@ -163,8 +162,8 @@ paths:
 Swagger format supports direct definition of parameters within each path and definition of parameters at the entire file
 level and their further use in any other pathes.
 
-Datagrok perfectly understands both options or their combination. In our AirNow example, the ```date``` parameter is
-defined inside the path and the rest of parameters are placed to ```parameters:``` section at the level of entire file.
+Datagrok perfectly understands both options or their combination. In our AirNow example, the `date` parameter is
+defined inside the path and the rest of parameters are placed to `parameters:` section at the level of entire file.
 
 It is important to mention that Datagrok can work with both parameterized queries with and queries without parameters.
 
@@ -177,7 +176,7 @@ In addition, there are no restrictions in Datagrok on the use of parameters in d
 ## Credentials
 
 Your access parameters to an OpenAPI service are not defined inside the Swagger file. Swagger file only describes the
-type and access parameters. The ```"securityDefinitions:``` section is used to determine the type and access parameters.
+type and access parameters. The `"securityDefinitions:` section is used to determine the type and access parameters.
 
 In the AirNow example, the `api_key` type is used with a parameter named `"API_KEY"` (external service itself provides
 the parameter naming requirement):
@@ -203,7 +202,7 @@ connection browser, special "Web Services" view, etc.) and open settings dialog 
 ![AirNow connection](../uploads/features/swagger-security-definitions.png "AirNow")
 
 Sometimes services don't require secret access. In situations like this, just don't specify the appropriate
-block ```securityDefinitions:``` inside the Swagger file. An example of a Swagger file without security definitions can
+block `securityDefinitions:` inside the Swagger file. An example of a Swagger file without security definitions can
 be found in
 our [public repository](https://github.com/datagrok-ai/public/blob/master/packages/Swaggers/swaggers/countries.yaml)
 .
@@ -217,7 +216,7 @@ Once its Swagger file is imported (which takes a second), the following connecti
 
 ![AirNow connection](../uploads/features/open-api-airnow-connection.png "AirNow")
 
-Click on the query to bring up its details in the property panel on the right:
+Click on the query to bring up its details in the context panel on the right:
 
 ![AirNow query](../uploads/features/open-api-airnow-query.png "AirNow")
 
@@ -291,7 +290,7 @@ steps can help.
 
 ## Videos
 
-[![Open Api](../uploads/youtube/data_access.png "Open on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8&t=3121s)
+[![Open Api](../uploads/youtube/data_access.png "Open on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8\&t=3121s)
 
 See also:
 

@@ -33,7 +33,7 @@ As with text extraction, this functionality is used in the [Translation](#neural
 The package creates a new info panel for text files. It uses [AWS Translate](https://aws.amazon.com/translate/) service, which supports over [70 languages](https://docs.aws.amazon.com/translate/latest/dg/what-is.html#what-is-languages).
 
 To translate a text, navigate to the file browser and select one of the demo files (see the `texts` folder). Alternatively, open your personal folder and drag-and-drop your file to the platform. Now, whenever you click
-on the file, you will see a suggestion to translate it in the property panel on the right.
+on the file, you will see a suggestion to translate it in the context panel on the right.
 
 ![Translate text files](./gif/nlp-machine-translation.gif)
 

@@ -40,3 +40,6 @@ Sessionx.vim
 tags
 [._]*.un~
 test-report.html
+
+# webpack-bundle-analyzer
+stats.json

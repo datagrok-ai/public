@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import { filter, map } from 'rxjs/operators';
-import { Tutorial } from '../../../tutorial';
+import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 import { interval } from 'rxjs';
 
 
@@ -64,7 +64,7 @@ export class EmbeddedViewersTutorial extends Tutorial {
         map((_) => trellis.props.viewerType),
         filter((t: string) => t === DG.VIEWER.SCATTER_PLOT)),
       $(trellis!.root).find('.d4-combo-popup')[0], 'This time, use the viewer type selector ' +
-      'in the opened Trellis plot. You can also set it from the property panel.');
+      'in the opened Trellis plot. You can also set it from the context panel.');
 
     await this.action('Open the inner plot properties and set Color to AGE',
       interval(1000).pipe(
@@ -72,6 +72,6 @@ export class EmbeddedViewersTutorial extends Tutorial {
         filter((name: string | undefined) => name === 'AGE')),
       $(trellis!.root).find('.grok-font-icon-settings.d4-viewer-icon')[0],
       'Click on the gear icon to edit the scatter plot properties. ' +
-      'Find the <b>Color</b> property within the <b>Data</b> section.');
+      'Find the <b>Color</b> property within the <b>Color</b> section.');
   }
 }

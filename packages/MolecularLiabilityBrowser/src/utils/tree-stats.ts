@@ -1,4 +1,5 @@
-import * as bio from '@datagrok-libraries/bio';
+import {Utils} from '@phylocanvas/phylocanvas.gl';
+import {parseNewick, PhylocanvasTreeNode} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 export const mlbTreeNodeRe = /([^|,:()]+)\|([^|,:()]+)\|([^|,:()]+)\|([^|,:()]+)/g;
 
@@ -63,8 +64,8 @@ export class TreeAnalyzer {
    * Traverses the tree and optionally calls node observing callbacks.
    * @param {PhylocanvasTreeNode} root Root of the tree.
    */
-  protected _traverseTree(root: bio.PhylocanvasTreeNode) {
-    const traversal: PhylocanvasTreeTraversal = bio.Utils.treeTraversal(root);
+  protected _traverseTree(root: PhylocanvasTreeNode) {
+    const traversal: PhylocanvasTreeTraversal = Utils.treeTraversal(root);
     const nodes = traversal.postorderTraversal;
 
     for (const node of nodes) {
@@ -81,7 +82,7 @@ export class TreeAnalyzer {
    * @param {string[]} selectedIds List of nodes id to count.
    * @return {TreeStats} Statistics.
    */
-  private _calcStats(root: bio.PhylocanvasTreeNode, selectedIds: string[]): TreeStats {
+  private _calcStats(root: PhylocanvasTreeNode, selectedIds: string[]): TreeStats {
     return {
       totalLeaves: root.totalLeaves,
       leavesIntersected: selectedIds.length,
@@ -98,7 +99,7 @@ export class TreeAnalyzer {
     let stats = _nullStats;
 
     if (TreeAnalyzer.newickRegEx.test(nwk.trim())) {
-      const tree = bio.Newick.parse_newick(nwk);
+      const tree = parseNewick(nwk) as PhylocanvasTreeNode;
 
       this._isect.reset();
       this._traverseTree(tree);
@@ -163,7 +164,7 @@ class NodeIdsIntersection {
    * @param {number} treeIndex Index of this node's tree.
    * @return {PhylocanvasTreeNode} Modified node.
    */
-  apply(node: bio.PhylocanvasTreeNode, treeIndex: number) {
+  apply(node: PhylocanvasTreeNode, treeIndex: number) {
     const nodeVId: string = getVId(node.id);
     if (node.isLeaf && this._items.has(nodeVId))
       this._isect.push(node.id);
@@ -203,13 +204,13 @@ const _nullStats: TreeStats = {
  */
 interface PhylocanvasTreeTraversal {
   nodeById: TreeNodeTraverseInfo;
-  rootNode: bio.PhylocanvasTreeNode;
-  postorderTraversal: bio.PhylocanvasTreeNode[];
-  preorderTraversal: bio.PhylocanvasTreeNode[];
+  rootNode: PhylocanvasTreeNode;
+  postorderTraversal: PhylocanvasTreeNode[];
+  preorderTraversal: PhylocanvasTreeNode[];
 }
 
 type TreeStatsKeys = keyof TreeStats;
 // eslint-disable-next-line no-unused-vars
 type TreeStatColumns = { [key in TreeStatsKeys]: number[] };
-type TreeNodeTraverseInfo = { [id: string]: bio.PhylocanvasTreeNode };
-type TreeNodeInspector = (node: bio.PhylocanvasTreeNode, treeIndex: number) => bio.PhylocanvasTreeNode;
+type TreeNodeTraverseInfo = { [id: string]: PhylocanvasTreeNode };
+type TreeNodeInspector = (node: PhylocanvasTreeNode, treeIndex: number) => PhylocanvasTreeNode;

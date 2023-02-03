@@ -3,9 +3,9 @@
  * */
 
 import * as DG from 'datagrok-api/dg';
-import {drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
+import {drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {isMolBlock} from '../utils/convert-notation-utils';
+import {aromatizeMolBlock} from "../utils/aromatic-utils";
 
 interface IMolInfo {
   mol: RDMol | null; // null when molString is invalid?
@@ -51,16 +51,23 @@ M  END
   rdKitModule: RDModule;
   canvasCounter: number;
   molCache: DG.LruCache<String, IMolInfo> = new DG.LruCache<String, IMolInfo>();
-  rendersCache: DG.LruCache<String, OffscreenCanvas> = new DG.LruCache<String, OffscreenCanvas>();
+  rendersCache: DG.LruCache<String, ImageData> = new DG.LruCache<String, ImageData>();
+  canvasReused: OffscreenCanvas;
 
   constructor(rdKitModule: RDModule) {
     super();
     this.rdKitModule = rdKitModule;
     this.canvasCounter = 0;
-
+    this.canvasReused = new OffscreenCanvas(this.defaultWidth, this.defaultHeight);
     this.molCache.onItemEvicted = function(obj: {[_ : string]: any}) {
       obj.mol?.delete();
     };
+  }
+
+  ensureCanvasSize(w: number, h: number) : OffscreenCanvas {
+    if (this.canvasReused.width < w || this.canvasReused.height < h)
+      this.canvasReused = new OffscreenCanvas(Math.max(this.defaultWidth, w), Math.max(this.defaultHeight, h));
+    return this.canvasReused;
   }
 
   get name(): string {return 'RDKit cell renderer';}
@@ -73,7 +80,16 @@ M  END
     let mol: RDMol | null = null;
     let substruct = {};
     try {
-      mol = this.rdKitModule.get_mol(molString, JSON.stringify(details));
+      if ((details as any).isSubstructure) {
+        if (molString.includes(' H ') || molString.includes('V3000')) {
+          mol = this.rdKitModule.get_mol(molString, '{"mergeQueryHs":true}');
+        } else {
+          const aromaMolString = aromatizeMolBlock(molString)
+          mol = this.rdKitModule.get_qmol(aromaMolString);
+        }
+     }
+      else
+        mol = this.rdKitModule.get_mol(molString, JSON.stringify(details));
       if (!mol.is_valid()) {
         mol.delete();
         mol = null;
@@ -105,9 +121,9 @@ M  END
       try {
         if (mol.is_valid()) {
           let molHasOwnCoords = mol.has_coords();
-          const scaffoldIsMolBlock = isMolBlock(scaffoldMolString);
+          const scaffoldIsMolBlock = DG.chem.isMolBlock(scaffoldMolString);
           if (scaffoldIsMolBlock) {
-            const rdKitScaffoldMol = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false, {mergeQueryHs: true}).mol;
+            const rdKitScaffoldMol = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false, {mergeQueryHs: true, isSubstructure: true}).mol;
             if (rdKitScaffoldMol && rdKitScaffoldMol.is_valid()) {
               rdKitScaffoldMol.normalize_depiction(0);
               if (molHasOwnCoords)
@@ -174,41 +190,33 @@ M  END
 
   _rendererGetOrCreate(
     width: number, height: number, molString: string, scaffoldMolString: string,
-    highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean): OffscreenCanvas {
+    highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean): ImageData {
     const fetchMolObj = this._fetchMol(molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords);
     const rdKitMol = fetchMolObj.mol;
     const substruct = fetchMolObj.substruct;
 
-    const canvas = new OffscreenCanvas(width, height);
+    const canvas = this.ensureCanvasSize(width, height);//new OffscreenCanvas(width, height);
+    const ctx = canvas.getContext('2d', {willReadFrequently : true})!;
     this.canvasCounter++;
     if (rdKitMol != null)
       drawRdKitMoleculeToOffscreenCanvas(rdKitMol, width, height, canvas, highlightScaffold ? substruct : null);
     else {
       // draw a crossed rectangle
-      const ctx = canvas.getContext('2d')!;
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = '#EFEFEF';
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(width, height);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(width, 0);
-      ctx.lineTo(0, height);
-      ctx.stroke();
+      drawErrorCross(ctx, width, height);
     }
-    return canvas;
+
+    return ctx.getImageData(0, 0, width, height);
   }
 
   _fetchRender(
     width: number, height: number, molString: string, scaffoldMolString: string,
-    highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean): OffscreenCanvas {
+    highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean): ImageData {
     const name = width + ' || ' + height + ' || ' +
       molString + ' || ' + scaffoldMolString + ' || ' + highlightScaffold + ' || ' +
       molRegenerateCoords + ' || ' + scaffoldRegenerateCoords;
-    return this.rendersCache.getOrCreate(name, (_: any) =>
-      this._rendererGetOrCreate(width, height,
-        molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords));
+
+    return this.rendersCache.getOrCreate(name, (_: any) => this._rendererGetOrCreate(width, height,
+      molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords));
   }
 
   _drawMolecule(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,
@@ -221,11 +229,11 @@ M  END
       w = h - w;
       h -= w;
     }
-    const offscreenCanvas = this._fetchRender(w, h, molString, scaffoldMolString,
+    const imageData = this._fetchRender(w, h, molString, scaffoldMolString,
       highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords);
 
     if (vertical) {
-      const ctx = onscreenCanvas.getContext('2d')!;
+      const ctx = onscreenCanvas.getContext('2d', {willReadFrequently : true})!;
       ctx.save();
       const scl = ctx.getTransform();
       ctx.resetTransform();
@@ -233,11 +241,12 @@ M  END
       ctx.rotate(Math.PI / 2);
       if (scl.m11 < 1 || scl.m22 < 1)
         ctx.scale(scl.m11, scl.m22);
-      ctx.drawImage(offscreenCanvas, 0, - (h));
+      const bitmap = this.canvasReused.transferToImageBitmap();
+      ctx.drawImage(bitmap, 0, - (h), w, h);
       ctx.restore();
     } else {
-      const image = offscreenCanvas.getContext('2d')!.getImageData(0, 0, w, h);
-      onscreenCanvas.getContext('2d')!.putImageData(image, x, y);
+      //const image = offscreenCanvas.getContext('2d')!.getImageData(0, 0, w, h);
+      onscreenCanvas.getContext('2d', {willReadFrequently : true})!.putImageData(imageData, x, y);
     }
   }
 

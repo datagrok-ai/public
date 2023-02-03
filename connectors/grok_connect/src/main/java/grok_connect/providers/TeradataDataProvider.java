@@ -40,7 +40,7 @@ public class TeradataDataProvider extends JdbcDataProvider {
     }
 
     public String getSchemasSql(String db) {
-        return "SELECT DISTINCT databaseName as table_schema FROM DBC.TablesV ORDER BY databaseName";
+        return "SELECT DISTINCT databaseName as table_schema FROM DBC.TablesV";
     }
 
     public String getSchemaSql(String db, String schema, String table) {

@@ -14,6 +14,8 @@ type PropertyGetter = (a: object) => any;
 type PropertySetter = (a: object, value: any) => void;
 type ValueValidator<T> = (value: T) => string;
 type DataConnectionDBParams = {dataSource: string, server: string, db: string, login?: string, password?: string};
+type DataConnectionParams = {server: string, db: string, port: number, schema: string, indexFiles: boolean,
+  cacheResults: boolean, cacheInvalidateSchedule: boolean};
 type FieldPredicate = {field: string, pattern: string};
 type FieldOrder = {field: string, asc?: boolean};
 type GroupAggregation = {aggType: string, colName: string, resultColName?: string, function?: string};
@@ -63,13 +65,13 @@ export class Entity {
   /** Who created entity **/
   get author(): User { return toJs(api.grok_Entity_Get_Author(this.dart)); }
 
-  /** Entity properties */
-  getProperties(): Promise<Map<string, any>> {
+  /** Gets entity properties */
+  getProperties(): Promise<{[index: string]: any}> {
     return new Promise((resolve, reject) => api.grok_EntitiesDataSource_GetProperties(grok.dapi.entities.dart, this.dart, (p: any) => resolve(p), (e: any) => reject(e)));
   }
 
   /** Sets entity properties */
-  setProperties(props: Map<string, any>): Promise<any> {
+  setProperties(props: {[index: string]: any}): Promise<any> {
     return new Promise((resolve, reject) => api.grok_EntitiesDataSource_SetProperties(grok.dapi.entities.dart, this.dart, props, (_: any) => resolve(_), (e: any) => reject(e)));
   }
 
@@ -169,11 +171,12 @@ export class UserSession extends Entity {
  * */
 export class Func extends Entity {
   public aux: any;
-  public options: any;
+  public options: { [key: string]: string; };
 
   constructor(dart: any) {
     super(dart);
     this.aux = new MapProxy(api.grok_Func_Get_Aux(this.dart));
+    // @ts-ignore
     this.options = new MapProxy(api.grok_Func_Get_Options(this.dart));
   }
 
@@ -183,8 +186,10 @@ export class Func extends Entity {
 
   get path(): string { return api.grok_Func_Get_Path(this.dart); }
 
+  /** Help URL. */
   get helpUrl(): string { return api.grok_Func_Get_HelpUrl(this.dart); }
 
+  /** A package this function belongs to. */
   get package(): Package { return api.grok_Func_Get_Package(this.dart); }
 
   /** Returns {@link FuncCall} object in a stand-by state */
@@ -319,11 +324,11 @@ export class Project extends Entity {
   }
 
   removeLink(entity: Entity): void {
-    api.grok_Project_AddRelation(this.dart, entity.dart);
+    api.grok_Project_RemoveRelation(this.dart, entity.dart);
   }
 
   removeChild(entity: Entity): void {
-    api.grok_Project_AddRelation(this.dart, entity.dart);
+    api.grok_Project_RemoveRelation(this.dart, entity.dart);
   }
 
 }
@@ -488,13 +493,15 @@ export class DataJob extends Func {
  * {@link https://datagrok.ai/help/access/data-connection}
  * */
 export class DataConnection extends Entity {
+  parameters: any;
   /** @constructs DataConnection */
   constructor(dart: any) {
     super(dart);
+    this.parameters = new MapProxy(api.grok_DataConnection_Get_Parameters(this.dart), 'parameters');
   }
 
   /** Collection of parameters: server, database, endpoint, etc. */
-  get parameters(): object { return api.grok_DataConnection_Parameters(this.dart); }
+  // get parameters(): DataConnectionParams { return api.grok_DataConnection_Parameters(this.dart); }
 
   /** Tests the connection, returns "ok" on success or an error message on error
    * @returns {Promise<string>}*/
@@ -570,6 +577,20 @@ export class TableInfo extends Entity {
   static fromDataFrame(t: DataFrame): TableInfo {return toJs(api.grok_DataFrame_Get_TableInfo(t.dart)); }
 
   get dataFrame(): DataFrame { return api.grok_TableInfo_Get_DataFrame(this.dart); }
+
+  get columns(): ColumnInfo[] { return api.grok_TableInfo_Get_Columns(this.dart); }
+}
+
+
+/** @extends Entity
+ * Represents a Column metadata
+ * */
+export class ColumnInfo extends Entity {
+
+  /** @constructs ColumnInfo */
+  constructor(dart: any) {
+    super(dart);
+  }
 
 }
 
@@ -977,7 +998,7 @@ export interface PropertyOptions {
   /** Custom editor (such as slider or text area) */
   editor?: string;
 
-  /** Corresponding category on the property panel */
+  /** Corresponding category on the context panel */
   category?: string;
 
   /** Value format */
@@ -1129,7 +1150,7 @@ export class Property {
   static fromOptions(options: PropertyOptions): Property { return Property.js(options.name!, options.type! as TYPE, options); }
 
   /** Registers the attached (dynamic) property for the specified type.
-   * It is editable via the property panel, and gets saved into the view layout as well.
+   * It is editable via the context panel, and gets saved into the view layout as well.
    * Property getter/setter typically uses Widget's "temp" property for storing the value. */
   static registerAttachedProperty(typeName: string, property: Property) {
     api.grok_Property_RegisterAttachedProperty(typeName, property.dart);

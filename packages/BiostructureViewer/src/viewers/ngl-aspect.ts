@@ -1,15 +1,18 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {PdbEntry} from '../pdb-entry.js';
+import * as NGL from 'NGL';
 
 // export let _package = new DG.Package();
 
-const getCircularReplacer = () => {
+const getCircularReplacer = (): (this: any, key: string, value: any) => any => {
   const seen = new WeakSet();
-  return (key, value) => {
+  return (key: string, value: any) => {
     if (typeof value === 'object' && value !== null) {
       if (seen.has(value)) {
+        //
         return;
       }
       seen.add(value);
@@ -39,7 +42,7 @@ export class NglAspect {
     this.entry = entry;
     this.repChoice = repChoice;
     this.selection = twinSelections;
-    //@ts-ignore
+
     this.stage = new NGL.Stage(nglHost);
     // let originalRender = this.stage.viewer.renderer.render;
     // this.stage.viewer.renderer.render = function(scene: any, camera: any) {
@@ -55,13 +58,13 @@ export class NglAspect {
     // .bind(this);
 
     const originalRender = this.stage.viewer.render;
-    this.stage.viewer.render = function() {
+    this.stage.viewer.render = () => {
       //@ts-ignore
       originalRender.bind(this.stage.viewer)();
-      console.log('ABABABABABABABABABABAB');
-      console.debug('JSON stage: ' + JSON.stringify(this.stage, getCircularReplacer()));
-    }
-      .bind(this);
+      console.debug('ABABABABABABABABABABAB');
+      //Getting JSON causes circular reference exception
+      //console.debug('JSON stage: ' + JSON.stringify(this.stage, getCircularReplacer()));
+    };
 
     // let listener = () => {
     //   let va = this.stage;

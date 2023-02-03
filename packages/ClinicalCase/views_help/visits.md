@@ -13,11 +13,11 @@ The domains can be selected/removed using `Domains` button on the ribbon panel.
 
 <img src="https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/img/visits_grid_1.gif" height="500" width='800'/>
 
-When selecting the cell you will see more detailed information about patient visit in a property panel. There is an expandable panel for each domain which contains rows from corresponding domain table.
+When selecting the cell you will see more detailed information about patient visit in a context panel. There is an expandable panel for each domain which contains rows from corresponding domain table.
 
 <img src="https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/img/visits_grid_2.gif" height="500" width='800'/>
 
-When selecting the column the property panel will show study visit summary such as total number of patients, min and max visit dates and some charts representing statistics for different domains:
+When selecting the column the context panel will show study visit summary such as total number of patients, min and max visit dates and some charts representing statistics for different domains:
 - pie chart for investigational product exposure
 - bar charts for new adverse events and concomitant medications since last visit
 - box plots with values distributions for laboratory and vital signs domains
@@ -27,6 +27,6 @@ When selecting the column the property panel will show study visit summary such 
 * **Heat maps**
 Intensity of color in a heat map represents number of events. Domain can be selected in a drop down list on a ribbon panel.
 Map can be sorted by treatment arm. 
-Selecting cell or column works as in grid regimen - corresponding property panel will appear. 
+Selecting cell or column works as in grid regimen - corresponding context panel will appear. 
 
 <img src="https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/img/visits_heatmap.gif" height="500" width='800'/>

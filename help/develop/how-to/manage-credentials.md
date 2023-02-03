@@ -1,6 +1,6 @@
-<!-- TITLE: Manage credentials -->
-
-# Working with credentials
+---
+title: "Manage credentials"
+---
 
 [Security credentials](../../govern/security.md#credentials) are used to gain access to external resources. For example,
 database connections typically require a pair of login and password, whereas web services normally expect a token or an

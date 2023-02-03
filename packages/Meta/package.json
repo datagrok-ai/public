@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.1.42",
+  "version": "3.1.95",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -142,6 +142,18 @@
         },
         "1.3.25": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.3.26": {
+          "datagrok-api": "^1.6.0"
+        },
+        "1.3.27": {
+          "datagrok-api": "^1.6.0"
+        },
+        "1.3.29": {
+          "datagrok-api": "^1.6.0"
+        },
+        "1.3.30": {
+          "datagrok-api": "^1.6.0"
         }
       },
       "description": "DevTools is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. Its purpose is to simplify and assist in the development of platform extensions.",
@@ -229,6 +241,15 @@
         },
         "1.1.7": {
           "datagrok-api": "^1.0.0"
+        },
+        "1.1.8": {
+          "datagrok-api": "^1.0.0"
+        },
+        "1.2.0": {
+          "datagrok-api": "^1.12.0"
+        },
+        "1.2.1": {
+          "datagrok-api": "^1.12.0"
         }
       },
       "description": "The package contains a collection of interactive materials helping users explore the [Datagrok](https://datagrok.ai) platform.",
@@ -237,7 +258,7 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Tutorials"
       },
-      "category": "Development"
+      "category": "General"
     },
     "chem": {
       "dependencies": {
@@ -369,6 +390,39 @@
         },
         "1.4.3": {
           "datagrok-api": "^1.10.2"
+        },
+        "1.4.8": {
+          "datagrok-api": "^1.10.2"
+        },
+        "1.4.10": {
+          "datagrok-api": "^1.10.2"
+        },
+        "1.4.11": {
+          "datagrok-api": "^1.10.2"
+        },
+        "1.4.15": {
+          "datagrok-api": "^1.11.2"
+        },
+        "1.4.16": {
+          "datagrok-api": "^1.11.2"
+        },
+        "1.4.17": {
+          "datagrok-api": "^1.11.2"
+        },
+        "1.4.18": {
+          "datagrok-api": "^1.11.2"
+        },
+        "1.4.20": {
+          "datagrok-api": "^1.11.2"
+        },
+        "1.4.21": {
+          "datagrok-api": "^1.11.2"
+        },
+        "1.4.23": {
+          "datagrok-api": "^1.11.2"
+        },
+        "1.4.24": {
+          "datagrok-api": "^1.11.2"
         }
       },
       "description": "Cheminformatics support: RDKit-based rendering, Molecule sketching, Feature based analysis",
@@ -418,6 +472,9 @@
           "datagrok-api": "^1.0.0"
         },
         "1.1.0": {
+          "datagrok-api": "^1.0.0"
+        },
+        "1.3.0": {
           "datagrok-api": "^1.0.0"
         }
       },
@@ -498,6 +555,9 @@
         },
         "1.0.16": {
           "datagrok-api": "^1.8.2"
+        },
+        "1.0.17": {
+          "datagrok-api": "^1.8.2"
         }
       },
       "description": "SequenceTranslator is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform, used to translate [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).",
@@ -565,7 +625,7 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/PowerPack"
       },
-      "category": "Development"
+      "category": "General"
     },
     "clinical-case": {
       "dependencies": {
@@ -588,6 +648,9 @@
           "datagrok-api": "^1.5.2"
         },
         "1.0.1": {
+          "datagrok-api": "^1.5.2"
+        },
+        "1.0.2": {
           "datagrok-api": "^1.5.2"
         }
       },
@@ -623,6 +686,9 @@
           "datagrok-api": "^1.9.1"
         },
         "1.1.4": {
+          "datagrok-api": "^1.9.1"
+        },
+        "1.1.5": {
           "datagrok-api": "^1.9.1"
         }
       },
@@ -740,6 +806,9 @@
         },
         "1.4.0": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.5.1": {
+          "datagrok-api": "^1.6.0"
         }
       },
       "description": "Provides advanced tools for analyzing collections of peptides.",
@@ -822,6 +891,9 @@
         },
         "1.0.5": {
           "datagrok-api": "^1.6.9"
+        },
+        "1.0.6": {
+          "datagrok-api": "^1.6.9"
         }
       },
       "description": "Calculates the following oligonucleotide properties: Length, Optical Density, NMoles, Mass, Molecular Weight, Extinction Coefficient (using nearest neighbour method)",
@@ -845,6 +917,9 @@
         },
         "1.0.1": {
           "datagrok-api": "^1.0.0"
+        },
+        "1.0.8": {
+          "datagrok-api": "^1.11.1"
         }
       },
       "description": "DrugBank is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
@@ -853,7 +928,7 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/DrugBank"
       },
-      "category": "Health"
+      "category": "Cheminformatics"
     },
     "grok-scripts": {
       "dependencies": {
@@ -903,6 +978,21 @@
         },
         "1.5.4": {
           "datagrok-api": "^1.8.1"
+        },
+        "1.5.5": {
+          "datagrok-api": "^1.8.1"
+        },
+        "1.5.6": {
+          "datagrok-api": "^1.8.1"
+        },
+        "1.5.7": {
+          "datagrok-api": "^1.8.1"
+        },
+        "1.5.8": {
+          "datagrok-api": "^1.8.1"
+        },
+        "1.5.9": {
+          "datagrok-api": "^1.8.1"
         }
       },
       "description": "js-api-tests is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
@@ -921,7 +1011,13 @@
         "1.0.2": {
           "datagrok-api": "^0.151.6"
         },
-        "1.0.3": {}
+        "1.0.3": {},
+        "1.0.4": {
+          "datagrok-api": "^1.12.0"
+        },
+        "1.0.5": {
+          "datagrok-api": "^1.12.0"
+        }
       },
       "description": "API Samples",
       "repository": {
@@ -1082,20 +1178,6 @@
       },
       "category": "Machine Learning"
     },
-    "seldon": {
-      "dependencies": {
-        "0.0.4": {
-          "datagrok-api": "latest"
-        }
-      },
-      "description": "Seldon is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It allows connecting to a [Seldon Cluster](https://www.seldon.io/) with deployed machine learning models and easily apply them within Datagrok.",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/Seldon"
-      },
-      "category": "Machine Learning"
-    },
     "chembl": {
       "dependencies": {
         "0.0.1": {
@@ -1133,6 +1215,15 @@
         },
         "1.0.17": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.0.18": {
+          "datagrok-api": "^1.11.0"
+        },
+        "1.0.19": {
+          "datagrok-api": "^1.11.0"
+        },
+        "1.0.20": {
+          "datagrok-api": "^1.11.0"
         }
       },
       "description": "Chembl integration, commonly used queries and browser",
@@ -1218,6 +1309,15 @@
         },
         "1.0.10": {
           "datagrok-api": "^1.6.7"
+        },
+        "1.0.11": {
+          "datagrok-api": "^1.6.7"
+        },
+        "1.0.15": {
+          "datagrok-api": "^1.6.7"
+        },
+        "1.0.16": {
+          "datagrok-api": "^1.6.7"
         }
       },
       "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
@@ -1297,6 +1397,9 @@
         },
         "1.0.2": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.0.4": {
+          "datagrok-api": "^1.11.1"
         }
       },
       "description": "Chem package extensiions. Features for similarity and substructure search in ChEMBL using API",
@@ -1657,26 +1760,6 @@
       },
       "category": "Bioinformatics"
     },
-    "viewers": {
-      "dependencies": {
-        "0.0.2": {
-          "datagrok-api": ">0.94.10"
-        },
-        "0.0.3": {
-          "datagrok-api": ">0.94.10"
-        },
-        "0.0.4": {
-          "datagrok-api": "^1.0.0"
-        }
-      },
-      "description": "Set of custom JavaScript viewers",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/Viewers"
-      },
-      "category": "Visualizations"
-    },
     "sunburst": {
       "dependencies": {
         "1.0.0": {
@@ -1706,27 +1789,6 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/VDJtools"
-      },
-      "category": "Bioinformatics"
-    },
-    "ngl-viewer": {
-      "dependencies": {
-        "0.1.0": {
-          "datagrok-api": "^0.151.6"
-        },
-        "0.1.1": {
-          "datagrok-api": "^0.151.6"
-        },
-        "0.1.2": {},
-        "1.0.1": {
-          "datagrok-api": "^1.5.0"
-        }
-      },
-      "description": "Web-based 3D molecular graphics. Supports the following file formats: .PDB, .CIF, SDF, MOL",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/NglViewer"
       },
       "category": "Bioinformatics"
     },
@@ -1903,6 +1965,15 @@
         },
         "1.1.10": {
           "datagrok-api": "^1.8.3"
+        },
+        "1.1.11": {
+          "datagrok-api": "^1.8.3"
+        },
+        "1.1.12": {
+          "datagrok-api": "^1.8.3"
+        },
+        "1.1.13": {
+          "datagrok-api": "^1.8.3"
         }
       },
       "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
@@ -2015,6 +2086,18 @@
         },
         "1.2.29": {
           "datagrok-api": "^1.8.2"
+        },
+        "1.3.4": {
+          "datagrok-api": "^1.8.2"
+        },
+        "1.3.5": {
+          "datagrok-api": "^1.8.2"
+        },
+        "1.3.7": {
+          "datagrok-api": "^1.8.2"
+        },
+        "1.3.8": {
+          "datagrok-api": "^1.8.2"
         }
       },
       "description": "MolecularLiabilityBrowser is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform to analyse variable region sequences of antibodies.",
@@ -2052,6 +2135,9 @@
           "datagrok-api": "^1.6.7"
         },
         "2.0.0": {
+          "datagrok-api": "^1.6.8"
+        },
+        "2.0.1": {
           "datagrok-api": "^1.6.8"
         }
       },
@@ -2091,6 +2177,9 @@
         },
         "1.1.4": {
           "datagrok-api": "^1.6.6"
+        },
+        "1.1.5": {
+          "datagrok-api": "^1.12.0"
         }
       },
       "description": "Alation is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
@@ -2107,9 +2196,12 @@
         },
         "1.0.1": {
           "datagrok-api": "^1.5.0"
+        },
+        "1.0.2": {
+          "datagrok-api": "^1.11.1"
         }
       },
-      "description": "",
+      "description": "Arrow is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform that provides us with the opportunity to work with parquet and feather file formats.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -2166,6 +2258,18 @@
         },
         "2.1.0": {
           "datagrok-api": "^1.7.2"
+        },
+        "2.1.1": {
+          "datagrok-api": "^1.11.1"
+        },
+        "2.1.2": {
+          "datagrok-api": "^1.11.1"
+        },
+        "2.1.3": {
+          "datagrok-api": "^1.11.1"
+        },
+        "2.1.4": {
+          "datagrok-api": "^1.10.2"
         }
       },
       "description": "",
@@ -2187,7 +2291,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/GIS"
-      }
+      },
+      "category": "Visualizations"
     },
     "demoxl": {
       "dependencies": {
@@ -2212,6 +2317,9 @@
         },
         "1.0.2": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.0.3": {
+          "datagrok-api": "^1.11.1"
         }
       },
       "description": "PKPD simulations tools",
@@ -2244,6 +2352,9 @@
         },
         "1.2.3": {
           "datagrok-api": "^1.8.2"
+        },
+        "1.2.4": {
+          "datagrok-api": "^1.8.2"
         }
       },
       "description": "*PhyloTreeViewer* is a [Datagrok package](https://datagrok.ai/help/develop/develop#packages) for phylogenetic trees visualization.",
@@ -2266,6 +2377,17 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/labs.git",
         "directory": "packages/ChemDraw"
+      }
+    },
+    "gridextdemo": {
+      "dependencies": {
+        "1.0.0": {}
+      },
+      "description": "Demos of Grid Extensions",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/gridextdemo"
       }
     }
   }

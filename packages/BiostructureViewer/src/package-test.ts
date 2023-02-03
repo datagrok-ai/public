@@ -7,6 +7,20 @@ import './tests/pdb-tests';
 export const _package = new DG.Package();
 export {tests};
 
+/*
+Entry point 'test' is required in webpack.config.js
+
+entry: {
+  test: {
+    filename: 'package-test.js',
+    library: {type: 'var', name: `${packageName}_test`},
+    import: './src/package-test.ts',
+  },
+  package: './src/package.ts',
+}
+*/
+
+
 //name: test
 //input: string category {optional: true}
 //input: string test {optional: true}

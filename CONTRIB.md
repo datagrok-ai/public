@@ -2,8 +2,8 @@
 
 ## Requirements
 
-1. Node version [12.22.x](https://nodejs.org/dist/v12.22.7/)
-2. Npm version 8.x.x: `npm install -g npm@8.x.x`
+1. Node version [18.12.x](https://nodejs.org/dist/v18.12.0/)
+2. Npm version 9.x.x: `npm install -g npm@9.x.x`
 3. Latest `typescript`.
 
 We are only using pure JavaScript in the packages not yet converted to TypeScript, such as
@@ -97,10 +97,17 @@ Some general recommendations on writing high-performance JavaScript code:
 
 * [Writing Fast, Memory-Efficient JavaScript](https://www.smashingmagazine.com/2012/11/writing-fast-memory-efficient-javascript/)
 * [JavaScript Performance](https://developer.mozilla.org/en-US/docs/Learn/Performance/javascript_performance)
+* [Chrome DevTools Documentation](https://developer.chrome.com/docs/devtools/)
+* [Web development best practices](https://web.dev/fast/)
 
 Below, we will discuss some performance-related topics important to building solutions with Datagrok. However, nothing
 beats common sense, benchmarks, and eventually developing an intuition of how fast or slow a particular method would
-work, and why.
+work, and why. Here are some universal recommendations:
+
+* Know how long each operation (network call, memory access, etc) should take
+* Master the tooling (Chrome Profiler, Network tab, etc)
+* Maintain a suite of benchmarks
+* Look into problems, and check your assumptions using the Chrome Profiler
 
 ### DataFrame
 
@@ -123,3 +130,35 @@ finding a utility function for that. The following code is wasteful (unnecessary
 , slow (use of lambdas) and inefficient (likely a typed array would perform better).
 `new Array(nItems).fill(0).map((_, i) => begin + i)`. A better way would be a specialized utility function if a real
 array is needed, or [wu.count](https://fitzgen.github.io/wu.js/#count) if you only need to iterate over indexes.
+
+### Common root causes of performance problems
+
+* **Using the suboptimal algorithm**. Think whether a different approach would 
+  be faster.
+* **Doing unnecessary computations upfront**. See if the result
+  is needed right now, or perhaps it could be computed later. Example: column tooltips
+  are calculated dynamically right when a user needs to see it, but not earlier.
+* **Computing what already has been computed**. See if the input has changed,
+  perhaps there is no need for recalculation. 
+* **Recalculating too often**. In case of applications reacting to the streams 
+  of events, consider using event debouncing to allow multiple events to
+  be fired, and then recalculating only once after that.
+* **Using DataFrame's API for number crunching**. For maximum performance, consider
+  working with raw data instead.
+* **Inefficiently using memory**. For number crunching, one of the most important
+  things that influences the performance is cache locality. Try to arrange data
+  (usually in raw memory buffers) in such a way that your algorithm would access
+  data sequentially. Minimize the memory footprint.
+* **Using the wrong containers for the job**. Typical error is creating a list 
+  of objects for the sole purpose to find out whether another object is in the
+  list. Consider using Map.
+* **Creating too many objects**. Each object comes at a cost - this includes
+    allocation, memory consumption, and garbage collection. Think whether you 
+    need it, especially within inner loops, or as part of a commonly used structure.
+* **Chatty client-server interactions**. Calling a web service is expensive, and 
+  each call introduce additional time penalty. Consider minimizing the number of 
+  calls, and the amount of data transferred. Use `Network` tab in the Chrome Dev Tools
+  to see what's happening.
+* **Not caching results of data queries**. If the underlying data has a known
+  change cadence (for instance, it's not changing at all, or ETL is run overnight),
+  consider using Datagrok's built-in query caching mechanism.

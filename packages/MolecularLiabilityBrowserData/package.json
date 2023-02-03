@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/molecular-liability-browser-data",
   "friendlyName": "MolecularLiabilityBrowserData",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "author": {
     "name": "Aleksandr Tanas",
     "email": "atanas@datagrok.ai"

@@ -988,8 +988,8 @@ export class SemanticValue<T = any> {
   get semType(): string { return api.grok_SemanticValue_Get_SemType(this.dart); }
   set semType(x: string) { api.grok_SemanticValue_Set_SemType(this.dart, x); }
 
-  getMeta(name: string): any { return api.grok_SemanticValue_Get_Meta(name); }
-  setMeta(name: string, value: any): void { api.grok_SemanticValue_Set_Meta(name, toDart(value)); }
+  getMeta(name: string): any { return api.grok_SemanticValue_Get_Meta(this.dart, name); }
+  setMeta(name: string, value: any): void { api.grok_SemanticValue_Set_Meta(this.dart, name, toDart(value)); }
 
   get cell(): Cell { return api.grok_SemanticValue_Get_Cell(this.dart); }
   get gridCell(): GridCell { return this.getMeta('gridCell'); }

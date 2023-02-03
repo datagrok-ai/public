@@ -1,3 +1,3 @@
-// Current object gets shown in the property panel on the right.
+// Current object gets shown in the context panel on the right.
 
 grok.shell.o = grok.shell.user;

@@ -4,3 +4,33 @@
   border-style: solid;
   border-width: 2px;
   }
+
+.btn-layers {
+    top: 4px;
+    right: 4px; 
+    width:30px;
+    height:24px;  
+    position: absolute;
+  }
+
+.ol-zoom button {
+  width:24px;
+  height:24px;
+}
+
+.ol-zoom {
+  margin: 8px;
+  display: flex;
+  gap:4px;
+}
+
+.panel-layers {
+  position: absolute;
+  top: 34px;
+  right: 8px;   
+  width: 200px; 
+  box-shadow: 1px 1px 6px var(--grey-5);
+  min-height: 100px;
+  max-height: 300px;
+  overflow: hidden;
+}

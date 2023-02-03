@@ -1,7 +1,6 @@
-<!-- TITLE: Heatmap -->
-<!-- SUBTITLE: -->
-
-# Heatmap
+---
+title: "Heatmap"
+---
 
 Heatmap is a spreadsheet (grid) that contains colors instead of numbers and
 strings. For numerical data, the higher values are colored red, and the lower

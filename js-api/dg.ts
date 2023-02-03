@@ -35,8 +35,14 @@ $(function () {
   (<any>window).$ = $;
   (<any>window).dayjs = dayjs;
   (<any>window).wu = wu;
-  (<any>window).addEventListener("unhandledrejection", function(e: PromiseRejectionEvent) {
-    (<any>window).grok_Unhandled_Error(e.reason);
+
+  window.addEventListener("error", function (e) {
+    e.preventDefault();
     e.stopPropagation();
+    if (e.error?.message == '[object ProgressEvent]')
+      return;
+    (<any>window).grok_Unhandled_Error(e.error?.message ?? e.error ?? e.message ?? e, e.error?.stack);
+
   });
+
 });

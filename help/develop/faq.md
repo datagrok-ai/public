@@ -1,4 +1,6 @@
-# Frequently asked questions
+---
+title: Frequently asked questions
+---
 
 *Question:*
 How do I set up VS Code or WebStorm for debugging on Datagrok? Debugging doesn't work for me now.

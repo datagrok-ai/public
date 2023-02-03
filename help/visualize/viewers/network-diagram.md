@@ -1,7 +1,6 @@
-<!-- TITLE: Network diagram -->
-<!-- SUBTITLE: -->
-
-# Network diagram
+---
+title: "Network diagram"
+---
 
 Network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become
 edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply
@@ -21,6 +20,6 @@ General:
 
 See also:
 
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [Table view](../../datagrok/table-view.md)
 * [JS API: Network diagram](https://public.datagrok.ai/js/samples/ui/viewers/types/network-diagram)

@@ -1,9 +1,13 @@
 {
-    "dataSource": "S3",
+  "dataSource": "S3",
+  "parameters": {
+    "dir": "/packages/demo/projects",
+    "region": "us-east-2",
+    "bucket": "datagrok-data"
+  },
+  "credentials": {
     "parameters": {
-      "dir": "/packages/demo/projects",
-      "region": "us-east-2",
-      "bucket": "datagrok-data",
       "anonymous": true
     }
   }
+}

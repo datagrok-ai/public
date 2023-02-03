@@ -6,6 +6,7 @@ import {ALPHABET, getSplitter, NOTATION, SplitterFunc, TAGS} from '../utils/macr
 // import {UnitsHandler} from '../utils/units-handler';
 import {NotationConverter} from '../utils/notation-converter';
 import {Monomer} from '../types';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 // interface for typed arrays, like Float32Array and Uint32Array
 interface ITypedArray {
@@ -152,13 +153,13 @@ export async function _toAtomicLevel(
   // determine the polymer type according to HELM specifications
   let polymerType;
   // todo: an exception from dart comes before this check if the alphabet is UN
-  if (alphabet === ALPHABET.PT) {
+  if (alphabet === ALPHABET.PT || alphabet === ALPHABET.UN) {
     polymerType = HELM_POLYMER_TYPE.PEPTIDE;
   } else if (alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA) {
     polymerType = HELM_POLYMER_TYPE.RNA;
   } else {
     grok.shell.warning(
-      `Only PT, DNA and RNA alphabets are supported, while the selected column has ${polymerType} alphabet`
+      `Unexpected column's '${macroMolCol.name}' alphabet '${alphabet}'.`
     );
     return;
   }
@@ -266,11 +267,18 @@ async function getMonomersDictFromLib(
   for (let row = 0; row < monomerSequencesArray.length; ++row) {
     const monomerSeq: string[] = monomerSequencesArray[row];
     for (const sym of monomerSeq) {
-      addMonomerToDict(monomersDict, sym, formattedMonomerLib,
-        moduleRdkit, polymerType, pointerToBranchAngle);
+      if (sym === '') continue; // Skip gap/empty monomer for MSA
+      try {
+        addMonomerToDict(monomersDict, sym, formattedMonomerLib,
+          moduleRdkit, polymerType, pointerToBranchAngle);
+      } catch (err: any) {
+        const errTxt = errorToConsole(err);
+        console.error(`bio lib: getMonomersDictFromLib() sym='${sym}', error:\n` + errTxt);
+        const errMsg = `can't get monomer '${sym}' from library: ${errTxt}`; // Text for Datagrok error baloon
+        throw new Error(errMsg);
+      }
     }
   }
-  // console.log(monomersDict);
 
   return monomersDict;
 }
@@ -850,7 +858,6 @@ function adjustPeptideMonomerGraph(monomer: MolGraph): void {
 function adjustPhosphateMonomerGraph(monomer: MolGraph): void {
   const centeredNode = monomer.meta.terminalNodes[0] - 1; // Phosphorus
   const rotatedNode = monomer.meta.rNodes[0] - 1; // Oxygen
-  const nodeOneIdx = monomer.meta.terminalNodes[0] - 1; // node indexing in molfiles starts from 1
   // const nodeTwoIdx = monomer.meta.rNodes[0] - 1;
   const x = monomer.atoms.x;
   const y = monomer.atoms.y;
@@ -1213,8 +1220,7 @@ function addAminoAcidToMolblock(monomer: MolGraph, molfileAtomBlock: string[],
 }
 
 function addMonomerToMolblockST(monomer: MolGraph, molfileAtomBlock: string[],
-  molfileBondBlock: string[], v: LoopVariables, C: LoopConstants
-): void {
+  molfileBondBlock: string[], v: LoopVariables): void {
   addBranchMonomerToMolblock(monomer, molfileAtomBlock, molfileBondBlock, v);
 }
 
@@ -1366,6 +1372,7 @@ function getResultingAtomBondCounts(
 
   // sum up all the atoms/nodes provided by the sequence
   for (const monomerSymbol of monomerSeq) {
+    if (monomerSymbol === '') continue; // Skip for gap/empty monomer in MSA
     const monomer = monomersDict.get(monomerSymbol)!;
     atomCount += monomer.atoms.x.length;
     bondCount += monomer.bonds.bondTypes.length;

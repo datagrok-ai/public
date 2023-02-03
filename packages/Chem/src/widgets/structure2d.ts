@@ -4,17 +4,17 @@ import {renderMolecule} from '../rendering/render-molecule';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 
-export function structure2dWidget(smiles: string): DG.Widget {
+export function structure2dWidget(molecule: string): DG.Widget {
   const rdKitModule = getRdKitModule();
   try {
-    smiles = _convertMolNotation(smiles, 'unknown', 'smiles', rdKitModule);
+    _convertMolNotation(molecule, 'unknown', 'smiles', rdKitModule);
   } catch (e) {
-    return new DG.Widget(ui.divText('Molecule is possible malformed'));
+    return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
   const width = 200;
   const height = 100;
   // const host = ui.canvas(width, height);
   // drawMoleculeToCanvas(0, 0, width, height, host, smiles);
-  const host = renderMolecule(smiles, {renderer: 'RDKit', width: width, height: height});
+  const host = renderMolecule(molecule, {renderer: 'RDKit', width: width, height: height});
   return new DG.Widget(host);
 }

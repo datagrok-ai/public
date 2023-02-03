@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/drug-bank",
   "friendlyName": "DrugBank",
-  "version": "1.0.5",
+  "version": "1.0.8",
   "author": {
     "name": "Volodymyr Dyma",
     "email": "vdyma@datagrok.ai"
@@ -13,11 +13,11 @@
     "directory": "packages/DrugBank"
   },
   "dependencies": {
-    "datagrok-api": "=1.9.0",
+    "datagrok-api": "^1.11.1",
     "cash-dom": "latest",
     "dayjs": "latest",
     "openchemlib": "latest",
-    "@datagrok-libraries/utils": "^1.15.5"
+    "@datagrok-libraries/utils": "^1.19.1"
   },
   "devDependencies": {
     "ts-loader": "latest",
@@ -27,16 +27,10 @@
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",
     "eslint": "latest",
-    "eslint-config-google": "latest",
-    "jest-html-reporter": "^3.5.0",
-    "jest": "^27.0.0",
-    "@types/jest": "^27.0.0",
-    "ts-jest": "^27.0.0",
-    "puppeteer": "^13.7.0",
-    "@types/js-yaml": "^4.0.5",
-    "js-yaml": "^4.1.0",
-    "@types/node-fetch": "^2.6.2",
-    "node-fetch": "^2.6.7"
+    "eslint-config-google": "latest"
+  },
+  "grokDependencies": {
+    "@datagrok/chem": "latest"
   },
   "scripts": {
     "install-dependencies": "npm install",
@@ -50,9 +44,9 @@
     "release-drugbank-local": "grok publish local --release",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
-    "test": "jest",
-    "test-dev": "set HOST=dev && jest",
-    "test-local": "set HOST=localhost && jest"
+    "test": "grok test",
+    "test-dev": "grok test --host dev",
+    "test-local": "grok test --host localhost"
   },
   "canEdit": [
     "Developers"

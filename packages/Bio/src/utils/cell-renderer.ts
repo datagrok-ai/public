@@ -3,11 +3,20 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {printLeftOrCentered, DrawStyle} from '@datagrok-libraries/bio/src/utils/cell-renderer';
-import * as bio from '@datagrok-libraries/bio';
 import * as C from './constants';
+import {
+  ALIGNMENT,
+  getPaletteByType,
+  getSplitter,
+  monomerToShort,
+  SplitterFunc,
+  TAGS as bioTAGS,
+} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
+import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
 
 const undefinedColor = 'rgb(100,100,100)';
-const monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = bio.monomerToShort;
+const monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = monomerToShort;
 
 function getUpdatedWidth(grid: DG.Grid | null, g: CanvasRenderingContext2D, x: number, w: number): number {
   return grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
@@ -46,7 +55,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (gridCell.cell.column.getTag(bio.TAGS.aligned) !== bio.ALIGNMENT.SEQ_MSA)
+    if (gridCell.cell.column.getTag(bioTAGS.aligned) !== ALIGNMENT.SEQ_MSA)
       return;
 
     const maxLengthWordsSum = gridCell.cell.column.temp['bio-sum-maxLengthWords'];
@@ -74,7 +83,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     }
     left = (argsX >= maxLengthWordsSum[left]) ? left + 1 : left;
     const separator = gridCell.cell.column.getTag('separator') ?? '';
-    const splitterFunc: bio.SplitterFunc = bio.getSplitter('separator', separator);
+    const splitterFunc: SplitterFunc = getSplitter('separator', separator);
     const subParts: string[] = splitterFunc(gridCell.cell.value);
     (((subParts[left]?.length ?? 0) > 0)) ?
       ui.tooltip.show(ui.div(subParts[left]), e.x + 16, e.y + 16) : ui.tooltip.hide();
@@ -95,7 +104,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
     cellStyle: DG.GridCellStyle
-  ): void {
+  ) {
     const grid = gridCell.gridRow !== -1 ? gridCell.grid : null;
     const cell = gridCell.cell;
     const paletteType = gridCell.cell.column.getTag(C.TAGS.ALPHABET);
@@ -111,11 +120,11 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     //TODO: can this be replaced/merged with splitSequence?
     const units = gridCell.cell.column.getTag(DG.TAGS.UNITS);
 
-    const palette = bio.getPaletteByType(paletteType);
+    const palette = getPaletteByType(paletteType);
 
     const separator = gridCell.cell.column.getTag('separator') ?? '';
     const splitLimit = gridCell.bounds.width / 5;
-    const splitterFunc: bio.SplitterFunc = bio.getSplitter(units, separator, splitLimit);
+    const splitterFunc: SplitterFunc = getSplitter(units, separator, splitLimit);
     const referenceSequence: string[] = splitterFunc(((gridCell.cell.column?.temp['reference-sequence'] != null) && (gridCell.cell.column?.temp['reference-sequence'] != ''))
       ? gridCell.cell.column.temp['reference-sequence'] : gridCell.cell.column.temp['current-word'] ?? '');
     const monomerWidth = (gridCell.cell.column?.temp['monomer-width'] != null) ? gridCell.cell.column.temp['monomer-width'] : 'short';
@@ -146,7 +155,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         });
         samples += 1;
       }
-      let minLength = 3 * 7;
+      const minLength = 3 * 7;
       for (let i = 0; i <= maxIndex; i++) {
         if (maxLengthWords[i] < minLength) {
           maxLengthWords[i] = minLength;
@@ -168,15 +177,15 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const subParts: string[] = splitterFunc(cell.value);
     let x1 = x;
     let color = undefinedColor;
-    let drawStyle = bio.DrawStyle.classic;
+    let drawStyle = DrawStyle.classic;
     if (gridCell.cell.column.getTag('aligned').includes('MSA') && gridCell.cell.column.getTag('units') === 'separator')
-      drawStyle = bio.DrawStyle.MSA;
+      drawStyle = DrawStyle.MSA;
 
     subParts.every((amino, index) => {
       color = palette.get(amino);
       g.fillStyle = undefinedColor;
-      let last = index === subParts.length - 1;
-      x1 = bio.printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell, referenceSequence, maxLengthOfMonomer);
+      const last = index === subParts.length - 1;
+      x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell, referenceSequence, maxLengthOfMonomer);
       return x1 - minDistanceRenderer - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCell.bounds.x) <= gridCell.bounds.width;
     });
 
@@ -212,14 +221,14 @@ export class MonomerCellRenderer extends DG.GridCellRenderer {
     g.textBaseline = 'middle';
     g.textAlign = 'center';
 
-    const palette = bio.getPaletteByType(gridCell.cell.column.getTag(C.TAGS.ALPHABET));
+    const palette = getPaletteByType(gridCell.cell.column.getTag(C.TAGS.ALPHABET));
     const s: string = gridCell.cell.value;
     if (!s)
       return;
     const color = palette.get(s);
 
     g.fillStyle = color;
-    g.fillText(bio.monomerToShort(s, 3), x + (w / 2), y + (h / 2), w);
+    g.fillText(monomerToShort(s, 3), x + (w / 2), y + (h / 2), w);
   }
 }
 
@@ -255,7 +264,7 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
     w = getUpdatedWidth(grid, g, x, w);
     //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
-    const splitter = bio.getSplitter(units, separator);
+    const splitter = getSplitter(units, separator);
     const subParts1 = splitter(s1);
     const subParts2 = splitter(s2);
     drawMoleculeDifferenceOnCanvas(g, x, y, w, h, subParts1, subParts2, units);
@@ -272,8 +281,8 @@ export function drawMoleculeDifferenceOnCanvas(
   subParts2: string [],
   units: string,
   fullStringLength?: boolean,
-  molDifferences?: { [key: number]: HTMLCanvasElement }) {
-
+  molDifferences?: { [key: number]: HTMLCanvasElement }
+): void {
   if (subParts1.length !== subParts2.length) {
     const emptyMonomersArray = new Array<string>(Math.abs(subParts1.length - subParts2.length)).fill('');
     subParts1.length > subParts2.length ?
@@ -297,9 +306,9 @@ export function drawMoleculeDifferenceOnCanvas(
   g.font = '12px monospace';
   g.textBaseline = 'top';
 
-  let palette: bio.SeqPalette = bio.UnknownSeqPalettes.Color;
+  let palette: SeqPalette = UnknownSeqPalettes.Color;
   if (units != 'HELM')
-    palette = bio.getPaletteByType(units.substring(units.length - 2));
+    palette = getPaletteByType(units.substring(units.length - 2));
 
   const vShift = 7;
   for (let i = 0; i < subParts1.length; i++) {
@@ -309,12 +318,12 @@ export function drawMoleculeDifferenceOnCanvas(
 
     if (amino1 != amino2) {
       const color2 = palette.get(amino2);
-      const subX0 = bio.printLeftOrCentered(updatedX, updatedY - vShift, w, h, g, amino1, color1, 0, true);
-      const subX1 = bio.printLeftOrCentered(updatedX, updatedY + vShift, w, h, g, amino2, color2, 0, true);
+      const subX0 = printLeftOrCentered(updatedX, updatedY - vShift, w, h, g, amino1, color1, 0, true);
+      const subX1 = printLeftOrCentered(updatedX, updatedY + vShift, w, h, g, amino2, color2, 0, true);
       updatedX = Math.max(subX1, subX0);
       if (molDifferences)
         molDifferences[i] = createDifferenceCanvas(amino1, amino2, color1, color2, updatedY, vShift, h);
-    } else { updatedX = bio.printLeftOrCentered(updatedX, updatedY, w, h, g, amino1, color1, 0, true, 0.5); }
+    } else { updatedX = printLeftOrCentered(updatedX, updatedY, w, h, g, amino1, color1, 0, true, 0.5); }
     updatedX += 4;
   }
   g.restore();
@@ -338,7 +347,7 @@ function createDifferenceCanvas(
   canvas.width = width + 4;
   context.font = '12px monospace';
   context.textBaseline = 'top';
-  bio.printLeftOrCentered(0, y - shift, width, h, context, amino1, color1, 0, true);
-  bio.printLeftOrCentered(0, y + shift, width, h, context, amino2, color2, 0, true);
+  printLeftOrCentered(0, y - shift, width, h, context, amino1, color1, 0, true);
+  printLeftOrCentered(0, y + shift, width, h, context, amino2, color2, 0, true);
   return canvas;
 }

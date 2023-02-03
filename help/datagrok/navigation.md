@@ -1,7 +1,6 @@
-<!-- TITLE: Navigation -->
-<!-- SUBTITLE: -->
-
-# Navigation
+---
+title: "Navigation"
+---
 
 This article is designed to help you navigate the Datagrok platform. We will introduce core concepts and walk you
 through the fundamentals of working with our platform.
@@ -22,9 +21,9 @@ Here you can find an overview of the platform's key capabilities as well as the 
 [projects](project.md) and more.
 
 The welcome page consists of several visual components: a sidebar, [toolbox](#toolbox), main
-view, [property panel](#properties), and [context help](#context-help). Typically, the view resides in the center and
+view, [context panel](#context-panel), and [context help](#context-help). Typically, the view resides in the center and
 occupies all available area in the screen. The sidebar and toolbox are placed on the left. The sidebar contains controls
-over the main functionality, while the toolbox displays options specific to the current view. The property panel and
+over the main functionality, while the toolbox displays options specific to the current view. The context panel and
 context help are docked to the right. This appearance is fully customizable, you can manage the displayed windows from
 the sidebar
 (`Windows`), or turn them on/off with the following shortcuts:
@@ -32,7 +31,7 @@ the sidebar
 |    Menu Option         |      Shortcut               |         Action                |
 |------------------------|-----------------------------|-------------------------------|
 | Windows | Toolbox      | Alt + X                     | Show/hide the toolbox         |
-| Windows | Properties   | F4                          | Show/hide the property panel  |
+| Windows | Properties   | F4                          | Show/hide the context panel  |
 | Windows | Context Help | F1                          | Show/hide the context help    |
 
 In addition to the design modularity, these panels can be resized and docked.
@@ -112,7 +111,7 @@ and, if available, [tables](../access/db-table-info.md) from the database.
 
 The `Windows` icon lets you manage windows and see the currently open ones. In particular, you can customize the
 visibility of the following panes: [Menu](#menu), [Tables](#tables),
-[Columns](#columns), [Properties](#properties), [Toolbox](#toolbox), [Variables](#variables),
+[Columns](#columns), [Context Panel](#context-panel), [Toolbox](#toolbox), [Variables](#variables),
 [Console](#console), [Context Help](#context-help). To save your preferences regarding the display of certain windows at
 startup, tweak your user's [general settings](https://public.datagrok.ai/settings/general)
 (`Settings | General`).
@@ -121,35 +120,35 @@ startup, tweak your user's [general settings](https://public.datagrok.ai/setting
 
 ### Columns
 
-### Properties
+### Context panel
 
 This panel describes the properties of a current object. Typically, whenever the user clicks on most objects within the
 platform, such as a table, data connection, application, command, or any other
 [supported object type](../datagrok/objects.md), this object becomes a current object. So, to focus on one, simply click
-on it. After that, you will see the corresponding property panel as well as the
+on it. After that, you will see the corresponding context panel as well as the
 [context help](#context-help).
 
-`F4` toggles the visibility of the property panel. Additionally, you can manage it from the sidebar
+`F4` toggles the visibility of the context panel. Additionally, you can manage it from the sidebar
 (`Windows | Properties`). There are several useful icons in the panel header:
 
 |      Icon        |            Action                                           |
 |------------------|-------------------------------------------------------------|
 | Back/Forward     | Navigate the history of previously viewed object properties |
-| Clone and detach | Detach a copy of the property panel preserving the content  |
+| Clone and detach | Detach a copy of the context panel preserving the content  |
 | Collapse all     | Collapse all listed property values                         |
 | Favorites        | Switch to the properties of favorite objects                |
 
-The property panel saves history of viewed objects, so you can switch to the previous selected object if necessary. This
-also means that the content of the property panel is synchronized with the current object. To display properties of
+The context panel saves history of viewed objects, so you can switch to the previous selected object if necessary. This
+also means that the content of the context panel is synchronized with the current object. To display properties of
 another object along with the currently selected one, click on the `Clone and detach` icon.
 
-The content of a property panel is generated based on the type of a current object, as well as its value. For example,
+The content of a context panel is generated based on the type of a current object, as well as its value. For example,
 if you open a table, you can find applicable actions,
 [predictive models](../learn/predictive-modeling.md), and algorithms. The panel is designed in such a way that related
 objects are easy to reach, e.g., having a query in front of their eyes, users can identify the corresponding data
 connection and switch to its properties with one click.
 
-Some visual components, such as viewers, activate the property panel in a special way. To access the properties of a
+Some visual components, such as viewers, activate the context panel in a special way. To access the properties of a
 viewer, you would click on a gear icon `⚙` in the top right corner of the viewer's header.
 
 What is more, the information provided for a current object can be expanded by means of
@@ -183,7 +182,7 @@ detection rules.
 
 ### Console
 
-Console can be used to call [functions](functions/function.md) and record [macros](functions/function.md#macros).
+Console can be used to call [functions](functions/functions.md) and record [macros](functions/functions.md#macros).
 
 #### Controls
 
@@ -198,7 +197,7 @@ Press the tilde key `~` to open the console or enable it from the toolbox (`Wind
 ![Autocomplete](../uploads/gifs/console-autocomplete.gif "Console Autocomplete")
 
 Two icons on the top left let you clear the console, or open the [variables view](#variables). Clicking on the function
-name will bring up its details in the [property panel](#properties).
+name will bring up its details in the [context panel](#context-panel).
 
 #### Command examples
 
@@ -298,6 +297,6 @@ is provided in the toolbox of the help icon.
 
 See also:
 
-* [Functions](functions/function.md)
+* [Functions](functions/functions.md)
 * [Info panels](../discover/info-panels.md)
 * [Entities](objects.md)

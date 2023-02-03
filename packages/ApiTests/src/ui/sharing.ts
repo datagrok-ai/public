@@ -1,4 +1,4 @@
-import {before, category, test, expect, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {before, category, test, expect, awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 //import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -10,7 +10,7 @@ category('UI: Sharing', () => {
   const entityName = 'apitestsentityshare';
 
   before(async () => {
-    testUser = await grok.dapi.users.filter('login = "test.user"').first();
+    testUser = await grok.dapi.users.filter('login = "admin"').first();
   });
 
   test('scripts.ui', async () => {
@@ -50,15 +50,15 @@ category('UI: Sharing', () => {
   });
 
   test('scripts.api', async () => {
-    testEntityAPI(DG.Script.create(''), grok.dapi.scripts);
+    await testEntityAPI(DG.Script.create(''), grok.dapi.scripts);
   });
 
   test('projects.api', async () => {
-    testEntityAPI(DG.Project.create(), grok.dapi.projects);
+    await testEntityAPI(DG.Project.create(), grok.dapi.projects);
   });
 
   test('connections.api', async () => {
-    testEntityAPI(DG.DataConnection.create('', {
+    await testEntityAPI(DG.DataConnection.create('', {
       dataSource: '',
       server: '',
       db: ''}), grok.dapi.connections);
@@ -81,14 +81,14 @@ category('UI: Sharing', () => {
     const pane = grok.shell.sidebar.getPane(paneName);
     const el = pane.content.querySelector(`[data-view=${elName}]`) as HTMLElement;
     el.click();
-    await awaitCheck(() => document.querySelector('.grok-gallery-grid')!.children.length > 0,
+    await awaitCheck(() => (document.querySelector('.grok-gallery-grid')?.children?.length ?? 0) > 0,
       'cannot load gallery grid', 3000);
     v = grok.shell.v;
     const gallery = v.root;
     const search = gallery.querySelector('.ui-input-editor') as HTMLInputElement;
     search.value = entityName;
     search.dispatchEvent(new MouseEvent('input'));
-    await awaitCheck(() => document.querySelector('.grok-gallery-grid')!.children.length === 1,
+    await awaitCheck(() => document.querySelector('.grok-gallery-grid')?.children?.length === 1,
       'more than one testing entity present', 3000);
     let entity = gallery.querySelector('.grok-gallery-grid')!.children[0];
     if (entity.className !== selector.slice(1)) entity = entity.querySelector(selector)!;
@@ -107,10 +107,13 @@ category('UI: Sharing', () => {
     await awaitCheck(() => shareDialogRoot.querySelector('.user-selector-input') !== null,
       'cannot enter user for sharing', 3000);
     const inputUser = shareDialogRoot.querySelector('.user-selector-input') as HTMLInputElement;
-    inputUser.value = 'test.user';
+    inputUser.value = 'Admin';
     inputUser.dispatchEvent(new MouseEvent('input'));
     await awaitCheck(() => (shareDialogRoot.querySelector('.user-selector-drop-down') as HTMLElement)
-      .style.visibility === '', 'cannot find user for sharing', 3000);
+      ?.style?.visibility === '', 'cannot find user for sharing', 3000);
+    await delay(100); // no way to handle it
+    inputUser.dispatchEvent(new KeyboardEvent('keydown', {keyCode: 40}));
+    await delay(100); // no way to handle it
     inputUser.dispatchEvent(new KeyboardEvent('keydown', {keyCode: 13}));
     shareDialogRoot.querySelector('textarea')!.value = 'Message1!';
     (shareDialogRoot.querySelector('.ui-btn.ui-btn-ok.enabled') as HTMLElement).click();

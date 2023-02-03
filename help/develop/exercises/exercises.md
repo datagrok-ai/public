@@ -1,7 +1,7 @@
-<!-- TITLE: &#8204;Exercises -->
-<!-- SUBTITLE: -->
-
-# Exercises
+---
+title: "Developer exercises"
+sidebar_position: 0
+---
 
 These programming exercises are designed to help developers get proficient with the Datagrok platform. The exercises are
 organized as progressive steps, with tasks of increasing complexity built on top of the previously completed steps.
@@ -73,12 +73,12 @@ predictive models, integration with the external utilities, data augmentation, a
    Also you can add `--eslint` option to add eslint checker feature to the package
 5. Run `npm install` to link the dependencies mentioned in `package.json` file of your package
 6. Upload it to the server: run `webpack` and `grok publish dev` (see other
-   options [here](../develop.md#deployment-modes))
+   options [here](../develop.md#publishing-modes))
 7. Launch the platform and run the package's `info()` function using different methods:
 
 * via the [Functions](https://dev.datagrok.ai/functions?q=info) view
 * via the [Packages](https://dev.datagrok.ai/packages?) menu (find your package, click on it and run `info()`
-  from the `Functions` pane in the property panel on the left)
+  from the `Functions` pane in the context panel on the left)
 * via the [console](../../datagrok/navigation.md#console): press `~` key anywhere inside Datagrok, the Console will
   appear to the right; execute `<loginName>Sequence:info()` there. The identifier used as package name (before ':') will
   be obtained by transformation kebab style of folder name to camel style, or can be specified directly with
@@ -190,7 +190,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 
 *Prerequisites:* basic Python knowledge.
 
-*Details:* [Scripting](../../compute/scripting.md), [Dev Meeting 1 | First-class functions][015]
+*Details:* [Scripting](../../compute/scripting), [Dev Meeting 1 | First-class functions][015]
 
 *You will learn:* how to create and invoke Datagrok scripts in data science languages like R and Python.
 
@@ -334,11 +334,11 @@ repeat what we've achieved in the last point of the previous exercise, now with 
 3. Run `CountSubsequenceJS` using the `Play` button; using the console. From same console, run `CountSubsequencePython`
    yet again. You can notice that both Python and JS versions of our function, implemented as scripts, are homogeneous
    functions in Datagrok. It's also possible to call them in a uniform
-   fashion [using our JavaScript API](../../compute/scripting.md#running-a-script).
+   fashion [using our JavaScript API](../../compute/scripting#running-a-script).
 4. Don't forget to save these two scripts. We would re-use parts of them in the following exercises.
 
 The difference between the two scripts is that the first, `CountSubsequencePython`, runs on our server by
-a [compute virtual machine](../admin/infrastructure.md#compute-components), whereas the second, `CountSubsequenceJS`,
+a [compute virtual machine](../admin/infrastructure#compute-components), whereas the second, `CountSubsequenceJS`,
 runs directly in the browser. To run `CountSubsequencePython`, Datagrok passes the script arguments over the network and
 fetches back the result to the browser.
 
@@ -476,7 +476,7 @@ nested script.
 *Prerequisites:* basic SQL knowledge
 
 *Details:* [Connecting to Databases](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s),
-[How to Access Data](../how-to/access-data.md)
+[How to Access Data](../how-to/access-data)
 
 *Note:* Editing an existing data query requires the respective access permission. You might need to request one.
 
@@ -485,7 +485,7 @@ database that Microsoft often uses for showcasing its technology). The database 
 from our server.
 
 1. Navigate to the `Data | Databases | PostgreSQL | northwind | Schemas | public | orders` table
-2. Make this table current by left-clicking on it, and explore its property panels on the right. The
+2. Make this table current by left-clicking on it, and explore its context panel on the right. The
    `Content` pane should be showing first 50 rows of that table.
 3. Right-click on the table, and choose `New SQL Query...`
 4. Execute the query and make sure it returns results.
@@ -514,7 +514,7 @@ from our server.
       and run it from the console.
 
 9. Now, let's add this query to our package. Create a connection by running `grok add connection <yourFirstName>`, then,
-   as instructed [here](../how-to/access-data.md#creating-queries), create the '.sql' file under the `queries`
+   as instructed [here](../how-to/access-data#creating-queries), create the '.sql' file under the `queries`
    folder, and paste our query there. Give it a name by adding the `--name: ordersByCountry` line on top of it.
 10. Deploy the package, launch the platform, find the query in the package, and run it.
 11. Create a JavaScript function (in `src/package.js`) that has no parameters and returns a dataframe with the results
@@ -529,14 +529,14 @@ from our server.
     ```
 
     There is another way to pass a country name to the query: you can provide a default value for the input parameter
-    (see examples in the article [Parameterized Queries](../../access/parameterized-queries.md)).
+    (see examples in the article [Parameterized Queries](../../access/parameterized-queries)).
 
 ## Exercise 4: Creating a scripting viewer
 
 *Prerequisites:* basic Python knowledge, [matplotlib](https://matplotlib.org/) or a similar library
 
-*Details:* [Scripting](../../compute/scripting.md)
-, [Scripting Viewer](../../visualize/viewers/scripting-viewer.md),
+*Details:* [Scripting](../../compute/scripting)
+, [Scripting Viewer](../../visualize/viewers/scripting-viewer),
 [Creating a scripting viewer (video)](https://www.youtube.com/embed/jHRpOnhBAz4).
 
 *Amino acids counting task.* In this exercise, we'd use a Python script to generate a histogram
@@ -565,21 +565,21 @@ First, let's explore how scripting viewer works.
    for `Color`. After checking this you should see a nice scatter plot for `WEIGHT` and `HEIGHT`
    with the color corresponding to `AGE`:
    ![exercises-scripting-viewer](exercises-scripting-viewer.png)
-7. In the property panel, proceed to modify the value of the "Script" field by clicking on a "..."
+7. In the context panel, proceed to modify the value of the "Script" field by clicking on a "..."
    icon in the text field.
 8. The Python code you see is what renders the scatter plot form p.6 on the Datagrok server. Let's walkthrough this
    code.
     * The script takes as inputs the original dataframe and the three columns. Remember form p.6 there were selectors
-      for `X`, `Y`, and `Color` in the property panel. In fact, these three property names are declared with the
+      for `X`, `Y`, and `Color` in the context panel. In fact, these three property names are declared with the
       notation `<propertyName>ColumnName` in the names of the three `#input` columns.
     * The script produces an `#output` of type `graphics`. It is important the graphics appear in the end of the Python
       script. This is exactly what happens with the `plt.show()` in the last line of the script.
 
 9. Modify the name of `colorColumnName` to a `temperatureColumnName`, hit `Apply` in the bottom of the window, and check
-   what happens to the `Color` field in the property panel.
+   what happens to the `Color` field in the context panel.
 10. Add another input parameter to the script with a name `Title`. Hit `Apply` and check what appears in the property
     panel.
-11. Add another input column to the script with a name `SEX`. Hit `Apply` and check what appears in the property panel.
+11. Add another input column to the script with a name `SEX`. Hit `Apply` and check what appears in the context panel.
 12. Now there's all you need to create a Python scripting viewer for our amino acid histogram task. Open a demo file
     with nucleotide sequences. It is located at `Data | Files | Demo Files | bio | sars-cov-2.csv`.
     `Data` corresponds to the first button from the top on the Datagrok sidebar.
@@ -660,7 +660,7 @@ First, let's explore how scripting viewer works.
     * use `fusioncharts-smartlabel` to break the original sequence in the current cell into lines which fit into a cell's
       canvas rectangle; learn [here][017] how to do it, consider `SmartLabel.textToLines(...).lines`
       as a target array of lines to render
-    * Datagrok [grid](../../visualize/viewers/grid.md) is rendered through an
+    * Datagrok [grid](../../visualize/viewers/grid) is rendered through an
       [HTML5 Canvas](https://en.wikipedia.org/wiki/Canvas_element). The grid's canvas is `g.canvas`. Iterate through the
       resulting lines and bring them to a `g.canvas` in the `render` method with `g.canvas.getContext("2d").fillText`; learn
       more about HTML Canvas if it's new for you
@@ -707,9 +707,9 @@ First, let's explore how scripting viewer works.
 
 ## Exercise 7: Accessing web services with OpenAPI
 
-*Details:* [OpenAPI access](../../access/open-api.md)
+*Details:* [OpenAPI access](../../access/open-api)
 
-Web services often provide their API specs in an [OpenAPI (Swagger)](../../access/open-api.md) format in a JSON or a
+Web services often provide their API specs in an [OpenAPI (Swagger)](../../access/open-api) format in a JSON or a
 yaml file. Because OpenAPI spec file is standardized, the API may now be directly loaded and later queried. Datagrok
 provides for connecting to API data sources and fetching API querying results as dataframes. In this lesson we will
 connect to the [European Nucleotide Archive (ENA)](https://www.ebi.ac.uk/ena/) and fetch some nucleotide data regarding
@@ -772,7 +772,7 @@ contained in a currently selected grid cell.
    }
    ```
 
-2. Use [`fetchProxy`](../how-to/access-data.md#rest-endpoints) to get a sequence for the potential corresponding ENA ID
+2. Use [`fetchProxy`](../how-to/access-data#rest-endpoints) to get a sequence for the potential corresponding ENA ID
    in fasta format. For example, this GET fetches the sequence for the `ID=AA046425`:
    [`https://www.ebi.ac.uk/ena/browser/api/fasta/AA046425`](https://www.ebi.ac.uk/ena/browser/api/fasta/AA046425)
    Use the following structure for the into panel function in your `src/package.js`:
@@ -889,7 +889,7 @@ Saving the search parameters
 A simple keyword search in the ENA database (with navigation)
 --->
 
-[014]: ../how-to/add-info-panel.md#functions "How to add an info panel"
+[014]: ../how-to/add-info-panel#functions "How to add an info panel"
 
 [015]: https://youtu.be/p7_qOU_IzLM?t=724 "Dev Meeting 1: Getting Started – First-class functions"
 
@@ -905,7 +905,7 @@ A simple keyword search in the ENA database (with navigation)
 
 [019]: https://www.ebi.ac.uk/ena/browser/api "Swagger API Tester"
 
-[020]: ../../access/open-api.md#troubleshooting "OpenAPI connections troubleshooting"
+[020]: ../../access/open-api#troubleshooting "OpenAPI connections troubleshooting"
 
 [021]: https://github.com/datagrok-ai/public/tree/master/packages/Swaggers/swaggers "Datagrok Swaggers samples"
 

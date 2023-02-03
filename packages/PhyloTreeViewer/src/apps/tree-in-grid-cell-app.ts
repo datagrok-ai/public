@@ -1,12 +1,14 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
-import * as u from '@datagrok-libraries/utils';
 
-import {PickingInfo} from '@deck.gl/core/typed';
-import {TooltipContent} from '@deck.gl/core/typed/lib/tooltip';
-import {Rect} from '@deck.gl/core/typed/passes/layers-pass';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import {
+  getPhylocanvasGlService,
+  PhylocanvasGlServiceBase
+} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
+import {NodeType} from '@datagrok-libraries/bio/src/trees';
+import {parseNewick, Shapes, TreeTypes} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 // //@ts-ignore
 // const oldInit = bio.PhylocanvasGL.prototype.init;
@@ -16,7 +18,7 @@ import {Rect} from '@deck.gl/core/typed/passes/layers-pass';
 // };
 
 export class TreeInGridCellApp {
-  private phylocanvasGlSvc: bio.PhylocanvasGlServiceBase | null = null;
+  private phylocanvasGlSvc: PhylocanvasGlServiceBase | null = null;
 
   private view: DG.TableView | null = null;
 
@@ -24,7 +26,7 @@ export class TreeInGridCellApp {
   get df(): DG.DataFrame { return this._df; }
 
   async init(): Promise<void> {
-    this.phylocanvasGlSvc = await bio.getPhylocanvasGlService();
+    this.phylocanvasGlSvc = await getPhylocanvasGlService();
     await this.loadData();
   }
 
@@ -90,13 +92,14 @@ export class TreeInGridCellApp {
         const name: string = `gridRow = ${gCell.gridRow}`;
         const bd = args.bounds;
         const gCtx: CanvasRenderingContext2D = args.g;
-        //console.debug('PhyloTreeViewer: TreeInGridCell.gridOnCellRender() start ' + `name: ${name}, bd: ${rectToString(bd)} `);
+        // console.debug('PhyloTreeViewer: TreeInGridCell.gridOnCellRender() start ' +
+        //   `name: ${name}, bd: ${rectToString(bd)} `);
 
         const nwkStr: string = gCell.cell.value;
-        const nwkRoot: bio.NodeType = bio.Newick.parse_newick(nwkStr);
+        const nwkRoot: NodeType = parseNewick(nwkStr);
 
-        const nodeShape: string = bio.Shapes.Circle;
-        const treeType: string = bio.TreeTypes.Rectangular;
+        const nodeShape: string = Shapes.Circle;
+        const treeType: string = TreeTypes.Rectangular;
         this.phylocanvasGlSvc!.render({
           name: name,
           backColor: gCell.grid.props.backColor,
@@ -114,7 +117,7 @@ export class TreeInGridCellApp {
           }
         }, gCell.tableRow?.idx);
       } catch (err) {
-        console.error(u.errorToConsole(err));
+        console.error(errorToConsole(err));
       } finally {
         args.preventDefault();
         //console.debug('PhyloTreeViewer: TreeInGridCell.gridOnCellRender() end ' + `name: ${name}`);

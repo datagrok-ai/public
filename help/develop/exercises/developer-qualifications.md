@@ -1,13 +1,12 @@
-<!-- TITLE: Developer qualifications -->
-<!-- SUBTITLE: -->
-
-# Datagrok developer qualifications
+---
+title: "Developer qualifications"
+---
 
 ## Platform user track
 
 * Import data (db, local files, file shares, webservices)
 * Explore (viewers, selection vs filter, filters, layouts)
-* Grid (actions, color-coding, summary columns, tooltips, property panel)
+* Grid (actions, color-coding, summary columns, tooltips, context panel)
 * Editing (in-place, batch edit, )
 * Tabular transformations (aggregate, unpivot, join, link)
 * Transformations (editing, add/remove rows/columns, add new column, functions)

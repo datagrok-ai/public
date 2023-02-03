@@ -1,7 +1,6 @@
-<!-- TITLE: Audit -->
-<!-- SUBTITLE: -->
-
-# Audit
+---
+title: "Audit"
+---
 
 Audit system is intended to store all users activity for future analysis.
 
@@ -11,7 +10,7 @@ corresponding entities. Audit records can be posted both from client and server 
 
 Each audit event can be disabled remotely from server for certain users group.
 
-All entities have activity section in property panel with all corresponding audit records.
+All entities have activity section in context panel with all corresponding audit records.
 
 All audit records have fixed types:
 

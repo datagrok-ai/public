@@ -1,13 +1,12 @@
-<!-- TITLE: Add an info panel -->
-<!-- SUBTITLE: -->
-
-# Info panels
+---
+title: "Add an info panel"
+---
 
 [Info panels](../../discover/info-panels.md) are a powerful tool for bringing
 new context-specific data to the sight. You can inform users about an object
 they see through these panels, which is why they have such a name. New details
-typically appear along with the rest of the information in the [property
-panel](../../datagrok/navigation.md#properties) and [visibility
+typically appear along with the rest of the information in the [context
+panel](../../datagrok/navigation.md#context-panel) and [visibility
 conditions](#visibility-conditions) will be re-evaluated whenever the object
 changes.
 
@@ -16,7 +15,7 @@ changes.
 Info panels are added as part of a [package](../develop.md). There are two ways
 of developing them for Datagrok: either as panel
 [scripts](../../compute/scripting.md) or as JavaScript panel
-[functions](../../datagrok/functions/function.md). Panel scripts can be written
+[functions](../../datagrok/functions/functions.md). Panel scripts can be written
 in any language supported by the platform (the full list of supported languages
 is available [here](../../compute/scripting.md#supported-languages)). In this
 case, the main difference between the two implementations pertains to where the
@@ -135,5 +134,5 @@ See also:
   Samples](https://public.datagrok.ai/js/samples/functions/info-panels/info-panels)
 * [JavaScript development](../develop.md)
 * [Scripting](../../compute/scripting.md)
-* [Functions](../../datagrok/functions/function.md)
+* [Functions](../../datagrok/functions/functions.md)
 * [Semantic types](../../discover/semantic-types.md)
