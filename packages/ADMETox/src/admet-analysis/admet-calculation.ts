@@ -24,13 +24,33 @@ export async function accessServer(csvString: string, queryParams: string) {
 
 function addTooltip() {
   const tableView = grok.shell.tv;
+  const between = (x: number, min: number, max: number) => {
+    return x >= min && x <= max;
+  }
   tableView.grid.onCellTooltip(function (cell, x, y) {
     const col = cell.tableColumn!.name;
+    const rangeNumbers = [];
     if (cell.isTableCell && Object.keys(models).includes(col)) {
+      const keys = Object.keys(models[col])
+      for (let i = 0; i < keys.length; ++i) {
+        rangeNumbers[i] = keys[i];
+      }
       const rowValue = tableView.dataFrame.get(cell.gridColumn.name, cell.gridRow);
-      let val: any = rowValue <= 0.5 ? Object.values(models[col])[0] : Object.values(models[col])[1];
+      let val = '';
+      //let val: any = _.inRange(rowValue) <= 0.5 ? Object.values(models[col])[0] : Object.values(models[col])[1];
+      for (let i = 0; i <= rangeNumbers.length; ++i) {
+        if (i != rangeNumbers.length - 1 && between(rowValue, parseFloat(rangeNumbers[i]), parseFloat(rangeNumbers[i + 1]))) {
+          val = models[col][rangeNumbers[i]];
+          break;
+        } else if (i === rangeNumbers.length - 1){
+          val = models[col][rangeNumbers[i]];
+          break;
+        } else {
+          val = models[col][rangeNumbers[i + 1]];
+        }
+      }
       ui.tooltip.show(ui.divV([
-        ui.div(val.toString())
+        ui.div(val)
       ]), x, y);
       return true;
     }

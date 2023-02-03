@@ -31,6 +31,9 @@ export async function admetoxCalculators(col: DG.Column) {
         if (column.colors.getType() === 'Conditional') {
           column.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"0-0.5":"#f1b6b4","0.5-1":"#b4f1bc"}`;
         }
+        if (column.colors.getType() === 'Linear') {
+          column.tags[DG.TAGS.COLOR_CODING_LINEAR] = `["#f1b6b4", "#b4f1bc"]`;
+        }
       })
     })
   });
