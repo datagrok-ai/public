@@ -1231,8 +1231,8 @@ function spliterResize(divider: HTMLElement, previousSibling: HTMLElement, nextS
   }
 }
 
-export function ribbonPanel(items, options = null) {
-  let root = document.createElement('div');
+export function ribbonPanel(items: HTMLElement[] | null): HTMLDivElement {
+  const root = document.createElement('div');
   $(root).addClass('d4-ribbon');
   if (items != null) {
     $(root).append(items.map(item => {
@@ -1240,9 +1240,9 @@ export function ribbonPanel(items, options = null) {
       $(itemBox).addClass('d4-ribbon-item');
       $(itemBox).append(item);
       return render(itemBox)
-    }))
+    }));
   }
-  let wrapSpacer = document.createElement('div');
+  const wrapSpacer = document.createElement('div');
   $(wrapSpacer).addClass('d4-ribbon-wrap-spacer');
   $(root).prepend(wrapSpacer);
   return root;
