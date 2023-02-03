@@ -35,7 +35,7 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    color: #4D5261;
+    /* color: #4D5261; */
 }
 
 body div#root, body div#root #content {
@@ -75,8 +75,6 @@ a {
 
 .navbar {
     min-height: 70px;
-    background-color: white;
-    box-shadow: #ecf0f4 0 0 5px;
     padding: 0 1rem;
 }
 
@@ -412,7 +410,7 @@ div.computer-image img {
     flex-grow: 1;
 }
 
-footer {
+.footer-landing {
     box-shadow: #778ea6 0 0 12px 0;
     margin-top: auto;
     background: radial-gradient(circle, rgb(114, 137, 174) 0%, #566c90 44%);
