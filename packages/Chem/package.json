@@ -69,12 +69,7 @@
     "webpack-cli": "latest",
     "style-loader": "latest",
     "css-loader": "latest",
-    "ts-loader": "latest",
-    "puppeteer": "^13.7.0",
-    "@types/js-yaml": "^4.0.5",
-    "js-yaml": "^4.1.0",
-    "@types/node-fetch": "^2.6.2",
-    "node-fetch": "^2.6.7"
+    "ts-loader": "latest"
   },
   "browser": {
     "fs": false,
