@@ -353,22 +353,22 @@ Standard package development includes the stages below:
 Most of the above steps can be automated
 using [CI/CD tools](https://www.redhat.com/en/topics/devops/what-is-ci-cd#ci/cd-tools). You can use [our
 workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yml)
-in [GitHub Actions](https://github.com/features/actions) as an example. It builds, tests and publish
+in [GitHub Actions](https://github.com/features/actions) as an example. It builds, tests, and publishes
 our [public packages](https://github.com/datagrok-ai/public/tree/master/packages).
 
 #### Tests in automation tools
 
-To test package in CI you need:
+To test a package in CI, you need the following:
 
-1. Set up a stand for workflow. It is very easy to do using [docker-compose](admin/docker-compose.md)
-2. Install latest [datagrok-tools](https://www.npmjs.com/package/datagrok-tools)
+1. Set up a stand for workflow. It is elementary to do using [docker-compose](admin/docker-compose.md)
+2. Install the latest [datagrok-tools](https://www.npmjs.com/package/datagrok-tools)
 3. [Publish package](#publication-with-automation-tools) to the stand
 4. Run tests using [grok test](how-to/test-packages.md#local-testing)
 
 ##### Install dependencies in GitHub Actions
 
 To install dependent grok packages in [our
-workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yml) you can
+workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yml), you can
 use `grokDependencies` in [package.json](#packagejson)
 
 ```json
