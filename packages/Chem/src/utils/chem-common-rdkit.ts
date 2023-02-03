@@ -6,8 +6,9 @@ import {convertToRDKit} from '../analysis/r-group-analysis';
 import rdKitLibVersion from '../rdkit_lib_version';
 //@ts-ignore
 import initRDKitModule from '../RDKit_minimal.js';
+import { isMolBlock } from './chem-common';
+import $ from 'cash-dom';
 import {RDModule, RDMol, Reaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {isMolBlock} from '../utils/convert-notation-utils';
 
 export let _rdKitModule: RDModule;
 export let _rdKitService: RdKitService;
@@ -123,6 +124,14 @@ export function drawMoleculeToCanvas(
   onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null,
   options = {normalizeDepiction: true, straightenDepiction: true}
 ) {
+
+  $(onscreenCanvas).addClass('chem-canvas');
+  const r = window.devicePixelRatio;
+  onscreenCanvas.width = w * r;
+  onscreenCanvas.height = h * r;
+  onscreenCanvas.style.width = (w).toString() + 'px';
+  onscreenCanvas.style.height = (h).toString() + 'px';
+
   let mol = null;
   try {
     const isMol: boolean = isMolBlock(molString);
@@ -154,4 +163,23 @@ export function drawMoleculeToCanvas(
   } finally {
     mol?.delete();
   }
+}
+
+export function checkMolEqualSmiles(mol1: any, molfile2: string): boolean {
+  const mol2 = checkMoleculeValid(molfile2);
+  const result = mol2 ? mol1.get_smiles() === mol2.get_smiles() : false;
+  mol2?.delete();
+  return result;
+}
+
+export function checkMoleculeValid(molecule: string): any {
+  let mol;
+  try {
+    mol = getRdKitModule().get_mol(molecule);
+  }
+  catch (e: any) {
+    mol?.delete();
+    return null;
+  }
+  return mol;
 }

@@ -7,7 +7,7 @@ import {readDataframe} from './utils';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 
-category('substructure filters', async () => {
+ category('substructure filters', async () => {
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
@@ -20,27 +20,12 @@ category('substructure filters', async () => {
     await grok.data.detectSemanticTypes(df);
     const sketcherDialogs: DG.Dialog[] = [];
 
-    async function initSketcher(sw: DG.chem.Sketcher) {
-      return new Promise(async (resolve, reject) => {
-        sw.sketcherCreated.subscribe(async (_: any) => {
-          try {
-            resolve(true);
-          } catch (error) {
-            reject(error);
-          }
-        });
-      });
-    }
-
     async function createFilter(colName: string): Promise<SubstructureFilter> {
       const filter = new SubstructureFilter();
       sketcherDialogs.push(ui.dialog().add(filter.sketcher).show());
       filter.attach(df);
       filter.column = df.col(colName);
       filter.columnName = colName;
-      const waitForSketcher = initSketcher(filter.sketcher);
-      if (!filter.sketcher.sketcher)
-        await waitForSketcher;
       return filter;
     }
 
@@ -86,5 +71,5 @@ M  END
     }, () => { filter2.sketcher.setMolFile(molfile2) }, 7000);
     sketcherDialogs.forEach((it) => it.close());
   });
-});
+}); 
   
