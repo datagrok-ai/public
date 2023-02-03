@@ -61,7 +61,6 @@ if not settings.configured:
 django.setup()
 
 from django.db import models
-from django.contrib import admin
 
 class Smiles(models.Model):
     smiles = models.TextField()
@@ -116,8 +115,8 @@ import botocore
 from botocore import UNSIGNED
 from botocore.config import Config
 
-#from pychem import pychem
-#from pychem.pychem import PyChem2d
+from pychem import pychem
+from pychem.pychem import PyChem2d
 
 """Dictionary that defines number of bits for each model or list of needed descriptors"""
 dict_bits_desc = {
@@ -191,12 +190,6 @@ dict_bits_desc = {
                   'bcutm4', 'PEOEVSA5', 'LogP2', 'LogP'],
     "logP": ['LogP']
 }
-
-models_to_download = ["Pgp-Inhibitor/Pgp-Inhibitor", "Pgp-Substrate/Pgp-Substrate", "HIA", 
-"F(20%)", "F(30%)", "Ames", "SkinSen", "BBB/BBB", "CYP1A2-Inhibitor/CYP1A2-Inhibitor",
-"CYP1A2-Substrate", "CYP3A4-Inhibitor/CYP3A4-Inhibitor", "CYP3A4-Substrate", 
-"CYP2C19-Inhibitor/CYP2C19-Inhibitor", "CYP2C19-Substrate", "CYP2C9-Inhibitor/CYP2C9-Inhibitor",
-"CYP2C9-Substrate", "CYP2D6-Inhibitor", "CYP2D6-Substrate"]
 
 def calculate_descriptors(smile):
     """Calculate descriptors for the input smile
@@ -277,14 +270,12 @@ def flatten(l):
 
 def download_all_files(bucket_name, s3_folder):
     s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
-    for model in models_to_download:
+    for model in dict_bits_desc.keys():
         if '/' in model:
             download_s3_folder(bucket_name, s3_folder + model.split('/')[0], model.split('/')[0])
         else:
             s3.download_file(bucket_name, s3_folder + model + '.pkl', model + '.pkl')
 
-
-downloaded = 0
 Maccs = []
 Ecfp2 = []
 Ecfp4 = []
@@ -298,14 +289,10 @@ def handle_uploaded_file(f, models):
     :return: zip(predict_label, predict_proba)
     """
 
-    global downloaded
     global smiles_global
     global Maccs
     global Ecfp2
     global Ecfp4
-    if downloaded == 0:
-        download_all_files('datagrok-data', 'models/admetox/')
-        downloaded += 1
     smiles = [list(row.values()) for row in f]
     encoded_smiles = [smile[0].encode('utf8') for smile in smiles]
     if len(smiles_global) == 0 or smiles_global != encoded_smiles:
@@ -315,30 +302,31 @@ def handle_uploaded_file(f, models):
         Ecfp4 = np.array(getECFP(smiles_global, 2, 1024))
     current_path = os.path.split(os.path.realpath(__file__))[0]
     models_res = [model.encode('utf8') for model in models.split(",")]
-    result = np.zeros((len(encoded_smiles),0), float)
+    result = np.zeros((len(smiles_global),0), float)
     for j in range(len(models_res)):
         if models_res[j] == 'logP':
-            result = np.concatenate([result, np.array(flatten(get_descriptor_vector(encoded_smiles, dict_bits_desc[models_res[j]]))).reshape(len(encoded_smiles), 1)], axis=1)
-            break
+            result = np.concatenate([result, np.array(flatten(get_descriptor_vector(smiles_global, dict_bits_desc[models_res[j]]))).reshape(len(smiles_global), 1)], axis=1)
+            if j == len(models_res) - 1:
+                break
+            continue
         res = [key for key in dict_bits_desc.keys() if models_res[j] in key]
         cf = sklearn.externals.joblib.load(current_path + '/' + res[0] + '.pkl')
         fingerprint_content = lambda bits: Maccs if bits == 167 \
             else (Ecfp2 if bits == 2048 \
             else (Ecfp4 if bits == 1024 \
-            else get_descriptor_vector(encoded_smiles, dict_bits_desc[models_res[j]])))
+            else get_descriptor_vector(smiles_global, dict_bits_desc[res[0]])))
         des_list = np.array(fingerprint_content(dict_bits_desc[res[0]]))
         predicts = []
         y_predict_label = cf.predict(des_list)
         try:
             y_predict_proba = cf.predict_proba(des_list)
-            for i in range(len(encoded_smiles)):
+            for i in range(len(smiles_global)):
                 predict = y_predict_proba[i]
-                predicts.append(predict[y_predict_label[1]])
+                predicts.append(predict[1])
         except:
-            for i in range(len(encoded_smiles)):
+            for i in range(len(smiles_global)):
                 predicts.append(y_predict_label[i])
-
-        result = np.concatenate([ result, np.array(predicts).reshape(len(encoded_smiles),1)], axis=1)
+        result = np.concatenate([ result, np.array(predicts).reshape(len(smiles_global),1)], axis=1)
     res_df = pd.DataFrame(result, columns=models_res)
     res_str = res_df.to_csv(index=False, quoting=csv.QUOTE_NONNUMERIC)
     return res_str
