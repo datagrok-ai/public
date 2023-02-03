@@ -3,7 +3,6 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import $ from "cash-dom";
 import {_rdKitModule} from '../utils/chem-common-rdkit';
-import {isMolBlock} from "../utils/convert-notation-utils";
 import {chem} from "datagrok-api/grok";
 import {toJs, TreeViewGroup, TreeViewNode} from "datagrok-api/dg";
 import Sketcher = chem.Sketcher;
@@ -1204,7 +1203,7 @@ class SketcherDialogWrapper {
     this.group = group;
     const v = value(this.group);
     const molStr = v === null ? '' : v.smiles;
-    this.isMolBlock = isMolBlock(molStr);
+    this.isMolBlock = DG.chem.isMolBlock(molStr);
 
     const thisWrapper = this;
 
@@ -1253,7 +1252,7 @@ class SketcherDialogWrapper {
     this.group = node;
     const v = value(node);
     const molStr = v === null ? '' : v.smiles;
-    this.isMolBlock = isMolBlock(molStr);
+    this.isMolBlock = DG.chem.isMolBlock(molStr);
     this.isMolBlock ? this.sketcher.setMolFile(molStr) : this.sketcher.setSmiles(molStr);
   }
 

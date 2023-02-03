@@ -1,0 +1,27 @@
+.sketch-link {
+    border: 1px solid var(--grey-2);
+    height: 25px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-left: 0px;
+    margin-left: 0px;
+  }
+
+.sketcher-standard-size {
+  min-width: 500px;
+  min-height: 400px;
+}
+
+.extended-width {
+  min-width: 800px;
+  min-height: 400px;
+}
+
+.clear-button {
+  position: absolute;
+  right: 0px;
+  top: 0px;
+  font-size: 10px;
+  visibility: hidden;
+}

@@ -5,7 +5,6 @@
 import * as DG from 'datagrok-api/dg';
 import {drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {isMolBlock} from '../utils/convert-notation-utils';
 import {aromatizeMolBlock} from "../utils/aromatic-utils";
 
 interface IMolInfo {
@@ -122,7 +121,7 @@ M  END
       try {
         if (mol.is_valid()) {
           let molHasOwnCoords = mol.has_coords();
-          const scaffoldIsMolBlock = isMolBlock(scaffoldMolString);
+          const scaffoldIsMolBlock = DG.chem.isMolBlock(scaffoldMolString);
           if (scaffoldIsMolBlock) {
             const rdKitScaffoldMol = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false, {mergeQueryHs: true, isSubstructure: true}).mol;
             if (rdKitScaffoldMol && rdKitScaffoldMol.is_valid()) {
