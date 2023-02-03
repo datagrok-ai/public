@@ -948,3 +948,7 @@ div.spacer {
 aside.theme-doc-sidebar-container > div {
     top:25px;
 }    
+
+.modal-title {
+    color: var(--grey-6);
+}
