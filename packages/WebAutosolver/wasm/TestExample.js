@@ -38,12 +38,6 @@ var solveTestExample = {
     _yInitial: {
       type: 'num'
     },
-    _param1Val: {
-      type: 'num'
-    },
-    _param2Val: {
-      type: 'num'
-    },
     _tCount: {
       type: 'num'
     },

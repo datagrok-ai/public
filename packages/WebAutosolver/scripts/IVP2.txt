@@ -1,0 +1,14 @@
+#name: TestExample
+#method: explicit
+#differential equations:
+  dx/dt = cos(t)
+  dy/dt = -sin(t)
+
+#argument: t (time, minutes)
+  initial = 0.0
+  final = 5.0
+  step = 0.1
+
+#initial values:
+  x = 0.0 (fhfhf)
+  y = 1.0 (adasda)

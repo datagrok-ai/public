@@ -8,7 +8,7 @@ using namespace std;
 extern "C" {
      int solveTestExample(float initial, float final, float step,
         float _xInitial, float _yInitial, 
-        float _param1Val, float _param2Val, 
+        
         int _tCount, int _varsCount,
         float * _solution, int _solutionRowCount, int _solutionColCount) noexcept;
 }
@@ -28,29 +28,19 @@ namespace TestExample
     const int DIM = 2;
 
     // parameters
-    double param1 = 0.0;
-    double param2 = 0.0;
 
     //the right part of the ODEs
     VectorXd _f(double t, VectorXd & _y) noexcept
     {
         VectorXd _res(DIM);
 
-        // constants
-        const double const1 = 1.0;
-        const double const2 = 3.0;
-
         // extract variables
         double x = _y(0);
         double y = _y(1);
 
-        // expressions
-        double coef1 = const1 + param1;
-        double coef2 = const2 + param2 + 0.0;
-
         // output computation
-        _res(0) = coef1 * y;
-        _res(1) = coef2 * x;
+        _res(0) = cos(t);
+        _res(1) = -sin(t);
 
         return _res;
     } // _f
@@ -83,10 +73,8 @@ namespace TestExample
 //input: double initial = 0.0 {caption: initial; category: time, minutes}
 //input: double final = 5.0 {caption: final; category: time, minutes}
 //input: double step = 0.1 {caption: step; category: time, minutes}
-//input: double _xInitial = 2.0 {units: x y.o.; caption: x; category: initial values}
-//input: double _yInitial = 0.0 {units: y y.o.; caption: y; category: initial values}
-//input: double _param1Val = 1.0 {units: param1 y.o.; caption: param1; category: parameters}
-//input: double _param2Val = -1.0 {units: param2 y.o.; caption: param2; category: parameters}
+//input: double _xInitial = 0.0 {units: fhfhf; caption: x; category: initial values}
+//input: double _yInitial = 1.0 {units: adasda; caption: y; category: initial values}
 //input: int _tCount
 //input: int _varsCount
 //output: column_list _solution [new(_tCount, _varsCount); 't'; 'x(t)'; 'y(t)']
@@ -95,7 +83,7 @@ namespace TestExample
 EMSCRIPTEN_KEEPALIVE
 int solveTestExample(float initial, float final, float step,
     float _xInitial, float _yInitial, 
-    float _param1Val, float _param2Val, 
+    
     int _tCount, int _varsCount,
     float * _solution, int _solutionRowCount, int _solutionColCount) noexcept
 {
@@ -108,9 +96,7 @@ int solveTestExample(float initial, float final, float step,
     _initialVals[1] = _yInitial;
 
     // parameters
-    param1 = _param1Val;
-    param2 = _param2Val;
 
-    return solveODE(_f, _T, _J, initial, final, step, _initialVals, _tol,
+    return solveODE(_f, initial, final, step, _initialVals, _tol,
             _solution, _tCount, _varsCount);
 } //solveTestExample

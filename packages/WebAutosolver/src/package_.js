@@ -21,20 +21,14 @@ export async function init() {
 //input: double initial = 0.0 {caption: initial; category: time, minutes}
 //input: double final = 5.0 {caption: final; category: time, minutes}
 //input: double step = 0.1 {caption: step; category: time, minutes}
-//input: double _xInitial = 0.0 {units: fhfhf; caption: x; category: initial values}
-//input: double _yInitial = 1.0 {units: adasda; caption: y; category: initial values}
+//input: double _xInitial = 0.0 {units: x y.o.; caption: x; category: initial values}
+//input: double _yInitial = 1.0 {units: y y.o.; caption: y; category: initial values}
 //output: dataframe dfSolution {caption: Solution; viewer: Line chart(x: "t, time (minutes)", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
 //editor: Compute:RichFunctionViewEditor
-export async function solveTestExample(initial, final, step,
-  _xInitial, _yInitial, 
-  )
-{
+export async function solveTestExample(initial, final, step, _xInitial, _yInitial) {
   let _tCount = Math.trunc((final - initial) / step) + 1;
   let _varsCount = 3;
-
-  return callWasm(TestExample, 'solveTestExample',
-    [ initial, final, step,
-     _xInitial, _yInitial,
-    
-     _tCount, _varsCount ] );
+  return callWasm(TestExample, 'solveTestExample', 
+    [initial, final, step, _xInitial, _yInitial, _tCount, _varsCount]);
 }
+

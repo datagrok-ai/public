@@ -7,6 +7,15 @@ import os
 import json
 
 from constants import *
+from export import getFunctionsFromListOfFiles, getCommand, completeJsWasmfile, updatePackageJsonFile 
+
+def loadSettings():
+    """
+    Load export settings.
+    """
+    with open(EXPORT_SETTINGS_FILE, 'r') as file:
+        return json.load(file)
+
 
 def getRawIVPfromFile(ivpFileName):
     """"
@@ -40,6 +49,7 @@ def getRawIVPfromFile(ivpFileName):
                     ivpRaw[category].append(line)        
 
     return ivpRaw
+
 
 def getSpecificationFromRawIVP(ivpRaw):
     """
@@ -106,6 +116,10 @@ def getSpecificationFromRawIVP(ivpRaw):
         """
         Returns joined multiline formulas.
         """
+        # nothing to do if there are no formulas
+        if len(formulas) == 0:
+            return formulas
+
         joinedFormulas = []        
 
         currentFormula = formulas[0]
@@ -131,7 +145,7 @@ def getSpecificationFromRawIVP(ivpRaw):
         for line in expressions:
             name, ignore, formula = line.partition('=')
             specification[name.strip()] = formula.strip() # spaces are removed
-
+        
         return specification
 
     def extractDifEqsSpecification(expressions):
@@ -165,11 +179,11 @@ def getSpecificationFromRawIVP(ivpRaw):
     ivp[INIT_VALS] = extractQuantitiesSpecification(ivpRaw[INIT_VALS])
 
     # 3. Process constants' description
-    ivp[CONSTANTS] = extractQuantitiesSpecification(ivpRaw[CONSTANTS])
+    ivp[CONSTANTS] = extractQuantitiesSpecification(ivpRaw[CONSTANTS])    
 
     # 4. Process parameters' description
     ivp[PARAMS] = extractQuantitiesSpecification(ivpRaw[PARAMS])
-
+    
     # 5. Process expressions' description
     ivp[EXPRESSIONS] = extractExpressionsSpecification(joinMultilineFormulas(ivpRaw[EXPRESSIONS]))
 
@@ -184,6 +198,7 @@ def getSpecificationFromRawIVP(ivpRaw):
         raise Warning
 
     return ivp
+
 
 def generateCppCode(ivp):
     """
@@ -265,9 +280,10 @@ def generateCppCode(ivp):
         # put body of the function
         puts(SPACE + '{\n')
 
-        puts(SUBSPACE + f'{VEC_TYPE} {VEC_OUTPUT_NAME}({DIMENSION_NAME});\n\n')
+        puts(SUBSPACE + f'{VEC_TYPE} {VEC_OUTPUT_NAME}({DIMENSION_NAME});\n')
 
-        puts(SUBSPACE + '// constants\n')
+        if len(ivp[CONSTANTS]) > 0:
+            puts('\n' + SUBSPACE + '// constants\n')
 
         # put constants
         for name in ivp[CONSTANTS]:
@@ -281,7 +297,8 @@ def generateCppCode(ivp):
             puts(SUBSPACE + f'{ARG_TYPE} {name} = {VEC_ARG_NAME}({index});\n')
             index += 1
 
-        puts('\n' + SUBSPACE + '// expressions\n')
+        if len(ivp[EXPRESSIONS]) > 0:
+            puts('\n' + SUBSPACE + '// expressions\n')
 
         # put expressions
         for name in ivp[EXPRESSIONS]:
@@ -504,8 +521,6 @@ def generateCppCode(ivp):
         puts(line)
         
         puts('} //' + SOLVER_PREFIX + ivp[NAME])
-
-
     
     settings = {}
 
@@ -550,51 +565,226 @@ def generateCppCode(ivp):
         putSolverBody(puts, ivp)
 
 
-def updateExportSettings(ivp):
+def updateExportSettings(settings, ivp):
     """
     Update C++-to-wasm export settings.
     """
-    settings = {}
-
-    with open(EXPORT_SETTINGS_FILE, 'r') as file:
-         settings = json.load(file)
-    
     settings['name'] = ivp[NAME]
     settings['source'] = [ivp[NAME] + '.cpp']
 
-    with open(EXPORT_SETTINGS_FILE, 'w') as file:
-            json.dump(settings, file)
+
+def cppToWasmExport(settings):
+    """
+    C++-to-Wasm export.
+    """
+    # parse C++-files and get exported functions data
+    functionsData = getFunctionsFromListOfFiles(settings)
+
+    # get command for the Emscripten tool
+    command = getCommand(settings, functionsData)
+
+    # execute command by Emscripten
+    os.system(command)
+
+    # complete JS-file created by Emscripten
+    completeJsWasmfile(settings, functionsData) 
+
+    # update the file package.json
+    updatePackageJsonFile(settings)
 
 
-def main(ivpFileName="IVP.txt"):
+def addSolverToPackageFile(settings, ivp):
+    """
+    Add IVP solver function to DATAGROK package file.
+    """
+
+    def putAnnotation(puts, ivp):
+        """
+        Put RichFunctionView annotation.
+        """
+        puts(f'\n//name: {SOLVER_PREFIX + ivp[NAME]}\n')
+
+        # 1. PUT ANNOTATION CONCERNING ARGUMENT
+
+        # initial value
+        puts(f'//input: {ANNOT_ARG_TYPE} {ivp[ARGUMENT]["initial"]["name"]}')
+        puts(f' = {ivp[ARGUMENT]["initial"]["value"]}')
+        puts(' {caption: ' + ivp[ARGUMENT]["initial"]["name"] + ';')
+        puts(f' category: {ivp[ARGUMENT]["title"]}' + '}\n')
+
+        # final value
+        puts(f'//input: {ANNOT_ARG_TYPE} {ivp[ARGUMENT]["final"]["name"]}')
+        puts(f' = {ivp[ARGUMENT]["final"]["value"]}')
+        puts(' {caption: ' + ivp[ARGUMENT]["final"]["name"] + ';')
+        puts(f' category: {ivp[ARGUMENT]["title"]}' + '}\n')
+
+         # step value
+        puts(f'//input: {ANNOT_ARG_TYPE} {ivp[ARGUMENT]["step"]["name"]}')
+        puts(f' = {ivp[ARGUMENT]["step"]["value"]}')
+        puts(' {caption: ' + ivp[ARGUMENT]["step"]["name"] + ';')
+        puts(f' category: {ivp[ARGUMENT]["title"]}' + '}\n')
+
+        # 2. INITIAL VALUES
+
+        # dict with initial values specification
+        data = ivp[INIT_VALS]
+
+        # put annotation
+        for name in data.keys():
+            puts(f'//input: {ANNOT_ARG_TYPE} _{name}Initial = {data[name]["value"]}')
+            puts(' {' + f'units: {data[name]["units"]};')
+            puts(f' caption: {name}; category: {INIT_VALS}' + '}\n')
+        
+        # 3. PARAMETERS
+
+        # dict with parameters specification
+        data = ivp[PARAMS]
+
+        # put annotation
+        for name in data.keys():
+            puts(f'//input: {ANNOT_ARG_TYPE} _{name}Val = {data[name]["value"]}')
+            puts(' {' + f'units: {data[name]["units"]};')
+            puts(f' caption: {name}; category: {PARAMS}' + '}\n')                 
+
+        # 4. OUTPUT DATAFRAME
+        puts(f'//output: dataframe {DF_SOLUTION_NAME} {DF_OUTPUT_ANNOT}\n')
+
+        # 5. EDITOR
+        puts(EDITOR_LINE + '\n')
+        
+    def putHeader(puts, ivp):
+        """
+        Put RichFunctionView annotation.
+        """
+        # name
+        puts(f'export async function {SOLVER_PREFIX + ivp[NAME]}(')
+        
+        # argument
+        arg = ivp[ARGUMENT]
+        puts(f'{arg["initial"]["name"]}, {arg["final"]["name"]}, {arg["step"]["name"]},\n')
+
+        # initial values
+        line = ''
+        for name in ivp[INIT_VALS].keys():
+            line += f'_{name}Initial' + ', '
+        puts(JS_SPACE + line + '\n')
+
+        # parameters
+        line = ''
+        for name in ivp[PARAMS].keys():
+            line += f'_{name}Val' + ', '
+
+        # remove last comma
+        line = line.rstrip(', ')
+        puts(JS_SPACE + line + ')\n')
+
+    def putBody(puts, ivp):
+        """
+        Put RichFunctionView annotation.
+        """
+        puts('{\n')
+
+        # put computation of dataframe size: rows count
+        arg = ivp[ARGUMENT]
+        puts(f'{JS_SPACE}let _{ivp[ARGUMENT]["name"]}Count = ')
+        puts(f'Math.trunc(({arg["final"]["name"]} - {arg["initial"]["name"]}) ')
+        puts(f'/ {arg["step"]["name"]}) + 1;\n')
+
+        # put computation of dataframe size: columns count        
+        puts(f'{JS_SPACE}let _varsCount = ')
+        puts(f'{len(ivp[INIT_VALS].keys()) + 1};\n\n')
+
+        # put return line
+        puts(f"{JS_SPACE}return callWasm({ivp[NAME]}, '{SOLVER_PREFIX + ivp[NAME]}',\n")
+
+        # put argument
+        puts(JS_SUBSPACE + '[')
+        arg = ivp[ARGUMENT]
+        puts(f' {arg["initial"]["name"]}, {arg["final"]["name"]}, {arg["step"]["name"]},\n')
+
+        # put initial values
+        line = ''
+        for name in ivp[INIT_VALS].keys():
+            line += f' _{name}Initial,'
+        puts(JS_SUBSPACE + line + '\n')
+
+        # put parameters
+        line = ''
+        for name in ivp[PARAMS].keys():
+            line += f' _{name}Val,'
+        puts(JS_SUBSPACE + line + '\n')
+
+        # put row- and col- counts
+        puts(f'{JS_SUBSPACE} _{ivp[ARGUMENT]["name"]}Count, _varsCount ] );\n')
+
+        puts('}\n')
+        
+
+    # set mode for openning file
+    mode = None
+    if settings['packageFileUpdateMode'] == 'rewrite':
+        mode = 'w' # the write mode
+    else:
+        mode = 'a' # the append mode
+
+    # put code to the package file
+    with open(settings['packageFile'], mode) as file:
+        puts = file.write
+
+        # put first lines if package file is opened in the write mode
+        if mode == 'w':        
+            puts(PACKAGE_FILE_FIRST_LINES)
+
+        # put annotation
+        putAnnotation(puts, ivp)
+
+        # put header of the function
+        putHeader(puts, ivp)
+
+        # put body of the function 
+        putBody(puts, ivp)
+
+
+def main():
     """
     The main script: 
-        1) get initial value problem from file;
-        2) get specification of IVP from its raw description;
-        3) generate C++ code;
-        4) update settings for C++-to-wasm export;
-        
+        1) load settings;
+        2) get initial value problem from file;
+        3) get specification of IVP from its raw description;
+        4) generate C++ code;
+        5) update settings for C++-to-wasm export;
+        6) C++-to-wasm export;
+        7) add IVP solver function to DATAGROK package file.        
     """
     try:
-        # 1) get initial value problem from file
-        ivpRaw = getRawIVPfromFile(ivpFileName)       
+        # 1) load settings
+        settings = loadSettings()
 
-        with open('rawIVP.json', 'w') as file:
-            json.dump(ivpRaw, file)
+        # 2) get initial value problem from file
+        ivpRaw = getRawIVPfromFile(settings["ivpFile"])       
+
+        # save raw IVP data
+        #with open('rawIVP.json', 'w') as file:
+        #    json.dump(ivpRaw, file)
         
-        # 2) get specification of IVP from its raw description
+        # 3) get specification of IVP from its raw description
         ivp = getSpecificationFromRawIVP(ivpRaw)
 
-        with open('IVP.json', 'w') as file:
-            json.dump(ivp, file)
+        # save parsed IVP specification
+        #with open('IVP.json', 'w') as file:
+        #    json.dump(ivp, file)
 
-        # 3) generate C++ code
+        # 4) generate C++ code
         generateCppCode(ivp)
 
-        # 4) update settings for C++-to-wasm export
-        updateExportSettings(ivp)
+        # 5) update settings for C++-to-wasm export
+        updateExportSettings(settings, ivp)
 
+        # 6) C++-to-wasm export
+        cppToWasmExport(settings)
 
+        # 7) add IVP solver function to DATAGROK package file
+        addSolverToPackageFile(settings, ivp)
 
     except OSError:
         print("OS ERROR: check paths and file names!")

@@ -60,3 +60,27 @@ EDITOR_LINE = '//editor: Compute:RichFunctionViewEditor'
 DF_SOLUTION_NAME = 'dfSolution'
 DF_OUTPUT_ANNOT = '{caption: Solution; viewer: Line chart(x: "t, time (minutes)", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }'
 
+# DATAGROK package file constants
+JS_SPACE = ' ' * 2
+JS_SUBSPACE = ' ' * 4
+
+PACKAGE_FILE_FIRST_LINES = '''/* Do not change these import lines to match external modules in webpack configuration */
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+
+export const _package = new DG.Package();
+
+//name: info
+export function info() {
+  grok.shell.info(_package.webRoot);
+}
+
+import { callWasm } from '../wasm/callWasm';
+
+//tags: init
+export async function init() {
+  await initTestExample();
+}
+'''
+

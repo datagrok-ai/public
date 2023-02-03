@@ -513,7 +513,6 @@ def addExportedFunctionsToPackageFile(settings, functionsData):
                 put(f"  return callWasm({settings['name']}, '{funcName}', {callArgs});\n")
                 put('}\n\n')
 
-
 def main(nameOfSettingsFile="exportSettings.json"):
     """
     The main script: 
