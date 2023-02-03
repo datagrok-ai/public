@@ -1,5 +1,20 @@
 html {
     font-size: 15px;
+    color: var(--text-color);
+    height: auto!important;
+}
+
+html[data-theme='light'] {
+    --brand-color: var(--steel-5);
+    --text-color: var(--grey-6);
+    --link-color: var(--blue-1);
+    --footer-background: var(--grey-1);
+}
+html[data-theme='dark'] {
+    --brand-color: white;
+    --text-color: var(--grey-1);
+    --link-color: var(--blue-2);
+    --footer-background: var(--ifm-navbar-background-color);    
 }
 
 h1, h2, h3, h4, h5, .display-1, .display-2, .display-3, .display-4, .display-5, .display-6 {
@@ -21,7 +36,7 @@ html.smooth-scroll {
 }
 
 h2 {
-    border-bottom: 1px solid lightgray;
+    border-bottom: 1px solid var(--ifm-toc-border-color);
     padding-bottom: 6px;
     margin-bottom: 18px;
 }
@@ -62,20 +77,56 @@ section a.anchor {
 }
 
 a {
-    color: #2083D5;
+    color: var(--link-color);
+}
+
+.root {
+    background-color: white;
+}
+
+.menu__link--active {
+    color: var(--link-color); 
 }
 
 .text-uppercase {
     letter-spacing: 1px;
 }
 
-.navbar-brand {
+.navbar__title {
     font-family: 'Nunito', sans-serif;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--brand-color);
 }
 
 .navbar {
     min-height: 70px;
     padding: 0 1rem;
+    position: sticky;
+}
+.navbar__link--active {
+    color: var(--link-color);
+}
+.breadcrumbs__item--active .breadcrumbs__link {
+    color: var(--link-color);
+}
+.breadcrumbs {
+    top: 0!important;
+    margin: 0!important;
+}
+.breadcrumbs__link {
+    color: var(--text-color);
+    padding: 0!important;
+}
+.breadcrumbs__item--active .breadcrumbs__link {
+    background: none;
+}
+.breadcrumbs__link:any-link:hover {
+    background: none;
+}
+
+.table-of-contents__link--active {
+    color: var(--link-color);
 }
 
 @media (max-width: 992px) {
@@ -416,6 +467,15 @@ div.computer-image img {
     background: radial-gradient(circle, rgb(114, 137, 174) 0%, #566c90 44%);
 }
 
+.footer {
+    color: var(--text-color);
+    background-color: var(--footer-background);
+}
+
+.footer__link-item {
+    color: var(--link-color);
+}
+
 ul.grok-features-list li {
     cursor: pointer;
     position: relative;
@@ -453,13 +513,6 @@ ul.grok-features-list li:focus:before {
     box-shadow: #ecf0f4 0 0 15px 4px;
     border: 1px solid #d8e3eb;
     user-select: none;
-}
-
-hr {
-    border: none;
-    height: 4px;
-    border-radius: 2px;
-    background-color: #d2dae2;
 }
 
 .heinlein h3 {
@@ -887,3 +940,11 @@ div.spacer {
     background-color: #60b4d0;
     border-color: #60b4d0;
 }
+
+.menu__list {
+    margin-right: 4px;
+}
+
+aside.theme-doc-sidebar-container > div {
+    top:25px;
+}    
