@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
+
+import {FlagCellRenderer} from './renderers/flag-cell-renderer';
 
 import {TreeViewer} from './viewers/tree/tree-viewer';
 import {SunburstViewer} from './viewers/sunburst/sunburst-viewer';
@@ -12,84 +13,10 @@ import {GroupAnalysisViewer} from './viewers/group-analysis/group-analysis-viewe
 import {SurfacePlot} from './viewers/surface-plot/surface-plot';
 import {GlobeViewer} from './viewers/globe/globe-viewer';
 
-import {FlagCellRenderer} from './renderers/flag-cell-renderer';
-
 import {Demo} from './demos/demo';
 
 export const _package = new DG.Package();
 
-
-//name: RadarViewer
-//tags: viewer
-//output: viewer result
-export function _RadarViewer() {
-  return new RadarViewer();
-}
-
-//name: TreeViewer
-//tags: viewer
-//meta.trellisable: true
-//output: viewer result
-export function _TreeViewer() {
-  return new TreeViewer();
-}
-
-//name: SunburstViewer
-//tags: viewer
-//output: viewer result
-export function _SunburstViewer() {
-  return new SunburstViewer();
-}
-
-//name: SankeyViewer
-//tags: viewer
-//output: viewer result
-export function _SankeyViewer() {
-  return new SankeyViewer();
-}
-
-//name: ChordViewer
-//tags: viewer
-//output: viewer result
-export function _ChordViewer() {
-  return new ChordViewer();
-}
-
-//name: WordCloudViewer
-//tags: viewer
-//output: viewer result
-export function _WordCloudViewer() {
-  return new WordCloudViewer();
-}
-
-//name: TimelinesViewer
-//tags: viewer
-//output: viewer result
-export function _TimelinesViewer() {
-  return new TimelinesViewer();
-}
-
-//name: SurfacePlot
-//tags: viewer
-//output: viewer result
-export function _SurfacePlot() {
-  return new SurfacePlot();
-}
-
-//name: GroupAnalysisViewer
-//tags: viewer
-//output: viewer result
-export function _GroupAnalysisViewer() {
-  return new GroupAnalysisViewer();
-}
-
-//name: GlobeViewer
-//description: Creates a globe viewer
-//tags: viewer
-//output: viewer result
-export function _GlobeViewer() {
-  return new GlobeViewer();
-}
 
 //name: flagCellRenderer
 //tags: cellRenderer
@@ -100,36 +27,85 @@ export function flagCellRenderer() {
 }
 
 
-//name: radarViewerDemo
-//meta.demoPath: Viewers | Radar
-export function _radarViewerDemo() {
-  radarViewerDemo();
+//name: ChordViewer
+//description: Creates a chord viewer
+//tags: viewer
+//output: viewer result
+export function _ChordViewer() {
+  return new ChordViewer();
 }
 
-//name: radarViewerDemo
-//meta.demoPath: Viewers | Timelines
-export function _timelinesViewerDemo() {
-  const tv = grok.shell.addTableView(grok.data.demo.demog());
-  tv.addViewer(DG.VIEWER.TIMELINES);
+//name: GlobeViewer
+//description: Creates a globe viewer
+//tags: viewer
+//output: viewer result
+export function _GlobeViewer() {
+  return new GlobeViewer();
 }
 
-//name: radarViewerDemo
-export function radarViewerDemo() {
-  const view = grok.shell.addTableView(grok.data.demo.demog(100));
-  view.addViewer('RadarViewer');
+//name: GroupAnalysisViewer
+//description: Creates a group analysis viewer
+//tags: viewer
+//output: viewer result
+export function _GroupAnalysisViewer() {
+  return new GroupAnalysisViewer();
 }
 
-//name: timelinesViewerDemo
-export function timelinesViewerDemo() {
-  const adverseEvents = DG.DataFrame.fromCsv(
-    `USUBJID, AESTDY, AEENDY, SEX, AGE
-    s1, 10/02/2018, 10/09/2018, F, 48
-    s2, 10/04/2018, 10/07/2018, M, 51
-    s3, 10/02/2018, 10/05/2018, F, 39
-    s4, 10/07/2018, 10/08/2018, M, 43`);
+//name: RadarViewer
+//description: Creates a radar viewer
+//tags: viewer
+//output: viewer result
+export function _RadarViewer() {
+  return new RadarViewer();
+}
 
-  const view = grok.shell.addTableView(adverseEvents);
-  view.addViewer('TimelinesViewer');
+//name: SankeyViewer
+//description: Creates a sankey viewer
+//tags: viewer
+//output: viewer result
+export function _SankeyViewer() {
+  return new SankeyViewer();
+}
+
+//name: SunburstViewer
+//description: Creates a sunburst viewer
+//tags: viewer
+//output: viewer result
+export function _SunburstViewer() {
+  return new SunburstViewer();
+}
+
+//name: SurfacePlot
+//description: Creates a surface plot viewer
+//tags: viewer
+//output: viewer result
+export function _SurfacePlot() {
+  return new SurfacePlot();
+}
+
+//name: TimelinesViewer
+//description: Creates a timelines viewer
+//tags: viewer
+//output: viewer result
+export function _TimelinesViewer() {
+  return new TimelinesViewer();
+}
+
+//name: TreeViewer
+//description: Creates a tree viewer
+//tags: viewer
+//meta.trellisable: true
+//output: viewer result
+export function _TreeViewer() {
+  return new TreeViewer();
+}
+
+//name: WordCloudViewer
+//description: Creates a word cloud viewer
+//tags: viewer
+//output: viewer result
+export function _WordCloudViewer() {
+  return new WordCloudViewer();
 }
 
 
@@ -143,4 +119,52 @@ export function _chordViewerDemo() {
 //meta.demoPath: Viewers | Globe
 export function _globeViewerDemo() {
   Demo.globeViewerDemo();
+}
+
+//name: groupAnalysisViewerDemo
+//meta.demoPath: Viewers | GroupAnalysis
+export function _groupAnalysisViewerDemo() {
+  Demo.groupAnalysisViewerDemo();
+}
+
+//name: radarViewerDemo
+//meta.demoPath: Viewers | Radar
+export function _radarViewerDemo() {
+  Demo.radarViewerDemo();
+}
+
+//name: sankeyViewerDemo
+//meta.demoPath: Viewers | Sankey
+export function _sankeyViewerDemo() {
+  Demo.sankeyViewerDemo();
+}
+
+//name: sunburstViewerDemo
+//meta.demoPath: Viewers | Sunburst
+export function _sunburstViewerDemo() {
+  Demo.sunburstViewerDemo();
+}
+
+//name: surfacePlotDemo
+//meta.demoPath: Viewers | SurfacePlot
+export function _surfacePlotDemo() {
+  Demo.surfacePlotDemo();
+}
+
+//name: timelinesViewerDemo
+//meta.demoPath: Viewers | Timelines
+export function _timelinesViewerDemo() {
+  Demo.timelinesViewerDemo();
+}
+
+//name: treeViewerDemo
+//meta.demoPath: Viewers | Tree
+export function _treeViewerDemo() {
+  Demo.treeViewerDemo();
+}
+
+//name: wordCloudViewerDemo
+//meta.demoPath: Viewers | WordCloud
+export function _wordCloudViewerDemo() {
+  Demo.wordCloudViewerDemo();
 }
