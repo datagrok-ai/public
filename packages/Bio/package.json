@@ -5,7 +5,7 @@
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
   },
-  "version": "2.3.4",
+  "version": "2.3.5",
   "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
   "repository": {
     "type": "git",
@@ -39,8 +39,8 @@
     "webpack-cli": "^4.6.0"
   },
   "grokDependencies": {
-    "@datagrok/chem": "1.4.23",
-    "@datagrok/helm": "2.1.1"
+    "@datagrok/chem": "1.4.21",
+    "@datagrok/helm": "2.1.4"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
