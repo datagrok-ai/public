@@ -1,33 +1,28 @@
 import * as ui from 'datagrok-api/ui';
 
 import typeahead from 'typeahead-standalone'; // imports library (js)
-import 'typeahead-standalone/dist/basic.css'; // imports basic styles (css)
-
+import '../../css/typeahead-input.css';
 
 export namespace u2 {
-    export function typeAhead(source: string[], minLength: number = 1, limit: number = 5, highlight: boolean = false,
-      autoSelect: boolean = false, hint: boolean = false, diacritics: boolean = false, debounceRemote: number = 100):
-      HTMLDivElement {
-      const inputElement = ui.searchInput('', '');
+  export function typeAhead(label: string = '', source: string[] = [], minLength: number = 1, limit: number = 5):
+    HTMLDivElement {
+    const inputElement = ui.stringInput(label, '');
+    (inputElement.input as HTMLInputElement).placeholder = 'Search';
 
-      typeahead({
-        input: <HTMLInputElement>inputElement.input,
-        source: {
-          local: source,
-          // prefetch: {...}
-          // remote: {...}
-        },
-        minLength: minLength,
-        limit: limit,
-        highlight: highlight,
-        autoSelect: autoSelect,
-        hint: hint,
-        diacritics: diacritics,
-        debounceRemote: debounceRemote,
-      });
+    typeahead({
+      input: <HTMLInputElement>inputElement.input,
+      source: {
+        local: source,
+      },
+      minLength: minLength,
+      limit: limit,
+      hint: false,
+    });
 
-      //get the typahead after modifying input
-      const element = inputElement.root.getElementsByClassName('typeahead-standalone')[0];
-      return ui.div([element]);
-    }
+    // set classes
+    inputElement.root.getElementsByClassName('tt-list')[0].className = 'ui-input-list';
+    inputElement.root.getElementsByClassName('tt-input')[0].className = 'ui-input-editor';
+
+    return inputElement.root as HTMLDivElement;
+  }
 }
