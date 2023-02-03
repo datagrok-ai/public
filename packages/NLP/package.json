@@ -19,16 +19,11 @@
     "util": "^0.12.3"
   },
   "devDependencies": {
-    "@types/js-yaml": "^4.0.5",
-    "@types/node-fetch": "^2.6.2",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "css-loader": "^5.0.0",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
-    "js-yaml": "^4.1.0",
-    "node-fetch": "^2.6.7",
-    "puppeteer": "^13.7.0",
     "rxjs": "^6.5.5",
     "style-loader": "^2.0.0",
     "ts-loader": "^9.4.1",
