@@ -153,11 +153,11 @@ export class WordCloudViewer extends DG.JsViewer {
     });
 
     this.chart
-      .on('mouseover', (d: echarts.SeriesOption) => ui.tooltip.showRowGroup(table, (i) => {
+      .on('mouseover', (d: echarts.SeriesOption & {name: string}) => ui.tooltip.showRowGroup(table, (i) => {
         return d.name === strColumn.get(i);
       }, 10, 10))
       .on('mouseout', () => ui.tooltip.hide())
-      .on('mousedown', (d: echarts.SeriesOption) => {
+      .on('mousedown', (d: echarts.SeriesOption & {name: string}) => {
         table.selection.handleClick((i) => {
           return d.name === strColumn.get(i);
         //@ts-ignore
