@@ -26,14 +26,9 @@
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "css-loader": "latest",
-    "puppeteer": "^13.7.0",
     "style-loader": "latest",
     "webpack": "latest",
-    "webpack-cli": "latest",
-    "@types/js-yaml": "^4.0.5",
-    "js-yaml": "^4.1.0",
-    "@types/node-fetch": "^2.6.2",
-    "node-fetch": "^2.6.7"
+    "webpack-cli": "latest"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",

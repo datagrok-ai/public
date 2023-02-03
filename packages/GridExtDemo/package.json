@@ -10,10 +10,7 @@
     "directory": "packages/gridextdemo"
   },
   "dependencies": {
-    "@types/node": "^14.14.37",
     "dts-bundle": "^0.7.3",
-    "js-yaml": "^4.1.0",
-    "node-fetch": "^2.6.0",
     "rxjs": "^6.5.5",
     "dayjs": "latest"
   },
