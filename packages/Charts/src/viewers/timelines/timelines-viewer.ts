@@ -125,8 +125,8 @@ export class TimelinesViewer extends EChartViewer {
                  this.columnData.startColumnName && this.columnData.endColumnName ?
             (this.isSameDate(params.value[1], this.getSafeValue(this.columnData.startColumnName, i)) &&
                  this.isSameDate(params.value[2], this.getSafeValue(this.columnData.endColumnName, i))) :
-            Object.values(this.columnData.eventsColumnNames!).some((c) =>
-              this.isSameDate(params.value[1], this.getSafeValue(c, i)));
+            (this.columnData.eventsColumnNames ? Object.values(this.columnData.eventsColumnNames!).some((c) =>
+              this.isSameDate(params.value[1], this.getSafeValue(c, i))) : false);
         }
         return false;
       }, params.event!.event));
