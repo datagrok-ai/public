@@ -90,10 +90,11 @@ const config = {
 
   themeConfig: {
     navbar: {
-      title: 'Datagrok',
+      title: 'datagrok',
       logo: {
         alt: 'Datagrok',
         src: 'docusaurus_img/logo.svg',
+        srcDark: 'docusaurus_img/logo_dark.svg',
         href: 'https://datagrok.ai', // Default to `siteConfig.baseUrl`.
       },
       items: [
