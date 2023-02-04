@@ -103,6 +103,8 @@ class SmilesViewSet(viewsets.ModelViewSet):
 import sklearn.externals.joblib
 import numpy as np
 import pandas as pd
+import multiprocessing
+from multiprocessing.dummy import Pool
 import csv
 import os
 import io
@@ -281,6 +283,30 @@ Ecfp2 = []
 Ecfp4 = []
 smiles_global = []
 
+def model_computation(model):
+    predicts = []
+    if model == 'logP':
+        predicts = flatten(get_descriptor_vector(smiles_global, dict_bits_desc[model]))
+        break
+    current_path = os.path.split(os.path.realpath(__file__))[0]
+    res = [key for key in dict_bits_desc.keys() if model in key]
+    cf = sklearn.externals.joblib.load(current_path + '/' + res[0] + '.pkl')
+    fingerprint_content = lambda bits: Maccs if bits == 167 \
+        else (Ecfp2 if bits == 2048 \
+        else (Ecfp4 if bits == 1024 \
+        else get_descriptor_vector(smiles_global, dict_bits_desc[res[0]])))
+    des_list = np.array(fingerprint_content(dict_bits_desc[res[0]]))
+    y_predict_label = cf.predict(des_list)
+    try:
+        y_predict_proba = cf.predict_proba(des_list)
+        for i in range(len(smiles_global)):
+            predict = y_predict_proba[i]
+            predicts.append(predict[1])
+    except:
+        for i in range(len(smiles_global)):
+            predicts.append(y_predict_label[i])
+    return predicts
+
 def handle_uploaded_file(f, models):
     """Calculate ADMET properties
 
@@ -300,33 +326,13 @@ def handle_uploaded_file(f, models):
         Maccs = np.array(getMACCS(smiles_global))
         Ecfp2 = np.array(getECFP(smiles_global, 1, 2048))
         Ecfp4 = np.array(getECFP(smiles_global, 2, 1024))
-    current_path = os.path.split(os.path.realpath(__file__))[0]
     models_res = [model.encode('utf8') for model in models.split(",")]
+    pool = Pool(multiprocessing.cpu_count())
+    predicts = pool.map(model_computation, models_res)
+    pool.close()
+    pool.join()
     result = np.zeros((len(smiles_global),0), float)
-    for j in range(len(models_res)):
-        if models_res[j] == 'logP':
-            result = np.concatenate([result, np.array(flatten(get_descriptor_vector(smiles_global, dict_bits_desc[models_res[j]]))).reshape(len(smiles_global), 1)], axis=1)
-            if j == len(models_res) - 1:
-                break
-            continue
-        res = [key for key in dict_bits_desc.keys() if models_res[j] in key]
-        cf = sklearn.externals.joblib.load(current_path + '/' + res[0] + '.pkl')
-        fingerprint_content = lambda bits: Maccs if bits == 167 \
-            else (Ecfp2 if bits == 2048 \
-            else (Ecfp4 if bits == 1024 \
-            else get_descriptor_vector(smiles_global, dict_bits_desc[res[0]])))
-        des_list = np.array(fingerprint_content(dict_bits_desc[res[0]]))
-        predicts = []
-        y_predict_label = cf.predict(des_list)
-        try:
-            y_predict_proba = cf.predict_proba(des_list)
-            for i in range(len(smiles_global)):
-                predict = y_predict_proba[i]
-                predicts.append(predict[1])
-        except:
-            for i in range(len(smiles_global)):
-                predicts.append(y_predict_label[i])
-        result = np.concatenate([ result, np.array(predicts).reshape(len(smiles_global),1)], axis=1)
+    result = np.concatenate([ result, np.array(predicts).reshape(len(smiles_global),len(models_res))], axis=1)
     res_df = pd.DataFrame(result, columns=models_res)
     res_str = res_df.to_csv(index=False, quoting=csv.QUOTE_NONNUMERIC)
     return res_str
