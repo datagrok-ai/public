@@ -34,15 +34,16 @@ import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import {checkForStructuralAlerts} from './panels/structural-alerts';
 
 //utils imports
+import { ScaffoldTreeViewer} from "./widgets/scaffold-tree";
 import {Fingerprint} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
+import {IMolContext, getMolSafe} from './utils/mol-creation_rdkit';
 import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
 import {_convertMolNotation} from './utils/convert-notation-utils';
 import {molToMolblock} from './utils/convert-notation-utils';
 import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
 import {saveAsSdfDialog} from './utils/sdf-utils';
 import {getSimilaritiesMarix} from './utils/similarity-utils';
-import { ScaffoldTreeViewer } from "./widgets/scaffold-tree";
 
 //analytical imports
 import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
@@ -704,7 +705,7 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
         if (!checkMolEqualSmiles(mol, newValue))
           cell.cell.value = newValue;
         mol?.delete();
-      } else 
+      } else
         cell.cell.value = sketcher.getMolFile();
       Sketcher.addToCollection(Sketcher.RECENT_KEY, sketcher.getMolFile());
     })
@@ -847,17 +848,14 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
 //name: detectSmiles
 //input: column col
 //input: int min
-export function detectSmiles(col: DG.Column, min: number) {
-  function isSmiles(s: string) {
-    let d: RDMol | null = null;
-    try {
-      d = _rdKitModule.get_mol(s);
+export function detectSmiles(col: DG.Column, min: number) : void {
+  function isSmiles(s: string) : boolean {
+    const ctx: IMolContext = getMolSafe(s, {}, _rdKitModule, true);
+    if (ctx.mol !== null) {
+      ctx.mol.delete();
       return true;
-    } catch {
-      return false;
-    } finally {
-      d?.delete();
     }
+   return false;
   }
 
   if (DG.Detector.sampleCategories(col, isSmiles, min, 10, 0.8)) {

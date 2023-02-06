@@ -1,5 +1,6 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {getMolSafe} from "../utils/mol-creation_rdkit";
 import { isMolBlock } from '../utils/chem-common';
 //import {aromatizeMolBlock} from "../utils/aromatic-utils";
 
@@ -59,39 +60,15 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   initMoleculesStructures(dict: string[]) : void {
     this.freeMoleculesStructures();
     this._rdKitMols = [];
-
     for (let i = 0; i < dict.length; ++i) {
       const item = dict[i];
-      let mol = this.getMol(item, null, true);
+      let mol = getMolSafe(item, {}, this._rdKitModule).mol;
       if (mol === null) {
         console.error('Chem | Possibly a malformed molString at init: `' + item + '`');
         mol = this._rdKitModule.get_mol('');
       }
       this._rdKitMols.push(mol);
     }
-  }
-
-  getMol(molString: string, options: string | null = null, qmolFallback: boolean = false) : RDMol | null {
-    options ??= '{"mergeQueryHs":true}';
-    let mol = null;
-    try { mol = this._rdKitModule.get_mol(molString, options); }
-    catch (e) {
-      if (mol !== null && mol.is_valid())
-        mol.delete();
-
-      if (qmolFallback) {
-        mol = this.getQMol(molString);
-        if (mol === null) {
-          console.error('Chem | Failed fallback to qmol. Possibly a malformed query: `' + molString + '`');
-          return null;
-        }
-        validateMol(mol, molString);
-        //console.error('Successfully performed fallback on qmol ' + molString);
-        return mol;
-      } else return null;
-    }
-    validateMol(mol, molString);
-    return mol;
   }
 
   getQMol(molString: string) : RDMol | null {
@@ -115,9 +92,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
     if (isMolBlock(queryMolString)) {
       if (queryMolString.includes(' H ') || queryMolString.includes('V3000'))
-        queryMol = this.getMol(queryMolString);
+        queryMol = getMolSafe(queryMolString, {mergeQueryHs: true}, this._rdKitModule).mol;
       else {
-        const molTmp = this.getMol(queryMolString, '{"mergeQueryHs":true, "kekulize": true}', true);
+        const molTmp = getMolSafe(queryMolString, {"mergeQueryHs":true, "kekulize": true}, this._rdKitModule).mol;
         if (molTmp !== null) {
           let molBlockAroma = null;
           try { molBlockAroma = molTmp!.get_aromatic_form(); }
@@ -135,7 +112,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     } else { // not a molblock
       queryMol = this.getQMol(queryMolString);
       if (queryMol !== null) {
-        const mol = this.getMol(queryMolString);
+        const mol = getMolSafe(queryMolString, {mergeQueryHs: true}, this._rdKitModule).mol;
         if (mol !== null) { // check the qmol is proper
           const match = mol.get_substruct_match(queryMol);
           if (match === '{}') {
@@ -143,7 +120,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           } else mol.delete();
         } // else, this looks to be a real SMARTS
       } else { // failover to queryMolBlockFailover
-        queryMol = this.getMol(queryMolBlockFailover); // possibly get rid of fall-over in future
+        queryMol = getMolSafe(queryMolBlockFailover, {mergeQueryHs: true}, this._rdKitModule).mol; // possibly get rid of fall-over in future
       }
     }
 
