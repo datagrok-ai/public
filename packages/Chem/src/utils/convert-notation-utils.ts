@@ -11,7 +11,11 @@ Malformed
 
   0  0  0  0  0  0  0  0  0  0999 V2000
 M  END`;
+const MALFORMED_MOL_V3000 = `
+Malformed
 
+  0  0  0  0  0  0            999 V3000
+M  END`;
 
 /**
  * Convert between the following notations: SMILES, SMARTS, Molfile V2000 and Molfile V3000
@@ -32,7 +36,9 @@ export function _convertMolNotation(
 ): string {
   if (sourceNotation === targetNotation)
     throw new Error(`Convert molecule notation: source and target notations must differ: "${sourceNotation}"`);
-  let result = MALFORMED_MOL_V2000;
+  let result = (targetNotation === MolNotation.MolBlock) ? MALFORMED_MOL_V2000 :
+    (targetNotation === MolNotation.V3KMolBlock) ? MALFORMED_MOL_V3000 :
+      'MALFORMED_INPUT_VALUE';
   let mol: RDMol | null = null;
   try {
     mol = rdKitModule.get_mol(moleculeString);
@@ -44,7 +50,7 @@ export function _convertMolNotation(
         mol.normalize_depiction(1);
         mol.straighten_depiction(false);
       }
-      return mol.get_molblock();
+      result = mol.get_molblock();
     }
     if (targetNotation === MolNotation.Smiles)
       result = mol.get_smiles();

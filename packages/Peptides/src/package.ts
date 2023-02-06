@@ -139,7 +139,7 @@ export function peptideSpace(): PeptideSpaceViewer {
 export function manualAlignment(_monomer: string): DG.Widget {
   //TODO: recalculate Molfile and Molecule panels on sequence update
   const df = grok.shell.t;
-  const model: PeptidesModel | null = df.temp[PeptidesModel.modelName];
+  const model: PeptidesModel | null = df?.temp[PeptidesModel.modelName];
   if (!model)
     return new DG.Widget(ui.divText('Manual alignment works with peptides analysis'));
 

@@ -132,10 +132,15 @@ export function createJsonMonomerLibFromSdf(table: DG.DataFrame): any {
 }
 
 export interface IMonomerLibHelper {
+  /** Singleton monomer library */
   getBioLib(): IMonomerLib;
 
+  /** (Re)Loads libraries based on settings in user storage {@link LIB_STORAGE_NAME} to singleton.
+   * @param {boolean} reload Clean {@link monomerLib} before load libraries [false]
+   */
   loadLibraries(reload?: boolean): Promise<void>;
 
+  /** Reads library from file shares, handles .json and .sdf */
   readLibrary(path: string, fileName: string): Promise<IMonomerLib>;
 }
 
