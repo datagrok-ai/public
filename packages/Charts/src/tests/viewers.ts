@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 
 import {category, test, testViewer} from '@datagrok-libraries/utils/src/test';
 
-import {energyUK, demog} from './test-data';
+import {energyUK, demog, earthquakes} from './test-data';
 
 
 category('Viewers', () => {
@@ -15,8 +15,9 @@ category('Viewers', () => {
       await testViewer(v, (() => {
         if (['SankeyViewer', 'ChordViewer'].includes(v)) return energyUK.clone();
         else if (['TreeMapViewer', 'SunburstViewer'].includes(v)) return demog.clone();
+        else if (v === 'GlobeViewer') return earthquakes.clone();
         return df.clone();
-      })());
+      })(), true);
     }, {skipReason: 'GROK-11534'});
   }
 });
