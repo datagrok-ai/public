@@ -24,13 +24,12 @@ category('usageAnalysis', () => {
   });
 
   test('openApp', async () => {
-    await delay(5000);
-    expect(grok.shell.v.name === 'Overview', true);
+    expect(grok.shell.v.name == 'Usage Analysis', true);
   });
 
   test('viewsTest', async () => {
     expect(Object.keys(allViewersToView).every((viewName) => grok.shell.view(viewName) !== undefined), true);
-  });
+  }, {skipReason: 'Ongoing rework #1414'});
 
   test('allViewersTest', async () => {
     for (const viewName of Object.keys(allViewersToView)) {
@@ -49,5 +48,5 @@ category('usageAnalysis', () => {
       }
       expect(foundedViewersOfView, allViewersToView[viewName].length);
     }
-  });
+  }, {skipReason: 'Ongoing rework #1414'});
 });
