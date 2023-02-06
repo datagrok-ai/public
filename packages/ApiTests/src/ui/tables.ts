@@ -51,6 +51,8 @@ category('UI: Tables', () => {
   async function normalize(changeMethod: boolean = false) {
     const ageDF = DG.DataFrame.fromColumns([df.getCol('age')]);
     const tv = grok.shell.addTableView(ageDF);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+    grok.shell.o = ageDF.col('age');
     try {
       const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
       await awaitCheck(() => {
