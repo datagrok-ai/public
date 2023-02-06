@@ -76,11 +76,5 @@ export function info() {
   grok.shell.info(_package.webRoot);
 }
 
-import { callWasm } from '../wasm/callWasm';
-
-//tags: init
-export async function init() {
-  await initTestExample();
-}
+import { callWasm } from '../wasm/callWasm';\n
 '''
-

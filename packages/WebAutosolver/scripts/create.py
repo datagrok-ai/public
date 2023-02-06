@@ -654,7 +654,7 @@ def addSolverToPackageFile(settings, ivp):
         
     def putHeader(puts, ivp):
         """
-        Put RichFunctionView annotation.
+        Put header of the function.
         """
         # name
         puts(f'export async function {SOLVER_PREFIX + ivp[NAME]}(')
@@ -680,7 +680,7 @@ def addSolverToPackageFile(settings, ivp):
 
     def putBody(puts, ivp):
         """
-        Put RichFunctionView annotation.
+        Put body of the function.
         """
         puts('{\n')
 
@@ -734,6 +734,10 @@ def addSolverToPackageFile(settings, ivp):
         # put first lines if package file is opened in the write mode
         if mode == 'w':        
             puts(PACKAGE_FILE_FIRST_LINES)
+
+        # put init-function
+        puts('//tags: init\nexport async function init() {\n')
+        puts(f'{JS_SPACE}await init{ivp[NAME]}();\n' + '}\n')
 
         # put annotation
         putAnnotation(puts, ivp)

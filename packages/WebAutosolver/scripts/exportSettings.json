@@ -1,5 +1,5 @@
 {
-    "ivpFile": "IVP2.txt",
+    "ivpFile": "MarkovModel.txt",
     "folder": "../wasm",
     "emscripten": "emscripten.h",
     "eigen": "../../../Eigen/Eigen/Dense",
