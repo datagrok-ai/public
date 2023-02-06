@@ -4,8 +4,8 @@
   "version": "1.0.16",
   "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
   "author": {
-    "name": "Diana Onufriienko",
-    "email": "donufriienko@datagrok.ai"
+    "name": "Dmytro Kovalyov",
+    "email": "kovalyov.dmytro@eigenmethod.com"
   },
   "repository": {
     "type": "git",
