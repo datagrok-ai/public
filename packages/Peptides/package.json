@@ -6,7 +6,7 @@
     "name": "Volodymyr Dyma",
     "email": "vdyma@datagrok.ai"
   },
-  "description": "Provides advanced tools for analyzing collections of peptides.",
+  "description": "Advanced tools for analyzing collections of peptides.",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

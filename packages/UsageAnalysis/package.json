@@ -6,7 +6,7 @@
   },
   "friendlyName": "Usage Analysis",
   "version": "0.0.6",
-  "description": "Usage Analysis System",
+  "description": "Platform usage analysis system",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
