@@ -790,6 +790,9 @@ export class Grid<TSettings = any> extends Viewer<TSettings> {
     return toJs(api.grok_Grid_Get_ColHeaderHeight(this.dart));
   }
 
+  /** Resets rows height */
+  resetRowHeight(): void { api.grok_Grid_ResetRowHeight(this.dart); }
+
   /** Column labels box */
   get colHeaderBox(): Rect {
     return toJs(api.grok_Grid_Get_ColHeaderRect(this.dart));
