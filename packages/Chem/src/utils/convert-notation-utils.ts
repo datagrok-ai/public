@@ -44,7 +44,7 @@ export function _convertMolNotation(
         mol.normalize_depiction(1);
         mol.straighten_depiction(false);
       }
-      return mol.get_molblock();
+      result = mol.get_molblock();
     }
     if (targetNotation === MolNotation.Smiles)
       result = mol.get_smiles();
