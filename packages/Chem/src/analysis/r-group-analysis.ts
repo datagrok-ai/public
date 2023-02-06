@@ -5,12 +5,13 @@ import {findMCS, findRGroups} from '../scripts-api';
 import {convertMolNotation, getRdKitModule} from '../package';
 
 
-export function convertToRDKit(smiles: string): string {
-  const regexConv: RegExp = /(\[)(R)(\d+)(\])/g;
-  const match = regexConv.exec(smiles);
-  if (match !== null)
-    smiles = smiles.replace(regexConv, `${match[1]}*:${match[3]}${match[4]}`);
-
+export function convertToRDKit(smiles: string | null): string | null {
+  if (smiles !== null) {
+    const regexConv: RegExp = /(\[)(R)(\d+)(\])/g;
+    const match = regexConv.exec(smiles);
+    if (match !== null)
+      smiles = smiles.replace(regexConv, `${match[1]}*:${match[3]}${match[4]}`);
+  }
   return smiles;
 }
 

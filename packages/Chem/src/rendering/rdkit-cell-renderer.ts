@@ -3,14 +3,12 @@
  * */
 
 import * as DG from 'datagrok-api/dg';
-import {_rdKitModule, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
-import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
+import {drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {aromatizeMolBlock} from "../utils/aromatic-utils";
 
 interface IMolInfo {
-  //mol: RDMol | null; // null when molString is invalid?
-  molCtx: IMolContext;
+  mol: RDMol | null; // null when molString is invalid?
   substruct: any;
   molString: string;
   scaffoldMolString: string;
@@ -77,35 +75,55 @@ M  END
   get defaultWidth() {return 200;}
   get defaultHeight() {return 100;}
 
-  _fetchMolGetOrCreate(molString: string, scaffoldMolString: string, molRegenerateCoords: boolean, details: object = {}): IMolInfo {
-    let molCtx: IMolContext;
+  _fetchMolGetOrCreate(molString: string, scaffoldMolString: string,
+    molRegenerateCoords: boolean, details: object = {}): IMolInfo {
     let mol: RDMol | null = null;
     let substruct = {};
-    //try {
-    if ((details as any).isSubstructure) {
-      if (molString.includes(' H ') || molString.includes('V3000')) {
-        //mol = this.rdKitModule.get_mol(molString, '{"mergeQueryHs":true}');
-        molCtx = getMolSafe(molString, {"mergeQueryHs":true}, _rdKitModule);
-        mol = molCtx.mol;//  this.rdKitModule.get_mol(molString, '{"mergeQueryHs":true}');
-      } else {
-        const aromaMolString = aromatizeMolBlock(molString)
-        mol = this.rdKitModule.get_qmol(aromaMolString);
-        molCtx = {mol: mol, kekulize: false, isQMol: true};
+    try {
+      if ((details as any).isSubstructure) {
+        if (molString.includes(' H ') || molString.includes('V3000')) {
+          mol = this.rdKitModule.get_mol(molString, '{"mergeQueryHs":true}');
+        } else {
+          const aromaMolString = aromatizeMolBlock(molString)
+          mol = this.rdKitModule.get_qmol(aromaMolString);
+        }
+     }
+      else
+        mol = this.rdKitModule.get_mol(molString, JSON.stringify(details));
+      if (!mol.is_valid()) {
+        mol.delete();
+        mol = null;
+      }
+    } catch (e) { }
+    if (!mol) {
+      try {
+        mol = this.rdKitModule.get_mol(molString, JSON.stringify({...details, kekulize: false}));
+        if (!mol.is_valid()) {
+          mol.delete();
+          mol = null;
+        }
+      } catch (e2) { }
+    }
+    if (!mol) {
+      try {
+        mol = this.rdKitModule.get_qmol(molString);
+        if (!mol.is_valid()) {
+          mol.delete();
+          mol = null;
+        }
+      } catch (e3) {
+        console.error(
+          'Chem | In _fetchMolGetOrCreate: RDKit .get_mol crashes on a molString: `' + molString + '`');
+        mol = null;
       }
     }
-    else {
-      molCtx = getMolSafe(molString, details, _rdKitModule);
-      mol = molCtx.mol;//mol = this.rdKitModule.get_mol(molString, JSON.stringify(details));
-    }
-
-    if (mol !== null) {
+    if (mol) {
       try {
         if (mol.is_valid()) {
           let molHasOwnCoords = mol.has_coords();
           const scaffoldIsMolBlock = DG.chem.isMolBlock(scaffoldMolString);
           if (scaffoldIsMolBlock) {
-            const rdKitScaffoldMolCtx = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false, {mergeQueryHs: true, isSubstructure: true}).molCtx;
-            const rdKitScaffoldMol = rdKitScaffoldMolCtx.mol;//this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false, {mergeQueryHs: true, isSubstructure: true}).mol;
+            const rdKitScaffoldMol = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false, {mergeQueryHs: true, isSubstructure: true}).mol;
             if (rdKitScaffoldMol && rdKitScaffoldMol.is_valid()) {
               rdKitScaffoldMol.normalize_depiction(0);
               if (molHasOwnCoords)
@@ -143,7 +161,7 @@ M  END
             mol.normalize_depiction(0);
           }
         }
-        else {
+        if (!mol!.is_valid()) {
           console.error(
             'Chem | In _fetchMolGetOrCreate: RDKit mol is invalid on a molString molecule: `' + molString + '`');
           mol.delete();
@@ -155,7 +173,7 @@ M  END
     }
 
     return {
-      molCtx: molCtx,
+      mol: mol,
       substruct: substruct,
       molString: molString,
       scaffoldMolString: scaffoldMolString,
@@ -173,16 +191,15 @@ M  END
   _rendererGetOrCreate(
     width: number, height: number, molString: string, scaffoldMolString: string,
     highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean): ImageData {
-    const fetchMolObj : IMolInfo = this._fetchMol(molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords);
-    const rdKitMolCtx = fetchMolObj.molCtx;
-    const rdKitMol = rdKitMolCtx.mol;//fetchMolObj.mol;
+    const fetchMolObj = this._fetchMol(molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords);
+    const rdKitMol = fetchMolObj.mol;
     const substruct = fetchMolObj.substruct;
 
     const canvas = this.ensureCanvasSize(width, height);//new OffscreenCanvas(width, height);
     const ctx = canvas.getContext('2d', {willReadFrequently : true})!;
     this.canvasCounter++;
     if (rdKitMol != null)
-      drawRdKitMoleculeToOffscreenCanvas(rdKitMolCtx, width, height, canvas, highlightScaffold ? substruct : null);
+      drawRdKitMoleculeToOffscreenCanvas(rdKitMol, width, height, canvas, highlightScaffold ? substruct : null);
     else {
       // draw a crossed rectangle
       drawErrorCross(ctx, width, height);
@@ -205,7 +222,7 @@ M  END
   _drawMolecule(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,
     molString: string, scaffoldMolString: string, highlightScaffold: boolean,
     molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, cellStyle: DG.GridCellStyle): void {
-    const vertical = cellStyle !== undefined && cellStyle !== null ? cellStyle.textVertical : false;
+    const vertical = cellStyle !== undefined ? cellStyle.textVertical : false;
 
     if (vertical) {
       h += w;
