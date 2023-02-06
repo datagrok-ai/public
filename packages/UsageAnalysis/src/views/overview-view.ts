@@ -1,32 +1,32 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import $ from 'cash-dom';
+
 import '../../css/usage_analysis.css';
-import {UaToolbox} from "../ua-toolbox";
-import {UaView} from "./ua-view";
-import {UaFilter} from "../filter2";
-import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
-import {UaDataFrameQueryViewer} from "../viewers/ua-data-frame-query-viewer";
-import { TopPackagesViewer } from '../drilldown_viewers/events/top-packages-viewer';
+import {UaToolbox} from '../ua-toolbox';
+import {UaView} from './ua-view';
+import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
+import {UaDataFrameQueryViewer} from '../viewers/ua-data-frame-query-viewer';
+import {TopPackagesViewer} from '../drilldown_viewers/events/top-packages-viewer';
 
 export class OverviewView extends UaView {
+  static viewName = 'Overview';
   topPackagesViewer: TopPackagesViewer | null = null;
 
   constructor(uaToolbox: UaToolbox) {
-    super('Overview', uaToolbox);
+    super(uaToolbox);
   }
 
   async initViewers() : Promise<void> {
-    let uniqueUsersViewer = new UaFilterableQueryViewer(
-        this.uaToolbox.filterStream,
-        'Unique Users',
-        'UniqueUsers',
-        (t: DG.DataFrame) => {
-          let viewer = DG.Viewer.lineChart(t, UaFilterableQueryViewer.splineStyle).root;
-          viewer.style.maxHeight = '150px';
-          return viewer;
-        }
+    const uniqueUsersViewer = new UaFilterableQueryViewer(
+      this.uaToolbox.filterStream,
+      'Unique Users',
+      'UniqueUsers',
+      (t: DG.DataFrame) => {
+        const viewer = DG.Viewer.lineChart(t, UaFilterableQueryViewer.splineStyle).root;
+        viewer.style.maxHeight = '150px';
+        return viewer;
+      },
     );
     this.viewers.push(uniqueUsersViewer);
 
@@ -54,34 +54,34 @@ export class OverviewView extends UaView {
     // );
     // this.viewers.push(errorsViewer);
 
-    let uniqueUsersListViewer = new UaFilterableQueryViewer(
-        this.uaToolbox.filterStream,
-        'Users',
-        'UniqueUsersList',
-        (t: DG.DataFrame) => {
-          let ids = Array.from(t.getCol('id').values());
-          return ui.wait(async () =>  ui.list(await grok.dapi.getEntities(ids)));
-        },
-        (host: HTMLElement) => {
-          host.style.overflow="auto";
-          host.style.height="94.5%";
-        }
+    const uniqueUsersListViewer = new UaFilterableQueryViewer(
+      this.uaToolbox.filterStream,
+      'Users',
+      'UniqueUsersList',
+      (t: DG.DataFrame) => {
+        const ids = Array.from(t.getCol('id').values());
+        return ui.wait(async () => ui.list(await grok.dapi.getEntities(ids)));
+      },
+      (host: HTMLElement) => {
+        host.style.overflow='auto';
+        host.style.height='94.5%';
+      },
     );
     this.viewers.push(uniqueUsersListViewer);
 
-    let totalUsersViewer = new UaDataFrameQueryViewer(
-        'Total Users',
-        'TotalUsersAndGroups',
-        (t: DG.DataFrame) => {
-          let list = [
-            ['Total users', t.get('user_count', 0)],
-            ['Total groups', t.get('group_count', 0)]
-          ];
+    const totalUsersViewer = new UaDataFrameQueryViewer(
+      'Total Users',
+      'TotalUsersAndGroups',
+      (t: DG.DataFrame) => {
+        const list = [
+          ['Total users', t.get('user_count', 0)],
+          ['Total groups', t.get('group_count', 0)],
+        ];
 
-          return ui.div([ui.table(list, (item, idx) =>
-              [`${item[0]}:`, item[1]]
-          )]);
-        }
+        return ui.div([ui.table(list, (item, idx) =>
+          [`${item[0]}:`, item[1]],
+        )]);
+      },
     );
     this.viewers.push(totalUsersViewer);
 
@@ -93,13 +93,13 @@ export class OverviewView extends UaView {
     this.root.append(ui.splitH([
       ui.splitV([
         ui.panel([ui.h1('Groups')]),
-        ui.panel([uniqueUsersListViewer.root])
-      ], {style:{maxWidth:'300px'}}),
+        ui.panel([uniqueUsersListViewer.root]),
+      ], {style: {maxWidth: '300px'}}),
       ui.panel([
         ui.block([uniqueUsersViewer.root]),
         ui.block([this.topPackagesViewer.root]),
-      ])
-    ]))
+      ]),
+    ]));
 
     /*
     this.root.append(ui.block25([
@@ -114,11 +114,8 @@ export class OverviewView extends UaView {
     */
   }
 
-  handleUrlParams(params: Map<string,string>) : void {
-    if (params.has('package')) {
-      // @ts-ignore
-      this.topPackagesViewer?.categorySelected(params.get('package'));
-    }
+  handleUrlParams(params: Map<string, string>) : void {
+    if (params.has('package'))
+      this.topPackagesViewer?.categorySelected(params.get('package')!);
   }
-
 }
