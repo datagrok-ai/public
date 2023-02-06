@@ -21,8 +21,10 @@ category('saveAsSdf', async () => {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
       await chemCommonRdKit.initRdKitModuleLocal();
     }
+    // this dataset deliberately contains broken/malformed data under 'Smiles'
     inputDf = await readDataframe('tests/sdf-test.csv');
     await grok.data.detectSemanticTypes(inputDf);
+    inputDf.getCol('Smiles').semType = 'Molecule';
     fileWithSavedSmiles = await loadFileAsText('tests/sdf-test-smiles.sdf');
     fileWithSavedMolblock = await loadFileAsText('tests/sdf-test-scaffold.sdf');
     fileWithSavedSmiles = fileWithSavedSmiles.replace(/\r/g, '');
