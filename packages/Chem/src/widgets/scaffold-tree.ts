@@ -2,13 +2,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import $ from "cash-dom";
-import {_rdKitModule} from '../utils/chem-common-rdkit';
+import {_rdKitModule, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
+import {getMolSafe} from '../utils/mol-creation_rdkit';
 import {chem} from "datagrok-api/grok";
 import {toJs, TreeViewGroup, TreeViewNode} from "datagrok-api/dg";
 import Sketcher = chem.Sketcher;
 import {chemSubstructureSearchLibrary} from "../chem-searches";
 import {getScaffoldTree} from "../package";
-import {drawRdKitMoleculeToOffscreenCanvas} from "../utils/chem-common-rdkit";
 import {aromatizeMolBlock} from "../utils/aromatic-utils";
 import {RDMol} from "@datagrok-libraries/chem-meta/src/rdkit-api";
 
@@ -255,9 +255,10 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
     g!.fillText(text, Math.floor((width - lineWidth) / 2), Math.floor((height - fontHeight) / 2));
   } else {
     molStr = processUnits(molStr);
-    const mol = getMol(molStr);
+    const molCtx = getMolSafe(molStr, {}, _rdKitModule);
+    const mol = molCtx.mol;
     if (mol !== null) {
-      drawRdKitMoleculeToOffscreenCanvas(mol, CELL_CANVAS_WIDTH, CELL_CANVAS_HEIGHT, offscreen, null);
+      drawRdKitMoleculeToOffscreenCanvas(molCtx, CELL_CANVAS_WIDTH, CELL_CANVAS_HEIGHT, offscreen, null);
       mol.delete();
     }
   }
