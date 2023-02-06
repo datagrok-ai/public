@@ -6,7 +6,7 @@
     "email": "vdyma@datagrok.ai"
   },
   "version": "1.0.1",
-  "description": "SQLite is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform that provides support for importing and previewing SQLite files.",
+  "description": "Support for importing and previewing SQLite files.",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
