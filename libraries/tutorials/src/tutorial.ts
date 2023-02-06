@@ -125,17 +125,37 @@ export abstract class Tutorial extends DG.Widget {
         }),
       ]));
     } else if (statusMap) {
-      const nextId = +Object.entries(statusMap).find((entry) => !entry[1])![0];
+      // Find the first uncompleted tutorial in the track. Give preference to the first tutorial
+      // after the current one, if there are uncompleted tutorials both before and after it.
+      let nextId: number | null = null;
+      for (const [tutorialId, completed] of Object.entries(statusMap)) {
+        const numId = +tutorialId;
+        if (!completed) {
+          if (nextId === null)
+            nextId = numId;
+          else {
+            if (nextId < id && id < numId) {
+              nextId = numId;
+              break;
+            }
+          }
+        }
+      }
+      if (nextId === null) {
+        console.error('Corrupted status map.');
+        nextId = id + 1;
+      }
       const tutorialNode = $('#tutorial-child-node');
+      const nextTutorial = tutorials[nextId];
       this.root.append(ui.divV([
-        ui.divText('Next "'+tutorials[nextId].name+'"', {style: {margin: '5px 0'}}),
+        ui.divText(`Next "${nextTutorial.name}"`, {style: {margin: '5px 0'}}),
         ui.divH([
           ui.bigButton('Start', () => {
             updateProgress(this.track);
             this.clearRoot();
             tutorialNode.html('');
-            tutorialNode.append(tutorials[nextId].root);
-            tutorials[nextId].run();
+            tutorialNode.append(nextTutorial.root);
+            nextTutorial.run();
           }),
           ui.button('Cancel', () => {
             updateProgress(this.track);
@@ -185,8 +205,7 @@ export abstract class Tutorial extends DG.Widget {
 
   _placeHint(hint: HTMLElement) {
     hint.classList.add('tutorials-target-hint');
-    const hintIndicator = ui.element('div');
-    hintIndicator.classList = 'blob';
+    const hintIndicator = ui.element('div', 'blob');
     hint.append(hintIndicator);
 
     const width = hint ? hint.clientWidth : 0;
@@ -229,7 +248,8 @@ export abstract class Tutorial extends DG.Widget {
       removeHint(hint);
     else if (Array.isArray(hint)) {
       hint.forEach((h) => {
-        if (h != null) removeHint(h);
+        if (h != null)
+          removeHint(h);
       });
     }
   }
@@ -246,7 +266,8 @@ export abstract class Tutorial extends DG.Widget {
     } else if (Array.isArray(hint)) {
       this.activeHints.push(...hint);
       hint.forEach((h) => {
-        if (h != null) this._placeHint(h);
+        if (h != null)
+          this._placeHint(h);
       });
     }
 
