@@ -92,7 +92,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
     if (isMolBlock(queryMolString)) {
       if (queryMolString.includes(' H ') || queryMolString.includes('V3000'))
-        queryMol = getMolSafe(queryMolString, {}, this._rdKitModule).mol;
+        queryMol = getMolSafe(queryMolString, {mergeQueryHs: true}, this._rdKitModule).mol;
       else {
         const molTmp = getMolSafe(queryMolString, {"mergeQueryHs":true, "kekulize": true}, this._rdKitModule).mol;
         if (molTmp !== null) {
@@ -112,7 +112,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     } else { // not a molblock
       queryMol = this.getQMol(queryMolString);
       if (queryMol !== null) {
-        const mol = getMolSafe(queryMolString, {}, this._rdKitModule).mol;
+        const mol = getMolSafe(queryMolString, {mergeQueryHs: true}, this._rdKitModule).mol;
         if (mol !== null) { // check the qmol is proper
           const match = mol.get_substruct_match(queryMol);
           if (match === '{}') {
@@ -120,7 +120,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           } else mol.delete();
         } // else, this looks to be a real SMARTS
       } else { // failover to queryMolBlockFailover
-        queryMol = getMolSafe(queryMolBlockFailover, {}, this._rdKitModule).mol; // possibly get rid of fall-over in future
+        queryMol = getMolSafe(queryMolBlockFailover, {mergeQueryHs: true}, this._rdKitModule).mol; // possibly get rid of fall-over in future
       }
     }
 
