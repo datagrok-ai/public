@@ -94,14 +94,15 @@ export function helmCellRenderer(): HelmCellRenderer {
 }
 
 //tags: cellEditor
-//description: Macromolecule
+//description: Macromolecule  
 //input: grid_cell cell
 export function editMoleculeCell(cell: DG.GridCell): void {
   const monomers = findMonomers(cell.cell.value);
-  if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === 'helm' && monomers.size === 0) 
-    webEditor(cell);
-  else
-    grok.shell.warning(`Monomers ${Array.from(monomers).join(', ')} are absent!`);
+  if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === 'helm')
+    if (monomers.size == 0) 
+      webEditor(cell);
+    else
+      grok.shell.warning(`Monomers ${Array.from(monomers).join(', ')} are absent!`);
 }
 
 //name: Open Helm Web Editor
@@ -112,7 +113,11 @@ export function openEditor(mol: string): void {
   let df = grok.shell.tv.grid.dataFrame;
   let converter = new NotationConverter(df.columns.bySemType('Macromolecule'));
   const resStr = converter.convertStringToHelm(mol, '/');
-  webEditor(undefined, resStr);
+  const monomers = findMonomers(resStr);
+  if (monomers.size == 0) 
+    webEditor(undefined, resStr);
+  else
+    grok.shell.warning(`Monomers ${Array.from(monomers).join(', ')} are absent!`);
 }
 
 //name: Properties
