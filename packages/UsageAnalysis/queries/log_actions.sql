@@ -11,6 +11,7 @@ order by event_time desc
 --end
 
 --name: Log Actions Summary
+--meta.cache: true
 --input: string eventTime = "today" {pattern: datetime}
 --connection: System:Datagrok
 
@@ -24,6 +25,7 @@ order by 1,2,4 desc
 --end
 
 --name: Log Actions Summary by Hours
+--meta.cache: true
 --input: string eventTime = "today" {pattern: datetime}
 --connection: System:Datagrok
 

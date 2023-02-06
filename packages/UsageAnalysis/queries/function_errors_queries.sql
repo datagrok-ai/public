@@ -1,4 +1,5 @@
 --name: FunctionErrors
+--meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -17,6 +18,7 @@ order by e.event_time::date;
 
 
 --name: TopFunctionErrors
+--meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -37,6 +39,7 @@ limit 50;
 --end
 
 --name: TopFunctionDisabledErrors
+--meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -58,6 +61,7 @@ limit 50;
 
 
 --name: TopPackagesByError
+--meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
