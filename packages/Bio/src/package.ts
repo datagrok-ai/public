@@ -120,8 +120,8 @@ export async function manageFiles() {
 }
 
 //name: Manage Libraries
-//tags: panel, widgets
 //input: column seqColumn {semType: Macromolecule}
+//tags: panel, exclude-actions-panel
 //output: widget result
 export async function libraryPanel(seqColumn: DG.Column): Promise<DG.Widget> {
   //@ts-ignore
