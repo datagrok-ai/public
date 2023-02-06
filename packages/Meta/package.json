@@ -1027,23 +1027,6 @@
       },
       "category": "Development"
     },
-    "usage-analysis": {
-      "dependencies": {
-        "0.0.3": {
-          "datagrok-api": ">=0.116.0"
-        },
-        "0.0.4": {
-          "datagrok-api": ">=0.116.0"
-        }
-      },
-      "description": "Usage Analysis System",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/UsageAnalysis"
-      },
-      "category": "Development"
-    },
     "multiplot": {
       "dependencies": {
         "0.0.4": {
