@@ -87,11 +87,12 @@ export class MonomerLib implements IMonomerLib {
 }
 
 export class MonomerLibHelper implements IMonomerLibHelper {
-  private _monomerLib: MonomerLib = new MonomerLib({});
+  private readonly _monomerLib: MonomerLib = new MonomerLib({});
 
   /** Protect constructor to prevent multiple instantiation. */
   protected constructor() {}
 
+  /** Singleton monomer library */
   getBioLib(): IMonomerLib {
     return this._monomerLib;
   }
@@ -99,7 +100,7 @@ export class MonomerLibHelper implements IMonomerLibHelper {
   private loadLibrariesPromise: Promise<void> = Promise.resolve();
 
   /** Loads libraries based on settings in user storage {@link LIB_STORAGE_NAME}
-   * @param {boolean} reload Clean {@link monomerLib} before load libraries
+   * @param {boolean} reload Clean {@link monomerLib} before load libraries [false]
    */
   async loadLibraries(reload: boolean = false): Promise<void> {
     return this.loadLibrariesPromise = this.loadLibrariesPromise.then(async () => {
@@ -112,6 +113,7 @@ export class MonomerLibHelper implements IMonomerLibHelper {
     });
   }
 
+  /** Reads library from file shares, handles .json and .sdf */
   async readLibrary(path: string, fileName: string): Promise<IMonomerLib> {
     let data: any[] = [];
     let file;
