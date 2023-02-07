@@ -174,7 +174,7 @@ export function linkStrandsV3000(
   macroMolBlock += 'M  V30 BEGIN BOND\n';
   macroMolBlock += bondBlock;
   macroMolBlock += 'M  V30 END BOND\n';
-  if (useChirality) {
+  if (useChirality && collection.length > 0) {
     macroMolBlock += 'M  V30 BEGIN COLLECTION\n';
     macroMolBlock += collectionBlock;
     macroMolBlock += 'M  V30 END COLLECTION\n';
@@ -367,7 +367,7 @@ export function linkV3000(molBlocks: string[], useChirality: boolean = true): st
   macroMolBlock += 'M  V30 BEGIN BOND\n';
   macroMolBlock += bondBlock;
   macroMolBlock += 'M  V30 END BOND\n';
-  if (useChirality) {
+  if (useChirality && collection.length > 0) {
     macroMolBlock += 'M  V30 BEGIN COLLECTION\n';
     macroMolBlock += collectionBlock;
     macroMolBlock += 'M  V30 END COLLECTION\n';
