@@ -1,8 +1,8 @@
 {
   "name": "@datagrok/usage-analysis",
   "author": {
-    "name": "Konstantin Doncov",
-    "email": "kdoncov@datagrok.ai"
+    "name": "Volodymyr Dyma",
+    "email": "vdyma@datagrok.ai"
   },
   "friendlyName": "Usage Analysis",
   "version": "0.0.7",
