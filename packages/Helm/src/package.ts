@@ -178,7 +178,8 @@ function webEditor(cell?: DG.GridCell, value?: string) {
       app.canvas.helm.setSequence(value, 'HELM');
     }
   }, 200);
-  ui.dialog({ showHeader: false, showFooter: true })
+  //@ts-ignore
+  ui.dialog({showHeader: false, showFooter: true})
     .add(view)
     .onOK(() => {
       if (typeof cell !== 'undefined') {
