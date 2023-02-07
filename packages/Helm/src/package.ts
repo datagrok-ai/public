@@ -93,16 +93,23 @@ export function helmCellRenderer(): HelmCellRenderer {
   return new HelmCellRenderer();
 }
 
+function getAbsentMonomers(cell?: DG.GridCell, value?: string) {
+  const cellValue = typeof cell !== 'undefined' ? cell.cell.value : value;
+  const monomers = findMonomers(cellValue);
+  if (monomers.size == 0) 
+    webEditor(cell, value);
+  else
+    grok.shell.warning(`Monomers ${Array.from(monomers).join(', ')} are absent! <br/>` +
+    `Please, upload the monomer library! <br/>` +
+    `<a href="https://datagrok.ai/help/domains/bio/macromolecules" target="_blank">Learn more</a>`);
+}
+
 //tags: cellEditor
 //description: Macromolecule  
 //input: grid_cell cell
 export function editMoleculeCell(cell: DG.GridCell): void {
-  const monomers = findMonomers(cell.cell.value);
   if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === 'helm')
-    if (monomers.size == 0) 
-      webEditor(cell);
-    else
-      grok.shell.warning(`Monomers ${Array.from(monomers).join(', ')} are absent!`);
+    getAbsentMonomers(cell)
 }
 
 //name: Open Helm Web Editor
@@ -113,11 +120,7 @@ export function openEditor(mol: string): void {
   let df = grok.shell.tv.grid.dataFrame;
   let converter = new NotationConverter(df.columns.bySemType('Macromolecule'));
   const resStr = converter.convertStringToHelm(mol, '/');
-  const monomers = findMonomers(resStr);
-  if (monomers.size == 0) 
-    webEditor(undefined, resStr);
-  else
-    grok.shell.warning(`Monomers ${Array.from(monomers).join(', ')} are absent!`);
+  getAbsentMonomers(undefined, resStr);
 }
 
 //name: Properties
