@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/drug-bank",
   "friendlyName": "DrugBank",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "author": {
     "name": "Volodymyr Dyma",
     "email": "vdyma@datagrok.ai"
@@ -54,5 +54,8 @@
   "canView": [
     "All users"
   ],
-  "category": "Cheminformatics"
+  "category": "Cheminformatics",
+  "sources": [
+    "common/openchemlib-full.js"
+  ]
 }
