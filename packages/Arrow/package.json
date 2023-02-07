@@ -6,7 +6,7 @@
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
   },
-  "description": "Arrow is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform that provides us with the opportunity to work with parquet and feather file formats.",
+  "description": "Provides an opportunity to work with parquet and feather file formats.",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
