@@ -3,6 +3,7 @@ import {WORKER_CALL} from './rdkit-service-worker-api';
 import {WorkerMessageBusClient} from '../worker-message-bus-client';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Fingerprint} from '../utils/chem-common';
+import {RDModule} from "@datagrok-libraries/chem-meta/src/rdkit-api";
 
 export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   constructor() {
@@ -23,4 +24,7 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
 
   getFingerprints = async (fingerprintType: Fingerprint) =>
     this.call(WORKER_CALL.GET_FINGERPRINTS, [fingerprintType]);
+
+  convertMolNotation = async (sourceNotation: string, targetNotation: string, bitset?: boolean[]) =>
+    this.call(WORKER_CALL.CONVERT_MOL_NOTATION, [sourceNotation, targetNotation, bitset]);
 }

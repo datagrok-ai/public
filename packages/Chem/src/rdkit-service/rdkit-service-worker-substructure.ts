@@ -2,7 +2,21 @@ import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getMolSafe} from "../utils/mol-creation_rdkit";
 import { isMolBlock } from '../utils/chem-common';
+import {errorToConsole} from "@datagrok-libraries/utils/src/to-console";
+import * as DG from 'datagrok-api/dg';
+import MolNotation = DG.chem.Notation;
 //import {aromatizeMolBlock} from "../utils/aromatic-utils";
+
+const MALFORMED_MOL_V2000 = `
+Malformed
+
+  0  0  0  0  0  0  0  0  0  0999 V2000
+M  END`;
+const MALFORMED_MOL_V3000 = `
+Malformed
+
+  0  0  0  0  0  0            999 V3000
+M  END`;
 
 function syncQueryAromatics_1(molBlock: string,  bonds2Change: Array<number> | null = null) : string | Array<number> {
   let curPos = 0;
@@ -149,5 +163,39 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         mol.delete();
       this._rdKitMols = null;
     }
+  }
+
+  convertMolNotation(sourceNotation: string, targetNotation: string, rdKitModule: RDModule, bitset?: boolean[]): Array<string> {
+    if (sourceNotation === targetNotation)
+      throw new Error(`Convert molecule notation: source and target notations must differ: "${sourceNotation}"`);
+    let result = (targetNotation === MolNotation.MolBlock) ? MALFORMED_MOL_V2000 :
+      (targetNotation === MolNotation.V3KMolBlock) ? MALFORMED_MOL_V3000 :
+        'MALFORMED_INPUT_VALUE';
+
+    const results = new Array(this._rdKitMols!.length);
+    let mol: RDMol | null = null;
+    for (let i = 0; i < this._rdKitMols!.length; ++i) {
+      mol = this._rdKitMols![i];
+      if (targetNotation === MolNotation.MolBlock) {
+        //when converting from smiles set coordinates and rendering parameters
+        if (sourceNotation === MolNotation.Smiles) {
+          if (!mol.has_coords())
+            mol.set_new_coords();
+          mol.normalize_depiction(1);
+          mol.straighten_depiction(false);
+        }
+        result = mol.get_molblock();
+      }
+      if (targetNotation === MolNotation.Smiles)
+        result = mol.get_smiles();
+      if (targetNotation === MolNotation.V3KMolBlock)
+        result = mol.get_v3Kmolblock();
+      if (targetNotation === MolNotation.Smarts)
+        result = mol.get_smarts();
+      // if (targetNotation === MolNotation.Inchi)
+      //   return mol.get_inchi();
+      results[i] = result;
+    }
+    return results;
   }
 }

@@ -145,6 +145,21 @@ async function getUint8ArrayFingerprints(
   }
 }
 
+async function geMolNotationConversions(
+  molCol: DG.Column, sourceNotation: string, targetNotation: string): Promise<string[]> {
+  await chemBeginCriticalSection();
+  try {
+    await _invalidate(molCol);
+    const conversions = await (await getRdKitService()).convertMolNotation(sourceNotation, targetNotation);
+    //saveFingerprintsToCol(molCol, fingerprints, fingerprintsType);
+    chemEndCriticalSection();
+    return conversions;
+  } finally {
+    chemEndCriticalSection();
+  }
+}
+
+
 function substructureSearchPatternsMatch(molString: string, querySmarts: string, fgs: Uint8Array[]): BitArray {
   const patternFpUint8Length = 256;
   const result = new BitArray(fgs.length, false);
