@@ -1,7 +1,7 @@
 {
 	"name": "fittingtools",
 	"friendlyName": "FittingTools",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"author": {
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
@@ -12,7 +12,7 @@
 		"cash-dom": "latest",
 		"dayjs": "latest",
 		"@datagrok-libraries/utils": "latest",
-		"@datagrok-libraries/statistics": "1.0.0"
+		"@datagrok-libraries/statistics": "1.0.1"
 	},
 	"devDependencies": {
 		"webpack": "latest",
