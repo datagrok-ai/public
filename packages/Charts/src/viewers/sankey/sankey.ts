@@ -122,14 +122,20 @@ export class SankeyViewer extends DG.JsViewer {
     this.targetCol = DG.Column.fromList('string', this.targetColumnName, targetList);
 
     const nodes: Node[] = Array.from(new Set(sourceList.concat(targetList)))
+      .filter((element) => element)
       .map((node: string, index: number) => ({node: index, name: node}));
 
     const links: Link[] = [];
     const rowCount = filteredIndexList.length;
     for (let i = 0; i < rowCount; i++) {
+      const source = nodes.findIndex((node) => node.name === sourceList[i]);
+      const target = nodes.findIndex((node) => node.name === targetList[i]);
+      if (source === -1 || target === -1)
+        continue;
+
       links.push({
-        source: nodes.findIndex((node) => node.name === sourceList[i]),
-        target: nodes.findIndex((node) => node.name === targetList[i]),
+        source: source,
+        target: target,
         value: valueList[i],
       });
     }
