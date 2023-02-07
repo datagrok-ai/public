@@ -1,3 +1,5 @@
+import {limitedMemoryBFGS} from "../../vendor/lbfgs"
+
 type Likelihood = {
   value: number, 
   const: number, 
