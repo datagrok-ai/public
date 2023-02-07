@@ -8,7 +8,7 @@ import { ValidationResult } from '../validators/interfaces';
 
 export function check(args: { [x: string]: string | string[]; }) {
   const nOptions = Object.keys(args).length - 1;
-  if (args['_'].length !== 1 || (nOptions > 1 && (!args.dir || typeof args.dir !== 'string')) || nOptions > 2)
+  if (args['_'].length !== 1 || (nOptions > 0 && (!args.dir || typeof args.dir !== 'string')) || nOptions > 1)
     return false;
 
   const curDir = process.cwd();
