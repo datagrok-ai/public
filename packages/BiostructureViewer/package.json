@@ -6,7 +6,7 @@
     "email": "atanas@datagrok.ai"
   },
   "version": "0.2.9",
-  "description": "BiostructureViewer is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
+  "description": "Protein viewers: support for multiple file formats, stand-alone viewer, and in-grid viewer. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/BiostructureViewer/README.md)",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
