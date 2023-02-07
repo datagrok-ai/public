@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/gis",
 	"friendlyName": "GIS",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"category": "Visualizations",
 	"author": {
 		"name": "Maksym Shvyrlo",
@@ -11,7 +11,7 @@
 	"dependencies": {
 		"@datagrok-libraries/utils": "^1.11.1",
 		"cash-dom": "latest",
-		"datagrok-api": "1.8.3",
+		"datagrok-api": "^1.12.0",
 		"dayjs": "latest",
 		"jszip": "^3.10.1",
 		"ol": "^6.15.1",
