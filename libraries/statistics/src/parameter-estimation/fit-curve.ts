@@ -1,4 +1,4 @@
-import {limitedMemoryBFGS} from "../../vendor/lbfgs"
+import {limitedMemoryBFGS} from "../../lbfgs/lbfgs"
 
 type Likelihood = {
   value: number, 
@@ -17,13 +17,16 @@ interface ICurveFitter<TArg> {
                                   data: {observed: number[], args: TArg[]},
                                   params: number[]): Likelihood
 }
+
 export class CurveFitter<TArg> implements ICurveFitter<TArg> {
+  errorModel: string;
   data: {observed: number[], args: TArg[]};
   params: number[];
   cf;
   of;
   optimizable;
-  fitHistory: {iterations: number, parameters: {[iteration: number]: number[]}, likelihood: {[iteration: number]: number}} = {
+  fitHistory: {iterations: number, parameters: {[iteration: number]: number[]}, 
+                likelihood: {[iteration: number]: number}} = {
     iterations: 0,
     parameters: {},
     likelihood: {}
@@ -32,7 +35,7 @@ export class CurveFitter<TArg> implements ICurveFitter<TArg> {
   constructor(curveFunction: (params: number[], args: TArg) => number, 
               data: {observed: number[], args: TArg[]},
               params: number[],
-              errorModel: 'constant' | 'proportional' = 'constant'//| 'combinational1' | 'combinational2'
+              errorModel: 'constant' | 'proportional' = 'constant'
               ) {
 
     if(data.observed.length == 0 || data.observed.length != data.args.length)
@@ -40,7 +43,7 @@ export class CurveFitter<TArg> implements ICurveFitter<TArg> {
       
     this.data = data;
     this.params = params;
-
+    this.errorModel = errorModel;
     this.cf = curveFunction;
 
     switch(errorModel) {
@@ -75,29 +78,53 @@ export class CurveFitter<TArg> implements ICurveFitter<TArg> {
     };
   }
 
-  getFittedCurve() {
+  performFit(): void {
     limitedMemoryBFGS(this.optimizable, this.params);
     limitedMemoryBFGS(this.optimizable, this.params);
+  }
+
+  get parameters(): number[] {
+    return this.params;
+  }
+
+  get curveFunction(): Function {
     let res = (arg: TArg) =>{
-      let params = this.fitHistory.parameters[this.fitHistory.iterations];
+      let params = this.fitHistory.parameters[this.fitHistory.iterations - 1];
 
       return this.cf(params, arg);
     }
 
     return res;
-
-    //fittedCurve
-    //parameters
-    //sigma
-    //outliers
   }
 
-  getFittedParams() {
-    return this.params;
+  get confidence(): {top:Function, bottom: Function} {
+    let params = this.fitHistory.parameters[this.fitHistory.iterations - 1];
+
+    let error = this.errorModel == "constant" ?
+                this.of(this.cf, this.data, params).const :
+                this.of(this.cf, this.data, params).mult;
+
+    let top = (arg: TArg) =>{
+      let value = this.cf(params, arg);
+      if (this.errorModel == "constant")
+        return  value + 1.4*error;
+      else
+        return  value + 1.4*(Math.abs(value)*error);
+    }
+
+    let bottom = (arg: TArg) =>{
+      let value = this.cf(params, arg);
+      if (this.errorModel == "constant")
+        return  value - 1.4*error;
+      else
+        return  value - 1.4*(Math.abs(value)*error);
+    }
+
+    return {top: top, bottom: bottom};
   }
 
   //central difference
-  getDerivative(params: number[], selectedParam: number): number {
+  private getDerivative(params: number[], selectedParam: number): number {
     let step = params[selectedParam]*0.0001;
     step = step == 0 ? 0.001 : step; 
     let paramsTop: number[] = [];
