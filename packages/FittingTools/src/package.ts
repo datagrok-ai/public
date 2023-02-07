@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 export const _package = new DG.Package();
 
 
-import {CurveFitter, sigmoid} from './fit-curve/fit-curve';
+import {CurveFitter, sigmoid} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 
 //name: Curves
 //tags: app
@@ -25,18 +25,28 @@ export async function sim() {
   let lc = DG.Viewer.scatterPlot(t);
 
   const x = [4, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75, 6, 6.25, 6.5, 6.75, 7, 7.25, 7.5, 7.75, 8];
-  const y = [1.005, 0.981, 0.921, 0.987,
-                0.948, 0.810, 0.730, 0.558,
-                0.501, 0.381, 0.271, 0.148, 
-                0.139, 0.078, 0.095, -0.037, 0.01];
+  const y = [1.005, 0.981, 0.921, 0.987, 0.948, 0.810, 0.730, 0.558, 0.501, 0.381, 0.271, 0.148, 0.139, 0.078, 0.095, -0.037, 0.01];
   const data = {observed: y, args: x};
 
-  const curveFitter = new CurveFitter(sigmoid, data, [0.9, 1.2, 4.95, 0.1]);
+  //Example of fit curve usage
+  const curveFitter = new CurveFitter(sigmoid, data, [0.9, 1.2, 4.95, 0.1], "constant");
 
   let btn = ui.bigButton('FIT', () => {
    
-    curveFitter.getFittedCurve();
-    let params = curveFitter.params;
+    curveFitter.performFit();
+    let params = curveFitter.parameters;
+    let fittedFunction = curveFitter.curveFunction;
+    let confidence = curveFitter.confidence;
+
+    for (let i = 0; i < x.length; ++i) {
+      console.log("y = " + y[i]);
+      console.log(fittedFunction(x[i]));
+      console.log(confidence.top(x[i]));
+      console.log(confidence.bottom(x[i]));
+    }
+
+    //Example of fit curve usage ends
+
     const out = curveFitter.of(curveFitter.cf, data, params).const;
 
 
