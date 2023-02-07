@@ -188,53 +188,6 @@ function webEditor(cell?: DG.GridCell, value?: string) {
     }).show({modal: true, fullScreen: true});
 }
 
-async function accessServer(url: string, key: string) {
-  const params: RequestInit = {
-    method: 'GET',
-    headers: {
-      'Accept': 'application/json',
-    }
-  };
-  const response = await fetch(url, params);
-  const json = await response.json();
-  return json[key];
-}
-
-//name: helmToFasta
-//input: string helmString {semType: Macromolecule}
-//output: string res
-export async function helmToFasta(helmString: string) {
-  const url = `http://localhost:8081/WebService/service/Fasta/Produce/${helmString}`;
-  return await accessServer(url, 'FastaFile');
-}
-
-//name: helmToRNA
-//description: converts to rna analogue sequence
-//input: string helmString {semType: Macromolecule}
-//output: string res
-export async function helmToRNA(helmString: string) {
-  const url = `http://localhost:8081/WebService/service/Fasta/Convert/RNA/${helmString}`;
-  return await accessServer(url, 'Sequence');
-}
-
-//name: helmToPeptide
-//description: converts to peptide analogue sequence
-//input: string helmString {semType: Macromolecule}
-//output: string res
-export async function helmToPeptide(helmString: string) {
-  const url = `http://localhost:8081/WebService/service/Fasta/Convert/PEPTIDE/${helmString}`;
-  return await accessServer(url, 'Sequence');
-}
-
-//name: helmToSmiles
-//description: converts to smiles
-//input: string helmString {semType: Macromolecule}
-//output: string smiles {semType: Molecule}
-export async function helmToSmiles(helmString: string) {
-  const url = `http://localhost:8081/WebService/service/SMILES/${helmString}`;
-  return await accessServer(url, 'SMILES');
-}
-
 function getRS(smiles: string) {
   const newS = smiles.match(/(?<=\[)[^\][]*(?=])/gm);
   const res = {};
