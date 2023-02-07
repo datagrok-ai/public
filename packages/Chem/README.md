@@ -107,11 +107,11 @@ Radar chart can be visualized in 2 ways:
 2. Radar chart appears in a new window. It changes automatically when you click on the new row.
   ![radar viewer](help/radar-chart-view.gif)
 
-## Similarity search
+## Similarity/Diversity search
 
 Tool that help scientists analyze a collection of molecules in terms of molecular similarity. It is based on applying different distance metrics (such as Tanimoto) to fingerprints.
 
-To run Similarity search select Chem | Similarity search from the top menu.
+Similarity search returns a set of N molecules most similar to the selected one. To run Similarity search select Chem | Search | Similarity search from the top menu.
 
 ![similarity search](help/similarity_search.png)
 
@@ -125,6 +125,11 @@ Using context panel you can change search metrics like similarity cut off, finge
 By selecting columns from `Molecule Properties` field you can add any fields present in your dataframe to similarity panes. Please note that if color coding is applied to a selected column it will be copied on a similarity pane. You can select to highlight background or text in the corresponding field. Ability to add fields to similarity panes simplifies analysis since multiple molecules characteristics can be easily assessed at once.
 
 ![similarity search add fields](help/similarity_search_add_fields.gif)
+
+Diversity search finds N most distinct molecules. To run Similarity search select Chem | Search | Diversity search from the top menu.
+As for Similarity search, you can adjust metrics or add fields to molecule panes using context panel.
+
+![diversity search](help/diversity_search.png)
 
 See also:
 
