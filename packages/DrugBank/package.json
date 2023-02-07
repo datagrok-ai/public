@@ -6,7 +6,7 @@
     "name": "Volodymyr Dyma",
     "email": "vdyma@datagrok.ai"
   },
-  "description": "Search capabilities in the DrugBank Open Strucutres dataset.",
+  "description": "Molecular similarity and substructure search capabilities in the [DrugBank](https://go.drugbank.com/) [Open Structures](https://go.drugbank.com/releases/latest#open-data) dataset.",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
