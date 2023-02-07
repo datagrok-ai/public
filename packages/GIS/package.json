@@ -7,7 +7,7 @@
 		"name": "Maksym Shvyrlo",
 		"email": "mshvyrlo@datagrok.ai"
 	},
-	"description": "Provides GIS (geographic information system) functionality such as maps and geocoding",
+	"description": "GIS (geographic information system) functionality, such as maps and geocoding. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/GIS/README.md)",
 	"dependencies": {
 		"@datagrok-libraries/utils": "^1.11.1",
 		"cash-dom": "latest",
