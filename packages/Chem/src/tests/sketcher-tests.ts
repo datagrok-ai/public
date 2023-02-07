@@ -109,7 +109,7 @@ async function testSmarts(rdkitModule: any, funcs: DG.Func[]) {
   for (const func of funcs) {
     if (func.name === 'chemDrawSketcher')
       continue;
-    DG.chem.currentSketcherType = func.friendlyName;
+    chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
     await awaitCheck(() => s.sketcher !== null, undefined, 5000);
@@ -141,7 +141,7 @@ async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean) {
   for (const func of funcs) {
     if (func.name === 'chemDrawSketcher')
       continue;
-    DG.chem.currentSketcherType = func.friendlyName;
+    chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
     await awaitCheck(() => s.sketcher !== null, undefined, 5000);
@@ -177,7 +177,7 @@ async function testMolV2000(rdkitModule: any, funcs: DG.Func[], input?: boolean)
   for (const func of funcs) {
     if (func.name === 'chemDrawSketcher')
       continue;
-    DG.chem.currentSketcherType = func.friendlyName;
+    chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
     await awaitCheck(() => s.sketcher !== null, undefined, 5000);
@@ -215,7 +215,7 @@ async function testInchi(rdkitModule: any, funcs: DG.Func[]) {
   for (const func of funcs) {
     if (func.name === 'chemDrawSketcher')
       continue;
-    DG.chem.currentSketcherType = func.friendlyName;
+    chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
     await awaitCheck(() => s.sketcher !== null, undefined, 5000);
