@@ -6,7 +6,7 @@
     "name": "Alexander Paramonov",
     "email": "aparamonov@datagrok.ai"
   },
-  "description": "js-api-tests is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
+  "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
