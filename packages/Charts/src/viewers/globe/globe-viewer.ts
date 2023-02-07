@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import * as THREE from 'three';
@@ -86,18 +87,19 @@ export class GlobeViewer extends DG.JsViewer {
 
   onTableAttached() {
     this.init();
-
-    this.latitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE)!.name;
-    this.longitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE)!.name;
+    this.latitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE)?.name || '';
+    this.longitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE)?.name || '';
+    if (!this.latitudeColumnName) grok.shell.warning('Cannot find latitude column!');
+    if (!this.longitudeColumnName) grok.shell.warning('Cannot find longitude column!');
     const magnitudeColumn = this.dataFrame.columns.bySemType('Magnitude')!;
     if (magnitudeColumn !== null) this.magnitudeColumnName = magnitudeColumn.name;
     else {
       const numColumns = this.dataFrame.columns.toList().filter((col) => ['double', 'int'].includes(col.type));
       this.magnitudeColumnName = numColumns[0].name;
+      grok.shell.info(`Cannot find magnitude column, use ${this.magnitudeColumnName} column instead`);
     }
     // By default, beam color and size depend on the same column
     this.colorByColumnName = this.magnitudeColumnName;
-
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => {
@@ -107,12 +109,25 @@ export class GlobeViewer extends DG.JsViewer {
       this.camera!.aspect = width / height;
       this.camera!.updateProjectionMatrix();
     }));
-
     this.render();
   }
 
   onPropertyChanged(property: DG.Property) {
     super.onPropertyChanged(property);
+    const newVal = property.get(this);
+    if (property.name.endsWith('ColumnName')) {
+      switch (property.name) {
+      case 'latitudeColumnName':
+        this.latitudeColumnName = this.dataFrame.col(newVal)?.semType === DG.SEMTYPE.LATITUDE ? newVal : '';
+        break;
+      case 'longitudeColumnName':
+        this.longitudeColumnName = this.dataFrame.col(newVal)?.semType === DG.SEMTYPE.LONGITUDE ? newVal : '';
+        break;
+      case 'magnitudeColumnName':
+        if (this.dataFrame.col(newVal)?.semType === 'Magnitude') this.magnitudeColumnName = newVal;
+        break;
+      }
+    }
     if (this.initialized) {
       this.orbControls!.autoRotate = this.autorotation;
       this.render();
@@ -124,6 +139,10 @@ export class GlobeViewer extends DG.JsViewer {
   }
 
   getCoordinates() {
+    if (!this.latitudeColumnName || !this.longitudeColumnName) {
+      this.points = [];
+      return;
+    }
     this.points.length = 0;
     const lat = this.dataFrame.getCol(this.latitudeColumnName).getRawData();
     const lon = this.dataFrame.getCol(this.longitudeColumnName).getRawData();
