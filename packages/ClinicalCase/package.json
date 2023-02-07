@@ -6,7 +6,7 @@
     "email": "maria.dolotova@arcadia.spb.ru"
   },
   "version": "1.0.2",
-  "description": "Provides support for dealing with clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.",
+  "description": "Analysis of the clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/README.md)",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

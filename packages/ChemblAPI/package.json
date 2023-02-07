@@ -2,7 +2,7 @@
   "name": "@datagrok/chembl-api",
   "friendlyName": "ChemblAPI",
   "version": "1.0.4",
-  "description": "Chem package extensiions. Features for similarity and substructure search in ChEMBL using API",
+  "description": "Similarity and substructure search in ChEMBL using its API",
   "author": {
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"

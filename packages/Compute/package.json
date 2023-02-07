@@ -6,7 +6,7 @@
 		"name": "Aufar Zakiev",
 		"email": "aufar.zakiev@softwarecountry.com"
 	},
-	"description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md)",
+	"description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/datagrok-ai/public.git",
