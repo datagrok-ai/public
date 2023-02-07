@@ -6,7 +6,7 @@
     "email": "lstolbov@datagrok.ai"
   },
   "version": "2.3.5",
-  "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
+  "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
