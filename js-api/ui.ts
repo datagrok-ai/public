@@ -522,7 +522,7 @@ export function link(
 }
 
 /** Creates a [Dialog]. */
-export function dialog(options?: { title?: string, helpUrl?: string } | string): Dialog {
+export function dialog(options?: { title?: string, helpUrl?: string, showHeader?: boolean, showFooter?: boolean } | string): Dialog {
   return Dialog.create(options);
 }
 
