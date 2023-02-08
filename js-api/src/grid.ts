@@ -954,6 +954,10 @@ export class CanvasRenderer {
     return null;
   }
 
+  getDefaultSize(gridColumn: GridColumn): {width: number, height: number} {
+    return { width: this.defaultHeight ?? 80, height: this.defaultHeight ?? 20 };
+  }
+
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, value: any, context: any): void {
     throw 'Not implemented';
   }
