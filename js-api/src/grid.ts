@@ -676,6 +676,9 @@ export class Form {
 
   get row(): Row { return new Row(api.grok_Form_Get_DataFrame(this.dart), api.grok_Form_Get_RowIdx(this.dart)); }
   set row(row: Row) { api.grok_Form_Set_Row(this.dart, row.toDart()); }
+
+  get state() { return api.grok_Form_Get_State(this.dart); }
+  set state(s: string) { api.grok_Form_Set_State(this.dart, s); }
 }
 
 
