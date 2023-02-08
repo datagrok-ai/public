@@ -1025,9 +1025,6 @@ export class PeptidesModel {
         visibleColumns.includes(tableColName);
       gridCol.width = 60;
     }
-    setTimeout(() => {
-      sourceGridProps.rowHeight = 20;
-    }, 500);
   }
 
   getSplitColValueAt(index: number, aar: string, position: string, aarLabel: string): string {

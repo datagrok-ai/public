@@ -73,7 +73,7 @@ predictive models, integration with the external utilities, data augmentation, a
    Also you can add `--eslint` option to add eslint checker feature to the package
 5. Run `npm install` to link the dependencies mentioned in `package.json` file of your package
 6. Upload it to the server: run `webpack` and `grok publish dev` (see other
-   options [here](../develop.md#deployment-modes))
+   options [here](../develop.md#publishing-modes))
 7. Launch the platform and run the package's `info()` function using different methods:
 
 * via the [Functions](https://dev.datagrok.ai/functions?q=info) view

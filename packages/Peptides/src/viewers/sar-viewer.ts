@@ -11,7 +11,7 @@ export class SARViewerBase extends DG.JsViewer {
   tempName!: string;
   _viewerGrid!: DG.Grid;
   sourceGrid!: DG.Grid;
-  model!: PeptidesModel;
+  _model!: PeptidesModel;
   isPropertyChanging: boolean = false;
   _isVertical = false;
 
@@ -28,10 +28,15 @@ export class SARViewerBase extends DG.JsViewer {
     this._viewerGrid = grid;
   }
 
+  get model(): PeptidesModel {
+    this._model ??= PeptidesModel.getInstance(this.dataFrame);
+    return this._model;
+  }
+
   onTableAttached(): void {
     super.onTableAttached();
     this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
-    this.model = PeptidesModel.getInstance(this.dataFrame);
+    // this.model = PeptidesModel.getInstance(this.dataFrame);
     this.subs.push(this.model.onMutationCliffsSelectionChanged.subscribe(() => this.viewerGrid.invalidate()));
     this.helpUrl = '/help/domains/bio/peptides.md';
   }
@@ -161,7 +166,6 @@ export class MonomerPosition extends SARViewerBase {
     this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(this.model.monomerPositionDf, this.model));
 
     setViewerGridProps(this.viewerGrid, false);
-    setTimeout(() => this.viewerGrid.col(C.COLUMNS_NAMES.MONOMER)!.width = 60, 10);
   }
 }
 
@@ -228,7 +232,6 @@ export class MostPotentResiduesViewer extends SARViewerBase {
     const mdCol: DG.GridColumn = this.viewerGrid.col(C.COLUMNS_NAMES.MEAN_DIFFERENCE)!;
     mdCol.name = 'Diff';
     setViewerGridProps(this.viewerGrid, true);
-    setTimeout(() => this.viewerGrid.col(C.COLUMNS_NAMES.MONOMER)!.width = 60, 10);
   }
 }
 

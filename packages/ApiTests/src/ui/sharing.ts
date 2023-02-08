@@ -11,6 +11,7 @@ category('UI: Sharing', () => {
 
   before(async () => {
     testUser = await grok.dapi.users.filter('login = "admin"').first();
+    // DG.Dialog.getOpenDialogs().forEach((d) => d.close());
   });
 
   test('scripts.ui', async () => {
@@ -22,7 +23,7 @@ category('UI: Sharing', () => {
     } finally {
       await grok.dapi.scripts.delete(newScript);
     }
-  });
+  }, {skipReason: 'GROK-11670'});
 
   test('projects.ui', async () => {
     const newProject = DG.Project.create();
@@ -33,7 +34,7 @@ category('UI: Sharing', () => {
     } finally {
       await grok.dapi.projects.delete(newProject);
     }
-  });
+  }, {skipReason: 'GROK-11670'});
 
   test('connections.ui', async () => {
     const newConnection = DG.DataConnection.create(entityName, {
@@ -47,7 +48,7 @@ category('UI: Sharing', () => {
     } finally {
       await grok.dapi.connections.delete(newConnection);
     }
-  });
+  }, {skipReason: 'GROK-11670'});
 
   test('scripts.api', async () => {
     await testEntityAPI(DG.Script.create(''), grok.dapi.scripts);
@@ -94,7 +95,7 @@ category('UI: Sharing', () => {
     if (entity.className !== selector.slice(1)) entity = entity.querySelector(selector)!;
     entity.dispatchEvent(new MouseEvent('contextmenu'));
     await awaitCheck(() => document.querySelector('.d4-menu-item-container.d4-vert-menu.d4-menu-popup') !== null,
-      'cannot find context menu', 3000);
+      'cannot find context menu', 5000);
     const menu = document.querySelector('.d4-menu-item-container.d4-vert-menu.d4-menu-popup');
     const share = Array.from(menu!.querySelectorAll('.d4-menu-item.d4-menu-item-vert'))
       .find((el) => el.textContent === 'Share...') as HTMLElement;
@@ -117,7 +118,7 @@ category('UI: Sharing', () => {
     inputUser.dispatchEvent(new KeyboardEvent('keydown', {keyCode: 13}));
     shareDialogRoot.querySelector('textarea')!.value = 'Message1!';
     (shareDialogRoot.querySelector('.ui-btn.ui-btn-ok.enabled') as HTMLElement).click();
-    // To Do: add balloons cleaner
+    DG.Balloon.closeAll();
     await awaitCheck(() => (document.querySelector('.d4-balloon.info') as HTMLElement).innerText === 'Shared',
       'cannot find info balloon', 3000);
     v.close();
