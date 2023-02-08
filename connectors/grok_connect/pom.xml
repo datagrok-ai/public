@@ -467,6 +467,11 @@
             <artifactId>ngdbc</artifactId>
             <version>2.12.9</version>
         </dependency>
+        <dependency>
+            <groupId>net.snowflake</groupId>
+            <artifactId>snowflake-jdbc</artifactId>
+            <version>3.13.27</version>
+        </dependency>
 
     </dependencies>
 
