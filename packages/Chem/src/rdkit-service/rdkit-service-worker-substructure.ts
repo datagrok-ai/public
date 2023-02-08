@@ -4,8 +4,16 @@ import {getMolSafe} from "../utils/mol-creation_rdkit";
 import { isMolBlock } from '../utils/chem-common';
 import {errorToConsole} from "@datagrok-libraries/utils/src/to-console";
 import * as DG from 'datagrok-api/dg';
-import MolNotation = DG.chem.Notation;
+//import MolNotation = DG.chem.Notation;
 //import {aromatizeMolBlock} from "../utils/aromatic-utils";
+
+export enum MolNotation {
+  Smiles = 'smiles',
+  Smarts = 'smarts',
+  MolBlock = 'molblock', // molblock V2000
+  V3KMolBlock = 'v3Kmolblock', // molblock V3000
+  Unknown = 'unknown',
+}
 
 const MALFORMED_MOL_V2000 = `
 Malformed
@@ -165,37 +173,30 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     }
   }
 
-  convertMolNotation(sourceNotation: string, targetNotation: string, rdKitModule: RDModule, bitset?: boolean[]): Array<string> {
-    if (sourceNotation === targetNotation)
-      throw new Error(`Convert molecule notation: source and target notations must differ: "${sourceNotation}"`);
+  convertMolNotation(targetNotation: string): string[] {
     let result = (targetNotation === MolNotation.MolBlock) ? MALFORMED_MOL_V2000 :
-      (targetNotation === MolNotation.V3KMolBlock) ? MALFORMED_MOL_V3000 :
-        'MALFORMED_INPUT_VALUE';
+      (targetNotation === MolNotation.V3KMolBlock) ? MALFORMED_MOL_V3000 : 'MALFORMED_INPUT_VALUE';
 
     const results = new Array(this._rdKitMols!.length);
     let mol: RDMol | null = null;
     for (let i = 0; i < this._rdKitMols!.length; ++i) {
       mol = this._rdKitMols![i];
       if (targetNotation === MolNotation.MolBlock) {
-        //when converting from smiles set coordinates and rendering parameters
-        if (sourceNotation === MolNotation.Smiles) {
           if (!mol.has_coords())
             mol.set_new_coords();
-          mol.normalize_depiction(1);
-          mol.straighten_depiction(false);
+         result = mol.get_molblock();
         }
-        result = mol.get_molblock();
-      }
-      if (targetNotation === MolNotation.Smiles)
-        result = mol.get_smiles();
-      if (targetNotation === MolNotation.V3KMolBlock)
-        result = mol.get_v3Kmolblock();
-      if (targetNotation === MolNotation.Smarts)
-        result = mol.get_smarts();
-      // if (targetNotation === MolNotation.Inchi)
-      //   return mol.get_inchi();
-      results[i] = result;
+        else if (targetNotation === MolNotation.Smiles)
+          result = mol.get_smiles();
+        else if (targetNotation === MolNotation.V3KMolBlock)
+          result = mol.get_v3Kmolblock();
+        else if (targetNotation === MolNotation.Smarts)
+          result = mol.get_smarts();
+
+     results[i] = result;
     }
+
+    console.log('Finished Worker ' + results.length);
     return results;
   }
 }

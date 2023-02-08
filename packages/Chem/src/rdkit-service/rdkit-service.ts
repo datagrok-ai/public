@@ -99,20 +99,14 @@ export class RdKitService {
   }
 
 
-  async convertMolNotation(sourceNotation: string, targetNotation: string, bitset?: BitArray): Promise<string[]> {
+  async convertMolNotation(targetNotation: string): Promise<string[]> {
     const t = this;
     return this._doParallel(
       (i: number, nWorkers: number) => {
-        return bitset ?
-          t.parallelWorkers[i].convertMolNotation(sourceNotation, targetNotation, i < (nWorkers - 1) ?
-            bitset.getRangeAsList(i * this.segmentLength, (i + 1) * this.segmentLength) :
-            bitset.getRangeAsList(i * this.segmentLength, bitset.length)) :
-          t.parallelWorkers[i].convertMolNotation(sourceNotation, targetNotation);
+        return t.parallelWorkers[i].convertMolNotation(targetNotation);
       },
       (data: any) => {
         for (let k = 0; k < data.length; ++k) {
-          // check for parse neccessity
-          data[k] = JSON.parse(data[k]);
           data[k] = data[k].map((a: number) => a + t.segmentLength * k);
         }
         return [].concat(...data);

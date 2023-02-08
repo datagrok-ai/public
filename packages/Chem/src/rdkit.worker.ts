@@ -33,8 +33,7 @@ ctx.addEventListener('message', async (e: any) => {
     const result = _rdKitServiceWorker!.getFingerprints(args[0]);
     port.postMessage({op: op, retval: result});
   } else if (op === WORKER_CALL.CONVERT_MOL_NOTATION) {
-    const result = _rdKitServiceWorker!.convertMolNotation(args[0], args[1], args[2]);
-  _rdKitServiceWorker = null;
-  port.postMessage({op: op, retval: result});
-}
+    const result = _rdKitServiceWorker!.convertMolNotation(args[0]);
+    port.postMessage({op: op, retval: result});
+  }
 });

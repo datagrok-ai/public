@@ -25,6 +25,6 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   getFingerprints = async (fingerprintType: Fingerprint) =>
     this.call(WORKER_CALL.GET_FINGERPRINTS, [fingerprintType]);
 
-  convertMolNotation = async (sourceNotation: string, targetNotation: string, bitset?: boolean[]) =>
-    this.call(WORKER_CALL.CONVERT_MOL_NOTATION, [sourceNotation, targetNotation, bitset]);
+  convertMolNotation = async (targetNotation: string, bitset?: boolean[]) =>
+    this.call(WORKER_CALL.CONVERT_MOL_NOTATION, [targetNotation, bitset]);
 }

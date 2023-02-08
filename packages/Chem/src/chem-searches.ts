@@ -145,21 +145,6 @@ async function getUint8ArrayFingerprints(
   }
 }
 
-async function geMolNotationConversions(
-  molCol: DG.Column, sourceNotation: string, targetNotation: string): Promise<string[]> {
-  await chemBeginCriticalSection();
-  try {
-    await _invalidate(molCol);
-    const conversions = await (await getRdKitService()).convertMolNotation(sourceNotation, targetNotation);
-    //saveFingerprintsToCol(molCol, fingerprints, fingerprintsType);
-    chemEndCriticalSection();
-    return conversions;
-  } finally {
-    chemEndCriticalSection();
-  }
-}
-
-
 function substructureSearchPatternsMatch(molString: string, querySmarts: string, fgs: Uint8Array[]): BitArray {
   const patternFpUint8Length = 256;
   const result = new BitArray(fgs.length, false);
@@ -267,5 +252,18 @@ export function chemGetFingerprint(molString: string, fingerprint: Fingerprint):
     throw new Error(`Chem | Possibly a malformed molString: ${molString}`);
   } finally {
     mol?.delete();
+  }
+}
+
+export async function geMolNotationConversions(molCol: DG.Column, targetNotation: string): Promise<string[]> {
+  await chemBeginCriticalSection();
+  try {
+    await _invalidate(molCol);
+    const conversions = await (await getRdKitService()).convertMolNotation(targetNotation);
+    //saveFingerprintsToCol(molCol, fingerprints, fingerprintsType);
+    chemEndCriticalSection();
+    return conversions;
+  } finally {
+    chemEndCriticalSection();
   }
 }
