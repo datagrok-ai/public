@@ -9,6 +9,7 @@ import grok_connect.table_query.Stats;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import grok_connect.utils.ProviderManager;
+import org.apache.http.client.utils.URIBuilder;
 import serialization.Types;
 
 import java.util.ArrayList;
@@ -98,13 +99,19 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
 
     @Override
     public String getConnectionStringImpl(DataConnection conn) {
-        return URL_PREFIX + buildAccount(conn)
-                + URL_SEPARATOR + SERVER;
+        return new StringBuilder(URL_PREFIX)
+                .append(buildAccount(conn))
+                .append(URL_SEPARATOR)
+                .append(SERVER)
+                .toString();
     }
 
     private String buildAccount(DataConnection conn) {
-        return conn.get(DbCredentials.ACCOUNT_LOCATOR)
-                + URL_SEPARATOR + conn.get(DbCredentials.REGION_ID) + URL_SEPARATOR
-                + conn.get(DbCredentials.CLOUD);
+        return new StringBuilder(conn.get(DbCredentials.ACCOUNT_LOCATOR))
+                .append(URL_SEPARATOR)
+                .append(conn.get(DbCredentials.REGION_ID))
+                .append(URL_SEPARATOR)
+                .append(conn.get(DbCredentials.CLOUD))
+                .toString();
     }
 }
