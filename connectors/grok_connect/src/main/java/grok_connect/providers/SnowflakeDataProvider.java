@@ -1,6 +1,5 @@
 package grok_connect.providers;
 
-import com.sun.tools.javac.util.List;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
@@ -9,11 +8,12 @@ import grok_connect.table_query.Stats;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import grok_connect.utils.ProviderManager;
-import org.apache.http.client.utils.URIBuilder;
 import serialization.Types;
-
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
 
 public class SnowflakeDataProvider extends JdbcDataProvider{
@@ -23,7 +23,8 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
     private static final String DRIVER_CLASS_NAME = "net.snowflake.client.jdbc.SnowflakeDriver";
     private static final String TYPE = "Snowflake";
     private static final String DESCRIPTION = "Query Snowflake database";
-    private static final List<String> AVAILABLE_CLOUDS = List.of("aws", "azure", "gcp");
+    private static final List<String> AVAILABLE_CLOUDS =
+            Collections.unmodifiableList(Arrays.asList("aws", "azure", "gcp"));
 
     public SnowflakeDataProvider(ProviderManager providerManager) {
         super(providerManager);
