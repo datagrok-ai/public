@@ -150,7 +150,7 @@ function contactus(){
 
 function footer(){
     return (
-        <footer class="py-3 px-4 text-light">
+        <footer class="py-3 px-4 text-light footer-landing">
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-md-6"></div>

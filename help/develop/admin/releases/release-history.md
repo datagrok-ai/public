@@ -6,7 +6,7 @@ title: "Release History"
 
 ### Latest Docker Images
 
-* Datagrok: 
+* Datagrok:
   *  `docker pull datagrok/datagrok:1.12.1`
 * [Docker-Compose](https://datagrok.ai/help/develop/admin/docker-compose)
 
@@ -27,57 +27,26 @@ title: "Release History"
 * [Docker-Compose](https://datagrok.ai/help/develop/admin/docker-compose)
 
 We've released a new version of the Datagrok platform (1.12.0). This release focuses on new features for visualization and usability and traditionally on platform stability.
+Here are some of the biggest improvements:
 
-### Visualization and usability
+* New [Scaffold Tree](release-history.md/#enhancements-in-packages ) visualization that organizes molecular data sets by arranging molecules into a tree hierarchy based on their scaffolds. For details, see [Scaffold tree](../../../domains/chem/scaffold-tree.md).
+* [Dendrogram](release-history.md/#enhancements-in-packages) for interactive exploration of the hierarchical clustering. For details, see [Dendrogram](https://community.datagrok.ai/t/dendrogram/721).
+* Brand new [Map](release-history.md/#enhancements-in-packages). To learn more, see [Map viewer](https://community.datagrok.ai/t/visualization-related-updates/521/27)
+* [Peptides](release-history.md/#enhancements-in-packages) new features and capabilities, such as custom clustering and multiple views, as well as a slightly redesigned user interface and improved application stability. To learn more, see [Macromolecules updates](https://community.datagrok.ai/t/macromolecules-updates/661/11)
 
-#### New features
+### Visualization and usability improvements
 
-##### Scaffold tree
-
-Scaffold tree organizes molecular data sets by arranging molecules into a tree hierarchy based on their scaffolds. Use this hierarchy for filtering or selecting the corresponding rows in the dataset.
-
-To open a scaffold tree, open a dataset with molecules and select **Chem | Scaffold Tree** from the top menu.
-A hierarchy can be either generated automatically or sketched manually. When a scaffold tree is initially created, a tree is generated automatically. You can also sketch the tree manually or modify the automatically generated one.
-
-For details, see [Scaffold tree documentation](https://github.com/datagrok-ai/public/blob/7c62a0c018ec631d3b23760d538a17aaf4d4ca36/help/domains/chem/scaffold-tree.md)
-
-![scaffold-tree-generate-edit](../../../uploads/gifs/scaffold-tree-generate-edit.gif)
-
-##### Peptides
-
-This release introduces new features and capabilities, such as custom clustering and multiple views, as well as a slightly redesigned user interface and improved application stability. To learn more, see [Macromolecules updates](https://community.datagrok.ai/t/macromolecules-updates/661/11)
-
-##### Dendrogram
-
-We separated **Dendrogram** from [**PhyloTreeViewer**](https://github.com/datagrok-ai/public/tree/master/packages/PhyloTreeViewer). And now it’s a [package](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram) for the Datagrok platform for phylogenetic tree visualization. Dendrogram supports the Newick tree format.
-For details, see [Dendrogram](https://community.datagrok.ai/t/dendrogram/721)
-
-![Dendrogram properties](../../../uploads/gifs/dendrogram-properties-1.gif)
-
-##### Map viewer
-
-We retired Google Map viewer and implemented a Map viewer in
-the [GIS](https://github.com/datagrok-ai/public/tree/master/packages/GIS) package.
-
-Map viewer shows geospatial data on a map as either markers or a heatmap. It displays data in geographic formats, like GEOJSON, TOPOJSON, KML, and KMZ. You can also add a map viewer to your custom table. When so, it automatically detects columns with longitude and latitude values.
-
-To learn more, see [Map viewer](https://community.datagrok.ai/t/visualization-related-updates/521/27).
-
-![Map viewer](../../../visualize/viewers/map-viewer.gif)
-
-#### Improvements
-
-* Color-coding
-  * Scatter plot now has a legend for continuous color-coding.
-  * In a grid, you can apply color-coding to the text or background. This option is available for all linear, categorical, and conditional schemas.
-  * When inheriting the color-coding from the grid, adjustments to the min/max made in the plot are reflected in the grid. However, if the original column is not color-coded and selected for the color column in the scatter plot,  the configuration isn't applied to the column in the grid.
-  * Fixed changing the linear color scheme issue. Now the null values don’t  get colored.
-  * Fixed inconsistent behavior of color-coding checkboxes in the columns context menu.
-* Scatter plot:
+* Color coding
+  * Scatter plot now has a legend for continuous color coding.
+  * In a grid, you can apply [color coding](../../../visualize/viewers/grid.md/#column-color-coding) to the text or background. This option is available for all linear, categorical, and conditional schemas.
+  * When inheriting the color coding from the grid, adjustments to the min/max made in the plot are reflected in the grid. However, if the original column is not color-coded and selected for the color column in the scatter plot,  the configuration isn't applied to the column in the grid.
+  * Fixed changing the linear color scheme issue. Now the null values don’t get colored.
+  * Fixed inconsistent behavior of color coding checkboxes in the columns context menu.
+* [Scatter plot](../../../visualize/viewers/scatter-plot.md):
   * Added the exact min/max of the column on the axes' ticks.
   * Context menu: marker section doesn’t close on click.
   * Fixed axis buffer and filters interaction.
-* Bar chart: reordered properties under the Order and Data submenus.
+* [Bar chart](../../../visualize/viewers/bar-chart.md): reordered properties under the Order and Data submenus.
 * Formula lines: regarding the line labels, the line title is on the plot, and both title and description are in the tooltip.
 * We’ve added radio group identification to menu options where relevant.
 * Linked tables:
@@ -86,12 +55,14 @@ To learn more, see [Map viewer](https://community.datagrok.ai/t/visualization-re
 
 ### Enhancements in packages
 
-#### Chem
+#### [Chem](https://github.com/datagrok-ai/public/tree/7c62a0c018ec631d3b23760d538a17aaf4d4ca36/packages/Chem#readme)
 
-* Added the package property to set the default **Sketcher** so that users won’t have to switch on the first use manually.
-* Сhanged the result output for **Chem | Find MCS**. Now it returns a variable instead of a column.
-* Improved the handling of invalid molecules and empty inputs.
-* Added aromatic bonds to MOL2 importer.
+We've added new **Scaffold Tree** visualization that organizes molecular data sets by arranging molecules into a tree hierarchy based on their scaffolds. For details, see [Scaffold tree](../../../domains/chem/scaffold-tree.md).
+* Improvements:
+  * Added the package property to [set the default **Sketcher**](https://github.com/datagrok-ai/public/tree/master/packages/Chem#sketcher) so that users won’t have to switch on the first use manually.
+  * Сhanged the result output for **Chem | Find MCS**. Now it returns a variable instead of a column.
+  * Improved the handling of invalid molecules and empty inputs.
+  * Added support for aromatic bonds when importing MOL2 files.
 * Bug fixes:
   * Excluded blank data from **Diversity Search**.
   * Fixed filter: incorrect behavior after **Reset**.
@@ -104,99 +75,118 @@ To learn more, see [Map viewer](https://community.datagrok.ai/t/visualization-re
   * Synchronized the selection and deselection of activity cliffs on scatter plot and grid.
   * Fixed an error after **Use as Filter** action under the cell with a molecule.
 
-#### Bio
+#### [Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram#readme)
 
-* Added aggregated columns to the MP viewer tooltips.
+We've separated **Dendrogram** from [**PhyloTreeViewer**](https://github.com/datagrok-ai/public/tree/master/packages/PhyloTreeViewer). And now it’s a [package](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram) for the Datagrok platform for phylogenetic tree visualization. 
 
-#### SequenceTranslator
+Use Dendrogram viewer to:
+* Display the Newick tree format files (NWK, NEWICK). 
+* Inject a dendrogram into the grid for interactive exploration of hierarchical clustering. 
 
-* Added adaptive input fields for chains. They resize automatically upon adding longer sequences.
-* Relocated _direction input fields_ to the right of chain input fields.
-* Improved handling of the malformed data. The malformed string is now filled with red color.
-* Added tooltips.
-* Added routing to open specific tabs from links.
+For details, see [Dendrogram](https://community.datagrok.ai/t/dendrogram/721).
+
+#### [GIS](https://github.com/datagrok-ai/public/tree/master/packages/GIS)
+
+We've retired Google Map viewer and implemented a Map viewer in
+the GIS package. It shows geospatial data on a map as either markers or a heatmap. It displays data in geographic formats, like GEOJSON, TOPOJSON, KML, and KMZ. You can also add a map viewer to your custom table. To learn more, see [Map viewer](https://community.datagrok.ai/t/visualization-related-updates/521/27).
+
+#### [Peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides#readme)
+
+This release introduces new features and capabilities, such as custom clustering and multiple views, as well as a slightly redesigned user interface and improved application stability. To learn more, see [Macromolecules updates](https://community.datagrok.ai/t/macromolecules-updates/661/11)
+
+ Improvement: 
+* Added aggregated columns to the Monomer-Positon viewer tooltips. This viewer is used in [Mutation Cliffs / Invariant Map and Most Potent Residues](../../../domains/bio/macromolecules#quantitative-sequence-based-activity-relationship-analyses-to-enable-design-and-optimization-of-polymer-modalities)
+
+#### [SequenceTranslator](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#readme)
+
+* Improvements: 
+  * Added adaptive input fields for chains. They resize automatically upon adding longer sequences.
+  * Relocated _direction input fields_ to the right of chain input fields.
+  * Improved handling of the malformed data. The malformed string is now filled with red color.
+  * Added tooltips.
+  * Added routing to open specific tabs from links.
 * Bug fixes:
   * Fixed rendering _resulting molecule_ with empty AS, AS2.
   * Fixed rendering for separate strands.
 
-#### Charts
+#### [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts#readme)
 
-We've merged package **Viewers** to **Charts**, removed out-of-use viewers, and refactored the others:
+We've merged package **Viewers** to **Charts**, removed obsolete viewers, and refactored the others:
 
-* Sankey viewer:
+* [Sankey viewer](https://github.com/datagrok-ai/public/tree/master/packages/Charts#sankey):
   * Added a tooltip.
-  * Fixed focus to highlight the current.object on a viewer
-  * Added the selection functionality.
+   * Added the selection functionality.
   * Added viewer redrawing on filtering.
+   * Fixed focus to highlight the current.object on a viewer
   * Fixed selection on filtered rows.
-* Chord viewer:
-  * Fixed the selection functionality.
-  * Added viewer redrawing on filtering.
-* Radar viewer:
+* [Chord viewer](https://github.com/datagrok-ai/public/tree/master/packages/Charts#chord):
+  * Added viewer redrawing on filtering. 
+  * Fixed the selection functionality.  
+* [Radar viewer](../../../visualize/viewers/radar-viewer.md):
   * Fixed changing color issue: synchronized the color of percentiles on the legend and **Context Pane**.
 
+#### [MLB](https://github.com/datagrok-ai/public/tree/master/packages/MolecularLiabilityBrowser#readme)
+  * VRs tree for grid.
+  * Revert database connection dataSource `PostgresNet`.
+  * Fix for routing tree in url.
 ### Improvements for developers
 
-#### Viewers
+#### [Viewers](../../../develop/how-to/develop-custom-viewer.md)
 
 * Added the ability to specify default viewer settings for the dataframe, see [annotation](https://github.com/datagrok-ai/public/issues/1395#issuecomment-1364325511).
 * Added the ability to show a custom viewer in the Viewers section of the toolbox. The viewer should have an icon (set via `meta.icon tag`). Toolbox visibility can be specified as `meta.toolbox: true`.
 
-#### JS API
+#### [JS API](../../../develop/js-api.md)
 
-* Added optional parameters to `Column.meta.colors.setLinear()` to set min and max values for linear color coding scale.You can also use the `COLOR_CODING_SCHEME_MIN` and `COLOR_CODING_SCHEME_MAX` tags.
-* Added radioGroup to Menu.item.
-* Added the ability to set `friendlyName` for `DataConnections` created from JS API.
-* Added hints to UI methods. The purpose is to attach interactive hints, close to what happens in tutorials, to elements. Application developers can then use these methods in the app code to introduce a new feature to the user, etc.
-* JS Viewers: disabled the removal of the default values (this likely fixes the issue with the JS properties not serialized).
-* Exposed schema property for `DataConnection`.
-* Fixed bugs:
-* `ui.choiceInput` does not work with strings that contain `\r` symbol.
-* Failure to get meta data from `SemanticValue` in JS.
-* Fixed date in `getValues()` in stock-broker.js.
-* Fixed `Project.removeChild` method.
+* Improvements: 
+  * Added optional parameters to `Column.meta.colors.setLinear()` to set min and max values for linear color coding scale.You can also use the `COLOR_CODING_SCHEME_MIN` and `COLOR_CODING_SCHEME_MAX` tags.
+  * Added radioGroup to Menu.item.
+  * Added the ability to set `friendlyName` for `DataConnections` created from JS API.
+  * Added hints to UI methods. The purpose is to attach interactive hints, close to what happens in tutorials, to elements. Application developers can then use these methods in the app code to introduce a new feature to the user, etc.
+  * JS Viewers: disabled the removal of the default values (this likely fixes the issue with the JS   properties not serialized).
+  * Exposed schema property for `DataConnection`.
+* Bug fixes:
+  * `ui.choiceInput` does not work with strings that contain `\r` symbol.
+  * Failure to get meta data from `SemanticValue` in JS.
+  * Fixed date in `getValues()` in stock-broker.js.
+  * Fixed `Project.removeChild` method.
 
-#### Widgets
+#### [Widgets](https://github.com/datagrok-ai/public/tree/7c62a0c018ec631d3b23760d538a17aaf4d4ca36/packages/Widgets#readme)
 
 * Added the ability to create a custom package settings widget.
 * `Widget.getType()` method major code cleanup.
 
 #### Enhancements in libraries
 
-* MLB:
-  * VRs tree for grid.
-  * Revert database connection dataSource `PostgresNet`.
-  * Fix for routing tree in url.
-* Utils:
+* [utils](https://github.com/datagrok-ai/public/tree/master/libraries/utils#readme):
   * Input categories added in the input form.
   * Added basic validation, btn disabling and UI fixes to **RichFunctionView**.
   * **RichFunctionView**: run button disabling added.
   * Move distance methods and constants to **ML lib** (utils), remove `index.ts`.
   * Exclude blank data from diversity search.
   * Utils for color.
-* ML lib:
+* [ml](https://github.com/datagrok-ai/public/tree/master/libraries/ml#readme):
   * Moved distance methods from **Chem**, **Bio**, **MLB** to **ML lib**.
   * Fixed **Activity Cliffs** page freezing bug.
   * Fixed **Stochastic Proximity Embedding** dialog does not work.
   * Handled errors from web workers.
-* Bio lib:
+* [bio](https://github.com/datagrok-ai/public/tree/master/libraries/bio#readme):
   * Clear **Bio** lib dependency on **Phylocanvas**.
   * Separate **Dendrogram** package.
   * Fix dendrogram interfaces to allow emp.
   * Added `ITreeHelper.getNodesByLeaves`.
 
+### [Compute](../../../compute/compute.md)
 
-### Compute
+* Improvements:
+  * `RichFunctionView` renamed and stabilized.
+  * Added script generator app example.
+  * Added sample of high-order function.
+* Bug fixes:
+  * Fixed linking to `RichFunctionView`.
 
 
-* `RichFunctionView` renamed and stabilized.
-* Added script generator app example.
-* Added sample of high-order function.
-* Fixed linking to `RichFunctionView`.
-
-
-### Bug fixes
-
+### Other bug fixes
 
 * Actions in packages don't support semantic values.
 * Connections: Fixed anonymous mode.

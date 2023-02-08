@@ -1,21 +1,18 @@
 {
 	"name": "fittingtools",
 	"friendlyName": "FittingTools",
-	"version": "0.0.2",
+	"version": "0.0.4",
 	"author": {
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
   },
 	"description": "",
-	"sources": [
-    "vendor/lbfgs.js",
-    "vendor/numeric-1.2.6.min.js"
-  ],
 	"dependencies": {
 		"datagrok-api": "latest",
 		"cash-dom": "latest",
 		"dayjs": "latest",
-		"@datagrok-libraries/utils": "latest"
+		"@datagrok-libraries/utils": "latest",
+		"@datagrok-libraries/statistics": "1.0.1"
 	},
 	"devDependencies": {
 		"webpack": "latest",
@@ -29,6 +26,7 @@
 	},
 	"scripts": {
 		"link-all": "",
+		"link-utils": "npm link @datagrok-libraries/statistics",
 		"debug-fittingtools": "webpack && grok publish",
 		"release-fittingtools": "webpack && grok publish --release",
 		"build-fittingtools": "webpack",

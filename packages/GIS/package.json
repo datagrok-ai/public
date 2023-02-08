@@ -1,17 +1,17 @@
 {
 	"name": "@datagrok/gis",
 	"friendlyName": "GIS",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"category": "Visualizations",
 	"author": {
 		"name": "Maksym Shvyrlo",
 		"email": "mshvyrlo@datagrok.ai"
 	},
-	"description": "Provides GIS (geographic information system) functionality such as maps and geocoding",
+	"description": "GIS (geographic information system) functionality, such as maps and geocoding. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/GIS/README.md)",
 	"dependencies": {
 		"@datagrok-libraries/utils": "^1.11.1",
 		"cash-dom": "latest",
-		"datagrok-api": "1.8.3",
+		"datagrok-api": "^1.12.0",
 		"dayjs": "latest",
 		"jszip": "^3.10.1",
 		"ol": "^6.15.1",

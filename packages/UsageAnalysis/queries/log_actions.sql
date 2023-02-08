@@ -11,6 +11,7 @@ order by event_time desc
 --end
 
 --name: Log Actions Summary
+--meta.cache: true
 --input: string eventTime = "today" {pattern: datetime}
 --connection: System:Datagrok
 
@@ -24,6 +25,7 @@ order by 1,2,4 desc
 --end
 
 --name: Log Actions Summary by Hours
+--meta.cache: true
 --input: string eventTime = "today" {pattern: datetime}
 --connection: System:Datagrok
 
@@ -34,16 +36,4 @@ inner join users u on u.id = s.user_id
 where @eventTime(e.event_time)
 group by u.login, t.name, t.source, hour
 order by 1,2,4 desc
---end
-
-
---name: Test Activity Summary
---input: string eventTime = "today" {pattern: datetime}
---connection: System:TestTrack
-
-select t.file_path || t.file_name as test, a.result, count(a.date) from test_scenario t inner join test_activity a on a.scenario_id = t.id
-where type = 'manual' and @eventTime(a.date)
-
-group by test, result
-order by 1,2
 --end

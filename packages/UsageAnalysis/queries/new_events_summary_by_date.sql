@@ -1,4 +1,5 @@
 --name: NewEventsSummaryByDate
+--meta.cache: true
 --input: string days
 --connection: System:Datagrok
 SELECT

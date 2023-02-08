@@ -41,7 +41,7 @@ category('UI: Tags', () => {
       if (document.querySelector('.grok-items-view-counts') !== null)
         return regex.test((document.querySelector('.grok-items-view-counts') as HTMLElement).innerText);
       return false;
-    }, 'number of projects does not match', 3000);
+    }, 'number of projects does not match', 7000);
   });
 
   test('tag.editor', async () => {

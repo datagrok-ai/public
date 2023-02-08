@@ -175,7 +175,8 @@ export async function initAutoTests(packageId: string, module?: any) {
   const moduleAutoTests = [];
   const packFunctions = await grok.dapi.functions.filter(`package.id = "${packageId}"`).list();
   for (const f of packFunctions) {
-    const tests: string[] = f.options['test'];
+    //@ts-ignore
+    const tests = f.options['test'];
     if (!(tests && Array.isArray(tests) && tests.length)) continue;
     for (let i = 0; i < tests.length; i++) {
       moduleAutoTests.push(new Test(autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {

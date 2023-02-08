@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 export namespace ts {
   /** A type guard function.
    * See https://stackoverflow.com/questions/64616994/typescript-type-narrowing-not-working-for-in-when-key-is-stored-in-a-variable*/
-  export function hasProp<T>(obj: T, key: PropertyKey): key is keyof T {
+  export function hasProp<T extends object>(obj: T, key: PropertyKey): key is keyof T {
     return key in obj;
   }
 }

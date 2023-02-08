@@ -31,6 +31,9 @@
 
     --success: #006400;
     --failure: #8B0000;
+
+    --ifm-color-primary: var(--blue-1);
+    --ifm-menu-color-active:var(--blue-1);
 }
 
 .signup-container {
