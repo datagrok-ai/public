@@ -7,6 +7,7 @@ import {Observable} from 'rxjs';
 import {RangeSlider} from './widgets';
 import {SemType} from './const';
 import {Property} from './entities';
+import {IFormLookSettings, IGridLookSettings} from "./interfaces/d4";
 
 
 let api = <any>window;
@@ -633,9 +634,53 @@ export class GridColumnList {
   }
 }
 
+/** DataFrame-bound viewer that contains {@link Form} */
+export class FormViewer extends Viewer<IFormLookSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  /** Creates a new default form for the specified columns. */
+  static createDefault(df: DataFrame, options?: {columns?: string[]}): FormViewer {
+    return new FormViewer(api.grok_FormViewer_CreateDefault(df.dart, options?.columns));
+  }
+
+  get form(): Form { return api.grok_FormViewer_Get_Form(this.dart); }
+
+  get editable(): boolean { return api.grok_FormViewer_Get_Editable(this.dart); }
+  set editable(x: boolean) { api.grok_FormViewer_Set_Editable(this.dart, x); }
+
+  get designMode(): boolean { return api.grok_FormViewer_Get_DesignMode(this.dart); }
+  set designMode(x: boolean) { api.grok_FormViewer_Set_DesignMode(this.dart, x); }
+}
+
+
+/** Represents a form that can be user-designed or edited. */
+export class Form {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** Creates a new grid. */
+  static forDataFrame(df: DataFrame, options?: {columns?: string[]}): Form {
+    return api.grok_Form_ForDataFrame(df.dart, options?.columns);
+  }
+
+  get editable(): boolean { return api.grok_Form_Get_Editable(this.dart); }
+  set editable(x: boolean) { api.grok_Form_Set_Editable(this.dart, x); }
+
+  get designMode(): boolean { return api.grok_Form_Get_DesignMode(this.dart); }
+  set designMode(x: boolean) { api.grok_Form_Set_DesignMode(this.dart, x); }
+
+  get row(): Row { return new Row(api.grok_Form_Get_DataFrame(this.dart), api.grok_Form_Get_RowIdx(this.dart)); }
+  set row(row: Row) { api.grok_Form_Set_Row(this.dart, row.toDart()); }
+}
+
 
 /** High-performance, flexible spreadsheet control */
-export class Grid<TSettings = any> extends Viewer<TSettings> {
+export class Grid extends Viewer<IGridLookSettings> {
 
   constructor(dart: any) {
     super(dart);
