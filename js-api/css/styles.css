@@ -7,15 +7,11 @@
     padding-left: 0px;
     margin-left: 0px;
   }
+  
 
-.sketcher-standard-size {
-  min-width: 500px;
-  min-height: 400px;
-}
-
-.extended-width {
-  min-width: 800px;
-  min-height: 400px;
+.sketcher-host {
+  width: 100%!important;
+  height: 100%!important;
 }
 
 .clear-button {

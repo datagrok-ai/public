@@ -709,7 +709,7 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
         cell.cell.value = sketcher.getMolFile();
       Sketcher.addToCollection(Sketcher.RECENT_KEY, sketcher.getMolFile());
     })
-    .show();
+    .show({resizable: true});
 }
 
 //name: OpenChemLib

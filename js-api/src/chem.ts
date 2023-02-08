@@ -97,6 +97,14 @@ export namespace chem {
       return [];
     }
 
+    get width(): number {
+      return 500;
+    }
+
+    get height(): number {
+      return 400;
+    }
+
     /** Override to provide custom initialization. At this point, the root is already in the DOM. */
     async init(host: Sketcher) {
       this.host = host;
@@ -112,7 +120,7 @@ export namespace chem {
   export class Sketcher extends Widget {
 
     molInput: HTMLInputElement = ui.element('input');
-    host: HTMLDivElement = ui.box(null, 'grok-sketcher');
+    host: HTMLDivElement = ui.box(null, 'grok-sketcher sketcher-host');
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
     onChanged: Subject<any> = new Subject<any>();
@@ -140,6 +148,15 @@ export namespace chem {
     set sketcherType(type: string) {
       this._setSketcherType(type);
     }
+
+    get width(): number {
+      return this.sketcher ? this.sketcher.width : 500;
+    }
+
+    get height(): number {
+      return this.sketcher ? this.sketcher.height : 400;
+    }
+
 
     getSmiles(): string {
       return this.sketcher?.isInitialized ? this.sketcher.smiles : this._smiles === null ?
@@ -313,7 +330,7 @@ export namespace chem {
               this.setMolFile(savedMolFile!);
               this.sketcherDialogOpened = false;
             })
-            .show();
+            .show({resizable: true});
         }
       };
 
@@ -410,12 +427,12 @@ export namespace chem {
       };
       getMolecule().then(async (molecule) => {
         ui.empty(this.host);
-        this.host.classList.remove('extended-width'); //need to remove class to reset width
+        this._setSketcherSize(); //set default size to show update indicator
         ui.setUpdateIndicator(this.host, true);
         this.changedSub?.unsubscribe();
         const sketcherFunc = this.sketcherFunctions.find(e => e.friendlyName == sketcherType|| e.name === sketcherType) ?? this.sketcherFunctions.find(e => e.friendlyName == DEFAULT_SKETCHER);
         this.sketcher = await sketcherFunc!.apply();
-        this.host.classList.add('sketcher-standard-size');
+        this._setSketcherSize(); //update sketcher size according to base sketcher width and height
         this.host.appendChild(this.sketcher!.root);
         await ui.tools.waitForElementInDom(this.root);
         await this.sketcher!.init(this);
@@ -433,6 +450,11 @@ export namespace chem {
         if (molecule)              
         this.setMolecule(molecule!, this._smarts !== null);
       });
+    }
+
+    private _setSketcherSize() {
+      this.host.style.minWidth = `${this.width}px`;
+      this.host.style.minHeight = `${this.height}px`;
     }
 
     static readonly FAVORITES_KEY = 'chem-molecule-favorites';
