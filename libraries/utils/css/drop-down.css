@@ -1,0 +1,106 @@
+.ui-drop-down-root { 
+    position: relative;
+    border-radius: 3px;
+    display: inline-flex;
+    align-items: center;
+    border-color: #7990A5;
+    padding: 0;
+    align-self: flex-start;
+    cursor: pointer;
+    margin: 8px 0;
+}
+.ui-drop-down-root:hover {
+    background-color: var(--grey-1);
+}
+.ui-drop-down-root::after {
+    content: ' ';
+    margin: 0 4px;
+    border-style: solid;
+    border-width: 4px 4px 0 4px;
+    border-color: #40607f transparent transparent transparent;
+    rotate:0deg;
+    transition: rotate 200ms ease-in-out;
+}
+.ui-drop-down-root.ui-drop-down-expanded::after {
+    rotate:180deg;
+    transition: rotate 200ms ease-in-out;
+}
+i.ui-drop-down-item {
+    font-size: 16px;
+}
+.ui-drop-down-item {
+    margin-left:4px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ui-drop-down-root.ui-drop-down-expanded {
+    box-shadow: 0px 0px 2px #40607f;
+    z-index: 4000;
+    border-radius: 0;
+    background-color: #ECEFF2;
+    padding-left: 2px;
+    padding-top: 0;
+    flex-grow: 1;
+    margin-left: -2px;
+}
+
+.ui-drop-down-root.ui-drop-down-expanded:before {
+    content: ' ';
+    bottom: -1px;
+    position: absolute;
+    width: 100%;
+    height: 5px;
+    left: 0;
+    z-index: 4002;
+    background-color: #ECEFF2;
+}
+
+.ui-drop-down-root > .ui-drop-down-menu-fixed {
+    position: fixed;
+    align-self: baseline;
+    z-index: 4001;
+}
+
+.ui-drop-down-root .ui-drop-down-menu {
+    position: absolute;
+    left: -2px;
+    top: 24px;
+    box-shadow: 0px 0px 2px #40607f;
+    z-index: 4000;
+    background: #ECEFF2;
+    padding-top: 3px;
+    min-width: 110px;
+    display: flex;
+    flex-direction: column;
+}
+
+.ui-drop-down-root .ui-drop-down-menu .ui-drop-down-menu-list {
+    max-height: 80vh;
+}
+
+.ui-drop-down-root .ui-drop-down-menu * {
+    cursor: pointer;
+}
+
+.ui-drop-down-root .ui-drop-down-menu .ui-drop-down-menu-list-item-item {
+    border-bottom: 1px solid #D7DFE7;
+    min-height: 24px;
+    display: flex;
+    align-items: center;
+    padding: 4px 12px 4px 4px;
+    box-sizing: border-box;
+}
+
+.ui-drop-down-root .ui-drop-down-menu .ui-drop-down-menu-list-item {
+    height: 24px;
+    display: flex;
+    align-items: center;
+    padding: 0px 8px;
+}
+
+.ui-drop-down-root .ui-drop-down-menu .ui-drop-down-menu-list-item:hover {
+    background: #D7DFE7;
+}
