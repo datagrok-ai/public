@@ -676,6 +676,9 @@ export class Form {
 
   get row(): Row { return new Row(api.grok_Form_Get_DataFrame(this.dart), api.grok_Form_Get_RowIdx(this.dart)); }
   set row(row: Row) { api.grok_Form_Set_Row(this.dart, row.toDart()); }
+
+  get state() { return api.grok_Form_Get_State(this.dart); }
+  set state(s: string) { api.grok_Form_Set_State(this.dart, s); }
 }
 
 
@@ -949,6 +952,10 @@ export class CanvasRenderer {
 
   get defaultHeight(): number | null {
     return null;
+  }
+
+  getDefaultSize(gridColumn: GridColumn): {width?: number | null, height?: number | null} {
+    return { width: this.defaultWidth, height: this.defaultHeight};
   }
 
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, value: any, context: any): void {

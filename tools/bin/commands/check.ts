@@ -3,7 +3,8 @@ import path from 'path';
 import walk from 'ignore-walk';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
-import { ValidationResult } from '../validators/interfaces';
+import { FuncMetadata, FuncParam, FuncValidator, ValidationResult } from '../validators/interfaces';
+import { PackageFile } from '../utils/interfaces';
 
 
 export function check(args: { [x: string]: string | string[]; }) {
@@ -46,10 +47,11 @@ export function check(args: { [x: string]: string | string[]; }) {
       const content = fs.readFileSync(webpackConfigPath, { encoding: 'utf-8' });
       const externals = extractExternals(content);
       if (externals)
-        checkImportStatements(packagePath, jsTsFiles, externals).forEach((warning) => color.warn(warning));
+        warn(checkImportStatements(packagePath, jsTsFiles, externals));
     }
 
-    checkFuncSignatures(packagePath, funcFiles).forEach((warning) => color.warn(warning));
+    warn(checkFuncSignatures(packagePath, funcFiles));
+    warn(checkPackageFile(packagePath));
   }
 
   return true;
@@ -204,12 +206,56 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
   return warnings;
 }
 
+function checkPackageFile(packagePath: string): string[] {
+  const warnings: string[] = [];
+  const packageFilePath = path.join(packagePath, 'package.json');
+  const json: PackageFile = JSON.parse(fs.readFileSync(packageFilePath, { encoding: 'utf-8' }));
+  const isPublicPackage = path.basename(path.dirname(packagePath)) === 'packages' &&
+    path.basename(path.dirname(path.dirname(packagePath))) === 'public';
+
+  if (!json.description)
+    warnings.push('File "package.json": "description" field is empty. Provide a package description.');
+
+  if (Array.isArray(json.properties) && json.properties.length > 0) {
+    for (const propInfo of json.properties) {
+      if (typeof propInfo !== 'object')
+        warnings.push('File "package.json": Invalid property annotation in the "properties" field.');
+      else if (!propInfo.name)
+        warnings.push('File "package.json": Add a property name for each property in the "properties" field.');
+      else if (!utils.propertyTypes.includes(propInfo.propertyType))
+        warnings.push(`File "package.json": Invalid property type for property ${propInfo.name}.`);
+    }
+  }
+
+  if (json.repository == null && isPublicPackage)
+    warnings.push('File "package.json": add the "repository" field.');
+
+  if (json.author == null && isPublicPackage)
+    warnings.push('File "package.json": add the "author" field.');
+
+  if (Array.isArray(json.sources) && json.sources.length > 0) {
+    for (const source of json.sources) {
+      if (typeof source !== 'string')
+        warnings.push(`File "package.json": Only file paths and URLs are allowed in sources. Modify the source ${source}`);
+      if (source.startsWith('common/') || utils.absUrlRegex.test(source))
+        continue;
+      if (source.startsWith('src/') && fs.existsSync(path.join(packagePath, 'webpack.config.js')))
+        warnings.push('File "package.json": Sources cannot include files from the \`src/\` directory. ' +
+          `Move file ${source} to another folder.`);
+      if (!(fs.existsSync(path.join(packagePath, source))))
+        warnings.push(`Source ${source} not found in the package.`);
+    }
+  }
+
+  return warnings;
+}
+
+function warn(warnings: string[]): void {
+  warnings.forEach((w) => color.warn(w));
+}
+
 function getFuncMetadata(script: string): FuncMetadata[] {
   const funcData: FuncMetadata[] = [];
-  const headerTags = ['name', 'description', 'help-url', 'input', 'output', 'tags', 'sample', 'language', 'returns', 'test',
-    'sidebar', 'condition', 'top-menu', 'environment', 'require', 'editor-for', 'schedule', 'reference', 'editor'];
-  const paramRegex = new RegExp(`\/\/\\s*(${headerTags.join('|')}|meta\\.[^:]*): *(\\S+) ?(\\S+)?`);
-  const nameRegex = /(?:|static|export\s+function|export\s+async\s+function)\s+([a-zA-Z_][a-zA-Z0-9_$]*)\s*\((.*?)\).*/;
   let isHeader = false;
   let data: FuncMetadata = { name: '', inputs: [], outputs: [] };
 
@@ -217,7 +263,7 @@ function getFuncMetadata(script: string): FuncMetadata[] {
     if (!line)
       continue;
 
-    const match = line.match(paramRegex);
+    const match = line.match(utils.paramRegex);
     if (match) {
       if (!isHeader)
         isHeader = true;
@@ -234,8 +280,8 @@ function getFuncMetadata(script: string): FuncMetadata[] {
         data.tags = match.input && match[3] ? match.input.split(':')[1].split(',').map((t) => t.trim()) : [match[2]];
     }
     if (isHeader) {
-      const nm = line.match(nameRegex);
-      if (nm && !line.match(paramRegex)) {
+      const nm = line.match(utils.nameRegex);
+      if (nm && !line.match(utils.paramRegex)) {
         data.name = data.name || nm[1];
         funcData.push(data);
         data = { name: '', inputs: [], outputs: [] };
@@ -246,21 +292,3 @@ function getFuncMetadata(script: string): FuncMetadata[] {
 
   return funcData;
 }
-
-type FuncParam = {type: string};
-
-type FuncMetadata = {
-  name: string,
-  inputs: FuncParam[],
-  outputs: FuncParam[],
-  tags?: string[],
-  description?: string,
-};
-
-type FuncValidator = ({}: {
-  name: string,
-  inputs: FuncParam[],
-  outputs: FuncParam[],
-  tags?: string[],
-  description?: string,
-}) => ValidationResult;

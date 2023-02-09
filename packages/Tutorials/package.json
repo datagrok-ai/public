@@ -13,7 +13,7 @@
     "directory": "packages/Tutorials"
   },
   "dependencies": {
-    "@datagrok-libraries/tutorials": "^1.0.2",
+    "@datagrok-libraries/tutorials": "^1.0.3",
     "@datagrok-libraries/utils": "^1.15.5",
     "cash-dom": "^8.1.0",
     "datagrok-api": "^1.12.0",

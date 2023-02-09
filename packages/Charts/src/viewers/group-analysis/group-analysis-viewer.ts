@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
+import {MapProxy} from "datagrok-api/dg";
 
 const AGGR_TYPE = 'Aggregate';
 const CHART_TYPE = 'Chart';
@@ -105,8 +106,8 @@ export class GroupAnalysisViewer extends DG.JsViewer {
   constructor() {
     super();
     this.groupByColumns = this.stringList('groupByColumns', undefined);
-    this.analyzedColumns = this.addProperty('analyzedColumns', 'object', [], {'userEditable': false});
-    this.parentViewers = this.addProperty('parentViewers', 'object', {}, {'userEditable': false});
+    this.analyzedColumns = [];
+    this.parentViewers = {};
   }
 
   init(): void {
