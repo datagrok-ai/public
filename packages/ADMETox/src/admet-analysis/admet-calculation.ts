@@ -66,9 +66,9 @@ export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFra
     let csvString: string | null = '';
     try {
       csvString = await accessServer(DG.DataFrame.fromColumns([smilesCol]).toCsv(), queryParams);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      grok.shell.warning('Dataset contains malformed data!');
+      grok.shell.warning(e.toString());
       pi.update(100, 'Evaluation failed...');
       pi.close();
     }
@@ -142,9 +142,9 @@ export function getModelsSingle(smiles: string): DG.Accordion {
       `smiles
       ${smiles}`,
       queryParams.toString()
-    ).catch((e) => {
+    ).catch((e: any) => {
       console.log(e);
-      grok.shell.warning('Dataset contains malformed data!');
+      grok.shell.warning(e.toString());
     }).then((csvString: any) => {
       removeChildren(result);
       const table = processCsv(csvString);
