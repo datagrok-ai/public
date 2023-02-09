@@ -28,9 +28,9 @@ export class ScatterPlotTutorial extends Tutorial {
 
     this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
-    const plot = <DG.ScatterPlotViewer>(await this.openPlot(
+    const plot = (await this.openPlot(
       'scatter plot',
-      (x) => x.type === DG.VIEWER.SCATTER_PLOT));
+      (x) => x.type === DG.VIEWER.SCATTER_PLOT)) as unknown as DG.ScatterPlotViewer;
     const info = <{ [key: string]: any }>plot.getInfo();
     const columnCheck = (selector: DG.ColumnComboBox, col: string) =>
       selector.onChanged.pipe(filter((v) => v === col));
