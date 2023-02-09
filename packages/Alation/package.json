@@ -6,7 +6,7 @@
     "name": "Volodymyr Dyma",
     "email": "vdyma@datagrok.ai"
   },
-  "description": "Alation is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
+  "description": "Integration with the Alation data catalog.",
   "properties": [
     {
       "name": "Base URL",
@@ -33,12 +33,7 @@
     "eslint": "latest",
     "eslint-config-google": "latest",
     "@typescript-eslint/eslint-plugin": "latest",
-    "@typescript-eslint/parser": "latest",
-    "puppeteer": "^13.7.0",
-    "@types/js-yaml": "^4.0.5",
-    "js-yaml": "^4.1.0",
-    "@types/node-fetch": "^2.6.2",
-    "node-fetch": "^2.6.7"
+    "@typescript-eslint/parser": "latest"
   },
   "scripts": {
     "link-all": "",

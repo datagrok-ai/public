@@ -2,7 +2,7 @@
   "name": "@datagrok/chembl-api",
   "friendlyName": "ChemblAPI",
   "version": "1.0.4",
-  "description": "Chem package extensiions. Features for similarity and substructure search in ChEMBL using API",
+  "description": "Similarity and substructure search in ChEMBL using its API",
   "author": {
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
@@ -26,14 +26,9 @@
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "css-loader": "latest",
-    "puppeteer": "^13.7.0",
     "style-loader": "latest",
     "webpack": "latest",
-    "webpack-cli": "latest",
-    "@types/js-yaml": "^4.0.5",
-    "js-yaml": "^4.1.0",
-    "@types/node-fetch": "^2.6.2",
-    "node-fetch": "^2.6.7"
+    "webpack-cli": "latest"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",

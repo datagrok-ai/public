@@ -1,0 +1,11 @@
+.greyColor {
+  color:var(--grey-4);
+}
+.card:hover{
+  cursor:pointer;
+}
+.dialogSize{
+  min-width:500px;
+  width: 600px;
+  max-width: 700px;
+}

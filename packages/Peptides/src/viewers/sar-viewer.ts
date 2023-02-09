@@ -166,7 +166,6 @@ export class MonomerPosition extends SARViewerBase {
     this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(this.model.monomerPositionDf, this.model));
 
     setViewerGridProps(this.viewerGrid, false);
-    setTimeout(() => this.viewerGrid.col(C.COLUMNS_NAMES.MONOMER)!.width = 60, 10);
   }
 }
 
@@ -233,7 +232,6 @@ export class MostPotentResiduesViewer extends SARViewerBase {
     const mdCol: DG.GridColumn = this.viewerGrid.col(C.COLUMNS_NAMES.MEAN_DIFFERENCE)!;
     mdCol.name = 'Diff';
     setViewerGridProps(this.viewerGrid, true);
-    setTimeout(() => this.viewerGrid.col(C.COLUMNS_NAMES.MONOMER)!.width = 60, 10);
   }
 }
 

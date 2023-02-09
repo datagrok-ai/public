@@ -67,9 +67,7 @@ body {
     font-size: 1rem;
     font-weight: 400;
     line-height: 1.5;
-    color: #212529;
     text-align: left;
-    background-color: #fff
 }
 
 [tabindex="-1"]:focus {
@@ -454,13 +452,6 @@ h6 {
     font-size: 3rem;
     font-weight: 400;
     line-height: 1.2
-}
-
-hr {
-    margin-top: 1rem;
-    margin-bottom: 1rem;
-    border: 0;
-    border-top: 1px solid rgba(0, 0, 0, .1)
 }
 
 .small,

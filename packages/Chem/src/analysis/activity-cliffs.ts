@@ -2,8 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {findMCS} from '../scripts-api';
-import {drawMoleculeToCanvas, getRdKitModule} from '../utils/chem-common-rdkit';
+import {drawMoleculeToCanvas} from '../utils/chem-common-rdkit';
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import { convertMolNotation } from '../package';
 
 const canvasWidth = 200;
 const canvasHeight = 100;
@@ -32,15 +33,9 @@ function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
     imageHost.style.width = (canvasWidth).toString() + 'px';
     imageHost.style.height = (canvasHeight).toString() + 'px';
     let molecule = params.seqCol.get(mol);
-    if (params.seqCol.tags[DG.TAGS.UNITS] === DG.chem.SMILES) {
+    if (params.seqCol.tags[DG.TAGS.UNITS] === DG.chem.Notation.Smiles) {
       //convert to molFile to draw in coordinates similar to dataframe cell
-      const rdmol = getRdKitModule().get_mol(molecule, '{"mergeQueryHs":true}');
-      if (!rdmol.has_coords())
-        rdmol.set_new_coords();
-      rdmol.normalize_depiction(1);
-      rdmol.straighten_depiction(false);
-      molecule = rdmol.get_molblock();
-      rdmol?.delete();
+      molecule = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
     }
     drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, molecule, params.cashedData[params.line.id],
       { normalizeDepiction: false, straightenDepiction: false });

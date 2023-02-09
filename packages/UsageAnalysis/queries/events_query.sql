@@ -1,4 +1,5 @@
 --name: TopFunctions
+--meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -13,6 +14,7 @@ group by et.name
 --end
 
 --name: TopPackageFunctions
+--meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -33,6 +35,7 @@ group by et.name
 --end
 
 --name: Events1
+--meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -46,6 +49,7 @@ order by e.event_time::date;
 --end
 
 --name: TopPackages
+--meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -69,6 +73,7 @@ limit 50
 --end
 
 --name: TopSources
+--meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok

@@ -810,7 +810,7 @@ in `src/test-app-01.js`. You may find this `datagrok-api` is a predefined locati
 
 ### Application lifecycle
 
-There are two main [deployment modes](../develop.md#deployment-modes) for Datagrok packages: Debug and Release.
+There are two main [publishing modes](../develop.md#publishing-modes) for Datagrok packages: Debug and Release.
 
 * When you `grok publish`, the package is deployed to Datagrok in a Debug mode. This means only you see this deployed
   version of the package, all others with proper privileges keep seeing the older version if one existed before

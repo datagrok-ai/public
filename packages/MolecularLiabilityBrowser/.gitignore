@@ -1,6 +1,0 @@
-.env.local
-.vscode/*
-#files/ptm_in_cdr.d42
-#src/examples/*
-
-test-report.html

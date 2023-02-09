@@ -522,7 +522,7 @@ export function link(
 }
 
 /** Creates a [Dialog]. */
-export function dialog(options?: { title?: string, helpUrl?: string } | string): Dialog {
+export function dialog(options?: { title?: string, helpUrl?: string, showHeader?: boolean, showFooter?: boolean } | string): Dialog {
   return Dialog.create(options);
 }
 
@@ -1229,6 +1229,23 @@ function spliterResize(divider: HTMLElement, previousSibling: HTMLElement, nextS
         nextSibling.style.maxHeight = (md.bottomHeight - delta.y) + "px";
       }
   }
+}
+
+export function ribbonPanel(items: HTMLElement[] | null): HTMLDivElement {
+  const root = document.createElement('div');
+  $(root).addClass('d4-ribbon');
+  if (items != null) {
+    $(root).append(items.map(item => {
+      let itemBox = document.createElement('div');
+      $(itemBox).addClass('d4-ribbon-item');
+      $(itemBox).append(item);
+      return render(itemBox)
+    }));
+  }
+  const wrapSpacer = document.createElement('div');
+  $(wrapSpacer).addClass('d4-ribbon-wrap-spacer');
+  $(root).prepend(wrapSpacer);
+  return root;
 }
 
 export function block(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {

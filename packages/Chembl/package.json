@@ -24,16 +24,11 @@
     "typescript": "latest"
   },
   "devDependencies": {
-    "@types/js-yaml": "^4.0.5",
-    "@types/node-fetch": "^2.6.2",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "css-loader": "latest",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
-    "js-yaml": "^4.1.0",
-    "node-fetch": "^2.6.7",
-    "puppeteer": "^13.7.0",
     "style-loader": "latest",
     "webpack": "latest",
     "webpack-cli": "latest"

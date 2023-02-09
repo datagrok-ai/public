@@ -6,7 +6,7 @@
     "name": "Diana Onufriienko",
     "email": "donufriienko@datagrok.ai"
   },
-  "description": "DevTools is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. Its purpose is to simplify and assist in the development of platform extensions.",
+  "description": "Tools for the Datagrok developers (TestManager, DevPanel). [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/DevTools/README.md)",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
@@ -16,28 +16,21 @@
     "@datagrok-libraries/utils": "^2.3.1",
     "codemirror": "^5.65.0",
     "datagrok-api": "^1.6.0",
-    "js-yaml": "^4.1.0",
     "rxjs": "^6.5.5"
   },
   "devDependencies": {
     "@types/codemirror": "^5.60.5",
-    "@types/node": "^17.0.23",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "cash-dom": "^8.1.0",
     "css-loader": "^5.2.4",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
-    "puppeteer": "^13.7.0",
     "style-loader": "^2.0.0",
     "ts-loader": "^9.2.3",
     "typescript": "^4.3.5",
     "webpack": "latest",
-    "webpack-cli": "latest",
-    "@types/js-yaml": "^4.0.5",
-    "js-yaml": "^4.1.0",
-    "@types/node-fetch": "^2.6.2",
-    "node-fetch": "^2.6.7"
+    "webpack-cli": "latest"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
