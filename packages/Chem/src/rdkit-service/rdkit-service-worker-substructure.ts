@@ -2,7 +2,29 @@ import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getMolSafe} from "../utils/mol-creation_rdkit";
 import { isMolBlock } from '../utils/chem-common';
+import {errorToConsole} from "@datagrok-libraries/utils/src/to-console";
+import * as DG from 'datagrok-api/dg';
+//import MolNotation = DG.chem.Notation;
 //import {aromatizeMolBlock} from "../utils/aromatic-utils";
+
+export enum MolNotation {
+  Smiles = 'smiles',
+  Smarts = 'smarts',
+  MolBlock = 'molblock', // molblock V2000
+  V3KMolBlock = 'v3Kmolblock', // molblock V3000
+  Unknown = 'unknown',
+}
+
+const MALFORMED_MOL_V2000 = `
+Malformed
+
+  0  0  0  0  0  0  0  0  0  0999 V2000
+M  END`;
+const MALFORMED_MOL_V3000 = `
+Malformed
+
+  0  0  0  0  0  0            999 V3000
+M  END`;
 
 function syncQueryAromatics_1(molBlock: string,  bonds2Change: Array<number> | null = null) : string | Array<number> {
   let curPos = 0;
@@ -149,5 +171,32 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         mol.delete();
       this._rdKitMols = null;
     }
+  }
+
+  convertMolNotation(targetNotation: string): string[] {
+    let result = (targetNotation === MolNotation.MolBlock) ? MALFORMED_MOL_V2000 :
+      (targetNotation === MolNotation.V3KMolBlock) ? MALFORMED_MOL_V3000 : 'MALFORMED_INPUT_VALUE';
+
+    const results = new Array(this._rdKitMols!.length);
+    let mol: RDMol | null = null;
+    for (let i = 0; i < this._rdKitMols!.length; ++i) {
+      mol = this._rdKitMols![i];
+      if (targetNotation === MolNotation.MolBlock) {
+          if (!mol.has_coords())
+            mol.set_new_coords();
+         result = mol.get_molblock();
+        }
+        else if (targetNotation === MolNotation.Smiles)
+          result = mol.get_smiles();
+        else if (targetNotation === MolNotation.V3KMolBlock)
+          result = mol.get_v3Kmolblock();
+        else if (targetNotation === MolNotation.Smarts)
+          result = mol.get_smarts();
+
+     results[i] = result;
+    }
+
+    console.log('Finished Worker ' + results.length);
+    return results;
   }
 }
