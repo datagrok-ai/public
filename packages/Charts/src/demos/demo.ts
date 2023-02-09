@@ -52,6 +52,6 @@ export class Demo {
 
   static wordCloudViewerDemo() {
     const tableView = grok.shell.addTableView(energyUK);
-    tableView.addViewer('WordCloud');
+    tableView.addViewer('WordCloudViewer');
   }
 }
