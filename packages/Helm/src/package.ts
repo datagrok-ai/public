@@ -93,11 +93,11 @@ export function helmCellRenderer(): HelmCellRenderer {
   return new HelmCellRenderer();
 }
 
-function checkMonomersAndOpenWebEditor(cell?: DG.GridCell, value?: string) {
-  const cellValue = typeof cell !== 'undefined' ? cell.cell.value : value;
+function checkMonomersAndOpenWebEditor(cell?: DG.Cell, value?: string, units?: string) {
+  const cellValue = typeof units === 'undefined' ? cell.value : value;
   const monomers = findMonomers(cellValue);
   if (monomers.size == 0) 
-    webEditor(cell, value);
+    webEditor(cell, value, units);
   else
     grok.shell.warning(`Monomers ${Array.from(monomers).join(', ')} are absent! <br/>` +
     `Please, upload the monomer library! <br/>` +
@@ -109,7 +109,7 @@ function checkMonomersAndOpenWebEditor(cell?: DG.GridCell, value?: string) {
 //input: grid_cell cell
 //meta.columnTags: quality=Macromolecule, units=helm
 export function editMoleculeCell(cell: DG.GridCell): void {
-  checkMonomersAndOpenWebEditor(cell)
+  checkMonomersAndOpenWebEditor(cell.cell, undefined, undefined);
 }
 
 //name: Open Helm Web Editor
@@ -118,9 +118,10 @@ export function editMoleculeCell(cell: DG.GridCell): void {
 //input: string mol { semType: Macromolecule }
 export function openEditor(mol: string): void {
   let df = grok.shell.tv.grid.dataFrame;
-  let converter = new NotationConverter(df.columns.bySemType('Macromolecule'));
+  let col = df.columns.bySemType('Macromolecule');
+  let converter = new NotationConverter(col);
   const resStr = converter.convertStringToHelm(mol, '/');
-  checkMonomersAndOpenWebEditor(undefined, resStr);
+  checkMonomersAndOpenWebEditor(df.currentCell, resStr, col.getTag(DG.TAGS.UNITS));
 }
 
 //name: Properties
@@ -149,8 +150,10 @@ export async function propertiesPanel(helmString: string) {
   );
 }
 
-function webEditor(cell?: DG.GridCell, value?: string) {
+function webEditor(cell?: DG.Cell, value?: string, units?: string) {
   let view = ui.div();
+  let df = grok.shell.tv.grid.dataFrame;
+  let converter = new NotationConverter(df.columns.bySemType('Macromolecule'));
   org.helm.webeditor.MolViewer.molscale = 0.8;
   let app = new scil.helm.App(view, {
     showabout: false,
@@ -175,8 +178,8 @@ function webEditor(cell?: DG.GridCell, value?: string) {
   app.structureview.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
   app.mex.resize(sizes.topheight - 80);
   setTimeout(function() {
-    if (typeof cell !== 'undefined') {
-      app.canvas.helm.setSequence(cell.cell.value, 'HELM');
+    if (typeof units === 'undefined') {
+      app.canvas.helm.setSequence(cell.value, 'HELM');
     } else {
       app.canvas.helm.setSequence(value, 'HELM');
     }
@@ -185,8 +188,12 @@ function webEditor(cell?: DG.GridCell, value?: string) {
   ui.dialog({showHeader: false, showFooter: true})
     .add(view)
     .onOK(() => {
-      if (typeof cell !== 'undefined') {
-        cell.cell.value = app.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
+      let helmValue = app.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
+      if (typeof units === 'undefined') {
+        cell.value = helmValue;
+      } else {
+        let convertedRes = converter.convertHelmToFastaSeparator(helmValue, units);
+        cell.value = convertedRes;
       }
     }).show({modal: true, fullScreen: true});
 }
