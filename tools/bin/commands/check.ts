@@ -210,9 +210,12 @@ function checkPackageFile(packagePath: string): string[] {
   const warnings: string[] = [];
   const packageFilePath = path.join(packagePath, 'package.json');
   const json: PackageFile = JSON.parse(fs.readFileSync(packageFilePath, { encoding: 'utf-8' }));
+  const isPublicPackage = path.basename(path.dirname(packagePath)) === 'packages' &&
+    path.basename(path.dirname(path.dirname(packagePath))) === 'public';
 
   if (!json.description)
-    warnings.push('File "package.json": "description" field is empty. Please provide a package description.');
+    warnings.push('File "package.json": "description" field is empty. Provide a package description.');
+
   if (Array.isArray(json.properties) && json.properties.length > 0) {
     for (const propInfo of json.properties) {
       if (typeof propInfo !== 'object')
@@ -223,10 +226,13 @@ function checkPackageFile(packagePath: string): string[] {
         warnings.push(`File "package.json": Invalid property type for property ${propInfo.name}.`);
     }
   }
-  if (json.repository == null && path.basename(path.dirname(packagePath)) === 'packages' &&
-    path.basename(path.dirname(path.dirname(packagePath))) === 'public') {
+
+  if (json.repository == null && isPublicPackage)
     warnings.push('File "package.json": add the "repository" field.');
-  }
+
+  if (json.author == null && isPublicPackage)
+    warnings.push('File "package.json": add the "author" field.');
+
   if (Array.isArray(json.sources) && json.sources.length > 0) {
     for (const source of json.sources) {
       if (typeof source !== 'string')
@@ -235,11 +241,12 @@ function checkPackageFile(packagePath: string): string[] {
         continue;
       if (source.startsWith('src/') && fs.existsSync(path.join(packagePath, 'webpack.config.js')))
         warnings.push('File "package.json": Sources cannot include files from the \`src/\` directory. ' +
-          `Please move file ${source} to another folder`);
+          `Move file ${source} to another folder.`);
       if (!(fs.existsSync(path.join(packagePath, source))))
         warnings.push(`Source ${source} not found in the package.`);
     }
   }
+
   return warnings;
 }
 
