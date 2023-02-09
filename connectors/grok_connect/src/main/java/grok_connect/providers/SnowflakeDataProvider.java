@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Properties;
 
 public class SnowflakeDataProvider extends JdbcDataProvider{
+    private static final boolean CAN_BROWSE_SCHEMA = true;
+    private static final String DEFAULT_SCHEMA = "PUBLIC";
     private static final String URL_PREFIX = "jdbc:snowflake://";
     private static final String URL_SEPARATOR = ".";
     private static final String SERVER = "snowflakecomputing.com";
@@ -28,63 +30,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
 
     public SnowflakeDataProvider(ProviderManager providerManager) {
         super(providerManager);
-        driverClassName = DRIVER_CLASS_NAME;
-        descriptor = new DataSource();
-        descriptor.type = TYPE;
-        descriptor.description = DESCRIPTION;
-        Prop prop = new Prop();
-        prop.nullable = false;
-        Property cloudProviders = new Property(Property.STRING_TYPE, DbCredentials.CLOUD, prop);
-        cloudProviders.choices = AVAILABLE_CLOUDS;
-        descriptor.connectionTemplate = new ArrayList<Property>(){{
-            add(new Property(Property.STRING_TYPE, DbCredentials.ACCOUNT_LOCATOR, prop));
-            add(new Property(Property.STRING_TYPE, DbCredentials.REGION_ID, prop));
-            add(cloudProviders);
-            add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
-            add(new Property(Property.STRING_TYPE, DbCredentials.WAREHOUSE));
-            add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
-                    DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
-            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
-            add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
-        }};
-        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
-        descriptor.nameBrackets = "\"";
-
-        //TODO: .*
-        descriptor.typesMap = new HashMap<String, String>() {{
-            put("number", Types.FLOAT);
-            put("decimal", Types.FLOAT);
-            put("numeric", Types.FLOAT);
-
-            put("int", Types.INT);
-            put("integer", Types.INT);
-            put("bigint", Types.BIG_INT);
-            put("smallint", Types.INT);
-
-            put("float", Types.FLOAT);
-            put("float4", Types.FLOAT);
-            put("float8", Types.FLOAT);
-            put("double", Types.FLOAT);
-            put("double precision", Types.FLOAT);
-            put("real", Types.FLOAT);
-
-            put("varchar", Types.STRING);
-            put("char", Types.STRING);
-            put("character", Types.STRING);
-            put("string", Types.STRING);
-            put("text", Types.STRING);
-
-            put("boolean", Types.BOOL);
-
-            put("date", Types.DATE_TIME);
-            put("datetime", Types.DATE_TIME);
-            put("time", Types.DATE_TIME);
-            put("timestamp", Types.DATE_TIME);
-
-        }};
-        descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stddev(#)", Types.dataFrameNumericTypes));
-
+        init();
     }
 
     @Override
@@ -105,6 +51,75 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
                 .append(URL_SEPARATOR)
                 .append(SERVER)
                 .toString();
+    }
+
+    @Override
+    public String getSchemasSql(String db) {
+        return "SELECT DISTINCT table_schema FROM information_schema.columns;";
+    }
+
+    @Override
+    public String getSchemaSql(String db, String schema, String table) {
+        schema = schema != null ? schema : DEFAULT_SCHEMA;
+        String query = "SELECT table_schema, table_name, column_name, data_type "
+                + "FROM information_schema.columns "
+                + "WHERE table_schema = '%s' ORDER BY table_name";
+        return String.format(query, schema);
+    }
+
+    private void init() {
+        driverClassName = DRIVER_CLASS_NAME;
+        descriptor = new DataSource();
+        descriptor.type = TYPE;
+        descriptor.description = DESCRIPTION;
+        descriptor.canBrowseSchema = CAN_BROWSE_SCHEMA;
+        descriptor.defaultSchema = DEFAULT_SCHEMA;
+        Prop notNullProperty = new Prop();
+        notNullProperty.nullable = false;
+        Property cloudProviders = new Property(Property.STRING_TYPE, DbCredentials.CLOUD, notNullProperty);
+        cloudProviders.choices = AVAILABLE_CLOUDS;
+        descriptor.connectionTemplate = new ArrayList<Property>(){{
+            add(new Property(Property.STRING_TYPE, DbCredentials.ACCOUNT_LOCATOR, notNullProperty));
+            add(new Property(Property.STRING_TYPE, DbCredentials.REGION_ID, notNullProperty));
+            add(cloudProviders);
+            add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
+            add(new Property(Property.STRING_TYPE, DbCredentials.WAREHOUSE));
+            add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
+                    DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
+            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
+            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
+            add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
+        }};
+        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+        descriptor.nameBrackets = "\"";
+
+        //TODO: .*
+        descriptor.typesMap = new HashMap<String, String>() {{
+            put("number", Types.FLOAT);
+            put("decimal", Types.FLOAT);
+            put("numeric", Types.FLOAT);
+            put("int", Types.INT);
+            put("integer", Types.INT);
+            put("bigint", Types.BIG_INT);
+            put("smallint", Types.INT);
+            put("float", Types.FLOAT);
+            put("float4", Types.FLOAT);
+            put("float8", Types.FLOAT);
+            put("double", Types.FLOAT);
+            put("double precision", Types.FLOAT);
+            put("real", Types.FLOAT);
+            put("varchar", Types.STRING);
+            put("char", Types.STRING);
+            put("character", Types.STRING);
+            put("string", Types.STRING);
+            put("text", Types.STRING);
+            put("boolean", Types.BOOL);
+            put("date", Types.DATE_TIME);
+            put("datetime", Types.DATE_TIME);
+            put("time", Types.DATE_TIME);
+            put("timestamp", Types.DATE_TIME);
+        }};
+        descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stddev(#)", Types.dataFrameNumericTypes));
     }
 
     private String buildAccount(DataConnection conn) {
