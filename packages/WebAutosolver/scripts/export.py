@@ -385,13 +385,7 @@ def updatePackageJsonFile(settings):
     fullNameOfLibFile = f"{settings['folder'].lstrip('../')}/{settings['name']}.js"
 
     # add dependence to package data
-    if "sources" in packageData.keys():
-
-        if fullNameOfLibFile not in packageData["sources"]: # add JS-file if "source" does not contain it yet
-            packageData["sources"].append(fullNameOfLibFile)
-
-    else:
-        packageData["sources"] = [ fullNameOfLibFile ]
+    packageData["sources"] = [ fullNameOfLibFile ]    
 
     # update package.json
     with open(settings["packageJsonFile"], 'w') as file:

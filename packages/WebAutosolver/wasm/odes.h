@@ -1,18 +1,18 @@
 // odes.h
 
-// Adaptive step solvers for the initial problems for ODEs:
-// - explicit Runge-Kutta Cash-Karp method;
-// - implcit modified Rosnbrock triple method.
+/* Adaptive step solvers for the initial problems for ODEs:
+     - explicit Runge-Kutta Cash-Karp method;
+     - implcit modified Rosnbrock triple method.
 
-/* The formulas applied are taken from
+   The formulas applied are taken from
 
-   [1] Endre Suli and David F. Mayers. An Introduction to Numerical Analysis, 2003.
+     [1] Endre Suli and David F. Mayers. An Introduction to Numerical Analysis, 2003.
 
-   [2] Steve Chapra and Raymond P. Canale. Numerical Methods for Engineers, 2021.
+     [2] Steve Chapra and Raymond P. Canale. Numerical Methods for Engineers, 2021.
 
-   [3] https://doi.org/10.1137/S1064827594276424
+     [3] https://doi.org/10.1137/S1064827594276424
 
-   [4] https://doi.org/10.1016/S0898-1221(00)00175-9
+     [4] https://doi.org/10.1016/S0898-1221(00)00175-9
 */
 
 #ifndef ODES_H

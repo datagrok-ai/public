@@ -5,6 +5,7 @@
 
 import os
 import json
+import shutil
 
 from constants import *
 from export import getFunctionsFromListOfFiles, getCommand, completeJsWasmfile, updatePackageJsonFile 
@@ -17,7 +18,7 @@ def loadSettings():
         return json.load(file)
 
 
-def getRawIVPfromFile(ivpFileName):
+def getRawIVPfromFile(ivProblemFileName):
     """"
     Returns raw specification of IVP extracted from the file.
     """
@@ -26,7 +27,7 @@ def getRawIVPfromFile(ivpFileName):
     ARGUMENT: [], INIT_VALS: [], CONSTANTS: [], PARAMS: [] }
 
     # process file with IVP 
-    with open(ivpFileName, 'r') as file:
+    with open(ivProblemFileName, 'r') as file:
         listOfLines = file.readlines()
 
         category = None
@@ -51,7 +52,7 @@ def getRawIVPfromFile(ivpFileName):
     return ivpRaw
 
 
-def getSpecificationFromRawIVP(ivpRaw):
+def getSpecificationFromRawIVP(ivProblemRaw):
     """
     Processes raw description of IVP and return its specification.
     """
@@ -170,357 +171,356 @@ def getSpecificationFromRawIVP(ivpRaw):
 
         return specification
 
-    ivp = {NAME: ivpRaw[NAME], METHOD: ivpRaw[METHOD] }
+    ivProblem = {NAME: ivProblemRaw[NAME], METHOD: ivProblemRaw[METHOD] }
 
     # 1. Process argument's description
-    ivp[ARGUMENT] = extractArgSpecification(ivpRaw[ARGUMENT])
+    ivProblem[ARGUMENT] = extractArgSpecification(ivProblemRaw[ARGUMENT])
 
     # 2. Process initial values' description
-    ivp[INIT_VALS] = extractQuantitiesSpecification(ivpRaw[INIT_VALS])
+    ivProblem[INIT_VALS] = extractQuantitiesSpecification(ivProblemRaw[INIT_VALS])
 
     # 3. Process constants' description
-    ivp[CONSTANTS] = extractQuantitiesSpecification(ivpRaw[CONSTANTS])    
+    ivProblem[CONSTANTS] = extractQuantitiesSpecification(ivProblemRaw[CONSTANTS])    
 
     # 4. Process parameters' description
-    ivp[PARAMS] = extractQuantitiesSpecification(ivpRaw[PARAMS])
+    ivProblem[PARAMS] = extractQuantitiesSpecification(ivProblemRaw[PARAMS])
     
     # 5. Process expressions' description
-    ivp[EXPRESSIONS] = extractExpressionsSpecification(joinMultilineFormulas(ivpRaw[EXPRESSIONS]))
+    ivProblem[EXPRESSIONS] = extractExpressionsSpecification(joinMultilineFormulas(ivProblemRaw[EXPRESSIONS]))
 
     # 6. Process differential equations' description
-    ivp[DIF_EQUATIONS] = extractDifEqsSpecification(joinMultilineFormulas(ivpRaw[DIF_EQUATIONS])) 
+    ivProblem[DIF_EQUATIONS] = extractDifEqsSpecification(joinMultilineFormulas(ivProblemRaw[DIF_EQUATIONS])) 
 
 
     # 7. Check results TODO: this section should be improved! 
 
     # 7.1) check differential variables
-    if set(ivp[DIF_EQUATIONS].keys()) != set(ivp[INIT_VALS].keys()):
+    if set(ivProblem[DIF_EQUATIONS].keys()) != set(ivProblem[INIT_VALS].keys()):
         raise Warning
 
-    return ivp
+    return ivProblem
 
 
-def generateCppCode(ivp):
+def generateCppCode(ivProblem):
     """
     Generates C++-code that solves the problem.
     """
 
-    def putExternBlock(puts, ivp):
+    def putExternBlock(put, ivProblem):
         """
-        Puts the 'extern "C"' block required for Emscripten compiling.
+        Put the 'extern "C"' block required for Emscripten compiling.
         """
-        puts('\nextern "C" {\n')
+        put('\nextern "C" {\n')
 
         # name of solving function
-        puts(f'{SPACE} int {SOLVER_PREFIX}{ivp[NAME]}(')
+        put(f'{SPACE} int {SOLVER_PREFIX}{ivProblem[NAME]}(')
 
         # arguments
-        puts(f'{DATA_TYPE} {ivp[ARGUMENT]["initial"]["name"]},')
-        puts(f' {DATA_TYPE} {ivp[ARGUMENT]["final"]["name"]},')
-        puts(f' {DATA_TYPE} {ivp[ARGUMENT]["step"]["name"]},\n')
+        put(f'{DATA_TYPE} {ivProblem[ARGUMENT]["initial"]["name"]},')
+        put(f' {DATA_TYPE} {ivProblem[ARGUMENT]["final"]["name"]},')
+        put(f' {DATA_TYPE} {ivProblem[ARGUMENT]["step"]["name"]},\n')
 
         # initial values
         line = SUBSPACE
 
-        for name in ivp[INIT_VALS].keys():
+        for name in ivProblem[INIT_VALS].keys():
             line += f'{DATA_TYPE} _{name}Initial, '
 
-        puts(line + '\n')
+        put(line + '\n')
 
         # parameters
         line = SUBSPACE
 
-        for name in ivp[PARAMS].keys():
+        for name in ivProblem[PARAMS].keys():
             line += f'{DATA_TYPE} _{name}Val, '
 
-        puts(line + '\n')
+        put(line + '\n')
 
-        puts(SUBSPACE + f'int _{ivp[ARGUMENT]["name"]}Count, ')
-        puts('int _varsCount,\n')
+        put(f'{SUBSPACE}int _{ivProblem[ARGUMENT]["name"]}Count, ')
+        put('int _varsCount,\n')
 
         # dataframe
-        puts(SUBSPACE + f'{DATA_TYPE} * {SOLVER_RESULT_NAME}, ')
-        puts(f'int {SOLVER_RESULT_ROW_COUNT_NAME}, ')
-        puts(f'int {SOLVER_RESULT_COL_COUNT_NAME}) noexcept;\n')
+        put(f'{SUBSPACE}{DATA_TYPE} * {SOLVER_RESULT_NAME}, ')
+        put(f'int {SOLVER_RESULT_ROW_COUNT_NAME}, ')
+        put(f'int {SOLVER_RESULT_COL_COUNT_NAME}) noexcept;\n')
 
-        puts('}\n')
+        put('}\n')
 
-    def putIVPcode(puts, ivp):
+    def putIVPcode(put, ivProblem):
         """
-        Puts C++-code specifying IVP.
+        Put C++-code specifying IVP.
         """
+        # 1. PUT THE RIGHT-HAND SIDE OF ODEs
 
-        # 1. PUT THE RIGHT PART OF ODEs
+        put(f'\n\nnamespace {ivProblem[NAME]}\n')
+        put('{\n')
 
-        puts(f'\n\nnamespace {ivp[NAME]}\n')
-        puts('{\n')
+        put(f'{SPACE}// tollerance\n')
+        put(f'{SPACE}{DATA_TYPE} {TOLLERANCE_NAME} = {TOLLERANCE_VALUE};\n\n')
 
-        puts(SPACE + '// tollerance\n')
-        puts(SPACE + f'{DATA_TYPE} {TOLLERANCE_NAME} = {TOLLERANCE_VALUE};\n\n')
+        put(f'{SPACE}// dimension of solution\n')
+        put(f'{SPACE}const int {DIMENSION_NAME} = {len(ivProblem[INIT_VALS])};\n\n')
 
-        puts(SPACE + '// dimension of solution\n')
-        puts(SPACE + f'const int {DIMENSION_NAME} = {len(ivp[INIT_VALS])};\n\n')
-
-        puts(SPACE + '// parameters\n')
+        put(f'{SPACE}// parameters\n')
 
         # put parameters declaration
-        for name in ivp[PARAMS]:
-            puts(SPACE + f'{ARG_TYPE} {name} = {PARAMETERS_INIT_VALUE};\n')
+        for name in ivProblem[PARAMS]:
+            put(f'{SPACE}{ARG_TYPE} {name} = {PARAMETERS_INIT_VALUE};\n')
 
         # operating name of the argument, for example, t
-        argName = ivp['argument']['name']
+        argName = ivProblem['argument']['name']
 
-        puts(f'\n{SPACE}//the right part of the ODEs\n')
+        put(f'\n{SPACE}//the right part of the ODEs\n')
         
-        # put ODEs right part header, for example, f(...)
-        puts(SPACE)
-        puts(f'{VEC_TYPE} {ODES_RIGHT_PART_NAME}({ARG_TYPE} {argName}, ')
-        puts(f'{VEC_TYPE} & {VEC_ARG_NAME}) noexcept\n')
+        # put ODEs right-hand side header, for example, f(...)
+        put(SPACE)
+        put(f'{VEC_TYPE} {ODES_RIGHT_PART_NAME}({ARG_TYPE} {argName}, ')
+        put(f'{VEC_TYPE} & {VEC_ARG_NAME}) noexcept\n')
 
         # put body of the function
-        puts(SPACE + '{\n')
+        put(SPACE + '{\n')
 
-        puts(SUBSPACE + f'{VEC_TYPE} {VEC_OUTPUT_NAME}({DIMENSION_NAME});\n')
+        put(f'{SUBSPACE}{VEC_TYPE} {VEC_OUTPUT_NAME}({DIMENSION_NAME});\n')
 
-        if len(ivp[CONSTANTS]) > 0:
-            puts('\n' + SUBSPACE + '// constants\n')
+        if len(ivProblem[CONSTANTS]) > 0:
+            put(f'\n{SUBSPACE}// constants\n')
 
         # put constants
-        for name in ivp[CONSTANTS]:
-            puts(SUBSPACE + f'const {ARG_TYPE} {name} = {ivp[CONSTANTS][name]["value"]};\n')
+        for name in ivProblem[CONSTANTS]:
+            put(f'{SUBSPACE}const {ARG_TYPE} {name} = {ivProblem[CONSTANTS][name]["value"]};\n')
       
         index = 0
-        puts('\n' + SUBSPACE + '// extract variables\n')
+        put(f'\n{SUBSPACE}// extract variables\n')
 
         # transform input vector coordinates to the current names
-        for name in ivp[DIF_EQUATIONS]:
-            puts(SUBSPACE + f'{ARG_TYPE} {name} = {VEC_ARG_NAME}({index});\n')
+        for name in ivProblem[DIF_EQUATIONS]:
+            put(f'{SUBSPACE}{ARG_TYPE} {name} = {VEC_ARG_NAME}({index});\n')
             index += 1
 
-        if len(ivp[EXPRESSIONS]) > 0:
-            puts('\n' + SUBSPACE + '// expressions\n')
+        if len(ivProblem[EXPRESSIONS]) > 0:
+            put(f'\n{SUBSPACE}// expressions\n')
 
         # put expressions
-        for name in ivp[EXPRESSIONS]:
-            puts(SUBSPACE + f'{ARG_TYPE} {name} = {ivp[EXPRESSIONS][name]};\n')
+        for name in ivProblem[EXPRESSIONS]:
+            put(f'{SUBSPACE}{ARG_TYPE} {name} = {ivProblem[EXPRESSIONS][name]};\n')
 
-        puts('\n' + SUBSPACE + '// output computation\n')
+        put(f'\n{SUBSPACE}// output computation\n')
         index = 0
 
         # computation lines
-        for name in ivp[DIF_EQUATIONS]:
-            puts(SUBSPACE + f'{VEC_OUTPUT_NAME}({index}) = {ivp[DIF_EQUATIONS][name]};\n')
+        for name in ivProblem[DIF_EQUATIONS]:
+            put(f'{SUBSPACE}{VEC_OUTPUT_NAME}({index}) = {ivProblem[DIF_EQUATIONS][name]};\n')
             index += 1        
 
-        puts('\n' + SUBSPACE + f'return {VEC_OUTPUT_NAME};\n')
+        put(f'\n{SUBSPACE}return {VEC_OUTPUT_NAME};\n')
         
-        puts(SPACE + '}' + f' // {ODES_RIGHT_PART_NAME}\n\n')
+        put(SPACE + '}' + f' // {ODES_RIGHT_PART_NAME}\n\n')
 
         # 1. PUT JACOBIAN
 
-        puts(SPACE + '// Jacobian (it is required, when applying implicit method)\n')
+        put(f'{SPACE}// Jacobian (it is required, when applying implicit method)\n')
 
         # header
-        puts(SPACE + f'{MATRIX_TYPE} {JACOBIAN_NAME}(')                
-        puts(f'{ARG_TYPE} {argName}, ')
-        puts(f'{VEC_TYPE} & {VEC_ARG_NAME}, ')
-        puts(f'{ARG_TYPE} {EPS_NAME}) noexcept\n')
+        put(f'{SPACE}{MATRIX_TYPE} {JACOBIAN_NAME}(')                
+        put(f'{ARG_TYPE} {argName}, ')
+        put(f'{VEC_TYPE} & {VEC_ARG_NAME}, ')
+        put(f'{ARG_TYPE} {EPS_NAME}) noexcept\n')
 
         # body
-        puts(SPACE + '{\n')
+        put(SPACE + '{\n')
 
-        puts(SUBSPACE + f'{MATRIX_TYPE} {MAT_OUTPUT_NAME}({DIMENSION_NAME}, {DIMENSION_NAME});\n')
+        put(f'{SUBSPACE}{MATRIX_TYPE} {MAT_OUTPUT_NAME}({DIMENSION_NAME}, {DIMENSION_NAME});\n')
 
-        puts(SUBSPACE + f'{VEC_TYPE} {VAL_NAME} = {ODES_RIGHT_PART_NAME}')
-        puts(f'({argName}, {VEC_ARG_NAME});\n')
+        put(f'{SUBSPACE}{VEC_TYPE} {VAL_NAME} = {ODES_RIGHT_PART_NAME}')
+        put(f'({argName}, {VEC_ARG_NAME});\n')
 
-        puts(SUBSPACE + f'{VEC_TYPE} {Y_DER_NAME} = {VEC_ARG_NAME};\n\n')
+        put(f'{SUBSPACE}{VEC_TYPE} {Y_DER_NAME} = {VEC_ARG_NAME};\n\n')
 
         # put loop-block
-        puts(SUBSPACE + f'for (int i = 0; i < {DIMENSION_NAME}; i++)' + ' {\n')
-        puts(SUBSUBSPACE + f'{Y_DER_NAME}(i) += {EPS_NAME};\n')
-        puts(SUBSUBSPACE + f'{MAT_OUTPUT_NAME}.col(i) = (')
-        puts(f'{ODES_RIGHT_PART_NAME}({argName}, {Y_DER_NAME}) - ')
-        puts(f'{VAL_NAME}) / {EPS_NAME};\n')
-        puts(SUBSUBSPACE + f'{Y_DER_NAME}(i) -= {EPS_NAME};\n')
+        put(f'{SUBSPACE}for (int i = 0; i < {DIMENSION_NAME}; i++)' + ' {\n')
+        put(f'{SUBSUBSPACE}{Y_DER_NAME}(i) += {EPS_NAME};\n')
+        put(f'{SUBSUBSPACE}{MAT_OUTPUT_NAME}.col(i) = (')
+        put(f'{ODES_RIGHT_PART_NAME}({argName}, {Y_DER_NAME}) - ')
+        put(f'{VAL_NAME}) / {EPS_NAME};\n')
+        put(f'{SUBSUBSPACE}{Y_DER_NAME}(i) -= {EPS_NAME};\n')
 
-        puts(SUBSPACE + '}\n\n')
+        put(SUBSPACE + '}\n\n')
 
-        puts(SUBSPACE + f'return {MAT_OUTPUT_NAME};\n')
+        put(f'{SUBSPACE}return {MAT_OUTPUT_NAME};\n')
 
-        puts(SPACE + '}' + f' // {JACOBIAN_NAME}\n\n')
+        put(SPACE + '}' + f' // {JACOBIAN_NAME}\n\n')
 
         # 3. PUT T-DERIVATIVE BLOCK
 
-        puts(SPACE + '// Derivative with respect to t (it is required, when applying implicit method)\n')
+        put(f'{SPACE}// Derivative with respect to t (it is required, when applying implicit method)\n')
 
         # header
-        puts(SPACE + f'{VEC_TYPE} {T_DERIVATIVE_NAME}(')                
-        puts(f'{ARG_TYPE} {argName}, ')
-        puts(f'{VEC_TYPE} & {VEC_ARG_NAME}, ')
-        puts(f'{ARG_TYPE} {EPS_NAME}) noexcept\n')
+        put(f'{SPACE}{VEC_TYPE} {T_DERIVATIVE_NAME}(')                
+        put(f'{ARG_TYPE} {argName}, ')
+        put(f'{VEC_TYPE} & {VEC_ARG_NAME}, ')
+        put(f'{ARG_TYPE} {EPS_NAME}) noexcept\n')
 
         # body
-        puts(SPACE + '{\n')
+        put(SPACE + '{\n')
 
-        puts(SUBSPACE + f'return ({ODES_RIGHT_PART_NAME}(')
-        puts(f'{argName} + {EPS_NAME}, {VEC_ARG_NAME}) - ')
-        puts(f'{ODES_RIGHT_PART_NAME}({argName}, {VEC_ARG_NAME}))')
-        puts(f' / {EPS_NAME};\n')
+        put(f'{SUBSPACE}return ({ODES_RIGHT_PART_NAME}(')
+        put(f'{argName} + {EPS_NAME}, {VEC_ARG_NAME}) - ')
+        put(f'{ODES_RIGHT_PART_NAME}({argName}, {VEC_ARG_NAME}))')
+        put(f' / {EPS_NAME};\n')
 
-        puts(SPACE + '}' + f' // {T_DERIVATIVE_NAME}\n\n')
+        put(SPACE + '}' + f' // {T_DERIVATIVE_NAME}\n\n')
 
-        puts('}; ' + f'// {ivp[NAME]}\n')
+        put('}; ' + f'// {ivProblem[NAME]}\n')
 
-    def putAnnotation(puts, ivp):
+    def putAnnotation(put, ivProblem):
         """
-        Puts ReachFunctionView annotation.
-        """
-        
-        puts(f'\n//name: {SOLVER_PREFIX + ivp[NAME]}\n')
+        Put ReachFunctionView annotation.
+        """        
+        put(f'\n//name: {SOLVER_PREFIX + ivProblem[NAME]}\n')
 
         # 1. PUT ANNOTATION CONCERNING ARGUMENT
 
         # initial value
-        puts(f'//input: {ANNOT_ARG_TYPE} {ivp[ARGUMENT]["initial"]["name"]}')
-        puts(f' = {ivp[ARGUMENT]["initial"]["value"]}')
-        puts(' {caption: ' + ivp[ARGUMENT]["initial"]["name"] + ';')
-        puts(f' category: {ivp[ARGUMENT]["title"]}' + '}\n')
+        put(f'//input: {ANNOT_ARG_TYPE} {ivProblem[ARGUMENT]["initial"]["name"]}')
+        put(f' = {ivProblem[ARGUMENT]["initial"]["value"]}')
+        put(' {caption: ' + ivProblem[ARGUMENT]["initial"]["name"] + ';')
+        put(f' category: {ivProblem[ARGUMENT]["title"]}' + '}\n')
 
         # final value
-        puts(f'//input: {ANNOT_ARG_TYPE} {ivp[ARGUMENT]["final"]["name"]}')
-        puts(f' = {ivp[ARGUMENT]["final"]["value"]}')
-        puts(' {caption: ' + ivp[ARGUMENT]["final"]["name"] + ';')
-        puts(f' category: {ivp[ARGUMENT]["title"]}' + '}\n')
+        put(f'//input: {ANNOT_ARG_TYPE} {ivProblem[ARGUMENT]["final"]["name"]}')
+        put(f' = {ivProblem[ARGUMENT]["final"]["value"]}')
+        put(' {caption: ' + ivProblem[ARGUMENT]["final"]["name"] + ';')
+        put(f' category: {ivProblem[ARGUMENT]["title"]}' + '}\n')
 
          # step value
-        puts(f'//input: {ANNOT_ARG_TYPE} {ivp[ARGUMENT]["step"]["name"]}')
-        puts(f' = {ivp[ARGUMENT]["step"]["value"]}')
-        puts(' {caption: ' + ivp[ARGUMENT]["step"]["name"] + ';')
-        puts(f' category: {ivp[ARGUMENT]["title"]}' + '}\n')
+        put(f'//input: {ANNOT_ARG_TYPE} {ivProblem[ARGUMENT]["step"]["name"]}')
+        put(f' = {ivProblem[ARGUMENT]["step"]["value"]}')
+        put(' {caption: ' + ivProblem[ARGUMENT]["step"]["name"] + ';')
+        put(f' category: {ivProblem[ARGUMENT]["title"]}' + '}\n')
 
         # 2. INITIAL VALUES
 
         # dict with initial values specification
-        data = ivp[INIT_VALS]
+        data = ivProblem[INIT_VALS]
 
         # put annotation
         for name in data.keys():
-            puts(f'//input: {ANNOT_ARG_TYPE} _{name}Initial = {data[name]["value"]}')
-            puts(' {' + f'units: {data[name]["units"]};')
-            puts(f' caption: {name}; category: {INIT_VALS}' + '}\n')
+            put(f'//input: {ANNOT_ARG_TYPE} _{name}Initial = {data[name]["value"]}')
+            put(' {' + f'units: {data[name]["units"]};')
+            put(f' caption: {name}; category: {INIT_VALS}' + '}\n')
         
         # 3. PARAMETERS
 
         # dict with parameters specification
-        data = ivp[PARAMS]
+        data = ivProblem[PARAMS]
 
         # put annotation
         for name in data.keys():
-            puts(f'//input: {ANNOT_ARG_TYPE} _{name}Val = {data[name]["value"]}')
-            puts(' {' + f'units: {data[name]["units"]};')
-            puts(f' caption: {name}; category: {PARAMS}' + '}\n')
+            put(f'//input: {ANNOT_ARG_TYPE} _{name}Val = {data[name]["value"]}')
+            put(' {' + f'units: {data[name]["units"]};')
+            put(f' caption: {name}; category: {PARAMS}' + '}\n')
 
-        # 4. SPECIAL INPUTS
-        puts(f'//input: int _{ivp[ARGUMENT]["name"]}Count\n')
-        puts(f'//input: int _varsCount\n')
+        # 4. SPECIAL INput
+        put(f'//input: int _{ivProblem[ARGUMENT]["name"]}Count\n')
+        put(f'//input: int _varsCount\n')
 
         # 5. OUTPUT COLUMNS
-        puts(f'//output: column_list {SOLVER_RESULT_NAME} ')
-        puts(f'[new(_{ivp[ARGUMENT]["name"]}Count, _varsCount)')
+        put(f'//output: column_list {SOLVER_RESULT_NAME} ')
+        put(f'[new(_{ivProblem[ARGUMENT]["name"]}Count, _varsCount)')
 
         # create new columns names
-        line = "; '" + ivp[ARGUMENT]["name"] + "'"       
+        line = "; '" + ivProblem[ARGUMENT]["name"] + "'"       
 
-        for name in ivp[DIF_EQUATIONS]:
-            line += "; '" + name + f'({ivp[ARGUMENT]["name"]})' + "'"
+        for name in ivProblem[DIF_EQUATIONS]:
+            line += "; '" + name + f'({ivProblem[ARGUMENT]["name"]})' + "'"
 
-        puts(line + ']\n')     
+        put(line + ']\n')     
 
         # 6. OUTPUT DATAFRAME
-        puts(f'//output: dataframe {DF_SOLUTION_NAME} [{SOLVER_RESULT_NAME}] {DF_OUTPUT_ANNOT}\n')
+        put(f'//output: dataframe {DF_SOLUTION_NAME} [{SOLVER_RESULT_NAME}] {DF_OUTPUT_ANNOT}\n')
 
         # 7. EDITOR
-        puts(EDITOR_LINE + '\n')
+        put(EDITOR_LINE + '\n')
     
-    def putSolverHeader(puts, ivp):
+    def putSolverHeader(put, ivProblem):
         """
-        Puts IVP solving function header.
+        Put IVP solving function header.
         """
-        puts('EMSCRIPTEN_KEEPALIVE\n')
+        put('EMSCRIPTEN_KEEPALIVE\n')
 
         # name of solving function
-        puts(f'int {SOLVER_PREFIX}{ivp[NAME]}(')
+        put(f'int {SOLVER_PREFIX}{ivProblem[NAME]}(')
 
         # arguments
-        puts(f'{DATA_TYPE} {ivp[ARGUMENT]["initial"]["name"]},')
-        puts(f' {DATA_TYPE} {ivp[ARGUMENT]["final"]["name"]},')
-        puts(f' {DATA_TYPE} {ivp[ARGUMENT]["step"]["name"]},\n')
+        put(f'{DATA_TYPE} {ivProblem[ARGUMENT]["initial"]["name"]},')
+        put(f' {DATA_TYPE} {ivProblem[ARGUMENT]["final"]["name"]},')
+        put(f' {DATA_TYPE} {ivProblem[ARGUMENT]["step"]["name"]},\n')
 
         # initial values
         line = SPACE
 
-        for name in ivp[INIT_VALS].keys():
+        for name in ivProblem[INIT_VALS].keys():
             line += f'{DATA_TYPE} _{name}Initial, '
 
-        puts(line + '\n')
+        put(line + '\n')
 
         # parameters
         line = SPACE
 
-        for name in ivp[PARAMS].keys():
+        for name in ivProblem[PARAMS].keys():
             line += f'{DATA_TYPE} _{name}Val, '
 
-        puts(line + '\n')
+        put(line + '\n')
 
-        puts(SPACE + f'int _{ivp[ARGUMENT]["name"]}Count, ')
-        puts('int _varsCount,\n')
+        put(f'{SPACE}int _{ivProblem[ARGUMENT]["name"]}Count, ')
+        put('int _varsCount,\n')
 
         # dataframe
-        puts(SPACE + f'{DATA_TYPE} * {SOLVER_RESULT_NAME}, ')
-        puts(f'int {SOLVER_RESULT_ROW_COUNT_NAME}, ')
-        puts(f'int {SOLVER_RESULT_COL_COUNT_NAME}) noexcept\n')
+        put(f'{SPACE}{DATA_TYPE} * {SOLVER_RESULT_NAME}, ')
+        put(f'int {SOLVER_RESULT_ROW_COUNT_NAME}, ')
+        put(f'int {SOLVER_RESULT_COL_COUNT_NAME}) noexcept\n')
     
-    def putSolverBody(puts, ivp):
+    def putSolverBody(put, ivProblem):
         """
-        Puts IVP solving function body.
+        Put IVP solving function body.
         """
-        puts('{\n')
+        put('{\n')
 
-        puts(SPACE + f'using namespace {ivp[NAME]};\n\n')
+        put(f'{SPACE}using namespace {ivProblem[NAME]};\n\n')
 
-        puts(SPACE + f'{DATA_TYPE} {INIT_VALS_ARR_NAME}[DIM];\n\n')
+        put(f'{SPACE}{DATA_TYPE} {INIT_VALS_ARR_NAME}[DIM];\n\n')
         
-        puts(SPACE + '// initial values\n')
+        put(f'{SPACE}// initial values\n')
 
         index = 0
 
-        # put initial values 
-        for name in ivp[INIT_VALS]:
-            puts(SPACE + f'{INIT_VALS_ARR_NAME}[{index}] = _{name}Initial;\n')
+        # put initial values
+        #for name in ivProblem[INIT_VALS]:
+        for name in ivProblem[DIF_EQUATIONS]:         
+            put(f'{SPACE}{INIT_VALS_ARR_NAME}[{index}] = _{name}Initial;\n')
             index += 1
 
-        puts('\n' + SPACE + '// parameters\n')
+        put(f'\n{SPACE}// parameters\n')
 
         # put parameters
-        for name in ivp[PARAMS]:
-            puts(SPACE + name + f' = _{name}Val;\n')
+        for name in ivProblem[PARAMS]:
+            put(f'{SPACE}{name} = _{name}Val;\n')
 
-        # return line
-        line = '\n' + SPACE + f'return solveODE({ODES_RIGHT_PART_NAME}, ' 
+        # creating return-line
+        line = f'\n{SPACE}return solveODE({ODES_RIGHT_PART_NAME}, ' 
 
-        if ivp[METHOD] == 'implicit':
+        if ivProblem[METHOD] == 'implicit':
             line += f'{T_DERIVATIVE_NAME}, {JACOBIAN_NAME}, '
 
-        line += f'{ivp[ARGUMENT]["initial"]["name"]}, '
-        line += f'{ivp[ARGUMENT]["final"]["name"]}, '
-        line += f'{ivp[ARGUMENT]["step"]["name"]}, '
+        line += f'{ivProblem[ARGUMENT]["initial"]["name"]}, '
+        line += f'{ivProblem[ARGUMENT]["final"]["name"]}, '
+        line += f'{ivProblem[ARGUMENT]["step"]["name"]}, '
         line += f'{INIT_VALS_ARR_NAME}, {TOLLERANCE_NAME},\n' + SUBSUBSPACE
-        line += f'{SOLVER_RESULT_NAME}, _{ivp[ARGUMENT]["name"]}Count, _varsCount);\n'
+        line += f'{SOLVER_RESULT_NAME}, _{ivProblem[ARGUMENT]["name"]}Count, _varsCount);\n'
         
-        puts(line)
+        put(line)
         
-        puts('} //' + SOLVER_PREFIX + ivp[NAME])
+        put('} //' + SOLVER_PREFIX + ivProblem[NAME])
     
     settings = {}
 
@@ -529,48 +529,48 @@ def generateCppCode(ivp):
          settings = json.load(file)
     
     # generate C++-code
-    with open(settings['folder'] + '/' + ivp[NAME] + '.cpp', 'w') as file:
-        puts = file.write
+    with open(settings['folder'] + '/' + ivProblem[NAME] + '.cpp', 'w') as file:
+        put = file.write
 
-        puts(f'// {ivp[NAME]}.cpp\n')
+        put(f'// {ivProblem[NAME]}.cpp\n')
 
         # STL includes TODO: consider other libs
-        puts('\n#include <cmath>\n')
-        puts('using namespace std;\n')
+        put('\n#include <cmath>\n')
+        put('using namespace std;\n')
 
         # Emscripten tools
-        puts(f'\n#include <{settings["emscripten"]}>\n')
+        put(f'\n#include <{settings["emscripten"]}>\n')
 
         # the 'extern "C"' block - it's required for Emscripten
-        putExternBlock(puts, ivp)
+        putExternBlock(put, ivProblem)
 
         # Eigen tools
-        puts(f'''\n#include "{settings['eigen']}"\n''')
-        puts('using namespace Eigen;\n')
+        put(f'''\n#include "{settings['eigen']}"\n''')
+        put('using namespace Eigen;\n')
 
         # ODEs solver tools
-        puts(f'\n#include "{ODES_SOLVER_LIB}"\n')
-        puts(f'using namespace {ODES_SOLVER_NAMESPACE};')
+        put(f'\n#include "{ODES_SOLVER_LIB}"\n')
+        put(f'using namespace {ODES_SOLVER_NAMESPACE};')
 
         # IVP code
-        putIVPcode(puts, ivp)
+        putIVPcode(put, ivProblem)
 
         # RichFunctionView annotation
-        putAnnotation(puts, ivp)
+        putAnnotation(put, ivProblem)
 
         # solving function's header
-        putSolverHeader(puts, ivp)
+        putSolverHeader(put, ivProblem)
 
         # solving function's body
-        putSolverBody(puts, ivp)
+        putSolverBody(put, ivProblem)
 
 
-def updateExportSettings(settings, ivp):
+def updateExportSettings(settings, ivProblem):
     """
     Update C++-to-wasm export settings.
     """
-    settings['name'] = ivp[NAME]
-    settings['source'] = [ivp[NAME] + '.cpp']
+    settings['name'] = ivProblem[NAME]
+    settings['source'] = [ivProblem[NAME] + '.cpp']
 
 
 def cppToWasmExport(settings):
@@ -593,160 +593,156 @@ def cppToWasmExport(settings):
     updatePackageJsonFile(settings)
 
 
-def addSolverToPackageFile(settings, ivp):
+def addSolverToPackageFile(settings, ivProblem):
     """
     Add IVP solver function to DATAGROK package file.
     """
 
-    def putAnnotation(puts, ivp):
+    def putAnnotation(put, ivProblem):
         """
         Put RichFunctionView annotation.
         """
-        puts(f'\n//name: {SOLVER_PREFIX + ivp[NAME]}\n')
+        put(f'\n//name: {SOLVER_PREFIX + ivProblem[NAME]}\n')
 
         # 1. PUT ANNOTATION CONCERNING ARGUMENT
 
         # initial value
-        puts(f'//input: {ANNOT_ARG_TYPE} {ivp[ARGUMENT]["initial"]["name"]}')
-        puts(f' = {ivp[ARGUMENT]["initial"]["value"]}')
-        puts(' {caption: ' + ivp[ARGUMENT]["initial"]["name"] + ';')
-        puts(f' category: {ivp[ARGUMENT]["title"]}' + '}\n')
+        put(f'//input: {ANNOT_ARG_TYPE} {ivProblem[ARGUMENT]["initial"]["name"]}')
+        put(f' = {ivProblem[ARGUMENT]["initial"]["value"]}')
+        put(' {caption: ' + ivProblem[ARGUMENT]["initial"]["name"] + ';')
+        put(f' category: {ivProblem[ARGUMENT]["title"]}' + '}\n')
 
         # final value
-        puts(f'//input: {ANNOT_ARG_TYPE} {ivp[ARGUMENT]["final"]["name"]}')
-        puts(f' = {ivp[ARGUMENT]["final"]["value"]}')
-        puts(' {caption: ' + ivp[ARGUMENT]["final"]["name"] + ';')
-        puts(f' category: {ivp[ARGUMENT]["title"]}' + '}\n')
+        put(f'//input: {ANNOT_ARG_TYPE} {ivProblem[ARGUMENT]["final"]["name"]}')
+        put(f' = {ivProblem[ARGUMENT]["final"]["value"]}')
+        put(' {caption: ' + ivProblem[ARGUMENT]["final"]["name"] + ';')
+        put(f' category: {ivProblem[ARGUMENT]["title"]}' + '}\n')
 
          # step value
-        puts(f'//input: {ANNOT_ARG_TYPE} {ivp[ARGUMENT]["step"]["name"]}')
-        puts(f' = {ivp[ARGUMENT]["step"]["value"]}')
-        puts(' {caption: ' + ivp[ARGUMENT]["step"]["name"] + ';')
-        puts(f' category: {ivp[ARGUMENT]["title"]}' + '}\n')
+        put(f'//input: {ANNOT_ARG_TYPE} {ivProblem[ARGUMENT]["step"]["name"]}')
+        put(f' = {ivProblem[ARGUMENT]["step"]["value"]}')
+        put(' {caption: ' + ivProblem[ARGUMENT]["step"]["name"] + ';')
+        put(f' category: {ivProblem[ARGUMENT]["title"]}' + '}\n')
 
         # 2. INITIAL VALUES
 
         # dict with initial values specification
-        data = ivp[INIT_VALS]
+        data = ivProblem[INIT_VALS]
 
         # put annotation
         for name in data.keys():
-            puts(f'//input: {ANNOT_ARG_TYPE} _{name}Initial = {data[name]["value"]}')
-            puts(' {' + f'units: {data[name]["units"]};')
-            puts(f' caption: {name}; category: {INIT_VALS}' + '}\n')
+            put(f'//input: {ANNOT_ARG_TYPE} _{name}Initial = {data[name]["value"]}')
+            put(' {' + f'units: {data[name]["units"]};')
+            put(f' caption: {name}; category: {INIT_VALS}' + '}\n')
         
         # 3. PARAMETERS
 
         # dict with parameters specification
-        data = ivp[PARAMS]
+        data = ivProblem[PARAMS]
 
         # put annotation
         for name in data.keys():
-            puts(f'//input: {ANNOT_ARG_TYPE} _{name}Val = {data[name]["value"]}')
-            puts(' {' + f'units: {data[name]["units"]};')
-            puts(f' caption: {name}; category: {PARAMS}' + '}\n')                 
+            put(f'//input: {ANNOT_ARG_TYPE} _{name}Val = {data[name]["value"]}')
+            put(' {' + f'units: {data[name]["units"]};')
+            put(f' caption: {name}; category: {PARAMS}' + '}\n')                 
 
         # 4. OUTPUT DATAFRAME
-        puts(f'//output: dataframe {DF_SOLUTION_NAME} {DF_OUTPUT_ANNOT}\n')
+        put(f'//output: dataframe {DF_SOLUTION_NAME} {DF_OUTPUT_ANNOT}\n')
 
         # 5. EDITOR
-        puts(EDITOR_LINE + '\n')
+        put(EDITOR_LINE + '\n')
         
-    def putHeader(puts, ivp):
+    def putHeader(put, ivProblem):
         """
         Put header of the function.
         """
         # name
-        puts(f'export async function {SOLVER_PREFIX + ivp[NAME]}(')
+        put(f'export async function {SOLVER_PREFIX + ivProblem[NAME]}(')
         
         # argument
-        arg = ivp[ARGUMENT]
-        puts(f'{arg["initial"]["name"]}, {arg["final"]["name"]}, {arg["step"]["name"]},\n')
+        arg = ivProblem[ARGUMENT]
+        put(f'{arg["initial"]["name"]}, {arg["final"]["name"]}, {arg["step"]["name"]},\n')
 
         # initial values
         line = ''
-        for name in ivp[INIT_VALS].keys():
+        for name in ivProblem[INIT_VALS].keys():
             line += f'_{name}Initial' + ', '
-        puts(JS_SPACE + line + '\n')
+        put(f'{JS_SPACE}{line}\n')
 
         # parameters
         line = ''
-        for name in ivp[PARAMS].keys():
+        for name in ivProblem[PARAMS].keys():
             line += f'_{name}Val' + ', '
 
         # remove last comma
         line = line.rstrip(', ')
-        puts(JS_SPACE + line + ')\n')
+        put(f'{JS_SPACE}{line})\n')
 
-    def putBody(puts, ivp):
+    def putBody(put, ivProblem):
         """
         Put body of the function.
         """
-        puts('{\n')
+        put('{\n')
 
         # put computation of dataframe size: rows count
-        arg = ivp[ARGUMENT]
-        puts(f'{JS_SPACE}let _{ivp[ARGUMENT]["name"]}Count = ')
-        puts(f'Math.trunc(({arg["final"]["name"]} - {arg["initial"]["name"]}) ')
-        puts(f'/ {arg["step"]["name"]}) + 1;\n')
+        arg = ivProblem[ARGUMENT]
+        put(f'{JS_SPACE}let _{ivProblem[ARGUMENT]["name"]}Count = ')
+        put(f'Math.trunc(({arg["final"]["name"]} - {arg["initial"]["name"]}) ')
+        put(f'/ {arg["step"]["name"]}) + 1;\n')
 
         # put computation of dataframe size: columns count        
-        puts(f'{JS_SPACE}let _varsCount = ')
-        puts(f'{len(ivp[INIT_VALS].keys()) + 1};\n\n')
+        put(f'{JS_SPACE}let _varsCount = ')
+        put(f'{len(ivProblem[INIT_VALS].keys()) + 1};\n\n')
 
         # put return line
-        puts(f"{JS_SPACE}return callWasm({ivp[NAME]}, '{SOLVER_PREFIX + ivp[NAME]}',\n")
+        put(f"{JS_SPACE}return callWasm({ivProblem[NAME]}, '{SOLVER_PREFIX + ivProblem[NAME]}',\n")
 
         # put argument
-        puts(JS_SUBSPACE + '[')
-        arg = ivp[ARGUMENT]
-        puts(f' {arg["initial"]["name"]}, {arg["final"]["name"]}, {arg["step"]["name"]},\n')
+        put(f'{JS_SUBSPACE}[')
+        arg = ivProblem[ARGUMENT]
+        put(f' {arg["initial"]["name"]}, {arg["final"]["name"]}, {arg["step"]["name"]},\n')
 
         # put initial values
         line = ''
-        for name in ivp[INIT_VALS].keys():
+        for name in ivProblem[INIT_VALS].keys():
             line += f' _{name}Initial,'
-        puts(JS_SUBSPACE + line + '\n')
+        put(JS_SUBSPACE + line + '\n')
 
         # put parameters
         line = ''
-        for name in ivp[PARAMS].keys():
+        for name in ivProblem[PARAMS].keys():
             line += f' _{name}Val,'
-        puts(JS_SUBSPACE + line + '\n')
+        put(JS_SUBSPACE + line + '\n')
 
         # put row- and col- counts
-        puts(f'{JS_SUBSPACE} _{ivp[ARGUMENT]["name"]}Count, _varsCount ] );\n')
+        put(f'{JS_SUBSPACE} _{ivProblem[ARGUMENT]["name"]}Count, _varsCount ] );\n')
 
-        puts('}\n')
+        put('}\n')
         
 
     # set mode for openning file
-    mode = None
-    if settings['packageFileUpdateMode'] == 'rewrite':
-        mode = 'w' # the write mode
-    else:
-        mode = 'a' # the append mode
+    openMode = REWRITE_MODE if settings['packageFileUpdateMode'] == 'rewrite' else APPEND_MODE        
 
     # put code to the package file
-    with open(settings['packageFile'], mode) as file:
-        puts = file.write
+    with open(settings['packageFile'], openMode) as file:
+        put = file.write
 
         # put first lines if package file is opened in the write mode
-        if mode == 'w':        
-            puts(PACKAGE_FILE_FIRST_LINES)
+        if openMode == REWRITE_MODE:        
+            put(PACKAGE_FILE_FIRST_LINES)
 
         # put init-function
-        puts('//tags: init\nexport async function init() {\n')
-        puts(f'{JS_SPACE}await init{ivp[NAME]}();\n' + '}\n')
+        put('//tags: init\nexport async function init() {\n')
+        put(f'{JS_SPACE}await init{ivProblem[NAME]}();\n' + '}\n')
 
         # put annotation
-        putAnnotation(puts, ivp)
+        putAnnotation(put, ivProblem)
 
         # put header of the function
-        putHeader(puts, ivp)
+        putHeader(put, ivProblem)
 
         # put body of the function 
-        putBody(puts, ivp)
+        putBody(put, ivProblem)
 
 
 def main():
@@ -758,37 +754,41 @@ def main():
         4) generate C++ code;
         5) update settings for C++-to-wasm export;
         6) C++-to-wasm export;
-        7) add IVP solver function to DATAGROK package file.        
+        7) add IVP solver function to DATAGROK package file;
+        8) delete of the __pycache__ folder.      
     """
     try:
         # 1) load settings
         settings = loadSettings()
 
         # 2) get initial value problem from file
-        ivpRaw = getRawIVPfromFile(settings["ivpFile"])       
+        ivProblemRaw = getRawIVPfromFile(settings["ivpFile"])       
 
         # save raw IVP data
         #with open('rawIVP.json', 'w') as file:
         #    json.dump(ivpRaw, file)
         
         # 3) get specification of IVP from its raw description
-        ivp = getSpecificationFromRawIVP(ivpRaw)
+        ivProblem = getSpecificationFromRawIVP(ivProblemRaw)
 
         # save parsed IVP specification
         #with open('IVP.json', 'w') as file:
         #    json.dump(ivp, file)
 
         # 4) generate C++ code
-        generateCppCode(ivp)
+        generateCppCode(ivProblem)
 
         # 5) update settings for C++-to-wasm export
-        updateExportSettings(settings, ivp)
+        updateExportSettings(settings, ivProblem)
 
         # 6) C++-to-wasm export
         cppToWasmExport(settings)
 
         # 7) add IVP solver function to DATAGROK package file
-        addSolverToPackageFile(settings, ivp)
+        addSolverToPackageFile(settings, ivProblem)
+
+        # 8) delete of the __pycache__ folder, otherwise it must be done further manually 
+        shutil.rmtree('__pycache__')
 
     except OSError:
         print("OS ERROR: check paths and file names!")

@@ -1,5 +1,5 @@
 #name: stiff
-#method: explicit
+#method: implicit
 #differential equations:
   dx/dt = -5.0 * x + 3.0 * y
   dy/dt = 100.0 * x - 301.0 * y

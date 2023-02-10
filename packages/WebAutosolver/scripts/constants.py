@@ -17,7 +17,7 @@ PARAMS = 'parameters'
 CONTROL_TAG = '#'
 
 # name of file with C++-to-wasm settings
-EXPORT_SETTINGS_FILE = 'exportSettings.json'
+EXPORT_SETTINGS_FILE = 'createSettings.json'
 
 # ODEs solver lib
 ODES_SOLVER_LIB = 'odes.h'
@@ -64,7 +64,9 @@ DF_OUTPUT_ANNOT = '{caption: Solution; viewer: Line chart(x: "t, time (minutes)"
 JS_SPACE = ' ' * 2
 JS_SUBSPACE = ' ' * 4
 
-PACKAGE_FILE_FIRST_LINES = '''/* Do not change these import lines to match external modules in webpack configuration */
+PACKAGE_FILE_FIRST_LINES = ''' // THIS FILE IS GENERATED AUTOMATICALLY. DO NOT CHANGE ANYTHING!
+
+/* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -78,3 +80,7 @@ export function info() {
 
 import { callWasm } from '../wasm/callWasm';\n
 '''
+
+# MISC
+REWRITE_MODE = 'w'
+APPEND_MODE = 'a'
