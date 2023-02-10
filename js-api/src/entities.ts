@@ -171,7 +171,7 @@ export class UserSession extends Entity {
  * */
 export class Func extends Entity {
   public aux: any;
-  public options: { [key: string]: string; };
+  public options: { [key: string]: any; };
 
   constructor(dart: any) {
     super(dart);
