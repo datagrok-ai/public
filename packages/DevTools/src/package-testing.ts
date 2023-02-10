@@ -539,7 +539,7 @@ export class TestManager extends DG.ViewBase {
         .aggregate();
       if (unhandled) {
         testInfo.rows.addNew([false, unhandled, 0, false, 'Unhandled exceptions',
-          'exceptions', null, testInfo.get('package', 0)]);
+          'exceptions', testInfo.get('package', 0)]);
       }
       if (testInfo.rowCount === 1 && testInfo.col('name').isNone(0))
         return info;
