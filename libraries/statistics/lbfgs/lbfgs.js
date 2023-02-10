@@ -42,14 +42,14 @@ export function limitedMemoryBFGS(optimizable, parameters) {
 	var oldValue = value;
 	
 	if (scale == 0.0) {
-		console.log("Line search can't step in initial direction.");
+		//console.log("Line search can't step in initial direction.");
 	}
 	
 	for (var iteration = 0; iteration < maxIterations; iteration++) {
 		var start = +new Date();
 		var end;
 		
-		//console.log("Beginning L-BFGS iteration, v=" + value + " ||g||=" + numeric.norm2(gradient));
+		////console.log("Beginning L-BFGS iteration, v=" + value + " ||g||=" + numeric.norm2(gradient));
 		
 		// Update the buffers with diffs
 		if (parameterChangeBuffer.length < memorySize) {
@@ -82,7 +82,9 @@ export function limitedMemoryBFGS(optimizable, parameters) {
 		var scalingFactor = sy / yy;
 		scaleBuffer.unshift(1.0 / sy);
 		
-		if (scalingFactor > 0.0) { console.log("Scaling factor greater than zero: " + scalingFactor); }
+		if (scalingFactor > 0.0) { 
+			//console.log("Scaling factor greater than zero: " + scalingFactor); 
+		}
 		
 		// Renaming the "gradient" array to "direction" -- but it's the same memory.
 		copyInto(direction, gradient);
@@ -128,7 +130,7 @@ export function limitedMemoryBFGS(optimizable, parameters) {
 		
 		scale = backtrackingLineSearch(optimizable, direction, gradient, parameters);
 		if (scale == 0.0) {
-			console.log("Cannot step in current direction");
+			//console.log("Cannot step in current direction");
 		}
 		
 		value = optimizable.getValue(parameters);
@@ -136,23 +138,23 @@ export function limitedMemoryBFGS(optimizable, parameters) {
 		
 		// Test for convergence
 		if (2.0 * (value - oldValue) <= tolerance * (Math.abs(value) + Math.abs(oldValue) + epsilon)) {
-			console.log("Value difference below threshold: " + value + " - " + oldValue);
+			//console.log("Value difference below threshold: " + value + " - " + oldValue);
 			end = +new Date();
-			console.log("Finished iterations " + (end - lbfgsStart));
+			//console.log("Finished iterations " + (end - lbfgsStart));
 			return true;
 		}
 		
 		var gradientNorm = numeric.norm2(gradient);
 		if (gradientNorm < gradientTolerance) {
-			console.log("Gradient norm below threshold: " + gradientNorm);
+			//console.log("Gradient norm below threshold: " + gradientNorm);
 			end = +new Date();
-			console.log("Finished iterations " + (end - lbfgsStart));
+			//console.log("Finished iterations " + (end - lbfgsStart));
 			return true;
 		}
 		else if (gradientNorm == 0.0) {
-			console.log("Gradient norm is zero");
+			//console.log("Gradient norm is zero");
 			end = +new Date();
-			console.log("Finished iterations " + (end - lbfgsStart));
+			//console.log("Finished iterations " + (end - lbfgsStart));
 			return true;
 		}
 		
@@ -182,7 +184,7 @@ function backtrackingLineSearch(optimizable, direction, gradient, parameters) {
 	// Make sure the initial step size isn't too big
 	var twoNorm = numeric.norm2(direction);
 	if (twoNorm > MAXIMUM_STEP) {
-		console.log("Initial step " + twoNorm + " is too big, reducing")
+		//console.log("Initial step " + twoNorm + " is too big, reducing")
 		numeric.muleq(direction, MAXIMUM_STEP / twoNorm);
 	}
 	
@@ -206,14 +208,14 @@ function backtrackingLineSearch(optimizable, direction, gradient, parameters) {
 		}
 		
 		if (scale < minimumScale) {
-			console.log("Step too small, exiting.");
+			//console.log("Step too small, exiting.");
 			return 0.0;
 		}
 		
 		var value = optimizable.getValue(parameters);
 		
 		if (value >= originalValue + DECREASE_FRACTION * scale * slope) {
-			//console.log("Exiting line search at value " + value);
+			////console.log("Exiting line search at value " + value);
 			return scale;
 		}
 		else if (! isFinite(value)) {
