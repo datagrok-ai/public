@@ -77,6 +77,10 @@ M  END
   get defaultWidth() {return 200;}
   get defaultHeight() {return 100;}
 
+  getDefaultSize(gridColumn: DG.GridColumn): {width: number, height: number} {
+    return { width: this.defaultWidth, height: this.defaultHeight };
+  }
+
   _fetchMolGetOrCreate(molString: string, scaffoldMolString: string, molRegenerateCoords: boolean, details: object = {}): IMolInfo {
     let molCtx: IMolContext;
     let mol: RDMol | null = null;
@@ -264,6 +268,7 @@ M  END
 
     const singleScaffoldHighlightMolString = this._initScaffoldString(colTemp, 'chem-scaffold');
     const singleScaffoldFilterMolString = this._initScaffoldString(colTemp, 'chem-scaffold-filter'); //expected molBlock
+    console.log(`*************scaffold ${singleScaffoldFilterMolString}`);
     const singleScaffoldMolString = singleScaffoldFilterMolString ?? singleScaffoldHighlightMolString;
     // TODO: make both filtering scaffold and single highlight scaffold appear
 
