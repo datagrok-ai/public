@@ -46,7 +46,10 @@ export class SubstructureFilter extends DG.Filter {
     this.calculating = false;
     this.root.appendChild(this.sketcher.root);
     this.root.appendChild(this.loader);
-    this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => { this.sketcher.setMolFile(DG.WHITE_MOLBLOCK); }));
+    this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => { {
+      this.sketcher.setMolFile(DG.WHITE_MOLBLOCK);
+      this.sketcher.updateExtSketcherContent(); //updating image in minimized sketcher panel
+    } }));
   }
 
   get _debounceTime(): number {
@@ -99,6 +102,7 @@ export class SubstructureFilter extends DG.Filter {
       this.dataFrame?.filter.and(this.bitset);
       this.dataFrame?.rows.addFilterState(this.saveState());
       this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile();
+      this.active = true;
     }
   }
 
@@ -113,9 +117,12 @@ export class SubstructureFilter extends DG.Filter {
   /** Override to load filter state. */
   applyState(state: any): void {
     super.applyState(state);
-    this.active = state.active;
-    if (state.molBlock)
+    this.active = state.active ?? true;
+    if (state.molBlock) {
       this.sketcher.setMolFile(state.molBlock);
+      if (this.sketcher._mode === DG.chem.SKETCHER_MODE.EXTERNAL)
+        this.sketcher.updateExtSketcherContent(); //updating image in minimized sketcher panel
+    }
 
     const that = this;
     if (state.molBlock)
@@ -129,8 +136,7 @@ export class SubstructureFilter extends DG.Filter {
    */
   async _onSketchChanged(): Promise<void> {
     if (!this.isFiltering) {
-      if (!this.active)
-        this.bitset = await this.getFilterBitset();
+      this.bitset = !this.active ? await this.getFilterBitset() : null;
       if (this.column?.temp['chem-scaffold-filter'])
         delete this.column.temp['chem-scaffold-filter'];
       this.dataFrame?.rows.requestFilter();
