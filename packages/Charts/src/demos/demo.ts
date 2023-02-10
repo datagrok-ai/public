@@ -12,7 +12,14 @@ export class Demo {
   static async globeViewerDemo() {
     const df = await grok.data.getDemoTable('geo/earthquakes.csv');
     const tableView = grok.shell.addTableView(df);
-    // timeout is for the table view to fully load, activate detectors and then start the globe viewer
+    // semantic type detection is needed for the latitude, longitude and magnitude columns
+
+    // TODO: change to this method when onSemanticTypeDetected is fixed
+
+    // df.onSemanticTypeDetected.subscribe((_) => {
+    //   tableView.addViewer('GlobeViewer');
+    // });
+
     setTimeout(() => {
       tableView.addViewer('GlobeViewer');
     }, 300);
