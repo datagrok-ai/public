@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -2097,9 +2097,12 @@
         },
         "2.1.5": {
           "datagrok-api": "^1.10.2"
+        },
+        "2.1.6": {
+          "datagrok-api": "^1.10.2"
         }
       },
-      "description": "",
+      "description": "Provides support for HELM notation (importing, detecting, rendering, conversion). [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Helm/README.md)",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
