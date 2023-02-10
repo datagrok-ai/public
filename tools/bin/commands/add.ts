@@ -312,40 +312,11 @@ export function add(args: { _: string[] }) {
       const packageObj = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
       Object.assign(packageObj.dependencies, {
         '@datagrok-libraries/utils': 'latest',
-      });
-      Object.assign(packageObj.devDependencies, {
-        'jest-html-reporter': '^3.5.0',
-        'jest': '^27.0.0',
-        '@types/jest': '^27.0.0',
-        'js-yaml': '^4.1.0',
-        '@types/js-yaml': "^4.0.5",
-        '@types/node-fetch': '^2.6.2',
-        'node-fetch': '^2.6.7'
-      }, ts ? {
-        'ts-jest': '^27.0.0',
-        'puppeteer': '^13.7.0'
-      } : {});
+      });    
       Object.assign(packageObj.scripts, {
-        'test': 'jest',
+        'test': 'grok test',
       });
       fs.writeFileSync(packagePath, JSON.stringify(packageObj, null, 2), 'utf8');
-
-      if (!fs.existsSync(path.join(curDir, 'jest.config.js')))
-        fs.writeFileSync(path.join(curDir, 'jest.config.js'), fs.readFileSync(
-          path.join(templateDir, 'package-template', 'jest.config.js')));
-
-      if (!fs.existsSync(path.join(srcDir, '__jest__')))
-        fs.mkdirSync(path.join(srcDir, '__jest__'));
-
-      if (!fs.existsSync(path.join(srcDir, '__jest__', 'remote.test.ts')))
-        fs.writeFileSync(path.join(srcDir, '__jest__', 'remote.test.ts'),
-          fs.readFileSync(path.join(templateDir, 'package-template', 'src',
-          '__jest__', 'remote.test.ts')));
-
-      if (!fs.existsSync(path.join(srcDir, '__jest__', 'test-node.ts')))
-        fs.writeFileSync(path.join(srcDir, '__jest__', 'test-node.ts'),
-          fs.readFileSync(path.join(templateDir, 'package-template', 'src',
-          '__jest__', 'test-node.ts')));
 
       const packageTestPath = path.join(srcDir, 'package-test.ts');
       if (!fs.existsSync(packageTestPath))

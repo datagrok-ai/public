@@ -18,7 +18,7 @@ import {MapProxy, _getIterator, _toIterable, _toJson, DartList} from "./utils";
 import {Observable}  from "rxjs";
 import {filter} from "rxjs/operators";
 import {Widget} from "./widgets";
-import {Grid} from "./grid";
+import {FormViewer, Grid} from "./grid";
 import {FilterState, ScatterPlotViewer, Viewer} from "./viewer";
 import {Property, TableInfo} from "./entities";
 import {FormulaLinesHelper} from "./helpers";
@@ -546,7 +546,7 @@ export class Row {
         return true;
       },
       get(target: any, name) {
-        if (name == 'cells' || name == 'get' || target.hasOwnProperty(name))
+        if (name == 'cells' || name == 'get' || name == 'toDart' || target.hasOwnProperty(name))
           return target[<any>name];
         return target.table.get(name, target.idx);
       }
@@ -1312,6 +1312,9 @@ export class RowList {
     this.table = table;
     this.dart = dart;
   }
+
+  /** Gets i-th row. DO NOT USE IN PERFORMANCE-CRITICAL CODE! */
+  get(i: number): Row { return new Row(this.table, i); }
 
   /** List of textual descriptions of currently applied filters */
   get filters(): DartList<string> { return DartList.fromDart(api.grok_RowList_Get_Filters(this.dart)); }
@@ -2178,8 +2181,10 @@ export class DataFramePlotHelper {
   fromType(viewerType: ViewerType, options: object | null = null): Promise<Widget> {
     return toJs(api.grok_Viewer_FromType_Async(viewerType, this.df.dart, _toJson(options)));
   }
+
   scatter(options: object | null = null): ScatterPlotViewer { return DG.Viewer.scatterPlot(this.df, options); }
   grid(options: object | null = null): Grid { return DG.Viewer.grid(this.df, options); }
+  form(options: object | null = null): FormViewer { return DG.Viewer.form(this.df, options); }
   histogram(options: object | null = null): Viewer { return DG.Viewer.histogram(this.df, options); }
   bar(options: object | null = null): Viewer { return DG.Viewer.barChart(this.df, options); }
   heatMap(options: object | null = null): Viewer { return DG.Viewer.heatMap(this.df, options); }

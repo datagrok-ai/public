@@ -9,9 +9,7 @@
   "dependencies": {
     "@types/node": "^14.14.37",
     "datagrok-api": ">=0.95.8",
-    "dts-bundle": "^0.7.3",
-    "js-yaml": "^4.1.0",
-    "node-fetch": "^2.6.0"
+    "dts-bundle": "^0.7.3"
   },
   "devDependencies": {
     "ts-loader": "^9.2.6",

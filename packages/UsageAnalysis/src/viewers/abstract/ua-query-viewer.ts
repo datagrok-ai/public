@@ -1,11 +1,12 @@
-import * as ui from "datagrok-api/ui";
-import { UaFilter } from "../../filter2";
-import * as grok from "datagrok-api/grok";
-import { UaViewer } from "./ua-viewer";
-import * as DG from "datagrok-api/dg";
+import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
+
+import {UaFilter} from '../../filter';
+import {UaViewer} from './ua-viewer';
+import $ from 'cash-dom';
 
 export abstract class UaQueryViewer extends UaViewer {
-
   queryName: string;
   viewerFunction: Function;
   staticFilter: Object = {};
@@ -27,7 +28,7 @@ export abstract class UaQueryViewer extends UaViewer {
   }
 
   setViewer(loader: any, host: HTMLDivElement, nameDiv: HTMLElement) {
-    let filter = { ...this.filter, ...this.staticFilter }
+    const filter = {...this.filter, ...this.staticFilter};
 
     grok.data.query('UsageAnalysis:' + this.queryName, filter).then((dataFrame) => {
       if (dataFrame.columns.byName('count') != null)
@@ -37,13 +38,13 @@ export abstract class UaQueryViewer extends UaViewer {
       if (dataFrame.rowCount > 0)
         viewer = this.viewerFunction(dataFrame);
       else
-        viewer = ui.divText('No data', { style: { color: 'var(--red-3)', paddingBottom: '25px' } })
+        viewer = ui.divText('No data', {style: {color: 'var(--red-3)', paddingBottom: '25px'}});
 
-      let grid = DG.Viewer.grid(dataFrame);
+      const grid = DG.Viewer.grid(dataFrame);
       grid.props.allowColSelection = false;
       let raw = false;
 
-      let tableIcon = ui.button(ui.iconFA('table'), () => {
+      const tableIcon = ui.button(ui.iconFA('table'), () => {
         if (!raw)
           $(viewer).replaceWith(grid.root);
         else
@@ -57,12 +58,12 @@ export abstract class UaQueryViewer extends UaViewer {
       tableIcon.style.margin = '0 3px';
       tableIcon.style.color = 'var(--grey-4)';
 
-      tableIcon.addEventListener("mouseover", function () { tableIcon.style.color = 'var(--blue-1)' });
-      tableIcon.addEventListener("mouseleave", function () { tableIcon.style.color = 'var(--grey-4)' });
+      tableIcon.addEventListener('mouseover', function() {tableIcon.style.color = 'var(--blue-1)';});
+      tableIcon.addEventListener('mouseleave', function() {tableIcon.style.color = 'var(--grey-4)';});
 
       nameDiv.append(ui.tooltip.bind(tableIcon, 'Show grid'));
 
-      let tableViewIcon = ui.button(ui.iconFA('external-link-square'), () => {
+      const tableViewIcon = ui.button(ui.iconFA('external-link-square'), () => {
         grok.shell.v = grok.shell.addTableView(dataFrame);
       });
 
@@ -71,21 +72,21 @@ export abstract class UaQueryViewer extends UaViewer {
       tableViewIcon.style.margin = '0 3px';
       tableViewIcon.style.color = 'var(--grey-4)';
 
-      tableViewIcon.addEventListener("mouseover", function () { tableViewIcon.style.color = 'var(--blue-1)' });
-      tableViewIcon.addEventListener("mouseleave", function () { tableViewIcon.style.color = 'var(--grey-4)' });
+      tableViewIcon.addEventListener('mouseover', function() {tableViewIcon.style.color = 'var(--blue-1)';});
+      tableViewIcon.addEventListener('mouseleave', function() {tableViewIcon.style.color = 'var(--grey-4)';});
 
       nameDiv.append(ui.tooltip.bind(tableViewIcon, 'Open grid'));
 
       host.appendChild(viewer);
       host.removeChild(loader);
 
-      host.addEventListener("mouseover", function () {
-        tableIcon.style.display = "block";
-        tableViewIcon.style.display = "block";
+      host.addEventListener('mouseover', function() {
+        tableIcon.style.display = 'block';
+        tableViewIcon.style.display = 'block';
       });
-      host.addEventListener("mouseleave", function () {
-        tableIcon.style.display = "none";
-        tableViewIcon.style.display = "none";
+      host.addEventListener('mouseleave', function() {
+        tableIcon.style.display = 'none';
+        tableViewIcon.style.display = 'none';
       });
     });
   }
@@ -95,5 +96,4 @@ export abstract class UaQueryViewer extends UaViewer {
 
   init(): void {
   }
-
 }

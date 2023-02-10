@@ -166,6 +166,53 @@ export class NotationConverter extends UnitsHandler {
   }
 
   /**
+   *  Convert HELM string to FASTA/SEPARATOR
+   *
+   * @param {string} helmPolymer    A string to be converted
+   * @param {string} tgtNotation    Target notation: FASTA or SEPARATOR
+   * @param {string} tgtSeparator   Optional target separator (for HELM ->
+   * @param {string | null} tgtGapSymbol   Optional target gap symbol
+   * SEPARATOR)
+   * @return {string} Converted string
+   */
+  public convertHelmToFastaSeparator(
+    helmPolymer: string, 
+    tgtNotation: string, 
+    tgtSeparator?: string, 
+    tgtGapSymbol?: string
+  ): string {
+    if (!tgtGapSymbol) {
+      tgtGapSymbol = (this.toFasta(tgtNotation as NOTATION)) ?
+        UnitsHandler._defaultGapSymbolsDict.FASTA :
+        UnitsHandler._defaultGapSymbolsDict.SEPARATOR;
+    }
+
+    if (!tgtSeparator) {
+      tgtSeparator = (this.toFasta(tgtNotation as NOTATION)) ? '' : this.separator;
+    }
+    const helmWrappersRe = /(R\(|D\(|\)|P)/g;
+    const isNucleotide = helmPolymer.startsWith('DNA') || helmPolymer.startsWith('RNA');
+    // items can be monomers or helms
+    const helmItemsArray = this.splitter(helmPolymer);
+    const tgtMonomersArray: string[] = [];
+    for (let i = 0; i < helmItemsArray.length; i++) {
+      let item = helmItemsArray[i];
+      if (isNucleotide)
+        item = item.replace(helmWrappersRe, '');
+      if (item === UnitsHandler._defaultGapSymbolsDict.HELM) {
+        tgtMonomersArray.push(tgtGapSymbol!);
+      } else if (this.toFasta(tgtNotation as NOTATION) && item.length > 1) {
+        // the case of a multi-character monomer converted to FASTA
+        const monomer = '[' + item + ']';
+        tgtMonomersArray.push(monomer);
+      } else {
+        tgtMonomersArray.push(item);
+      }
+    }
+    return tgtMonomersArray.join(tgtSeparator);
+  }
+
+  /**
    *  Convert HELM column to FASTA/SEPARATOR
    *
    * @param {string} tgtNotation    Target notation: FASTA or SEPARATOR
@@ -177,45 +224,14 @@ export class NotationConverter extends UnitsHandler {
   private convertHelm(tgtNotation: string, tgtSeparator?: string, tgtGapSymbol?: string): DG.Column {
     // This function must not contain calls of isDna() and isRna(), for
     // source helm columns may contain RNA, DNA and PT across different rows
-    if (!tgtGapSymbol) {
-      tgtGapSymbol = (this.toFasta(tgtNotation as NOTATION)) ?
-        UnitsHandler._defaultGapSymbolsDict.FASTA :
-        UnitsHandler._defaultGapSymbolsDict.SEPARATOR;
-    }
-
-    if (!tgtSeparator) {
-      tgtSeparator = (this.toFasta(tgtNotation as NOTATION)) ? '' : this.separator;
-    }
-
-    const helmWrappersRe = /(R\(|D\(|\)|P)/g;
     const newColumn = this.getNewColumn(tgtNotation as NOTATION);
     // assign the values to the empty column
     newColumn.init((idx: number) => {
       const helmPolymer = this.column.get(idx);
-
+      return this.convertHelmToFastaSeparator(helmPolymer, tgtNotation, tgtSeparator, tgtGapSymbol);
       // we cannot use isDna() or isRna() because source helm columns can
       // contain DNA, RNA and PT in different cells, so the corresponding
       // tags cannot be set for the whole column
-      const isNucleotide = helmPolymer.startsWith('DNA') || helmPolymer.startsWith('RNA');
-
-      // items can be monomers or helms
-      const helmItemsArray = this.splitter(helmPolymer);
-      const tgtMonomersArray: string[] = [];
-      for (let i = 0; i < helmItemsArray.length; i++) {
-        let item = helmItemsArray[i];
-        if (isNucleotide)
-          item = item.replace(helmWrappersRe, '');
-        if (item === UnitsHandler._defaultGapSymbolsDict.HELM) {
-          tgtMonomersArray.push(tgtGapSymbol!);
-        } else if (this.toFasta(tgtNotation as NOTATION) && item.length > 1) {
-          // the case of a multi-character monomer converted to FASTA
-          const monomer = '[' + item + ']';
-          tgtMonomersArray.push(monomer);
-        } else {
-          tgtMonomersArray.push(item);
-        }
-      }
-      return tgtMonomersArray.join(tgtSeparator);
     });
 
     // TAGS.aligned is mandatory for columns of NOTATION.FASTA and NOTATION.SEPARATOR

@@ -8,6 +8,8 @@ import {HelmWebEditor} from './helm-web-editor';
 import {HelmCellRenderer} from './cell-renderer';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
+import {findMonomers} from './utils';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 export const _package = new DG.Package();
 let monomerLib: IMonomerLib | null = null;
@@ -19,18 +21,32 @@ export async function initHelm(): Promise<void> {
     dojo.ready(function() { resolve(null); });
   }), await grok.functions.call('Bio:getBioLib')]).then(([_, lib]: [void, IMonomerLib]) => {
     monomerLib = lib;
-    rewriteLibraries();
+    rewriteLibraries(); // initHelm()
     monomerLib.onChanged.subscribe((_) => {
-      rewriteLibraries();
-    })
+      try {
+        rewriteLibraries(); // initHelm()
+
+        const monTypeList: string[] = monomerLib.getTypes();
+        const msgStr: string = 'Monomer lib updated:<br />' + (
+          monTypeList.length == 0 ? 'empty' : monTypeList.map((monType) => {
+            return `${monType} ${monomerLib.getMonomerNamesByType(monType).length}`;
+          }).join('<br />'));
+
+        grok.shell.info(msgStr);
+      } catch (err: any) {
+        const errMsg = errorToConsole(err);
+        console.error('Helm: initHelm monomerLib.onChanged() error:\n' + errMsg);
+        // throw err; // Prevent disabling event handler
+      }
+    });
   });
 }
 
 function rewriteLibraries() {
   org.helm.webeditor.Monomers.clear();
-  monomerLib.getTypes().forEach(type => {
+  monomerLib.getTypes().forEach((type) => {
     const mms = monomerLib.getMonomerNamesByType(type);
-    mms.forEach(symbol => {
+    mms.forEach((symbol) => {
       let isBroken = false;
       const monomer: Monomer = monomerLib.getMonomer(type, symbol);
       const webEditorMonomer: WebEditorMonomer = {
@@ -42,29 +58,30 @@ function rewriteLibraries() {
         type: monomer.polymerType,
         mt: monomer.monomerType,
         at: {}
-      }; 
+      };
 
-      if(monomer.rgroups.length > 0) {
+      if (monomer.rgroups.length > 0) {
         webEditorMonomer.rs = monomer.rgroups.length;
         const at = {};
         monomer.rgroups.forEach(it => {
           at[it[RGROUP_LABEL]] = it[RGROUP_CAP_GROUP_NAME];
         });
         webEditorMonomer.at = at;
-      } else if (monomer.data[SMILES] != null){
+      } else if (monomer.data[SMILES] != null) {
         webEditorMonomer.rs = Object.keys(getRS(monomer.data[SMILES].toString())).length;
         webEditorMonomer.at = getRS(monomer.data[SMILES].toString());
-      } else
+      } else {
         isBroken = true;
+      }
 
-      if(!isBroken)
+      if (!isBroken)
         org.helm.webeditor.Monomers.addOneMonomer(webEditorMonomer);
     });
   });
 
   // Obsolete
   let grid: DG.Grid = grok.shell.tv.grid;
-  grid.invalidate();
+  if (grid) grid.invalidate();
 }
 
 //name: helmCellRenderer
@@ -76,12 +93,23 @@ export function helmCellRenderer(): HelmCellRenderer {
   return new HelmCellRenderer();
 }
 
+function checkMonomersAndOpenWebEditor(cell?: DG.Cell, value?: string, units?: string) {
+  const cellValue = typeof units === 'undefined' ? cell.value : value;
+  const monomers = findMonomers(cellValue);
+  if (monomers.size == 0) 
+    webEditor(cell, value, units);
+  else
+    grok.shell.warning(`Monomers ${Array.from(monomers).join(', ')} are absent! <br/>` +
+    `Please, upload the monomer library! <br/>` +
+    `<a href="https://datagrok.ai/help/domains/bio/macromolecules" target="_blank">Learn more</a>`);
+}
+
 //tags: cellEditor
-//description: Macromolecule
+//description: Macromolecule  
 //input: grid_cell cell
+//meta.columnTags: quality=Macromolecule, units=helm
 export function editMoleculeCell(cell: DG.GridCell): void {
-  if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === 'helm')
-    webEditor(cell);
+  checkMonomersAndOpenWebEditor(cell.cell, undefined, undefined);
 }
 
 //name: Open Helm Web Editor
@@ -90,9 +118,10 @@ export function editMoleculeCell(cell: DG.GridCell): void {
 //input: string mol { semType: Macromolecule }
 export function openEditor(mol: string): void {
   let df = grok.shell.tv.grid.dataFrame;
-  let converter = new NotationConverter(df.columns.bySemType('Macromolecule'));
+  let col = df.columns.bySemType('Macromolecule');
+  let converter = new NotationConverter(col);
   const resStr = converter.convertStringToHelm(mol, '/');
-  webEditor(undefined, resStr);
+  checkMonomersAndOpenWebEditor(df.currentCell, resStr, col.getTag(DG.TAGS.UNITS));
 }
 
 //name: Properties
@@ -121,8 +150,10 @@ export async function propertiesPanel(helmString: string) {
   );
 }
 
-function webEditor(cell?: DG.GridCell, value?: string) {
+function webEditor(cell?: DG.Cell, value?: string, units?: string) {
   let view = ui.div();
+  let df = grok.shell.tv.grid.dataFrame;
+  let converter = new NotationConverter(df.columns.bySemType('Macromolecule'));
   org.helm.webeditor.MolViewer.molscale = 0.8;
   let app = new scil.helm.App(view, {
     showabout: false,
@@ -147,8 +178,8 @@ function webEditor(cell?: DG.GridCell, value?: string) {
   app.structureview.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
   app.mex.resize(sizes.topheight - 80);
   setTimeout(function() {
-    if (typeof cell !== 'undefined') {
-      app.canvas.helm.setSequence(cell.cell.value, 'HELM');
+    if (typeof units === 'undefined') {
+      app.canvas.helm.setSequence(cell.value, 'HELM');
     } else {
       app.canvas.helm.setSequence(value, 'HELM');
     }
@@ -157,57 +188,14 @@ function webEditor(cell?: DG.GridCell, value?: string) {
   ui.dialog({showHeader: false, showFooter: true})
     .add(view)
     .onOK(() => {
-      if (typeof cell !== 'undefined') {
-        cell.cell.value = app.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
+      let helmValue = app.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
+      if (typeof units === 'undefined') {
+        cell.value = helmValue;
+      } else {
+        let convertedRes = converter.convertHelmToFastaSeparator(helmValue, units);
+        cell.value = convertedRes;
       }
     }).show({modal: true, fullScreen: true});
-}
-
-async function accessServer(url: string, key: string) {
-  const params: RequestInit = {
-    method: 'GET',
-    headers: {
-      'Accept': 'application/json',
-    }
-  };
-  const response = await fetch(url, params);
-  const json = await response.json();
-  return json[key];
-}
-
-//name: helmToFasta
-//input: string helmString {semType: Macromolecule}
-//output: string res
-export async function helmToFasta(helmString: string) {
-  const url = `http://localhost:8081/WebService/service/Fasta/Produce/${helmString}`;
-  return await accessServer(url, 'FastaFile');
-}
-
-//name: helmToRNA
-//description: converts to rna analogue sequence
-//input: string helmString {semType: Macromolecule}
-//output: string res
-export async function helmToRNA(helmString: string) {
-  const url = `http://localhost:8081/WebService/service/Fasta/Convert/RNA/${helmString}`;
-  return await accessServer(url, 'Sequence');
-}
-
-//name: helmToPeptide
-//description: converts to peptide analogue sequence
-//input: string helmString {semType: Macromolecule}
-//output: string res
-export async function helmToPeptide(helmString: string) {
-  const url = `http://localhost:8081/WebService/service/Fasta/Convert/PEPTIDE/${helmString}`;
-  return await accessServer(url, 'Sequence');
-}
-
-//name: helmToSmiles
-//description: converts to smiles
-//input: string helmString {semType: Macromolecule}
-//output: string smiles {semType: Molecule}
-export async function helmToSmiles(helmString: string) {
-  const url = `http://localhost:8081/WebService/service/SMILES/${helmString}`;
-  return await accessServer(url, 'SMILES');
 }
 
 function getRS(smiles: string) {

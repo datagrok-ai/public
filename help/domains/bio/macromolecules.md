@@ -91,7 +91,7 @@ which groups of people have access to which libraries.
 
 The system could be integrated with a custom monomer library service if needed.
 
-![Monomer Library](../../uploads/macromolecules/MonomerLibrary.gif "Monomer Library")
+![Monomer Library](../../uploads/macromolecules/ManageLibraries.gif "Monomer Library")
 
 ### Atomic-Level structures from sequences
 
