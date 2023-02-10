@@ -206,7 +206,7 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
   return warnings;
 }
 
-function checkPackageFile(packagePath: string): string[] {
+export function checkPackageFile(packagePath: string): string[] {
   const warnings: string[] = [];
   const packageFilePath = path.join(packagePath, 'package.json');
   const json: PackageFile = JSON.parse(fs.readFileSync(packageFilePath, { encoding: 'utf-8' }));
