@@ -13,16 +13,7 @@ export class Demo {
     const df = await grok.data.getDemoTable('geo/earthquakes.csv');
     const tableView = grok.shell.addTableView(df);
     // semantic type detection is needed for the latitude, longitude and magnitude columns
-
-    // TODO: change to this method when onSemanticTypeDetected is fixed
-
-    // df.onSemanticTypeDetected.subscribe((_) => {
-    //   tableView.addViewer('GlobeViewer');
-    // });
-
-    setTimeout(() => {
-      tableView.addViewer('GlobeViewer');
-    }, 300);
+    DG.debounce(df.onSemanticTypeDetected, 50).subscribe((_) => tableView.addViewer('GlobeViewer'));
   }
 
   static async groupAnalysisViewerDemo() {
