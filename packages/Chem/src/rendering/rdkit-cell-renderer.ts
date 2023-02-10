@@ -268,7 +268,6 @@ M  END
 
     const singleScaffoldHighlightMolString = this._initScaffoldString(colTemp, 'chem-scaffold');
     const singleScaffoldFilterMolString = this._initScaffoldString(colTemp, 'chem-scaffold-filter'); //expected molBlock
-    console.log(`*************scaffold ${singleScaffoldFilterMolString}`);
     const singleScaffoldMolString = singleScaffoldFilterMolString ?? singleScaffoldHighlightMolString;
     // TODO: make both filtering scaffold and single highlight scaffold appear
 
