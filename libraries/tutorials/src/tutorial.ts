@@ -14,7 +14,7 @@ export abstract class Tutorial extends DG.Widget {
   abstract get steps(): number;
 
   track: Track | null = null;
-  prerequisites: string[] = [];
+  prerequisites: TutorialPrerequisites = {};
   demoTable: string = 'demog.csv';
   private _t: DG.DataFrame | null = null;
   get t(): DG.DataFrame | null {
@@ -41,6 +41,11 @@ export abstract class Tutorial extends DG.Widget {
   progressSteps: HTMLDivElement = ui.divText('');
 
   static DATA_STORAGE_KEY: string = 'tutorials';
+  static SERVICES: {[service: string]: string} = {
+    'jupyter': 'Jupyter',
+    'grokCompute': 'GrokCompute',
+    'grokConnect': 'Grok Connect',
+  };
 
   async updateStatus(): Promise<void> {
     const info = await grok.dapi.userDataStorage.getValue(Tutorial.DATA_STORAGE_KEY, this.name);
@@ -70,9 +75,10 @@ export abstract class Tutorial extends DG.Widget {
       return;
     }
 
-    if (this.prerequisites.length > 0) {
+    if (this.prerequisites.packages && Array.isArray(this.prerequisites.packages) &&
+      this.prerequisites.packages.length > 0) {
       const missingPackages = [];
-      for (const p of this.prerequisites) {
+      for (const p of this.prerequisites.packages) {
         const packages = await grok.dapi.packages.list({filter: `shortName = "${p}"`});
         if (!packages.length || !(packages[0] instanceof DG.Package))
           missingPackages.push(p);
@@ -82,6 +88,14 @@ export abstract class Tutorial extends DG.Widget {
           missingPackages.join(', ')} to start the tutorial`);
         this.close();
         return;
+      }
+    }
+
+    for (const [service, flag] of Object.entries(this.prerequisites)) {
+      if (service in Tutorial.SERVICES && flag === true) {
+        const serviceAvailable = await this.checkService(Tutorial.SERVICES[service]);
+        if (!serviceAvailable)
+          return;
       }
     }
 
@@ -167,6 +181,17 @@ export abstract class Tutorial extends DG.Widget {
         ], {style: {marginLeft: '-4px'}}),
       ]));
     }
+  }
+
+  async checkService(name: string): Promise<boolean> {
+    const services = await grok.dapi.admin.getServiceInfos();
+    const service = services.find((si) => si.name === name);
+    const serviceAvailable = service == null ? false : service.enabled && service.status === 'Running';
+    if (!serviceAvailable) {
+      grok.shell.error(`Service "${name}" not available. Please try running this tutorial later`);
+      this.close();
+    }
+    return serviceAvailable;
   }
 
   close(): void {
@@ -537,3 +562,10 @@ export abstract class Tutorial extends DG.Widget {
 }
 
 type EleLoose = HTMLElement & Element & Node;
+
+interface TutorialPrerequisites {
+  packages?: string[],
+  jupyter?: boolean,
+  grokCompute?: boolean,
+  grokConnect?: boolean,
+}
