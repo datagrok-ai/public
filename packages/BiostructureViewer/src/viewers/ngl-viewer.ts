@@ -164,7 +164,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   private viewSubs: Unsubscribable[] = [];
 
   private destroyView(): void {
-    console.debug('BiostructureViewer: NglViewer.destroyView() ');
+    _package.logger.debug('NglViewer.destroyView() ');
     if (this.pdbStr) {
       if (this.nglDiv && this.stage)
         this.stage.removeAllComponents();
@@ -180,7 +180,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   }
 
   private buildView(): void {
-    console.debug('BiostructureViewer: NglViewer.buildView() ');
+    _package.logger.debug('NglViewer.buildView() ');
     if (this.pdbStr) {
       if (!this.nglDiv) {
         this.nglDiv = ui.div([], {
@@ -279,7 +279,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
   }
 
   private dataFrameOnCurrentRowChanged(value: any): void {
-    console.debug('BiostructureViewer: NglViewer.dataFrameOnCurrentRowChanged() ');
+    _package.logger.debug('NglViewer.dataFrameOnCurrentRowChanged() ');
 
     const dataFrame: DG.DataFrame = this.dataFrame;
     const ligandColumnName: string = this.ligandColumnName;

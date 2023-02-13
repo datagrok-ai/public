@@ -21,7 +21,25 @@ import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 import {MolstarViewerApp} from './apps/molstar-viewer-app';
 
-export const _package = new DG.Package();
+class Package extends DG.Package {
+  private _pLogger: DG.PackageLogger;
+
+  get logger(): DG.PackageLogger {
+    if (!this._pLogger) {
+      this._pLogger = new class extends DG.PackageLogger {
+        private logPrefix: string = 'BsV: ';
+
+        constructor(_package: DG.Package) { super(_package); }
+
+        debug(message: string, params?: object): void { super.debug(this.logPrefix + message, params); }
+      }(this);
+    }
+
+    return this._pLogger;
+  }
+}
+
+export const _package = new Package();
 
 //name: pdbCellRenderer
 //tags: cellRenderer
