@@ -1453,7 +1453,9 @@ export namespace hints {
 
   export function addTextHint(el: HTMLElement, options?: {title?: string, helpUrl?: string, pages?: WizardPage[]}): Wizard {
     el.classList.add('ui-text-hint-target');
-    $('#rootDiv').addClass('ui-grayed-out-block');
+    let ovelay = document.createElement('div');
+    ovelay.className = 'ui-hint-overlay';
+    $('body').prepend(ovelay);
     const wizard = new Wizard({title: options?.title, helpUrl: options?.helpUrl});
     if (options?.pages) {
       options.pages.forEach((p) => wizard.page(p));
@@ -1471,7 +1473,7 @@ export namespace hints {
     $(el).find('div.ui-hint-blob')[0]?.remove();
     $(el).find('i.fa-times')[0]?.remove();
     el.classList.remove('ui-hint-target', 'ui-text-hint-target');
-    $('#rootDiv').removeClass('ui-grayed-out-block');
+    $('.ui-hint-overlay').remove();
     return el;
   }
 }
