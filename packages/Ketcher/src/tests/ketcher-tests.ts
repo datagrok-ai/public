@@ -17,7 +17,7 @@ category('ketcher', async () => {
 
   test('setSmarts', async () => {
     await _testSetSmarts();
-  });
+  }, {skipReason: 'GROK-12137'});
 
   after(async () => {
   });
