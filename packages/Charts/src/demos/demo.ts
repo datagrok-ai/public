@@ -29,7 +29,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
   const tableView = grok.shell.addTableView(df);
 
   if (['GlobeViewer', 'GroupAnalysisViewer'].includes(viewerName)) {
-    DG.debounce(df.onSemanticTypeDetected, 50).subscribe((_) => tableView.addViewer(viewerName));
+    DG.debounce(df.onSemanticTypeDetected, 50).subscribe((_) => tableView.addViewer(viewerName, options));
     return;
   }
 
