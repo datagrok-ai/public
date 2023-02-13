@@ -7,6 +7,7 @@ import {Observable} from 'rxjs';
 import {RangeSlider} from './widgets';
 import {SemType} from './const';
 import {Property} from './entities';
+import {IFormLookSettings, IGridLookSettings} from "./interfaces/d4";
 
 
 let api = <any>window;
@@ -486,6 +487,8 @@ export class GridCell {
   set element(e: HTMLElement) { api.grok_GridCell_Set_Element(this.dart, e); }
 }
 
+export type GridColumnTooltipType = 'Default' | 'None' | 'Form' | 'Columns';
+
 /** Represents a grid column */
 export class GridColumn {
   dart: any;
@@ -558,6 +561,18 @@ export class GridColumn {
   /** Whether the column is selected. */
   get selected(): boolean { return api.grok_GridColumn_Get_Selected(this.dart); }
   set selected(x: boolean) { api.grok_GridColumn_Set_Selected(this.dart, x); }
+
+  /** Tooltip type, specific to this column. */
+  get tooltipType(): GridColumnTooltipType { return api.grok_GridColumn_Get_TooltipType(this.dart); }
+  set tooltipType(x: GridColumnTooltipType) { api.grok_GridColumn_Set_TooltipType(this.dart, x); }
+
+  /** Tooltip form. Also requires {@link tooltipType} to be 'Form'. */
+  get tooltipForm(): string { return api.grok_GridColumn_Get_TooltipForm(this.dart); }
+  set tooltipForm(x: string) { api.grok_GridColumn_Set_TooltipForm(this.dart, x); }
+
+  /** Tooltip columns. Also requires {@link tooltipType} to be 'Columns'. */
+  get tooltipColumns(): string[] { return api.grok_GridColumn_Get_TooltipForm(this.dart); }
+  set tooltipColumns(x: string[]) { api.grok_GridColumn_Set_TooltipForm(this.dart, x); }
 
   /** Left border (in pixels in the virtual viewport) */
   get left(): number { return api.grok_GridColumn_Get_Left(this.dart); }
@@ -633,9 +648,56 @@ export class GridColumnList {
   }
 }
 
+/** DataFrame-bound viewer that contains {@link Form} */
+export class FormViewer extends Viewer<IFormLookSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  /** Creates a new default form for the specified columns. */
+  static createDefault(df: DataFrame, options?: {columns?: string[]}): FormViewer {
+    return new FormViewer(api.grok_FormViewer_CreateDefault(df.dart, options?.columns));
+  }
+
+  get form(): Form { return api.grok_FormViewer_Get_Form(this.dart); }
+
+  get editable(): boolean { return api.grok_FormViewer_Get_Editable(this.dart); }
+  set editable(x: boolean) { api.grok_FormViewer_Set_Editable(this.dart, x); }
+
+  get designMode(): boolean { return api.grok_FormViewer_Get_DesignMode(this.dart); }
+  set designMode(x: boolean) { api.grok_FormViewer_Set_DesignMode(this.dart, x); }
+}
+
+
+/** Represents a form that can be user-designed or edited. */
+export class Form {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** Creates a new grid. */
+  static forDataFrame(df: DataFrame, options?: {columns?: string[]}): Form {
+    return api.grok_Form_ForDataFrame(df.dart, options?.columns);
+  }
+
+  get editable(): boolean { return api.grok_Form_Get_Editable(this.dart); }
+  set editable(x: boolean) { api.grok_Form_Set_Editable(this.dart, x); }
+
+  get designMode(): boolean { return api.grok_Form_Get_DesignMode(this.dart); }
+  set designMode(x: boolean) { api.grok_Form_Set_DesignMode(this.dart, x); }
+
+  get row(): Row { return new Row(api.grok_Form_Get_DataFrame(this.dart), api.grok_Form_Get_RowIdx(this.dart)); }
+  set row(row: Row) { api.grok_Form_Set_Row(this.dart, row.toDart()); }
+
+  get state() { return api.grok_Form_Get_State(this.dart); }
+  set state(s: string) { api.grok_Form_Set_State(this.dart, s); }
+}
+
 
 /** High-performance, flexible spreadsheet control */
-export class Grid<TSettings = any> extends Viewer<TSettings> {
+export class Grid extends Viewer<IGridLookSettings> {
 
   constructor(dart: any) {
     super(dart);
@@ -790,6 +852,9 @@ export class Grid<TSettings = any> extends Viewer<TSettings> {
     return toJs(api.grok_Grid_Get_ColHeaderHeight(this.dart));
   }
 
+  /** Resets rows height */
+  resetRowHeight(): void { api.grok_Grid_ResetRowHeight(this.dart); }
+
   /** Column labels box */
   get colHeaderBox(): Rect {
     return toJs(api.grok_Grid_Get_ColHeaderRect(this.dart));
@@ -903,6 +968,10 @@ export class CanvasRenderer {
     return null;
   }
 
+  getDefaultSize(gridColumn: GridColumn): {width?: number | null, height?: number | null} {
+    return { width: this.defaultWidth, height: this.defaultHeight};
+  }
+
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, value: any, context: any): void {
     throw 'Not implemented';
   }
@@ -988,8 +1057,8 @@ export class SemanticValue<T = any> {
   get semType(): string { return api.grok_SemanticValue_Get_SemType(this.dart); }
   set semType(x: string) { api.grok_SemanticValue_Set_SemType(this.dart, x); }
 
-  getMeta(name: string): any { return api.grok_SemanticValue_Get_Meta(name); }
-  setMeta(name: string, value: any): void { api.grok_SemanticValue_Set_Meta(name, toDart(value)); }
+  getMeta(name: string): any { return api.grok_SemanticValue_Get_Meta(this.dart, name); }
+  setMeta(name: string, value: any): void { api.grok_SemanticValue_Set_Meta(this.dart, name, toDart(value)); }
 
   get cell(): Cell { return api.grok_SemanticValue_Get_Cell(this.dart); }
   get gridCell(): GridCell { return this.getMeta('gridCell'); }

@@ -1,7 +1,6 @@
-<!-- TITLE: Reactions -->
-<!-- SUBTITLE: -->
-
-# Reactions
+---
+title: "Reactions"
+---
 
 Enumeration of many molecules with template reaction and building blocks are useful for library generation. Reaction
 template is in [SMARTS](https://www.daylight.com/dayhtml/doc/theory/theory.smarts.html) format. Reactants can be combined

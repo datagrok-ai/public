@@ -3,8 +3,8 @@
   "name": "MSSQLTest",
   "friendlyName": "NorthwindTest",
   "parameters": {
-    "server": "dev.datagrok.ai",
-    "port": 21433,
+    "server": "db.datagrok.ai",
+    "port": 1433,
     "db": "northwind"
   },
   "credentials" : {

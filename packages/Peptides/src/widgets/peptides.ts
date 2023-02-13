@@ -2,13 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import * as uuid from 'uuid';
+
 import '../styles.css';
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
 import {PeptidesModel} from '../model';
 import $ from 'cash-dom';
 import {scaleActivity} from '../utils/misc';
-import * as bio from '@datagrok-libraries/bio';
+import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 /** Peptide analysis widget.
  *
@@ -16,7 +18,7 @@ import * as bio from '@datagrok-libraries/bio';
  * @param {DG.Column} col Aligned sequence column
  * @return {Promise<DG.Widget>} Widget containing peptide analysis */
 export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
-{host: HTMLElement, callback: () => Promise<boolean>} {
+  { host: HTMLElement, callback: () => Promise<boolean> } {
   const logoHost = ui.div();
   // logoHost.style.alignContent = 'center';
   let seqColInput: DG.InputBase | null = null;
@@ -38,8 +40,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
         return viewer.root;
       }));
     });
-  } else if (!(col.getTag(bio.TAGS.aligned) == bio.ALIGNMENT.SEQ_MSA) &&
-             col.getTag(DG.TAGS.UNITS) !== bio.NOTATION.HELM) {
+  } else if (!(col.getTag(bioTAGS.aligned) == ALIGNMENT.SEQ_MSA) &&
+    col.getTag(DG.TAGS.UNITS) !== NOTATION.HELM) {
     return {
       host: ui.label('Peptides analysis only works with aligned sequences'),
       callback: async (): Promise<boolean> => false,
@@ -65,7 +67,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
   let scaledCol: DG.Column<number>;
 
   const defaultActivityColumn: DG.Column<number> | null =
-    df.col('activity') || df.col('IC50') || DG.Utils.firstOrNull(df.columns.numerical); ;
+    df.col('activity') || df.col('IC50') || DG.Utils.firstOrNull(df.columns.numerical);
+  ;
   const histogramHost = ui.div([], {id: 'pep-hist-host'});
 
   const activityScalingMethod = ui.choiceInput(
@@ -94,6 +97,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
   };
   const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState);
   const clustersColumnChoice = ui.columnInput('Clusters', df, null);
+  clustersColumnChoice.nullable = true;
   activityColumnChoice.fireChanged();
   activityScalingMethod.fireChanged();
 
@@ -118,12 +122,14 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
     return false;
   };
 
+  let bottomHeight = 'auto';
   const inputElements: HTMLElement[] = [ui.inputs(inputsList)];
   $(inputElements[0]).find('label').css('width', 'unset');
   if (typeof col !== 'undefined') {
     const startBtn = ui.button('Launch SAR', startAnalysisCallback);
     startBtn.style.alignSelf = 'center';
     inputElements.push(startBtn);
+    bottomHeight = '215px';
   }
 
   $(logoHost).empty().append(ui.wait(async () => {
@@ -137,7 +143,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
     ui.splitH([
       ui.splitV(inputElements),
       histogramHost,
-    ], {style: {height: '215px'}}),
+    ], {style: {height: bottomHeight}}),
   ]);
   mainHost.style.maxWidth = '400px';
   return {host: mainHost, callback: startAnalysisCallback};
@@ -171,16 +177,16 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     newDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
 
     let monomerType = 'HELM_AA';
-    if (peptidesCol.getTag(DG.TAGS.UNITS) == bio.NOTATION.HELM) {
+    if (peptidesCol.getTag(DG.TAGS.UNITS) == NOTATION.HELM) {
       const sampleSeq = peptidesCol.get(0)!;
       monomerType = sampleSeq.startsWith('PEPTIDE') ? 'HELM_AA' : 'HELM_BASE';
     } else {
       const alphabet = peptidesCol.tags[C.TAGS.ALPHABET];
       monomerType = alphabet == 'DNA' || alphabet == 'RNA' ? 'HELM_BASE' : 'HELM_AA';
     }
-
+    const dfUuid = uuid.v4();
+    newDf.setTag(C.TAGS.UUID, dfUuid);
     newDf.setTag('monomerType', monomerType);
-    newDf.setTag('newAnalysis', '1');
     model = PeptidesModel.getInstance(newDf);
     await model.addViewers();
   } else

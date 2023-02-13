@@ -109,7 +109,7 @@ export async function getById(id: string): Promise<DG.DataFrame | null> {
 //output: widget result
 //condition: true
 export function chemblSubstructureSearchPanel(mol: string): DG.Widget {
-  return chemblSearchWidget(mol, true);
+  return mol ? chemblSearchWidget(mol, true) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: Chembl API | Similarity Search
@@ -118,5 +118,5 @@ export function chemblSubstructureSearchPanel(mol: string): DG.Widget {
 //output: widget result
 //condition: true
 export function chemblSimilaritySearchPanel(mol: string): DG.Widget {
-  return chemblSearchWidget(mol);
+  return mol ? chemblSearchWidget(mol) : new DG.Widget(ui.divText('SMILES is empty'));
 }

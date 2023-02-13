@@ -45,7 +45,7 @@ export interface RDMol {
 
   get_stereo_tags(): string;
   get_aromatic_form(): string;
-  get_kekule_from(): string;
+  get_kekule_form(): string;
   get_new_coords(useCoordGen?: boolean): string;
   set_new_coords(useCoordGen?: boolean): boolean;
   remove_hs(): string;
@@ -83,6 +83,9 @@ export interface Reaction {
   get_svg_with_highlights(options?: string): string;
   draw_to_canvas_with_offset(): string;
   draw_to_canvas(canvas: HTMLCanvasElement, width: number, height: number): string;
-  draw_to_canvas_with_highlights(): string;
+  draw_to_canvas_with_highlights(canvas: HTMLCanvasElement, details: string): string;
+  
+   /** Reclaims the memory used for that molecule. */
+   delete(): void;
 }
 

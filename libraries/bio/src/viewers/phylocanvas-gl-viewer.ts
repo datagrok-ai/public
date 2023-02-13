@@ -37,7 +37,11 @@ export interface IPhylocanvasGlViewer extends IViewer {
 //   get onAfterRender(): Observable<HTMLCanvasElement>;
 // }
 
-export type PhylocanvasGlTask = { name: string, backColor: number, props: { [propName: string]: any }, onAfterRender: CanvasCallback };
+export type PhylocanvasGlTask = {
+  name: string,
+  backColor: number, props: { [propName: string]: any },
+  onAfterRender: CanvasCallback
+};
 
 export type CanvasCallback = (canvas: HTMLCanvasElement) => void;
 
@@ -68,6 +72,7 @@ export async function getPhylocanvasGlService(): Promise<PhylocanvasGlServiceBas
   if (funcList.length === 0)
     throw new Error('Package "PhyloTreeViewer"" must be installed for PhylocanvasGL services.');
 
-  const svc: PhylocanvasGlServiceBase = (await funcList[0].prepare().call()).getOutputParamValue() as PhylocanvasGlServiceBase;
+  const svc: PhylocanvasGlServiceBase = (await funcList[0].prepare().call())
+    .getOutputParamValue() as PhylocanvasGlServiceBase;
   return svc;
 }

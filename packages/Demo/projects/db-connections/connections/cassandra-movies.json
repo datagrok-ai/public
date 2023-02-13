@@ -1,0 +1,21 @@
+{
+  "#type": "DataConnection",
+  "name": "CassandraMovieLens",
+  "friendlyName": "MovieLens",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "port": 29042,
+    "db": "movielens"
+  },
+  "credentials": {
+    "parameters": {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "Cassandra",
+  "description": "MovieLens sample database",
+  "tags": [
+    "demo"
+  ]
+}

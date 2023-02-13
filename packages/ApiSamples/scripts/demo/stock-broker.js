@@ -18,8 +18,7 @@ function runStockBroker() {
   df.columns.addNew('up', DG.TYPE.STRING);
 
   let addMilliseconds = function (time, ms) {
-    time.setMilliseconds(time.getMilliseconds() + ms);
-    return time;
+    return dayjs(time).add(ms, 'millisecond').toDate();
   };
 
   let tick = 20; // ms
@@ -30,7 +29,7 @@ function runStockBroker() {
     return v;
   };
   let upDown = () => Math.random() > 0.5 ? '▲' : '▼';
-  let getValues = (symbol, time) => [symbol, DG.DateTime.fromDate(time).d, next(symbol), Math.round(Math.random() * 10000), upDown()];
+  let getValues = (symbol, time) => [symbol, dayjs(time).toDate().toLocaleString('en-US'), next(symbol), Math.round(Math.random() * 10000), upDown()];
 
   let addTick = function (time) {
     for (let symbol in tickers)

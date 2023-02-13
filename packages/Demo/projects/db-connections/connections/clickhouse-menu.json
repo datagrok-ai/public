@@ -1,0 +1,21 @@
+{
+  "#type": "DataConnection",
+  "name": "ClickHouseMenu",
+  "friendlyName": "Menu",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "db": "menu",
+    "port": 28125
+  },
+  "credentials": {
+    "parameters": {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "ClickHouse",
+  "description": "Menu sample database",
+  "tags": [
+    "demo"
+  ]
+}

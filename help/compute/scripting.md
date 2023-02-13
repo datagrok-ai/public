@@ -1,7 +1,6 @@
-<!-- TITLE: Scripting -->
-<!-- SUBTITLE: -->
-
-# Scripting
+---
+title: "Scripting"
+---
 
 Scripting is an integration mechanism with languages for statistical/mathematical computing. Scripting combines fast
 interactive visualizations and other features of the Datagrok platform with thousands of statistical packages and
@@ -85,7 +84,7 @@ First of all, a script can be executed right from the script editor (see picture
 
 Other ways involve saving the script as a part of a [package](../develop/develop.md#packages). In this case, it gets
 registered in the platform as a
-[function](../datagrok/functions/function.md), and can be invoked in different ways:
+[function](../datagrok/functions/functions.md), and can be invoked in different ways:
 
 * From the [console](../datagrok/navigation.md#console)
 * From the [data job](../access/data-job.md)
@@ -98,7 +97,7 @@ When a function is invoked with no explicitly specified parameters, a dialog is 
 by creating editors for each parameter. Depending on the metadata associated with the parameters, the editor can be
 enriched by [validators](#parameter-validators), [choices](#parameter-choices),
 and [suggestions](#parameter-suggestions). Validators, choices, and suggestions are
-[functions](../datagrok/functions/function.md), that means they can be implemented in different ways (db query, script,
+[functions](../datagrok/functions/functions.md), that means they can be implemented in different ways (db query, script,
 etc), and reused.
 
 Registered scripts can be called via [JavaScript API](../develop/js-api.md) in the following manner:
@@ -154,7 +153,7 @@ Configurations are stored in the same repository with the script, in the folder 
 [example of such configuration](https://github.com/datagrok-ai/public/tree/master/environments)
 for the [Datagrok public repository](https://github.com/datagrok-ai/public). Also, a package can define its own
 configurations as well (
-[see examples](https://github.com/datagrok-ai/public/tree/master/packages/Demo/projects/scripts)).
+[see examples](https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts)).
 
 If the `#environment` tag in the script header is not specified, the script uses the configuration defined in
 [`default.yaml`](https://github.com/datagrok-ai/public/blob/master/environments/default.yaml).
@@ -257,7 +256,7 @@ script in a temporary folder with a unique name. This folder becomes an
 _renv_ project folder for the current run of the script.
 
 Start using _renv_ by initializing it and installing packages (see a
-[full example](https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/projects/r/scripts/renv_spelling.R)):
+[full example](https://github.com/datagrok-ai/public/blob/master/packages/Demo/scripts/r/renv_spelling.R)):
 
 ```
 #language: r
@@ -559,5 +558,5 @@ See also:
 * [JavaScript](https://www.javascript.com)
 * [Packages](../develop/develop.md#packages)
 * [JavaScript API](../develop/js-api.md)
-* [Functions](../datagrok/functions/function.md)
+* [Functions](../datagrok/functions/functions.md)
 * [Function call](../datagrok/functions/function-call.md)

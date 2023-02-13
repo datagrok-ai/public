@@ -37,8 +37,13 @@ $(function () {
   (<any>window).wu = wu;
 
   window.addEventListener("error", function (e) {
-    (<any>window).grok_Unhandled_Error(e.error.message, e.error.stack);
-    e.preventDefault();
+    if (e.error?.message == '[object ProgressEvent]')
+      return;
+    if ((<any>window).grok_Unhandled_Error != undefined) {
+      e.preventDefault();
+      e.stopPropagation();
+      (<any>window).grok_Unhandled_Error(e.error?.message ?? e.error ?? e.message ?? e, e.error?.stack);
+    }
   });
 
 });

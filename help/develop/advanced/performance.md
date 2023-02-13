@@ -1,7 +1,6 @@
-<!-- TITLE: Performance -->
-<!-- SUBTITLE: -->
-
-# Performance
+---
+title: "Performance"
+---
 
 The importance of performance cannot be overstated. A modern system should be capable of working with hundreds of
 millions of data points, and every bit of performance counts. Memory consumption and latency fall in the same category.
@@ -38,7 +37,7 @@ purpose of exploratory data analysis, interactive visualizations, and machine le
 * Built-in intelligent CSV parser
   * Automatically handles delimiters and comments
   * Adaptive reading: makes one very fast pass to find out some features about the file (whether or not it has quotes,
-      multilines, etc.) and chooses the strategy accordingly
+    multilines, etc.) and chooses the strategy accordingly
   * Adjusts strategy for performance/memory as it reads
   * Smart parsing of dates
   * Multithreaded parsing
@@ -50,7 +49,7 @@ purpose of exploratory data analysis, interactive visualizations, and machine le
   * Default natural sorting for strings (“study2” comes before “study10”)
   * Built-in custom category sorting (ex: Mon, Tue, Wed, Thurs, Fri, Sat, Sun)
   * Ability to pass custom comparison function that will also be used by the rest of the engine (
-      sorting, aggregations, grouping, etc.)
+    sorting, aggregations, grouping, etc.)
 * Built-in high-performance descriptive statistics
   * Counts, min, max, sum, avg, med, avg, stdev, q1, q2, q3
   * All stats calculated in one pass where possible
@@ -67,11 +66,12 @@ purpose of exploratory data analysis, interactive visualizations, and machine le
 * Metadata on column and data frame levels (units, quality, auto-formatting, etc.)
 * Change notifications
   * A custom eventing mechanism used across the whole platform allows for easy listening to, aggregation, filtering,
-      routing, and logging events.
+    routing, and logging events.
 
 ## Viewers
 
-Just like the in-memory database, our [viewers](../../visualize/viewers.md) were built from scratch for the purpose of
+Just like the in-memory database, our [viewers](../../visualize/viewers/viewers.md) were built from scratch for the
+purpose of
 being able to interactively work with millions of data points at once. All of them make heavy use of the in-memory
 database. The ability to use that engine unlocks unique possibilities for viewers, such as easy data aggregations or
 passing data to web workers for multithreaded rendering. All viewers access the same data, so no copies are made, they
@@ -87,24 +87,24 @@ certain tasks.
   * Fast, extensible, annotated aggregation functions that work across all viewers
 * High-performance rendering
   * Choosing the best option for rendering (HTML / canvas / svg / WebGL) based on the viewer’s distinctive features,
-      without compromising performance. The stretch goal is for all viewers to be able to visualize billion rows (
-      certain viewers will resort to auto-sampling in order to still be interactive during the data exploration stage).
-      Many viewers utilize hybrid rendering systems, i.e. svg for high-level controls and canvas for performance and
-      memory consumption reasons
+    without compromising performance. The stretch goal is for all viewers to be able to visualize billion rows (
+    certain viewers will resort to auto-sampling in order to still be interactive during the data exploration stage).
+    Many viewers utilize hybrid rendering systems, i.e. svg for high-level controls and canvas for performance and
+    memory consumption reasons
   * Immediate-mode canvas rendering
   * Renders millions of primitives quickly
     * Adaptive marker rendering - switches between drawing directly on canvas, rendering from cache, or rendering
-          into array of bytes. This is transparent to viewers’ code.
+      into array of bytes. This is transparent to viewers’ code.
   * Multi-threaded rendering
   * WebGL-accelerated rendering with custom shaders (coming soon)
   * Adaptive rendering behavior - the system keeps track of how long it took each viewer to render and optimizes
-      accordingly - for instance, “fast” viewers are rendered first, and “slow” viewers are not re-rendered while a
-      slider is being dragged.
+    accordingly - for instance, “fast” viewers are rendered first, and “slow” viewers are not re-rendered while a
+    slider is being dragged.
 * Interactivity and synchronization
   * Current row, mouse-over row, current column, mouse-over column, mouse-over row group
 * Viewers as first-class citizens
   * Register, query, instantiate, attach to data source, add to view, use as a tooltip for row groups, render viewers
-      dynamically. Usage example: full-screen mode that applies to all viewers.
+    dynamically. Usage example: full-screen mode that applies to all viewers.
   * Viewer descriptors: name, tooltip, best size/position, type of accepted data
 * Properties infrastructure
   * Persistence
@@ -123,8 +123,8 @@ certain tasks.
 * Clean functional decomposition
   * Clean separation between settings and viewer fields
   * Each viewer consists of three main classes - core, look, and meta. Each of them can be accessed dynamically, which
-      allows to operate on categories of entities. This dramatically increases code reuse and allows for complex
-      customizations to be implemented very easily.
+    allows to operate on categories of entities. This dramatically increases code reuse and allows for complex
+    customizations to be implemented very easily.
 * Share common base, utilize the same tricks, same naming conventions
   * Dense, straight-to-business, and easy-to-understand code
   * Data-aware axes across all viewers (adaptive resolution for time series)
@@ -151,8 +151,8 @@ certain tasks.
   * Drag any objects (users, scripts, tables, statistics, viewers, etc.)
 * Composable rendering
   * Many controls, such as histogram, are capable on rendering themselves on a canvas that is owned by another viewer.
-      That allows for a lightweight, memory-efficient rendering of complex scenes (
-      ex: histograms on line chart)
+    That allows for a lightweight, memory-efficient rendering of complex scenes (
+    ex: histograms on line chart)
 * Event bus for common viewer events for decoupling and easier event handling
 * Filters
   * Collaborative - each filter has a say in determining whether the row passes filter
@@ -170,7 +170,7 @@ certain tasks.
 * Flex tooltips
   * Row tooltips: Ability to select columns to show on a tooltip (including row viewers)
   * Row group tooltip: Use any viewer as a tooltip (for example, when mouse is over a particular histogram bin, the
-      tooltip contains a scatter plot with values that fall in that bin)
+    tooltip contains a scatter plot with values that fall in that bin)
   * Object tooltip (users, etc.)
 
 ### Videos
@@ -180,4 +180,4 @@ certain tasks.
 See also:
 
 * [Exploratory data analysis](../../explore/exploratory-data-analysis.md)
-* [Viewers](../../visualize/viewers.md)
+* [Viewers](../../visualize/viewers/viewers.md)

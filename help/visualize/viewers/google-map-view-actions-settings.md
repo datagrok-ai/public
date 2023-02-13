@@ -1,7 +1,6 @@
-<!-- TITLE: Google Map view action settings -->
-<!-- SUBTITLE: -->
-
-# Google Map view action settings
+---
+title: "Google Map view action settings"
+---
 
 Allows to link actions to map and show estimated parameters on cursor.
 
@@ -19,7 +18,7 @@ Actions can be set for:
 
 ## Prediction
 
-Predicts parameter using predicted model selected in "Model" parameter. Description of model available on Property panel
+Predicts parameter using predicted model selected in "Model" parameter. Description of model available on Context panel
 after selection.
 
 ## Demographics statistics

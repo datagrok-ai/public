@@ -1,11 +1,13 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-import * as bio from '@datagrok-libraries/bio';
 
 import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 
 import {ConverterFunc} from './types';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 // import {mmSemType} from '../const';
 // import {importFasta} from '../package';
@@ -132,12 +134,12 @@ RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$
     return _csvDfs[key];
   };
 
-  function converter(tgtNotation: bio.NOTATION, tgtSeparator: string | null = null): ConverterFunc {
-    if (tgtNotation === bio.NOTATION.SEPARATOR && !tgtSeparator)
+  function converter(tgtNotation: NOTATION, tgtSeparator: string | null = null): ConverterFunc {
+    if (tgtNotation === NOTATION.SEPARATOR && !tgtSeparator)
       throw new Error(`Argument 'separator' is missed for notation '${tgtNotation.toString()}'.`);
 
     return function(srcCol: DG.Column): DG.Column {
-      const converter = new bio.NotationConverter(srcCol);
+      const converter = new NotationConverter(srcCol);
       const resCol = converter.convert(tgtNotation, tgtSeparator);
       expect(resCol.getTag('units'), tgtNotation);
       return resCol;
@@ -156,100 +158,100 @@ RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$
     const tgtCol: DG.Column = tgtDf.getCol('seq');
 
     expectArray(resCol.toList(), tgtCol.toList());
-    const uh: bio.UnitsHandler = new bio.UnitsHandler(resCol);
+    const uh: UnitsHandler = new UnitsHandler(resCol);
   }
 
   // FASTA tests
   // fasta -> separator
   test('testFastaPtToSeparator', async () => {
-    await _testConvert(Samples.fastaPt, converter(bio.NOTATION.SEPARATOR, '-'), Samples.separatorPt);
+    await _testConvert(Samples.fastaPt, converter(NOTATION.SEPARATOR, '-'), Samples.separatorPt);
   });
   test('testFastaDnaToSeparator', async () => {
-    await _testConvert(Samples.fastaDna, converter(bio.NOTATION.SEPARATOR, '/'), Samples.separatorDna);
+    await _testConvert(Samples.fastaDna, converter(NOTATION.SEPARATOR, '/'), Samples.separatorDna);
   });
   test('testFastaRnaToSeparator', async () => {
-    await _testConvert(Samples.fastaRna, converter(bio.NOTATION.SEPARATOR, '*'), Samples.separatorRna);
+    await _testConvert(Samples.fastaRna, converter(NOTATION.SEPARATOR, '*'), Samples.separatorRna);
   });
   test('testFastaGapsToSeparator', async () => {
-    await _testConvert(Samples.fastaGaps, converter(bio.NOTATION.SEPARATOR, '/'), Samples.separatorGaps);
+    await _testConvert(Samples.fastaGaps, converter(NOTATION.SEPARATOR, '/'), Samples.separatorGaps);
   });
 
   // fasta -> helm
   test('testFastaPtToHelm', async () => {
-    await _testConvert(Samples.fastaPt, converter(bio.NOTATION.HELM), Samples.helmPt);
+    await _testConvert(Samples.fastaPt, converter(NOTATION.HELM), Samples.helmPt);
   });
   test('testFastaDnaToHelm', async () => {
-    await _testConvert(Samples.fastaDna, converter(bio.NOTATION.HELM), Samples.helmDna);
+    await _testConvert(Samples.fastaDna, converter(NOTATION.HELM), Samples.helmDna);
   });
   test('testFastaRnaToHelm', async () => {
-    await _testConvert(Samples.fastaRna, converter(bio.NOTATION.HELM), Samples.helmRna);
+    await _testConvert(Samples.fastaRna, converter(NOTATION.HELM), Samples.helmRna);
   });
   test('testFastaGapsToHelm', async () => {
-    await _testConvert(Samples.fastaGaps, converter(bio.NOTATION.HELM), Samples.helmGaps);
+    await _testConvert(Samples.fastaGaps, converter(NOTATION.HELM), Samples.helmGaps);
   });
 
 
   // SEPARATOR tests
   // separator -> fasta
   test('testSeparatorPtToFasta', async () => {
-    await _testConvert(Samples.separatorPt, converter(bio.NOTATION.FASTA), Samples.fastaPt);
+    await _testConvert(Samples.separatorPt, converter(NOTATION.FASTA), Samples.fastaPt);
   });
   test('testSeparatorDnaToFasta', async () => {
-    await _testConvert(Samples.separatorDna, converter(bio.NOTATION.FASTA), Samples.fastaDna);
+    await _testConvert(Samples.separatorDna, converter(NOTATION.FASTA), Samples.fastaDna);
   });
   test('testSeparatorRnaToFasta', async () => {
-    await _testConvert(Samples.separatorRna, converter(bio.NOTATION.FASTA), Samples.fastaRna);
+    await _testConvert(Samples.separatorRna, converter(NOTATION.FASTA), Samples.fastaRna);
   });
   test('testSeparatorGapsToFasta', async () => {
-    await _testConvert(Samples.separatorGaps, converter(bio.NOTATION.FASTA), Samples.fastaGaps);
+    await _testConvert(Samples.separatorGaps, converter(NOTATION.FASTA), Samples.fastaGaps);
   });
 
   // separator -> helm
   test('testSeparatorPtToHelm', async () => {
-    await _testConvert(Samples.separatorPt, converter(bio.NOTATION.HELM), Samples.helmPt);
+    await _testConvert(Samples.separatorPt, converter(NOTATION.HELM), Samples.helmPt);
   });
   test('testSeparatorDnaToHelm', async () => {
-    await _testConvert(Samples.separatorDna, converter(bio.NOTATION.HELM), Samples.helmDna);
+    await _testConvert(Samples.separatorDna, converter(NOTATION.HELM), Samples.helmDna);
   });
   test('testSeparatorRnaToHelm', async () => {
-    await _testConvert(Samples.separatorRna, converter(bio.NOTATION.HELM), Samples.helmRna);
+    await _testConvert(Samples.separatorRna, converter(NOTATION.HELM), Samples.helmRna);
   });
   test('testSeparatorGapsToHelm', async () => {
-    await _testConvert(Samples.separatorGaps, converter(bio.NOTATION.HELM), Samples.helmGaps);
+    await _testConvert(Samples.separatorGaps, converter(NOTATION.HELM), Samples.helmGaps);
   });
 
 
   // HELM tests
   // helm -> fasta
   test('testHelmDnaToFasta', async () => {
-    await _testConvert(Samples.helmDna, converter(bio.NOTATION.FASTA), Samples.fastaDna);
+    await _testConvert(Samples.helmDna, converter(NOTATION.FASTA), Samples.fastaDna);
   });
   test('testHelmRnaToFasta', async () => {
-    await _testConvert(Samples.helmRna, converter(bio.NOTATION.FASTA), Samples.fastaRna);
+    await _testConvert(Samples.helmRna, converter(NOTATION.FASTA), Samples.fastaRna);
   });
   test('testHelmPtToFasta', async () => {
-    await _testConvert(Samples.helmPt, converter(bio.NOTATION.FASTA), Samples.fastaPt);
+    await _testConvert(Samples.helmPt, converter(NOTATION.FASTA), Samples.fastaPt);
   });
 
   // helm -> separator
   test('testHelmDnaToSeparator', async () => {
-    await _testConvert(Samples.helmDna, converter(bio.NOTATION.SEPARATOR, '/'), Samples.separatorDna);
+    await _testConvert(Samples.helmDna, converter(NOTATION.SEPARATOR, '/'), Samples.separatorDna);
   });
   test('testHelmRnaToSeparator', async () => {
-    await _testConvert(Samples.helmRna, converter(bio.NOTATION.SEPARATOR, '*'), Samples.separatorRna);
+    await _testConvert(Samples.helmRna, converter(NOTATION.SEPARATOR, '*'), Samples.separatorRna);
   });
   test('testHelmPtToSeparator', async () => {
-    await _testConvert(Samples.helmPt, converter(bio.NOTATION.SEPARATOR, '-'), Samples.separatorPt);
+    await _testConvert(Samples.helmPt, converter(NOTATION.SEPARATOR, '-'), Samples.separatorPt);
   });
 
   // helm miscellaneous
   test('testHelmLoneRibose', async () => {
-    await _testConvert(Samples.helmLoneRibose, converter(bio.NOTATION.FASTA), Samples.fastaRna);
+    await _testConvert(Samples.helmLoneRibose, converter(NOTATION.FASTA), Samples.fastaRna);
   });
   test('testHelmLoneDeoxyribose', async () => {
-    await _testConvert(Samples.helmLoneDeoxyribose, converter(bio.NOTATION.SEPARATOR, '/'), Samples.separatorDna);
+    await _testConvert(Samples.helmLoneDeoxyribose, converter(NOTATION.SEPARATOR, '/'), Samples.separatorDna);
   });
   test('testHelmLonePhosphorus', async () => {
-    await _testConvert(Samples.helmLonePhosphorus, converter(bio.NOTATION.FASTA), Samples.fastaRna);
+    await _testConvert(Samples.helmLonePhosphorus, converter(NOTATION.FASTA), Samples.fastaRna);
   });
 });

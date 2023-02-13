@@ -1,7 +1,6 @@
-<!-- TITLE: Frontend -->
-<!-- SUBTITLE: -->
-
-# Frontend track: exercises
+---
+title: "Frontend"
+---
 
 The Frontend track teaches you how to create production-grade Datagrok applications. Before proceeding to exercises,
 make sure you are ready for it:

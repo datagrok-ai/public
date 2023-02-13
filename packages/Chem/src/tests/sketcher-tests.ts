@@ -1,4 +1,4 @@
-import {category, expect, test, before, after, testEvent, delay} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test, before, after, testEvent, delay, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -53,7 +53,7 @@ Accelrys05311914342D 1   1.00000     0.00000     0
 M  CHG  2   9   1  11  -1
 M  END`
 
-category('sketcher testing', () => {
+ category('sketcher testing', () => {
 
   let rdkitModule: any;
   let funcs: DG.Func[];
@@ -93,18 +93,6 @@ category('sketcher testing', () => {
 
 });
 
-async function initSketcher(sw: Sketcher) {
-  const t = new Promise(async (resolve, reject) => {
-    sw.sketcherCreated.subscribe(async (_: any) => {
-      try {
-        resolve(true);
-      } catch (error) {
-        reject(error);
-      }
-    });
-  });
-  await t;
-}
 
 function compareTwoMols(rdkitModule: any, mol: any, resMolfile: any) {
   const mol2 = rdkitModule.get_mol(resMolfile);
@@ -121,12 +109,10 @@ async function testSmarts(rdkitModule: any, funcs: DG.Func[]) {
   for (const func of funcs) {
     if (func.name === 'chemDrawSketcher')
       continue;
-    await window.localStorage.setItem('sketcher', func.name);
+    chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
-    if (!s.sketcher)
-      await initSketcher(s);
-    setTimeout(()=> {s.setSmarts(convertedSmarts)}, 1000);
+    await awaitCheck(() => s.sketcher !== null, undefined, 5000);
     const t = new Promise((resolve, reject) => {
       s.sketcher!.onChanged.subscribe(async (_: any) => {
         try {
@@ -137,6 +123,7 @@ async function testSmarts(rdkitModule: any, funcs: DG.Func[]) {
         }
       });
     });
+    setTimeout(()=> {s.setSmarts(convertedSmarts)}, 1000);
     const resSmarts = await t;
     const qmol2 = rdkitModule.get_qmol(resSmarts);
     const match1 = mol.get_substruct_match(qmol2);
@@ -154,17 +141,10 @@ async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean) {
   for (const func of funcs) {
     if (func.name === 'chemDrawSketcher')
       continue;
-    await window.localStorage.setItem('sketcher', func.name);
+    chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
-    if (!s.sketcher)
-      await initSketcher(s);
-    if (input) {
-      s.molInput.value = exampleSmiles;
-      s.molInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-    } else {
-      setTimeout(() => {s.setSmiles(exampleSmiles)}, 1000);
-    }
+    await awaitCheck(() => s.sketcher !== null, undefined, 5000);
     const t = new Promise((resolve, reject) => {
       s.sketcher!.onChanged.subscribe(async (_: any) => {
         try {
@@ -175,6 +155,14 @@ async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean) {
         }
       });
     });
+    if (input) {
+      setTimeout(() => {
+        s.molInput.value = exampleSmiles;
+        s.molInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      }, 1000);
+    } else {
+      setTimeout(() => {s.setSmiles(exampleSmiles)}, 1000);
+    }
     const resMolblock = await t;
     compareTwoMols(rdkitModule, mol, resMolblock);
     d.close();
@@ -189,11 +177,20 @@ async function testMolV2000(rdkitModule: any, funcs: DG.Func[], input?: boolean)
   for (const func of funcs) {
     if (func.name === 'chemDrawSketcher')
       continue;
-    await window.localStorage.setItem('sketcher', func.name);
+    chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
-    if (!s.sketcher)
-      await initSketcher(s);
+    await awaitCheck(() => s.sketcher !== null, undefined, 5000);
+    const t = new Promise((resolve, reject) => {
+      s.sketcher!.onChanged.subscribe(async (_: any) => {
+        try {
+          const resultMol = s.getMolFile();
+          resolve(resultMol);
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
     if (input) {
       setTimeout(() => {
         let dT = null;
@@ -206,16 +203,6 @@ async function testMolV2000(rdkitModule: any, funcs: DG.Func[], input?: boolean)
     } else {
       setTimeout(() => {s.setMolFile(molfileV2000)}, 1000);
     }
-    const t = new Promise((resolve, reject) => {
-      s.sketcher!.onChanged.subscribe(async (_: any) => {
-        try {
-          const resultMol = s.getMolFile();
-          resolve(resultMol);
-        } catch (error) {
-          reject(error);
-        }
-      });
-    });
     const resMolblock = await t;
     compareTwoMols(rdkitModule, mol, resMolblock);
     d.close();
@@ -228,30 +215,16 @@ async function testInchi(rdkitModule: any, funcs: DG.Func[]) {
   for (const func of funcs) {
     if (func.name === 'chemDrawSketcher')
       continue;
-    await window.localStorage.setItem('sketcher', func.name);
+    chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
-    if (!s.sketcher)
-      await initSketcher(s);
+    await awaitCheck(() => s.sketcher !== null, undefined, 5000);
     s.molInput.value = exampleInchi;
-    //s.molInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-    // const t = new Promise((resolve, reject) => {
-    //   s.sketcher!.onChanged.subscribe(async (_: any) => {
-    //     try {
-    //       const resultMol = s.getMolFile();
-    //       resolve(resultMol);
-    //     } catch (error) {
-    //       reject(error);
-    //     }
-    //   });
-    // });
     await delay(5000);
-    await testEvent(s.sketcher!.onChanged,
+    await testEvent(s.onChanged,
                     () => {compareTwoMols(rdkitModule, mol, s.getMolFile())}, 
-                    () => {s.molInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))}, 5000);
-    // const resMolblock = await t;
-    // compareTwoMols(rdkitModule, mol, resMolblock);
+                    () => {s.molInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))}, 10000);
     d.close();
   }
   mol?.delete();
-}
+} 

@@ -437,6 +437,8 @@ class Editor {
 
       /** Preparing the "Tooltip" panel */
       tooltipPane.append(this._inputTitle(itemIdx));
+      tooltipPane.append(this._inputShowLabels(itemIdx));
+      tooltipPane.append(this._inputShowDescriptionInTooltip(itemIdx));
       tooltipPane.append(this._inputDescription(itemIdx));
     }
 
@@ -464,7 +466,7 @@ class Editor {
 
     const elFormula = ibFormula.input as HTMLInputElement;
     elFormula.placeholder = 'Formula';
-    elFormula.setAttribute('style', 'width: 360px; height: 137px; margin-right: -6px;');
+    elFormula.setAttribute('style', 'width: 360px; height: 60px; margin-right: -6px;');
 
     ui.tools.initFormulaAccelerators(ibFormula, this._dataFrame);
 
@@ -606,6 +608,34 @@ class Editor {
     formTitleValue(elTitle.value);
 
     return ui.divH([this._ibTitle.root]);
+  }
+
+  /** Creates show on plot bool */
+  _inputShowLabels(itemIdx: number): HTMLElement {
+    const item = this.items[itemIdx];
+
+    const iShowLabels = ui.boolInput('Show on plot', item.showOnPlot ?? true,
+      (value: boolean) => {
+        item.showOnPlot = value;
+        this._onItemChangedAction(itemIdx);
+      });
+
+
+    return iShowLabels.root;
+  }
+
+  /** Creates show on plot bool */
+  _inputShowDescriptionInTooltip(itemIdx: number): HTMLElement {
+    const item = this.items[itemIdx];
+
+    const iShowLabels = ui.boolInput('Show on tooltip', item.showOnTooltip ?? true,
+      (value: boolean) => {
+        item.showOnTooltip = value;
+        this._onItemChangedAction(itemIdx);
+      });
+
+
+    return iShowLabels.root;
   }
 
   /** Creates textarea for item description */

@@ -1,7 +1,6 @@
-<!-- TITLE: 3D Scatter plot -->
-<!-- SUBTITLE: -->
-
-# 3D Scatter plot
+---
+title: "3D Scatter plot"
+---
 
 Use 3D scatter plot to plot data points on three axes to show the relationship between three variables. Each row in the
 data table is represented by a marker whose position depends on its values in the columns set on the X, Y, and Z axes.
@@ -27,5 +26,5 @@ See also:
 * [2D Scatter plot](scatter-plot.md)
 * [Column selectors](column-selectors.md)
 * [Table View](../../datagrok/table-view.md)
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [JS API: 3D Scatter plot](https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot-3d)

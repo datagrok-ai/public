@@ -1,6 +1,5 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 
@@ -9,6 +8,8 @@ import {convertDo} from '../utils/convert';
 import {SEM_TYPES, TAGS} from '../utils/constants';
 import {generateLongSequence, generateManySequences, performanceTest} from './utils/sequences-generators';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 category('renderers', () => {
   let tvList: DG.TableView[];
@@ -20,8 +21,9 @@ category('renderers', () => {
   });
 
   after(async () => {
-    dfList.forEach((df: DG.DataFrame) => { grok.shell.closeTable(df); });
-    tvList.forEach((tv: DG.TableView) => tv.close());
+    // Closing viewes and data frames leads to exception
+    // dfList.forEach((df: DG.DataFrame) => { grok.shell.closeTable(df); });
+    // tvList.forEach((tv: DG.TableView) => tv.close());
   });
 
   test('long sequence performance ', async () => {
@@ -103,7 +105,7 @@ category('renderers', () => {
   async function _rendererMacromoleculeDifference() {
     const seqDiffCol: DG.Column = DG.Column.fromStrings('SequencesDiff',
       ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
-    seqDiffCol.tags[DG.TAGS.UNITS] = bio.NOTATION.SEPARATOR;
+    seqDiffCol.tags[DG.TAGS.UNITS] = NOTATION.SEPARATOR;
     seqDiffCol.tags[TAGS.SEPARATOR] = '/';
     seqDiffCol.semType = SEM_TYPES.MACROMOLECULE_DIFFERENCE;
     const df = DG.DataFrame.fromColumns([seqDiffCol]);
@@ -138,22 +140,22 @@ category('renderers', () => {
       `semType="${srcSeqCol!.semType}", units="${srcSeqCol!.getTag(DG.TAGS.UNITS)}", ` +
       `cell.renderer="${srcSeqCol!.getTag(DG.TAGS.CELL_RENDERER)}"`);
     expect(srcSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
-    expect(srcSeqCol.getTag(DG.TAGS.UNITS), bio.NOTATION.FASTA);
-    expect(srcSeqCol.getTag(bio.TAGS.aligned), bio.ALIGNMENT.SEQ);
-    expect(srcSeqCol.getTag(bio.TAGS.alphabet), bio.ALPHABET.PT);
+    expect(srcSeqCol.getTag(DG.TAGS.UNITS), NOTATION.FASTA);
+    expect(srcSeqCol.getTag(bioTAGS.aligned), ALIGNMENT.SEQ);
+    expect(srcSeqCol.getTag(bioTAGS.alphabet), ALPHABET.PT);
     expect(srcSeqCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
 
     const msaSeqCol: DG.Column = (await multipleSequenceAlignmentAny(df, srcSeqCol!))!;
     tv.grid.invalidate();
 
     expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
-    expect(msaSeqCol.getTag(DG.TAGS.UNITS), bio.NOTATION.FASTA);
-    expect(msaSeqCol.getTag(bio.TAGS.aligned), bio.ALIGNMENT.SEQ_MSA);
-    expect(msaSeqCol.getTag(bio.TAGS.alphabet), bio.ALPHABET.PT);
+    expect(msaSeqCol.getTag(DG.TAGS.UNITS), NOTATION.FASTA);
+    expect(msaSeqCol.getTag(bioTAGS.aligned), ALIGNMENT.SEQ_MSA);
+    expect(msaSeqCol.getTag(bioTAGS.alphabet), ALPHABET.PT);
     expect(msaSeqCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
 
     // check newColumn with UnitsHandler constructor
-    const uh: bio.UnitsHandler = new bio.UnitsHandler(msaSeqCol);
+    const uh: UnitsHandler = new UnitsHandler(msaSeqCol);
 
     dfList.push(df);
     tvList.push(tv);
@@ -175,13 +177,13 @@ category('renderers', () => {
     tvList.push(tv);
     dfList.push(df);
 
-    const tgtCol: DG.Column = await convertDo(srcCol, bio.NOTATION.SEPARATOR, '/');
+    const tgtCol: DG.Column = await convertDo(srcCol, NOTATION.SEPARATOR, '/');
 
     const resCellRenderer = tgtCol.getTag(DG.TAGS.CELL_RENDERER);
     expect(resCellRenderer, 'sequence');
 
     // check tgtCol with UnitsHandler constructor
-    const uh: bio.UnitsHandler = new bio.UnitsHandler(tgtCol);
+    const uh: UnitsHandler = new UnitsHandler(tgtCol);
   }
 
   async function _selectRendererBySemType() {
@@ -190,7 +192,7 @@ category('renderers', () => {
     /**/
     const seqDiffCol: DG.Column = DG.Column.fromStrings('SequencesDiff',
       ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
-    seqDiffCol.tags[DG.TAGS.UNITS] = bio.NOTATION.SEPARATOR;
+    seqDiffCol.tags[DG.TAGS.UNITS] = NOTATION.SEPARATOR;
     seqDiffCol.tags[TAGS.SEPARATOR] = '/';
     seqDiffCol.semType = SEM_TYPES.MACROMOLECULE_DIFFERENCE;
     const df = DG.DataFrame.fromColumns([seqDiffCol]);
@@ -200,10 +202,11 @@ category('renderers', () => {
 
     await delay(100);
     const renderer = seqDiffCol.getTag(DG.TAGS.CELL_RENDERER);
-    if (renderer !== 'MacromoleculeDifference') // this is value of MacromoleculeDifferenceCR.cellType
+    if (renderer !== 'MacromoleculeDifference') { // this is value of MacromoleculeDifferenceCR.cellType
       throw new Error(`Units 'separator', separator '/' and semType 'MacromoleculeDifference' ` +
         `have been manually set on column but after df was added as table, ` +
         `view renderer has set to '${renderer}' instead of correct 'MacromoleculeDifference'.`);
+    }
   }
 
   /** GROK-11212 Do not overwrite / recalculate 'cell.renderer' tag that has been set programmatically
@@ -211,7 +214,7 @@ category('renderers', () => {
   async function _setRendererManually() {
     const seqDiffCol: DG.Column = DG.Column.fromStrings('SequencesDiff',
       ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
-    seqDiffCol.tags[DG.TAGS.UNITS] = bio.NOTATION.SEPARATOR;
+    seqDiffCol.tags[DG.TAGS.UNITS] = NOTATION.SEPARATOR;
     seqDiffCol.tags[TAGS.SEPARATOR] = '/';
     seqDiffCol.semType = SEM_TYPES.MACROMOLECULE;
     const tgtCellRenderer = 'MacromoleculeDifference';
@@ -224,9 +227,10 @@ category('renderers', () => {
 
     await delay(100);
     const resCellRenderer = seqDiffCol.getTag(DG.TAGS.CELL_RENDERER);
-    if (resCellRenderer !== tgtCellRenderer) // this is value of MacromoleculeDifferenceCR.cellType
+    if (resCellRenderer !== tgtCellRenderer) { // this is value of MacromoleculeDifferenceCR.cellType
       throw new Error(`Tag 'cell.renderer' has been manually set to '${tgtCellRenderer}' for column ` +
         `but after df was added as table, tag 'cell.renderer' has reset to '${resCellRenderer}' ` +
         `instead of manual '${tgtCellRenderer}'.`);
+    }
   }
 });

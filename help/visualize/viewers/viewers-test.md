@@ -3,7 +3,7 @@
 
 # Tests: Viewers
 
-A [viewer](../viewers.md) is a visual component associated with a table.
+A [viewer](../viewers/viewers.md) is a visual component associated with a table.
 
 List of viewers available for testing:
 
@@ -31,15 +31,15 @@ List of viewers available for testing:
 Approaches to testing, Testing scenarios, test items in general are similar for all viewers. Categories of testing
 scenarios common to all viewers were identified:
 
-1. Creating a [viewer](../viewers.md). (UX, tooltips, graphic icons, on-screen display):
+1. Creating a [viewer](../viewers/viewers.md). (UX, tooltips, graphic icons, on-screen display):
 
     * From toolbox
     * From menu "Add"
 
-2. Correct construction of created [viewer](../viewers.md). Here we look at the correspondence of the chosen viewer
+2. Correct construction of created [viewer](../viewers/viewers.md). Here we look at the correspondence of the chosen viewer
    type, correctness of construction from the point of view of math logic.
 
-3. Working with a [viewer](../viewers.md) window:
+3. Working with a [viewer](../viewers/viewers.md) window:
 
     * Moving the window by the workspace
     * Zoom in\Zoom out
@@ -130,7 +130,7 @@ scenarios common to all viewers were identified:
 
 7. Open properties for [Scatter Plot](../viewers/scatter-plot.md)
 
-    * Viewer properties are displayed on [Property Panel](../../datagrok/navigation.md#properties)
+    * Viewer properties are displayed on [Context Panel](../../datagrok/navigation.md#context-panel)
 
 8. Check performance and impact of changing properties on [Scatter Plot](../viewers/scatter-plot.md)
 
@@ -180,4 +180,4 @@ scenarios common to all viewers were identified:
 
 See also:
 
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)

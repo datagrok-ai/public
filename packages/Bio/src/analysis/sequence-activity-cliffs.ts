@@ -1,7 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {getSimilarityFromDistance} from '@datagrok-libraries/ml/src/distance-metrics-methods';
@@ -11,6 +10,7 @@ import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
 import * as C from '../utils/constants';
 import {GridColumn} from 'datagrok-api/dg';
 import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
+import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export async function getDistances(col: DG.Column, seq: string): Promise<Array<number>> {
   const stringArray = col.toList();
@@ -105,7 +105,7 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
   const molDifferences: { [key: number]: HTMLCanvasElement } = {};
   const units = params.seqCol.getTag(DG.TAGS.UNITS);
   const separator = params.seqCol.getTag(TAGS.SEPARATOR);
-  const splitter = bio.getSplitter(units, separator);
+  const splitter = getSplitter(units, separator);
   const subParts1 = splitter(sequencesArray[0]);
   const subParts2 = splitter(sequencesArray[1]);
   const canvas = createDifferenceCanvas(subParts1, subParts2, units, molDifferences);

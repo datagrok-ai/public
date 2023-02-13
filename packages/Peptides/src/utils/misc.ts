@@ -1,3 +1,5 @@
+import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as C from './constants';
 import * as type from './types';
@@ -36,6 +38,7 @@ export function scaleActivity(activityCol: DG.Column<number>, scaling: string = 
   return scaledCol;
 }
 
+//TODO: optimize
 export function calculateSelected(df: DG.DataFrame): type.MonomerSelectionStats {
   const monomerColumns: DG.Column<string>[] = df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER);
   const selectedObj: type.MonomerSelectionStats = {};
@@ -54,10 +57,10 @@ export function calculateSelected(df: DG.DataFrame): type.MonomerSelectionStats 
   return selectedObj;
 }
 
-export function isGridCellInvalid(gc: DG.GridCell | null): boolean {
-  return !gc || !gc.cell.value || !gc.tableColumn || gc.tableRowIndex == null || gc.tableRowIndex == -1 ||
-    gc.cell.value == DG.INT_NULL || gc.cell.value == DG.FLOAT_NULL;
-}
+// export function isGridCellInvalid(gc: DG.GridCell | null): boolean {
+//   return !gc || !gc.cell.value || !gc.tableColumn || gc.tableRowIndex == null || gc.tableRowIndex == -1 ||
+//     gc.cell.value == DG.INT_NULL || gc.cell.value == DG.FLOAT_NULL;
+// }
 
 export function extractMonomerInfo(col: DG.Column<string>): type.RawColumn {
   return {
@@ -65,4 +68,13 @@ export function extractMonomerInfo(col: DG.Column<string>): type.RawColumn {
     cat: col.categories,
     rawData: col.getRawData(),
   };
+}
+
+export function wrapDistroAndStatsDefault(labels: HTMLDivElement, histRoot: HTMLElement, tableMap: StringDictionary,
+  isTooltip: boolean = false): HTMLDivElement {
+  const result = ui.divV([labels, histRoot, ui.tableFromMap(tableMap)]);
+  result.style.minWidth = '200px';
+  if (isTooltip)
+    histRoot.style.maxHeight = '150px';
+  return result;
 }

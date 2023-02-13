@@ -1,7 +1,0 @@
-#name: GrokDup
-#description: Duplicates a string in Grok	
-#language: grok
-#tags: demo, test, selenium
-#input: string s
-#output: string res
-res = s + s

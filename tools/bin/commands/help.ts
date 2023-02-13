@@ -9,6 +9,8 @@ Commands:
     check     Check package content (function signatures, etc.)
     config    Create and manage config files
     create    Create a package
+    link      Link \`datagrok-api\` and libraries for local development
+    unlink    Revert \`grok link\`
     publish   Upload a package
     test      Run package tests
 
@@ -75,13 +77,12 @@ grok create <name>  Create a package in a folder with the specified name
 Please note that the package name may only include letters, numbers, underscores, or hyphens
 
 Options:
-[--eslint] [--ide] [--js|--ts] [--jest]
+[--eslint] [--ide] [--js|--ts]
 
 --eslint    Add a configuration for eslint
 --ide       Add an IDE-specific configuration for debugging (vscode)
 --js        Create a JavaScript package
 --ts        Create a TypeScript package (default)
---jest      Add a configuration for jest
 `;
 
 const HELP_PUBLISH = `
@@ -110,14 +111,30 @@ const HELP_TEST = `
 Usage: grok test
 
 Options:
-[--host]
+[--host] [--csv]
 
---host       Host alias as in the config file
+--host           Host alias as in the config file
+--csv            Save the test report in a CSV file
+--gui            Launch graphical interface (non-headless mode)
+--skip-build     Skip the package build step
+--skip-publish   Skip the package publication step
 
 Run package tests
 
 See instructions:
 https://datagrok.ai/help/develop/how-to/test-packages#local-testing
+`;
+
+const HELP_LINK = `
+Usage: grok link
+
+Link \`datagrok-api\` and libraries for local development
+`;
+
+const HELP_UNLINK = `
+Usage: grok unlink
+
+Revert \`grok link\`
 `;
 
 const HELP_MIGRATE = `
@@ -133,6 +150,8 @@ export const help = {
   check: HELP_CHECK,
   config: HELP_CONFIG,
   create: HELP_CREATE,
+  link: HELP_LINK,
+  unlink: HELP_UNLINK,
   publish: HELP_PUBLISH,
   test: HELP_TEST,
   help: HELP

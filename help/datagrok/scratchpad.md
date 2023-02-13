@@ -1,7 +1,6 @@
-<!-- TITLE: Scratchpad -->
-<!-- SUBTITLE: -->
-
-# Scratchpad
+---
+title: "Scratchpad"
+---
 
 Scratchpad is a default [Project](project.md) in the workspace, which is opened when you start the application. When you
 drag files into the platform, they end up in the Scratchpad.

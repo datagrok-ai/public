@@ -1,35 +1,32 @@
-import "../../css/choice_input.css";
+import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 
-import * as DG from "datagrok-api/dg";
-import * as ui from "datagrok-api/ui";
-import * as grok from "datagrok-api/grok";
+import '../../css/choice_input.css';
 
-import Choices from "choices.js";
-import {Group, InputBase} from "datagrok-api/dg";
+import Choices from 'choices.js';
 
 export class ChoiceInput {
   choices: Choices;
-  field: InputBase;
+  field: DG.InputBase;
 
-  static async construct () {
-   // @ts-ignore
-    let field = ui.choiceInput('Groups',[], []);
+  static async construct() {
+    const field = ui.choiceInput('Groups', [], []);
 
     field.input.setAttribute('multiple', '');
-    let choices = new Choices(field.input, {
+    const choices = new Choices(field.input, {
       addItems: true,
       removeItems: true,
       removeItemButton: true,
       searchEnabled: true,
       searchChoices: true,
-      itemSelectText: ''
+      itemSelectText: '',
     });
 
     field.input.addEventListener('search', async (event) => {
-      // @ts-ignore
-      let newGroups: Group[] = await grok.dapi.groups.getGroupsLookup(choices.input.value);
+      const newGroups: DG.Group[] = await grok.dapi.groups.getGroupsLookup(choices.input.value);
       choices.clearChoices();
-      choices.setChoices(() => newGroups.map((g: Group) => {
+      choices.setChoices(() => newGroups.map((g: DG.Group) => {
         return {value: g.name, label: g.name};
       }));
     });
@@ -38,15 +35,13 @@ export class ChoiceInput {
     return new ChoiceInput(choices, field);
   }
 
-  private constructor(choices: Choices, field: InputBase) {
+  private constructor(choices: Choices, field: DG.InputBase) {
     this.choices = choices;
     this.field = field;
   }
 
   getSelectedGroups() : string[] {
-    let users = [];
-    // @ts-ignore
-    users = this.choices?.getValue(true);
+    const users = this.choices?.getValue(true) as string[];
     if (users && users.length > 0)
       return users;
     else

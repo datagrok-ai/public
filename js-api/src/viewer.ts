@@ -174,7 +174,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     api.grok_Viewer_Set_HelpUrl(this.dart, s);
   }
 
-  static grid(t: DataFrame, options: object | null = null): Grid<interfaces.IGridLookSettings> {
+  static grid(t: DataFrame, options: object | null = null): Grid {
     return new DG.Grid(api.grok_Viewer_Grid(t.dart, _toJson(options)));
   }
 
@@ -455,6 +455,11 @@ export class LineChartViewer extends Viewer<interfaces.ILineChartLookSettings> {
 export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotLookSettings> {
   constructor(dart: any) {
     super(dart);
+  }
+
+  /** Rerender plot */
+  invalidateCanvas(): void{
+    api.grok_ScatterPlotViewer_InvalidateCanvas(this.dart);
   }
 
   /** Row hit test using canvas coords */

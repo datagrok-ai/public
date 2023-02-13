@@ -87,7 +87,7 @@ export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = f
 //output: widget result
 //condition: true
 export function chemblSubstructureSearchPanel(mol: string): DG.Widget {
-    return chemblSearchWidgetLocalDb(mol, true);
+    return mol ? chemblSearchWidgetLocalDb(mol, true) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: Chembl Similarity Search
@@ -96,7 +96,7 @@ export function chemblSubstructureSearchPanel(mol: string): DG.Widget {
 //output: widget result
 //condition: true
 export function chemblSimilaritySearchPanel(mol: string): DG.Widget {
-    return chemblSearchWidgetLocalDb(mol);
+    return mol ? chemblSearchWidgetLocalDb(mol) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: ChemblBrowser

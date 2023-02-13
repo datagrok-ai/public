@@ -19,12 +19,14 @@ category('DataFrame', () => {
     return df;
   };
 
+  /*
   test('byte array', async () => {
     const t = grok.data.testData('demog');
-    //const data = t.toByteArray();
-    //const t2 = DG.DataFrame.fromByteArray(data);
-    //expect(t.toCsv(), t2.toCsv());
+    const data = t.toByteArray();
+    const t2 = DG.DataFrame.fromByteArray(data);
+    expect(t.toCsv(), t2.toCsv());
   });
+  */
 
   test('create from arrays', async () => {
     DG.DataFrame.fromColumns([
@@ -298,7 +300,7 @@ Tesla, Model S,  ,          1.6,    120000`);
     const t = grok.data.testData('demog');
     const c = t.columns.byName('started');
     c.set(1, dayjs('2022-01-01'));
-    expect(c.get(1).valueOf(), 1640984400000);
+    expect(c.get(1).valueOf(), 1640988000000);
     c.set(1, null);
     expect(c.get(1), null);
     const v = grok.shell.addTableView(t);
@@ -316,5 +318,12 @@ Tesla, Model S,  ,          1.6,    120000`);
     const df3 = DG.DataFrame.fromCsv(`a,b\n"abc",0\n"dce",0\n"xyz",0`);
     const df4 = DG.DataFrame.fromCsv(`a,b\n"dce",0\n"abc",0\n"xyz",0`);
     expectArray(hashDataFrame(df3), hashDataFrame(df4));
+  });
+
+  test('emptyDataFrameToCsv', async () => {
+    const df: DG.DataFrame = DG.DataFrame.fromColumns([]);
+    const csv: string = df.toCsv();
+
+    expect(csv, '');
   });
 });

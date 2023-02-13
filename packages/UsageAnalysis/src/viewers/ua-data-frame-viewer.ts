@@ -1,6 +1,5 @@
-import * as DG from "datagrok-api/dg";
-import {UaFilter} from "../filter2";
-import {UaViewer} from "./abstract/ua-viewer";
+import * as DG from 'datagrok-api/dg';
+import {UaViewer} from './abstract/ua-viewer';
 
 export class UaDataFrameViewer extends UaViewer {
   dataFrame: DG.DataFrame;
@@ -14,10 +13,9 @@ export class UaDataFrameViewer extends UaViewer {
   }
 
   setViewer(loader: any, host: HTMLDivElement, nameDiv: HTMLElement) {
-    let grid = DG.Viewer.grid(this.dataFrame);
+    const grid = DG.Viewer.grid(this.dataFrame);
     host.appendChild(grid.root);
-    grid.autoSize(600,400,200,100);
+    grid.autoSize(600, 400, 200, 100);
     host.removeChild(loader);
   }
-
 }

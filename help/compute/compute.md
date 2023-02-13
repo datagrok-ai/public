@@ -1,7 +1,7 @@
-<!-- TITLE: Compute -->
-<!-- SUBTITLE: -->
-
-# Compute
+---
+title: "Compute"
+sidebar_position: 0
+---
 
 A next-generation environment for scientific computing that leverages core Datagrok features, such as
 [in-memory data engine](../develop/advanced/performance.md#in-memory-database),
@@ -267,7 +267,7 @@ As with any other objects in Datagrok, models could be annotated with tags (sing
 and parameters (key-value pairs). Parameters could also be combined in schemas. This helps keep things organized and
 discoverable. [Model browser](#model-browser) makes heavy use of this feature.
 
-Tags and parameters could either be edited manually in the model's property panel, or specified along with the model
+Tags and parameters could either be edited manually in the model's context panel, or specified along with the model
 body. Here is the corresponding section from the Lotka-Volterra model
 (full code [here](https://github.com/datagrok-ai/public/blob/master/packages/Compute/scripts/Lotka-Volterra.js)):
 
@@ -307,28 +307,28 @@ to implement these algorithms just once, and then use them everywhere. Here are 
 The fact that the typical analysis is an introspectable workflow consisting of functions passing the data helps us deal
 with that in a declarative manner.
 
-# Integration
+## Integration
 
 Datagrok was designed with the design goal to be as extensible and easy to integrate with as possible, so out-of-the box
 we get many platform integration capabilities such as authentication, data access, and many others. In addition to that,
 there are some capabilities specific to models: [REST API](#rest-api) and
 [embedding as iframe](#embedding-as-iframe).
 
-## REST API
+### REST API
 
 Once registered, each function gets assigned a REST API endpoint that allows external code to execute it by passing the
 input parameters, along with the authentication token. This allows instantaneous deployment of scientific methods for
-external consumption. To find our how to use it, click on the function and expand the `REST` pane on the property panel
+external consumption. To find our how to use it, click on the function and expand the `REST` pane on the context panel
 on the right. Both JavaScript and Curl samples are provided.
 
 ![rest-api](rest-api.png)
 
-## JS API
+### JS API
 
 JavaScript-based apps have access to the whole Datagrok platform via the
 [JS API](../develop/js-api.md).
 
-## Embedding as iframe
+### Embedding as iframe
 
 Sometimes, an app has to be included in the external web page. The simplest way to achieve it is via
 the [iframe](https://www.w3schools.com/tags/tag_iframe.ASP)
@@ -340,14 +340,14 @@ On the bottom, you see a preview of the result ()
 
 ![embed-as-iframe](embed-as-iframe.png)
 
-# Leveraging the platform
+## Leveraging the platform
 
 The computation engine utilizes the power of the Datagrok platform, which brings plenty of benefits:
 
 * Not having to reimplement the wheel
 * Users don't have to switch tools anymore
 
-## Logging, audit, and traceability
+### Logging, audit, and traceability
 
 Out-of-the box, the platform provides audit and logging capabilities, and when the model is [deployed](#deployment), we
 get the following automatically:
@@ -361,17 +361,17 @@ in a structured, machine-readable way. We can also tune what needs to be persist
 
 ![img.png](img.png)
 
-## Privileges and visibility
+### Privileges and visibility
 
 Datagrok has the built-in [role-based privileges system](https://datagrok.ai/help/govern/authorization)
 that is used to define who can see, execute, or edit models. The same mechanism is used for the data access control.
 
-## Exploratory data analysis
+### Exploratory data analysis
 
 Perhaps the most commonly used data structure in computing is [DataFrame](../develop/advanced/data-frame.md). To analyze
 either input or output dataframe, click on the `+` ("Add to workspace")
 icon. This will open the dataframe in the [exploratory data analysis](../explore/exploratory-data-analysis.md)
-mode, allowing to [visualize](../visualize/viewers.md) the data,
+mode, allowing to [visualize](../visualize/viewers/viewers.md) the data,
 [transform](../transform/query-transformations.md)
 or perform more in-depth exploration, such as multivariate analysis.
 

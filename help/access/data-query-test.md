@@ -41,7 +41,7 @@ would be sheet name, etc. The system allows you to create parameterized and non-
 * The list shows the status of run and start time
 
 1. Run [query](data-query.md) from different places (context
-   menu, [Property Panel](../datagrok/navigation.md#properties), by double-clicking)
+   menu, [Context Panel](../datagrok/navigation.md#context-panel), by double-clicking)
 
 1. Find in the list [queries](data-query.md) from the previous paragraphs
 
@@ -49,18 +49,18 @@ would be sheet name, etc. The system allows you to create parameterized and non-
 * The runtime is correct
 * Queries with errors are marked with color coding
 
-1. Open the "Details" tab in [Property Panel](../datagrok/navigation.md#properties)
+1. Open the "Details" tab in [Context Panel](../datagrok/navigation.md#context-panel)
 
 * "Details" tab is open
 * The correct information for all fields is displayed (Author, Created, Updated, Connection, Tags, Params – for
   parameterized queries)
 
-1. Open the "Query" tab in [Property Panel](../datagrok/navigation.md#properties)
+1. Open the "Query" tab in [Context Panel](../datagrok/navigation.md#context-panel)
 
 * "Query" tab is open
 * Display current text of query
 
-1. Open the "Activity" tab in [Property Panel](../datagrok/navigation.md#properties)
+1. Open the "Activity" tab in [Context Panel](../datagrok/navigation.md#context-panel)
 
 * "Activity" tab is open
 * Display information about tables that were created after the query was executed.
@@ -70,7 +70,7 @@ would be sheet name, etc. The system allows you to create parameterized and non-
 * Look on "Activity" tab
 * New record about actually query is added here
 
-1. Open the "Usage" tab in [Property Panel](../datagrok/navigation.md#properties)
+1. Open the "Usage" tab in [Context Panel](../datagrok/navigation.md#context-panel)
 
 * "Usage" tab is open. Display query runs statistics.
 
@@ -84,7 +84,7 @@ would be sheet name, etc. The system allows you to create parameterized and non-
 * New parameterized [query](data-query.md) created
 * Check this in "Data Queries" in menu "Admin"
 
-1. Open the "Run" tab in [Property Panel](../datagrok/navigation.md#properties) for "
+1. Open the "Run" tab in [Context Panel](../datagrok/navigation.md#context-panel) for "
    Test_param" [query](data-query.md)
 
 * "Run" tab is open, there are fields for entering parameters

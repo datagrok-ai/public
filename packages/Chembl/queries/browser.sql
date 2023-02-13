@@ -61,8 +61,8 @@ where
 
 --name: compoundsSelectiveToOneTargetOverSecond
 --connection: Chembl
---input: string selectiveFor = CHEMBL301
---input: string over = CHEMBL4036
+--input: string selectiveFor = "CHEMBL301"
+--input: string over = "CHEMBL4036"
 SELECT md.chembl_id,
 cs.canonical_smiles
 FROM target_dictionary td
@@ -92,7 +92,7 @@ AND td.chembl_id              = @over;
 
 --name: compoundActivityDetailsForTarget
 --connection: Chembl
---input: string target = CHEMBL1827
+--input: string target = "CHEMBL1827"
 SELECT m.chembl_id AS compound_chembl_id,
 s.canonical_smiles,
 r.compound_key,

@@ -1,6 +1,6 @@
 /* eslint-disable block-spacing */
 /* Do not change these import lines to match external modules in webpack configuration */
-import * as grok from 'datagrok-api/grok';
+//import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -31,7 +31,7 @@ export class GisArea {
   // coordinates: Array<gisCoordinate>;
   coordinates: gisPolygons;
   attributes: gisFeatureProperties = {};
-  // maprefference: OpenLayers | null; //TODO: maybe we should refference to superclass (e.g. MapEngine above OpenLayers)
+  // mapreference: OpenLayers | null; //TODO: maybe we should reference to superclass (e.g. MapEngine above OpenLayers)
 
   constructor(coord: gisPolygons, attr?: gisFeatureProperties, parentmap: OpenLayers | null = null) {
     this.coordinates = coord;
@@ -183,6 +183,7 @@ export class GisAreaHandler extends DG.ObjectHandler {
       grid = DG.Viewer.fromType('Grid', coordsDF);
 
     const acc = ui.accordion();
+    acc.addTitle(ui.label(`Object`));
     acc.addPane('Details', () => ui.tableFromMap(obj.attributes));
     acc.addPane('Coordinates', () => {
       if (!grid)
@@ -196,7 +197,7 @@ export class GisAreaHandler extends DG.ObjectHandler {
       return ui.div([canvas]);
     });
 
-    const panelProperties = ui.divV([ui.divText(`Properties for GisObject`), acc.root]);
+    const panelProperties = ui.divV([acc.root]);
     return panelProperties;
   }
 
@@ -299,9 +300,14 @@ export class GisPointHandler extends DG.ObjectHandler {
   renderIcon() { return ui.iconFA('bullseye'); }
   renderTooltip(obj: GisPoint) { return ui.divText(`[${obj.x} ; ${obj.y}]`); }
   renderProperties(obj: GisPoint) {
-    const panelProperties = ui.divV([]);
-    panelProperties.appendChild(ui.divText(`Properties for Point`));
-    panelProperties.appendChild(ui.divText(`[${obj.x} ; ${obj.y}]`));
+    const acc = ui.accordion();
+    acc.addTitle(ui.label(`Point`));
+    acc.addPane('Coordinates', () => ui.tableFromMap({
+      latitude: obj.x,
+      longitude: obj.y,
+    }));
+
+    const panelProperties = ui.divV([acc.root]);
     return panelProperties;
   }
 

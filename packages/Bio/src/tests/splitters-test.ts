@@ -1,12 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import {after, before, category, test, expect, expectArray, expectObject} from '@datagrok-libraries/utils/src/test';
 import * as C from '../utils/constants';
 import {splitToMonomers, _package, getHelmMonomers} from '../package';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import {splitterAsFasta, splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 
 category('splitters', () => {
@@ -122,13 +122,13 @@ PEPTIDE1{hHis.Aca.Cys_SEt}$$$,5.72388
 });
 
 export async function _testFastaSplitter(src: string, tgt: string[]) {
-  const res: string[] = bio.splitterAsFasta(src);
+  const res: string[] = splitterAsFasta(src);
   console.debug(`Bio: tests: splitters: src=${JSON.stringify(src)}, res=${JSON.stringify(res)} .`);
   expectArray(res, tgt);
 }
 
 export async function _testHelmSplitter(src: string, tgt: string[]) {
-  const res: string[] = bio.splitterAsHelm(src);
+  const res: string[] = splitterAsHelm(src);
   console.debug(`Bio: tests: splitters: src=${JSON.stringify(src)}, res=${JSON.stringify(res)} .`);
   expectArray(res, tgt);
 }

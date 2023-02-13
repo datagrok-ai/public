@@ -1,7 +1,6 @@
-<!-- TITLE: Data science -->
-<!-- SUBTITLE: -->
-
-# Data science
+---
+title: "Data science"
+---
 
 Datagrok was built for data scientists, by data scientists. Our goal is to let scientist focus on science, not
 infrastructure.
@@ -9,7 +8,7 @@ infrastructure.
 Out of the box, Datagrok provides all tools necessary for
 [data ingestion](../access/file-browser-and-file-shares.md),
 [transformation](../transform/data-wrangling.md),
-[visualization](../visualize/viewers.md),
+[visualization](../visualize/viewers/viewers.md),
 [analysis](../explore/exploratory-data-analysis.md),
 [modeling](predictive-modeling.md), as well as [deploying models](predictive-modeling.md#deployment)
 and scientific analyses. Scripts and models can be written in any language, such as R or Python.
@@ -45,7 +44,7 @@ Available hypothesis tests:
 
 Return p-values.
 
-Test are available on Property Panel in "Commands" section for two selected numerical columns without missing values. Or
+Tests are available on Context Panel in "Commands" section for two selected numerical columns without missing values. Or
 from Functions browser "Help | Actions", see "Math or Statistics"
 sections.
 
@@ -56,7 +55,7 @@ Available normalizations:
 * [min-max](https://en.wikipedia.org/wiki/Feature_scaling)
 * [z-scores](https://en.wikipedia.org/wiki/Standard_score)
 
-Any numerical columns can be normalized via Property Panel in "Commands" section. Or from Functions browser "Help |
+Any numerical columns can be normalized via Context Panel in "Commands" section. Or from Functions browser "Help |
 Actions", see "Math" section.
 
 ## Interactive methods

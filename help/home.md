@@ -1,7 +1,7 @@
-<!-- TITLE: Datagrok -->
-<!-- SUBTITLE: -->
+---
+title: "Datagrok: Swiss Army Knife for Data"
+---
 
-# Datagrok: Swiss Army Knife for Data
 
 Datagrok is a platform for turning data into actionable insights. It helps you unlock the value of your organization’s
 complex data by empowering non-technical users to discover, cleanse, visualize, explore, model data themselves, and
@@ -57,7 +57,7 @@ Manage availability, usability, integrity and security of your data, all in one 
 
 * [Aggregate, join, filter and edit data](transform/data-wrangling.md) right in the browser
 * Record and apply [macros](datagrok/navigation.md#recording-macros)
-* Use 500+ available [functions](datagrok/functions/function.md), or write your own in R, Python, or JavaScript
+* Use 500+ available [functions](datagrok/functions/functions.md), or write your own in R, Python, or JavaScript
 * Visually edit [pipelines](transform/job-editor.md)
   and [query transformations](transform/recipe-editor.md)
 
@@ -68,7 +68,7 @@ were previously impossible to spot, resulting in the acceleration of data-driven
 
 * [Proprietary in-memory database](develop/advanced/performance.md) technology allows to handle tens of millions of rows
   in the browser
-* [30+ high-performance interactive viewers](visualize/viewers.md)
+* [30+ high-performance interactive viewers](visualize/viewers/viewers.md)
 * [Powerful integration with any visualizations available in R, Python, or Julia languages](visualize/viewers/scripting-viewer.md)
 * Built-in viewers: [regression lines](visualize/viewers/scatter-plot.md), confidence intervals,
   correlations, [statistical tests](learn/data-science.md)

@@ -1,7 +1,6 @@
-<!-- TITLE: Calendar -->
-<!-- SUBTITLE: -->
-
-# Calendar
+---
+title: "Calendar"
+---
 
 Calendar lets you analyze longitudinal data. It needs at least one column of type DateTime.
 
@@ -24,6 +23,6 @@ General:
 
 See also:
 
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [Table View](../../datagrok/table-view.md)
 * [JS API: Calendar](https://public.datagrok.ai/js/samples/ui/viewers/types/calendar)

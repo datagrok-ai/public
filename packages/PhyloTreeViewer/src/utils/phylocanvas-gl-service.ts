@@ -1,23 +1,25 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
+
 import {Observable, Subject} from 'rxjs';
+import {PhylocanvasGL} from '@phylocanvas/phylocanvas.gl';
+import {PhylocanvasGlServiceBase, PhylocanvasGlTask} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
 
 
-export class PhylocanvasGlService implements bio.PhylocanvasGlServiceBase {
+export class PhylocanvasGlService implements PhylocanvasGlServiceBase {
   private readonly pcDiv: HTMLDivElement;
-  private readonly pc: bio.PhylocanvasGL;
+  private readonly pc: PhylocanvasGL;
 
   //private renderQueue: Subject<bio.PhylocanvasGlRenderTask>;
-  private readonly _queue: { key?: keyof any, task: bio.PhylocanvasGlTask }[];
-  private readonly _queueDict: { [key: keyof any]: bio.PhylocanvasGlTask };
+  private readonly _queue: { key?: keyof any, task: PhylocanvasGlTask }[];
+  private readonly _queueDict: { [key: keyof any]: PhylocanvasGlTask };
 
   constructor() {
-    const defaultProps = {source: '(none:1);',};
+    const defaultProps = {source: '(none:1);'};
     this.pcDiv = ui.div([], {style: {backgroundColor: '#FFFFF0'}});
-    this.pc = new bio.PhylocanvasGL(this.pcDiv, defaultProps);
-    this.pc.deck.setProps({useDevicePixels: true,});
+    this.pc = new PhylocanvasGL(this.pcDiv, defaultProps);
+    this.pc.deck.setProps({useDevicePixels: true});
 
     this._queue = [];
     this._queueDict = {};
@@ -26,7 +28,7 @@ export class PhylocanvasGlService implements bio.PhylocanvasGlServiceBase {
   /* The flag allows _processQueue() on add item to the queue */
   private _busy: boolean = false;
 
-  render(task: bio.PhylocanvasGlTask, key?: keyof any): void {
+  render(task: PhylocanvasGlTask, key?: keyof any): void {
     //console.debug('PhyloTreeViewer: PhylocanvasGlService.render() start ' + `name: ${name}`);
 
     if (key) {
@@ -71,9 +73,11 @@ export class PhylocanvasGlService implements bio.PhylocanvasGlServiceBase {
         gl.clearColor(r, g, b, a);
       },
       onAfterRender: ({gl}: { gl: WebGLRenderingContext }) => {
-        //console.debug('PhyloTreeViewer: PhylocanvasGlService._processQueue() .onAfterRender() start ' + `name: ${name}`);
+        // console.debug('PhyloTreeViewer: PhylocanvasGlService._processQueue() .onAfterRender() start ' +
+        //   `name: ${name}`);
         task.onAfterRender(gl.canvas);
-        //console.debug('PhyloTreeViewer: PhylocanvasGlService._processQueue() .onAfterRender() end ' + `name: ${name}`);
+        // console.debug('PhyloTreeViewer: PhylocanvasGlService._processQueue() .onAfterRender() end ' +
+        //   `name: ${name}`);
 
         next();
       },

@@ -13,7 +13,6 @@ grok.events.onProjectClosed.subscribe(p => info(`${p.name}: closed`));
 grok.events.onProjectModified.subscribe(p => info(`${p.name}: modified`));
 grok.events.onProjectOpened.subscribe(p => info(`${p.name}: opened`));
 grok.events.onProjectSaved.subscribe(p => info(`${p.name}: saved`));
-grok.events.onProjectUploaded.subscribe(p => info(`${p.name}: uploaded`));
 
 grok.events.onCurrentProjectChanged.subscribe(p => info(`Current project changed: ${grok.shell.project.name}`));
 

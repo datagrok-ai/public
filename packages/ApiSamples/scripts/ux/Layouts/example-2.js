@@ -2,8 +2,8 @@
 
 let windows = grok.shell.windows;
 windows.showToolbox = false; //*hide tool box
-windows.showProperties = false; //*hide property panel
-windows.showHelp = false; //*hide property panel
+windows.showContextPanel = false; //*hide context panel
+windows.showHelp = false; //*hide context help
 
 let col2 = ui.block50([]);
 let col3 = ui.block([]);
