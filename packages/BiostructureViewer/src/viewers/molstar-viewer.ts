@@ -2,12 +2,20 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+// import {Viewer as rcsbViewer, ViewerProps as rcsbViewerProps} from '@rcsb/rcsb-molstar/src/viewer';
+import {Viewer as RcsbViewer, ViewerProps as RcsbViewerProps} from '@rcsb/rcsb-molstar/build/src/viewer';
+
 import $ from 'cash-dom';
 import wu from 'wu';
 
 //@ts-ignore
 import {Viewer} from 'molstar/build/viewer/molstar';
 import {Unsubscribable} from 'rxjs';
+import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
+import {ColorNames} from 'molstar/lib/mol-util/color/names';
+import {ModelUrlProvider} from '@rcsb/rcsb-molstar/build/src/viewer/types';
+import {_package} from '../package';
+import {PluginContext} from 'molstar/lib/mol-plugin/context';
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -45,7 +53,8 @@ const DefaultViewerOptions = {
 const enum PROPS_CATS {
   DATA = 'Data',
   STYLE = 'Style',
-  LAYOUT = 'Layout'
+  LAYOUT = 'Layout',
+  CONTROLS = 'Controls',
 }
 
 export enum PROPS {
@@ -70,7 +79,56 @@ export enum PROPS {
   collapseRightPanel = 'collapseRightPanel',
   viewportShowExpand = 'viewportShowExpand',
   viewportShowControls = 'viewportShowControls',
+
+  // -- Controls --
+  showImportControls = 'showImportControls',
 }
+
+const DefaultViewerProps: Partial<RcsbViewerProps> = {
+  showImportControls: false,
+  showSessionControls: false,
+  showStructureSourceControls: true,
+  // showMeasurementsControls: true,
+  // showStrucmotifSubmitControls: true,
+  showSuperpositionControls: true,
+  // showQuickStylesControls: false,
+  // showStructureComponentControls: true,
+  // showVolumeStreamingControls: true,
+  // showAssemblySymmetryControls: true,
+  showValidationReportControls: true,
+
+  showMembraneOrientationPreset: false,
+  // showNakbColorTheme: false,
+  /**
+   * Needed when running outside of sierra. If set to true, the strucmotif UI will use an absolute URL to sierra-prod.
+   * Otherwise, the link will be relative on the current host.
+   */
+  detachedFromSierra: false,
+  modelUrlProviders: [
+    (pdbId: string) => ({
+      url: `https://models.rcsb.org/${pdbId.toLowerCase()}.bcif`,
+      format: 'mmcif',
+      isBinary: true
+    }),
+    (pdbId: string) => ({
+      url: `https://files.rcsb.org/download/${pdbId.toLowerCase()}.cif`,
+      format: 'mmcif',
+      isBinary: false
+    })
+  ] as ModelUrlProvider[],
+
+  layoutIsExpanded: false,
+  layoutShowControls: true,
+  layoutShowSequence: true,
+  layoutShowLog: false,
+
+  viewportShowExpand: true,
+  viewportShowSelectionMode: true,
+  volumeStreamingServer: 'https://maps.rcsb.org/',
+
+  backgroundColor: ColorNames.white,
+  showWelcomeToast: true
+};
 
 export interface IMolstarViewer {
   get pdb(): string;
@@ -114,6 +172,13 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
   [PROPS.viewportShowExpand]: boolean;
   [PROPS.viewportShowControls]: boolean;
 
+  // -- Controls --
+  [PROPS.showImportControls]: boolean;
+
+  propsEngine = new class {
+
+  }(this);
+
   constructor() {
     super();
 
@@ -155,7 +220,12 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
     this.viewportShowControls = this.bool(PROPS.viewportShowControls, false,
       {category: PROPS_CATS.LAYOUT});
 
-    // --
+    // -- Controls --
+    this.showImportControls = this.bool(PROPS.showImportControls, DefaultViewerProps.showImportControls,
+      {category: PROPS_CATS.CONTROLS});
+
+    this.subs.push(
+      ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
   }
 
   override onPropertyChanged(property: DG.Property | null): void {
@@ -166,11 +236,33 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
       return;
     }
 
+    // const setPropsLayout = (props: Partial<RcsbViewerProps>) => {
+    //   Object.assign(this.viewerLayoutState, props);
+    //   if (this.viewer) {
+    //     const viewerPlugin: PluginContext = this.viewer.getPlugin();
+    //     viewerPlugin.layout.setProps();
+    //
+    //     // for (const propName in props) {
+    //     //   const propValue: any = (props as { [propName: string]: any })[propName];
+    //     //   this.viewer.customState[propName] = propValue;
+    //     // }
+    //   }
+    // };
+
     switch (property.name) {
     case PROPS.representation:
       this.updateView();
       break;
+    case PROPS.showImportControls:
+    case PROPS.layoutIsExpanded:
+    case PROPS.layoutShowControls:
+      const propValue: any = this[property.name];
+      this.propsEngine.apply(property.name, propValue);
+      _package.logger.debug('PhylocanvasGlViewer.onPropertyChanged() ' +
+        `${property.name} = ${propValue.toString()} .`);
+      break;
     }
+
 
     switch (property.name) {
     case PROPS.pdb:
@@ -211,6 +303,12 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
       this.viewed = false;
     }
 
+    // -- PDB data --
+    let pdbTag: string = pdbTAGS.PDB;
+    if (this.pdbTag) pdbTag = this.pdbTag;
+    this.pdbStr = this.dataFrame.getTag(pdbTag);
+    if (this.pdb && this.pdb != pdbDefault) this.pdbStr = this.pdb;
+
     // -- Ligand --
     // TODO: Ligand
 
@@ -222,12 +320,18 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
 
   // -- View --
 
+  private viewerDiv?: HTMLDivElement;
+  private viewer?: RcsbViewer;
+
+  /** Container to store prop values while {@link viewer} is not created yet */
+  private viewerProps: Partial<RcsbViewerProps> = {};
+
   private splashDiv?: HTMLDivElement;
 
   private viewSubs: Unsubscribable[] = [];
 
   private destroyView(): void {
-    console.debug('BiostrctureViewer: MolstarViewer.destroyView() ');
+    _package.logger.debug('MolstarViewer.destroyView() ');
     if (this.pdbStr) {
       // Clear viewer
     }
@@ -242,9 +346,21 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
   }
 
   private buildView(): void {
-    console.debug('BiostructureViewer: MolstarViewer.buildView() ');
+    _package.logger.debug('MolstarViewer.buildView() ');
     if (this.pdbStr) {
       // Fill in viewer
+      if (!this.viewerDiv) {
+        this.viewerDiv = ui.div([], {
+          classes: 'd4-molstar-viewer',
+          style: {width: '100%', height: '100%'},
+        });
+        this.root.appendChild(this.viewerDiv);
+
+        const props: Partial<RcsbViewerProps> = {};
+
+        Object.assign(props, this.viewerProps);
+        this.viewer = new RcsbViewer(this.viewerDiv, props);
+      }
     }
   }
 
@@ -252,10 +368,30 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
 
   }
 
+  private calcSize(): void {
+    if (!this.viewer) return;
+
+    const cw: number = this.root.clientWidth;
+    const ch: number = this.root.clientHeight;
+    _package.logger.debug('MolstarViewer.calcSize( ${cw.toString()} x ${ch.toString()} )');
+
+    if (this.viewerDiv) {
+      this.viewerDiv.style.width = `${cw}px`;
+      this.viewerDiv.style.height = `${ch}px`;
+
+      this.viewer.handleResize();
+    }
+  }
+
   // -- Handle events --
 
+  private rootOnSizeChanged(value: any): void {
+    _package.logger.debug('MolstarViewer.rootOnSizeChanged() ');
+    this.calcSize();
+  }
+
   private dataFrameOnCurrentRowChanged(value: any): void {
-    console.debug('BiostructureViewer: MolstarViewer.dataFrameOnCurrentRowChanged() ');
+    _package.logger.debug('MolstarViewer.dataFrameOnCurrentRowChanged() ');
   }
 }
 
