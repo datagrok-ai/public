@@ -13,7 +13,7 @@ category('PepSeA', () => {
 
   test('Basic alignment', async () => {
     const table = DG.DataFrame.fromCsv(testCsv);
-    const alignedCol = await runPepsea(table.getCol('HELM'));
+    const alignedCol = await runPepsea(table.getCol('HELM'), 'msa(HELM)');
     const alignedTestCol = table.getCol('MSA');
     for (let i = 0; i < alignedCol.length; ++i)
       expect(alignedCol.get(i) == alignedTestCol.get(i), true);

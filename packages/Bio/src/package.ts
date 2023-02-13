@@ -7,19 +7,12 @@ export const _package = new DG.Package();
 
 import {MacromoleculeDifferenceCellRenderer, MonomerCellRenderer} from './utils/cell-renderer';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
-import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
-import {SequenceAlignment, Aligned} from './seq_align';
-import {getEmbeddingColsNames, sequenceSpace, sequenceSpaceByFingerprints} from './analysis/sequence-space';
+import {runKalign} from './utils/multiple-sequence-alignment';
+import {SequenceAlignment} from './seq_align';
+import {getEmbeddingColsNames, sequenceSpaceByFingerprints} from './analysis/sequence-space';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {
-  createLinesGrid,
-  createPropPanelElement,
-  createTooltipElement,
-  getChemSimilaritiesMarix,
-  getSimilaritiesMarix
-} from './analysis/sequence-activity-cliffs';
+import {createLinesGrid, createPropPanelElement, createTooltipElement, getChemSimilaritiesMarix,} from './analysis/sequence-activity-cliffs';
 import {HELM_CORE_LIB_FILENAME} from '@datagrok-libraries/bio/src/utils/const';
-import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
 import {getMacroMolColumnPropertyPanel, representationsWidget} from './widgets/representations';
@@ -31,14 +24,12 @@ import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter'
 import * as C from './utils/constants';
 import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
-import {invalidateMols, MONOMERIC_COL_TAGS, substructureSearchDialog} from './substructure-search/substructure-search';
+import {substructureSearchDialog} from './substructure-search/substructure-search';
 import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
-import {getMonomericMols} from './calculations/monomerLevelMols';
 import {delay} from '@datagrok-libraries/utils/src/test';
-import {from, Observable, Subject} from 'rxjs';
 import {getStats, NOTATION, splitterAsHelm, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {pepseaDialog, pepseaMethods, runPepsea} from './utils/pepsea';
+import {pepseaMethods, runPepsea} from './utils/pepsea';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
@@ -409,45 +400,49 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
 }
 
 //top-menu: Bio | MSA...
-//name: MSA
-//input: column col {semType: Macromolecule}
-export async function multipleSequenceAlignmentAny(col: DG.Column<string> | null = null): Promise<void> {
-  let performAlignment: () => Promise<DG.Column<string> | null> = async () => null; 
-
+//name: MSA...
+//tags: bio, panel
+export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = null): void {
   const table = col?.dataFrame ?? grok.shell.t;
-  const methodInput = ui.choiceInput('Method', pepseaMethods[0], pepseaMethods);
-  const gapOpenInput = ui.floatInput('Gap open', 1.53);
-  const gapExtendInput = ui.floatInput('Gap extend', 0);
+  const seqCol = col ?? table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
+  if (seqCol == null) {
+    grok.shell.warning(`MSAError: dataset doesn't conain any Macromolecule column`);
+    return;
+  }
 
+  let performAlignment: () => Promise<DG.Column<string> | null> = async () => null; 
+  const methodInput = ui.choiceInput('Method', pepseaMethods[0], pepseaMethods);
+  methodInput.setTooltip('Alignment method');
+  const gapOpenInput = ui.floatInput('Gap open', 1.53);
+  gapOpenInput.setTooltip('Gap opening penalty at group-to-group alignment');
+  const gapExtendInput = ui.floatInput('Gap extend', 0);
+  gapExtendInput.setTooltip('Gap extension penalty to skip the alignment');
   const inputRootStyles = [methodInput.root.style, gapOpenInput.root.style, gapExtendInput.root.style];
 
-  const colInput: DG.InputBase<DG.Column<string> | null> = ui.columnInput('Sequence', table,
-    col ?? table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE), () => {
-      const potentialCol = colInput.value;
-      if (potentialCol == null) {
-        performAlignment = async () => null;
-        return;
-      }
+  const colInput = ui.columnInput('Sequence', table, seqCol, () => {
+    const potentialCol = colInput.value;
+    const unUsedName = table.columns.getUnusedName(`msa(${potentialCol.name})`);
+  
+    if (checkInputColumnUi(potentialCol, 'MSA', [NOTATION.FASTA], ['DNA', 'RNA', 'PT'], false)) {
+      for (const inputRootStyle of inputRootStyles)
+        inputRootStyle.display = 'none';
 
-      const unUsedName = table.columns.getUnusedName(`msa(${potentialCol.name})`);
-      if (checkInputColumnUi(potentialCol, 'MSA', [NOTATION.FASTA], ['DNA', 'RNA', 'PT'], false)) {
-        for (const inputRootStyle of inputRootStyles)
-          inputRootStyle.display = 'none';
+      performAlignment = () => runKalign(potentialCol, false, unUsedName);
+    } else if (checkInputColumnUi(potentialCol, 'MSA', [NOTATION.HELM], [], false)) {
+      for (const inputRootStyle of inputRootStyles)
+        inputRootStyle.display = 'initial';
 
-        performAlignment = () => runKalign(potentialCol, false, unUsedName);
-      } else if (checkInputColumnUi(potentialCol, 'MSA', [NOTATION.HELM], [], false)) {
-        for (const inputRootStyle of inputRootStyles)
-          inputRootStyle.display = 'initial';
+      performAlignment = () => runPepsea(
+        potentialCol, unUsedName, methodInput.value!, gapOpenInput.value!, gapExtendInput.value!);
+    } else {
+      for (const inputRootStyle of inputRootStyles)
+        inputRootStyle.display = 'none';
 
-        performAlignment = () => runPepsea(potentialCol, methodInput.value!, gapOpenInput.value, gapExtendInput.value);
-      } else {
-        for (const inputRootStyle of inputRootStyles)
-          inputRootStyle.display = 'none';
-
-        performAlignment = async () => null;
-      }
-    });
-    colInput.fireChanged();
+      performAlignment = async () => null;
+    }
+  }) as DG.InputBase<DG.Column<string>>;
+  colInput.setTooltip('Sequences column to use for alignment');
+  colInput.fireChanged();
 
   ui.dialog('MSA')
     .add(colInput)
@@ -463,13 +458,6 @@ export async function multipleSequenceAlignmentAny(col: DG.Column<string> | null
       await grok.data.detectSemanticTypes(table);
     })
     .show();
-}
-
-//name: Bio | MSA
-//tags: bio, panel
-//input: column sequence { semType: Macromolecule }
-export async function panelMSA(sequence: DG.Column): Promise<void> {
-  return multipleSequenceAlignmentAny(sequence);
 }
 
 //name: Composition Analysis
@@ -704,11 +692,4 @@ export function saveAsFasta() {
 //meta.semType: Macromolecule
 export function bioSubstructureFilter(): BioSubstructureFilter {
   return new BioSubstructureFilter();
-}
-
-//name: PepSeA MSA...
-//top-menu: Bio | PepSeA MSA...
-//description: Perform Multiple sequence alignment using PepSeA
-export function pepseaMSA(): void {
-  pepseaDialog();
 }

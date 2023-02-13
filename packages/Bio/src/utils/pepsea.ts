@@ -1,6 +1,5 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {NOTATION, TAGS as bioTAGS, ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import * as C from './constants';
@@ -15,56 +14,14 @@ type PepseaRepsonse = {
 };
 type PepseaBodyUnit = {ID: string, HELM: string};
 
-export function pepseaDialog(): void {
-  const table = grok.shell.t;
-  const colInput = ui.columnInput('Sequences', table, table.columns.bySemType('Macromolecule'),
-    (col: DG.Column<string>) => {
-      if (col.getTag(DG.TAGS.UNITS) != 'helm' || col.semType != DG.SEMTYPE.MACROMOLECULE)
-        grok.shell.info('Sequence column must contain sequences in HELM notation!');
-    });
-  colInput.setTooltip('Sequences column to use for alignment');
-  const methodInput = ui.choiceInput('Method', 'ginsi', pepseaMethods);
-  methodInput.setTooltip('Alignment method');
-  const gapOpenInput = ui.floatInput('Gap open', 1.53);
-  gapOpenInput.setTooltip('Gap opening penalty at group-to-group alignment');
-  const gapExtendInput = ui.floatInput('Gap extend', 0.0);
-  gapExtendInput.setTooltip('Gap extension penalty to skip the alignment');
-  const clusterColInput = ui.columnInput('Clusters', table, null);
-  clusterColInput.setTooltip('Clusters column to perform in-cluster alignment');
-
-  ui.dialog('PepSeA Multiple Sequence Alignment')
-    .add(colInput)
-    .add(methodInput)
-    .add(gapOpenInput)
-    .add(gapExtendInput)
-    .add(clusterColInput)
-    .onOK(async () => {
-      const progress = DG.TaskBarProgressIndicator.create('Performing MSA...');
-      try {
-        const msaCol = await runPepsea(colInput.value!, methodInput.stringValue, gapOpenInput.value,
-          gapExtendInput.value, clusterColInput.value);
-        table.columns.add(msaCol);
-
-        // This call is required to enable cell renderer activation
-        await grok.data.detectSemanticTypes(table);
-      } catch (e) {
-        grok.shell.error('PepseaMsaError: Could not perform alignment. See console for details.');
-        console.error(e);
-      }
-      progress.close();
-    })
-    .show();
-}
-
-export async function runPepsea(srcCol: DG.Column<string>, method: typeof pepseaMethods[number] = 'ginsi',
-  gapOpen: number | null = 1.53, gapExtend: number | null = 0.0, clustersCol: DG.Column<string | number> | null = null,
+export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
+  method: typeof pepseaMethods[number] = 'ginsi', gapOpen: number = 1.53, gapExtend: number = 0.0,
+  clustersCol: DG.Column<string | number> | null = null,
   ): Promise<DG.Column<string>> {
   const peptideCount = srcCol.length;
-  gapOpen ??= 1.53;
-  gapExtend ??= 0.0;
   clustersCol ??= DG.Column.int('Clusters', peptideCount).init(0);
-  clustersCol = (clustersCol.type !== DG.TYPE.STRING ? clustersCol.convertTo(DG.TYPE.STRING) :
-    clustersCol) as DG.Column<string>;
+  if (clustersCol.type != DG.COLUMN_TYPE.STRING)
+    clustersCol = clustersCol.convertTo(DG.TYPE.STRING);
 
   const clusters = clustersCol.categories;
   const bodies: PepseaBodyUnit[][] = new Array(clusters.length);
@@ -96,8 +53,7 @@ export async function runPepsea(srcCol: DG.Column<string>, method: typeof pepsea
     }
   }
 
-  const newColName = srcCol.dataFrame.columns.getUnusedName(`msa(${srcCol.name})`);
-  const alignedSequencesCol: DG.Column<string> = DG.Column.fromStrings(newColName, alignedSequences);
+  const alignedSequencesCol: DG.Column<string> = DG.Column.fromStrings(unUsedName, alignedSequences);
   alignedSequencesCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
   alignedSequencesCol.setTag(bioTAGS.separator, C.PEPSEA.SEPARATOR);
   alignedSequencesCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
