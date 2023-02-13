@@ -1,6 +1,435 @@
 ---
 title: "Release History"
 ---
+## 2023-02-13 1.13.0
+
+### Stable Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.13.0`
+* [Docker-Compose](https://datagrok.ai/help/develop/admin/docker-compose)
+
+### Addressed Issues
+
+* update GrokConnect to version 1.1.0 
+* Charts: syntax fixes in tree-viewer.ts 
+* update GrokConnect version to 1.1.0 
+* Charts: fixed filter problem in sankey and chord 
+* Add null values support to ui.dateInput 
+* Core: add radioGroup identification to menu options where relevant 
+* Test Manager: Sort categories alphabetically 
+* Charts: fixed tree-utils mapRowsToObjects() method 
+* Charts: removed data duplication in chords and sankey 
+* bio lib: PDB interfaces 
+* BiostructureViewer: NGL typings, NglViewer open file 
+* Dendrogram: Package icon, minor fixes 
+* Harmonize Demo package 
+* NglViewer: Move NGL to BiostructureViewer 
+* Utils: history panel engine refactored 
+* Utils: removed Cloning step from ComputationView 
+* Utils: added scriptsCache for HistoryPanel 
+* Utils: fixed getPackageUrls fails for old runs 
+* Utils: minor version bump 
+* datagrok-tools: fix exit codes in grok test 
+* Fix empty state icon style 
+* Viewers: added sankey viewer redrawing on filltering 
+* ClinicalCase: Fix connection to S3 bucket with files 
+* Test manager: Mark all tests yellow if Unhandled exception occurred 
+* #863: moved pepsea to Bio package 
+* (Bug) Table content queries fire events 
+* Removed StackedBarChart 
+* Chem: menu: sketcher types as radio buttons 
+* Viewers: fixed labels which don't move with selected graph node 
+* #1480: Demo App: WIP 
+* PIDB: Connection string generation 
+* bio lib: Fix TreeCutOptions type for min, max optional 
+* Dendrogram: Fixes allowing empty trees 
+* Libraries/ml: activity cliffs refactoring 
+* Utils: added updated indicators to history panel 
+* PI DB icon 
+* Compute: deps update 
+* Bump grok_connect versions 
+* Compute: updated maintainer email 
+* update grok connect version to 1.2.0 
+* Reverted serialization version 
+* Charts: removed exportation of sankey and chord 
+* Chem: fix UI tests 
+* Tutorials: library refactoring 
+* ScaffoldTree: removing script needed to install ScaffoldGraphDG module + all its occurrences 
+* Tutorials: add missing property to the library 
+* bump datagrok tiils version to 4.7.6 
+* Chem: fixing top menu script based.mutate 
+* closes #1467 date values should be shown in tooltips. 
+* Tutorials: reuse code from the tutorials lib 
+* #1465 Improve usability of range filters 
+* Chem: map identifiers (increase wait) 
+* dpetrov/1364: Support for non-standard fragments in structure search 
+* dpetrov/1217: Scaffold-Tree: fixed environments, fixed aromatics, various ui-changes 
+* closes #1465 Improve usability of range filters 
+* #1472 Reuse 'Pick up style' functionality for JsViewers 
+* Utils: parentView made optional 
+* chen-meta: bump version 
+* dpetrov/1217: Scaffold-Tree: fixed autogenerate & deserialize 
+* Tree view outline 
+* ML: fix and bump 
+* Chem: fix and bump 
+* Chem: skip map identifiers test 
+* Viewers: changed JS to TS 
+* Viewers: added Circos for chord viewer 
+* Viewers: syntax fixes 
+* Viewers: rewrote code base from JS to TS 
+* Viewers: fixed word-cloud onPropertyChanged() 
+* Libraries/ml: fix and version up 
+* Chem: updated ml dependency, bump version 
+* Ketcher: updated utils dependence, bump version 
+* Charts: restructured the package 
+* Adjusted the type for Entity.getProperties() to {[index: string]: any} 
+* Issue #1492: Chem | Elemental analysis: malformed data in dataset handling 
+* Chem: bump new version 
+* Tooltip.show now accepts String | HtmlElement 
+* Minor help updates 
+* Packages Charts and Viewers merged into one package 
+* closes #1481 Chem | Cell with molecule: ‘Use as Flter ‘ action causes error 
+* JKG: Disable Datlas autostart in container 
+* BiostructureViewer: add 1pdbq.sdf 
+* #1336: creating new cluster 
+* #1336: custom clusters serialization 
+* #1336: enable cluster removing 
+* Charts: added documentation about new viewers 
+* #1465 Improve usability of range filters, layout problem 
+* (Bug) GrokConnect: Neptune list parameters don't work 
+* #1465 filters improvements default size 
+* (Bug) Viewers | Map: layer data export doesn't work 
+* Tutorials: items to fix (WIP)
+* #1333: multiple views 
+* update grok connect version to 1.2.1 
+* Proper parameter visibility 
+* Peptides: Disabled Get Peptides Structure 
+* utils lib: fix errorToConsole for number type 
+* bio lib: Fix for handling errors in toAtomicLevel, fix for gaps in MSA in toAtomicLevel bump version 
+* Bio: bump version for dependencies on utils liband bio lib 
+* Peptides: throw error if barchart rendering fails 
+* #1077: UI fixes 
+* Peptides: fixed aggregated columns not showing in LST 
+* Peptides: fixed errors in LST 
+* Peptides: lint fixes 
+* Peptides: 1.6.0 release 
+* GIS: fixed odd adding of Markers GL Selection to layers list 
+* (Bug) Viewers | Map: after setting the 'Render Type', the Layers menu update is one step late  
+* bio lib: Fix parse newick for no name root, reduce ITreeHelper.newickToDf args, bump version 
+* Dendrogram: Add tests for TreeHelper, reduce TreeHelper.toNewickDf args, fix for no name root 
+* Dendrogram: bump version 
+* ScaffoldTree: script minor fixes 
+* Dendrogram: Fix using nodePrefix in TreeHelper.toNewickDf correction no name root node 
+* Utils: HistoryPanel redesigned 
+* Utils: added ribbonMenu clearing 
+* Utils: patch version bump 
+* MLB: Add VRs count to antigen list, fix PTM filter, checkVrForTree, VR space, fix tree for grid with cellType='html', fix merged clone trees on network diagram, calc distance on JUNCTION region 
+* Charts: fixed GIFs size in md file to 800x500 
+* Compute: migrated default scripts to JS 
+* closes #1483 Event.path removed from chrome 
+* Libraries/chem-meta: updated rdKit Reaction api, version up 
+* Chem: added chemical reaction semantic type to js-api 
+* Chem: added rdkit reaction cell renderer, version up 
+* Detectors: one test for all (WIP)
+* Docs: Create script to migrate help to Docusaurus 
+* Chem: #1497 aromatic query substructure search 
+* bio lib: Fix export type IDendrogramService, TreeCutOptions 
+* Dendrogram: bump version for dependency bio lib new version 
+* Charts: replaced jQuery with cash-dom 
+* bump node version in action packages 
+* bump npm version to 9 in actions package 
+* Charts: moved tree-map to deprecated 
+* dpetrov/1497: Package Chem: Added support for non-standard fragments to structure highlighter 
+* Compute: renamed default scripts 
+* Compute: patch version bump 
+* Utils: moved all history actions to HistoryPanel 
+* (Bug) JS API: DG.toJs won't work for predictive models 
+* Chem: reactions renderer \- split row into reactants and products in case of long reaction string 
+* Charts: added filtering to radar 
+* ApiTests: added tests for returning FuncCall options 
+* DevTools: version bump 
+* js-api: Add semType Molecule3D, PDB_ID 
+* Charts: added selection to surface-plot 
+* bio lib: No re export type IDendrogramServer and TreeCutOptions, bump version 
+* Charts: fixed radar tests 
+* Dendrogram: Fix import IDendrogramService, bump version 
+* Dendrogram: Move NglViewer README, PDB_ID semType detector, PDB_ID semType widget panel to BsV, fix Molecule3D file (pre)viewers, fix PDB file handler 
+* bio lib: Remove index.ts 
+* (Bug) Failed to share a connection 
+* Fixed NPE 
+* ApiSamples: version bump 
+* bio lib: Reduce vd-regions modules, bump version 
+* Chem: mol2 importer, fix bug with lacking bonds 
+* Charts: updated substituent analysis and renamed it to group analysis 
+* Bio: Fix imports from bio lib, bump version 
+* Dendrogram: Fix imports from bio lib 
+* PTV: Fix imports from bio lib 
+* GIS: UI fixes (header in property panel) 
+* MLB: Selector for VR space dimensionality reduction method UMAP or t-SNE, fix imports from bio lib 
+* Fix splitter resizing 
+* GIS: added title and html table for coordinates in property panel 
+* (Bug) API: `ui.tableInput` shows invalid DF names if tables are opened before its' creation 
+* Help: DocSearch token 
+* Chem: ScaffoldTree: removing the highlighting when necessary 
+* Chem: ScaffoldTree: added the lines (should still be improved though) 
+* TreeViewNode: added a generics type to represent node.value 
+* Chem: Scaffold Tree: major code cleanup; made most of it strongly-typed as well 
+* Chem: Scaffold Tree: added 'ringCutoff' and 'dischargeAndDeradicalize' parameters (to both script and viewer) 
+* Chem: Scaffold Tree: minor code cleanup 
+* Chem: Scaffold Tree: saving and opening \- WIP 
+* Chem: Scaffold Tree: moved UI code to CSS 
+* Chem: Scaffold Tree: beautified the lines 
+* Chem: Scaffold Tree: minor fix 
+* Minor visual improvements 
+* Fixed #1502: fixed missing custom cluster name in distribution widget 
+* #1077: WebLogo fixes 
+* Chem: Scaffold Tree: support for loading and saving trees 
+* Chem: Scaffold Tree: ability to invoke it from the top menu 
+* Fixed #1503: added custom cluster name property in logo summary table 
+* Fixed #1504: fixed aggregated column not appearing in LST 
+* Fixed #1505: added aggregated columns to distribution widget 
+* Peptides version 1.6.1 
+* Chem: Scaffold Tree: Fixed the rendering of non-standard nodes fragments 
+* Chem: Scaffold Tree: cosmetic improvements 
+* Chem: Scaffold Tree: Returned accidently removed version of the aromatic processor 
+* Chem: Scaffold Tree: help 
+* Chem: bumped up the version 
+* (Bug) Scatterplot: range sliders issue when a legend is present 
+* Chem: Scaffold Tree: Fixed structure highliter bug on node selection 
+* Chem: Scaffold Tree: Fixed saving scaffold tree as part of layout 
+* NglViewer: Remove the package 
+* Chem: added tests for substructure search with aromatic bond/explicit hydrogen 
+* Packages: Tutorials: version bump 
+* Widgets: obsolete smiles widget removal 
+* Tutorials: clarifications for the scripting tutorial 
+* Charts: added filtering to group-analysis 
+* (Bug) FuncCall.options can't be saved to DB 
+* closes #1499 Legend/viewer inconsistencies when table is filtered 
+* #1354: fixed RGroup failing with OCL sketcher 
+* Dendrogram: Fix hierarchicalClustering for datetime type column as float 
+* JS UI Test: SPE 
+* closes 1464 Change order of filters 
+* JS API: add showNextTo parameter to Dialog.show 
+* Bio: fixed typo 
+* Charts: refactored sankey 
+* Issue #1417: Chem | Column Actions | Descriptors: error when empty values are present 
+* Chem: Scaffold Tree: Added support to cancel tree auto generation 
+* MLB: Fix VR space scatter plot X, Y data column names on changing data frame 
+* GIS: removed the showing of custom property panel of GisObject 
+* (Bug) Add missing DB index 
+* Help: Fix linter errors 
+* Charts: refactored chord 
+* Docker: load image to system 
+* Build: Universal build script for all OS 
+* Charts: refactored globe 
+* Build: Windows compatibility 
+* Revert "Build: Windows compatibility" 
+* Widgets: bumped up the version 
+* #928 recheck properties order 
+* Build: Docker cache for files in Windows 
+* Build: Docker files copy 
+* The ability to construct byte array column using fromList constructor 
+* (Bug) File Shares: Mount Windows shares 
+* Charts: added aggregation types to group-analysis 
+* Cloudfimation:add 80 port to cvm_int_lb SG 
+* Charts: fixed typos in radar 
+* udate node to 18.12.0 in puppeteer 
+* Charts: fixed typos in word-cloud 
+* Fixed #1517: fixed cluster not removing 
+* add webpack to DSP-package 
+* Fixes #1521: don't create empty new views 
+* #1518: replaced settings button with wrench icon 
+* #1518: removed view name field 
+* #1518: moved New view button to property panel on selection 
+* Added Dmytro to beta users 
+* Chem: add tests for mol2 importer 
+* Bio: substructure filters refactoring 
+* Alation: updated api dependency 
+* GIS: fixed zipcode detector 
+* bio lib: Move WebLogo viewer to Bio package 
+* Charts: version up 
+* (Bug) Color coding: dialog size issue when coloring a molecular column 
+* Lstolbov/curves (#1526) 
+* Charts: skipped timelines properties test, version up 
+* Bio: Move WebLogo viewer to Bio package 
+* Peptides: Remove reexporting index.ts from bio lib 
+* Charts: skipped timelines viwer creation tests, version up 
+* #1314: Chem \- fixed properties widget 
+* #1487: fixed Structural Alerts panel mol orientation 
+* Chem: updated Group analysis fucntion, bump version 
+* Chem: fixed typo in panels 
+* #1454: use the same instance of rdkit module in structural alerts panel 
+* Chem: bump version 
+* FottingTools: bum version 
+* Revert "GitHub Actions: Bump Meta package version for" 
+* Peptides: refactored views 
+* Build: Remove Windows symbols 
+* Chembl: New server for databases 
+* #1518: moved custom cluster actions to property  panel 
+* Charts: changed mode to development 
+* #1518: Monomer-Position viewer hints in icon 
+* Chembl: Add Chem as grok dependency 
+* #1518: nullable clusters column input 
+* #1524: nullable clusters field 
+* #1524: autogenerate aligned column name 
+* #1524: added inputs tooltips 
+* (Bug) Viewers | Trellis plot: errors occur when a trellis plot is displayed in R-Groups Analysis 
+* (Bug) Package can't be installed with npm proxy specified  
+* Helm: fixing datagrok-libraries/bio version 
+* Close #1466 MLB: Fix WebLogo tooltip invalid count rows/sequences with specific monomer at particular position, add test, add WebLogo.filterSource property 
+* Dendrogram: Dendrogram viewer fix props category Style 
+* JS API: fix Dialog.showModal 
+* Dendrogram: documentation 
+* Dendrogram: documentation fix gifs 
+* Dendrogram: Scroll grid on wheel on tree 
+* MLB: Fix binding embed columns with VR space scatter plot 
+* (Bug) Charts | GroupAnalysisViewer: NullError: method not found: 'root' on null 
+* (Bug) AddNewColumn without passing column type causes the exeption (WIP)
+* Viewers: Histogram: An option to render the distribution as spline when no split is defined 
+* dpetrov/1532: Chem: Fixed structure highlight with explicit hydrogen 
+* Dpetrov/1533 chem structurre search makeover (#1535) 
+* Grok Compute: Default configuration 
+* Grok Compute: downgrade numpy Fix 'AttributeError: module 'numpy' has no attribute 'bool'' error Numpy removed method bool in 1.24.0 More infromation: https://github.com/numpy/numpy/releases/tag/v1.24.0 
+* #1529: Chem \- added check if package has been initiated 
+* DSP: package.json indent 
+* Update Meta package 
+* 1476 chem similarity search improvements (#1536) 
+* Peptides: minor refactoring 
+* Chem: described similarity search in README 
+* Build: Multiple actions for docker build 
+* Git: ignore files generated by datlas during start 
+* Chem: version up 
+* Docs: Release documentation 
+* Docs: Docusaurus documentation 
+* Grok Shared: Default values for CVM using ipv4 localhost address 
+* Chem: fixed typos in readme 
+* Chem: updated similarity search in Wiki 
+* Chem: similarity search, updated Wiki 
+* Grok Spawner: optional registry credentials 
+* Build: Docker output on build action 
+* JKG: Octave libspqr2 library 
+* (Bug) Auto init method of Chem package is called multiple times 
+* JKG: Octave libopenblas library 
+* Demo DB: MSSQL healthcheck 
+* ApiTests: New Demo DB servers 
+* Fixed some tests 
+* Error handling 
+* Bump package version 
+* (Bug) Some inputs cannot be nullified (WIP)
+* DevTools: TM fixes 
+* (Bug) Viewers | Scatterplot : 'zoom by filter' doesn't work, when Filter is set first 
+* closes #1498 Line chart coloring legend does not match the right colors in some cases 
+* 1465 Improving usability of range filters 
+* closes 1475 Chem | Filtering: Filter Panel has to be reopened to display the molecule after Current value>Use as filter action 
+* BiostructureViewer: Change ownership to atanas@datagrok.ai 
+* Chem: fixing linter errors in similarity search wiki 
+* Chem: similarity serach, linter fixes 
+* (Bug) Timelines viewer: properties return null dateFormat 
+* (Bug) Timelines viewer cannot be created (error in onFrameAttached) 
+* ApiTests: Viewer.props.setDefault/resetDefault 
+* MLB: Check data consistency VRs of the antigen in tree2 and antbody2antigen 
+* JS API: fix build error 
+* Grok Spawner: Debug in log 
+* Grok Spawner: Fail on docker push errors 
+* MLB: Check data consistency VRs of the antigen in tree2 and antibody2antigen fix 
+* Logger: format stacktrace for test engine 
+* Grok Compute: num cores based on cpu limit 
+* DevTools: testFunctions fix 
+* Add team page 
+* Update css styles 
+* #1307: fixed PubChem api panels fixed width in window 
+* Top panel refimnement (WIP)
+* #1030: limited drug likeness panel vertically 
+* #1030: limited structural alerts panel vertically 
+* closes #1500 Line chart coloring should be able to scale to visible range of data 
+* dpetrov/1545: Fixed appending orphans folders after scaffold tree is loaded from a local file 
+* Grok Spawner: Deploy containers to datarok host if host label is missing 
+* BiostructureViewer: Fix imports from bio lib, enable ts strict mode, molstar viewer initial 
+* JS API: add windows.showContextPane 
+* Cheminformatics | Stability and Polishings (WIP)
+* Grok Spawner: Fail if hosts with required labels are missing 
+* Release notes 1.12.0 
+* #1465 improve usability of range filters 
+* Fixed #1543: MPR row ordering fix 
+* (Bug) Predictive Modeling | H2O: Input fields are not shown in training view (on https://public.datagrok.ai/) 
+* trellis plot issue 
+* added type-ahead control to utils 
+* Help: Documentation for docusaurus 
+* Docker Compose: Additional profiles 
+* Docusaurus: Team page with custom images and css 
+* JS API: package-lock.json upgrade 
+* Docusaurus: unique location for images 
+* set julia version to 1.6.7LTS 
+* Docusaurus: fix 
+* MLB: Fix VR space zooming on current igphyml clone/tree 
+* Peptides: changed category to Bioinformatics 
+* Help: Release notes headings fix 
+* Chem: columns on null (fixed for To Inchi and To Inchi Keys) 
+* Chem: fix tests due to panels refinement 
+* MLB: Bump bio/Bio dependency version for updated WebLogoViewer, VdRegionsViewer 
+* Rename the property panel to context panel (#1554) 
+* Chem: fix test for similarity search 
+* Rename the property panel to context panel 
+* Chem: skipped UI tests, version up 
+* Chem: fixed tests, version up 
+* (Bug) Test engine: enable script testing mechanism for test manager and all packages 
+* Docs: Fix link in help documentation 
+* DevTools: bump version 
+* Usage Analysis: changed category to General 
+* closes 1482 Chem | Cell with molecule: ‘Sort by similarity ‘ action causes an error 
+* Docs: Add Browse Schema to Supported Connectors documentation 
+* MLB: Fix for network diagram data columns 
+* Meta: Remove ngl-viewer package, bump version 
+* Chem: #1306 chem item in panel 
+* Packages: adjust package categories 
+* Bio: fixed substructure filters tests 
+* Bio: Enable tests for substructure search, fix grokDependencies versions 
+* Helm: Fix imports from bio lib, bump version 
+* fix julia scripts working 
+* #1523: mutation cliffs now respond to filtering 
+* #1523: fixed distribution widget for custom clusters 
+* #1523: fixed cluster creation 
+* #1523: fixed wrong tooltip stats in LST if filter is applied 
+* #1557: fixed filter not applied on project load 
+* #1523: made logo summary table react to filtering 
+* #1523: store cluster names in selection 
+* #1557: fixed wrong object is shown on project load 
+* #1556: added aggregated column to cluster tooltip 
+* Peptides: fixed Monomer-Position hints 
+* #274: fixed save and load test 
+* Library GridExt: Adding repaint call on adding pinned columns 
+* Removed extra menu items 
+* Package PowerGrid: Bumping Up version 
+* #1498 reset filter legend refresh 
+* 1500 readjusting X axis 
+* grid core height by visible cols 
+* scatterplot invalidate method 
+* scatterplot invalidate canvas method 
+* Bio: Downgrade platform version dependency 
+* Add .columns property to DG.ViewLayout 
+* Chem: diversity search \- additional molecule properties 
+* added comments to TypeAhead 
+* added DropDown control 
+* Build: Moved grok connect to github 
+* Avoiding using dapi on server to upload tables 
+* Build: Grok Connect in public 
+* Docs: how to set the default sketcher + link to the Release Notes 
+* Peptides: version 1.7.0 release 
+* Docs: fix link in help documentation 
+* Peptides: autotests fix 
+* Docs: fix links in help documentation 
+* typeahead styles 
+* add ribbonPanel div 
+* update ribbonPanel 
+* Chem: detectors small fix 
+* closes 1553 slider in log mode 
+* closes 1551 Line chart: X categorical axis is not aligned with value 
+* Mdolotov/sketchers refactoring (#1349) 
+* (Bug) Databases: error in Sharing tab after deleting the shared query 
+* grid should not throw errors 
+
+
 
 ## 2023-01-27 Dev build 1.12.1
 

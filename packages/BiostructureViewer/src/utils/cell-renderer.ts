@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {byData} from '../viewers/molstar-viewer';
-import {getNglGlService} from '../package';
+import {_package, getNglGlService} from '../package';
 import {NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 
 const PDB_RENDERER_IMAGE_CACHE_KEY = 'PdbRendererImageCache';
@@ -73,7 +73,7 @@ export class PdbRenderer extends DG.GridCellRenderer {
     if (gridCell.tableRowIndex == null || gridCell.tableColumn == null) return;
 
     const rowIdx: number = gridCell.tableRowIndex;
-    console.debug('PTV: PdbRenderer.render() start ' + `rowIdx=${rowIdx}`);
+    _package.logger.debug('PdbRenderer.render() start ' + `rowIdx=${rowIdx}`);
 
     g.save();
     try {
@@ -104,7 +104,7 @@ export class PdbRenderer extends DG.GridCellRenderer {
             height: gridCell.grid.props.rowHeight * r,
           },
           onAfterRender: async (canvas: HTMLCanvasElement) => {
-            console.debug('PTV: PdbRenderer.render() onAfterRender() ' + `rowIdx = ${rowIdx}`);
+            _package.logger.debug('PdbRenderer.render() onAfterRender() ' + `rowIdx = ${rowIdx}`);
             const imageStr: string = canvas.toDataURL();
             const image: HTMLImageElement = await base64ToImg(imageStr);
 
@@ -120,10 +120,10 @@ export class PdbRenderer extends DG.GridCellRenderer {
       } else {
         const image: HTMLImageElement = imageCache[rowIdx];
         if (image) {
-          console.debug('PTV: PdbRenderer.render() ' + `imageCache[${rowIdx}] = <image>`);
+          _package.logger.debug('PdbRenderer.render() ' + `imageCache[${rowIdx}] = <image>`);
           service.renderOnGridCell(g, new DG.Rect(x, y, w, h), gridCell, image);
         } else {
-          console.debug('PTV: PdbRenderer.render() ' + `imageCache[${rowIdx}] = null`);
+          _package.logger.debug('PdbRenderer.render() ' + `imageCache[${rowIdx}] = null`);
         }
       }
     } finally {

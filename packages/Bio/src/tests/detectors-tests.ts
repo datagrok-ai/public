@@ -141,6 +141,7 @@ MWRSWY-CKHP
     testDmvOffices = 'testDmvOffices',
     testAlertCollection = 'testAlertCollection',
     testSpgi = 'testSpgi',
+    testUrl = 'testUrl',
   }
 
   const samples: { [key: string]: string } = {
@@ -164,6 +165,7 @@ MWRSWY-CKHP
     [Samples.testDmvOffices]: 'System:AppData/Bio/tests/testDmvOffices.csv',
     [Samples.testAlertCollection]: 'System:AppData/Bio/tests/testAlertCollection.csv',
     [Samples.testSpgi]: 'System:AppData/Bio/tests/SPGI-derived.csv',
+    [Samples.testUrl]: 'System:AppData/Bio/tests/testUrl.csv',
   };
 
   const _samplesDfs: { [key: string]: Promise<DG.DataFrame> } = {};
@@ -406,6 +408,10 @@ MWRSWY-CKHP
 
   test('samplesTestSpgiNegativeVals', async () => {
     await _testNeg(readSamples(Samples.testSpgi), 'vals');
+  });
+
+  test('samplesTestUrlNegativeSeq', async () => {
+    await _testNeg(readSamples(Samples.testUrl), 'url');
   });
 });
 

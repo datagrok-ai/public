@@ -18,6 +18,7 @@ export class ScriptingTutorial extends Tutorial {
 
   demoTable: string = '';
   helpUrl: string = 'https://datagrok.ai/help/compute/scripting';
+  prerequisites = {jupyter: true};
 
   protected async _run() {
     this.header.textContent = this.name;

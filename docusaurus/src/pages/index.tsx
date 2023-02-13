@@ -8,7 +8,7 @@ import styles from './index.module.css';
 
 function HomepageHeader() {
   const {siteConfig} = useDocusaurusContext();
-  window.location.href = 'https://datagrok.ai';
+  // window.location.href = 'https://datagrok.ai';
   return (
     <header className={clsx('hero hero--primary', styles.heroBanner)}>
       <div className="container">

@@ -4,7 +4,7 @@
     "access": "public"
   },
   "friendlyName": "Datagrok bio library",
-  "version": "5.22.0",
+  "version": "5.22.2",
   "description": "",
   "dependencies": {
     "@datagrok-libraries/gridext": "^1.3.22",

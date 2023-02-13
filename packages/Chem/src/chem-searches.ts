@@ -254,3 +254,16 @@ export function chemGetFingerprint(molString: string, fingerprint: Fingerprint):
     mol?.delete();
   }
 }
+
+export async function geMolNotationConversions(molCol: DG.Column, targetNotation: string): Promise<string[]> {
+  await chemBeginCriticalSection();
+  try {
+    await _invalidate(molCol);
+    const conversions = await (await getRdKitService()).convertMolNotation(targetNotation);
+    //saveFingerprintsToCol(molCol, fingerprints, fingerprintsType);
+    chemEndCriticalSection();
+    return conversions;
+  } finally {
+    chemEndCriticalSection();
+  }
+}
