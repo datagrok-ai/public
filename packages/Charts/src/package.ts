@@ -13,7 +13,8 @@ import {GroupAnalysisViewer} from './viewers/group-analysis/group-analysis-viewe
 import {SurfacePlot} from './viewers/surface-plot/surface-plot';
 import {GlobeViewer} from './viewers/globe/globe-viewer';
 
-import {Demo} from './demos/demo';
+import {viewerDemo} from './demos/demo';
+
 
 export const _package = new DG.Package();
 
@@ -112,59 +113,59 @@ export function _WordCloudViewer() {
 //name: chordViewerDemo
 //meta.demoPath: Viewers | Chord
 export function _chordViewerDemo() {
-  Demo.chordViewerDemo();
+  viewerDemo('ChordViewer');
 }
 
 //name: globeViewerDemo
 //meta.demoPath: Viewers | Globe
 export function _globeViewerDemo() {
-  Demo.globeViewerDemo();
+  viewerDemo('GlobeViewer');
 }
 
 //name: groupAnalysisViewerDemo
 //meta.demoPath: Viewers | GroupAnalysis
 export function _groupAnalysisViewerDemo() {
-  Demo.groupAnalysisViewerDemo();
+  viewerDemo('GroupAnalysisViewer');
 }
 
 //name: radarViewerDemo
 //meta.demoPath: Viewers | Radar
 export function _radarViewerDemo() {
-  Demo.radarViewerDemo();
+  viewerDemo('RadarViewer');
 }
 
 //name: sankeyViewerDemo
 //meta.demoPath: Viewers | Sankey
 export function _sankeyViewerDemo() {
-  Demo.sankeyViewerDemo();
+  viewerDemo('SankeyViewer');
 }
 
 //name: sunburstViewerDemo
 //meta.demoPath: Viewers | Sunburst
 export function _sunburstViewerDemo() {
-  Demo.sunburstViewerDemo();
+  viewerDemo('SunburstViewer');
 }
 
 //name: surfacePlotDemo
 //meta.demoPath: Viewers | SurfacePlot
 export function _surfacePlotDemo() {
-  Demo.surfacePlotDemo();
+  viewerDemo('SurfacePlot');
 }
 
 //name: timelinesViewerDemo
 //meta.demoPath: Viewers | Timelines
 export function _timelinesViewerDemo() {
-  Demo.timelinesViewerDemo();
+  viewerDemo('TimelinesViewer');
 }
 
 //name: treeViewerDemo
 //meta.demoPath: Viewers | Tree
 export function _treeViewerDemo() {
-  Demo.treeViewerDemo();
+  viewerDemo('TreeViewer');
 }
 
 //name: wordCloudViewerDemo
 //meta.demoPath: Viewers | WordCloud
 export function _wordCloudViewerDemo() {
-  Demo.wordCloudViewerDemo();
+  viewerDemo('WordCloudViewer');
 }

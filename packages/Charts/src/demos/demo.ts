@@ -1,71 +1,37 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
+import {_package} from '../package';
 
-export class Demo {
-  static async chordViewerDemo() {
-    const df = await grok.data.getDemoTable('energy_uk.csv');
-    const tableView = grok.shell.addTableView(df);
-    tableView.addViewer('ChordViewer');
+
+const VIEWER_TABLES_PATH: {[key: string]: string} = {
+  ChordViewer: 'energy_uk.csv',
+  GlobeViewer: 'geo/earthquakes.csv',
+  GroupAnalysisViewer: 'files/r-groups.csv',
+  RadarViewer: 'demog.csv',
+  SankeyViewer: 'energy_uk.csv',
+  SunburstViewer: 'demog.csv',
+  SurfacePlot: 'files/surface-plot.csv',
+  TimelinesViewer: '', // fix
+  TreeViewer: 'demog.csv',
+  WordCloudViewer: 'word_cloud.csv',
+};
+
+
+export async function viewerDemo(viewerName: string, options?: object | null) {
+  let df: DG.DataFrame;
+
+  if (['GroupAnalysisViewer', 'SurfacePlot'].includes(viewerName))
+    df = await grok.data.loadTable(`${_package.webRoot}${VIEWER_TABLES_PATH[viewerName]}`);
+  else
+    df = await grok.data.getDemoTable(VIEWER_TABLES_PATH[viewerName]);
+
+  const tableView = grok.shell.addTableView(df);
+
+  if (['GlobeViewer', 'GroupAnalysisViewer'].includes(viewerName)) {
+    DG.debounce(df.onSemanticTypeDetected, 50).subscribe((_) => tableView.addViewer(viewerName));
+    return;
   }
 
-  static async globeViewerDemo() {
-    const df = await grok.data.getDemoTable('geo/earthquakes.csv');
-    const tableView = grok.shell.addTableView(df);
-    // semantic type detection is needed for the latitude, longitude and magnitude columns
-    DG.debounce(df.onSemanticTypeDetected, 50).subscribe((_) => tableView.addViewer('GlobeViewer'));
-  }
-
-  static async groupAnalysisViewerDemo() {
-    const df = await grok.data.getDemoTable('demog.csv');
-    const tableView = grok.shell.addTableView(df);
-    tableView.addViewer('GroupAnalysisViewer');
-  }
-
-  static async radarViewerDemo() {
-    const df = await grok.data.getDemoTable('demog.csv');
-    const tableView = grok.shell.addTableView(df);
-    tableView.addViewer('RadarViewer');
-  }
-
-  static async sankeyViewerDemo() {
-    const df = await grok.data.getDemoTable('energy_uk.csv');
-    const tableView = grok.shell.addTableView(df);
-    tableView.addViewer('SankeyViewer');
-  }
-
-  static async sunburstViewerDemo() {
-    const df = await grok.data.getDemoTable('demog.csv');
-    const tableView = grok.shell.addTableView(df);
-    tableView.addViewer('SunburstViewer');
-  }
-
-  static async surfacePlotDemo() {
-    const df = await grok.data.getDemoTable('demog.csv');
-    const tableView = grok.shell.addTableView(df);
-    tableView.addViewer('SurfacePlot');
-  }
-
-  static timelinesViewerDemo() {
-    const df = DG.DataFrame.fromCsv(
-      `USUBJID, AESTDY, AEENDY, SEX, AGE
-      s1, 10/02/2018, 10/09/2018, F, 48
-      s2, 10/04/2018, 10/07/2018, M, 51
-      s3, 10/02/2018, 10/05/2018, F, 39
-      s4, 10/07/2018, 10/08/2018, M, 43`);
-    const tableView = grok.shell.addTableView(df);
-    tableView.addViewer('TimelinesViewer');
-  }
-
-  static async treeViewerDemo() {
-    const df = await grok.data.getDemoTable('demog.csv');
-    const tableView = grok.shell.addTableView(df);
-    tableView.addViewer('TreeViewer');
-  }
-
-  static async wordCloudViewerDemo() {
-    const df = await grok.data.getDemoTable('word_cloud.csv');
-    const tableView = grok.shell.addTableView(df);
-    tableView.addViewer('WordCloudViewer');
-  }
+  tableView.addViewer(viewerName, options);
 }
