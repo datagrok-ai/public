@@ -18,6 +18,8 @@ select canonical_smiles from compound_structures where molregno = @molregno
 --end
 
 --name: nameToSmiles
+--meta.role: converter
+--meta.inputRegexp: (^[\w()_+\-=\[\]{};':"\\|,.<>\s\/?]+)
 --connection: ChemblSql
 --input: string compoundName
 --output: string smiles { semType: Molecule }

@@ -77,6 +77,10 @@ M  END
   get defaultWidth() {return 200;}
   get defaultHeight() {return 100;}
 
+  getDefaultSize(gridColumn: DG.GridColumn): {width: number, height: number} {
+    return { width: this.defaultWidth, height: this.defaultHeight };
+  }
+
   _fetchMolGetOrCreate(molString: string, scaffoldMolString: string, molRegenerateCoords: boolean, details: object = {}): IMolInfo {
     let molCtx: IMolContext;
     let mol: RDMol | null = null;
@@ -220,12 +224,13 @@ M  END
       ctx.save();
       const scl = ctx.getTransform();
       ctx.resetTransform();
-      ctx.translate(x, y);
+      ctx.translate(x + h, y);
       ctx.rotate(Math.PI / 2);
       if (scl.m11 < 1 || scl.m22 < 1)
         ctx.scale(scl.m11, scl.m22);
-      const bitmap = this.canvasReused.transferToImageBitmap();
-      ctx.drawImage(bitmap, 0, - (h), w, h);
+      let f = new OffscreenCanvas(imageData.width, imageData.height)!;
+      f.getContext('2d')?.putImageData(imageData, 0, 0);
+      ctx.drawImage(f, 0, 0)
       ctx.restore();
     } else {
       //const image = offscreenCanvas.getContext('2d')!.getImageData(0, 0, w, h);

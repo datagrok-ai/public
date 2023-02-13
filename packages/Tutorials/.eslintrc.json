@@ -26,6 +26,19 @@
     // Disabled due to function annotation
     "spaced-comment": "off",
     "require-jsdoc": "off",
-    "object-curly-spacing": "off"
+    "linebreak-style": "off",
+    "space-infix-ops": "error",
+		"curly": [
+			"error",
+			"multi-or-nest"
+		],
+		"brace-style": [
+			"error",
+			"1tbs",
+			{
+				"allowSingleLine": true
+			}
+		],
+		"block-spacing": 2
   }
 }

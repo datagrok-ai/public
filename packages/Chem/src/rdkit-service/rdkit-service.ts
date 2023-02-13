@@ -97,4 +97,19 @@ export class RdKitService {
       // We deliberately choose Uint32Array over DG.BitSet here
         obj.data);
   }
+
+
+  async convertMolNotation(targetNotation: string): Promise<string[]> {
+    const t = this;
+    return this._doParallel(
+      (i: number, nWorkers: number) => {
+        return t.parallelWorkers[i].convertMolNotation(targetNotation);
+      },
+      (data: any) => {
+        for (let k = 0; k < data.length; ++k) {
+          data[k] = data[k].map((a: number) => a + t.segmentLength * k);
+        }
+        return [].concat(...data);
+      });
+  }
 }

@@ -54,7 +54,7 @@ export class DistanceMatrix {
     this._data[this._linearizeIJ(i, j)] = value;
   }
 
-  static calc<TObj>(list: TObj[], method: (a: TObj, b: TObj) => number): DistanceMatrix {
+  static calc<TObj>(list: Indexable<TObj>, method: (a: TObj, b: TObj) => number): DistanceMatrix {
     const size: number = list.length;
     const res = new DistanceMatrix(undefined, size);
     for (let i = 0; i < size; i++) {
@@ -63,4 +63,9 @@ export class DistanceMatrix {
     }
     return res;
   }
+}
+
+export interface Indexable<TObj> {
+  [index: number]: TObj;
+  get length(): number;
 }

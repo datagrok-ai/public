@@ -45,7 +45,7 @@ export class NglGlService implements NglGlServiceBase {
   private _busy: boolean = false;
 
   render(task: NglGlTask, key?: keyof any): void {
-    //console.debug('BSV: NglGlService.render() start ' + `name: ${name}`);
+    //_package.logger.debug('NglGlService.render() start ' + `name: ${name}`);
 
     if (key !== undefined) {
       if (key in this._queueDict) {
@@ -64,12 +64,12 @@ export class NglGlService implements NglGlServiceBase {
       const hostDiv = ui.div([this.nglDiv]);
       this.hostDn = grok.shell.tv.dockManager.dock(hostDiv, DG.DOCK_TYPE.RIGHT,
         null, 'NglGlService', 0.00);
-      console.debug('PTV: NglGlService dock()');
+      _package.logger.debug('NglGlService dock()');
 
       // TODO: Use requestAnimationFrame()
       window.setTimeout(async () => { await this._processQueue(); }, 0 /* next event cycle */);
     }
-    //console.debug('BSV: NglGlService.render() end ' + `name: ${name}`);
+    //_package.logger.debug('NglGlService.render() end ' + `name: ${name}`);
   }
 
   private async _processQueue() {
@@ -111,7 +111,7 @@ export class NglGlService implements NglGlServiceBase {
   private async onNglRendered(): Promise<void> {
     if (this.task === undefined) return;
 
-    console.debug('PTV: NglGlService onAfterRenderHandler() ' + `key = ${JSON.stringify(this.key)}`);
+    _package.logger.debug('NglGlService onAfterRenderHandler() ' + `key = ${JSON.stringify(this.key)}`);
     let taskCompleted: boolean = false;
 
     //TODO: Use canvas size switching 0/1 px to required to detect rendering completed
@@ -122,7 +122,7 @@ export class NglGlService implements NglGlServiceBase {
     } else {
       const currentPaintingSize = this.ngl.viewer.renderer.domElement.toDataURL('image/png').length;
       if (currentPaintingSize > this.emptyPaintingSize * 2) {
-        console.debug('PTV: NglGlService taskCompleted ' + `key = ${JSON.stringify(this.key)}`);
+        _package.logger.debug('NglGlService taskCompleted ' + `key = ${JSON.stringify(this.key)}`);
         taskCompleted = true;
       }
     }
@@ -147,7 +147,7 @@ export class NglGlService implements NglGlServiceBase {
           grok.shell.tv.dockManager.close(this.hostDn!);
         } catch (err) {}
         delete this.hostDn;
-        console.debug('PTV: NglGlService undock()');
+        _package.logger.debug('NglGlService undock()');
       }
     }
   }
