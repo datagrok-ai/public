@@ -20,6 +20,7 @@ const FILTER_SYNC_EVENT = 'chem-substructure-filter';
 interface ISubstructureFilterState {
   bitset: DG.BitSet;
   molblock: string;
+  colName: string;
 }
 export class SubstructureFilter extends DG.Filter {
   // @ts-ignore
@@ -58,10 +59,12 @@ export class SubstructureFilter extends DG.Filter {
       this.updateExternalSketcher();
     } }));
     this.subs.push(grok.events.onCustomEvent(FILTER_SYNC_EVENT).subscribe((state: ISubstructureFilterState) => {
-      this.syncEvent = true;
-      this.bitset = state.bitset;
-      this.sketcher.setMolFile(state.molblock);
-      this.updateExternalSketcher();
+      if (state.colName === this.columnName) {
+        this.syncEvent = true;
+        this.bitset = state.bitset;
+        this.sketcher.setMolFile(state.molblock);
+        this.updateExternalSketcher();
+      }
     }))
   }
 
@@ -166,7 +169,7 @@ export class SubstructureFilter extends DG.Filter {
           return;
         this.bitset = bitset;
         this.calculating = false;
-        grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset, molblock: this.sketcher.getMolFile()});
+        grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset, molblock: this.sketcher.getMolFile(), colName: this.columnName});
         this.dataFrame?.rows.requestFilter();
       } finally {
         this.calculating = false;
