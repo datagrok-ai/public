@@ -1,0 +1,35 @@
+// index.html
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Simple template</title>
+  </head>
+  <body>
+    <script>
+      (async () => {
+        const fetchPromise = fetch('sum.wasm');
+        const module = await WebAssembly.compileStreaming(fetchPromise);
+        const instance = await WebAssembly.instantiate(module);
+        
+        /*const func = instance.exports.fib; // this is the function required
+        
+        for(let i = 1; i <= 10; i++)
+          console.log(i + " <-> " + func(i));*/
+
+        const sum = instance.exports.sum;
+        const memory = instance.exports.memory;        
+  
+        // Create an array that can be passed to the WebAssembly instance.
+        const array = new Int32Array(memory.buffer, 0, 5);
+        array.set([1, 2, 3, 4, 5]);
+        
+        // Call the function and display the results.
+        const result = sum(array.byteOffset, array.length);
+
+        console.log(result);
+
+      })();
+    </script>
+  </body>
+</html>
