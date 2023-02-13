@@ -856,6 +856,9 @@
         },
         "3.0.0": {
           "datagrok-api": "^1.6.0"
+        },
+        "3.1.0": {
+          "datagrok-api": "^1.13.0"
         }
       },
       "description": "marvin is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
@@ -2208,6 +2211,9 @@
       "dependencies": {
         "1.0.1": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.1.0": {
+          "datagrok-api": "^1.13.0"
         }
       },
       "description": "ChemDraw is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
