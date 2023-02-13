@@ -553,7 +553,7 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
   }
 }
 
-//top-menu: Chem | Analyze SAR | Structural alerts
+//top-menu: Chem | Analyze SAR | Structural Alerts...
 //name: Structural Alerts...
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}
