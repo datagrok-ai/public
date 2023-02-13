@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {NOTATION, TAGS as bioTAGS, ALIGNMENT, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import * as C from './constants';
 
 export const pepseaMethods = ['mafft --auto', 'mafft', 'linsi', 'ginsi', 'einsi', 'fftns', 'fftnsi', 'nwns', 'nwnsi'];
 const alignmentObjectMetaKeys = ['AlignedSeq', 'AlignedSubpeptide', 'HELM', 'ID', 'PolymerID'];
@@ -55,10 +56,10 @@ export function pepseaDialog(): void {
     .show();
 }
 
-export async function runPepsea(col: DG.Column<string>, method: typeof pepseaMethods[number] = 'ginsi',
+export async function runPepsea(srcCol: DG.Column<string>, method: typeof pepseaMethods[number] = 'ginsi',
   gapOpen: number | null = 1.53, gapExtend: number | null = 0.0, clustersCol: DG.Column<string | number> | null = null,
   ): Promise<DG.Column<string>> {
-  const peptideCount = col.length;
+  const peptideCount = srcCol.length;
   gapOpen ??= 1.53;
   gapExtend ??= 0.0;
   clustersCol ??= DG.Column.int('Clusters', peptideCount).init(0);
@@ -75,7 +76,7 @@ export async function runPepsea(col: DG.Column<string>, method: typeof pepseaMet
       continue;
 
     const clusterId = clusters.indexOf(cluster);
-    const helmSeq = col.get(rowIndex);
+    const helmSeq = srcCol.get(rowIndex);
     if (helmSeq)
       (bodies[clusterId] ??= []).push({ID: rowIndex.toString(), HELM: helmSeq});
   }
@@ -90,16 +91,17 @@ export async function runPepsea(col: DG.Column<string>, method: typeof pepseaMet
     for (const alignment of alignments) {  // filling alignedSequencesCol
       alignedSequences[parseInt(alignment.ID)] = Object.entries(alignment)
         .filter((v) => !alignmentObjectMetaKeys.includes(v[0]))
-        .map((v) => v[1])
-        .join('.');
+        .map((v) => v[1] != '-' ? v[1] : '')
+        .join(C.PEPSEA.SEPARATOR);
     }
   }
 
-  const newColName = col.dataFrame.columns.getUnusedName(`msa(${col.name})`);
+  const newColName = srcCol.dataFrame.columns.getUnusedName(`msa(${srcCol.name})`);
   const alignedSequencesCol: DG.Column<string> = DG.Column.fromStrings(newColName, alignedSequences);
   alignedSequencesCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+  alignedSequencesCol.setTag(bioTAGS.separator, C.PEPSEA.SEPARATOR);
   alignedSequencesCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
-  alignedSequencesCol.setTag(bioTAGS.alphabet, ALPHABET.PT);
+  alignedSequencesCol.setTag(bioTAGS.alphabet, ALPHABET.UN);
   alignedSequencesCol.semType = DG.SEMTYPE.MACROMOLECULE;
 
   return alignedSequencesCol;

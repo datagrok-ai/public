@@ -410,10 +410,11 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
 
 //top-menu: Bio | MSA...
 //name: MSA
-export async function multipleSequenceAlignmentAny(col?: DG.Column<string>): Promise<void> {
+//input: column col {semType: Macromolecule}
+export async function multipleSequenceAlignmentAny(col: DG.Column<string> | null = null): Promise<void> {
   let performAlignment: () => Promise<DG.Column<string> | null> = async () => null; 
 
-  const table = grok.shell.t;
+  const table = col?.dataFrame ?? grok.shell.t;
   const methodInput = ui.choiceInput('Method', pepseaMethods[0], pepseaMethods);
   const gapOpenInput = ui.floatInput('Gap open', 1.53);
   const gapExtendInput = ui.floatInput('Gap extend', 0);
