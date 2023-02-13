@@ -1,7 +1,6 @@
-<!-- TITLE: Jupyter Notebook -->
-<!-- SUBTITLE: -->
-
-# Jupyter Notebook
+---
+title: "Jupyter Notebook"
+---
 
 The Jupyter Notebook is an open-source web application that allows you to create and share documents that contain live
 code, equations, visualizations and narrative text. Uses include: data cleaning and transformation, numerical
@@ -18,7 +17,7 @@ Creating a new notebook is very easy. There are several ways to do this:
 1. Click `Functions | Notebooks | New Notebook`
 2. Run #{x.CmdNewNotebook} from the [console](../datagrok/navigation.md#console)
 3. Select one or more tables and click `Actions | Open in Notebooks` on
-   the [Property Panel](../datagrok/navigation.md#properties)
+   the [Context Panel](../datagrok/navigation.md#context-panel)
 
 If you want to link a notebook to one or more tables, please use the third method.
 

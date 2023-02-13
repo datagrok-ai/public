@@ -1,85 +1,79 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as rxjs from 'rxjs';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
-// import $ from 'cash-dom';
+import * as rxjs from 'rxjs';
 
 import {download} from '../utils/helpers';
-
 import {sequenceToMolV3000} from '../utils/structures-works/from-monomers';
 import {linkStrandsV3000} from '../utils/structures-works/mol-transformations';
 import {getFormat} from './sequence-codes-tools';
 
 import {drawMolecule} from '../utils/structures-works/draw-molecule';
 
-function getMolfileForImg(
-  ss: string, as: string,
-  as2: string | null = null,
-  invertSS: boolean, invertAS: boolean, invertAS2: boolean,
-  useChiral: boolean
-): string {
-  const formatAs = getFormat(as);
-  const formatSs = getFormat(ss);
-  let formatAs2: string | null = null;
-  let molAS2: string | null = null;
+/** Data associated with strands */
+type StrandData = {
+  strand: string,
+  invert: boolean
+}
 
-  let molSS = '';
-  let molAS = '';
+/** Get a molfile for a single strand */
+function getMolfileForStrand(strand: string, invert: boolean): string {
+  const format = getFormat(strand);
+  let molfile = '';
   try {
-    // a workaround to get the SS depicted in case AS is empty
-    molSS = sequenceToMolV3000(ss, invertSS, false, formatSs!);
-    molAS = sequenceToMolV3000(as, invertAS, false, formatAs!);
+    molfile = sequenceToMolV3000(strand, invert, false, format!);
   } catch (err) {
     const errStr = errorToConsole(err);
     console.error(errStr);
   }
-
-  if (as2 !== null && as2 !== '') {
-    formatAs2 = getFormat(as2!);
-    molAS2 = sequenceToMolV3000(as2, invertAS2!, false, formatAs2!);
-  }
-
-  const antiStrands = molAS2 === null ? [molAS] : [molAS, molAS2];
-  const resultingMolfile = linkStrandsV3000({senseStrands: [molSS], antiStrands: antiStrands}, useChiral);
-  return resultingMolfile;
+  return molfile;
 }
 
-export function saveSdf(as: string, ss: string,
-  oneEntity: boolean, useChiral: boolean,
-  invertSS: boolean, invertAS: boolean,
-  as2: string | null = null, invertAS2: boolean | null
-): void {
-  if (ss === '' && as === '') {
-    grok.shell.warning('Enter a sequence to save SDF');
+/** Get molfile for single strand or linked strands */
+function getLinkedMolfile(
+  ss: StrandData, as: StrandData, as2: StrandData, useChiral: boolean
+): string {
+  const nonEmptyStrands = [ss, as, as2].filter((item) => item.strand !== '');
+  if (nonEmptyStrands.length === 1) {
+    return getMolfileForStrand(nonEmptyStrands[0].strand, nonEmptyStrands[0].invert);
   } else {
-    const formatAs = getFormat(as);
-    const formatSs = getFormat(ss);
-    let formatAs2: string | null = null;
-    let molAS2: string | null = null;
+    const ssMol = getMolfileForStrand(ss.strand, ss.invert);
+    const asMol = getMolfileForStrand(as.strand, as.invert);
+    const as2Mol = getMolfileForStrand(as2.strand, as2.invert);
 
-    const molSS = sequenceToMolV3000(ss, invertSS, false, formatSs!);
-    const molAS = sequenceToMolV3000(as, invertAS, false, formatAs!);
+    // select only the non-empty anti-strands
+    const antiStrands = [asMol, as2Mol].filter((item) => item !== '');
+    const resultingMolfile = linkStrandsV3000({senseStrands: [ssMol], antiStrands: antiStrands}, useChiral);
 
-    if (as2 !== null && as2 !== '') {
-      formatAs2 = getFormat(as2!);
-      molAS2 = sequenceToMolV3000(as2, invertAS2!, false, formatAs2!);
-    }
+    return resultingMolfile;
+  }
+}
 
+/** Save sdf in case ss and as (and optionally as2) strands entered */
+export function saveSdf(
+  ss: StrandData, as: StrandData, as2: StrandData, useChiral: boolean,
+  oneEntity: boolean
+): void {
+  if (ss.strand === '' && (as.strand !== '' && as2.strand !== '')) {
+    grok.shell.warning('Enter SS and AS/AS2 to save SDF');
+  } else {
     let result: string;
     if (oneEntity) {
-      const antiStrands = molAS2 === null ? [molAS] : [molAS, molAS2];
-      result = linkStrandsV3000({senseStrands: [molSS], antiStrands: antiStrands}, useChiral) + '\n$$$$\n';
+      result = getLinkedMolfile(ss, as, as2, useChiral) + '\n$$$$\n';
     } else {
-      result =
-        molSS + '\n' +
-        `> <Sequence>\nSense Strand\n$$$$\n` +
-        molAS + '\n' +
+      const ssMol = getMolfileForStrand(ss.strand, ss.invert);
+      const asMol = getMolfileForStrand(as.strand, as.invert);
+      const as2Mol = getMolfileForStrand(as2.strand, as2.invert);
+      result = ssMol + '\n' +
+        `> <Sequence>\nSense Strand\n$$$$\n`;
+      if (asMol) {
+        result += asMol + '\n' +
         `> <Sequence>\nAnti Sense\n$$$$\n`;
-
-      if (molAS2) {
-        result += molAS2+ '\n' +
+      }
+      if (as2Mol) {
+        result += as2Mol + '\n' +
           `> <Sequence>\nAnti Sense 2\n$$$$\n`;
       }
     }
@@ -92,6 +86,7 @@ export function saveSdf(as: string, ss: string,
     const dateString: string = date.getFullYear() + '-' + pad(date.getMonth() + 1) +
       '-' + pad(date.getDate()) + '_' + pad(date.getHours()) + '-' +
       pad(date.getMinutes()) + '-' + pad(date.getSeconds());
+
     download(`SequenceTranslator-${dateString}.sdf`, encodeURIComponent(result));
   }
 }
@@ -189,8 +184,10 @@ export function getSdfTab(): HTMLDivElement {
   DG.debounce<string>(onInput, 300).subscribe(async () => {
     let molfile = '';
     try {
-      molfile = getMolfileForImg(
-        ssInput.value, asInput.value, as2Input.value, invertSS, invertAS, invertAS2, useChiralInput.value!
+      molfile = getLinkedMolfile(
+        {strand: ssInput.value, invert: invertSS},
+        {strand: asInput.value, invert: invertAS},
+        {strand: as2Input.value, invert: invertAS2}, useChiralInput.value!
       );
     } catch (err) {
       const errStr = errorToConsole(err);
@@ -210,8 +207,12 @@ export function getSdfTab(): HTMLDivElement {
   const saveButton = ui.buttonsInput([
     ui.bigButton('Save SDF', () =>
       saveSdf(
-        asInput.value, ssInput.value, saveEntity.value!,
-        useChiralInput.value!, invertSS, invertAS, as2Input.value, invertAS2)
+        {strand: ssInput.value, invert: invertSS},
+        {strand: asInput.value, invert: invertAS},
+        {strand: as2Input.value, invert: invertAS2},
+        useChiralInput.value!,
+        saveEntity.value!
+      )
     )
   ]);
 

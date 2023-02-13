@@ -2,10 +2,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
-
+import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 //@ts-ignore
 import Aioli from '@biowasm/aioli';
 
@@ -39,7 +38,7 @@ export async function runKalign(srcCol: DG.Column, isAligned = false, unUsedName
   const fasta = _stringsToFasta(sequences);
   const CLI = await new Aioli([
     'base/1.0.0',
-    {tool: 'kalign', version: '3.3.1', reinit: true,}
+    {tool: 'kalign', version: '3.3.1', reinit: true}
   ]);
 
   console.log(['fasta.length =', fasta.length]);
@@ -59,14 +58,14 @@ export async function runKalign(srcCol: DG.Column, isAligned = false, unUsedName
   // units
   const srcUnits = srcCol.getTag(DG.TAGS.UNITS);
   //aligned
-  const srcAligned = srcCol.getTag(bio.TAGS.aligned);
+  const srcAligned = srcCol.getTag(bioTAGS.aligned);
   const tgtAligned = srcAligned + '.MSA';
   //alphabet
-  const srcAlphabet = srcCol.getTag(bio.TAGS.alphabet);
+  const srcAlphabet = srcCol.getTag(bioTAGS.alphabet);
 
   tgtCol.setTag(DG.TAGS.UNITS, srcUnits);
-  tgtCol.setTag(bio.TAGS.aligned, tgtAligned);
-  tgtCol.setTag(bio.TAGS.alphabet, srcAlphabet);
+  tgtCol.setTag(bioTAGS.aligned, tgtAligned);
+  tgtCol.setTag(bioTAGS.alphabet, srcAlphabet);
   tgtCol.semType = DG.SEMTYPE.MACROMOLECULE;
   return tgtCol;
 }

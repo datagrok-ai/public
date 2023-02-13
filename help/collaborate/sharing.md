@@ -1,7 +1,6 @@
-<!-- TITLE: Sharing -->
-<!-- SUBTITLE: -->
-
-# Sharing
+---
+title: "Sharing"
+---
 
 Many types of objects within the Datagrok platform can be shared with other users or [groups](../govern/group.md). Such
 shareable objects are called [entities](../datagrok/objects.md). When an object is shared, you are essentially granting
@@ -9,11 +8,11 @@ a [privilege](../govern/authorization.md) (typically, 'view' or 'edit') to a gra
 the [Security](../govern/security.md) article for details on how to manage groups and privileges.
 
 To share an object, either right-click on it and choose `Share...`, or expand the `Sharing` section in the object's
-property panel and choose `Share...` there.
+context panel and choose `Share...` there.
 
 ![Share Connection](share-connection.gif)
 
-![Property Panel Share](property-panel-share.png)
+![Context Panel Share](property-panel-share.png)
 
 ## Sharing connections and queries
 

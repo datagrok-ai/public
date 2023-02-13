@@ -1,7 +1,6 @@
-<!-- TITLE: Teradata -->
-<!-- SUBTITLE: -->
-
-# Teradata
+---
+title: "Teradata"
+---
 
 Provides access to
 [Teradata](https://www.teradata.ru/Products/Software/Database) database using
@@ -11,10 +10,10 @@ SQL queries via JDBC driver.
 
 ```json
 {
-    "server": "",
-    "port": "",
-    "db": "",
-    "connString": ""
+  "server": "",
+  "port": "",
+  "db": "",
+  "connString": ""
 }
 ```
 

@@ -6,7 +6,7 @@
     "email": "mshvyrlo@datagrok.ai"
   },
   "fullName": "Chemspace",
-  "description": "Chemspace API demo",
+  "description": "Integration with Chemspace. Allows to search for molecules available in Chemspace, and provides contextual information for the current molecule. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Chemspace/README.md)",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

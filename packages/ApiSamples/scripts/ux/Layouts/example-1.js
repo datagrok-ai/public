@@ -6,8 +6,8 @@ view.box = true;
 
 let windows = grok.shell.windows;
 windows.showToolbox = false; //*hide tool box
-windows.showProperties = false; //*hide property panel
-windows.showHelp = false; //*hide property panel
+windows.showContextPanel = false; //*hide context panel
+windows.showHelp = false; //*hide context help
 
 //inputs
 let colInput = ui.columnInput('Column', data, data.col('age'), ()=>{

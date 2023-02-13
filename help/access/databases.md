@@ -1,4 +1,6 @@
-# Databases
+---
+title: "Databases"
+---
 
 ## Connecting to a database
 
@@ -8,7 +10,7 @@
 > objects _entities_. You can share _entities_, set permissions, annotate, reuse them in multiple ways, and more.
 > Connections, queries, tables, and table columns are all Datagrok _entities_.
 >
->Key concept: [_Function_](../datagrok/functions/function.md)
+>Key concept: [_Function_](../datagrok/functions/functions.md)
 >
 >Any action executed within Datagrok is a _function_. For example, a data query, a calculation, or sending an email are
 > all _functions_. _Functions_ are scriptable and auditable, can be parameterized, used in automation workflows, and
@@ -40,9 +42,9 @@ Before you connect a database, the following prerequisites must be met:
    string. Leave all other parameter fields empty. You still need to enter credentials.
    >
    >You can enter credentials (typically, login/password) manually. When entered manually, Datagrok stores secrets in
-   a [secure privilege management system](../govern/security.md/#credentials). You can also set up a connection using
+   a [secure privilege management system](../govern/security.md#credentials). You can also set up a connection using
    Datagrok's integration with the AWS Secrets Manager (
-   see [Secrets Managers](data-connection-credentials.md/#secrets-managers) for details).
+   see [Secrets Managers](data-connection-credentials.md#secrets-managers) for details).
    >
    >To define who can change the connection credentials, select from the _Credential owner_ dropdown.
 4. Click **TEST** to the connection, then click **OK** to save it.
@@ -88,7 +90,7 @@ content, run available queries and instantly preview the results, and do more.
 See also:
 
 * View<!--link out to a document when ready-->
-* [Context Pane](../datagrok/navigation.md#properties).
+* [Context Panel](../datagrok/navigation.md#context-panel).
 
 ### Schema Browser
 
@@ -202,7 +204,9 @@ On the **Transformations** tab:
 
 1. Use the checkboxes provided to select the desired operation. When you select, a list of applicable functions appears
    to the right.
+
 2. Click the desired function. A parameter dialog opens.
+
 3. Set the parameters in the dialog, then click **OK**. The preview updates the output, and the transformation record
    appears in the **Transformation Log** on the left.
 
@@ -294,6 +298,7 @@ queries. All parameters are optional.
 #### Add a parameter
 
 1. Right-click a query and select **Edit**. A **Query View** opens.
+
 2. In the **Query** tab, annotate parameters in the box provided using SQL/Sparql comments. Use `--` for SQL and `#` for
    Sparql.
    > Example:
@@ -312,21 +317,21 @@ You have multiple options to define input parameters:
 * Enter a single value.
 * Use parameter _functions_:
   * **Choices**. _Choices_ are functions with no parameters that return a list of strings. To learn more about _choices_
-    , see [Parameter choices](../compute/scripting.md/#parameter-choices). Example:
+    , see [Parameter choices](../compute/scripting.md#parameter-choices). Example:
 
     ```sql
     --input: string shipCountry = "France" {choices: ['France', 'Italy', 'Germany']}
     ```
 
   * **Editors**. _Editors_ are functions that generate parameters from another _function's_ output. To learn more
-    about _editors_, see [Parameter editors](../compute/scripting.md/). Example:
+    about _editors_, see [Parameter editors](../compute/scripting.md). Example:
 
     ```sql
     --input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
     ```
 
   * **Suggestions**. _Suggestions_ are functions that take a string argument and return a list of matching strings. To
-    learn more about _suggestions_, see [Parameter suggestions](../compute/scripting.md/#parameter-suggestions).
+    learn more about _suggestions_, see [Parameter suggestions](../compute/scripting.md#parameter-suggestions).
     Example:
 
     ```sql
@@ -335,7 +340,7 @@ You have multiple options to define input parameters:
 
   * **Validators**. _Validators_ are functions that take a value and check it against the specified criteria. When
     validation fails, _validators_ return a specified object and (optionally) an error message. To learn more about _
-    validators_, see [Parameter validators](../compute/scripting.md/#parameter-validators).
+    validators_, see [Parameter validators](../compute/scripting.md#parameter-validators).
 * Reuse other parameters as parameter values. Example:
 
   ```sql
@@ -450,7 +455,7 @@ with, and more.
 ### Sharing and managing queries
 
 To share a query, right-click the query and follow
-the [steps for sharing database connections](databases.md/#sharing-and-managing-connections). Once shared, the shared
+the [steps for sharing database connections](databases.md#sharing-and-managing-connections). Once shared, the shared
 query appears in the recipient's **Database Explorer**. Use the **Context Pane** to manage access permissions, share
 with more users, and more.
 
@@ -466,7 +471,7 @@ results from the link provided, users must have permissions to execute this quer
 > Note: You can upload the dataframe to the server. When you do, you can store the data as a static snapshot.
 > Alternatively, you can store it as a generation script, in which case the query is executed every time you open the
 > project. To learn more about dynamic data updates in projects,
-> see [Dynamic data](../datagrok/project.md/#dynamic-data).
+> see [Dynamic data](../datagrok/project.md#dynamic-data).
 
 <!--add gif-->
 

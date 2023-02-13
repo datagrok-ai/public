@@ -9,7 +9,13 @@ function isNullText(cell : DG.Cell) : boolean {
 }
 
 export class ClickableTextRenderer extends GridCellRendererEx {
+  private onTextClickCallback: ((gridCell: DG.GridCell) => void) | null;
 
+  constructor(onTextClicked?: (gridCell: DG.GridCell) => void) {
+    super();
+
+    this.onTextClickCallback = onTextClicked !== undefined ? onTextClicked : null;
+  }
   render(g : CanvasRenderingContext2D, nX : number, nY : number, nW : number, nH : number, cellGrid : DG.GridCell, style : DG.GridCellStyle) : void {
     const cell : DG.Cell = cellGrid.cell;
     let str = isNullText(cell) ? null : cell.value.toString();
@@ -83,10 +89,21 @@ export class ClickableTextRenderer extends GridCellRendererEx {
   }
 
 
+  onTextClicked(cellGrid : DG.GridCell) {
+
+    if ( this.onTextClickCallback !== null)
+      this.onTextClickCallback(cellGrid);
+    //window.open("https://www.w3schools.com");
+  }
+
   onMouseUpEx(cellGrid : DG.GridCell, e : MouseEvent, nXOnCell : number, nYOnCell : number) : void {
     if (document.body.style.cursor !== 'auto') {
       document.body.style.cursor = 'auto';
     }
+
+    const b = this.isClickable(cellGrid, nXOnCell, nYOnCell);
+    if(b)
+      this.onTextClicked(cellGrid);
   }
 
   onMouseMoveEx(cellGrid : DG.GridCell, e : MouseEvent, nXOnCell : number, nYOnCell : number) : void {

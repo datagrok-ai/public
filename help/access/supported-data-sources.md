@@ -1,7 +1,6 @@
-<!-- TITLE: Importing data -->
-<!-- SUBTITLE: -->
-
-# Importing data
+---
+title: "Importing data"
+---
 
 Datagrok lets you easily ingest virtually any kind of data from almost anywhere. It supports dozens of file types and
 can connect to [30+ popular databases](data-connection.md#connectors) and other services, including cloud data
@@ -66,7 +65,7 @@ by [uploading a project](../datagrok/project.md#uploading-a-project).
 
 ## Videos
 
-[![Notebooks](../uploads/youtube/data_access.png "Open on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8&t=336s)
+[![Notebooks](../uploads/youtube/data_access.png "Open on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8\&t=336s)
 
 See also:
 

@@ -19,7 +19,10 @@ if core is not None:
   r_group = 1
   r_group_map = dict()
   for n in range(0, length):
-    mol = Chem.MolFromMolBlock(molecules[n], sanitize = True) if ("M  END" in molecules[n]) else Chem.MolFromSmiles(molecules[n], sanitize = True)
+    try:
+      mol = Chem.MolFromMolBlock(molecules[n], sanitize = True) if ("M  END" in molecules[n]) else Chem.MolFromSmiles(molecules[n], sanitize = True)
+    except:
+      mol = None
     if mol is None:
       continue
     mol_no_core = Chem.ReplaceCore(mol, core, labelByIndex=True)

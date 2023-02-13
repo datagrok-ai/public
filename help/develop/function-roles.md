@@ -1,6 +1,6 @@
-<!-- TITLE: Function roles-->
-
-# Function roles
+---
+title: "Function roles"
+---
 
 A package can contain functions that get discovered and integrated with the platform at runtime.
 Typically, each function type has a special tag denoting what the function does, for example:
@@ -29,7 +29,7 @@ const applications = DG.Func.find({tags: [DG.FUNC_TYPES.APP]});
 
 ## Applications
 
-Applications are [functions](../datagrok/functions/function.md) tagged with the `#app` tag. Use `datagrok-tools` to get
+Applications are [functions](../datagrok/functions/functions.md) tagged with the `#app` tag. Use `datagrok-tools` to get
 a template:
 
 ```shell
@@ -41,7 +41,7 @@ grok add app <name>
 
 ## Info panels
 
-Functions tagged as `#panel` extend the property panel with additional content for the current object.
+Functions tagged as `#panel` extend the context panel with additional content for the current object.
 Use `datagrok-tools` to get a template:
 
 ```shell
@@ -135,7 +135,7 @@ Exporters reside in the platform's top menu "export" section.
 ## Settings editors
 
 Settings editors work with [package properties](develop.md#package-settings) and define how they will be displayed in
-the `Settings` pane of the property panel. An editor function should return a widget (`DG.Widget`) and be tagged as
+the `Settings` pane of the context panel. An editor function should return a widget (`DG.Widget`) and be tagged as
 `#packageSettingsEditor`.
 
 *Details:* [How to write custom package settings editors](how-to/custom-package-settings-editors.md)

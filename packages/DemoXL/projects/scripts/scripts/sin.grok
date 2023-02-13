@@ -1,9 +1,0 @@
-#name: GrokSin2x
-#language: grok
-#tags: demo
-#input: double x = 0.1
-#output: double result [Sin(x)]
-#test: [0]: [0]
-#test: [PI / 2]: [1]
-
-result = Sin(x * 2)

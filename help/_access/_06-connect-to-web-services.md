@@ -22,7 +22,7 @@ importing OpenAPI / Swagger files.
 This is a YAML-file which describes what the web service is doing. Let's simply
 drag-and-drop it into the platform. The platform is smart enough to understand
 what the file has. After some processing we see that the connector has been
-imported and appeared in the property panel. Alternatively we can go to `Web
+imported and appeared in the context panel. Alternatively we can go to `Web
 Services` and find the newly created connection there.
 
 Once expanded, we can see all the methods supported by the service. Each is a

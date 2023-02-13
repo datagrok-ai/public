@@ -29,6 +29,7 @@
     ],
     "skipBlankLines": 0,
     "require-jsdoc": "off",
+    "valid-jsdoc": "off",
     "spaced-comment": "off",
     "linebreak-style": 0,
     "no-trailing-spaces": "off",

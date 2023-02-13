@@ -2,7 +2,9 @@ import * as DG from 'datagrok-api/dg';
 
 import * as C from './constants';
 import * as types from './types';
-import * as bio from '@datagrok-libraries/bio';
+import {PositionStats, SummaryStats, MonomerPositionStats} from '../model';
+import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
+import {monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 function renderCellSelection(canvasContext: CanvasRenderingContext2D, bound: DG.Rect): void {
   canvasContext.strokeStyle = '#000';
@@ -18,34 +20,32 @@ export function setAARRenderer(col: DG.Column, alphabet: string): void {
 }
 
 export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
-  currentPosition: string, statsDf: DG.DataFrame, mdCol: DG.Column<number>, bound: DG.Rect, cellValue: number,
+  currentPosition: string, monomerPositionStats: MonomerPositionStats, bound: DG.Rect,
   mutationCliffsSelection: types.PositionToAARList, substitutionsInfo: types.SubstitutionsInfo,
   twoColorMode: boolean = false): void {
-  const queryAAR = `${C.COLUMNS_NAMES.MONOMER} = ${currentAAR}`;
-  const query = `${queryAAR} and ${C.COLUMNS_NAMES.POSITION} = ${currentPosition}`;
-  const pVal: number = statsDf
-    .groupBy([C.COLUMNS_NAMES.P_VALUE])
-    .where(query)
-    .aggregate()
-    .get(C.COLUMNS_NAMES.P_VALUE, 0);
+  const positionStats = monomerPositionStats[currentPosition];
+  const pVal: number = positionStats[currentAAR].pValue;
+  const currentMeanDiff = positionStats[currentAAR].meanDifference;
 
   let coef: string;
-  const variant = cellValue < 0;
+  const isMeanDeltaNegative = currentMeanDiff < 0;
   if (pVal < 0.01)
-    coef = variant && twoColorMode ? '#FF7900' : '#299617';
+    coef = isMeanDeltaNegative && twoColorMode ? '#FF7900' : '#299617';
   else if (pVal < 0.05)
-    coef = variant && twoColorMode ? '#FFA500' : '#32CD32';
+    coef = isMeanDeltaNegative && twoColorMode ? '#FFA500' : '#32CD32';
   else if (pVal < 0.1)
-    coef = variant && twoColorMode ? '#FBCEB1' : '#98FF98';
+    coef = isMeanDeltaNegative && twoColorMode ? '#FBCEB1' : '#98FF98';
   else
     coef = DG.Color.toHtml(DG.Color.lightLightGray);
 
 
-  const chooseMin = (): number => twoColorMode ? 0 : mdCol.min;
-  const chooseMax = (): number => twoColorMode ? Math.max(Math.abs(mdCol.min), mdCol.max) : mdCol.max;
-  const chooseCurrent = (): any => twoColorMode ? Math.abs(cellValue) : cellValue;
+  const minMeanDifference = twoColorMode ? 0 : monomerPositionStats.general.minMeanDifference;
+  const maxMeanDifference = twoColorMode ?
+    Math.max(Math.abs(monomerPositionStats.general.minMeanDifference), monomerPositionStats.general.maxMeanDifference) :
+    monomerPositionStats.general.maxMeanDifference;
+  const currentMeanDifference = twoColorMode ? Math.abs(currentMeanDiff) : currentMeanDiff;
 
-  const rCoef = (chooseCurrent() - chooseMin()) / (chooseMax() - chooseMin());
+  const rCoef = (currentMeanDifference - minMeanDifference) / (maxMeanDifference - minMeanDifference);
 
   const maxRadius = 0.9 * (bound.width > bound.height ? bound.height : bound.width) / 2;
   const radius = Math.floor(maxRadius * rCoef);
@@ -92,22 +92,22 @@ export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, 
     renderCellSelection(canvasContext, bound);
 }
 
-export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, cellValue: string, cellRawData: number,
-  clusterSelection: number[], bound: DG.Rect): void {
+export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, cellValue: string,
+  clusterSelection: string[], bound: DG.Rect): void {
   canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
   canvasContext.textAlign = 'center';
   canvasContext.textBaseline = 'middle';
   canvasContext.fillStyle = '#000';
   canvasContext.fillText(cellValue.toString(), bound.x + (bound.width / 2), bound.y + (bound.height / 2), bound.width);
 
-  if (clusterSelection.includes(cellRawData))
+  if (clusterSelection.includes(cellValue))
     renderCellSelection(canvasContext, bound);
 }
 
 
-export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect, statsInfo: types.StatsInfo,
-  rowCount: number, cp: bio.SeqPalette, monomerSelectionStats: {[monomer: string]: number} = {},
-  drawOptions: types.DrawOptions = {}): {[monomer: string]: DG.Rect} {
+export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect, stats: PositionStats,
+  sortedOrder: string[], rowCount: number, cp: SeqPalette, monomerSelectionStats: { [monomer: string]: number } = {},
+  drawOptions: types.DrawOptions = {}): { [monomer: string]: DG.Rect } {
   drawOptions.fontStyle ??= '16px Roboto, Roboto Local, sans-serif';
   drawOptions.upperLetterHeight ??= 12.2;
   drawOptions.upperLetterAscent ??= 0.25;
@@ -115,7 +115,7 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
   drawOptions.marginHorizontal ??= 5;
 
   const pr = window.devicePixelRatio;
-  const totalSpaceBetweenLetters = (statsInfo.orderedIndexes.length - 1) * drawOptions.upperLetterAscent;
+  const totalSpaceBetweenLetters = (sortedOrder.length - 1) * drawOptions.upperLetterAscent;
   const barHeight = (bounds.height - 2 * drawOptions.marginVertical - totalSpaceBetweenLetters) * pr;
   const leftShift = drawOptions.marginHorizontal * 2;
   const barWidth = (bounds.width - leftShift * 2) * pr;
@@ -124,17 +124,16 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
   const xSelection = (bounds.x + 3) * pr;
   let currentY = (bounds.y + drawOptions.marginVertical) * pr;
 
-  const monomerBounds: {[monomer: string]: DG.Rect} = {};
-  for (const index of statsInfo.orderedIndexes) {
-    const monomer = statsInfo.monomerCol.get(index)!;
-    const monomerHeight = barHeight * (statsInfo.countCol.get(index)! / rowCount);
+  const monomerBounds: { [monomer: string]: DG.Rect } = {};
+  for (const monomer of sortedOrder) {
+    const monomerHeight = barHeight * (stats[monomer].count / rowCount);
     const selectionHeight = barHeight * ((monomerSelectionStats[monomer] ?? 0) / rowCount);
     const currentBound = new DG.Rect(xStart / pr, currentY / pr, barWidth / pr, monomerHeight / pr);
     monomerBounds[monomer] = currentBound;
 
     ctx.resetTransform();
     if (monomer !== '-' && monomer !== '') {
-      const monomerTxt = bio.monomerToShort(monomer, 5);
+      const monomerTxt = monomerToShort(monomer, 5);
       const mTm: TextMetrics = ctx.measureText(monomerTxt);
 
       // Filling selection

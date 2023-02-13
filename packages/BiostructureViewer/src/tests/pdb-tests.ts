@@ -12,7 +12,7 @@ import * as ui from 'datagrok-api/ui';
 */
 
 category('biosv', () => {
-  test('pdb_entry.RSCB_is_alive', async () => {
+  test('pdb_entry.RCSB_is_alive', async () => {
     await _testRCSBAlive();
   });
 

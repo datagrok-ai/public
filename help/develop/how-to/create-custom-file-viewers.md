@@ -1,6 +1,6 @@
-<!-- TITLE: Create custom file viewers -->
-
-# Create custom file viewers
+---
+title: "Create custom file viewers"
+---
 
 Datagrok provides a way to define custom file viewers that are used by the
 [file share browser](../../access/connect-a-file-share.md). This could be done by defining a function annotated in a

@@ -19,6 +19,7 @@
 			"error",
 			120
 		],
+		"valid-jsdoc": "off",
 		"require-jsdoc": "off",
 		"spaced-comment": "off",
 		"linebreak-style": "off",

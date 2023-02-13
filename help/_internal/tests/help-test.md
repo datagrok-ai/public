@@ -68,7 +68,7 @@
 1. Click on "Clone and detach" button on context help window
 
 * Current page ([Scripting](../../compute/scripting.md)) is fixed by separate window
-  on [Property Panel](../../datagrok/navigation.md#properties)
+  on [Context Panel](../../datagrok/navigation.md#context-panel)
 
 1. Open **Admin | Data Queries**
 

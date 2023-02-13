@@ -5,25 +5,91 @@ import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
+import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import grok_connect.utils.ProviderManager;
 import serialization.Types;
-
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
 
 public class SnowflakeDataProvider extends JdbcDataProvider{
+    private static final boolean CAN_BROWSE_SCHEMA = true;
+    private static final String DEFAULT_SCHEMA = "PUBLIC";
+    private static final String URL_PREFIX = "jdbc:snowflake://";
+    private static final String URL_SEPARATOR = ".";
+    private static final String SERVER = "snowflakecomputing.com";
+    private static final String DRIVER_CLASS_NAME = "net.snowflake.client.jdbc.SnowflakeDriver";
+    private static final String TYPE = "Snowflake";
+    private static final String DESCRIPTION = "Query Snowflake database";
+    private static final List<String> AVAILABLE_CLOUDS =
+            Collections.unmodifiableList(Arrays.asList("aws", "azure", "gcp"));
 
     public SnowflakeDataProvider(ProviderManager providerManager) {
         super(providerManager);
-        driverClassName = "com.snowflake.client.jdbc.SnowflakeDriver";
+        init();
+    }
 
+    @Override
+    public Properties getProperties(DataConnection conn) {
+        java.util.Properties properties = defaultConnectionProperties(conn);
+        if (!conn.hasCustomConnectionString()) {
+            properties.put(DbCredentials.DB, conn.getDb());
+            properties.put(DbCredentials.WAREHOUSE, conn.get(DbCredentials.WAREHOUSE));
+            properties.put(DbCredentials.ACCOUNT, buildAccount(conn));
+        }
+        return properties;
+    }
+
+    @Override
+    public String getConnectionStringImpl(DataConnection conn) {
+        return new StringBuilder(URL_PREFIX)
+                .append(buildAccount(conn))
+                .append(URL_SEPARATOR)
+                .append(SERVER)
+                .toString();
+    }
+
+    @Override
+    public String getSchemasSql(String db) {
+        return "SELECT DISTINCT table_schema FROM information_schema.columns;";
+    }
+
+    @Override
+    public String getSchemaSql(String db, String schema, String table) {
+        schema = schema != null ? schema : DEFAULT_SCHEMA;
+        String query = "SELECT table_schema, table_name, column_name, data_type "
+                + "FROM information_schema.columns "
+                + "WHERE table_schema = '%s' ORDER BY table_name";
+        return String.format(query, schema);
+    }
+
+    private void init() {
+        driverClassName = DRIVER_CLASS_NAME;
         descriptor = new DataSource();
-        descriptor.type = "Snowflake";
-        descriptor.description = "Query Snowflake database";
-        descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
-        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
+        descriptor.type = TYPE;
+        descriptor.description = DESCRIPTION;
+        descriptor.canBrowseSchema = CAN_BROWSE_SCHEMA;
+        descriptor.defaultSchema = DEFAULT_SCHEMA;
+        Prop notNullProperty = new Prop();
+        notNullProperty.nullable = false;
+        Property cloudProviders = new Property(Property.STRING_TYPE, DbCredentials.CLOUD, notNullProperty);
+        cloudProviders.choices = AVAILABLE_CLOUDS;
+        descriptor.connectionTemplate = new ArrayList<Property>(){{
+            add(new Property(Property.STRING_TYPE, DbCredentials.ACCOUNT_LOCATOR, notNullProperty));
+            add(new Property(Property.STRING_TYPE, DbCredentials.REGION_ID, notNullProperty));
+            add(cloudProviders);
+            add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
+            add(new Property(Property.STRING_TYPE, DbCredentials.WAREHOUSE));
+            add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
+                    DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
+            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
+            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
+            add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
+        }};
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.nameBrackets = "\"";
 
@@ -32,49 +98,36 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
             put("number", Types.FLOAT);
             put("decimal", Types.FLOAT);
             put("numeric", Types.FLOAT);
-
             put("int", Types.INT);
             put("integer", Types.INT);
             put("bigint", Types.BIG_INT);
             put("smallint", Types.INT);
-
             put("float", Types.FLOAT);
             put("float4", Types.FLOAT);
             put("float8", Types.FLOAT);
             put("double", Types.FLOAT);
             put("double precision", Types.FLOAT);
             put("real", Types.FLOAT);
-
             put("varchar", Types.STRING);
             put("char", Types.STRING);
             put("character", Types.STRING);
             put("string", Types.STRING);
             put("text", Types.STRING);
-
             put("boolean", Types.BOOL);
-
             put("date", Types.DATE_TIME);
             put("datetime", Types.DATE_TIME);
             put("time", Types.DATE_TIME);
             put("timestamp", Types.DATE_TIME);
-
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stddev(#)", Types.dataFrameNumericTypes));
-
     }
 
-    public Properties getProperties(DataConnection conn) {
-        java.util.Properties properties = defaultConnectionProperties(conn);
-
-        if (!conn.hasCustomConnectionString() && conn.ssl())
-            properties.setProperty("ssl", "on");
-
-        properties.put("db", conn.getDb());
-        return properties;
-    }
-
-    public String getConnectionStringImpl(DataConnection conn) {
-        String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
-        return "jdbc:snowflake://" + conn.getServer() + port;
+    private String buildAccount(DataConnection conn) {
+        return new StringBuilder(conn.get(DbCredentials.ACCOUNT_LOCATOR))
+                .append(URL_SEPARATOR)
+                .append(conn.get(DbCredentials.REGION_ID))
+                .append(URL_SEPARATOR)
+                .append(conn.get(DbCredentials.CLOUD))
+                .toString();
     }
 }

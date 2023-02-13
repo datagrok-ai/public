@@ -1,10 +1,12 @@
 //Base import
+import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
-
+//import $ from 'cash-dom';
 import {OpenLayers} from '../src/gis-openlayer';
-import {Control, defaults as defaultControls} from 'ol/control'; //Attribution include?
+import {Control} from 'ol/control'; //Attribution include?
+import VectorLayer from 'ol/layer/Vector';
+import {SEMTYPEGIS} from './gis-semtypes';
 
 
 export class PanelLayersControl extends Control {
@@ -21,8 +23,8 @@ export class PanelLayersControl extends Control {
     const options = opt || {};
 
     const layersGridStyle = {
-      'allowEdit': false,
-      'showAddNewRowIcon': true,
+      // 'allowEdit': false,
+      'showAddNewRowIcon': false,
       'allowColReordering': false,
       'allowColResizing': false,
       'allowColHeaderResizing': false,
@@ -36,18 +38,23 @@ export class PanelLayersControl extends Control {
       'showRowHeader': false,
       'showColumnTooltip': false,
       'showColumnGridlines': false,
-      'topLevelDefaultMenu': true,
       'showColumnLabels': false,
+      'topLevelDefaultMenu': true,
+      'allowDynamicMenus': false,
+      'showContextMenu': false,
     };
 
-    const df = grok.data.demo.demog(6);
-    // const layersGrid = DG.Viewer.grid(this.dfLayersList, layersGridStyle);
+    const df = DG.DataFrame.fromCsv(
+      `vis, name, exp, del, layerid
+      true, Map, false, false, 0
+      `);
     const layersGrid = DG.Viewer.grid(df, layersGridStyle);
-    layersGrid.autoSize(200, 170);
+    layersGrid.autoSize(200, 300, 200, 100, true);
+    layersGrid.columns.setOrder(['vis', 'name', 'exp', 'del']);
+    layersGrid.root.style.borderWidth = '2px';
+    layersGrid.root.style.borderColor = 'rgb(100, 100, 100)';
 
-    // const element = ui.box(layersGrid.root);
     const element = ui.div(layersGrid.root);
-    // const element = ui.div();
     element.className = 'panel-layers ol-unselectable ol-control';
 
     super({
@@ -59,16 +66,82 @@ export class PanelLayersControl extends Control {
     this.layersGrid = layersGrid;
     this.layersPanel = element;
     this.refreshDF(DG.DataFrame.fromColumns([]));
+
     //<<PanelLayersControl constructor
+  }
+
+  cellPrepareFn(gc: DG.GridCell) {
+    if (gc.isTableCell && gc.gridColumn.name === 'del') {
+      const btnDel = ui.button(ui.iconFA(gc.cell.value ? 'trash-alt' : ''), () => {
+        if (gc.tableRowIndex !== null) {
+          const col = gc.grid.table.columns.byName('layerid');
+          if (col) {
+            const layerId = col.get(gc.tableRowIndex);
+            if (layerId)
+              this.ol.removeLayerById(layerId);
+            this.updateLayersList();
+          }
+        }
+      }, 'Delete layer');
+      btnDel.style.width = '18px';
+      btnDel.style.height = '18px';
+      gc.style.element = btnDel;
+    } //setup delete button
+
+    if (gc.isTableCell && gc.gridColumn.name === 'exp') {
+      const btnExp = ui.button(ui.iconFA(gc.cell.value ? 'arrow-to-bottom' : ''), () => {
+        if (gc.tableRowIndex !== null) {
+          const col = gc.grid.table.columns.byName('layerid');
+          if (col) {
+            const layerId = col.get(gc.tableRowIndex);
+            if (layerId) {
+              const layer = this.ol.getLayerById(layerId) as VectorLayer<any>;
+              const arrPreparedToDF: any[] = this.ol.exportLayerToArray(layer);
+              if (arrPreparedToDF.length) {
+                const df = DG.DataFrame.fromObjects(arrPreparedToDF);
+                if (df) {
+                  const gisCol = df.col('gisObject');
+                  if (gisCol)
+                    gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
+                  df.name = layer.get('layerName');
+
+                  // this.view.addTableView(df as DG.DataFrame);
+                  grok.shell.addTableView(df);
+                }
+              }
+            }
+            this.updateLayersList();
+          }
+        }
+      }, 'Export layer data to table');
+      btnExp.style.width = '18px';
+      btnExp.style.height = '18px';
+      gc.style.element = btnExp;
+    } //setup export button
+  }
+
+  cellVisibleClick(gc: DG.GridCell) {
+    if (gc.tableRowIndex !== null) {
+      const col = gc.grid.table.columns.byName('layerid');
+      if (col) {
+        const layerId = col.get(gc.tableRowIndex);
+        if (!layerId)
+          return;
+        const layer = this.ol.getLayerById(layerId);
+        if (!layer)
+          return;
+
+        layer.setVisible(gc.cell.value);
+        this.updateLayersList();
+      }
+    }
   }
 
   setupGridControls() {
     this.layersGrid.setOptions({'rowHeight': 24});
-    // this.layersGrid.rows
     let col = this.layersGrid.columns.byName('vis');
     if (col) {
       col.width = 19;
-      col.cellType = 'html';
       col.editable = true;
     }
     col = this.layersGrid.columns.byName('del');
@@ -85,48 +158,13 @@ export class PanelLayersControl extends Control {
     if (col)
       col.visible = false;
     col = this.layersGrid.columns.byName('name');
-    if (col)
+    if (col) {
       col.width = 125;
+      col.editable = false;
+    }
 
-    this.layersGrid.onCellPrepare(function(gc) {
-      if (gc.isTableCell && gc.gridColumn.name === 'vis') {
-        const btnVisible = ui.iconFA(gc.cell.value ? 'eye' : 'eye-slash', undefined, 'Show/hide layer');
-
-/*        const btnVisible = ui.iconFA(gc.cell.value ? 'eye' : 'eye-slash', (evt) => {
-          // evt.stopImmediatePropagation();
-          //get layer ID for grid row >>
-          const layerId = 12;
-          if (!layerId)
-            return;
-          // const layer = this.ol.getLayerById(layerId);
-          // if (!layer)
-          //   return;
-          // const isVisible = layer.getVisible();
-          // layer.setVisible(!isVisible);
-          // this.updateLayersList();
-        }, 'Show/hide layer'); */
-        btnVisible.setAttribute('LayerId', 'testID');
-        btnVisible.style.margin = '3px';
-
-        gc.style.element = ui.divV([
-          btnVisible,
-        ]);
-      } //setup visible button
-
-      if (gc.isTableCell && gc.gridColumn.name === 'del') {
-        const btnDel = ui.iconFA('trash-alt', (evt) => {
-        }, 'Delete layer');
-        btnDel.style.margin = '3px';
-        gc.style.element = ui.divV([btnDel]);
-      } //setup delete button
-
-      if (gc.isTableCell && gc.gridColumn.name === 'exp') {
-        const btnExp = ui.iconFA(gc.cell.value ? 'download' : '', (evt) => {
-        }, 'Export layer data to table');
-        btnExp.style.margin = '3px';
-        gc.style.element = ui.divV([btnExp]);
-      } //setup export button
-    });
+    this.layersGrid.onCellPrepare(this.cellPrepareFn.bind(this));
+    this.layersGrid.onCurrentCellChanged.subscribe(this.cellVisibleClick.bind(this));
   }
 
   updateLayersList() {
@@ -143,8 +181,9 @@ export class PanelLayersControl extends Control {
     this.layersGrid.invalidate();
   }
   setVisibility(visible: boolean) {
-    // this.setProperties({'visible': visible});
-    this.layersPanel.style.visibility = visible ? 'hidden' : 'visible';
+    if (visible)
+      this.updateLayersList();
+    this.layersPanel.style.visibility = visible ? 'visible' : 'hidden';
   }
 }
 
@@ -153,18 +192,15 @@ export class BtnLayersControl extends Control {
    * @param {Object} [opt] Control options.
    */
   parentOnClickHandler: Function | null = null;
-  btnIsOn = false;
+  isOn = false;
 
   constructor(opt: any | undefined, clkHandler: Function | null = null) {
     const options = opt || {};
 
-    // const button = document.createElement('button');
-    const button = ui.iconFA('layer-group');
-    // button.innerHTML = 'L';
-    // button.className = 'btn-layers ol-unselectable ol-control';
+    const button = ui.button(ui.iconFA('layer-group'), ()=>{}, 'Map layers');
+    button.className = 'btn-layers ol-unselectable ol-control';
 
     const element = document.createElement('div');
-    // const element = ui.iconFA('layer-group');
     element.className = 'btn-layers ol-unselectable ol-control';
     element.appendChild(button);
 
@@ -178,8 +214,10 @@ export class BtnLayersControl extends Control {
   }
 
   onClickLayersBtnControl() {
-    this.btnIsOn = !this.btnIsOn;
+    this.isOn = !this.isOn;
     if (this.parentOnClickHandler)
       this.parentOnClickHandler();
   }
 }
+
+//lPanel: PanelLayersControl;

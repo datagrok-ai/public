@@ -1,0 +1,22 @@
+{
+  "#type": "DataConnection",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "db": "aact",
+    "schema": "ctgov"
+  },
+  "credentials": {
+    "parameters": {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "Postgres",
+  "name": "PostgresAACT",
+  "friendlyName": "AACT",
+  "description": "AACT db",
+  "tags": [
+    "demo",
+    "clinicaltrials"
+  ]
+}

@@ -31,22 +31,3 @@ export class TimeWidget extends DG.Widget {
     this.root.appendChild(ui.render([new Date().toTimeString()]));
   }
 }
-
-
-export class SmilesLengthWidget extends DG.Widget {
-  smiles: string;
-
-  constructor() {
-    super(ui.div());
-
-    // properties
-    this.smiles = this.addProperty('smiles', DG.TYPE.STRING, null, {semType: DG.SEMTYPE.MOLECULE});
-    this.render();
-  }
-
-  onPropertyChanged(_: DG.Property) {this.render();}
-
-  render() {
-    this.root.innerText = `Length: ${this.smiles === null ? 'none' : this.smiles.length}`;
-  }
-}

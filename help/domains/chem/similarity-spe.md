@@ -1,7 +1,6 @@
-<!-- TITLE: Molecular similarity analysis using Stochastic Proximity Embedding (SPE) -->
-<!-- SUBTITLE: -->
-
-# Molecular similarity analysis using Stochastic Proximity Embedding (SPE)
+---
+title: "Molecular similarity analysis using Stochastic Proximity Embedding (SPE)"
+---
 
 Molecular similarity refers to the similarity of chemical elements, molecules or chemical compounds with respect to
 either structural or functional qualities, i.e. the effect that the chemical compound has on reaction partners in

@@ -1,0 +1,21 @@
+{
+  "#type": "DataConnection",
+  "name": "MySQLNorthwind",
+  "friendlyName": "Northwind",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "port": 23306,
+    "db": "Northwind"
+  },
+  "credentials": {
+    "parameters": {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "MySQL",
+  "description": "Northwind sample database",
+  "tags": [
+    "demo"
+  ]
+}

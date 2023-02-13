@@ -3,8 +3,12 @@
   "parameters": {
     "dir": "/packages/demo/files/demo",
     "region": "us-east-2",
-    "bucket": "datagrok-data",
-    "anonymous": true
+    "bucket": "datagrok-data"
+  },
+  "credentials": {
+    "parameters": {
+      "anonymous": true
+    }
   },
   "name": "Files",
   "friendlyName": "Demo Files"

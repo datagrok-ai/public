@@ -1,7 +1,6 @@
-<!-- TITLE: Athena -->
-<!-- SUBTITLE: -->
-
-# Athena
+---
+title: "Athena"
+---
 
 Provides access to [Amazon Athena](https://docs.aws.amazon.com/athena/latest/ug/what-is.html)
 service using SQL queries via a JDBC driver.

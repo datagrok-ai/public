@@ -71,20 +71,8 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
           Object.assign(_package.dependencies, {
             '@datagrok-libraries/utils': 'latest',
           });
-          Object.assign(_package.devDependencies, {
-            'jest-html-reporter': '^3.5.0',
-            'jest': '^27.0.0',
-            '@types/jest': '^27.0.0',
-            'js-yaml': '^4.1.0',
-            '@types/js-yaml': "^4.0.5",
-            '@types/node-fetch': '^2.6.2',
-            'node-fetch': '^2.6.7'
-          }, ts ? {
-            'ts-jest': '^27.0.0',
-            'puppeteer': '^13.7.0'
-          } : {});
           Object.assign(_package.scripts, {
-            'test': 'jest',
+            'test': 'grok test',
           });
         }
 
@@ -98,9 +86,6 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
       if (file === 'package-test.ts' && !ts) return false;
       if (file === 'tsconfig.json' && !ts) return false;
       if (file === 'ts.webpack.config.js') return false;
-      if (file === 'remote.test.ts' && (!ts || !jest)) return false;
-      if (file === 'test-node.ts' && (!ts || !jest)) return false;
-      if (file === 'jest.config.js' && !jest) return false;
       if (file === '.eslintrc.json') {
         if (!eslint) return false;
         if (ts) {

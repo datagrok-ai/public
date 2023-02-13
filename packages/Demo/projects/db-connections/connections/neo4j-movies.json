@@ -1,0 +1,21 @@
+{
+  "#type": "DataConnection",
+  "name": "Neo4jMovies",
+  "friendlyName": "Movies",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "db": "movies",
+    "port": 27688
+  },
+  "credentials": {
+    "parameters": {
+      "login": "neo4j",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "Neo4j",
+  "description": "Movies sample database",
+  "tags": [
+    "demo"
+  ]
+}

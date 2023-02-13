@@ -1,4 +1,5 @@
 --name: TopEventsOfUser
+--meta.cache: true
 --input: string date { pattern: datetime }
 --input: string name
 --connection: System:Datagrok

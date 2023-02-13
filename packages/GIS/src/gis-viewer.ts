@@ -11,26 +11,16 @@ import * as DG from 'datagrok-api/dg';
 import {SEMTYPEGIS} from '../src/gis-semtypes';
 
 //OpenLayers functionality import
-import {OLCallbackParam} from '../src/gis-openlayer';
-import {OpenLayers} from '../src/gis-openlayer';
-import {Coordinate} from '../src/gis-openlayer';
+import {OLCallbackParam, OpenLayers, Coordinate, toStringColor} from '../src/gis-openlayer';
 import VectorLayer from 'ol/layer/Vector';
 import * as OLProj from 'ol/proj';
 import Feature from 'ol/Feature';
-import {Circle, Point} from 'ol/geom';
+//import {Circle} from 'ol/geom';
+import {Point} from 'ol/geom';
 // import { numberSafeCompareFunction } from 'ol/array';
 
 //release mode flag: set to true to hide all experimental UI features
 const releaseMode = false;
-
-function toStringColor(num : number, opacity?: number) : string {
-  num >>>= 0;
-  const b = num & 0xFF;
-  const g = (num & 0xFF00) >>> 8;
-  const r = (num & 0xFF0000) >>> 16;
-  const a = opacity ? opacity : 1;
-  return 'rgba(' + [r, g, b, a].join(',') + ')';
-}
 
 export class GisViewer extends DG.JsViewer {
   currentLayer: string;
@@ -335,38 +325,36 @@ export class GisViewer extends DG.JsViewer {
     body.style.maxWidth = '100%';
     body.style.maxHeight = '100%';
 
-    this.viewerContainer = ui.splitV(
+    this.viewerContainer = body;/*ui.splitV(
       [this.panelTop,
         ui.splitH([this.panelLeft, body], null, true),
-        this.panelBottom]);
+        this.panelBottom]);*/
 
     this.root.appendChild(this.viewerContainer);
 
     //setup context menu
     this.onContextMenu.subscribe((menu) => {
-      if (this.isShortUI === true) {
-        menu.item('Show toolbar', () => {
-          this.isShortUI = false;
-          this.switchUI(this.isShortUI);
-        });
-      } else {
-        menu.item('Hide toolbar', () => {
-          this.isShortUI = true;
-          this.switchUI(this.isShortUI);
-        });
-      }
+      // menu.item('Add rest layer', async () => {
+      //   this.ol.testFunc();
+      // });
+      menu.item('Reset view', async () => {
+        await this.render(true, false);
+      });
     });
 
     return this.viewerContainer;
   }
 
   init() {
+    const loadingDiv = ui.div('Loading...');
     try {
-      console.log('gis-viewer.init()');
-      // ui.setUpdateIndicator(this.root, true);
+      loadingDiv.style.position = 'absolute';
+      loadingDiv.style.left = '50%';
+      loadingDiv.style.top = '50%';
+
+      this.root.append(loadingDiv);
 
       this.ol.useWebGL = true; //choose true if we want to use WebGL renderer
-
       this.initUi();
       this.ol.initMap('map-container');
 
@@ -379,26 +367,23 @@ export class GisViewer extends DG.JsViewer {
       this.subs.push(ui.onSizeChanged((this.panelLeft as HTMLElement)).subscribe(this.rootOnSizeChanged.bind(this)));
       //setup callbacks
       this.ol.setMapPointermoveCallback(this.showMarkerTooltip.bind(this));
-      // this.ol.setMapClickCallback(this.showCoordsInStatus.bind(this));
-
       this.ol.setMapSelectionCallback(this.handlerOnMarkerSelect.bind(this));
       this.ol.setMapClickCallback(this.handlerOnMapClick.bind(this));
       this.ol.setMapRefreshCallback(this.updateLayersList.bind(this));
-
-      // this.ol.setBtnLayersClickCallback(this.handlerOnBtnLayersClick.bind(this));
 
       this.initialized = true;
     } catch (e: any) {
       this.initialized = false;
       grok.shell.error(e.toString());
-      this.root.appendChild(
-        ui.divV([ui.div('Error loading GIS map! /n '), ui.div(e.toString())]));
     } finally {
-      // ui.setUpdateIndicator(this.root, false);
       setTimeout(() => {
+        // const loadingDiv = this.root.firstElementChild as HTMLElement;
+        //loadingDiv.style.visibility = 'hidden';
+        this.root.removeChild(loadingDiv);
+
         grok.shell.o = this;
         grok.shell.windows.showProperties = true;
-      }, 200);
+      }, 100);
     }
   }
 
@@ -468,9 +453,9 @@ export class GisViewer extends DG.JsViewer {
     }
 
     let xCrd = this.root.getBoundingClientRect().left;
-    let yCrd = 0; //this.root.clientTop;
+    let yCrd = 0;
     if (this.viewerContainer) {
-      xCrd += p.pixel[0];// + 150;
+      xCrd += p.pixel[0];
       yCrd += p.pixel[1] + 60;
     }
     const markerIdx = p.features[0].get('fieldIndex');
@@ -492,15 +477,13 @@ export class GisViewer extends DG.JsViewer {
       this.dataFrame.selection.setAll(false, false);
       for (let i = 0; i < p.features.length; i++) {
         idx = p.features[i].get('fieldIndex');
-        //We need to search by element index because coords were tranfrormed while mapping
+        //We need to search by element index because coords were transformed while mapping
         if (idx !== undefined)
           this.dataFrame.selection.set(idx, true, false);
       }
       this.dataFrame.selection.fireChanged();
-      if (idx !== undefined) {
-        // this.dataFrame.selection.set(idx, true, true);
+      if (idx !== undefined)
         this.dataFrame.currentRowIdx = idx; //set focus on the last selected item
-      }
     }
   }
 
@@ -517,10 +500,6 @@ export class GisViewer extends DG.JsViewer {
         }, 50);
       }
     }
-  }
-
-  handlerOnBtnLayersClick(): void {
-    // alert('Layers button clicked!');
   }
 
   private rootOnSizeChanged(args: any): void {
@@ -603,6 +582,7 @@ export class GisViewer extends DG.JsViewer {
       }
     }));
 
+    //render map
     setTimeout(async () => {
       await this.render(true, true);
     }, 2);
@@ -627,7 +607,7 @@ export class GisViewer extends DG.JsViewer {
       return;
 
     if (updateLayer) {
-    //TODO: experiment: i've tried to refresh WebGL layer here without recreating of it but it's not work yet>>
+    //TODO: experiment: i've tried to refresh WebGL layer here without recreating of it but it isn't work yet>>
       this.ol.updateMarkersGLLayer(true);
       // this.ol.olMarkersSource.changed();
       // this.ol.olMap.render();
@@ -676,15 +656,7 @@ export class GisViewer extends DG.JsViewer {
   }
 
   async render(fit: boolean = false, reloadData: boolean = true): Promise<void> {
-    //
-    if (this.latitudeColumnName == null || this.longitudeColumnName == null)
-      return;
-
-    // ui.setUpdateIndicator(this.root, true);
-    // let progressBar: DG.TaskBarProgressIndicator | null = null;
     try {
-      // progressBar = DG.TaskBarProgressIndicator.create('Open map..');
-
       if (reloadData)
         this.getCoordinates();
 
@@ -695,29 +667,26 @@ export class GisViewer extends DG.JsViewer {
         //TODO: this style of switching visibility is a bad but temporary decision
         this.ol.olHeatmapLayer?.setVisible(true);
         this.ol.olMarkersLayerGL?.setVisible(false);
-        // this.updateLayersList();
+        this.ol.panelLayersList.updateLayersList();
       } else if (this.renderType === 'markers') {
         //render markers map
         this.renderMarkersBatch(this.features);
         this.ol.olHeatmapLayer?.setVisible(false);
         this.ol.olMarkersLayerGL?.setVisible(true);
-        // this.updateLayersList();
+        this.ol.panelLayersList.updateLayersList();
       } else if (this.renderType === 'both') {
         //render markers map
         this.renderMarkersBatch(this.features);
         this.ol.olHeatmapLayer?.setVisible(true);
         this.ol.olMarkersLayerGL?.setVisible(true);
-        // this.updateLayersList();
+        this.ol.panelLayersList.updateLayersList();
       }
 
       if (fit) {
         if ((this.ol.olMarkersLayerGL) && (this.features.length > 0))
           this.ol.olMap.getView().fit((this.ol.olMarkersSource).getExtent());
-          // this.ol.olMap.getView().fit((this.ol.olMarkersLayerGL.getSource()!).getExtent());
       }
     } finally {
-      // ui.setUpdateIndicator(this.root, false);
-
       this.updateLayersList();
     }
   }
@@ -760,8 +729,13 @@ export class GisViewer extends DG.JsViewer {
     lat = this.dataFrame.col(this.latitudeColumnName)?.getRawData();
     lon = this.dataFrame.col(this.longitudeColumnName)?.getRawData();
 
-    if ((!lat) || (!lon))
+    // clear the features full array
+    if ((!lat) || (!lon)) {
+      this.featuresFull.length = 0;
+      this.features.length = 0;
       return;
+    }
+
 
     //TODO: change it to filling array of objects with all table data (if we need it of course?)
     let colValue: DG.Column | null = null;

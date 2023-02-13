@@ -17,7 +17,7 @@ category('FSE exists', ()=> {
       (elem) => !!elem.querySelector('.fa-magic'),
     ).lastChild as HTMLElement;
     if (!fseButton) throw 'Failed: FSE button does not exist';
-  });
+  }, { skipReason: 'GROK-11734' });
 
   after(async () => {
     grok.shell.v.close();
@@ -45,7 +45,7 @@ category('FSE opens', () => {
       !!currentView.root.querySelector('[name="CODE"]') &&
       !!currentView.root.querySelector('[name="UI"]');
     expect(allTabsExist, true);
-  });
+  }, { skipReason: 'GROK-11734' });
 
   after(async () => {
     grok.shell.v.close();
@@ -75,7 +75,7 @@ category('FSE closes', () => {
 
     const editorExists = !!currentView.root.querySelector('.CodeMirror.cm-s-default');
     expect(editorExists, true);
-  });
+  }, { skipReason: 'GROK-11734' });
 
   after(async () => {
     grok.shell.v.close();

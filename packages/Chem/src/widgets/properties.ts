@@ -7,9 +7,11 @@ import {div} from "datagrok-api/ui";
 import $ from 'cash-dom';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
+import { MOL_FORMAT } from '../constants';
 
 async function getIUPACName(smiles: string): Promise<string> {
-  const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${smiles}/property/IUPACName/JSON`;
+  const preparedSmiles = smiles.replaceAll(`#`, `%23`); // need to escape # sign (triple bond) in URL
+  const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${preparedSmiles}/property/IUPACName/JSON`;
   const response = await fetch(url);
   const responseJson = await response.json();
   const result = responseJson.PropertyTable?.Properties;
@@ -19,15 +21,15 @@ async function getIUPACName(smiles: string): Promise<string> {
 export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget {
   const rdKitModule = getRdKitModule();
   try {
-    semValue.value = _convertMolNotation(semValue.value, 'unknown', 'smiles', rdKitModule);
+    semValue.value = _convertMolNotation(semValue.value, 'unknown', MOL_FORMAT.SMILES, rdKitModule);
   } catch (e) {
-    return new DG.Widget(ui.divText('Molecule is possible malformed'));
+    return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
   let host = div();
   try {
     var mol = oclMol(semValue.value);
   } catch {
-    return new DG.Widget(ui.divText('Could not analysze properties'));
+    return new DG.Widget(ui.divText('Could not analyze properties'));
   }
 
   function prop(name: string, type: DG.ColumnType, extract: (mol: OCL.Molecule) => any) {

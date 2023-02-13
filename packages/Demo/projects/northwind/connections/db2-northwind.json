@@ -1,0 +1,21 @@
+{
+  "#type": "DataConnection",
+  "name": "DB2Northwind",
+  "friendlyName": "Northwind",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "db": "northwind",
+    "port": 50000
+  },
+  "credentials": {
+    "parameters": {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "DB2",
+  "description": "Northwind sample database",
+  "tags": [
+    "demo"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "#type": "DataConnection",
+  "name": "AthenaNorthwind",
+  "friendlyName": "Northwind",
+  "parameters": {
+    "server": "athena.us-east-2.amazonaws.com",
+    "db": "northwind",
+    "port": 443,
+    "s3OutputLocation": "s3://athena-northwind/results/"
+  },
+  "credentials": {
+    "parameters": {
+      "login": "",
+      "password": ""
+    }
+  },
+  "dataSource": "Athena",
+  "description": "Northwind sample database",
+  "tags": [
+    "demo"
+  ]
+}

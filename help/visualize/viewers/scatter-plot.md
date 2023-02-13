@@ -1,7 +1,6 @@
-<!-- TITLE: Scatter plot -->
-<!-- SUBTITLE: -->
-
-# Scatter plot
+---
+title: "Scatter plot"
+---
 
 A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or
 mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the
@@ -39,6 +38,6 @@ Hit 'R' to toggle regression line.
 See also:
 
 * [Column selectors](column-selectors.md)
-* [Viewers](../viewers.md)
+* [Viewers](../viewers/viewers.md)
 * [Table view](../../datagrok/table-view.md)
 * [JS API: Scatter plot](https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot)

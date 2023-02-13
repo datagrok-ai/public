@@ -4,7 +4,7 @@
 		"access": "public"
 	},
 	"friendlyName": "Tutorials",
-	"version": "1.0.0",
+	"version": "1.0.3",
 	"description": "Helpers for creating tutorials",
 	"dependencies": {
 		"cash-dom": "^8.1.1",

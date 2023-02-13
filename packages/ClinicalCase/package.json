@@ -5,8 +5,8 @@
     "name": "Maria Dolotova",
     "email": "maria.dolotova@arcadia.spb.ru"
   },
-  "version": "1.0.1",
-  "description": "Provides support for dealing with clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.",
+  "version": "1.0.2",
+  "description": "Analysis of the clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/README.md)",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
@@ -28,18 +28,9 @@
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "webpack-cli": "^4.7.2",
-    "jest-html-reporter": "^3.5.0",
-    "jest": "^27.0.0",
-    "@types/jest": "^27.0.0",
-    "ts-jest": "^27.0.0",
-    "puppeteer": "^13.7.0",
     "ts-loader": "latest",
     "webpack": "latest",
-    "typescript": "latest",
-    "@types/js-yaml": "^4.0.5",
-    "js-yaml": "^4.1.0",
-    "@types/node-fetch": "^2.6.2",
-    "node-fetch": "^2.6.7"
+    "typescript": "latest"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
@@ -53,9 +44,9 @@
     "release-clinicalcase-dev": "grok publish dev --release",
     "debug-clinicalcase-public": "grok publish public",
     "release-clinicalcase-public": "grok publish public --release",
-    "test": "jest",
-    "test-dev": "set HOST=dev && jest",
-    "test-local": "set HOST=localhost && jest"
+    "test": "grok test",
+    "test-dev": "grok test --host dev",
+    "test-local": "grok test --host localhost"
   },
   "canEdit": [
     "Developers"

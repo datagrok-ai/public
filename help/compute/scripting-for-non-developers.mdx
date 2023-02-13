@@ -1,0 +1,98 @@
+# Scripting for non-developers \[WIP\]
+
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+```
+
+This article describes Datagrok scripting feature. Techniques described here are useful for users with no prior experience in software development. 
+Scripting on Datagrok allows to deploy scripts on Datagrok platform. For deployed scripts you can:
+
+- use different languages
+- fastly generate graphical user interface (GUI)
+- access computations history
+- control sharing
+- integrate them into external systems
+
+## Prerequisites
+
+Sign up and login to [public server of Datagrok](https://public.datagrok.ai/). After successful login, you should see welcome screen:
+![welcome-screen](welcome-screen.png)
+
+## How to create
+
+You can create a script directly on the platform in two ways:
+
+<Tabs>
+  <TabItem value="apple" label="Fast way" default>
+    - Open Datagrok's [Scripts section](https://public.datagrok.ai/scripts)
+    - Hover over the taskbar on the left side. Toolbox will appear.
+    - Click on `New Javascript Script` action on the bottom of toolbox ![scripts](scripts.png)
+  </TabItem>
+  <TabItem value="orange" label="Advanced way">
+    - Open Datagrok (e.g. [public homepage](https://public.datagrok.ai/))
+    - Click on `Functions` icon on the right toolbar
+    - Click on `Scripts` icon on the opened toolbox 
+    - Click on `New Javascript Script` action on the bottom of toolbox ![scripts](scripts.png)
+  </TabItem>
+</Tabs>
+
+If everything is OK, you should see the code editor with the Javascript code inside. 
+
+<details>
+  <summary> Your first script </summary>
+  <div>
+    ```js
+    //name: Template
+    //description: Hello world script
+    //language: javascript
+
+    alert('Hello World!');
+    ```
+  </div>
+</details>
+
+## How to edit and save the script
+
+You can edit the script directly on the platform using built-in editor. 
+
+- Freshly created scripts are opened in the editor automatically
+- To edit an existing script, find it in [Scripts secton](https://public.datagrok.ai/scripts), right click on script card and choose `Edit` action
+
+## How to run script
+
+After the script is created, you can run it:
+
+- Built-in editor has <i class="fas fa-play"></i> "Run" button  on the top panel
+- To edit an existing script, find it in [Scripts secton](https://public.datagrok.ai/scripts), right click on script card and choose `Run` action
+
+## How to enhance a built-in script view
+
+Datagrok automatically creates a graphical user interface for your scripts. It uses script header to create an input form and properly show the outputs after running the script.
+Header could have additional GUI-related hints. You can use these hints to create more user-friendly interface for your scripts. 
+Hints should be listed in curly braces in corresponding header lines. The order of the hints makes no difference; all the hints are optional.
+
+### Inputs' captions
+
+You can add a specific caption for an input parameter. Proper caption gives to a script user an additional context about input parameter meaning.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="code" label="Code" default>
+```
+
+```javascript
+//input: double S1 {caption: Initial volume of liquid}
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="result" label="Result">
+```
+
+![caption-example](caption-example.png)
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```

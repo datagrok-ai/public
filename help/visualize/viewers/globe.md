@@ -1,7 +1,6 @@
-<!-- TITLE: Globe -->
-<!-- SUBTITLE: -->
-
-# Globe
+---
+title: "Globe"
+---
 
 Visualizes magnitude and color for data on a 3D globe using latitude and longitude.
 

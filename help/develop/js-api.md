@@ -1,11 +1,10 @@
-<!-- TITLE: &#8204;JavaScript API -->
-<!-- SUBTITLE: -->
-
-# JavaScript API
+---
+title: "JavaScript API"
+---
 
 [Datagrok JS API](https://datagrok.ai/js-api) allows to control all aspects of the Datagrok platform. The API can be
 used either from ad-hoc [scripts](../compute/scripting.md) (`Functions | Scripts | New JavaScript Script`)
-or from [packages](develop.md#packages).
+or from [packages](./develop.md#packages).
 
 This document covers the following areas:
 
@@ -122,7 +121,7 @@ grok.shell.dockElement(e, 'JS', 'left', 0.5);
 
 ## Registering functions
 
-Pretty much anything in Datagrok is a [function](../datagrok/functions/function.md), it is a concept that connects
+Pretty much anything in Datagrok is a [function](../datagrok/functions/functions.md), it is a concept that connects
 together [scripts](../compute/scripting.md) written in different languages, predictive models, statistical functions,
 query transformations, data flows, and many other features.
 
@@ -198,9 +197,9 @@ Event-related code snippets:
 To figure out what events are coming out of the platform, use the Inspector tool. Open it (Alt+I), go to the "Client
 Log" tab, and perform the action that you want to intercept. In the panel, you will see one or more of the events, click
 on them to inspect event parameters. To simplify the development process, we also generate JavaScript code for handling
-this particular event, copy-paste it from the property panel into your code if needed.
+this particular event, copy-paste it from the context panel into your code if needed.
 
-![inspector-events](tools/inspector-events.png)
+![inspector-events](./tools/inspector-events.png)
 
 ## User-defined types
 
@@ -271,5 +270,5 @@ Code snippets:
 
 See also:
 
-* [JavaScript development](develop.md)
+* [JavaScript development](./develop.md)
 * [JavaScript API Samples](https://public.datagrok.ai/js)
