@@ -32,9 +32,9 @@ predictive models, integration with the external utilities, data augmentation, a
 * [Creating a scripting viewer](#exercise-4-creating-a-scripting-viewer)
 * [Transforming dataframes](#exercise-5-transforming-dataframes)
 * [Custom cell renderers with 3-rd party JS libraries](#exercise-6-custom-cell-renderers-with-3-rd-party-js-libraries)
-* [Accessing Web services with OpenAPI](#exercise-7-accessing-web-services-with-openapi)
-* [Creating an info panel with a REST web service](#exercise-8-creating-an-info-panel-with-a-rest-web-service)
-* [Enhancing Datagrok with dialog-based functions](#exercise-9-enhancing-datagrok-with-dialog-based-functions)
+<!-- * [Accessing Web services with OpenAPI](#exercise-7-accessing-web-services-with-openapi) -->
+* [Creating an info panel with a REST web service](#exercise-7-creating-an-info-panel-with-a-rest-web-service)
+* [Enhancing Datagrok with dialog-based functions](#exercise-8-enhancing-datagrok-with-dialog-based-functions)
 
 <!---
 * Creating an application
@@ -647,9 +647,9 @@ First, let's explore how scripting viewer works.
 
 1. Navigate into the folder with your `<yourFirstName>-sequence` package created in
    ["Setting up the environment"](#setting-up-the-environment).
-2. Let's add a custom cell renderer for a *nucleotide sequence box* to represent our sequences in different colors. We need
-   to use monospace font and render each nucleotide (`A`, `G`, `C`, `T`) in a different color using on of the popular conventions, following
-   [this link](https://www.biostars.org/p/171056/).
+2. Let's add a custom cell renderer for a *nucleotide sequence box* to represent our sequences in different colors.
+   We need to use monospace font and render each nucleotide (`A`, `G`, `C`, `T`) in a different color using on of
+   the popular conventions, following [this link](https://www.biostars.org/p/171056/).
 3. Add a class to `src/package.ts` for the new cell renderer:
 
     * Datagrok [grid](../../visualize/viewers/grid.md) is rendered through an
