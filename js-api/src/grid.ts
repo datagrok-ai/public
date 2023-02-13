@@ -487,6 +487,8 @@ export class GridCell {
   set element(e: HTMLElement) { api.grok_GridCell_Set_Element(this.dart, e); }
 }
 
+export type GridColumnTooltipType = 'Default' | 'None' | 'Form' | 'Columns';
+
 /** Represents a grid column */
 export class GridColumn {
   dart: any;
@@ -559,6 +561,18 @@ export class GridColumn {
   /** Whether the column is selected. */
   get selected(): boolean { return api.grok_GridColumn_Get_Selected(this.dart); }
   set selected(x: boolean) { api.grok_GridColumn_Set_Selected(this.dart, x); }
+
+  /** Tooltip type, specific to this column. */
+  get tooltipType(): GridColumnTooltipType { return api.grok_GridColumn_Get_TooltipType(this.dart); }
+  set tooltipType(x: GridColumnTooltipType) { api.grok_GridColumn_Set_TooltipType(this.dart, x); }
+
+  /** Tooltip form. Also requires {@link tooltipType} to be 'Form'. */
+  get tooltipForm(): string { return api.grok_GridColumn_Get_TooltipForm(this.dart); }
+  set tooltipForm(x: string) { api.grok_GridColumn_Set_TooltipForm(this.dart, x); }
+
+  /** Tooltip columns. Also requires {@link tooltipType} to be 'Columns'. */
+  get tooltipColumns(): string[] { return api.grok_GridColumn_Get_TooltipForm(this.dart); }
+  set tooltipColumns(x: string[]) { api.grok_GridColumn_Set_TooltipForm(this.dart, x); }
 
   /** Left border (in pixels in the virtual viewport) */
   get left(): number { return api.grok_GridColumn_Get_Left(this.dart); }
