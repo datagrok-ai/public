@@ -1451,28 +1451,70 @@ export namespace hints {
     return el;
   }
 
-  export function addTextHint(el: HTMLElement, options?: {title?: string, helpUrl?: string, pages?: WizardPage[]}): Wizard {
-    el.classList.add('ui-text-hint-target');
+  /** Describes series of visual components in the wizard. Each wizard page is associated with the
+   * [showNextTo] element. Provide either [text] or [root] parameter to populate the page, the other
+   * parameters are optional. The wizard header is shown only if [title] or [helpUrl] are provided.
+   * The user can use the arrow buttons to navigate the set of instructions. The wizard can be closed
+   * from the dialog header (the "x" icon), via the "Cancel" button, or via the [Wizard.close()] method.
+   * Example: {@link https://public.datagrok.ai/js/samples/ux/Interactivity/hints}:*/
+  export function addTextHint(options: {title?: string, helpUrl?: string, pages?: HintPage[]}): Wizard {
+    let targetElement: HTMLElement | undefined;
     const overlay = div([], 'ui-hint-overlay');
     $('body').prepend(overlay);
-    const wizard = new Wizard({title: options?.title, helpUrl: options?.helpUrl});
-    if (options?.pages) {
-      options.pages.forEach((p) => wizard.page(p));
+    const wizard = new Wizard({title: options.title, helpUrl: options.helpUrl});
+    if (options.pages) {
+      options.pages.forEach((p) => {
+        const page = Object.assign({}, p);
+        page.onActivated = () => {
+          if (p.showNextTo) {
+            if (targetElement)
+              targetElement.classList.remove('ui-text-hint-target');
+            targetElement = p.showNextTo;
+            p.showNextTo.classList.add('ui-text-hint-target');
+          }
+          if (p.onActivated)
+            p.onActivated();
+        };
+        page.root = p.root ?? divText(p.text ?? '');
+        wizard.page(<WizardPage>page);
+      });
     }
-    wizard.onClose.subscribe(() => remove(el));
-    wizard.show({width: 250, height: 200, showNextTo: el});
-    const leftPos = $(wizard.root).css('left');
-    if (leftPos) 
-      $(wizard.root).css('left', parseInt(leftPos) + 10);
+    wizard.onClose.subscribe(() => remove(targetElement));
+    const _x = $(wizard.root).css('left');
+    const _y = $(wizard.root).css('top');
+    wizard.show({width: 250, height: 200,
+      x: _x ? parseInt(_x) : undefined, y: _y ? parseInt(_y) : undefined});
     return wizard;
   }
 
   /** Removes the hint indication from the provided element and returns it. */
-  export function remove(el: HTMLElement): HTMLElement {
+  export function remove(el?: HTMLElement): HTMLElement | null {
     $(el).find('div.ui-hint-blob')[0]?.remove();
     $(el).find('i.fa-times')[0]?.remove();
-    el.classList.remove('ui-hint-target', 'ui-text-hint-target');
-    $('div.ui-hint-overlay').remove();
-    return el;
+    el?.classList.remove('ui-hint-target', 'ui-text-hint-target');
+    $('div.ui-hint-overlay')?.remove();
+    return el ?? null;
   }
+}
+
+interface HintPage {
+
+  /** Page root. Can also be set via [text] property */
+  root?: HTMLDivElement;
+
+  /** Caption to be displayed on top of the panel */
+  caption?: HTMLElement | string;
+
+  /** Called when the page is activated */
+  onActivated?: () => void;
+
+  /** Returns error message (and stops wizard from proceeding to the next page),
+   * or null if validated */
+  validate?: () => string | null;
+
+  /** Displays the wizard next to the specified element when the page is current. */
+  showNextTo: HTMLElement;
+
+  /** Adds a div with the specified text as the page root. */
+  text?: string;
 }

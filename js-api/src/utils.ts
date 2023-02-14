@@ -230,6 +230,10 @@ export namespace HtmlUtils {
   export function renderToCanvas(element: HTMLElement, ratio: number = 1): Promise<HTMLCanvasElement> {
     return api.grok_HtmlUtils_RenderToCanvas(element, ratio);
   }
+
+  export function htmlGetBounds(element: HTMLElement): Rect {
+    return Rect.fromDart(api.grok_HtmlUtils_HtmlGetBounds(element));
+  }
 }
 
 /**
