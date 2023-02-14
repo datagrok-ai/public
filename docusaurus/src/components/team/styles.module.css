@@ -4,8 +4,9 @@
 .card:hover{
   cursor:pointer;
 }
-.dialogSize{
-  min-width:500px;
-  width: 600px;
-  max-width: 700px;
+.dialogSize{  
+  max-width: 700px!important;
+}
+.dialogMargin{
+  margin-top:50px;
 }
