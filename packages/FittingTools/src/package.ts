@@ -2,11 +2,76 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-
+import {fit, sigmoid, FitErrorModel} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 export const _package = new DG.Package();
 
 
-import {fit, sigmoid} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
+//tags: app
+//name: Demo Curve Fit
+export async function curveFitRenderer() {
+  const strIC50ColName = 'FittedCurve';
+  const columnCount = 10;
+  const rowCount = 100;
+  const columnsFit = new Array(columnCount);
+  for (let nCol=0; nCol<columnCount; ++nCol) {
+    const columnFit = DG.Column.fromType(DG.TYPE.DATA_FRAME, strIC50ColName + nCol.toString(), rowCount).init((i) => {
+
+      const dff = grok.data.demo.doseResponse();
+      const x = dff.columns.byName('concentration [ug/ml]').toList();
+      const y = dff.columns.byName('viability [%]').toList();
+
+      //fit
+      const data = {x: x, y: y};
+      const minY = dff.columns.byName('viability [%]').min;
+      const maxY = dff.columns.byName('viability [%]').max;
+      const medY = dff.columns.byName('viability [%]').stats.med;
+      let xAtMedY = -1;
+      for (let n = 0; n < y.length; ++n) {
+        if (y[n] === medY) {
+          xAtMedY = x[n];
+          break;
+        }
+      }
+
+      //Example of fit curve usage
+      const fitRes = fit(data, [maxY, 1.2, xAtMedY, minY], sigmoid, FitErrorModel.Constant);
+      const params = fitRes.parameters;
+
+      const dfOut = DG.DataFrame.fromColumns([
+        DG.Column.fromFloat32Array('X', new Float32Array(x)),
+        DG.Column.fromFloat32Array('Y', new Float32Array(y))]);
+      const scatterOptions = {
+        x: 'X',
+        y: 'Y',
+        markerDefaultSize: 4
+      };
+
+      const helper = dfOut.plot.scatter(scatterOptions);
+      helper!.meta.formulaLines.addLine({
+        title: 'Fitted',
+        formula: '${Y} = ' + params[3] + ' + (' + params[0] + ' - ' + params[3] + ')/(1 + Pow(10, ' + params[1] + '*(${X} - ' + params[2] + ')))',
+        zIndex: -30,
+        color: "#FF7F00",
+        width: 2,
+        visible: true,
+      });
+
+      //dfOut.temp = helper;
+      return helper;
+    });
+
+    columnsFit[nCol] = columnFit;
+  }
+
+  const t = DG.DataFrame.fromColumns(columnsFit);
+  const view: DG.TableView = grok.shell.addTableView(t);
+  view.grid.setOptions({rowHeight: 150});
+
+  for (let n=1; n<view.grid.columns.length; ++n) {
+    view.grid.columns.byIndex(n)!.width = 200;
+    view.grid.columns.byIndex(n)!.cellType = 'scatterplot';
+  }
+}
 
 //name: Curves
 //tags: app
@@ -29,7 +94,7 @@ export async function sim() {
   const data = {x: x, y: y};
 
   //Example of fit curve usage
-  let fitRes = fit(data, [0.9, 1.2, 4.95, 0.1], sigmoid, "constant");
+  let fitRes = fit(data, [0.9, 1.2, 4.95, 0.1], sigmoid, FitErrorModel.Constant);
   //const curveFitter = new CurveFitter(sigmoid, data, [0.9, 1.2, 4.95, 0.1], "constant");
 
   let btn = ui.bigButton('FIT', () => {
