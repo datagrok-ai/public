@@ -1327,6 +1327,18 @@ export class RowList {
     api.grok_RowList_RemoveAt(this.dart, idx, count, notify);
   }
 
+  /** Removes specified rows
+   * @param {RowPredicate} rowPredicate */
+  removeWhere(rowPredicate: RowPredicate): void {
+    api.grok_RowList_RemoveWhere(this.dart, rowPredicate);
+  }
+
+  /** Removes specified rows
+   * @param {IndexPredicate} indexPredicate */
+  removeWhereIdx(indexPredicate: IndexPredicate): void {
+    api.grok_RowList_RemoveWhereIdx(this.dart, indexPredicate);
+  }
+
   /** Inserts empty rows at the specified position
    * @param {number} idx
    * @param {number} [count=1] - Number of rows to insert.
