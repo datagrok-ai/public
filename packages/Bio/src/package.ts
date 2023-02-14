@@ -103,6 +103,19 @@ export async function initBio() {
   hydrophobPalette = new SeqPaletteCustom(palette);
 }
 
+//name: sequenceTooltip
+//tags: tooltip
+//input: column col {semType: Macromolecule}
+//output: widget result
+export async function sequenceTooltip(col: DG.Column): Promise<DG.Widget<any>> {
+  const tv = grok.shell.tv;
+  let viewer = await tv.dataFrame.plot.fromType('WebLogo', {
+    sequenceColumnName: col.name,
+    backgroundColor: 0xFFfdffe5
+  });
+  return viewer;
+}
+
 //name: getBioLib
 //output: object monomerLib
 export function getBioLib(): IMonomerLib {
