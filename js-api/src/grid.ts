@@ -682,15 +682,19 @@ export class Form {
     return api.grok_Form_ForDataFrame(df.dart, options?.columns);
   }
 
+  /** When in editable mode, users can edit field values. */
   get editable(): boolean { return api.grok_Form_Get_Editable(this.dart); }
   set editable(x: boolean) { api.grok_Form_Set_Editable(this.dart, x); }
 
+  /** When in design mode, users can move form controls. */
   get designMode(): boolean { return api.grok_Form_Get_DesignMode(this.dart); }
   set designMode(x: boolean) { api.grok_Form_Set_DesignMode(this.dart, x); }
 
+  /** Data frame row bound to the form. */
   get row(): Row { return new Row(api.grok_Form_Get_DataFrame(this.dart), api.grok_Form_Get_RowIdx(this.dart)); }
   set row(row: Row) { api.grok_Form_Set_Row(this.dart, row.toDart()); }
 
+  /** Serialized form content. Use it for persistence purposes. */
   get state() { return api.grok_Form_Get_State(this.dart); }
   set state(s: string) { api.grok_Form_Set_State(this.dart, s); }
 }
@@ -707,7 +711,6 @@ export class Grid extends Viewer<IGridLookSettings> {
   static create(table: { dart: any; }): Grid {
     return new Grid(api.grok_Grid_Create(table.dart));
   }
-
 
   /** Creates a new grid from a list of items (rows) and their properties (columns) */
   static fromProperties(items: any[], props: Property[]): Grid {
