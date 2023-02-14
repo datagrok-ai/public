@@ -155,7 +155,7 @@ export function _surfacePlotDemo() {
 //name: timelinesViewerDemo
 //meta.demoPath: Viewers | Timelines
 export function _timelinesViewerDemo() {
-  viewerDemo('TimelinesViewer');
+  viewerDemo('TimelinesViewer', {lineWidth: 4, markerPosition: 'above main line'});
 }
 
 //name: treeViewerDemo
