@@ -1,7 +1,7 @@
 import styles from './styles.module.css';
 import React from 'react';
 
-export function LayoutHeader ({children, meta}){
+export function LayoutHeader ({meta}){
     return(
         <div className="row">
             <div className="row py-2 align-items-center">
