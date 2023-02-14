@@ -44,7 +44,7 @@
 		"release-powergrid-dev": "grok publish dev --release",
 		"debug-powergrid-public": "grok publish public",
 		"release-powergrid-public": "grok publish public --release",
-		"debug-powergrid-local": "webpack && grok publish local"
+		"debug-powergrid-local": "tsc && webpack && grok publish local"
 	},
 	"canEdit": [
 		"Developers"
