@@ -8,6 +8,8 @@ import $ from 'cash-dom';
 import {select, scaleLinear, scaleOrdinal, color, ScaleLinear, ScaleOrdinal} from 'd3';
 import {layoutConf, topSort} from './utils';
 
+import '../../../css/chord-viewer.css';
+
 export class ChordViewer extends DG.JsViewer {
   fromColumnName: string | null;
   toColumnName: string | null;
