@@ -10,3 +10,14 @@
 button[title="About"], button[title="Help (?)"] {
     display: none !important;
 }
+
+.ketcher-host {
+    width: 500px;
+    height: 400px;
+    overflow: hidden!important;
+}
+
+.ketcher-resizing {
+    width: 100%!important;
+    height: 100%!important;
+}
