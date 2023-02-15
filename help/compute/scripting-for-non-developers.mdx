@@ -97,7 +97,7 @@ You can add a specific caption for an input parameter. Proper caption gives to a
 ```
 
 ```javascript
-//input: double S1 {caption: Initial volume of liquid}
+//input: double S1 { caption: Initial volume of liquid }
 ```
 
 ```mdx-code-block
@@ -108,7 +108,7 @@ You can add a specific caption for an input parameter. Proper caption gives to a
 ```javascript
 //name: Captions sample
 //language: javascript
-//input: double S1 {caption: Initial volume of liquid}
+//input: double S1 { caption: Initial volume of liquid }
 
 grok.shell.info(`S1 equals ${S1}`);
 ```
@@ -124,6 +124,45 @@ grok.shell.info(`S1 equals ${S1}`);
 </TabItem>
 </Tabs>
 ```
+
+### Input units
+
+You can add corresponding unit for an input parameter. Unit will appear in the input form next to the input field.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="short" label="Short sample" default>
+```
+
+```javascript
+//input: double initial_temp { units: °С }
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="full" label="Full sample">
+```
+
+```javascript
+//name: Units sample
+//language: javascript
+//input: double initial_temp { units: °С }
+
+grok.shell.info(`Initial temperature equals ${initial_temp}`);
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="result" label="Result">
+```
+
+![units-example](units-example.png)
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
 ### Adding viewers for output dataframes
 
 You can specify viewers to review dataframes in human-friendly way. Each dataframe parameter may have a list of viewers. 
@@ -135,7 +174,7 @@ For instance, the following code adds `Scatter plot` and `Line chart` viewers on
 ```
 
 ```javascript
-//output: dataframe tempOnTime { viewer: Line chart }
+//output: dataframe tempOnTime { viewer: Line chart | Scatter plot }
 ```
 
 ```mdx-code-block
@@ -159,6 +198,52 @@ tempOnTime.name = "DF with linechart"
 ```
 
 ![builtin-viewers](builtin-viewers.png)
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+### Customizing dataframes viewers
+
+Each viewer has a list of properties used for rendering and changing its' behaviour. For instance, you may specify dataframe column used as X axis on scatter plot. 
+
+List of available properties differs for each type of viewer. You may tight click on viewer and select `Properties` item in the context menu. 
+Any of properties listed in the opened property panel could be customized. For example, the following code:
+- specifies column used for X axis values for line chart
+- specifies row height for grid
+- sets the width value for both viewers to 100% (using `block` property)
+
+```mdx-code-block
+<Tabs>
+<TabItem value="short" label="Short sample">
+```
+
+```javascript
+//output: dataframe dumb_data { viewer: Line chart(markerType: star, markerSize: 15) | Scatter plot(showRegressionLine: true) }
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="full" label="Full sample">
+```
+
+```javascript
+//name: Viewers customization
+//language: javascript
+//input: dataframe temp_data
+//output: dataframe dumb_data { viewer: Line chart(markerType: star, markerSize: 15) | Scatter plot(showRegressionLine: true) }
+
+dumb_data = temp_data.clone();
+grok.shell.info(`Data row count: ${dumb_data.rowCount}`);
+```
+
+```mdx-code-block
+</TabItem>
+<TabItem value="result" label="Result">
+```
+
+![viewers-customization](viewers-customization.png)
 
 ```mdx-code-block
 </TabItem>
@@ -217,6 +302,17 @@ grok.functions.register({
 ## How to use advanced script view
 
 You can use so called `RichFunctionView` feature to access to advanced features. 
+It has all the features of basic script view, such as 
+[captions](#input-captions), 
+[viewers for outputs](#adding-viewers-for-output-dataframes) or 
+[input validators](#validating-inputs). 
+Advanced features include:
+
+- [Viewers for input dataframes](#adding-input-dataframes-viewers)
+- Grouping [inputs](#grouping-inputs) and [outputs](#grouping-outputs)
+- Automatic [export](#exporting-to-a-file)
+- Saving and accessing [history](#accessing-history)
+
 To enable it, add following code to your script header:
 
 ```mdx-code-block
@@ -315,51 +411,6 @@ rowCount = test.rowCount
 ```
 
 ![input-viewers](input-viewers.gif)
-
-```mdx-code-block
-</TabItem>
-</Tabs>
-```
-
-### Customizing dataframes viewers
-
-Each viewer has a list of properties used for rendering and changing its' behaviour. For instance, you may specify dataframe column used as X axis on scatter plot. 
-
-List of available properties differs for each type of viewer. You may tight click on viewer and select `Properties` item in the context menu. 
-Any of properties listed in the opened property panel could be customized. For example, the following code:
-- specifies column used for X axis values for line chart
-- specifies row height for grid
-- sets the width value for both viewers to 100% (using `block` property)
-
-```mdx-code-block
-<Tabs>
-<TabItem value="short" label="Short sample">
-```
-
-```javascript
-//input: dataframe temp_data { viewer: Line chart(block: 100, x: "Time (hours)") | Grid(block: 100, rowHeight: 35) }
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="full" label="Full sample">
-```
-
-```javascript
-//name: Input categories demo
-//language: javascript
-//input: dataframe temp_data { viewer: Line chart(block: 100, x: "Time (hours)") | Grid(block: 100, rowHeight: 35) }
-//editor: Compute:RichFunctionViewEditor
-
-grok.shell.info(`Data row count: ${temp_data.rowCount}`);
-```
-
-```mdx-code-block
-</TabItem>
-<TabItem value="result" label="Result">
-```
-
-
 
 ```mdx-code-block
 </TabItem>
@@ -483,13 +534,74 @@ Here we also specify default value for `S1` parameter
 
 ### Exporting to a file
 
+You may use one-click export feature to save entire script run data to a local file. To generate export file, click on <i class="fas fa-arrow-to-bottom"></i> "Export" icon on the top panel. 
+Automatic export saves all input and output values with their captions, units and even viewers' screenshots. This feature is available for all scripts using `RichFunctionView` by default.
 
+<details>
+<summary> Export file example </summary>
+<div>
+
+![export-demo](export-demo.gif)
+
+</div>
+</details>
 
 ### Accessing history
 
 Each script run is saved on the server. Saved script run includes both input and output values of the run. 
-You may review the history of runs clicking on the <i class="fas fa-history"></i> history button on the top panel.
+You may review the history of runs clicking on the <i class="fas fa-history"></i> "History" button on the top panel.
 
 History panel will appear on the right side. Clicking on any of cards will load the historical run into the UI.
 The historical runs are immutable. Thus, if you load historical run and then run it again with different input values, the platofrm will create new historical run.
+This feature is available for all scripts using `RichFunctionView` by default.
 
+## How to share a script
+
+You may control access rights to your scripts. All sharing features are located in Sharing dialog. To open it, find your script in [Scripts section](https://public.datagrok.ai/scripts) and right click on it. 
+Choose "Share..." option in the context menu. In the opened dialog you will see groups and users with their privileges. You may edit list of collaborators, grant or revoke privileges at any moment.
+
+![share-search](share-search.png) ![share-send](share-send.png) ![share-list](share-list.png)
+
+
+## How to integrate script into third-party software
+
+Datagrok was designed with the design goal to be as extensible and easy to integrate with as possible, so out-of-the box
+we get many platform integration capabilities such as authentication, data access, and many others. In addition to that,
+there are some capabilities specific to models: [REST API](#rest-api) and
+[embedding as iframe](#embedding-as-iframe).
+
+### REST API
+
+Once registered, each function gets assigned a REST API endpoint that allows external code to execute it by passing the
+input parameters, along with the authentication token. This allows instantaneous deployment of scientific methods for
+external consumption. To find our how to use it, click on the function and expand the `REST` pane on the context panel
+on the right. Both JavaScript and Curl samples are provided.
+
+![rest-api](rest-api.png)
+
+### JS API
+
+JavaScript-based apps have access to the whole Datagrok platform via the
+[JS API](../develop/js-api.md).
+
+### Embedding as iframe
+
+Sometimes, an app has to be included in the external web page. The simplest way to achieve it is via
+the [iframe](https://www.w3schools.com/tags/tag_iframe.ASP)
+element. To embed a model, click on the hamburger icon in the top left corner, and choose `Embed...`
+. You will see a dialog with the HTML code on top that you can use to embed this into external site. Note that you can
+change parameter values right in the URL.
+
+On the bottom, you see a preview of the result ()
+
+![embed-as-iframe](embed-as-iframe.png)
+
+## How to delete a script
+
+At any moment of the time you can delete a script. To do that, you need to find to in [Scripts section](https://public.datagrok.ai/scripts), right click on it and choose "Delete" option. 
+
+:::caution
+
+This action is irreversable! Your collaborators will lose access to it and all historical runs will become inaccessible. 
+
+:::
