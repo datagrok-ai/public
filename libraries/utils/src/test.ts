@@ -94,9 +94,9 @@ export function test(name: string, test: () => Promise<any>, options?: TestOptio
 }
 
 /* Tests two objects for equality, throws an exception if they are not equal. */
-export function expect(actual: any, expected: any): void {
+export function expect(actual: any, expected: any = true, error?: string): void {
   if (actual !== expected)
-    throw new Error(`Expected "${expected}", got "${actual}"`);
+    throw error ? new Error(error) : new Error(`Expected "${expected}", got "${actual}"`);
 }
 
 export function expectFloat(actual: number, expected: number, tolerance = 0.001): void {
@@ -175,7 +175,6 @@ export async function initAutoTests(packageId: string, module?: any) {
   const moduleAutoTests = [];
   const packFunctions = await grok.dapi.functions.filter(`package.id = "${packageId}"`).list();
   for (const f of packFunctions) {
-    //@ts-ignore
     const tests = f.options['test'];
     if (!(tests && Array.isArray(tests) && tests.length)) continue;
     for (let i = 0; i < tests.length; i++) {
