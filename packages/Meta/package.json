@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.8",
+  "version": "3.2.9",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1011,9 +1011,12 @@
         },
         "1.5.9": {
           "datagrok-api": "^1.8.1"
+        },
+        "1.5.10": {
+          "datagrok-api": "^1.13.0"
         }
       },
-      "description": "js-api-tests is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
+      "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
