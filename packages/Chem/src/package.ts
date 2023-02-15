@@ -51,6 +51,7 @@ import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversit
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {chemSpace, getEmbeddingColsNames} from './analysis/chem-space';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
+import {ChemSearchBaseViewer} from './analysis/chem-search-base-viewer';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
@@ -113,6 +114,19 @@ export async function initChem(): Promise<void> {
 
 //tags: autostart
 export async function initChemAutostart(): Promise<void> { }
+
+//name: chemTooltip
+//tags: tooltip
+//input: column col {semType: Molecule}
+//output: widget result
+export async function chemTooltip(col: DG.Column): Promise<DG.Widget<any>> {
+  const tv = grok.shell.tv;
+  let viewer = await tv.dataFrame.plot.fromType('diversitySearchViewer', {
+    limit: 9,
+    sizesMap: 'small'
+  });
+  return viewer;
+}
 
 //name: Scaffold Tree
 //tags: viewer
