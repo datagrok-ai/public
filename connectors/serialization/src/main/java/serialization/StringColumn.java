@@ -1,6 +1,10 @@
 package serialization;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
 
 
 // String column.
@@ -100,5 +104,23 @@ public class StringColumn extends Column<String> {
             }
             idxs[order[i]] = categories.size() - 1;
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        StringColumn that = (StringColumn) o;
+        return Arrays.equals(data, that.data)
+                && Objects.equals(name, that.name)
+                && Objects.equals(getType(), that.getType());
+    }
+
+    @Override
+    public int hashCode() {
+        int dataHash = Arrays.hashCode(data);
+        dataHash += name == null ? 1 : name.hashCode();
+        dataHash += getType() == null ? 1 : getType().hashCode();
+        return dataHash;
     }
 }

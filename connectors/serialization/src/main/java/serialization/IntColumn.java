@@ -1,6 +1,9 @@
 package serialization;
 
 
+import java.util.Arrays;
+import java.util.Objects;
+
 // Integer column.
 public class IntColumn extends Column<Integer> {
     private static final String TYPE = Types.INT;
@@ -57,5 +60,23 @@ public class IntColumn extends Column<Integer> {
             System.arraycopy(data, 0, newData, 0, data.length);
             data = newData;
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        IntColumn that = (IntColumn) o;
+        return Arrays.equals(data, that.data)
+                && Objects.equals(name, that.name)
+                && Objects.equals(getType(), that.getType());
+    }
+
+    @Override
+    public int hashCode() {
+        int dataHash = Arrays.hashCode(data);
+        dataHash += name == null ? 1 : name.hashCode();
+        dataHash += getType() == null ? 1 : getType().hashCode();
+        return dataHash;
     }
 }

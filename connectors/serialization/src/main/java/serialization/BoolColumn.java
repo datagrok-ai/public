@@ -1,6 +1,9 @@
 package serialization;
 
 
+import java.util.Arrays;
+import java.util.Objects;
+
 // Bool column.
 public class BoolColumn extends Column<Boolean> {
     private static final String TYPE = Types.BOOL;
@@ -63,5 +66,23 @@ public class BoolColumn extends Column<Boolean> {
             System.arraycopy(data, 0, newData, 0, data.length);
             data = newData;
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        BoolColumn that = (BoolColumn) o;
+        return Arrays.equals(data, that.data)
+                && Objects.equals(name, that.name)
+                && Objects.equals(getType(), that.getType());
+    }
+
+    @Override
+    public int hashCode() {
+        int dataHash = Arrays.hashCode(data);
+        dataHash += name == null ? 1 : name.hashCode();
+        dataHash += getType() == null ? 1 : getType().hashCode();
+        return dataHash;
     }
 }
