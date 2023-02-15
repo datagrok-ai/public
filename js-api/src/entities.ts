@@ -350,6 +350,9 @@ export class DataQuery extends Func {
   get query(): string { return api.grok_Query_Query(this.dart); }
   set query(q: string) { api.grok_Query_Set_Query(this.dart, q); }
 
+  get connection(): DataConnection { return toJs(api.grok_Query_Get_Connection(this.dart)); }
+  set connection(c: DataConnection) { api.grok_Query_Set_Connection(this.dart, toDart(c)); }
+
   /** Executes query
    * @returns {Promise<DataFrame>} */
   async executeTable(): Promise<DataFrame> { return toJs(await api.grok_Query_ExecuteTable(this.dart)); }
