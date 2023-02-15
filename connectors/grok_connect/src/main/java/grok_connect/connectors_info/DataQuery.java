@@ -11,7 +11,7 @@ public class DataQuery
     public String query;
     public String connectionId;
     public DataConnection connection;
-    private List<FuncParam> params;
+    public List<FuncParam> params;
     public Map options;
 
     public Map<String, Object> parameters = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
