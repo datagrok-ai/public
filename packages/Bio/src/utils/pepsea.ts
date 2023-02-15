@@ -38,11 +38,16 @@ export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
       (bodies[clusterId] ??= []).push({ID: rowIndex.toString(), HELM: helmSeq});
   }
 
-  const dockerfileId = (await grok.dapi.dockerfiles.filter('bio').first()).id;
+  const pepseaDockerfile = await grok.dapi.dockerfiles.filter('bio').first();
+  try {
+    await grok.dapi.dockerfiles.run(pepseaDockerfile.id);
+  } catch {
+    console.warn(`PepSeAError: couldn't run container, it's probably already running`);
+  }
 
   const alignedSequences: string[] = new Array(peptideCount);
   for (const body of bodies) { // getting aligned sequences for each cluster
-    const alignedObject = await requestAlignedObjects(dockerfileId, body, method, gapOpen, gapExtend);
+    const alignedObject = await requestAlignedObjects(pepseaDockerfile.id, body, method, gapOpen, gapExtend);
     const alignments = alignedObject.Alignment;
 
     for (const alignment of alignments) {  // filling alignedSequencesCol
