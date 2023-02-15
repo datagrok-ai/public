@@ -1,8 +1,6 @@
 /** EXPERIMENTAL - USE AT YOUR OWN RISK - API might change */
 import * as ui from "../../ui";
 import {Dialog} from "../widgets";
-import $ from 'cash-dom';
-import { HtmlUtils } from "../utils";
 let api = <any>window;
 
 /** EXPERIMENTAL - USE AT YOUR OWN RISK - API might change */
@@ -19,9 +17,6 @@ export interface WizardPage {
   /** Returns error message (and stops wizard from proceeding to the next page),
    * or null if validated */
   validate?: () => string | null;
-
-  /** Displays the wizard next to the specified element when the page is current. */
-  showNextTo?: HTMLElement;
 }
 
 /** A set of pages that user navigates using the "<<" and ">>" buttons */
@@ -66,7 +61,6 @@ export class Wizard extends Dialog {
     if (w.onActivated)
       w.onActivated();
     this._updateButtonStates();
-    this._updatePosition();
   }
 
   _updateButtonStates() {
@@ -75,26 +69,15 @@ export class Wizard extends Dialog {
     ui.setClass(this.getButton('>>'), 'disabled', this.pageIndex == this.pages.length - 1);
   }
 
-  _updatePosition() {
-    if (!this.currentPage.showNextTo)
-      return;
-    const rect = HtmlUtils.htmlGetBounds(this.currentPage.showNextTo);
-    const offset = 10;
-    $(this.root).css('left', rect.right + offset);
-    $(this.root).css('top', rect.top);
-  }
-
   /** Activates the previous page */
   prev() {
     this.currentPage = this.pages[this.pageIndex - 1];
     this._updateButtonStates();
-    this._updatePosition();
   }
 
   /** Activates the previous page */
   next() {
     this.currentPage = this.pages[this.pageIndex + 1];
     this._updateButtonStates();
-    this._updatePosition();
   }
 }

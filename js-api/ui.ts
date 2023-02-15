@@ -25,7 +25,7 @@ import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
 import $ from 'cash-dom';
 import {__obs, StreamSubscription} from './src/events';
-import {_isDartium, _options} from './src/utils';
+import {HtmlUtils, _isDartium, _options} from './src/utils';
 import * as rxjs from 'rxjs';
 import { CanvasRenderer, GridCellRenderer, SemanticValue } from './src/grid';
 import {Entity, Property} from './src/entities';
@@ -1461,6 +1461,7 @@ export namespace hints {
     let targetElement: HTMLElement | undefined;
     const overlay = div([], 'ui-hint-overlay');
     $('body').prepend(overlay);
+    const horizontalOffset = 10;
     const wizard = new Wizard({title: options.title, helpUrl: options.helpUrl});
     if (options.pages) {
       options.pages.forEach((p) => {
@@ -1471,6 +1472,9 @@ export namespace hints {
               targetElement.classList.remove('ui-text-hint-target');
             targetElement = p.showNextTo;
             p.showNextTo.classList.add('ui-text-hint-target');
+            const rect = HtmlUtils.htmlGetBounds(p.showNextTo);
+            $(wizard.root).css('left', rect.right + horizontalOffset);
+            $(wizard.root).css('top', rect.top);
           }
           if (p.onActivated)
             p.onActivated();
@@ -1505,16 +1509,16 @@ interface HintPage {
   /** Caption to be displayed on top of the panel */
   caption?: HTMLElement | string;
 
+  /** Adds a div with the specified text as the page root. */
+  text?: string;
+
+  /** Displays the wizard next to the specified element when the page is current. */
+  showNextTo: HTMLElement;
+
   /** Called when the page is activated */
   onActivated?: () => void;
 
   /** Returns error message (and stops wizard from proceeding to the next page),
    * or null if validated */
   validate?: () => string | null;
-
-  /** Displays the wizard next to the specified element when the page is current. */
-  showNextTo: HTMLElement;
-
-  /** Adds a div with the specified text as the page root. */
-  text?: string;
 }
