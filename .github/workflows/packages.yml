@@ -231,6 +231,7 @@ jobs:
           retries=5
           until grok publish ${HOST}; do
             exit=$?
+            docker logs --tail 100 $(docker ps --filter "ancestor=datagrok/datagrok:${{ env.DATAGROK_VERSION }}" -q) 
             wait=$((2 ** count))
             count=$((count + 1))
             if [ "$count" -lt "$retries" ]; then
