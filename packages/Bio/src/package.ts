@@ -402,13 +402,12 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
 //top-menu: Bio | MSA...
 //name: MSA...
 //tags: bio, panel
-export async function multipleSequenceAlignmentAny(
-  col: DG.Column<string> | null = null): Promise<DG.Column<string> | null> {
+export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = null): void {
   const table = col?.dataFrame ?? grok.shell.t;
   const seqCol = col ?? table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
   if (seqCol == null) {
     grok.shell.warning(`MSAError: dataset doesn't conain any Macromolecule column`);
-    return null;
+    return;
   }
 
   let performAlignment: () => Promise<DG.Column<string> | null> = async () => null; 
@@ -460,8 +459,6 @@ export async function multipleSequenceAlignmentAny(
       await grok.data.detectSemanticTypes(table);
     })
     .show();
-  await dialog.onClose.toPromise();
-  return msaCol;
 }
 
 //name: Composition Analysis
