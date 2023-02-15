@@ -402,12 +402,13 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
 //top-menu: Bio | MSA...
 //name: MSA...
 //tags: bio, panel
-export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = null): void {
+export async function multipleSequenceAlignmentAny(
+  col: DG.Column<string> | null = null): Promise<DG.Column<string> | null> {
   const table = col?.dataFrame ?? grok.shell.t;
   const seqCol = col ?? table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
   if (seqCol == null) {
     grok.shell.warning(`MSAError: dataset doesn't conain any Macromolecule column`);
-    return;
+    return null;
   }
 
   let performAlignment: () => Promise<DG.Column<string> | null> = async () => null; 
@@ -444,13 +445,14 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
   colInput.setTooltip('Sequences column to use for alignment');
   colInput.fireChanged();
 
-  ui.dialog('MSA')
+  let msaCol: DG.Column<string> | null = null;
+  const dialog = ui.dialog('MSA')
     .add(colInput)
     .add(methodInput)
     .add(gapOpenInput)
     .add(gapExtendInput)
     .onOK(async () => {
-      const msaCol = await performAlignment();
+      msaCol = await performAlignment();
       if (msaCol == null)
         return grok.shell.warning('Wrong column format');
 
@@ -458,6 +460,8 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
       await grok.data.detectSemanticTypes(table);
     })
     .show();
+  await dialog.onClose.toPromise();
+  return msaCol;
 }
 
 //name: Composition Analysis
