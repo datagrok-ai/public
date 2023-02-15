@@ -378,7 +378,7 @@ export class PeptidesModel {
   }
 
   buildSplitSeqDf(): DG.DataFrame {
-    const sequenceCol: DG.Column<string> = this.df.getCol(this.settings.sequenceColumnName!);
+    const sequenceCol = this.df.getCol(this.settings.sequenceColumnName!);
     const splitSeqDf = splitAlignedSequences(sequenceCol);
 
     return splitSeqDf;
@@ -423,8 +423,7 @@ export class PeptidesModel {
 
     this.createScaledCol();
 
-    this.initMutationCliffsSelection();
-    this.initInvariantMapSelection();
+    this.initSelections();
 
     this.setWebLogoInteraction();
     this.webLogoBounds = {};
@@ -438,19 +437,15 @@ export class PeptidesModel {
     this.postProcessGrids();
   }
 
-  initInvariantMapSelection(): void {
+  initSelections(): void {
     const tempInvariantMapSelection: type.PositionToAARList = this.invariantMapSelection;
-    const positionColumns = this.splitSeqDf.columns.names();
-    for (const pos of positionColumns)
-      tempInvariantMapSelection[pos] ??= [];
-    this.invariantMapSelection = tempInvariantMapSelection;
-  }
-
-  initMutationCliffsSelection(): void {
     const mutationCliffsSelection: type.PositionToAARList = this.mutationCliffsSelection;
     const positionColumns = this.splitSeqDf.columns.names();
-    for (const pos of positionColumns)
+    for (const pos of positionColumns) {
+      tempInvariantMapSelection[pos] ??= [];
       mutationCliffsSelection[pos] ??= [];
+    }
+    this.invariantMapSelection = tempInvariantMapSelection;
     this.mutationCliffsSelection = mutationCliffsSelection;
   }
 
@@ -991,8 +986,6 @@ export class PeptidesModel {
       this._filterChangedSubject.next();
     });
     this.isBitsetChangedInitialized = true;
-
-    grok.events.onResetFilterRequest.subscribe(() => this.initInvariantMapSelection());
   }
 
   fireBitsetChanged(isPeptideSpaceSource: boolean = false, fireFilterChanged: boolean = false): void {
