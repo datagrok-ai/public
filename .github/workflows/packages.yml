@@ -229,10 +229,10 @@ jobs:
         run: |
           count=0
           retries=5
-          docker logs --tail 100 $(docker ps -q -f ancestor=datagrok/datagrok:latest)
+          docker logs --tail 100 $(docker ps -q -f ancestor=datagrok/datagrok:bleeding-edge)
           until grok publish ${HOST}; do
             exit=$?
-            docker logs --tail 100 $(docker ps -q -f ancestor=datagrok/datagrok:latest) 
+            docker logs --tail 100 $(docker ps -q -f ancestor=datagrok/datagrok:bleeding-edge) 
             wait=$((2 ** count))
             count=$((count + 1))
             if [ "$count" -lt "$retries" ]; then
