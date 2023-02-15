@@ -233,10 +233,9 @@ jobs:
             exit=$?
             wait=$((2 ** count))
             count=$((count + 1))
-            if [ $count -lt "$retries" ]; then
+            if [ "$count" -lt "$retries" ]; then
               echo "Retry $count/$retries exited $exit, retrying 'grok publish ${HOST}' in $wait seconds..."
               sleep $wait
-              git pull --rebase
             else
               echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${HOST}'."
               exit $exit
