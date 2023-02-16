@@ -1,5 +1,10 @@
 # Databases
 
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+```
+
 Datagrok connects to relational databases, allowing each database to function as a standalone data connection. Some of the features include:
 
 * Inspecting schema, tables, and columns.
@@ -14,7 +19,8 @@ Datagrok connects to relational databases, allowing each database to function as
 You can connect to a database via a direct connection. Out-of-the-box, Datagrok provides connectors to 30+ databases. To view information about a specific data source, see [the list of supported connectors](supported-connectors.md).
 
 <details>
-<summary> Developers</summary>
+
+<summary> Developers </summary>
 
 You can create [custom connectors](https://github.com/datagrok-ai/public/tree/master/connectors). <!--need to create a How-to under Develop-->
 
@@ -55,17 +61,22 @@ When working with database connections and queries, you can cache data to improv
 
 Datagrok provides three caching options:
 
+```mdx-code-block
 <Tabs>
 <TabItem value="schema" label="Cache schema" default>
+```
 
 Choosing this option will cache all tables and table columns in the database connection. To cache schema:
 
 1. Right-click a desired connection and select **Edit** from the list.
 1. In the dialog that opens, select the checkbox **Cache Schema**.
 1. Click **OK** to save the changes.
+
+```mdx-code-block
 </TabItem>
 
 <TabItem value="connection" label="Cache connection">
+```
 
 Choosing this option will cache the results for all queries executed on this connection. To cache all queries:
 
@@ -73,7 +84,8 @@ Choosing this option will cache the results for all queries executed on this con
 1. In the dialog that opens, select the checkbox **Cache Results**.
 1. In the **Invalidate On** field that appears, type in a [cron expression](https://www.freeformatter.com/cron-expression-generator-quartz.html) that defines when the cache is invalidated.
     <details>
-    <summary>Example</summary>
+
+    <summary> Example </summary>
 
     Here is an example of a cron expression that invalidates the cache at 1 AM every night for a database that refreshes overnight: `0 0 1 * * ?`
 
@@ -81,9 +93,12 @@ Choosing this option will cache the results for all queries executed on this con
 
     >**IMPORTANT**: If you leave the **Invalidate On** field empty, the cache won't be reloaded.
 1. Click **OK** to save the changes.
+
+```mdx-code-block
 </TabItem>
 
 <TabItem value="query" label="Cache query">
+```
 
 Choosing this option will cache the results of an individual query. This is the most specific way to enable caching in Datagrok. To cache a specific query:
 
@@ -91,7 +106,8 @@ Choosing this option will cache the results of an individual query. This is the 
 1. In the dialog that opens, select the checkbox **Cache Results**.
 1. In the **Invalidate On** field that appears, type in a [cron expression](https://www.freeformatter.com/cron-expression-generator-quartz.html) that defines when the cache is invalidated.
     <details>
-    <summary>Example</summary>
+
+    <summary> Example </summary>
 
     Here is an example of a cron expression that invalidates the cache at 1 AM every night for a database that refreshes overnight: `0 0 1 * * ?`
 
@@ -99,9 +115,12 @@ Choosing this option will cache the results of an individual query. This is the 
 
     >**IMPORTANT**: If you leave the **Invalidate On** field empty, the cache won't be reloaded.
 1. Click **OK** to save the changes.
+
+```mdx-code-block
 </TabItem>
 
 </Tabs>
+```
 
 To set caching for connections that are created automatically as part of a package, you can specify the `cacheResults` parameter in the connection json definition:
 
@@ -127,8 +146,9 @@ To set caching for query results programmatically, you need to edit the correspo
 
 By setting these fields, you can control the caching behavior of individual queries and improve overall query performance.
 
-<Details>
-<summary>Example.</summary>
+<details>
+
+<summary> Example </summary>
 
 ```Grok Script
 --name: getProductNames
@@ -163,7 +183,8 @@ where p.department = @department
 Each object in Datagrok has multiple contexts, or _data properties_. Users get access to these contexts through [info panels](../discover/info-panels.md), which are displayed in the **Context Panel**. The [**Context Panel**](../datagrok/navigation.md#properties) is dynamic and context-sensitive, meaning it adapts to the selected object, presenting only the relevant information and options.
 
 <details>
-<summary>Developers</summary>
+
+<summary> Developers </summary>
 
 **Context Panel** can be extended. You can add custom [info panels](../develop/how-to/add-info-panel.md) and [context actions](../develop/how-to/context-actions.md).
 
@@ -222,8 +243,10 @@ Datagrok offers two editors for querying databases:
 
 The **SQL Query** editor has two tabs:
 
+```mdx-code-block
 <Tabs>
 <TabItem value="query" label="**Query Tab**" default>
+```
 
 This tab is where you write and edit SQL statements.
 
@@ -234,10 +257,12 @@ When your query is complete, give it a name and click the **Save** button. If yo
 ![Create a database query](query-add.gif)
 
 >Note: You can also add the query results to the workspace for further analysis. To do so, click the **Dropdown Arrow** control in the bottom left corner of the **Query** tab and selecting **Add results to workspace**.
-</TabItem>
 
+```mdx-code-block
+</TabItem>
 <TabItem value="transformations" label="**Transformations Tab**">
-   
+```
+
 Use this tab to apply post-processing operations to your query:
 
 ![Query transformations](transformations.gif)
@@ -252,11 +277,17 @@ Each transformation is recorded. To see the results of each record, locate the r
 > Tip: Use the menu ribbon on top to add or remove columns quickly.
 
 <details>
-<summary>Developers</summary>
-    
+
+<summary> Developers </summary>
+
 You can create custom transformation functions in R, Python, or any other language. See [Scripting](../compute/scripting.md).
 
 </details>
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
 
 #### Aggregation Query editor
 
@@ -275,7 +306,8 @@ To aggregate data from a table, use the **Transformation** tab. In this tab, you
       >Note: The list of functions may vary based on the connector and any packages that have been installed. If connectors expose custom functions, such as GIS functions in PostreSQL, Datagrok makes them readily available in the interface.
 
       <details>
-      <summary>Developers</summary>
+
+      <summary> Developers </summary>
 
       You can [create custom aggregation functions](../compute/scripting.md).
       </details>
@@ -357,7 +389,8 @@ To add a parameter, follow these steps:
 1. When you're done, click **Save**.
 
 <details>
-<summary>Example</summary>
+
+<summary> Example </summary>
 
 >```sql
 >--input: string productName                                               
@@ -372,7 +405,8 @@ To define input parameters, you have these options:
 1. Use parameter _functions_:
    * [Choices](../compute/scripting.md/#parameter-choices): These functions return a list of strings with no parameters.
       <details>
-      <summary>Example</summary>
+
+      <summary> Example </summary>
 
       ```sql
       --input: string shipCountry = "France" {choices: ['France', 'Italy', 'Germany']}
@@ -381,7 +415,8 @@ To define input parameters, you have these options:
       </details>
    * [Editors](../compute/scripting.md/#parameter-editors): These functions generate parameters from the output of another function.
       <details>
-      <summary>Example</summary>
+
+      <summary> Example </summary>
 
       ```sql
       --input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
@@ -390,7 +425,7 @@ To define input parameters, you have these options:
       </details>
    * [Suggestions](../compute/scripting.md/#parameter-suggestions): These functions take a string argument and return a list of matching strings.
       <details>
-      <summary>Example</summary>
+      <summary> Example </summary>
 
       ```sql
       --input: string shipCountry = "France" {suggestions: Demo:northwind:countries}
@@ -401,7 +436,8 @@ To define input parameters, you have these options:
 
 1. Reuse other parameters as parameter values.
     <details>
-    <summary>Example</summary>
+
+    <summary> Example </summary>
 
      ```sql
      --input: string firstLetter = "F"
@@ -413,7 +449,8 @@ To define input parameters, you have these options:
 1. Use parameter _patterns_ as filters to allow users to enter free text (supported for the `string` and `datetime` only).
     >Note: A _parameter pattern_ is an expression to create a filter condition within the query. Much like a formula, it consists of field references, operators, and constants. To see a list of available patterns, see [Search patterns](../explore/data-search-patterns.md).
     <details>
-    <summary>Example</summary>
+
+    <summary> Example </summary>
 
     Add filtering criteria for the column _freightValue_:
 
@@ -444,7 +481,8 @@ When you run a parameterized query, the system automatically generates a dialog 
 and executes a parameterized, secure, connector-specific SQL query on the backend.
 
 <details>
-<summary>Example</summary>
+
+<summary> Example </summary>
 
 ```sql
 --input: int employeeId = 5
@@ -470,7 +508,8 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
 </details>
 
 <details>
-<summary>Developers</summary>
+
+<summary> Developers </summary>
 
 You can expose the parameter dialog to end-users as an [application](../develop/how-to/create-package.md).<!--Mention?: when the cartdridge is not deployed on that particular database, the query returns an error-->
 
@@ -487,7 +526,8 @@ When you run a query, you receive the results in a dataframe.
 >Tip: To return a value of a different data type, specify it in the output parameter.  
 >
 ><details>
-><summary>Example</summary>
+>
+><summary> Example </summary>
 >
 >Return a string with the semantic type `Molecule`:
 >
