@@ -451,6 +451,7 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
     .add(gapOpenInput)
     .add(gapExtendInput)
     .onOK(async () => {
+      colInput.fireChanged();
       msaCol = await performAlignment();
       if (msaCol == null)
         return grok.shell.warning('Wrong column format');
