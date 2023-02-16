@@ -6,6 +6,7 @@
 import os
 import json
 import shutil
+import re
 
 from constants import *
 from export import getFunctionsFromListOfFiles, getCommand, completeJsWasmfile, updatePackageJsonFile 
@@ -205,7 +206,21 @@ def generateCppCode(ivProblem):
     """
     Generates C++-code that solves the problem.
     """
+    def replaceIntsByDoubles(expression):
+        """
+        Replace each integer value by the corresponding double number.
+        """
+        # add '.0' after each number        
+        bufferLine1 = re.sub(r'([^.A-Za-z_0-9]\d+)', r'\1.0', f' {expression}')
+        
+        # put spaces before/after artihmetic operations symbols
+        bufferLine2 = re.sub(r'(\+|\*|-|/)', r' \1 ', bufferLine1)
 
+        # remove extra '.0.'-s that may occur and double spaces
+        result = bufferLine2.replace('.0.', '.').replace('  ', ' ')
+
+        return result
+  
     def putExternBlock(put, ivProblem):
         """
         Put the 'extern "C"' block required for Emscripten compiling.
@@ -302,14 +317,18 @@ def generateCppCode(ivProblem):
 
         # put expressions
         for name in ivProblem[EXPRESSIONS]:
-            put(f'{SUBSPACE}{ARG_TYPE} {name} = {ivProblem[EXPRESSIONS][name]};\n')
+            expression = replaceIntsByDoubles(ivProblem[EXPRESSIONS][name])
+            put(f'{SUBSPACE}{ARG_TYPE} {name} = {expression};\n')
+            #put(f'{SUBSPACE}{ARG_TYPE} {name} = {ivProblem[EXPRESSIONS][name]};\n')
 
         put(f'\n{SUBSPACE}// output computation\n')
         index = 0
 
         # computation lines
         for name in ivProblem[DIF_EQUATIONS]:
-            put(f'{SUBSPACE}{VEC_OUTPUT_NAME}({index}) = {ivProblem[DIF_EQUATIONS][name]};\n')
+            expression = replaceIntsByDoubles(ivProblem[DIF_EQUATIONS][name])
+            put(f'{SUBSPACE}{VEC_OUTPUT_NAME}({index}) = {expression};\n')
+            #put(f'{SUBSPACE}{VEC_OUTPUT_NAME}({index}) = {ivProblem[DIF_EQUATIONS][name]};\n')
             index += 1        
 
         put(f'\n{SUBSPACE}return {VEC_OUTPUT_NAME};\n')
