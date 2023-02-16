@@ -97,12 +97,22 @@ export namespace chem {
       return [];
     }
 
+    get width(): number {
+      return 500;
+    }
+
+    get height(): number {
+      return 400;
+    }
+
     /** Override to provide custom initialization. At this point, the root is already in the DOM. */
     async init(host: Sketcher) {
       this.host = host;
     }
 
     refresh(): void {}
+
+    resize(): void {}
   }
 
 
@@ -112,7 +122,7 @@ export namespace chem {
   export class Sketcher extends Widget {
 
     molInput: HTMLInputElement = ui.element('input');
-    host: HTMLDivElement = ui.box(null, 'grok-sketcher');
+    host: HTMLDivElement = ui.box(null, 'grok-sketcher sketcher-host');
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
     onChanged: Subject<any> = new Subject<any>();
@@ -136,10 +146,25 @@ export namespace chem {
     inplaceSketcherDiv: HTMLDivElement | null = null;
     clearSketcherButton: HTMLButtonElement;
     emptySketcherLink: HTMLDivElement;
+    sketcherInDom = false;
+    resized = false;
 
     set sketcherType(type: string) {
       this._setSketcherType(type);
     }
+
+    get width(): number {
+      return this.sketcher ? this.sketcher.width : 500;
+    }
+
+    get height(): number {
+      return this.sketcher ? this.sketcher.height : 400;
+    }
+
+    get isResizing(): boolean {
+      return this.resized;
+    }
+
 
     getSmiles(): string {
       return this.sketcher?.isInitialized ? this.sketcher.smiles : this._smiles === null ?
@@ -235,7 +260,7 @@ export namespace chem {
       super(ui.div());
       if (mode)
         this._mode = mode;
-      this.root.append(ui.div([ui.divText('')]));
+      this.root.style.height = '100%';
       this.clearSketcherButton = this.createClearSketcherButton(this.extSketcherCanvas);
       this.emptySketcherLink = ui.divText('Click to edit', 'sketch-link');
       ui.tooltip.bind(this.emptySketcherLink, 'Click to edit');
@@ -246,6 +271,13 @@ export namespace chem {
     setExternalModeForSubstrFilter() {
       if (this.root.closest('.d4-filter'))
         this._mode = SKETCHER_MODE.EXTERNAL;
+    }
+
+    resize() {
+      if (this.sketcherInDom) {
+        this.sketcher?.resize();
+        this.resized = true;
+      }
     }
 
     createSketcher() {
@@ -295,6 +327,11 @@ export namespace chem {
     }
 
     createExternalModeSketcher(): HTMLElement {
+      const closeDlg = () => {
+        this.sketcherDialogOpened = false;
+        this.resized = false;
+      } 
+
       this.extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
 
       this.extSketcherDiv.onclick = () => {
@@ -307,13 +344,17 @@ export namespace chem {
             .onOK(() => {
               this.updateExtSketcherContent();
               Sketcher.addToCollection(Sketcher.RECENT_KEY, this.getMolFile());
-              this.sketcherDialogOpened = false;
+              closeDlg();
             })
             .onCancel(() => {
               this.setMolFile(savedMolFile!);
-              this.sketcherDialogOpened = false;
+              closeDlg();
             })
-            .show();
+            .show({resizable: true});
+            ui.onSizeChanged(dlg.root).subscribe((_) => {
+              if (this.sketcherDialogOpened)
+                this.resize();
+            });
         }
       };
 
@@ -397,7 +438,7 @@ export namespace chem {
 
       this.inplaceSketcherDiv = ui.div([
         molInputDiv,
-        this.host]);
+        this.host], {style: {height: '90%'}});
 
       return this.inplaceSketcherDiv;
     }
@@ -410,14 +451,16 @@ export namespace chem {
       };
       getMolecule().then(async (molecule) => {
         ui.empty(this.host);
-        this.host.classList.remove('extended-width'); //need to remove class to reset width
+        this.sketcherInDom = false;
+        this._setSketcherSize(); //set default size to show update indicator
         ui.setUpdateIndicator(this.host, true);
         this.changedSub?.unsubscribe();
         const sketcherFunc = this.sketcherFunctions.find(e => e.friendlyName == sketcherType|| e.name === sketcherType) ?? this.sketcherFunctions.find(e => e.friendlyName == DEFAULT_SKETCHER);
         this.sketcher = await sketcherFunc!.apply();
-        this.host.classList.add('sketcher-standard-size');
+        this._setSketcherSize(); //update sketcher size according to base sketcher width and height
         this.host.appendChild(this.sketcher!.root);
         await ui.tools.waitForElementInDom(this.root);
+        this.sketcherInDom = true;
         await this.sketcher!.init(this);
         ui.setUpdateIndicator(this.host, false);      
         this.changedSub = this.sketcher!.onChanged.subscribe((_: any) => {
@@ -433,6 +476,11 @@ export namespace chem {
         if (molecule)              
         this.setMolecule(molecule!, this._smarts !== null);
       });
+    }
+
+    private _setSketcherSize() {
+      this.host.style.minWidth = `${this.width}px`;
+      this.host.style.minHeight = `${this.height}px`;
     }
 
     static readonly FAVORITES_KEY = 'chem-molecule-favorites';
