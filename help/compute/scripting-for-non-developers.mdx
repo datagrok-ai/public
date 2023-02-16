@@ -5,6 +5,7 @@ title: "Scripting for non-developers [WIP]"
 ```mdx-code-block
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import TOCInline from '@theme/TOCInline';
 ```
 
 This article describes Datagrok scripting feature. Techniques described here are useful for users with no prior experience in software development. 
@@ -33,7 +34,8 @@ You can create a script directly on the platform in two ways:
 
 - Open Datagrok's [Scripts section](https://public.datagrok.ai/scripts)
 - Hover over the taskbar on the left side. Toolbox will appear.
-- Click on `New Javascript Script` action on the bottom of toolbox ![scripts](scripts.png)
+- Click on `New Javascript Script` action on the bottom of toolbox 
+![scripts](scripts.png)
 
 ```mdx-code-block
 </TabItem>
@@ -67,19 +69,58 @@ alert('Hello World!');
 </div>
 </details>
 
+:::tip Pro tip
+
+You may create and store scripts locally (as any other code) using [packages](https://datagrok.ai/help/develop/#packages) feature
+
+:::
+
 ## How to edit and save the script
 
 You can edit the script directly on the platform using built-in editor. 
 
 - Freshly created scripts are opened in the editor automatically
-- To edit an existing script, find it in [Scripts secton](https://public.datagrok.ai/scripts), right click on script card and choose `Edit` action
+- To edit an existing script, find it in [Scripts secton](https://public.datagrok.ai/scripts), right click on script card and choose **Edit** action
 
 ## How to run script
 
 After the script is created, you can run it:
 
-- Built-in editor has <i class="fas fa-play"></i> "Run" button  on the top panel
-- To edit an existing script, find it in [Scripts secton](https://public.datagrok.ai/scripts), right click on script card and choose `Run` action
+- Built-in editor has <i class="fas fa-play"></i> **Run** button  on the top panel
+- To run an existing script, find it in [Scripts secton](https://public.datagrok.ai/scripts), right click on script card and choose **Run** action
+
+## How to debug script
+
+Datagrok supports several languages for [scripting](scripting.md#supported-languages). We recommend you to JavaScript scripts for learning purposes:
+- Datagrok has wide range of JS API
+- JS scripts run locally in the browser, without sending it to the server
+
+### JavaScript
+
+There are a set of [script examples](https://public.datagrok.ai/js/samples) available publicly. Feel free to play around with them to explore different Datagrok capabilities.
+
+For the scripts created via user interface, it is possible to use debugging output. Output could be written:
+- into DG interface (use `grok.shell.info()` / `grok.shell.warning()` / `grok.shell.error()`)
+- into the console (use `console.log()` and developer console available by F12)
+
+In addition, you can use built-in Inspector to see what's happening "under the hood" of the platform. To open Inspector, use `Alt+I` hotkey. 
+Inspector provides a wide range of additional information for development.
+
+### Octave
+
+Octave scripts are run in a separate container on server. This container includes following Octave packages:
+- [symbolic](https://gnu-octave.github.io/packages/symbolic/)
+- [optim](https://gnu-octave.github.io/packages/optim/)
+
+Since scripts runs are independent, it is important provide `pkg load %PACKAGE_NAME%` in your scripts.
+
+### Python
+
+See [Conda environments](scripting.md#conda-environments) for details.
+
+### R
+
+See [Renv environments](scripting.md#renv-environments) for details.
 
 ## How to enhance basic script view
 
@@ -166,7 +207,18 @@ grok.shell.info(`Initial temperature equals ${initial_temp}`);
 ### Adding viewers for output dataframes
 
 You can specify viewers to review dataframes in human-friendly way. Each dataframe parameter may have a list of viewers. 
-For instance, the following code adds `Scatter plot` and `Line chart` viewers on input dataframe
+For instance, the following code adds `Scatter plot` and `Line chart` viewers on input dataframe.
+
+You may see all available viewers opening [demo dataframe](https://public.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv) and opening toolbox on the left.
+
+<details>
+<summary> Fantastic viewers and where to find them </summary>
+<div>
+
+![viewers-toolbox](viewers-toolbox.png)
+
+</div>
+</details>
 
 ```mdx-code-block
 <Tabs>
@@ -210,9 +262,8 @@ Each viewer has a list of properties used for rendering and changing its' behavi
 
 List of available properties differs for each type of viewer. You may tight click on viewer and select `Properties` item in the context menu. 
 Any of properties listed in the opened property panel could be customized. For example, the following code:
-- specifies column used for X axis values for line chart
-- specifies row height for grid
-- sets the width value for both viewers to 100% (using `block` property)
+- specifies marker type and size for linechart
+- enables regression line rendering for scatterplot
 
 ```mdx-code-block
 <Tabs>
@@ -220,7 +271,7 @@ Any of properties listed in the opened property panel could be customized. For e
 ```
 
 ```javascript
-//output: dataframe dumb_data { viewer: Line chart(markerType: star, markerSize: 15) | Scatter plot(showRegressionLine: true) }
+//output: dataframe dummy_data { viewer: Line chart(markerType: star, markerSize: 15) | Scatter plot(showRegressionLine: true) }
 ```
 
 ```mdx-code-block
@@ -232,10 +283,10 @@ Any of properties listed in the opened property panel could be customized. For e
 //name: Viewers customization
 //language: javascript
 //input: dataframe temp_data
-//output: dataframe dumb_data { viewer: Line chart(markerType: star, markerSize: 15) | Scatter plot(showRegressionLine: true) }
+//output: dataframe dummy_data { viewer: Line chart(markerType: star, markerSize: 15) | Scatter plot(showRegressionLine: true) }
 
-dumb_data = temp_data.clone();
-grok.shell.info(`Data row count: ${dumb_data.rowCount}`);
+dummy_data = temp_data.clone();
+grok.shell.info(`Data row count: ${dummy_data.rowCount}`);
 ```
 
 ```mdx-code-block
@@ -376,6 +427,12 @@ O5 = S2
 </TabItem>
 </Tabs>
 ```
+
+:::tip
+
+Use `RichFunctionView` only when you are sure that script works as expected. Features of `RichFunctionView` affect only user interface and has no effect on computations.
+
+:::
 
 ### Adding input dataframes viewers
 
@@ -557,11 +614,19 @@ This feature is available for all scripts using `RichFunctionView` by default.
 
 ## How to share a script
 
-You may control access rights to your scripts. All sharing features are located in Sharing dialog. To open it, find your script in [Scripts section](https://public.datagrok.ai/scripts) and right click on it. 
-Choose "Share..." option in the context menu. In the opened dialog you will see groups and users with their privileges. You may edit list of collaborators, grant or revoke privileges at any moment.
+You may control access rights to your scripts. All sharing features are located in Sharing dialog. 
+- To open it, find your script in [Scripts section](https://public.datagrok.ai/scripts) and right click on it. 
+- Choose "Share..." option in the context menu. In the opened dialog you will see groups and users with their privileges. 
+- You may edit list of collaborators, grant or revoke privileges at any moment.
 
-![share-search](share-search.png) ![share-send](share-send.png) ![share-list](share-list.png)
+<details>
+<summary> Sharing step-by-step </summary>
+<div>
 
+![share-demo](sharing.gif)
+
+</div>
+</details>
 
 ## How to integrate script into third-party software
 
@@ -577,24 +642,33 @@ input parameters, along with the authentication token. This allows instantaneous
 external consumption. To find our how to use it, click on the function and expand the `REST` pane on the context panel
 on the right. Both JavaScript and Curl samples are provided.
 
-![rest-api](rest-api.png)
+<details>
+<summary> REST API panel </summary>
+<div>
+
+![rest-api](script-rest.png)
+
+</div>
+</details>
 
 ### JS API
 
-JavaScript-based apps have access to the whole Datagrok platform via the
-[JS API](../develop/js-api.md).
+JavaScript-based apps have access to the whole Datagrok platform via the [JS API](../develop/js-api.md).
 
 ### Embedding as iframe
 
-Sometimes, an app has to be included in the external web page. The simplest way to achieve it is via
-the [iframe](https://www.w3schools.com/tags/tag_iframe.ASP)
-element. To embed a model, click on the hamburger icon in the top left corner, and choose `Embed...`
-. You will see a dialog with the HTML code on top that you can use to embed this into external site. Note that you can
-change parameter values right in the URL.
+Sometimes, an app has to be included in the external web page.
+The simplest way to achieve it is via the [iframe](https://www.w3schools.com/tags/tag_iframe.ASP) element. To embed a model, click on the hamburger icon in the top left corner, and choose `Embed...`. 
+You will see a dialog with the HTML code on top that you can use to embed this into external site. Note that you can change parameter values right in the URL.
 
-On the bottom, you see a preview of the result ()
+<details>
+<summary> Embedded iframe preview </summary>
+<div>
 
 ![embed-as-iframe](embed-as-iframe.png)
+
+</div>
+</details>
 
 ## How to delete a script
 
