@@ -29,7 +29,7 @@ export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
   // Grouping data by clusters
   for (let rowIndex = 0; rowIndex < peptideCount; ++rowIndex) {
     const cluster = clustersCol.get(rowIndex) as string;
-    if (cluster == '')
+    if (cluster === '')
       continue;
 
     const clusterId = clusters.indexOf(cluster);
@@ -53,7 +53,7 @@ export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
     for (const alignment of alignments) {  // filling alignedSequencesCol
       alignedSequences[parseInt(alignment.ID)] = Object.entries(alignment)
         .filter((v) => !alignmentObjectMetaKeys.includes(v[0]))
-        .map((v) => v[1] != '-' ? v[1] : '')
+        .map((v) => v[1] !== '-' ? v[1] : '')
         .join(C.PEPSEA.SEPARATOR);
     }
   }
