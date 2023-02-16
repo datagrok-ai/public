@@ -174,7 +174,7 @@ jobs:
         uses: celsiusnarhwal/typesense-scraper@v2
         with:
           api-key: ${{ secrets.TYPESENSE_API_KEY }}
-          host: ${{ secrets.TYPESENSE_HOST }}
-          port: ${{ secrets.TYPESENSE_PORT }}
-          protocol: ${{ secrets.TYPESENSE_PROTOCOL }}
+          host: 'typesense.datagrok.ai'
+          port: '443'
+          protocol: 'https'
           config: docusaurus/docsearch.json
