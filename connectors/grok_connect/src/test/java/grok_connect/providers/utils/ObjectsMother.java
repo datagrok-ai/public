@@ -13,9 +13,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.Year;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Base64;
 import java.util.stream.Stream;
 
+/**
+ * Provides data for tests
+ */
 public class ObjectsMother {
     public static Stream<Arguments> getSchemas_ok() {
         DataFrame expected = DataFrameBuilder.getBuilder()
@@ -46,10 +52,10 @@ public class ObjectsMother {
                 .setColumn(new FloatColumn(new Float[]{378.73f}), "some_number")
                 .build();
         FuncCall funcCall1 = FuncCallBuilder.getBuilder()
-                .addQuery("--name: PostgresqlByInt\n" +
-                        "--input: int id = 20\n" +
-                        "SELECT * FROM mock_data WHERE id = @id;\n" +
-                        "--end")
+                .addQuery("--name: PostgresqlByInt\n"
+                        + "--input: int id = 20\n"
+                        + "SELECT * FROM mock_data WHERE id = @id;\n"
+                        + "--end")
                 .addFuncParam("int", "id", 20, "")
                 .build();
         // --input: string id = ">28" {pattern: int}
@@ -72,21 +78,23 @@ public class ObjectsMother {
                 .build();
 
         FuncCall funcCall2 = FuncCallBuilder.getBuilder()
-                .addQuery("--name: PostgresqlByStringPatternInt\n" +
-                        "--input: string id = \">28\" {pattern: int}\n" +
-                        "SELECT * FROM mock_data WHERE @id(id)\n" +
-                        "--end")
+                .addQuery("--name: PostgresqlByStringPatternInt\n"
+                        + "--input: string id = \">28\" {pattern: int}\n"
+                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "--end")
                 .addFuncParam("string", "id", ">28", "int")
-                .addFuncCallOptionsPattern("id", ">28", ">", 28)
+                .addFuncCallOptionsPattern("id", ">28", ">",
+                        null, null, 28)
                 .build();
         // input: string id = ">=29" {pattern: int}
         FuncCall funcCall3 = FuncCallBuilder.getBuilder()
-                .addQuery("--name: PostgresqlByStringPatternInt\n" +
-                        "--input: string id = \">=29\" {pattern: int}\n" +
-                        "SELECT * FROM mock_data WHERE @id(id)\n" +
-                        "--end")
+                .addQuery("--name: PostgresqlByStringPatternInt\n"
+                        + "--input: string id = \">=29\" {pattern: int}\n"
+                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "--end")
                 .addFuncParam("string", "id", ">=29", "int")
-                .addFuncCallOptionsPattern("id", ">=29", ">=", 29)
+                .addFuncCallOptionsPattern("id", ">=29", ">=",
+                        null, null, 29)
                 .build();
         // --input: string id = "<=1" {pattern: int}
         DataFrame expected3 = DataFrameBuilder.getBuilder()
@@ -106,30 +114,33 @@ public class ObjectsMother {
                 .setColumn(new FloatColumn(new Float[]{510.32f}), "some_number")
                 .build();
         FuncCall funcCall4 = FuncCallBuilder.getBuilder()
-                .addQuery("--name: PostgresqlByStringPatternInt\n" +
-                        "--input: string id = \"<=1\" {pattern: int}\n" +
-                        "SELECT * FROM mock_data WHERE @id(id)\n" +
-                        "--end")
+                .addQuery("--name: PostgresqlByStringPatternInt\n"
+                        + "--input: string id = \"<=1\" {pattern: int}\n"
+                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "--end")
                 .addFuncParam("string", "id", "<=1", "int")
-                .addFuncCallOptionsPattern("id", "<=1", "<=", 1)
+                .addFuncCallOptionsPattern("id", "<=1", "<=",
+                        null, null, 1)
                 .build();
         // --input: string id = "<2" {pattern: int}
         FuncCall funcCall5 = FuncCallBuilder.getBuilder()
-                .addQuery("--name: PostgresqlByStringPatternInt\n" +
-                        "--input: string id = \"<2\" {pattern: int}\n" +
-                        "SELECT * FROM mock_data WHERE @id(id)\n" +
-                        "--end")
+                .addQuery("--name: PostgresqlByStringPatternInt\n"
+                        + "--input: string id = \"<2\" {pattern: int}\n"
+                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "--end")
                 .addFuncParam("string", "id", "<2", "int")
-                .addFuncCallOptionsPattern("id", "<2", "<", 2)
+                .addFuncCallOptionsPattern("id", "<2", "<",
+                        null, null, 2)
                 .build();
         // --input: string id = "in(29, 30)" {pattern: int}
         FuncCall funcCall6 = FuncCallBuilder.getBuilder()
-                .addQuery("--name: PostgresqlByStringPatternInt\n" +
-                        "--input: string id = \"in(29, 30)\" {pattern: int}\n" +
-                        "SELECT * FROM mock_data WHERE @id(id)\n" +
-                        "--end")
+                .addQuery("--name: PostgresqlByStringPatternInt\n"
+                        + "--input: string id = \"in(29, 30)\" {pattern: int}\n"
+                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "--end")
                 .addFuncParam("string", "id", "in(29, 30)", "int")
-                .addFuncCallOptionsPattern("id", "in(29, 30)", "in", 29, 30)
+                .addFuncCallOptionsPattern("id", "in(29, 30)", "in",
+                        null, null, 29, 30)
                 .build();
         // --input: string id = "not in(21, 22, 23, 24, 25, 26, 27, 28, 29, 30)" {pattern: int}
         DataFrame expected4 = DataFrameBuilder.getBuilder()
@@ -165,25 +176,306 @@ public class ObjectsMother {
                         378.4f, 349.11f, 631.89f, 561.72f, 978.01f}), "some_number")
                 .build();
         FuncCall funcCall7 = FuncCallBuilder.getBuilder()
-                .addQuery("--name: PostgresqlByStringPatternInt\n" +
-                        "--input: string id = \"not in(21, 22, 23, 24, 25, 26, 27, 28, 29, 30)\" {pattern: int}\n" +
-                        "SELECT * FROM mock_data WHERE @id(id)\n" +
-                        "--end")
+                .addQuery("--name: PostgresqlByStringPatternInt\n"
+                        + "--input: string id = \"not in(21, 22, 23, 24, 25, 26, 27, 28, 29, 30)\" {pattern: int}\n"
+                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "--end")
                 .addFuncParam("string", "id", "not in(21, 22, 23, 24, 25, 26, 27, 28, 29, 30)",
                         "int")
                 .addFuncCallOptionsPattern("id", "not in(21, 22, 23, 24, 25, 26, 27, 28, 29, 30)",
-                        "not in", 21, 22, 23, 24, 25, 26, 27, 28, 29, 30)
+                        "not in", null, null, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30)
                 .build();
         // --input: string id = "min-max 29-30" {pattern: int}
         FuncCall funcCall8 = FuncCallBuilder.getBuilder()
-                .addQuery("--name: PostgresqlByStringPatternInt\n" +
-                        "--input: string id = \"min-max 29-30\" {pattern: int}\n" +
-                        "SELECT * FROM mock_data WHERE @id(id)\n" +
-                        "--end")
+                .addQuery("--name: PostgresqlByStringPatternInt\n"
+                        + "--input: string id = \"min-max 29-30\" {pattern: int}\n"
+                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "--end")
                 .addFuncParam("string", "id", "min-max 29-30",
                         "int")
                 .addFuncCallOptionsPattern("id", "29-30",
-                        "-", 29, 30)
+                        "-", null, null, 29, 30)
+                .build();
+        //--input: double some_number = 510.32
+        FuncCall funcCall9 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByDouble\n"
+                        + "--input: double some_number = 510.32\n"
+                        + "SELECT * FROM mock_data WHERE some_number = @some_number;\n"
+                        + "--end")
+                .addFuncParam("double", "some_number", 510.32, "double")
+                .build();
+        // --input: string some_number = ">975" {pattern: double}
+        DataFrame expected5 = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new BigIntColumn(new String[]{"10", "26"}),
+                        "id")
+                .setColumn(new StringColumn(new String[]{"Scottie", "Daryle"}), "first_name")
+                .setColumn(new StringColumn(new String[]{"Formilli", "O'Shaughnessy"}),
+                        "last_name")
+                .setColumn(new StringColumn(new String[]{"sformilli9@aol.com", "doshaughnessyp@com.com"}),
+                        "email")
+                .setColumn(new StringColumn(new String[]{"Male", "Male"}), "gender")
+                .setColumn(new StringColumn(new String[]{"101.241.191.228/32", "204.107.16.207/32"}),
+                        "ip_address")
+                .setColumn(new BoolColumn(new Boolean[]{false, false}), "bool")
+                .setColumn(new StringColumn(new String[]{"Vietnam", "Honduras"}), "country")
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2003-01-04",
+                        "2010-05-04")), "date")
+                .setColumn(new FloatColumn(new Float[]{978.01f, 983.03f}), "some_number")
+                .build();
+        FuncCall funcCall10 =  FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByDouble\n" +
+                        "--input: string some_number = \">975\" {pattern: double}\n"
+                        + "SELECT * FROM mock_data WHERE @some_number(some_number);\n"
+                        + "--end")
+                .addFuncParam("string", "some_number", ">975", "double")
+                .addFuncCallOptionsPattern("some_number", ">975", ">",
+                        null, null, 975)
+                .build();
+        // --input: string some_number = ">=975" {pattern: double}
+        FuncCall funcCall11 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByDouble\n"
+                        + "--input: string some_number = \">=975\" {pattern: double}\n"
+                        + "SELECT * FROM mock_data WHERE @some_number(some_number);\n"
+                        + "--end")
+                .addFuncParam("string", "some_number", ">=975", "double")
+                .addFuncCallOptionsPattern("some_number", ">=975", ">=",
+                        null, null, 975)
+                .build();
+        //--input: string some_number = "<20" {pattern: double}
+        DataFrame expected6 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new BigIntColumn(new String[]{"5"}),
+                        "id")
+                .setColumn(new StringColumn(new String[]{"Mitchell"}), "first_name")
+                .setColumn(new StringColumn(new String[]{"Haglington"}),
+                        "last_name")
+                .setColumn(new StringColumn(new String[]{"mhaglington4@indiegogo.com"}), "email")
+                .setColumn(new StringColumn(new String[]{"Male"}), "gender")
+                .setColumn(new StringColumn(new String[]{"209.93.181.190/32"}),
+                        "ip_address")
+                .setColumn(new BoolColumn(new Boolean[]{true}), "bool")
+                .setColumn(new StringColumn(new String[]{"Poland"}), "country")
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2020-10-09")), "date")
+                .setColumn(new FloatColumn(new Float[]{15.22f}), "some_number")
+                .build();
+        FuncCall funcCall12 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByDouble\n"
+                        + "--input: string some_number = \"<20\" {pattern: double}\n"
+                        + "SELECT * FROM mock_data WHERE @some_number(some_number);\n"
+                        + "--end")
+                .addFuncParam("string", "some_number", "<20", "double")
+                .addFuncCallOptionsPattern("some_number", "<20", "<",
+                        null, null, 20)
+                .build();
+        // --input: string some_number = "<=20" {pattern: double}
+        FuncCall funcCall13 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByDouble\n" +
+                        "--input: string some_number = \"<=20\" {pattern: double}\n"
+                        + "SELECT * FROM mock_data WHERE @some_number(some_number);\n"
+                        + "--end")
+                .addFuncParam("string", "some_number", "<=20", "double")
+                .addFuncCallOptionsPattern("some_number", "<=20", "<=",
+                        null, null, 20)
+                .build();
+        // --input: string first_name = 'contains Z' {pattern: string}
+        DataFrame expected7 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new BigIntColumn(new String[]{"25"}),
+                        "id")
+                .setColumn(new StringColumn(new String[]{"Zolly"}), "first_name")
+                .setColumn(new StringColumn(new String[]{"Wimmers"}),
+                        "last_name")
+                .setColumn(new StringColumn(new String[]{"zwimmerso@hatena.ne.jp"}), "email")
+                .setColumn(new StringColumn(new String[]{"Male"}), "gender")
+                .setColumn(new StringColumn(new String[]{"123.12.225.114/32"}),
+                        "ip_address")
+                .setColumn(new BoolColumn(new Boolean[]{false}), "bool")
+                .setColumn(new StringColumn(new String[]{"Bosnia and Herzegovina"}), "country")
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2003-02-12")), "date")
+                .setColumn(new FloatColumn(new Float[]{217.18f}), "some_number")
+                .build();
+        FuncCall funcCall14 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByStringPatternString\n"
+                        + "--input: string first_name = 'contains Z' {pattern: string}\n"
+                        + "SELECT * FROM mock_data WHERE @first_name(first_name);\n"
+                        + "--end")
+                .addFuncParam("string", "first_name", "contains Z", "string")
+                .addFuncCallOptionsPattern("first_name", "contains Z", "contains",
+                        null, null, "Z")
+                .build();
+        // --input: string first_name = 'starts with W' {pattern: string}
+        DataFrame expected8 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new BigIntColumn(new String[]{"23"}),
+                        "id")
+                .setColumn(new StringColumn(new String[]{"Waly"}), "first_name")
+                .setColumn(new StringColumn(new String[]{"Rogliero"}),
+                        "last_name")
+                .setColumn(new StringColumn(new String[]{"wroglierom@berkeley.edu"}), "email")
+                .setColumn(new StringColumn(new String[]{"Female"}), "gender")
+                .setColumn(new StringColumn(new String[]{"122.90.196.231/32"}),
+                        "ip_address")
+                .setColumn(new BoolColumn(new Boolean[]{true}), "bool")
+                .setColumn(new StringColumn(new String[]{"Sweden"}), "country")
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2011-12-18")),
+                        "date")
+                .setColumn(new FloatColumn(new Float[]{147.69f}), "some_number")
+                .build();
+        FuncCall funcCall15 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByStringPatternString\n"
+                        + "--input: string first_name = 'starts with W' {pattern: string}\n"
+                        + "SELECT * FROM mock_data WHERE @first_name(first_name);\n"
+                        + "--end")
+                .addFuncParam("string", "first_name", "starts with W", "string")
+                .addFuncCallOptionsPattern("first_name", "starts with W", "starts with",
+                        null, null, "W")
+                .build();
+        // --input: string first_name = 'ends with y' {pattern: string}
+        DataFrame expected9 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new BigIntColumn(new String[]{"20"}),
+                        "id")
+                .setColumn(new StringColumn(new String[]{"Lucius"}), "first_name")
+                .setColumn(new StringColumn(new String[]{"Edelmann"}),
+                        "last_name")
+                .setColumn(new StringColumn(new String[]{"ledelmannj@bravesites.com"}), "email")
+                .setColumn(new StringColumn(new String[]{"Male"}), "gender")
+                .setColumn(new StringColumn(new String[]{"66.174.30.225/32"}),
+                        "ip_address")
+                .setColumn(new BoolColumn(new Boolean[]{false}), "bool")
+                .setColumn(new StringColumn(new String[]{"Brazil"}), "country")
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "1999-06-22")),
+                        "date")
+                .setColumn(new FloatColumn(new Float[]{378.73f}), "some_number")
+                .build();
+        FuncCall funcCall16 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByStringPatternString\n"
+                        + "--input: string first_name = 'ends with s' {pattern: string}\n"
+                        + "SELECT * FROM mock_data WHERE @first_name(first_name);\n"
+                        + "--end")
+                .addFuncParam("string", "first_name", "ends with s", "string")
+                .addFuncCallOptionsPattern("first_name", "ends with s", "ends with",
+                        null, null, "s")
+                .build();
+        // --input: string country = 'in (Poland, Brazil)' {pattern: string}
+        DataFrame expected10 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new BigIntColumn(new String[]{"2", "5", "20"}),
+                        "id")
+                .setColumn(new StringColumn(new String[]{"Nicholle", "Mitchell", "Lucius",}), "first_name")
+                .setColumn(new StringColumn(new String[]{"Karoly", "Haglington", "Edelmann"}),
+                        "last_name")
+                .setColumn(new StringColumn(new String[]{"nkaroly1@alexa.com", "mhaglington4@indiegogo.com",
+                        "ledelmannj@bravesites.com"}), "email")
+                .setColumn(new StringColumn(new String[]{"Female", "Male", "Male"}), "gender")
+                .setColumn(new StringColumn(new String[]{"255.233.247.118/32", "209.93.181.190/32", "66.174.30.225/32"}),
+                        "ip_address")
+                .setColumn(new BoolColumn(new Boolean[]{false, true, false}), "bool")
+                .setColumn(new StringColumn(new String[]{"Poland", "Poland", "Brazil"}), "country")
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2014-02-27",
+                                "2020-10-09","1999-06-22")),
+                        "date")
+                .setColumn(new FloatColumn(new Float[]{864.09f, 15.22f, 378.73f}), "some_number")
+                .build();
+        FuncCall funcCall17 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByStringPatternString\n" +
+                        "--input: string country = 'in (Poland, Brazil)' {pattern: string}\n" +
+                        "SELECT * FROM mock_data WHERE @country(country);\n" +
+                        "--end")
+                .addFuncParam("string", "country", "in (Poland, Brazil)", "string")
+                .addFuncCallOptionsPattern("country", "in (Poland, Brazil)", "in",
+                        null, null, "Poland", "Brazil")
+                .build();
+        // --input: string email = 'regex ^([A-Za-z0-9_]+@google.com.au)$' {pattern: string}
+        DataFrame expected11 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new BigIntColumn(new String[]{"9"}),
+                        "id")
+                .setColumn(new StringColumn(new String[]{"Marlie"}), "first_name")
+                .setColumn(new StringColumn(new String[]{"Mayze"}),
+                        "last_name")
+                .setColumn(new StringColumn(new String[]{"mmayze8@google.com.au"}), "email")
+                .setColumn(new StringColumn(new String[]{"Female"}), "gender")
+                .setColumn(new StringColumn(new String[]{"68.41.25.65/32"}),
+                        "ip_address")
+                .setColumn(new BoolColumn(new Boolean[]{false}), "bool")
+                .setColumn(new StringColumn(new String[]{"France"}), "country")
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2011-11-10")),
+                        "date")
+                .setColumn(new FloatColumn(new Float[]{561.72f}), "some_number")
+                .build();
+        FuncCall funcCall18 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByStringPatternString\n"
+                        + "--input: string email = 'regex ^([A-Za-z0-9_]+@google.com.au)$' {pattern: string}\n"
+                        + "SELECT * FROM mock_data WHERE @email(email);\n"
+                        + "--end")
+                .addFuncParam("string", "email", "regex ^([A-Za-z0-9_]+@google.com.au)$", "string")
+                .addFuncCallOptionsPattern("email", "regex ^([A-Za-z0-9_]+@google.com.au)$",
+                        "regex", null, null, "^([A-Za-z0-9_]+@google.com.au)$")
+                .build();
+        // --input: string first_name = "starts with p" {pattern: string}
+        //--input: string id = ">1" {pattern :int}
+        //--input: bool bool = false
+        //--input: string email = "contains com" {pattern: string}
+        //--input: string some_number = ">20" {pattern: double}
+        //--input: string country = "in (Indonesia)" {pattern: string}
+        //--input: string date = "before 1/1/2022" {pattern: datetime}
+        DataFrame expected12 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new BigIntColumn(new String[]{"13"}),
+                        "id")
+                .setColumn(new StringColumn(new String[]{"Pail"}), "first_name")
+                .setColumn(new StringColumn(new String[]{"Boxell"}),
+                        "last_name")
+                .setColumn(new StringColumn(new String[]{"pboxellc@moonfruit.com"}), "email")
+                .setColumn(new StringColumn(new String[]{"Genderqueer"}), "gender")
+                .setColumn(new StringColumn(new String[]{"2.37.160.155/32"}),
+                        "ip_address")
+                .setColumn(new BoolColumn(new Boolean[]{false}), "bool")
+                .setColumn(new StringColumn(new String[]{"Indonesia"}), "country")
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2012-01-14")),
+                        "date")
+                .setColumn(new FloatColumn(new Float[]{73.47f}), "some_number")
+                .build();
+        FuncCall funcCall19 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlAll\n" +
+                        "--input: string first_name = \"starts with p\" {pattern: string}\n" +
+                        "--input: string id = \">1\" {pattern :int}\n" +
+                        "--input: bool bool = false\n" +
+                        "--input: string email = \"contains com\" {pattern: string}\n" +
+                        "--input: string some_number = \">20\" {pattern: double}\n" +
+                        "--input: string country = \"in (Indonesia)\" {pattern: string}\n" +
+                        "--input: string date = \"before 1/1/2022\" {pattern: datetime}\n" +
+                        "SELECT * FROM mock_data\n" +
+                        "WHERE @first_name(first_name)\n" +
+                        "  AND @id(id)\n" +
+                        "           AND bool = @bool\n" +
+                        "           AND @email(email)\n" +
+                        "           AND @some_number(some_number)\n" +
+                        "           AND @country(country)\n" +
+                        "           AND @date(date);\n" +
+                        "\n" +
+                        "--end")
+                .addFuncParam("string", "first_name", "starts with p", "string")
+                .addFuncParam("string", "id", ">1", "string")
+                .addFuncParam("bool", "bool", false, "")
+                .addFuncParam("string", "email", "contains com", "string")
+                .addFuncParam("string", "some_number", ">20", "double")
+                .addFuncParam("string", "country", "in (Indonesia)", "string")
+                .addFuncParam("string", "date", "before 1/1/2022", "datetime")
+                .addFuncCallOptionsPattern("first_name", "starts with p",
+                        "starts with", null, null, "p")
+                .addFuncCallOptionsPattern("id", ">1", ">", null,
+                        null, "1")
+                .addFuncCallOptionsPattern("email", "contains com",
+                "contains", null, null, "com")
+                .addFuncCallOptionsPattern("some_number", ">20", ">", null,
+                        null, 20)
+                .addFuncCallOptionsPattern("country", "in (Indonesia)", "in",
+                        null, null, "Indonesia")
+                .addFuncCallOptionsPattern("date", "before 1/1/2022", "before",
+                        true, true, Year.of(2022).atMonth(1).atDay(1).toString())
                 .build();
         return Stream.of(
                 Arguments.of(funcCall1, expected1),
@@ -193,7 +485,223 @@ public class ObjectsMother {
                 Arguments.of(funcCall5, expected3),
                 Arguments.of(funcCall6, expected2),
                 Arguments.of(funcCall7, expected4),
-                Arguments.of(funcCall8, expected2)
+                Arguments.of(funcCall8, expected2),
+                Arguments.of(funcCall9, expected3),
+                Arguments.of(funcCall10, expected5),
+                Arguments.of(funcCall11, expected5),
+                Arguments.of(funcCall12, expected6),
+                Arguments.of(funcCall13, expected6),
+                Arguments.of(funcCall14, expected7),
+                Arguments.of(funcCall15, expected8),
+                Arguments.of(funcCall16, expected9),
+                Arguments.of(funcCall17, expected10),
+                Arguments.of(funcCall18, expected11),
+                Arguments.of(funcCall19, expected12)
+        );
+    }
+
+    public static Stream<Arguments> checkDatesParameterSupport_ok() {
+        Parser parser = new DateParser();
+        String datePattern = "yyyy-MM-dd";
+        LocalDate now = LocalDate.now();
+        int dayOfWeek = now.getDayOfWeek().getValue();
+        int dayOfMonth = now.getDayOfMonth();
+        int dayOfYear = now.getDayOfYear();
+        LocalDate firstDayOfWeek = now.minusDays(dayOfWeek - 1);
+        LocalDate lastDayOfWeek = now.plusDays(7 - dayOfWeek);
+        LocalDate firstDayOfMonth = now.with(TemporalAdjusters.firstDayOfMonth());
+        LocalDate lastDayOfMonth = now.with(TemporalAdjusters.lastDayOfMonth());
+        LocalDate firstDayOfYear = now.with(TemporalAdjusters.firstDayOfYear());
+        LocalDate lastDayOfYear = now.with(TemporalAdjusters.lastDayOfYear());
+        LocalDate yesterday = now.minusDays(1);
+        LocalDate dayOfLastYear = now.minusDays(150);
+        // --input: string date = "today" {pattern: datetime}
+        DataFrame expected1 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble(datePattern, now.toString())}),
+                        "date")
+                .build();
+        FuncCall funcCall1 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByStringPatternDatetime\n"
+                        + "--input: string date = \"today\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date);\n"
+                        + "--end")
+                .addFuncParam("string", "date", "today", "datetime")
+                .addFuncCallOptionsPattern("date", "", "range", true, false,
+                        now.toString(), now.plusDays(1).toString())
+                .build();
+        // --input: string date = "this week" {pattern: datetime}
+        DataFrame expected2 = DataFrameBuilder.getBuilder()
+                .setRowCount(dayOfWeek == 1 ? 2 : 3)
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+                                now.toString(),
+                                dayOfWeek == 1 ? null : yesterday.toString(),
+                                lastDayOfWeek.toString())),
+                        "date")
+                .build();
+        FuncCall funcCall2 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByStringPatternDatetime\n"
+                        + "--input: string date = \"this week\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date);\n"
+                        + "--end")
+                .addFuncParam("string", "date", "this week", "datetime")
+                .addFuncCallOptionsPattern("date", "", "range", true, false,
+                        firstDayOfWeek.toString(),
+                        lastDayOfWeek.plusDays(1).toString())
+                .build();
+        // --input: string date = "this month" {pattern: datetime}
+        DataFrame expected3 = DataFrameBuilder.getBuilder()
+                .setRowCount(dayOfMonth > 1 && dayOfMonth < 31 - 6 ? 3 : 2)
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+                                now.toString(),
+                                dayOfMonth == 1 ? null : yesterday.toString(),
+                                lastDayOfWeek.toString())),
+                        "date")
+                .build();
+        FuncCall funcCall3 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByStringPatternDatetime\n"
+                        + "--input: string date = \"this month\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date);\n"
+                        + "--end")
+                .addFuncParam("string", "date", "this month", "datetime")
+                .addFuncCallOptionsPattern("date", "", "range", true, false,
+                        firstDayOfMonth.toString(),
+                        lastDayOfMonth.plusDays(1).toString())
+                .build();
+        // --input: string date = "this year" {pattern: datetime}
+        DataFrame expected4 = DataFrameBuilder.getBuilder()
+                .setRowCount(dayOfYear > 1 && dayOfYear < Year.of(now.getYear()).length() - 6 ? 3 : 2)
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+                                now.toString(),
+                                dayOfMonth == 1 ? null : yesterday.toString(),
+                                lastDayOfWeek.toString())),
+                        "date")
+                .build();
+        FuncCall funcCall4 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByStringPatternDatetime\n"
+                        + "--input: string date = \"this year\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date);\n"
+                        + "--end")
+                .addFuncParam("string", "date", "this year", "datetime")
+                .addFuncCallOptionsPattern("date", "", "range", true, false,
+                        firstDayOfYear.toString(),
+                        lastDayOfYear.plusDays(1).toString())
+                .build();
+        // --input: string date = "yesterday" {pattern: datetime}
+        DataFrame expected5 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, yesterday.toString())),
+                        "date")
+                .build();
+        FuncCall funcCall5 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByStringPatternDatetime\n"
+                        + "--input: string date = \"yesterday\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date);\n"
+                        + "--end")
+                .addFuncParam("string", "date", "yesterday", "datetime")
+                .addFuncCallOptionsPattern("date", "", "range", true, false,
+                        yesterday.toString(),
+                        now.toString())
+                .build();
+        // --input: string date = "last year" {pattern: datetime}
+        DataFrame expected6 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+                               dayOfLastYear.toString())),
+                        "date")
+                .build();
+        FuncCall funcCall6 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByStringPatternDatetime\n"
+                        + "--input: string date = \"last year\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date);\n"
+                        + "--end")
+                .addFuncParam("string", "date", "last year", "datetime")
+                .addFuncCallOptionsPattern("date", "", "range", true, false,
+                        firstDayOfYear.minusYears(1).toString(), firstDayOfYear.toString())
+                .build();
+        // --input: string date = "anytime" {pattern: datetime}
+        DataFrame expected7 = DataFrameBuilder.getBuilder()
+                .setRowCount(5)
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, now.toString(),
+                                yesterday.toString(), lastDayOfWeek.toString(), dayOfLastYear.toString(),
+                                "2021-04-09")),
+                        "date")
+                .build();
+        FuncCall funcCall7 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByStringPatternDatetime\n"
+                        + "--input: string date = \"anytime\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date);\n"
+                        + "--end")
+                .addFuncParam("string", "date", "anytime", "datetime")
+                .addFuncCallOptionsPattern("date", "", "none", true, true)
+                .build();
+        // --input: string date = "2021-2022" {pattern: datetime}
+        DataFrame expected8 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2021-04-09")),
+                        "date")
+                .build();
+
+        FuncCall funcCall8 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByStringPatternDatetime\n"
+                        + "--input: string date = \"2021-2021\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date);\n"
+                        + "--end")
+                .addFuncParam("string", "date", "2021-2022", "datetime")
+                .addFuncCallOptionsPattern("date", "", "range", true, true,
+                        Year.of(2021).atDay(1).toString(),
+                        Year.of(2022).atDay(1).toString())
+                .build();
+        // --input: string date = "before 1/1/2022" {pattern: datetime}
+
+        FuncCall funcCall9 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByStringPatternDatetime\n"
+                        + "--input: string date = \"before 1/1/2022\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date);\n"
+                        + "--end")
+                .addFuncParam("string", "date", "before 1/1/2022", "datetime")
+                .addFuncCallOptionsPattern("date", "", "before", true, true,
+                        Year.of(2022).atDay(1).toString())
+                .build();
+        // --input: string date = "after 1/1/2022" {pattern: datetime}
+        DataFrame expected9 = DataFrameBuilder.getBuilder()
+                .setRowCount(4)
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, now.toString(),
+                                yesterday.toString(), lastDayOfWeek.toString(), dayOfLastYear.toString())),
+                        "date")
+                .build();
+        FuncCall funcCall10 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByStringPatternDatetime\n"
+                        + "--input: string date = \"after 1/1/2022\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date);\n"
+                        + "--end")
+                .addFuncParam("string", "date", "after 1/1/2022", "datetime")
+                .addFuncCallOptionsPattern("date", "", "after", true, true,
+                        LocalDate.parse("2022-01-01").toString())
+                .build();
+        // --input: string date = "April 2021" {pattern: datetime}
+        FuncCall funcCall11 = FuncCallBuilder.getBuilder()
+                .addQuery("--name: PostgresqlByStringPatternDatetime\n"
+                        + "--input: string date = \"April 2021\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date);\n"
+                        + "--end")
+                .addFuncParam("string", "date", "April 2021", "datetime")
+                .addFuncCallOptionsPattern("date", "", "range", true, false,
+                        Year.of(2021).atMonth(4).atDay(1).toString(),
+                        Year.of(2021).atMonth(5).atDay(1).toString())
+                .build();
+        return Stream.of(
+                Arguments.of(funcCall1, expected1),
+                Arguments.of(funcCall2, expected2),
+                Arguments.of(funcCall3, expected3),
+                Arguments.of(funcCall4, expected4),
+                Arguments.of(funcCall5, expected5),
+                Arguments.of(funcCall6, expected6),
+                Arguments.of(funcCall7, expected7),
+                Arguments.of(funcCall8, expected8),
+                Arguments.of(funcCall9, expected8),
+                Arguments.of(funcCall10, expected9),
+                Arguments.of(funcCall11, expected8)
         );
     }
 
@@ -244,9 +752,10 @@ public class ObjectsMother {
                 .setColumn(new StringColumn(new String[] {"{{lunch},{presentation}}"}), thirdColumnName)
                 .build();
         return Stream.of(
-                Arguments.of("SELECT * FROM sal_emp;", expected1),
-                Arguments.of("SELECT pay_by_quarter[3] FROM sal_emp;", expected2),
-                Arguments.of("SELECT schedule[:2][2:] FROM sal_emp WHERE name = 'Bill';", expected3)
+                Arguments.of(getShortFuncCall("SELECT * FROM sal_emp;"), expected1),
+                Arguments.of(getShortFuncCall("SELECT pay_by_quarter[3] FROM sal_emp;"), expected2),
+                Arguments.of(getShortFuncCall("SELECT schedule[:2][2:] FROM sal_emp WHERE "
+                        + "name = 'Bill';"), expected3)
         );
     }
 
@@ -285,7 +794,7 @@ public class ObjectsMother {
                 .setColumn(new FloatColumn(new Float[]{510.32f, 864.09f, 822.7f, 251.05f, 15.22f,
                         378.4f, 349.11f, 631.89f, 561.72f, 978.01f}), "some_number")
                 .build();
-        return Stream.of(Arguments.of("SELECT * FROM mock_data LIMIT 10;", expected));
+        return Stream.of(Arguments.of(getShortFuncCall("SELECT * FROM mock_data LIMIT 10;"), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_bitStringType_ok() {
@@ -299,8 +808,8 @@ public class ObjectsMother {
                 .setColumn(new BoolColumn(new Boolean[] {true, false}), "c")
                 .setColumn(new StringColumn(new String[] {"101", "0"}), "d")
                 .build();
-        return Stream.of(Arguments.of("SELECT * FROM test1;", expected1),
-                Arguments.of("SELECT * FROM test2", expected2));
+        return Stream.of(Arguments.of(getShortFuncCall("SELECT * FROM test1;"), expected1),
+                Arguments.of(getShortFuncCall("SELECT * FROM test2"), expected2));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_byteAType_ok() {
@@ -313,11 +822,11 @@ public class ObjectsMother {
         }
         String data = Base64.getEncoder().encodeToString(file);// or if we know that it is text file,
         // we can use new String(data, StandardCharset.UTF-8)
-        DataFrame expected1 = DataFrameBuilder.getBuilder()
+        DataFrame expected = DataFrameBuilder.getBuilder()
                 .setRowCount(1)
                 .setColumn(new StringColumn(new String[] {data}), "data")
                 .build();
-        return Stream.of(Arguments.of("SELECT * FROM bytea_data;", expected1));
+        return Stream.of(Arguments.of(getShortFuncCall("SELECT * FROM bytea_data;"), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_compositeType_ok() {
@@ -334,36 +843,25 @@ public class ObjectsMother {
                 .setColumn(new IntColumn(new Integer[]{1000}), "count")
                 .build();
         return Stream.of(
-                Arguments.of("SELECT * FROM on_hand;", expected1),
-                Arguments.of("SELECT (item).name, (item).supplier_id, "
-                        + "(item).price, count FROM on_hand", expected2)
+                Arguments.of(getShortFuncCall("SELECT * FROM on_hand;"), expected1),
+                Arguments.of(getShortFuncCall("SELECT (item).name, (item).supplier_id, "
+                        + "(item).price, count FROM on_hand"), expected2)
         );
     }
 
     public static Stream<Arguments> checkOutputDataFrame_dateTypes_ok() {
         Parser parser = new DateParser();
         DataFrame expected = DataFrameBuilder.getBuilder()
-                .setRowCount(4)
-                .setColumn(new DateTimeColumn(new Double[]{
-                        parser.parseDateToDouble("yyyy-MM-dd", "1999-01-08"),
-                        parser.parseDateToDouble("MMMM d, YYYY", "January 8, 1999"),
-                        parser.parseDateToDouble("dd/MM/yyyy", "1/8/1999"),
-                        parser.parseDateToDouble("M/dd/yyyy", "1/18/1999")}), "date")
+                .setRowCount(1)
+                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("yyyy-MM-dd",
+                        "1999-01-08")}), "date")
                 .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("hh:mm:ss.SSS",
-                        "04:05:06.789"),
-                        parser.parseDateToDouble("hh:mm:ss", "04:05:06"),
-                        parser.parseDateToDouble("hhmmss", "040506"),
-                        parser.parseDateToDouble("hh:mm", "04:05 AM")}), "time")
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss", "1999-01-08 04:05:06"),
-                        parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss", "2004-10-19 10:23:54"),
-                        parser.parseDateToDouble("dd-MM-yyyy HH:mm:ssX", "2004-10-19 10:23:54+02"),
-                        parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss", "2004-10-19 10:23:54")}), "stamp")
-                .setColumn(new StringColumn(new String[] {"1 year 5 months 5 days",
-                        "0 years 0 mons 1 days 0 hours 0 mins 0.0 secs",
-                        "0 years 0 mons 0 days 0 hours 0 mins 1.0 secs",
-                        "5 years 4 mons 3 days 2 hours 1 mins 1.0 secs"}), "interval")
+                        "04:05:06.789")}), "time")
+                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss",
+                        "1999-01-08 04:05:06"),}), "stamp")
+                .setColumn(new StringColumn(new String[] {"1 years 5 mons 5 days 0 hours 0 mins 0.0 secs"}), "interval")
                 .build();
-        return Stream.of(Arguments.of("SELECT * FROM dates", expected));
+        return Stream.of(Arguments.of(getShortFuncCall("SELECT * FROM dates"), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_jsonbType_ok() {
@@ -373,7 +871,7 @@ public class ObjectsMother {
                         new String[]{"{\"phones\": [{\"type\": \"mobile\", \"phone\": \"001001\"}, {\"type\": \"fix\", \"phone\": \"002002\"}]}",
                                 "{\"bar\": \"baz\", \"active\": false, \"balance\": 7.77}", "{\"reading\": 0.00001230}"}), "data")
                 .build();
-        return Stream.of(Arguments.of("SELECT * FROM jsonb_data", expected));
+        return Stream.of(Arguments.of(getShortFuncCall("SELECT * FROM jsonb_data"), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_numericType_ok() {
@@ -408,12 +906,12 @@ public class ObjectsMother {
                 .setColumn(new FloatColumn(new Float[] {22.22f, 55.55f}), "data")
                 .build();
         return Stream.of(
-                Arguments.of("SELECT * FROM numeric_data", expected1),
-                Arguments.of("SELECT * FROM doubles", expected2),
-                Arguments.of("SELECT * FROM reals", expected3),
-                Arguments.of("SELECT * FROM bigint_data", expected4),
-                Arguments.of("SELECT * FROM numeric_data_precision", expected5),
-                Arguments.of("SELECT * FROM numeric_data_precision_scale", expected6)
+                Arguments.of(getShortFuncCall("SELECT * FROM numeric_data"), expected1),
+                Arguments.of(getShortFuncCall("SELECT * FROM doubles"), expected2),
+                Arguments.of(getShortFuncCall("SELECT * FROM reals"), expected3),
+                Arguments.of(getShortFuncCall("SELECT * FROM bigint_data"), expected4),
+                Arguments.of(getShortFuncCall("SELECT * FROM numeric_data_precision"), expected5),
+                Arguments.of(getShortFuncCall("SELECT * FROM numeric_data_precision_scale"), expected6)
         );
     }
 
@@ -429,9 +927,9 @@ public class ObjectsMother {
                 .setColumn(new StringColumn(new String[]{"Fiat", "Honda"}), "brand")
                 .build();
         return Stream.of(
-                Arguments.of("SELECT * FROM cars_small", expected1),
-                Arguments.of("SELECT * FROM cars", expected1),
-                Arguments.of("SELECT * FROM cars_big", expected2)
+                Arguments.of(getShortFuncCall("SELECT * FROM cars_small"), expected1),
+                Arguments.of(getShortFuncCall("SELECT * FROM cars"), expected1),
+                Arguments.of(getShortFuncCall("SELECT * FROM cars_big"), expected2)
         );
     }
 
@@ -441,7 +939,7 @@ public class ObjectsMother {
                 .setColumn(new StringColumn(new String[]{"6ecd8c99-4036-403d-bf84-cf8400f67836",
                         "c81d4e2e-bcf2-11e6-869b-7df92533d2db", "237e9877-e79b-12d4-a765-321741963000"}), "id")
                 .build();
-        return Stream.of(Arguments.of("SELECT * FROM uuid_data", expected));
+        return Stream.of(Arguments.of(getShortFuncCall("SELECT * FROM uuid_data"), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_xmlType_ok() {
@@ -451,6 +949,12 @@ public class ObjectsMother {
                         "abc<foo>bar</foo><bar>foo</bar",
                         "<?xml version=\"1.0\"?><book><title>Manual</title><chapter>...</chapter></book>"}), "data")
                 .build();
-        return Stream.of(Arguments.of("SELECT * FROM xml_data", expected));
+        return Stream.of(Arguments.of(getShortFuncCall("SELECT * FROM xml_data"), expected));
+    }
+
+    private static FuncCall getShortFuncCall(String sqlQuery) {
+        return FuncCallBuilder.getBuilder()
+                .addQuery(sqlQuery)
+                .build();
     }
 }

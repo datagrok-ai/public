@@ -8,8 +8,12 @@ import grok_connect.connectors_info.FuncParam;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * Builder fore reducing amount of code
+ */
 public class FuncCallBuilder {
     private static FuncCallBuilder builder;
     private FuncCall funcCall;
@@ -29,7 +33,9 @@ public class FuncCallBuilder {
         funcCall = new FuncCall();
         funcCall.func = new DataQuery();
         funcCall.func.params = new ArrayList<>();
-        funcCall.options = new LinkedTreeMap<String, Object>();
+        funcCall.options = new LinkedTreeMap<String, LinkedTreeMap<String, LinkedTreeMap<String, Object>>>();
+        LinkedTreeMap<String, LinkedTreeMap<String, Object>> map = new LinkedTreeMap<>();
+        funcCall.options.put("patterns", map);
     }
 
     public FuncCallBuilder addQuery(String query) {
@@ -58,15 +64,18 @@ public class FuncCallBuilder {
 
     @SuppressWarnings("unchecked")
     public <T> FuncCallBuilder addFuncCallOptionsPattern(String columnName, String expression,
-                                                         String operator, T... values) {
+                                                         String operator, Boolean include1,
+                                                         Boolean include2, T... values) {
         LinkedTreeMap<String, Object> map1 = new LinkedTreeMap<>();
         map1.put("expression", expression);
         map1.put("colName", "");
-        map1.put("values", Arrays.stream(values).collect(Collectors.toList()));
+        map1.put("values", Arrays.stream(values).filter(Objects::nonNull).collect(Collectors.toList()));
         map1.put("op", operator);
-        LinkedTreeMap<String, LinkedTreeMap<String, Object>> map2 = new LinkedTreeMap<>();
-        map2.put(columnName, map1);
-        funcCall.options.put("patterns", map2);
+        map1.put("include1", include1);
+        map1.put("include2", include2);
+        LinkedTreeMap<String, LinkedTreeMap<String, Object>> patterns =
+                (LinkedTreeMap<String, LinkedTreeMap<String, Object>>) funcCall.options.get("patterns");
+        patterns.put(columnName, map1);
         return this;
     }
 
