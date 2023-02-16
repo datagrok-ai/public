@@ -709,7 +709,7 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
     molecule = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
   }
   sketcher.setMolecule(molecule);
-  ui.dialog()
+  const dlg = ui.dialog()
     .add(sketcher)
     .onOK(() => {
       if (unit === DG.chem.Notation.Smiles) {
@@ -723,7 +723,10 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
         cell.cell.value = sketcher.getMolFile();
       Sketcher.addToCollection(Sketcher.RECENT_KEY, sketcher.getMolFile());
     })
-    .show();
+    .show({resizable: true});
+    ui.onSizeChanged(dlg.root).subscribe((_) => {
+      sketcher.resize();
+    });
 }
 
 //name: OpenChemLib
