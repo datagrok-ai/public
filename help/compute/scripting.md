@@ -373,6 +373,12 @@ grok.functions.register({
 
 ![Script Parameter Suggestions](../uploads/features/script-param-suggestions.gif "Script Parameter Suggestions")
 
+#### Auto-complete via SQL
+
+The same concept could be used for SQL queries:
+
+![](auto-complete-sql.png)
+
 ### Parameter editors
 
 Use parameter editor to set the output of another function to the parameter value. All function parameters will be
