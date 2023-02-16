@@ -1,7 +1,7 @@
 package grok_connect.providers;
 
-import grok_connect.connectors_info.DataQuery;
 import grok_connect.connectors_info.FuncCall;
+import grok_connect.providers.utils.DataFrameComparator;
 import grok_connect.providers.utils.Providers;
 import grok_connect.providers.utils.Sql;
 import grok_connect.providers.utils.SqlScriptRunner;
@@ -21,9 +21,11 @@ import serialization.DataFrame;
 class PostgresDataProviderTest extends ProviderBaseTest {
     private static final String INIT_SCHEMA_NAME = "public";
     private static final String INIT_TABLE_NAME = "mock_data";
+    private final DataFrameComparator dataFrameComparator;
 
     protected PostgresDataProviderTest() {
         super(Providers.POSTGRESQL);
+        dataFrameComparator = new DataFrameComparator();
     }
 
     @DisplayName("Test of getSchemas() method with correct DataConnection")
@@ -33,7 +35,7 @@ class PostgresDataProviderTest extends ProviderBaseTest {
             restorePath = "scripts/postgres/drop.sql")
     public void getSchemas_ok(DataFrame expected) {
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchemas(connection));
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
     @Disabled
@@ -50,7 +52,7 @@ class PostgresDataProviderTest extends ProviderBaseTest {
     public void getSchema_ok(DataFrame expected) {
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchema(connection,
                 INIT_SCHEMA_NAME, INIT_TABLE_NAME));
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
     @Disabled
@@ -64,10 +66,10 @@ class PostgresDataProviderTest extends ProviderBaseTest {
     @MethodSource("grok_connect.providers.utils.ObjectsMother#checkOutputDataFrame_arrayType_ok")
     @Sql(path = "scripts/postgres/postgres_array.sql",
             restorePath = "scripts/postgres/drop.sql")
-    public void checkOutputDataFrame_arrayType_ok(String sqlQuery, DataFrame expected) {
-        FuncCall funcCall = prepareFuncCall(sqlQuery);
+    public void checkOutputDataFrame_arrayType_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
     @DisplayName("Output support for postgresql basic types")
@@ -75,10 +77,10 @@ class PostgresDataProviderTest extends ProviderBaseTest {
     @MethodSource("grok_connect.providers.utils.ObjectsMother#checkOutputDataFrame_basicTypes_ok")
     @Sql(path = "scripts/postgres/postgres_basic_types.sql",
             restorePath = "scripts/postgres/drop.sql")
-    public void checkOutputDataFrame_basicTypes_ok(String sqlQuery, DataFrame expected) {
-        FuncCall funcCall = prepareFuncCall(sqlQuery);
+    public void checkOutputDataFrame_basicTypes_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
     @DisplayName("Output support for postgresql bit string type")
@@ -86,21 +88,22 @@ class PostgresDataProviderTest extends ProviderBaseTest {
     @MethodSource("grok_connect.providers.utils.ObjectsMother#checkOutputDataFrame_bitStringType_ok")
     @Sql(path = "scripts/postgres/postgres_bit_string.sql",
             restorePath = "scripts/postgres/drop.sql")
-    public void checkOutputDataFrame_bitStringType_ok(String sqlQuery, DataFrame expected) {
-        FuncCall funcCall = prepareFuncCall(sqlQuery);
+    public void checkOutputDataFrame_bitStringType_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
+
 // bytea types - incorrect mapping - string repr of memory location id, not bytes
     @DisplayName("Output support for postgresql bytea type")
     @ParameterizedTest
     @MethodSource("grok_connect.providers.utils.ObjectsMother#checkOutputDataFrame_byteAType_ok")
     @Sql(path = "scripts/postgres/postgres_bytea.sql",
             restorePath = "scripts/postgres/drop.sql")
-    public void checkOutputDataFrame_byteAType_ok(String sqlQuery, DataFrame expected) {
-        FuncCall funcCall = prepareFuncCall(sqlQuery);
+    public void checkOutputDataFrame_byteAType_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
     @DisplayName("Output support for postgresql composite custom type")
@@ -108,10 +111,10 @@ class PostgresDataProviderTest extends ProviderBaseTest {
     @MethodSource("grok_connect.providers.utils.ObjectsMother#checkOutputDataFrame_compositeType_ok")
     @Sql(path = "scripts/postgres/postgres_composite.sql",
             restorePath = "scripts/postgres/drop.sql")
-    public void checkOutputDataFrame_compositeType_ok(String sqlQuery, DataFrame expected) {
-        FuncCall funcCall = prepareFuncCall(sqlQuery);
+    public void checkOutputDataFrame_compositeType_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
     @DisplayName("Output support for postgresql date, time, timestamp, interval types")
@@ -119,10 +122,10 @@ class PostgresDataProviderTest extends ProviderBaseTest {
     @MethodSource("grok_connect.providers.utils.ObjectsMother#checkOutputDataFrame_dateTypes_ok")
     @Sql(path = "scripts/postgres/postgres_dates.sql",
             restorePath = "scripts/postgres/drop.sql")
-    public void checkOutputDataFrame_dateTypes_ok(String sqlQuery, DataFrame expected) {
-        FuncCall funcCall = prepareFuncCall(sqlQuery);
+    public void checkOutputDataFrame_dateTypes_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
     @DisplayName("Output support for postgresql jsonb")
@@ -130,10 +133,10 @@ class PostgresDataProviderTest extends ProviderBaseTest {
     @MethodSource("grok_connect.providers.utils.ObjectsMother#checkOutputDataFrame_jsonbType_ok")
     @Sql(path = "scripts/postgres/postgres_jsonb.sql",
             restorePath = "scripts/postgres/drop.sql")
-    public void checkOutputDataFrame_jsonbType_ok(String sqlQuery, DataFrame expected) {
-        FuncCall funcCall = prepareFuncCall(sqlQuery);
+    public void checkOutputDataFrame_jsonbType_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
     //incorrect results for numeric NaN - exception, numeric with only precision - lost of data after floating point
@@ -143,10 +146,10 @@ class PostgresDataProviderTest extends ProviderBaseTest {
     @MethodSource("grok_connect.providers.utils.ObjectsMother#checkOutputDataFrame_numericType_ok")
     @Sql(path = "scripts/postgres/postgres_numeric.sql",
             restorePath = "scripts/postgres/drop.sql")
-    public void checkOutputDataFrame_numericType_ok(String sqlQuery, DataFrame expected) {
-        FuncCall funcCall = prepareFuncCall(sqlQuery);
+    public void checkOutputDataFrame_numericType_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
     @DisplayName("Output support for serial")
@@ -154,10 +157,10 @@ class PostgresDataProviderTest extends ProviderBaseTest {
     @MethodSource("grok_connect.providers.utils.ObjectsMother#checkOutputDataFrame_serialType_ok")
     @Sql(path = "scripts/postgres/postgres_serial.sql",
             restorePath = "scripts/postgres/drop.sql")
-    public void checkOutputDataFrame_serialType_ok(String sqlQuery, DataFrame expected) {
-        FuncCall funcCall = prepareFuncCall(sqlQuery);
+    public void checkOutputDataFrame_serialType_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
     @DisplayName("Output support for uuid")
@@ -165,10 +168,10 @@ class PostgresDataProviderTest extends ProviderBaseTest {
     @MethodSource("grok_connect.providers.utils.ObjectsMother#checkOutputDataFrame_uuidType_ok")
     @Sql(path = "scripts/postgres/postgres_uuid.sql",
             restorePath = "scripts/postgres/drop.sql")
-    public void checkOutputDataFrame_uuidType_ok(String sqlQuery, DataFrame expected) {
-        FuncCall funcCall = prepareFuncCall(sqlQuery);
+    public void checkOutputDataFrame_uuidType_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
     // xml type is not supported, output as memory location (e.g. default toString())
@@ -177,13 +180,14 @@ class PostgresDataProviderTest extends ProviderBaseTest {
     @MethodSource("grok_connect.providers.utils.ObjectsMother#checkOutputDataFrame_xmlType_ok")
     @Sql(path = "scripts/postgres/postgres_xml.sql",
             restorePath = "scripts/postgres/drop.sql")
-    public void checkOutputDataFrame_xmlType_ok(String sqlQuery, DataFrame expected) {
-        FuncCall funcCall = prepareFuncCall(sqlQuery);
+    public void checkOutputDataFrame_xmlType_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
     // Parameter support
+    // not in and regex are not supported
     @DisplayName("Parameters support")
     @ParameterizedTest
     @MethodSource("grok_connect.providers.utils.ObjectsMother#checkParameterSupport_ok")
@@ -192,15 +196,18 @@ class PostgresDataProviderTest extends ProviderBaseTest {
     public void checkParameterSupport_ok(FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
-    private FuncCall prepareFuncCall(String sqlQuery) {
-        FuncCall funcCall = new FuncCall();
-        DataQuery dataQuery = new DataQuery();
-        funcCall.func = dataQuery;
-        dataQuery.query = sqlQuery;
-        dataQuery.connection = connection;
-        return funcCall;
+    // this week - incorrect request comes from browser
+    @DisplayName("Parameters support for datetime")
+    @ParameterizedTest
+    @MethodSource("grok_connect.providers.utils.ObjectsMother#checkDatesParameterSupport_ok")
+    @Sql(path = "scripts/postgres/postgres_dates_patterns.sql",
+            restorePath = "scripts/postgres/drop.sql")
+    public void checkDatesParameterSupport_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 }

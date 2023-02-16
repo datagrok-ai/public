@@ -4,6 +4,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Objects;
 
 /**
  * Class for parsing dates from mock data into Doubles[] (required for building DateTime Column for DataFrame)
@@ -11,6 +12,7 @@ import java.util.Date;
 public class DateParser implements Parser {
     public Double[] parseDatesToDoubles(String pattern, String... dateToParse) {
         return Arrays.stream(dateToParse)
+                .filter(Objects::nonNull)
                 .map(date -> parseDateToDouble(pattern, date))
                 .toArray(Double[]::new);
     }
