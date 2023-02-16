@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/tutorials",
   "friendlyName": "Tutorials",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "author": {
     "name": "Diana Onufriienko",
     "email": "donufriienko@datagrok.ai"
@@ -13,10 +13,10 @@
     "directory": "packages/Tutorials"
   },
   "dependencies": {
-    "@datagrok-libraries/tutorials": "^1.0.3",
+    "@datagrok-libraries/tutorials": "^1.0.4",
     "@datagrok-libraries/utils": "^1.15.5",
     "cash-dom": "^8.1.0",
-    "datagrok-api": "^1.12.0",
+    "datagrok-api": "^1.14.0",
     "dayjs": "^1.10.6",
     "rxjs": "6.6.7",
     "wu": "^2.1.0"

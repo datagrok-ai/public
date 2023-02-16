@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { filter } from 'rxjs/operators';
-import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
+import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
 
 
 export class MultivariateAnalysisTutorial extends Tutorial {
@@ -16,6 +16,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     
   demoTable: string = 'cars.csv';
   helpUrl: string = 'https://datagrok.ai/help/explore/multivariate-analysis/pls';
+  prerequisites: TutorialPrerequisites = {jupyter: true};
 
   protected async _run() {
     this.header.textContent = this.name;
