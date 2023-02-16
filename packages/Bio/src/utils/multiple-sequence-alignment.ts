@@ -11,6 +11,8 @@ import Aioli from '@biowasm/aioli';
 import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
+type KalignBodyUnit = {};
+
 /**
  * Converts array of sequences into simple fasta string.
  *
@@ -29,31 +31,55 @@ function _stringsToFasta(sequences: string[]): string {
  * @param {string} unUsedName
  * @return {Promise<DG.Column>} Aligned sequences.
  */
-export async function runKalign(srcCol: DG.Column, isAligned = false, unUsedName: string = ''): Promise<DG.Column> {
-  let sequences = srcCol.toList();
+export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = false, unUsedName: string = '',
+  clustersCol: DG.Column | null = null): Promise<DG.Column> {
+  let sequences: string[] = srcCol.toList();
 
   if (isAligned)
     sequences = sequences.map((v: string, _) => AlignedSequenceEncoder.clean(v).replace(/\-/g, ''));
 
-  const fasta = _stringsToFasta(sequences);
+  const sequencesLength = srcCol.length;
+  clustersCol ??= DG.Column.string('Clusters', sequencesLength).init('0');
+  if (clustersCol.type != DG.COLUMN_TYPE.STRING)
+    clustersCol = clustersCol.convertTo(DG.TYPE.STRING);
+  clustersCol.compact();
+  
+  const clustersColCategories = clustersCol.categories;
+  const clustersColData = clustersCol.getRawData();
+  const fastaSequences: string[][] = new Array(clustersColCategories.length);
+  const clusterIndexes: number[][] = new Array(clustersColCategories.length);
+  for (let rowIdx = 0; rowIdx < sequencesLength; ++rowIdx) {
+    const clusterCategoryIdx = clustersColData[rowIdx];
+    (fastaSequences[clusterCategoryIdx] ??= []).push(sequences[rowIdx]);
+    (clusterIndexes[clusterCategoryIdx] ??= []).push(rowIdx);
+  }
+
   const CLI = await new Aioli([
     'base/1.0.0',
     {tool: 'kalign', version: '3.3.1', reinit: true}
   ]);
+  const tgtCol = DG.Column.string(unUsedName, sequencesLength);
 
-  console.log(['fasta.length =', fasta.length]);
+  for (let clusterIdx = 0; clusterIdx < clustersColCategories.length; ++clusterIdx) {
+    const clusterSequences = fastaSequences[clusterIdx];
+    const fasta = _stringsToFasta(clusterSequences);
+    
+    console.log(['fasta.length =', fasta.length]);
 
-  await CLI.fs.writeFile('input.fa', fasta);
-  const output = await CLI.exec('kalign input.fa -f fasta -o result.fasta');
-  console.warn(output);
+    await CLI.fs.writeFile('input.fa', fasta);
+    const output = await CLI.exec('kalign input.fa -f fasta -o result.fasta');
+    console.warn(output);
 
-  const buf = await CLI.cat('result.fasta');
-  if (!buf)
-    throw new Error(`kalign output no result`);
+    const buf = await CLI.cat('result.fasta');
+    if (!buf)
+      throw new Error(`kalign output no result`);
 
-  const ffh = new FastaFileHandler(buf);
-  const aligned = ffh.sequencesArray; // array of sequences extracted from FASTA
-  const tgtCol = DG.Column.fromStrings(unUsedName, aligned);
+    const ffh = new FastaFileHandler(buf);
+    const aligned = ffh.sequencesArray; // array of sequences extracted from FASTA
+    const clusterRowIds = clusterIndexes[clusterIdx];
+    for (let clusterRowIdIdx = 0; clusterRowIdIdx < aligned.length; ++clusterRowIdIdx)
+      tgtCol.set(clusterRowIds[clusterRowIdIdx], aligned[clusterRowIdIdx]);
+  }
 
   // units
   const srcUnits = srcCol.getTag(DG.TAGS.UNITS);
@@ -70,7 +96,7 @@ export async function runKalign(srcCol: DG.Column, isAligned = false, unUsedName
   return tgtCol;
 }
 
-export async function testMSAEnoughMemory(col: DG.Column): Promise<void> {
+export async function testMSAEnoughMemory(col: DG.Column<string>): Promise<void> {
   const sequencesCount = col.length;
   const delta = sequencesCount / 100;
 
