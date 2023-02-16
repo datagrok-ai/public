@@ -11,6 +11,6 @@ category('viewers', () => {
   for (const v of viewers) {
     test(v, async () => {
       await testViewer(v, df.clone(), true);
-    }, {skipReason: 'GROK-11534'});
+    });
   }
 });
