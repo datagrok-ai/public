@@ -118,13 +118,13 @@ export async function initChemAutostart(): Promise<void> { }
 //name: chemTooltip
 //tags: tooltip
 //input: column col {semType: Molecule}
-//output: widget result
-export async function chemTooltip(col: DG.Column): Promise<DG.Widget<any>> {
+//output: object
+export async function chemTooltip(col: DG.Column): Promise<DG.Viewer> {
   const tv = grok.shell.tv;
-  let viewer = await tv.dataFrame.plot.fromType('diversitySearchViewer', {
-    limit: 9,
-    sizesMap: 'small'
-  });
+  let viewer = new ChemDiversityViewer(true)//await tv.dataFrame.plot.fromType('diversitySearchViewer', {
+    viewer.limit = 9;
+    viewer.dataFrame = tv.dataFrame;
+
   return viewer;
 }
 
