@@ -4,7 +4,7 @@ const packageName = path.parse(require('./package.json').name).name.toLowerCase(
 module.exports = {
   mode: 'development',
   entry: {
-    package: './src/package.js'
+    package: ['./fibs/fib.wasm', './src/package.js']
   },
   devtool: 'inline-source-map',
   externals: {
@@ -26,4 +26,8 @@ module.exports = {
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },
+  experiments: {
+    asyncWebAssembly: true,
+    topLevelAwait: true
+  }
 };

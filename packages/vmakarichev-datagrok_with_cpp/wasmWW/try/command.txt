@@ -1,0 +1,1 @@
+em++ try.cpp -o TRY.js -s TOTAL_MEMORY=268435456 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s MODULARIZE=1 -s EXPORT_NAME="TRY" -s EXPORTED_FUNCTIONS=["_fib","_malloc","_free"] -s EXPORTED_RUNTIME_METHODS=["cwrap","ccall"] -sENVIRONMENT=web,worker

@@ -1,12 +1,4 @@
 
-export var Module = (() => {
-  var _scriptDir = typeof document !== 'undefined' && document.currentScript ? document.currentScript.src : undefined;
-  
-  return (
-function(Module) {
-  Module = Module || {};
-
-
 
 // The Module object: Our interface to the outside world. We import
 // and export values on it. There are various ways Module can be used:
@@ -26,21 +18,6 @@ var Module = typeof Module != 'undefined' ? Module : {};
 // See https://caniuse.com/mdn-javascript_builtins_object_assign
 
 // See https://caniuse.com/mdn-javascript_builtins_bigint64array
-
-// Set up the promise that indicates the Module is initialized
-var readyPromiseResolve, readyPromiseReject;
-Module['ready'] = new Promise(function(resolve, reject) {
-  readyPromiseResolve = resolve;
-  readyPromiseReject = reject;
-});
-["_main","_fib","_fflush","onRuntimeInitialized"].forEach((prop) => {
-  if (!Object.getOwnPropertyDescriptor(Module['ready'], prop)) {
-    Object.defineProperty(Module['ready'], prop, {
-      get: () => abort('You are getting ' + prop + ' on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js'),
-      set: () => abort('You are setting ' + prop + ' on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js'),
-    });
-  }
-});
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
@@ -105,6 +82,88 @@ function logExceptionOnExit(e) {
   err('exiting due to exception: ' + toLog);
 }
 
+if (ENVIRONMENT_IS_NODE) {
+  if (typeof process == 'undefined' || !process.release || process.release.name !== 'node') throw new Error('not compiled for this environment (did you build to HTML and try to run it not on the web, or set ENVIRONMENT to something - like node - and run it someplace else - like on the web?)');
+  // `require()` is no-op in an ESM module, use `createRequire()` to construct
+  // the require()` function.  This is only necessary for multi-environment
+  // builds, `-sENVIRONMENT=node` emits a static import declaration instead.
+  // TODO: Swap all `require()`'s with `import()`'s?
+  // These modules will usually be used on Node.js. Load them eagerly to avoid
+  // the complexity of lazy-loading.
+  var fs = require('fs');
+  var nodePath = require('path');
+
+  if (ENVIRONMENT_IS_WORKER) {
+    scriptDirectory = nodePath.dirname(scriptDirectory) + '/';
+  } else {
+    scriptDirectory = __dirname + '/';
+  }
+
+// include: node_shell_read.js
+
+
+read_ = (filename, binary) => {
+  // We need to re-wrap `file://` strings to URLs. Normalizing isn't
+  // necessary in that case, the path should already be absolute.
+  filename = isFileURI(filename) ? new URL(filename) : nodePath.normalize(filename);
+  return fs.readFileSync(filename, binary ? undefined : 'utf8');
+};
+
+readBinary = (filename) => {
+  var ret = read_(filename, true);
+  if (!ret.buffer) {
+    ret = new Uint8Array(ret);
+  }
+  assert(ret.buffer);
+  return ret;
+};
+
+readAsync = (filename, onload, onerror) => {
+  // See the comment in the `read_` function.
+  filename = isFileURI(filename) ? new URL(filename) : nodePath.normalize(filename);
+  fs.readFile(filename, function(err, data) {
+    if (err) onerror(err);
+    else onload(data.buffer);
+  });
+};
+
+// end include: node_shell_read.js
+  if (process['argv'].length > 1) {
+    thisProgram = process['argv'][1].replace(/\\/g, '/');
+  }
+
+  arguments_ = process['argv'].slice(2);
+
+  if (typeof module != 'undefined') {
+    module['exports'] = Module;
+  }
+
+  process['on']('uncaughtException', function(ex) {
+    // suppress ExitStatus exceptions from showing an error
+    if (!(ex instanceof ExitStatus)) {
+      throw ex;
+    }
+  });
+
+  // Without this older versions of node (< v15) will log unhandled rejections
+  // but return 0, which is not normally the desired behaviour.  This is
+  // not be needed with node v15 and about because it is now the default
+  // behaviour:
+  // See https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode
+  process['on']('unhandledRejection', function(reason) { throw reason; });
+
+  quit_ = (status, toThrow) => {
+    if (keepRuntimeAlive()) {
+      process['exitCode'] = status;
+      throw toThrow;
+    }
+    logExceptionOnExit(toThrow);
+    process['exit'](status);
+  };
+
+  Module['inspect'] = function () { return '[Emscripten Module object]'; };
+
+} else
 if (ENVIRONMENT_IS_SHELL) {
 
   if ((typeof process == 'object' && typeof require === 'function') || typeof window == 'object' || typeof importScripts == 'function') throw new Error('not compiled for this environment (did you build to HTML and try to run it not on the web, or set ENVIRONMENT to something - like node - and run it someplace else - like on the web?)');
@@ -159,11 +218,6 @@ if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
     scriptDirectory = self.location.href;
   } else if (typeof document != 'undefined' && document.currentScript) { // web
     scriptDirectory = document.currentScript.src;
-  }
-  // When MODULARIZE, this JS may be executed later, after document.currentScript
-  // is gone, so we saved it, and we use it here instead of any other info.
-  if (_scriptDir) {
-    scriptDirectory = _scriptDir;
   }
   // blob urls look like blob:http://site.com/etc/etc and we cannot infer anything from them.
   // otherwise, slice off the final part of the url to find the script directory.
@@ -266,8 +320,6 @@ var IDBFS = 'IDBFS is no longer included by default; build with -lidbfs.js';
 var PROXYFS = 'PROXYFS is no longer included by default; build with -lproxyfs.js';
 var WORKERFS = 'WORKERFS is no longer included by default; build with -lworkerfs.js';
 var NODEFS = 'NODEFS is no longer included by default; build with -lnodefs.js';
-
-assert(!ENVIRONMENT_IS_NODE, "node environment detected but not enabled at build time.  Add 'node' to `-sENVIRONMENT` to enable.");
 
 assert(!ENVIRONMENT_IS_SHELL, "shell environment detected but not enabled at build time.  Add 'shell' to `-sENVIRONMENT` to enable.");
 
@@ -656,7 +708,7 @@ function updateGlobalBufferAndViews(buf) {
 var STACK_SIZE = 65536;
 if (Module['STACK_SIZE']) assert(STACK_SIZE === Module['STACK_SIZE'], 'the stack size can no longer be determined at runtime')
 
-var INITIAL_MEMORY = Module['INITIAL_MEMORY'] || 16777216;legacyModuleProp('INITIAL_MEMORY', 'INITIAL_MEMORY');
+var INITIAL_MEMORY = Module['INITIAL_MEMORY'] || 268435456;legacyModuleProp('INITIAL_MEMORY', 'INITIAL_MEMORY');
 
 assert(INITIAL_MEMORY >= STACK_SIZE, 'INITIAL_MEMORY should be larger than STACK_SIZE, was ' + INITIAL_MEMORY + '! (STACK_SIZE=' + STACK_SIZE + ')');
 
@@ -666,7 +718,7 @@ assert(typeof Int32Array != 'undefined' && typeof Float64Array !== 'undefined' &
 
 // If memory is defined in wasm, the user can't provide it.
 assert(!Module['wasmMemory'], 'Use of `wasmMemory` detected.  Use -sIMPORTED_MEMORY to define wasmMemory externally');
-assert(INITIAL_MEMORY == 16777216, 'Detected runtime INITIAL_MEMORY setting.  Use -sIMPORTED_MEMORY to define wasmMemory dynamically');
+assert(INITIAL_MEMORY == 268435456, 'Detected runtime INITIAL_MEMORY setting.  Use -sIMPORTED_MEMORY to define wasmMemory dynamically');
 
 // include: runtime_init_table.js
 // In regular non-RELOCATABLE mode the table is exported
@@ -918,7 +970,6 @@ function abort(what) {
   /** @suppress {checkTypes} */
   var e = new WebAssembly.RuntimeError(what);
 
-  readyPromiseReject(e);
   // Throw the error whether or not MODULARIZE is set because abort is used
   // in code paths apart from instantiation where an exception is expected
   // to be thrown when abort is called.
@@ -986,11 +1037,7 @@ function createExportWrapper(name, fixedasm) {
 }
 
 var wasmBinaryFile;
-
-  //wasmBinaryFile = new URL('../fibs/fib.wasm', import.meta.url); // This is created manually!
-
-  wasmBinaryFile = 'fib.wasm'; // This line is genreated by Emscripten!
-
+  wasmBinaryFile = 'TRY.wasm';
   if (!isDataURI(wasmBinaryFile)) {
     wasmBinaryFile = locateFile(wasmBinaryFile);
   }
@@ -1018,6 +1065,7 @@ function getBinaryPromise() {
   // So use fetch if it is available and the url is not a file, otherwise fall back to XHR.
   if (!wasmBinary && (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER)) {
     if (typeof fetch == 'function'
+      && !isFileURI(wasmBinaryFile)
     ) {
       return fetch(wasmBinaryFile, { credentials: 'same-origin' }).then(function(response) {
         if (!response['ok']) {
@@ -1027,6 +1075,14 @@ function getBinaryPromise() {
       }).catch(function () {
           return getBinary(wasmBinaryFile);
       });
+    }
+    else {
+      if (readAsync) {
+        // fetch is not available or url is file => try XHR (readAsync uses XHR internally)
+        return new Promise(function(resolve, reject) {
+          readAsync(wasmBinaryFile, function(response) { resolve(new Uint8Array(/** @type{!ArrayBuffer} */(response))) }, reject)
+        });
+      }
     }
   }
 
@@ -1056,7 +1112,7 @@ function createWasm() {
     // This assertion doesn't hold when emscripten is run in --post-link
     // mode.
     // TODO(sbc): Read INITIAL_MEMORY out of the wasm file in post-link mode.
-    //assert(wasmMemory.buffer.byteLength === 16777216);
+    //assert(wasmMemory.buffer.byteLength === 268435456);
     updateGlobalBufferAndViews(wasmMemory.buffer);
 
     wasmTable = Module['asm']['__indirect_function_table'];
@@ -1105,6 +1161,15 @@ function createWasm() {
     if (!wasmBinary &&
         typeof WebAssembly.instantiateStreaming == 'function' &&
         !isDataURI(wasmBinaryFile) &&
+        // Don't use streaming for file:// delivered objects in a webview, fetch them synchronously.
+        !isFileURI(wasmBinaryFile) &&
+        // Avoid instantiateStreaming() on Node.js environment for now, as while
+        // Node.js v18.1.0 implements it, it does not have a full fetch()
+        // implementation yet.
+        //
+        // Reference:
+        //   https://github.com/emscripten-core/emscripten/pull/16917
+        !ENVIRONMENT_IS_NODE &&
         typeof fetch == 'function') {
       return fetch(wasmBinaryFile, { credentials: 'same-origin' }).then(function(response) {
         // Suppress closure warning here since the upstream definition for
@@ -1139,13 +1204,11 @@ function createWasm() {
       return exports;
     } catch(e) {
       err('Module.instantiateWasm callback failed with error: ' + e);
-        // If instantiation fails, reject the module ready promise.
-        readyPromiseReject(e);
+        return false;
     }
   }
 
-  // If instantiation fails, reject the module ready promise.
-  instantiateAsync().catch(readyPromiseReject);
+  instantiateAsync();
   return {}; // no exports yet; we'll fill them in later
 }
 
@@ -1227,79 +1290,9 @@ var ASM_CONSTS = {
       if (!warnOnce.shown) warnOnce.shown = {};
       if (!warnOnce.shown[text]) {
         warnOnce.shown[text] = 1;
+        if (ENVIRONMENT_IS_NODE) text = 'warning: ' + text;
         err(text);
       }
-    }
-
-  function getCFunc(ident) {
-      var func = Module['_' + ident]; // closure exported function
-      assert(func, 'Cannot call unknown function ' + ident + ', make sure it is exported');
-      return func;
-    }
-  
-  function writeArrayToMemory(array, buffer) {
-      assert(array.length >= 0, 'writeArrayToMemory array must have a length (should be an array or typed array)')
-      HEAP8.set(array, buffer);
-    }
-  
-    /**
-     * @param {string|null=} returnType
-     * @param {Array=} argTypes
-     * @param {Arguments|Array=} args
-     * @param {Object=} opts
-     */
-  function ccall(ident, returnType, argTypes, args, opts) {
-      // For fast lookup of conversion functions
-      var toC = {
-        'string': (str) => {
-          var ret = 0;
-          if (str !== null && str !== undefined && str !== 0) { // null string
-            // at most 4 bytes per UTF-8 code point, +1 for the trailing '\0'
-            var len = (str.length << 2) + 1;
-            ret = stackAlloc(len);
-            stringToUTF8(str, ret, len);
-          }
-          return ret;
-        },
-        'array': (arr) => {
-          var ret = stackAlloc(arr.length);
-          writeArrayToMemory(arr, ret);
-          return ret;
-        }
-      };
-  
-      function convertReturnValue(ret) {
-        if (returnType === 'string') {
-          
-          return UTF8ToString(ret);
-        }
-        if (returnType === 'boolean') return Boolean(ret);
-        return ret;
-      }
-  
-      var func = getCFunc(ident);
-      var cArgs = [];
-      var stack = 0;
-      assert(returnType !== 'array', 'Return type should not be "array".');
-      if (args) {
-        for (var i = 0; i < args.length; i++) {
-          var converter = toC[argTypes[i]];
-          if (converter) {
-            if (stack === 0) stack = stackSave();
-            cArgs[i] = converter(args[i]);
-          } else {
-            cArgs[i] = args[i];
-          }
-        }
-      }
-      var ret = func.apply(null, cArgs);
-      function onDone(ret) {
-        if (stack !== 0) stackRestore(stack);
-        return convertReturnValue(ret);
-      }
-  
-      ret = onDone(ret);
-      return ret;
     }
 var ASSERTIONS = true;
 
@@ -1362,7 +1355,7 @@ var _emscripten_stack_get_current = Module["_emscripten_stack_get_current"] = fu
 
 // === Auto-generated postamble setup entry stuff ===
 
-Module["ccall"] = ccall;
+
 var unexportedRuntimeSymbols = [
   'run',
   'UTF8ArrayToString',
@@ -1409,7 +1402,6 @@ var unexportedRuntimeSymbols = [
   'stringToNewUTF8',
   'exitJS',
   'getHeapMax',
-  'abortOnCannotGrowMemory',
   'emscripten_realloc_buffer',
   'ENV',
   'ERRNO_CODES',
@@ -1463,6 +1455,7 @@ var unexportedRuntimeSymbols = [
   'convertI32PairToI53Checked',
   'convertU32PairToI53',
   'getCFunc',
+  'ccall',
   'cwrap',
   'uleb128Encode',
   'sigToWasmTypes',
@@ -1613,7 +1606,6 @@ var missingLibrarySymbols = [
   'stringToNewUTF8',
   'exitJS',
   'getHeapMax',
-  'abortOnCannotGrowMemory',
   'emscripten_realloc_buffer',
   'setErrNo',
   'inetPton4',
@@ -1657,6 +1649,8 @@ var missingLibrarySymbols = [
   'convertI32PairToI53',
   'convertI32PairToI53Checked',
   'convertU32PairToI53',
+  'getCFunc',
+  'ccall',
   'cwrap',
   'uleb128Encode',
   'sigToWasmTypes',
@@ -1684,6 +1678,7 @@ var missingLibrarySymbols = [
   'allocateUTF8',
   'allocateUTF8OnStack',
   'writeStringToMemory',
+  'writeArrayToMemory',
   'writeAsciiToMemory',
   'getSocketFromFD',
   'getSocketAddress',
@@ -1813,7 +1808,6 @@ function run(args) {
 
     initRuntime();
 
-    readyPromiseResolve(Module);
     if (Module['onRuntimeInitialized']) Module['onRuntimeInitialized']();
 
     assert(!Module['_main'], 'compiled without a main, but one is present. if you added it from JS, use Module["onRuntimeInitialized"]');
@@ -1878,15 +1872,3 @@ run();
 
 
 
-
-
-  return Module.ready
-}
-);
-})();
-if (typeof exports === 'object' && typeof module === 'object')
-  module.exports = Module;
-else if (typeof define === 'function' && define['amd'])
-  define([], function() { return Module; });
-else if (typeof exports === 'object')
-  exports["Module"] = Module;
