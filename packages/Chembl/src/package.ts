@@ -81,7 +81,7 @@ export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = f
     return new DG.Widget(panel);
 }
 
-//name: Chembl Substructure Search
+//name: Databases | ChEMBL (Internal) Substructure Search
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result
@@ -90,7 +90,7 @@ export function chemblSubstructureSearchPanel(mol: string): DG.Widget {
     return mol ? chemblSearchWidgetLocalDb(mol, true) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Chembl Similarity Search
+//name: Databases | ChEMBL (Internal) Similarity Search
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result
