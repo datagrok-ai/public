@@ -99,4 +99,17 @@ public class DataFrame {
                 return newName;
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DataFrame dataFrame = (DataFrame) o;
+        return Objects.equals(name, dataFrame.name) && Objects.equals(rowCount, dataFrame.rowCount) && Objects.equals(columns, dataFrame.columns) && Objects.equals(tags, dataFrame.tags);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, rowCount, columns, tags);
+    }
 }

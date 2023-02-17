@@ -172,9 +172,10 @@ jobs:
         uses: actions/checkout@v3
       - name: Update the DocSearch index
         uses: celsiusnarhwal/typesense-scraper@v2
+        continue-on-error: true
         with:
           api-key: ${{ secrets.TYPESENSE_API_KEY }}
-          host: ${{ secrets.TYPESENSE_HOST }}
-          port: ${{ secrets.TYPESENSE_PORT }}
-          protocol: ${{ secrets.TYPESENSE_PROTOCOL }}
+          host: 'typesense.datagrok.ai'
+          port: '443'
+          protocol: 'https'
           config: docusaurus/docsearch.json

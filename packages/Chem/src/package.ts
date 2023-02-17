@@ -118,13 +118,13 @@ export async function initChemAutostart(): Promise<void> { }
 //name: chemTooltip
 //tags: tooltip
 //input: column col {semType: Molecule}
-//output: widget result
-export async function chemTooltip(col: DG.Column): Promise<DG.Widget<any>> {
+//output: widget
+export async function chemTooltip(col: DG.Column): Promise<DG.Viewer> {
   const tv = grok.shell.tv;
-  let viewer = await tv.dataFrame.plot.fromType('diversitySearchViewer', {
-    limit: 9,
-    sizesMap: 'small'
-  });
+  let viewer = new ChemDiversityViewer(true)//await tv.dataFrame.plot.fromType('diversitySearchViewer', {
+    viewer.limit = 9;
+    viewer.dataFrame = tv.dataFrame;
+
   return viewer;
 }
 
@@ -604,7 +604,7 @@ export function molColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
   return getMolColumnPropertyPanel(molColumn);
 }
 
-//name: Chem Descriptors
+//name: Chemistry | Descriptors
 //tags: panel, chem, widgets
 //input: string smiles { semType: Molecule }
 //output: widget result
@@ -612,7 +612,7 @@ export function descriptorsWidget(smiles: string): DG.Widget {
   return smiles ? getDescriptorsSingle(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Drug Likeness
+//name: Biology | Drug Likeness
 //description: Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.
 //help-url: /help/domains/chem/info-panels/drug-likeness.md
 //tags: panel, chem, widgets
@@ -631,7 +631,7 @@ export function molfile(smiles: string): DG.Widget {
   return smiles ? molfileWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Properties
+//name: Chemistry | Properties
 //description: Basic molecule properties
 //tags: panel, chem, widgets
 //input: semantic_value smiles { semType: Molecule }
@@ -640,7 +640,7 @@ export async function properties(smiles: DG.SemanticValue): Promise<DG.Widget> {
   return smiles ? propertiesWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Structural Alerts
+//name: Biology | Structural Alerts
 //description: Screening drug candidates against structural alerts i.e. fragments associated to a toxicological response
 //help-url: /help/domains/chem/info-panels/structural-alerts.md
 //tags: panel, chem, widgets
@@ -668,7 +668,7 @@ export async function structure3d(molecule: string): Promise<DG.Widget> {
   return molecule ? structure3dWidget(molecule) : new DG.Widget(ui.divText('Molecule is empty'));
 }
 
-//name: Toxicity
+//name: Biology | Toxicity
 //description: Toxicity prediction. Calculated by openchemlib
 //help-url: /help/domains/chem/info-panels/toxicity-risks.md
 //tags: panel, chem, widgets
@@ -709,7 +709,7 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
     molecule = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
   }
   sketcher.setMolecule(molecule);
-  ui.dialog()
+  const dlg = ui.dialog()
     .add(sketcher)
     .onOK(() => {
       if (unit === DG.chem.Notation.Smiles) {
@@ -723,7 +723,10 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
         cell.cell.value = sketcher.getMolFile();
       Sketcher.addToCollection(Sketcher.RECENT_KEY, sketcher.getMolFile());
     })
-    .show();
+    .show({resizable: true});
+    ui.onSizeChanged(dlg.root).subscribe((_) => {
+      sketcher.resize();
+    });
 }
 
 //name: OpenChemLib
