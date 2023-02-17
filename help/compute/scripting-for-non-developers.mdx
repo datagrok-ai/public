@@ -453,7 +453,7 @@ O5 = S2
 
 :::tip
 
-Use Rich function view only when you are sure that script works as expected. Features of Rich function view affect GUI only and has no effect on computations.
+Use Rich function view only when you are sure that the script works as expected. Features of Rich function view affect GUI only and have no effect on computations.
 
 :::
 
@@ -499,7 +499,7 @@ rowCount = test.rowCount
 
 ### Grouping inputs
 
-You can group script inputs into categories using `category` tag. Specified categories are rendered as separate blocks of the input form.
+You can group script inputs into categories using the `category` tag. Specified categories are rendered as separate blocks of the input form.
 
 ```mdx-code-block
 <Tabs>
@@ -629,11 +629,13 @@ Automatic export saves all input and output values with their captions, units an
 ### Accessing history
 
 Each script run is saved on the server. Saved script run includes both input and output values of the run. 
-You may review the history of runs clicking on the <i class="fas fa-history"></i> **History** button on the top panel.
+To review the history of runs, click on the <i class="fas fa-history"></i> **History** button on the top panel.
 
-History panel will appear on the right side. Clicking on any of cards will load the historical run into the UI.
-The historical runs are immutable. Thus, if you load historical run and then run it again changing input values, the platform will create a new historical run.
-This feature is available for all scripts using Rich function view by default.
+History panel appears on the right side. To load the run into the UI, click on the corresponding card.
+The historical runs are immutable. Thus, if you load historical run and then run it again changing input values,
+the platform will create a new historical run.
+
+This is a feature of the Rich function view.
 
 ## How to share a script
 
@@ -653,7 +655,7 @@ You may control access rights to your scripts. All sharing features are located 
 
 ## How to integrate script into third-party software
 
-Datagrok was designed with the design goal to be as extensible and easy to integrate with as possible, so out-of-the box
+Datagrok was designed to be as extensible and easy to integrate with as possible, so out-of-the box
 we get many platform integration capabilities such as authentication, data access, and many others. In addition to that,
 there are some capabilities specific to models: [REST API](#rest-api) and
 [embedding as iframe](#embedding-as-iframe).
@@ -695,13 +697,12 @@ You will see a dialog with the HTML code on top that you can use to embed this i
 
 ## How to delete a script
 
-At any moment of the time you can delete a script:
 - Find to in [Scripts section](https://public.datagrok.ai/scripts).
 - Right click on it. Context menu opens.
 - Choose "Delete" option.
 
 :::caution
 
-This action is irreversable! Your collaborators will lose access to it and all historical runs will become inaccessible. 
+This action is irreversible! Your collaborators will lose access to it and all historical runs will become inaccessible.
 
 :::
