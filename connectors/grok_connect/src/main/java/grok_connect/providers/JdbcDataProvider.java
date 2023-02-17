@@ -353,7 +353,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                     column = new IntColumn();
                 else if (isFloat(type, typeName, precision, scale) || isDecimal(type, typeName))
                     column = new FloatColumn();
-                else if (isBoolean(type, typeName))
+                else if (isBoolean(type, typeName, precision))
                     column = new BoolColumn();
                 else if (isString(type, typeName) ||
                         typeName.equalsIgnoreCase("uuid") ||
@@ -363,7 +363,11 @@ public abstract class JdbcDataProvider extends DataProvider {
                     column = new BigIntColumn();
                 else if (isTime(type, typeName))
                     column = new DateTimeColumn();
-                else {
+                else if (isXml(type, typeName)) {
+                    column = new StringColumn();
+                } else if (isBitString(type, precision, typeName)) {
+                    column = new BigIntColumn();
+                } else {
                     column = new StringColumn();
                     supportedType.set(c - 1, false);
                     initColumn.set(c - 1, false);
@@ -418,7 +422,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
                     if (supportedType.get(c - 1)) {
                         String colType = columns.get(c - 1).getType();
-                        if (isInteger(type, typeName, precision, scale) || isBoolean(type, typeName) ||
+                        if (isInteger(type, typeName, precision, scale) || isBoolean(type, typeName, precision) ||
                                 colType.equals(Types.INT) || colType.equals(Types.BOOL))
                             if (value instanceof Short)
                                 columns.get(c - 1).add(((Short)value).intValue());
@@ -438,8 +442,29 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 columns.get(c - 1).add(writer.toString());
                             } else
                                 columns.get(c - 1).add(value);
-                        } else if (isDecimal(type, typeName))
-                            columns.get(c - 1).add((value == null) ? null : ((BigDecimal)value).floatValue());
+                        } else if (isXml(type, typeName)) {
+                            String valueToAdd = "";
+                            if (value != null) {
+                                SQLXML sqlxml = (SQLXML)value;
+                                valueToAdd = sqlxml.getString();
+                            }
+                            columns.get(c - 1).add(valueToAdd);
+                        } else if (isBitString(type, precision, typeName)) {
+                            String valueToAdd = "";
+                            if (value != null) {
+                                valueToAdd = value.toString();
+                            }
+                            columns.get(c - 1).add(valueToAdd);
+                        } else if (isDecimal(type, typeName)) {
+                            Float valueToAdd = null;
+                            if (value.toString().equals("NaN")
+                                    && value.getClass().getName().equals("java.lang.Double")) {
+                                valueToAdd = Float.NaN;
+                            } else if (value != null){
+                                valueToAdd = ((BigDecimal)value).floatValue();
+                            }
+                            columns.get(c - 1).add(valueToAdd);
+                        }
                         else if (isFloat(type, typeName, precision, scale) || (colType.equals(Types.FLOAT)))
                             if (value instanceof Double)
                                 columns.get(c - 1).add(new Float((Double)value));
@@ -565,14 +590,13 @@ public abstract class JdbcDataProvider extends DataProvider {
             result.query = "(" + matcher.colName + " >= @" + name0 + " AND " + matcher.colName + " <= @" + name1 + ")";
             result.params.add(new FuncParam(type, name0, matcher.values.get(0)));
             result.params.add(new FuncParam(type, name1, matcher.values.get(1)));
-        } else if (matcher.op.equals(PatternMatcher.IN)) {
+        } else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
             String names = paramToNamesString(param, matcher, type, result);
             result.query = "(" + matcher.colName + " " + matcher.op + " (" + names + "))";
         } else {
             result.query = "(" + matcher.colName + " " + matcher.op + " @" + param.name + ")";
             result.params.add(new FuncParam(type, param.name, matcher.values.get(0)));
         }
-
         return result;
     }
 
@@ -604,7 +628,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         } else if (matcher.op.equals(PatternMatcher.REGEXP)) {
             result.query = regexQuery;
             result.params.add(new FuncParam(type, param.name, value));
-        } else if (matcher.op.equals(PatternMatcher.IN)) {
+        } else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
             String names = paramToNamesString(param, matcher, type, result);
             result.query = "(" + matcher.colName + " " + matcher.op + " (" + names + "))";
         } else {
@@ -703,6 +727,14 @@ public abstract class JdbcDataProvider extends DataProvider {
         // TODO Investigate precision value for current case
     }
 
+    private static boolean isBitString(int type, int precision, String typeName) {
+        return (type == java.sql.Types.BIT && precision > 1) || typeName.equalsIgnoreCase("varbit");
+    }
+
+    private static boolean isXml(int type, String typeName) {
+        return (type == java.sql.Types.SQLXML || typeName.equalsIgnoreCase("xml"));
+    }
+
     private static boolean isTime(int type, String typeName) {
         return (type == java.sql.Types.DATE) || (type == java.sql.Types.TIME) || (type == java.sql.Types.TIMESTAMP) ||
                 typeName.equalsIgnoreCase("timetz") ||
@@ -726,8 +758,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                 typeName.equalsIgnoreCase("decimal");
     }
 
-    private static boolean isBoolean(int type, String typeName) {
-        return (type == java.sql.Types.BOOLEAN) || (type == java.sql.Types.BIT) ||
+    private static boolean isBoolean(int type, String typeName, int precision) {
+        return (type == java.sql.Types.BOOLEAN) ||
                 typeName.equalsIgnoreCase("bool");
     }
 

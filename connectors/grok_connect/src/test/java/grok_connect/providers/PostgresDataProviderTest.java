@@ -94,7 +94,7 @@ class PostgresDataProviderTest extends ProviderBaseTest {
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
-// bytea types - incorrect mapping - string repr of memory location id, not bytes
+// bytea types - supported as string if in sql query use encode()
     @DisplayName("Output support for postgresql bytea type")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.utils.ObjectsMother#checkOutputDataFrame_byteAType_ok")
@@ -139,8 +139,6 @@ class PostgresDataProviderTest extends ProviderBaseTest {
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
-    //incorrect results for numeric NaN - exception, numeric with only precision - lost of data after floating point
-    //
     @DisplayName("Output support for postgresql numeric, real, double precision, bigint")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.utils.ObjectsMother#checkOutputDataFrame_numericType_ok")
@@ -174,7 +172,6 @@ class PostgresDataProviderTest extends ProviderBaseTest {
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
-    // xml type is not supported, output as memory location (e.g. default toString())
     @DisplayName("Output support for xml type")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.utils.ObjectsMother#checkOutputDataFrame_xmlType_ok")
@@ -186,8 +183,6 @@ class PostgresDataProviderTest extends ProviderBaseTest {
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
-    // Parameter support
-    // not in and regex are not supported
     @DisplayName("Parameters support")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.utils.ObjectsMother#checkParameterSupport_ok")
@@ -199,7 +194,6 @@ class PostgresDataProviderTest extends ProviderBaseTest {
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
-    // this week - incorrect request comes from browser
     @DisplayName("Parameters support for datetime")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.utils.ObjectsMother#checkDatesParameterSupport_ok")
