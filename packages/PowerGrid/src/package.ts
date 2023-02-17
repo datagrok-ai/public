@@ -9,7 +9,7 @@ import {HtmlTestCellRenderer, TestCellRenderer} from './cell-types/test-cell-ren
 import {BarCellRenderer} from './cell-types/bar-cell-renderer';
 import {BinaryImageCellRenderer} from './cell-types/binary-image-cell-renderer';
 
-import {SparklineCellRenderer} from './sparklines/sparklines-lines';
+import {SparklineCellRenderer, FitCellRenderer} from './sparklines/sparklines-lines';
 import {BarChartCellRenderer} from './sparklines/bar-chart';
 import {PieChartCellRenderer} from './sparklines/piechart';
 import {RadarChartCellRender} from './sparklines/radar-chart';
@@ -66,6 +66,15 @@ export function barCellRenderer() {
 //output: grid_cell_renderer result
 export function sparklineCellRenderer() {
   return new SparklineCellRenderer();
+}
+
+//name: Fit
+//tags: cellRenderer
+//meta.cellType: sparkline
+//meta.virtual: true
+//output: grid_cell_renderer result
+export function fitCellRenderer() {
+  return new FitCellRenderer();
 }
 
 //name: Scatter Plot
