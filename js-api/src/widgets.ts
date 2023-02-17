@@ -448,6 +448,10 @@ export class Accordion extends DartWidget {
   get header(): HTMLElement { return api.grok_Accordion_Get_Header(this.dart); }
   set header(header) { api.grok_Accordion_Set_Header(this.dart, header); }
 
+  /** Whether tab header should be hidden if there is only one tab */
+  get autoHideTabHeader(): boolean { return api.grok_Accordion_Get_AutoHideTabHeader(this.dart); }
+  set autoHideTabHeader(x) { api.grok_Accordion_Set_AutoHideTabHeader(this.dart, x); }
+
   /** Returns a pane with the specified name.
    * @param {string} name
    * @returns {AccordionPane} */
