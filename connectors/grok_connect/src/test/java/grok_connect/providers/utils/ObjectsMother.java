@@ -143,7 +143,8 @@ public class ObjectsMother {
                 .addFuncCallOptionsPattern("id", "in(29, 30)", "in",
                         null, null, 29, 30)
                 .build();
-        // --input: string id = "not in(21, 22, 23, 24, 25, 26, 27, 28, 29, 30)" {pattern: int}
+        // --input: string id = "not in(11, 12, 13, 14, 15, "
+        //                                + "16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30)" {pattern: int}
         DataFrame expected4 = DataFrameBuilder.getBuilder()
                 .setRowCount(10)
                 .setColumn(new BigIntColumn(
@@ -178,13 +179,17 @@ public class ObjectsMother {
                 .build();
         FuncCall funcCall7 = FuncCallBuilder.getBuilder()
                 .addQuery("--name: PostgresqlByStringPatternInt\n"
-                        + "--input: string id = \"not in(21, 22, 23, 24, 25, 26, 27, 28, 29, 30)\" {pattern: int}\n"
+                        + "--input: string id = \"not in(11, 12, 13, 14, 15, 16, 17, 18, 19, 20, "
+                        + "21, 22, 23, 24, 25, 26, 27, 28, 29, 30)\" {pattern: int}\n"
                         + "SELECT * FROM mock_data WHERE @id(id)\n"
                         + "--end")
-                .addFuncParam("string", "id", "not in(21, 22, 23, 24, 25, 26, 27, 28, 29, 30)",
+                .addFuncParam("string", "id", "not in(11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, " +
+                                "22, 23, 24, 25, 26, 27, 28, 29, 30)",
                         "int")
-                .addFuncCallOptionsPattern("id", "not in(21, 22, 23, 24, 25, 26, 27, 28, 29, 30)",
-                        "not in", null, null, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30)
+                .addFuncCallOptionsPattern("id", "not in(11, 12, 13, 14, 15, "
+                                + "16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30)",
+                        "not in", null, null, 11, 12, 13, 14, 15, 16, 17,
+                        18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30)
                 .build();
         // --input: string id = "min-max 29-30" {pattern: int}
         FuncCall funcCall8 = FuncCallBuilder.getBuilder()
@@ -806,17 +811,17 @@ public class ObjectsMother {
     public static Stream<Arguments> checkOutputDataFrame_bitStringType_ok() {
         DataFrame expected1 = DataFrameBuilder.getBuilder()
                 .setRowCount(2)
-                .setColumn(new StringColumn(new String[] {"101", "001"}), "a")
-                .setColumn(new StringColumn(new String[] {"0011", "101"}), "b")
+                .setColumn(new BigIntColumn(new String[] {"101", "001"}), "a")
+                .setColumn(new BigIntColumn(new String[] {"0011", "101"}), "b")
                 .build();
         DataFrame expected2 = DataFrameBuilder.getBuilder()
                 .setRowCount(2)
                 .setColumn(new BoolColumn(new Boolean[] {true, false}), "c")
-                .setColumn(new StringColumn(new String[] {"101", "0"}), "d")
+                .setColumn(new BigIntColumn(new String[] {"101", "0"}), "d")
                 .build();
-        return Stream.of(Arguments.of(Named.of("BIT STRING WITH FIXED LENGTH SUPPORT",
+        return Stream.of(Arguments.of(Named.of("BIT STRING WITH FIXED(>1) AND VARYING LENGTH SUPPORT",
                         getShortFuncCall("SELECT * FROM test1;")), expected1),
-                Arguments.of(Named.of("BIT STRING WITH VARYING LENGTH SUPPORT",
+                Arguments.of(Named.of("BIT STRING WITH FIXED(1) AND VARYING LENGTH SUPPORT",
                         getShortFuncCall("SELECT * FROM test2")), expected2));
     }
 
@@ -835,7 +840,7 @@ public class ObjectsMother {
                 .setColumn(new StringColumn(new String[] {data}), "data")
                 .build();
         return Stream.of(Arguments.of(Named.of("BYTEA TYPE SUPPORT",
-                getShortFuncCall("SELECT * FROM bytea_data;")), expected));
+                getShortFuncCall("SELECT encode(data, 'base64') as data FROM bytea_data;")), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_compositeType_ok() {
@@ -912,7 +917,7 @@ public class ObjectsMother {
                 .build();
         DataFrame expected5 = DataFrameBuilder.getBuilder()
                 .setRowCount(2)
-                .setColumn(new FloatColumn(new Float[] {2.2221f, 2222.2f}), "data")
+                .setColumn(new FloatColumn(new Float[] {2f, 2222f}), "data")
                 .build();
         DataFrame expected6 = DataFrameBuilder.getBuilder()
                 .setRowCount(2)
@@ -965,8 +970,8 @@ public class ObjectsMother {
         DataFrame expected = DataFrameBuilder.getBuilder()
                 .setRowCount(3)
                 .setColumn(new StringColumn(new String[]{"<foo>Hello World!</foo>",
-                        "abc<foo>bar</foo><bar>foo</bar",
-                        "<?xml version=\"1.0\"?><book><title>Manual</title><chapter>...</chapter></book>"}), "data")
+                        "abc<foo>bar</foo><bar>foo</bar>",
+                        "<book><title>Manual</title><chapter>...</chapter></book>"}), "data")
                 .build();
         return Stream.of(Arguments.of(
                 Named.of("XML TYPE SUPPORT", getShortFuncCall("SELECT * FROM xml_data")), expected
