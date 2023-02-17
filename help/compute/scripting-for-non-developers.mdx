@@ -5,14 +5,13 @@ title: "Scripting for non-developers [WIP]"
 ```mdx-code-block
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-import TOCInline from '@theme/TOCInline';
 ```
 
-This article describes Datagrok scripting feature. Techniques described here are useful for users with no prior experience in software development. 
-Scripting on Datagrok allows to deploy scripts on Datagrok platform. For deployed scripts you can:
+This article describes Datagrok scripting feature. Datagrok allows to deploy scripts on platform and control their lifecycle.
+For deployed scripts you can:
 
 - use different languages
-- fastly generate graphical user interface (GUI)
+- generate graphical user interface (GUI)
 - access computations history
 - control sharing
 - integrate them into external systems
@@ -32,9 +31,9 @@ You can create a script directly on the platform in two ways:
 <TabItem value="fast" label="Fast way" default>
 ```
 
-- Open Datagrok's [Scripts section](https://public.datagrok.ai/scripts)
-- Hover over the taskbar on the left side. Toolbox will appear.
-- Click on `New Javascript Script` action on the bottom of toolbox 
+- Open Datagrok's [Scripts section](https://public.datagrok.ai/scripts).
+- Hover over the taskbar on the left side. Toolbox appears.
+- Select `New Javascript Script` action on the bottom of toolbox.
 ![scripts](scripts.png)
 
 ```mdx-code-block
@@ -43,16 +42,17 @@ You can create a script directly on the platform in two ways:
 ```
 
 - Open Datagrok (e.g. [public homepage](https://public.datagrok.ai/))
-- Click on `Functions` icon on the right toolbar
-- Click on `Scripts` icon on the opened toolbox 
-- Click on `New Javascript Script` action on the bottom of toolbox ![scripts](scripts.png)
+- Select `Functions` icon on the right toolbar.
+- Select `Scripts` icon on the opened toolbox.
+- Select `New Javascript Script` action on the bottom of toolbox. 
+![scripts](scripts.png)
 
 ```mdx-code-block
 </TabItem>
 </Tabs>
 ```
 
-If everything is OK, you should see the code editor with the Javascript code inside. 
+The code editor appears with the Javascript code inside. 
 
 <details>
 <summary> Your first script </summary>
@@ -71,7 +71,7 @@ alert('Hello World!');
 
 :::tip Pro tip
 
-You may create and store scripts locally (as any other code) using [packages](https://datagrok.ai/help/develop/#packages) feature
+You may create and store scripts locally (as any other code) using [packages](https://datagrok.ai/help/develop/#packages) feature.
 
 :::
 
@@ -79,32 +79,39 @@ You may create and store scripts locally (as any other code) using [packages](ht
 
 You can edit the script directly on the platform using built-in editor. 
 
-- Freshly created scripts are opened in the editor automatically
-- To edit an existing script, find it in [Scripts secton](https://public.datagrok.ai/scripts), right click on script card and choose **Edit** action
+- Built-in editor opens for newly created scripts (see [how to create a script](#how-to-create))
+- To edit an existing script:
+  - Find it in [Scripts secton](https://public.datagrok.ai/scripts). 
+  - Right click on script card. Context menu appears.
+  - Choose **Edit** action. Built-in editor with script code opens.
 
 ## How to run script
 
 After the script is created, you can run it:
 
 - Built-in editor has <i class="fas fa-play"></i> **Run** button  on the top panel
-- To run an existing script, find it in [Scripts secton](https://public.datagrok.ai/scripts), right click on script card and choose **Run** action
+- To run an existing script:
+  - Find it in [Scripts secton](https://public.datagrok.ai/scripts).
+  - Right click on script card. Context menu appears.
+  - Choose **Run** action. Run dialog opens.
+  - Fill out the input form. Select **Run** action to start computations.
 
 ## How to debug script
 
 Datagrok supports several languages for [scripting](scripting.md#supported-languages). We recommend you to JavaScript scripts for learning purposes:
 - Datagrok has wide range of JS API
-- JS scripts run locally in the browser, without sending it to the server
+- JS scripts run locally in the browser, so you can start them faster
 
 ### JavaScript
 
-There are a set of [script examples](https://public.datagrok.ai/js/samples) available publicly. Feel free to play around with them to explore different Datagrok capabilities.
+There is the set of [script examples](https://public.datagrok.ai/js/samples) available publicly. Feel free to play around with them to explore different Datagrok capabilities.
 
-For the scripts created via user interface, it is possible to use debugging output. Output could be written:
+You may to use debugging output. Output could be written:
 - into DG interface (use `grok.shell.info()` / `grok.shell.warning()` / `grok.shell.error()`)
 - into the console (use `console.log()` and developer console available by F12)
 
 In addition, you can use built-in Inspector to see what's happening "under the hood" of the platform. To open Inspector, use `Alt+I` hotkey. 
-Inspector provides a wide range of additional information for development.
+For example, Inspector provides an information about triggered events.
 
 ### Octave
 
@@ -112,7 +119,7 @@ Octave scripts are run in a separate container on server. This container include
 - [symbolic](https://gnu-octave.github.io/packages/symbolic/)
 - [optim](https://gnu-octave.github.io/packages/optim/)
 
-Since scripts runs are independent, it is important provide `pkg load %PACKAGE_NAME%` in your scripts.
+Always provide `pkg load %PACKAGE_NAME%` in your scripts, since script runs are fully independent.
 
 ### Python
 
@@ -122,15 +129,17 @@ See [Conda environments](scripting.md#conda-environments) for details.
 
 See [Renv environments](scripting.md#renv-environments) for details.
 
-## How to enhance basic script view
+## How to enhance script view
 
-Datagrok automatically creates a graphical user interface for your scripts. It uses script header to create an input form and properly show the outputs after running the script.
-Header could have additional GUI-related hints. You can use these hints to create more user-friendly interface for your scripts. 
-Hints should be listed in curly braces in corresponding header lines. The order of the hints makes no difference; all the hints are optional.
+Datagrok automatically creates a graphical user interface for your scripts. It uses [script header](scripting.md#header) to create an input form and properly show the outputs.
+You may specify different [options](https://datagrok.ai/help/compute/scripting#options) in header. 
+
+You may customize script view using additional GUI-related options. These options are, basically, hints to create more user-friendly interface for your scripts. 
+Options should be listed in curly braces in corresponding header lines. The order of the hints makes no difference. All options are optional.
 
 ### Input captions
 
-You can add a specific caption for an input parameter. Proper caption gives to a script user an additional context about input parameter meaning.
+You can add an arbitrary caption for an input parameter. Proper caption helps user to understand the meaning of the parameter.
 
 ```mdx-code-block
 <Tabs>
@@ -138,7 +147,7 @@ You can add a specific caption for an input parameter. Proper caption gives to a
 ```
 
 ```javascript
-//input: double S1 { caption: Initial volume of liquid }
+//input: double V1 { caption: Initial volume of liquid }
 ```
 
 ```mdx-code-block
@@ -149,9 +158,9 @@ You can add a specific caption for an input parameter. Proper caption gives to a
 ```javascript
 //name: Captions sample
 //language: javascript
-//input: double S1 { caption: Initial volume of liquid }
+//input: double V1 { caption: Initial volume of liquid }
 
-grok.shell.info(`S1 equals ${S1}`);
+grok.shell.info(`V1 equals ${V1}`);
 ```
 
 ```mdx-code-block
@@ -166,9 +175,9 @@ grok.shell.info(`S1 equals ${S1}`);
 </Tabs>
 ```
 
-### Input units
+### Units
 
-You can add corresponding unit for an input parameter. Unit will appear in the input form next to the input field.
+You can add a proper unit label for an input parameter. Unit label will appear in the input form next to the input field.
 
 ```mdx-code-block
 <Tabs>
@@ -206,7 +215,7 @@ grok.shell.info(`Initial temperature equals ${initial_temp}`);
 
 ### Adding viewers for output dataframes
 
-You can specify viewers to review dataframes in human-friendly way. Each dataframe parameter may have a list of viewers. 
+You can specify viewers to review output dataframes in human-friendly way. Each dataframe parameter may have a list of viewers. 
 For instance, the following code adds `Scatter plot` and `Line chart` viewers on input dataframe.
 
 You may see all available viewers opening [demo dataframe](https://public.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv) and opening toolbox on the left.
@@ -226,7 +235,7 @@ You may see all available viewers opening [demo dataframe](https://public.datagr
 ```
 
 ```javascript
-//output: dataframe tempOnTime { viewer: Line chart | Scatter plot }
+//output: dataframe output_DF { viewer: Line chart | Scatter plot }
 ```
 
 ```mdx-code-block
@@ -237,11 +246,11 @@ You may see all available viewers opening [demo dataframe](https://public.datagr
 ```javascript
 //name: Adding viewer on output dataframe
 //language: javascript
-//input: dataframe test
-//output: dataframe tempOnTime { viewer: Line chart | Scatter plot }
+//input: dataframe input_DF
+//output: dataframe output_DF { viewer: Line chart | Scatter plot }
 
-tempOnTime = test
-tempOnTime.name = "DF with linechart"
+output_DF = input_DF
+output_DF.name = "DF with linechart"
 ```
 
 ```mdx-code-block
@@ -256,14 +265,27 @@ tempOnTime.name = "DF with linechart"
 </Tabs>
 ```
 
+:::tip
+
+Default script view supports viewers for *output* dataframes only. You may specify viewers *input* dataframes using [Rich function view](#Adding input dataframes viewers)
+
+:::
+
 ### Customizing dataframes viewers
 
-Each viewer has a list of properties used for rendering and changing its' behaviour. For instance, you may specify dataframe column used as X axis on scatter plot. 
+Each viewer has a list of customizable properties. They change how the viewer is rendered and how it behaves. 
+For instance, you may specify dataframe column used as X axis on scatter plot. 
 
-List of available properties differs for each type of viewer. You may tight click on viewer and select `Properties` item in the context menu. 
-Any of properties listed in the opened property panel could be customized. For example, the following code:
+List of available properties differs for each type of viewer. You may right click on viewer and select `Properties` item in the context menu. 
+Any of properties listed in the opened property panel could be specified in `viewer` option. For example, the following code:
 - specifies marker type and size for linechart
 - enables regression line rendering for scatterplot
+
+:::tip 
+
+Viewer property should be entered in camelCase format. For example, here "Show regression line" property of scatteplot becomes `showRegressionLine`.
+
+:::
 
 ```mdx-code-block
 <Tabs>
@@ -303,8 +325,8 @@ grok.shell.info(`Data row count: ${dummy_data.rowCount}`);
 
 ### Validating inputs
 
-You can add custom validation on input values of your script. By default, the input form only validates the value presence and type validity.
-A validator is a JS-function that accepts one parameter of any type and returns null (if validation passes) or error string (if valdiation fails).
+You can add custom validation on input values of your script. By default, the input form only validates that value is presented and has expected type.
+A validator is a JS-function that accepts one parameter of any type and returns `null` (if validation passes) or error string (if valdiation fails).
 You can add multiple validators on each input value.
 
 ```mdx-code-block
@@ -352,11 +374,12 @@ grok.functions.register({
 
 ## How to use advanced script view
 
-You can use so called `RichFunctionView` feature to access to advanced features. 
+You can use Rich function view feature to use advanced features. 
 It has all the features of basic script view, such as 
 [captions](#input-captions), 
 [viewers for outputs](#adding-viewers-for-output-dataframes) or 
 [input validators](#validating-inputs). 
+
 Advanced features include:
 
 - [Viewers for input dataframes](#adding-input-dataframes-viewers)
@@ -430,13 +453,13 @@ O5 = S2
 
 :::tip
 
-Use `RichFunctionView` only when you are sure that script works as expected. Features of `RichFunctionView` affect only user interface and has no effect on computations.
+Use Rich function view only when you are sure that script works as expected. Features of Rich function view affect GUI only and has no effect on computations.
 
 :::
 
 ### Adding input dataframes viewers
 
-You can add viewers for input dataframes. Using them, you can review your input data before starting actual computations.
+You can add viewers for input dataframes. Using them, you can review your input data before starting computations.
 
 ```mdx-code-block
 <Tabs>
@@ -510,7 +533,7 @@ grok.shell.info(`Temperature data row count: ${temp_data.rowCount}`);
 
 :::tip
 
-Here we also use "caption" tag to control inputs' labels.
+Here we also use `caption` tag to control input fields' labels.
 
 :::
 
@@ -529,7 +552,7 @@ Here we also use "caption" tag to control inputs' labels.
 ### Grouping outputs
 
 You also can specify categories for output parameters. 
-In case of output parameters, `category` tag will specify which output tab will be used to show output parameters value.
+In case of output parameters, `category` tag will specify the output tab used to show output parameters value.
 Following code will generate UI with 3 output tabs:
 
 ```mdx-code-block
@@ -573,7 +596,7 @@ IC4 = test.rowCount;
 
 :::tip
 
-Here we also specify default value for `S1` parameter
+View includes 4 tabs in total since there is separate tab for input dataframe viewers.
 
 :::
 
@@ -591,8 +614,8 @@ Here we also specify default value for `S1` parameter
 
 ### Exporting to a file
 
-You may use one-click export feature to save entire script run data to a local file. To generate export file, click on <i class="fas fa-arrow-to-bottom"></i> "Export" icon on the top panel. 
-Automatic export saves all input and output values with their captions, units and even viewers' screenshots. This feature is available for all scripts using `RichFunctionView` by default.
+You may use one-click export feature to save entire script run data to a local file. To generate export file, Select <i class="fas fa-arrow-to-bottom"></i> **Export** icon on the top panel. 
+Automatic export saves all input and output values with their captions, units and even viewers' screenshots. This feature is available for all scripts using Rich function view by default.
 
 <details>
 <summary> Export file example </summary>
@@ -606,15 +629,15 @@ Automatic export saves all input and output values with their captions, units an
 ### Accessing history
 
 Each script run is saved on the server. Saved script run includes both input and output values of the run. 
-You may review the history of runs clicking on the <i class="fas fa-history"></i> "History" button on the top panel.
+You may review the history of runs clicking on the <i class="fas fa-history"></i> **History** button on the top panel.
 
 History panel will appear on the right side. Clicking on any of cards will load the historical run into the UI.
-The historical runs are immutable. Thus, if you load historical run and then run it again with different input values, the platofrm will create new historical run.
-This feature is available for all scripts using `RichFunctionView` by default.
+The historical runs are immutable. Thus, if you load historical run and then run it again changing input values, the platform will create a new historical run.
+This feature is available for all scripts using Rich function view by default.
 
 ## How to share a script
 
-You may control access rights to your scripts. All sharing features are located in Sharing dialog. 
+You may control access rights to your scripts. All sharing features are located in the Sharing dialog. 
 - To open it, find your script in [Scripts section](https://public.datagrok.ai/scripts) and right click on it. 
 - Choose "Share..." option in the context menu. In the opened dialog you will see groups and users with their privileges. 
 - You may edit list of collaborators, grant or revoke privileges at any moment.
@@ -639,7 +662,7 @@ there are some capabilities specific to models: [REST API](#rest-api) and
 
 Once registered, each function gets assigned a REST API endpoint that allows external code to execute it by passing the
 input parameters, along with the authentication token. This allows instantaneous deployment of scientific methods for
-external consumption. To find our how to use it, click on the function and expand the `REST` pane on the context panel
+external consumption. To find our how to use it, select the function and expand the `REST` pane on the context panel
 on the right. Both JavaScript and Curl samples are provided.
 
 <details>
@@ -672,7 +695,10 @@ You will see a dialog with the HTML code on top that you can use to embed this i
 
 ## How to delete a script
 
-At any moment of the time you can delete a script. To do that, you need to find to in [Scripts section](https://public.datagrok.ai/scripts), right click on it and choose "Delete" option. 
+At any moment of the time you can delete a script:
+- Find to in [Scripts section](https://public.datagrok.ai/scripts).
+- Right click on it. Context menu opens.
+- Choose "Delete" option.
 
 :::caution
 
