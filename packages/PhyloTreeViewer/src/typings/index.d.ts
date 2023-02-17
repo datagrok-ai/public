@@ -12,7 +12,9 @@ declare module 'phylotree' {
 
 declare module 'phylotree/src/formats/newick' {
   import {PhylotreeNode} from 'phylotree';
+  import {NO_NAME_ROOT} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
+  /** Does not correct empty root name to {@link NO_NAME_ROOT}*/
   function newickParser(newick: string): { json: PhylotreeNode, error: string | null } ;
 
   export = newickParser; // default
