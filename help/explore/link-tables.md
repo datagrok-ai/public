@@ -15,8 +15,7 @@ datasets (current record, filter, selection, and mouse-over record). We support 
 * selection to filter
 * selection to selection
 
-
-The value on the left (for the first table) is the synchronization source (to be changed by the user). 
+The value on the left (for the first table) is the synchronization source (to be changed by the user).
 The values on the right (for the second table) determines what gets synchronized as a response to user actions.
 
 For example, "current row to filter" means that changing of the current row in the first table triggers
@@ -29,16 +28,17 @@ This means that all records of the second table, except for those that correspon
 selected rows in the main table, will be filtered out. Selection in the first table
 controls the filter in the second one.
 
-You can create chains of links, where a change in the first table would trigger a cascade of 
+You can create chains of links, where a change in the first table would trigger a cascade of
 synchronizations. In the following example, we are establishing two links:
-* "order" to "order-details" on the "OrderID" columns, using `row to filter` 
+
+* "order" to "order-details" on the "OrderID" columns, using `row to filter`
 * "order-details" to "products" on the "ProductID columns, using `filter to filter`
 
 When you click on a row in "orders", this filters the "order-details" table, which in turns
 filters the "product" tables. In the end, when you click on the order above you see corresponding
 rows on the "order-details" and "products" level.
 
-![](link-tables.gif)
+![link-tables](link-tables.gif)
 
 See also:
 
