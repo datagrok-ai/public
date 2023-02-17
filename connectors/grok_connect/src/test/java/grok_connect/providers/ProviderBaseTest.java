@@ -16,6 +16,7 @@ import org.testcontainers.containers.JdbcDatabaseContainer;
  * Base test class for providers, has common tests, fields and lifecycle
   */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public abstract class ProviderBaseTest {
     private final Providers type;
     protected JdbcDatabaseContainer<?> container;
@@ -56,6 +57,7 @@ public abstract class ProviderBaseTest {
     }
 
     @DisplayName("Test whether container with db is running")
+    @Order(1)
     @Test
     public void database_isRunning_ok() {
         Assertions.assertTrue(container.isRunning());
