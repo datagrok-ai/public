@@ -3,7 +3,7 @@ title: "Link tables"
 ---
 
 You can link tables based on the key columns. The link type determines which records should be synchronized between the
-datasets (current record, filter, selection, and mouse-over record), which gives us the following combinations:
+datasets (current record, filter, selection, and mouse-over record). We support the following types:
 
 * current row to row
 * current row to selection
@@ -14,6 +14,10 @@ datasets (current record, filter, selection, and mouse-over record), which gives
 * filter to selection
 * selection to filter
 * selection to selection
+
+
+The value on the left (for the first table) is the synchronization source (to be changed by the user). 
+The values on the right (for the second table) determines what gets synchronized as a response to user actions.
 
 For example, "current row to filter" means that changing of the current row in the first table triggers
 filtering of the second table. Rows in the second table with the key column values differing from
@@ -34,7 +38,7 @@ When you click on a row in "orders", this filters the "order-details" table, whi
 filters the "product" tables. In the end, when you click on the order above you see corresponding
 rows on the "order-details" and "products" level.
 
-
+![](link-tables.gif)
 
 See also:
 
