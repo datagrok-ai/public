@@ -175,9 +175,9 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
   // -- Controls --
   [PROPS.showImportControls]: boolean;
 
-  propsEngine = new class {
-
-  }(this);
+  // propsEngine = new class {
+  //
+  // }(this);
 
   constructor() {
     super();
@@ -255,12 +255,12 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
       break;
     case PROPS.showImportControls:
     case PROPS.layoutIsExpanded:
-    case PROPS.layoutShowControls:
-      const propValue: any = this[property.name];
-      this.propsEngine.apply(property.name, propValue);
-      _package.logger.debug('PhylocanvasGlViewer.onPropertyChanged() ' +
-        `${property.name} = ${propValue.toString()} .`);
-      break;
+    // case PROPS.layoutShowControls:
+    //   const propValue: any = this[property.name];
+    //   this.propsEngine.apply(property.name, propValue);
+    //   _package.logger.debug('PhylocanvasGlViewer.onPropertyChanged() ' +
+    //     `${property.name} = ${propValue.toString()} .`);
+    //   break;
     }
 
 
