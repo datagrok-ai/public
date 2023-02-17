@@ -5,10 +5,9 @@ import * as DG from 'datagrok-api/dg';
 import {newickToDf} from '../utils';
 import {Unsubscribable} from 'rxjs';
 import {_package} from '../package';
-import {IPhylocanvasGlViewer} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
 
 
-export class PhylocanvasGlViewerApp {
+export class PhyloTreeViewerApp {
   private readonly appName: string;
   private viewed: boolean = false;
   private tv!: DG.TableView;
@@ -16,7 +15,7 @@ export class PhylocanvasGlViewerApp {
   // private ptv!: DG.Viewer; // PhyloTreeViewer
 
   treeHost!: HTMLDivElement | null;
-  treeViewer!: IPhylocanvasGlViewer | DG.JsViewer | null; // PhylocanvasGL
+  treeViewer!: DG.JsViewer | null; // PhylocanvasGL
   treeDn!: DG.DockNode | null;
 
   _treeDf!: DG.DataFrame;
@@ -111,7 +110,7 @@ export class PhylocanvasGlViewerApp {
     if (!this.treeViewer) {
       // TableView.addViewer() returns JsViewer (no access to viewer's attributes)
       // DataFrame.plot.fromType() return viewers type object (with attributes)
-      this.treeViewer = (await this.treeDf.plot.fromType('PhylocanvasGl', {
+      this.treeViewer = (await this.treeDf.plot.fromType('PhyloTree', {
         interactive: true,
         alignLabels: true,
         showLabels: true,
