@@ -587,6 +587,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         String type = "string";
         String _query = "(LOWER(" + matcher.colName + ") LIKE @" + param.name + ")";
         String value = ((String)matcher.values.get(0)).toLowerCase();
+        String regexQuery = String.format("%s ~ '%s'", matcher.colName, value);
 
         if (matcher.op.equals(PatternMatcher.EQUALS)) {
             result.query = _query;
@@ -601,7 +602,8 @@ public abstract class JdbcDataProvider extends DataProvider {
             result.query = _query;
             result.params.add(new FuncParam(type, param.name, "%" + value));
         } else if (matcher.op.equals(PatternMatcher.REGEXP)) {
-            result.query = "(1 = 1)"; // TODO Implement regexp
+            result.query = regexQuery;
+            result.params.add(new FuncParam(type, param.name, value));
         } else if (matcher.op.equals(PatternMatcher.IN)) {
             String names = paramToNamesString(param, matcher, type, result);
             result.query = "(" + matcher.colName + " " + matcher.op + " (" + names + "))";
