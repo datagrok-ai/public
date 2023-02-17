@@ -448,6 +448,7 @@ To define input parameters, you have these options:
      </details>
 1. Use parameter _patterns_ as filters to allow users to enter free text (supported for the `string` and `datetime` only).
     >Note: A _parameter pattern_ is an expression to create a filter condition within the query. Much like a formula, it consists of field references, operators, and constants. To see a list of available patterns, see [Search patterns](../explore/data-search-patterns.md).
+
     <details>
 
     <summary> Example </summary>
@@ -513,7 +514,7 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
 
 You can expose the parameter dialog to end-users as an [application](../develop/how-to/create-package.md).<!--Mention?: when the cartdridge is not deployed on that particular database, the query returns an error-->
 
-Similar to functions in JavaScript, queries are [functions](/datagrok/functions/function.md) in Datagrok. This means you can “call” a query across multiple Datagrok plugins instead of copy-pasting the same query every time.
+Similar to functions in JavaScript, queries are [functions](../datagrok/functions/functions.md) in Datagrok. This means you can “call” a query across multiple Datagrok plugins instead of copy-pasting the same query every time.
 
 To run a query programmatically, see this [code snippet](https://public.datagrok.ai/js/samples/data-access/parameterized-query).
 
@@ -591,7 +592,7 @@ To share:
    * can_delete
    * can_query
 
-   These privileges can be given to individuals or to [groups](./govern/group.md) (which can be defined via dynamic filters). For more information on the access privilege model, see [Privileges](./govern/security.md#privileges).
+   These privileges can be given to individuals or to [groups](../govern/group.md) (which can be defined via dynamic filters). For more information on the access privilege model, see [Privileges](../govern/security.md#privileges).
 3. (Optional) Add a description in the provided text field. If you don't want to notify the recipients, clear the **Send notification** checkbox.
    > Note: To notify via email, enter the user's email in the identity/email field. The email contains a link to the shared item and entered description. When you enter a user or a group name, they are  notified via the Datagrok interface.
 4. Click **OK** to share.
