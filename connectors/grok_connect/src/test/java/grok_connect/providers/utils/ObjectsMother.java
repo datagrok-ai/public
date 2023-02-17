@@ -1,6 +1,7 @@
 package grok_connect.providers.utils;
 
 import grok_connect.connectors_info.FuncCall;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.params.provider.Arguments;
 import serialization.BigIntColumn;
 import serialization.BoolColumn;
@@ -478,25 +479,26 @@ public class ObjectsMother {
                         true, true, Year.of(2022).atMonth(1).atDay(1).toString())
                 .build();
         return Stream.of(
-                Arguments.of(funcCall1, expected1),
-                Arguments.of(funcCall2, expected2),
-                Arguments.of(funcCall3, expected2),
-                Arguments.of(funcCall4, expected3),
-                Arguments.of(funcCall5, expected3),
-                Arguments.of(funcCall6, expected2),
-                Arguments.of(funcCall7, expected4),
-                Arguments.of(funcCall8, expected2),
-                Arguments.of(funcCall9, expected3),
-                Arguments.of(funcCall10, expected5),
-                Arguments.of(funcCall11, expected5),
-                Arguments.of(funcCall12, expected6),
-                Arguments.of(funcCall13, expected6),
-                Arguments.of(funcCall14, expected7),
-                Arguments.of(funcCall15, expected8),
-                Arguments.of(funcCall16, expected9),
-                Arguments.of(funcCall17, expected10),
-                Arguments.of(funcCall18, expected11),
-                Arguments.of(funcCall19, expected12)
+                Arguments.of(Named.of("type: int; operator: =; pattern: none", funcCall1), expected1),
+                Arguments.of(Named.of("type: string; operator: >; pattern: int", funcCall2), expected2),
+                Arguments.of(Named.of("type: string; operator: >=; pattern: int", funcCall3), expected2),
+                Arguments.of(Named.of("type: string; operator: <=; pattern: int", funcCall4), expected3),
+                Arguments.of(Named.of("type: string; operator: <; pattern: int", funcCall5), expected3),
+                Arguments.of(Named.of("type: string; operator: in; pattern: int", funcCall6), expected2),
+                Arguments.of(Named.of("type: string; operator: not in; pattern: int", funcCall7), expected4),
+                Arguments.of(Named.of("type: string; operator: min-max; pattern: int", funcCall8), expected2),
+                Arguments.of(Named.of("type: double; operator: =; pattern: none", funcCall9), expected3),
+                Arguments.of(Named.of("type: string; operator: >; pattern: double", funcCall10), expected5),
+                Arguments.of(Named.of("type: string; operator: >=; pattern: double", funcCall11), expected5),
+                Arguments.of(Named.of("type: string; operator: <; pattern: double", funcCall12), expected6),
+                Arguments.of(Named.of("type: string; operator: <=; pattern: double", funcCall13), expected6),
+                Arguments.of(Named.of("type: string; operator: contains; pattern: string", funcCall14), expected7),
+                Arguments.of(Named.of("type: string; operator: starts with; pattern: string", funcCall15), expected8),
+                Arguments.of(Named.of("type: string; operator: ends with; pattern: string", funcCall16), expected9),
+                Arguments.of(Named.of("type: string; operator: in; pattern: string", funcCall17), expected10),
+                Arguments.of(Named.of("type: string; operator: regex; pattern: string", funcCall18), expected11),
+                Arguments.of(Named.of("type: multiple; operator: multiple; pattern: multiple", funcCall19),
+                        expected12)
         );
     }
 
@@ -691,17 +693,17 @@ public class ObjectsMother {
                         Year.of(2021).atMonth(5).atDay(1).toString())
                 .build();
         return Stream.of(
-                Arguments.of(funcCall1, expected1),
-                Arguments.of(funcCall2, expected2),
-                Arguments.of(funcCall3, expected3),
-                Arguments.of(funcCall4, expected4),
-                Arguments.of(funcCall5, expected5),
-                Arguments.of(funcCall6, expected6),
-                Arguments.of(funcCall7, expected7),
-                Arguments.of(funcCall8, expected8),
-                Arguments.of(funcCall9, expected8),
-                Arguments.of(funcCall10, expected9),
-                Arguments.of(funcCall11, expected8)
+                Arguments.of(Named.of("type: string; operator: today; pattern: datetime", funcCall1), expected1),
+                Arguments.of(Named.of("type: string; operator: this week; pattern: datetime", funcCall2), expected2),
+                Arguments.of(Named.of("type: string; operator: this month; pattern: datetime", funcCall3), expected3),
+                Arguments.of(Named.of("type: string; operator: this year; pattern: datetime", funcCall4), expected4),
+                Arguments.of(Named.of("type: string; operator: yesterday; pattern: datetime", funcCall5), expected5),
+                Arguments.of(Named.of("type: string; operator: last year; pattern: datetime", funcCall6), expected6),
+                Arguments.of(Named.of("type: string; operator: anytime; pattern: datetime", funcCall7), expected7),
+                Arguments.of(Named.of("type: string; operator: range -; pattern: datetime", funcCall8), expected8),
+                Arguments.of(Named.of("type: string; operator: before; pattern: datetime", funcCall9), expected8),
+                Arguments.of(Named.of("type: string; operator: after; pattern: datetime", funcCall10), expected9),
+                Arguments.of(Named.of("type: string; operator: April 2021; pattern: datetime", funcCall11), expected8)
         );
     }
 
@@ -752,10 +754,13 @@ public class ObjectsMother {
                 .setColumn(new StringColumn(new String[] {"{{lunch},{presentation}}"}), thirdColumnName)
                 .build();
         return Stream.of(
-                Arguments.of(getShortFuncCall("SELECT * FROM sal_emp;"), expected1),
-                Arguments.of(getShortFuncCall("SELECT pay_by_quarter[3] FROM sal_emp;"), expected2),
-                Arguments.of(getShortFuncCall("SELECT schedule[:2][2:] FROM sal_emp WHERE "
-                        + "name = 'Bill';"), expected3)
+                Arguments.of(Named.of("ARRAY TYPE SUPPORT",
+                        getShortFuncCall("SELECT * FROM sal_emp;")), expected1),
+                Arguments.of(Named.of("ARRAY'S INTERNAL TYPE SUPPORT#1",
+                        getShortFuncCall("SELECT pay_by_quarter[3] FROM sal_emp;")), expected2),
+                Arguments.of(Named.of("ARRAY'S INTERNAL TYPE SUPPORT#2",
+                        getShortFuncCall("SELECT schedule[:2][2:] FROM sal_emp WHERE "
+                        + "name = 'Bill';")), expected3)
         );
     }
 
@@ -794,7 +799,8 @@ public class ObjectsMother {
                 .setColumn(new FloatColumn(new Float[]{510.32f, 864.09f, 822.7f, 251.05f, 15.22f,
                         378.4f, 349.11f, 631.89f, 561.72f, 978.01f}), "some_number")
                 .build();
-        return Stream.of(Arguments.of(getShortFuncCall("SELECT * FROM mock_data LIMIT 10;"), expected));
+        return Stream.of(Arguments.of(Named.of("VARCHAR, BOOLEAN, BIGINT, DATE, CIDR, NUMERIC TYPES SUPPORT",
+                getShortFuncCall("SELECT * FROM mock_data LIMIT 10;")), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_bitStringType_ok() {
@@ -808,8 +814,10 @@ public class ObjectsMother {
                 .setColumn(new BoolColumn(new Boolean[] {true, false}), "c")
                 .setColumn(new StringColumn(new String[] {"101", "0"}), "d")
                 .build();
-        return Stream.of(Arguments.of(getShortFuncCall("SELECT * FROM test1;"), expected1),
-                Arguments.of(getShortFuncCall("SELECT * FROM test2"), expected2));
+        return Stream.of(Arguments.of(Named.of("BIT STRING WITH FIXED LENGTH SUPPORT",
+                        getShortFuncCall("SELECT * FROM test1;")), expected1),
+                Arguments.of(Named.of("BIT STRING WITH VARYING LENGTH SUPPORT",
+                        getShortFuncCall("SELECT * FROM test2")), expected2));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_byteAType_ok() {
@@ -826,7 +834,8 @@ public class ObjectsMother {
                 .setRowCount(1)
                 .setColumn(new StringColumn(new String[] {data}), "data")
                 .build();
-        return Stream.of(Arguments.of(getShortFuncCall("SELECT * FROM bytea_data;"), expected));
+        return Stream.of(Arguments.of(Named.of("BYTEA TYPE SUPPORT",
+                getShortFuncCall("SELECT * FROM bytea_data;")), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_compositeType_ok() {
@@ -843,9 +852,11 @@ public class ObjectsMother {
                 .setColumn(new IntColumn(new Integer[]{1000}), "count")
                 .build();
         return Stream.of(
-                Arguments.of(getShortFuncCall("SELECT * FROM on_hand;"), expected1),
-                Arguments.of(getShortFuncCall("SELECT (item).name, (item).supplier_id, "
-                        + "(item).price, count FROM on_hand"), expected2)
+                Arguments.of(Named.of("COMPOSITE TYPE SUPPORT",
+                        getShortFuncCall("SELECT * FROM on_hand;")), expected1),
+                Arguments.of(Named.of("COMPOSITE TYPE FIELDS TYPES SUPPORT",
+                        getShortFuncCall("SELECT (item).name, (item).supplier_id, "
+                        + "(item).price, count FROM on_hand")), expected2)
         );
     }
 
@@ -861,7 +872,8 @@ public class ObjectsMother {
                         "1999-01-08 04:05:06"),}), "stamp")
                 .setColumn(new StringColumn(new String[] {"1 years 5 mons 5 days 0 hours 0 mins 0.0 secs"}), "interval")
                 .build();
-        return Stream.of(Arguments.of(getShortFuncCall("SELECT * FROM dates"), expected));
+        return Stream.of(Arguments.of(Named.of("DATE, TIME, TIMESTAMP, INTERVAL TYPES SUPPORT",
+                getShortFuncCall("SELECT * FROM dates")), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_jsonbType_ok() {
@@ -871,7 +883,8 @@ public class ObjectsMother {
                         new String[]{"{\"phones\": [{\"type\": \"mobile\", \"phone\": \"001001\"}, {\"type\": \"fix\", \"phone\": \"002002\"}]}",
                                 "{\"bar\": \"baz\", \"active\": false, \"balance\": 7.77}", "{\"reading\": 0.00001230}"}), "data")
                 .build();
-        return Stream.of(Arguments.of(getShortFuncCall("SELECT * FROM jsonb_data"), expected));
+        return Stream.of(Arguments.of(Named.of("JSONB TYPE SUPPORT",
+                getShortFuncCall("SELECT * FROM jsonb_data")), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_numericType_ok() {
@@ -906,12 +919,18 @@ public class ObjectsMother {
                 .setColumn(new FloatColumn(new Float[] {22.22f, 55.55f}), "data")
                 .build();
         return Stream.of(
-                Arguments.of(getShortFuncCall("SELECT * FROM numeric_data"), expected1),
-                Arguments.of(getShortFuncCall("SELECT * FROM doubles"), expected2),
-                Arguments.of(getShortFuncCall("SELECT * FROM reals"), expected3),
-                Arguments.of(getShortFuncCall("SELECT * FROM bigint_data"), expected4),
-                Arguments.of(getShortFuncCall("SELECT * FROM numeric_data_precision"), expected5),
-                Arguments.of(getShortFuncCall("SELECT * FROM numeric_data_precision_scale"), expected6)
+                Arguments.of(Named.of("NUMERIC TYPE SUPPORT WITHOUT PRECISION AND SCALE",
+                        getShortFuncCall("SELECT * FROM numeric_data")), expected1),
+                Arguments.of(Named.of("DOUBLE TYPE SUPPORT",
+                        getShortFuncCall("SELECT * FROM doubles")), expected2),
+                Arguments.of(Named.of("REAL TYPE SUPPORT",
+                        getShortFuncCall("SELECT * FROM reals")), expected3),
+                Arguments.of(Named.of("BIGINT TYPE SUPPORT",
+                        getShortFuncCall("SELECT * FROM bigint_data")), expected4),
+                Arguments.of(Named.of("NUMERIC TYPE SUPPORT WITH PRECISION",
+                        getShortFuncCall("SELECT * FROM numeric_data_precision")), expected5),
+                Arguments.of(Named.of("NUMERIC TYPE SUPPORT WITH PRECISION AND SCALE",
+                        getShortFuncCall("SELECT * FROM numeric_data_precision_scale")), expected6)
         );
     }
 
@@ -927,9 +946,9 @@ public class ObjectsMother {
                 .setColumn(new StringColumn(new String[]{"Fiat", "Honda"}), "brand")
                 .build();
         return Stream.of(
-                Arguments.of(getShortFuncCall("SELECT * FROM cars_small"), expected1),
-                Arguments.of(getShortFuncCall("SELECT * FROM cars"), expected1),
-                Arguments.of(getShortFuncCall("SELECT * FROM cars_big"), expected2)
+                Arguments.of(Named.of("SMALL SERIAL TYPE SUPPORT", getShortFuncCall("SELECT * FROM cars_small")), expected1),
+                Arguments.of(Named.of("SERIAL TYPE SUPPORT", getShortFuncCall("SELECT * FROM cars")), expected1),
+                Arguments.of(Named.of("BIG SERIAL TYPE SUPPORT", getShortFuncCall("SELECT * FROM cars_big")), expected2)
         );
     }
 
@@ -939,7 +958,7 @@ public class ObjectsMother {
                 .setColumn(new StringColumn(new String[]{"6ecd8c99-4036-403d-bf84-cf8400f67836",
                         "c81d4e2e-bcf2-11e6-869b-7df92533d2db", "237e9877-e79b-12d4-a765-321741963000"}), "id")
                 .build();
-        return Stream.of(Arguments.of(getShortFuncCall("SELECT * FROM uuid_data"), expected));
+        return Stream.of(Arguments.of(Named.of("UUID TYPE SUPPORT", getShortFuncCall("SELECT * FROM uuid_data")), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_xmlType_ok() {
@@ -949,7 +968,10 @@ public class ObjectsMother {
                         "abc<foo>bar</foo><bar>foo</bar",
                         "<?xml version=\"1.0\"?><book><title>Manual</title><chapter>...</chapter></book>"}), "data")
                 .build();
-        return Stream.of(Arguments.of(getShortFuncCall("SELECT * FROM xml_data"), expected));
+        return Stream.of(Arguments.of(
+                Named.of("XML TYPE SUPPORT", getShortFuncCall("SELECT * FROM xml_data")), expected
+            )
+        );
     }
 
     private static FuncCall getShortFuncCall(String sqlQuery) {
