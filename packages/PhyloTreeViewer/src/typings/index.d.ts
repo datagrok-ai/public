@@ -6,6 +6,7 @@ declare module 'phylotree' {
     children: PhylotreeNode[];
     attribute: string; // height / branch length
     annotation: string;
+    depth?: number;
   }
 }
 
@@ -30,13 +31,20 @@ declare module 'phylotree' {
 
     select_all_descendants(node: PhylotreeNode, flag1: boolean, flag2: boolean);
 
-    getNodes(): PhylotreeNode[];
+    /** Get the root node */
+    getRootNode(): PhylotreeNode
 
-    render(props: { [propName: string]: any });
+    /** Implementation returns root node, the same {@link getRootNode} */
+    getNodes(): PhylotreeNode;
+
+    /** Update with new hiearchy layout */
+    update(json): void;
+
+    render(props: { [propName: string]: any }): TreeRender;
   }
 
   class TreeRender {
-    show();
+    show(): SVGSVGElement;
 
     modifySelection(predicate: () => boolean);
   }
