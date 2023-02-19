@@ -31,57 +31,57 @@ websites easily.
 1. Install Node JS [v18.12.x](https://nodejs.org/dist/v18.12.0/)
 2. Upgrade npm to `v9.x.x`:
 
-  ```shell
-  npm install -g npm@9.x.x
-  ```
+    ```shell
+    npm install -g npm@9.x.x
+    ```
 
 3. Clone the public repository:
 
-```shell
-git clone https://github.com/datagrok-ai/public.git
-```
+    ```shell
+    git clone https://github.com/datagrok-ai/public.git
+    ```
 
 ### Local setup
 
 1. Open the terminal and change the current directory to the directory with docusaurus code:
 
-```shell
-cd <absolute_path_to_public_repo>/docusaurus
-```
+    ```shell
+    cd <absolute_path_to_public_repo>/docusaurus
+    ```
 
 2. Install package dependencies:
 
-```shell
-npm install
-```
+    ```shell
+    npm install
+    ```
 
 3. As we use docusaurus to generate the API documentation, you need to repeat these installation steps in the `js-api` folder:
 
-```shell
-cd <absolute_path_to_public_repo>/js-api
-npm install
-```
+    ```shell
+    cd <absolute_path_to_public_repo>/js-api
+    npm install
+    ```
 
 4. To run docusaurus and test the changes, run the following command:
 
-```shell
-cd <absolute_path_to_public_repo>/docusaurus
-npm run start
-```
+    ```shell
+    cd <absolute_path_to_public_repo>/docusaurus
+    npm run start
+    ```
 
-  It will start the server and recompile the client
-  on every change you make. If the command does not work use `docusaurus start`.
+    It will start the server and recompile the client
+    on every change you make. If the command does not work use `docusaurus start`.
 
 5. Docusaurus will be available at <http://localhost:3000>. If you don't see your changes immediately, reload the page.
 6. When you think the development is over and you want to commit the code, run the following command to check that the
    project builds without errors.
     1. If the command does not work use `docusaurus build`
 
-```shell
-npm run build
-```
+    ```shell
+    npm run build
+    ```
 
-  Note that the build step will take some time.
+    Note that the build step will take some time.
 
 7. Now you can commit and push your changes to the repository.
 
