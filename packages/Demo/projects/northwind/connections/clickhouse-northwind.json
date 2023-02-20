@@ -1,11 +1,11 @@
 {
   "#type": "DataConnection",
-  "name": "ClickHouseMenu",
-  "friendlyName": "Menu",
+  "name": "ClickHouseNorthwind",
+  "friendlyName": "Northwind",
   "parameters": {
     "server": "db.datagrok.ai",
-    "db": "menu",
-    "port": 28125
+    "db": "northwind",
+    "port": 8125
   },
   "credentials": {
     "parameters": {
@@ -14,7 +14,7 @@
     }
   },
   "dataSource": "ClickHouse",
-  "description": "Menu sample database",
+  "description": "Northwind sample database",
   "tags": [
     "demo"
   ]
