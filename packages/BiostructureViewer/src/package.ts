@@ -234,3 +234,15 @@ export function getPdbHelper(): IPdbHelper {
 export async function nglViewerGen(): Promise<void> {
   _nglViewerGen();
 }
+
+//name: dockingDemo
+//meta.demoPath: Viewers | Docking
+export async function _dockingViewerDemo() {
+  const pdbStr: string = await _package.files.readAsText('samples/protease.pdb');
+  const sdfBytes: Uint8Array = await _package.files.readAsBytes('samples/1bdq.sdf');
+  const ligands: DG.DataFrame = (await grok.functions.call(
+    'Chem:importSdf', {bytes: sdfBytes}))[0];
+  
+  let app = new NglViewerApp("dockingDemo");
+  await app.init({ligands: ligands, macromolecule: pdbStr});
+}
