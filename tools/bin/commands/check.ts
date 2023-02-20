@@ -142,6 +142,22 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
 
       return { value, message };
     },
+    viewer: ({inputs, outputs}: {inputs: FuncParam[], outputs: FuncParam[]}) => {
+      let value = true;
+      let message = '';
+
+      if (inputs.length !== 0) {
+        value = false;
+        message += 'Viewer functions should take no arguments\n';
+      }
+
+      if (outputs.length > 1 || (outputs.length === 1 && outputs[0].type !== 'viewer')) {
+        value = false;
+        message += 'Viewers must have one output of type "viewer"\n';
+      }
+
+      return { value, message };
+    },
     fileViewer: ({inputs, outputs, tags}: {inputs: FuncParam[], outputs: FuncParam[], tags?: string[]}) => {
       let value = true;
       let message = '';
