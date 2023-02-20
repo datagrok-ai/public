@@ -17,6 +17,8 @@ import {ScatterPlotCellRenderer} from "./sparklines/scatter-plot";
 import {names, SparklineType, sparklineTypes} from "./sparklines/shared";
 import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
 
+import {curveFitDemo} from './fit-demo';
+
 export const _package = new DG.Package();
 
 //name: imageUrlCellRenderer
@@ -70,11 +72,17 @@ export function sparklineCellRenderer() {
 
 //name: Fit
 //tags: cellRenderer
-//meta.cellType: sparkline
+//meta.cellType: fit
 //meta.virtual: true
 //output: grid_cell_renderer result
 export function fitCellRenderer() {
   return new FitCellRenderer();
+}
+
+//tags: app
+//name: Curve Fit Demo
+export function curveFitDemoApp() {
+  curveFitDemo();
 }
 
 //name: Scatter Plot
