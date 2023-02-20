@@ -1,8 +1,4 @@
----
-title: "File"
----
-
-Datagrok supports the following formats.
+# Supported formats
 
 ## Tabular formats
 
@@ -30,8 +26,6 @@ Datagrok supports the following formats.
 | .ipynb     | Jupyter Notebook                                 | Core   |
 | netCDF     | network Common Data Form                         | Core   | <!--check!!!-->
 
-![File browsing](connectors/files-browser.gif "Files Browser") <!--rename-->
-
 ## Molecular structure formats
 
 | Extension | Description                        | Source             |
@@ -46,8 +40,6 @@ Datagrok supports the following formats.
 | .mmtf     | Macromolecular Transmission Format | [NglViewer] plugin |
 
 See also:
-
-* [File shares](connect-a-file-share.md)
 
 [NglViewer]: https://github.com/datagrok-ai/public/tree/master/packages/NglViewer#readme
 
