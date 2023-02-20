@@ -210,9 +210,9 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
 }
 
 export class FitCellRenderer extends DG.GridCellRenderer {
-  get name() { return SparklineType.Sparkline; }
+  get name() { return 'fit'; }
 
-  get cellType() { return SparklineType.Sparkline; }
+  get cellType() { return 'fit'; }
 
   // onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
   //   const hitData = onHit(gridCell, e);
@@ -230,6 +230,7 @@ export class FitCellRenderer extends DG.GridCellRenderer {
     const df = gridCell.grid.dataFrame;
     if (w < 20 || h < 10 || df === void 0) return;
 
+    const filteredIndexes = df.filter.getSelectedIndexes();
     const column = df.columns.toList().filter((c) => c.type === DG.COLUMN_TYPE.DATA_FRAME)![0];
     const currentDfValue = DG.toJs(column.get(gridCell.cell.row.idx)) as DG.DataFrame;
     if (!currentDfValue) return;
@@ -250,15 +251,19 @@ export class FitCellRenderer extends DG.GridCellRenderer {
       }
     }
 
-    const canvasCoordinates = scaleCoordinates(coordinates, w, h);
+    const updatedWidth = 160;
+    gridCell.gridColumn.width = updatedWidth;
+
+    const canvasCoordinates = scaleCoordinates(coordinates, updatedWidth, h);
 
     // randomize dataframe columns with x and y (grok.data.demo.fit()?)
     // set x like this higher (fixed)
     // set y randomized between [-1; 1]
     // make all markers the same color (like in scatterplot)
-
     // fix max-min range, make width for renderer cell ??
     // set bigger size for renderer (width height of cell ~ 200x100 and a little demo) !!!!
+
+
     // make outlayers switch (below)!
     // TODO: add filtering bitset for points (if clicked for example)
     // on click turn off the point (change bitset on false) - change it to cross (DG.MARKER_TYPE??)
@@ -273,54 +278,61 @@ export class FitCellRenderer extends DG.GridCellRenderer {
       fitCoordinates.y[i] = fitRes.fittedCurve(fitCoordinates.x[i]);
     }
 
-    const cavnasFitCoordinates = scaleCoordinates(fitCoordinates, w, h);
+    const cavnasFitCoordinates = scaleCoordinates(fitCoordinates, updatedWidth, h);
 
     g.strokeStyle = 'black';
 
+    // let index = 0;
     g.beginPath();
-    g.moveTo(x + cavnasFitCoordinates.x[0], y + h - cavnasFitCoordinates.y[0]);
+    g.moveTo(x + cavnasFitCoordinates.x[0], (y + h) - cavnasFitCoordinates.y[0]);
     for (let i = 1; i < cavnasFitCoordinates.x.length; i++)
-      g.lineTo(x + cavnasFitCoordinates.x[i], y + h - cavnasFitCoordinates.y[i]);
+      g.lineTo(x + cavnasFitCoordinates.x[i], (y + h) - cavnasFitCoordinates.y[i]);
     g.stroke();
 
     for (let i = 0; i < canvasCoordinates.x.length; i++) {
       const color = DG.Color.scatterPlotMarker;
-      DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, x + canvasCoordinates.x[i], y + h - canvasCoordinates.y[i], color, 3);
+      if (filteredIndexes.includes(i)) {
+        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, x + canvasCoordinates.x[i], (y + h) - canvasCoordinates.y[i],
+          color, 4);
+      } else {
+        DG.Paint.marker(g, DG.MARKER_TYPE.OUTLIER, x + canvasCoordinates.x[i], (y + h) - canvasCoordinates.y[i],
+          color, 7);
+      }
     }
   }
 
-  renderSettings(gridColumn: DG.GridColumn): HTMLElement {
-    gridColumn.settings ??= {globalScale: true};
-    const settings: SparklineSettings = gridColumn.settings;
+  // renderSettings(gridColumn: DG.GridColumn): HTMLElement {
+  //   gridColumn.settings ??= {globalScale: true};
+  //   const settings: SparklineSettings = gridColumn.settings;
 
-    const globalScaleProp = DG.Property.js('globalScale', DG.TYPE.BOOL, {
-      description: 'Determines the way a value is mapped to the vertical scale.\n' +
-        '- Global Scale OFF: bottom is column minimum, top is column maximum. Use when columns ' +
-        'contain values in different units.\n' +
-        '- Global Scale ON: uses the same scale. This lets you compare values ' +
-        'across columns, if units are the same (for instance, use it for tracking change over time).'
-    });
+  //   const globalScaleProp = DG.Property.js('globalScale', DG.TYPE.BOOL, {
+  //     description: 'Determines the way a value is mapped to the vertical scale.\n' +
+  //       '- Global Scale OFF: bottom is column minimum, top is column maximum. Use when columns ' +
+  //       'contain values in different units.\n' +
+  //       '- Global Scale ON: uses the same scale. This lets you compare values ' +
+  //       'across columns, if units are the same (for instance, use it for tracking change over time).'
+  //   });
 
-    const normalizeInput = DG.InputBase.forProperty(globalScaleProp, settings);
-    normalizeInput.onChanged(() => gridColumn.grid.invalidate());
+  //   const normalizeInput = DG.InputBase.forProperty(globalScaleProp, settings);
+  //   normalizeInput.onChanged(() => gridColumn.grid.invalidate());
 
-    const colorCodeScaleProp = DG.Property.js('colorCode', DG.TYPE.BOOL, {
-      description: 'Activates color rendering'
-    });
+  //   const colorCodeScaleProp = DG.Property.js('colorCode', DG.TYPE.BOOL, {
+  //     description: 'Activates color rendering'
+  //   });
 
-    const colorCodeNormalizeInput = DG.InputBase.forProperty(colorCodeScaleProp, settings);
-    colorCodeNormalizeInput.onChanged(() => { gridColumn.grid.invalidate(); });
+  //   const colorCodeNormalizeInput = DG.InputBase.forProperty(colorCodeScaleProp, settings);
+  //   colorCodeNormalizeInput.onChanged(() => { gridColumn.grid.invalidate(); });
 
-    return ui.inputs([
-      normalizeInput,
-      ui.columnsInput('Сolumns', gridColumn.grid.dataFrame, (columns) => {
-        settings.columnNames = names(columns);
-        gridColumn.grid.invalidate();
-      }, {
-        available: names(gridColumn.grid.dataFrame.columns.numerical),
-        checked: settings?.columnNames ?? names(gridColumn.grid.dataFrame.columns.numerical),
-      }),
-      colorCodeNormalizeInput,
-    ]);
-  }
+  //   return ui.inputs([
+  //     normalizeInput,
+  //     ui.columnsInput('Сolumns', gridColumn.grid.dataFrame, (columns) => {
+  //       settings.columnNames = names(columns);
+  //       gridColumn.grid.invalidate();
+  //     }, {
+  //       available: names(gridColumn.grid.dataFrame.columns.numerical),
+  //       checked: settings?.columnNames ?? names(gridColumn.grid.dataFrame.columns.numerical),
+  //     }),
+  //     colorCodeNormalizeInput,
+  //   ]);
+  // }
 }
