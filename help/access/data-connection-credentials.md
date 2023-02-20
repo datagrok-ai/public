@@ -1,50 +1,41 @@
----
-title: "Data connection credentials"
----
+# Secrets Managers
 
-A data connection is associated with the access credentials (typically login/password). In Datagrok, these credentials
-could be specified either manually by providing login/password (that gets stored in the
-secure [Datagrok Credentials Management Service](../govern/security.md#credentials), or through integrating with the
-Secrets Managers, such as AWS Secrets Manager.
+When you [add a data connection](databases.md#adding-connection) you can use Amazon Web Services Secrets Manager to store, manage, and retrieve secrets. Alternatively, you can use the [Datagrok's Credentials Management Service](../govern/security.md#credentials).
 
-## Specifying credentials manually
+## Setting up connection with AWS Secrets Manager
 
-This basic option provides keeping encrypted credentials for any data sources in the protected service inside the
-Datagrok platform.
+Prerequisites:
 
-## Secrets Managers
+* In Datagrok:
+  * A user role with _create connections_ and _edit connections_ privileges.
+* In AWS:
+  * An existing secret. For information on how to create a secret, see [Amazon's documentation](https://docs.aws.amazon.com/secretsmanager/latest/userguide/create_secret.html).
+  * Permissions that allow you to view secrets in AWS Secrets Manager.
 
-This option uses a Secret Manager to retrieve the actual credentials when needed. The primary purpose of a secret
-management services is to allow you to decouple the storage of secrets from the code or configuration that consumes the
-secrets. This decoupling supports centralization, revocation and rotation of passwords.
+To use the AWS Secrets Manager in a database connection, follow these steps:
 
-The Datagrok platform is integrated with storing secrets services:
+* _Step 1_. Set up a connection to the AWS Secrets Manager.
+  1. Go to **Data > Databases**.
+  1. In the **Toolbox** under **Actions**, select **Add new connection…** to open the **Add new connection** dialog.
+  1. In the dialog under the **Data Source**, select **AWS** from the list of options.
+  1. Paste the secret key and access key in the fields provided, name the connection, and fill in other connection parameters as appropriate.
 
-* Amazon AWS Secrets Manager
+  ![Create connection to AWS Secret Manager](connect-to-aws.png)
+  
+  1. Click **TEST** to test the connection, then click **OK** to save it. If the connection fails, verify your secrets details.
+* _Step 2_. Create a connection that will use the AWS Secrets Manager.
+  1. Open the **Add new connection** dialog by repeating the actions described in Step 1 above.
+  1. In the **Add new connection** dialog, under **Credentials**, select the name of the connection that you created in Step 1.
+  1. Enter the Secret Name and other connection parameters in the fields provided.
+  
+  ![Add new Data connection](data-connection-secret-p02.png)
+  
+  :::note
 
-The platform supports having several Secrets Managers Connection used by different groups. In these cases, specific
-credentials for Data Source are stored in the Cloud Manager that is referenced by the specified Datagrok connection and
-specified Secret Name. The specified Secret Name is defined in the AWS Secrets Manager.
+  You can set up connections to the AWS Secrets Managers for different user groups. Each connection has its own set of credentials which are stored in the Cloud Manager and which are identified by the specified Datagrok connection name and the Secret Name. The Secret Name is defined within the AWS Secrets Manager.
 
-## How to setup connection using AWS Secret Manager
+  :::
 
-Imagine that there is a Postgres database `biodb01` with the credentials `user01`/`password01`. First, let's create a
-secret in AWS Secrets Manager, if it does not exist yet:
+  1. Click **Test** to test the connection, then click **OK** to save it. If the connection fails, verify your connection details and that you added Datagrok's IP addresses to your allowlist.
 
-```shell
-aws secretsmanager create-secret --name biodb01 --secret-string "{\"password\":\"password01\",\"login\":\"user01\"}"
-```
-
-Then, let's do the following in Datagrok:
-
-1. Create connection `aws-sm-bio` to the AWS Secret Manager (later we can use this connection for other secret names)
-   ![Create connection to AWS Secret Manager](data-connection-secret-p01.png)
-
-2. Create a Postgres connection to database `biodb01` with name `biodb01-connection`. It is important to select
-   `aws-sm-bio` created at the previous step and specify the correct secret name.
-   ![Add new Data connection](data-connection-secret-p02.png)
-
-3. Click test to ensure that secret name is correct.
-   ![Test connection](data-connection-secret-p03.png)
-
-4. Click OK. This saves the connection, and you are ready to go!
+For more information about using the AWS Secrets Manager, see the [Amazon Web Services Secrets Manager User Guide](https://docs.aws.amazon.com/secretsmanager/latest/userguide/introduction.html).
