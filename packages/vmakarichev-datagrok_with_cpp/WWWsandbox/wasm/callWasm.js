@@ -315,6 +315,8 @@ function cppFuncWrapper(module, cFuncName, returnType, args)
         else
             result = module.ccall(cFuncName, extendedTypeOfReturn, types, params);*/
 
+        console.log(params);
+
         result = module.ccall(cFuncName, extendedTypeOfReturn, types, params);
                     
         // update and get data from buffers if required
@@ -329,7 +331,6 @@ function cppFuncWrapper(module, cFuncName, returnType, args)
     if(result != undefined)
         return result;    
 } // cppFuncWrapper
-
 
 // A LAYER BETWEEN JS AND CPP-WRAPPER
 
