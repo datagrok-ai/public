@@ -185,7 +185,7 @@ You can add a proper unit label for an input parameter. Unit label will appear i
 ```
 
 ```javascript
-//input: double initial_temp { units: °С }
+//input: double initialTemp { units: °С }
 ```
 
 ```mdx-code-block
@@ -196,9 +196,9 @@ You can add a proper unit label for an input parameter. Unit label will appear i
 ```javascript
 //name: Units sample
 //language: javascript
-//input: double initial_temp { units: °С }
+//input: double initialTemp { units: °С }
 
-grok.shell.info(`Initial temperature equals ${initial_temp}`);
+grok.shell.info(`Initial temperature equals ${initialTemp}`);
 ```
 
 ```mdx-code-block
@@ -235,7 +235,7 @@ You may see all available viewers opening [demo dataframe](https://public.datagr
 ```
 
 ```javascript
-//output: dataframe output_DF { viewer: Line chart | Scatter plot }
+//output: dataframe outputDF { viewer: Line chart | Scatter plot }
 ```
 
 ```mdx-code-block
@@ -246,11 +246,11 @@ You may see all available viewers opening [demo dataframe](https://public.datagr
 ```javascript
 //name: Adding viewer on output dataframe
 //language: javascript
-//input: dataframe input_DF
-//output: dataframe output_DF { viewer: Line chart | Scatter plot }
+//input: dataframe inputDF
+//output: dataframe outputDF { viewer: Line chart | Scatter plot }
 
-output_DF = input_DF
-output_DF.name = "DF with linechart"
+outputDF = inputDF
+outputDF.name = "DF with linechart"
 ```
 
 ```mdx-code-block
@@ -293,7 +293,7 @@ Viewer property should be entered in camelCase format. For example, here "Show r
 ```
 
 ```javascript
-//output: dataframe dummy_data { viewer: Line chart(markerType: star, markerSize: 15) | Scatter plot(showRegressionLine: true) }
+//output: dataframe dummyData { viewer: Line chart(markerType: star, markerSize: 15) | Scatter plot(showRegressionLine: true) }
 ```
 
 ```mdx-code-block
@@ -304,11 +304,11 @@ Viewer property should be entered in camelCase format. For example, here "Show r
 ```javascript
 //name: Viewers customization
 //language: javascript
-//input: dataframe temp_data
-//output: dataframe dummy_data { viewer: Line chart(markerType: star, markerSize: 15) | Scatter plot(showRegressionLine: true) }
+//input: dataframe tempData
+//output: dataframe dummyData { viewer: Line chart(markerType: star, markerSize: 15) | Scatter plot(showRegressionLine: true) }
 
-dummy_data = temp_data.clone();
-grok.shell.info(`Data row count: ${dummy_data.rowCount}`);
+dummyData = tempData.clone();
+grok.shell.info(`Data row count: ${dummyData.rowCount}`);
 ```
 
 ```mdx-code-block
@@ -335,7 +335,7 @@ You can add multiple validators on each input value.
 ```
 
 ```javascript
-//input: int row_count {validators: ["isPositive"]} 
+//input: int rowCount {validators: ["isPositive"]} 
 
 grok.functions.register({
   signature: 'List<String> isPositive(int input)',
@@ -352,7 +352,7 @@ grok.functions.register({
 //name: Custom validation sample
 //description: Hello world script
 //language: javascript
-//input: int row_count {validators: ["isPositive"]} 
+//input: int rowCount {validators: ["isPositive"]} 
 
 grok.functions.register({
   signature: 'List<String> isPositive(int input)',
@@ -507,10 +507,10 @@ You can group script inputs into categories using the `category` tag. Specified 
 ```
 
 ```javascript
-//input: dataframe temp_data { category: Experimental data }
-//input: double initial_pressure { category: Experimental data }
-//input: double desired_pressure { category: Goals }
-//input: double desired_humidity { category: Goals }
+//input: dataframe tempData { category: Experimental data }
+//input: double initialPressure { category: Experimental data }
+//input: double desiredPressure { category: Goals }
+//input: double desiredHumidity { category: Goals }
 ```
 
 ```mdx-code-block
@@ -521,14 +521,14 @@ You can group script inputs into categories using the `category` tag. Specified 
 ```javascript
 //name: Input categories demo
 //language: javascript
-//input: dataframe temp_data { caption: Temperature data; category: Experimental data }
-//input: double initial_pressure { caption: Initial pressure; category: Experimental data }
-//input: double desired_pressure { caption: Goal pressure; category: Goals }
-//input: double desired_humidity { caption: Goal humidity; category: Goals }
+//input: dataframe tempData { caption: Temperature data; category: Experimental data }
+//input: double initialPressure { caption: Initial pressure; category: Experimental data }
+//input: double desiredPressure { caption: Goal pressure; category: Goals }
+//input: double desiredHumidity { caption: Goal humidity; category: Goals }
 //editor: Compute:RichFunctionViewEditor
 
-grok.shell.info(`Initial pressure: ${initial_pressure}`);
-grok.shell.info(`Temperature data row count: ${temp_data.rowCount}`);
+grok.shell.info(`Initial pressure: ${initialPressure}`);
+grok.shell.info(`Temperature data row count: ${tempData.rowCount}`);
 ```
 
 :::tip
@@ -664,8 +664,12 @@ there are some capabilities specific to models: [REST API](#rest-api) and
 
 Once registered, each function gets assigned a REST API endpoint that allows external code to execute it by passing the
 input parameters, along with the authentication token. This allows instantaneous deployment of scientific methods for
-external consumption. To find our how to use it, select the function and expand the `REST` pane on the context panel
-on the right. Both JavaScript and Curl samples are provided.
+external consumption. To find our how to use it:
+- Select the script in [Scripts section](https://public.datagrok.ai/scripts).
+- Press F4 to open the context panel on the right.
+- Expand the `REST` pane on it.
+
+Both JavaScript and Curl samples are provided.
 
 <details>
 <summary> REST API panel </summary>
@@ -697,7 +701,7 @@ You will see a dialog with the HTML code on top that you can use to embed this i
 
 ## How to delete a script
 
-- Find to in [Scripts section](https://public.datagrok.ai/scripts).
+- Find your script in [Scripts section](https://public.datagrok.ai/scripts).
 - Right click on it. Context menu opens.
 - Choose "Delete" option.
 
