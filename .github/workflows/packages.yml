@@ -202,10 +202,10 @@ jobs:
           npm install
           if [ -n "$grok_deps" ]; then
             for dep in $grok_deps; do
-              current_dir=$(pwd);
-              cd node_modules/$dep;
-              npm install;
-              npm run build;
+              current_dir=$(pwd)
+              cd node_modules/$dep
+              npm install
+              npm run build
               count=0
               retries=5
               until grok publish ${HOST}; do
@@ -220,7 +220,7 @@ jobs:
                   exit $exit
                 fi
               done
-              cd $current_dir;
+              cd $current_dir
             done
           fi
         working-directory: packages/${{ matrix.package }}
