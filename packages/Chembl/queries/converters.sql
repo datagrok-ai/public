@@ -30,7 +30,7 @@ inner join
   select compound_name, min(molregno) as molregno
   from compound_records
   group by compound_name
-  having compound_name = @compoundName
+  having compound_name = replace(@compoundName, 'name:', '')
 ) as cr on cr.molregno = cs.molregno
 --end
 
