@@ -17,6 +17,7 @@ export interface FormulaLine {
   min?: number;
   max?: number;
   formula?: string;
+  funcFormula?: string;
   showOnPlot?:boolean;
   showOnTooltip?:boolean;
   // Specific to lines:

@@ -11,6 +11,7 @@
 		"datagrok-api": "latest",
 		"cash-dom": "latest",
 		"dayjs": "latest",
+		"worker-loader": "latest",
 		"@datagrok-libraries/utils": "latest",
 		"@datagrok-libraries/statistics": "1.0.2"
 	},
@@ -25,15 +26,15 @@
 		"@typescript-eslint/parser": "latest"
 	},
 	"scripts": {
-		"link-all": "",
+		"link-all": "npm link @datagrok-libraries/statistics",
 		"link-utils": "npm link @datagrok-libraries/statistics",
 		"debug-fittingtools": "webpack && grok publish",
 		"release-fittingtools": "webpack && grok publish --release",
 		"build-fittingtools": "webpack",
-		"build": "webpack",
+		"build": "tsc && webpack",
 		"debug-fittingtools-public": "webpack && grok publish public",
 		"release-fittingtools-public": "webpack && grok publish public --release",
-		"debug-fittingtools-local": "webpack && grok publish local",
+		"debug-fittingtools-local": "tsc && webpack && grok publish local",
 		"release-fittingtools-local": "webpack && grok publish local --release",
 		"lint": "eslint src --ext .ts",
 		"lint-fix": "eslint src --ext .ts --fix"
