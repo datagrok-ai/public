@@ -49,9 +49,7 @@
     "typescript": "^4.2.3",
     "webpack": "^5.75.0",
     "webpack-bundle-analyzer": "latest",
-    "webpack-cli": "^4.6.0"
-  },
-  "grokDependencies": {
+    "webpack-cli": "^4.6.0",
     "@datagrok/chem": "1.4.24"
   },
   "scripts": {
