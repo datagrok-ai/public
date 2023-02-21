@@ -18,7 +18,7 @@ public class OracleDataProvider extends JdbcDataProvider {
 
     public OracleDataProvider(ProviderManager providerManager) {
         super(providerManager);
-        driverClassName = "oracle.jdbc.OracleDriver";
+        driverClassName = "oracle.jdbc.driver.OracleDriver";
 
         descriptor = new DataSource();
         descriptor.type = "Oracle";

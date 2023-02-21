@@ -3,6 +3,7 @@ package grok_connect.providers;
 import grok_connect.connectors_info.Credentials;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataProvider;
+import grok_connect.providers.utils.DataFrameComparator;
 import grok_connect.providers.utils.Providers;
 import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryMonitor;
@@ -23,10 +24,12 @@ public abstract class ProviderBaseTest {
     protected JdbcDataProvider provider;
     protected Credentials credentials;
     protected DataConnection connection;
+    protected DataFrameComparator dataFrameComparator;
 
     protected ProviderBaseTest(Providers type) {
         this.container = type.getContainer();
         this.type = type;
+        dataFrameComparator = new DataFrameComparator();
     }
 
     @BeforeAll
