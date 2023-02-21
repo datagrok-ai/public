@@ -1,0 +1,4 @@
+data
+<foo>Hello World!</foo>
+abc<foo>bar</foo><bar>foo</bar>
+<book><title>Manual</title><chapter>...</chapter></book>
