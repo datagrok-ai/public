@@ -1,9 +1,8 @@
 --name: PostgresqlArrayType
 --connection: PostgreSQLApiTests
---test: ApiTests:compareTables(PostgresqlArrayType(), 'postgres_output_array.csv', 'ApiTests/datasets/tests')
+--test: ApiTests:compareTables(PostgresqlArrayType(), ApiTests:getTable('postgres_output_array.csv', path='ApiTests/datasets/tests'))
 SELECT * FROM sal_emp;
 --end
-
 
 --name: PostgresqlBitString1
 --connection: PostgreSQLApiTests
