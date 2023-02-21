@@ -1,6 +1,6 @@
 --name: PostgresqlPatternsAll
 --connection: PostgreSQLApiTests
---test: ApiTests:compareTables(PostgresqlPatternsAll(), ApiTests:getTable("data1-30.csv", path="ApiTests/datasets/tests"))
+--test: ApiTests:compareTables(PostgresqlPatternsAll(), ApiTests:getTable('data1-30.csv', path='ApiTests/datasets/tests'))
 SELECT * FROM mock_data;
 --end
 
