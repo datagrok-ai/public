@@ -163,7 +163,8 @@ jobs:
         run: npm install -g npm@x
       - name: npm version
         run: npm version
-      - run: npm install
+      - name: Do npm install for packages
+        run: npm install
         id: install
         working-directory: packages/${{ matrix.package }}
       - name: js-api dependencies
