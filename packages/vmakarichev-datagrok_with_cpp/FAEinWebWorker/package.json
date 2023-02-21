@@ -1,0 +1,38 @@
+{
+	"name": "faeinwebworker",
+	"friendlyName": "FAEinWebWorker",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"cash-dom": "latest",
+		"dayjs": "latest",
+		"@datagrok-libraries/utils": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest"
+	},
+	"scripts": {
+		"link-all": "",
+		"debug-faeinwebworker": "webpack && grok publish",
+		"release-faeinwebworker": "webpack && grok publish --release",
+		"build-faeinwebworker": "webpack",
+		"build": "webpack",
+		"debug-faeinwebworker-dev": "webpack && grok publish dev",
+		"release-faeinwebworker-dev": "webpack && grok publish dev --release",
+		"debug-faeinwebworker-local": "webpack && grok publish local",
+		"release-faeinwebworker-local": "webpack && grok publish local --release"
+	},
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/datagrok-ai/public.git",
+		"directory": "packages/vmakarichev-datagrok_with_cpp/FAEinWebWorker"
+	}
+}
