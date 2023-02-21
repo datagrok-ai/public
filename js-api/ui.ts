@@ -1471,6 +1471,8 @@ export namespace hints {
       root.classList.add('ui-hint-popup-bottom');
     }
 
+    return root;
+    
   }
 
   /** Adds a hint indication to the provided element and returns it. */
