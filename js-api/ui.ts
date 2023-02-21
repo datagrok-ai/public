@@ -1419,52 +1419,95 @@ export namespace labels {
 /** Visual hints attached to an element. They can be used to introduce a new app to users. */
 export namespace hints {
 
-  /** Adds a hint indication to the provided element and returns it. */
-  export function addHint(el: HTMLElement): HTMLElement {
-    el.classList.add('ui-hint-target');
-    const hintIndicator = div([], 'ui-hint-blob');
-    el.append(hintIndicator);
+  export function addHint(el: HTMLElement, content: HTMLElement, position:string = 'right'){
+    const root = document.createElement('div');
+    root.className = 'ui-hint-popup';
+    root.style.cssText = `
+      display: block;
+      padding:12px;
+      background: white;
+      border-radius: 3px;
+      box-shadow: 0px 1px 3px var(--grey-3);
+      border-top: 1px solid var(--grey-1);
+      position: fixed;
+      z-index: 4000;
+      width: 150px;
+      max-width: 300px;
+    `;
+    
+    const closeBtn = iconFA('times',()=>root.remove());
+    closeBtn.style.cssText = `
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      color: var(--grey-4);
+    `;
 
-    const closeIcon = iconFA('times', () => {
-      remove(el);
-      // fire an event?
-    }, 'Remove hints');
-    closeIcon.classList.add('ui-hint-close-btn');
-    el.append(closeIcon);
+    const node = el.getBoundingClientRect();
+    
+    root.append(closeBtn);
+    root.append(content);
+    $('body').append(root);
 
-    const width = el ? el.clientWidth : 0;
-    const height = el ? el.clientHeight : 0;
-
-    const hintNode = el.getBoundingClientRect();
-    const indicatorNode = hintIndicator.getBoundingClientRect();
-
-    type elementPosition = 'static' | 'relative' | 'absolute' | 'fixed' | 'sticky';
-    const hintPosition = <elementPosition>($(el).css('position') ?? 'static');
-
-    function setDefaultStyles() {
-      $(hintIndicator).css('position', 'absolute');
-      $(hintIndicator).css('left', '0');
-      $(hintIndicator).css('top', '0');
-    };
-
-    const positions = {
-      static: () => {
-        $(hintIndicator).css('position', 'absolute');
-        $(hintIndicator).css('margin-left', hintNode.left + 1 == indicatorNode.left ? 0 : -width);
-        $(hintIndicator).css('margin-top', hintNode.top + 1 == indicatorNode.top ? 0 : -height);
-      },
-      relative: setDefaultStyles,
-      fixed: setDefaultStyles,
-      absolute: setDefaultStyles,
-      sticky: setDefaultStyles,
-    };
-
-    positions[hintPosition]();
-
-    if ($(el).hasClass('d4-ribbon-item')){
-      $(hintIndicator).css('margin-left', '0px')
+    if (position == 'right'){
+      const right = node.right+8;
+      root.style.left = right+'px';
+      root.style.top = node.top+'px';
     }
 
+    if (position == 'left'){
+      let left = node.left-root.offsetWidth-8;
+      if (left < 0 ) 
+        left = 0;
+      root.style.left = left+'px';
+      root.style.top = node.top+'px';
+    }
+
+    if (position == 'top'){
+      let top = node.top-root.offsetHeight-8;
+      if (top<0) 
+        top = 0 
+      root.style.left = node.left+'px';
+      root.style.top = top+'px';
+    }
+
+    if (position == 'bottom'){
+      let bottom = node.bottom+8;
+      if (bottom > screen.height)
+        bottom = screen.height;
+      root.style.left = node.left+'px';
+      root.style.top = bottom+'px';
+    }
+
+  }
+
+  /** Adds a hint indication to the provided element and returns it. */
+  export function addHintIndicator(el: HTMLElement, clickToClose:boolean = true, autoClose?:number): HTMLElement {
+    const id = Math.floor(Math.random()*1000);
+    const hintIndicator = document.createElement('div');
+    hintIndicator.className = 'ui-hint-blob';
+    
+    hintIndicator.setAttribute('data-target','hint-target-'+id);
+    el.setAttribute('data-target','hint-target-'+id);
+
+    el.classList.add('ui-hint-target');
+    $('body').append(hintIndicator);
+
+    const indicatorNode = el.getBoundingClientRect();
+    hintIndicator.style.position = 'fixed';
+    hintIndicator.style.zIndex = '4000';
+    hintIndicator.style.left = indicatorNode.left+'px';
+    hintIndicator.style.top = indicatorNode.top+'px';
+    
+    if (clickToClose){
+      $(el).on('click', ()=>{
+        remove(el);
+      });
+    }
+
+    if (autoClose!>0){
+      setTimeout(() => remove(el), autoClose);
+    }
     return el;
   }
 
@@ -1510,8 +1553,8 @@ export namespace hints {
 
   /** Removes the hint indication from the provided element and returns it. */
   export function remove(el?: HTMLElement): HTMLElement | null {
-    $(el).find('div.ui-hint-blob')[0]?.remove();
-    $(el).find('i.fa-times')[0]?.remove();
+    const id = el?.getAttribute('data-target');
+    $(`div.ui-hint-blob[data-target="${id}"]`)[0]?.remove();
     el?.classList.remove('ui-hint-target', 'ui-text-hint-target');
     $('div.ui-hint-overlay')?.remove();
     return el ?? null;
