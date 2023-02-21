@@ -224,15 +224,11 @@ export class FitCellRenderer extends DG.GridCellRenderer {
   //     ui.tooltip.hide();
   // }
 
-  render(
-    g: CanvasRenderingContext2D,
-    x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
-  ) {
-    const df = gridCell.grid.dataFrame;
-    if (w < 20 || h < 10 || df === void 0) return;
+  onClick(gridCell: DG.GridCell, e: MouseEvent): void {
+    console.log(`click coordinates: x = ${e.offsetX}, y = ${e.offsetY}`);
 
-    const filteredIndexes = df.filter.getSelectedIndexes();
+    const df = gridCell.grid.dataFrame;
+
     const column = df.columns.toList().filter((c) => c.type === DG.COLUMN_TYPE.DATA_FRAME)![0];
     const currentDfValue = DG.toJs(column.get(gridCell.cell.row.idx)) as DG.DataFrame;
     if (!currentDfValue) return;
@@ -242,21 +238,67 @@ export class FitCellRenderer extends DG.GridCellRenderer {
     coordinates.x = columns[0].toList();
     coordinates.y = columns[1].toList();
 
-    const minY = columns[1].min;
-    const maxY = columns[1].max;
-    const medY = columns[1].stats.med;
-    let xAtMedY = -1;
-    for (let i = 0; i < coordinates.y.length; i++) {
-      if (coordinates.y[i] === medY) {
-        xAtMedY = coordinates.x[i];
-        break;
-      }
+    // this to call rerendering??
+    const updatedWidth = 160;
+    gridCell.gridColumn.width = updatedWidth;
+
+    const canvasCoordinates = scaleCoordinates(coordinates, gridCell.bounds.width, gridCell.bounds.height);
+
+    const markerPxSize = 6;
+    for (let i = 0; i < canvasCoordinates.x.length; i++) {
+      const markerCenterX = gridCell.bounds.x + canvasCoordinates.x[i];
+      const markerCenterY = (gridCell.bounds.y + gridCell.bounds.height) - canvasCoordinates.y[i];
+      if (e.offsetX > markerCenterX - (markerPxSize / 2) && e.offsetX < markerCenterX + (markerPxSize / 2) &&
+        e.offsetY > markerCenterY - (markerPxSize / 2) && e.offsetY < markerCenterY + (markerPxSize / 2))
+        currentDfValue.filter.set(i, !(currentDfValue.filter.get(i)));
     }
+  }
+
+  render(
+    g: CanvasRenderingContext2D,
+    x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
+  ) {
+    const df = gridCell.grid.dataFrame;
+
+    if (w < 20 || h < 10 || df === void 0) return;
+
+    const column = df.columns.toList().filter((c) => c.type === DG.COLUMN_TYPE.DATA_FRAME)![0];
+    const currentDfValue = DG.toJs(column.get(gridCell.cell.row.idx)) as DG.DataFrame;
+    const filteredIndexes = currentDfValue.filter.getSelectedIndexes();
+    if (!currentDfValue) return;
+
+    const columns = currentDfValue.columns.byNames(['x', 'y']);
+    const coordinates: {x: number[], y: number[]} = {x: [], y: []};
+    coordinates.x = columns[0].toList();
+    coordinates.y = columns[1].toList();
 
     const updatedWidth = 160;
     gridCell.gridColumn.width = updatedWidth;
 
-    const canvasCoordinates = scaleCoordinates(coordinates, updatedWidth, h);
+    const canvasPointCoordinates = scaleCoordinates(coordinates, updatedWidth, h);
+
+    const filteredDf = currentDfValue
+      .groupBy(['x', 'y'])
+      .whereRowMask(currentDfValue.filter)
+      .aggregate();
+
+    const filteredColumns = filteredDf.columns.byNames(['x', 'y']);
+    const filteredCoordinates: {x: number[], y: number[]} = {x: [], y: []};
+    filteredCoordinates.x = filteredColumns[0].toList();
+    filteredCoordinates.y = filteredColumns[1].toList();
+
+    const minY = filteredColumns[1].min;
+    const maxY = filteredColumns[1].max;
+    const medY = filteredColumns[1].stats.med;
+    let xAtMedY = -1;
+    for (let i = 0; i < filteredCoordinates.y.length; i++) {
+      if (filteredCoordinates.y[i] === medY) {
+        xAtMedY = filteredCoordinates.x[i];
+        break;
+      }
+    }
+
 
     // randomize dataframe columns with x and y (grok.data.demo.fit()?)
     // set x like this higher (fixed)
@@ -266,39 +308,39 @@ export class FitCellRenderer extends DG.GridCellRenderer {
     // set bigger size for renderer (width height of cell ~ 200x100 and a little demo) !!!!
 
 
-    // make outlayers switch (below)!
+    // make outliers switch (below)!
     // TODO: add filtering bitset for points (if clicked for example)
     // on click turn off the point (change bitset on false) - change it to cross (DG.MARKER_TYPE??)
     // second click returns it
 
     const params = [maxY, 1.2, xAtMedY, minY];
-    const fitRes = fit(coordinates, params, sigmoid, FitErrorModel.Constant);
+    const fitRes = fit(filteredCoordinates, params, sigmoid, FitErrorModel.Constant);
 
     const fitCoordinates: {x: number[], y: number[]} = {x: [], y: []};
-    for (let i = 0; i < coordinates.x.length; i++) {
-      fitCoordinates.x[i] = coordinates.x[i];
+    for (let i = 0; i < filteredCoordinates.x.length; i++) {
+      fitCoordinates.x[i] = filteredCoordinates.x[i];
       fitCoordinates.y[i] = fitRes.fittedCurve(fitCoordinates.x[i]);
     }
 
-    const cavnasFitCoordinates = scaleCoordinates(fitCoordinates, updatedWidth, h);
+    const canvasFitCoordinates = scaleCoordinates(fitCoordinates, updatedWidth, h);
 
     g.strokeStyle = 'black';
 
     // let index = 0;
     g.beginPath();
-    g.moveTo(x + cavnasFitCoordinates.x[0], (y + h) - cavnasFitCoordinates.y[0]);
-    for (let i = 1; i < cavnasFitCoordinates.x.length; i++)
-      g.lineTo(x + cavnasFitCoordinates.x[i], (y + h) - cavnasFitCoordinates.y[i]);
+    g.moveTo(x + canvasFitCoordinates.x[0], (y + h) - canvasFitCoordinates.y[0]);
+    for (let i = 1; i < canvasFitCoordinates.x.length; i++)
+      g.lineTo(x + canvasFitCoordinates.x[i], (y + h) - canvasFitCoordinates.y[i]);
     g.stroke();
 
-    for (let i = 0; i < canvasCoordinates.x.length; i++) {
+    for (let i = 0; i < canvasPointCoordinates.x.length; i++) {
       const color = DG.Color.scatterPlotMarker;
       if (filteredIndexes.includes(i)) {
-        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, x + canvasCoordinates.x[i], (y + h) - canvasCoordinates.y[i],
-          color, 4);
+        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, x + canvasPointCoordinates.x[i],
+          (y + h) - canvasPointCoordinates.y[i], color, 4);
       } else {
-        DG.Paint.marker(g, DG.MARKER_TYPE.OUTLIER, x + canvasCoordinates.x[i], (y + h) - canvasCoordinates.y[i],
-          color, 7);
+        DG.Paint.marker(g, DG.MARKER_TYPE.OUTLIER, x + canvasPointCoordinates.x[i],
+          (y + h) - canvasPointCoordinates.y[i], color, 6);
       }
     }
   }
