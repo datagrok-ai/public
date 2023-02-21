@@ -102,8 +102,12 @@ export async function sequenceTooltip(col: DG.Column): Promise<DG.Widget<any>> {
   const tv = grok.shell.tv;
   let viewer = await tv.dataFrame.plot.fromType('WebLogo', {
     sequenceColumnName: col.name,
-    backgroundColor: 0xFFfdffe5
+    backgroundColor: 0xFFfdffe5,
+    fitArea: false,
+    positionHeight: 'Entropy',
+    fixWidth: true
   });
+  viewer.root.style.height = '50px';
   return viewer;
 }
 
