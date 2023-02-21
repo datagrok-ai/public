@@ -1,0 +1,4 @@
+id,first_name,last_name,email,gender,ip_address,bool,country,date,some_number
+6,Jeromy,Twinn,jtwinn5@globo.com,Male,25.13.2.132/32,t,Serbia,2014-10-04,378.40
+23,Waly,Rogliero,wroglierom@berkeley.edu,Female,122.90.196.231/32,t,Sweden,2011-12-18,147.69
+25,Zolly,Wimmers,zwimmerso@hatena.ne.jp,Male,123.12.225.114/32,f,Bosnia and Herzegovina,2003-02-12,217.18
