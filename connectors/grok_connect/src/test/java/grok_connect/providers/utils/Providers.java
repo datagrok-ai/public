@@ -2,12 +2,28 @@ package grok_connect.providers.utils;
 
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.JdbcDatabaseContainer;
+import org.testcontainers.containers.OracleContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 /**
  * Enum that contains all necessary data related to specific provider and it's container
  */
 public enum Providers {
+    ORACLE("Oracle", "gvenzl/oracle-xe:21-slim-faststart",
+            "datagrok", "datagrok", "datagrok", "") {
+        @Override
+        protected JdbcDatabaseContainer<?> newJdbcContainer() {
+            if (this.container == null) {
+                container = new OracleContainer(getDefaultImage())
+                        .withDatabaseName(getDatabase())
+                        .withUsername(getDefaultUser())
+                        .withPassword(getDefaultPassword())
+                        .withInitScript("scripts/oracle/oracle_basic_data.sql");
+                container.start();
+            }
+            return container;
+        }
+    },
     POSTGRESQL("Postgres", "postgres:12-alpine",
             "datagrok", "postgres", "postgres",
             "scripts/postgres/file.txt") {
