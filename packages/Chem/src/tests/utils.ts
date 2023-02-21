@@ -51,7 +51,7 @@ export async function _testSearchSubstructureSARSmall(): Promise<void> {
 
   const df = DG.DataFrame.fromCsv(file);
   const col = df.columns.byIndex(0);
-  const bitset: DG.BitSet = (await searchSubstructure(col, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1', '')).get(0);
+  const bitset: DG.BitSet = (await searchSubstructure(col, 'O=C1CN=C(C2CCCCC2)c2ccccc2N1', '')).get(0);
   const countDataframe = col.length;
   const countResult = bitset.trueCount;
   expect(countDataframe, 200);
