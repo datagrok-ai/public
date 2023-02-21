@@ -136,7 +136,7 @@ jobs:
         run: |
           commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
-          grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key' packages/${{ matrix.package }}/package.json)"
+          grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key' packages/${{ matrix.package }}/package.json | grep '@datagrok/')"
           profiles='--profile datagrok --profile db --profile grok_spawner'
           if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "simpkpd" ]] || \
@@ -199,13 +199,10 @@ jobs:
         if: ${{ matrix.test == 'true' }}
         run: |
           grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key' package.json | grep '@datagrok/')"
-          npm install
           if [ -n "$grok_deps" ]; then
             for dep in $grok_deps; do
               current_dir=$(pwd)
               cd node_modules/$dep
-              npm install
-              npm run build
               count=0
               retries=5
               until grok publish ${HOST}; do
