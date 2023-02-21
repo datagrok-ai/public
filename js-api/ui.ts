@@ -1422,18 +1422,6 @@ export namespace hints {
   export function addHint(el: HTMLElement, content: HTMLElement, position:string = 'right'){
     const root = document.createElement('div');
     root.className = 'ui-hint-popup';
-    root.style.cssText = `
-      display: block;
-      padding:12px;
-      background: white;
-      border-radius: 3px;
-      box-shadow: 0px 1px 3px var(--grey-3);
-      border-top: 1px solid var(--grey-1);
-      position: fixed;
-      z-index: 4000;
-      width: 150px;
-      max-width: 300px;
-    `;
     
     const closeBtn = iconFA('times',()=>root.remove());
     closeBtn.style.cssText = `
@@ -1453,6 +1441,7 @@ export namespace hints {
       const right = node.right+8;
       root.style.left = right+'px';
       root.style.top = node.top+'px';
+      root.classList.add('ui-hint-popup-right');
     }
 
     if (position == 'left'){
@@ -1461,6 +1450,7 @@ export namespace hints {
         left = 0;
       root.style.left = left+'px';
       root.style.top = node.top+'px';
+      root.classList.add('ui-hint-popup-left');
     }
 
     if (position == 'top'){
@@ -1469,6 +1459,7 @@ export namespace hints {
         top = 0 
       root.style.left = node.left+'px';
       root.style.top = top+'px';
+      root.classList.add('ui-hint-popup-top');
     }
 
     if (position == 'bottom'){
@@ -1477,6 +1468,7 @@ export namespace hints {
         bottom = screen.height;
       root.style.left = node.left+'px';
       root.style.top = bottom+'px';
+      root.classList.add('ui-hint-popup-bottom');
     }
 
   }
