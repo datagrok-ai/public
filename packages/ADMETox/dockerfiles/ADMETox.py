@@ -287,24 +287,24 @@ def model_computation(model):
     predicts = []
     if model == 'logP':
         predicts = flatten(get_descriptor_vector(smiles_global, dict_bits_desc[model]))
-        break
-    current_path = os.path.split(os.path.realpath(__file__))[0]
-    res = [key for key in dict_bits_desc.keys() if model in key]
-    cf = sklearn.externals.joblib.load(current_path + '/' + res[0] + '.pkl')
-    fingerprint_content = lambda bits: Maccs if bits == 167 \
+    else:
+        current_path = os.path.split(os.path.realpath(__file__))[0]
+        res = [key for key in dict_bits_desc.keys() if model in key]
+        cf = sklearn.externals.joblib.load(current_path + '/' + res[0] + '.pkl')
+        fingerprint_content = lambda bits: Maccs if bits == 167 \
         else (Ecfp2 if bits == 2048 \
         else (Ecfp4 if bits == 1024 \
         else get_descriptor_vector(smiles_global, dict_bits_desc[res[0]])))
-    des_list = np.array(fingerprint_content(dict_bits_desc[res[0]]))
-    y_predict_label = cf.predict(des_list)
-    try:
-        y_predict_proba = cf.predict_proba(des_list)
-        for i in range(len(smiles_global)):
-            predict = y_predict_proba[i]
-            predicts.append(predict[1])
-    except:
-        for i in range(len(smiles_global)):
-            predicts.append(y_predict_label[i])
+        des_list = np.array(fingerprint_content(dict_bits_desc[res[0]]))
+        y_predict_label = cf.predict(des_list)
+        try:
+            y_predict_proba = cf.predict_proba(des_list)
+            for i in range(len(smiles_global)):
+                predict = y_predict_proba[i]
+                predicts.append(predict[1])
+        except:
+            for i in range(len(smiles_global)):
+                predicts.append(y_predict_label[i])
     return predicts
 
 def handle_uploaded_file(f, models):

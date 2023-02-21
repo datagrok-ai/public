@@ -20,23 +20,26 @@ export function admetWidget(smiles: string): DG.Widget<any> {
   return getModelsSingle(smiles);
 }
 
+//top-menu: Chem | Analyze Structure | ADME/Tox...
 //name: ADME/Tox...
-//input: column col {semType: Molecule}
-export async function admetoxCalculators(col: DG.Column) {
-  let table = col.dataFrame;
-  addPredictions(col, table).then(() => {
-    table.onCurrentColChanged.subscribe((_) => {
-      let column = table.currentCol;
-      table.onMetadataChanged.subscribe((_) => {
-        if (column.colors.getType() === 'Conditional') {
-          column.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"0-0.5":"#f1b6b4","0.5-1":"#b4f1bc"}`;
-        }
-        if (column.colors.getType() === 'Linear') {
-          column.tags[DG.TAGS.COLOR_CODING_LINEAR] = `["#f1b6b4", "#b4f1bc"]`;
-        }
+export async function admetoxCalculators() {
+  let table = grok.shell.tv.dataFrame;
+  let col = table.columns.bySemType(DG.SEMTYPE.MOLECULE);
+  if (col) {
+    addPredictions(col, table).then(() => {
+      table.onCurrentColChanged.subscribe((_) => {
+        let column = table.currentCol;
+        table.onMetadataChanged.subscribe((_) => {
+          if (column.colors.getType() === 'Conditional') {
+            column.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"0-0.5":"#f1b6b4","0.5-1":"#b4f1bc"}`;
+          }
+          if (column.colors.getType() === 'Linear') {
+            column.tags[DG.TAGS.COLOR_CODING_LINEAR] = `["#f1b6b4", "#b4f1bc"]`;
+          }
+        })
       })
-    })
-  });
+    });
+  }
 }
 
 //name: testDocker
