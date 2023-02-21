@@ -421,19 +421,19 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
 
   const colInput = ui.columnInput('Sequence', table, seqCol, () => {
     const potentialCol = colInput.value;
-    const unUsedName = table.columns.getUnusedName(`msa(${potentialCol.name})`);
+    const unusedName = table.columns.getUnusedName(`msa(${potentialCol.name})`);
   
     if (checkInputColumnUi(
       potentialCol, potentialCol.name, [NOTATION.FASTA], [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT], false)) {
       for (const inputRootStyle of inputRootStyles)
         inputRootStyle.display = 'none';
 
-      performAlignment = () => runKalign(potentialCol, false, unUsedName, clustersColInput.value);
+      performAlignment = () => runKalign(potentialCol, false, unusedName, clustersColInput.value);
     } else if (checkInputColumnUi(potentialCol, potentialCol.name, [NOTATION.HELM], [], false)) {
       for (const inputRootStyle of inputRootStyles)
         inputRootStyle.display = 'initial';
 
-      performAlignment = () => runPepsea(potentialCol, unUsedName, methodInput.value!, gapOpenInput.value!,
+      performAlignment = () => runPepsea(potentialCol, unusedName, methodInput.value!, gapOpenInput.value!,
         gapExtendInput.value!, clustersColInput.value);
     } else {
       for (const inputRootStyle of inputRootStyles)

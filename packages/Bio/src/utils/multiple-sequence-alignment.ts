@@ -1,17 +1,14 @@
 /* Do not change these import lines to match external modules in webpack configuration */
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-//@ts-ignore
+//@ts-ignore: there are no types for this library
 import Aioli from '@biowasm/aioli';
 
 import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-
-type KalignBodyUnit = {};
+const fastaInputFilename = 'input.fa';
+const fastaOutputFilename = 'result.fasta';
 
 /**
  * Converts array of sequences into simple fasta string.
@@ -36,7 +33,7 @@ export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = 
   let sequences: string[] = srcCol.toList();
 
   if (isAligned)
-    sequences = sequences.map((v: string, _) => AlignedSequenceEncoder.clean(v).replace(/\-/g, ''));
+    sequences = sequences.map((v: string) => AlignedSequenceEncoder.clean(v).replace(/\-/g, ''));
 
   const sequencesLength = srcCol.length;
   clustersCol ??= DG.Column.string('Clusters', sequencesLength).init('0');
@@ -44,6 +41,7 @@ export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = 
     clustersCol = clustersCol.convertTo(DG.TYPE.STRING);
   clustersCol.compact();
   
+  //TODO: use fixed-size inner arrays, but first need to expose the method to get each category count
   const clustersColCategories = clustersCol.categories;
   const clustersColData = clustersCol.getRawData();
   const fastaSequences: string[][] = new Array(clustersColCategories.length);
@@ -66,11 +64,11 @@ export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = 
     
     console.log(['fasta.length =', fasta.length]);
 
-    await CLI.fs.writeFile('input.fa', fasta);
-    const output = await CLI.exec('kalign input.fa -f fasta -o result.fasta');
+    await CLI.fs.writeFile(fastaInputFilename, fasta);
+    const output = await CLI.exec(`kalign ${fastaInputFilename} -f fasta -o ${fastaOutputFilename}`);
     console.warn(output);
 
-    const buf = await CLI.cat('result.fasta');
+    const buf = await CLI.cat(fastaOutputFilename);
     if (!buf)
       throw new Error(`kalign output no result`);
 
