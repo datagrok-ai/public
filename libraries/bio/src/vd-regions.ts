@@ -45,5 +45,5 @@ export class VdRegion {
 export interface IVdRegionsViewer extends IViewer {
   init(): Promise<void>;
 
-  setData(mlbDf: DG.DataFrame, regions: VdRegion[]): Promise<void>;
+  setData(mlbDf: DG.DataFrame, regions: VdRegion[]): void;
 }
