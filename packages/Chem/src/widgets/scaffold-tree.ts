@@ -763,7 +763,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (checkedNodes.length === 1) {
       const molStr = value(checkedNodes[0]).smiles;
       if(molStr !== undefined) {
-        const molFile = aromatizeMolBlock(molStr);
+        const molFile = aromatizeMolBlock(molStr, _rdKitModule);
         this.molColumn.temp['chem-scaffold-filter'] = molFile;
       }
     } else delete this.molColumn.temp['chem-scaffold-filter'];
