@@ -42,7 +42,7 @@
     "common/openchemlib-full.js"
   ],
   "dependencies": {
-    "datagrok-api": "^1.13.0",
+    "datagrok-api": "^1.13.2",
     "@datagrok-libraries/chem-meta": "^1.0.3",
     "@datagrok-libraries/ml": "^6.3.11",
     "@datagrok-libraries/utils": "^1.19.3",
