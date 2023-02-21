@@ -165,7 +165,7 @@ category('cell panel', async () => {
 
   test('gasteiger-partion-charges', async () => {
     const parameters = {mol: molStr, contours: 10};
-    await grok.functions.call('Chem:GasteigerPartialCharges', parameters);
+    await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', parameters);
   });
 
   //TODO: Compare the calculated values
