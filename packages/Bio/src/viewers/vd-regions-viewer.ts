@@ -106,7 +106,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
 
   public override async onTableAttached() {
     const superOnTableAttached = super.onTableAttached.bind(this);
-    this.viewPromise = this.viewPromise.then(async () => {
+    this.viewPromise = this.viewPromise.then(async () => { // onTableAttached
       superOnTableAttached();
       if (!this.viewed) {
         await this.buildView('onTableAttached'); // onTableAttached
@@ -145,10 +145,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     case 'skipEmptyPositions':
     case 'positionWidth':
     case 'positionHeight':
-      window.setTimeout(
-        async () => {
-          await this.setData(this.dataFrame, this.regions);
-        }, 0 /* next event cycle */);
+      this.setData(this.dataFrame, this.regions); // onPropertyChanged
       break;
     }
   }
@@ -156,9 +153,9 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   // -- Data --
 
   // TODO: .onTableAttached is not calling on dataFrame set, onPropertyChanged  also not calling
-  public async setData(mlbDf: DG.DataFrame, regions: VdRegion[]) {
+  public setData(mlbDf: DG.DataFrame, regions: VdRegion[]) {
     console.debug('Bio: VdRegionsViewer.setData()');
-    this.viewPromise = this.viewPromise.then(async () => {
+    this.viewPromise = this.viewPromise.then(async () => { // setData
       if (this.viewed) {
         await this.destroyView('setData'); // setData
         this.viewed = false;
@@ -166,9 +163,9 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     });
 
     this.regions = regions;
-    this.dataFrame = mlbDf;
+    this.dataFrame = mlbDf; // causes detach and onTableAttached
 
-    this.viewPromise = this.viewPromise.then(async () => {
+    this.viewPromise = this.viewPromise.then(async () => { // setData
       if (!this.viewed) {
         await this.buildView('setData'); // setData
         this.viewed = true;
@@ -178,14 +175,7 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
 
   override detach() {
     const superDetach = super.detach.bind(this);
-    // window.setTimeout(async () => {
-    //   if (this.viewed) {
-    //     await this.destroyView('detach'); // detach
-    //     this.viewed = false;
-    //   }
-    //   superDetach();
-    // }, 0 /* next event cycle */);
-    this.viewPromise = this.viewPromise.then(async () => {
+    this.viewPromise = this.viewPromise.then(async () => { // detach
       if (this.viewed) {
         await this.destroyView('detach'); // detach
         this.viewed = false;
