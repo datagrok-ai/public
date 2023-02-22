@@ -1,60 +1,60 @@
 --name: PostgresqlArrayType
 --connection: PostgreSQLApiTests
---test: ApiTests:compareTables(PostgresqlArrayType(), ApiTests:getTable('postgres_output_array.csv', path='ApiTests/datasets/tests'))
+--test: ApiTests:compareTables(PostgresqlArrayType(), OpenFile('System:AppData/ApiTests/datasets/tests/postgres_output_array.csv'))
 SELECT * FROM sal_emp;
 --end
 
 --name: PostgresqlBitString1
 --connection: PostgreSQLApiTests
---test: ApiTests:compareTables(PostgresqlBitString1(), ApiTests:getTable('postgres_output_bitstring_1.csv', path='ApiTests/datasets/tests'))
+--test: ApiTests:compareTables(PostgresqlBitString1(), OpenFile('System:AppData/ApiTests/datasets/tests/postgres_output_bitstring_1.csv'))
 SELECT * FROM test1;
 --end
 
 --name: PostgresqlBitString2
 --connection: PostgreSQLApiTests
---test: ApiTests:compareTables(PostgresqlBitString2(), ApiTests:getTable('postgres_output_bitstring_2.csv', path='ApiTests/datasets/tests'))
+--test: ApiTests:compareTables(PostgresqlBitString2(), OpenFile('System:AppData/ApiTests/datasets/tests/postgres_output_bitstring_2.csv'))
 SELECT * FROM test2;
 --end
 
 --name: PostgresqlComposite
 --connection: PostgreSQLApiTests
---test: ApiTests:compareTables(PostgresqlComposite(), ApiTests:getTable('postgres_output_composite.csv', path='ApiTests/datasets/tests'))
+--test: ApiTests:compareTables(PostgresqlComposite(), OpenFile('System:AppData/ApiTests/datasets/tests/postgres_output_composite.csv'))
 SELECT * FROM on_hand;
 --end
 
 --name: PostgresqlDates
 --connection: PostgreSQLApiTests
---test: ApiTests:compareTables(PostgresqlDates(), ApiTests:getTable('postgres_output_dates.csv', path='ApiTests/datasets/tests'))
+--test: ApiTests:compareTables(PostgresqlDates(), OpenFile('System:AppData/ApiTests/datasets/tests/postgres_output_dates.csv'))
 SELECT * FROM dates;
 --end
 
 --name: PostgresqlJSONB
 --connection: PostgreSQLApiTests
---test: ApiTests:compareTables(PostgresqlJSONB(), ApiTests:getTable('postgres_output_jsonb.csv', path='ApiTests/datasets/tests'))
+--test: ApiTests:compareTables(PostgresqlJSONB(), OpenFile('System:AppData/ApiTests/datasets/tests/postgres_output_jsonb.csv'))
 SELECT * FROM jsonb_data;
 --end
 
 --name: PostgresqlNumeric
 --connection: PostgreSQLApiTests
---test: ApiTests:compareTables(PostgresqlNumeric(), ApiTests:getTable('postgres_output_numeric.csv', path='ApiTests/datasets/tests'))
+--test: ApiTests:compareTables(PostgresqlNumeric(), OpenFile('System:AppData/ApiTests/datasets/tests/postgres_output_numeric.csv'))
 SELECT * FROM numeric_data;
 --end
 
 --name: PostgresqlDouble
 --connection: PostgreSQLApiTests
---test: ApiTests:compareTables(PostgresqlDouble(), ApiTests:getTable('postgres_output_doubles.csv', path='ApiTests/datasets/tests'))
+--test: ApiTests:compareTables(PostgresqlDouble(), OpenFile('System:AppData/ApiTests/datasets/tests/postgres_output_doubles.csv'))
 SELECT * FROM doubles;
 --end
 
 --name: PostgresqlReal
 --connection: PostgreSQLApiTests
---test: ApiTests:compareTables(PostgresqlReal(), ApiTests:getTable('postgres_output_real.csv', path='ApiTests/datasets/tests'))
+--test: ApiTests:compareTables(PostgresqlReal(), OpenFile('System:AppData/ApiTests/datasets/tests/postgres_output_real.csv'))
 SELECT * FROM reals;
 --end
 
 --name: PostgresqlBigInt
 --connection: PostgreSQLApiTests
---test: ApiTests:compareTables(PostgresqlBigInt(), ApiTests:getTable('postgres_output_bigint.csv', path='ApiTests/datasets/tests'))
+--test: ApiTests:compareTables(PostgresqlBigInt(), OpenFile('System:AppData/ApiTests/datasets/tests/postgres_output_bigint.csv'))
 SELECT * FROM bigint_data;
 --end
 
@@ -72,30 +72,30 @@ SELECT * FROM numeric_data_precision_scale;
 
 --name: PostgresqlSmallSerial
 --connection: PostgreSQLApiTests
---test: ApiTests:compareTables(PostgresqlSmallSerial(), ApiTests:getTable('postgres_output_serial.csv', path='ApiTests/datasets/tests'))
+--test: ApiTests:compareTables(PostgresqlSmallSerial(), OpenFile('System:AppData/ApiTests/datasets/tests/postgres_output_serial.csv'))
 SELECT * FROM cars_small;
 --end
 
 --name: PostgresqlSerial
 --connection: PostgreSQLApiTests
---test: ApiTests:compareTables(PostgresqlSerial(), ApiTests:getTable('postgres_output_serial.csv', path='ApiTests/datasets/tests'))
+--test: ApiTests:compareTables(PostgresqlSerial(), OpenFile('System:AppData/ApiTests/datasets/tests/postgres_output_serial.csv'))
 SELECT * FROM cars;
 --end
 
 --name: PostgresqlBigSerial
 --connection: PostgreSQLApiTests
---test: ApiTests:compareTables(PostgresqlBigSerial(), ApiTests:getTable('postgres_output_serial.csv', path='ApiTests/datasets/tests'))
+--test: ApiTests:compareTables(PostgresqlBigSerial(), OpenFile('System:AppData/ApiTests/datasets/tests/postgres_output_serial.csv'))
 SELECT * FROM cars_big;
 --end
 
 --name: PostgresqlUUID
 --connection: PostgreSQLApiTests
---test: ApiTests:compareTables(PostgresqlUUID(), ApiTests:getTable('postgres_output_uuid.csv', path='ApiTests/datasets/tests'))
+--test: ApiTests:compareTables(PostgresqlUUID(), OpenFile('System:AppData/ApiTests/datasets/tests/postgres_output_uuid.csv'))
 SELECT * FROM uuid_data;
 --end
 
 --name: PostgresqlXML
 --connection: PostgreSQLApiTests
---test: ApiTests:compareTables(PostgresqlXML(), ApiTests:getTable('postgres_output_xml.csv', path='ApiTests/datasets/tests'))
+--test: ApiTests:compareTables(PostgresqlXML(), OpenFile('System:AppData/ApiTests/datasets/tests/postgres_output_xml.csv'))
 SELECT * FROM xml_data;
 --end
