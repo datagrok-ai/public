@@ -150,7 +150,7 @@ jobs:
             profiles+=' --profile scripting'
           fi
           if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]]; then
             echo "Add Grok Compute as dependency for package ${{ matrix.package }}"
             profiles+=' --profile grok_compute'
           fi
