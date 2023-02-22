@@ -100,11 +100,26 @@ public class OracleDataProvider extends JdbcDataProvider {
         // The absence of precision and scale designators specifies the maximum range and precision for an Oracle number.
         // We shall ignore the case where type == java.sql.Types. ... value is identified incorrectly
         if (isOracleFloatNumber(typeName, precision, scale)) return false;
-        return super.isInteger(type, typeName, precision, scale);
+        return typeName.equalsIgnoreCase("number") && precision < 10 && scale == 0;
     }
 
     @Override
     protected boolean isFloat(int type, String typeName, int precision, int scale) {
         return super.isFloat(type, typeName, precision, scale) || isOracleFloatNumber(typeName, precision, scale);
+    }
+
+    @Override
+    protected boolean isDecimal(int type, String typeName, int scale) {
+        return typeName.equalsIgnoreCase("number") && scale > 0;
+    }
+
+    @Override
+    protected boolean isBigInt(int type, String typeName, int precision, int scale) {
+        return typeName.equalsIgnoreCase("number") && precision > 10 && scale == 0;
+    }
+
+    @Override
+    protected String getRegexQuery(String columnName, String regexExpression) {
+        return String.format("REGEXP_LIKE (%s, '%s', 'i')", columnName, regexExpression);
     }
 }

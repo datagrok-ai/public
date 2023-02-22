@@ -2,18 +2,14 @@ package grok_connect.providers;
 
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.providers.utils.Providers;
-import grok_connect.providers.utils.Sql;
-import grok_connect.providers.utils.SqlScriptRunner;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import serialization.DataFrame;
 
-@ExtendWith(SqlScriptRunner.class)
 class OracleDataProviderTest extends ProviderBaseTest {
 
     protected OracleDataProviderTest() {

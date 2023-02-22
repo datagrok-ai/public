@@ -90,4 +90,9 @@ public class PostgresDataProvider extends JdbcDataProvider {
     protected boolean isFloat(int type, String typeName, int precision, int scale) {
         return super.isFloat(type, typeName, precision, scale) || isPostgresNumeric(typeName);
     }
+
+    @Override
+    protected String getRegexQuery(String columnName, String regexExpression) {
+        return String.format("%s ~ %s", columnName, regexExpression);
+    }
 }
