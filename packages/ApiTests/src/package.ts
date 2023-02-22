@@ -20,6 +20,8 @@ export function testViewerForProperties() {
 //shortName: expectTable
 //input: dataframe actual
 //input: dataframe expected
-export function expectTable(actual: DG.DataFrame, expected: DG.DataFrame): void {
+//output: bool result
+export function expectTable(actual: DG.DataFrame, expected: DG.DataFrame): boolean {
   _expectTable(actual, expected);
+  return true;
 }
