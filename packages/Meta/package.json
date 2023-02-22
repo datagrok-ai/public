@@ -2248,17 +2248,6 @@
         "directory": "packages/ChemDraw"
       }
     },
-    "gridextdemo": {
-      "dependencies": {
-        "1.0.0": {}
-      },
-      "description": "Demos of Grid Extensions",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/gridextdemo"
-      }
-    },
     "molecular-liability-browser": {
       "dependencies": {
         "1.3.8": {
