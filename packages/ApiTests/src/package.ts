@@ -4,6 +4,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {TestViewerForProperties} from './viewers/test-viewer-for-properties';
+import {expect, expectFloat} from "@datagrok-libraries/utils/src/test";
+import {TYPE} from "datagrok-api/dg";
 // import {hashDataFrame} from '@datagrok-libraries/utils/src/dataframe-utils';
 
 
@@ -31,8 +33,35 @@ export async function getTable(name: string, path: string): Promise<DG.DataFrame
 //input: dataframe expected
 //output: bool result
 export function compareTables(actual: DG.DataFrame, expected: DG.DataFrame): boolean {
-  const result = actual.toCsv() === expected.toCsv();
-  return result;
+
+  const expectedRowCount = expected.rowCount;
+  const actualRowCount = actual.rowCount;
+  if (expectedRowCount != actualRowCount)
+    throw `Row count expected ${expectedRowCount}, got ${actualRowCount}`;
+
+  for (const column of expected.columns) {
+    const actualColumn = actual.columns.byName(column.name);
+    if (actualColumn == null)
+      throw `Column ${column.name} not found`;
+    if (actualColumn.type != column.type)
+      throw `Column ${column.name} type expected ${column.type} got ${actualColumn.type}`;
+    for (let i = 0; i < expectedRowCount; i++) {
+      const value = column.get(i);
+      const actualValue = actualColumn.get(i);
+      try {
+        if (column.type == TYPE.FLOAT || column.type == TYPE.INT)
+          expectFloat(actualValue, value);
+        else
+          expect(actualValue, value);
+      } catch (x) {
+        console.log(column.name, column.type);
+        console.log(actualColumn.name, actualColumn.type);
+        throw x;
+      }
+    }
+  }
+
+  return true;
   /*
   let result: boolean = true;
   const uint8ArrayActual = hashDataFrame(actual);
