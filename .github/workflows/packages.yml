@@ -149,7 +149,7 @@ jobs:
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"simpkpd"* ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"dendrogram"* ]]; then
             echo "Add CVM as dependency for package ${{ matrix.package }}"
-            profiles+=' --profile cvm'
+            profiles+=' --profile scripting --profile grok_compute'
           fi
           echo "Run datagrok stand with profiles ${profiles}"
           docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
