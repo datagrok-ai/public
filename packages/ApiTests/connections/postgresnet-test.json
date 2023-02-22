@@ -14,6 +14,5 @@
     }
   },
   "dataSource": "Postgres",
-  "description": "Northwind test database",
-  "tags": ["demo"]
+  "description": "Northwind test database"
 }
