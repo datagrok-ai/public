@@ -1,3 +1,3 @@
 id,first_name,last_name,email,gender,ip_address,bool,country,date,some_number
-10,Scottie,Formilli,sformilli9@aol.com,Male,101.241.191.228/32,f,Vietnam,2003-01-04,978.01
-26,Daryle,O'Shaughnessy,doshaughnessyp@com.com,Male,204.107.16.207/32,f,Honduras,2010-05-04,983.03
+10,Scottie,Formilli,sformilli9@aol.com,Male,101.241.191.228/32,false,Vietnam,2003-01-04,978.01
+26,Daryle,O'Shaughnessy,doshaughnessyp@com.com,Male,204.107.16.207/32,false,Honduras,2010-05-04,983.03
