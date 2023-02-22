@@ -19,6 +19,6 @@ export function testViewerForProperties() {
 //name: expectTable
 //input: dataframe actual
 //input: dataframe expected
-export function compareTables(actual: DG.DataFrame, expected: DG.DataFrame): void {
+export function expectTable(actual: DG.DataFrame, expected: DG.DataFrame): void {
   expectTable(actual, expected);
 }
