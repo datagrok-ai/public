@@ -2,6 +2,19 @@
 title: "Release History"
 ---
 
+## 2023-02-22 1.13.3
+
+### Stable Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.13.3`
+* [Docker-Compose](https://datagrok.ai/help/develop/admin/docker-compose)
+
+### Addressed Issues
+
+* (Bug) Connecting to local file storage results in error (WIP)
+
+
 ## 2023-02-21 1.13.2
 
 ### Stable Docker Images
