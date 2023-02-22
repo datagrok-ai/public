@@ -136,8 +136,10 @@ jobs:
         run: |
           commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
+          echo "Find grok dependencies packages"
           grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key' packages/${{ matrix.package }}/package.json | grep '@datagrok/')"
           profiles='--profile datagrok --profile db --profile grok_spawner'
+          echo "Check if CVM is required for the package"
           if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "simpkpd" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "dendrogram" ]] || \
@@ -146,12 +148,15 @@ jobs:
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chembl"* ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"simpkpd"* ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"dendrogram"* ]]; then
+            echo "Add CVM as dependency for package ${{ matrix.package }}"
             profiles+=' --profile cvm'
           fi
-
+          echo "Run datagrok stand with profiles ${profiles}"
           docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
+          echo "Set docker_sha"
           docker_sha=$(docker images --quiet datagrok/datagrok:bleeding-edge)
           echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
+          echo "Notify abour version used for tests"
           echo "::notice title=${{ matrix.package }}::datagrok/datagrok:bleeding-edge SHA=$docker_sha docker version was used for tests"
       - name: Setup Node
         uses: actions/setup-node@v3
