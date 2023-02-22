@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       libraries:
-        description: 'Libraries separated by spaces'
+        description: 'Enter short libraries names separated by spaces'
         required: true
         type: string
   push:
