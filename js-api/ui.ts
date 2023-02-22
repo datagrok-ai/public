@@ -1481,7 +1481,7 @@ export namespace hints {
     const horizontalOffset = 10;
     const wizard = new Wizard({title: options.title, helpUrl: options.helpUrl});
     if (options.pages) {
-      options.pages.forEach((p) => {
+      for (const p of options.pages) {
         const page = Object.assign({}, p);
         page.onActivated = () => {
           if (p.showNextTo) {
@@ -1498,7 +1498,7 @@ export namespace hints {
         };
         page.root = p.root ?? divText(p.text ?? '');
         wizard.page(<WizardPage>page);
-      });
+      }
     }
     wizard.onClose.subscribe(() => remove(targetElement));
     const _x = $(wizard.root).css('left');
@@ -1510,9 +1510,11 @@ export namespace hints {
 
   /** Removes the hint indication from the provided element and returns it. */
   export function remove(el?: HTMLElement): HTMLElement | null {
-    $(el).find('div.ui-hint-blob')[0]?.remove();
-    $(el).find('i.fa-times')[0]?.remove();
-    el?.classList.remove('ui-hint-target', 'ui-text-hint-target');
+    if (el != null) {
+      $(el).find('div.ui-hint-blob')[0]?.remove();
+      $(el).find('i.fa-times')[0]?.remove();
+      el.classList.remove('ui-hint-target', 'ui-text-hint-target');
+    }
     $('div.ui-hint-overlay')?.remove();
     return el ?? null;
   }
@@ -1520,17 +1522,17 @@ export namespace hints {
 
 interface HintPage {
 
+  /** Displays the wizard next to the specified element when the page is current. */
+  showNextTo: HTMLElement;
+
   /** Page root. Can also be set via [text] property */
   root?: HTMLDivElement;
-
-  /** Caption to be displayed on top of the panel */
-  caption?: HTMLElement | string;
 
   /** Adds a div with the specified text as the page root. */
   text?: string;
 
-  /** Displays the wizard next to the specified element when the page is current. */
-  showNextTo: HTMLElement;
+  /** Caption to be displayed on top of the panel */
+  caption?: HTMLElement | string;
 
   /** Called when the page is activated */
   onActivated?: () => void;
