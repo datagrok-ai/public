@@ -351,7 +351,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 // Maybe the better way to use here strategy pattern ? e.g. ColumnManager -> ColumnProvider
                 if (isInteger(type, typeName, precision, scale))
                     column = new IntColumn();
-                else if (isFloat(type, typeName, precision, scale) || isDecimal(type, typeName))
+                else if (isFloat(type, typeName, precision, scale) || isDecimal(type, typeName, scale))
                     column = new FloatColumn();
                 else if (isBoolean(type, typeName, precision))
                     column = new BoolColumn();
@@ -359,7 +359,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                         typeName.equalsIgnoreCase("uuid") ||
                         typeName.equalsIgnoreCase("set"))
                     column = new StringColumn();
-                else if (isBigInt(type, typeName))
+                else if (isBigInt(type, typeName, precision, scale))
                     column = new BigIntColumn();
                 else if (isTime(type, typeName))
                     column = new DateTimeColumn();
@@ -455,7 +455,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 valueToAdd = value.toString();
                             }
                             columns.get(c - 1).add(valueToAdd);
-                        } else if (isDecimal(type, typeName)) {
+                        } else if (isDecimal(type, typeName, scale)) {
                             Float valueToAdd = null;
                             if (value.toString().equals("NaN")
                                     && value.getClass().getName().equals("java.lang.Double")) {
@@ -470,7 +470,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 columns.get(c - 1).add(new Float((Double)value));
                             else
                                 columns.get(c - 1).add(value);
-                        else if (isBigInt(type, typeName) ||
+                        else if (isBigInt(type, typeName, precision, scale) ||
                                 typeName.equalsIgnoreCase("uuid") ||
                                 typeName.equalsIgnoreCase("set") ||
                                 colType.equals(Types.STRING))
@@ -611,7 +611,6 @@ public abstract class JdbcDataProvider extends DataProvider {
         String type = "string";
         String _query = "(LOWER(" + matcher.colName + ") LIKE @" + param.name + ")";
         String value = ((String)matcher.values.get(0)).toLowerCase();
-        String regexQuery = String.format("%s ~ '%s'", matcher.colName, value);
 
         if (matcher.op.equals(PatternMatcher.EQUALS)) {
             result.query = _query;
@@ -626,7 +625,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             result.query = _query;
             result.params.add(new FuncParam(type, param.name, "%" + value));
         } else if (matcher.op.equals(PatternMatcher.REGEXP)) {
-            result.query = regexQuery;
+            result.query = getRegexQuery(matcher.colName, value);
             result.params.add(new FuncParam(type, param.name, value));
         } else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
             String names = paramToNamesString(param, matcher, type, result);
@@ -636,6 +635,10 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
 
         return result;
+    }
+
+    protected String getRegexQuery(String columnName, String regexExpression) {
+        throw new UnsupportedOperationException("REGEXP is not supported for this provider");
     }
 
     public PatternMatcherResult dateTimePatternConverter(FuncParam param, PatternMatcher matcher) {
@@ -723,7 +726,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                 typeName.equalsIgnoreCase("int") ||
                 typeName.equalsIgnoreCase("serial2") ||
                 typeName.equalsIgnoreCase("serial4") ||
-                ((precision < 8) && (scale == 0) && (isFloat(type, typeName, precision, scale) || isDecimal(type, typeName)));
+                ((precision < 8) && (scale == 0) && (isFloat(type, typeName, precision, scale)
+                        || isDecimal(type, typeName, scale)));
         // TODO Investigate precision value for current case
     }
 
@@ -741,7 +745,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 typeName.equalsIgnoreCase("timestamptz");
     }
 
-    private static boolean isBigInt(int type, String typeName) {
+    protected boolean isBigInt(int type, String typeName, int precision, int scale) {
         return (type == java.sql.Types.BIGINT) || typeName.equalsIgnoreCase("int8") ||
                 typeName.equalsIgnoreCase("serial8");
     }
@@ -753,7 +757,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 typeName.equalsIgnoreCase("money");
     }
 
-    private static boolean isDecimal(int type, String typeName) {
+    protected boolean isDecimal(int type, String typeName, int scale) {
         return (type == java.sql.Types.DECIMAL) || (type == java.sql.Types.NUMERIC) ||
                 typeName.equalsIgnoreCase("decimal");
     }
