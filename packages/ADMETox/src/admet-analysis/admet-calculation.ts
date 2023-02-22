@@ -5,6 +5,7 @@ import { properties, models } from './const';
 
 const _STORAGE_NAME = 'admet_models';
 const _KEY = 'selected';
+let _FORM = 'false';
 
 export async function accessServer(csvString: string, queryParams: string) {
   const dockerId = (await grok.dapi.dockerfiles.filter('admetox').first()).id;
@@ -75,13 +76,6 @@ export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFra
     const table = processCsv(csvString);
     addResultColumns(table, viewTable);
     addTooltip();
-    if (await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, 'Form') === 'true') 
-      grok.shell.tv.addViewer(DG.Viewer.fromType('Form', viewTable)); 
-    /*if (await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, 'RadarGrid') === 'true') {
-      let gc = grok.shell.tv.grid.columns.add({gridColumnName: 'predictsRadar', cellType: 'radar'});
-      gc.settings = {columnNames: table.columns.names()};
-    }*/
-    pi.close();
   });
 }
 
@@ -242,9 +236,12 @@ function openModelsDialog(selected: any, onOK: any): void {
     countLabel.textContent = `${keys.length} checked`;
   }
 
-  let bIForm = ui.boolInput('Form', false);
+  /*let bIForm = ui.boolInput('Form', false);
   bIForm.onChanged(async () => {
-    await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, 'Form', bIForm.value!.toString());
+    if (bIForm.value!.toString() === 'true') {
+      _FORM = 'true';
+    }
+    //await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, 'Form', bIForm.value!.toString());
   });
   
   /*let bIRadarGrid = ui.boolInput('RadarGrid', false);
@@ -256,7 +253,7 @@ function openModelsDialog(selected: any, onOK: any): void {
   bIRadarView.onChanged(async () => {
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, 'RadarView', bIRadarView.value!.toString(), true);
   })*/
-  tree.root.appendChild(bIForm.root);
+  //tree.root.appendChild(bIForm.root);
   //tree.root.appendChild(bIRadarGrid.root);
   //tree.root.appendChild(bIRadarView.root);
 

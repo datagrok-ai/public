@@ -63,3 +63,15 @@ export async function testDocker() {
     grok.shell.addTableView(DG.DataFrame.fromCsv(response));
   }
 }
+
+//top-menu: Chem | Analyze Structure | Layout...
+//name: testLayout
+export async function testLayout() {
+  const layout = await _package.files.readAsText('layout.json');
+  const tableName = grok.shell.tv.dataFrame.name;
+  const modifiedLayout = layout.replaceAll("tableName", tableName);
+  console.log(JSON.parse(modifiedLayout));
+  //console.log(JSON.parse(modifiedLayout));
+  let view = grok.shell.tv;
+  view.loadLayout(DG.ViewLayout.fromJson(modifiedLayout));
+}
