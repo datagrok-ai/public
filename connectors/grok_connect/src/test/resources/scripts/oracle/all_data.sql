@@ -1,5 +1,8 @@
+-- ORACLE CONTAINER REQUIRES ADDITIONAL WORK TO
+-- EXECUTE NEW SCRIPTS DURING RUN, DECIDED TO INJECT ALL DATA AT THE BEGINNING
+
 CREATE TABLE MOCK_DATA (
-                           id NUMBER(18),
+                           id NUMBER(19),
                            first_name VARCHAR2(50),
                            last_name VARCHAR2(50),
                            email VARCHAR2(50),
@@ -39,3 +42,94 @@ INSERT INTO MOCK_DATA (id, first_name, last_name, email, gender, ip_address, cou
 INSERT INTO MOCK_DATA (id, first_name, last_name, email, gender, ip_address, country, dat, some_number) VALUES (28, 'Ilsa', 'Huguenet', 'ihuguenetr@harvard.edu', 'Female', '147.1.198.181/32',  'China', TO_DATE('2014-05-11', 'YYYY-MM-DD'), 318.96);
 INSERT INTO MOCK_DATA (id, first_name, last_name, email, gender, ip_address, country, dat, some_number) VALUES (29, 'Grantham', 'Fayter', 'gfayters@desdev.cn', 'Male', '26.120.76.78/32',  'Sweden', TO_DATE('2009-10-02', 'YYYY-MM-DD'), 595.22);
 INSERT INTO MOCK_DATA (id, first_name, last_name, email, gender, ip_address, country, dat, some_number) VALUES (30, 'Bran', 'Longlands', 'blonglandst@tripod.com', 'Genderqueer', '14.92.3.30/32',  'France', TO_DATE('2016-07-10', 'YYYY-MM-DD'), 879.94);
+
+
+CREATE TABLE character_type (
+                                ch CHAR(10),
+                                varch VARCHAR2(10),
+                                nch NCHAR(10),
+                                nvarch NVARCHAR2(50)
+);
+
+INSERT INTO character_type(ch, varch, nch, nvarch) VALUES ('Hello', 'World', 'Datagrok', 'Groking');
+
+
+CREATE TABLE date_patterns (
+    dat DATE
+);
+
+INSERT INTO date_patterns(dat) VALUES (SYSDATE); --TODAY
+INSERT INTO date_patterns(dat) VALUES (TRUNC(SYSDATE + 6, 'DAY') - 1); --THIS WEEK
+INSERT INTO date_patterns(dat) VALUES (SYSDATE - 1); --YESTERDAY
+INSERT INTO date_patterns(dat) VALUES (TRUNC(SYSDATE +150, 'YEAR') - 1); --THIS YEAR
+INSERT INTO date_patterns(dat) VALUES (TO_DATE('2021-04-09', 'YYYY-MM-DD'));
+
+CREATE TABLE dates_type (
+                            dat DATE,
+                            stamp TIMESTAMP,
+                            zoned_stamp TIMESTAMP WITH TIME ZONE,
+                            interval1 INTERVAL YEAR TO MONTH,
+                            interval2 INTERVAL DAY TO SECOND
+);
+
+INSERT INTO dates_type(dat, stamp, zoned_stamp, interval1, interval2)
+VALUES (TO_DATE('01-01-2023', 'DD-MM-YYYY'), '03-AUG-17 11:20:30.45 AM',
+        TO_TIMESTAMP_TZ ('21-FEB-2009 18:00:00 -5:00', 'DD-MON-YYYY HH24:MI:SS TZH:TZM'),
+        INTERVAL '10-2' YEAR TO MONTH, INTERVAL '4 5:12:10.222' DAY TO SECOND);
+
+CREATE TABLE JSON_DATA (
+    data JSON
+);
+
+INSERT INTO JSON_DATA(data)
+VALUES ('{ "phones":[ {"type": "mobile", "phone": "001001"} , {"type": "fix", "phone": "002002"} ] }');
+
+INSERT INTO JSON_DATA(data) VALUES ('{"bar": "baz", "balance": 7.77, "active":false}');
+
+INSERT INTO JSON_DATA(data) VALUES ('{"reading": 1.230e-5}');
+
+CREATE TABLE numeric_type (
+                              number_value NUMBER(6, 2),
+                              small_value NUMBER(9),
+                              float_value FLOAT(126),
+                              binary_float_value BINARY_FLOAT,
+                              binary_double_value BINARY_DOUBLE
+
+);
+
+INSERT INTO numeric_type(number_value, small_value, float_value, binary_float_value, binary_double_value)
+VALUES (1.987, 1123, 1.2e-4, 1.17549E-38F, 2.22507485850720E-308);
+INSERT INTO numeric_type(number_value, small_value, float_value, binary_float_value, binary_double_value)
+VALUES (1.9, 1, 0.55, binary_float_infinity, 0.2222);
+INSERT INTO numeric_type(number_value, small_value, float_value, binary_float_value, binary_double_value)
+VALUES (13.0, 1244124, 12, -binary_float_infinity, 2.2222);
+
+CREATE TABLE uri_types (
+    uri URIType
+);
+
+INSERT INTO uri_types(uri) VALUES (SYS.URIFACTORY.getURI('/home/oe/doc1.xml'));
+INSERT INTO uri_types(uri) VALUES (SYS.URIFACTORY.getURI('/HR/EMPLOYEES/ROW[EMPLOYEE_ID=205]/SALARY'));
+INSERT INTO uri_types(uri) VALUES (SYS.URIFACTORY.getURI('https://datagrok.ai'));
+
+CREATE OR REPLACE TYPE mem_type IS VARRAY(10) of VARCHAR2(15);
+
+CREATE TABLE varrays (members mem_type);
+
+INSERT INTO varrays(members) VALUES (mem_type('Brenda','Richard'));
+
+CREATE TABLE XML_DATA (
+    data XMLType
+);
+
+INSERT INTO XML_DATA (data) VALUES ('<foo>Hello World!</foo>');
+INSERT INTO XML_DATA (data) VALUES ('<book><title>Manual</title><chapter>...</chapter></book>');
+
+-- CREATE TABLE lobs (
+--                       blob_type BLOB,
+--                       clob_type CLOB,
+--                       nclob_type NCLOB,
+--                       bfile_type BFILE,
+-- );
+--
+-- INSERT INTO lobs (blob_type, clob_type, nclob_type, bfile_type) VALUES ('Grok', 'Grok', 'Grok', 'Grok');
