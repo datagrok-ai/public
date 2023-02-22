@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {TestViewerForProperties} from './viewers/test-viewer-for-properties';
-import {expectTable} from '@datagrok-libraries/utils/src/test';
+import {expectTable as _expectTable} from '@datagrok-libraries/utils/src/test';
 // import {hashDataFrame} from '@datagrok-libraries/utils/src/dataframe-utils';
 
 
@@ -17,8 +17,9 @@ export function testViewerForProperties() {
 }
 
 //name: expectTable
+//shortName: expectTable
 //input: dataframe actual
 //input: dataframe expected
 export function expectTable(actual: DG.DataFrame, expected: DG.DataFrame): void {
-  expectTable(actual, expected);
+  _expectTable(actual, expected);
 }
