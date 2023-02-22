@@ -1,2 +1,2 @@
 id,first_name,last_name,email,gender,ip_address,bool,country,date,some_number
-20,Lucius,Edelmann,ledelmannj@bravesites.com,Male,66.174.30.225/32,f,Brazil,1999-06-22,378.73
+20,Lucius,Edelmann,ledelmannj@bravesites.com,Male,66.174.30.225/32,false,Brazil,1999-06-22,378.73
