@@ -9,11 +9,12 @@ import {HtmlTestCellRenderer, TestCellRenderer} from './cell-types/test-cell-ren
 import {BarCellRenderer} from './cell-types/bar-cell-renderer';
 import {BinaryImageCellRenderer} from './cell-types/binary-image-cell-renderer';
 
-import {SparklineCellRenderer, FitCellRenderer} from './sparklines/sparklines-lines';
+import {SparklineCellRenderer} from './sparklines/sparklines-lines';
 import {BarChartCellRenderer} from './sparklines/bar-chart';
 import {PieChartCellRenderer} from './sparklines/piechart';
 import {RadarChartCellRender} from './sparklines/radar-chart';
 import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
+import {FitCellRenderer} from './sparklines/fit-curve';
 import {names, SparklineType, sparklineTypes} from './sparklines/shared';
 import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
 
