@@ -1,0 +1,1 @@
+em++ -O3 ../wasm/lib.cpp -o ../wasm/Lib.js -s TOTAL_MEMORY=268435456 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s MODULARIZE=1 -s EXPORT_NAME="exportLib" -s EXPORTED_FUNCTIONS=["_sum","_maxFloatCol","_maxIntCol","_addFloatCols","_addIntCols","_doubledInts","_doubledFloats","_malloc","_free"] -s EXPORTED_RUNTIME_METHODS=["cwrap","ccall"] -sENVIRONMENT=web,worker

@@ -1,0 +1,184 @@
+{
+    "lib.cpp": {
+        "sum": {
+            "arguments": {
+                "a": {
+                    "type": "num"
+                },
+                "b": {
+                    "type": "num"
+                }
+            },
+            "output": {
+                "type": "int",
+                "source": "_callResult"
+            },
+            "annotation": [
+                "//name: sum",
+                "//input: int a",
+                "//input: int b",
+                "//output: int res "
+            ],
+            "prototype": "sum(a, b)",
+            "callArgs": "[a, b]"
+        },
+        "maxFloatCol": {
+            "arguments": {
+                "col": {
+                    "type": "floatColumn"
+                }
+            },
+            "output": {
+                "type": "double",
+                "source": "_callResult"
+            },
+            "annotation": [
+                "//name: maxFloatCol",
+                "//input: dataframe df",
+                "//input: column col",
+                "//output: double max "
+            ],
+            "prototype": "maxFloatCol(df, col)",
+            "callArgs": "[col]"
+        },
+        "maxIntCol": {
+            "arguments": {
+                "col": {
+                    "type": "intColumn"
+                }
+            },
+            "output": {
+                "type": "int",
+                "source": "_callResult"
+            },
+            "annotation": [
+                "//name: maxIntCol",
+                "//input: dataframe df",
+                "//input: column col",
+                "//output: int max "
+            ],
+            "prototype": "maxIntCol(df, col)",
+            "callArgs": "[col]"
+        },
+        "addFloatCols": {
+            "arguments": {
+                "col1": {
+                    "type": "floatColumn"
+                },
+                "col2": {
+                    "type": "floatColumn"
+                },
+                "sum": {
+                    "type": "newFloatColumn",
+                    "numOfRows": {
+                        "ref": "col1",
+                        "value": "numOfRows"
+                    }
+                }
+            },
+            "output": {
+                "type": "column",
+                "source": "sum"
+            },
+            "annotation": [
+                "//name: addFloatCols",
+                "//input: dataframe df",
+                "//input: column col1",
+                "//input: column col2",
+                "//output: column sum"
+            ],
+            "prototype": "addFloatCols(df, col1, col2)",
+            "callArgs": "[col1, col2]"
+        },
+        "addIntCols": {
+            "arguments": {
+                "col1": {
+                    "type": "intColumn"
+                },
+                "col2": {
+                    "type": "intColumn"
+                },
+                "sum": {
+                    "type": "newIntColumn",
+                    "numOfRows": {
+                        "ref": "col1",
+                        "value": "numOfRows"
+                    }
+                }
+            },
+            "output": {
+                "type": "column",
+                "source": "sum"
+            },
+            "annotation": [
+                "//name: addIntCols",
+                "//input: dataframe df",
+                "//input: column col1",
+                "//input: column col2",
+                "//output: column sum"
+            ],
+            "prototype": "addIntCols(df, col1, col2)",
+            "callArgs": "[col1, col2]"
+        },
+        "doubledInts": {
+            "arguments": {
+                "cols": {
+                    "type": "intColumns"
+                },
+                "components": {
+                    "type": "newIntColumns",
+                    "numOfRows": {
+                        "ref": "cols",
+                        "value": "numOfRows"
+                    },
+                    "numOfColumns": {
+                        "ref": "cols",
+                        "value": "numOfColumns"
+                    }
+                }
+            },
+            "output": {
+                "type": "tableFromColumns",
+                "source": "components"
+            },
+            "annotation": [
+                "//name: doubledInts",
+                "//input: dataframe table",
+                "//input: column_list cols",
+                "//output: dataframe result "
+            ],
+            "prototype": "doubledInts(table, cols)",
+            "callArgs": "[cols]"
+        },
+        "doubledFloats": {
+            "arguments": {
+                "cols": {
+                    "type": "floatColumns"
+                },
+                "components": {
+                    "type": "newFloatColumns",
+                    "numOfRows": {
+                        "ref": "cols",
+                        "value": "numOfRows"
+                    },
+                    "numOfColumns": {
+                        "ref": "cols",
+                        "value": "numOfColumns"
+                    }
+                }
+            },
+            "output": {
+                "type": "tableFromColumns",
+                "source": "components"
+            },
+            "annotation": [
+                "//name: doubledFloats",
+                "//input: dataframe table",
+                "//input: column_list cols",
+                "//output: dataframe result "
+            ],
+            "prototype": "doubledFloats(table, cols)",
+            "callArgs": "[cols]"
+        }
+    }
+}
