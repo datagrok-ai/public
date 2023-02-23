@@ -1,8 +1,18 @@
+// This file contains C++-functions that are exported to wasm.
+
+// The tool Emscripten is applied (the header emscripten.h is included
+// and each exported function is marked by EMSCRIPTEN_KEEPALIVE).
+
+// Also, each function has a special DATAGROK annotation for C++-functions.
+// This approach provides further usage of C++-to-wasm export script that 
+// performes all routine steps. 
+
 #include <emscripten.h>
 
 #include<cmath>
 using namespace std;
 
+// The following provides convenient naming of the exported functions.
 extern "C" {
     int sum(int a, int b);
 

@@ -1,3 +1,5 @@
+// Simple test of functions from lib.cpp
+
 #include <iostream>
 using namespace std;
 

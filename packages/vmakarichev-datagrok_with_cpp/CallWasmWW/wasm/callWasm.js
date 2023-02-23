@@ -1,4 +1,5 @@
-// Runtime system for exported C/C++-functions call
+// Runtime system for exported C/C++-functions call.
+// It was previousely developed and does NOT provide call wasm-functions in WebWorkers.
 
 // type-to-heap correspondence
 const heapMap = {"i32": "HEAP32", // Int32Array
