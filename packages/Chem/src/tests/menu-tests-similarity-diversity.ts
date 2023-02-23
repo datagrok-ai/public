@@ -1,16 +1,16 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {category, expect, expectFloat, test, delay, before} from '@datagrok-libraries/utils/src/test';
+import {category, expect, expectFloat, expectArray, test, delay, before} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {Fingerprint} from '../utils/chem-common';
-import {createTableView, readDataframe} from './utils';
+import {createTableView, readDataframe, molV2000, molV3000} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 
 import {
-  _testSearchSubstructure,
-  _testSearchSubstructureAllParameters,
-  _testSearchSubstructureSARSmall,
+  // _testSearchSubstructure,
+  // _testSearchSubstructureAllParameters,
+  // _testSearchSubstructureSARSmall,
   loadFileAsText,
 } from './utils';
 import {findSimilar, getSimilarities} from '../package';
@@ -44,8 +44,16 @@ category('top menu similarity/diversity', () => {
     }
   });
 
-  test('findSimilar.chem.sar-small', async () => {
+  test('findSimilar.chem.smiles', async () => {
     await _testFindSimilar(findSimilar);
+  });
+
+  // test('findSimilar.chem.molV2000', async () => {
+  //   await _testFindSimilar(findSimilar, molV2000, 'V2000');
+  // });
+
+  test('findSimilar.chem.molV3000', async () => {
+    await _testFindSimilar(findSimilar, molV3000, 'V3000');
   });
 
   test('getSimilarities.chem.molecules', async () => {
@@ -81,46 +89,54 @@ function getSearchViewer(viewer: DG.Viewer, name: string) {
   }
 }
 
-export async function _testFindSimilar(findSimilarFunction: (...args: any) => Promise<DG.DataFrame | null>) {
-  const dfInput = DG.DataFrame.fromCsv(await loadFileAsText('sar-small.csv'));
-  const colInput = dfInput.columns.byIndex(0);
+export async function _testFindSimilar(findSimilarFunction: (...args: any) => Promise<DG.DataFrame | null>,
+  molecule: string = 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1', notation?: string) {
+  let dfInput: DG.DataFrame;
+  if (notation)
+    dfInput = DG.DataFrame.fromCsv(await loadFileAsText(notation === 'V2000' ? 'tests/spgi-100.csv' : 'tests/approved-drugs-100.csv'));
+  else
+    dfInput = DG.DataFrame.fromCsv(await loadFileAsText('sar-small.csv'));
+  await grok.data.detectSemanticTypes(dfInput);
+  const colInput = dfInput.columns.bySemType(DG.SEMTYPE.MOLECULE)!;
   const numRowsOriginal = dfInput.rowCount;
   const dfResult: DG.DataFrame = // shouldn't be null
-    (await findSimilarFunction(colInput, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'))!;
-
+    (await findSimilarFunction(colInput, molecule))!;
   const numRows = dfResult.rowCount;
   const columnNames = [
     dfResult.columns.byIndex(0).name,
     dfResult.columns.byIndex(1).name,
     dfResult.columns.byIndex(2).name,
   ];
-  const first5Rows: any[] = [];
+  const arr: any[] = [];
   for (let i = 0; i < 5; ++i) {
     const molecule: string = dfResult.columns.byIndex(0).get(i);
     const score: number = dfResult.columns.byIndex(1).get(i);
     const index: number = dfResult.columns.byIndex(2).get(i);
-    first5Rows[i] = {molecule, score, index};
+    arr[i] = {molecule, score, index};
   }
-  expect(numRows, numRowsOriginal);
-  expect(columnNames[0], 'molecule');
-  expect(columnNames[1], 'score');
-  expect(columnNames[2], 'index');
-  const arr = first5Rows;
-  expect(arr[0].molecule, 'O=C1CN=C(c2ccccc2N1)C3CCCCC3');
-  expect(arr[1].molecule, 'O=C1CN=C(c2cc(I)ccc2N1)C3CCCCC3');
-  expect(arr[2].molecule, 'O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3');
-  expect(arr[3].molecule, 'O=C1CN=C(c2cc(F)ccc2N1)C3CCCCC3');
-  expect(arr[4].molecule, 'O=C1CN=C(c2cc(Br)ccc2N1)C3CCCCC3');
-  expectFloat(arr[0].score, 1.0000);
-  expectFloat(arr[1].score, 0.6905);
-  expectFloat(arr[2].score, 0.6744);
-  expectFloat(arr[3].score, 0.6744);
-  expectFloat(arr[4].score, 0.6744);
-  expect(arr[0].index, 0);
-  expect(arr[1].index, 30);
-  expect(arr[2].index, 5);
-  expect(arr[3].index, 20);
-  expect(arr[4].index, 25);
+  expectArray([numRows, columnNames[0], columnNames[1], columnNames[2]],
+    [numRowsOriginal, 'molecule', 'score', 'index']);
+  switch (notation) {
+  case 'V2000':
+    break;
+  case 'V3000':
+    expectArray([arr[0].molecule, arr[1].molecule, arr[2].molecule, arr[3].molecule, arr[4].molecule],
+      [colInput.get(0), colInput.get(71), colInput.get(43), colInput.get(87), colInput.get(89)]);
+    expectArray([arr[0].score, arr[1].score, arr[2].score, arr[3].score, arr[4].score],
+      [1, 0.13725490868091583, 0.12903225421905518, 0.12820513546466827, 0.12820513546466827]);
+    expectArray([arr[0].index, arr[1].index, arr[2].index, arr[3].index, arr[4].index],
+      [0, 71, 43, 87, 89]);
+    break;
+  default:
+    expectArray([arr[0].molecule, arr[1].molecule, arr[2].molecule, arr[3].molecule, arr[4].molecule],
+      ['O=C1CN=C(c2ccccc2N1)C3CCCCC3', 'O=C1CN=C(c2cc(I)ccc2N1)C3CCCCC3', 'O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3',
+        'O=C1CN=C(c2cc(F)ccc2N1)C3CCCCC3', 'O=C1CN=C(c2cc(Br)ccc2N1)C3CCCCC3']);
+    expectArray([arr[0].score, arr[1].score, arr[2].score, arr[3].score, arr[4].score],
+      [1, 0.6904761791229248, 0.6744186282157898, 0.6744186282157898, 0.6744186282157898]);
+    expectArray([arr[0].index, arr[1].index, arr[2].index, arr[3].index, arr[4].index],
+      [0, 30, 5, 20, 25]);  
+    break;
+  }
 }
 
 export async function _testGetSimilarities(getSimilaritiesFunction: (...args: any) => Promise<any>) {
