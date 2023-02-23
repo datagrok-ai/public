@@ -19,6 +19,7 @@ import {names, SparklineType, sparklineTypes} from './sparklines/shared';
 import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
 
 import {curveFitDemo} from './fit-demo';
+import {FitViewer} from './fit-viewer';
 
 export const _package = new DG.Package();
 
@@ -78,6 +79,14 @@ export function sparklineCellRenderer() {
 //output: grid_cell_renderer result
 export function fitCellRenderer() {
   return new FitCellRenderer();
+}
+
+//name: FitViewer
+//description: Creates a fit viewer
+//tags: viewer
+//output: viewer result
+export function _FitViewer() {
+  return new FitViewer();
 }
 
 //tags: app

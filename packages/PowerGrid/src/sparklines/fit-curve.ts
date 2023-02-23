@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {fit, sigmoid, FitErrorModel} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 
 
-function scaleCoordinates(coordinates: {x: number[], y: number[]}, canvasWidth: number, canvasHeight: number):
+export function scaleCoordinates(coordinates: {x: number[], y: number[]}, canvasWidth: number, canvasHeight: number):
   {x: number[], y: number[]} {
   const xMin = Math.min(...coordinates.x);
   const xMax = Math.max(...coordinates.x);
@@ -33,7 +33,7 @@ function scaleCoordinates(coordinates: {x: number[], y: number[]}, canvasWidth: 
   return scaledCoordinates;
 }
 
-function getParams(columns: DG.Column<any>[]): number[] {
+export function getParams(columns: DG.Column<any>[]): number[] {
   const coordinates: {x: number[], y: number[]} = {x: columns[0].toList(), y: columns[1].toList()};
 
   const minY = columns[1].min;
@@ -106,6 +106,11 @@ export class FitCellRenderer extends DG.GridCellRenderer {
     // TODO: add filtering bitset for points (if clicked for example)
     // on click turn off the point (change bitset on false) - change it to cross (DG.MARKER_TYPE??)
     // second click returns it
+    // fix demo dataset (parameteres?)
+
+    // make normal resizing (width height - make with bounds) ???
+    // add confidence intervals (top and bottom)
+    // make viewer (on selected rows with the name??)
 
     const df = gridCell.grid.dataFrame;
     if (w < 20 || h < 10 || df === void 0) return;
@@ -162,6 +167,35 @@ export class FitCellRenderer extends DG.GridCellRenderer {
           (y + h) - canvasPointCoordinates.y[i], color, 6);
       }
     }
+
+    // const confidenceTopCoordinates: {x: number[], y: number[]} = {x: [], y: []};
+    // for (let i = 0; i < filteredCoordinates.x.length; i++) {
+    //   confidenceTopCoordinates.x[i] = filteredCoordinates.x[i];
+    //   confidenceTopCoordinates.y[i] = fitResult.confidenceTop(confidenceTopCoordinates.x[i]);
+    // }
+
+    // const canvasConfidenceTopCoordinates = scaleCoordinates(confidenceTopCoordinates, gridCell.gridColumn.width, h);
+
+    // g.beginPath();
+    // g.moveTo(x + canvasConfidenceTopCoordinates.x[0], (y + h) - canvasConfidenceTopCoordinates.y[0]);
+    // for (let i = 1; i < canvasConfidenceTopCoordinates.x.length; i++)
+    //   g.lineTo(x + canvasConfidenceTopCoordinates.x[i], (y + h) - canvasConfidenceTopCoordinates.y[i]);
+    // g.stroke();
+
+
+    // const confidenceBottomCoordinates: {x: number[], y: number[]} = {x: [], y: []};
+    // for (let i = 0; i < filteredCoordinates.x.length; i++) {
+    //   confidenceBottomCoordinates.x[i] = filteredCoordinates.x[i];
+    //   confidenceBottomCoordinates.y[i] = fitResult.confidenceBottom(confidenceBottomCoordinates.x[i]);
+    // }
+
+    // const canvasConfidenceBottomCoordinates = scaleCoordinates(confidenceBottomCoordinates,
+    //   gridCell.gridColumn.width, h);
+
+    // g.beginPath();
+    // g.moveTo(x + canvasConfidenceBottomCoordinates.x[0], (y + h) - canvasConfidenceBottomCoordinates.y[0]);
+    // for (let i = 1; i < canvasConfidenceBottomCoordinates.x.length; i++)
+    //   g.lineTo(x + canvasConfidenceBottomCoordinates.x[i], (y + h) - canvasConfidenceBottomCoordinates.y[i]);
+    // g.stroke();
   }
 }
-
