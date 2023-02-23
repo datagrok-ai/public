@@ -1440,7 +1440,7 @@ export namespace hints {
     if (position == 'right'){
       const right = node.right+8;
       root.style.left = right+'px';
-      root.style.top = node.top+'px';
+      root.style.top = node.top+(el.offsetHeight/2)-(root.offsetHeight/2)+'px';
       root.classList.add('ui-hint-popup-right');
     }
 
@@ -1449,7 +1449,7 @@ export namespace hints {
       if (left < 0 ) 
         left = 0;
       root.style.left = left+'px';
-      root.style.top = node.top+'px';
+      root.style.top = node.top+(el.offsetHeight/2)-(root.offsetHeight/2)+'px';
       root.classList.add('ui-hint-popup-left');
     }
 
