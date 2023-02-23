@@ -1,7 +1,6 @@
 package grok_connect.providers;
 
 import grok_connect.connectors_info.FuncCall;
-import grok_connect.providers.utils.DataFrameComparator;
 import grok_connect.providers.utils.Providers;
 import grok_connect.providers.utils.Sql;
 import grok_connect.providers.utils.SqlScriptRunner;
@@ -183,7 +182,8 @@ class PostgresDataProviderTest extends ProviderBaseTest {
 
     @DisplayName("Parameters support")
     @ParameterizedTest(name = "{index} : {0}")
-    @MethodSource("grok_connect.providers.data_providers.CommonObjectsMother#checkParameterSupport_ok")
+    @MethodSource({"grok_connect.providers.data_providers.CommonObjectsMother#checkParameterSupport_ok",
+            "grok_connect.providers.data_providers.PostgresObjectsMother#checkMultipleParametersSupport"})
     @Sql(path = "scripts/postgres/postgres_basic_types.sql",
             restorePath = "scripts/postgres/drop.sql")
     public void checkParameterSupport_ok(FuncCall funcCall, DataFrame expected) {

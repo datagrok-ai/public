@@ -2,7 +2,7 @@
 -- EXECUTE NEW SCRIPTS DURING RUN, DECIDED TO INJECT ALL DATA AT THE BEGINNING
 
 CREATE TABLE MOCK_DATA (
-                           id NUMBER(19),
+                           id NUMBER(18),
                            first_name VARCHAR2(50),
                            last_name VARCHAR2(50),
                            email VARCHAR2(50),
@@ -44,6 +44,7 @@ INSERT INTO MOCK_DATA (id, first_name, last_name, email, gender, ip_address, cou
 INSERT INTO MOCK_DATA (id, first_name, last_name, email, gender, ip_address, country, dat, some_number) VALUES (30, 'Bran', 'Longlands', 'blonglandst@tripod.com', 'Genderqueer', '14.92.3.30/32',  'France', TO_DATE('2016-07-10', 'YYYY-MM-DD'), 879.94);
 
 
+
 CREATE TABLE character_type (
                                 ch CHAR(10),
                                 varch VARCHAR2(10),
@@ -54,15 +55,15 @@ CREATE TABLE character_type (
 INSERT INTO character_type(ch, varch, nch, nvarch) VALUES ('Hello', 'World', 'Datagrok', 'Groking');
 
 
-CREATE TABLE date_patterns (
+CREATE TABLE dates_patterns (
     dat DATE
 );
 
-INSERT INTO date_patterns(dat) VALUES (SYSDATE); --TODAY
-INSERT INTO date_patterns(dat) VALUES (TRUNC(SYSDATE + 6, 'DAY') - 1); --THIS WEEK
-INSERT INTO date_patterns(dat) VALUES (SYSDATE - 1); --YESTERDAY
-INSERT INTO date_patterns(dat) VALUES (TRUNC(SYSDATE +150, 'YEAR') - 1); --THIS YEAR
-INSERT INTO date_patterns(dat) VALUES (TO_DATE('2021-04-09', 'YYYY-MM-DD'));
+INSERT INTO dates_patterns(dat) VALUES (SYSDATE); --TODAY
+INSERT INTO dates_patterns(dat) VALUES (SYSDATE - 1); --YESTERDAY
+INSERT INTO dates_patterns(dat) VALUES (TRUNC(SYSDATE + 6, 'DAY')); --THIS WEEK
+INSERT INTO dates_patterns(dat) VALUES (SYSDATE - 150); --THIS YEAR
+INSERT INTO dates_patterns(dat) VALUES (TO_DATE('2021-04-09', 'YYYY-MM-DD'));
 
 CREATE TABLE dates_type (
                             dat DATE,
