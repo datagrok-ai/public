@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.11",
+  "version": "3.2.12",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1488,6 +1488,9 @@
         },
         "2.1.1": {
           "datagrok-api": "^1.13.0"
+        },
+        "2.1.2": {
+          "datagrok-api": "^1.13.2"
         }
       },
       "description": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher.",
