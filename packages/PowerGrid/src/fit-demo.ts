@@ -10,15 +10,12 @@ function sigmoid(x: number) {
   return 1 / (1 + Math.exp(-x));
 }
 
-function createRandomDataFrame(colLength: number) {
-  const x = new Float32Array(colLength);
-  const y = new Float32Array(colLength);
+function createRandomDataFrame(pointNumber: number, step: number, noise: number, decimals: number) {
+  const x = new Float32Array(pointNumber);
+  const y = new Float32Array(pointNumber);
 
-  const step = 0.5;
-  const beginNumber = 0 - Math.floor(colLength / 2) * step;
-  const endNumber = beginNumber + (step * (colLength - 1));
-  const noise = 0.4;
-  const decimals = 10;
+  const beginNumber = 0 - Math.floor(pointNumber / 2) * step;
+  const endNumber = beginNumber + (step * (pointNumber - 1));
 
   for (let num = beginNumber, i = 0; num <= endNumber; num += step, i++) {
     x[i] = num;
@@ -33,13 +30,16 @@ function createRandomDataFrame(colLength: number) {
   return df;
 }
 
-function createDemoDataFrame() {
-  const colLength = 15;
-  const rowNumber = 30;
+function createDemoDataFrame(rowNumber: number) {
+  const pointNumber = 15;
+  const step = 0.4;
+  const noise = 0.25;
+  const decimals = 10;
+
   const dataFrameColumn = DG.Column.fromType(DG.COLUMN_TYPE.DATA_FRAME, 'dataframes', rowNumber);
 
   for (let i = 0; i < rowNumber; i++) {
-    const df = createRandomDataFrame(colLength);
+    const df = createRandomDataFrame(pointNumber, step, noise, decimals);
     dataFrameColumn.set(i, df);
   }
 
@@ -48,7 +48,7 @@ function createDemoDataFrame() {
 }
 
 export async function curveFitDemo() {
-  const df = createDemoDataFrame();
+  const df = createDemoDataFrame(30);
   const grid = grok.shell.addTableView(df).grid;
   grid.columns.add({cellType: 'fit'});
 }
