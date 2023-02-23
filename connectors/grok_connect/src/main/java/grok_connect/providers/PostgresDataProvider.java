@@ -93,6 +93,6 @@ public class PostgresDataProvider extends JdbcDataProvider {
 
     @Override
     protected String getRegexQuery(String columnName, String regexExpression) {
-        return String.format("%s ~ %s", columnName, regexExpression);
+        return String.format("%s ~ '%s'", columnName, regexExpression);
     }
 }
