@@ -23,6 +23,13 @@ export async function accessServer(csvString: string, queryParams: string) {
   return response;
 }
 
+export async function addForm(smilesCol: DG.Column, viewTable: DG.DataFrame) {
+  let queryParams = 'Pgp-Inhibitor,Pgp-Substrate,HIA,F(20%),F(30%),Ames,SkinSen,BBB,CYP1A2-Inhibitor,CYP1A2-Substrate,CYP3A4-Inhibitor,CYP3A4-Substrate,CYP2C19-Inhibitor,CYP2C19-Substrate,CYP2C9-Inhibitor,CYP2C9-Substrate,CYP2D6-Inhibitor,CYP2D6-Substrate';
+  let csvString = await accessServer(DG.DataFrame.fromColumns([smilesCol]).toCsv(), queryParams);
+  const table = processCsv(csvString);
+  addResultColumns(table, viewTable);
+}
+
 function addTooltip() {
   const tableView = grok.shell.tv;
   const between = (x: number, min: number, max: number) => {
@@ -76,6 +83,7 @@ export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFra
     const table = processCsv(csvString);
     addResultColumns(table, viewTable);
     addTooltip();
+    pi.close();
   });
 }
 

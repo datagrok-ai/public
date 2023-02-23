@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { addPredictions } from './admet-analysis/admet-calculation';
-import { getModelsSingle } from './admet-analysis/admet-calculation';
+import { getModelsSingle, addForm } from './admet-analysis/admet-calculation';
 
 export const _package = new DG.Package();
 
@@ -20,7 +20,7 @@ export function admetWidget(smiles: string): DG.Widget<any> {
   return getModelsSingle(smiles);
 }
 
-//top-menu: Chem | Analyze Structure | ADME/Tox...
+//top-menu: Chem | Analyze Structure | ADME/Tox Calculations...
 //name: ADME/Tox...
 export async function admetoxCalculators() {
   let table = grok.shell.tv.dataFrame;
@@ -64,11 +64,15 @@ export async function testDocker() {
   }
 }
 
-//top-menu: Chem | Analyze Structure | Layout...
+//top-menu: Chem | Analyze Structure | Add Form...
 //name: testLayout
 export async function testLayout() {
+  const df = grok.shell.tv.dataFrame;
+  const col = df.columns.bySemType(DG.SEMTYPE.MOLECULE);
+  if (col)
+    await addForm(col, df);
   const layout = await _package.files.readAsText('layout.json');
-  const tableName = grok.shell.tv.dataFrame.name;
+  const tableName = df.name;
   const modifiedLayout = layout.replaceAll("tableName", tableName);
   console.log(JSON.parse(modifiedLayout));
   //console.log(JSON.parse(modifiedLayout));

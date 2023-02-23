@@ -111,6 +111,62 @@
                       "customFormat": "0.0000000",
                       "cellType": "number",
                       "format": "0.0000000"
+                    },
+                    {
+                      "width": 127,
+                      "columnName": "Pgp-Inhibitor",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000"
+                    },
+                    {
+                      "width": 127,
+                      "columnName": "Pgp-Substrate",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000"
+                    },
+                    {
+                      "width": 127,
+                      "columnName": "HIA",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000"
+                    },
+                    {
+                      "width": 127,
+                      "columnName": "F(20%)",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000"
+                    },
+                    {
+                      "width": 127,
+                      "columnName": "F(30%)",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000"
+                    },
+                    {
+                      "width": 127,
+                      "columnName": "BBB",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000"
+                    },
+                    {
+                      "width": 127,
+                      "columnName": "Ames",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000"
+                    },
+                    {
+                      "width": 127,
+                      "columnName": "SkinSen",
+                      "customFormat": "0.0000000",
+                      "cellType": "number",
+                      "format": "0.0000000"
                     }
                   ]
                 },
@@ -159,7 +215,7 @@
                     }
                   },
                   {
-                    "left":152,
+                    "left":212,
                     "top":242,
                     "width":150,
                     "height":20,
@@ -286,7 +342,7 @@
                     }
                   },
                   {
-                    "left":152,
+                    "left":212,
                     "top": 382,
                     "width":150,
                     "height":20,
@@ -321,7 +377,7 @@
                     }
                   },
                   {
-                    "left":152,
+                    "left":212,
                     "top":292,
                     "width":150,
                     "height":20,
@@ -454,7 +510,7 @@
                     "height":20,
                     "type":"field",
                     "viewerSettings":{
-                        "table":"tableName",
+                        "table":"tableName",  
                         "column":"SkinSen",
                         "format":null
                     }
@@ -471,7 +527,7 @@
                     }
                   },
                   {
-                    "left":152,
+                    "left":212,
                     "top": 317,
                     "width":150,
                     "height":20,
@@ -494,7 +550,7 @@
                     }
                   },
                   {
-                    "left":152,
+                    "left":212,
                     "top":267,
                     "width":150,
                     "height":20,
@@ -576,9 +632,9 @@
                     }
                   },
                   {
-                    "left":152,
+                    "left":212,
                     "top":217,
-                    "width":150,
+                    "width":100,
                     "height":20,
                     "type":"field",
                     "viewerSettings":{
