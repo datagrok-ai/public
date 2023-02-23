@@ -119,7 +119,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         if (dataQuery.inputParamsCount() > 0) {
             query = convertPatternParamsToQueryParams(queryRun, query);
 
-            if (autoInterpolation()) { //what is this? always true
+            if (autoInterpolation()) {
                 // Parametrized func
                 StringBuilder queryBuffer = new StringBuilder();
                 List<String> names = getParameterNames(query, dataQuery, queryBuffer);
