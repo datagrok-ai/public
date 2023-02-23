@@ -118,8 +118,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     const grid = grok.shell.tv.grid;
     if (similarity)
       propsDict['similarity'] = {val: similarity};
-    for (const col of this.moleculeProperties) {        
-        propsDict[col] = {val: this.moleculeColumn!.dataFrame.get(col, idx)};
+    for (const col of this.moleculeProperties) {  
+        propsDict[col] = {val: this.moleculeColumn!.dataFrame.col(col)!.getString(idx)};
         if (this.moleculeColumn!.dataFrame.col(col)!.tags[DG.TAGS.COLOR_CODING_TYPE]) {
             propsDict[col].color = grid.cell(col, idx).color;
         }
