@@ -6,7 +6,7 @@ import $ from 'cash-dom';
 
 import {RadioButtonFilter} from './filters/radio-button-filter';
 import {MultiValueFilter} from './filters/multi-value-filter';
-import {TimeWidget} from './widgets';
+import {TableSummaryViewer, TimeWidget} from './widgets';
 
 export const _package = new DG.Package();
 
@@ -31,6 +31,13 @@ export function multiValueFilter() {
 //output: widget result
 export function timeWidget() {
   return new TimeWidget();
+}
+
+//name: TableSummary
+//tags: viewer
+//output: viewer result
+export function tableSummary() {
+  return new TableSummaryViewer();
 }
 
 //name: inputDemo
