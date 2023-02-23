@@ -2,8 +2,17 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+export type PdbResDataFrameType = DG.DataFrame & {
+  get code(): DG.Column<string>;
+  get compId(): DG.Column<string>;
+  get seqId(): DG.Column<number>;
+  get label(): DG.Column<string>
+  get seq(): DG.Column<string>;
+  get frame(): DG.Column<number>;
+};
+
 export interface IPdbHelper {
-  pdbToDf(pdb: string, name: string): Promise<DG.DataFrame>;
+  pdbToDf(pdb: string, name: string): Promise<PdbResDataFrameType>;
 }
 
 export async function getPdbHelper(): Promise<IPdbHelper> {
