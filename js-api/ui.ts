@@ -1419,11 +1419,11 @@ export namespace labels {
 /** Visual hints attached to an element. They can be used to introduce a new app to users. */
 export namespace hints {
 
-  export function addHint(el: HTMLElement, content: HTMLElement, position:string = 'right'){
+  export function addHint(el: HTMLElement, content: HTMLElement, position: string = 'right') {
     const root = document.createElement('div');
     root.className = 'ui-hint-popup';
-    
-    const closeBtn = iconFA('times',()=>root.remove());
+
+    const closeBtn = iconFA('times', () => root.remove());
     closeBtn.style.cssText = `
       position: absolute;
       right: 10px;
@@ -1432,57 +1432,56 @@ export namespace hints {
     `;
 
     const node = el.getBoundingClientRect();
-    
+
     root.append(closeBtn);
     root.append(content);
     $('body').append(root);
 
-    if (position == 'right'){
-      const right = node.right+8;
-      root.style.left = right+'px';
-      root.style.top = node.top+(el.offsetHeight/2)-(root.offsetHeight/2)+'px';
+    if (position == 'right') {
+      const right = node.right + 8;
+      root.style.left = right + 'px';
+      root.style.top = node.top + (el.offsetHeight / 2) - (root.offsetHeight / 2) + 'px';
       root.classList.add('ui-hint-popup-right');
     }
 
-    if (position == 'left'){
-      let left = node.left-root.offsetWidth-8;
-      if (left < 0 ) 
+    if (position == 'left') {
+      let left = node.left - root.offsetWidth - 8;
+      if (left < 0)
         left = 0;
-      root.style.left = left+'px';
-      root.style.top = node.top+(el.offsetHeight/2)-(root.offsetHeight/2)+'px';
+      root.style.left = left + 'px';
+      root.style.top = node.top + (el.offsetHeight / 2) - (root.offsetHeight / 2) + 'px';
       root.classList.add('ui-hint-popup-left');
     }
 
-    if (position == 'top'){
-      let top = node.top-root.offsetHeight-8;
-      if (top<0) 
-        top = 0 
-      root.style.left = node.left+(el.offsetWidth/2)-(root.offsetWidth/2)+'px';
-      root.style.top = top+'px';
+    if (position == 'top') {
+      let top = node.top - root.offsetHeight - 8;
+      if (top < 0)
+        top = 0
+      root.style.left = node.left + (el.offsetWidth / 2) - (root.offsetWidth / 2) + 'px';
+      root.style.top = top + 'px';
       root.classList.add('ui-hint-popup-top');
     }
 
-    if (position == 'bottom'){
-      let bottom = node.bottom+8;
+    if (position == 'bottom') {
+      let bottom = node.bottom + 8;
       if (bottom > screen.height)
         bottom = screen.height;
-      root.style.left = node.left+(el.offsetWidth/2)-(root.offsetWidth/2)+'px';
-      root.style.top = bottom+'px';
+      root.style.left = node.left + (el.offsetWidth / 2) - (root.offsetWidth / 2) + 'px';
+      root.style.top = bottom + 'px';
       root.classList.add('ui-hint-popup-bottom');
     }
 
     return root;
-    
   }
 
   /** Adds a hint indication to the provided element and returns it. */
-  export function addHintIndicator(el: HTMLElement, clickToClose:boolean = true, autoClose?:number): HTMLElement {
-    const id = Math.floor(Math.random()*1000);
+  export function addHintIndicator(el: HTMLElement, clickToClose: boolean = true, autoClose?: number): HTMLElement {
+    const id = Math.floor(Math.random() * 1000);
     const hintIndicator = document.createElement('div');
     hintIndicator.className = 'ui-hint-blob';
-    
-    hintIndicator.setAttribute('data-target','hint-target-'+id);
-    el.setAttribute('data-target','hint-target-'+id);
+
+    hintIndicator.setAttribute('data-target', 'hint-target-' + id);
+    el.setAttribute('data-target', 'hint-target-' + id);
 
     el.classList.add('ui-hint-target');
     $('body').append(hintIndicator);
@@ -1490,16 +1489,16 @@ export namespace hints {
     const indicatorNode = el.getBoundingClientRect();
     hintIndicator.style.position = 'fixed';
     hintIndicator.style.zIndex = '4000';
-    hintIndicator.style.left = indicatorNode.left+'px';
-    hintIndicator.style.top = indicatorNode.top+'px';
-    
-    if (clickToClose){
-      $(el).on('click', ()=>{
+    hintIndicator.style.left = indicatorNode.left + 'px';
+    hintIndicator.style.top = indicatorNode.top + 'px';
+
+    if (clickToClose) {
+      $(el).on('click', () => {
         remove(el);
       });
     }
 
-    if (autoClose!>0){
+    if (autoClose! > 0) {
       setTimeout(() => remove(el), autoClose);
     }
     return el;
