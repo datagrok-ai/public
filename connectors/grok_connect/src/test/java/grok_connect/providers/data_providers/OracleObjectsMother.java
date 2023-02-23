@@ -76,7 +76,7 @@ public class OracleObjectsMother {
                 .addQuery("--input: string dat = \"today\" {pattern: datetime}\n"
                         + "SELECT TO_DATE(TO_CHAR (dat, 'YYYY-MM-DD'), 'YYYY-MM-DD') AS DAT FROM dates_patterns WHERE @dat(dat)\n"
                         + "--end")
-                .addFuncParam("string", "dat", "today", "datetime")
+                .addFuncParam("string", "", "dat", "today", "datetime")
                 .addFuncCallOptionsPattern("dat", "", "range", true, false,
                         now.toString(), now.plusDays(1).toString())
                 .build();
@@ -93,7 +93,7 @@ public class OracleObjectsMother {
                 .addQuery("--input: string dat = \"this week\" {pattern: datetime}\n"
                         + "SELECT TO_DATE(TO_CHAR (dat, 'YYYY-MM-DD'), 'YYYY-MM-DD') AS DAT FROM dates_patterns WHERE @dat(dat)\n"
                         + "--end")
-                .addFuncParam("string", "dat", "this week", "datetime")
+                .addFuncParam("string","", "dat", "this week", "datetime")
                 .addFuncCallOptionsPattern("dat", "", "range", true, false,
                         firstDayOfWeek.toString(),
                         lastDayOfWeek.plusDays(1).toString())
@@ -111,7 +111,7 @@ public class OracleObjectsMother {
                 .addQuery("--input: string dat = \"this month\" {pattern: datetime}\n"
                         + "SELECT TO_DATE(TO_CHAR (dat, 'YYYY-MM-DD'), 'YYYY-MM-DD') AS DAT FROM dates_patterns WHERE @dat(dat)\n"
                         + "--end")
-                .addFuncParam("string", "dat", "this month", "datetime")
+                .addFuncParam("string", "","dat", "this month", "datetime")
                 .addFuncCallOptionsPattern("dat", "", "range", true, false,
                         firstDayOfMonth.toString(),
                         lastDayOfMonth.plusDays(1).toString())
@@ -129,7 +129,7 @@ public class OracleObjectsMother {
                 .addQuery("--input: string dat = \"this year\" {pattern: datetime}\n"
                         + "SELECT TO_DATE(TO_CHAR (dat, 'YYYY-MM-DD'), 'YYYY-MM-DD') AS DAT FROM dates_patterns WHERE @dat(dat)\n"
                         + "--end")
-                .addFuncParam("string", "dat", "this year", "datetime")
+                .addFuncParam("string", "","dat", "this year", "datetime")
                 .addFuncCallOptionsPattern("dat", "", "range", true, false,
                         firstDayOfYear.toString(),
                         lastDayOfYear.plusDays(1).toString())
@@ -144,7 +144,7 @@ public class OracleObjectsMother {
                 .addQuery("--input: string date = \"yesterday\" {pattern: datetime}\n"
                         + "SELECT TO_DATE(TO_CHAR (dat, 'YYYY-MM-DD'), 'YYYY-MM-DD') AS DAT FROM dates_patterns WHERE @dat(dat)\n"
                         + "--end")
-                .addFuncParam("string", "dat", "yesterday", "datetime")
+                .addFuncParam("string", "","dat", "yesterday", "datetime")
                 .addFuncCallOptionsPattern("dat", "", "range", true, false,
                         yesterday.toString(),
                         now.toString())
@@ -160,7 +160,7 @@ public class OracleObjectsMother {
                 .addQuery("--input: string dat = \"last year\" {pattern: datetime}\n"
                         + "SELECT TO_DATE(TO_CHAR (dat, 'YYYY-MM-DD'), 'YYYY-MM-DD') AS DAT FROM dates_patterns WHERE @dat(dat)\n"
                         + "--end")
-                .addFuncParam("string", "dat", "last year", "datetime")
+                .addFuncParam("string", "", "dat", "last year", "datetime")
                 .addFuncCallOptionsPattern("dat", "", "range", true, false,
                         firstDayOfYear.minusYears(1).toString(), firstDayOfYear.toString())
                 .build();
@@ -176,7 +176,7 @@ public class OracleObjectsMother {
                 .addQuery( "--input: string dat = \"anytime\" {pattern: datetime}\n"
                         + "SELECT TO_DATE(TO_CHAR (dat, 'YYYY-MM-DD'), 'YYYY-MM-DD') AS DAT FROM dates_patterns WHERE @dat(dat)\n"
                         + "--end")
-                .addFuncParam("string", "dat", "anytime", "datetime")
+                .addFuncParam("string", "", "dat", "anytime", "datetime")
                 .addFuncCallOptionsPattern("dat", "", "none", true, true)
                 .build();
         // --input: string date = "2021-2022" {pattern: datetime}
@@ -190,7 +190,7 @@ public class OracleObjectsMother {
                 .addQuery( "--input: string dat = \"2021-2021\" {pattern: datetime}\n"
                         + "SELECT TO_DATE(TO_CHAR (dat, 'YYYY-MM-DD'), 'YYYY-MM-DD') AS DAT FROM dates_patterns WHERE @dat(dat)\n"
                         + "--end")
-                .addFuncParam("string", "dat", "2021-2022", "datetime")
+                .addFuncParam("string", "", "dat", "2021-2022", "datetime")
                 .addFuncCallOptionsPattern("dat", "", "range", true, true,
                         Year.of(2021).atDay(1).toString(),
                         Year.of(2022).atDay(1).toString())
@@ -201,7 +201,7 @@ public class OracleObjectsMother {
                 .addQuery("--input: string dat = \"before 1/1/2022\" {pattern: datetime}\n"
                         + "SELECT TO_DATE(TO_CHAR (dat, 'YYYY-MM-DD'), 'YYYY-MM-DD') AS DAT FROM dates_patterns WHERE @dat(dat)\n"
                         + "--end")
-                .addFuncParam("string", "dat", "before 1/1/2022", "datetime")
+                .addFuncParam("string", "","dat", "before 1/1/2022", "datetime")
                 .addFuncCallOptionsPattern("dat", "", "before", true, true,
                         Year.of(2022).atDay(1).toString())
                 .build();
@@ -216,7 +216,7 @@ public class OracleObjectsMother {
                 .addQuery("--input: string dat = \"after 1/1/2022\" {pattern: datetime}\n"
                         + "SELECT TO_DATE(TO_CHAR (dat, 'YYYY-MM-DD'), 'YYYY-MM-DD') AS DAT FROM dates_patterns WHERE @dat(dat)\n"
                         + "--end")
-                .addFuncParam("string", "dat", "after 1/1/2022", "datetime")
+                .addFuncParam("string", "","dat", "after 1/1/2022", "datetime")
                 .addFuncCallOptionsPattern("dat", "", "after", true, true,
                         LocalDate.parse("2022-01-01").toString())
                 .build();
@@ -225,7 +225,7 @@ public class OracleObjectsMother {
                 .addQuery("--input: string dat = \"April 2021\" {pattern: datetime}\n"
                         + "SELECT TO_DATE(TO_CHAR (dat, 'YYYY-MM-DD'), 'YYYY-MM-DD') AS DAT FROM dates_patterns WHERE @dat(dat)\n"
                         + "--end")
-                .addFuncParam("string", "dat", "April 2021", "datetime")
+                .addFuncParam("string", "","dat", "April 2021", "datetime")
                 .addFuncCallOptionsPattern("dat", "", "range", true, false,
                         Year.of(2021).atMonth(4).atDay(1).toString(),
                         Year.of(2021).atMonth(5).atDay(1).toString())
@@ -283,12 +283,12 @@ public class OracleObjectsMother {
                         + "AND @email(email) AND @some_number(some_number) "
                         + "AND @country(country) AND @dat(dat)\n"
                         + "--end")
-                .addFuncParam("string", "first_name", "starts with p", "string")
-                .addFuncParam("string", "id", ">1", "string")
-                .addFuncParam("string", "email", "contains com", "string")
-                .addFuncParam("string", "some_number", ">20", "double")
-                .addFuncParam("string", "country", "in (Indonesia)", "string")
-                .addFuncParam("string", "dat", "before 1/1/2022", "datetime")
+                .addFuncParam("string", "", "first_name", "starts with p", "string")
+                .addFuncParam("string", "","id", ">1", "string")
+                .addFuncParam("string", "","email", "contains com", "string")
+                .addFuncParam("string", "","some_number", ">20", "double")
+                .addFuncParam("string", "","country", "in (Indonesia)", "string")
+                .addFuncParam("string", "","dat", "before 1/1/2022", "datetime")
                 .addFuncCallOptionsPattern("first_name", "starts with p",
                         "starts with", null, null, "p")
                 .addFuncCallOptionsPattern("id", ">1", ">", null,
@@ -304,5 +304,23 @@ public class OracleObjectsMother {
                 .build();
         return Stream.of(Arguments.of(Named.of("type: multiple; operator: multiple; pattern: multiple", funcCall1),
                 expected1));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_xmlType_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new StringColumn(new String[]{"<foo>Hello World!</foo>\n",
+                        "<book>\n  <title>Manual</title>\n  <chapter>...</chapter>\n</book>\n"}), "DATA")
+                .build();
+        return Stream.of(Arguments.of(
+                        Named.of("XML TYPE SUPPORT", getShortFuncCall("SELECT * FROM xml_data")), expected
+                )
+        );
+    }
+
+    private static FuncCall getShortFuncCall(String sqlQuery) {
+        return FuncCallBuilder.getBuilder()
+                .addQuery(sqlQuery)
+                .build();
     }
 }

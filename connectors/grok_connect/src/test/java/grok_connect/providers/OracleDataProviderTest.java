@@ -2,6 +2,7 @@ package grok_connect.providers;
 
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.providers.utils.Providers;
+import grok_connect.providers.utils.Sql;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -56,6 +57,15 @@ class OracleDataProviderTest extends ProviderBaseTest {
     public void checkDatesParameterSupport_ok(FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         expected.columns.forEach(column -> column.name = column.name.toUpperCase());
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support for xml type")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.data_providers.OracleObjectsMother#checkOutputDataFrame_xmlType_ok")
+    public void checkOutputDataFrame_xmlType_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
