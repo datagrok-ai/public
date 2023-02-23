@@ -28,7 +28,7 @@ import {substructureSearchDialog} from './substructure-search/substructure-searc
 import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {delay} from '@datagrok-libraries/utils/src/test';
-import {getStats, NOTATION, splitterAsHelm, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {getStats, NOTATION, splitterAsHelm, TAGS as bioTAGS, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {pepseaMethods, runPepsea} from './utils/pepsea';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
@@ -102,8 +102,12 @@ export async function sequenceTooltip(col: DG.Column): Promise<DG.Widget<any>> {
   const tv = grok.shell.tv;
   let viewer = await tv.dataFrame.plot.fromType('WebLogo', {
     sequenceColumnName: col.name,
-    backgroundColor: 0xFFfdffe5
+    backgroundColor: 0xFFfdffe5,
+    fitArea: false,
+    positionHeight: 'Entropy',
+    fixWidth: true
   });
+  viewer.root.style.height = '50px';
   return viewer;
 }
 
@@ -421,19 +425,20 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
 
   const colInput = ui.columnInput('Sequence', table, seqCol, () => {
     const potentialCol = colInput.value;
-    const unUsedName = table.columns.getUnusedName(`msa(${potentialCol.name})`);
+    const unusedName = table.columns.getUnusedName(`msa(${potentialCol.name})`);
   
-    if (checkInputColumnUi(potentialCol, 'MSA', [NOTATION.FASTA], ['DNA', 'RNA', 'PT'], false)) {
+    if (checkInputColumnUi(
+      potentialCol, potentialCol.name, [NOTATION.FASTA], [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT], false)) {
       for (const inputRootStyle of inputRootStyles)
         inputRootStyle.display = 'none';
 
-      performAlignment = () => runKalign(potentialCol, false, unUsedName);
-    } else if (checkInputColumnUi(potentialCol, 'MSA', [NOTATION.HELM], [], false)) {
+      performAlignment = () => runKalign(potentialCol, false, unusedName, clustersColInput.value);
+    } else if (checkInputColumnUi(potentialCol, potentialCol.name, [NOTATION.HELM], [], false)) {
       for (const inputRootStyle of inputRootStyles)
         inputRootStyle.display = 'initial';
 
-      performAlignment = () => runPepsea(
-        potentialCol, unUsedName, methodInput.value!, gapOpenInput.value!, gapExtendInput.value!);
+      performAlignment = () => runPepsea(potentialCol, unusedName, methodInput.value!, gapOpenInput.value!,
+        gapExtendInput.value!, clustersColInput.value);
     } else {
       for (const inputRootStyle of inputRootStyles)
         inputRootStyle.display = 'none';
@@ -444,9 +449,13 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
   colInput.setTooltip('Sequences column to use for alignment');
   colInput.fireChanged();
 
+  const clustersColInput = ui.columnInput('Clusters', table, null);
+  clustersColInput.nullable = true;
+
   let msaCol: DG.Column<string> | null = null;
-  const dialog = ui.dialog('MSA')
+  ui.dialog('MSA')
     .add(colInput)
+    .add(clustersColInput)
     .add(methodInput)
     .add(gapOpenInput)
     .add(gapExtendInput)

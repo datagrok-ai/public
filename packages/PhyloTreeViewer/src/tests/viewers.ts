@@ -15,6 +15,6 @@ category('Viewers', () => {
         const newickStr: string = await _package.files.readAsText('data/tree95.nwk');
         return newickToDf(newickStr, 'tree95');
       })(), true);
-    }, v === 'PhyloTree' ? {skipReason: 'GROK-12182'} : {});
+    });
   }
 });

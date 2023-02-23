@@ -13,6 +13,13 @@ module.exports = {
   module: {
     rules: [
       {
+        test: /\.worker\.ts$/,
+        loader: "worker-loader",
+        options: {
+          inline: "fallback" // this creates a separate file
+        },
+      },
+      {
         test: /\.ts(x?)$/,
         use: 'ts-loader',
         exclude: /node_modules/,

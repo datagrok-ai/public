@@ -268,6 +268,9 @@ export const TAGS = {
   IGNORE_CUSTOM_FILTER: '.ignore-custom-filter',
   /** Filter type for molecular columns: "Sketch" | "Categorical". See [DG.STRUCTURE_FILTER_TYPE] */
   STRUCTURE_FILTER_TYPE: '.structure-filter-type',
+  /** Custom filter type to be used by default for a column: "<PackageName\>:<FilterType\>".
+   * Takes precedence over [IGNORE_CUSTOM_FILTER] */
+  CUSTOM_FILTER_TYPE: '.custom-filter-type',
 
   CELL_RENDERER: 'cell.renderer',
   UNITS: 'units',  // see DG.UNITS

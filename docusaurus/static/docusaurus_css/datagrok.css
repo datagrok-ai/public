@@ -131,7 +131,7 @@ a {
 
 @media (max-width: 992px) {
     .navbar-toggler {
-        position: fixed;
+        /*position: fixed;*/
         right: 14px;
         background-color: white;
         z-index: 1;

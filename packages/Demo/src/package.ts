@@ -20,10 +20,10 @@ export function demoApp() {
 
 //name: getTable
 //input: string name
-//input: string folder {optional: true}
+//input: string path {optional: true}
 //output: dataframe result
-export async function getTable(name: string, folder: string = ''): Promise<DG.DataFrame> {
-  const file = (await grok.dapi.files.list(folder ? `Demo:Files/${folder}/` : 'Demo:Files/', true, name))[0];
+export async function getTable(name: string, path: string): Promise<DG.DataFrame> {
+  const file = (await grok.dapi.files.list(path ? `system:appdata/${path}/` : 'Demo:Files/', true, name))[0];
   const str = await file.readAsString();
   const result = DG.DataFrame.fromCsv(str);
   return result;

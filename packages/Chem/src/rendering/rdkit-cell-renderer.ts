@@ -92,7 +92,7 @@ M  END
         molCtx = getMolSafe(molString, {"mergeQueryHs":true}, _rdKitModule);
         mol = molCtx.mol;//  this.rdKitModule.get_mol(molString, '{"mergeQueryHs":true}');
       } else {
-        const aromaMolString = aromatizeMolBlock(molString)
+        const aromaMolString = aromatizeMolBlock(molString, _rdKitModule)
         mol = this.rdKitModule.get_qmol(aromaMolString);
         molCtx = {mol: mol, kekulize: false, isQMol: true};
       }

@@ -37,20 +37,20 @@ Provides access to [PostgreSQL](https://www.postgresql.org/) database using SQL 
 |----------------------|--------------------|
 | bigInt               | :white_check_mark: |
 | integer              | :white_check_mark: |
-| double precision     | limmited support   |
+| double precision     | :white_check_mark: |
 | real                 | :white_check_mark: |
-| numeric              | limited support    |
+| numeric              | :white_check_mark: |
 | serial               | :white_check_mark: |
-| monetary             | not testes         |
+| monetary             | not tested         |
 | character type       | :white_check_mark: |
-| bytea                | not supported      |
+| bytea                | limited support    |
 | date/time            | :white_check_mark: |
 | boolean              | :white_check_mark: |
 | network address type | :white_check_mark: |
-| bit string           | limited support    |
+| bit string           | :white_check_mark: |
 | uuid                 | :white_check_mark: |
 | jsonb, json          | limited support    |
-| xml                  | not supported      |
+| xml                  | limited support    |
 | composite types      | limited support    |
 
 ## Supported features
