@@ -6,6 +6,7 @@
 }
 .dialogSize{
   max-width: calc(100% - 3.5rem);
+  margin: .5rem auto;
   margin-top:70px!important;
 }
 .dialogBody{
