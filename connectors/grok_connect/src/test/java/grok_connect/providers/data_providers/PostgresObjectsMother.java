@@ -341,13 +341,13 @@ public class PostgresObjectsMother {
                         + "AND @email(email) AND @some_number(some_number) "
                         + "AND @country(country) AND @date(date)\n"
                         + "--end")
-                .addFuncParam("string", "first_name", "starts with p", "string")
-                .addFuncParam("string", "id", ">1", "string")
-                .addFuncParam("bool", "bool", false, "")
-                .addFuncParam("string", "email", "contains com", "string")
-                .addFuncParam("string", "some_number", ">20", "double")
-                .addFuncParam("string", "country", "in (Indonesia)", "string")
-                .addFuncParam("string", "date", "before 1/1/2022", "datetime")
+                .addFuncParam("string", "","first_name", "starts with p", "string")
+                .addFuncParam("string", "","id", ">1", "string")
+                .addFuncParam("bool", "","bool", false, "")
+                .addFuncParam("string", "","email", "contains com", "string")
+                .addFuncParam("string", "","some_number", ">20", "double")
+                .addFuncParam("string", "","country", "in (Indonesia)", "string")
+                .addFuncParam("string", "","date", "before 1/1/2022", "datetime")
                 .addFuncCallOptionsPattern("first_name", "starts with p",
                         "starts with", null, null, "p")
                 .addFuncCallOptionsPattern("id", ">1", ">", null,
