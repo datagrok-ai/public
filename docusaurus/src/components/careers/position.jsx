@@ -3,7 +3,7 @@ import React from 'react';
 
 export default function profileCard ({children, meta}){
     return(
-        <div className={"col-lg-6 col-md-6 col-sm-6 col-6 my-3"}>
+        <div className={"col-lg-6 col-md-6 col-sm-12 my-3"}>
             <div className="card hover-shadow border-0 border-0 border-light shadow-sm h-100">
                 <a className="btn link" data-toggle="modal" data-target={"#"+meta.id}>
                     <div className="card-body text-left pt-0">
