@@ -35,11 +35,11 @@ category('saveAsSdf', async () => {
     const savedColumn = inputDf.col('Smiles')!;
     const sdfString = getSdfString(inputDf, savedColumn);
     expect(sdfString.replace(/\r/g, ''), fileWithSavedSmiles);
-  });
+  }, {skipReason: 'GROK-12224'});
 
   test('saveMolblockColumn', async () => {
     const savedColumn = inputDf.col('Scaffold')!;
     const sdfString = getSdfString(inputDf, savedColumn);
     expect(sdfString.replace(/\r/g, ''), fileWithSavedMolblock);
-  });
+  }, {skipReason: 'GROK-12224'});
 });
