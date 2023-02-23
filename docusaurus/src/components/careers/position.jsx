@@ -20,7 +20,7 @@ export default function profileCard ({children, meta}){
             <div className="modal fade" tabIndex="-1" id={meta.id} aria-hidden="true">
                 <div className={"modal-dialog modal-dialog-scrollable "+ styles.dialogSize}>
                     <div className={"modal-content "}>
-                        <div className="modal-body text-center ">
+                        <div className={"modal-body text-center "+ styles.dialogBody}>
                             <button type="button" className="close" data-dismiss="modal" aria-label="Close">
                                 <i className="fal fa-times fa-lg text-secondary"></i>
                             </button>
