@@ -30,20 +30,45 @@ class OracleDataProviderTest extends ProviderBaseTest {
         // method probably should throw something when bad input
     }
 
+    @DisplayName("Test of getSchema() method with correct DataConnection")
+    @ParameterizedTest(name = "CORRECT ARGUMENTS")
+    @MethodSource("grok_connect.providers.data_providers.OracleObjectsMother#getSchema_ok")
+    public void getSchema_ok(DataFrame expected) {
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchema(connection,
+                "DATAGROK", "MOCK_DATA"));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
     @DisplayName("Parameters support")
     @ParameterizedTest(name = "{index} : {0}")
-    @MethodSource("grok_connect.providers.data_providers.CommonObjectsMother#checkParameterSupport_ok")
+    @MethodSource({"grok_connect.providers.data_providers.CommonObjectsMother#checkParameterSupport_ok",
+            "grok_connect.providers.data_providers.OracleObjectsMother#checkMultipleParametersSupport"})
     public void checkParameterSupport_ok(FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
-        expected.columns.removeIf(column -> column.name.equals("bool"));
-        expected.columns.forEach(column -> {
-            if (column.name.equals("date")) {
+        prepareDataFrame(expected);
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Parameters support for datetime")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.data_providers.OracleObjectsMother#checkDatesParameterSupport_ok")
+    public void checkDatesParameterSupport_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        expected.columns.forEach(column -> column.name = column.name.toUpperCase());
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    private void prepareDataFrame(DataFrame dataFrame) {
+        // in order to save time reuse some common's
+        dataFrame.columns.removeIf(column -> column.name.equals("bool")); // oracle doesn't have boolean type
+        dataFrame.columns.forEach(column -> { // all columns name stored in uppercase
+            if (column.name.equals("date")) { // 'date' is reserved word in oracle, so use 'dat' for column name
                 column.name = "DAT";
             } else {
                 column.name = column.name.toUpperCase();
             }
         });
-        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
-        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 }
