@@ -1457,7 +1457,7 @@ export namespace hints {
       let top = node.top-root.offsetHeight-8;
       if (top<0) 
         top = 0 
-      root.style.left = node.left+'px';
+      root.style.left = node.left+(el.offsetWidth/2)-(root.offsetWidth/2)+'px';
       root.style.top = top+'px';
       root.classList.add('ui-hint-popup-top');
     }
@@ -1466,7 +1466,7 @@ export namespace hints {
       let bottom = node.bottom+8;
       if (bottom > screen.height)
         bottom = screen.height;
-      root.style.left = node.left+'px';
+      root.style.left = node.left+(el.offsetWidth/2)-(root.offsetWidth/2)+'px';
       root.style.top = bottom+'px';
       root.classList.add('ui-hint-popup-bottom');
     }
