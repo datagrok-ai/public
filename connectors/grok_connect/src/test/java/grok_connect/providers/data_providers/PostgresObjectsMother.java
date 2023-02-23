@@ -18,9 +18,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDate;
 import java.time.Year;
-import java.time.temporal.TemporalAdjusters;
 import java.util.Base64;
 import java.util.stream.Stream;
 
@@ -302,6 +300,69 @@ public class PostgresObjectsMother {
                 Named.of("XML TYPE SUPPORT", getShortFuncCall("SELECT * FROM xml_data")), expected
             )
         );
+    }
+
+    public static Stream<Arguments> checkMultipleParametersSupport() {
+        Parser parser = new DateParser();
+        String datePattern = "yyyy-MM-dd";
+        // --input: string first_name = "starts with p" {pattern: string}
+        //--input: string id = ">1" {pattern :int}
+        //--input: bool bool = false
+        //--input: string email = "contains com" {pattern: string}
+        //--input: string some_number = ">20" {pattern: double}
+        //--input: string country = "in (Indonesia)" {pattern: string}
+        //--input: string date = "before 1/1/2022" {pattern: datetime}
+        DataFrame expected1 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new BigIntColumn(new String[]{"13"}),
+                        "id")
+                .setColumn(new StringColumn(new String[]{"Pail"}), "first_name")
+                .setColumn(new StringColumn(new String[]{"Boxell"}),
+                        "last_name")
+                .setColumn(new StringColumn(new String[]{"pboxellc@moonfruit.com"}), "email")
+                .setColumn(new StringColumn(new String[]{"Genderqueer"}), "gender")
+                .setColumn(new StringColumn(new String[]{"2.37.160.155/32"}),
+                        "ip_address")
+                .setColumn(new BoolColumn(new Boolean[]{false}), "bool")
+                .setColumn(new StringColumn(new String[]{"Indonesia"}), "country")
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2012-01-14")),
+                        "date")
+                .setColumn(new FloatColumn(new Float[]{73.47f}), "some_number")
+                .build();
+        FuncCall funcCall1 = FuncCallBuilder.getBuilder()
+                .addQuery("--input: string first_name = \"starts with p\" {pattern: string}\n"
+                        + "--input: string id = \">1\" {pattern :int}\n"
+                        + "--input: bool bool = false\n"
+                        + "--input: string email = \"contains com\" {pattern: string}\n"
+                        + "--input: string some_number = \">20\" {pattern: double}\n"
+                        + "--input: string country = \"in (Indonesia)\" {pattern: string}\n"
+                        + "--input: string date = \"before 1/1/2022\" {pattern: datetime}\n"
+                        + "SELECT * FROM mock_data WHERE @first_name(first_name) AND @id(id) AND bool = @bool "
+                        + "AND @email(email) AND @some_number(some_number) "
+                        + "AND @country(country) AND @date(date)\n"
+                        + "--end")
+                .addFuncParam("string", "first_name", "starts with p", "string")
+                .addFuncParam("string", "id", ">1", "string")
+                .addFuncParam("bool", "bool", false, "")
+                .addFuncParam("string", "email", "contains com", "string")
+                .addFuncParam("string", "some_number", ">20", "double")
+                .addFuncParam("string", "country", "in (Indonesia)", "string")
+                .addFuncParam("string", "date", "before 1/1/2022", "datetime")
+                .addFuncCallOptionsPattern("first_name", "starts with p",
+                        "starts with", null, null, "p")
+                .addFuncCallOptionsPattern("id", ">1", ">", null,
+                        null, "1")
+                .addFuncCallOptionsPattern("email", "contains com",
+                        "contains", null, null, "com")
+                .addFuncCallOptionsPattern("some_number", ">20", ">", null,
+                        null, 20)
+                .addFuncCallOptionsPattern("country", "in (Indonesia)", "in",
+                        null, null, "Indonesia")
+                .addFuncCallOptionsPattern("date", "before 1/1/2022", "before",
+                        true, true, Year.of(2022).atMonth(1).atDay(1).toString())
+                .build();
+        return Stream.of(Arguments.of(Named.of("type: multiple; operator: multiple; pattern: multiple", funcCall1),
+                expected1));
     }
 
     private static FuncCall getShortFuncCall(String sqlQuery) {
