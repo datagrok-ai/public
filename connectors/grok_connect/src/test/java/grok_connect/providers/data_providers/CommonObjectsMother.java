@@ -16,6 +16,10 @@ import serialization.StringColumn;
 import java.time.LocalDate;
 import java.time.Year;
 import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -45,7 +49,7 @@ public class CommonObjectsMother {
         FuncCall funcCall1 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: int id = 20\n"
                         + "SELECT * FROM mock_data WHERE id = @id")
-                .addFuncParam("int", "id", 20, "")
+                .addFuncParam("int", "", "id", 20, "")
                 .build();
         // --input: string id = ">28" {pattern: int}
         DataFrame expected2 = DataFrameBuilder.getBuilder()
@@ -70,7 +74,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string id = \">28\" {pattern: int}\n"
                         + "SELECT * FROM mock_data WHERE @id(id)\n"
                         + "--end")
-                .addFuncParam("string", "id", ">28", "int")
+                .addFuncParam("string", "", "id", ">28", "int")
                 .addFuncCallOptionsPattern("id", ">28", ">",
                         null, null, 28)
                 .build();
@@ -79,7 +83,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string id = \">=29\" {pattern: int}\n"
                         + "SELECT * FROM mock_data WHERE @id(id)\n"
                         + "--end")
-                .addFuncParam("string", "id", ">=29", "int")
+                .addFuncParam("string", "", "id", ">=29", "int")
                 .addFuncCallOptionsPattern("id", ">=29", ">=",
                         null, null, 29)
                 .build();
@@ -104,7 +108,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string id = \"<=1\" {pattern: int}\n"
                         + "SELECT * FROM mock_data WHERE @id(id)\n"
                         + "--end")
-                .addFuncParam("string", "id", "<=1", "int")
+                .addFuncParam("string", "", "id", "<=1", "int")
                 .addFuncCallOptionsPattern("id", "<=1", "<=",
                         null, null, 1)
                 .build();
@@ -113,7 +117,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string id = \"<2\" {pattern: int}\n"
                         + "SELECT * FROM mock_data WHERE @id(id)\n"
                         + "--end")
-                .addFuncParam("string", "id", "<2", "int")
+                .addFuncParam("string", "", "id", "<2", "int")
                 .addFuncCallOptionsPattern("id", "<2", "<",
                         null, null, 2)
                 .build();
@@ -122,7 +126,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string id = \"in(29, 30)\" {pattern: int}\n"
                         + "SELECT * FROM mock_data WHERE @id(id)\n"
                         + "--end")
-                .addFuncParam("string", "id", "in(29, 30)", "int")
+                .addFuncParam("string", "","id", "in(29, 30)", "int")
                 .addFuncCallOptionsPattern("id", "in(29, 30)", "in",
                         null, null, 29, 30)
                 .build();
@@ -165,7 +169,7 @@ public class CommonObjectsMother {
                         + "21, 22, 23, 24, 25, 26, 27, 28, 29, 30)\" {pattern: int}\n"
                         + "SELECT * FROM mock_data WHERE @id(id)\n"
                         + "--end")
-                .addFuncParam("string", "id", "not in(11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, " +
+                .addFuncParam("string", "", "id", "not in(11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, " +
                                 "22, 23, 24, 25, 26, 27, 28, 29, 30)",
                         "int")
                 .addFuncCallOptionsPattern("id", "not in(11, 12, 13, 14, 15, "
@@ -178,7 +182,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string id = \"min-max 29-30\" {pattern: int}\n"
                         + "SELECT * FROM mock_data WHERE @id(id)\n"
                         + "--end")
-                .addFuncParam("string", "id", "min-max 29-30",
+                .addFuncParam("string", "", "id", "min-max 29-30",
                         "int")
                 .addFuncCallOptionsPattern("id", "29-30",
                         "-", null, null, 29, 30)
@@ -188,7 +192,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: double some_number = 510.32\n"
                         + "SELECT * FROM mock_data WHERE some_number = @some_number\n"
                         + "--end")
-                .addFuncParam("double", "some_number", 510.32, "double")
+                .addFuncParam("double", "", "some_number", 510.32, "double")
                 .build();
         // --input: string some_number = ">975" {pattern: double}
         DataFrame expected5 = DataFrameBuilder.getBuilder()
@@ -213,7 +217,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string some_number = \">975\" {pattern: double}\n"
                         + "SELECT * FROM mock_data WHERE @some_number(some_number)\n"
                         + "--end")
-                .addFuncParam("string", "some_number", ">975", "double")
+                .addFuncParam("string",  "", "some_number", ">975", "double")
                 .addFuncCallOptionsPattern("some_number", ">975", ">",
                         null, null, 975)
                 .build();
@@ -222,7 +226,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string some_number = \">=975\" {pattern: double}\n"
                         + "SELECT * FROM mock_data WHERE @some_number(some_number)\n"
                         + "--end")
-                .addFuncParam("string", "some_number", ">=975", "double")
+                .addFuncParam("string", "", "some_number", ">=975", "double")
                 .addFuncCallOptionsPattern("some_number", ">=975", ">=",
                         null, null, 975)
                 .build();
@@ -247,7 +251,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string some_number = \"<20\" {pattern: double}\n"
                         + "SELECT * FROM mock_data WHERE @some_number(some_number)\n"
                         + "--end")
-                .addFuncParam("string", "some_number", "<20", "double")
+                .addFuncParam("string", "", "some_number", "<20", "double")
                 .addFuncCallOptionsPattern("some_number", "<20", "<",
                         null, null, 20)
                 .build();
@@ -256,7 +260,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string some_number = \"<=20\" {pattern: double}\n"
                         + "SELECT * FROM mock_data WHERE @some_number(some_number)\n"
                         + "--end")
-                .addFuncParam("string", "some_number", "<=20", "double")
+                .addFuncParam("string", "", "some_number", "<=20", "double")
                 .addFuncCallOptionsPattern("some_number", "<=20", "<=",
                         null, null, 20)
                 .build();
@@ -281,7 +285,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string first_name = 'contains Z' {pattern: string}\n"
                         + "SELECT * FROM mock_data WHERE @first_name(first_name)\n"
                         + "--end")
-                .addFuncParam("string", "first_name", "contains Z", "string")
+                .addFuncParam("string", "","first_name", "contains Z", "string")
                 .addFuncCallOptionsPattern("first_name", "contains Z", "contains",
                         null, null, "Z")
                 .build();
@@ -307,7 +311,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string first_name = 'starts with W' {pattern: string}\n"
                         + "SELECT * FROM mock_data WHERE @first_name(first_name)\n"
                         + "--end")
-                .addFuncParam("string", "first_name", "starts with W", "string")
+                .addFuncParam("string", "","first_name", "starts with W", "string")
                 .addFuncCallOptionsPattern("first_name", "starts with W", "starts with",
                         null, null, "W")
                 .build();
@@ -333,7 +337,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string first_name = 'ends with s' {pattern: string}\n"
                         + "SELECT * FROM mock_data WHERE @first_name(first_name)\n"
                         + "--end")
-                .addFuncParam("string", "first_name", "ends with s", "string")
+                .addFuncParam("string", "","first_name", "ends with s", "string")
                 .addFuncCallOptionsPattern("first_name", "ends with s", "ends with",
                         null, null, "s")
                 .build();
@@ -361,7 +365,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string country = 'in (Poland, Brazil)' {pattern: string}\n" +
                         "SELECT * FROM mock_data WHERE @country(country)\n" +
                         "--end")
-                .addFuncParam("string", "country", "in (Poland, Brazil)", "string")
+                .addFuncParam("string", "", "country", "in (Poland, Brazil)", "string")
                 .addFuncCallOptionsPattern("country", "in (Poland, Brazil)", "in",
                         null, null, "Poland", "Brazil")
                 .build();
@@ -387,9 +391,27 @@ public class CommonObjectsMother {
                 .addQuery("--input: string email = 'regex ^([A-Za-z0-9_]+@google.com.au)$' {pattern: string}\n"
                         + "SELECT * FROM mock_data WHERE @email(email)\n"
                         + "--end")
-                .addFuncParam("string", "email", "regex ^([A-Za-z0-9_]+@google.com.au)$", "string")
+                .addFuncParam("string", "", "email", "regex ^([A-Za-z0-9_]+@google.com.au)$", "string")
                 .addFuncCallOptionsPattern("email", "regex ^([A-Za-z0-9_]+@google.com.au)$",
                         "regex", null, null, "^([A-Za-z0-9_]+@google.com.au)$")
+                .build();
+        // list<string>
+        List<String> values = new ArrayList<>();
+        values.add("Poland");
+        values.add("Brazil");
+        FuncCall funcCall19 = FuncCallBuilder.getBuilder()
+                .addQuery("--input: list<string> values\n" +
+                        "SELECT * FROM mock_data WHERE country = ANY(@values)")
+                .addFuncParam("list", "string", "values", values, "")
+                .addFuncCallOptionsPattern("country", "", "",
+                        null, null, "Poland", "Brazil")
+                .build();
+        FuncCall funcCall20 = FuncCallBuilder.getBuilder()
+                .addQuery("--input: list<string> values = ['Poland','Brazil']\n" +
+                        "SELECT * FROM mock_data WHERE country = ANY(@values)")
+                .addFuncParam("list", "string", "values", values, "")
+                .addFuncCallOptionsPattern("country", "", "",
+                        null, null, "Poland", "Brazil")
                 .build();
         return Stream.of(
                 Arguments.of(Named.of("type: int; operator: =; pattern: none", funcCall1), expected1),
@@ -409,7 +431,9 @@ public class CommonObjectsMother {
                 Arguments.of(Named.of("type: string; operator: starts with; pattern: string", funcCall15), expected8),
                 Arguments.of(Named.of("type: string; operator: ends with; pattern: string", funcCall16), expected9),
                 Arguments.of(Named.of("type: string; operator: in; pattern: string", funcCall17), expected10),
-                Arguments.of(Named.of("type: string; operator: regex; pattern: string", funcCall18), expected11)
+                Arguments.of(Named.of("type: string; operator: regex; pattern: string", funcCall18), expected11),
+                Arguments.of(Named.of("type: list<string>; operator: none; pattern: none", funcCall19), expected10),
+                Arguments.of(Named.of("type: list<string>; operator: none; pattern: none", funcCall20), expected10)
         );
     }
 
@@ -438,7 +462,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string date = \"today\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date)\n"
                         + "--end")
-                .addFuncParam("string", "date", "today", "datetime")
+                .addFuncParam("string", "","date", "today", "datetime")
                 .addFuncCallOptionsPattern("date", "", "range", true, false,
                         now.toString(), now.plusDays(1).toString())
                 .build();
@@ -455,7 +479,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string date = \"this week\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date)\n"
                         + "--end")
-                .addFuncParam("string", "date", "this week", "datetime")
+                .addFuncParam("string", "","date", "this week", "datetime")
                 .addFuncCallOptionsPattern("date", "", "range", true, false,
                         firstDayOfWeek.toString(),
                         lastDayOfWeek.plusDays(1).toString())
@@ -473,7 +497,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string date = \"this month\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date)\n"
                         + "--end")
-                .addFuncParam("string", "date", "this month", "datetime")
+                .addFuncParam("string", "","date", "this month", "datetime")
                 .addFuncCallOptionsPattern("date", "", "range", true, false,
                         firstDayOfMonth.toString(),
                         lastDayOfMonth.plusDays(1).toString())
@@ -491,7 +515,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string date = \"this year\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date)\n"
                         + "--end")
-                .addFuncParam("string", "date", "this year", "datetime")
+                .addFuncParam("string","", "date", "this year", "datetime")
                 .addFuncCallOptionsPattern("date", "", "range", true, false,
                         firstDayOfYear.toString(),
                         lastDayOfYear.plusDays(1).toString())
@@ -506,7 +530,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string date = \"yesterday\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date)\n"
                         + "--end")
-                .addFuncParam("string", "date", "yesterday", "datetime")
+                .addFuncParam("string","", "date", "yesterday", "datetime")
                 .addFuncCallOptionsPattern("date", "", "range", true, false,
                         yesterday.toString(),
                         now.toString())
@@ -522,7 +546,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string date = \"last year\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date)\n"
                         + "--end")
-                .addFuncParam("string", "date", "last year", "datetime")
+                .addFuncParam("string","","date", "last year", "datetime")
                 .addFuncCallOptionsPattern("date", "", "range", true, false,
                         firstDayOfYear.minusYears(1).toString(), firstDayOfYear.toString())
                 .build();
@@ -538,7 +562,7 @@ public class CommonObjectsMother {
                 .addQuery( "--input: string date = \"anytime\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date)\n"
                         + "--end")
-                .addFuncParam("string", "date", "anytime", "datetime")
+                .addFuncParam("string", "","date", "anytime", "datetime")
                 .addFuncCallOptionsPattern("date", "", "none", true, true)
                 .build();
         // --input: string date = "2021-2022" {pattern: datetime}
@@ -552,7 +576,7 @@ public class CommonObjectsMother {
                 .addQuery( "--input: string date = \"2021-2021\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date)\n"
                         + "--end")
-                .addFuncParam("string", "date", "2021-2022", "datetime")
+                .addFuncParam("string", "","date", "2021-2022", "datetime")
                 .addFuncCallOptionsPattern("date", "", "range", true, true,
                         Year.of(2021).atDay(1).toString(),
                         Year.of(2022).atDay(1).toString())
@@ -563,7 +587,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string date = \"before 1/1/2022\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date)\n"
                         + "--end")
-                .addFuncParam("string", "date", "before 1/1/2022", "datetime")
+                .addFuncParam("string", "","date", "before 1/1/2022", "datetime")
                 .addFuncCallOptionsPattern("date", "", "before", true, true,
                         Year.of(2022).atDay(1).toString())
                 .build();
@@ -578,7 +602,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string date = \"after 1/1/2022\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date);\n"
                         + "--end")
-                .addFuncParam("string", "date", "after 1/1/2022", "datetime")
+                .addFuncParam("string", "","date", "after 1/1/2022", "datetime")
                 .addFuncCallOptionsPattern("date", "", "after", true, true,
                         LocalDate.parse("2022-01-01").toString())
                 .build();
@@ -587,7 +611,7 @@ public class CommonObjectsMother {
                 .addQuery("--input: string date = \"April 2021\" {pattern: datetime}\n"
                         + "SELECT * FROM dates_patterns WHERE @date(date)\n"
                         + "--end")
-                .addFuncParam("string", "date", "April 2021", "datetime")
+                .addFuncParam("string", "","date", "April 2021", "datetime")
                 .addFuncCallOptionsPattern("date", "", "range", true, false,
                         Year.of(2021).atMonth(4).atDay(1).toString(),
                         Year.of(2021).atMonth(5).atDay(1).toString())
