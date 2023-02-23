@@ -1440,7 +1440,7 @@ export namespace hints {
     if (position == 'right') {
       const right = node.right + 8;
       root.style.left = right + 'px';
-      root.style.top = node.top + (el.offsetHeight / 2) - (root.offsetHeight / 2) + 'px';
+      root.style.top = node.top + (el.offsetHeight / 2) - 17 + 'px';
       root.classList.add('ui-hint-popup-right');
     }
 
@@ -1449,7 +1449,7 @@ export namespace hints {
       if (left < 0)
         left = 0;
       root.style.left = left + 'px';
-      root.style.top = node.top + (el.offsetHeight / 2) - (root.offsetHeight / 2) + 'px';
+      root.style.top = node.top + (el.offsetHeight / 2) - 17 + 'px';
       root.classList.add('ui-hint-popup-left');
     }
 
@@ -1457,16 +1457,16 @@ export namespace hints {
       let top = node.top - root.offsetHeight - 8;
       if (top < 0)
         top = 0
-      root.style.left = node.left + (el.offsetWidth / 2) - (root.offsetWidth / 2) + 'px';
+      root.style.left = node.left + (el.offsetWidth / 2) - 17 + 'px';
       root.style.top = top + 'px';
       root.classList.add('ui-hint-popup-top');
     }
 
     if (position == 'bottom') {
       let bottom = node.bottom + 8;
-      if (bottom > screen.height)
-        bottom = screen.height;
-      root.style.left = node.left + (el.offsetWidth / 2) - (root.offsetWidth / 2) + 'px';
+      if (bottom+root.offsetHeight > window.innerHeight)
+        bottom = window.innerHeight - root.offsetHeight;
+      root.style.left = node.left + (el.offsetWidth / 2) - 17 + 'px';
       root.style.top = bottom + 'px';
       root.classList.add('ui-hint-popup-bottom');
     }
