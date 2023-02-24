@@ -568,7 +568,7 @@ export type ElementOptions = {
   classes?: string;
   style?: object;
   processNode?: (node: HTMLElement) => void;
-  onClick?: (node: HTMLElement) => void;
+  onClick?: (event: PointerEvent) => void;
 };
 
 /** Metadata associated with the semantic type. */
