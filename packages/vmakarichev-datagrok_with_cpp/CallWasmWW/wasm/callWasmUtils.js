@@ -22,6 +22,7 @@ const NUM_OF_COLUMNS = 'numOfColumns';
 const REF = 'ref';
 const VALUE = 'value';
 const TABLE_OF_COLUMNS = 'tableFromColumns';
+const OBJECTS = 'objects';
 const INT_TYPE = 'int';
 const DOUBLE_TYPE = 'double';
 
@@ -80,13 +81,14 @@ export function getCppInput(argsSpecification, inputVals)
     let i = 0;
     for(let key in argsSpecification){
         let arg = argsSpecification[key]; 
+        let type = arg.type;
         
         // skip auxiliry element
         if(key == CALL_RESULT)             
             continue;
 
         // here, we consider each type of input
-        switch(arg.type){
+        switch(type){           
 
             // numbers
             case NUM_TYPE:                
@@ -99,7 +101,22 @@ export function getCppInput(argsSpecification, inputVals)
             // column
             case INT_COLUMN_TYPE:
             case FLOAT_COLUMN_TYPE:
-                let array = inputVals[i].getRawData();
+
+                let array;
+
+                // this is OK if type of column and target type coinside
+                //array = inputVals[i].getRawData();
+
+                let col = inputVals[i];
+
+                // here, we check types and perform an appropriate transform
+                if(((col.type == 'int') && (type == INT_COLUMN_TYPE)) 
+                   || ((col.type == 'double') && (type == FLOAT_COLUMN_TYPE)))
+                     array = col.getRawData();
+                else
+                     array = new typeMap[type](col.getRawData());
+
+                // check types
                 arg.data = { 'array': array,
                              'numOfRows': array.length};
                 i++;
@@ -112,7 +129,7 @@ export function getCppInput(argsSpecification, inputVals)
 
                 ref = arg[NUM_OF_ROWS][REF];
 
-                if (ref.type == INT_TYPE)
+                if (argsSpecification[ref].type == NUM_TYPE)
                     val = argsSpecification[ref].data;
                 else
                     val = argsSpecification[ref].data[arg[NUM_OF_ROWS][VALUE]];                                
@@ -127,8 +144,17 @@ export function getCppInput(argsSpecification, inputVals)
             case FLOAT_COLUMNS_TYPE:                
                 let arrays = [];                
 
+                // this is OK if type of columns and target type coinside
+                //for(let col of inputVals[i].toList())
+                //  arrays.push(col.getRawData());
+
+                // here, we check types and perform an appropriate transform
                 for(let col of inputVals[i].toList())
-                  arrays.push(col.getRawData());
+                  if(((col.type == 'int') && (type == INT_COLUMN_TYPE)) 
+                    || ((col.type == 'double') && (type == FLOAT_COLUMN_TYPE)))
+                    arrays.push(col.getRawData());
+                  else
+                    arrays.push(new typeMap[type](col.getRawData()));
 
                 arg.data = { 'arrays': arrays,
                     'numOfRows': arrays[0].length,
@@ -145,14 +171,18 @@ export function getCppInput(argsSpecification, inputVals)
 
                 ref = arg[NUM_OF_ROWS][REF];
 
-                if (ref.type == INT_TYPE)
+                if (argsSpecification[ref].type == NUM_TYPE)
                     val1 = argsSpecification[ref].data;
                 else
                     val1 = argsSpecification[ref].data[arg[NUM_OF_ROWS][VALUE]];
 
                 ref = arg[NUM_OF_COLUMNS][REF];
 
-                if (ref.type == INT_TYPE)
+                console.log('Ref:');
+                console.log(ref);
+                console.log(argsSpecification[ref].data);
+
+                if (argsSpecification[ref].type == NUM_TYPE)
                     val2 = argsSpecification[ref].data;
                 else
                     val2 = argsSpecification[ref].data[arg[NUM_OF_COLUMNS][VALUE]];                
@@ -534,7 +564,12 @@ function extractNewlyCreatedData(funcSpecificationArgs, argsAfterWasmCall) {
 
 // Get output data: overall output is created
 function getOutput(funcSpecification) {  
-    let output = funcSpecification.output;    
+    let output = funcSpecification.output;
+    
+    const typeToDataFieldMap = {'newFloatColumns': 'columns',
+                                'newIntColumns': 'columns',
+                                'newFloatColumn': 'column',
+                                'newIntColumn': 'column'};
 
     switch(output.type) {
 
@@ -550,6 +585,18 @@ function getOutput(funcSpecification) {
 
         case TABLE_OF_COLUMNS:
             return DG.DataFrame.fromColumns(funcSpecification.arguments[output.source].columns);
+            break;
+
+        case OBJECTS:
+            let arrayToReturn = [];
+            
+            // push data of the required arguments
+            for(let name of output.source) {
+                let arg = funcSpecification.arguments[name];
+                arrayToReturn.push(arg[typeToDataFieldMap[arg.type]]);
+            }                
+
+            return arrayToReturn;
             break;
 
         // TODO: process other cases and mistakes
