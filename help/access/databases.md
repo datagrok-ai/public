@@ -67,7 +67,8 @@ When you cache the query results, use the **Invalidate On** field to specify a [
 
 :::caution
 
-If you leave the **Invalidate On** field empty, the cache won't be reloaded.
+If you leave the **Invalidate On** field empty, the cache won't ever be updated.
+This only makes sense when the data in the database never changes. 
 
 :::
 
@@ -96,7 +97,7 @@ To cache package-defined connections, you can specify the `cacheResults` paramet
 
 <details>
 
-<summary> Adding caches progrmmatically </summary>
+<summary> Setting cache options programmatically </summary>
 
 To cache the query results programmatically, edit the corresponding .sql file in the package queries and specify the `meta.cache` and `meta.invalidate` fields. These fields determine whether and how to cache the query results:
 
@@ -134,7 +135,7 @@ If you don't see a certain action, it may be due to insufficient permissions. Co
 
 :::note
 
-Each object in Datagrok has multiple data properties (or contexts). These properties are displayed in the [**Context Panel**](../datagrok/navigation.md#properties) on the left. The **Context Panel** is dynamic and context-sensitive, meaning it adapts to the selected object, presenting only the relevant information and options. For example, when you click a table in the **Database Manager**, the **Context Panel** updates, allowing you to view the table's metadata, dynamically preview the table's contents, run queries, and access other relevant information and options.
+When you click on an object, its properties and context actions are shown in the [**Context Panel**](../datagrok/navigation.md#context-panel) on the right. For example, when you click a table in the **Database Manager**, the **Context Panel** updates, allowing you to view the table's metadata, dynamically preview the table's contents, run queries, and access other relevant information and options.
 
 <details>
 <summary> Developers </summary>
@@ -155,9 +156,9 @@ You can reposition, resize, detach, or hide any panel. To learn more about custo
 
 ### Schema Browser
 
-A **Schema Browser** provides a convenient way to explore all tables and columns belonging to a connection. The view is interactive - right-clicking a table or a column pulls up the object's context menu, clicking the object updates the **Context Panel**.
+A **Schema Browser** provides a convenient way to explore all tables and columns belonging to a connection. Right-clicking a table or a column pulls up the object's context menu, clicking the object updates the **Context Panel**.
 
-To open a **Schema Browser**, in the **Database Manager** right-click the desired connection and select **Browse schema** from the list of options.
+To open a **Schema Browser**, in the **Database Manager** right-click on a connection and select **Browse schema**.
 
 ![Schema browser](browse-schema.gif)
 
@@ -305,60 +306,18 @@ To aggregate data, use the **Transformation Tab**. In this tab, you can choose w
    1. (Optional) Repeat these steps to add additional aggregation parameters. To modify or remove a parameter, right-click and select the action from the list.
 * Use **Filters** to specify which items are returned when you run a query.
 
-### Filtering
-
-You can use these fields to filter queries with [smart search](../datagrok/smart-search.md):
-
-| Field       | Description                                                       |
-|-------------|-------------------------------------------------------------------|
-| ID          |                                                                   |
-| name        |                                                                   |
-| query       |                                                                   |
-| runs        | list of [FuncCall](../datagrok/functions/function-call.md) object |
-| connection  |                                                                   |
-| jobs        | [DataJob](data-job.md) object                                     |
-| createdOn   |                                                                   |
-| updatedOn   |                                                                   |
-| author      | [User](../govern/user.md) object                                  |
-| starredBy   | [User](../govern/user.md) object                                  |
-| commentedBy | [User](../govern/user.md) object                                  |
-| usedBy      | [User](../govern/user.md) object                                  |
-
 ## Parameterized queries
 
-A parameterized query uses _parameters_ as placeholders for constant values. The parameters are assigned values only during query execution, so you can run the same query with different values instead of creating distinct queries for each scenario. Parameterized queries are also useful for dynamic data where the values are not determined until the statement is executed. All parameters are optional and are defined at the beginning of a query.
+A query can be parameterized, allowing you to run the same query with different values instead of creating distinct queries for each scenario. 
 
-The syntax for defining query parameters is based on [scripting](../compute/scripting.md) with additions specific to queries.
+The syntax for defining query parameters is based on [scripting](../compute/scripting.md) with additions specific to queries. Here's an example of a simple query that accepts one string parameter "productName":
 
-<details>
-
-<summary> Example </summary>
 
 >```sql
 >--input: string productName                                               
 >select * from products where productname = @productName
 >```
 
-</details>
-
-### Adding parameter
-
-To add a parameter, follow these steps:
-
-1. Right-click the query to which you wish to add a parameter. Select **Edit** to open the **Query Editor**.
-1. In the **Query** tab, annotate parameters. Use `--` for SQL and `#` for Sparql followed by the parameter type. If you declare a parameter without a type, the type is assumed to be `string`.
-1. (Optional) Add a default value. The table below lists the supported types. If you declare a parameter without a default value, a value must be entered at execution.
-
-   | Parameter  | Description, supported type | Input template |
-   |----------------|----------|---------|
-   | `name`         |       |      |
-   | `friendlyName` | Friendly name  |       |
-   | `description`  | Description           |
-   | `help`         | Help URL    |          |
-   | `tags`         | Tags           |       |
-   | `input`        | `int` - integer number<br />`double`  - float number <br />`bool` - boolean<br />`string` - string<br />`datetime`- DateTime<br />`list<T>` - a list of type T | `--input: <type> <name> = <value> {<option>: <value>; ...} [<description>]` |
-   | `output`       | Output parameter        |
-1. When you're done, click **Save**.
 
 To define input parameters, you have these options:
 
@@ -434,7 +393,7 @@ To define input parameters, you have these options:
 
     :::
 
-In most cases, Datagrok returns the query results as a dataframe. To return a value of a different data type, use the output parameter.
+In most cases, Datagrok returns the query results as a dataframe. To return a value of a different data type, specify the type of the output parameter.
 
 <details>
 
@@ -447,8 +406,6 @@ To return a string with the semantic type `Molecule`:
  ```
 
 </details>
-
-You can persist the collected parameters to use them with more than one query.
 
 ## Running queries
 
@@ -499,12 +456,12 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
 
 You have two options to share query results:
 
-* _Share the dataframe's URL_: Each query output has a unique URL that encodes the parameters entered. After you have executed a query, copy the URL from the address bar and share it with others. To access the query results from the link provided, users must have the necessary permissions to execute this query.
-* _Share the dataframe_: To share the query results as a dataframe, you need to [upload it](/datagrok/project.md#uploading-a-project). Use this option when you want to persist a specific layout or create a [dynamic dashboard](#sharing-query-output-as-dynamic-dashboard).
+* _Share the URL_: Each query output has a unique URL that includes query parameters. After you have executed a query, copy the URL from the address bar and share it with others. When this URL is accessed, a query gets re-executed, so you will always be looking at the latest data. To refine the query, change its parameters in the toolbox on the left. To access the query results from the link provided, users must have the necessary permissions to execute this query.
+* _Share the project_: To share query results as a project, you need to [upload it](../datagrok/project.md#uploading-a-project). Use this option when you want to persist a specific layout or create a [dynamic dashboard](#sharing-query-output-as-dynamic-dashboard).
 
 ### Sharing query output as dynamic dashboard
 
-When you run a query, you receive the results in an interactive dataframe. In the dataframe, you can perform various operations such as data cleansing, transformation, [and more](/visualize/viewers/grid.md). Once you have the data set up to your satisfaction, you can add viewers and create a visualization. You can save this visualization as a dashboard and share it with others. For parameterized queries, these dashboards can be dynamic. By changing query parameters right inside the dashboard, users can view different datasets and interact with data in real-time.
+When you run a query, you typically get back the dataframe. After that, you can perform various operations on that dataframe, such as data cleansing, transformation, [and more](../visualize/viewers/grid.md). All of these actions get recorded as a macros, and will be replayed when the query is re-executed. Once you have the data set up to your satisfaction, you can add viewers and create a visualization. You can save this visualization as a dashboard and share it with others. For parameterized queries, these dashboards can be dynamic. By changing query parameters right inside the dashboard, users can view different datasets and interact with data in real-time.
 
 To save the query output as a dynamic dashboard, do the following:
 
@@ -519,9 +476,9 @@ To save the query output as a dynamic dashboard, do the following:
 
 ## Access control
 
-In Datagrok, certain classes of objects we call _entities_ have a [standard set of operations](../datagrok/objects.md) that can be applied to them. This includes connections, queries, tables, and table columns, all of which can be shared, assigned permissions, annotated, and more.
+In Datagrok, certain classes of objects we call _entities_ have a [standard set of operations](../datagrok/objects.md) that can be applied to them. These entities are connections, queries, tables, and table columns, all of which can be shared, assigned permissions, annotated, and more.
 
-When you create a connection or a query, it's private and visible to you only. You can share it to make it accessible to others. If you can't share a connection or a query, you may have insufficient permissions. Contact your Datagrok administrator for assistance.
+When you create an entity such as a connection or a query, it's private and visible to you only. You can share it to make it accessible to others. If you can't share a connection or a query, you may have insufficient permissions. Contact your Datagrok administrator for assistance.
 
 To share:
 
@@ -546,16 +503,16 @@ Datagrok query belongs to the database connection for which it's created. It mea
 
 :::tip
 
-You can use the **Context Pane** on the left to inspect and quickly adjust access permissions to your databases, manage queries, view history and activity details, send comments to those you're sharing with, and more.
+Use the **Context Pane** on the right to inspect and quickly adjust access permissions to your databases, manage queries, view history and activity details, send comments to those you're sharing with, and more.
 
 :::
 
 ## Data reproducibility
 
-Any action performed on datagrok entities is reproducable and can be used in
+Any action performed on datagrok entities is reproducible and can be used in
 automation workflows. For example, you can use data preparation pipeline to define jobs for data ingestion, postprocessing, and transformations.
 
-To learn more about automating workflows usung data preparation pipelines, see [Data preparation pipeline](data-pipeline.md).
+To learn more about automating workflows using data preparation pipelines, see [Data preparation pipeline](data-pipeline.md).
 
 ## Resources
 
