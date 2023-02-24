@@ -175,7 +175,7 @@ More information about Datagrok design and components:
 
 8. Go in the web browser to <CVM_DNS>, login to Datagrok using username "admin" and password "admin"
 
-9. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
+9. Edit settings in the deployed Datagrok platfom  (Tools -> Settings...). Do not forget to click Apply to save new settings.
 
 * Scripting:
   * CVM Url: `http://<CVM_DNS>`
