@@ -83,11 +83,11 @@ public class PostgresObjectsMother {
                 .build();
         return Stream.of(
                 Arguments.of(Named.of("ARRAY TYPE SUPPORT",
-                        getShortFuncCall("SELECT * FROM sal_emp;")), expected1),
+                        FuncCallBuilder.fromQuery("SELECT * FROM sal_emp;")), expected1),
                 Arguments.of(Named.of("ARRAY'S INTERNAL TYPE SUPPORT#1",
-                        getShortFuncCall("SELECT pay_by_quarter[3] FROM sal_emp;")), expected2),
+                        FuncCallBuilder.fromQuery("SELECT pay_by_quarter[3] FROM sal_emp;")), expected2),
                 Arguments.of(Named.of("ARRAY'S INTERNAL TYPE SUPPORT#2",
-                        getShortFuncCall("SELECT schedule[:2][2:] FROM sal_emp WHERE "
+                        FuncCallBuilder.fromQuery("SELECT schedule[:2][2:] FROM sal_emp WHERE "
                         + "name = 'Bill';")), expected3)
         );
     }
@@ -128,7 +128,7 @@ public class PostgresObjectsMother {
                         378.4f, 349.11f, 631.89f, 561.72f, 978.01f}), "some_number")
                 .build();
         return Stream.of(Arguments.of(Named.of("VARCHAR, BOOLEAN, BIGINT, DATE, CIDR, NUMERIC TYPES SUPPORT",
-                getShortFuncCall("SELECT * FROM mock_data LIMIT 10;")), expected));
+                FuncCallBuilder.fromQuery("SELECT * FROM mock_data LIMIT 10;")), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_bitStringType_ok() {
@@ -143,9 +143,9 @@ public class PostgresObjectsMother {
                 .setColumn(new BigIntColumn(new String[] {"101", "0"}), "d")
                 .build();
         return Stream.of(Arguments.of(Named.of("BIT STRING WITH FIXED(>1) AND VARYING LENGTH SUPPORT",
-                        getShortFuncCall("SELECT * FROM test1;")), expected1),
+                        FuncCallBuilder.fromQuery("SELECT * FROM test1;")), expected1),
                 Arguments.of(Named.of("BIT STRING WITH FIXED(1) AND VARYING LENGTH SUPPORT",
-                        getShortFuncCall("SELECT * FROM test2")), expected2));
+                        FuncCallBuilder.fromQuery("SELECT * FROM test2")), expected2));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_byteAType_ok() {
@@ -163,7 +163,7 @@ public class PostgresObjectsMother {
                 .setColumn(new StringColumn(new String[] {data}), "data")
                 .build();
         return Stream.of(Arguments.of(Named.of("BYTEA TYPE SUPPORT",
-                getShortFuncCall("SELECT encode(data, 'base64') as data FROM bytea_data;")), expected));
+                FuncCallBuilder.fromQuery("SELECT encode(data, 'base64') as data FROM bytea_data;")), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_compositeType_ok() {
@@ -181,9 +181,9 @@ public class PostgresObjectsMother {
                 .build();
         return Stream.of(
                 Arguments.of(Named.of("COMPOSITE TYPE SUPPORT",
-                        getShortFuncCall("SELECT * FROM on_hand;")), expected1),
+                        FuncCallBuilder.fromQuery("SELECT * FROM on_hand;")), expected1),
                 Arguments.of(Named.of("COMPOSITE TYPE FIELDS TYPES SUPPORT",
-                        getShortFuncCall("SELECT (item).name, (item).supplier_id, "
+                        FuncCallBuilder.fromQuery("SELECT (item).name, (item).supplier_id, "
                         + "(item).price, count FROM on_hand")), expected2)
         );
     }
@@ -201,7 +201,7 @@ public class PostgresObjectsMother {
                 .setColumn(new StringColumn(new String[] {"1 years 5 mons 5 days 0 hours 0 mins 0.0 secs"}), "interval")
                 .build();
         return Stream.of(Arguments.of(Named.of("DATE, TIME, TIMESTAMP, INTERVAL TYPES SUPPORT",
-                getShortFuncCall("SELECT * FROM dates")), expected));
+                FuncCallBuilder.fromQuery("SELECT * FROM dates")), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_jsonbType_ok() {
@@ -212,7 +212,7 @@ public class PostgresObjectsMother {
                                 "{\"bar\": \"baz\", \"active\": false, \"balance\": 7.77}", "{\"reading\": 0.00001230}"}), "data")
                 .build();
         return Stream.of(Arguments.of(Named.of("JSONB TYPE SUPPORT",
-                getShortFuncCall("SELECT * FROM jsonb_data")), expected));
+                FuncCallBuilder.fromQuery("SELECT * FROM jsonb_data")), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_numericType_ok() {
@@ -248,17 +248,17 @@ public class PostgresObjectsMother {
                 .build();
         return Stream.of(
                 Arguments.of(Named.of("NUMERIC TYPE SUPPORT WITHOUT PRECISION AND SCALE",
-                        getShortFuncCall("SELECT * FROM numeric_data")), expected1),
+                        FuncCallBuilder.fromQuery("SELECT * FROM numeric_data")), expected1),
                 Arguments.of(Named.of("DOUBLE TYPE SUPPORT",
-                        getShortFuncCall("SELECT * FROM doubles")), expected2),
+                        FuncCallBuilder.fromQuery("SELECT * FROM doubles")), expected2),
                 Arguments.of(Named.of("REAL TYPE SUPPORT",
-                        getShortFuncCall("SELECT * FROM reals")), expected3),
+                        FuncCallBuilder.fromQuery("SELECT * FROM reals")), expected3),
                 Arguments.of(Named.of("BIGINT TYPE SUPPORT",
-                        getShortFuncCall("SELECT * FROM bigint_data")), expected4),
+                        FuncCallBuilder.fromQuery("SELECT * FROM bigint_data")), expected4),
                 Arguments.of(Named.of("NUMERIC TYPE SUPPORT WITH PRECISION",
-                        getShortFuncCall("SELECT * FROM numeric_data_precision")), expected5),
+                        FuncCallBuilder.fromQuery("SELECT * FROM numeric_data_precision")), expected5),
                 Arguments.of(Named.of("NUMERIC TYPE SUPPORT WITH PRECISION AND SCALE",
-                        getShortFuncCall("SELECT * FROM numeric_data_precision_scale")), expected6)
+                        FuncCallBuilder.fromQuery("SELECT * FROM numeric_data_precision_scale")), expected6)
         );
     }
 
@@ -274,9 +274,9 @@ public class PostgresObjectsMother {
                 .setColumn(new StringColumn(new String[]{"Fiat", "Honda"}), "brand")
                 .build();
         return Stream.of(
-                Arguments.of(Named.of("SMALL SERIAL TYPE SUPPORT", getShortFuncCall("SELECT * FROM cars_small")), expected1),
-                Arguments.of(Named.of("SERIAL TYPE SUPPORT", getShortFuncCall("SELECT * FROM cars")), expected1),
-                Arguments.of(Named.of("BIG SERIAL TYPE SUPPORT", getShortFuncCall("SELECT * FROM cars_big")), expected2)
+                Arguments.of(Named.of("SMALL SERIAL TYPE SUPPORT", FuncCallBuilder.fromQuery("SELECT * FROM cars_small")), expected1),
+                Arguments.of(Named.of("SERIAL TYPE SUPPORT", FuncCallBuilder.fromQuery("SELECT * FROM cars")), expected1),
+                Arguments.of(Named.of("BIG SERIAL TYPE SUPPORT", FuncCallBuilder.fromQuery("SELECT * FROM cars_big")), expected2)
         );
     }
 
@@ -286,7 +286,7 @@ public class PostgresObjectsMother {
                 .setColumn(new StringColumn(new String[]{"6ecd8c99-4036-403d-bf84-cf8400f67836",
                         "c81d4e2e-bcf2-11e6-869b-7df92533d2db", "237e9877-e79b-12d4-a765-321741963000"}), "id")
                 .build();
-        return Stream.of(Arguments.of(Named.of("UUID TYPE SUPPORT", getShortFuncCall("SELECT * FROM uuid_data")), expected));
+        return Stream.of(Arguments.of(Named.of("UUID TYPE SUPPORT", FuncCallBuilder.fromQuery("SELECT * FROM uuid_data")), expected));
     }
 
     public static Stream<Arguments> checkOutputDataFrame_xmlType_ok() {
@@ -297,7 +297,7 @@ public class PostgresObjectsMother {
                         "<book><title>Manual</title><chapter>...</chapter></book>"}), "data")
                 .build();
         return Stream.of(Arguments.of(
-                Named.of("XML TYPE SUPPORT", getShortFuncCall("SELECT * FROM xml_data")), expected
+                Named.of("XML TYPE SUPPORT", FuncCallBuilder.fromQuery("SELECT * FROM xml_data")), expected
             )
         );
     }
@@ -363,11 +363,5 @@ public class PostgresObjectsMother {
                 .build();
         return Stream.of(Arguments.of(Named.of("type: multiple; operator: multiple; pattern: multiple", funcCall1),
                 expected1));
-    }
-
-    private static FuncCall getShortFuncCall(String sqlQuery) {
-        return FuncCallBuilder.getBuilder()
-                .addQuery(sqlQuery)
-                .build();
     }
 }
