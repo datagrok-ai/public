@@ -2,7 +2,6 @@ package grok_connect.providers;
 
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.providers.utils.Providers;
-import grok_connect.providers.utils.Sql;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -65,6 +64,71 @@ class OracleDataProviderTest extends ProviderBaseTest {
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.data_providers.OracleObjectsMother#checkOutputDataFrame_xmlType_ok")
     public void checkOutputDataFrame_xmlType_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support for character types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.data_providers.OracleObjectsMother#checkOutputDataFrame_characterTypes_ok")
+    public void checkOutputDataFrame_characterTypes_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support for date types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.data_providers.OracleObjectsMother#checkOutputDataFrame_dateTypes_ok")
+    public void checkOutputDataFrame_dateTypes_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support for json type")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.data_providers.OracleObjectsMother#checkOutputDataFrame_jsonType_ok")
+    public void checkOutputDataFrame_jsonType_ok(FuncCall funcCall, DataFrame expected) {
+        // resultSet.getObject(1, OracleJsonObject.class)
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support for uri type")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.data_providers.OracleObjectsMother#checkOutputDataFrame_uriType_ok")
+    public void checkOutputDataFrame_uriType_ok(FuncCall funcCall, DataFrame expected) {
+        // should be used only with .getURI()
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support for varray type")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.data_providers.OracleObjectsMother#checkOutputDataFrame_varrayType_ok")
+    public void checkOutputDataFrame_varrayType_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support for numeric types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.data_providers.OracleObjectsMother#checkOutputDataFrame_numericTypes_ok")
+    public void checkOutputDataFrame_numericTypes_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support for lobs types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.data_providers.OracleObjectsMother#checkOutputDataFrame_lobsTypes_ok")
+    public void checkOutputDataFrame_lobsTypes_ok(FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));

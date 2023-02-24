@@ -29,6 +29,11 @@ public class FuncCallBuilder {
         return builder;
     }
 
+    public static FuncCall fromQuery(String query) {
+        return getBuilder().addQuery(query).build();
+    }
+
+    @SuppressWarnings("unchecked")
     public void restore() {
         funcCall = new FuncCall();
         funcCall.func = new DataQuery();
