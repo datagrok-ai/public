@@ -1,12 +1,12 @@
+import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+
 import {expect} from '@datagrok-libraries/utils/src/test';
-import {_package} from '../package-test';
 import {PdbEntry} from '../pdb-entry';
 import {byId} from '../viewers/molstar-viewer';
 
-export async function requireText(name: string): Promise<string> {
-  return await _package.files.readAsText(name);
-}
-
+export const _packageName = 'BiostructureViewer';
 const _examplePDBID = '2V0A';
 
 /**
