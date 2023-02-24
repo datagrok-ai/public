@@ -58,7 +58,8 @@ it can be any virtual machine. Also, Load Balancers for each VM can be used inst
     ```
 
 3. [Create VPC](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-getting-started.html#getting-started-create-vpc)
-   for Datagrok EC2 Instances. Skip this stage if you do not use AWS EC2.
+   for Datagrok EC2 Instances. Do steps following links or applying code below in AWS CLI.
+   Skip this stage if you do not use AWS EC2.
     1. [Create VPC](https://docs.aws.amazon.com/vpc/latest/userguide/working-with-vpcs.html#Create-VPC)
 
        ```shell
@@ -131,6 +132,8 @@ it can be any virtual machine. Also, Load Balancers for each VM can be used inst
         14. Launch
         15. Choose an existing key pair which we imported on the 3rd stage: datagrok-deploy
 
+       Or do it from AWS CLI:
+
        ```shell
        aws ec2 run-instances --image-id ami-092cce4a19b438926 --block-device-mappings 'Ebs={VolumeSize=20}' --network-interfaces 'AssociatePublicIpAddress=true' --count 1 --instance-type t3.medium --key-name datagrok-deploy --security-group-ids <SG_ID_FROM_5_STAGE> --subnet-id <SUBNET_ID_FROM_4_STAGE>
        ```
@@ -154,6 +157,8 @@ it can be any virtual machine. Also, Load Balancers for each VM can be used inst
         14. Launch
         15. Choose an existing key pair which we imported on the 3rd stage: datagrok-deploy
 
+       Or do it from AWS CLI:
+
        ```shell
        aws ec2 run-instances --image-id ami-092cce4a19b438926 --block-device-mappings 'Ebs={VolumeSize=100}' --network-interfaces 'AssociatePublicIpAddress=true' --count 1 --instance-type c5.xlarge --key-name datagrok-deploy --security-group-ids <SG_ID_FROM_5_STAGE> --subnet-id <SUBNET_ID_FROM_4_STAGE>
        ```
@@ -171,6 +176,7 @@ it can be any virtual machine. Also, Load Balancers for each VM can be used inst
 8. Create PostgreSQL 12 database for Datagrok
     1. [Create Security Group](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_SecurityGroups.html#creating-security-groups)
        for EC2 instances. Skip this step if you do not use AWS RDS.
+       You can do it from AWS CLI:
 
        ```shell
        aws ec2 create-security-group --group-name datagrok-rds-sg --description "Datagrok RDS SG" --vpc-id <VPC_ID_FROM_4_STAGE>
@@ -191,6 +197,8 @@ it can be any virtual machine. Also, Load Balancers for each VM can be used inst
         11. Create a new DB Subnet Group for the Subnet group
         12. Public access: No
         13. VPC security group: Choose existing: select security group created in the 1st step: datagrok-rds-sg
+
+        You can do it from AWS CLI:
 
         ```shell
         aws rds create-db-subnet-group \
@@ -236,7 +244,7 @@ it can be any virtual machine. Also, Load Balancers for each VM can be used inst
 ## Setup Datagrok components
 
 1. Switch to the datagrok context `docker context use datagrok`
-2. Replace in `GROK_PARAMETERS` value with
+2. In downloaded `localhost.docker-compose.yaml` replace in `GROK_PARAMETERS` value with
 
     ```json
     {
@@ -281,7 +289,7 @@ it can be any virtual machine. Also, Load Balancers for each VM can be used inst
     COMPOSE_PROFILES=cvm docker-compose --project-name cvm up -d
     ```
 
-3. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
+3. Edit settings in the running Datagrok platfom (Tools -> Settings...). Do not forget to click Apply to save new settings.
     * Scripting:
         * CVM Url: `http://<CVM_VM_IP_ADDRESS>:8090`
         * CVM URL Client: `http://<CVM_VM_IP_ADDRESS>:8090`

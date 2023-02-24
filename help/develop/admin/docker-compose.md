@@ -186,7 +186,7 @@ docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok -
 
 ## Troubleshooting
 
-1. In case of any issues, check the settings in the Datagrok (Tools | Settings...).
+1. In case of any issues, check the settings in the Datagrok (Tools -> Settings...).
 
     * Connectors
       * External Host: `grok_connect`
