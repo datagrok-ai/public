@@ -33,7 +33,7 @@ We separated the Git Flow into two types: flow for experienced contributors and 
    <TabItem value="master" label="Master branch" default>
    ```
    Do not create unnecessary merge loops. Always use the --rebase flag to pull changes from the `master` branch. For
-   more information how to work with git check the detailed instructions in [codeowners flow](#codeowners-flow).
+   more information on how to work with git, check the detailed instructions in [codeowners flow](#codeowners-flow).
    ```bash
    git stash
    git pull --rebase
@@ -69,7 +69,7 @@ requests to the master branch. They are the owners of the code quality of the pr
 <details>
   <summary>Detailed git instructions</summary>
 
-1. Clone the repository if you do not have the local repository. It should be done once.
+1. Clone the repository if you do not have the local repository. It is a one-time procedure.
 
    ```bash
    # git clone <repository_url>
@@ -83,7 +83,8 @@ requests to the master branch. They are the owners of the code quality of the pr
    git checkout master
    ```
 
-3. Pull the latest changes from the remote server. Start your work with pulling the changes from remote server. It will
+3. Pull the latest changes from the remote server. Start your work by pulling the changes from the remote server. It
+   will
    prevent bugs, rework, and the tiresome resolution of conflicts.
 
    ```bash
@@ -100,7 +101,7 @@ requests to the master branch. They are the owners of the code quality of the pr
    git add -p
    ```
 
-7. Create a commit with changes. Write descriptive and meaningful commit messages according to
+7. Create a commit with changes. Write descriptive and meaningful messages according to
    the [commit message rules](#commit-message-policy). Changelogs include all commit messages.
 
    ```bash
@@ -123,7 +124,7 @@ requests to the master branch. They are the owners of the code quality of the pr
 
 The general contributors first push code to the branches and get a code review from the code owner. Then, the code owner
 merges the changes to the master branch. Pushing straight to the master branch is forbidden for general contributors.
-They have to follow the full git-flow, which is quite similar to
+They have to follow the full git flow, which is quite similar to
 the [trunk-based development flow](https://www.atlassian.com/continuous-delivery/continuous-integration/trunk-based-development).
 
 ![Git Flow General](gitflow-general.svg)
@@ -131,7 +132,7 @@ the [trunk-based development flow](https://www.atlassian.com/continuous-delivery
 <details>
   <summary>Detailed git instructions</summary>
 
-1. Clone the repository if you do not have the local repository. It should be done once.
+1. Clone the repository if you do not have the local repository. It is a one-time procedure.
 
    ```bash
    # git clone <repository_url>
@@ -145,15 +146,17 @@ the [trunk-based development flow](https://www.atlassian.com/continuous-delivery
    git checkout master
    ```
 
-3. Pull the latest changes from the remote server. Start your work with pulling the changes from remote server. It will
+3. Pull the latest changes from the remote server. Start your work by pulling the changes from the remote server. It
+   will
    prevent bugs, rework, and the tiresome resolution of conflicts.
 
    ```bash
    git pull
    ```
 
-4. Create a git branch. It should be named according to the task. Name of branches should be meaningful. Use the agreed
-   standard: `<first letter of your name><your surname>/<task ID>/<meaningful short description>`. Task ID should be a
+4. Create a git branch. It would be best to name it according to the task; the name must be meaningful.
+   Use the agreed standard: `<first letter of your name><your surname>/<task ID>/<meaningful short description>`. Task
+   ID should be a
    full ID from any task tracking system. For example, `jdoe/GROK-123/description` for Jira issues or
    `jdoe/#123/description` for GitHub issues.
 
@@ -186,7 +189,7 @@ the [trunk-based development flow](https://www.atlassian.com/continuous-delivery
    git add -p
    ```
 
-9. Create a commit with changes. Write descriptive and meaningful commit messages according to
+9. Create a commit with changes. Write descriptive and meaningful messages according to
    the [commit message rules](#commit-message-policy). Changelogs include all commit messages. If all the commits have
    descriptive messages, there will be no need to rewrite the message during a merge.
 
@@ -205,10 +208,11 @@ the [trunk-based development flow](https://www.atlassian.com/continuous-delivery
     ```
 
 11. Repeat steps 5-9 until you get the expected result
-12. Create Pull Request from your branch to the master branch and ask for a review from Code Owner.
-13. After the approval, merge pull request using the 'Squash and merge' option. All changes from the development branch
+12. Create a pull request from your branch to the master branch and ask for a review from Code Owner.
+13. After the approval, merge the pull request using the 'Squash and merge' option. All changes from the development
+    branch
     will be merged into the master branch as one squashed commit. Check and rewrite the commit message if needed. The
-    commit message must meet our [commit message rules](#commit-message-policy). Changelogs include all commit messages.
+    commit message must meet the [commit message rules](#commit-message-policy). Changelogs include all commit messages.
 14. Repeat 2-12 steps every time you start working on a new task
 
 </details>
@@ -219,11 +223,11 @@ The new branch `release/X.Y.Z` is created during the release of the latest versi
 is required to create a stable and reliable release of public [Datagrok JS API](https://datagrok.ai/help/develop/js-api)
 and [Datagrok Docker image](https://hub.docker.com/r/datagrok/datagrok). After the tests and approvals, the CI/CD
 tool bumps the version of [JS API](https://datagrok.ai/help/develop/js-api)
-and [Datagrok Docker image](https://hub.docker.com/r/datagrok/datagrok). Then it and
-generates the release notes for the new version. The version of [JS API](https://datagrok.ai/help/develop/js-api)
-coincide with the [Datagrok Docker image](https://hub.docker.com/r/datagrok/datagrok) version. Commit with new version
+and [Datagrok Docker image](https://hub.docker.com/r/datagrok/datagrok). Then it generates the release notes for the new
+version. The version of [JS API](https://datagrok.ai/help/develop/js-api)
+coincide with the [Datagrok Docker image](https://hub.docker.com/r/datagrok/datagrok) version. Commit with new version,
 and release notes should be cherry-picked from the release branch to the master branch.
-All the operations are performed automatically by [CI/CD tool](../admin/releases/ci-flow.mdx).
+All the procedures are performed automatically by [CI/CD tool](../admin/releases/ci-flow.mdx).
 
 :::note
 For now, there is no need in the release branch for any software other than JS API and Datagrok Docker Image.
@@ -235,7 +239,7 @@ For now, there is no need in the release branch for any software other than JS A
 <details>
   <summary>Detailed git instructions</summary>
 
-1. Clone the repository if you do not have the local repository. It should be done once.
+1. Clone the repository if you do not have the local repository. It is a one-time procedure.
 
    ```bash
    # git clone <repository_url>
@@ -249,14 +253,13 @@ For now, there is no need in the release branch for any software other than JS A
    git checkout master
    ```
 
-3. Pull the latest changes from the remote server. Start your work with pulling the changes from remote server. It will
-   prevent bugs, rework, and the tiresome resolution of conflicts.
+3. Pull the latest changes from the remote server.
 
    ```bash
    git pull
    ```
 
-4. Create a release branch. It should be named according to the release: `release/<release number>`. For example,
+4. Create a release branch. Name it according to the release: `release/<release number>`. For example,
    `release/1.2.3`
 
    ```bash
@@ -268,8 +271,8 @@ For now, there is no need in the release branch for any software other than JS A
 
 5. Run the release job in CI/CD tool.
 
-6. If any test has failed and the changes are required. The changes should be made in the master branch and then
-   cherry-picked to the release branch.
+6. If any test has failed and the changes are required, make changes in the master branch and then
+   cherry-pick them to the release branch.
 
    ```bash
    git pull
@@ -278,7 +281,7 @@ For now, there is no need in the release branch for any software other than JS A
    ```
 
 7. Restart the release job in CI/CD tool.
-8. Repeat steps 5-6 until you get the expected result. The release job should complete successfully, and push the new
+8. Repeat steps 5-6 until you get the expected result. The release job should complete successfully and push the new
    version and release notes to the release branch.
 
 9. Cherry-pick the commit with the new version from the release branch to the master branch
@@ -369,8 +372,8 @@ Grok Connect: closes #321: Fix vulnerability in Postgres provider
 
 ##### Scope
 
-The scope is REQUIRED in the commit message. Use software name that was changed as scope. For example, the scope for
-package-specific changes is package name.
+The scope is REQUIRED in the commit message. Use the software name that was changed as scope. For example, the scope for
+package-specific changes is the package name.
 
 Example:
 
@@ -408,7 +411,7 @@ ticket name will suit the subject.
 #### Commit body
 
 The body is OPTIONAL in the commit message. Every line in the body of the commit should be 70 chars or less. The body is
-a detailed description of the change, which is needed if the subject is not enough to express the change.
+a detailed description of the change; It is needed if the subject is not enough to express the change.
 For example, add a link to the community forum topic to the body.
 If you need to break the behavior of the existing functionality in the JS API, library, or package API, add `BREAKING
 CHANGE: <description what change breaks>` to the body.
