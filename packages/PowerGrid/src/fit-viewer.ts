@@ -25,31 +25,37 @@ export class FitViewer extends DG.JsViewer {
       const ctx = this.canvas?.getContext('2d')!;
       ctx.clearRect(0, 0, this.canvas?.width!, this.canvas?.height!);
       
-      const df = this.dataFrame
-        .groupBy(['dataframes'])
-        .whereRowMask(this.dataFrame.selection)
-        .aggregate();
+      // const df = this.dataFrame
+      //   .groupBy(['dataframes'])
+      //   .whereRowMask(this.dataFrame.selection)
+      //   .aggregate();
 
-      const dfColumn = df.columns.toList().filter((column) => column.type === DG.COLUMN_TYPE.DATA_FRAME)![0];
+      const selectedIndexes = this.dataFrame.selection.getSelectedIndexes();
+      const dfColumn = this.dataFrame.columns.toList().filter((col) => col.type === DG.COLUMN_TYPE.DATA_FRAME)![0];
 
-      console.log(df.toString());
-      for (let i = 0; i < df.rowCount; i++) {
-        const coordinateDf = DG.toJs(dfColumn.get(i)) as DG.DataFrame;
-        if (!coordinateDf) return;
+      const valueList = new Array(selectedIndexes.length) as DG.DataFrame[];
+      for (let i = 0, j = 0; i < dfColumn.length; i++) {
+        if (selectedIndexes.includes(i))
+          valueList[j++] = DG.toJs(dfColumn.get(i));
+      }
+
+      for (let i = 0; i < valueList.length; i++) {
+        const currentDf = valueList[i];
+        // if (!coordinateDf) return;
         // console.log(coordinateDf.toCsv());
 
 
 
 
-        const coordinateColumns = coordinateDf.columns.byNames(['x', 'y']);
+        const coordinateColumns = currentDf.columns.byNames(['x', 'y']);
         const coordinates: {x: number[], y: number[]} = {x: coordinateColumns[0].toList(),
           y: coordinateColumns[1].toList()};
 
         const canvasPointCoordinates = scaleCoordinates(coordinates, this.canvas?.width!, this.canvas?.height!);
 
-        const filteredCoordinateDf = coordinateDf
+        const filteredCoordinateDf = currentDf
           .groupBy(['x', 'y'])
-          .whereRowMask(coordinateDf.filter)
+          .whereRowMask(currentDf.filter)
           .aggregate();
 
         const filteredColumns = filteredCoordinateDf.columns.byNames(['x', 'y']);
@@ -76,7 +82,7 @@ export class FitViewer extends DG.JsViewer {
           ctx.lineTo(canvasFitCurveCoordinates.x[j], this.canvas?.height! - canvasFitCurveCoordinates.y[j]);
         ctx.stroke();
 
-        const filteredIndexes = coordinateDf.filter.getSelectedIndexes();
+        const filteredIndexes = currentDf.filter.getSelectedIndexes();
         for (let j = 0; j < canvasPointCoordinates.x.length; j++) {
           const color = DG.Color.scatterPlotMarker;
           if (filteredIndexes.includes(j)) {
