@@ -313,14 +313,99 @@ public class OracleObjectsMother {
                         "<book>\n  <title>Manual</title>\n  <chapter>...</chapter>\n</book>\n"}), "DATA")
                 .build();
         return Stream.of(Arguments.of(
-                        Named.of("XML TYPE SUPPORT", getShortFuncCall("SELECT * FROM xml_data")), expected
+                        Named.of("XML TYPE SUPPORT", FuncCallBuilder.fromQuery("SELECT * FROM xml_data")), expected
                 )
         );
     }
 
-    private static FuncCall getShortFuncCall(String sqlQuery) {
-        return FuncCallBuilder.getBuilder()
-                .addQuery(sqlQuery)
+    public static Stream<Arguments> checkOutputDataFrame_characterTypes_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new StringColumn(new String[]{"Hello"}), "CH")
+                .setColumn(new StringColumn(new String[]{"World"}), "VARCH")
+                .setColumn(new StringColumn(new String[]{"Datagrok"}), "NCH")
+                .setColumn(new StringColumn(new String[]{"Groking"}), "NVARCH")
                 .build();
+        return Stream.of(Arguments.of(Named.of("CHARACTER TYPES SUPPORT",
+                FuncCallBuilder.fromQuery("SELECT TRIM(CH) AS CH, VARCH, TRIM(NCH) AS NCH, "
+                        + "NVARCH FROM character_type")), // Use trim function, because of how values stored in char and varchar columns
+                expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_dateTypes_ok() {
+        Parser parser = new DateParser();
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("dd-MM-yyyy",
+                                "01-01-2023")}),
+                        "DAT")
+                .setColumn(new DateTimeColumn(new Double[]{
+                        parser.parseDateToDouble(
+                                "dd-MMM-yy HH:mm:ss.SS", "03-AUG-17 11:20:30.450 AM")}), "STAMP")
+                .setColumn(new DateTimeColumn(new Double[]{
+                        parser.parseDateToDouble("dd-MMM-yyyy HH:mm:ss X", "21-FEB-2009 18:00:00 -05:00")}),
+                        "ZONED_STAMP")
+                .setColumn(new StringColumn(new String[]{"10-2"}), "INTERVAL1")
+                .setColumn(new StringColumn(new String[]{"4 5:12:10.222"}), "INTERVAL2")
+                .build();
+        return Stream.of(Arguments.of(
+                Named.of("DATE TYPES SUPPORT", FuncCallBuilder.fromQuery("SELECT * FROM dates_type")), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_jsonType_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(3)
+                .setColumn(new StringColumn(new String[]{"{\"phones\":[{\"type\": \"mobile\", \"phone\": \"001001\"}, "
+                        + "{\"type\": \"fix\", \"phone\": \"002002\"}]}", "{\"bar\": \"baz\", \"balance\": 7.77, "
+                        + "\"active\":false}", "{\"reading\": 1.230e-5}"}), "DATA")
+                .build();
+        return Stream.of(Arguments.of(Named.of("JSON TYPE SUPPORT",
+                FuncCallBuilder.fromQuery("SELECT * FROM JSON_DATA")), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_uriType_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(3)
+                .setColumn(new StringColumn(new String[]{"/home/oe/doc1.xml",
+                        "/HR/EMPLOYEES/ROW[EMPLOYEE_ID=205]/SALARY", "https://datagrok.ai"}), "URI")
+                .build();
+        // should be used only with .getURI() otherwise unreadable
+        return Stream.of(Arguments.of(Named.of("URI TYPE SUPPORT",
+                FuncCallBuilder.fromQuery("SELECT u.uri.getURL() AS URI FROM uri_types u")), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_varrayType_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new StringColumn(new String[]{"[Brenda, Richard]"}), "MEMBERS")
+                .build();
+        return Stream.of(Arguments.of(Named.of("VARRAY TYPE SUPPORT",
+                FuncCallBuilder.fromQuery("SELECT * FROM varrays")), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_numericTypes_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(3)
+                .setColumn(new FloatColumn(new Float[]{1.99f, 1.9f, 13.0f}), "NUMBER_VALUE")
+                .setColumn(new IntColumn(new Integer[]{1123, 1, 1244124}), "SMALL_VALUE")
+                .setColumn(new FloatColumn(new Float[]{1.2e-4f, 0.55f, 12.123f}), "FLOAT_VALUE")
+                .setColumn(new FloatColumn(new Float[]{1.17549E-38f, Float.POSITIVE_INFINITY,
+                        Float.NEGATIVE_INFINITY}), "BINARY_FLOAT_VALUE")
+                .setColumn(new FloatColumn(new Float[]{0.0f, 0.2222f, 2.2222f}), "BINARY_DOUBLE_VALUE")
+                .build();
+        return Stream.of(Arguments.of(Named.of("NUMERIC TYPES SUPPORT",
+                FuncCallBuilder.fromQuery("SELECT * FROM numeric_type")), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_lobsTypes_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(3)
+                .setColumn(new StringColumn(new String[]{"Grok"}), "BLOB_TYPE")
+                .setColumn(new StringColumn(new String[]{"Grok"}), "CLOB_TYPE")
+                .setColumn(new StringColumn(new String[]{"Grok"}), "NCLOB_TYPE")
+                .build();
+        return Stream.of(Arguments.of(Named.of("LOB TYPES SUPPORT",
+                FuncCallBuilder.fromQuery("SELECT UTL_RAW.CAST_TO_VARCHAR2(BLOB_TYPE) AS BLOB_TYPE, TO_CHAR(CLOB_TYPE) AS CLOB_TYPE, "
+                        + "TO_CHAR(NCLOB_TYPE) AS NCLOB_TYPE FROM lobs")), expected));
     }
 }
