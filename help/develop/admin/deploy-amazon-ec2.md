@@ -2,7 +2,7 @@
 title: "Deployment on AWS EC2"
 ---
 
-Datagrok consist of Docker containers, [database](infrastructure.md#database)
+Datagrok is based on Docker containers, [database](infrastructure.md#database)
 and [persistent file storage](infrastructure.md#storage).
 
 Like a regular machine, any bare-metal server or virtual machine, including virtual machines in cloud providers, for
