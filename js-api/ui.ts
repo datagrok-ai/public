@@ -1419,6 +1419,8 @@ export namespace labels {
 /** Visual hints attached to an element. They can be used to introduce a new app to users. */
 export namespace hints {
 
+  /** Adds a popup window with the specified [content] next to an [element].
+   * Set [position] to control where the popup will appear. The default position is 'right'. */
   export function addHint(el: HTMLElement, content: HTMLElement, position: string = 'right') {
     const root = document.createElement('div');
     root.className = 'ui-hint-popup';
@@ -1456,7 +1458,7 @@ export namespace hints {
     if (position == 'top') {
       let top = node.top - root.offsetHeight - 8;
       if (top < 0)
-        top = 0
+        top = 0;
       root.style.left = node.left + (el.offsetWidth / 2) - 17 + 'px';
       root.style.top = top + 'px';
       root.classList.add('ui-hint-popup-top');
@@ -1516,10 +1518,18 @@ export namespace hints {
     $('body').prepend(overlay);
     const horizontalOffset = 10;
     const wizard = new Wizard({title: options.title, helpUrl: options.helpUrl});
+
     if (options.pages) {
+      const pageNumberStr = `${wizard.pageIndex + 1}/${options.pages.length}`;
+      wizard.addButton(pageNumberStr, () => {}, 3);
+      const pageNumberField = wizard.getButton(pageNumberStr);
+      pageNumberField.classList.add('disabled');
+      $(pageNumberField).css('margin-right', 'auto');
+
       for (const p of options.pages) {
         const page = Object.assign({}, p);
         page.onActivated = () => {
+          pageNumberField.innerText = `${wizard.pageIndex + 1}/${options.pages!.length}`;
           if (p.showNextTo) {
             if (targetElement)
               targetElement.classList.remove('ui-text-hint-target');
