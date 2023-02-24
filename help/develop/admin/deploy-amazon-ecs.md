@@ -2,7 +2,7 @@
 title: "Deployment on AWS ECS using Docker Compose"
 ---
 
-Datagrok consist of Docker containers, [database](infrastructure.md#database)
+Datagrok is based on Docker containers, [database](infrastructure.md#database)
 and [persistent file storage](infrastructure.md#storage).
 
 Docker containers allow installing Datagrok on any platform, including container services in cloud providers, for
