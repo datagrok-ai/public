@@ -1,0 +1,65 @@
+---
+title: "CI/CD Flow"
+---
+
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+```
+
+Datagrok application is an incredibly powerful platform. With great power comes great responsibility. Which is why we
+created an automated flow to build, scan, test and publish our application. This way we prevent any vulnerable or broken
+code to be published.
+
+The generalized CI/CD scheme consists of 4 steps: analyze, build, test, publish. More information can be found below in
+specific topics: [release flow](#release-cicd-flow), [public repository flow](#public-repository-cicd-flow).
+
+## Release CI/CD flow
+
+![Release CI Flow](ci_release.svg)
+
+## Public repository CI/CD flows
+
+```mdx-code-block
+<Tabs>
+<TabItem value="packages" label="Packages" default>
+```
+
+![Packages CI Flow](ci_public_packages.svg)
+
+```mdx-code-block
+</TabItem>
+<TabItem value="libraries" label="Libraries">
+```
+
+![Libraries CI Flow](ci_public_libraries.svg)
+
+```mdx-code-block
+</TabItem>
+<TabItem value="grok_connect" label="Grok Connect">
+```
+
+![GC CI Flow](ci_public_gc.svg)
+
+```mdx-code-block
+</TabItem>
+<TabItem value="help" label="Docusaurus Help">
+```
+
+![Docusaurus CI Flow](ci_public_help.svg)
+
+```mdx-code-block
+</TabItem>
+<TabItem value="tools" label="Tools Package">
+```
+
+![Tools CI Flow](ci_public_tools.svg)
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+## More information
+
+* [Versioning policy](versioning-policy.md)
