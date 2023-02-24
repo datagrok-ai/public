@@ -2,7 +2,7 @@
 title: "Deployment on a regular machine"
 ---
 
-Datagrok consist of Docker containers, [database](infrastructure.md#database)
+Datagrok is based on Docker containers, [database](infrastructure.md#database)
 and [persistent file storage](infrastructure.md#storage).
 
 Like a regular machine, any bare-metal server or virtual machine, including virtual machines in cloud providers, for
@@ -17,7 +17,8 @@ for example [AWS S3](https://aws.amazon.com/s3/) and Local File System storage.
 This document contains instructions to deploy Datagrok using [Docker Compose](https://docs.docker.com/compose/)
 on [AWS EC2](https://aws.amazon.com/ecs/) virtual machines with [AWS RDS](https://aws.amazon.com/rds/) as database and
 Local File System for persistent storage. This instruction does not cover load balancers creation, which is recommended
-for production usage: one load balancer for Datagrok components and one for CVM components.
+for production usage: one load balancer for Datagrok components and one for CVM components. However, you can use 
+[nginx](https://www.nginx.com/) as loadbalancers in bare metal or on-premise case. 
 
 More information about Datagrok design and components:
 
