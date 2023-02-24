@@ -125,6 +125,10 @@ export enum TYPE {
   NOTEBOOK = 'Notebook'
 }
 
+export enum GRID_COLUMN_TAGS {
+
+}
+
 /** Commonly used options on the function level */
 export enum FUNC_OPTIONS {
   DEMO_PATH = 'demoPath',    // Demo path, such as 'Viewers | Radar'
