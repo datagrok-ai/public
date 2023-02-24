@@ -4,18 +4,21 @@ import * as DG from 'datagrok-api/dg';
 
 // import {Viewer as rcsbViewer, ViewerProps as rcsbViewerProps} from '@rcsb/rcsb-molstar/src/viewer';
 import {Viewer as RcsbViewer, ViewerProps as RcsbViewerProps} from '@rcsb/rcsb-molstar/build/src/viewer';
+import {PROPS as pdbPROPS} from './../viewers/ngl-viewer';
+
 
 import $ from 'cash-dom';
 import wu from 'wu';
 
 //@ts-ignore
-import {Viewer} from 'molstar/build/viewer/molstar';
 import {Unsubscribable} from 'rxjs';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
 import {ColorNames} from 'molstar/lib/mol-util/color/names';
+import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
 import {ModelUrlProvider} from '@rcsb/rcsb-molstar/build/src/viewer/types';
 import {_package} from '../package';
 import {PluginContext} from 'molstar/lib/mol-plugin/context';
+import {PluginLayoutControlsDisplay} from 'molstar/lib/mol-plugin/layout';
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -33,21 +36,22 @@ import {PluginContext} from 'molstar/lib/mol-plugin/context';
 };*/
 
 const DefaultViewerOptions = {
-  extensions: [],
+  // extensions: [],
   layoutIsExpanded: false,
   layoutShowControls: false,
-  layoutShowRemoteState: false,
+  // layoutControlsDisplay: 'outside',
+  // layoutShowRemoteState: false,
   layoutShowSequence: false,
   layoutShowLog: false,
-  layoutShowLeftPanel: false,
-  collapseLeftPanel: true,
-  collapseRightPanel: true,
-
-  viewportShowExpand: false,
-  viewportShowControls: false,
-
-  pdbProvider: 'rcsb',
-  emdbProvider: 'rcsb',
+  // layoutShowLeftPanel: false,
+  // collapseLeftPanel: true,
+  // collapseRightPanel: true,
+  //
+  // viewportShowExpand: false,
+  // viewportShowControls: false,
+  //
+  // pdbProvider: 'rcsb',
+  // emdbProvider: 'rcsb',
 };
 
 const enum PROPS_CATS {
@@ -71,6 +75,12 @@ export enum PROPS {
   // --Layout --
   layoutIsExpanded = 'layoutIsExpanded',
   layoutShowControls = 'layoutShowControls',
+  layoutRegionStateLeft = 'layoutRegionStateLeft',
+  layoutRegionStateTop = 'layoutRegionStateTop',
+  layoutRegionStateRight = 'layoutRegionStateRight',
+  layoutRegionStateBottom = 'layoutRegionStateBottom',
+  layoutControlsDisplay = 'layoutControlsDisplay',
+
   layoutShowRemoteState = 'layoutShowRemoteState',
   layoutShowSequence = 'layoutShowSequence',
   layoutShowLog = 'layoutShowLog',
@@ -81,8 +91,16 @@ export enum PROPS {
   viewportShowControls = 'viewportShowControls',
 
   // -- Controls --
+  showWelcomeToast = 'showWelcomeToast',
   showImportControls = 'showImportControls',
 }
+
+export enum PluginLayoutControlsDisplayType {
+  OUTSIDE = 'outside',
+  PORTRAIT = 'portrait',
+  LANDSCAPE = 'landscape',
+  REACTIVE = 'reactive'
+};
 
 const DefaultViewerProps: Partial<RcsbViewerProps> = {
   showImportControls: false,
@@ -119,6 +137,7 @@ const DefaultViewerProps: Partial<RcsbViewerProps> = {
 
   layoutIsExpanded: false,
   layoutShowControls: true,
+  layoutControlsDisplay: PluginLayoutControlsDisplayType.OUTSIDE,
   layoutShowSequence: true,
   layoutShowLog: false,
 
@@ -127,7 +146,7 @@ const DefaultViewerProps: Partial<RcsbViewerProps> = {
   volumeStreamingServer: 'https://maps.rcsb.org/',
 
   backgroundColor: ColorNames.white,
-  showWelcomeToast: true
+  showWelcomeToast: false
 };
 
 export interface IMolstarViewer {
@@ -147,6 +166,17 @@ enum RepresentationType {
   Surface = 'surface'
 }
 
+enum RegionStateOptionsType {
+  FULL = 'full',
+  COLLAPSED = 'collapsed',
+  HIDDEN = 'hidden'
+}
+
+enum SimpleRegionStateOptionsType {
+  FULL = 'full',
+  HIDDEN = 'hidden'
+}
+
 export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
   private viewed: boolean = false;
 
@@ -163,6 +193,12 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
   // -- Layout --
   [PROPS.layoutIsExpanded]: boolean;
   [PROPS.layoutShowControls]: boolean;
+  [PROPS.layoutRegionStateLeft]: RegionStateOptionsType;
+  [PROPS.layoutRegionStateTop]: SimpleRegionStateOptionsType;
+  [PROPS.layoutRegionStateRight]: SimpleRegionStateOptionsType;
+  [PROPS.layoutRegionStateBottom]: SimpleRegionStateOptionsType;
+  [PROPS.layoutControlsDisplay]: string;
+
   [PROPS.layoutShowRemoteState]: boolean;
   [PROPS.layoutShowSequence]: boolean;
   [PROPS.layoutShowLog]: boolean;
@@ -173,6 +209,7 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
   [PROPS.viewportShowControls]: boolean;
 
   // -- Controls --
+  [PROPS.showWelcomeToast]: boolean;
   [PROPS.showImportControls]: boolean;
 
   // propsEngine = new class {
@@ -203,6 +240,21 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
       {category: PROPS_CATS.LAYOUT});
     this.layoutShowControls = this.bool(PROPS.layoutShowControls, false,
       {category: PROPS_CATS.LAYOUT});
+    this.layoutRegionStateLeft = this.string(PROPS.layoutRegionStateLeft, RegionStateOptionsType.FULL,
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(RegionStateOptionsType)}) as RegionStateOptionsType;
+    this.layoutRegionStateTop = this.string(PROPS.layoutRegionStateTop, SimpleRegionStateOptionsType.FULL,
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)}
+    ) as SimpleRegionStateOptionsType;
+    this.layoutRegionStateRight = this.string(PROPS.layoutRegionStateRight, SimpleRegionStateOptionsType.FULL,
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)}
+    ) as SimpleRegionStateOptionsType;
+    this.layoutRegionStateBottom = this.string(PROPS.layoutRegionStateBottom, SimpleRegionStateOptionsType.FULL,
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)}
+    ) as SimpleRegionStateOptionsType;
+    this.layoutControlsDisplay = this.string(
+      PROPS.layoutControlsDisplay, PluginLayoutControlsDisplayType.OUTSIDE,
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(PluginLayoutControlsDisplayType)});
+
     this.layoutShowRemoteState = this.bool(PROPS.layoutShowRemoteState, false,
       {category: PROPS_CATS.LAYOUT});
     this.layoutShowSequence = this.bool(PROPS.layoutShowSequence, false,
@@ -220,7 +272,10 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
     this.viewportShowControls = this.bool(PROPS.viewportShowControls, false,
       {category: PROPS_CATS.LAYOUT});
 
+
     // -- Controls --
+    this.showWelcomeToast = this.bool(PROPS.showWelcomeToast, DefaultViewerProps.showWelcomeToast,
+      {category: PROPS_CATS.CONTROLS});
     this.showImportControls = this.bool(PROPS.showImportControls, DefaultViewerProps.showImportControls,
       {category: PROPS_CATS.CONTROLS});
 
@@ -248,26 +303,74 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
     //     // }
     //   }
     // };
+    const applyProperty = async (propName: string, value: any) => {
+      if (!this.viewer) throw new Error('viewer does not exists');
+
+
+      const plugin: PluginContext = this.viewer.getPlugin();
+      switch (property.name) {
+      case PROPS.layoutShowLog: {
+        //plugin.layout.setProps({layoutShowLog: value;});
+
+        //PluginCommands.Layout.Update(plugin, );
+        const k = 11;
+      }
+        break;
+      case PROPS.layoutShowControls: {
+        // eslint-disable-next-line new-cap
+        await PluginCommands.Layout.Update(plugin, {state: {showControls: this.layoutShowControls}});
+        const k = 11;
+      }
+        break;
+      case PROPS.layoutIsExpanded: {
+        //eslint-disable-next-line new-cap
+        await PluginCommands.Layout.Update(plugin, {state: {isExpanded: this.layoutIsExpanded}});
+      }
+        break;
+      case PROPS.layoutRegionStateLeft:
+      case PROPS.layoutRegionStateTop:
+      case PROPS.layoutRegionStateRight:
+      case PROPS.layoutRegionStateBottom: {
+        //eslint-disable-next-line new-cap
+        await PluginCommands.Layout.Update(plugin, {
+          state: {
+            regionState: {
+              left: this.layoutRegionStateLeft,
+              top: this.layoutRegionStateTop,
+              right: this.layoutRegionStateRight,
+              bottom: this.layoutRegionStateBottom
+            }
+          }
+        });
+      }
+        break;
+      case PROPS.layoutControlsDisplay: {
+        //eslint-disable-next-line new-cap
+        await PluginCommands.Layout.Update(plugin,
+          {state: {controlsDisplay: this.layoutControlsDisplay as PluginLayoutControlsDisplay}});
+      }
+        break;
+      }
+    };
 
     switch (property.name) {
     case PROPS.representation:
-      this.updateView();
       break;
     case PROPS.showImportControls:
+      break;
     case PROPS.layoutIsExpanded:
-    // case PROPS.layoutShowControls:
-    //   const propValue: any = this[property.name];
-    //   this.propsEngine.apply(property.name, propValue);
-    //   _package.logger.debug('PhylocanvasGlViewer.onPropertyChanged() ' +
-    //     `${property.name} = ${propValue.toString()} .`);
-    //   break;
+      this.viewerProps[PROPS.layoutIsExpanded] = this.layoutIsExpanded;
+      break;
     }
 
+    const propName: string = property.name;
+    const propValue: any = this.props.get(propName);
+    if (this.viewer) applyProperty(propName, propValue);
 
     switch (property.name) {
     case PROPS.pdb:
     case PROPS.pdbTag:
-      this.setData();
+      this.setData('onPropertyChanged'); // onPropertyChanged
       break;
     }
   }
@@ -276,32 +379,41 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
   private pdbStr: string | null = null;
 
   override onTableAttached(): void {
-    super.onTableAttached();
+    const superOnTableAttached = super.onTableAttached.bind(this);
 
-    // -- Editors --
+    // -- Props editors --
     const dfTagNameList = wu<string>(this.dataFrame.tags.keys())
       .filter((tagName: string) => tagName.startsWith('.')).toArray();
     this.props.getProperty(PROPS.pdbTag).choices = ['', ...dfTagNameList];
 
-    this.setData();
+    this.viewPromise = this.viewPromise.then(async () => { // onTableAttached
+      superOnTableAttached();
+      await this.setData('onTableAttached');
+    });
   }
 
   override detach(): void {
-    super.detach();
-
-    if (this.viewed) {
-      this.destroyView();
-      this.viewed = false;
-    }
+    const superDetach = super.detach.bind(this);
+    this.viewPromise = this.viewPromise.then(async () => { // detach
+      if (this.viewed) {
+        await this.destroyView('detach'); //detach
+        this.viewed = false;
+      }
+      superDetach();
+    });
   }
 
   // -- Data --
 
-  setData(): void {
-    if (this.viewed) {
-      this.destroyView();
-      this.viewed = false;
-    }
+  setData(purpose: string): void {
+    _package.logger.debug(`MolstarViewer.setData(purpose = '${purpose}') `);
+
+    this.viewPromise = this.viewPromise.then(async () => { // setData
+      if (this.viewed) {
+        await this.destroyView('setData');
+        this.viewed = false;
+      }
+    });
 
     // -- PDB data --
     let pdbTag: string = pdbTAGS.PDB;
@@ -312,26 +424,33 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
     // -- Ligand --
     // TODO: Ligand
 
-    if (!this.viewed) {
-      this.buildView();
-      this.viewed = true;
-    }
+    this.viewPromise = this.viewPromise.then(async () => {
+      if (!this.viewed) {
+        await this.buildView('setData');
+        this.viewed = true;
+      }
+    });
   }
 
   // -- View --
 
+  private viewPromise: Promise<void> = Promise.resolve();
   private viewerDiv?: HTMLDivElement;
   private viewer?: RcsbViewer;
 
   /** Container to store prop values while {@link viewer} is not created yet */
-  private viewerProps: Partial<RcsbViewerProps> = {};
+  private viewerProps: Partial<RcsbViewerProps> = {
+    [PROPS.layoutShowControls]: false,
+    [PROPS.showWelcomeToast]: false,
+  };
 
   private splashDiv?: HTMLDivElement;
 
   private viewSubs: Unsubscribable[] = [];
 
-  private destroyView(): void {
-    _package.logger.debug('MolstarViewer.destroyView() ');
+
+  private async destroyView(purpose: string): Promise<void> {
+    _package.logger.debug(`MolstarViewer.destroyView(purpise='${purpose}') `);
     if (this.pdbStr) {
       // Clear viewer
     }
@@ -345,23 +464,49 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
     }
   }
 
-  private buildView(): void {
-    _package.logger.debug('MolstarViewer.buildView() ');
-    if (this.pdbStr) {
-      // Fill in viewer
-      if (!this.viewerDiv) {
-        this.viewerDiv = ui.div([], {
-          classes: 'd4-molstar-viewer',
-          style: {width: '100%', height: '100%'},
-        });
-        this.root.appendChild(this.viewerDiv);
+  private async buildView(purpose: string): Promise<void> {
+    _package.logger.debug(`MolstarViewer.buildView(purpose='${purpose}') `);
+    if (this.pdbStr)
+      await this.buildViewWithPdb();
+    else
+      await this.buildViewWithoutPdb();
+  }
 
-        const props: Partial<RcsbViewerProps> = {};
+  private async buildViewWithPdb() {
+    if (!this.pdbStr) throw new Error('MolstarViewer.buildViewWithPdb() pdbStr is empty');
 
-        Object.assign(props, this.viewerProps);
-        this.viewer = new RcsbViewer(this.viewerDiv, props);
-      }
+    // Fill in viewer
+    if (!this.viewerDiv) {
+      this.viewerDiv = ui.div([], {
+        classes: 'd4-molstar-viewer',
+        style: {width: '100%', height: '100%'},
+      });
+      this.root.appendChild(this.viewerDiv);
+
+      const props: Partial<RcsbViewerProps> = {};
+
+      Object.assign(props, this.viewerProps);
+      this.viewer = new RcsbViewer(this.viewerDiv, props);
+      await this.viewer.loadStructureFromData(this.pdbStr, 'pdb', false);
+
+      const plugin: PluginContext = this.viewer.getPlugin();
+      plugin.commands.subscribe(PluginCommands.Layout.Update, () => {
+
+      });
     }
+  }
+
+  private async buildViewWithoutPdb() {
+    if (this.viewerDiv) {
+      await this.viewer!.clear();
+      delete this.viewer;
+      $(this.viewerDiv).empty();
+      delete this.viewerDiv;
+    }
+
+    this.splashDiv = ui.div('No PDB data',
+      {style: {width: '100%', height: '100%', verticalAlign: 'middle', fontSize: 'larger'}});
+    this.root.appendChild(this.splashDiv);
   }
 
   private updateView(): void {
@@ -395,22 +540,22 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
   }
 }
 
-export function initViewer(viewName: string = 'Mol*') {
+export async function initViewer(viewName: string = 'Mol*'): Promise<RcsbViewer> {
   const view = grok.shell.newView(viewName);
   const viewerContainer = view.root;
-  const viewer = Viewer.create(viewerContainer, DefaultViewerOptions);
+  const viewer = new RcsbViewer(viewerContainer, DefaultViewerOptions);
   return viewer;
 }
 
 /**
  * Creates an instance of Mol* viewer.
  *
- * @param {string} pdbID ID of an entity in PDB.
+ * @param {string} pdbId ID of an entity in PDB.
  */
-export async function byId(pdbID: string) {
+export async function byId(pdbId: string) {
   initViewer()
     .then((v: any) => {
-      v.loadPdb(pdbID);
+      v.loadPdb(pdbId);
     });
   //v.handleResize();
 }
@@ -422,8 +567,8 @@ export async function byId(pdbID: string) {
  */
 export async function byData(pdbData: string, name: string = 'Mol*') {
   initViewer(name)
-    .then((v: any) => {
-      v.loadStructureFromData(pdbData, 'pdb');
+    .then(async (viewer: RcsbViewer) => {
+      await viewer.loadStructureFromData(pdbData, 'pdb', false);
     });
   //v.handleResize();
 }

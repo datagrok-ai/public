@@ -25,10 +25,20 @@ export function nglViewUI(file: any): DG.View {
 }
 
 export function nglWidgetUI(pdbId: string): DG.Widget {
-  const host = ui.div([], 'd4-ngl-viewer');
+  const host = ui.div([], {classes: 'd4-ngl-viewer', style: {width: '100%'}});
   const stage = new NGL.Stage(host);
-  handleResize(host, stage);
-  stage.loadFile(`rcsb://${pdbId}`, {defaultRepresentation: true});
+  stage.loadFile(`rcsb://${pdbId}`, {defaultRepresentation: true})
+    .then(() => {
+      stage.compList[0].autoView();
+      handleResize(host, stage);
+    });
+
+  // // Link `rcsb://${pdbId}` causes CORS error
+  // stage.loadFile(`http://files.rcsb.org/download/${pdbId}.cif`, {defaultRepresentation: true})
+  //   .then(() => {
+  //     stage.compList[0].autoView();
+  //     handleResize(host, stage);
+  //   });
   return DG.Widget.fromRoot(host);
 }
 

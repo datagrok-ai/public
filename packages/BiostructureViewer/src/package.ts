@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {DockingApp} from './apps/docking-app';
 import {byId, byData, MolstarViewer} from './viewers/molstar-viewer';
-import {PdbRenderer} from './utils/cell-renderer';
+import {PdbGridCellRenderer} from './utils/pdb-grid-cell-renderer';
 import {NglGlService} from './utils/ngl-gl-service';
 import {NglForGridTestApp} from './apps/ngl-for-grid-test-app';
 import {nglViewerGen as _nglViewerGen} from './utils/ngl-viewer-gen';
@@ -20,6 +20,9 @@ import {nglViewUI, nglWidgetUI} from './viewers/ngl-ui';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 import {MolstarViewerApp} from './apps/molstar-viewer-app';
+import {TaskBarProgressIndicator} from 'datagrok-api/dg';
+import {dockingDemoApp} from './demo/docking';
+import {biostructureInGridApp} from './demo/biostructure-in-grid';
 
 class Package extends DG.Package {
   private _pLogger: DG.PackageLogger;
@@ -46,8 +49,8 @@ export const _package = new Package();
 //meta.cellType: Molecule3D
 //meta.columnTags: quality=Molecule3D
 //output: grid_cell_renderer result
-export function Molecule3dCellRenderer(): PdbRenderer {
-  return new PdbRenderer();
+export function Molecule3dCellRenderer(): PdbGridCellRenderer {
+  return new PdbGridCellRenderer();
 }
 
 //name: Docking
@@ -62,22 +65,27 @@ export async function dockingApp() {
   }
 }
 
-//name: Mol* BioStructure Viewer Id.
-//tags: viewer
-//input: string pdbID
-export async function molstarViewId(pdbID: string) {
-  const pi = DG.TaskBarProgressIndicator.create('Opening BioStructure* Viewer Id');
-  await byId(pdbID);
-  pi.close();
+//name: viewPdbById
+//input: string pdbId
+export async function viewPdbById(pdbId: string) {
+  const pi = DG.TaskBarProgressIndicator.create(`Opening PDB ${pdbId}...`);
+  try {
+    await byId(pdbId);
+  } finally {
+    pi.close();
+  }
 }
 
-//name: Mol* BioStructure Viewer Data.
-//tags: viewer
-export async function molstarViewData() {
-  const pdbData = await _package.files.readAsText('1bdq.pdb');
-  const pi = DG.TaskBarProgressIndicator.create('Opening BioStructure* Viewer Data');
-  await byData(pdbData);
-  pi.close();
+//name: viewPdbByData
+//input: string pdbData
+//input: string name
+export async function viewPdbByData(pdbData: string, name: string): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create(`Opening PDB '${name ?? '[data]'}'...`);
+  try {
+    await byData(pdbData, name);
+  } finally {
+    pi.close();
+  }
 }
 
 
@@ -107,7 +115,7 @@ export function getNglGlService(): NglGlServiceBase {
 //input: string fileContent
 //output: list tables
 export async function importPdb(fileContent: string): Promise<DG.DataFrame[]> {
-  const ph: IPdbHelper = new PdbHelper();
+  const ph: IPdbHelper = await getPdbHelper();
   const df: DG.DataFrame = await ph.pdbToDf(fileContent, '');
 
   const app = new PdbApp();
@@ -153,7 +161,7 @@ export function molecule3dNglView4(file: any): DG.View {
 //name: PDB id viewer
 //tags: panel
 //input: string pdbId {semType: PDB_ID}
-//output: widget w
+//output: widget result
 export function pdbIdNglPanelWidget(pdbId: string): DG.Widget {
   return nglWidgetUI(pdbId);
 }
@@ -198,16 +206,20 @@ export async function molstarViewerApp() {
 
 // -- Viewers --
 
-//name: NglViewer
+//name: Ngl
+// eslint-disable-next-line max-len
 //description: 3D structure viewer for large biological molecules (proteins, DNA, and RNA)
+//meta.keywords: PDB, Biostructure
 //tags: viewer, panel
 //output: viewer result
 export function nglViewer(): DG.JsViewer {
   return new NglViewer();
 }
 
-//name: MolstarViewer
+//name: Biostructure
+// eslint-disable-next-line max-len
 //description: 3D structure molstar RCSB viewer for large biological molecules (proteins, DNA, and RNA)
+//meta.keywords: Molstar, PDB
 //tags: viewer, panel
 //output: viewer result
 export function molstarViewer(): DG.JsViewer {
@@ -223,9 +235,9 @@ export function molstarViewer(): DG.JsViewer {
 
 //name: getPdbHelper
 //output: object result
-export function getPdbHelper(): IPdbHelper {
+export async function getPdbHelper(): Promise<IPdbHelper> {
   if (!(window.$pdbHelper)) {
-    const ph = new PdbHelper();
+    const ph = await PdbHelper.getInstance(); // getPdbHelper
     window.$pdbHelper = ph;
   }
   return window.$pdbHelper;
@@ -237,12 +249,24 @@ export async function nglViewerGen(): Promise<void> {
 
 //name: dockingDemo
 //meta.demoPath: Viewers | Docking
-export async function _dockingViewerDemo() {
-  const pdbStr: string = await _package.files.readAsText('samples/protease.pdb');
-  const sdfBytes: Uint8Array = await _package.files.readAsBytes('samples/1bdq.sdf');
-  const ligands: DG.DataFrame = (await grok.functions.call(
-    'Chem:importSdf', {bytes: sdfBytes}))[0];
-  
-  let app = new NglViewerApp("dockingDemo");
-  await app.init({ligands: ligands, macromolecule: pdbStr});
+export async function dockingDemo() {
+  const piMsg: string = 'Opening docking demo app ...';
+  const pi: TaskBarProgressIndicator = TaskBarProgressIndicator.create(piMsg);
+  try {
+    await dockingDemoApp('dockingDemo', pi);
+  } finally {
+    pi.close();
+  }
+}
+
+//name: inGridDemo
+//meta.demoPath: Viewers | In Grid
+export async function inGridDemo() {
+  const piMsg: string = 'Opening biostructure in grid demo app ...';
+  const pi: TaskBarProgressIndicator = TaskBarProgressIndicator.create(piMsg);
+  try {
+    await biostructureInGridApp('inGridDemo', pi);
+  } finally {
+    pi.close();
+  }
 }
