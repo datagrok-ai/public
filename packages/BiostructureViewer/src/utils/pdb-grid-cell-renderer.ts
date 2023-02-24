@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {byData} from '../viewers/molstar-viewer';
 import {_package, getNglGlService} from '../package';
+import {byData} from '../viewers/molstar-viewer';
 import {NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 
 const PDB_RENDERER_IMAGE_CACHE_KEY = 'PdbRendererImageCache';
@@ -22,7 +22,7 @@ async function base64ToImg(base64: string): Promise<HTMLImageElement> {
   });
 }
 
-export class PdbRenderer extends DG.GridCellRenderer {
+export class PdbGridCellRenderer extends DG.GridCellRenderer {
   get name(): string { return 'xray'; }
 
   get cellType(): string { return 'xray'; }
