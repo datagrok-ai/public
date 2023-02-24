@@ -14,14 +14,15 @@ We recommend this method if you want to jump-start with Datagrok on your local m
 
 1. [Docker Compose](https://docs.docker.com/compose/). If you do not have it, follow
    these [installation instructions](https://docs.docker.com/compose/install/) for your operating system.
-2. Ideally, you should have at least 30 GB of free disk space, 2 CPU, 4 GB RAM
+2. Minimal hardware requirements: 30 GB of free disk space, 2 CPU, 4 GB RAM.
+   Recommended hardware requirements: > 30 GB of free disk space, 4 CPU, 8 GB RAM or higher.
 
 ## Instructions
 
 1. Download a Docker Compose YAML
    file: [link](https://github.com/datagrok-ai/public/blob/master/docker/localhost.docker-compose.yaml).
 
-2. To start up Datagrok, run these commands:
+2. To start up Datagrok, or get last updates run these commands:
 
    ```shell
    docker-compose -f docker/localhost.docker-compose.yaml --profile all pull
@@ -49,6 +50,70 @@ We recommend this method if you want to jump-start with Datagrok on your local m
 
    ```shell
    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all down --volumes
+   ```
+
+### CVM features
+
+If you do not need CVM features, you can run only Datagrok application containers:
+
+```shell
+docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile db up -d
+```
+
+If you need CVM features only, you can run only CVM application containers:
+
+```shell
+docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile cvm up -d
+```
+
+To run Datagrok with exact CVM features, specify them in the command line using the `--profile` flag
+
+* Cheminformatics
+
+   ```shell
+   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile db --profile chem up -d
+   ```
+
+* Jupyter notebook
+
+   ```shell
+   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile db --profile jupyter_notebook up -d
+   ```
+
+* Scripting
+
+   ```shell
+   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile db --profile scripting up -d
+   ```
+
+* Modeling
+
+   ```shell
+   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile db --profile modeling up -d
+   ```
+
+* Features can be enabled in any combination
+
+   ```shell
+   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
+     --profile datagrok \
+     --profile db \
+     --profile chem \
+     --profile scripting \
+     --profile jupyter_notebook \
+     --profile modeling \
+     up -d
+   ```
+
+* Datagrok container is not required to be started for any feature, so you can do not include in run parameters
+
+   ```shell
+   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
+     --profile chem \
+     --profile scripting \
+     --profile jupyter_notebook \
+     --profile modeling \
+     up -d
    ```
 
 ## Advanced usage
@@ -119,70 +184,6 @@ If you want to install demo databases with Datagrok locally, run
 docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all --profile demo up -d
 ```
 
-### CVM features
-
-If you do not need CVM features, you can run only Datagrok application containers:
-
-```shell
-docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile db up -d
-```
-
-If you need CVM features only, you can run only CVM application containers:
-
-```shell
-docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile cvm up -d
-```
-
-To run Datagrok with exact CVM features, specify them in the command line using the `--profile` flag
-
-* Cheminformatics
-
-   ```shell
-   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile db --profile chem up -d
-   ```
-
-* Jupyter notebook
-
-   ```shell
-   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile db --profile jupyter_notebook up -d
-   ```
-
-* Scripting
-
-   ```shell
-   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile db --profile scripting up -d
-   ```
-
-* Modeling
-
-   ```shell
-   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile db --profile modeling up -d
-   ```
-
-* Features can be enabled in any combination
-
-   ```shell
-   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
-     --profile datagrok \
-     --profile db \
-     --profile chem \
-     --profile scripting \
-     --profile jupyter_notebook \
-     --profile modeling \
-     up -d
-   ```
-
-* Datagrok container is not required to be started for any feature
-
-   ```shell
-   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
-     --profile chem \
-     --profile scripting \
-     --profile jupyter_notebook \
-     --profile modeling \
-     up -d
-   ```
-
 ## Troubleshooting
 
 1. In case of any issues, check the settings in the Datagrok (Tools | Settings...).
@@ -204,6 +205,17 @@ To run Datagrok with exact CVM features, specify them in the command line using 
 
    ```shell
    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all logs
+   ```
+   
+   You can also watch the logs of the desired service in real time
+
+   ```shell
+   # Get list of running containers and choose a nessesary one
+   docker ps
+   # Replace datagrok_datagrok_1 with nessesary container name
+   # Replace 50 with desired log lines to watch or remove --tail 50 at all, if you need to 
+   # watch full log
+   docker logs -f --tail 50  datagrok_datagrok_1
    ```
 
 3. Restart Docker compose stand
