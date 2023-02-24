@@ -242,8 +242,10 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     const repComp = stage.compList[0].addRepresentation(representation, {});
     stage.compList[0].autoView();
 
-    this.viewSubs.push(df.onCurrentRowChanged
-      .subscribe(this.dataFrameOnCurrentRowChanged.bind(this)));
+    // this.viewSubs.push(df.onCurrentRowChanged
+    //   .subscribe(this.dataFrameOnCurrentRowChanged.bind(this)));
+    this.viewSubs.push(df.onSelectionChanged
+      .subscribe(this.dataFrameOnSelectionChanged.bind(this)));
   }
 
   private async buildViewWithoutPdb() {
@@ -311,27 +313,68 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     const ligandColumnName: string = this.ligandColumnName;
     const stage: NGL.Stage = this.stage!;
     this.viewPromise = this.viewPromise.then(async () => {
-      if (!ligandColumnName || dataFrame.currentRowIdx == -1) return;
+      await this.ligandsClear();
 
-      // remove all components but the first
-      if (stage.compList.length > 1) {
-        for (let compI = stage.compList.length - 1; compI > 0; compI--) {
-          const comp = stage.compList[compI];
-          stage.removeComponent(comp);
-        }
-      }
+      if (!ligandColumnName || dataFrame.currentRowIdx == -1) return;
 
       // const ligandStr: string = await _package.files.readAsText('samples/1bdq.pdb');
       // const ligandBlob: Blob = new Blob([ligandStr], {type: 'text/plain'});
       // const ligandParams: LoaderParameters = {ext: 'sdf', compressed: false, binary: false, name: '<Ligand>'};
 
-      const ligandMol: string = dataFrame.get(ligandColumnName, dataFrame.currentRowIdx);
-      const ligandStr: string = ligandMol + '$$$$';
-      const ligandBlob: Blob = new Blob([ligandStr], {type: 'text/plain'});
+      const ligandBlob: Blob = this.getLigandBlob(dataFrame.currentRowIdx);
       const ligandParams: Partial<LoaderParameters> = {ext: 'sdf', compressed: false, binary: false, name: '<Ligand>'};
 
       const loadRes = await stage.loadFile(ligandBlob, ligandParams);
       const repComp = stage.compList[1].addRepresentation(RepresentationType.BallAndStick, {});
     });
+  }
+
+  private dataFrameOnSelectionChanged(value: any): void {
+    _package.logger.debug('NglViewer.dataFrameOnCurrentRowChanged() ');
+
+    const dataFrame: DG.DataFrame = this.dataFrame;
+    const ligandColumnName: string = this.ligandColumnName;
+    const stage: NGL.Stage = this.stage!;
+    this.viewPromise = this.viewPromise.then(async () => {
+      await this.ligandsClear();
+
+      if (!ligandColumnName || !dataFrame.selection.anyTrue) return;
+
+      const selIdxList: Int32Array = dataFrame.selection.getSelectedIndexes();
+      for (let selI: number = 0; selI < selIdxList.length; selI++) {
+        const selIdx: number = selIdxList[selI];
+        const ligandBlob: Blob = this.getLigandBlob(selIdx);
+        const ligandParams: Partial<LoaderParameters> = {
+          ext: 'sdf',
+          compressed: false,
+          binary: false,
+          name: '<Ligand>'
+        };
+
+        const loadRes = await stage.loadFile(ligandBlob, ligandParams);
+        const repComp = stage.compList[selI + 1].addRepresentation(RepresentationType.BallAndStick, {});
+      }
+    });
+  }
+
+  // -- Ligands routines --
+
+  private getLigandBlob(rowIdx: number): Blob {
+    const ligandMol: string = this.dataFrame.get(this.ligandColumnName, rowIdx);
+    const ligandStr: string = ligandMol + '$$$$';
+    const ligandBlob: Blob = new Blob([ligandStr], {type: 'text/plain'});
+    return ligandBlob;
+  }
+
+  private async ligandsClear(): Promise<void> {
+    if (!this.stage) return;
+
+    // remove all components but the first (zero index)
+    if (this.stage.compList.length > 1) {
+      for (let compI = this.stage.compList.length - 1; compI > 0; compI--) {
+        const comp = this.stage.compList[compI];
+        this.stage.removeComponent(comp);
+      }
+    }
   }
 }
