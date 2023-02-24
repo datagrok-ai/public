@@ -147,20 +147,22 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
         await this.destroyView('setData');
         this.viewed = false;
       }
+    });
 
-      // -- PDB data --
-      let pdbTag: string = pdbTAGS.PDB;
-      if (this.pdbTag) pdbTag = this.pdbTag;
-      this.pdbStr = this.dataFrame.getTag(pdbTag);
-      if (this.pdb && this.pdb != pdbDefault) this.pdbStr = this.pdb;
+    // -- PDB data --
+    let pdbTag: string = pdbTAGS.PDB;
+    if (this.pdbTag) pdbTag = this.pdbTag;
+    this.pdbStr = this.dataFrame.getTag(pdbTag);
+    if (this.pdb && this.pdb != pdbDefault) this.pdbStr = this.pdb;
 
-      // -- Ligand --
-      if (!this.ligandColumnName) {
-        const molCol: DG.Column | null = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-        if (molCol)
-          this.ligandColumnName = molCol.name;
-      }
+    // -- Ligand --
+    if (!this.ligandColumnName) {
+      const molCol: DG.Column | null = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+      if (molCol)
+        this.ligandColumnName = molCol.name;
+    }
 
+    this.viewPromise = this.viewPromise.then(async () => {
       if (!this.viewed) {
         await this.buildView('setData').then(() => { this._onAfterBuildView.next(); });
         this.viewed = true;
@@ -265,8 +267,9 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
       }
     });
     const fileLink = ui.link('Open...', '', '', {
-      onClick: (node) => {
-        const k = 11;
+      // @ts-ignore // ui.link argument options.onClick: (node: HTMLElement) => void
+      onClick: (event: PointerEvent) => {
+        event.preventDefault();
         $(fileEl).trigger('click');
       }
     });
