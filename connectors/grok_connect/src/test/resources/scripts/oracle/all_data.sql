@@ -83,7 +83,7 @@ CREATE TABLE JSON_DATA (
 );
 
 INSERT INTO JSON_DATA(data)
-VALUES ('{ "phones":[ {"type": "mobile", "phone": "001001"} , {"type": "fix", "phone": "002002"} ] }');
+VALUES ('{"phones":[{"type": "mobile", "phone": "001001"}, {"type": "fix", "phone": "002002"}]}');
 
 INSERT INTO JSON_DATA(data) VALUES ('{"bar": "baz", "balance": 7.77, "active":false}');
 
@@ -103,7 +103,7 @@ VALUES (1.987, 1123, 1.2e-4, 1.17549E-38F, 2.22507485850720E-308);
 INSERT INTO numeric_type(number_value, small_value, float_value, binary_float_value, binary_double_value)
 VALUES (1.9, 1, 0.55, binary_float_infinity, 0.2222);
 INSERT INTO numeric_type(number_value, small_value, float_value, binary_float_value, binary_double_value)
-VALUES (13.0, 1244124, 12, -binary_float_infinity, 2.2222);
+VALUES (13.0, 1244124, 12.123, -binary_float_infinity, 2.2222);
 
 CREATE TABLE uri_types (
     uri URIType
@@ -126,11 +126,6 @@ CREATE TABLE XML_DATA (
 INSERT INTO XML_DATA (data) VALUES ('<foo>Hello World!</foo>');
 INSERT INTO XML_DATA (data) VALUES ('<book><title>Manual</title><chapter>...</chapter></book>');
 
--- CREATE TABLE lobs (
---                       blob_type BLOB,
---                       clob_type CLOB,
---                       nclob_type NCLOB,
---                       bfile_type BFILE,
--- );
---
--- INSERT INTO lobs (blob_type, clob_type, nclob_type, bfile_type) VALUES ('Grok', 'Grok', 'Grok', 'Grok');
+CREATE TABLE lobs (blob_type BLOB, clob_type CLOB, nclob_type NCLOB);
+
+INSERT INTO lobs (blob_type, clob_type, nclob_type) VALUES (UTL_RAW.CAST_TO_RAW('Grok'), TO_CLOB('Grok'), TO_NCLOB('Grok'));
