@@ -322,7 +322,9 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
       // const ligandParams: LoaderParameters = {ext: 'sdf', compressed: false, binary: false, name: '<Ligand>'};
 
       const ligandBlob: Blob = this.getLigandBlob(dataFrame.currentRowIdx);
-      const ligandParams: Partial<LoaderParameters> = {ext: 'sdf', compressed: false, binary: false, name: '<Ligand>'};
+      const ligandParams: Partial<LoaderParameters> = {
+        ext: 'sdf', compressed: false, binary: false, name: `<Ligand at row ${dataFrame.currentRowIdx}>`
+      };
 
       const loadRes = await stage.loadFile(ligandBlob, ligandParams);
       const repComp = stage.compList[1].addRepresentation(RepresentationType.BallAndStick, {});
@@ -348,7 +350,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
           ext: 'sdf',
           compressed: false,
           binary: false,
-          name: '<Ligand>'
+          name: `<Ligand at row ${selIdx}>`
         };
 
         const loadRes = await stage.loadFile(ligandBlob, ligandParams);
