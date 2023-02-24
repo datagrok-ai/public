@@ -56,6 +56,10 @@ export class FitCellRenderer extends DG.GridCellRenderer {
 
   get cellType() { return 'fit'; }
 
+  get defaultHeight(): number { return 50; }
+
+  get defaultWidth(): number { return 160; }
+
   // onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
   //   const hitData = onHit(gridCell, e);
   //   if (hitData.isHit)
@@ -107,10 +111,19 @@ export class FitCellRenderer extends DG.GridCellRenderer {
     // on click turn off the point (change bitset on false) - change it to cross (DG.MARKER_TYPE??)
     // second click returns it
     // fix demo dataset (parameteres?)
+    // make viewer (on selected rows with the name??)
+
 
     // make normal resizing (width height - make with bounds) ???
+    // that's easy - just redefine the defaultHeight and etc. (we can do this)
+
     // add confidence intervals (top and bottom)
-    // make viewer (on selected rows with the name??)
+    // ask Leonid about why confidenceTop, confidenceBottom and fittedCurve give the same value
+
+    // make viewer using echarts?? (interactive, synchronizing with the renderer)
+    // make markers and lines one color on viewer (blue - blue, green - green, etc.)
+
+    // curves have to be like dose response curve
 
     const df = gridCell.grid.dataFrame;
     if (w < 20 || h < 10 || df === void 0) return;
@@ -144,6 +157,13 @@ export class FitCellRenderer extends DG.GridCellRenderer {
     for (let i = 0; i < filteredCoordinates.x.length; i++) {
       fitCurveCoordinates.x[i] = filteredCoordinates.x[i];
       fitCurveCoordinates.y[i] = fitResult.fittedCurve(fitCurveCoordinates.x[i]);
+      // console.group('coordinates');
+      // console.log(`fitted curve: x = ${fitCurveCoordinates.x[i]}, y = ${fitCurveCoordinates.y[i]}`);
+      // console.log(`confidence top: x = ${fitCurveCoordinates.x[i]},
+      //   y = ${fitResult.confidenceTop(fitCurveCoordinates.x[i])}`);
+      // console.log(`confidence bottom: x = ${fitCurveCoordinates.x[i]},
+      //   y = ${fitResult.confidenceBottom(fitCurveCoordinates.x[i])}`);
+      // console.groupEnd();
     }
 
     const canvasFitCurveCoordinates = scaleCoordinates(fitCurveCoordinates, gridCell.gridColumn.width, h);
