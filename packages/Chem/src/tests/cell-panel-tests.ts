@@ -58,7 +58,7 @@ category('cell panel', async () => {
 
     for (const mol of molFormats)
       molfileWidget(mol);
-  });
+  }, {skipReason: 'GROK-12233'});
 
   test('properties', async () => {
     //commented out since the return type has changed - see if we still need it
@@ -165,7 +165,7 @@ category('cell panel', async () => {
 
   test('gasteiger-partion-charges', async () => {
     const parameters = {mol: molStr, contours: 10};
-    await grok.functions.call('Chem:GasteigerPartialCharges', parameters);
+    await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', parameters);
   });
 
   //TODO: Compare the calculated values

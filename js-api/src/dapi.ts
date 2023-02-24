@@ -386,7 +386,7 @@ export class AdminDataSource {
   }
 }
 
-interface ServiceInfo {
+export interface ServiceInfo {
   name: string,
   description: string,
   enabled: boolean,

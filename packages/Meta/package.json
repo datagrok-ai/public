@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.10",
+  "version": "3.2.14",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -432,6 +432,9 @@
         },
         "1.5.3": {
           "datagrok-api": "^1.13.0"
+        },
+        "1.5.5": {
+          "datagrok-api": "^1.13.2"
         }
       },
       "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Chem/README.md)",
@@ -1231,6 +1234,9 @@
         },
         "1.0.21": {
           "datagrok-api": "^1.11.0"
+        },
+        "1.0.24": {
+          "datagrok-api": "^1.11.0"
         }
       },
       "description": "Chembl integration, commonly used queries and browser",
@@ -1327,6 +1333,9 @@
           "datagrok-api": "^1.6.7"
         },
         "1.0.17": {
+          "datagrok-api": "^1.6.7"
+        },
+        "1.0.18": {
           "datagrok-api": "^1.6.7"
         }
       },
@@ -1485,6 +1494,9 @@
         },
         "2.1.1": {
           "datagrok-api": "^1.13.0"
+        },
+        "2.1.2": {
+          "datagrok-api": "^1.13.2"
         }
       },
       "description": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher.",
@@ -2243,17 +2255,6 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/labs.git",
         "directory": "packages/ChemDraw"
-      }
-    },
-    "gridextdemo": {
-      "dependencies": {
-        "1.0.0": {}
-      },
-      "description": "Demos of Grid Extensions",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/gridextdemo"
       }
     },
     "molecular-liability-browser": {

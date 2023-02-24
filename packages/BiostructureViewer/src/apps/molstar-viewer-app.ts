@@ -46,7 +46,7 @@ export class MolstarViewerApp {
 
     const pdbStr: string = await _package.files.readAsText('samples/protease.pdb');
 
-    const viewer: DG.JsViewer = (await this.view.dataFrame.plot.fromType('MolstarViewer', {
+    const viewer: DG.JsViewer = (await this.view.dataFrame.plot.fromType('Biostructure', {
       [msPROPS.pdb]: pdbStr,
     })) as DG.JsViewer;
     this.view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Molstar', 0.4);

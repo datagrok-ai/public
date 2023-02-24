@@ -5,7 +5,13 @@
   cursor:pointer;
 }
 .dialogSize{
-  max-width: calc(100% - 3.5rem);
+  max-width: 700px!important;
+  margin: .5rem auto;
+  margin-top:70px!important;
+}
+.dialogBody{
+  background: white;
+  border-radius: 3px;
 }
 .right{
   float:right;

@@ -76,6 +76,9 @@ category('Functions: Math', () => {
     'Eq(-1, 1)': false,
     'Eq(-0, 0)': true,
     'Eq(3.142, 3.142)': true,
+    'Eq("1", 1)': false,
+    'Eq(0, null)': false,
+    'Eq(null, null)': true,
   }));
 
   test('Exp', () => check({

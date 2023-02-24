@@ -11,7 +11,7 @@ export default function banner (){
                     'width': '300px',
                     'transform': 'rotate(45deg)',
                     'background': 'linear-gradient(-180deg,#1796FC 50%,#ffd500 0)',
-                    zIndex: '99999',
+                    zIndex: '1000',
                 }}></a>
     );
 }

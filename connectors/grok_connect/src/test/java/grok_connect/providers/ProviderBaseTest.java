@@ -3,12 +3,22 @@ package grok_connect.providers;
 import grok_connect.connectors_info.Credentials;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataProvider;
+import grok_connect.providers.utils.DataFrameComparator;
 import grok_connect.providers.utils.Providers;
 import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryMonitor;
 import grok_connect.utils.SettingsManager;
 import org.apache.log4j.Logger;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 
@@ -23,10 +33,12 @@ public abstract class ProviderBaseTest {
     protected JdbcDataProvider provider;
     protected Credentials credentials;
     protected DataConnection connection;
+    protected DataFrameComparator dataFrameComparator;
 
     protected ProviderBaseTest(Providers type) {
         this.container = type.getContainer();
         this.type = type;
+        dataFrameComparator = new DataFrameComparator();
     }
 
     @BeforeAll
