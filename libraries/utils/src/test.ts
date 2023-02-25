@@ -10,10 +10,11 @@ export const tests: {
   }
 } = {};
 
+const autoTestsCatName = 'Auto Tests';
+const wasRegistered: {[key: string]: boolean} = {};
 export let currentCategory: string;
 
 export namespace assure {
-
   export function notNull(value: any, name?: string) {
     if (value == null)
       throw new Error(`${name == null ? 'Value' : name} not defined`);
@@ -93,15 +94,43 @@ export function test(name: string, test: () => Promise<any>, options?: TestOptio
 }
 
 /* Tests two objects for equality, throws an exception if they are not equal. */
-export function expect(actual: any, expected: any): void {
+export function expect(actual: any, expected: any = true, error?: string): void {
+  if (error)
+    error = `${error}, `;
+  else error = '';
   if (actual !== expected)
-    throw new Error(`Expected "${expected}", got "${actual}"`);
+    throw new Error(`${error}Expected "${expected}", got "${actual}"`);
 }
 
-export function expectFloat(actual: number, expected: number, tolerance = 0.001): void {
+export function expectFloat(actual: number, expected: number, tolerance = 0.001, error?: string): void {
   const areEqual = Math.abs(actual - expected) < tolerance;
+  expect(areEqual, true, `${error ?? ''} (tolerance = ${tolerance})`);
   if (!areEqual)
     throw new Error(`Expected ${expected}, got ${actual} (tolerance = ${tolerance})`);
+}
+
+export function expectTable(actual: DG.DataFrame, expected: DG.DataFrame, error?: string): void {
+  const expectedRowCount = expected.rowCount;
+  const actualRowCount = actual.rowCount;
+  expect(actualRowCount, expectedRowCount, `${error ?? ''}, row count`);
+
+  for (const column of expected.columns) {
+    const actualColumn = actual.columns.byName(column.name);
+    if (actualColumn == null)
+      throw new Error(`Column ${column.name} not found`);
+    if (actualColumn.type != column.type)
+      throw new Error(`Column ${column.name} type expected ${column.type} got ${actualColumn.type}`);
+    for (let i = 0; i < expectedRowCount; i++) {
+      const value = column.get(i);
+      const actualValue = actualColumn.get(i);
+      if (column.type == DG.TYPE.FLOAT)
+        expectFloat(actualValue, value, 0.0001, error);
+      else if (column.type == DG.TYPE.DATE_TIME)
+        expect(actualValue.isSame(value), true, error);
+      else
+        expect(actualValue, value, error);
+    }
+  }
 }
 
 export function expectObject(actual: { [key: string]: any }, expected: { [key: string]: any }) {
@@ -160,11 +189,40 @@ export function after(after: () => Promise<void>): void {
   tests[currentCategory].after = after;
 }
 
+function addNamespace(s: string, f: DG.Func): string {
+  return s.replace(new RegExp(f.name, 'gi'), f.nqName);
+}
 
-export async function runTests(options?: { category?: string, test?: string, testContext?: TestContext }) {
+export async function initAutoTests(packageId: string, module?: any) {
+  if (wasRegistered[packageId]) return;
+  const moduleTests = module ? module.tests : tests;
+  if (moduleTests[autoTestsCatName] !== undefined) {
+    wasRegistered[packageId] = true;
+    return;
+  }
+  const moduleAutoTests = [];
+  const packFunctions = await grok.dapi.functions.filter(`package.id = "${packageId}"`).list();
+  for (const f of packFunctions) {
+    const tests = f.options['test'];
+    if (!(tests && Array.isArray(tests) && tests.length)) continue;
+    for (let i = 0; i < tests.length; i++) {
+      moduleAutoTests.push(new Test(autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
+        const res = await grok.functions.eval(addNamespace(tests[i], f));
+        // eslint-disable-next-line no-throw-literal
+        if (res !== true) throw `Failed: ${tests[i]}`;
+      }));
+    }
+  }
+  wasRegistered[packageId] = true;
+  if (!moduleAutoTests.length) return;
+  moduleTests[autoTestsCatName] = {tests: moduleAutoTests};
+}
+
+export async function runTests(options?: {category?: string, test?: string, testContext?: TestContext}) {
+  const package_ = grok.functions.getCurrentCall()?.func?.package;
+  await initAutoTests(package_.id);
   const results: { category?: string, name?: string, success: boolean,
                    result: string, ms: number, skipped: boolean }[] = [];
-  const packageName = grok.functions.getCurrentCall()?.func?.package;
   console.log(`Running tests`);
   options ??= {};
   options!.testContext ??= new TestContext();
@@ -185,7 +243,6 @@ export async function runTests(options?: { category?: string, test?: string, tes
     const res = [];
     for (let i = 0; i < t.length; i++)
       res.push(await execTest(t[i], options?.test));
-
     const data = (await Promise.all(res)).filter((d) => d.result != 'skipped');
     try {
       if (value.after)
@@ -219,7 +276,7 @@ export async function runTests(options?: { category?: string, test?: string, tes
       successful: successful,
       skipped: skipped,
       failed: failed.length,
-      package: packageName
+      package: package_
     };
     for (const r of failed) Object.assign(params, {[`${r.category} | ${r.name}`]: r.result});
     logger.log(description, params, 'package-tested');
@@ -235,7 +292,6 @@ async function execTest(t: Test, predicate: string | undefined) {
   if (!skip)
     console.log(`Started ${t.category} ${t.name}`);
   const start = new Date();
-
   try {
     if (skip)
       r = {success: true, result: skipReason!, ms: 0, skipped: true};
@@ -249,7 +305,6 @@ async function execTest(t: Test, predicate: string | undefined) {
   r.ms = stop - start;
   if (!skip)
     console.log(`Finished ${t.category} ${t.name} for ${r.ms} ms`);
-
   r.category = t.category;
   r.name = t.name;
   return r;

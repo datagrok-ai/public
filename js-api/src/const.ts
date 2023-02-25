@@ -125,6 +125,10 @@ export enum TYPE {
   NOTEBOOK = 'Notebook'
 }
 
+export enum GRID_COLUMN_TAGS {
+
+}
+
 /** Commonly used options on the function level */
 export enum FUNC_OPTIONS {
   DEMO_PATH = 'demoPath',    // Demo path, such as 'Viewers | Radar'
@@ -268,6 +272,9 @@ export const TAGS = {
   IGNORE_CUSTOM_FILTER: '.ignore-custom-filter',
   /** Filter type for molecular columns: "Sketch" | "Categorical". See [DG.STRUCTURE_FILTER_TYPE] */
   STRUCTURE_FILTER_TYPE: '.structure-filter-type',
+  /** Custom filter type to be used by default for a column: "<PackageName\>:<FilterType\>".
+   * Takes precedence over [IGNORE_CUSTOM_FILTER] */
+  CUSTOM_FILTER_TYPE: '.custom-filter-type',
 
   CELL_RENDERER: 'cell.renderer',
   UNITS: 'units',  // see DG.UNITS
@@ -285,7 +292,7 @@ export const FUNC_TYPES = {
     * Signature: app() */
   APP: 'app',
 
-  /** Context-specific widget that appears on the property panel
+  /** Context-specific widget that appears on the context panel
     * Signature: panel(x: any): Widget */
   PANEL: 'panel',
 
@@ -547,11 +554,11 @@ export type MarkerCodingType = `${MARKER_TYPE}`;
 export type DemoDatasetName = `${DEMO_DATASET}`;
 export type DockType = `${DOCK_TYPE}`;
 export type LegendPosition = `${LEGEND_POSITION}`;
-export type ColumnInfo = {name: string, type?: string, semType?: string};
+export type CsvImportColumnOptions = {name: string, type?: string, semType?: string};
 export type CsvImportOptions = {
   delimiter?: string, decimalSeparator?: string, thousandSeparator?: string, headerRow?: boolean,
   columnFilterNames?: string[], columnFilterRegexp?: string, mergeDelimiters?: boolean, maxRows?: number,
-  rowFilterTop?: number, rowFilterProb?: number, nullStrings?: string[], columnImportOptions?: ColumnInfo[]};
+  rowFilterTop?: number, rowFilterProb?: number, nullStrings?: string[], columnImportOptions?: CsvImportColumnOptions[]};
 export type IndexPredicate = (ind: number) => boolean;
 export type StringPredicate = (str: string) => boolean;
 export type ScriptLanguage = `${SCRIPT_LANGUAGE}`;
@@ -561,7 +568,7 @@ export type ElementOptions = {
   classes?: string;
   style?: object;
   processNode?: (node: HTMLElement) => void;
-  onClick?: (node: HTMLElement) => void;
+  onClick?: (event: PointerEvent) => void;
 };
 
 /** Metadata associated with the semantic type. */

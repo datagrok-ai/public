@@ -22,7 +22,7 @@ export class BioSubstructureFilter extends DG.Filter {
   bitset: DG.BitSet | null = null;
   loader: HTMLDivElement = ui.loader();
   onBioFilterChangedSubs?: Subscription;
-  notation: string | undefined = '';
+  notation: string | undefined = undefined;
 
   get calculating(): boolean { return this.loader.style.display == 'initial'; }
 

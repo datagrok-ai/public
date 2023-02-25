@@ -9,10 +9,11 @@ import {HtmlTestCellRenderer, TestCellRenderer} from './cell-types/test-cell-ren
 import {BarCellRenderer} from './cell-types/bar-cell-renderer';
 import {BinaryImageCellRenderer} from './cell-types/binary-image-cell-renderer';
 
-import {SparklineCellRenderer} from './sparklines/sparklines-lines';
+import {SparklineCellRenderer, FitCellRenderer} from './sparklines/sparklines-lines';
 import {BarChartCellRenderer} from './sparklines/bar-chart';
 import {PieChartCellRenderer} from './sparklines/piechart';
 import {RadarChartCellRender} from './sparklines/radar-chart';
+import {ScatterPlotCellRenderer} from "./sparklines/scatter-plot";
 import {names, SparklineType, sparklineTypes} from "./sparklines/shared";
 import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
 
@@ -65,6 +66,24 @@ export function barCellRenderer() {
 //output: grid_cell_renderer result
 export function sparklineCellRenderer() {
   return new SparklineCellRenderer();
+}
+
+//name: Fit
+//tags: cellRenderer
+//meta.cellType: sparkline
+//meta.virtual: true
+//output: grid_cell_renderer result
+export function fitCellRenderer() {
+  return new FitCellRenderer();
+}
+
+//name: Scatter Plot
+//tags: cellRenderer
+//meta.cellType: scatterplot
+//meta.virtual: true
+//output: grid_cell_renderer result
+export function scatterPlotRenderer() {
+  return new ScatterPlotCellRenderer();
 }
 
 //name: Bar Chart
@@ -165,8 +184,9 @@ export function demoTestUnitsCellRenderer() {
   grok.shell.info('Different renderers even though semantic types are the same');
 }
 
-//description: pinnedColumns
+//description: autoPowerGrid
 //tags: autostart
-export function _pinnedColumns(): void {
+export function _autoPowerGrid(): void {
   PinnedUtils.registerPinnedColumns();
+  DG.GridCellRenderer.register(new ScatterPlotCellRenderer());
 }

@@ -2,10 +2,15 @@ package grok_connect.providers;
 
 import java.io.*;
 import java.sql.*;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.math.*;
 import java.text.*;
 import java.util.regex.*;
+
+import oracle.sql.TIMESTAMPTZ;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.text.StringEscapeUtils;
@@ -39,7 +44,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     public Properties getProperties(DataConnection conn) {
         return defaultConnectionProperties(conn);
     }
-
+//    what is this?
     public boolean autoInterpolation() {
         return true;
     }
@@ -70,9 +75,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                 res = DataProvider.CONN_AVAILABLE;
         } catch (Throwable ex) {
             StringWriter errors = new StringWriter();
-            errors.write("ERROR:\n" + ex.toString() + "\n\nSTACK TRACE:\n");
+            errors.write("ERROR:\n" + ex + "\n\nSTACK TRACE:\n");
             ex.printStackTrace(new PrintWriter(errors));
-            System.out.println(errors.toString());
+            System.out.println(errors);
             res = errors.toString();
         }
         finally {
@@ -110,6 +115,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         throw new UnsupportedOperationException();
     }
 
+//    why do we need 3 variables query, queryRun and connection if queryRun consists of all of them
     public ResultSet executeQuery(String query, FuncCall queryRun, Connection connection, int timeout)  throws ClassNotFoundException, SQLException {
         DataQuery dataQuery = queryRun.func;
         String mainCallId = (String) queryRun.aux.get("mainCallId");
@@ -125,7 +131,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 query = queryBuffer.toString();
                 System.out.println(query);
                 PreparedStatement statement = connection.prepareStatement(query);
-                providerManager.queryMonitor.addNewStatement(mainCallId, statement);
+                providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 List<String> stringValues = new ArrayList<>();
                 System.out.println(names);
                 int i = 0;
@@ -154,38 +160,38 @@ public abstract class JdbcDataProvider extends DataProvider {
                 }
                 statement.setQueryTimeout(timeout);
                 String logString = String.format("Query: %s; \nParams array: %s \n", statement, stringValues);
-                providerManager.logger.info(logString);
+                providerManager.getLogger().info(logString);
                 if (queryRun.debugQuery)
                     queryRun.log += logString;
                 if(statement.execute())
                     resultSet = statement.getResultSet();
-                providerManager.queryMonitor.removeStatement(mainCallId);
+                providerManager.getQueryMonitor().removeStatement(mainCallId);
             } else {
                 query = manualQueryInterpolation(query, dataQuery);
 
                 Statement statement = connection.createStatement();
-                providerManager.queryMonitor.addNewStatement(mainCallId, statement);
+                providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 statement.setQueryTimeout(timeout);
                 String logString = String.format("Query: %s \n", query);
-                providerManager.logger.info(logString);
+                providerManager.getLogger().info(logString);
                 if (queryRun.debugQuery)
                     queryRun.log += logString;
                 if(statement.execute(query))
                     resultSet = statement.getResultSet();
-                providerManager.queryMonitor.removeStatement(mainCallId);
+                providerManager.getQueryMonitor().removeStatement(mainCallId);
             }
         } else {
             // Query without parameters
             Statement statement = connection.createStatement();
-            providerManager.queryMonitor.addNewStatement(mainCallId, statement);
+            providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
             statement.setQueryTimeout(timeout);
             String logString = String.format("Query: %s \n", query);
-            providerManager.logger.info(logString);
+            providerManager.getLogger().info(logString);
             if (queryRun.debugQuery)
                 queryRun.log += logString;
             if(statement.execute(query))
                 resultSet = statement.getResultSet();
-            providerManager.queryMonitor.removeStatement(mainCallId);
+            providerManager.getQueryMonitor().removeStatement(mainCallId);
         }
         return resultSet;
     }
@@ -285,24 +291,29 @@ public abstract class JdbcDataProvider extends DataProvider {
         int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
 
+        Connection connection = null;
         try {
-            String query = queryRun.func.query;
-            
+            // Remove header lines
+            DataQuery dataQuery = queryRun.func;
+            String query = dataQuery.query;
+            connection = getConnection(dataQuery.connection);
             String commentStart = descriptor.commentStart;
 
             ResultSet resultSet = null;
 
+            DateTime queryExecutionStart = DateTime.now();
 
             if (!(queryRun.func.options != null
                     && queryRun.func.options.containsKey("batchMode")
                     && queryRun.func.options.get("batchMode").equals("true"))) {
                 query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
+                System.out.println(query);
                 resultSet = executeQuery(query, queryRun, connection, timeout);
             } else {
                 String[] queries = query.replaceAll("\r\n", "\n").split("\n--batch\n");
 
                 for (String currentQuery : queries)
-                    resultSet = executeQuery(currentQuery, queryRun, connection, timeout);
+                    resultSet = executeQuery(currentQuery, queryRun, connection, timeout); // IT WON'T WORK?
             }
 
             return resultSet;
@@ -333,7 +344,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             int columnCount = resultSetMetaData.getColumnCount();
             List<Column> columns = new ArrayList<>(columnCount);
             List<Boolean> supportedType = new ArrayList<>(columnCount);
-            List<Boolean> initColumn = new ArrayList<>(columnCount);
+             List<Boolean> initColumn = new ArrayList<>(columnCount);
             for (int c = 1; c < columnCount + 1; c++) {
                 Column column;
 
@@ -350,23 +361,29 @@ public abstract class JdbcDataProvider extends DataProvider {
                         label, type, typeName, precision, scale);
                 if (queryRun.debugQuery)
                     queryRun.log += logString1;
-                providerManager.logger.info(logString1);
-
+                providerManager.getLogger().info(logString1);
+// Maybe the better way to use here strategy pattern ? e.g. ColumnManager -> ColumnProvider
                 if (isInteger(type, typeName, precision, scale))
                     column = new IntColumn();
-                else if (isFloat(type, typeName, precision, scale) || isDecimal(type, typeName))
+                else if (isFloat(type, typeName, precision, scale) || isDecimal(type, typeName, scale))
                     column = new FloatColumn();
-                else if (isBoolean(type, typeName))
+                else if (isBoolean(type, typeName, precision))
                     column = new BoolColumn();
                 else if (isString(type, typeName) ||
                         typeName.equalsIgnoreCase("uuid") ||
                         typeName.equalsIgnoreCase("set"))
                     column = new StringColumn();
-                else if (isBigInt(type, typeName))
+                else if (isBigInt(type, typeName, precision, scale))
                     column = new BigIntColumn();
                 else if (isTime(type, typeName))
                     column = new DateTimeColumn();
-                else {
+                else if (isXml(type, typeName)) {
+                    column = new StringColumn();
+                } else if (isBitString(type, precision, typeName)) {
+                    column = new BigIntColumn();
+                } else if(isArray(type, typeName)) {
+                    column = new StringColumn();
+                }else {
                     column = new StringColumn();
                     supportedType.set(c - 1, false);
                     initColumn.set(c - 1, false);
@@ -375,9 +392,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                 String logString2 = String.format("Java type: %s \n", column.getClass().getName());
                 if (queryRun.debugQuery)
                     queryRun.log += logString2;
-                providerManager.logger.info(logString2);
+                providerManager.getLogger().info(logString2);
 
-                column.name = resultSetMetaData.getColumnLabel(c);
+                column.name = resultSetMetaData.getColumnLabel(c); // duplicate method call
                 columns.add(c - 1, column);
             }
             return new SchemeInfo(columns, supportedType, initColumn);
@@ -408,7 +425,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 
             DateTime fillingDataframeStart = DateTime.now();
-
+// why can't we do it in previous for loop?
             BufferedWriter csvWriter = null;
             if (outputCsv != null) {
                 csvWriter = new BufferedWriter(new FileWriter(outputCsv));
@@ -448,7 +465,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
                     if (supportedType.get(c - 1)) {
                         String colType = columns.get(c - 1).getType();
-                        if (isInteger(type, typeName, precision, scale) || isBoolean(type, typeName) ||
+                        if (isInteger(type, typeName, precision, scale) || isBoolean(type, typeName, precision) ||
                                 colType.equals(Types.INT) || colType.equals(Types.BOOL))
                             if (value instanceof Short)
                                 columns.get(c - 1).add(((Short)value).intValue());
@@ -468,14 +485,37 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 columns.get(c - 1).add(writer.toString());
                             } else
                                 columns.get(c - 1).add(value);
-                        } else if (isDecimal(type, typeName))
-                            columns.get(c - 1).add((value == null) ? null : ((BigDecimal)value).floatValue());
+                        } else if (isArray(type, typeName)) {
+                            columns.get(c - 1).add(convertArrayType(value));
+                        } else if (isXml(type, typeName)) {
+                            String valueToAdd = "";
+                            if (value != null) {
+                                SQLXML sqlxml = (SQLXML)value;
+                                valueToAdd = sqlxml.getString();
+                            }
+                            columns.get(c - 1).add(valueToAdd);
+                        } else if (isBitString(type, precision, typeName)) {
+                            String valueToAdd = "";
+                            if (value != null) {
+                                valueToAdd = value.toString();
+                            }
+                            columns.get(c - 1).add(valueToAdd);
+                        } else if (isDecimal(type, typeName, scale)) {
+                            Float valueToAdd = null;
+                            if (value.toString().equals("NaN")
+                                    && value.getClass().getName().equals("java.lang.Double")) {
+                                valueToAdd = Float.NaN;
+                            } else if (value != null){
+                                valueToAdd = ((BigDecimal)value).floatValue();
+                            }
+                            columns.get(c - 1).add(valueToAdd);
+                        }
                         else if (isFloat(type, typeName, precision, scale) || (colType.equals(Types.FLOAT)))
                             if (value instanceof Double)
                                 columns.get(c - 1).add(new Float((Double)value));
                             else
                                 columns.get(c - 1).add(value);
-                        else if (isBigInt(type, typeName) ||
+                        else if (isBigInt(type, typeName, precision, scale) ||
                                 typeName.equalsIgnoreCase("uuid") ||
                                 typeName.equalsIgnoreCase("set") ||
                                 colType.equals(Types.STRING))
@@ -486,9 +526,12 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 time = java.util.Date.from(((java.sql.Timestamp)value).toInstant());
                             else if (value instanceof java.time.ZonedDateTime)
                                 time = java.util.Date.from(((java.time.ZonedDateTime)value).toInstant());
-                            else
+                            else if (value instanceof oracle.sql.TIMESTAMPTZ) {
+                                OffsetDateTime offsetDateTime = timestamptzToOffsetDateTime((TIMESTAMPTZ) value);
+                                time = java.util.Date.from(offsetDateTime.toInstant());
+                            } else {
                                 time = ((java.util.Date) value);
-
+                            }
                             columns.get(c - 1).add((time == null) ? null : time.getTime() * 1000.0);
                         }
                     } else {
@@ -522,14 +565,14 @@ public abstract class JdbcDataProvider extends DataProvider {
                     }
                 }
 
-                if (rowCount % 10 == 0) {
-                    size = 0;
+                if (rowCount % 1000 == 0) {
+                    int size = 0;
                     for (Column column : columns)
                         size += column.memoryInBytes();
-                    size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000;
+                    size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000; // count? it's 200 lines up
                     if (memoryLimit > 0 && size > memoryLimit)
                         throw new SQLException("Too large query result: " +
-                                String.valueOf(size) + " > " + String.valueOf(memoryLimit) + " MB");
+                                size + " > " + memoryLimit + " MB");
                 }
             }
             if (queryRun.debugQuery) {
@@ -537,7 +580,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                     if (!numericColumnStats.get(i).valuesCounter.equals(new BigDecimal(0))) {
                         String logString = String.format("Column: %s, min: %s, max: %s, mean: %s\n", columns.get(i).name, numericColumnStats.get(i).min, numericColumnStats.get(i).max, numericColumnStats.get(i).mean);
                         queryRun.log += logString;
-                        providerManager.logger.info(logString);
+                        providerManager.getLogger().info(logString);
                     }
                 }
             }
@@ -547,7 +590,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                     (finish.getMillis() - fillingDataframeStart.getMillis())/ 1000.0);
             if (queryRun.debugQuery)
                 queryRun.log += logString;
-            providerManager.logger.info(logString);
+            providerManager.getLogger().info(logString);
 
             if (outputCsv != null)
                 csvWriter.close();
@@ -576,7 +619,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             return getResultSetSubDf(queryRun, resultSet, schemeInfo.columns, schemeInfo.supportedType, schemeInfo.initColumn, -1);
         }
         catch (SQLException e) {
-            if (providerManager.queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
+            if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
                 throw new QueryCancelledByUser();
             else throw e;
         }
@@ -584,6 +627,14 @@ public abstract class JdbcDataProvider extends DataProvider {
             if (connection != null)
                 connection.close();
         }
+    }
+
+    protected Object convertArrayType(Object value) {
+        return value.toString();
+    }
+
+    protected OffsetDateTime timestamptzToOffsetDateTime(TIMESTAMPTZ dbData) {
+        throw new UnsupportedOperationException("TIMESTAMPTZ is not supported");
     }
 
     private static String paramToNamesString(FuncParam param, PatternMatcher matcher, String type,
@@ -610,14 +661,13 @@ public abstract class JdbcDataProvider extends DataProvider {
             result.query = "(" + matcher.colName + " >= @" + name0 + " AND " + matcher.colName + " <= @" + name1 + ")";
             result.params.add(new FuncParam(type, name0, matcher.values.get(0)));
             result.params.add(new FuncParam(type, name1, matcher.values.get(1)));
-        } else if (matcher.op.equals(PatternMatcher.IN)) {
+        } else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
             String names = paramToNamesString(param, matcher, type, result);
             result.query = "(" + matcher.colName + " " + matcher.op + " (" + names + "))";
         } else {
             result.query = "(" + matcher.colName + " " + matcher.op + " @" + param.name + ")";
             result.params.add(new FuncParam(type, param.name, matcher.values.get(0)));
         }
-
         return result;
     }
 
@@ -646,8 +696,9 @@ public abstract class JdbcDataProvider extends DataProvider {
             result.query = _query;
             result.params.add(new FuncParam(type, param.name, "%" + value));
         } else if (matcher.op.equals(PatternMatcher.REGEXP)) {
-            result.query = "(1 = 1)"; // TODO Implement regexp
-        } else if (matcher.op.equals(PatternMatcher.IN)) {
+            result.query = getRegexQuery(matcher.colName, value);
+            result.params.add(new FuncParam(type, param.name, value));
+        } else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
             String names = paramToNamesString(param, matcher, type, result);
             result.query = "(" + matcher.colName + " " + matcher.op + " (" + names + "))";
         } else {
@@ -655,6 +706,10 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
 
         return result;
+    }
+
+    protected String getRegexQuery(String columnName, String regexExpression) {
+        throw new UnsupportedOperationException("REGEXP is not supported for this provider");
     }
 
     public PatternMatcherResult dateTimePatternConverter(FuncParam param, PatternMatcher matcher) {
@@ -742,17 +797,31 @@ public abstract class JdbcDataProvider extends DataProvider {
                 typeName.equalsIgnoreCase("int") ||
                 typeName.equalsIgnoreCase("serial2") ||
                 typeName.equalsIgnoreCase("serial4") ||
-                ((precision < 8) && (scale == 0) && (isFloat(type, typeName, precision, scale) || isDecimal(type, typeName)));
+                ((precision < 8) && (scale == 0) && (isFloat(type, typeName, precision, scale)
+                        || isDecimal(type, typeName, scale)));
         // TODO Investigate precision value for current case
     }
 
-    private static boolean isTime(int type, String typeName) {
-        return (type == java.sql.Types.DATE) || (type == java.sql.Types.TIME) || (type == java.sql.Types.TIMESTAMP) ||
-                typeName.equalsIgnoreCase("timetz") ||
-                typeName.equalsIgnoreCase("timestamptz");
+    protected boolean isArray(int type, String typeName) {
+        return false;
     }
 
-    private static boolean isBigInt(int type, String typeName) {
+    private static boolean isBitString(int type, int precision, String typeName) {
+        return (type == java.sql.Types.BIT && precision > 1) || typeName.equalsIgnoreCase("varbit");
+    }
+
+    private static boolean isXml(int type, String typeName) {
+        return (type == java.sql.Types.SQLXML || typeName.equalsIgnoreCase("xml"));
+    }
+
+    private static boolean isTime(int type, String typeName) {
+        return (type == java.sql.Types.DATE) || (type == java.sql.Types.TIME) || (type == java.sql.Types.TIMESTAMP)
+                || typeName.equalsIgnoreCase("timetz")
+                || typeName.equalsIgnoreCase("timestamptz")
+                || (typeName.equalsIgnoreCase("TIMESTAMP WITH TIME ZONE"));
+    }
+
+    protected boolean isBigInt(int type, String typeName, int precision, int scale) {
         return (type == java.sql.Types.BIGINT) || typeName.equalsIgnoreCase("int8") ||
                 typeName.equalsIgnoreCase("serial8");
     }
@@ -761,16 +830,18 @@ public abstract class JdbcDataProvider extends DataProvider {
         return (type == java.sql.Types.FLOAT) || (type == java.sql.Types.DOUBLE) || (type == java.sql.Types.REAL) ||
                 typeName.equalsIgnoreCase("float8") ||
                 typeName.equalsIgnoreCase("float4") ||
-                typeName.equalsIgnoreCase("money");
+                typeName.equalsIgnoreCase("money") ||
+                typeName.equalsIgnoreCase("binary_float") ||
+                typeName.equalsIgnoreCase("binary_double");
     }
 
-    private static boolean isDecimal(int type, String typeName) {
+    protected boolean isDecimal(int type, String typeName, int scale) {
         return (type == java.sql.Types.DECIMAL) || (type == java.sql.Types.NUMERIC) ||
                 typeName.equalsIgnoreCase("decimal");
     }
 
-    private static boolean isBoolean(int type, String typeName) {
-        return (type == java.sql.Types.BOOLEAN) || (type == java.sql.Types.BIT) ||
+    private static boolean isBoolean(int type, String typeName, int precision) {
+        return (type == java.sql.Types.BOOLEAN) ||
                 typeName.equalsIgnoreCase("bool");
     }
 

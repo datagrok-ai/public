@@ -34,15 +34,16 @@ import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import {checkForStructuralAlerts} from './panels/structural-alerts';
 
 //utils imports
+import { ScaffoldTreeViewer} from "./widgets/scaffold-tree";
 import {Fingerprint} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
-import {_rdKitModule} from './utils/chem-common-rdkit';
-import {_convertMolNotation, isMolBlock} from './utils/convert-notation-utils';
+import {IMolContext, getMolSafe} from './utils/mol-creation_rdkit';
+import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
+import {_convertMolNotation} from './utils/convert-notation-utils';
 import {molToMolblock} from './utils/convert-notation-utils';
 import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
 import {saveAsSdfDialog} from './utils/sdf-utils';
 import {getSimilaritiesMarix} from './utils/similarity-utils';
-import { ScaffoldTreeViewer } from "./widgets/scaffold-tree";
 
 //analytical imports
 import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
@@ -50,6 +51,7 @@ import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversit
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {chemSpace, getEmbeddingColsNames} from './analysis/chem-space';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
+import {ChemSearchBaseViewer} from './analysis/chem-search-base-viewer';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
@@ -57,15 +59,15 @@ import {_importSmi} from './file-importers/smi-importer';
 
 //script api
 import {generateScaffoldTree} from "./scripts-api";
+import { renderMolecule } from './rendering/render-molecule';
 import { RDKitReactionRenderer } from './rendering/rdkit-reaction-renderer';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
-const DEFAULT_SKETCHER = 'openChemLibSketcher';
-const SKETCHER_FUNCTIONS_ALIASES: {[key: string]: string} = {
-  OpenChemLib: 'openChemLibSketcher',
-  Ketcher: 'ketcherSketcher',
-  Marvin: 'marvinSketcher',
-  ChemDraw: 'chemDrawSketcher'
+const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
+  OpenChemLib: 'OpenChemLib',
+  Ketcher: 'Ketcher',
+  Marvin: 'Marvin',
+  ChemDraw: 'ChemDraw'
 }
 
 /**
@@ -87,40 +89,44 @@ export let _properties: any;
 let _rdRenderer: RDKitCellRenderer;
 export let renderer: GridCellRendererProxy;
 let _renderers: Map<string, DG.GridCellRenderer>;
-let _init: Promise<void>;
 
 //tags: init
 export async function initChem(): Promise<void> {
-  if (_init !== undefined) //temporary solution for bug
-    return _init;
-  _init = new Promise<void>(async (resolve, reject) => {
-    chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
-    await chemCommonRdKit.initRdKitModuleLocal();
-    _properties = await _package.getProperties();
-    _rdRenderer = new RDKitCellRenderer(getRdKitModule());
-    renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
-    const lastSelectedSketcher = _properties.Sketcher ? SKETCHER_FUNCTIONS_ALIASES[_properties.Sketcher]:
-        await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
-    const sketcherFucntions = DG.Func.find({tags: ['moleculeSketcher']});
-    if (sketcherFucntions.find(e => e.name == lastSelectedSketcher) || !lastSelectedSketcher)
-      window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, lastSelectedSketcher);
-    else {
-      const funcByFriendlyName = sketcherFucntions.find(e => e.friendlyName == lastSelectedSketcher);
-      if (funcByFriendlyName) {
-        window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, funcByFriendlyName.name);
-      } else {
-        grok.shell.warning(`Package with ${lastSelectedSketcher} function is not installed. Switching to ${DEFAULT_SKETCHER}.`);
-        window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, DEFAULT_SKETCHER);
-      }
+  chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+  await chemCommonRdKit.initRdKitModuleLocal();
+  _properties = await _package.getProperties();
+  _rdRenderer = new RDKitCellRenderer(getRdKitModule());
+  renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
+  let storedSketcherType = await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
+  if (!storedSketcherType && _properties.Sketcher)
+    storedSketcherType = SKETCHER_FUNCS_FRIENDLY_NAMES[_properties.Sketcher]
+  const sketcherFunc = DG.Func.find({tags: ['moleculeSketcher']}).find(e => e.name === storedSketcherType || e.friendlyName === storedSketcherType);
+  if (sketcherFunc)
+    DG.chem.currentSketcherType = sketcherFunc.friendlyName;
+  else {
+    if(!!storedSketcherType) {
+      grok.shell.warning(`Package with ${storedSketcherType} function is not installed. Switching to ${DG.DEFAULT_SKETCHER}.`);
     }
-    _renderers = new Map();
-    resolve();
-  });
-  return _init;
+    DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
+  }
+  _renderers = new Map();
 }
 
 //tags: autostart
 export async function initChemAutostart(): Promise<void> { }
+
+//name: chemTooltip
+//tags: tooltip
+//input: column col {semType: Molecule}
+//output: widget
+export async function chemTooltip(col: DG.Column): Promise<DG.Viewer> {
+  const tv = grok.shell.tv;
+  let viewer = new ChemDiversityViewer(true)//await tv.dataFrame.plot.fromType('diversitySearchViewer', {
+    viewer.limit = 9;
+    viewer.dataFrame = tv.dataFrame;
+
+  return viewer;
+}
 
 //name: Scaffold Tree
 //tags: viewer
@@ -157,6 +163,17 @@ export function canvasMol(
   drawMoleculeToCanvas(x, y, w, h, canvas,
     molString, scaffoldMolString == '' ? null : scaffoldMolString,
     options);
+}
+
+
+//name: drawMolecule
+//input: string molStr
+//input: int w {optional: true}
+//input: int h {optional: true}
+//input: bool popupMenu {optional: true}
+//output: object canvas
+export function drawMolecule(molStr: string, w?: number, h?: number, popupMenu?: boolean): HTMLElement {
+  return renderMolecule(molStr, {width: w, height: h, popupMenu: popupMenu});
 }
 
 
@@ -310,10 +327,12 @@ export function descriptorsApp(): void {
 }
 
 //name: saveAsSdf
-//description: Save as SDF
+//description: As SDF
 //tags: fileExporter
-export function saveAsSdf(): void {
+export async function saveAsSdf(): Promise<void> {
+  const progressIndicator = DG.TaskBarProgressIndicator.create('Saving as SDF...');
   saveAsSdfDialog();
+  progressIndicator.close();
 }
 
 //#region Top menu
@@ -325,7 +344,7 @@ export function similaritySearchViewer(): ChemSimilarityViewer {
   return new ChemSimilarityViewer();
 }
 
-//top-menu: Chem | Base | Similarity Search...
+//top-menu: Chem | Search | Similarity Search...
 //name: similaritySearch
 //description: finds the most similar molecule
 export function similaritySearchTopMenu(): void {
@@ -339,14 +358,14 @@ export function diversitySearchViewer(): ChemDiversityViewer {
   return new ChemDiversityViewer();
 }
 
-//top-menu: Chem | Base | Diversity Search...
+//top-menu: Chem | Search | Diversity Search...
 //name: diversitySearch
 //description: finds the most diverse molecules
-export function diversitySearchTopMenu() {
+export function diversitySearchTopMenu(): void {
   (grok.shell.v as DG.TableView).addViewer('DiversitySearchViewer');
 }
 
-//top-menu: Chem | Analysis | Chemical Space...
+//top-menu: Chem | Analyze Structure | Chemical Space...
 //name: Chem Space
 //input: dataframe table
 //input: column molecules { semType: Molecule }
@@ -430,31 +449,7 @@ export async function getChemSimilaritiesMatrix(dim: number, col: DG.Column,
   return await getSimilaritiesMarix(dim, col, df, colName, simArr);
 }
 
-//name: R-Groups Analysis
-//top-menu: Chem | Analysis | R-Groups Analysis...
-
-export function rGroupsAnalysisMenu(): void {
-  const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  if (col === null) {
-    grok.shell.error('Current table does not contain molecules');
-    return;
-  }
-  rGroupAnalysis(col);
-}
-
-//top-menu: Chem | Analysis | Substituent Analysis...
-//name: groupAnalysis
-export function groupAnalysisMenu(): void {
-  const packageExists = checkPackage('Charts', '_GroupAnalysisViewer');
-  if (packageExists) {
-    const groupAnalysisViewer = DG.Viewer.fromType('GroupAnalysisViewer', grok.shell.tv.dataFrame, {});
-    grok.shell.tv.addViewer(groupAnalysisViewer);
-  } else {
-    grok.shell.warning('Charts package is not installed');
-  }
-}
-
-//top-menu: Chem | Analysis | Elemental Analysis...
+//top-menu: Chem | Analyze Structure | Elemental Analysis...
 //name: Elemental analysis
 //description: function that implements elemental analysis
 //input: dataframe table
@@ -511,7 +506,31 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
   }
 }
 
-//top-menu: Chem | SAR | Activity Cliffs...
+//name: R-Groups Analysis
+//top-menu: Chem | Analyze SAR | R-Groups Analysis...
+
+export function rGroupsAnalysisMenu(): void {
+  const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+  if (col === null) {
+    grok.shell.error('Current table does not contain molecules');
+    return;
+  }
+  rGroupAnalysis(col);
+}
+
+//top-menu: Chem | Analyze SAR | Group Analysis...
+//name: groupAnalysis
+export function groupAnalysisMenu(): void {
+  const packageExists = checkPackage('Charts', '_GroupAnalysisViewer');
+  if (packageExists) {
+    const groupAnalysisViewer = DG.Viewer.fromType('GroupAnalysisViewer', grok.shell.tv.dataFrame, {});
+    grok.shell.tv.addViewer(groupAnalysisViewer);
+  } else {
+    grok.shell.warning('Charts package is not installed');
+  }
+}
+
+//top-menu: Chem | Analyze SAR | Activity Cliffs...
 //name: Activity Cliffs
 //description: detect activity cliffs
 //input: dataframe table [Input data table]
@@ -548,7 +567,7 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
   }
 }
 
-//top-menu: Chem | SAR | Structural alerts
+//top-menu: Chem | Analyze SAR | Structural Alerts...
 //name: Structural Alerts...
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}
@@ -560,16 +579,16 @@ export async function getStructuralAlerts(col: DG.Column<string>): Promise<void>
 //name: To InchI...
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}
-export function addInchisTopMenu(col: DG.Column): void {
-  addInchis(col);
+export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column): void {
+  addInchis(table, col);
 }
 
 //top-menu: Chem | Calculate | To InchI Keys
 //name: To InchI Keys...
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}
-export function addInchisKeysTopMenu(col: DG.Column): void {
-  addInchiKeys(col);
+export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void {
+  addInchiKeys(table, col);
 }
 
 //#endregion
@@ -579,13 +598,13 @@ export function addInchisKeysTopMenu(col: DG.Column): void {
 
 //name: Chem
 //input: column molColumn {semType: Molecule}
-//tags: panel
+//tags: panel, exclude-actions-panel
 //output: widget result
 export function molColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
   return getMolColumnPropertyPanel(molColumn);
 }
 
-//name: Chem Descriptors
+//name: Chemistry | Descriptors
 //tags: panel, chem, widgets
 //input: string smiles { semType: Molecule }
 //output: widget result
@@ -593,7 +612,7 @@ export function descriptorsWidget(smiles: string): DG.Widget {
   return smiles ? getDescriptorsSingle(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Drug Likeness
+//name: Biology | Drug Likeness
 //description: Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.
 //help-url: /help/domains/chem/info-panels/drug-likeness.md
 //tags: panel, chem, widgets
@@ -612,7 +631,7 @@ export function molfile(smiles: string): DG.Widget {
   return smiles ? molfileWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Properties
+//name: Chemistry | Properties
 //description: Basic molecule properties
 //tags: panel, chem, widgets
 //input: semantic_value smiles { semType: Molecule }
@@ -621,7 +640,7 @@ export async function properties(smiles: DG.SemanticValue): Promise<DG.Widget> {
   return smiles ? propertiesWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Structural Alerts
+//name: Biology | Structural Alerts
 //description: Screening drug candidates against structural alerts i.e. fragments associated to a toxicological response
 //help-url: /help/domains/chem/info-panels/structural-alerts.md
 //tags: panel, chem, widgets
@@ -649,7 +668,7 @@ export async function structure3d(molecule: string): Promise<DG.Widget> {
   return molecule ? structure3dWidget(molecule) : new DG.Widget(ui.divText('Molecule is empty'));
 }
 
-//name: Toxicity
+//name: Biology | Toxicity
 //description: Toxicity prediction. Calculated by openchemlib
 //help-url: /help/domains/chem/info-panels/toxicity-risks.md
 //tags: panel, chem, widgets
@@ -684,17 +703,33 @@ export function convertMolNotation(molecule: string, sourceNotation: string, tar
 export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
   const sketcher = new Sketcher();
   const unit = cell.cell.column.tags[DG.TAGS.UNITS];
-  sketcher.setMolecule(cell.cell.value);
-  ui.dialog()
+  let molecule = cell.cell.value;
+  if (unit === DG.chem.Notation.Smiles) {
+    //convert to molFile to draw in coordinates similar to dataframe cell
+    molecule = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
+  }
+  sketcher.setMolecule(molecule);
+  const dlg = ui.dialog()
     .add(sketcher)
     .onOK(() => {
-      cell.cell.value = unit == 'molblock' ? sketcher.getMolFile() : sketcher.getSmiles();
-      Sketcher.addRecent(sketcher.getMolFile());
+      if (unit === DG.chem.Notation.Smiles) {
+        //set new cell value only in case smiles has been edited (to avoid undesired molecule orientation change)
+        const newValue = sketcher.getSmiles();
+        const mol = checkMoleculeValid(cell.cell.value);
+        if (!checkMolEqualSmiles(mol, newValue))
+          cell.cell.value = newValue;
+        mol?.delete();
+      } else
+        cell.cell.value = sketcher.getMolFile();
+      Sketcher.addToCollection(Sketcher.RECENT_KEY, sketcher.getMolFile());
     })
-    .show();
+    .show({resizable: true});
+    ui.onSizeChanged(dlg.root).subscribe((_) => {
+      sketcher.resize();
+    });
 }
 
-//name: Open Chem Sketcher
+//name: OpenChemLib
 //tags: moleculeSketcher
 //output: widget sketcher
 export function openChemLibSketcher(): OpenChemLibSketcher {
@@ -771,6 +806,7 @@ export async function oclCellRenderer(): Promise<OCLCellRenderer> {
 
 //name: Sort by similarity
 //description: Sorts a molecular column by similarity
+//tags: exclude-actions-panel
 //meta.action: Sort by similarity
 //input: semantic_value value { semType: Molecule }
 export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
@@ -797,6 +833,7 @@ export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
 
 //name: Use as filter
 //description: Adds this structure as a substructure filter
+//tags: exclude-actions-panel
 //meta.action: Use as filter
 //input: semantic_value value { semType: Molecule }
 export function useAsSubstructureFilter(value: DG.SemanticValue): void {
@@ -805,22 +842,17 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
     throw 'Requires an open table view.';
 
   const molCol = value.cell.column;
-  const mol = value.value;
+  const molecule = value.value;
   if (molCol == null)
     throw 'Molecule column not found.';
 
-  let molblock = molToMolblock(mol, getRdKitModule());
+  let molblock;
 
   //in case molecule is smiles setting correct coordinates to save molecule orientation in filter
-  if (!isMolBlock(mol)) {
-    const mol = getRdKitModule().get_mol(molblock);
-    if (!mol.has_coords())
-      mol.set_new_coords();
-    mol.normalize_depiction(1);
-    mol.straighten_depiction(false);
-    molblock = mol.get_molblock();
-    mol.delete();
-  }
+  if (value.cell.column.tags[DG.TAGS.UNITS] == DG.chem.Notation.Smiles)
+    molblock = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
+  else
+    molblock = molToMolblock(molecule, getRdKitModule());
   
   tv.getFiltersGroup({createDefaultFilters: false}).add({
     type: DG.FILTER_TYPE.SUBSTRUCTURE,
@@ -833,17 +865,14 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
 //name: detectSmiles
 //input: column col
 //input: int min
-export function detectSmiles(col: DG.Column, min: number) {
-  function isSmiles(s: string) {
-    let d: RDMol | null = null;
-    try {
-      d = _rdKitModule.get_mol(s);
+export function detectSmiles(col: DG.Column, min: number) : void {
+  function isSmiles(s: string) : boolean {
+    const ctx: IMolContext = getMolSafe(s, {}, _rdKitModule, true);
+    if (ctx.mol !== null) {
+      ctx.mol.delete();
       return true;
-    } catch {
-      return false;
-    } finally {
-      d?.delete();
     }
+   return false;
   }
 
   if (DG.Detector.sampleCategories(col, isSmiles, min, 10, 0.8)) {
@@ -888,7 +917,7 @@ export async function callChemDiversitySearch(
 }
 
 
-//top-menu: Chem | Base | Scaffold Tree...
+//top-menu: Chem | Analyze Structure | Scaffold Tree...
 //name: addScaffoldTree
 export function addScaffoldTree(): void {
   grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
@@ -925,4 +954,17 @@ export async function getScaffoldTree(data: DG.DataFrame,
   data.columns.add(smilesColumn);
   const scriptRes = await generateScaffoldTree(data, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
   return scriptRes;
+}
+
+
+//name: filterMoleculeDuplicates
+//input: list molecules
+//input: string molecule
+//output: list result
+export function removeDuplicates(molecules: string[], molecule: string): string[] {
+  const mol1 = checkMoleculeValid(molecule);
+  if (!mol1) throw (`Molecule is possibly malformed`);
+  const filteredMolecules = molecules.filter((smiles) => !checkMolEqualSmiles(mol1, smiles));
+  mol1.delete();
+  return filteredMolecules;
 }

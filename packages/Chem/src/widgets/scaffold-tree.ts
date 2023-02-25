@@ -2,14 +2,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import $ from "cash-dom";
-import {_rdKitModule} from '../utils/chem-common-rdkit';
-import {isMolBlock} from "../utils/convert-notation-utils";
+import {_rdKitModule, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
+import {getMolSafe} from '../utils/mol-creation_rdkit';
 import {chem} from "datagrok-api/grok";
 import {toJs, TreeViewGroup, TreeViewNode} from "datagrok-api/dg";
 import Sketcher = chem.Sketcher;
 import {chemSubstructureSearchLibrary} from "../chem-searches";
 import {getScaffoldTree} from "../package";
-import {drawRdKitMoleculeToOffscreenCanvas} from "../utils/chem-common-rdkit";
 import {aromatizeMolBlock} from "../utils/aromatic-utils";
 import {RDMol} from "@datagrok-libraries/chem-meta/src/rdkit-api";
 
@@ -256,9 +255,10 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
     g!.fillText(text, Math.floor((width - lineWidth) / 2), Math.floor((height - fontHeight) / 2));
   } else {
     molStr = processUnits(molStr);
-    const mol = getMol(molStr);
+    const molCtx = getMolSafe(molStr, {}, _rdKitModule);
+    const mol = molCtx.mol;
     if (mol !== null) {
-      drawRdKitMoleculeToOffscreenCanvas(mol, CELL_CANVAS_WIDTH, CELL_CANVAS_HEIGHT, offscreen, null);
+      drawRdKitMoleculeToOffscreenCanvas(molCtx, CELL_CANVAS_WIDTH, CELL_CANVAS_HEIGHT, offscreen, null);
       mol.delete();
     }
   }
@@ -298,6 +298,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   ringCutoff: number = 10;
   dischargeAndDeradicalize: boolean = false;
   cancelled: boolean = false;
+  treeBuildCount: number = -1;
   checkBoxesUpdateInProgress: boolean = false;
   treeEncodeUpdateInProgress: boolean = false;
   _generateLink?: HTMLElement;
@@ -385,9 +386,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   /** Loads previously saved tree. See also {@link saveTree} */
   loadTree(): void {
+    const thisViewer = this;
     DG.Utils.openFile({
       accept: '.tree',
-      open: async (file) => this.loadTreeStr(await file.text())
+      open: async (file) => {
+        thisViewer.cancelled = false;
+        await this.loadTreeStr(await file.text());}
     });
   }
 
@@ -399,10 +403,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
      this.skipAutoGenerate = false;
      return;
     }
-
+    ++this.treeBuildCount;
     this.cancelled = false;
     this.message = null;
     this.clear();
+    let currentCancelled = false;
 
     //this.root.style.visibility = 'hidden';
     ui.setUpdateIndicator(this.root, true);
@@ -415,20 +420,32 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       let eCancel : HTMLAnchorElement;
       eCancel = ui.link('Cancel', () => {
         this.cancelled = true;
+        currentCancelled = true;
         eCancel.innerHTML = 'Cancelling... Please Wait...';
         eCancel.style.pointerEvents = 'none';
         eCancel.style.color = 'gray';
         eCancel.style.opacity = '90%';
+
+        ui.setUpdateIndicator(this.root, false);
+        this.progressBar!.update(100, 'Build Cancelled');
+        this.progressBar!.close();
+        this.progressBar = null;
       }, 'Cancel Tree build', 'chem-scaffold-tree-cancel-hint');
       eProgress.appendChild(eCancel);
     }
+
+    if (currentCancelled)
+      return;
 
     if (!this.workersInit) {
       await _initWorkers(this.molColumn);
       this.workersInit = true;
     }
 
-    this.progressBar.update(30, 'Generating tree..: 30% completed');
+    if (currentCancelled)
+      return;
+
+    this.progressBar!.update(30, 'Generating tree..: 30% completed');
     const maxMolCount = 750;
 
     let length = this.molColumn.length;
@@ -463,9 +480,21 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       } else ar[n] = molStr;
     }
 
+    if (currentCancelled)
+      return;
+
     const molCol: DG.Column = DG.Column.fromStrings('smiles', ar);
     molCol.semType = DG.SEMTYPE.MOLECULE;
     const dataFrame = DG.DataFrame.fromColumns([molCol]);
+
+    if (currentCancelled)
+      return;
+
+    this.finishGenerateTree(dataFrame);
+  }
+
+  async finishGenerateTree(dataFrame: DG.DataFrame) : Promise<void> {
+    const runNum = this.treeBuildCount;
 
     let jsonStr = null;
     try {
@@ -473,19 +502,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     } catch (e) {
       console.error(e);
       ui.setUpdateIndicator(this.root, false);
-      this.progressBar.update(50, 'Build failed');
-      this.progressBar.close();
+      this.progressBar!.update(50, 'Build failed');
+      this.progressBar!.close();
       this.message = 'Tree build failed...Please ensure that python package ScaffoldGraph is installed';
       return;
     }
 
-    if (this.cancelled) {
-      ui.setUpdateIndicator(this.root, false);
-      this.progressBar.update(100, 'Build Cancelled');
-      this.progressBar.close();
-      this.progressBar = null;
+    if (this.treeBuildCount > runNum || this.cancelled)
       return;
-    }
 
     if (jsonStr != null)
       await this.loadTreeStr(jsonStr);
@@ -493,8 +517,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (this.cancelled) {
       this.clear();
       ui.setUpdateIndicator(this.root, false);
-      this.progressBar.update(100, 'Build Cancelled');
-      this.progressBar.close();
+      this.progressBar!.update(100, 'Build Cancelled');
+      this.progressBar!.close();
       this.progressBar = null;
       return;
     }
@@ -504,7 +528,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.treeEncode = JSON.stringify(ScaffoldTreeViewer.serializeTrees(this.tree));
     this.treeEncodeUpdateInProgress = false;
 
-    this.progressBar.close();
+    this.progressBar!.close();
     this.progressBar = null;
   }
 
@@ -512,7 +536,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.clear();
     const json = JSON.parse(jsonStr);
 
-    this.progressBar?.update(50, 'Initializing Tree..: 50% completed');
+    this.progressBar!.update(50, 'Initializing Tree..: 50% completed');
 
     const thisViewer = this;
     ScaffoldTreeViewer.deserializeTrees(json, this.tree, (molStr: string, rootGroup: TreeViewGroup) => {
@@ -521,7 +545,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     await updateVisibleNodesHits(this); //first visible N nodes
     ui.setUpdateIndicator(this.root, false);
-    this.progressBar?.update(100, 'Tree is ready');
+    this.progressBar!.update(100, 'Tree is ready');
 
     this.updateSizes();
     this.updateUI();
@@ -623,6 +647,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
 
+    ++this.treeBuildCount;
     this.cancelled = false;
     const thisViewer = this;
     this.wrapper = SketcherDialogWrapper.create("Add New Scaffold...", "Add", group,async (molStrSketcher: string, parent: TreeViewGroup, errorMsg: string | null) => {
@@ -738,7 +763,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (checkedNodes.length === 1) {
       const molStr = value(checkedNodes[0]).smiles;
       if(molStr !== undefined) {
-        const molFile = aromatizeMolBlock(molStr);
+        const molFile = aromatizeMolBlock(molStr, _rdKitModule);
         this.molColumn.temp['chem-scaffold-filter'] = molFile;
       }
     } else delete this.molColumn.temp['chem-scaffold-filter'];
@@ -1201,7 +1226,7 @@ class SketcherDialogWrapper {
     this.group = group;
     const v = value(this.group);
     const molStr = v === null ? '' : v.smiles;
-    this.isMolBlock = isMolBlock(molStr);
+    this.isMolBlock = DG.chem.isMolBlock(molStr);
 
     const thisWrapper = this;
 
@@ -1250,7 +1275,7 @@ class SketcherDialogWrapper {
     this.group = node;
     const v = value(node);
     const molStr = v === null ? '' : v.smiles;
-    this.isMolBlock = isMolBlock(molStr);
+    this.isMolBlock = DG.chem.isMolBlock(molStr);
     this.isMolBlock ? this.sketcher.setMolFile(molStr) : this.sketcher.setSmiles(molStr);
   }
 

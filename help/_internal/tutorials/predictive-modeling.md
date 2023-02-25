@@ -25,7 +25,7 @@ servers, sharing
 * Open “Predictive Modelling Browser” (Tools | Predictive modeling | Browse Models)
 * Search for trained model (applicable model will be at the top of list, or use search by defined previously name)
 * Select model in “Models” browser
-* Open “Performance” on “Property Panel”
+* Open “Performance” on “Context Panel”
 
 3. Share:
 
@@ -47,7 +47,7 @@ servers, sharing
 * Open “Predictive Modelling Browser” (Tools | Predictive modeling | Browse Models)
 * Search for trained models (applicable model will be at the top of list, or use search by defined previously name)
 * Select two trained models using “Shift” button
-* Open “Compare models” view (Property Panel: Commands | Compare)
+* Open “Compare models” view (Context Panel: Commands | Compare)
 
 6. Change modeling engine
 

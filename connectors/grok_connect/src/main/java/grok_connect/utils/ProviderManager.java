@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.ListIterator;
 
 public class ProviderManager {
-    public Logger logger;
-    public QueryMonitor queryMonitor;
+    private final Logger logger; // we reuse this logger in providers, is this good practice?
+    private final QueryMonitor queryMonitor;
     public List<JdbcDataProvider> Providers;
 
     public ProviderManager(Logger logger) {
@@ -52,7 +52,7 @@ public class ProviderManager {
     public List<String> getAllProvidersTypes() {
         List<String> types = new ArrayList<>();
 
-        for (DataProvider provider : Providers)
+        for (DataProvider provider : providers)
             types.add(provider.descriptor.type);
 
         return types;
@@ -60,7 +60,7 @@ public class ProviderManager {
     public JdbcDataProvider getByName(String name) {
         JdbcDataProvider provider = Providers.get(0);
 
-        for (ListIterator<JdbcDataProvider> providers = Providers.listIterator(); providers.hasNext(); ) {
+        for (ListIterator<JdbcDataProvider> this.providers = Providers.listIterator(); providers.hasNext(); ) {
             JdbcDataProvider tmp = providers.next();
             if (tmp.descriptor.type.equals(name)) {
                 provider = tmp;
@@ -71,5 +71,11 @@ public class ProviderManager {
         return provider;
     }
 
+    public QueryMonitor getQueryMonitor() {
+        return queryMonitor;
+    }
 
+    public Logger getLogger() {
+        return logger;
+    }
 }

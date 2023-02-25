@@ -51,13 +51,15 @@ category('UI: Tables', () => {
   async function normalize(changeMethod: boolean = false) {
     const ageDF = DG.DataFrame.fromColumns([df.getCol('age')]);
     const tv = grok.shell.addTableView(ageDF);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+    grok.shell.o = ageDF.col('age');
     try {
       const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
       await awaitCheck(() => {
         if (pp.querySelector('.ui-label') !== null)
           return (pp.querySelector('.ui-label') as HTMLElement).innerText === 'age';
         return false;
-      }, 'cannot load property panel of age column', 5000);
+      }, 'cannot load context panel of age column', 5000);
       const actions = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
         .find((el) => el.textContent === 'Actions') as HTMLElement;
       if (!actions.classList.contains('expanded')) await actions.click();

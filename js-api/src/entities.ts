@@ -171,7 +171,7 @@ export class UserSession extends Entity {
  * */
 export class Func extends Entity {
   public aux: any;
-  public options: { [key: string]: string; };
+  public options: { [key: string]: any; };
 
   constructor(dart: any) {
     super(dart);
@@ -349,6 +349,9 @@ export class DataQuery extends Func {
   /** Query text */
   get query(): string { return api.grok_Query_Query(this.dart); }
   set query(q: string) { api.grok_Query_Set_Query(this.dart, q); }
+
+  get connection(): DataConnection { return toJs(api.grok_Query_Get_Connection(this.dart)); }
+  set connection(c: DataConnection) { api.grok_Query_Set_Connection(this.dart, toDart(c)); }
 
   /** Executes query
    * @returns {Promise<DataFrame>} */
@@ -577,6 +580,20 @@ export class TableInfo extends Entity {
   static fromDataFrame(t: DataFrame): TableInfo {return toJs(api.grok_DataFrame_Get_TableInfo(t.dart)); }
 
   get dataFrame(): DataFrame { return api.grok_TableInfo_Get_DataFrame(this.dart); }
+
+  get columns(): ColumnInfo[] { return api.grok_TableInfo_Get_Columns(this.dart); }
+}
+
+
+/** @extends Entity
+ * Represents a Column metadata
+ * */
+export class ColumnInfo extends Entity {
+
+  /** @constructs ColumnInfo */
+  constructor(dart: any) {
+    super(dart);
+  }
 
 }
 
@@ -960,6 +977,9 @@ export interface PropertyOptions {
   /** Property type */
   type?: string;
 
+  /** Whether an empty value is allowed. This is used by validators. */
+  nullable?: boolean;
+
   /** Property description */
   description?: string;
 
@@ -984,7 +1004,7 @@ export interface PropertyOptions {
   /** Custom editor (such as slider or text area) */
   editor?: string;
 
-  /** Corresponding category on the property panel */
+  /** Corresponding category on the context panel */
   category?: string;
 
   /** Value format */
@@ -1136,7 +1156,7 @@ export class Property {
   static fromOptions(options: PropertyOptions): Property { return Property.js(options.name!, options.type! as TYPE, options); }
 
   /** Registers the attached (dynamic) property for the specified type.
-   * It is editable via the property panel, and gets saved into the view layout as well.
+   * It is editable via the context panel, and gets saved into the view layout as well.
    * Property getter/setter typically uses Widget's "temp" property for storing the value. */
   static registerAttachedProperty(typeName: string, property: Property) {
     api.grok_Property_RegisterAttachedProperty(typeName, property.dart);

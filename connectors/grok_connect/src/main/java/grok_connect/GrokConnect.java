@@ -39,7 +39,6 @@ public class GrokConnect {
             logMemory();
 
             providerManager = new ProviderManager(logger);
-
             port(port);
             connectorsModule();
 
@@ -63,7 +62,7 @@ public class GrokConnect {
 
             BufferAccessor buffer;
             DataQueryRunResult result = new DataQueryRunResult();
-            result.log = "";
+            result.log = "";// use builder instead
 
             FuncCall call = null;
             if (SettingsManager.getInstance().settings != null) {
@@ -223,7 +222,7 @@ public class GrokConnect {
 
         get("/conn", (request, response) -> {
             List<DataSource> dataSources = new ArrayList<>();
-            for (DataProvider provider : providerManager.Providers)
+            for (DataProvider provider : providerManager.providers)
                 dataSources.add(provider.descriptor);
             response.type(MediaType.APPLICATION_JSON);
             return gson.toJson(dataSources);
@@ -249,10 +248,10 @@ public class GrokConnect {
 
         post("/cancel", (request, response) -> {
             FuncCall call = gson.fromJson(request.body(), FuncCall.class);
-            providerManager.queryMonitor.cancelStatement(call.id);
+            providerManager.getQueryMonitor().cancelStatement(call.id);
             return null;
         });
-
+// how it works, who sends this request?
         post("/set_settings", (request, response) -> {
             System.out.println(request.body());
             Settings settings = gson.fromJson(request.body(), Settings.class);
@@ -260,7 +259,7 @@ public class GrokConnect {
             ConnectionPool.getInstance().setTimer();
             return null;
         });
-
+// maybe here would be better to return something in json format, like ReponseEntity(status, body)
         get("/health", (request, response) -> {
             int status;
             String body;

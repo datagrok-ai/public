@@ -43,7 +43,7 @@ export class PredictiveModelingTutorial extends Tutorial {
 
       const hasNulls = this.t!.columns
         .byNames(['AGE', 'HEIGHT', 'WEIGHT'])
-        .some((col: DG.Column) => col?.stats.missingValueCount > 0);
+        .some((col) => col?.stats.missingValueCount > 0);
 
       await this.choiceInputAction(pmv.root, 'Set "Table" to "demog"', 'Table', 'demog');
       await this.columnInpAction(pmv.root, 'Set "Predict" to "SEX"', 'Predict', 'SEX');
@@ -102,7 +102,7 @@ export class PredictiveModelingTutorial extends Tutorial {
       }), filter((model) => model instanceof DG.Model && model.friendlyName === modelName)),
       null, modelsViewInfo);
 
-    await this.action('Expand the "Performance" pane in the property panel',
+    await this.action('Expand the "Performance" pane in the context panel',
       interval(1000).pipe(filter(() => modelPP?.getPane('Performance')?.expanded)));
 
     await this.contextMenuAction('Right-click on the trained model and select "Apply to | ' +
@@ -123,6 +123,6 @@ export class PredictiveModelingTutorial extends Tutorial {
       grok.events.onViewAdded.pipe(filter((view) => view.name == 'Compare models')),
       $('div.d4-accordion-pane-header').filter((idx, el) => el.textContent == 'Commands')[0],
       'Search for the trained models and select them holding <b>Shift</b>. ' +
-      'Then run the "Compare" command given at the property panel.');
+      'Then run the "Compare" command given at the context panel.');
   }
 }

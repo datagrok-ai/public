@@ -31,10 +31,10 @@ predictive models, integration with the external utilities, data augmentation, a
 * [Querying databases](#exercise-3-querying-databases)
 * [Creating a scripting viewer](#exercise-4-creating-a-scripting-viewer)
 * [Transforming dataframes](#exercise-5-transforming-dataframes)
-* [Custom cell renderers with 3-rd party JS libraries](#exercise-6-custom-cell-renderers-with-3-rd-party-js-libraries)
-* [Accessing Web services with OpenAPI](#exercise-7-accessing-web-services-with-openapi)
-* [Creating an info panel with a REST web service](#exercise-8-creating-an-info-panel-with-a-rest-web-service)
-* [Enhancing Datagrok with dialog-based functions](#exercise-9-enhancing-datagrok-with-dialog-based-functions)
+* [Custom cell renderers](#exercise-6-custom-cell-renderers)
+<!-- * [Accessing Web services with OpenAPI](#exercise-7-accessing-web-services-with-openapi) -->
+* [Creating an info panel with a REST web service](#exercise-7-creating-an-info-panel-with-a-rest-web-service)
+* [Enhancing Datagrok with dialog-based functions](#exercise-8-enhancing-datagrok-with-dialog-based-functions)
 
 <!---
 * Creating an application
@@ -73,12 +73,12 @@ predictive models, integration with the external utilities, data augmentation, a
    Also you can add `--eslint` option to add eslint checker feature to the package
 5. Run `npm install` to link the dependencies mentioned in `package.json` file of your package
 6. Upload it to the server: run `webpack` and `grok publish dev` (see other
-   options [here](../develop.md#deployment-modes))
+   options [here](../develop.md#publishing-modes))
 7. Launch the platform and run the package's `info()` function using different methods:
 
 * via the [Functions](https://dev.datagrok.ai/functions?q=info) view
 * via the [Packages](https://dev.datagrok.ai/packages?) menu (find your package, click on it and run `info()`
-  from the `Functions` pane in the property panel on the left)
+  from the `Functions` pane in the context panel on the left)
 * via the [console](../../datagrok/navigation.md#console): press `~` key anywhere inside Datagrok, the Console will
   appear to the right; execute `<loginName>Sequence:info()` there. The identifier used as package name (before ':') will
   be obtained by transformation kebab style of folder name to camel style, or can be specified directly with
@@ -485,7 +485,7 @@ database that Microsoft often uses for showcasing its technology). The database 
 from our server.
 
 1. Navigate to the `Data | Databases | PostgreSQL | northwind | Schemas | public | orders` table
-2. Make this table current by left-clicking on it, and explore its property panels on the right. The
+2. Make this table current by left-clicking on it, and explore its context panel on the right. The
    `Content` pane should be showing first 50 rows of that table.
 3. Right-click on the table, and choose `New SQL Query...`
 4. Execute the query and make sure it returns results.
@@ -565,21 +565,21 @@ First, let's explore how scripting viewer works.
    for `Color`. After checking this you should see a nice scatter plot for `WEIGHT` and `HEIGHT`
    with the color corresponding to `AGE`:
    ![exercises-scripting-viewer](exercises-scripting-viewer.png)
-7. In the property panel, proceed to modify the value of the "Script" field by clicking on a "..."
+7. In the context panel, proceed to modify the value of the "Script" field by clicking on a "..."
    icon in the text field.
 8. The Python code you see is what renders the scatter plot form p.6 on the Datagrok server. Let's walkthrough this
    code.
     * The script takes as inputs the original dataframe and the three columns. Remember form p.6 there were selectors
-      for `X`, `Y`, and `Color` in the property panel. In fact, these three property names are declared with the
+      for `X`, `Y`, and `Color` in the context panel. In fact, these three property names are declared with the
       notation `<propertyName>ColumnName` in the names of the three `#input` columns.
     * The script produces an `#output` of type `graphics`. It is important the graphics appear in the end of the Python
       script. This is exactly what happens with the `plt.show()` in the last line of the script.
 
 9. Modify the name of `colorColumnName` to a `temperatureColumnName`, hit `Apply` in the bottom of the window, and check
-   what happens to the `Color` field in the property panel.
+   what happens to the `Color` field in the context panel.
 10. Add another input parameter to the script with a name `Title`. Hit `Apply` and check what appears in the property
     panel.
-11. Add another input column to the script with a name `SEX`. Hit `Apply` and check what appears in the property panel.
+11. Add another input column to the script with a name `SEX`. Hit `Apply` and check what appears in the context panel.
 12. Now there's all you need to create a Python scripting viewer for our amino acid histogram task. Open a demo file
     with nucleotide sequences. It is located at `Data | Files | Demo Files | bio | sars-cov-2.csv`.
     `Data` corresponds to the first button from the top on the Datagrok sidebar.
@@ -638,56 +638,44 @@ First, let's explore how scripting viewer works.
 
 <!--- TODO: add linked dataframes demo here --->
 
-## Exercise 6: Custom cell renderers with 3-rd party js libraries
+## Exercise 6: Custom cell renderers
 
-*You will learn:* reuse 3-rd party JavaScript libraries in your Datagrok packages; render cells by semantic types.
+*You will learn:* render cells by semantic types.
 
 *Prerequisites:* exercises ["Setting up the environment"](#setting-up-the-environment),
 ["Semantic types"](#exercise-1-semantic-types).
 
 1. Navigate into the folder with your `<yourFirstName>-sequence` package created in
    ["Setting up the environment"](#setting-up-the-environment).
-2. Let's add a custom cell renderer for a *nucleotide sequence box* to represent our sequences in high density on the
-   screen. We need to render each nucleotide sequence with a monospace font in small letter sizing, fitting into a
-   rectangular cell area and adding ellipsis to the end of the string if it won't fit. This is a basis for a very useful
-   nucleotide sequence representation in bioscience applications. Let's use a 3-rd party JavaScript
-   library `fusioncharts-smartlabel` to compute the text fit. Add it to your package by navigating in its folder and
-   calling:
-   `npm install fusioncharts-smartlabel --save`
-   The `--save` key updates `package.json` to add this library to your package dependencies.
-3. Add a class to `src/package.js` for the new cell renderer:
+2. Let's add a custom cell renderer for a *nucleotide sequence box* to represent our sequences in different colors.
+   We need to use monospace font and render each nucleotide (`A`, `G`, `C`, `T`) in a different color using on of
+   the popular conventions, following [this link](https://www.biostars.org/p/171056/).
+3. Add a class to `src/package.ts` for the new cell renderer:
 
-    * use `fusioncharts-smartlabel` to break the original sequence in the current cell into lines which fit into a cell's
-      canvas rectangle; learn [here][017] how to do it, consider `SmartLabel.textToLines(...).lines`
-      as a target array of lines to render
     * Datagrok [grid](../../visualize/viewers/grid) is rendered through an
       [HTML5 Canvas](https://en.wikipedia.org/wiki/Canvas_element). The grid's canvas is `g.canvas`. Iterate through the
-      resulting lines and bring them to a `g.canvas` in the `render` method with `g.canvas.getContext("2d").fillText`; learn
+      resulting lines and bring them to a `g.canvas` in the `render` method with `g.canvas.getContext('2d').fillText`; learn
       more about HTML Canvas if it's new for you
-    * Hint: pay attention to managing `line-height` both at computing the box and rendering text lines
 
-    ```javascript
-    class NucleotideBoxCellRenderer extends DG.GridCellRenderer {
-      get name() { return 'Nucleotide cell renderer'; }
-      get cellType() { return 'dna_nucleotide'; }
-      render(g, x, y, w, h, gridCell, cellStyle) {
+    ```typescript
+    export class NucleotideBoxCellRenderer extends DG.GridCellRenderer {
+      get name() { return 'Nucleotide cell renderer';}
+      get cellType() {return 'dna_nucleotide';}
+      render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+        gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
         let seq = gridCell.cell.value;
-        const sl = new SmartLabel('id', true);
-        sl.setStyle({/* ... */});
-        // ...
-        let ctx = g.canvas.getContext("2d");
+        let ctx = g.canvas.getContext('2d');
         ctx.font = '11px courier';
         // ...
-        const lines = labelObj.lines;
-        for (let i = 0; i < lines.length; i++)
+        for (let i = 0; i < gridCell.cell.value.length; i++)
           ctx.fillText(/* ... */);
       }
     }
     ```
 
-4. Add the below to `src/package.js` to make the new cell renderer part of the package:
+4. Add the below to `src/package.ts` to make the new cell renderer part of the package:
 
-   ```javascript
+   ```typescript
     //name: nucleotideBoxCellRenderer
     //tags: cellRenderer
     //meta.cellType: dna_nucleotide
@@ -701,9 +689,9 @@ First, let's explore how scripting viewer works.
    with nucleotide sequences from `"Demo files"`, such as `sars-cov-2.csv`. Verify you get the desired result, it should
    look similar to this:
    ![exercises-custom-cell-renderer](exercises-custom-cell-renderer.png)
-   Change the "Sequence" column width and rows heights with a mouse to see how things adujst.
-6. (*) Implement a colored nucleotide sequence box where backgrounds of `A`, `G`, `C`, `T` vary. Choose one of the
-   popular coloring conventions, following [this link](https://www.biostars.org/p/171056/).
+   Change the "Sequence" column width and rows heights with a mouse to see how sequence looks.
+
+<!-- Fix the OpenAPI problems to make the exercise 7 doable
 
 ## Exercise 7: Accessing web services with OpenAPI
 
@@ -754,7 +742,9 @@ coronavirus.
 We provide a handful of demo Swaggers, check their source JSON files [here][021] and see in action in Datagrok at
 the [`Web Services`](https://public.datagrok.ai/webservices) section of the Datagrok UI.
 
-## Exercise 8: Creating an info panel with a REST web service
+-->
+
+## Exercise 7: Creating an info panel with a REST web service
 
 We will use the ENA REST API to output sequences and associated data in the info panel, based on the ENA sequence ID
 contained in a currently selected grid cell.
@@ -762,28 +752,29 @@ contained in a currently selected grid cell.
 1. Searching through [the ENA archive](https://www.ebi.ac.uk/ena/browser/text-search?query=coronavirus), you may notice
    the sequences' IDs have a format of `[A-Z]{2}[0-9]{6}` (two capital letters + six digits). Go to
    the [detectors file](#exercise-1-semantic-types) of your package and add a detector which recognizes a string of this
-   form:
+   form and sets a proper semantic type to column:
 
    ```javascript
-   //input: string str
-   //output: bool result
-   isPotentialENAId(str) {
-     // returns true, if name is of the form [A-Z]{2}[0-9]{6}
+   //tags: semTypeDetector
+   //input: column col
+   //output: string semType
+   detectENAID(col) {
+     // returns semType 'EnaID', if name is of the form [A-Z]{2}[0-9]{6}
    }
    ```
 
 2. Use [`fetchProxy`](../how-to/access-data#rest-endpoints) to get a sequence for the potential corresponding ENA ID
    in fasta format. For example, this GET fetches the sequence for the `ID=AA046425`:
    [`https://www.ebi.ac.uk/ena/browser/api/fasta/AA046425`](https://www.ebi.ac.uk/ena/browser/api/fasta/AA046425)
-   Use the following structure for the into panel function in your `src/package.js`:
+   Use the following structure for the into panel function in your `src/package.ts`:
 
-   ```javascript
+   ```typescript
     //name: ENA Sequence
     //tags: panel, widgets
-    //input: string cellText {semType: ENA}
+    //input: string cellText {semType: EnaID}
     //output: widget result
-    //condition: isPotentialENAId(cellText)
-    export async function enaSequence(cellText) {
+    //condition: true
+    export async function enaSequence(cellText: string) {
       const url = `https://www.ebi.ac.uk/ena/browser/api/fasta/${cellText}`;
       const fasta = await (await grok.dapi.fetchProxy(url)).text();
       return new DG.Widget(ui.box(
@@ -804,7 +795,7 @@ a [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) limitation of J
 the external domain from your web page, whereas CORS prevents you from querying anything outside a reach of your web
 page's domain. Thus Datagrok provides a proxy facility in the neat `fetchProxy` wrapper.
 
-## Exercise 9: Enhancing Datagrok with dialog-based functions
+## Exercise 8: Enhancing Datagrok with dialog-based functions
 
 In the previous exercises we've learned how the Datagrok function inputs are offered in a dialog window automatically
 once you run the function. In this exercise we find how to expand these dialogs with the behaviour beyond simple
@@ -822,7 +813,7 @@ be `coronavirus`, `influenza` etc.
    a `query` ad a `limit` and returns a dataframe with two string columns `ID` and `Sequence`. Use this structure for
    dataframe construction:
 
-   ```javascript
+   ```typescript
     df = DG.DataFrame.fromColumns([
       DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'ID', [ /* a list of IDs you've parsed from a ENA output */ ]),
       DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Sequence', [ /* corresponding list of sequences */ ])
@@ -844,7 +835,7 @@ be `coronavirus`, `influenza` etc.
 
     Here is the code scaffold for the `formENADataTable` function:
 
-    ```javascript
+    ```typescript
     let grid = DG.Viewer.grid(df);
     let limitInput = ui.intInput('How many rows: ', 100);
     let queryInput = ui.stringInput('Query: ', 'coronavirus');
@@ -868,7 +859,7 @@ be `coronavirus`, `influenza` etc.
 
     Re-use twice the `_fetchENASequence` function you've prepared previously.
 
-3. In this first version we fetched `60` characters for a sequence. Add a new text field called `Sequece length`
+3. In this first version we fetched `60` characters for a sequence. Add a new text field called `Sequence length`
    to let the user specify this trim length, set it `60` as a default.
 
 4. Make your function set a proper [semantic type](#exercise-1-semantic-types) for the `Sequence` column.
@@ -909,4 +900,4 @@ A simple keyword search in the ENA database (with navigation)
 
 [021]: https://github.com/datagrok-ai/public/tree/master/packages/Swaggers/swaggers "Datagrok Swaggers samples"
 
-[022]: #exercise-8-creating-an-info-panel-with-a-rest-web-service "Creating an info panel with a REST web service"
+[022]: #exercise-7-creating-an-info-panel-with-a-rest-web-service "Creating an info panel with a REST web service"

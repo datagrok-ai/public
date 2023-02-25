@@ -104,10 +104,10 @@ export class WordCloudViewer extends DG.JsViewer {
     const height = this.root.parentElement!.clientHeight - margin.top - margin.bottom;
     const strColumn = this.dataFrame.getCol(this.strColumnName);
     const words = strColumn.categories;
-    const data: echarts.SeriesOption[] = [];
+    const data: any = []; //echarts.SeriesOption[] = [];
     const table = this.dataFrame;
 
-    words.forEach((w) => data.push(<echarts.SeriesOption>{
+    words.forEach((w) => data.push({
       name: w,
       value: strColumn.toList().filter((row) => row === w).length,
       textStyle: {
@@ -118,7 +118,7 @@ export class WordCloudViewer extends DG.JsViewer {
     if (this.chart !== undefined)
       this.chart.dispose();
 
-    this.chart = echarts.init(this.root);
+    this.chart = echarts.init(<HTMLDivElement | HTMLCanvasElement> this.root);
 
     this.chart.setOption({
       width: width + margin.left + margin.right,
@@ -153,11 +153,11 @@ export class WordCloudViewer extends DG.JsViewer {
     });
 
     this.chart
-      .on('mouseover', (d: echarts.SeriesOption) => ui.tooltip.showRowGroup(table, (i) => {
+      .on('mouseover', (d: any) => ui.tooltip.showRowGroup(table, (i) => {
         return d.name === strColumn.get(i);
       }, 10, 10))
       .on('mouseout', () => ui.tooltip.hide())
-      .on('mousedown', (d: echarts.SeriesOption) => {
+      .on('mousedown', (d: any) => {
         table.selection.handleClick((i) => {
           return d.name === strColumn.get(i);
         //@ts-ignore

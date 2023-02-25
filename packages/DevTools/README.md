@@ -12,7 +12,7 @@ generated for you.
 Components:
 
   1. `Dev` [info panel](https://datagrok.ai/help/discover/info-panels).
-     It appears in the property panel whenever an entity becomes the current object. Under `Dev`, you will find links to the documentation and the object's class reference, a set of examples dynamically loaded from the [ApiSamples](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples) package, and an editor with a template script with most common actions for this type of entity.
+     It appears in the context panel whenever an entity becomes the current object. Under `Dev`, you will find links to the documentation and the object's class reference, a set of examples dynamically loaded from the [ApiSamples](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples) package, and an editor with a template script with most common actions for this type of entity.
 
      ![Scripting](./gif/dev-tools-info-panel.gif)
 
@@ -43,7 +43,7 @@ There are multiple ways you can run tests:
 - by right clicking on package, category, or test and selecting `Run` from context menu
 - by selecting package, category, or test and pushing `Enter`
 - by selecting package, category, or test and pushing `Run` on a ribbon panel
-- by selecting package, category, or test and pushing `Run` on a property panel
+- by selecting package, category, or test and pushing `Run` on a context panel
 - individual tests can be run by double click
 - you can run all tests at once using `Run all` button on the ribbon
 - package, category, or test can be run by putting the corresponding url into address bar of the browser. The format is the following `your_server_name/apps/DevTools/TestManager/package_name/category_name/test_name`
@@ -56,7 +56,7 @@ Progress bar on the bottom of the page will show the percentage of completed tes
 ![Progress bar](./img/test_manager_progress_bar.png)
 
 ### Reviewing results
-Information about test results is available via tooltip or in the property panel. Selected test, category, or package to explore results.
+Information about test results is available via tooltip or in the context panel. Selected test, category, or package to explore results.
 In case category/package contain multiple tests results are shown as a grid which can be added to workspace for further exploration.
 
 ![Test results](./img/test_results.gif)

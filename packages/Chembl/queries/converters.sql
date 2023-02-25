@@ -18,6 +18,8 @@ select canonical_smiles from compound_structures where molregno = @molregno
 --end
 
 --name: nameToSmiles
+--meta.role: converter
+--meta.inputRegexp: (^name\:[\w()_+\-=\[\]{};':"\\|,.<>\s\/?]+$)
 --connection: ChemblSql
 --input: string compoundName
 --output: string smiles { semType: Molecule }
@@ -28,7 +30,7 @@ inner join
   select compound_name, min(molregno) as molregno
   from compound_records
   group by compound_name
-  having compound_name = @compoundName
+  having compound_name = replace(@compoundName, 'name:', '')
 ) as cr on cr.molregno = cs.molregno
 --end
 

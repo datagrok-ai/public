@@ -4,11 +4,11 @@
 		"access": "public"
 	},
 	"friendlyName": "Tutorials",
-	"version": "1.0.2",
+	"version": "1.0.4",
 	"description": "Helpers for creating tutorials",
 	"dependencies": {
 		"cash-dom": "^8.1.1",
-		"datagrok-api": "^1.7.0",
+		"datagrok-api": "^1.14.0",
 		"rxjs": "6.6.7"
 	},
 	"devDependencies": {

@@ -8,6 +8,10 @@
 #output: double min
 #output: double max
 #output: double avg
+#test: ColumnStats(Demo:getColumn(Demo:getTable('demog'), 'AGE'))
+#test: min == 18
+#test: max == 89
+#test: avg == 45.694306719097284
 
 min = col.stats.min
 max = col.stats.max

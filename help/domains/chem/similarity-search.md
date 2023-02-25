@@ -13,7 +13,7 @@ These tools can be used together as a collection browser. 'Diverse structures' w
 compounds present in the dataset; when you click on a molecule representing a class, similar molecules will be shown in
 the 'Similar structures' window.
 
-To run Similarity search select Chem | Similarity search from the top menu.
+To run Similarity search select Chem | Search | Similarity search from the top menu.
 
 ![similarity_search](img/similarity_search.png)
 
@@ -22,7 +22,7 @@ Target molecule can be also changed using `edit` button in the top left corner o
 
 ![similarity_search_sketch_target](img/similarity_search_sketch_target.gif)
 
-Use property panel to change search metrics like similarity cutoff, fingerprints type or distance metric.
+Use context panel to change search metrics like similarity cutoff, fingerprints type or distance metric.
 
 You can add any fields from your dataframe to similarity panes by selecting columns from `Molecule Properties` field.
 If color coding is applied to a selected column it will be saved on a similarity pane. To apply highlighting to background

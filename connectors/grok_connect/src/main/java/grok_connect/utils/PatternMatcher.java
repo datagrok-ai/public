@@ -14,7 +14,7 @@ public class PatternMatcher {
     public static String EQUALS = "equals";
     public static String REGEXP = "regex";
     public static String IN = "in";
-
+    public static String NOT_IN = "not in";
     public static String BEFORE = "before";
     public static String AFTER = "after";
     public static String RANGE_DATE_TIME = "range";
@@ -58,6 +58,9 @@ public class PatternMatcher {
                 return "(" + variable + " >= " + values.get(0) + " AND " + variable + " <= " + values.get(1) + ")";
             else if (op.equals(IN))
                 return "(" + variable + " IN " + "(" + StringUtils.join(values, ",") + "))";
+            else if (op.equals(NOT_IN)) {
+                return "(" + variable + " NOT IN " + "(" + StringUtils.join(values, ",") + "))";
+            }
             return "(" + variable + op + values.get(0) + ")";
         } else if (type.equals("string")) {
             String val = ((String)values.get(0)).toLowerCase();

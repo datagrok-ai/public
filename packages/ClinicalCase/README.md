@@ -27,7 +27,7 @@ Also there is a couple of charts with essential population characteristics – a
 
 <img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/summary.gif" height="500" width='800'/>
 
-In case trial is registered on [clinicaltrials.gov](https://clinicaltrials.gov/) property panel on the right will basic study information extracted from database along with the link to the study on [clinicaltrials.gov](https://clinicaltrials.gov/).
+In case trial is registered on [clinicaltrials.gov](https://clinicaltrials.gov/) context panel on the right will basic study information extracted from database along with the link to the study on [clinicaltrials.gov](https://clinicaltrials.gov/).
 
 <img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/Summary_property_panel.PNG"/>
 
@@ -207,7 +207,7 @@ Line chart is splitted by treatment arm by default. But parameter to split by ca
 
 <img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/time_profile_2.gif" height="500" width='800'/>
 
-Each value on the line is drawn in form of distribution. By default points represents median, whiskers represent upper and lower quartiles. Type of distribution can also be changed in property panel. 
+Each value on the line is drawn in form of distribution. By default points represents median, whiskers represent upper and lower quartiles. Type of distribution can also be changed in context panel. 
 
 ### AE browser
 
@@ -215,7 +215,7 @@ This view is useful for exploring adverse events in details including preceding 
 
 The view is basically 'ae' domain table which contains list of all registered adverse events. The table can be filtered.
 
-By selecting row in a table the following information will be displayed on a property panel:
+By selecting row in a table the following information will be displayed on a context panel:
 - subject ID (in a tooltip on mouse hover you will see basic demographic characteristics - age, sex, race, treatment arm)
 - AE name preceded by AE severity
 - Days of study in which AE occurred (in a tooltip on mouse hover you will see real AE dates)

@@ -1,45 +1,27 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
-import {isMolBlock} from '../utils/convert-notation-utils';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-//import {aromatizeMolBlock} from "../utils/aromatic-utils";
+import {syncQueryAromatics} from "../utils/aromatic-utils";
+import {getMolSafe} from "../utils/mol-creation_rdkit";
+import {isMolBlock} from '../utils/chem-common';
 
-function syncQueryAromatics_1(molBlock: string,  bonds2Change: Array<number> | null = null) : string | Array<number> {
-  let curPos = 0;
-  curPos = molBlock.indexOf('\n', curPos) + 1;
-  curPos = molBlock.indexOf('\n', curPos) + 1;
-  curPos = molBlock.indexOf('\n', curPos) + 1;
-  const atomCounts = parseInt(molBlock.substring(curPos, curPos + 3));
-  const bondCounts = parseInt(molBlock.substring(curPos + 3, curPos + 6));
-
-  for (let atomRowI = 0; atomRowI < atomCounts; atomRowI++) {
-    curPos = molBlock.indexOf('\n', curPos) + 1;
-  }
-
-  const read = bonds2Change === null;
-  bonds2Change ??= [];
-
-  let bondOrder = -1;
-  for (let bondRowI = 0; bondRowI < bondCounts; bondRowI++) {
-    curPos = molBlock.indexOf('\n', curPos) + 1;
-    if (read) {
-      bondOrder = parseInt(molBlock.substring(curPos + 8, curPos + 9));
-      if (bondOrder === 4)
-       bonds2Change.push(bondRowI);
-    }
-    else {
-      if (bonds2Change.includes(bondRowI))
-        molBlock = molBlock.slice(0, curPos + 8) + '4' + molBlock.slice(curPos + 9);
-    }
-  }
-
-  return read ? bonds2Change : molBlock;
+export enum MolNotation {
+  Smiles = 'smiles',
+  Smarts = 'smarts',
+  MolBlock = 'molblock', // molblock V2000
+  V3KMolBlock = 'v3Kmolblock', // molblock V3000
+  Unknown = 'unknown',
 }
 
-function syncQueryAromatics_2(molBlockAroma: string, molBlock : string) : string {
-  const bonds2Change = syncQueryAromatics_1(molBlock);
-  const molModified = syncQueryAromatics_1(molBlockAroma, bonds2Change as Array<number>);
-  return molModified as string;
-}
+const MALFORMED_MOL_V2000 = `
+Malformed
+
+  0  0  0  0  0  0  0  0  0  0999 V2000
+M  END`;
+const MALFORMED_MOL_V3000 = `
+Malformed
+
+  0  0  0  0  0  0            999 V3000
+M  END`;
 
 function validateMol(mol: RDMol | null, molString: string) : void {
   if (mol === null)
@@ -59,39 +41,15 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   initMoleculesStructures(dict: string[]) : void {
     this.freeMoleculesStructures();
     this._rdKitMols = [];
-
     for (let i = 0; i < dict.length; ++i) {
       const item = dict[i];
-      let mol = this.getMol(item, null, true);
+      let mol = getMolSafe(item, {}, this._rdKitModule).mol;
       if (mol === null) {
         console.error('Chem | Possibly a malformed molString at init: `' + item + '`');
         mol = this._rdKitModule.get_mol('');
       }
       this._rdKitMols.push(mol);
     }
-  }
-
-  getMol(molString: string, options: string | null = null, qmolFallback: boolean = false) : RDMol | null {
-    options ??= '{"mergeQueryHs":true}';
-    let mol = null;
-    try { mol = this._rdKitModule.get_mol(molString, options); }
-    catch (e) {
-      if (mol !== null && mol.is_valid())
-        mol.delete();
-
-      if (qmolFallback) {
-        mol = this.getQMol(molString);
-        if (mol === null) {
-          console.error('Chem | Failed fallback to qmol. Possibly a malformed query: `' + molString + '`');
-          return null;
-        }
-        validateMol(mol, molString);
-        //console.error('Successfully performed fallback on qmol ' + molString);
-        return mol;
-      } else return null;
-    }
-    validateMol(mol, molString);
-    return mol;
   }
 
   getQMol(molString: string) : RDMol | null {
@@ -115,9 +73,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
     if (isMolBlock(queryMolString)) {
       if (queryMolString.includes(' H ') || queryMolString.includes('V3000'))
-        queryMol = this.getMol(queryMolString);
+        queryMol = getMolSafe(queryMolString, {mergeQueryHs: true}, this._rdKitModule).mol;
       else {
-        const molTmp = this.getMol(queryMolString, '{"mergeQueryHs":true, "kekulize": true}', true);
+        const molTmp = getMolSafe(queryMolString, {"mergeQueryHs":true, "kekulize": true}, this._rdKitModule).mol;
         if (molTmp !== null) {
           let molBlockAroma = null;
           try { molBlockAroma = molTmp!.get_aromatic_form(); }
@@ -126,16 +84,15 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           }
 
           molTmp.delete();
-          const newQueryMolString = syncQueryAromatics_2(molBlockAroma, queryMolString);
+          const newQueryMolString = syncQueryAromatics(molBlockAroma, queryMolString);
           queryMolString = newQueryMolString;
-          //const newQueryMolString = aromatizeMolBlock(queryMolString);
         }
         queryMol = this.getQMol(queryMolString);
       }
     } else { // not a molblock
       queryMol = this.getQMol(queryMolString);
       if (queryMol !== null) {
-        const mol = this.getMol(queryMolString);
+        const mol = getMolSafe(queryMolString, {mergeQueryHs: true}, this._rdKitModule).mol;
         if (mol !== null) { // check the qmol is proper
           const match = mol.get_substruct_match(queryMol);
           if (match === '{}') {
@@ -143,7 +100,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           } else mol.delete();
         } // else, this looks to be a real SMARTS
       } else { // failover to queryMolBlockFailover
-        queryMol = this.getMol(queryMolBlockFailover); // possibly get rid of fall-over in future
+        queryMol = getMolSafe(queryMolBlockFailover, {mergeQueryHs: true}, this._rdKitModule).mol; // possibly get rid of fall-over in future
       }
     }
 
@@ -172,5 +129,32 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         mol.delete();
       this._rdKitMols = null;
     }
+  }
+
+  convertMolNotation(targetNotation: string): string[] {
+    let result = (targetNotation === MolNotation.MolBlock) ? MALFORMED_MOL_V2000 :
+      (targetNotation === MolNotation.V3KMolBlock) ? MALFORMED_MOL_V3000 : 'MALFORMED_INPUT_VALUE';
+
+    const results = new Array(this._rdKitMols!.length);
+    let mol: RDMol | null = null;
+    for (let i = 0; i < this._rdKitMols!.length; ++i) {
+      mol = this._rdKitMols![i];
+      if (targetNotation === MolNotation.MolBlock) {
+          if (!mol.has_coords())
+            mol.set_new_coords();
+         result = mol.get_molblock();
+        }
+        else if (targetNotation === MolNotation.Smiles)
+          result = mol.get_smiles();
+        else if (targetNotation === MolNotation.V3KMolBlock)
+          result = mol.get_v3Kmolblock();
+        else if (targetNotation === MolNotation.Smarts)
+          result = mol.get_smarts();
+
+     results[i] = result;
+    }
+
+    console.log('Finished Worker ' + results.length);
+    return results;
   }
 }

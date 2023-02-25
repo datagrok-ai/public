@@ -381,9 +381,19 @@ export class AdminDataSource {
   /** Returns information about the services.
    * Sample: {@link https://public.datagrok.ai/js/samples/dapi/admin}
    *  @returns {Promise<Map>} */
-  getServiceInfos(): Promise<object[]> {
+  getServiceInfos(): Promise<ServiceInfo[]> {
     return new Promise((resolve, reject) => api.grok_Dapi_Admin_GetServiceInfos(this.dart, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
   }
+}
+
+export interface ServiceInfo {
+  name: string,
+  description: string,
+  enabled: boolean,
+  key: string,
+  time: string,
+  status: 'Running' | 'Failed' | 'Stopped',
+  type: 'Service' | 'Plugin',
 }
 
 /**

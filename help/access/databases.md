@@ -90,7 +90,7 @@ content, run available queries and instantly preview the results, and do more.
 See also:
 
 * View<!--link out to a document when ready-->
-* [Context Pane](../datagrok/navigation.md#properties).
+* [Context Panel](../datagrok/navigation.md#context-panel).
 
 ### Schema Browser
 

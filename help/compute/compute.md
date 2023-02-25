@@ -267,7 +267,7 @@ As with any other objects in Datagrok, models could be annotated with tags (sing
 and parameters (key-value pairs). Parameters could also be combined in schemas. This helps keep things organized and
 discoverable. [Model browser](#model-browser) makes heavy use of this feature.
 
-Tags and parameters could either be edited manually in the model's property panel, or specified along with the model
+Tags and parameters could either be edited manually in the model's context panel, or specified along with the model
 body. Here is the corresponding section from the Lotka-Volterra model
 (full code [here](https://github.com/datagrok-ai/public/blob/master/packages/Compute/scripts/Lotka-Volterra.js)):
 
@@ -318,7 +318,7 @@ there are some capabilities specific to models: [REST API](#rest-api) and
 
 Once registered, each function gets assigned a REST API endpoint that allows external code to execute it by passing the
 input parameters, along with the authentication token. This allows instantaneous deployment of scientific methods for
-external consumption. To find our how to use it, click on the function and expand the `REST` pane on the property panel
+external consumption. To find our how to use it, click on the function and expand the `REST` pane on the context panel
 on the right. Both JavaScript and Curl samples are provided.
 
 ![rest-api](rest-api.png)

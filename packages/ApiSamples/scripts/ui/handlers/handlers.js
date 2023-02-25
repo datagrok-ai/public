@@ -1,5 +1,5 @@
 // Custom object handlers
-// Clicking on the item shows its properties in the property panel
+// Clicking on the item shows its properties in the context panel
 // Right-clicking allows to use context actions
 
 class Fruit {

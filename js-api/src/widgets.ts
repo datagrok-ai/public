@@ -342,7 +342,7 @@ export abstract class Filter extends Widget {
   /** Whether a filter is ready to apply the filtering mask synchronously. */
   get isReadyToApplyFilter(): boolean { return true; }
 
-  /** Override to provide short filter summary that might be shown on viewers or in the property panel. */
+  /** Override to provide short filter summary that might be shown on viewers or in the context panel. */
   abstract get filterSummary(): string;
 
   /** Override to filter the dataframe.
@@ -447,6 +447,10 @@ export class Accordion extends DartWidget {
   /** Header element on top of the accordion */
   get header(): HTMLElement { return api.grok_Accordion_Get_Header(this.dart); }
   set header(header) { api.grok_Accordion_Set_Header(this.dart, header); }
+
+  /** Whether tab header should be hidden if there is only one tab */
+  get autoHideTabHeader(): boolean { return api.grok_Accordion_Get_AutoHideTabHeader(this.dart); }
+  set autoHideTabHeader(x) { api.grok_Accordion_Set_AutoHideTabHeader(this.dart, x); }
 
   /** Returns a pane with the specified name.
    * @param {string} name

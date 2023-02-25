@@ -1,6 +1,7 @@
 package serialization;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 
 // Column.

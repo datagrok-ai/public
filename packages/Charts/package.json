@@ -1,11 +1,11 @@
 {
   "name": "@datagrok/charts",
   "fullName": "Charts",
-  "version": "1.0.15",
+  "version": "1.0.18",
   "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
   "author": {
-    "name": "Diana Onufriienko",
-    "email": "donufriienko@datagrok.ai"
+    "name": "Dmytro Kovalyov",
+    "email": "kovalyov.dmytro@eigenmethod.com"
   },
   "repository": {
     "type": "git",
@@ -48,8 +48,6 @@
     "@types/d3-drag": "^3.0.2",
     "@types/d3-sankey": "^0.12.0",
     "@types/echarts": "^4.9.15",
-    "@types/js-yaml": "^4.0.5",
-    "@types/node-fetch": "^2.6.2",
     "@types/three": "^0.148.0",
     "@typescript-eslint/eslint-plugin": "^5.27.0",
     "@typescript-eslint/parser": "^5.27.0",
@@ -60,9 +58,6 @@
     "d3-sankey": "^0.12.3",
     "eslint": "^8.16.0",
     "eslint-config-google": "^0.14.0",
-    "js-yaml": "^4.1.0",
-    "node-fetch": "^2.6.7",
-    "puppeteer": "^13.7.0",
     "style-loader": "^2.0.0",
     "three": "^0.148.0",
     "three-globe": "^2.24.13",

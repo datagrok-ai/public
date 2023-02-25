@@ -42,6 +42,10 @@ export class LogoSummary extends DG.JsViewer {
     }));
     this.subs.push(this.model.onNewCluster.subscribe(() => this.clusterFromSelection()));
     this.subs.push(this.model.onRemoveCluster.subscribe(() => this.removeCluster()));
+    this.subs.push(this.model.onFilterChanged.subscribe(() => {
+      this.createLogoSummaryGrid();
+      this.render();
+    }));
 
     this.createLogoSummaryGrid();
     this.initialized = true;
@@ -74,18 +78,26 @@ export class LogoSummary extends DG.JsViewer {
   }
 
   createLogoSummaryGrid(): DG.Grid {
-    const activityCol = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-
     const clustersColName = this.model.settings.clustersColumnName!;
-    const originalClustersCol = this.dataFrame.getCol(clustersColName);
-    const originalClustersColData = originalClustersCol.getRawData();
-    const originalClustersColCategories = originalClustersCol.categories;
-    const originalClustersColLength = originalClustersColData.length;
+    const isDfFiltered = this.dataFrame.filter.anyFalse;
+    const filteredDf = isDfFiltered ? this.dataFrame.clone(this.dataFrame.filter) : this.dataFrame;
+    const filteredDfCols = filteredDf.columns;
+    const activityCol = filteredDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    const activityColData = activityCol.getRawData();
 
-    const customClustersColumnsList = wu(this.model.customClusters).toArray();
+    const filteredDfClustersCol = filteredDf.getCol(clustersColName);
+    const filteredDfClustersColData = filteredDfClustersCol.getRawData();
+    const filteredDfClustersColCategories = filteredDfClustersCol.categories;
+    const filteredDfClustersColLength = filteredDfClustersColData.length;
+
+    // const customClustersColumnsList = wu(this.model.customClusters).toArray();
+    const query: { [key: string]: string } = {};
+    query[C.TAGS.CUSTOM_CLUSTER] = '1';
+    const customClustersColumnsList = wu(filteredDfCols.byTags(query)).filter(c => c.max > 0).toArray();
     const getAggregatedColName = (aggF: string, colName: string) => `${aggF}(${colName})`;
+    const isCustomCluster = (cluster: string) => filteredDfCols.contains(cluster);
 
-    let summaryTableBuilder = this.dataFrame.groupBy([clustersColName]);
+    let summaryTableBuilder = filteredDf.groupBy([clustersColName]);
     const aggregateColumnsEntries = Object.entries(this.model.settings.columns ?? {});
     for (const [colName, aggregationFunc] of aggregateColumnsEntries) {
       summaryTableBuilder = summaryTableBuilder.add(
@@ -107,7 +119,7 @@ export class LogoSummary extends DG.JsViewer {
     const clustersColData = clustersCol.getRawData();
     const clustersColCategories = clustersCol.categories;
 
-    const peptideCol: DG.Column<string> = this.dataFrame.getCol(this.model.settings.sequenceColumnName!);
+    const peptideCol: DG.Column<string> = filteredDf.getCol(this.model.settings.sequenceColumnName!);
     const peptideColData = peptideCol.getRawData();
     const peptideColCategories = peptideCol.categories;
     const peptideColTags = peptideCol.tags;
@@ -135,13 +147,32 @@ export class LogoSummary extends DG.JsViewer {
       const customClusterColData = customClustersColumnsList.find((col) => col.name == currentCluster)?.toList();
 
       const isValidIndex = isOriginalCluster ?
-        (j: number) => originalClustersColCategories[originalClustersColData[j]] == currentCluster :
+        (j: number) => filteredDfClustersColCategories[filteredDfClustersColData[j]] == currentCluster :
         (j: number) => customClusterColData![j];
 
-      const stats = this.model.clusterStats[currentClusterCategoryIndex];
+        
+      //TODO: use bitset instead of splitCol
+      const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
+      const getSplitColValueAt = isOriginalCluster ?
+        (splitColIndex: number) => filteredDfClustersColData[splitColIndex] == currentClusterCategoryIndex :
+        (splitColIndex: number) => customClusterColData![splitColIndex];
+      splitCol.init((i) => getSplitColValueAt(i));
+
+      let stats: Stats;
+      if (isDfFiltered) {
+        const trueCount = splitCol.stats.sum;
+        const maskInfo = {
+          trueCount: trueCount,
+          falseCount: activityColData.length - trueCount,
+          mask: splitCol.toList() as boolean[],
+        };
+        stats = getStats(activityColData, maskInfo);
+      } else
+        stats = this.model.clusterStats[currentCluster];
+
       const tCol = DG.Column.string('peptides', stats.count);
       let tColIdx = 0;
-      for (let j = 0; j < originalClustersColLength; ++j) {
+      for (let j = 0; j < filteredDfClustersColLength; ++j) {
         if (isValidIndex(j))
           tCol.set(tColIdx++, peptideColCategories[peptideColData[j]]);
       }
@@ -152,12 +183,6 @@ export class LogoSummary extends DG.JsViewer {
       const uh = new UnitsHandler(tCol);
       tCol.setTag(bioTAGS.alphabetSize, uh.getAlphabetSize().toString());
 
-      //TODO: use bitset instead of splitCol
-      const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
-      const getSplitColValueAt = isOriginalCluster ?
-        (splitColIndex: number) => originalClustersColData[splitColIndex] == currentClusterCategoryIndex :
-        (splitColIndex: number) => customClusterColData![splitColIndex];
-      splitCol.init((i) => getSplitColValueAt(i));
 
       const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
       const dfSlice = DG.DataFrame.fromColumns([tCol]);
@@ -173,9 +198,9 @@ export class LogoSummary extends DG.JsViewer {
       //Setting aggregated col values
       if (!isOriginalCluster) {
         for (const [colName, aggregationFunc] of aggregateColumnsEntries) {
-          const arrayBuffer = this.dataFrame.getCol(colName).getRawData();
+          const arrayBuffer = filteredDf.getCol(colName).getRawData();
           const clusterMask = DG.BitSet.fromBytes(arrayBuffer.buffer, arrayBuffer.byteLength / 4);
-          const subDf = this.dataFrame.clone(clusterMask, [colName]);
+          const subDf = filteredDf.clone(clusterMask, [colName]);
           const newColName = getAggregatedColName(aggregationFunc, colName);
           const aggregatedDf = subDf.groupBy()
             .add(aggregationFunc as any, colName, newColName)
@@ -226,14 +251,14 @@ export class LogoSummary extends DG.JsViewer {
     });
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const cell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
-      if (!cell || !cell.isTableCell)
+      if (!cell || !cell.isTableCell || cell.tableColumn?.name != clustersColName)
         return;
 
       summaryTable.currentRowIdx = -1;
       if (ev.shiftKey)
-        this.model.modifyClusterSelection(cell.tableRowIndex!);
+        this.model.modifyClusterSelection(cell.cell.value);
       else
-        this.model.initClusterSelection(cell.tableRowIndex!);
+        this.model.initClusterSelection(cell.cell.value);
       this.viewerGrid.invalidate();
     });
     this.viewerGrid.onCellRender.subscribe((gridCellArgs) => {
@@ -246,7 +271,7 @@ export class LogoSummary extends DG.JsViewer {
       canvasContext.beginPath();
       canvasContext.rect(bound.x, bound.y, bound.width, bound.height);
       canvasContext.clip();
-      CR.renderLogoSummaryCell(canvasContext, gc.cell.value, gc.cell.rowIndex, this.model.logoSummarySelection, bound);
+      CR.renderLogoSummaryCell(canvasContext, gc.cell.value, this.model.logoSummarySelection, bound);
       gridCellArgs.preventDefault();
       canvasContext.restore();
     });
@@ -278,22 +303,24 @@ export class LogoSummary extends DG.JsViewer {
   }
 
   clusterFromSelection(): void {
-    const selection = this.dataFrame.selection;
+    const filteredDf = this.dataFrame.filter.anyFalse ? this.dataFrame.clone(this.dataFrame.filter, null, true) :
+      this.dataFrame;
+    const selection = filteredDf.selection;
     const viewerDf = this.viewerGrid.dataFrame;
     const viewerDfCols = viewerDf.columns;
     const viewerDfColsLength = viewerDfCols.length;
     const newClusterVals = new Array(viewerDfCols.length);
 
-    const activityScaledCol = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    const activityScaledCol = filteredDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     const maskInfo: MaskInfo = {
       mask: selection.getBuffer(),
       trueCount: selection.trueCount,
       falseCount: selection.falseCount,
     };
     const stats = getStats(activityScaledCol.getRawData(), maskInfo);
-    const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, this.model.splitCol]);
+    const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, filteredDf.getCol(this.model.splitCol.name)]);
 
-    const peptideCol: DG.Column<string> = this.dataFrame.getCol(this.model.settings.sequenceColumnName!);
+    const peptideCol: DG.Column<string> = filteredDf.getCol(this.model.settings.sequenceColumnName!);
     const peptideColData = peptideCol.getRawData();
     const peptideColCategories = peptideCol.categories;
     const peptideColTags = peptideCol.tags;
@@ -336,24 +363,21 @@ export class LogoSummary extends DG.JsViewer {
     }
     viewerDf.rows.addNew(newClusterVals);
 
-    this.model.clusterStats.push(stats);
+    this.model.clusterStats[newClusterName] = stats;
     this.model.addNewCluster(newClusterName);
   }
 
   removeCluster(): void {
     const lss = this.model.logoSummarySelection;
+    const dfCols = this.dataFrame.columns;
 
-    const viewerDf = this.viewerGrid.dataFrame;
-    const viewerClustersCol = viewerDf.getCol(this.model.settings.clustersColumnName!);
-    const originalClusterAmount = this.dataFrame.getCol(this.model.settings.clustersColumnName!).categories.length;
-
-    const removeClusterIndexesList = lss.filter((clusterId) => clusterId + 1 > originalClusterAmount);
+    const removeClusterIndexesList = lss.filter((cluster) => dfCols.contains(cluster));
     if (removeClusterIndexesList.length == 0)
       return grok.shell.info('Nothing removed. Please select a created cluster to remove');
 
-    for (const clusterId of removeClusterIndexesList) {
-      lss.splice(lss.indexOf(clusterId), 1);
-      this.dataFrame.columns.remove(viewerClustersCol.get(clusterId));
+    for (const cluster of removeClusterIndexesList) {
+      lss.splice(lss.indexOf(cluster), 1);
+      dfCols.remove(cluster);
     }
 
     this.model.logoSummarySelection = lss;

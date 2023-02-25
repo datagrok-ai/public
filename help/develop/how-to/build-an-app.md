@@ -256,7 +256,7 @@ a namespace for it.
    `NewNamespace` on the left side of the window, again, and select `Rename...`. Provide that both
    `Name` or `Function Name` are `NewNamespace`, and hit `Ok`.
 6. *Left*-click on the `<CONNECTION>` under the project's name (without leaving the `Projects`
-   section), and observe its property panel on the right. Find `Links...` and left-click on it. You should find that the
+   section), and observe its context panel on the right. Find `Links...` and left-click on it. You should find that the
    link to the connection is now suffixed by `NewNamespace:<CONNECTION>`.
 
 <!--
@@ -720,7 +720,7 @@ ui.dialog('Windows')
 To figure out what events are coming out of the platform, use the Inspector tool. Open it (`Alt+I`), go to the "Client
 Log" tab, and perform the action that you want to intercept. In the panel, you will see one or more of the events, click
 on them to inspect event parameters. To simplify the development process, we also generate JavaScript code for handling
-this particular event, copy-paste it from the property panel into your code if needed.
+this particular event, copy-paste it from the context panel into your code if needed.
 
 Remember that the underlying UI controls in Datagrok are still DOM elements, so you can always subscribe to the regular
 events using `.addEventListener`:
@@ -810,7 +810,7 @@ in `src/test-app-01.js`. You may find this `datagrok-api` is a predefined locati
 
 ### Application lifecycle
 
-There are two main [deployment modes](../develop.md#deployment-modes) for Datagrok packages: Debug and Release.
+There are two main [publishing modes](../develop.md#publishing-modes) for Datagrok packages: Debug and Release.
 
 * When you `grok publish`, the package is deployed to Datagrok in a Debug mode. This means only you see this deployed
   version of the package, all others with proper privileges keep seeing the older version if one existed before

@@ -25,12 +25,13 @@ import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
 import $ from 'cash-dom';
 import {__obs, StreamSubscription} from './src/events';
-import {_isDartium, _options} from './src/utils';
+import {HtmlUtils, _isDartium, _options} from './src/utils';
 import * as rxjs from 'rxjs';
 import { CanvasRenderer, GridCellRenderer, SemanticValue } from './src/grid';
 import {Entity, Property} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
+import { Wizard, WizardPage } from './src/ui/wizard';
 
 
 let api = <any>window;
@@ -522,7 +523,7 @@ export function link(
 }
 
 /** Creates a [Dialog]. */
-export function dialog(options?: { title?: string, helpUrl?: string } | string): Dialog {
+export function dialog(options?: { title?: string, helpUrl?: string, showHeader?: boolean, showFooter?: boolean } | string): Dialog {
   return Dialog.create(options);
 }
 
@@ -1033,7 +1034,7 @@ export class ObjectHandler {
   /**
    * Registers a function that takes applicable objects as the only argument.
    * It will be suggested to run in the context menu for that object, and
-   * also in the "Actions" pane on the property panel.
+   * also in the "Actions" pane on the context panel.
    *
    * Samples: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
    *
@@ -1229,6 +1230,23 @@ function spliterResize(divider: HTMLElement, previousSibling: HTMLElement, nextS
         nextSibling.style.maxHeight = (md.bottomHeight - delta.y) + "px";
       }
   }
+}
+
+export function ribbonPanel(items: HTMLElement[] | null): HTMLDivElement {
+  const root = document.createElement('div');
+  $(root).addClass('d4-ribbon');
+  if (items != null) {
+    $(root).append(items.map(item => {
+      let itemBox = document.createElement('div');
+      $(itemBox).addClass('d4-ribbon-item');
+      $(itemBox).append(item);
+      return render(itemBox)
+    }));
+  }
+  const wrapSpacer = document.createElement('div');
+  $(wrapSpacer).addClass('d4-ribbon-wrap-spacer');
+  $(root).prepend(wrapSpacer);
+  return root;
 }
 
 export function block(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
@@ -1450,11 +1468,76 @@ export namespace hints {
     return el;
   }
 
-  /** Removes the hint indication from the provided element and returns it. */
-  export function remove(el: HTMLElement): HTMLElement {
-    $(el).find('div.ui-hint-blob')[0]?.remove();
-    $(el).find('i.fa-times')[0]?.remove();
-    el.classList.remove('ui-hint-target');
-    return el;
+  /** Describes series of visual components in the wizard. Each wizard page is associated with the
+   * [showNextTo] element. Provide either [text] or [root] parameter to populate the page, the other
+   * parameters are optional. The wizard header is shown only if [title] or [helpUrl] are provided.
+   * The user can use the arrow buttons to navigate the set of instructions. The wizard can be closed
+   * from the dialog header (the "x" icon), via the "Cancel" button, or via the [Wizard.close()] method.
+   * Example: {@link https://public.datagrok.ai/js/samples/ux/Interactivity/hints}:*/
+  export function addTextHint(options: {title?: string, helpUrl?: string, pages?: HintPage[]}): Wizard {
+    let targetElement: HTMLElement | undefined;
+    const overlay = div([], 'ui-hint-overlay');
+    $('body').prepend(overlay);
+    const horizontalOffset = 10;
+    const wizard = new Wizard({title: options.title, helpUrl: options.helpUrl});
+    if (options.pages) {
+      for (const p of options.pages) {
+        const page = Object.assign({}, p);
+        page.onActivated = () => {
+          if (p.showNextTo) {
+            if (targetElement)
+              targetElement.classList.remove('ui-text-hint-target');
+            targetElement = p.showNextTo;
+            p.showNextTo.classList.add('ui-text-hint-target');
+            const rect = HtmlUtils.htmlGetBounds(p.showNextTo);
+            $(wizard.root).css('left', rect.right + horizontalOffset);
+            $(wizard.root).css('top', rect.top);
+          }
+          if (p.onActivated)
+            p.onActivated();
+        };
+        page.root = p.root ?? divText(p.text ?? '');
+        wizard.page(<WizardPage>page);
+      }
+    }
+    wizard.onClose.subscribe(() => remove(targetElement));
+    const _x = $(wizard.root).css('left');
+    const _y = $(wizard.root).css('top');
+    wizard.show({width: 250, height: 200,
+      x: _x ? parseInt(_x) : undefined, y: _y ? parseInt(_y) : undefined});
+    return wizard;
   }
+
+  /** Removes the hint indication from the provided element and returns it. */
+  export function remove(el?: HTMLElement): HTMLElement | null {
+    if (el != null) {
+      $(el).find('div.ui-hint-blob')[0]?.remove();
+      $(el).find('i.fa-times')[0]?.remove();
+      el.classList.remove('ui-hint-target', 'ui-text-hint-target');
+    }
+    $('div.ui-hint-overlay')?.remove();
+    return el ?? null;
+  }
+}
+
+interface HintPage {
+
+  /** Displays the wizard next to the specified element when the page is current. */
+  showNextTo: HTMLElement;
+
+  /** Page root. Can also be set via [text] property */
+  root?: HTMLDivElement;
+
+  /** Adds a div with the specified text as the page root. */
+  text?: string;
+
+  /** Caption to be displayed on top of the panel */
+  caption?: HTMLElement | string;
+
+  /** Called when the page is activated */
+  onActivated?: () => void;
+
+  /** Returns error message (and stops wizard from proceeding to the next page),
+   * or null if validated */
+  validate?: () => string | null;
 }

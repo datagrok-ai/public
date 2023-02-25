@@ -1,6 +1,10 @@
 package serialization;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
 
 
 // String column.
@@ -106,5 +110,9 @@ public class StringColumn extends Column<String> {
             }
             idxs[order[i]] = categories.size() - 1;
         }
+    }
+
+    public String[] getData() {
+        return data;
     }
 }

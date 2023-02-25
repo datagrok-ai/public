@@ -19,17 +19,9 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   const selectionObject = model.mutationCliffsSelection;
   const clustersColName = model.settings.clustersColumnName;
   let clustersProcessedObject: string[] = [];
-  if (clustersColName) {
-    const clustersRawObject = model.logoSummarySelection;
-    const clustersColCategories = table.getCol(model.settings.clustersColumnName!).categories;
-    clustersProcessedObject = new Array(clustersRawObject.length);
-    const customClustersColumns = wu(model.customClusters).toArray();
-    for (let i = 0; i < clustersRawObject.length; ++i) {
-      const clusterIdx = clustersRawObject[i];
-      clustersProcessedObject[i] = clusterIdx - clustersColCategories.length < 0 ? clustersColCategories[clusterIdx] :
-        customClustersColumns[clusterIdx - clustersColCategories.length].name;
-    }
-  }
+  if (clustersColName)
+    clustersProcessedObject = model.logoSummarySelection;
+
   const positions = Object.keys(selectionObject);
   const positionsLen = positions.length;
   let aarStr = allConst;
@@ -60,7 +52,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
 
           const colResults: {[colName: string]: number} = {};
           for (const [col, agg] of Object.entries(model.settings.columns || {})) {
-            const currentCol = model.df.getCol(col);
+            const currentCol = table.getCol(col);
             const currentColData = currentCol.getRawData();
             const tempCol = DG.Column.float('', indexes.length);
             tempCol.init((i) => currentColData[indexes[i]]);
@@ -101,7 +93,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         const indexes = mask.getSelectedIndexes();
         const colResults: {[colName: string]: number} = {};
         for (const [col, agg] of Object.entries(model.settings.columns || {})) {
-          const currentCol = model.df.getCol(col);
+          const currentCol = table.getCol(col);
           const currentColData = currentCol.getRawData();
           const tempCol = DG.Column.float('', indexes.length);
           tempCol.init((i) => currentColData[indexes[i]]);
@@ -157,7 +149,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         const indexes = mask.getSelectedIndexes();
         const colResults: {[colName: string]: number} = {};
         for (const [col, agg] of Object.entries(model.settings.columns || {})) {
-          const currentCol = model.df.getCol(col);
+          const currentCol = table.getCol(col);
           const currentColData = currentCol.getRawData();
           const tempCol = DG.Column.float('', indexes.length);
           tempCol.init((i) => currentColData[indexes[i]]);
@@ -193,11 +185,12 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         }
 
         const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
+        // distributionTable.filter.copyFrom(table.filter);
 
-        const indexes = table.selection.getSelectedIndexes();
+        const indexes = model.getCompoundBitest().getSelectedIndexes();
         const colResults: {[colName: string]: number} = {};
         for (const [col, agg] of Object.entries(model.settings.columns || {})) {
-          const currentCol = model.df.getCol(col);
+          const currentCol = table.getCol(col);
           const currentColData = currentCol.getRawData();
           const tempCol = DG.Column.float('', indexes.length);
           tempCol.init((i) => currentColData[indexes[i]]);
