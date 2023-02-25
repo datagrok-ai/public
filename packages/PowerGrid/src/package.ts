@@ -14,12 +14,13 @@ import {BarChartCellRenderer} from './sparklines/bar-chart';
 import {PieChartCellRenderer} from './sparklines/piechart';
 import {RadarChartCellRender} from './sparklines/radar-chart';
 import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
-import {FitCellRenderer} from './sparklines/fit-curve';
+import {FitCellRenderer} from './fit/fit-curve';
 import {names, SparklineType, sparklineTypes} from './sparklines/shared';
 import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
 
-import {curveFitDemo} from './fit-demo';
-import {FitViewer} from './fit-viewer';
+import {curveFitDemo} from './fit/fit-demo';
+import {FitViewer} from './fit/fit-viewer';
+import {FitGridCellHandler} from "./fit/fit-grid-cell-handler";
 
 export const _package = new DG.Package();
 
@@ -202,9 +203,9 @@ export function demoTestUnitsCellRenderer() {
   grok.shell.info('Different renderers even though semantic types are the same');
 }
 
-//description: autoPowerGrid
 //tags: autostart
 export function _autoPowerGrid(): void {
   PinnedUtils.registerPinnedColumns();
   DG.GridCellRenderer.register(new ScatterPlotCellRenderer());
+  DG.ObjectHandler.register(new FitGridCellHandler());
 }

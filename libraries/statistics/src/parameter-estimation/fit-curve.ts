@@ -6,7 +6,7 @@ type Likelihood = {
   mult: number
 };
 
-type FitResult = {
+export type FitResult = {
   parameters: number[],
   fittedCurve: (x:number)=> number,
   confidenceTop: (x:number)=> number,

@@ -1,6 +1,13 @@
 import * as DG from 'datagrok-api/dg';
-
-import {fit, sigmoid, FitErrorModel} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
+import * as grok from 'datagrok-api/grok';
+import {
+  fit,
+  sigmoid,
+  FitErrorModel,
+  FitResult
+} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
+import {GridColumn} from "datagrok-api/dg";
+import {getColumnFitOptions} from "./fit-options";
 
 
 export function scaleCoordinates(coordinates: {x: number[], y: number[]}, canvasWidth: number, canvasHeight: number):
@@ -15,12 +22,7 @@ export function scaleCoordinates(coordinates: {x: number[], y: number[]}, canvas
   const xMid = (xMax + xMin) / 2;
   const yMid = (yMax + yMin) / 2;
 
-  let coeff: number;
-  if (xDiff * canvasHeight >= yDiff * canvasWidth)
-    coeff = canvasWidth / xDiff;
-  else
-    coeff = canvasHeight / yDiff;
-
+  const coeff = xDiff * canvasHeight >= yDiff * canvasWidth ? canvasWidth / xDiff : canvasHeight / yDiff;
   const canvasXCenter = canvasWidth / 2;
   const canvasYCenter = canvasHeight / 2;
 
@@ -33,7 +35,7 @@ export function scaleCoordinates(coordinates: {x: number[], y: number[]}, canvas
   return scaledCoordinates;
 }
 
-export function getParams(columns: DG.Column<any>[]): number[] {
+export function getParams(columns: DG.Column[]): number[] {
   const coordinates: {x: number[], y: number[]} = {x: columns[0].toList(), y: columns[1].toList()};
 
   const minY = columns[1].min;
@@ -56,9 +58,13 @@ export class FitCellRenderer extends DG.GridCellRenderer {
 
   get cellType() { return 'fit'; }
 
-  get defaultHeight(): number { return 50; }
+  get defaultHeight(): number { return 100; }
 
   get defaultWidth(): number { return 160; }
+
+  getDefaultSize(gridColumn: GridColumn): {width?: number | null, height?: number | null} {
+    return { width: 160, height: 100};
+  }
 
   // onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
   //   const hitData = onHit(gridCell, e);
@@ -93,6 +99,8 @@ export class FitCellRenderer extends DG.GridCellRenderer {
           e.offsetY > markerCenterY - (markerPxSize / 2) && e.offsetY < markerCenterY + (markerPxSize / 2))
         coordinateDf.filter.set(i, !(coordinateDf.filter.get(i)));
     }
+
+    grok.shell.o = gridCell;
   }
 
   render(
@@ -125,6 +133,7 @@ export class FitCellRenderer extends DG.GridCellRenderer {
 
     // curves have to be like dose response curve
 
+    const options = getColumnFitOptions(gridCell.gridColumn);
     const df = gridCell.grid.dataFrame;
     if (w < 20 || h < 10 || df === void 0) return;
 
@@ -150,41 +159,50 @@ export class FitCellRenderer extends DG.GridCellRenderer {
     const filteredCoordinates: {x: number[], y: number[]} = {x: filteredColumns[0].toList(),
       y: filteredColumns[1].toList()};
 
-    const params = getParams(filteredColumns);
-    const fitResult = fit(filteredCoordinates, params, sigmoid, FitErrorModel.Constant);
+    if (options.showFitLine) {
+      const params = getParams(filteredColumns);
 
-    const fitCurveCoordinates: {x: number[], y: number[]} = {x: [], y: []};
-    for (let i = 0; i < filteredCoordinates.x.length; i++) {
-      fitCurveCoordinates.x[i] = filteredCoordinates.x[i];
-      fitCurveCoordinates.y[i] = fitResult.fittedCurve(fitCurveCoordinates.x[i]);
-      // console.group('coordinates');
-      // console.log(`fitted curve: x = ${fitCurveCoordinates.x[i]}, y = ${fitCurveCoordinates.y[i]}`);
-      // console.log(`confidence top: x = ${fitCurveCoordinates.x[i]},
-      //   y = ${fitResult.confidenceTop(fitCurveCoordinates.x[i])}`);
-      // console.log(`confidence bottom: x = ${fitCurveCoordinates.x[i]},
-      //   y = ${fitResult.confidenceBottom(fitCurveCoordinates.x[i])}`);
-      // console.groupEnd();
+      // caching fit results - not sure if needed
+      const fitResultsColumn = gridCell.cell.dataFrame.columns.getOrCreate(`~fit:${gridCell.gridColumn.name}`, DG.TYPE.OBJECT, dfColumn.length);
+      if (fitResultsColumn.isNone(gridCell.cell.row.idx))
+        fitResultsColumn.set(gridCell.cell.row.idx, fit(filteredCoordinates, params, sigmoid, FitErrorModel.Constant));
+      const fitResult: FitResult = fitResultsColumn.get(gridCell.cell.row.idx);
+
+      const fitCurveCoordinates: {x: number[], y: number[]} = {x: [], y: []};
+      for (let i = 0; i < filteredCoordinates.x.length; i++) {
+        fitCurveCoordinates.x[i] = filteredCoordinates.x[i];
+        fitCurveCoordinates.y[i] = fitResult.fittedCurve(fitCurveCoordinates.x[i]);
+        // console.group('coordinates');
+        // console.log(`fitted curve: x = ${fitCurveCoordinates.x[i]}, y = ${fitCurveCoordinates.y[i]}`);
+        // console.log(`confidence top: x = ${fitCurveCoordinates.x[i]},
+        //   y = ${fitResult.confidenceTop(fitCurveCoordinates.x[i])}`);
+        // console.log(`confidence bottom: x = ${fitCurveCoordinates.x[i]},
+        //   y = ${fitResult.confidenceBottom(fitCurveCoordinates.x[i])}`);
+        // console.groupEnd();
+      }
+
+      const canvasFitCurveCoordinates = scaleCoordinates(fitCurveCoordinates, gridCell.gridColumn.width, h);
+
+      g.strokeStyle = options.color ?? 'black';
+
+      g.beginPath();
+      g.moveTo(x + canvasFitCurveCoordinates.x[0], (y + h) - canvasFitCurveCoordinates.y[0]);
+      for (let i = 1; i < canvasFitCurveCoordinates.x.length; i++)
+        g.lineTo(x + canvasFitCurveCoordinates.x[i], (y + h) - canvasFitCurveCoordinates.y[i]);
+      g.stroke();
     }
 
-    const canvasFitCurveCoordinates = scaleCoordinates(fitCurveCoordinates, gridCell.gridColumn.width, h);
-
-    g.strokeStyle = 'black';
-
-    g.beginPath();
-    g.moveTo(x + canvasFitCurveCoordinates.x[0], (y + h) - canvasFitCurveCoordinates.y[0]);
-    for (let i = 1; i < canvasFitCurveCoordinates.x.length; i++)
-      g.lineTo(x + canvasFitCurveCoordinates.x[i], (y + h) - canvasFitCurveCoordinates.y[i]);
-    g.stroke();
-
-    const filteredIndexes = coordinateDf.filter.getSelectedIndexes();
-    for (let i = 0; i < canvasPointCoordinates.x.length; i++) {
-      const color = DG.Color.scatterPlotMarker;
-      if (filteredIndexes.includes(i)) {
-        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, x + canvasPointCoordinates.x[i],
-          (y + h) - canvasPointCoordinates.y[i], color, 4);
-      } else {
-        DG.Paint.marker(g, DG.MARKER_TYPE.OUTLIER, x + canvasPointCoordinates.x[i],
-          (y + h) - canvasPointCoordinates.y[i], color, 6);
+    if (options.showPoints) {
+      const filteredIndexes = coordinateDf.filter.getSelectedIndexes();
+      for (let i = 0; i < canvasPointCoordinates.x.length; i++) {
+        const color = DG.Color.scatterPlotMarker;
+        if (filteredIndexes.includes(i)) {
+          DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, x + canvasPointCoordinates.x[i],
+            (y + h) - canvasPointCoordinates.y[i], color, 4);
+        } else {
+          DG.Paint.marker(g, DG.MARKER_TYPE.OUTLIER, x + canvasPointCoordinates.x[i],
+            (y + h) - canvasPointCoordinates.y[i], color, 6);
+        }
       }
     }
 

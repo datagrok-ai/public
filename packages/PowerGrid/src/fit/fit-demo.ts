@@ -50,5 +50,6 @@ function createDemoDataFrame(rowNumber: number) {
 export async function curveFitDemo() {
   const df = createDemoDataFrame(30);
   const grid = grok.shell.addTableView(df).grid;
-  grid.columns.add({cellType: 'fit'});
+  grid.columns.add({cellType: 'fit'}).width = 200;
+  grid.props.rowHeight = 150;
 }

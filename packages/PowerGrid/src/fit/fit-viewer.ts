@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 
 import {fit, sigmoid, FitErrorModel} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 
-import {scaleCoordinates, getParams} from './sparklines/fit-curve';
+import {scaleCoordinates, getParams} from './fit-curve';
 
 // import {FitCellRenderer} from './sparklines/fit-curve';
 
