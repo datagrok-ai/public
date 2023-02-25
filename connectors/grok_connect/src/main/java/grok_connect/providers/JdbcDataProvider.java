@@ -291,7 +291,6 @@ public abstract class JdbcDataProvider extends DataProvider {
         int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
 
-        Connection connection = null;
         try {
             // Remove header lines
             DataQuery dataQuery = queryRun.func;
@@ -318,7 +317,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
             return resultSet;
         } catch (SQLException e) {
-            if (providerManager.queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
+            if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
                 throw new QueryCancelledByUser();
             else throw e;
         }
@@ -400,7 +399,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             return new SchemeInfo(columns, supportedType, initColumn);
         
         } catch (SQLException e) {
-            if (providerManager.queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
+            if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
                 throw new QueryCancelledByUser();
             else throw e;
         }
@@ -409,7 +408,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,
                                        List<Boolean> supportedType,List<Boolean> initColumn, int maxIterations) 
             throws IOException, SQLException, QueryCancelledByUser {
-        if (providerManager.queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
+        if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
             throw new QueryCancelledByUser();
 
         int count = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_COUNT))
@@ -566,7 +565,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 }
 
                 if (rowCount % 1000 == 0) {
-                    int size = 0;
+                    size = 0;
                     for (Column column : columns)
                         size += column.memoryInBytes();
                     size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000; // count? it's 200 lines up
