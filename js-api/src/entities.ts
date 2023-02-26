@@ -962,7 +962,14 @@ export class Package extends Entity {
 }
 
 
-export class Dockerfile extends Entity {
+export class DockerImage extends Entity {
+  constructor(dart: any) {
+    super(dart);
+  }
+}
+
+
+export class DockerContainer extends Entity {
   constructor(dart: any) {
     super(dart);
   }
