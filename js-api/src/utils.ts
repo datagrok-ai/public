@@ -89,7 +89,7 @@ export namespace Paint {
   }
 
   /** Renders a marker */
-  export function marker(g: CanvasRenderingContext2D, markerType: MARKER_TYPE, x: number, y: number, color: number, size: number) {
+  export function marker(g: CanvasRenderingContext2D, markerType: MARKER_TYPE, x: number, y: number, color: number | string, size: number) {
     api.grok_Paint_Marker(g, markerType, x, y, color, size);
   }
 

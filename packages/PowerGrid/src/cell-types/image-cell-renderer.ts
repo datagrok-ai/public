@@ -35,7 +35,7 @@ export class ImageCellRenderer extends DG.GridCellRenderer {
 
     // g.save();
     g.rect(x, y, w, h);
-    let bounds = new DG.Rect(x, y, w, h).fit(img.width, img.height);
+    const bounds = new DG.Rect(x, y, w, h).fit(img.width, img.height);
 
     // const width: number = (img.naturalWidth * (cellStyle.imageScale ?? 1)).toInt();
     // int height = (img.naturalHeight * (cellStyle.imageScale ?? 1)).toInt();
