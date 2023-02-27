@@ -20,8 +20,8 @@ import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils
 
 import {curveFitDemo} from './fit/fit-demo';
 import {FitViewer} from './fit/fit-viewer';
-import {FitGridCellHandler} from "./fit/fit-grid-cell-handler";
-import {FitChartCellRenderer} from "./fit/fit-renderer";
+import {FitGridCellHandler} from './fit/fit-grid-cell-handler';
+import {FitChartCellRenderer} from './fit/fit-renderer';
 
 export const _package = new DG.Package();
 
