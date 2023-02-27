@@ -1,4 +1,6 @@
 import {limitedMemoryBFGS} from "../../lbfgs/lbfgs"
+//@ts-ignore: no types
+import * as jStat from 'jstat';
 
 type Likelihood = {
   value: number, 
@@ -11,7 +13,8 @@ type FitResult = {
   fittedCurve: (x:number)=> number,
   confidenceTop: (x:number)=> number,
   confidenceBottom: (x:number)=> number,
-  sigma: number
+  rSquared: number,
+  auc: number;
 };
 
 type ObjectiveFunction = (targetFunc: (params: number[], x: number) => number, 
@@ -23,8 +26,11 @@ export enum FitErrorModel {
   Proportional
 }
 
-export function fit(data:{x: number[], y: number[]}, params: number[],
-                    curveFunction: (params: number[], x: number) => number, errorModel: FitErrorModel): FitResult {
+export function fit(data:{x: number[], y: number[]}, 
+                    params: number[],
+                    curveFunction: (params: number[], x: number) => number, 
+                    errorModel: FitErrorModel,
+                    confidenceLevel: number = 0.05): FitResult {
 
   let of: ObjectiveFunction;
   switch(errorModel) {
@@ -63,24 +69,26 @@ export function fit(data:{x: number[], y: number[]}, params: number[],
     return curveFunction(params, x);
   }
 
+  let error = errorModel == FitErrorModel.Proportional ?
+  of(curveFunction, data, params).mult :
+  of(curveFunction, data, params).const;
+
+  let studentQ = jStat.studentt.inv(1 - confidenceLevel/2, data.x.length - params.length);
+
   let top = (x: number) =>{
     let value = curveFunction(params, x);
     if (errorModel == FitErrorModel.Constant)
-      return  value + 1.4*error;
+      return  value + studentQ*error/Math.sqrt(data.x.length);
     else
-      return  value + 1.4*(Math.abs(value)*error);
+      return  value + studentQ*(Math.abs(value)*error/Math.sqrt(data.x.length));
   }
-
-  let error = errorModel == FitErrorModel.Proportional ?
-  of(curveFunction, data, params).const :
-  of(curveFunction, data, params).mult;
 
   let bottom = (x: number) => {
     let value = curveFunction(params, x);
     if (errorModel == FitErrorModel.Constant)
-      return  value - 1.4*error;
+      return  value - studentQ*error/Math.sqrt(data.x.length);
     else
-      return  value - 1.4*(Math.abs(value)*error);
+      return  value - studentQ*(Math.abs(value)*error/Math.sqrt(data.x.length));
   }
 
   let fitRes: FitResult = {
@@ -88,7 +96,8 @@ export function fit(data:{x: number[], y: number[]}, params: number[],
     fittedCurve: fittedCurve,
     confidenceTop: top,
     confidenceBottom: bottom,
-    sigma: error
+    rSquared: getDetCoeff(fittedCurve, data),
+    auc: getAuc(fittedCurve, data)
   };
 
   return fitRes;
@@ -124,6 +133,36 @@ function getObjectiveDerivative(of: ObjectiveFunction, curveFunction: (params: n
   return (drvTop - drvBottom)/(2*step);
 }
 
+function getAuc(fittedCurve: (x: number) => number, 
+                data: {x: number[], y: number[]}): number {
+  let auc = 0;
+  const integrationStep = 0.00001;
+  let min = Math.min(...data.x);
+  let max = Math.max(...data.x);
+
+
+  for(let x = min; x < max; x+= integrationStep)
+    auc += integrationStep*fittedCurve(x);
+
+  return auc;
+}
+
+function getDetCoeff(fittedCurve: (x: number) => number, 
+                     data: {x: number[], y: number[]}): number {
+  let ssRes = 0;
+  let ssTot = 0;
+  
+  const yMean = jStat.mean(data.y);
+
+  for(let i = 0; i < data.x.length; i++) {
+    ssRes += Math.pow(data.y[i] - fittedCurve(data.x[i]), 2);
+    ssTot += Math.pow(data.y[i] - yMean, 2);
+  }
+
+  return 1 - ssRes/ssTot;
+}
+
+
 function objectiveNormalConstant (
   targetFunc: (params: number[], x: number) => number, 
   data: {y: number[], x: number[]},
@@ -137,18 +176,18 @@ function objectiveNormalConstant (
 
   let residuesSquares = new Float32Array(data.x.length);
   for(let i = 0; i < data.x.length; i++) {
-  const obs = data.y[i];
-  const pred = targetFunc(params, data.x[i]);
-  residuesSquares[i] = Math.pow(obs - pred, 2);
+    const obs = data.y[i];
+    const pred = targetFunc(params, data.x[i]);
+    residuesSquares[i] = Math.pow(obs - pred, 2);
   }
 
   for(let i = 0; i < residuesSquares.length; i++)
-  sigmaSq += residuesSquares[i];
+    sigmaSq += residuesSquares[i];
   sigmaSq /= residuesSquares.length;
   sigma = Math.sqrt(sigmaSq);
 
   for(let i = 0; i < residuesSquares.length; i++)
-  likelihood += residuesSquares[i]/sigmaSq + Math.log(2 * pi * sigmaSq);
+    likelihood += residuesSquares[i]/sigmaSq + Math.log(2 * pi * sigmaSq);
 
   return {value: -likelihood, const: sigma, mult: 0};                                              
 }
@@ -166,18 +205,18 @@ params: number[]
 
   let residuesSquares = new Float32Array(data.x.length);
   for(let i = 0; i < data.x.length; i++) {
-  const obs = data.y[i];
-  const pred = targetFunc(params, data.x[i])
-  residuesSquares[i] = Math.pow(obs - pred, 2);
+    const obs = data.y[i];
+    const pred = targetFunc(params, data.x[i])
+    residuesSquares[i] = Math.pow(obs - pred, 2);
   }
 
   for(let i = 0; i < residuesSquares.length; i++)
-  sigmaSq += residuesSquares[i];
+    sigmaSq += residuesSquares[i];
   sigmaSq /= residuesSquares.length;
   sigma = Math.sqrt(sigmaSq);
 
   for(let i = 0; i < residuesSquares.length; i++)
-  likelihood += residuesSquares[i]/sigmaSq + Math.log(2*pi*sigmaSq);
+    likelihood += residuesSquares[i]/sigmaSq + Math.log(2*pi*sigmaSq);
 
   return {value: -likelihood, const: sigma, mult: 0};                                              
 }
