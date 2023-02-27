@@ -34,7 +34,7 @@ function createSigmoidPoints(length: number, step: number):
   const range = 0.2 * (Math.max(...y) - Math.min(...y));
   const dx = rnd(0, 4) - 2;
   for (let i = 0; i < length; i++) {
-    x[i] += dx;
+    //x[i] += dx;
     y[i] = y[i] + rnd(0, range) - range / 2;
   }
 
