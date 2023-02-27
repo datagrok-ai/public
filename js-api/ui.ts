@@ -1526,6 +1526,7 @@ export namespace hints {
       const pageNumberField = wizard.getButton(pageNumberStr);
       pageNumberField.classList.add('disabled');
       $(pageNumberField).css('margin-right', 'auto');
+      $(pageNumberField).css('font-weight', 500);
 
       for (const p of options.pages) {
         const page = Object.assign({}, p);
