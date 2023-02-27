@@ -472,7 +472,7 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
 }
 
 //name: Composition Analysis
-//top-menu: Bio | Composition Analysis
+//top-menu: Bio | Composition Analysis...
 //output: viewer result
 export async function compositionAnalysis(): Promise<void> {
   // Higher priority for columns with MSA data to show with WebLogo.
@@ -558,11 +558,14 @@ export function importFasta(fileContent: string): DG.DataFrame [] {
   return ffh.importFasta();
 }
 
-//name: Bio | Convert ...
-//friendly-name: Bio | Convert
-//tags: panel, bio
-//input: column col {semType: Macromolecule}
-export function convertPanel(col: DG.Column): void {
+//top-menu: Bio | Convert...
+//name: convertDialog
+export function convertDialog() {
+  const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
+  if (col === null) {
+    grok.shell.error('Current table does not contain macromolecules');
+    return;
+  }
   convert(col);
 }
 
@@ -682,10 +685,14 @@ export function diversitySearchTopMenu() {
   view.dockManager.dock(viewer, 'down');
 }
 
-//name: Bio | Substructure search ...
-//tags: panel, bio
-//input: column col {semType: Macromolecule}
-export function bioSubstructureSearch(col: DG.Column): void {
+//top-menu: Bio | Substructure search ...
+//name: bioSubstructureSearch
+export function bioSubstructureSearch(): void {
+  const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
+  if (col === null) {
+    grok.shell.error('Current table does not contain macromolecules');
+    return;
+  }
   substructureSearchDialog(col);
 }
 
