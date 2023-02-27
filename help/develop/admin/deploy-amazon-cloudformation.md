@@ -83,7 +83,8 @@ More information about Datagrok design and components:
          create demo databases near Datagrok.
       5. `LaunchType`: It is an optional argument. The default value is `FARGATE`. It will suit best in most cases. Also,
          the template supports the `EC2` launch type, which will use EC2 instances and reduce the price of the stand.
-         More information about EC2 launch type is described [below](#optional-cost-reduction-stand).
+         More information about EC2 launch type is described [below](#optional-cost-reduction-stand). We strongly
+         recommend use `FARGATE` launch type.
       6. `Ec2PublicKey`: It is an optional argument. It is only required for `EC2` `LaunchType`. By default, you can
          skip it. More information about EC2 launch type is described [below](#optional-cost-reduction-stand).
       7. All other parameters are for Datagrok Docker image tags. The default value is `latest`.
@@ -96,6 +97,15 @@ More information about Datagrok design and components:
 
 3. CloudFormation Stack creation takes around 10 minutes. It will create RDS, S3, ECS Cluster, and other required
    resources.
+   Cloudformation template is large, so you need to upload it, for example, to S3 bucket and launch it from there
+   in AWS CLI: 
+
+   ```
+   aws cloudformation create-stack \
+    --stack-name STACK_NAME \
+    --template-url https://s3.amazonaws.com/BUCKET_NAME/TEMPLATE_NAME.yaml \
+    --parameters ParameterKey=KeyName,ParameterValue=my-key \
+   ```
 
 4. After the Datagrok container starts, the Datagrok server will deploy the database. You can check the status by
    checking the running task log in [CloudWatch](https://aws.amazon.com/cloudwatch/)
@@ -106,7 +116,7 @@ More information about Datagrok design and components:
 ## Configure Datagrok settings
 
 1. Go to the web browser to `DATAGROK_DNS`, login to Datagrok using username `admin` and password `admin`.
-2. Edit settings in the Datagrok (Tools | Settings...). Remember to click Apply to save new settings.
+2. Edit settings in the Datagrok platform (Tools -> Settings...). Remember to click Apply to save new settings.
 
    * Scripting:
      * Api Url: `https://<DATAGROK_DNS>`
