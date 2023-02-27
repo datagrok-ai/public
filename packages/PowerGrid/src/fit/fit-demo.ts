@@ -1,9 +1,11 @@
+/* eslint-disable no-multi-spaces */
+
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as fit from './fit-data';
-import * as fitMath from "@datagrok-libraries/statistics/src/parameter-estimation/fit-curve";
-import {FIT_CELL_TYPE, IFitChartData} from "./fit-data";
-import wu from "wu";
+import * as fitMath from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
+import {FIT_CELL_TYPE, IFitChartData} from './fit-data';
+import wu from 'wu';
 
 function rnd(min: number, max: number) {
   return Math.random() * (max - min) + min;
@@ -14,8 +16,7 @@ function sigmoid(x: number) {
 }
 
 function createSigmoidPoints(length: number, step: number):
-    { x: Float32Array, y: Float32Array, params: number[] }
-{
+    { x: Float32Array, y: Float32Array, params: number[] } {
   const x = new Float32Array(length);
   const y = new Float32Array(length);
 
@@ -42,7 +43,7 @@ function createSigmoidPoints(length: number, step: number):
 }
 
 function createDemoDataFrame(rowCount: number, chartsCount: number, chartsPerCell: number) {
-  let df = DG.DataFrame.create(rowCount);
+  const df = DG.DataFrame.create(rowCount);
   const seriesLength = 15;
   const step = 0.5;
 
@@ -66,7 +67,7 @@ function createDemoDataFrame(rowCount: number, chartsCount: number, chartsPerCel
       const chartData: IFitChartData = {
         //chartOptions: { minX: -10, minY: -2, maxX: 10, maxY: 2},
         series: []
-      }
+      };
 
       for (let j = 0; j < chartsPerCell; j++) {
         const points = createSigmoidPoints(seriesLength, step);
@@ -75,7 +76,7 @@ function createDemoDataFrame(rowCount: number, chartsCount: number, chartsPerCel
           fitLineColor: DG.Color.toHtml(DG.Color.getCategoricalColor(colIdx * chartsPerCell + j)),
           pointColor: DG.Color.toHtml(DG.Color.getCategoricalColor(colIdx * chartsPerCell + j)),
           points: wu.count().take(seriesLength)
-            .map(function (i) { return { x: points.x[i], y: points.y[i]}})
+            .map(function(i) { return {x: points.x[i], y: points.y[i]}; })
             .toArray()
         });
       }

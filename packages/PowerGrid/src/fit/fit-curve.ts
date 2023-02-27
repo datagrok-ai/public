@@ -6,8 +6,8 @@ import {
   FitErrorModel,
   FitResult
 } from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
-import {GridColumn} from "datagrok-api/dg";
-import {getChartData} from "./fit-data";
+import {GridColumn} from 'datagrok-api/dg';
+import {getChartData} from './fit-data';
 
 
 export function scaleCoordinates(coordinates: {x: number[], y: number[]}, canvasWidth: number, canvasHeight: number):
@@ -63,7 +63,7 @@ export class FitCellRenderer extends DG.GridCellRenderer {
   get defaultWidth(): number { return 160; }
 
   getDefaultSize(gridColumn: GridColumn): {width?: number | null, height?: number | null} {
-    return { width: 160, height: 100};
+    return {width: 160, height: 100};
   }
 
   // onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
@@ -164,7 +164,8 @@ export class FitCellRenderer extends DG.GridCellRenderer {
       const params = getParams(filteredColumns);
 
       // caching fit results - not sure if needed
-      const fitResultsColumn = gridCell.cell.dataFrame.columns.getOrCreate(`~fit:${gridCell.gridColumn.name}`, DG.TYPE.OBJECT, dfColumn.length);
+      const fitResultsColumn = gridCell.cell.dataFrame.columns.
+        getOrCreate(`~fit:${gridCell.gridColumn.name}`, DG.TYPE.OBJECT, dfColumn.length);
       if (fitResultsColumn.isNone(gridCell.cell.row.idx))
         fitResultsColumn.set(gridCell.cell.row.idx, fit(filteredCoordinates, params, sigmoid, FitErrorModel.Constant));
       const fitResult: FitResult = fitResultsColumn.get(gridCell.cell.row.idx);

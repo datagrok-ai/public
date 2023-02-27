@@ -24,7 +24,7 @@ export class FitViewer extends DG.JsViewer {
     this.dataFrame.onSelectionChanged.subscribe((_) => {
       const ctx = this.canvas?.getContext('2d')!;
       ctx.clearRect(0, 0, this.canvas?.width!, this.canvas?.height!);
-      
+
       // const df = this.dataFrame
       //   .groupBy(['dataframes'])
       //   .whereRowMask(this.dataFrame.selection)
@@ -43,8 +43,6 @@ export class FitViewer extends DG.JsViewer {
         const currentDf = valueList[i];
         // if (!coordinateDf) return;
         // console.log(coordinateDf.toCsv());
-
-
 
 
         const coordinateColumns = currentDf.columns.byNames(['x', 'y']);

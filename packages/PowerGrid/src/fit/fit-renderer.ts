@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {GridColumn} from "datagrok-api/dg";
-import {fitSeries, getChartData, getChartBounds, getFittedCurve} from "./fit-data";
+import {GridColumn} from 'datagrok-api/dg';
+import {fitSeries, getChartData, getChartBounds, getFittedCurve} from './fit-data';
 
 interface ITransform {
   xToScreen(world: number): number;
@@ -17,7 +17,7 @@ class Transform {
       yToScreen(worldY: number): number {
         return screen.bottom - screen.height * (worldY - world.top) / world.height;
       }
-    }
+    };
   }
 }
 
@@ -27,7 +27,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   get cellType() { return 'fit'; }
 
   getDefaultSize(gridColumn: GridColumn): {width?: number | null, height?: number | null} {
-    return { width: 160, height: 100};
+    return {width: 160, height: 100};
   }
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
@@ -35,9 +35,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   }
 
   render(g: CanvasRenderingContext2D,
-         x: number, y: number, w: number, h: number,
-         gridCell: DG.GridCell, cellStyle: DG.GridCellStyle)
-  {
+    x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
     g.save();
     g.beginPath();
     g.rect(x, y, w, h);
@@ -47,13 +46,13 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const screenBounds = new DG.Rect(x, y, w, h).inflate(-6, -6);
 
     const data = getChartData(gridCell);
-    let dataBounds = getChartBounds(data);
-    let transform = Transform.linear(dataBounds, screenBounds);
+    const dataBounds = getChartBounds(data);
+    const transform = Transform.linear(dataBounds, screenBounds);
 
-    for (let series of data.series!) {
+    for (const series of data.series!) {
       if (series.showPoints ?? true) {
         for (let i = 0; i < series.points.length!; i++) {
-          let p = series.points[i];
+          const p = series.points[i];
           DG.Paint.marker(g,
             p.outlier ? DG.MARKER_TYPE.OUTLIER : DG.MARKER_TYPE.CIRCLE,
             transform.xToScreen(p.x), transform.yToScreen(p.y),
@@ -64,12 +63,12 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
       if (series.showFitLine ?? true ) {
         g.strokeStyle = series.fitLineColor ?? 'black';
-        let curve = getFittedCurve(series);
+        const curve = getFittedCurve(series);
 
         g.beginPath();
         for (let i = 0; i < series.points.length!; i++) {
-          let x = transform.xToScreen(series.points[i].x);
-          let y = transform.yToScreen(curve(series.points[i].x));
+          const x = transform.xToScreen(series.points[i].x);
+          const y = transform.yToScreen(curve(series.points[i].x));
           if (i == 0)
             g.moveTo(x, y);
           else

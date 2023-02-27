@@ -1,12 +1,15 @@
+/* eslint-disable valid-jsdoc */
+/* eslint-disable no-multi-spaces */
+
 import * as DG from 'datagrok-api/dg';
-import {Property} from "datagrok-api/src/entities";
-import {TYPE} from "datagrok-api/src/const";
+import {Property} from 'datagrok-api/src/entities';
+import {TYPE} from 'datagrok-api/src/const';
 import {
   fit,
   FitErrorModel,
   FitResult,
   sigmoid
-} from "@datagrok-libraries/statistics/src/parameter-estimation/fit-curve";
+} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 
 /**
  *  Datagrok curve fitting
@@ -100,8 +103,10 @@ export const fitChartDataProperties: Property[] = [
   Property.js('minY', TYPE.FLOAT, {description: 'Minimum value of the Y axis', nullable: true}),
   Property.js('maxX', TYPE.FLOAT, {description: 'Maximum value of the X axis', nullable: true}),
   Property.js('maxY', TYPE.FLOAT, {description: 'Maximum value of the Y axis', nullable: true}),
-  Property.js('xAxisName', TYPE.STRING, {description: 'Label to show on the X axis. If not specified, corresponding data column name is used', nullable: true}),
-  Property.js('yAxisName', TYPE.STRING, {description: 'Label to show on the Y axis. If not specified, corresponding data column name is used', nullable: true}),
+  Property.js('xAxisName', TYPE.STRING, {description:
+    'Label to show on the X axis. If not specified, corresponding data column name is used', nullable: true}),
+  Property.js('yAxisName', TYPE.STRING, {description:
+    'Label to show on the Y axis. If not specified, corresponding data column name is used', nullable: true}),
   Property.js('logX', TYPE.BOOL, {defaultValue: false}),
   Property.js('logY', TYPE.BOOL, {defaultValue: false}),
 ];
@@ -110,13 +115,20 @@ export const fitChartDataProperties: Property[] = [
 /** Properties that describe {@link IFitSeriesOptions}. Useful for editing, initialization, transformations, etc. */
 export const fitSeriesProperties: Property[] = [
   Property.js('name', TYPE.STRING),
-  Property.js('fitFunction', TYPE.STRING, {category: 'Fitting', choices: ['sigmoid', 'linear'], defaultValue: 'sigmoid'}),
-  Property.js('pointColor', TYPE.STRING, {category: 'Rendering', defaultValue: DG.Color.toHtml(DG.Color.scatterPlotMarker), nullable: true}),
-  Property.js('fitLineColor', TYPE.STRING, {category: 'Rendering', defaultValue: DG.Color.toHtml(DG.Color.scatterPlotMarker), nullable: true}),
-  Property.js('clickToToggle', TYPE.BOOL, {category: 'Fitting', description: 'If true, clicking on the point toggles its outlier status and causes curve refitting', nullable: true}),
-  Property.js('autoFit', TYPE.BOOL, {category: 'Fitting', description: 'Perform fitting on-the-fly', defaultValue: true}),
-  Property.js('showFitLine', TYPE.BOOL, {category: 'Fitting', description: 'Whether the fit line should be rendered', defaultValue: true}),
-  Property.js('showPoints', TYPE.BOOL, {category: 'Fitting', description: 'Whether points should be rendered', defaultValue: true}),
+  Property.js('fitFunction', TYPE.STRING,
+    {category: 'Fitting', choices: ['sigmoid', 'linear'], defaultValue: 'sigmoid'}),
+  Property.js('pointColor', TYPE.STRING,
+    {category: 'Rendering', defaultValue: DG.Color.toHtml(DG.Color.scatterPlotMarker), nullable: true}),
+  Property.js('fitLineColor', TYPE.STRING,
+    {category: 'Rendering', defaultValue: DG.Color.toHtml(DG.Color.scatterPlotMarker), nullable: true}),
+  Property.js('clickToToggle', TYPE.BOOL, {category: 'Fitting', description:
+    'If true, clicking on the point toggles its outlier status and causes curve refitting', nullable: true}),
+  Property.js('autoFit', TYPE.BOOL,
+    {category: 'Fitting', description: 'Perform fitting on-the-fly', defaultValue: true}),
+  Property.js('showFitLine', TYPE.BOOL,
+    {category: 'Fitting', description: 'Whether the fit line should be rendered', defaultValue: true}),
+  Property.js('showPoints', TYPE.BOOL,
+    {category: 'Fitting', description: 'Whether points should be rendered', defaultValue: true}),
 ];
 
 
@@ -132,9 +144,10 @@ export const fitResultProperties: Property[] = [
 /** Creates new object with the default values specified in {@link properties} */
 function createFromProperties(properties: Property[]): any {
   const o: any = {};
-  for (let p of properties)
+  for (const p of properties) {
     if (p.defaultValue != null)
       o[p.name] = p.defaultValue;
+  }
   return o;
 }
 
@@ -146,9 +159,10 @@ function mergeProperties(properties: Property[], source: any, target: any) {
   if (!source || !target)
     return;
 
-  for (let p of properties)
+  for (const p of properties) {
     if (p.name !in target && p.name in source)
       p.set(target, p.get(source));
+  }
 }
 
 
@@ -167,12 +181,12 @@ export function getColumnChartOptions(gridColumn: DG.GridColumn): IFitChartData 
 
 
 export function getChartBounds(chartData: IFitChartData): DG.Rect {
-  let o = chartData.chartOptions;
+  const o = chartData.chartOptions;
   if (o?.minX && o.minY && o.maxX && o.maxY)
     return new DG.Rect(o.minX, o.minY, o.maxX - o.minX, o.maxY - o.minY);
-  if (!chartData.series?.length || chartData.series.length == 0)
+  if (!chartData.series?.length || chartData.series.length == 0) {
     return new DG.Rect(0, 0, 1, 1);
-  else {
+  } else {
     let bounds = getDataBounds(chartData.series[0].points);
     for (let i = 1; i < chartData.series!.length; i++)
       bounds = union(bounds, getDataBounds(chartData.series[i].points));
@@ -201,9 +215,9 @@ export function getDataBounds(points: IFitPoint[]): DG.Rect {
 
 //TODO: move to DG.Rect
 function fromPoints(x1: number, y1: number, x2: number, y2: number): DG.Rect {
-  let minX = Math.min(x1, x2);
-  let minY = Math.min(y1, y2);
-  return new DG.Rect(minX, minY, Math.max(x1, x2) - minX, Math.max(y1, y2) - minY)
+  const minX = Math.min(x1, x2);
+  const minY = Math.min(y1, y2);
+  return new DG.Rect(minX, minY, Math.max(x1, x2) - minX, Math.max(y1, y2) - minY);
 }
 
 
@@ -219,11 +233,10 @@ function union(r1: DG.Rect, r2: DG.Rect): DG.Rect {
 
 /** Fits the series data according to the series fitting settings */
 export function fitSeries(series: IFitSeries): FitResult {
-
   //TODO: optimize the calculation of the initial parameters
   const dataBounds = getDataBounds(series.points);
-  let ys = series.points.map(p => p.y);
-  let medY = ys[Math.floor(series.points.length / 2)];
+  const ys = series.points.map((p) => p.y);
+  const medY = ys[Math.floor(series.points.length / 2)];
   let xAtMedY = -1;
   for (let i = 0; i < series.points.length; i++) {
     if (series.points[i].y === medY) {
@@ -231,18 +244,18 @@ export function fitSeries(series: IFitSeries): FitResult {
       break;
     }
   }
-  let initialParams = [dataBounds.bottom, 1.2, xAtMedY, dataBounds.top];
+  const initialParams = [dataBounds.bottom, 1.2, xAtMedY, dataBounds.top];
 
   return fit(
-    {x: series.points.map(p => p.x), y: series.points.map(p => p.x)},
-    initialParams, sigmoid, FitErrorModel.Constant)
+    {x: series.points.map((p) => p.x), y: series.points.map((p) => p.x)},
+    initialParams, sigmoid, FitErrorModel.Constant);
 }
 
 /** Returns a curve function, either using the pre-computed parameters
  * or by fitting on-the-fly */
 export function getFittedCurve(series: IFitSeries): (x: number) => number {
   if (series.parameters)
-    return x => sigmoid(series.parameters!, x);
+    return (x) => sigmoid(series.parameters!, x);
   else
     return fitSeries(series).fittedCurve;
 }
@@ -250,15 +263,15 @@ export function getFittedCurve(series: IFitSeries): (x: number) => number {
 /** Constructs {@link IFitChartData} from the grid cell, taking into account
  * chart and fit settings potentially defined on the dataframe and column level. */
 export function getChartData(gridCell: DG.GridCell): IFitChartData {
-  let cellChartData: IFitChartData = gridCell.cell?.column?.type == DG.TYPE.STRING
-    ? (JSON.parse(gridCell.cell.value ?? '{}') ?? {}) : createDefaultChartData();
+  const cellChartData: IFitChartData = gridCell.cell?.column?.type == DG.TYPE.STRING ?
+    (JSON.parse(gridCell.cell.value ?? '{}') ?? {}) : createDefaultChartData();
   cellChartData.series ??= [];
 
-  let columnChartOptions = getColumnChartOptions(gridCell.gridColumn);
+  const columnChartOptions = getColumnChartOptions(gridCell.gridColumn);
 
   // merge cell options with column options
   mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions, cellChartData.chartOptions);
-  for (let series of cellChartData.series)
+  for (const series of cellChartData.series)
     mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, series);
 
   return cellChartData;
@@ -267,34 +280,34 @@ export function getChartData(gridCell: DG.GridCell): IFitChartData {
 
 const sample: IFitChartData = {
   // chartOptions could be retrieved either from the column, or from the cell
-  "chartOptions": {
-    "minX": 0, "minY": 0, "maxX": 5, "maxY": 10,
-    "xAxisName": "concentration",
-    "yAxisName": "activity",
-    "logX": false,
-    "logY": false,
+  'chartOptions': {
+    'minX': 0, 'minY': 0, 'maxX': 5, 'maxY': 10,
+    'xAxisName': 'concentration',
+    'yAxisName': 'activity',
+    'logX': false,
+    'logY': false,
   },
   // These options are used as default options for the series. They could be overridden in series.
-  "seriesOptions": {
-    "fitFunction": "sigmoid",
+  'seriesOptions': {
+    'fitFunction': 'sigmoid',
     // parameters not specified -> auto-fitting by default
-    "pointColor": "blue",
-    "fitLineColor": "red",
-    "clickToToggle": true,
-    showFitLine: true,
-    showPoints: true
+    'pointColor': 'blue',
+    'fitLineColor': 'red',
+    'clickToToggle': true,
+    'showFitLine': true,
+    'showPoints': true
   },
-  "series": [
+  'series': [
     {
-      "fitFunction": "sigmoid",
+      'fitFunction': 'sigmoid',
       // parameters specified -> use them, no autofitting
-      "parameters": [1.86011e-07,-0.900,103.748,-0.001],
-      "points": [
-        {"x": 0, "y": 0},
-        {"x": 1, "y": 0.5},
-        {"x": 2, "y": 1},
-        {"x": 3, "y": 10, outlier: true},
-        {"x": 4, "y": 0}
+      'parameters': [1.86011e-07, -0.900, 103.748, -0.001],
+      'points': [
+        {'x': 0, 'y': 0},
+        {'x': 1, 'y': 0.5},
+        {'x': 2, 'y': 1},
+        {'x': 3, 'y': 10, 'outlier': true},
+        {'x': 4, 'y': 0}
       ]
     }
   ]
