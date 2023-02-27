@@ -33,7 +33,7 @@
 	"scripts": {
 		"lint": "eslint src --ext .ts",
 		"lint-fix": "eslint src --ext .ts --fix",
-		"link-all": "npm link datagrok-api  @datagrok-libraries/utils @datagrok-libraries/utils @datagrok-libraries/gridext",
+		"link-all": "npm link datagrok-api  @datagrok-libraries/utils @datagrok-libraries/statistics @datagrok-libraries/gridext",
 		"link-api": "npm link datagrok-api ",
 		"debug-powergrid": "grok publish",
 		"release-powergrid": "grok publish --release",
