@@ -1419,9 +1419,16 @@ export namespace labels {
 /** Visual hints attached to an element. They can be used to introduce a new app to users. */
 export namespace hints {
 
+  export enum POSITION {
+    TOP = 'top',
+    BOTTOM = 'bottom',
+    LEFT = 'left',
+    RIGHT = 'right',
+  }
+
   /** Adds a popup window with the specified [content] next to an [element].
-   * Set [position] to control where the popup will appear. The default position is 'right'. */
-  export function addHint(el: HTMLElement, content: HTMLElement, position: string = 'right') {
+   * Set [position] to control where the popup will appear. The default position is [POSITION.RIGHT]. */
+  export function addHint(el: HTMLElement, content: HTMLElement, position: `${POSITION}` = POSITION.RIGHT) {
     const root = document.createElement('div');
     root.className = 'ui-hint-popup';
 
@@ -1439,38 +1446,32 @@ export namespace hints {
     root.append(content);
     $('body').append(root);
 
-    if (position == 'right') {
+    if (position == POSITION.RIGHT) {
       const right = node.right + 8;
       root.style.left = right + 'px';
       root.style.top = node.top + (el.offsetHeight / 2) - 17 + 'px';
-      root.classList.add('ui-hint-popup-right');
-    }
-
-    if (position == 'left') {
+      root.classList.add(`ui-hint-popup-${position}`);
+    } else if (position == POSITION.LEFT) {
       let left = node.left - root.offsetWidth - 8;
       if (left < 0)
         left = 0;
       root.style.left = left + 'px';
       root.style.top = node.top + (el.offsetHeight / 2) - 17 + 'px';
-      root.classList.add('ui-hint-popup-left');
-    }
-
-    if (position == 'top') {
+      root.classList.add(`ui-hint-popup-${position}`);
+    } else if (position == POSITION.TOP) {
       let top = node.top - root.offsetHeight - 8;
       if (top < 0)
         top = 0;
       root.style.left = node.left + (el.offsetWidth / 2) - 17 + 'px';
       root.style.top = top + 'px';
-      root.classList.add('ui-hint-popup-top');
-    }
-
-    if (position == 'bottom') {
+      root.classList.add(`ui-hint-popup-${position}`);
+    } else if (position == POSITION.BOTTOM) {
       let bottom = node.bottom + 8;
-      if (bottom+root.offsetHeight > window.innerHeight)
+      if (bottom + root.offsetHeight > window.innerHeight)
         bottom = window.innerHeight - root.offsetHeight;
       root.style.left = node.left + (el.offsetWidth / 2) - 17 + 'px';
       root.style.top = bottom + 'px';
-      root.classList.add('ui-hint-popup-bottom');
+      root.classList.add(`ui-hint-popup-${position}`);
     }
 
     return root;
