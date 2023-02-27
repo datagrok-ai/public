@@ -1,0 +1,416 @@
+version: "3.8"
+
+x-logging:
+  &default-logging
+  driver: "json-file"
+  options:
+    max-size: "200m"
+    max-file: "3"
+
+x-datagrok-placement:
+  &datagrok-placement
+  max_replicas_per_node: 2
+  constraints:
+    - "node.labels.role==datagrok"
+x-cvm-placement:
+  &cvm-placement
+  max_replicas_per_node: 2
+  constraints:
+    - "node.labels.role==cvm"
+x-db-placement:
+  &db-placement
+  max_replicas_per_node: 2
+  constraints:
+    - "node.labels.role==db"
+
+x-update-config:
+  &update-config
+  parallelism: 1
+  failure_action: rollback
+  monitor: 10s
+  max_failure_ratio: 0
+#  order: start-first
+  order: stop-first
+
+x-restart-policy:
+  &restart-policy
+  condition: any
+  window: 10s
+
+x-rollback-config:
+  &rollback-config
+  parallelism: 1
+  failure_action: pause
+  monitor: 10s
+  max_failure_ratio: 0
+#  order: start-first
+  order: stop-first
+
+x-healthcheck:
+  &healthcheck
+  test: ["CMD", "curl", "-f", "http://localhost/health"]
+  interval: 10s
+  timeout: 10s
+  retries: 3
+  start_period: 5s
+
+services:
+
+  datagrok:
+    image: datagrok/datagrok:latest
+    stop_grace_period: 2m
+    deploy:
+      replicas: 1
+      mode: replicated
+      endpoint_mode: dnsrr
+      placement: *datagrok-placement
+      update_config:
+        <<: *update-config
+        monitor: 2m
+      restart_policy:
+        <<: *restart-policy
+        window: 30s
+      rollback_config:
+        <<: *rollback-config
+        monitor: 30s
+      resources:
+        reservations:
+          cpus: '1'
+          memory: 200M
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/admin/health"]
+      interval: 30s
+      start_period: 30s
+    environment:
+      GROK_MODE: "auto"
+      GROK_PARAMETERS: |
+        {
+          "name": "prod",
+          "deployDemo": false,
+          "deployTestDemo": false,
+          "testTracking": false,
+          "createBetaUsers": true,
+          "debug": false,
+          "dbServer": "database",
+          "db": "datagrok",
+          "dbAdminLogin": "db_admin",
+          "dbAdminPassword": "db_password",
+          "dbLogin": "datagrok",
+          "dbPassword": "datagrok123",
+          "testTrackLogin": "test_login",
+          "testTrackPassword": "test_password",
+          "testTrackDbServer": "host.docker.internal",
+          "adminPassword": "admin",
+          "adminDevKey": "1111111111",
+          "isolatesCount": 4,
+          "testDevKey": "2222222222"
+        }
+    ports:
+      - target: 8080
+        published: 8080
+        protocol: tcp
+        mode: host
+    networks:
+      datagrok:
+        aliases:
+          - datagrok
+    volumes:
+      - datagrok_data:/home/grok/data
+      - datagrok_cfg:/home/grok/cfg
+    logging:
+      <<: *default-logging
+      options:
+        max-size: "1G"
+        max-file: "3"
+
+  grok_spawner:
+    image: datagrok/grok_spawner:latest
+    user: root
+    stop_grace_period: 2m
+    deploy:
+      replicas: 1
+      mode: replicated
+      endpoint_mode: dnsrr
+      placement:
+        <<: *datagrok-placement
+        constraints:
+          - "node.role==manager"
+          - "node.labels.role==datagrok"
+      update_config:
+        <<: *update-config
+        order: start-first
+      restart_policy:
+        <<: *restart-policy
+      rollback_config:
+        <<: *rollback-config
+        order: start-first
+      resources:
+        reservations:
+          cpus: '0.25'
+          memory: 200M
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "-SqO", "-", "http://localhost:8000/info"]
+    environment:
+      X_API_KEY: "x-api-key"
+      DOCKER_REGISTRY: "docker-registry"
+      DOCKER_REGISTRY_USER: "docker-registry-user"
+      DOCKER_REGISTRY_PASS: "docker-registry-password"
+      GROK_SPAWNER_ENVIRONMENT: ${COMPOSE_PROJECT_NAME:-localhost}
+    networks:
+      datagrok:
+        aliases:
+          - grok_spawner
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    logging: *default-logging
+
+  grok_connect:
+    image: datagrok/grok_connect:latest
+    stop_grace_period: 2m
+    deploy:
+      replicas: 1
+      mode: replicated
+      endpoint_mode: dnsrr
+      placement: *datagrok-placement
+      update_config:
+        <<: *update-config
+        order: start-first
+      restart_policy:
+        <<: *restart-policy
+      rollback_config:
+        <<: *rollback-config
+        order: start-first
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          cpus: '0.25'
+          memory: 300M
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "-SqO", "-", "http://localhost:1234/health"]
+    networks:
+      datagrok:
+        aliases:
+          - grok_connect
+    logging: *default-logging
+
+  db:
+    image: postgres:12.13
+    stop_grace_period: 2m
+    deploy:
+      replicas: 1
+      mode: replicated
+      endpoint_mode: dnsrr
+      placement: *datagrok-placement
+      update_config:
+        <<: *update-config
+      restart_policy:
+        <<: *restart-policy
+      rollback_config:
+        <<: *rollback-config
+      resources:
+        reservations:
+          cpus: '0.25'
+          memory: 100M
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD-SHELL", "su - postgres -c pg_isready"]
+      interval: 30s
+      start_period: 30s
+    environment:
+      POSTGRES_USER: db_admin
+      POSTGRES_PASSWORD: db_password
+    ports:
+      - target: 5432
+        published: 5432
+        protocol: tcp
+        mode: host
+    networks:
+      datagrok:
+        aliases:
+          - database
+    volumes:
+      - datagrok_db:/var/lib/postgresql/data
+    command: postgres -c shared_buffers=1024MB -c max_connections=800
+    logging:
+      <<: *default-logging
+      options:
+        max-size: "1G"
+        max-file: "3"
+  cvm_nginx:
+    image: datagrok/cvm_nginx:latest
+    stop_grace_period: 2m
+    deploy:
+      replicas: 1
+      mode: replicated
+      placement: *cvm-placement
+      update_config:
+        <<: *update-config
+        order: start-first
+      restart_policy:
+        <<: *restart-policy
+      rollback_config:
+        <<: *rollback-config
+        order: start-first
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "curl", "-f", "http://localhost:8090"]
+    ports:
+      - "8090:8090/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - cvm
+          - nginx_cvm
+    logging: *default-logging
+
+  grok_compute:
+    image: datagrok/grok_compute:latest
+    stop_grace_period: 2m
+    deploy:
+      replicas: 1
+      mode: replicated
+      endpoint_mode: dnsrr
+      placement: *cvm-placement
+      update_config:
+        <<: *update-config
+        order: start-first
+      restart_policy:
+        <<: *restart-policy
+      rollback_config:
+        <<: *rollback-config
+        order: start-first
+      resources:
+        reservations:
+          cpus: '0.125'
+          memory: 100M
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "-SqO", "-", "http://localhost:5005/grok_compute/info"]
+    environment:
+      GROK_COMPUTE_NUM_CORES: 2
+    networks:
+      datagrok:
+        aliases:
+          - grok_compute
+    logging: *default-logging
+
+  jupyter_notebook:
+    image: datagrok/jupyter_notebook:latest
+    stop_grace_period: 2m
+    deploy:
+      replicas: 1
+      mode: replicated
+      endpoint_mode: dnsrr
+      placement: *cvm-placement
+      update_config:
+        <<: *update-config
+        order: start-first
+      restart_policy:
+        <<: *restart-policy
+      rollback_config:
+        <<: *rollback-config
+        order: start-first
+      resources:
+        reservations:
+          cpus: '0.125'
+          memory: 100M
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "-SqO", "-", "http://localhost:5005/notebook/helper/info"]
+    networks:
+      datagrok:
+        aliases:
+          - jupyter_notebook
+    logging: *default-logging
+
+  jupyter_kernel_gateway:
+    image: datagrok/jupyter_kernel_gateway:latest
+    stop_grace_period: 2m
+    entrypoint: ./entrypoint.sh --main "jupyter kernelgateway --config=.jupyter/jupyter_kernel_gateway_config.py" --helper "gunicorn grok_helper:app --timeout 900 --chdir /home/grok/grok_helper -b 0.0.0.0:5005  --access-logfile - --error-logfile - --workers 4"
+    deploy:
+      replicas: 1
+      mode: replicated
+      endpoint_mode: dnsrr
+      placement: *cvm-placement
+      update_config:
+        <<: *update-config
+        order: start-first
+      restart_policy:
+        <<: *restart-policy
+      rollback_config:
+        <<: *rollback-config
+        order: start-first
+      resources:
+        reservations:
+          cpus: '0.125'
+          memory: 300M
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "curl", "-f", "http://localhost:5005/jupyter/helper/info"]
+    networks:
+      datagrok:
+        aliases:
+          - jupyter_kernel_gateway
+    volumes:
+      - jkg_helper_cache:/home/grok/grok_helper/cache
+      - jkg_helper_envs:/home/grok/grok_helper/environments
+      - jkg_conda_envs:/home/grok/miniconda/envs
+      - jkg_kernels:/home/grok/.local/share/jupyter/kernels/
+    logging: *default-logging
+
+  h2o:
+    image: datagrok/h2o:latest
+    stop_grace_period: 2m
+    deploy:
+      replicas: 1
+      mode: replicated
+      endpoint_mode: dnsrr
+      placement: *cvm-placement
+      update_config:
+        <<: *update-config
+      restart_policy:
+        <<: *restart-policy
+      rollback_config:
+        <<: *rollback-config
+      resources:
+        reservations:
+          cpus: '0.125'
+          memory: 100M
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "-SqO", "-", "http://localhost:5005/helper/info"]
+    ports:
+      - target: 54321
+        published: 54321
+        protocol: tcp
+        mode: host
+      - target: 5005
+        published: 5005
+        protocol: tcp
+        mode: host
+    networks:
+      datagrok:
+        aliases:
+          - h2o
+    logging: *default-logging
+
+volumes:
+  datagrok_db:
+  datagrok_data:
+  datagrok_cfg:
+  jkg_helper_cache:
+  jkg_helper_envs:
+  jkg_conda_envs:
+  jkg_kernels:
+
+networks:
+  datagrok:
+    driver: overlay
+    attachable: true
+    ipam:
+      config:
+        - subnet: 192.168.2.0/24
