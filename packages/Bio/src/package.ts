@@ -36,6 +36,7 @@ import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {createJsonMonomerLibFromSdf, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {LIB_PATH, LIB_STORAGE_NAME, MonomerLibHelper} from './utils/monomer-lib';
+import { getMacromoleculeColumn } from './utils/ui-utils';
 
 // /** Avoid reassinging {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
 // let monomerLib: MonomerLib | null = null;
@@ -561,11 +562,7 @@ export function importFasta(fileContent: string): DG.DataFrame [] {
 //top-menu: Bio | Convert...
 //name: convertDialog
 export function convertDialog() {
-  const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
-  if (col === null) {
-    grok.shell.error('Current table does not contain macromolecules');
-    return;
-  }
+  const col = getMacromoleculeColumn();
   convert(col);
 }
 
@@ -628,10 +625,10 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
   return resDf;
 }
 
-//name: Bio | Split to monomers
-//tags: panel, bio
-//input: column col {semType: Macromolecule}
-export function splitToMonomers(col: DG.Column<string>): void {
+//top-menu: Bio | Split to monomers...
+//name: splitToMonomers
+export function splitToMonomers(): void {
+  const col = getMacromoleculeColumn();
   const tempDf = splitAlignedSequences(col);
   const originalDf = col.dataFrame;
   for (const tempCol of tempDf.columns) {
@@ -688,11 +685,7 @@ export function diversitySearchTopMenu() {
 //top-menu: Bio | Substructure search ...
 //name: bioSubstructureSearch
 export function bioSubstructureSearch(): void {
-  const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
-  if (col === null) {
-    grok.shell.error('Current table does not contain macromolecules');
-    return;
-  }
+  const col = getMacromoleculeColumn();
   substructureSearchDialog(col);
 }
 
