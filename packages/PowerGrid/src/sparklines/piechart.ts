@@ -161,10 +161,11 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         available: names(gc.grid.dataFrame.columns.numerical),
         checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
       }),
-      ui.choiceInput('Style', PieChartStyle.Radius, [PieChartStyle.Angle, PieChartStyle.Radius], function(value: string) {
-        settings.style = value;
-        gc.grid.invalidate();
-      }),
+      ui.choiceInput('Style', PieChartStyle.Radius, [PieChartStyle.Angle, PieChartStyle.Radius],
+        function(value: string) {
+          settings.style = value;
+          gc.grid.invalidate();
+        }),
     ]);
   }
 }
