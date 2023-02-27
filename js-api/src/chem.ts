@@ -296,7 +296,11 @@ export namespace chem {
         const height = width / 2;
         if (!(this.isEmpty()) && this.extSketcherDiv.parentElement) {
           ui.empty(this.extSketcherDiv);
-          ui.tooltip.bind(this.extSketcherCanvas, 'Click to edit');
+          const currentMolfile = this.getMolFile();
+          const deltaX = 11;
+          const deltaY = 10;
+          const tooltip = (deltaX > 10 || deltaY > 10) ? this.drawToCanvas(deltaX*30, deltaY*30, currentMolfile) : ui.divText('Click to edit');
+          ui.tooltip.bind(this.extSketcherCanvas, () => tooltip);
           canvasMol(0, 0, width, height, this.extSketcherCanvas, this.getMolFile()!, null, { normalizeDepiction: true, straightenDepiction: true })
             .then((_) => {
               ui.empty(this.extSketcherDiv);
