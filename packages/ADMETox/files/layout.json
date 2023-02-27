@@ -39,7 +39,7 @@
                     },
                     {
                       "width": 200,
-                      "columnName": "smiles",
+                      "columnName": "smilesColumn",
                       "cellType": "Molecule"
                     },
                     {
@@ -215,9 +215,9 @@
                     }
                   },
                   {
-                    "left":212,
+                    "left":192,
                     "top":242,
-                    "width":150,
+                    "width":100,
                     "height":20,
                     "type":"field",
                     "viewerSettings":{
@@ -342,9 +342,9 @@
                     }
                   },
                   {
-                    "left":212,
+                    "left":192,
                     "top": 382,
-                    "width":150,
+                    "width":100,
                     "height":20,
                     "type":"field",
                     "viewerSettings":{
@@ -377,9 +377,9 @@
                     }
                   },
                   {
-                    "left":212,
+                    "left":192,
                     "top":292,
-                    "width":150,
+                    "width":100,
                     "height":20,
                     "type":"field",
                     "viewerSettings":{
@@ -396,7 +396,7 @@
                     "type": "field",
                     "viewerSettings": {
                       "table": "tableName",
-                      "column": "smiles",
+                      "column": "smilesColumn",
                       "format": null
                     }
                   },
@@ -527,9 +527,9 @@
                     }
                   },
                   {
-                    "left":212,
+                    "left":192,
                     "top": 317,
-                    "width":150,
+                    "width":100,
                     "height":20,
                     "type":"field",
                     "viewerSettings":{
@@ -550,9 +550,9 @@
                     }
                   },
                   {
-                    "left":212,
+                    "left":192,
                     "top":267,
-                    "width":150,
+                    "width":100,
                     "height":20,
                     "type":"field",
                     "viewerSettings":{
@@ -632,7 +632,7 @@
                     }
                   },
                   {
-                    "left":212,
+                    "left":192,
                     "top":217,
                     "width":100,
                     "height":20,

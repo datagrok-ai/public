@@ -5,7 +5,7 @@ import { properties, models } from './const';
 
 const _STORAGE_NAME = 'admet_models';
 const _KEY = 'selected';
-let _FORM = 'false';
+let _COLOR = 'true';
 
 export async function accessServer(csvString: string, queryParams: string) {
   const dockerId = (await grok.dapi.dockerfiles.filter('admetox').first()).id;
@@ -23,14 +23,7 @@ export async function accessServer(csvString: string, queryParams: string) {
   return response;
 }
 
-export async function addForm(smilesCol: DG.Column, viewTable: DG.DataFrame) {
-  let queryParams = 'Pgp-Inhibitor,Pgp-Substrate,HIA,F(20%),F(30%),Ames,SkinSen,BBB,CYP1A2-Inhibitor,CYP1A2-Substrate,CYP3A4-Inhibitor,CYP3A4-Substrate,CYP2C19-Inhibitor,CYP2C19-Substrate,CYP2C9-Inhibitor,CYP2C9-Substrate,CYP2D6-Inhibitor,CYP2D6-Substrate';
-  let csvString = await accessServer(DG.DataFrame.fromColumns([smilesCol]).toCsv(), queryParams);
-  const table = processCsv(csvString);
-  addResultColumns(table, viewTable);
-}
-
-function addTooltip() {
+export function addTooltip() {
   const tableView = grok.shell.tv;
   const between = (x: number, min: number, max: number) => {
     return x >= min && x <= max;
@@ -65,6 +58,21 @@ function addTooltip() {
   });
 }
 
+export function addColorCoding(columnNames: string[], viewTable: DG.DataFrame) {
+  for (const columnName of columnNames) {
+    viewTable.col(columnName)!.tags['.color-coding-type'] = 'Conditional';
+    viewTable.col(columnName)!.tags['.color-coding-conditional'] = `{"0-0.5":"#f1b6b4","0.5-1":"#b4f1bc"}`;
+  }   
+}
+
+export async function addForm(smilesCol: DG.Column, viewTable: DG.DataFrame) {
+  let queryParams = 'Pgp-Inhibitor,Pgp-Substrate,HIA,F(20%),F(30%),Ames,SkinSen,BBB,CYP1A2-Inhibitor,CYP1A2-Substrate,CYP3A4-Inhibitor,CYP3A4-Substrate,CYP2C19-Inhibitor,CYP2C19-Substrate,CYP2C9-Inhibitor,CYP2C9-Substrate,CYP2D6-Inhibitor,CYP2D6-Substrate';
+  let csvString = await accessServer(DG.DataFrame.fromColumns([smilesCol]).toCsv(), queryParams);
+  const table = processCsv(csvString);
+  addResultColumns(table, viewTable);
+  addColorCoding(table.columns.names(), viewTable);
+}
+
 export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFrame): Promise<void> {
   openModelsDialog(await getSelected(), async (selected: any) => {
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
@@ -83,6 +91,11 @@ export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFra
     const table = processCsv(csvString);
     addResultColumns(table, viewTable);
     addTooltip();
+    console.log(_COLOR);
+    if (_COLOR === 'true') {
+      let columnNames = table.columns.names();
+      addColorCoding(columnNames, viewTable);
+    }
     pi.close();
   });
 }
@@ -118,8 +131,11 @@ function processCsv(csvString: string | null): DG.DataFrame {
 }
 
 export function getModelsSingle(smiles: string): DG.Accordion {
-  const acc = ui.accordion();
-  const accIcon = ui.element('i');
+  const acc = ui.accordion('ADME/Tox');
+  acc.root.appendChild(ui.divV([
+    ui.link('Detailed info', () => window.open('README.md link', '_blank'))]));
+  let accHeader = document.getElementsByClassName('d4-accordion-pane-header')[17] as HTMLElement;
+  accHeader.append(ui.icons.help(() => {window.open('README.md link', '_blank')}));
   for (const property of Object.keys(properties)) {
     const result = ui.div();
     acc.addPane(property, () => {
@@ -127,13 +143,6 @@ export function getModelsSingle(smiles: string): DG.Accordion {
       return result;
     }, false);
   }
-  /*const selectButton = ui.bigButton('SELECT', async () => {
-    openModelsDialog(await getSelected(), async (selected: any) => {
-      await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
-      update();    
-    });
-  });
-  selectButton.style.marginTop = '20px';*/
   const update = (result: HTMLDivElement, modelName: string) => {
     let queryParams: string[] = [];
     let model = properties[modelName]['models']
@@ -244,28 +253,13 @@ function openModelsDialog(selected: any, onOK: any): void {
     countLabel.textContent = `${keys.length} checked`;
   }
 
-  /*let bIForm = ui.boolInput('Form', false);
-  bIForm.onChanged(async () => {
-    if (bIForm.value!.toString() === 'true') {
-      _FORM = 'true';
-    }
-    //await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, 'Form', bIForm.value!.toString());
+  let bIColor = ui.boolInput('Color Coding', true);
+  tree.root.appendChild(bIColor.root);
+
+  bIColor.onChanged(async () => {
+    _COLOR = bIColor.value!.toString();
   });
   
-  /*let bIRadarGrid = ui.boolInput('RadarGrid', false);
-  bIRadarGrid.onChanged(async () => {
-    await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, 'RadarGrid', bIRadarGrid.value!.toString());
-  });*/
-
-  /*let bIRadarView = ui.boolInput('RadarView', false);
-  bIRadarView.onChanged(async () => {
-    await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, 'RadarView', bIRadarView.value!.toString(), true);
-  })*/
-  //tree.root.appendChild(bIForm.root);
-  //tree.root.appendChild(bIRadarGrid.root);
-  //tree.root.appendChild(bIRadarView.root);
-
-  //tree.root.appendChild(ui.boolInput('Radar', false).root);
 
   let dlg = ui.dialog('ADME/Tox');
   dlg.add(ui.divH([selectAll, selectNone, countLabel]))
