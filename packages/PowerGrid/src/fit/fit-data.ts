@@ -36,9 +36,6 @@ export const TAG_FIT = '.fit';
 
 export type FitMarkerType = 'circle' | 'triangle up' | 'triangle down' | 'cross';
 
-export type FitFunctionType = 'sigmoid' | 'linear' | 'custom';  // free-hand function in JavaScript
-
-
 /** A point in the fit series. Only x and y are required. Can override some fields defined in IFitSeriesOptions. */
 export interface IFitPoint {
   x: number;
@@ -54,12 +51,15 @@ export interface IFitPoint {
 /** Series options can be either applied globally on a column level, or partially overridden in particular series */
 export interface IFitSeriesOptions {
   name?: string;
-  fitFunction?: FitFunctionType;
+  fitFunction?: string;
   parameters?: number[];         // auto-fitting when not defined
   pointColor?: string;
   fitLineColor?: string;
   showFitLine?: boolean;
   showPoints?: boolean;
+  showCurveConfidenceInterval?: boolean;   // show ribbon
+  showBoxPlot?: boolean;      // if true, multiple values with the same X are rendered as a candlestick
+  showConfidenceForX?: number;
 
   clickToToggle?: boolean;    // If true, clicking on the point toggles its outlier status and causes curve refitting
 }

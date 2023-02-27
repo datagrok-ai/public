@@ -23,6 +23,58 @@ export enum FitErrorModel {
   Proportional
 }
 
+export const FIT_FUNCTION_SIGMOID = 'Sigmoid';
+export const FIT_FUNCTION_LINEAR = 'Linear';
+
+export type FitFunctionType = 'Sigmoid' | 'Linear';
+
+abstract class FitFunction {
+  abstract get name(): string;
+  abstract get parameterNames(): string[];
+  abstract y(params: number[], x: number): number;
+  abstract getInitialParameters(x: number[], y: number[]): number[];
+}
+
+
+class LinearFunction extends FitFunction {
+  get name(): string { return FIT_FUNCTION_LINEAR; }
+
+  get parameterNames(): string[] {
+    return ['Slope', 'Intercept'];
+  }
+
+  y(params: number[], x: number): number {
+    throw 'Not implemented';
+  }
+
+  getInitialParameters(x: number[], y: number[]): number[] {
+    throw 'Not implemented';
+  }
+}
+
+
+class SigmoidFunction extends FitFunction {
+  get name(): string { return FIT_FUNCTION_SIGMOID; }
+
+  get parameterNames(): string[] {
+    return ['Top', 'Bottom', 'Slope', 'IC50'];
+  }
+
+  y(params: number[], x: number): number {
+    throw 'Not implemented';
+  }
+
+  getInitialParameters(x: number[], y: number[]): number[] {
+    throw 'Not implemented';
+  }
+}
+
+
+export const fitFunctions: {[index: string]: any} = {
+  FIT_FUNCTION_LINEAR: new LinearFunction(),
+  FIT_FUNCTION_SIGMOID: new SigmoidFunction(),
+};
+
 export function fit(data:{x: number[], y: number[]}, params: number[],
                     curveFunction: (params: number[], x: number) => number, errorModel: FitErrorModel): FitResult {
 
