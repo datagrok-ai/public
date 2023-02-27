@@ -10,8 +10,8 @@ const Configuration = {
    */
   parserPreset: {
     parserOpts: {
-      headerPattern: /^([\w ]*): (?:([\w]*))?(?:\[((?:[\w]+-[0-9]+)|(?:#[0-9]+))\])?!?: (.*)$/,
-      headerCorrespondence: ['scope', 'type', 'ticket', 'subject'],
+      headerPattern: /^([\w ]*): ?(?:closes )?(?:((?:[\w]+-[0-9]+)|(?:#[0-9]+)))?:?(.*)$/,
+      headerCorrespondence: ['scope', 'ticket', 'subject'],
     }
   },
   /*
