@@ -13,6 +13,7 @@ import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import Sketcher = DG.chem.Sketcher;
 import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {IUMAPOptions, ITSNEOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 import {elementsTable} from './constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
@@ -49,7 +50,7 @@ import {getSimilaritiesMarix} from './utils/similarity-utils';
 import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
 import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversity-viewer';
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
-import {chemSpace, getEmbeddingColsNames} from './analysis/chem-space';
+import {chemSpace, ChemSpaceFuncEditor, getEmbeddingColsNames} from './analysis/chem-space';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
 import {ChemSearchBaseViewer} from './analysis/chem-search-base-viewer';
 
@@ -365,6 +366,21 @@ export function diversitySearchTopMenu(): void {
   (grok.shell.v as DG.TableView).addViewer('DiversitySearchViewer');
 }
 
+
+//name: ChemSpaceEditor
+//tags: editor
+//input: funccall call
+export function ChemSpaceEditor(call: DG.FuncCall) {
+  const funcEditor = new ChemSpaceFuncEditor();
+  ui.dialog({title: 'Chemical space'})
+    .add(funcEditor.paramsUI)
+    .onOK(async () => {      
+      call.func.prepare(funcEditor.funcParams).call(true);
+    })
+    .show();
+}
+
+
 //top-menu: Chem | Analyze Structure | Chemical Space...
 //name: Chem Space
 //input: dataframe table
@@ -372,9 +388,10 @@ export function diversitySearchTopMenu(): void {
 //input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: bool plotEmbeddings = true
+//input: object options
+//editor: Chem:ChemSpaceEditor
 export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: string,
-  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean): Promise<DG.Viewer | undefined> {
-
+  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean, options: IUMAPOptions | ITSNEOptions): Promise<DG.Viewer | undefined> {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
@@ -390,6 +407,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     methodName: methodName,
     similarityMetric: similarityMetric,
     embedAxesNames: [embedColsNames[0], embedColsNames[1]],
+    options: options
   };
 
   const chemSpaceRes = await chemSpace(chemSpaceParams);
