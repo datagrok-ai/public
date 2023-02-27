@@ -2,7 +2,7 @@
 title: "Deployment on AWS ECS using Terraform"
 ---
 
-Datagrok consist of Docker containers, [database](infrastructure.md#database)
+Datagrok is based on Docker containers, [database](infrastructure.md#database)
 and [persistent file storage](infrastructure.md#storage).
 
 This document contains instructions to deploy Datagrok using [Terraform](https://www.terraform.io/)
@@ -50,7 +50,7 @@ More information about Datagrok design and components:
 4. Apply Terraform code
 
    ```shell
-   terraform init
+   terraform init --upgrade
    terraform apply -target module.datagrok_core
    terraform apply -target module.datagrok_cvm
    ```

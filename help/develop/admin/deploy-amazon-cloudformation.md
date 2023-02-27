@@ -100,7 +100,7 @@ More information about Datagrok design and components:
    Cloudformation template is large, so you need to upload it, for example, to S3 bucket and launch it from there
    in AWS CLI: 
 
-   ```
+   ```shell
    aws cloudformation create-stack \
     --stack-name STACK_NAME \
     --template-url https://s3.amazonaws.com/BUCKET_NAME/TEMPLATE_NAME.yaml \
