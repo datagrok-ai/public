@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 export const _package = new DG.Package();
 
 import {callWasm} from '../wasm/callWasm';
-import {callWasmWebWorker} from '../wasm/callWasmWW';
+import {getCppInput, getResult} from '../wasm/callWasmUtils';
 
 //name: info
 export function info() {
@@ -43,7 +43,7 @@ export async function init() {
 //input: double _TVal = 300.0 {units: degK; caption: T; category: parameters}
 //input: double _RVal = 0.082 {units: Liter Atm / mole degK; caption: R; category: parameters}
 //input: double _PVal = 1.0 {units: atma; caption: P; category: parameters}
-//output: dataframe dfSolution {caption: Solution; viewer: Line chart(x: "t, time (minutes)", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
+//output: dataframe dfSolution {caption: FAE(explicit); viewer: Line chart(x: "t, time (minutes)", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
 //editor: Compute:RichFunctionViewEditor
 export async function solveFAEexplicit(initial, final, step,
   _CystamineInitial, _FFoxInitial, _FFredInitial, _KKredInitial, _KfreeInitial, _FKredInitial, _KKoxInitial, _FKoxInitial, _MEAthiolInitial, _CO2Initial, _yO2PInitial, _VLInitial, _FfreeInitial, 
@@ -91,9 +91,22 @@ export async function solveFAEexplicitWebWorker(initial, final, step,
   let _tCount = Math.trunc((final - initial) / step) + 1;
   let _varsCount = 14;
 
-  callWasmWebWorker(FAEexplicit, 'solveFAEexplicit',
+  // web worker declaration
+  var worker = new Worker(new URL('../wasm/workerFAE.js', import.meta.url));              
+
+  // post function specification & inputs
+  worker.postMessage(getCppInput(FAEexplicit['solveFAEexplicit'].arguments, 
     [ initial, final, step,
-     _CystamineInitial, _FFoxInitial, _FFredInitial, _KKredInitial, _KfreeInitial, _FKredInitial, _KKoxInitial, _FKoxInitial, _MEAthiolInitial, _CO2Initial, _yO2PInitial, _VLInitial, _FfreeInitial,
-     _qinVal, _percentO2saturationVal, _yO2inVal, _pKa2MEAVal, _HVal, _TVal, _RVal, _PVal,
-     _tCount, _varsCount ] );
+      _CystamineInitial, _FFoxInitial, _FFredInitial, _KKredInitial, _KfreeInitial, _FKredInitial, _KKoxInitial, _FKoxInitial, _MEAthiolInitial, _CO2Initial, _yO2PInitial, _VLInitial, _FfreeInitial,
+      _qinVal, _percentO2saturationVal, _yO2inVal, _pKa2MEAVal, _HVal, _TVal, _RVal, _PVal,
+      _tCount, _varsCount ]));       
+  
+  worker.onmessage = function(e) {       
+    // get results of wasm-computations 
+    let output = getResult(FAEexplicit['solveFAEexplicit'], e.data);
+  
+    output.name = 'FAE(explicit, webworker)';
+    let view = grok.shell.addTableView(output);
+    view.lineChart({ markerType: 'dot', sharex: 'true', multiAxis: 'true'});
+  }    
 }

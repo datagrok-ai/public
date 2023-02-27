@@ -19,5 +19,3 @@ else if (typeof define === 'function' && define['amd'])
   define([], function() { return exportFAEexplicit; });
 else if (typeof exports === 'object')
   exports["exportFAEexplicit"] = exportFAEexplicit;
-
-  new URL('../wasm/FAEexplicit.wasm', import.meta.url)
