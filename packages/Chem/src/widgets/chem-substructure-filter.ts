@@ -87,8 +87,8 @@ export class SubstructureFilter extends DG.Filter {
   attach(dataFrame: DG.DataFrame): void {
     super.attach(dataFrame);
 
-    this.column = dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-    this.columnName = this.column?.name;
+    this.column ??= dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+    this.columnName ??= this.column?.name;
     this.onSketcherChangedSubs?.unsubscribe();
 
     // hide the scaffold when user deactivates the filter
@@ -105,8 +105,6 @@ export class SubstructureFilter extends DG.Filter {
       this.syncEvent === true ? this.syncEvent = false : await this._onSketchChanged();
     });
 
-    if (this.column?.temp['chem-scaffold-filter'])
-      this.sketcher.setMolFile(this.column?.temp['chem-scaffold-filter']);
   }
 
   refresh() {
@@ -138,16 +136,18 @@ export class SubstructureFilter extends DG.Filter {
 
   /** Override to load filter state. */
   applyState(state: any): void {
-    super.applyState(state);
-    this.active = state.active ?? true;
-    if (state.molBlock) {
-      this.sketcher.setMolFile(state.molBlock);
-      this.updateExternalSketcher();
-    }
-
-    const that = this;
-    if (state.molBlock)
-      setTimeout(function() {that._onSketchChanged();}, 1000);
+      super.applyState(state);
+      this.active = state.active ?? true;
+      if (this.column?.temp['chem-scaffold-filter'])
+        state.molBlock = this.column?.temp['chem-scaffold-filter'];
+      if (state.molBlock) {
+        this.sketcher.setMolFile(state.molBlock);
+        this.updateExternalSketcher();
+      }
+  
+      const that = this;
+      if (state.molBlock)
+        setTimeout(function() {that._onSketchChanged();}, 1000);
   }
 
   /**
