@@ -1,8 +1,12 @@
 {
 	"name": "fae",
 	"friendlyName": "FAE",
-	"version": "0.0.1",
-	"description": "",
+	"version": "1.0.0",
+	"author": {
+		"name": "Viktor Makarichev",
+		"email": "vmakarichev@datagrok.ai"
+	  },
+	"description": "FAE is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
 	"dependencies": {
 		"datagrok-api": "latest",
 		"cash-dom": "latest",
@@ -29,6 +33,9 @@
 	],
 	"canView": [
 		"All users"
+	],
+	"sources": [
+		"wasm/FAE.js"
 	],
 	"repository": {
 		"type": "git",
