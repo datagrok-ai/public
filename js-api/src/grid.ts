@@ -13,8 +13,13 @@ import {IFormLookSettings, IGridLookSettings} from "./interfaces/d4";
 let api = <any>window;
 let _bytes = new Float64Array(4);
 
+export interface IPoint {
+  x: number;
+  y: number;
+}
+
 /** Represents a point. */
-export class Point {
+export class Point implements IPoint {
   x: number;
   y: number;
 
@@ -44,6 +49,12 @@ export class Rect {
     this.height = height;
   }
 
+  static fromPoints(x1: number, y1: number, x2: number, y2: number): Rect {
+    let minX = Math.min(x1, x2);
+    let minY = Math.min(y1, y2);
+    return new Rect(minX, minY, Math.max(x1, x2) - minX, Math.max(y1, y2) - minY)
+  }
+
   static fromDart(dart: any): Rect {
     api.grok_Rect_Pack(dart, _bytes);
     return new Rect(_bytes[0], _bytes[1], _bytes[2], _bytes[3]);
@@ -63,6 +74,18 @@ export class Rect {
   get midY(): number {
     return this.y + this.height / 2;
   }
+
+  /** Same as x */
+  get minX(): number { return this.x; }
+
+  /** Same as (x + width), or (right) */
+  get maxX(): number { return this.x + this.width; }
+
+  /** Same as (y) */
+  get minY(): number { return this.y; }
+
+  /** Same as x + width */
+  get maxY(): number { return this.bottom; }
 
   /** Left border position of the rectangle along the x-axis. */
   get left(): number {
@@ -382,6 +405,15 @@ export class Rect {
   /** Checks if this Rect contains the specified point */
   containsPoint(p: Point): boolean {
     return this.contains(p.x, p.y);
+  }
+
+  /** Returns a rectangle that contains both this and r. */
+  union(r: Rect): Rect {
+    return Rect.fromPoints(
+      Math.min(this.minX, r.minX),
+      Math.min(this.minY, r.minY),
+      Math.max(this.maxX, r.maxX),
+      Math.max(this.maxY, r.maxY));
   }
 }
 

@@ -7,7 +7,7 @@ import {
   FitResult
 } from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 import {GridColumn} from "datagrok-api/dg";
-import {getColumnFitOptions} from "./fit-options";
+import {getChartData} from "./fit-data";
 
 
 export function scaleCoordinates(coordinates: {x: number[], y: number[]}, canvasWidth: number, canvasHeight: number):
@@ -54,9 +54,9 @@ export function getParams(columns: DG.Column[]): number[] {
 
 
 export class FitCellRenderer extends DG.GridCellRenderer {
-  get name() { return 'fit'; }
+  get name() { return 'fit-old'; }
 
-  get cellType() { return 'fit'; }
+  get cellType() { return 'fit-old'; }
 
   get defaultHeight(): number { return 100; }
 
@@ -133,7 +133,8 @@ export class FitCellRenderer extends DG.GridCellRenderer {
 
     // curves have to be like dose response curve
 
-    const options = getColumnFitOptions(gridCell.gridColumn);
+    const data = getChartData(gridCell);
+
     const df = gridCell.grid.dataFrame;
     if (w < 20 || h < 10 || df === void 0) return;
 
@@ -159,7 +160,7 @@ export class FitCellRenderer extends DG.GridCellRenderer {
     const filteredCoordinates: {x: number[], y: number[]} = {x: filteredColumns[0].toList(),
       y: filteredColumns[1].toList()};
 
-    if (options.showFitLine) {
+    if (data.seriesOptions?.showFitLine) {
       const params = getParams(filteredColumns);
 
       // caching fit results - not sure if needed
@@ -183,7 +184,7 @@ export class FitCellRenderer extends DG.GridCellRenderer {
 
       const canvasFitCurveCoordinates = scaleCoordinates(fitCurveCoordinates, gridCell.gridColumn.width, h);
 
-      g.strokeStyle = options.color ?? 'black';
+      g.strokeStyle = data.seriesOptions.fitLineColor ?? 'black';
 
       g.beginPath();
       g.moveTo(x + canvasFitCurveCoordinates.x[0], (y + h) - canvasFitCurveCoordinates.y[0]);
@@ -192,7 +193,7 @@ export class FitCellRenderer extends DG.GridCellRenderer {
       g.stroke();
     }
 
-    if (options.showPoints) {
+    if (data.seriesOptions?.showPoints) {
       const filteredIndexes = coordinateDf.filter.getSelectedIndexes();
       for (let i = 0; i < canvasPointCoordinates.x.length; i++) {
         const color = DG.Color.scatterPlotMarker;

@@ -21,6 +21,7 @@ import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils
 import {curveFitDemo} from './fit/fit-demo';
 import {FitViewer} from './fit/fit-viewer';
 import {FitGridCellHandler} from "./fit/fit-grid-cell-handler";
+import {FitChartCellRenderer} from "./fit/fit-renderer";
 
 export const _package = new DG.Package();
 
@@ -79,6 +80,14 @@ export function sparklineCellRenderer() {
 //meta.virtual: true
 //output: grid_cell_renderer result
 export function fitCellRenderer() {
+  return new FitChartCellRenderer();
+}
+
+//tags: cellRenderer
+//meta.cellType: fit-old
+//meta.virtual: true
+//output: grid_cell_renderer result
+export function fitOldCellRenderer() {
   return new FitCellRenderer();
 }
 
