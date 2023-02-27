@@ -107,7 +107,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           const similarity = this.scores.get(i).toPrecision(2);
           const label = idx === this.targetMoleculeIdx && !this.isEditedFromSketcher ?
             this.sketchButton : ui.div();
-          const molProps = this.createMoleculePropertiesDiv(this.targetMoleculeIdx, similarity);
+          const molProps = this.createMoleculePropertiesDiv(idx, similarity);
           const grid = ui.div([
             renderMolecule(
               this.molCol?.get(i), {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),

@@ -2,10 +2,15 @@ package grok_connect.providers;
 
 import java.io.*;
 import java.sql.*;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.math.*;
 import java.text.*;
 import java.util.regex.*;
+
+import oracle.sql.TIMESTAMPTZ;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.text.StringEscapeUtils;
@@ -119,7 +124,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         if (dataQuery.inputParamsCount() > 0) {
             query = convertPatternParamsToQueryParams(queryRun, query);
 
-            if (autoInterpolation()) { //what is this? always true
+            if (autoInterpolation()) {
                 // Parametrized func
                 StringBuilder queryBuffer = new StringBuilder();
                 List<String> names = getParameterNames(query, dataQuery, queryBuffer);
@@ -330,7 +335,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             int columnCount = resultSetMetaData.getColumnCount();
             List<Column> columns = new ArrayList<>(columnCount);
             List<Boolean> supportedType = new ArrayList<>(columnCount);
-            List<Boolean> initColumn = new ArrayList<>(columnCount);
+             List<Boolean> initColumn = new ArrayList<>(columnCount);
             for (int c = 1; c < columnCount + 1; c++) {
                 Column column;
 
@@ -351,7 +356,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 // Maybe the better way to use here strategy pattern ? e.g. ColumnManager -> ColumnProvider
                 if (isInteger(type, typeName, precision, scale))
                     column = new IntColumn();
-                else if (isFloat(type, typeName, precision, scale) || isDecimal(type, typeName))
+                else if (isFloat(type, typeName, precision, scale) || isDecimal(type, typeName, scale))
                     column = new FloatColumn();
                 else if (isBoolean(type, typeName, precision))
                     column = new BoolColumn();
@@ -359,7 +364,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                         typeName.equalsIgnoreCase("uuid") ||
                         typeName.equalsIgnoreCase("set"))
                     column = new StringColumn();
-                else if (isBigInt(type, typeName))
+                else if (isBigInt(type, typeName, precision, scale))
                     column = new BigIntColumn();
                 else if (isTime(type, typeName))
                     column = new DateTimeColumn();
@@ -367,7 +372,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                     column = new StringColumn();
                 } else if (isBitString(type, precision, typeName)) {
                     column = new BigIntColumn();
-                } else {
+                } else if(isArray(type, typeName)) {
+                    column = new StringColumn();
+                }else {
                     column = new StringColumn();
                     supportedType.set(c - 1, false);
                     initColumn.set(c - 1, false);
@@ -442,6 +449,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 columns.get(c - 1).add(writer.toString());
                             } else
                                 columns.get(c - 1).add(value);
+                        } else if (isArray(type, typeName)) {
+                            columns.get(c - 1).add(convertArrayType(value));
                         } else if (isXml(type, typeName)) {
                             String valueToAdd = "";
                             if (value != null) {
@@ -455,7 +464,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 valueToAdd = value.toString();
                             }
                             columns.get(c - 1).add(valueToAdd);
-                        } else if (isDecimal(type, typeName)) {
+                        } else if (isDecimal(type, typeName, scale)) {
                             Float valueToAdd = null;
                             if (value.toString().equals("NaN")
                                     && value.getClass().getName().equals("java.lang.Double")) {
@@ -470,7 +479,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 columns.get(c - 1).add(new Float((Double)value));
                             else
                                 columns.get(c - 1).add(value);
-                        else if (isBigInt(type, typeName) ||
+                        else if (isBigInt(type, typeName, precision, scale) ||
                                 typeName.equalsIgnoreCase("uuid") ||
                                 typeName.equalsIgnoreCase("set") ||
                                 colType.equals(Types.STRING))
@@ -481,9 +490,12 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 time = java.util.Date.from(((java.sql.Timestamp)value).toInstant());
                             else if (value instanceof java.time.ZonedDateTime)
                                 time = java.util.Date.from(((java.time.ZonedDateTime)value).toInstant());
-                            else
+                            else if (value instanceof oracle.sql.TIMESTAMPTZ) {
+                                OffsetDateTime offsetDateTime = timestamptzToOffsetDateTime((TIMESTAMPTZ) value);
+                                time = java.util.Date.from(offsetDateTime.toInstant());
+                            } else {
                                 time = ((java.util.Date) value);
-
+                            }
                             columns.get(c - 1).add((time == null) ? null : time.getTime() * 1000.0);
                         }
                     } else {
@@ -566,6 +578,14 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
     }
 
+    protected Object convertArrayType(Object value) {
+        return value.toString();
+    }
+
+    protected OffsetDateTime timestamptzToOffsetDateTime(TIMESTAMPTZ dbData) {
+        throw new UnsupportedOperationException("TIMESTAMPTZ is not supported");
+    }
+
     private static String paramToNamesString(FuncParam param, PatternMatcher matcher, String type,
                                              PatternMatcherResult result) {
         StringBuilder builder = new StringBuilder();
@@ -611,7 +631,6 @@ public abstract class JdbcDataProvider extends DataProvider {
         String type = "string";
         String _query = "(LOWER(" + matcher.colName + ") LIKE @" + param.name + ")";
         String value = ((String)matcher.values.get(0)).toLowerCase();
-        String regexQuery = String.format("%s ~ '%s'", matcher.colName, value);
 
         if (matcher.op.equals(PatternMatcher.EQUALS)) {
             result.query = _query;
@@ -626,7 +645,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             result.query = _query;
             result.params.add(new FuncParam(type, param.name, "%" + value));
         } else if (matcher.op.equals(PatternMatcher.REGEXP)) {
-            result.query = regexQuery;
+            result.query = getRegexQuery(matcher.colName, value);
             result.params.add(new FuncParam(type, param.name, value));
         } else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
             String names = paramToNamesString(param, matcher, type, result);
@@ -636,6 +655,10 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
 
         return result;
+    }
+
+    protected String getRegexQuery(String columnName, String regexExpression) {
+        throw new UnsupportedOperationException("REGEXP is not supported for this provider");
     }
 
     public PatternMatcherResult dateTimePatternConverter(FuncParam param, PatternMatcher matcher) {
@@ -723,8 +746,13 @@ public abstract class JdbcDataProvider extends DataProvider {
                 typeName.equalsIgnoreCase("int") ||
                 typeName.equalsIgnoreCase("serial2") ||
                 typeName.equalsIgnoreCase("serial4") ||
-                ((precision < 8) && (scale == 0) && (isFloat(type, typeName, precision, scale) || isDecimal(type, typeName)));
+                ((precision < 8) && (scale == 0) && (isFloat(type, typeName, precision, scale)
+                        || isDecimal(type, typeName, scale)));
         // TODO Investigate precision value for current case
+    }
+
+    protected boolean isArray(int type, String typeName) {
+        return false;
     }
 
     private static boolean isBitString(int type, int precision, String typeName) {
@@ -736,12 +764,13 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     private static boolean isTime(int type, String typeName) {
-        return (type == java.sql.Types.DATE) || (type == java.sql.Types.TIME) || (type == java.sql.Types.TIMESTAMP) ||
-                typeName.equalsIgnoreCase("timetz") ||
-                typeName.equalsIgnoreCase("timestamptz");
+        return (type == java.sql.Types.DATE) || (type == java.sql.Types.TIME) || (type == java.sql.Types.TIMESTAMP)
+                || typeName.equalsIgnoreCase("timetz")
+                || typeName.equalsIgnoreCase("timestamptz")
+                || (typeName.equalsIgnoreCase("TIMESTAMP WITH TIME ZONE"));
     }
 
-    private static boolean isBigInt(int type, String typeName) {
+    protected boolean isBigInt(int type, String typeName, int precision, int scale) {
         return (type == java.sql.Types.BIGINT) || typeName.equalsIgnoreCase("int8") ||
                 typeName.equalsIgnoreCase("serial8");
     }
@@ -750,10 +779,12 @@ public abstract class JdbcDataProvider extends DataProvider {
         return (type == java.sql.Types.FLOAT) || (type == java.sql.Types.DOUBLE) || (type == java.sql.Types.REAL) ||
                 typeName.equalsIgnoreCase("float8") ||
                 typeName.equalsIgnoreCase("float4") ||
-                typeName.equalsIgnoreCase("money");
+                typeName.equalsIgnoreCase("money") ||
+                typeName.equalsIgnoreCase("binary_float") ||
+                typeName.equalsIgnoreCase("binary_double");
     }
 
-    private static boolean isDecimal(int type, String typeName) {
+    protected boolean isDecimal(int type, String typeName, int scale) {
         return (type == java.sql.Types.DECIMAL) || (type == java.sql.Types.NUMERIC) ||
                 typeName.equalsIgnoreCase("decimal");
     }

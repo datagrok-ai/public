@@ -29,6 +29,11 @@ public class FuncCallBuilder {
         return builder;
     }
 
+    public static FuncCall fromQuery(String query) {
+        return getBuilder().addQuery(query).build();
+    }
+
+    @SuppressWarnings("unchecked")
     public void restore() {
         funcCall = new FuncCall();
         funcCall.func = new DataQuery();
@@ -53,8 +58,9 @@ public class FuncCallBuilder {
         return this;
     }
 
-    public FuncCallBuilder addFuncParam(String type, String name, Object value, String patternType) {
+    public FuncCallBuilder addFuncParam(String type, String subType, String name, Object value, String patternType) {
         FuncParam funcParam = new FuncParam(type, name, value);
+        funcParam.propertySubType = subType;
         funcParam.options = new LinkedTreeMap<>();
         funcParam.options.put("pattern", patternType);
         funcParam.options.put("default", "");

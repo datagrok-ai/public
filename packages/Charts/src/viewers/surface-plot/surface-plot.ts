@@ -5,8 +5,9 @@ import * as grok from 'datagrok-api/grok';
 import {EChartViewer} from '../echart/echart-viewer';
 import 'echarts-gl';
 
-type AxisArray = {data: number[], min: number, max: number, type: string}
 
+type AxisArray = {data: number[], min: number, max: number, type: string}
+/** Represents a surface plot viewer */
 export class SurfacePlot extends EChartViewer {
   XColumnName: string;
   YColumnName: string;
@@ -23,31 +24,23 @@ export class SurfacePlot extends EChartViewer {
   rawData: number[][] = [[]];
   colsDict: {[name: string]: {data: any[], min: number, max: number, type: string}} = {};
 
-  zip = (a: any[], b: any[], c: any[]) => a.map((k, i) => [k, b[i], c[i]]);
-  sort = (a: any[], b: any[]) => {
-    const x = this.switch(a, b, 0, this.XArr.type);
-    const y = this.switch(a, b, 1, this.YArr.type);
-    return y || x;
+  generateX = (start: number, stop: number, rows: number) => {
+    const arr: number[] = [];
+    const num = Math.ceil(Math.sqrt(rows));
+    const step = (stop - start) / (num - 1);
+    for (let i = 0; i < num; i++) arr.push(start + (step * i));
+    return Array(...Array(num)).map(() => arr).flat();
   };
+
+  generateY = (start: number, stop: number, rows: number) => {
+    return this.generateX(start, stop, rows).sort((a, b) => a - b);
+  };
+
+  zip = (a: any[], b: any[], c: any[]) => a.map((k, i) => [k, b[i], c[i]]);
+
   filter = () => {
     const ind = Array.from(this.dataFrame.filter.getSelectedIndexes());
-    return ind.map((id) => this.rawData[id]);
-  };
-  switch = (a: any[], b: any[], n: number, type: string) => {
-    if (a[n] === undefined || b[n] === undefined) return 0;
-    let res;
-    switch (type) {
-    case 'category':
-      res = a[n].localeCompare(b[n]);
-      break;
-    case 'time':
-      res = a[n].getTime() - b[n].getTime();
-      break;
-    default:
-      res = a[n] - b[n];
-      break;
-    }
-    return res;
+    return this.rawData.map((v, i) => ind.includes(i) ? v : [null, null, null]);
   };
 
   constructor() {
@@ -60,9 +53,9 @@ export class SurfacePlot extends EChartViewer {
     this.projection = this.string('projection', 'perspective', {choices: ['perspective', 'orthographic']});
     this.bkgcolor = this.int('backgroundColor', 0xFFF);
     this.visualMapComponent = this.bool('legendVisualMapComponent', false);
-    this.grid = this.bool('axisGrid', true);
     this.axisLabel = this.bool('axisLabel', true);
     this.wireframe = this.bool('wireframe', true);
+    this.grid = this.bool('axisGrid', true);
 
     this.option = {
       tooltip: {},
@@ -116,6 +109,7 @@ export class SurfacePlot extends EChartViewer {
           wireframe: {
             show: true,
           },
+          connectNulls: false,
         },
       ],
     };
@@ -130,16 +124,21 @@ export class SurfacePlot extends EChartViewer {
   }
 
   onTableAttached() {
-    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render(false)));
-    this.subs.push(DG.debounce(this.dataFrame.onDataChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(() => this.render()));
+    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe(() => this.render(false)));
+    this.subs.push(DG.debounce(this.dataFrame.onDataChanged, 50).subscribe(() => this.render()));
 
-    const num = Array.from(this.dataFrame.columns);
-    if (num.length < 3) grok.shell.error(`Error: insufficient number of columns: expected 3+, got ${num.length}`);
-    num.forEach((c) => {
+    const cols = Array.from(this.dataFrame.columns);
+    const numCols = Array.from(this.dataFrame.columns.numerical);
+    if (cols.length < 3)
+      grok.shell.error(`Error: insufficient number of columns: expected 3+, got ${cols.length}`);
+    if (numCols.length < 2)
+      grok.shell.error(`Error: insufficient number of numerical columns: expected 2+, got ${numCols.length}`);
+
+    for (const c of cols) {
       let type: string; let isTime = false;
       switch (c.type) {
-      case 'string':
+      case ('string' || 'object' || 'bool' || 'dataframe'):
         type = 'category';
         break;
       case 'datetime':
@@ -152,15 +151,26 @@ export class SurfacePlot extends EChartViewer {
       }
       if (isTime)
         this.colsDict[c.name] = {data: c.toList().map((val) => new Date(val)), min: c.min, max: c.max, type: type};
-      else this.colsDict[c.name] = {data: c.toList(), min: c.min, max: c.max, type: type};
-    });
+      else
+        this.colsDict[c.name] = {data: c.toList(), min: c.min, max: c.max, type: type};
+    };
 
-    this.XColumnName = Object.keys(this.colsDict)[0];
-    this.YColumnName = Object.keys(this.colsDict)[1];
-    this.ZColumnName = Object.keys(this.colsDict)[2];
+    this.XColumnName = numCols[0].name;
+    this.YColumnName = numCols[1].name;
+    this.ZColumnName = numCols.length > 2 ? numCols[2].name : Array.from(this.dataFrame.columns.categorical)[0].name;
 
-    this.XArr = this.colsDict[this.XColumnName];
-    this.YArr = this.colsDict[this.YColumnName];
+    this.XArr = {data: this.generateX(this.colsDict[this.XColumnName].min,
+      this.colsDict[this.XColumnName].max, this.dataFrame.rowCount),
+    min: this.colsDict[this.XColumnName].min,
+    max: this.colsDict[this.XColumnName].max,
+    type: 'value'};
+
+    this.YArr = {data: this.generateY(this.colsDict[this.YColumnName].min,
+      this.colsDict[this.YColumnName].max, this.dataFrame.rowCount),
+    min: this.colsDict[this.YColumnName].min,
+    max: this.colsDict[this.YColumnName].max,
+    type: 'value'};
+
     this.ZArr = this.colsDict[this.ZColumnName];
 
     this.render(true, false);
@@ -168,17 +178,28 @@ export class SurfacePlot extends EChartViewer {
 
   onPropertyChanged(property: DG.Property) {
     const newVal = property.get(this);
-
     if (property.name.endsWith('ColumnName')) {
       const col = this.colsDict[newVal];
       switch (property.name) {
       case 'XColumnName':
         this.XColumnName = newVal;
-        this.XArr = col;
+        if (col.type !== 'value') {
+          grok.shell.warning(`${newVal} column is not numerical`);
+          this.XArr = col;
+        } else {
+          this.XArr = {data: this.generateX(col.min, col.max, this.dataFrame.rowCount),
+            min: col.min, max: col.max, type: 'value'};
+        }
         break;
       case 'YColumnName':
         this.YColumnName = newVal;
-        this.YArr = col;
+        if (col.type !== 'value') {
+          grok.shell.warning(`${newVal} column is not numerical`);
+          this.YArr = col;
+        } else {
+          this.YArr = {data: this.generateY(col.min, col.max, this.dataFrame.rowCount),
+            min: col.min, max: col.max, type: 'value'};
+        }
         break;
       case 'ZColumnName':
         this.ZColumnName = newVal;
@@ -231,8 +252,8 @@ export class SurfacePlot extends EChartViewer {
       this.rawData = this.zip(this.XArr.data, this.YArr.data, this.ZArr.data);
     }
 
-    if (filter) this.option.series[0].data = this.filter().sort(this.sort);
-    else this.option.series[0].data = this.rawData.sort(this.sort);
+    if (filter) this.option.series[0].data = this.filter();
+    else this.option.series[0].data = this.rawData;
 
     this.chart.setOption(this.option);
   }

@@ -744,7 +744,7 @@ export class ViewLayout extends Entity {
   }
 
   get columns(): ColumnInfo[] {
-    return api.grok_ViewLayout_Get_Columns(this.dart);
+    return toJs(api.grok_ViewLayout_Get_Columns(this.dart));
   }
 
 }

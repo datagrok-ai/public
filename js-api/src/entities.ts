@@ -962,7 +962,14 @@ export class Package extends Entity {
 }
 
 
-export class Dockerfile extends Entity {
+export class DockerImage extends Entity {
+  constructor(dart: any) {
+    super(dart);
+  }
+}
+
+
+export class DockerContainer extends Entity {
   constructor(dart: any) {
     super(dart);
   }
@@ -976,6 +983,9 @@ export interface PropertyOptions {
 
   /** Property type */
   type?: string;
+
+  /** Whether an empty value is allowed. This is used by validators. */
+  nullable?: boolean;
 
   /** Property description */
   description?: string;

@@ -587,7 +587,10 @@ export class GridColumn {
   get settings(): any | null { return api.grok_GridColumn_Get_Settings(this.dart); }
   set settings(s: any | null) { api.grok_GridColumn_Set_Settings(this.dart, s); }
 
-  /** Use this field to keep auxiliary data. It is not serialized. */
+  /** Use this field to keep arbitrary auxiliary data. It is serialized as JSON, so be careful. See also {@link temp}. */
+  get tags(): {[indexer: string]: any} { return api.grok_GridColumn_Get_Tags(this.dart); }
+
+  /** Use this field to keep auxiliary data. It is not serialized. See also {@link tags}. */
   get temp(): {[indexer: string]: any} { return api.grok_GridColumn_Get_Temp(this.dart); }
 
   /** Moves the specified column to the specified position */

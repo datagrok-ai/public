@@ -18,7 +18,7 @@ public enum Providers {
                         .withDatabaseName(getDatabase())
                         .withUsername(getDefaultUser())
                         .withPassword(getDefaultPassword())
-                        .withInitScript("scripts/oracle/oracle_basic_data.sql");
+                        .withInitScript("scripts/oracle/all_data.sql");
                 container.start();
             }
             return container;

@@ -136,22 +136,30 @@ jobs:
         run: |
           commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
-          grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key' packages/${{ matrix.package }}/package.json | grep '@datagrok/')"
+          echo "Find grok dependencies packages"
+          grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' packages/${{ matrix.package }}/package.json)"
           profiles='--profile datagrok --profile db --profile grok_spawner'
+          echo "Check if CVM is required for the package"
           if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "simpkpd" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "dendrogram" ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chembl" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chembl"* ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"simpkpd"* ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"dendrogram"* ]]; then
-            profiles+=' --profile cvm'
+            echo "Add Scripting as dependency for package ${{ matrix.package }}"
+            profiles+=' --profile scripting'
           fi
-
+          if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]]; then
+            echo "Add Grok Compute as dependency for package ${{ matrix.package }}"
+            profiles+=' --profile grok_compute'
+          fi
+          echo "Run datagrok stand with profiles ${profiles}"
           docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
+          echo "Set docker_sha"
           docker_sha=$(docker images --quiet datagrok/datagrok:bleeding-edge)
           echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
+          echo "Notify abour version used for tests"
           echo "::notice title=${{ matrix.package }}::datagrok/datagrok:bleeding-edge SHA=$docker_sha docker version was used for tests"
       - name: Setup Node
         uses: actions/setup-node@v3
@@ -199,7 +207,7 @@ jobs:
       - name: Install Grok Dependencies before package publish to Datagrok
         if: ${{ matrix.test == 'true' }}
         run: |
-          grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key' package.json | grep '@datagrok/')"
+          grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' package.json)"
           if [ -n "$grok_deps" ]; then
             for dep in $grok_deps; do
               current_dir=$(pwd)
@@ -251,6 +259,7 @@ jobs:
       - name: Create error notification
         if: failure() && steps.test-package.outcome == 'failure'
         run: |
+          docker logs $(docker ps -q -f ancestor=datagrok/datagrok:bleeding-edge)
           echo "::error title=${{ matrix.package }}: failed tests with datagrok:bleeding-edge SHA=${{ steps.datagrok-image.outputs.docker_sha }}::Check test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html report for results"
           echo "status=error" >> $GITHUB_OUTPUT
 

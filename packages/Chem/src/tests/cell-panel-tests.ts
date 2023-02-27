@@ -58,7 +58,7 @@ category('cell panel', async () => {
 
     for (const mol of molFormats)
       molfileWidget(mol);
-  });
+  }, {skipReason: 'GROK-12233'});
 
   test('properties', async () => {
     //commented out since the return type has changed - see if we still need it
