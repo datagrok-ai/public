@@ -1419,52 +1419,91 @@ export namespace labels {
 /** Visual hints attached to an element. They can be used to introduce a new app to users. */
 export namespace hints {
 
-  /** Adds a hint indication to the provided element and returns it. */
-  export function addHint(el: HTMLElement): HTMLElement {
-    el.classList.add('ui-hint-target');
-    const hintIndicator = div([], 'ui-hint-blob');
-    el.append(hintIndicator);
+  export enum POSITION {
+    TOP = 'top',
+    BOTTOM = 'bottom',
+    LEFT = 'left',
+    RIGHT = 'right',
+  }
 
-    const closeIcon = iconFA('times', () => {
-      remove(el);
-      // fire an event?
-    }, 'Remove hints');
-    closeIcon.classList.add('ui-hint-close-btn');
-    el.append(closeIcon);
+  /** Adds a popup window with the specified [content] next to an [element].
+   * Set [position] to control where the popup will appear. The default position is [POSITION.RIGHT]. */
+  export function addHint(el: HTMLElement, content: HTMLElement, position: `${POSITION}` = POSITION.RIGHT) {
+    const root = document.createElement('div');
+    root.className = 'ui-hint-popup';
 
-    const width = el ? el.clientWidth : 0;
-    const height = el ? el.clientHeight : 0;
+    const closeBtn = iconFA('times', () => root.remove());
+    closeBtn.style.cssText = `
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      color: var(--grey-4);
+    `;
 
-    const hintNode = el.getBoundingClientRect();
-    const indicatorNode = hintIndicator.getBoundingClientRect();
+    const node = el.getBoundingClientRect();
 
-    type elementPosition = 'static' | 'relative' | 'absolute' | 'fixed' | 'sticky';
-    const hintPosition = <elementPosition>($(el).css('position') ?? 'static');
+    root.append(closeBtn);
+    root.append(content);
+    $('body').append(root);
 
-    function setDefaultStyles() {
-      $(hintIndicator).css('position', 'absolute');
-      $(hintIndicator).css('left', '0');
-      $(hintIndicator).css('top', '0');
-    };
-
-    const positions = {
-      static: () => {
-        $(hintIndicator).css('position', 'absolute');
-        $(hintIndicator).css('margin-left', hintNode.left + 1 == indicatorNode.left ? 0 : -width);
-        $(hintIndicator).css('margin-top', hintNode.top + 1 == indicatorNode.top ? 0 : -height);
-      },
-      relative: setDefaultStyles,
-      fixed: setDefaultStyles,
-      absolute: setDefaultStyles,
-      sticky: setDefaultStyles,
-    };
-
-    positions[hintPosition]();
-
-    if ($(el).hasClass('d4-ribbon-item')){
-      $(hintIndicator).css('margin-left', '0px')
+    if (position == POSITION.RIGHT) {
+      const right = node.right + 8;
+      root.style.left = right + 'px';
+      root.style.top = node.top + (el.offsetHeight / 2) - 17 + 'px';
+      root.classList.add(`ui-hint-popup-${position}`);
+    } else if (position == POSITION.LEFT) {
+      let left = node.left - root.offsetWidth - 8;
+      if (left < 0)
+        left = 0;
+      root.style.left = left + 'px';
+      root.style.top = node.top + (el.offsetHeight / 2) - 17 + 'px';
+      root.classList.add(`ui-hint-popup-${position}`);
+    } else if (position == POSITION.TOP) {
+      let top = node.top - root.offsetHeight - 8;
+      if (top < 0)
+        top = 0;
+      root.style.left = node.left + (el.offsetWidth / 2) - 17 + 'px';
+      root.style.top = top + 'px';
+      root.classList.add(`ui-hint-popup-${position}`);
+    } else if (position == POSITION.BOTTOM) {
+      let bottom = node.bottom + 8;
+      if (bottom + root.offsetHeight > window.innerHeight)
+        bottom = window.innerHeight - root.offsetHeight;
+      root.style.left = node.left + (el.offsetWidth / 2) - 17 + 'px';
+      root.style.top = bottom + 'px';
+      root.classList.add(`ui-hint-popup-${position}`);
     }
 
+    return root;
+  }
+
+  /** Adds a hint indication to the provided element and returns it. */
+  export function addHintIndicator(el: HTMLElement, clickToClose: boolean = true, autoClose?: number): HTMLElement {
+    const id = Math.floor(Math.random() * 1000);
+    const hintIndicator = document.createElement('div');
+    hintIndicator.className = 'ui-hint-blob';
+
+    hintIndicator.setAttribute('data-target', 'hint-target-' + id);
+    el.setAttribute('data-target', 'hint-target-' + id);
+
+    el.classList.add('ui-hint-target');
+    $('body').append(hintIndicator);
+
+    const indicatorNode = el.getBoundingClientRect();
+    hintIndicator.style.position = 'fixed';
+    hintIndicator.style.zIndex = '4000';
+    hintIndicator.style.left = indicatorNode.left + 'px';
+    hintIndicator.style.top = indicatorNode.top + 'px';
+
+    if (clickToClose) {
+      $(el).on('click', () => {
+        remove(el);
+      });
+    }
+
+    if (autoClose! > 0) {
+      setTimeout(() => remove(el), autoClose);
+    }
     return el;
   }
 
@@ -1480,10 +1519,18 @@ export namespace hints {
     $('body').prepend(overlay);
     const horizontalOffset = 10;
     const wizard = new Wizard({title: options.title, helpUrl: options.helpUrl});
+
     if (options.pages) {
+      const pageNumberStr = `${wizard.pageIndex + 1}/${options.pages.length}`;
+      wizard.addButton(pageNumberStr, () => {}, 3);
+      const pageNumberField = wizard.getButton(pageNumberStr);
+      pageNumberField.classList.add('disabled');
+      $(pageNumberField).css('margin-right', 'auto');
+
       for (const p of options.pages) {
         const page = Object.assign({}, p);
         page.onActivated = () => {
+          pageNumberField.innerText = `${wizard.pageIndex + 1}/${options.pages!.length}`;
           if (p.showNextTo) {
             if (targetElement)
               targetElement.classList.remove('ui-text-hint-target');
@@ -1511,8 +1558,8 @@ export namespace hints {
   /** Removes the hint indication from the provided element and returns it. */
   export function remove(el?: HTMLElement): HTMLElement | null {
     if (el != null) {
-      $(el).find('div.ui-hint-blob')[0]?.remove();
-      $(el).find('i.fa-times')[0]?.remove();
+      const id = el.getAttribute('data-target');
+      $(`div.ui-hint-blob[data-target="${id}"]`)[0]?.remove();
       el.classList.remove('ui-hint-target', 'ui-text-hint-target');
     }
     $('div.ui-hint-overlay')?.remove();
