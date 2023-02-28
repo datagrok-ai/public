@@ -393,24 +393,6 @@ public class CommonObjectsMother {
                 .addFuncCallOptionsPattern("email", "regex ^([A-Za-z0-9_]+@google.com.au)$",
                         "regex", null, null, "^([A-Za-z0-9_]+@google.com.au)$")
                 .build();
-        // list<string>
-        List<String> values = new ArrayList<>();
-        values.add("Poland");
-        values.add("Brazil");
-        FuncCall funcCall19 = FuncCallBuilder.getBuilder()
-                .addQuery("--input: list<string> values\n" +
-                        "SELECT * FROM mock_data WHERE country = ANY(@values)")
-                .addFuncParam("list", "string", "values", values, "")
-                .addFuncCallOptionsPattern("country", "", "",
-                        null, null, "Poland", "Brazil")
-                .build();
-        FuncCall funcCall20 = FuncCallBuilder.getBuilder()
-                .addQuery("--input: list<string> values = ['Poland','Brazil']\n" +
-                        "SELECT * FROM mock_data WHERE country = ANY(@values)")
-                .addFuncParam("list", "string", "values", values, "")
-                .addFuncCallOptionsPattern("country", "", "",
-                        null, null, "Poland", "Brazil")
-                .build();
         return Stream.of(
                 Arguments.of(Named.of("type: int; operator: =; pattern: none", funcCall1), expected1),
                 Arguments.of(Named.of("type: string; operator: >; pattern: int", funcCall2), expected2),
@@ -429,9 +411,7 @@ public class CommonObjectsMother {
                 Arguments.of(Named.of("type: string; operator: starts with; pattern: string", funcCall15), expected8),
                 Arguments.of(Named.of("type: string; operator: ends with; pattern: string", funcCall16), expected9),
                 Arguments.of(Named.of("type: string; operator: in; pattern: string", funcCall17), expected10),
-                Arguments.of(Named.of("type: string; operator: regex; pattern: string", funcCall18), expected11),
-                Arguments.of(Named.of("type: list<string>; operator: none; pattern: none", funcCall19), expected10),
-                Arguments.of(Named.of("type: list<string>; operator: none; pattern: none", funcCall20), expected10)
+                Arguments.of(Named.of("type: string; operator: regex; pattern: string", funcCall18), expected11)
         );
     }
 
@@ -630,7 +610,7 @@ public class CommonObjectsMother {
         );
     }
 
-    public static Stream<Arguments> checkMultipleParametersSupport() {
+    public static Stream<Arguments> checkMultipleParametersSupport_ok() {
         Parser parser = new DateParser();
         String datePattern = "yyyy-MM-dd";
         // --input: string first_name = "starts with p" {pattern: string}
@@ -691,5 +671,49 @@ public class CommonObjectsMother {
                 .build();
         return Stream.of(Arguments.of(Named.of("type: multiple; operator: multiple; pattern: multiple", funcCall1),
                 expected1));
+    }
+
+    public static Stream<Arguments> checkListParameterSupport_ok() {
+        Parser parser = new DateParser();
+        // list<string>
+        List<String> values = new ArrayList<>();
+        values.add("Poland");
+        values.add("Brazil");
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new BigIntColumn(new String[]{"2", "5", "20"}),
+                        "id")
+                .setColumn(new StringColumn(new String[]{"Nicholle", "Mitchell", "Lucius",}), "first_name")
+                .setColumn(new StringColumn(new String[]{"Karoly", "Haglington", "Edelmann"}),
+                        "last_name")
+                .setColumn(new StringColumn(new String[]{"nkaroly1@alexa.com", "mhaglington4@indiegogo.com",
+                        "ledelmannj@bravesites.com"}), "email")
+                .setColumn(new StringColumn(new String[]{"Female", "Male", "Male"}), "gender")
+                .setColumn(new StringColumn(new String[]{"255.233.247.118/32", "209.93.181.190/32", "66.174.30.225/32"}),
+                        "ip_address")
+                .setColumn(new BoolColumn(new Boolean[]{false, true, false}), "bool")
+                .setColumn(new StringColumn(new String[]{"Poland", "Poland", "Brazil"}), "country")
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles("yyyy-MM-dd", "2014-02-27",
+                                "2020-10-09","1999-06-22")),
+                        "date")
+                .setColumn(new FloatColumn(new Float[]{864.09f, 15.22f, 378.73f}), "some_number")
+                .build();
+        FuncCall funcCall1 = FuncCallBuilder.getBuilder()
+                .addQuery("--input: list<string> values\n" +
+                        "SELECT * FROM mock_data WHERE country = ANY(@values)")
+                .addFuncParam("list", "string", "values", values, "")
+                .addFuncCallOptionsPattern("country", "", "",
+                        null, null, "Poland", "Brazil")
+                .build();
+        FuncCall funcCall2 = FuncCallBuilder.getBuilder()
+                .addQuery("--input: list<string> values = ['Poland','Brazil']\n" +
+                        "SELECT * FROM mock_data WHERE country = ANY(@values)")
+                .addFuncParam("list", "string", "values", values, "")
+                .addFuncCallOptionsPattern("country", "", "",
+                        null, null, "Poland", "Brazil")
+                .build();
+        return Stream.of(
+                Arguments.of(Named.of("type: list<string>; operator: none; pattern: none", funcCall1), expected),
+                Arguments.of(Named.of("type: list<string>; operator: none; pattern: none", funcCall2), expected));
     }
 }
