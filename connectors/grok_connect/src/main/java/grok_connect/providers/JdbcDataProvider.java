@@ -411,7 +411,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 rowCount++;
 
                 for (int c = 1; c < columnCount + 1; c++) {
-                    Object value = resultSet.getObject(c);
+                    Object value = getObjectFromResultSet(resultSet, c);
 
                     if (queryRun.debugQuery && value != null)
                         numericColumnStats.get(c-1).updateStats(value);
@@ -578,6 +578,14 @@ public abstract class JdbcDataProvider extends DataProvider {
         finally {
             if (connection != null)
                 connection.close();
+        }
+    }
+
+    protected Object getObjectFromResultSet(ResultSet resultSet, int c) {
+        try {
+            return resultSet.getObject(c);
+        }catch (SQLException e) {
+            throw new RuntimeException("Something went wrong when getting object from result set", e);
         }
     }
 
