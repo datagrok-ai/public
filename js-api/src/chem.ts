@@ -248,7 +248,7 @@ export namespace chem {
       const extractor = extractors
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
 
-      if (extractor != null)
+      if (extractor != null && !checkSmiles(x))
         extractor
           .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
           .then((mol) => this.setMolecule(mol));
@@ -734,6 +734,14 @@ export namespace chem {
     funcCall.callSync();
     const resultMolecule = funcCall.getOutputParamValue();
     return resultMolecule;
+  }
+
+  export function checkSmiles(s: string): boolean {
+    const isSmilesFunc = Func.find({package: 'Chem', name: 'isSmiles'})[0];
+    const funcCall: FuncCall = isSmilesFunc.prepare({s});
+    funcCall.callSync();
+    const resultBool = funcCall.getOutputParamValue();
+    return resultBool;
   }
 
   export function smilesFromSmartsWarning(): string {
