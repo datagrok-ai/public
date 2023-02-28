@@ -789,7 +789,7 @@ export class DockerDataSource {
   /**Dockerfiles API endpoint
    * @type {HttpDataSource<DockerImage>} */
   get dockerContainers(): DockerContainersDataSource {
-    return new DockerContainersDataSource(api.grok_Dapi_DockeContainers());
+    return new DockerContainersDataSource(api.grok_Dapi_DockerContainers());
   }
 }
 
