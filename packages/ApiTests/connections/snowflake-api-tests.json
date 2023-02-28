@@ -1,0 +1,18 @@
+{
+  "#type": "DataConnection",
+  "name": "SnowflakeApiTests",
+  "friendlyName": "Tests",
+  "parameters": {
+    "server": "",
+    "port": "",
+    "db": ""
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "",
+      "password": ""
+    }
+  },
+  "dataSource": "Snowflake",
+  "description": "Test data"
+}
