@@ -9,5 +9,6 @@ export declare class ColorUtils {
     static toRgb(color: number): string;
     static get currentRow(): number;
     static get colSelection(): number;
+    static get sortArrow(): number;
 }
 //# sourceMappingURL=ColorUtils.d.ts.map
