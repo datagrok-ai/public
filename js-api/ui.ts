@@ -642,24 +642,25 @@ export function tree(): TreeViewGroup {
 }
 
 
-// Will come back later (-Andrew)
-//
-// export interface InputOptions {
-//   value?: any;
-//   onValueChanged?: (v: any) => void;
-// }
-//
-//
+export interface IInputInitOptions {
+  onCreated?: (input: InputBase) => void;
+  onValueChanged?: (input: InputBase) => void;
+}
+
+
 export namespace input {
 
   /** Creates input for the specified property, and optionally binds it to the specified object */
-  export function forProperty(property: Property, source: any = null): InputBase {
-    return InputBase.forProperty(property, source);
+  export function forProperty(property: Property, source: any = null, options?: IInputInitOptions): InputBase {
+    const input = InputBase.forProperty(property, source);
+    if (options?.onCreated)
+      options.onCreated(input);
+    return input;
   }
 
   /** Returns a form for the specified properties, bound to the specified object */
-  export function form(source: any, props: Property[]): HTMLElement {
-    return inputs(props.map((p) => forProperty(p, source)));
+  export function form(source: any, props: Property[], options?: IInputInitOptions): HTMLElement {
+    return inputs(props.map((p) => forProperty(p, source, options)));
   }
 
   // export function bySemType(semType: string) {

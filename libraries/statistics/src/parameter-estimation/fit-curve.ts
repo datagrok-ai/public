@@ -1,6 +1,8 @@
 import {limitedMemoryBFGS} from "../../lbfgs/lbfgs"
 //@ts-ignore: no types
 import * as jStat from 'jstat';
+import {Property} from "datagrok-api/src/entities";
+import {TYPE} from "datagrok-api/src/const";
 
 type Likelihood = {
   value: number, 
@@ -13,9 +15,15 @@ export type FitResult = {
   fittedCurve: (x:number)=> number,
   confidenceTop: (x:number)=> number,
   confidenceBottom: (x:number)=> number,
-  rSquared: number,
-  auc: number;
+  rSquared?: number,
+  auc?: number;
 };
+
+/** Properties that describe {@link FitResult}. Useful for editing, initialization, transformations, etc. */
+export const fitResultProperties: Property[] = [
+  Property.js('rSquared', TYPE.FLOAT),
+  Property.js('auc', TYPE.FLOAT)
+];
 
 type ObjectiveFunction = (targetFunc: (params: number[], x: number) => number, 
 data: {x: number[], y: number[]},
@@ -78,11 +86,23 @@ export const fitFunctions: {[index: string]: any} = {
   FIT_FUNCTION_SIGMOID: new SigmoidFunction(),
 };
 
+
+export interface IFitOptions {
+  errorModel: FitErrorModel;
+  confidenceLevel: number;
+  statistics: boolean;
+}
+
+
+/**
+ * statistics - whether or not to calculate fit statistics (potentially computationally intensive)
+ * */
 export function fit(data:{x: number[], y: number[]}, 
                     params: number[],
                     curveFunction: (params: number[], x: number) => number, 
                     errorModel: FitErrorModel,
-                    confidenceLevel: number = 0.05): FitResult {
+                    confidenceLevel: number = 0.05,
+                    statistics: boolean = true): FitResult {
 
   let of: ObjectiveFunction;
   switch(errorModel) {
@@ -148,8 +168,8 @@ export function fit(data:{x: number[], y: number[]},
     fittedCurve: fittedCurve,
     confidenceTop: top,
     confidenceBottom: bottom,
-    rSquared: getDetCoeff(fittedCurve, data),
-    auc: getAuc(fittedCurve, data)
+    rSquared: statistics ? getDetCoeff(fittedCurve, data) : undefined,
+    auc: statistics ? getAuc(fittedCurve, data) : undefined
   };
 
   return fitRes;

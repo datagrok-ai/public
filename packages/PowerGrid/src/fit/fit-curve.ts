@@ -166,8 +166,10 @@ export class FitCellRenderer extends DG.GridCellRenderer {
       // caching fit results - not sure if needed
       const fitResultsColumn = gridCell.cell.dataFrame.columns.
         getOrCreate(`~fit:${gridCell.gridColumn.name}`, DG.TYPE.OBJECT, dfColumn.length);
-      if (fitResultsColumn.isNone(gridCell.cell.row.idx))
-        fitResultsColumn.set(gridCell.cell.row.idx, fit(filteredCoordinates, params, sigmoid, FitErrorModel.Constant));
+      if (fitResultsColumn.isNone(gridCell.cell.row.idx)) {
+        const result = fit(filteredCoordinates, params, sigmoid, FitErrorModel.Constant, 0.005, false);
+        fitResultsColumn.set(gridCell.cell.row.idx, result);
+      }
       const fitResult: FitResult = fitResultsColumn.get(gridCell.cell.row.idx);
 
       const fitCurveCoordinates: {x: number[], y: number[]} = {x: [], y: []};
