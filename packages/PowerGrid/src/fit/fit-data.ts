@@ -7,7 +7,7 @@ import {TYPE} from 'datagrok-api/src/const';
 import {
   fit,
   FitErrorModel,
-  FitResult,
+  FitResult, IFitOptions,
   sigmoid
 } from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 
@@ -132,15 +132,6 @@ export const fitSeriesProperties: Property[] = [
 ];
 
 
-/** Properties that describe {@link FitResult}. Useful for editing, initialization, transformations, etc. */
-export const fitResultProperties: Property[] = [
-  Property.js('sigma', TYPE.FLOAT),
-  Property.js('rSquared', TYPE.FLOAT),
-  Property.js('hillSlope', TYPE.FLOAT),
-  Property.js('classification', TYPE.STRING),
-];
-
-
 /** Creates new object with the default values specified in {@link properties} */
 function createFromProperties(properties: Property[]): any {
   const o: any = {};
@@ -232,7 +223,7 @@ function union(r1: DG.Rect, r2: DG.Rect): DG.Rect {
 
 
 /** Fits the series data according to the series fitting settings */
-export function fitSeries(series: IFitSeries): FitResult {
+export function fitSeries(series: IFitSeries, statistics: boolean = false): FitResult {
   //TODO: optimize the calculation of the initial parameters
   const dataBounds = getDataBounds(series.points);
   const ys = series.points.map((p) => p.y);
@@ -248,7 +239,7 @@ export function fitSeries(series: IFitSeries): FitResult {
 
   return fit(
     {x: series.points.map((p) => p.x), y: series.points.map((p) => p.x)},
-    initialParams, sigmoid, FitErrorModel.Constant);
+    initialParams, sigmoid, FitErrorModel.Constant, 0.05, statistics);
 }
 
 /** Returns a curve function, either using the pre-computed parameters
