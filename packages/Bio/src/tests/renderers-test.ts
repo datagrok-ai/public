@@ -106,7 +106,7 @@ category('renderers', () => {
     const seqDiffCol: DG.Column = DG.Column.fromStrings('SequencesDiff',
       ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
     seqDiffCol.tags[DG.TAGS.UNITS] = NOTATION.SEPARATOR;
-    seqDiffCol.tags[TAGS.SEPARATOR] = '/';
+    seqDiffCol.tags[bioTAGS.separator] = '/';
     seqDiffCol.semType = SEM_TYPES.MACROMOLECULE_DIFFERENCE;
     const df = DG.DataFrame.fromColumns([seqDiffCol]);
 
@@ -193,7 +193,7 @@ category('renderers', () => {
     const seqDiffCol: DG.Column = DG.Column.fromStrings('SequencesDiff',
       ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
     seqDiffCol.tags[DG.TAGS.UNITS] = NOTATION.SEPARATOR;
-    seqDiffCol.tags[TAGS.SEPARATOR] = '/';
+    seqDiffCol.tags[bioTAGS.separator] = '/';
     seqDiffCol.semType = SEM_TYPES.MACROMOLECULE_DIFFERENCE;
     const df = DG.DataFrame.fromColumns([seqDiffCol]);
     const tv = grok.shell.addTableView(df);
@@ -215,8 +215,8 @@ category('renderers', () => {
     const seqDiffCol: DG.Column = DG.Column.fromStrings('SequencesDiff',
       ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
     seqDiffCol.tags[DG.TAGS.UNITS] = NOTATION.SEPARATOR;
-    seqDiffCol.tags[TAGS.SEPARATOR] = '/';
-    seqDiffCol.semType = SEM_TYPES.MACROMOLECULE;
+    seqDiffCol.tags[bioTAGS.separator] = '/';
+    seqDiffCol.semType = DG.SEMTYPE.MACROMOLECULE;
     const tgtCellRenderer = 'MacromoleculeDifference';
     seqDiffCol.setTag(DG.TAGS.CELL_RENDERER, tgtCellRenderer);
     const df = DG.DataFrame.fromColumns([seqDiffCol]);

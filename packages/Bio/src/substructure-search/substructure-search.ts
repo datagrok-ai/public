@@ -2,11 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as C from '../utils/constants';
 import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {delay} from '@datagrok-libraries/utils/src/test';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {TAGS as bioTAGS, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export const MONOMER_MOLS_COL = 'monomeric-mols';
 
@@ -23,7 +22,7 @@ export const enum MONOMERIC_COL_TAGS {
  */
 export function substructureSearchDialog(col: DG.Column): void {
   const units = col.getTag(DG.TAGS.UNITS);
-  const separator = col.getTag(C.TAGS.SEPARATOR);
+  const separator = col.getTag(bioTAGS.separator);
   // const notations = [NOTATION.FASTA, NOTATION.SEPARATOR, NOTATION.HELM];
 
   const substructureInput = ui.textInput('Substructure', '');
@@ -91,7 +90,8 @@ function prepareSubstructureRegex(substructure: string, separator: string) {
   const startsWithSep = substructure.charAt(0) === separator;
   const endsWithSep = substructure.charAt(substructure.length - 1) === separator;
   const substrWithoutSep = substructure.replace(new RegExp(`^${char}|${char}$`, 'g'), '');
-  const re = startsWithSep ? endsWithSep ? `${char}${substrWithoutSep}${char}` :
+  const re = startsWithSep ?
+    endsWithSep ? `${char}${substrWithoutSep}${char}` :
       `${char}${substrWithoutSep}${char}|${char}${substrWithoutSep}$` :
     endsWithSep ? `^${substrWithoutSep}${char}|${char}${substrWithoutSep}${char}` :
       `^${substrWithoutSep}${char}|${char}${substrWithoutSep}${char}|${char}${substrWithoutSep}$`;
