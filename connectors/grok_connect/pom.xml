@@ -394,7 +394,12 @@
         <dependency>
             <groupId>com.oracle.database.xml</groupId>
             <artifactId>xdb6</artifactId>
-            <version>11.2.0.4</version>
+            <version>18.3.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.oracle.database.xml</groupId>
+            <artifactId>xmlparserv2</artifactId>
+            <version>21.9.0.0</version>
         </dependency>
 
 

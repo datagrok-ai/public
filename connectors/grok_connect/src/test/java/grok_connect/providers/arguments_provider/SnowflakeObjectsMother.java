@@ -7,8 +7,12 @@ import grok_connect.providers.utils.FuncCallBuilder;
 import grok_connect.providers.utils.Parser;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.params.provider.Arguments;
-import serialization.*;
-
+import serialization.BigIntColumn;
+import serialization.DataFrame;
+import serialization.DateTimeColumn;
+import serialization.FloatColumn;
+import serialization.IntColumn;
+import serialization.StringColumn;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
@@ -45,12 +49,85 @@ public class SnowflakeObjectsMother {
     }
 
     public static Stream<Arguments> checkOutputDataFrame_binaryType_ok() {
-        String expectedHexRepr = String.format("%040x", new BigInteger(1, "Datagrok".getBytes(StandardCharsets.UTF_8)));
+        String expectedHexRepr = String.format("%010X", new BigInteger(1, "Datagrok".getBytes(StandardCharsets.UTF_8)));
         DataFrame expected = DataFrameBuilder.getBuilder()
                 .setRowCount(1)
                 .setColumn(new StringColumn(new String[]{expectedHexRepr}), "B")
                 .build();
-        FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM binary_table");
+        FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT to_char(B) AS B FROM binary_table");
         return Stream.of(Arguments.of(Named.of("BINARY TYPE SUPPORT", funcCall), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_geoType_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new BigIntColumn(new String[]{"1", "2"}), "ID")
+                .setColumn(new StringColumn(new String[]{"{\n" +
+                        "  \"coordinates\": [\n" +
+                        "    -122.35,\n" +
+                        "    37.55\n" +
+                        "  ],\n" +
+                        "  \"type\": \"Point\"\n" +
+                        "}",
+                        "{\n" +
+                                "  \"coordinates\": [\n" +
+                                "    [\n" +
+                                "      -124.2,\n" +
+                                "      42\n" +
+                                "    ],\n" +
+                                "    [\n" +
+                                "      -120.01,\n" +
+                                "      41.99\n" +
+                                "    ]\n" +
+                                "  ],\n" +
+                                "  \"type\": \"LineString\"\n" +
+                                "}"}), "G")
+                .build();
+        FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM geospatial_table");
+        return Stream.of(Arguments.of(Named.of("GEO TYPE SUPPORT", funcCall), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_semiStructuredTypes_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new BigIntColumn(new String[]{"1", "2"}), "ID")
+                .setColumn(new StringColumn(new String[]{"[\n" +
+                        "  1,\n" +
+                        "  2,\n" +
+                        "  3\n" +
+                        "]", "[\n" +
+                        "  1,\n" +
+                        "  2,\n" +
+                        "  3,\n" +
+                        "  undefined\n" +
+                        "]"}), "ARRAY1")
+                .setColumn(new StringColumn(new String[]{"{\n" +
+                        "  \"key1\": \"value1\",\n" +
+                        "  \"key2\": \"value2\"\n" +
+                        "}",
+                        "{\n" +
+                                "  \"key1\": \"value1\",\n" +
+                                "  \"key2\": null\n" +
+                                "}"}), "VARIANT1")
+                .setColumn(new StringColumn(new String[]{"{\n" +
+                        "  \"outer_key1\": {\n" +
+                        "    \"inner_key1A\": \"1a\",\n" +
+                        "    \"inner_key1B\": \"1b\"\n" +
+                        "  },\n" +
+                        "  \"outer_key2\": {\n" +
+                        "    \"inner_key2\": 2\n" +
+                        "  }\n" +
+                        "}", "{\n" +
+                        "  \"outer_key1\": {\n" +
+                        "    \"inner_key1A\": \"1a\",\n" +
+                        "    \"inner_key1B\": null\n" +
+                        "  },\n" +
+                        "  \"outer_key2\": {\n" +
+                        "    \"inner_key2\": 2\n" +
+                        "  }\n" +
+                        "}"}), "OBJECT1")
+                .build();
+        FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM demonstration1");
+        return Stream.of(Arguments.of(Named.of("SEMI STRUCTURED TYPE SUPPORT", funcCall), expected));
     }
 }
