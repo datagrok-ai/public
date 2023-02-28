@@ -621,6 +621,39 @@ function getOutput(funcSpecification) {
 
 } // getOutput
 
+// Clear newly created data fields (new column(s))
+function clearNewlyCreatedData(funcSpecificationArgs)
+{ 
+    for(let key in funcSpecificationArgs) {
+        let arg = funcSpecificationArgs[key];
+
+        switch (arg.type) {
+            case NUM_TYPE:
+            case INT_TYPE:
+            case DOUBLE_TYPE:
+            case INT_COLUMN_TYPE:
+            case FLOAT_COLUMN_TYPE:            
+            case INT_COLUMNS_TYPE:
+            case FLOAT_COLUMNS_TYPE:
+                break;
+
+            case NEW_INT_COLUMN_TYPE:
+            case NEW_FLOAT_COLUMN_TYPE:
+                arg.column = null;                
+                break;
+
+            case NEW_INT_COLUMNS_TYPE:
+            case NEW_FLOAT_COLUMNS_TYPE:
+                arg.columns = null;
+                break;
+        
+            // TODO: process other cases and mistakes
+            default:
+                break;
+        }
+    }
+} // clearNewlyCreatedData
+
 // THE MAIN FUNCTION: a wrapper for C++-function call
 export function cppWrapper(module, args, cppFuncName, returnType)
 {
@@ -665,7 +698,13 @@ export function getResult(funcSpecification, dataFromWebWorker)
 {
     funcSpecification.arguments._callResult = dataFromWebWorker.callResult;  
 
-    extractNewlyCreatedData(funcSpecification.arguments, dataFromWebWorker.args);
+    extractNewlyCreatedData(funcSpecification.arguments, dataFromWebWorker.args);    
 
-    return getOutput(funcSpecification);
+    let outPut = getOutput(funcSpecification);
+
+    // Below, we remove newly created column(s), which are created at the extraction-step.
+    // It is especially required, when multiple call of wasm-functions in webworker.
+    clearNewlyCreatedData(funcSpecification.arguments);
+
+    return outPut;
 }
