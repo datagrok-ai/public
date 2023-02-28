@@ -1,4 +1,4 @@
-package grok_connect.providers.data_providers;
+package grok_connect.providers.arguments_provider;
 
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.providers.utils.DataFrameBuilder;
@@ -104,7 +104,8 @@ public class OracleObjectsMother {
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
                                 now.toString(),
                                 dayOfMonth == 1 ? null : yesterday.toString(),
-                                lastDayOfWeek.toString())),
+                                lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() ?
+                                        null : lastDayOfWeek.toString())),
                         "dat")
                 .build();
         FuncCall funcCall3 = FuncCallBuilder.getBuilder()
@@ -122,7 +123,7 @@ public class OracleObjectsMother {
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
                                 now.toString(),
                                 dayOfMonth == 1 ? null : yesterday.toString(),
-                                lastDayOfWeek.toString())),
+                                lastDayOfWeek.getYear() > lastDayOfYear.getYear() ? null : lastDayOfWeek.toString())),
                         "dat")
                 .build();
         FuncCall funcCall4 = FuncCallBuilder.getBuilder()

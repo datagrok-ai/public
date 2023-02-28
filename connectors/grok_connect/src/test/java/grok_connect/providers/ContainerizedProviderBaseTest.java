@@ -3,8 +3,9 @@ package grok_connect.providers;
 import grok_connect.connectors_info.Credentials;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataProvider;
+import grok_connect.connectors_info.DbCredentials;
 import grok_connect.providers.utils.DataFrameComparator;
-import grok_connect.providers.utils.Providers;
+import grok_connect.providers.utils.Provider;
 import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryMonitor;
 import grok_connect.utils.SettingsManager;
@@ -27,15 +28,15 @@ import org.testcontainers.containers.JdbcDatabaseContainer;
   */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public abstract class ProviderBaseTest {
-    private final Providers type;
+public abstract class ContainerizedProviderBaseTest {
+    private final Provider type;
     protected JdbcDatabaseContainer<?> container;
     protected JdbcDataProvider provider;
     protected Credentials credentials;
     protected DataConnection connection;
     protected DataFrameComparator dataFrameComparator;
 
-    protected ProviderBaseTest(Providers type) {
+    protected ContainerizedProviderBaseTest(Provider type) {
         this.container = type.getContainer();
         this.type = type;
         dataFrameComparator = new DataFrameComparator();
@@ -43,9 +44,6 @@ public abstract class ProviderBaseTest {
 
     @BeforeAll
     public void init() {
-        credentials = new Credentials();
-        credentials.parameters.put("login", container.getUsername());
-        credentials.parameters.put("password", container.getPassword());
         SettingsManager settingsManager = SettingsManager.getInstance();
         settingsManager.initSettingsWithDefaults();
         Logger mockLogger = Mockito.mock(Logger.class);
@@ -53,19 +51,20 @@ public abstract class ProviderBaseTest {
         ProviderManager providerManager = new ProviderManager(mockLogger);
         ProviderManager spy = Mockito.spy(providerManager);
         Mockito.when(spy.getQueryMonitor()).thenReturn(mockMonitor);
-        provider = (JdbcDataProvider) spy.getByName(type.getProviderName());
+        provider = (JdbcDataProvider) spy.getByName(type.getProperties().get("providerName").toString());
     }
 
     @BeforeEach
     public void beforeEach() {
+        credentials = new Credentials();
+        credentials.parameters.put(DbCredentials.LOGIN, container.getUsername());
+        credentials.parameters.put(DbCredentials.PASSWORD, container.getPassword());
         connection = new DataConnection();
-        credentials.parameters.put("login", container.getUsername());
-        credentials.parameters.put("password", container.getPassword());
         connection.credentials = credentials;
         connection.dataSource = provider.descriptor.type;
-        connection.parameters.put("server", container.getHost());
-        connection.parameters.put("port", (double) container.getFirstMappedPort());
-        connection.parameters.put("db", container.getDatabaseName());
+        connection.parameters.put(DbCredentials.SERVER, container.getHost());
+        connection.parameters.put(DbCredentials.PORT, (double) container.getFirstMappedPort());
+        connection.parameters.put(DbCredentials.DB, container.getDatabaseName());
     }
 
     @DisplayName("Test whether container with db is running")
