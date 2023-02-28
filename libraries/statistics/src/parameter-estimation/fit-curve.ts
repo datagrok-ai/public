@@ -208,7 +208,7 @@ function getObjectiveDerivative(of: ObjectiveFunction, curveFunction: (params: n
 function getAuc(fittedCurve: (x: number) => number, 
                 data: {x: number[], y: number[]}): number {
   let auc = 0;
-  const integrationStep = 0.00001;
+  const integrationStep = 0.001;
   let min = Math.min(...data.x);
   let max = Math.max(...data.x);
 
