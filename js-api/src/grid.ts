@@ -32,6 +32,26 @@ export class Point implements IPoint {
   distanceTo(p: Point): number {
     return Math.sqrt((this.x - p.x) * (this.x - p.x) + (this.y - p.y) * (this.y - p.y));
   }
+
+  /** Returns the bounding rectangle for the specified points. */
+  static getBounds(points: IPoint[]): Rect {
+    if (!points || points.length == 0)
+      return new Rect(0, 0, 1, 1);
+
+    let minX = points[0].x;
+    let minY = points[0].y;
+    let maxX = points[0].x;
+    let maxY = points[0].y;
+
+    for (let i = 1; i < points.length; i++) {
+      minX = Math.min(minX, points[i].x);
+      minY = Math.min(minY, points[i].y);
+      maxX = Math.max(maxX, points[i].x);
+      maxY = Math.max(maxY, points[i].y);
+    }
+
+    return new Rect(minX, minY, maxX - minX, maxY - minY);
+  }
 }
 
 
@@ -882,6 +902,12 @@ export class Grid extends Viewer<IGridLookSettings> {
   get vertScroll(): RangeSlider {
     return toJs(api.grok_Grid_Get_VertScroll(this.dart));
   }
+
+  /** Converts table row index to grid index. See also {@link gridRowToTable} */
+  tableRowToGrid(tableRow: number): number { return api.grok_Grid_TableRowToGrid(this.dart, tableRow); }
+
+  /** Converts grid row index to table index. See also {@link tableRowToGrid} */
+  gridRowToTable(gridRow: number): number { return api.grok_Grid_GridRowToTable(this.dart, gridRow); }
 
   /** Horizontal scroll bar */
   get horzScroll(): RangeSlider {
