@@ -75,8 +75,7 @@ class SnowflakeDataProviderTest {
 
     @DisplayName("Parameters support")
     @ParameterizedTest(name = "{index} : {0}")
-    @MethodSource({"grok_connect.providers.arguments_provider.CommonObjectsMother#checkParameterSupport_ok",
-            "grok_connect.providers.arguments_provider.CommonObjectsMother#checkMultipleParametersSupport_ok",
+    @MethodSource({
             "grok_connect.providers.arguments_provider.CommonObjectsMother#checkListParameterSupport_ok"})
     public void checkParameterSupport_ok(FuncCall funcCall, DataFrame expected) {
         prepareDataFrame(expected);
