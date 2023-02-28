@@ -7,7 +7,6 @@ import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.providers.utils.DataFrameComparator;
 import grok_connect.providers.utils.Provider;
-import grok_connect.providers.utils.Sql;
 import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryMonitor;
 import grok_connect.utils.SettingsManager;
@@ -77,7 +76,8 @@ class SnowflakeDataProviderTest {
     @DisplayName("Parameters support")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource({"grok_connect.providers.arguments_provider.CommonObjectsMother#checkParameterSupport_ok",
-            "grok_connect.providers.arguments_provider.CommonObjectsMother#checkMultipleParametersSupport"})
+            "grok_connect.providers.arguments_provider.CommonObjectsMother#checkMultipleParametersSupport_ok",
+            "grok_connect.providers.arguments_provider.CommonObjectsMother#checkListParameterSupport_ok"})
     public void checkParameterSupport_ok(FuncCall funcCall, DataFrame expected) {
         prepareDataFrame(expected);
         funcCall.func.connection = connection;
@@ -117,6 +117,24 @@ class SnowflakeDataProviderTest {
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.SnowflakeObjectsMother#checkOutputDataFrame_binaryType_ok")
     public void checkOutputDataFrame_binaryType_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support for snowflake geo type")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.SnowflakeObjectsMother#checkOutputDataFrame_geoType_ok")
+    public void checkOutputDataFrame_geoType_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support for snowflake semi-structured types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.SnowflakeObjectsMother#checkOutputDataFrame_semiStructuredTypes_ok")
+    public void checkOutputDataFrame_semiStructuredTypes_ok(FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
