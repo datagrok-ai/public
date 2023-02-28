@@ -40,6 +40,8 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
             properties.put(DbCredentials.DB, conn.getDb());
             properties.put(DbCredentials.WAREHOUSE, conn.get(DbCredentials.WAREHOUSE));
             properties.put(DbCredentials.ACCOUNT, buildAccount(conn));
+            String schema = conn.get(DbCredentials.SCHEMA);
+            properties.put(DbCredentials.SCHEMA, schema == null ? DEFAULT_SCHEMA : schema);
         }
         return properties;
     }
@@ -65,6 +67,26 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
                 + "FROM information_schema.columns "
                 + "WHERE table_schema = '%s' ORDER BY table_name";
         return String.format(query, schema);
+    }
+
+    @Override
+    protected boolean isInteger(int type, String typeName, int precision, int scale) {
+        return typeName.equals("NUMBER") && precision < 10 && scale == 0;
+    }
+
+    @Override
+    protected boolean isBigInt(int type, String typeName, int precision, int scale) {
+        return typeName.equals("NUMBER") && precision >= 10 && scale == 0;
+    }
+
+    @Override
+    protected boolean isFloat(int type, String typeName, int precision, int scale) {
+        return typeName.equals("DOUBLE") || type == java.sql.Types.DOUBLE;
+    }
+
+    @Override
+    protected String getRegexQuery(String columnName, String regexExpression) {
+        return String.format("%s REGEXP '%s'", columnName, regexExpression);
     }
 
     private void init() {

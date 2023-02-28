@@ -2,6 +2,7 @@ package grok_connect.providers;
 
 import java.io.*;
 import java.sql.*;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -44,7 +45,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     public Properties getProperties(DataConnection conn) {
         return defaultConnectionProperties(conn);
     }
-//    what is this?
+
     public boolean autoInterpolation() {
         return true;
     }
@@ -439,7 +440,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 columns.get(c - 1).add(((Float)value).intValue());
                             else if (value instanceof BigDecimal)
                                 columns.get(c - 1).add(((BigDecimal)value).intValue());
-                            else
+                            else if (value instanceof Long) {
+                                columns.get(c - 1).add(((Long)value).intValue());
+                            } else
                                 columns.get(c - 1).add(value);
                         else if (isString(type, typeName)) {
                             if ((type == java.sql.Types.CLOB || value instanceof Clob) && value != null) {
