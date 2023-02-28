@@ -7,8 +7,13 @@ import grok_connect.providers.utils.FuncCallBuilder;
 import grok_connect.providers.utils.Parser;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.params.provider.Arguments;
-import serialization.*;
-
+import serialization.BigIntColumn;
+import serialization.BoolColumn;
+import serialization.DataFrame;
+import serialization.DateTimeColumn;
+import serialization.FloatColumn;
+import serialization.IntColumn;
+import serialization.StringColumn;
 import java.time.LocalDate;
 import java.time.Year;
 import java.time.temporal.TemporalAdjusters;
@@ -246,7 +251,7 @@ public class OracleObjectsMother {
         );
     }
 
-    public static Stream<Arguments> checkMultipleParametersSupport() {
+    public static Stream<Arguments> checkMultipleParametersSupport_ok() {
         Parser parser = new DateParser();
         String datePattern = "yyyy-MM-dd";
         // --input: string first_name = "starts with p" {pattern: string}
@@ -356,9 +361,9 @@ public class OracleObjectsMother {
     public static Stream<Arguments> checkOutputDataFrame_jsonType_ok() {
         DataFrame expected = DataFrameBuilder.getBuilder()
                 .setRowCount(3)
-                .setColumn(new StringColumn(new String[]{"{\"phones\":[{\"type\": \"mobile\", \"phone\": \"001001\"}, "
-                        + "{\"type\": \"fix\", \"phone\": \"002002\"}]}", "{\"bar\": \"baz\", \"balance\": 7.77, "
-                        + "\"active\":false}", "{\"reading\": 1.230e-5}"}), "DATA")
+                .setColumn(new StringColumn(new String[]{"{\"phones\":[{\"type\":\"mobile\",\"phone\":\"001001\"},"
+                        + "{\"type\":\"fix\",\"phone\":\"002002\"}]}", "{\"bar\":\"baz\",\"balance\":7.77,\"active\":false}",
+                        "{\"reading\":0.0000123}"}), "DATA")
                 .build();
         return Stream.of(Arguments.of(Named.of("JSON TYPE SUPPORT",
                 FuncCallBuilder.fromQuery("SELECT * FROM JSON_DATA")), expected));
