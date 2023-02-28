@@ -1,20 +1,23 @@
 package grok_connect.providers;
 
-import grok_connect.connectors_info.DataConnection;
-import grok_connect.connectors_info.DataSource;
-import grok_connect.connectors_info.DbCredentials;
+import grok_connect.connectors_info.*;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import grok_connect.utils.ProviderManager;
 import serialization.Types;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SnowflakeDataProvider extends JdbcDataProvider{
     private static final boolean CAN_BROWSE_SCHEMA = true;
@@ -87,6 +90,24 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
     @Override
     protected String getRegexQuery(String columnName, String regexExpression) {
         return String.format("%s REGEXP '%s'", columnName, regexExpression);
+    }
+
+    @Override
+    protected void appendQueryParam(DataQuery dataQuery, String paramName, StringBuilder queryBuffer) {
+        FuncParam param = dataQuery.getParam(paramName);
+        if (param.propertyType.equals("list")) {
+            queryBuffer.append("SELECT TRIM(VALUE) FROM TABLE(strtok_split_to_table('?', ','))");
+        } else {
+            queryBuffer.append("?");
+        }
+    }
+
+    @Override
+    protected int setArrayParamValue(PreparedStatement statement, int n, FuncParam param) throws SQLException {
+        @SuppressWarnings("unchecked")
+        String[] values = ((ArrayList<String>) param.value).toArray(new String[0]);
+        statement.setString(n, String.join(",", values ));
+        return 0;
     }
 
     private void init() {
