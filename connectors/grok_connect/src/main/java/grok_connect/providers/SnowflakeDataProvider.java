@@ -6,6 +6,8 @@ import grok_connect.table_query.Stats;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import grok_connect.utils.ProviderManager;
+import net.snowflake.client.jdbc.SnowflakePreparedStatement;
+import net.snowflake.client.jdbc.SnowflakeStatement;
 import serialization.Types;
 
 import java.sql.PreparedStatement;
@@ -18,6 +20,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class SnowflakeDataProvider extends JdbcDataProvider{
     private static final boolean CAN_BROWSE_SCHEMA = true;
@@ -96,7 +99,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
     protected void appendQueryParam(DataQuery dataQuery, String paramName, StringBuilder queryBuffer) {
         FuncParam param = dataQuery.getParam(paramName);
         if (param.propertyType.equals("list")) {
-            queryBuffer.append("SELECT TRIM(VALUE) FROM TABLE(strtok_split_to_table('?', ','))");
+            queryBuffer.append("SELECT TRIM(VALUE) FROM TABLE(SPLIT_TO_TABLE(?, ','))");
         } else {
             queryBuffer.append("?");
         }
@@ -105,8 +108,9 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
     @Override
     protected int setArrayParamValue(PreparedStatement statement, int n, FuncParam param) throws SQLException {
         @SuppressWarnings("unchecked")
-        String[] values = ((ArrayList<String>) param.value).toArray(new String[0]);
-        statement.setString(n, String.join(",", values ));
+        List<String> list = ((ArrayList<String>) param.value);
+        String values = String.join(",", list);
+        statement.setObject(n, values);
         return 0;
     }
 
