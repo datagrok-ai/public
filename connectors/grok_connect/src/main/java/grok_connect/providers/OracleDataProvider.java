@@ -1,6 +1,8 @@
 package grok_connect.providers;
 
 import java.sql.Array;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -9,15 +11,18 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import grok_connect.connectors_info.DataConnection;
-import grok_connect.connectors_info.DataSource;
-import grok_connect.connectors_info.DbCredentials;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import grok_connect.connectors_info.*;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.Property;
 import grok_connect.utils.ProviderManager;
+import oracle.jdbc.OracleResultSet;
 import oracle.sql.TIMESTAMPTZ;
 import oracle.sql.ZONEIDMAP;
+import oracle.sql.json.OracleJsonObject;
 import serialization.Types;
 
 
@@ -125,6 +130,44 @@ public class OracleDataProvider extends JdbcDataProvider {
         } catch (SQLException e) {
             throw new RuntimeException("Something went wrong when converting VARRAY type of Oracle");
         }
+    }
+
+    @Override
+    protected Object getObjectFromResultSet(ResultSet resultSet, int c) {
+        try {
+            if (resultSet.getMetaData().getColumnTypeName(c).equals("JSON")) {
+                return resultSet.unwrap(OracleResultSet.class).getObject(c, OracleJsonObject.class);
+            }
+            return resultSet.getObject(c);
+        } catch (SQLException e) {
+            throw new RuntimeException("Something went wrong when getting object from result set");
+        }
+    }
+
+    @Override
+    protected void appendQueryParam(DataQuery dataQuery, String paramName, StringBuilder queryBuffer) {
+        FuncParam param = dataQuery.getParam(paramName);
+        if (param.propertyType.equals("list")) {
+            @SuppressWarnings("unchecked")
+            List<String> values = ((ArrayList<String>) param.value);
+            queryBuffer.append(values.stream().map(value -> "?").collect(Collectors.joining(", ")));
+        } else {
+            queryBuffer.append("?");
+        }
+    }
+
+    @Override
+    protected int setArrayParamValue(PreparedStatement statement, int n, FuncParam param) throws SQLException {
+        @SuppressWarnings (value="unchecked")
+        ArrayList<Object> lst = (ArrayList<Object>)param.value;
+        if (lst == null || lst.size() == 0) {
+            statement.setObject(n, null);
+            return 0;
+        }
+        for (int i = 0; i < lst.size(); i++) {
+            statement.setObject(n + i, lst.get(i));
+        }
+        return lst.size() - 1;
     }
 
     public String getConnectionStringImpl(DataConnection conn) {
