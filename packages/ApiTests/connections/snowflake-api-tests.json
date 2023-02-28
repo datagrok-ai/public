@@ -3,14 +3,16 @@
   "name": "SnowflakeApiTests",
   "friendlyName": "Tests",
   "parameters": {
-    "server": "",
-    "port": "",
-    "db": ""
+    "region": "west-europe",
+    "accountLocator": "ni99608",
+    "cloud": "azure",
+    "db": "test",
+    "warehouse": "COMPUTE_WH"
   },
   "credentials" : {
     "parameters" : {
-      "login": "",
-      "password": ""
+      "login": "pasha32662",
+      "password": "pBx7dyjp_"
     }
   },
   "dataSource": "Snowflake",
