@@ -89,7 +89,5 @@ export function convertXMLToIFitChartData(xmlText: string): IFitChartData {
     series: fitSeries
   };
 
-  console.log(fitChartData);
-
   return fitChartData;
 }
