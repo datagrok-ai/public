@@ -5,16 +5,25 @@ repos:
     rev: v4.4.0
     hooks:
       - id: check-case-conflict
+        stages: [commit, merge-commit, push, manual]
       - id: check-merge-conflict
+        stages: [commit, merge-commit, push, manual]
       - id: check-symlinks
+        stages: [commit, merge-commit, push, manual]
       - id: detect-private-key
+        stages: [commit, merge-commit, push, manual]
       - id: end-of-file-fixer
+        stages: [commit, merge-commit, push, manual]
       - id: trailing-whitespace
+        stages: [commit, merge-commit, push, manual]
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
     rev: v9.4.0
     hooks:
       - id: commitlint
+        stages: [commit-msg, manual]
+        additional_dependencies: ['@commitlint/config-conventional']
   - repo: https://github.com/DavidAnson/markdownlint-cli2
     rev: v0.6.0
     hooks:
       - id: markdownlint-cli2
+        stages: [commit, merge-commit, push, manual]

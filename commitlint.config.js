@@ -10,8 +10,9 @@ const Configuration = {
    */
   parserPreset: {
     parserOpts: {
-      headerPattern: /^([\w ]*): ?(?:closes )?(?:((?:[\w]+-[0-9]+)|(?:#[0-9]+)))?:?(.*)$/,
-      headerCorrespondence: ['scope', 'ticket', 'subject'],
+      headerPattern: /^([\w ]*): ?(?:closes )?(?:((?:GROK-[0-9]+)|(?:#[0-9]+)): )?((?:(?!(?:GROK-[0-9]+)|(?:#[0-9]+))\w)+.*)$/,
+      headerCorrespondence: ['scope', 'references', 'subject'],
+      issuePrefixes: ['GROK-', '#']
     }
   },
   /*
@@ -26,13 +27,13 @@ const Configuration = {
     "header-max-length": [1, "always", 70],
     "body-full-stop": [1, "never", '.'],
     "body-leading-blank": [2, "always"],
-    "body-empty": [1, "never"],
+    "body-empty": [0, "never"],
     "body-max-length": [0, "always", "Infinity"],
     "body-max-line-length": [1, "always", 70],
     "body-min-length": [0, "always", 0],
     "body-case": [1, "always", "sentence-case"],
     "footer-leading-blank": [2, "always"],
-    "footer-empty": [1, "never"],
+    "footer-empty": [0, "never"],
     "footer-max-length": [0, "always", "Infinity"],
     "footer-max-line-length": [1, "always", 70],
     "footer-min-length": [0, "always", 0],
@@ -41,10 +42,10 @@ const Configuration = {
     "header-max-length": [2, "always", 80],
     "header-min-length": [2, "always", 1],
     "references-empty": [1, "never"],
-    "scope-enum": [0, "always", []],
-    "scope-case": [0, "always", "pascal-case"],
+    "scope-enum": [2, "always"],
+    "scope-case": [2, "always", "pascal-case"],
     "scope-empty": [2, "never"],
-    "scope-max-length": [0, "always", 25],
+    "scope-max-length": [2, "always", 25],
     "scope-min-length": [2, "always", 1],
     "subject-case": [2, "always", ['sentence-case', 'start-case', 'lower-case']],
     "subject-empty": [2, "never"],
@@ -52,10 +53,10 @@ const Configuration = {
     "subject-max-length": [2, "always", 60],
     "subject-min-length": [2, "always", 1],
     "subject-exclamation-mark": [0, "never"],
-    "type-enum": [2, "always", ["Fix", "Feat", "Perf", "Refactor", "Docs", "Test", "Build", "CI", "Revert"]],
+    "type-enum": [0, "always"],
     "type-case": [0, "always", "pascal-case"],
     "type-empty": [0, "never"],
-    "type-max-length": [1, "always", 10],
+    "type-max-length": [0, "always", 10],
     "type-min-length": [0, "always", 0],
     "signed-off-by": [0, "always", "Signed-off-by:"],
     "trailer-exists": [0, "always", "Signed-off-by:"],
@@ -75,7 +76,7 @@ const Configuration = {
    * Custom URL to show upon failure
    */
   helpUrl:
-    'https://datagrok.ai/help/develop/admin/releases/versioning-policy',
+    'http://localhost:3000/help/develop/advanced/git-policy#commit-message-policy',
 };
 
 module.exports = Configuration;
