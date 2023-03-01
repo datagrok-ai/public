@@ -92,7 +92,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '18'
-#          cache: 'npm'
       - run: npm install --location=global @commitlint/config-conventional @commitlint/cli
       - uses: wagoid/commitlint-github-action@v5
         with:
