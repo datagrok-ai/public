@@ -3,14 +3,18 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-enum MolfileVersion {
+import {AbstractChemicalTableParser, AtomAndBondCounts} from './chemical-table-parser';
+
+enum MOLFILE_VERSION {
   V2000 = 'V2000',
   V3000 = 'V3000',
 }
 
+// todo: port exportable constants to a separate module
 const enum V3K {
   HEADER = '999 V3000\n',
   BEGIN_COUNTS_LINE = 'M  V30 COUNTS ',
+  BEGIN_ATOM_BLOCK = 'M  V30 BEGIN ATOM',
   END = 'M  END',
 }
 
@@ -19,41 +23,72 @@ const enum V2K {
   END = 'M  END',
 }
 
-type Coordinates = {
-  x: Float32Array,
-  y: Float32Array,
-  z: Float32Array,
-}
-
 /** Class for handling MDL Molfiles V2000 and V3000 */
-class MolfileHandler {
+class MolfileHandler extends AbstractChemicalTableParser {
   constructor(molfile: string) {
+    super(molfile);
     this.molfileVersion = MolfileHandler.determineMolfileVersion(molfile);
-    this.molfile = molfile.replaceAll('\r', ''); // to handle old and new sdf standards
-    this.atomCoordinates = null;
-    this.atomCount = null;
-    this.bondCount = null;
-    this.atomTypes = null;
-    this.currentIdx = 0;
   }
 
-  private molfile: string;
-  private molfileVersion: MolfileVersion;
-  private atomCount: null | number;
-  private bondCount: null | number;
-  /** X, Y and Z coordinates of atoms  */
-  private atomCoordinates: null | Coordinates;
-  private atomTypes: null | string[];
-  private currentIdx: number;
+  private molfileVersion: MOLFILE_VERSION;
 
   /** Determine whether the file is V2000/V3000, or throw */
-  private static determineMolfileVersion(molfile: string): MolfileVersion {
+  private static determineMolfileVersion(molfile: string): MOLFILE_VERSION {
     if (MolfileHandler.validateV3K(molfile))
-      return MolfileVersion.V3000;
+      return MOLFILE_VERSION.V3000;
     else if (MolfileHandler.validateV2K(molfile))
-      return MolfileVersion.V3000;
+      return MOLFILE_VERSION.V3000;
     else
       throw new Error('Malformed molfile');
+  }
+
+  protected parseAtomAndBondCounts(): AtomAndBondCounts {
+    this.currentIdx = this.getAtomBlockIdx();
+    if (this.molfileVersion === MOLFILE_VERSION.V2000)
+      this.parseAtomAndBondCountsV2K();
+    else
+      this.parseAtomAndBondCountsV3K();
+  };
+
+  protected parseAtomCoordinates(): Float32Array[] {
+
+  };
+
+  protected parseAtomTypes(): string[] {
+
+  };
+
+  protected getAtomBlockIdx(): number {
+    if (this.molfileVersion === MOLFILE_VERSION.V2000)
+      return this.getAtomBlockIdxV2K();
+    else
+      return this.getAtomBlockIdxV3K();
+  };
+
+  private getAtomBlockIdxV2K(): number {
+    let idx = 0;
+    // 4 is for 3 header lines in V2K + one counts line
+    for (let i = 0; i < 4; ++i)
+      idx = this.getIdxOfNextLine(idx);
+    return idx;
+  }
+
+  private getAtomBlockIdxV3K(): number {
+    let idx = this.file.indexOf(V3K.BEGIN_ATOM_BLOCK);
+    idx = this.getIdxOfNextLine(idx);
+    return idx;
+  }
+
+  protected getBondBlockIdx(): number {
+    if (this.molfileVersion === MOLFILE_VERSION.V2000)
+      return this.getBondBlockIdxV2K();
+    else
+      return this.getBondBlockIdxV3K();
+  };
+
+  private getBondBlockIdxV2K(): number {
+    let idx = this.getAtomBlockIdx();
+    for (let i = 0; i < )
   }
 
   // todo: devise a more complex validation
@@ -72,34 +107,16 @@ class MolfileHandler {
     return false;
   }
 
-  private parseCoordinates(): Float32Array[] {
-    const x = new Float32Array();
-    const y = new Float32Array();
-    const z = new Float32Array();
-    return [x, y, z];
-  }
+  // private setAtomAndBondCounts(): void {
+  //   if (!this.atomCount) {
+  //     const parse = (this.molfileVersion === MolfileVersion.V2000) ? this.parseAtomAndBondCountsV3K : this.parseAtomAndBondCountsV2K;
+  //     const counts = parse();
+  //     this.atomCount = counts.atomCount;
+  //     this.bondCount = counts.bondCount;
+  //   }
+  // }
 
-  private setAtomAndBondCounts(): void {
-    if (!this.atomCount) {
-      const parse = (this.molfileVersion === MolfileVersion.V2000) ? this.parseAtomAndBondCountsV3K : this.parseAtomAndBondCountsV2K;
-      const counts = parse();
-      this.atomCount = counts.atomCount;
-      this.bondCount = counts.bondCount;
-    }
-  }
-
-  private jumpToNextLine(): void {
-    this._currentIdx = this.getIdxOfNextLine();
-  }
-
-  private getIdxOfNextLine(): number {
-    if (this._str.at(this._currentIdx) !== '\n')
-      return this._str.indexOf('\n', this._currentIdx) + 1;
-    else
-      return this._str.indexOf('\n', this._currentIdx + 1) + 1;
-  }
-
-  private parseAtomAndBondCountsV2K() { atomCount: number, bondCount: number } {
+  private parseAtomAndBondCountsV2K(): AtomAndBondCounts {
 
     // parse atom count
     let begin = this.molfile.indexOf(V3K_BEGIN_COUNTS_LINE) + V3K_COUNTS_SHIFT;
@@ -114,7 +131,7 @@ class MolfileHandler {
     return {atomCount: numOfAtoms, bondCount: numOfBonds};
   };
 
-  private parseAtomAndBondCountsV3K() { atomCount: number, bondCount: number } {
+  private parseAtomAndBondCountsV3K(): AtomAndBondCounts {
     molfileV3K = molfileV3K.replaceAll('\r', ''); // to handle old and new sdf standards
 
     // parse atom count
@@ -129,13 +146,4 @@ class MolfileHandler {
 
     return {atomCount: numOfAtoms, bondCount: numOfBonds};
   }
-
-  public get x: Float32Array {
-    if (!this.) {
-
-    } else {
-      return this.x;
-    }
-  }
-
 }
