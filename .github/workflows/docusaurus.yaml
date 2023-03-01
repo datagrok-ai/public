@@ -20,25 +20,25 @@ jobs:
         with:
           node-version: 18
       - name: Install markdownlint-cli2
-        run: npm install -g markdownlint-cli2
+        run: npm install -g markdownlint-cli2 markdownlint-cli2-formatter-summarize
       - name: Lint Markdown
         id: check
         run: |
-          markdownlint-cli2 "help/**/*.{md,mdx}" > help/lint-check-report.md 2>&1
+          markdownlint-cli2 "help/**/*.{md,mdx}" > help/_lint-check-report.md 2>&1
           echo "result=success" >> $GITHUB_OUTPUT
         continue-on-error: true
       - name: Set summary
         run: |
           echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
-          if [[ "${{ steps.anchors.outputs.result }}" == "success" ]]; then
+          if [[ "${{ steps.check.outputs.result }}" == "success" ]]; then
             echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
           else
             echo ":no_entry_sign: Some errors occurred" >> "${GITHUB_STEP_SUMMARY}"
             echo "## Errors per input" >> "${GITHUB_STEP_SUMMARY}"
             echo ":no_entry_sign: Markdown Linter errors:"
-            echo "To test locally use the [instructions](https://datagrok.ai/help/develop/how-to/help-pages#markdown-linter)" >> help/lint-check-report.md
-            cat help/lint-check-report.md
-            cat help/lint-check-report.md >> "${GITHUB_STEP_SUMMARY}"
+            echo "To test locally use the [instructions](https://datagrok.ai/help/develop/how-to/help-pages#markdown-linter)" >> help/_lint-check-report.md
+            cat help/_lint-check-report.md
+            cat help/_lint-check-report.md >> "${GITHUB_STEP_SUMMARY}"
             exit 1
           fi
 
@@ -82,7 +82,7 @@ jobs:
         working-directory: ./docusaurus
         continue-on-error: true
         run: |
-          hyperlink --check-anchors build/ --sources ../help/ > ../help/anchor-check-report.md 2>&1
+          hyperlink --check-anchors build/ --sources ../help/ > ../help/_anchor-check-report.md 2>&1
           echo "result=success" >> $GITHUB_OUTPUT
       - name: Set summary
         run: |
@@ -92,9 +92,9 @@ jobs:
           else
             echo ":no_entry_sign: Some errors occurred" >> "${GITHUB_STEP_SUMMARY}"
             echo ":no_entry_sign: Hyperlink link checker errors:"
-            echo "To test locally use the [instructions](https://datagrok.ai/help/develop/how-to/help-pages#links-and-anchors-check)" >> help/anchor-check-report.md
-            cat help/anchor-check-report.md >> "${GITHUB_STEP_SUMMARY}"
-            cat help/anchor-check-report.md
+            echo "To test locally use the [instructions](https://datagrok.ai/help/develop/how-to/help-pages#links-and-anchors-check)" >> help/_anchor-check-report.md
+            cat help/_anchor-check-report.md >> "${GITHUB_STEP_SUMMARY}"
+            cat help/_anchor-check-report.md
             sed -i '/Found some broken links, reading source files/a ## Errors per input' ${GITHUB_STEP_SUMMARY}
             sed -i -r 's,^(help/.*\.md)$,### \1,g' ${GITHUB_STEP_SUMMARY}
             sed -i 's,error:,**Error:**,g' ${GITHUB_STEP_SUMMARY}

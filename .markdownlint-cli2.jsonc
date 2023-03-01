@@ -1,0 +1,16 @@
+{
+  "ignores": [
+    "**/markdown.md",
+    "**/release-history.md",
+    "**/video-lessons.md",
+    "help/_*/**/*.md",
+    "help/**/_*.md",
+    "**/node_modules",
+    "js-api/docs/**",
+    "js-api/help/**",
+    "LICENSE.md"
+  ],
+  "outputFormatters": [
+    [ "markdownlint-cli2-formatter-summarize", { "byRuleByFile": true } ]
+  ]
+}
