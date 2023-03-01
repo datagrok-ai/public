@@ -24,6 +24,7 @@ jobs:
       - name: Lint Markdown
         id: check
         run: |
+          markdownlint-cli2 "help/**/*.{md,mdx}"
           markdownlint-cli2 "help/**/*.{md,mdx}" > help/lint-check-report.md 2>&1
           echo "result=success" >> $GITHUB_OUTPUT
         continue-on-error: true
@@ -82,7 +83,7 @@ jobs:
         working-directory: ./docusaurus
         continue-on-error: true
         run: |
-          hyperlink --check-anchors build/ --sources ../help/ >  ../help/anchor-check-report.md 2>&1
+          hyperlink --check-anchors build/ --sources ../help/ > ../help/anchor-check-report.md 2>&1
           echo "result=success" >> $GITHUB_OUTPUT
       - name: Set summary
         run: |
