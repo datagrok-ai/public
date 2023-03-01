@@ -1,0 +1,8 @@
+---
+ignores:
+  - "**/markdown.md"
+  - "**/release-history.md"
+  - "**/video-lessons.md"
+  - "help/_*/**/*.md"
+  - "help/**/_*.md"
+  - "**/node_modules"

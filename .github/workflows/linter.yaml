@@ -6,8 +6,8 @@ on:
   pull_request:
 
 jobs:
-  lint:
-    name: Lint Code Base
+  super-linter:
+    name: Super Lint Code Base
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code
@@ -26,7 +26,6 @@ jobs:
           ERROR_ON_MISSING_EXEC_BIT: true
           SUPPRESS_FILE_TYPE_WARN: false
           JSCPD_CONFIG_FILE: .jscpd.json
-          MARKDOWN_CONFIG_FILE: .markdownlint.yaml
           NATURAL_LANGUAGE_CONFIG_FILE: .textlintrc
           JAVASCRIPT_ES_CONFIG_FILE: .eslintrc.json
           TYPESCRIPT_ES_CONFIG_FILE: .eslintrc.json
@@ -51,7 +50,6 @@ jobs:
           VALIDATE_JSX: true
           VALIDATE_KUBERNETES_KUBEVAL: true
           VALIDATE_LUA: true
-          VALIDATE_MARKDOWN: true
           VALIDATE_NATURAL_LANGUAGE: true
           VALIDATE_POWERSHELL: true
           VALIDATE_SHELL_SHFMT: true
@@ -61,6 +59,27 @@ jobs:
           VALIDATE_TYPESCRIPT_ES: true
           VALIDATE_XML: true
           VALIDATE_YAML: true
+
+  markdown:
+    name: MarkdownLint
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          # Full git history is needed to get a proper list of changed files within `markdownlint`
+          fetch-depth: 0
+      - uses: tj-actions/changed-files@v35
+        id: changed-files
+        with:
+          files: '**/*.md'
+          separator: ","
+      - name: markdownlint-cli2-action
+        uses: DavidAnson/markdownlint-cli2-action
+        if: steps.changed-files.outputs.any_changed == 'true'
+        with:
+          globs: ${{ steps.changed-files.outputs.all_changed_files }}
+          separator: ","
 
   commit:
     name: Lint Commit message

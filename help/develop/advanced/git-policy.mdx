@@ -28,12 +28,15 @@ We separated the Git Flow into two types: flow for experienced contributors and 
    and [test](https://datagrok.ai/help/develop/how-to/test-packages#local-testing) your changes before committing.
 3. Keep your local branch up to date by frequently fetching changes from the remote server. It will prevent bugs,
    rework, and the tiresome resolution of conflicts. Start your work by fetching changes.
+
    ```mdx-code-block
    <Tabs>
    <TabItem value="master" label="Master branch" default>
    ```
+
    Do not create unnecessary merge loops. Always use the --rebase flag to pull changes from the `master` branch. For
    more information on how to work with git, check the detailed instructions in [codeowners flow](#codeowners-flow).
+
    ```bash
    git stash
    git pull --rebase
@@ -41,16 +44,20 @@ We separated the Git Flow into two types: flow for experienced contributors and 
    # Resolve the conflicts if any occurred
    git reset
    ```
+
    ```mdx-code-block
    </TabItem>
    <TabItem value="branch" label="Development branches">
    ```
+
    Fetch changes from `master` branch to keep your code up-to-date.
+
    ```bash
    git pull
    git merge origin/master
    git push
    ```
+
    ```mdx-code-block
    </TabItem>
    </Tabs>
@@ -106,7 +113,7 @@ requests to the master branch. They are the owners of the code quality of the pr
 
    ```bash
    # git commit -m '<commit message>'
-   git commit -m '<scope>: [closes] <ticket ID>: <subject>     
+   git commit -m '<scope>: [closes] <ticket ID>: <subject>
    [optional description]
    '
    ```
@@ -163,7 +170,7 @@ the [trunk-based development flow](https://www.atlassian.com/continuous-delivery
    ```bash
    # git checkout -b <first letter of your name><you surname>/<task ID>/<meaningful short description>
    git checkout -b jdoe/GROK-123/description
-   
+
    # git push –set-upstream origin <first letter of your name><you surname>/<task ID>/<meaningful short description>
    git push --set-upstream origin jdoe/GROK-123/description
    ```
@@ -195,7 +202,7 @@ the [trunk-based development flow](https://www.atlassian.com/continuous-delivery
 
    ```bash
    # git commit -m '<commit message>'
-   git commit -m '<scope>: [closes] <ticket ID>: <subject>     
+   git commit -m '<scope>: [closes] <ticket ID>: <subject>
    [optional description]
    '
    ```
@@ -290,10 +297,10 @@ For now, there is no need in the release branch for any software other than JS A
    # Pull changes in the release branch
    git pull
    git checkout master
-   
+
    # Pull changes in the master branch
    git pull
-   
+
    # git cherry-pick <commit with version change and release notes from release branch>
    git cherry-pick zyxwvutsrqponmlkjihgfedcba987654321
    ```
@@ -333,7 +340,7 @@ Every line in the commit should be 70 chars or less.
 ```
 JS API: GROK-123: Update rxjs dependency version
 
-Fix the CVE-0000-99999 vulnerability of old version rxjs in 
+Fix the CVE-0000-99999 vulnerability of old version rxjs in
 JS API package.json
 https://community.datagrok.ai/t/topic-for-dependency/000
 ```
@@ -440,4 +447,4 @@ husky install
 ```
 
 Every commit is checked in GitHub Actions and reported broken if it does not apply to
-the [commit message rules](#commit-message-rules) 
+the [commit message rules](#commit-message-rules)
