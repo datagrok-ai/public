@@ -198,8 +198,8 @@ export class FitCellRenderer extends DG.GridCellRenderer {
 
     if (data.seriesOptions?.showPoints) {
       const filteredIndexes = coordinateDf.filter.getSelectedIndexes();
+      const color = DG.Color.scatterPlotMarker;
       for (let i = 0; i < canvasPointCoordinates.x.length; i++) {
-        const color = DG.Color.scatterPlotMarker;
         if (filteredIndexes.includes(i)) {
           DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, x + canvasPointCoordinates.x[i],
             (y + h) - canvasPointCoordinates.y[i], color, 4);
