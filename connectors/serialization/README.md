@@ -1,9 +1,8 @@
-serialization
-=========
+# serialization
 
 Java-based implementation of Grok binary serialization
 
-# Dependencies
+## Dependencies
 
 | Name             | License                                 |
 |------------------|-----------------------------------------|
