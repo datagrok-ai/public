@@ -26,8 +26,8 @@ export abstract class AbstractChemicalTableParser implements ChemicalTableParser
 
   /** Index running along the string/file being parsed  */
   protected currentIdx: number = 0;
-  protected atomCount?: number;
-  protected bondCount?: number;
+  protected _atomCount?: number;
+  protected _bondCount?: number;
   /** The array of X, Y, Z arrays for atomic coordinates */
   protected atomCoordinates?: Float32Array[];
   protected atomTypes?: string[];
@@ -35,8 +35,16 @@ export abstract class AbstractChemicalTableParser implements ChemicalTableParser
   protected abstract parseAtomAndBondCounts(): AtomAndBondCounts;
   protected abstract parseAtomCoordinates(): Float32Array[];
   protected abstract parseAtomTypes(): string[];
+  /** Get idx of the first line of the atom block  */
   protected abstract getAtomBlockIdx(): number;
+  /** Get idx of the first line of the bond block  */
   protected abstract getBondBlockIdx(): number;
+
+  protected setAtomAndBondCounts(): void {
+    const {atomCount, bondCount} = this.parseAtomAndBondCounts();
+    this._atomCount = atomCount;
+    this._bondCount = bondCount;
+  }
 
   /** Gets the idx of the next column relatively to this._currentIdx  */
   protected getNextColumnIdx(): number {
@@ -84,6 +92,12 @@ export abstract class AbstractChemicalTableParser implements ChemicalTableParser
       ++end;
     const value = parserFunction(this.file.substring(this.currentIdx, end));
     return value;
+  }
+
+  protected get atomCount(): number {
+    if (this._atomCount === undefined)
+      this.setAtomAndBondCounts();
+    return this._atomCount!;
   }
 
   get X(): Float32Array {

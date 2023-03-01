@@ -45,9 +45,9 @@ class MolfileHandler extends AbstractChemicalTableParser {
   protected parseAtomAndBondCounts(): AtomAndBondCounts {
     this.currentIdx = this.getAtomBlockIdx();
     if (this.molfileVersion === MOLFILE_VERSION.V2000)
-      this.parseAtomAndBondCountsV2K();
+      return this.parseAtomAndBondCountsV2K();
     else
-      this.parseAtomAndBondCountsV3K();
+      return this.parseAtomAndBondCountsV3K();
   };
 
   protected parseAtomCoordinates(): Float32Array[] {
