@@ -95,9 +95,8 @@ jobs:
 #          cache: 'npm'
       - run: npm install --location=global @commitlint/config-conventional @commitlint/cli
       - uses: wagoid/commitlint-github-action@v5
-        continue-on-error: true
         with:
           configFile: commitlint.config.js
           firstParent: true
           failOnWarnings: false
-          helpURL: https://datagrok.ai/help/develop/admin/releases/versioning-policy
+          helpURL: http://localhost:3000/help/develop/advanced/git-policy#commit-message-policy
