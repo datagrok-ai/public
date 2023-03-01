@@ -5,10 +5,17 @@ import * as DG from 'datagrok-api/dg';
 
 /** Interface for parsers of Molfile and Mol2 formats */
 interface ChemicalTableParser {
-  X: Float32Array;
-  Y: Float32Array;
-  Z: Float32Array;
-  AtomTypes: string[];
+  /** Number of atoms in a molecule  */
+  atomCount: number;
+  /** Number of bonds in a molecule  */
+  bondCount: number;
+  /** X coordinates of all atoms in a molecule  */
+  x: number[];
+  /** Y coordinates of all atoms in a molecule  */
+  y: number[];
+  /** Z coordinates of all atoms in a molecule  */
+  z: number[];
+  atomTypes: string[];
 }
 
 export type AtomAndBondCounts = {
@@ -29,11 +36,10 @@ export abstract class AbstractChemicalTableParser implements ChemicalTableParser
   protected _atomCount?: number;
   protected _bondCount?: number;
   /** The array of X, Y, Z arrays for atomic coordinates */
-  protected atomCoordinates?: Float32Array[];
-  protected atomTypes?: string[];
+  protected atomCoordinates?: number[][];
+  protected _atomTypes?: string[];
 
   protected abstract parseAtomAndBondCounts(): AtomAndBondCounts;
-  protected abstract parseAtomCoordinates(): Float32Array[];
   protected abstract parseAtomTypes(): string[];
   /** Get idx of the first line of the atom block  */
   protected abstract getAtomBlockIdx(): number;
@@ -58,17 +64,28 @@ export abstract class AbstractChemicalTableParser implements ChemicalTableParser
     return idx;
   }
 
+  protected parseAtomCoordinates(): number[][] {
+    const x = new Array<number>(this.atomCount);
+    const y = new Array<number>(this.atomCount);
+    const z = new Array<number>(this.atomCount);
+    let idx = this.getAtomBlockIdx();
+    for (let i = 0; i < this.atomCount; i ++) {
+      idx = this.getXCoordinateIdx();
+      x[i] = this.parseFloatValue();
+    }
+  }
+
   /** Check if a character is whitespace including '\t'  */
   protected isWhitespace(idx: number): boolean {
     return /\s/.test(this.file.at(idx)!);
   }
 
   protected jumpToNextLine(): void {
-    this.currentIdx = this.getIdxOfNextLine(this.currentIdx);
+    this.currentIdx = this.getNextLineIdx(this.currentIdx);
   }
 
   /** Get index of the next line starting from idx  */
-  protected getIdxOfNextLine(idx: number): number {
+  protected getNextLineIdx(idx: number): number {
     if (this.file.at(idx) !== '\n')
       return this.file.indexOf('\n', idx) + 1;
     else
@@ -94,33 +111,39 @@ export abstract class AbstractChemicalTableParser implements ChemicalTableParser
     return value;
   }
 
-  protected get atomCount(): number {
+  get atomCount(): number {
     if (this._atomCount === undefined)
       this.setAtomAndBondCounts();
     return this._atomCount!;
   }
 
-  get X(): Float32Array {
+  get bondCount(): number {
+    if (this._bondCount === undefined)
+      this.setAtomAndBondCounts();
+    return this._bondCount!;
+  }
+
+  get x(): Float32Array {
     if (this.atomCoordinates === undefined)
       this.atomCoordinates = this.parseAtomCoordinates();
     return this.atomCoordinates![0];
   };
 
-  get Y(): Float32Array {
+  get y(): Float32Array {
     if (this.atomCoordinates === undefined)
       this.atomCoordinates = this.parseAtomCoordinates();
     return this.atomCoordinates![1];
   };
 
-  get Z(): Float32Array {
+  get z(): Float32Array {
     if (this.atomCoordinates === undefined)
       this.atomCoordinates = this.parseAtomCoordinates();
     return this.atomCoordinates![2];
   };
 
-  get AtomTypes(): string[] {
-    if (this.atomTypes === undefined)
-      this.atomTypes = this.parseAtomTypes();
-    return this.atomTypes;
+  get atomTypes(): string[] {
+    if (this._atomTypes === undefined)
+      this._atomTypes = this.parseAtomTypes();
+    return this._atomTypes;
   }
 }

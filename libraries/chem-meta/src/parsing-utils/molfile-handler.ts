@@ -15,6 +15,7 @@ const enum V3K {
   HEADER = '999 V3000\n',
   BEGIN_COUNTS_LINE = 'M  V30 COUNTS ',
   BEGIN_ATOM_BLOCK = 'M  V30 BEGIN ATOM',
+  BEGIN_BOND_BLOCK = 'M  V30 BEGIN BOND',
   END = 'M  END',
 }
 
@@ -51,7 +52,6 @@ class MolfileHandler extends AbstractChemicalTableParser {
   };
 
   protected parseAtomCoordinates(): Float32Array[] {
-
   };
 
   protected parseAtomTypes(): string[] {
@@ -69,13 +69,13 @@ class MolfileHandler extends AbstractChemicalTableParser {
     let idx = 0;
     // 4 is for 3 header lines in V2K + one counts line
     for (let i = 0; i < 4; ++i)
-      idx = this.getIdxOfNextLine(idx);
+      idx = this.getNextLineIdx(idx);
     return idx;
   }
 
   private getAtomBlockIdxV3K(): number {
     let idx = this.file.indexOf(V3K.BEGIN_ATOM_BLOCK);
-    idx = this.getIdxOfNextLine(idx);
+    idx = this.getNextLineIdx(idx);
     return idx;
   }
 
@@ -88,7 +88,13 @@ class MolfileHandler extends AbstractChemicalTableParser {
 
   private getBondBlockIdxV2K(): number {
     let idx = this.getAtomBlockIdx();
-    for (let i = 0; i < )
+    for (let i = 0; i < this.atomCount; i++)
+      idx = this.getNextLineIdx(idx);
+    return idx;
+  }
+
+  private getBondBlockIdxV3K(): number {
+    return this.getNextLineIdx(this.file.indexOf(V3K.BEGIN_BOND_BLOCK));
   }
 
   // todo: devise a more complex validation
@@ -107,17 +113,7 @@ class MolfileHandler extends AbstractChemicalTableParser {
     return false;
   }
 
-  // private setAtomAndBondCounts(): void {
-  //   if (!this.atomCount) {
-  //     const parse = (this.molfileVersion === MolfileVersion.V2000) ? this.parseAtomAndBondCountsV3K : this.parseAtomAndBondCountsV2K;
-  //     const counts = parse();
-  //     this.atomCount = counts.atomCount;
-  //     this.bondCount = counts.bondCount;
-  //   }
-  // }
-
   private parseAtomAndBondCountsV2K(): AtomAndBondCounts {
-
     // parse atom count
     let begin = this.molfile.indexOf(V3K_BEGIN_COUNTS_LINE) + V3K_COUNTS_SHIFT;
     let end = molfileV3K.indexOf(' ', begin + 1);
