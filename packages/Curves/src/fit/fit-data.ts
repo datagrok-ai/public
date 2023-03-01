@@ -168,7 +168,7 @@ function createDefaultChartData(): IFitChartData {
 
 /** Returns existing, or creates new column default chart options. */
 export function getColumnChartOptions(gridColumn: DG.GridColumn): IFitChartData {
-  return gridColumn.temp[TAG_FIT] ??= createDefaultChartData();
+  return gridColumn.tags[TAG_FIT] ??= createDefaultChartData();
 }
 
 
