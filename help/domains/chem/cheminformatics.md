@@ -11,59 +11,61 @@ Datagrok provides a powerful set of tools for [Cheminformatics](https://en.wikip
 
 With Datagrok, you can:
 
-* Instantly import your data of the most common [molecular structure formats](../../access/supported-formats.md#molecular-structure-formats).
-  For databases and cloud services we provide [30+ data connectors](../../access/data-connection.md), [data queries](../../access/data-query.md) and [data preparation pipelines](../../access/data-pipeline.md).  
-  Our [semantic types](../../discover/semantic-types.md) include molecules that enables automatic structures rendering, chemically-aware viewers and adaptive info panels.
+* Instantly import your data in [multiple data formats](../../access/supported-formats.md), including the most common [molecular structure formats](../../access/supported-formats.md#molecular-structure-formats).  
+  To access databases and cloud services, you can use [30+ data connectors](../../access/data-connection.md), [data queries](../../access/data-query.md), and [data preparation pipelines](../../access/data-pipeline.md).  
+
+  By recognizing molecules in your data, the platform automatically renders chemical structures and connects adaptive [info panels](../../discover/info-panels.md).
 
   ![SMILES rendering](smiles-rendering.gif "SMILES rendering")
 
-* Visualize your data with context-driven [Viewers](../../visualize/viewers/). For molecular data, [chemically aware viewers](chemically-aware-viewers) offer additional functionality:
+* Visualize your data with [viewers](../../visualize/viewers/). Our viewers, including [chemically aware viewers](chemically-aware-viewers) for molecular data, offer the following functionality:
 
-  * Vizualization of molecules on axes
+  * Visualization of molecules on axes.
 
-    ![Molecules are shown on axis](structures-on-axis.gif "Molecules are shown on axis")
+    ![Molecules on axis](structures-on-axis.gif "Molecules on axis")
 
-  * Synchronized filtering across selected viewers
+  * Synchronized filtering across selected viewers.
   
     ![Synchronized filtering](synchronized-filtering.gif "Synchronized filtering")
   
-  * Datapoint-associated tooltip with useful information
+  * Useful tooltips for each datapoint.
   
-    ![Datapoint-associated tooltip](datapoint-tooltip.gif "Datapoint-associated tooltip")
+    ![Datapoint tooltip](datapoint-tooltip.gif "Datapoint tooltip")
 
-* Sketch a new molecule, edit an existing one, or retrieve one by entering compound identifier/trivial name with [Sketcher](sketcher.md)
+* Sketch a new molecule, edit an existing one, or retrieve one by entering compound identifier/trivial name with [sketcher](sketcher.md). Datagrok supports the following sketchers: Marvin, ChemDraw, OpenChemLib, Ketcher.
 
-  ![Sketcher](sketcher-molecules.gif "Molecular structures in Sketcher")
-
-  While drawing a molecule, info panels update interactively.
-
-  ![Updating info panels](updating-info-panels.gif "Updating info panels")
-
-  With a structure in Sketcher, substructure search is available. You can select or filter rows in dataset by sketched substuctures.
+  ![Sketcher](sketcher-molecules.gif "Molecular structures in sketcher")
+  
+  <details>
+  <summary>Use sketcher to filter your data by a substructure.</summary>
+  <div>
 
   ![Sketcher substructure search](sketcher-substructure-search.gif "Sketcher substructure search")
-  
-  We support several Sketcher types: Marvin, ChemDraw, OpenChemLib, Ketcher.
 
-* Explore molecules in [info panels](../../discover/info-panels.md): view structures in 2D and 3D, evaluate [drug likeness](info-panels/drug-likeness.md), [toxicity risks](info-panels/toxicity-risks), [structural alerts](info-panels/structural-alerts.md), chemical properties
+  </div>
+  </details>
 
-* Navigate through molecules with [diversity search](diversity-search.md) and [similarity search](similarity-search.md)
-* Extract [molecular descriptors](descriptors.md) and [fingerprints](fingerprints.md) on the fly
-* Train models using [predictive modeling](chem-predictive-modeling.md) and incorporate them in pipelines or [info panels](../../discover/info-panels.md)
+* Explore molecules in [info panels](../../discover/info-panels.md): view structures in 2D and 3D, evaluate [drug likeness](info-panels/drug-likeness.md), [toxicity risks](info-panels/toxicity-risks), [structural alerts](info-panels/structural-alerts.md), chemical properties.
+
+* Search through a collection of molecules with [diversity search](diversity-search.md), [similarity search](similarity-search.md), and substructure search.
+
+* Calculate [molecular descriptors](descriptors.md) and [fingerprints](fingerprints.md)
+
+* Train models using [predictive modeling](chem-predictive-modeling.md) and incorporate them in pipelines or [info panels](../../discover/info-panels.md).
 
 ## Augment
 
-Explore your data with [info panels](../../discover/info-panels.md). Datagrok's info panels collect molecule-specific functions in one place, calculating them on the fly.
+Extract more information about your data with [info panels](../../discover/info-panels.md). Datagrok's info panels contain molecule-specific functions and update dynamically and interactively.
 
 ![Toxicity, Gasteiger Partial Charges, Solubility Prediction](../../uploads/gifs/chem-model-augment.gif "Toxicity, Gasteiger Partial Charges, Solubility Prediction")
 
-By opening, info panels automatically enable the following functions:
+By opening, info panels automatically show the general functions:
 
 * Structure 2D – visualizes a molecule in 2D
 * Structure 3D – visualizes a molecule in 3D through generating .mol file
 * Molfile – provides a .mol file
 
-All the rest functions are optional and fall into Chemistry, Biology, Databases groups:
+All the rest functions fall into Chemistry, Biology, Databases groups:
 
 ```mdx-code-block
 <Tabs>
@@ -72,9 +74,9 @@ All the rest functions are optional and fall into Chemistry, Biology, Databases 
 
 Chemistry group helps explore chemical features and includes:
 
-* [Gasteiger Partial Charges](functions/gasteiger-charges.md) - visualizes and highlights partial charges in a molecule
-* [Chem descriptors](descriptors.md) – calculates and displays the specified descriptors for a molecule
-* Properties – yields the list of physical and chemical properties: empirical formula, molecular weight, hydrogen bond acceptor (HBA) and donor (HDA) values, LogP and LogS, polar surface area (PSA), number of rotatable bonds and stereocenters, also IUPAC name
+* [Gasteiger Partial Charges](functions/gasteiger-charges.md) - visualizes and highlights partial charges in a molecule.
+* [Chem descriptors](descriptors.md) – calculates and displays the specified descriptors for a molecule.
+* Properties – yields the list of physical and chemical properties: empirical formula, molecular weight, hydrogen bond acceptor (HBA) and donor (HDA) values, LogP and LogS, polar surface area (PSA), number of rotatable bonds and stereocenters, also IUPAC name.
 
 ```mdx-code-block
 </TabItem>
@@ -83,10 +85,10 @@ Chemistry group helps explore chemical features and includes:
 
 Biology group helps explore drug design related features and includes:
 
-* [Toxicity](info-panels/toxicity-risks.md) –  predicts the toxicity scores. Consists of such categories as mutagenicity, tumorogenicity, irritating effects, reproductive effects
-* [Structural alerts](info-panels/structural-alerts.md) – highlights the fragments in structures that might greatly increase the toxicity and other problematic structural features
+* [Toxicity](info-panels/toxicity-risks.md) –  predicts the toxicity scores. Consists of such categories as mutagenicity, tumorogenicity, irritating effects, reproductive effects.
+* [Structural alerts](info-panels/structural-alerts.md) – highlights the fragments in structures that might greatly increase the toxicity and other problematic structural features.
 * [Drug likeness](info-panels/structural-alerts.md) – predicts a score that shows how likely this molecule is to be a drug.
-* ADME/Tox - performs ADME and Toxicity analysis
+* ADME/Tox - performs ADME and Toxicity analysis.
 
 ```mdx-code-block
 </TabItem>
@@ -95,21 +97,21 @@ Biology group helps explore drug design related features and includes:
 
 Databases group helps access ChEmbl, PubChem and DrugBank public databases and includes:
 
-* Identifiers - fetches all known identifiers for the specified structure across [UniChem databases](https://www.ebi.ac.uk/unichem/)
-* Substructure and similarity search - provides search across ChEmbl, PubChem and DrugBank public databases
+* Identifiers - fetches all known identifiers for the specified structure across [UniChem databases](https://www.ebi.ac.uk/unichem/).
+* Substructure and similarity search - provides search across ChEmbl, PubChem and DrugBank public databases.
 
 ```mdx-code-block
 </TabItem>
 </Tabs>
 ```
 
-:::info Information
+:::info
 In addition to predefined info panels, users also can develop their own using any scripting language supported by the Datagrok platform.
 :::
 
 ## Calculate
 
-With chemical dataset uploaded, you can use two types of calculation functions: descriptors/fingerprints and mapping functions.
+With chemical dataset uploaded, you can run two types of calculation functions: descriptors/fingerprints and mapping functions.
 
 ### Descriptors and fingerprints
 
@@ -122,17 +124,17 @@ While descriptors are more physical and fingerprints are more abstract vectors, 
 * SAR analysis
 * Machine learning predictive modeling
 
-We support the following descriptors: Lipinski, Crippen, EState, EState VSA, Fragments, Graph, MolSurf, QED and [others](descriptors.md).
+We support the following descriptors: Lipinski, Crippen, EState, Graph, MolSurf, and [others](descriptors.md).
 
 ![descriptors](descriptors.gif "Calculate descriptors")
 
-We support the following fingerprints: RDKFingerprint, MACCSKeys, AtomPair, TopologicalTorsion, Morgan/Circular and [others](fingerprints.md).
+We support the following fingerprints: RDKFingerprint, MACCSKeys, AtomPair, TopologicalTorsion, Morgan/Circular, and [others](fingerprints.md).
 
 <!-- GIF with fingerprints. Doesn't work yet! -->
 
 ### Mapping functions
 
-Datagrok's mapping functions calculate molecules' unique textual identifiers known as [International Chemical Identifiers](https://en.wikipedia.org/wiki/International_Chemical_Identifier), interlinking the same molecules between multiple databases.
+Datagrok's mapping functions calculate molecules' textual identifiers known as [International Chemical Identifiers](https://en.wikipedia.org/wiki/International_Chemical_Identifier), interlinking the same molecules between multiple databases.
 
 With just a few clicks, you can convert your structures to InChI and InChI keys, its hashed version.
 
@@ -140,7 +142,7 @@ With just a few clicks, you can convert your structures to InChI and InChI keys,
 
 ## Transform
 
-Datagrok lets transform your molecular structures for standartization and/or augmentation purposes.  
+Datagrok lets transform your molecular structures for standardization and/or augmentation purposes.  
 In addition to general [data wrangling](../../transform/data-wrangling.md) procedures, you can use chemistry-specific ones: curation and mutation.
 
 ### Curation
@@ -148,7 +150,7 @@ In addition to general [data wrangling](../../transform/data-wrangling.md) proce
 [Сhemical structure curation](chem-curate.md) standardizes your chemical structures and helps avoid data-associated errors such as duplicated vectors in the training set or incorrect structure representation.
 
 :::tip
-By chemical structure curation you can improve your SAR analysis or model's prediction accuracy
+By chemical structure curation you can improve your SAR analysis or model's prediction accuracy.
 :::
 
 We offer the following curation methods:
@@ -175,14 +177,14 @@ Mutation function generates new structures based on the specified one. Generatio
 
 * ### [Similarity and diversity search](similarity-search.md)
 
-  For the specified structure, finds the 10 most similar/diverse ones in your dataset.  
-  Similarity search sorts all the found structures by similarity score based on Morgan fingerprints and multiple [distance metrics](similarity-spe#available-distance-metrics) to opt.
+  For the reference structure, finds the 10 most similar/diverse ones in your dataset.  
+  Similarity search sorts all the found structures by similarity score. Уou can try multiple [distance metrics](similarity-spe#available-distance-metrics) for different similarity scoring.
 
   ![Similarity search](../../uploads/gifs/similarity-search.gif "Similarity search")
 
 * ### [Substructure search](substructure-search.md)
 
-  Sketcher-supported function that searches for specified structural pattern in the datasource.
+  Sketcher-supported function that searches for query structural pattern in the data source.
 
   In Datagrok, substructure search implements several advanced features:
 
@@ -192,9 +194,9 @@ Mutation function generates new structures based on the specified one. Generatio
   * Multicolumn filtering
 
 :::info
-Similarity and substructure search support uploaded dataset, public databases (Chembl, PubChem, DrugBank) and [relational databases](db-substructure-similarity-search.md).
+In addition to an uploaded dataset, similarity and substructure search also support public databases (Chembl, PubChem, DrugBank) and [relational databases](db-substructure-similarity-search.md).
 :::
-<!-- #GIF с поиском субструктур в опен-сорсных БД, doesn't work -->
+<!-- #GIF с поиском субструктур в опен-сорсных БД, плохо работают -->
 
 ## Analyze
 
@@ -224,7 +226,7 @@ Identifies structure-based bioactivity values and includes:
 
   Flags potential chemical hazards taken from several rule sets containing
 [1,251 substructures in the SMARTS format](https://raw.githubusercontent.com/PatWalters/rd_filters/5f70235b387baa39669f25d95079e5dfec49a47c/rd_filters/data/alert_collection.csv).
-  Presence of any of these substructures triggers a structural alert shown on the info panel.
+  The presence of any of these substructures triggers a structural alert shown on the info panel.
 
 <!-- GIF with Structural Alerts, doesn't work -->
 
