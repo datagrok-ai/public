@@ -274,7 +274,7 @@ export namespace chem {
     }
 
     resize() {
-      if (this.sketcherInDom) {
+      if (this.sketcherInDom && this.sketcher?.isInitialized) {
         this.sketcher?.resize();
         this.resized = true;
       }
@@ -422,10 +422,12 @@ export namespace chem {
           .endGroup()
           .separator()
           .items(this.sketcherFunctions.map((f) => f.friendlyName), (friendlyName: string) => {
-            grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, friendlyName, true);
-            currentSketcherType = friendlyName;
-            this.sketcherType = currentSketcherType;
-            },
+            if (currentSketcherType !== friendlyName) {
+                grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, friendlyName, true);
+                currentSketcherType = friendlyName;
+                this.sketcherType = currentSketcherType;
+            }
+          },
             {
               isChecked: (item) => item === currentSketcherType, toString: item => item,
               radioGroup: 'sketcher type'
@@ -457,6 +459,8 @@ export namespace chem {
         this.changedSub?.unsubscribe();
         const sketcherFunc = this.sketcherFunctions.find(e => e.friendlyName == sketcherType|| e.name === sketcherType) ?? this.sketcherFunctions.find(e => e.friendlyName == DEFAULT_SKETCHER);
         this.sketcher = await sketcherFunc!.apply();
+        if(currentSketcherType !== sketcherFunc!.friendlyName) //in case sketcher type has been changed while previous sketcher was loading
+          return;
         this._setSketcherSize(); //update sketcher size according to base sketcher width and height
         this.host.appendChild(this.sketcher!.root);
         await ui.tools.waitForElementInDom(this.root);
