@@ -83,89 +83,59 @@ expected quality standards.
 Results of all automated tests are kept in the
 [test tracking system](#test-tracking-system).
 
-### Unit tests
-
-Our core libraries contain more than 2,000 unit tests that serve two primary
+* **Unit tests**. Our core libraries contain more than 2,000 unit tests that serve two primary
 purposes. First of all, they are produced and get used in the process of the
 test-driven development. Secondly, they automatically execute as part of the
-continuous integration process, enabling us to detect regression bugs.
-
-We also provide unit tests for our packages and libraries.
-See also [Adding package unit tests](../how-to/add-package-tests.md/#adding-unit-tests)
-
-### Integration tests
-
-Integration tests are very similar to unit tests. While unit tests tend to
+continuous integration process, enabling us to detect regression bugs. We also provide unit tests for our packages and libraries, see [Adding package unit tests](../how-to/add-package-tests.md/#adding-unit-tests)
+* **Integration tests**. Integration tests are very similar to unit tests. While unit tests tend to
 address isolated modules, integration tests cover interactions between different
 modules.
-
-### JS API tests
-
-! A separate suite of tests is devoted to the [JS API](../js-api.md). These
+* **JS API tests**. ! A separate suite of tests is devoted to the [JS API](../js-api.md). These
 tests are executed automatically on a server using a headless browser mode. The
 test suite is written in TypeScript, and is a regular
 [Datagrok package](https://github.com/datagrok-ai/public/tree/master/packages/ApiTests).
-
-### UI tests
-
-! For automated testing of the platform, we use Selenium, which works by
+* **UI tests**. ! For automated testing of the platform, we use Selenium, which works by
 emulating user input, and then checking for the expected result. We have over
 100 complex UI tests, and the number is proliferating. Each one is associated
 with a separate story, which is a plain text file describing the objective of
 the story (i.e., "user queries a database"), actions (i.e., "user opens the data
 connection toolbox, ..."), and the expected outcome (i.e., "results of the query
-are opened in the workspace").
-
-Stories can be produced by external users, in which case our QA engineer
-translates them to a script executable by Selenium.
-
+are opened in the workspace"). Stories can be produced by external users, in
+which case our QA engineer translates them to a script executable by Selenium.
 Overall, these tests cover a significant part of the platform's functionality,
 and there is a good chance that a bug will be caught by that system.
-
-### Function tests
-
-! Test cases can be added directly to a function's annotation. As every package,
-script, and API utilizes the concept of
+* **Function tests**. ! Test cases can be added directly to a function's
+annotation. As every package, script, and API utilizes the concept of
 [functions](../../datagrok/functions/functions.md), we provide function tests to
 all of them. See
 [testing functions](https://datagrok.ai/help/develop/how-to/add-package-tests#testing-functions)
 for details.
-
-### Performance benchmarks
-
-We consider performance a critical feature of Datagrok, so we keep track of it.
-We run performance benchmarks as part of the build, and keep track of the
-results to make sure the platform only gets better with time.
-
-### Stress tests
-
-To make sure the platform is stable under heavy load (either many users working
-simultaneously or executing CPU-intensive computations), we perform automated
-stress testing regularly. The real workflow is emulated by spawning many virtual
-machines that have Selenium installed on them and executing selected UI tests on
-them. There are two different passes:
-
-* An ordinary yet intensive user activity is emulated by random-ranging tests.
-* Each of the selected tests is executed on all machines simultaneously. This
+* **Performance benchmarks**. We consider performance a critical feature of
+Datagrok, so we keep track of it. We run performance benchmarks as part of the
+build, and keep track of the results to make sure the platform only gets better
+with time.
+* **Stress tests**. To make sure the platform is stable under heavy load (either
+many users working simultaneously or executing CPU-intensive computations), we
+perform automated stress testing regularly. The real workflow is emulated by
+spawning many virtual machines that have Selenium installed on them and
+executing selected UI tests on them. There are two different passes:
+  * An ordinary yet intensive user activity is emulated by random-ranging tests.
+  * Each of the selected tests is executed on all machines simultaneously. This
 helps us identify steps responsible for the performance degradation.
 
-For more details on different environments, tests, and interpretation of
+  For more details on different environments, tests, and interpretation of
 results, see [stress testing results](stress-testing-results.md).
 
 ## Manual testing
 
-### Structured manual tests
+* **Structured manual tests**. ! Certain UI tests are so complex that it's
+impractical to develop and maintain corresponding scripts. In such cases, we
+still write the story for it just like in UI tests. Our QA engineer executes
+structured UI tests, and results are reported to the test tracking system.
 
-! Certain UI tests are so complex that it's impractical to develop and maintain
-corresponding scripts. In such cases, we still write the story for it just like
-in UI tests. Our QA engineer executes structured UI tests, and results are
-reported to the test tracking system.
-
-### Unstructured manual tests
-
-! In addition to the testing outlined above, each release is manually tested by
-our QA engineer on a separate release environment. The amount of testing depends
-on the magnitude of the release.
+* **Unstructured manual tests**. ! In addition to the testing outlined above,
+each release is manually tested by our QA engineer on a separate release
+environment. The amount of testing depends on the magnitude of the release.
 
 ## QA monitoring tools
 
