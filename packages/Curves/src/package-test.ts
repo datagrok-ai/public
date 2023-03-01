@@ -1,6 +1,8 @@
 import * as DG from "datagrok-api/dg";
 import {runTests, tests} from '@datagrok-libraries/utils/src/test';
 
+import './tests/fit-viewer-test';
+
 export let _package = new DG.Package();
 export {tests};
 
