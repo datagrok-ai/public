@@ -43,7 +43,7 @@ const Configuration = {
     "header-min-length": [2, "always", 1],
     "references-empty": [1, "never"],
     "scope-enum": [2, "always"],
-    "scope-case": [2, "always", "pascal-case"],
+    "scope-case": [1, "always", "pascal-case"],
     "scope-empty": [2, "never"],
     "scope-max-length": [2, "always", 25],
     "scope-min-length": [2, "always", 1],
