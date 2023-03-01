@@ -28,10 +28,10 @@ import serialization.Types;
 
 public class OracleDataProvider extends JdbcDataProvider {
     private static final String SYS_SCHEMAS_FILTER =
-            "OWNER != 'SYSTEM' AND OWNER != 'CTXSYS' AND OWNER != 'MDSYS' " +
-            "AND OWNER != 'XDB' AND OWNER != 'APEX_040000' AND OWNER != 'SYS' " +
-            "AND OWNER != 'WMSYS' AND OWNER != 'EXFSYS' AND OWNER != 'ORDSYS' " +
-            "AND OWNER != 'ORDDATA'";
+            "COL.OWNER != 'SYSTEM' AND COL.OWNER != 'CTXSYS' AND COL.OWNER != 'MDSYS' " +
+            "AND COL.OWNER != 'XDB' AND COL.OWNER != 'APEX_040000' AND COL.OWNER != 'SYS' " +
+            "AND COL.OWNER != 'WMSYS' AND COL.OWNER != 'EXFSYS' AND COL.OWNER != 'ORDSYS' " +
+            "AND COL.OWNER != 'ORDDATA'";
     private static final byte REGIONIDBIT = (byte) 0b1000_0000;
 
     public OracleDataProvider(ProviderManager providerManager) {
@@ -170,6 +170,7 @@ public class OracleDataProvider extends JdbcDataProvider {
         return lst.size() - 1;
     }
 
+    @Override
     public String getConnectionStringImpl(DataConnection conn) {
         conn.getPort();
         return "jdbc:oracle:thin:@(DESCRIPTION=" +
@@ -180,20 +181,24 @@ public class OracleDataProvider extends JdbcDataProvider {
                 "(CONNECT_DATA=(SERVICE_NAME=" + conn.getDb() + ")))";
     }
 
+    @Override
     public String getSchemasSql(String db) {
         return "SELECT OWNER as TABLE_SCHEMA FROM ALL_TAB_COLUMNS WHERE " + SYS_SCHEMAS_FILTER +
                 " GROUP BY OWNER ORDER BY OWNER";
     }
 
+    @Override
     public String getSchemaSql(String db, String schema, String table) {
         String whereClause = "WHERE " + SYS_SCHEMAS_FILTER;
 
         if (table != null)
-            whereClause = whereClause + " AND (TABLE_NAME = '" + table + "')";
+            whereClause = whereClause + " AND (COL.TABLE_NAME = '" + table + "')";
         if (schema != null)
-            whereClause = whereClause + " AND (OWNER = '" + schema + "')";
+            whereClause = whereClause + " AND (COL.OWNER = '" + schema + "')";
 
-        return "SELECT OWNER as TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM ALL_TAB_COLUMNS " + whereClause +
+        return "SELECT COL.OWNER as TABLE_SCHEMA, COL.TABLE_NAME AS TABLE_NAME, COL.COLUMN_NAME AS COLUMN_NAME, COL.DATA_TYPE AS DATA_TYPE, " +
+                "CASE WHEN O.OBJECT_TYPE = 'VIEW' THEN 1 ELSE 0 END AS IS_VIEW" +
+                " FROM ALL_TAB_COLUMNS COL INNER JOIN ALL_OBJECTS O ON O.OBJECT_NAME = COL.TABLE_NAME " + whereClause +
                 " ORDER BY TABLE_NAME";
     }
 
@@ -204,7 +209,7 @@ public class OracleDataProvider extends JdbcDataProvider {
     public String addBrackets(String name) {
         String brackets = descriptor.nameBrackets;
         return name.startsWith(brackets.substring(0, 1)) ? name :
-                brackets.substring(0, 1) + name + brackets.substring(brackets.length() - 1, brackets.length());
+                brackets.charAt(0) + name + brackets.substring(brackets.length() - 1);
     }
 
     private boolean isOracleFloatNumber(String typeName, int precision, int scale) {
