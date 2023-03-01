@@ -626,6 +626,10 @@ export class GridColumn {
   get tooltipColumns(): string[] { return api.grok_GridColumn_Get_TooltipForm(this.dart); }
   set tooltipColumns(x: string[]) { api.grok_GridColumn_Set_TooltipForm(this.dart, x); }
 
+  /** isTextColorCoded. Whether to apply color to the text or background. */
+  get isTextColorCoded(): boolean { return api.grok_GridColumn_Get_isTextColorCoded(this.dart); }
+  set isTextColorCoded(x: boolean) { api.grok_GridColumn_Set_isTextColorCoded(this.dart, x); }
+
   /** Left border (in pixels in the virtual viewport) */
   get left(): number { return api.grok_GridColumn_Get_Left(this.dart); }
 
