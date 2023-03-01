@@ -83,11 +83,23 @@ a {
 .root {
     background-color: white;
 }
-
-.menu__link--active {
+.menu__link {
     color: var(--link-color); 
 }
-
+.menu__link:hover {
+    color: var(--link-color); 
+}
+.menu__link--active {
+    color: var(--text-color); 
+    background: var(--ifm-menu-color-background-hover);
+}
+.menu__link--active:hover {
+    color: var(--text-color); 
+    background: var(--ifm-menu-color-background-hover);
+}
+a.menu__link.menu__link--sublist.menu__link--sublist-caret.menu__link--active {
+    background: var(--ifm-menu-color-background-hover)!important;
+}
 .text-uppercase {
     letter-spacing: 1px;
 }
@@ -104,18 +116,50 @@ a {
     padding: 0 1rem;
     position: sticky;
 }
-.navbar__link--active {
+.navbar__link {
     color: var(--link-color);
 }
-.breadcrumbs__item--active .breadcrumbs__link {
+.navbar__link:hover {
     color: var(--link-color);
+}
+.navbar__link--active {
+    color: var(--text-color);
+}
+.navbar__link--active:hover {
+    color: var(--text-color);
+}
+.navbar-light .btn-primary, .navbar__item.navbar__link.btn.btn-primary {
+    font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
+    font-weight: 500; 
+}  
+.navbar__item.navbar__link.btn.btn-primary svg {
+    display: none;
+}
+.navbar__item.navbar__link.btn.btn-primary:hover {
+    color:white;
+}
+button.DocSearch.DocSearch-Button {
+    border-radius: 4px;
+}
+button.DocSearch.DocSearch-Button:hover {
+    background: var(--docsearch-searchbox-focus-background);
+    box-shadow: inset 0 0 0 1.5px var(--link-color);
+    color: var(--link-color);
+    outline: none;
+}
+button.DocSearch.DocSearch-Button:hover svg.DocSearch-Search-Icon{
+    color: var(--link-color);
+}
+
+.breadcrumbs__item--active .breadcrumbs__link {
+    color: var(--text-color);
 }
 .breadcrumbs {
     top: 0!important;
     margin: 0!important;
 }
 .breadcrumbs__link {
-    color: var(--text-color);
+    color: var(--link-color);
     padding: 0!important;
 }
 .breadcrumbs__item--active .breadcrumbs__link {
@@ -126,7 +170,8 @@ a {
 }
 
 .table-of-contents__link--active {
-    color: var(--link-color);
+    color: var(--text-color);
+    font-weight: 600;
 }
 
 @media (max-width: 992px) {
@@ -211,6 +256,10 @@ a {
     align-items: center;
     margin-left: 0.5rem;
     margin-right: 0;
+    font-family: 'Nunito', sans-serif;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--brand-color);
 }
 
 .navbar .nav-item {
@@ -932,6 +981,7 @@ div.spacer {
   }
 
 .btn-primary {
+    letter-spacing: 1px;
     color: #fff;
     background-color: #50A9C5;
     border-color: #50A9C5;
@@ -951,4 +1001,32 @@ aside.theme-doc-sidebar-container > div {
 
 .modal-title {
     color: var(--grey-6);
+}
+.menu__link:hover, .menu__caret:hover {
+    background: none;
+}
+.menu__caret:before {
+    content: '';
+    background: var(--ifm-menu-link-sublist-icon) 50% / 1.5rem 1.5rem;
+    filter: var(--ifm-menu-link-sublist-icon-filter);
+    opacity: .7;
+    height: 1.25rem;
+    transform: rotate(180deg);
+    width: 1.25rem;
+    transition: transform var(--ifm-transition-fast) linear;
+}
+.menu__link--sublist-caret:after{
+    content: '';
+    margin-left: auto;
+    min-width: 1.25rem;
+    opacity: .7;
+    background: var(--ifm-menu-link-sublist-icon) 50% / 1.5rem 1.5rem;
+    filter: var(--ifm-menu-link-sublist-icon-filter);
+    height: 1.25rem;
+    transform: rotate(180deg);
+    width: 1.25rem;
+    transition: transform var(--ifm-transition-fast) linear;
+}
+.DocSearch-Logo {
+    display: none;
 }
