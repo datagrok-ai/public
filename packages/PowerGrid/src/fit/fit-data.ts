@@ -146,7 +146,8 @@ function createFromProperties(properties: Property[]): any {
 /** Merges properties of the two objects by iterating over the specified {@link properties}
  * and assigning properties from {@link source} to {@link target} only when
  * the property is not defined in target and is defined in source. */
-function mergeProperties(properties: Property[], source: any, target: any) {
+function mergeProperties(properties: Property[],
+  source: IFitChartOptions | IFitSeriesOptions | undefined, target: IFitChartOptions | IFitSeries | undefined) {
   if (!source || !target)
     return;
 
