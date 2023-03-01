@@ -49,7 +49,7 @@ With Datagrok, you can:
 
 * Search through a collection of molecules with [diversity search](diversity-search.md), [similarity search](similarity-search.md), and substructure search.
 
-* Calculate [molecular descriptors](descriptors.md) and [fingerprints](fingerprints.md)
+* Calculate [molecular descriptors](descriptors.md) and [fingerprints](fingerprints.md).
 
 * Train models using [predictive modeling](chem-predictive-modeling.md) and incorporate them in pipelines or [info panels](../../discover/info-panels.md).
 
@@ -61,9 +61,9 @@ Extract more information about your data with [info panels](../../discover/info-
 
 By opening, info panels automatically show the general functions:
 
-* Structure 2D – visualizes a molecule in 2D
-* Structure 3D – visualizes a molecule in 3D through generating .mol file
-* Molfile – provides a .mol file
+* Structure 2D – visualizes a molecule in 2D.
+* Structure 3D – visualizes a molecule in 3D through generating .mol file.
+* Molfile – provides a .mol file.
 
 All the rest functions fall into Chemistry, Biology, Databases groups:
 
@@ -111,11 +111,11 @@ In addition to predefined info panels, users also can develop their own using an
 
 ## Calculate
 
-With chemical dataset uploaded, you can run two types of calculation functions: descriptors/fingerprints and mapping functions.
+For chemical structures, you can run two types of calculation functions: descriptors/fingerprints and mapping functions.
 
 ### Descriptors and fingerprints
 
-To vectorize molecular graph data, the platform supports [descriptors](descriptors.md) and [fingerprints](fingerprints.md).
+To vectorize molecular graph data, the platform offers [descriptors](descriptors.md) and [fingerprints](fingerprints.md).
 
 While descriptors are more physical and fingerprints are more abstract vectors, both enable the following procedures:
 
@@ -178,7 +178,7 @@ Mutation function generates new structures based on the specified one. Generatio
 * ### [Similarity and diversity search](similarity-search.md)
 
   For the reference structure, finds the 10 most similar/diverse ones in your dataset.  
-  Similarity search sorts all the found structures by similarity score. Уou can try multiple [distance metrics](similarity-spe#available-distance-metrics) for different similarity scoring.
+  Similarity search sorts all the found structures by similarity score. You can try multiple [distance metrics](similarity-spe#available-distance-metrics) for different similarity scoring.
 
   ![Similarity search](../../uploads/gifs/similarity-search.gif "Similarity search")
 
