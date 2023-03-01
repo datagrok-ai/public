@@ -86,7 +86,9 @@ Results of all automated tests are kept in the
 * **Unit tests**. Our core libraries contain more than 2,000 unit tests that serve two primary
 purposes. First of all, they are produced and get used in the process of the
 test-driven development. Secondly, they automatically execute as part of the
-continuous integration process, enabling us to detect regression bugs. We also provide unit tests for our packages and libraries, see [Adding package unit tests](../how-to/add-package-tests.md/#adding-unit-tests)
+continuous integration process, enabling us to detect regression bugs. We also
+provide unit tests for our packages and libraries, see
+[Adding package unit tests](../how-to/add-package-tests.md/#adding-unit-tests)
 * **Integration tests**. Integration tests are very similar to unit tests. While unit tests tend to
 address isolated modules, integration tests cover interactions between different
 modules.
