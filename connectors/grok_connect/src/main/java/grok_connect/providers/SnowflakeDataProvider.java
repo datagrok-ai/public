@@ -68,11 +68,20 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
 
     @Override
     public String getSchemaSql(String db, String schema, String table) {
-        schema = schema != null ? schema : DEFAULT_SCHEMA;
-        String query = "SELECT table_schema, table_name, column_name, data_type "
-                + "FROM information_schema.columns "
-                + "WHERE table_schema = '%s' ORDER BY table_name";
-        return String.format(query, schema);
+        List<String> filters = new ArrayList<String>() {{
+            add("c.table_schema = '" + ((schema != null) ? schema : descriptor.defaultSchema) + "'");
+        }};
+
+        if (db != null && db.length() != 0)
+            filters.add("c.table_catalog = '" + db + "'");
+        if (table != null)
+            filters.add("c.table_name = '" + table + "'");
+        String whereClause = "WHERE " + String.join(" AND \n", filters);
+        return "SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
+                + "c.data_type as data_type, "
+                + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
+                + "JOIN information_schema.tables t ON t.table_name = c.table_name " + whereClause +
+                " ORDER BY c.table_name";
     }
 
     @Override
