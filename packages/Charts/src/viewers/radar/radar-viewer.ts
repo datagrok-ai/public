@@ -9,7 +9,7 @@ type MaximumIndicator = '75' | '90' | '95' | '99';
 
 // Based on this example: https://echarts.apache.org/examples/en/editor.html?c=radar
 export class RadarViewer extends DG.JsViewer {
-  get type(): string { return 'RadarViewer'; }
+  get type(): string {return 'RadarViewer';}
 
   chart: echarts.ECharts;
   min: MinimalIndicator;
