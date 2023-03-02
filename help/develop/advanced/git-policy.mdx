@@ -437,13 +437,14 @@ dependency for Grok Connect (CVE-2021-44228)
 
 ### Commit linting
 
-Every commit MUST be checked by commitlint on pre-commit hook.
+Every commit MUST be checked by [commitlint](https://commitlint.js.org/#/) on [pre-commit](https://pre-commit.com/) hook.
 
 Installation
 
 ```bash
-npm install --location=global @commitlint/config-conventional @commitlint/cli husky
-husky install
+npm install --location=global @commitlint/config-conventional @commitlint/cli
+pip install pre-commit
+pre-commit install --install-hooks --hook-type pre-commit --hook-type commit-msg
 ```
 
 Every commit is checked in GitHub Actions and reported broken if it does not apply to
