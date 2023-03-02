@@ -24,8 +24,9 @@ import java.util.stream.Stream;
  * Provides data that is common for all tests
   */
 public class CommonObjectsMother {
+    private static final Parser parser = new DateParser();
+
     public static Stream<Arguments> checkParameterSupport_ok() {
-        Parser parser = new DateParser();
         String datePattern = "yyyy-MM-dd";
         // --input: int id = 20
         DataFrame expected1 = DataFrameBuilder.getBuilder()
@@ -367,32 +368,6 @@ public class CommonObjectsMother {
                 .addFuncCallOptionsPattern("country", "in (Poland, Brazil)", "in",
                         null, null, "Poland", "Brazil")
                 .build();
-        // --input: string email = 'regex ^([A-Za-z0-9_]+@google.com.au)$' {pattern: string}
-        DataFrame expected11 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new BigIntColumn(new String[]{"9"}),
-                        "id")
-                .setColumn(new StringColumn(new String[]{"Marlie"}), "first_name")
-                .setColumn(new StringColumn(new String[]{"Mayze"}),
-                        "last_name")
-                .setColumn(new StringColumn(new String[]{"mmayze8@google.com.au"}), "email")
-                .setColumn(new StringColumn(new String[]{"Female"}), "gender")
-                .setColumn(new StringColumn(new String[]{"68.41.25.65/32"}),
-                        "ip_address")
-                .setColumn(new BoolColumn(new Boolean[]{false}), "bool")
-                .setColumn(new StringColumn(new String[]{"France"}), "country")
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2011-11-10")),
-                        "date")
-                .setColumn(new FloatColumn(new Float[]{561.72f}), "some_number")
-                .build();
-        FuncCall funcCall18 = FuncCallBuilder.getBuilder()
-                .addQuery("--input: string email = 'regex ^([A-Za-z0-9_]+@google.com.au)$' {pattern: string}\n"
-                        + "SELECT * FROM mock_data WHERE @email(email)\n"
-                        + "--end")
-                .addFuncParam("string", "", "email", "regex ^([A-Za-z0-9_]+@google.com.au)$", "string")
-                .addFuncCallOptionsPattern("email", "regex ^([A-Za-z0-9_]+@google.com.au)$",
-                        "regex", null, null, "^([A-Za-z0-9_]+@google.com.au)$")
-                .build();
         return Stream.of(
                 Arguments.of(Named.of("type: int; operator: =; pattern: none", funcCall1), expected1),
                 Arguments.of(Named.of("type: string; operator: >; pattern: int", funcCall2), expected2),
@@ -410,13 +385,42 @@ public class CommonObjectsMother {
                 Arguments.of(Named.of("type: string; operator: contains; pattern: string", funcCall14), expected7),
                 Arguments.of(Named.of("type: string; operator: starts with; pattern: string", funcCall15), expected8),
                 Arguments.of(Named.of("type: string; operator: ends with; pattern: string", funcCall16), expected9),
-                Arguments.of(Named.of("type: string; operator: in; pattern: string", funcCall17), expected10),
-                Arguments.of(Named.of("type: string; operator: regex; pattern: string", funcCall18), expected11)
+                Arguments.of(Named.of("type: string; operator: in; pattern: string", funcCall17), expected10)
         );
     }
 
+    public static Stream<Arguments> checkRegexSupport_ok() {
+        // --input: string email = 'regex ^([A-Za-z0-9_]+@google.com.au)$' {pattern: string}
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new BigIntColumn(new String[]{"9"}),
+                        "id")
+                .setColumn(new StringColumn(new String[]{"Marlie"}), "first_name")
+                .setColumn(new StringColumn(new String[]{"Mayze"}),
+                        "last_name")
+                .setColumn(new StringColumn(new String[]{"mmayze8@google.com.au"}), "email")
+                .setColumn(new StringColumn(new String[]{"Female"}), "gender")
+                .setColumn(new StringColumn(new String[]{"68.41.25.65/32"}),
+                        "ip_address")
+                .setColumn(new BoolColumn(new Boolean[]{false}), "bool")
+                .setColumn(new StringColumn(new String[]{"France"}), "country")
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles("yyyy-MM-dd", "2011-11-10")),
+                        "date")
+                .setColumn(new FloatColumn(new Float[]{561.72f}), "some_number")
+                .build();
+        FuncCall funcCall = FuncCallBuilder.getBuilder()
+                .addQuery("--input: string email = 'regex ^([A-Za-z0-9_]+@google.com.au)$' {pattern: string}\n"
+                        + "SELECT * FROM mock_data WHERE @email(email)\n"
+                        + "--end")
+                .addFuncParam("string", "", "email", "regex ^([A-Za-z0-9_]+@google.com.au)$", "string")
+                .addFuncCallOptionsPattern("email", "regex ^([A-Za-z0-9_]+@google.com.au)$",
+                        "regex", null, null, "^([A-Za-z0-9_]+@google.com.au)$")
+                .build();
+        return Stream.of(Arguments.of(Named.of("type: string; operator: regex; pattern: string",
+                funcCall), expected));
+    }
+
     public static Stream<Arguments> checkDatesParameterSupport_ok() {
-        Parser parser = new DateParser();
         String datePattern = "yyyy-MM-dd";
         LocalDate now = LocalDate.now();
         int dayOfWeek = now.getDayOfWeek().getValue();
@@ -611,7 +615,6 @@ public class CommonObjectsMother {
     }
 
     public static Stream<Arguments> checkMultipleParametersSupport_ok() {
-        Parser parser = new DateParser();
         String datePattern = "yyyy-MM-dd";
         // --input: string first_name = "starts with p" {pattern: string}
         //--input: string id = ">1" {pattern :int}
@@ -674,7 +677,6 @@ public class CommonObjectsMother {
     }
 
     public static Stream<Arguments> checkListParameterSupport_ok() {
-        Parser parser = new DateParser();
         // list<string>
         List<String> values = new ArrayList<>();
         values.add("Poland");
