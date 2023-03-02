@@ -14,13 +14,13 @@ import {linkStrandsV3000} from '../utils/structures-works/mol-transformations';
 import {stringify, download, removeEmptyRows, differenceOfTwoArrays} from '../utils/helpers';
 
 import {SALTS_CSV} from '../hardcode-to-be-eliminated/salts';
-import {USERS_CSV} from '../hardcode-to-be-eliminated/users';
 import {ICDS} from '../hardcode-to-be-eliminated/ICDs';
 import {SOURCES} from '../hardcode-to-be-eliminated/sources';
 import {IDPS} from '../hardcode-to-be-eliminated/IDPs';
 
 import {sdfAddColumns} from '../utils/sdf-add-columns';
 import {sdfSaveTable} from '../utils/sdf-save-table';
+import {_package} from '../package';
 
 const enum PREFIXES {
   AS = 'AS',
@@ -162,11 +162,17 @@ function oligoSdFileGrid(view: DG.TableView): void {
 }
 
 export function autostartOligoSdFileSubscription() {
-  grok.events.onViewAdded.subscribe((v: any) => {
+  grok.events.onViewAdded.subscribe(async (v: any) => {
     if (v.type === DG.VIEW_TYPE.TABLE_VIEW) {
       if (v.dataFrame.columns.contains(COL_NAMES.TYPE)) {
-        oligoSdFileGrid(v);
-        oligoSdFile(v.dataFrame);
+        try {
+          await _package.initDataLoader();
+          console.log('here:', _package.dataLoader.users.toCsv());
+          oligoSdFileGrid(v);
+          oligoSdFile(v.dataFrame);
+        } catch (err: any) {
+          grok.shell.error(err.toString());
+        }
       }
 
       // Should be removed after fixing bug https://github.com/datagrok-ai/public/issues/808
@@ -226,7 +232,7 @@ export function autostartOligoSdFileSubscription() {
 
 export function oligoSdFile(table: DG.DataFrame) {
   const saltsDf = DG.DataFrame.fromCsv(SALTS_CSV);
-  const usersDf = DG.DataFrame.fromCsv(USERS_CSV);
+  const usersDf = _package.dataLoader.users;
   const sourcesDf = DG.DataFrame.fromCsv(SOURCES);
   const icdsDf = DG.DataFrame.fromCsv(ICDS);
   const idpsDf = DG.DataFrame.fromCsv(IDPS);
