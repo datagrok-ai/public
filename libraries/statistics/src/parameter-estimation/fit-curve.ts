@@ -4,11 +4,13 @@ import * as jStat from 'jstat';
 import {Property} from "datagrok-api/src/entities";
 import {TYPE} from "datagrok-api/src/const";
 
+
 type Likelihood = {
   value: number, 
   const: number, 
   mult: number
 };
+
 
 export type FitResult = {
   parameters: number[],
@@ -19,23 +21,31 @@ export type FitResult = {
   auc?: number;
 };
 
+
 /** Properties that describe {@link FitResult}. Useful for editing, initialization, transformations, etc. */
 export const fitResultProperties: Property[] = [
   Property.js('rSquared', TYPE.FLOAT),
   Property.js('auc', TYPE.FLOAT)
 ];
 
+
 type ObjectiveFunction = (targetFunc: (params: number[], x: number) => number, 
-data: {x: number[], y: number[]},
-params: number[]) => Likelihood;
+  data: {x: number[], y: number[]},
+  params: number[]) => Likelihood;
+
 
 export enum FitErrorModel {
   Constant,
   Proportional
 }
 
+
 export const FIT_FUNCTION_SIGMOID = 'Sigmoid';
 export const FIT_FUNCTION_LINEAR = 'Linear';
+
+// export const FIT_STATS_RSQUARED = 'rSquared';
+// export const FIT_STATS_AUC = 'auc';
+
 
 export type FitFunctionType = 'Sigmoid' | 'Linear';
 
