@@ -39,6 +39,7 @@ public class PostgresObjectsMother {
         String secondColumnName = "table_name";
         String thirdColumnName = "column_name";
         String fourthColumnName = "data_type";
+        String fifthColumnName = "is_view";
         String schema = "public";
         String table = "mock_data";
         DataFrame expected = DataFrameBuilder.getBuilder()
@@ -54,6 +55,7 @@ public class PostgresObjectsMother {
                 .setColumn(new StringColumn(), fourthColumnName, new String[] {"bigint", "character varying",
                         "character varying", "character varying", "character varying", "cidr",
                         "boolean", "character varying", "date", "numeric"})
+                .setColumn(new IntColumn(), fifthColumnName, new Integer[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
                 .build();
         return Stream.of(Arguments.of(expected));
     }
