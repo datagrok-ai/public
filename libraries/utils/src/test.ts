@@ -94,15 +94,43 @@ export function test(name: string, test: () => Promise<any>, options?: TestOptio
 }
 
 /* Tests two objects for equality, throws an exception if they are not equal. */
-export function expect(actual: any, expected: any): void {
+export function expect(actual: any, expected: any = true, error?: string): void {
+  if (error)
+    error = `${error}, `;
+  else error = '';
   if (actual !== expected)
-    throw new Error(`Expected "${expected}", got "${actual}"`);
+    throw new Error(`${error}Expected "${expected}", got "${actual}"`);
 }
 
-export function expectFloat(actual: number, expected: number, tolerance = 0.001): void {
+export function expectFloat(actual: number, expected: number, tolerance = 0.001, error?: string): void {
   const areEqual = Math.abs(actual - expected) < tolerance;
+  expect(areEqual, true, `${error ?? ''} (tolerance = ${tolerance})`);
   if (!areEqual)
     throw new Error(`Expected ${expected}, got ${actual} (tolerance = ${tolerance})`);
+}
+
+export function expectTable(actual: DG.DataFrame, expected: DG.DataFrame, error?: string): void {
+  const expectedRowCount = expected.rowCount;
+  const actualRowCount = actual.rowCount;
+  expect(actualRowCount, expectedRowCount, `${error ?? ''}, row count`);
+
+  for (const column of expected.columns) {
+    const actualColumn = actual.columns.byName(column.name);
+    if (actualColumn == null)
+      throw new Error(`Column ${column.name} not found`);
+    if (actualColumn.type != column.type)
+      throw new Error(`Column ${column.name} type expected ${column.type} got ${actualColumn.type}`);
+    for (let i = 0; i < expectedRowCount; i++) {
+      const value = column.get(i);
+      const actualValue = actualColumn.get(i);
+      if (column.type == DG.TYPE.FLOAT)
+        expectFloat(actualValue, value, 0.0001, error);
+      else if (column.type == DG.TYPE.DATE_TIME)
+        expect(actualValue.isSame(value), true, error);
+      else
+        expect(actualValue, value, error);
+    }
+  }
 }
 
 export function expectObject(actual: { [key: string]: any }, expected: { [key: string]: any }) {
@@ -175,7 +203,6 @@ export async function initAutoTests(packageId: string, module?: any) {
   const moduleAutoTests = [];
   const packFunctions = await grok.dapi.functions.filter(`package.id = "${packageId}"`).list();
   for (const f of packFunctions) {
-    //@ts-ignore
     const tests = f.options['test'];
     if (!(tests && Array.isArray(tests) && tests.length)) continue;
     for (let i = 0; i < tests.length; i++) {

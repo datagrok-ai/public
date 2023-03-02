@@ -8,7 +8,7 @@ import {Editor} from "ketcher-react";
 import {StandaloneStructServiceProvider} from "ketcher-standalone";
 import {Ketcher} from "ketcher-core";
 import "ketcher-react/dist/index.css";
-import "./editor.css";
+import "../css/editor.css";
 import { chem } from "datagrok-api/grok";
 import { KETCHER_MOLV2000, KETCHER_MOLV3000 } from "./constants";
 
@@ -21,6 +21,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   _molV3000: string | null = null;
   _smarts: string | null = null;
   _sketcher: Ketcher | null = null;
+  ketcherHost: HTMLDivElement;
 
   constructor() {
     super();
@@ -46,19 +47,20 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
       },
     };
 
-    let host = ui.div([], { style: { width: "500px", height: "400px" } });
-    host.style.setProperty('overflow', 'hidden', 'important');
+    this.ketcherHost = ui.div([], 'ketcher-host');
 
     let component = React.createElement(Editor, props, null);
-    ReactDOM.render(component, host);
+    ReactDOM.render(component, this.ketcherHost);
 
-    this.root.appendChild(host);
+    this.root.appendChild(this.ketcherHost);
   }
 
   async init(host: chem.Sketcher) {
     this.host = host;
     let id = `ketcher-${sketcherId++}`;
     this.root.id = id;
+    if (this.host.isResizing)
+      this.ketcherHost.classList.add('ketcher-resizing');
   }
 
   get supportedExportFormats() {
@@ -124,6 +126,10 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
 
   get isInitialized() {
     return this._sketcher !== null;
+  }
+
+  resize() {
+      this.ketcherHost.classList.add('ketcher-resizing');
   }
 
   setKetcherMolecule(molecule: string) {

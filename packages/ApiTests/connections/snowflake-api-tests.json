@@ -1,0 +1,20 @@
+{
+  "#type": "DataConnection",
+  "name": "SnowflakeApiTests",
+  "friendlyName": "Tests",
+  "parameters": {
+    "region": "west-europe",
+    "accountLocator": "ni99608",
+    "cloud": "azure",
+    "db": "test",
+    "warehouse": "COMPUTE_WH"
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "pasha32662",
+      "password": "pBx7dyjp_"
+    }
+  },
+  "dataSource": "Snowflake",
+  "description": "Test data"
+}

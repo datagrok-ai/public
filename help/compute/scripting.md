@@ -373,6 +373,12 @@ grok.functions.register({
 
 ![Script Parameter Suggestions](../uploads/features/script-param-suggestions.gif "Script Parameter Suggestions")
 
+#### Auto-complete via SQL
+
+The same concept could be used for SQL queries:
+
+![auto-complete-sql](auto-complete-sql.png)
+
 ### Parameter editors
 
 Use parameter editor to set the output of another function to the parameter value. All function parameters will be
@@ -402,7 +408,7 @@ check the output before starting the script.
 | language    | Script language (see the [list of supported languages](#supported-languages) below) |
 | help-url    | Datagrok's Wiki URL                                                                 |
 | reference   | Reference to a research paper, Wikipedia article, Git repository, etc.              |
-| top-menu    | Top menu path separated with pipes (`\|`)                                           |
+| top-menu    | Top menu path separated with pipes (`\                                              |`)                                           |
 | tags        | Tags                                                                                |
 | sample      | Name of a sample file                                                               |
 | input       | Input parameter                                                                     |
@@ -460,12 +466,12 @@ Also it is possible to add custom parameter using "meta." prefix.
 
 #### Common
 
-| Option      | Value                     | Description              |
-|-------------|---------------------------|--------------------------|
-| validators  | List separated with comma | List of named validators |
-| caption     | Text string               | Custom field caption     |
-| postfix     | Text string               | Field postfix            |
-| units       | Same as postfix           |                          |
+| Option     | Value                     | Description              |
+|------------|---------------------------|--------------------------|
+| validators | List separated with comma | List of named validators |
+| caption    | Text string               | Custom field caption     |
+| postfix    | Text string               | Field postfix            |
+| units      | Same as postfix           |                          |
 
 Named validators:
 

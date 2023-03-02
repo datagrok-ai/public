@@ -563,7 +563,7 @@ export abstract class Tutorial extends DG.Widget {
 
 type EleLoose = HTMLElement & Element & Node;
 
-interface TutorialPrerequisites {
+export interface TutorialPrerequisites {
   packages?: string[],
   jupyter?: boolean,
   grokCompute?: boolean,

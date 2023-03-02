@@ -6,12 +6,19 @@ export interface IMolContext {
   isQMol: boolean;
 }
 
+function isSmarts(molString: string): boolean {
+  return !!molString.match(/\[.?#\d|\$|&|;|,|!|:|\*.?\]/g) && !molString.includes('\n');
+}
+ 
 export function getMolSafe(molString: string, details: object = {}, rdKitModule: RDModule, warnOff: boolean = true): IMolContext {
   let isQMol = false;
   let kekulize: boolean = true;
   let mol: RDMol | null = null;
 
-  try { mol = rdKitModule.get_mol(molString, JSON.stringify(details)); }
+  try {
+    const _isSmarts = isSmarts(molString);     
+    mol = _isSmarts ? rdKitModule.get_qmol(molString) : rdKitModule.get_mol(molString, JSON.stringify(details)); 
+  }
   catch (e) {
     if (mol !== null && mol.is_valid()) {
       mol.delete();

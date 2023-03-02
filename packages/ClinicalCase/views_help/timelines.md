@@ -1,4 +1,4 @@
-### Timelines
+# Timelines
 
 Timelines view allows to visualize events flow in time. X axis is time axis reflecting study days. On Y axis there are subjects.
 Events are shown either as a point(in case event lased for one day) or as a line (for cases events were prolonged in time)

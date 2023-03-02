@@ -1,0 +1,28 @@
+@startuml
+scale 800*500
+start
+:Developers;
+:Commit and push code;
+:GitHub Actions 'Grok Connect' job start;
+:Build Grok Connect with maven;
+:Build Grok Connect Docker image;
+:Create test stand with latest Datagrok image (or bleeding-edge if required);
+:Test Grok Connect;
+if (Tests passed?) then (Yes)
+if (Branch Master?) then (Yes)
+if (Version already exists in Docker Hub?) then (Yes)
+:Publish Docker image with tag bleeding-edge;
+else(No)
+:Publish to NPM registry;
+:Upgrade package version in Meta package;
+:Publish new version of Meta package to NPM registry;
+endif
+else (No)
+:Save docker image to artifacts;
+endif
+else (No)
+:Notify the developer;
+end
+endif
+stop
+@enduml

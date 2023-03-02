@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.4",
+  "version": "3.2.16",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -426,6 +426,15 @@
         },
         "1.5.1": {
           "datagrok-api": "^1.13.0"
+        },
+        "1.5.2": {
+          "datagrok-api": "^1.13.0"
+        },
+        "1.5.3": {
+          "datagrok-api": "^1.13.0"
+        },
+        "1.5.5": {
+          "datagrok-api": "^1.13.2"
         }
       },
       "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Chem/README.md)",
@@ -1005,9 +1014,12 @@
         },
         "1.5.9": {
           "datagrok-api": "^1.8.1"
+        },
+        "1.5.10": {
+          "datagrok-api": "^1.13.0"
         }
       },
-      "description": "js-api-tests is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
+      "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -1219,6 +1231,12 @@
         },
         "1.0.20": {
           "datagrok-api": "^1.11.0"
+        },
+        "1.0.21": {
+          "datagrok-api": "^1.11.0"
+        },
+        "1.0.24": {
+          "datagrok-api": "^1.11.0"
         }
       },
       "description": "Chembl integration, commonly used queries and browser",
@@ -1313,6 +1331,12 @@
         },
         "1.0.16": {
           "datagrok-api": "^1.6.7"
+        },
+        "1.0.17": {
+          "datagrok-api": "^1.6.7"
+        },
+        "1.0.18": {
+          "datagrok-api": "^1.6.7"
         }
       },
       "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
@@ -1395,9 +1419,15 @@
         },
         "1.0.4": {
           "datagrok-api": "^1.11.1"
+        },
+        "1.0.5": {
+          "datagrok-api": "^1.11.1"
+        },
+        "1.0.6": {
+          "datagrok-api": "^1.11.1"
         }
       },
-      "description": "Chem package extensiions. Features for similarity and substructure search in ChEMBL using API",
+      "description": "Similarity and substructure search in ChEMBL using its API",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -1467,6 +1497,9 @@
         },
         "2.1.1": {
           "datagrok-api": "^1.13.0"
+        },
+        "2.1.2": {
+          "datagrok-api": "^1.13.2"
         }
       },
       "description": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher.",
@@ -1972,6 +2005,9 @@
         },
         "1.1.13": {
           "datagrok-api": "^1.8.3"
+        },
+        "1.1.14": {
+          "datagrok-api": "^1.8.3"
         }
       },
       "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
@@ -2225,17 +2261,6 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/labs.git",
         "directory": "packages/ChemDraw"
-      }
-    },
-    "gridextdemo": {
-      "dependencies": {
-        "1.0.0": {}
-      },
-      "description": "Demos of Grid Extensions",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/gridextdemo"
       }
     },
     "molecular-liability-browser": {

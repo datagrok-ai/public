@@ -4,6 +4,7 @@ import MolNotation = DG.chem.Notation;
 
 // datagrok libraries dependencies
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import { getMolSafe } from './mol-creation_rdkit';
 
 
 const MALFORMED_MOL_V2000 = `
@@ -41,25 +42,27 @@ export function _convertMolNotation(
       'MALFORMED_INPUT_VALUE';
   let mol: RDMol | null = null;
   try {
-    mol = rdKitModule.get_mol(moleculeString);
-    if (targetNotation === MolNotation.MolBlock) {
-      //when converting from smiles set coordinates and rendering parameters
-      if (sourceNotation === MolNotation.Smiles) {
-        if (!mol.has_coords())
-          mol.set_new_coords();
-        mol.normalize_depiction(1);
-        mol.straighten_depiction(false);
+    mol = getMolSafe(moleculeString, {}, rdKitModule).mol;
+    if (mol) {
+      if (targetNotation === MolNotation.MolBlock) {
+        //when converting from smiles set coordinates and rendering parameters
+        if (sourceNotation === MolNotation.Smiles) {
+          if (!mol.has_coords())
+            mol!.set_new_coords();
+          mol.normalize_depiction(1);
+          mol.straighten_depiction(false);
+        }
+        result = mol.get_molblock();
       }
-      result = mol.get_molblock();
+      if (targetNotation === MolNotation.Smiles)
+        result = mol.get_smiles();
+      if (targetNotation === MolNotation.V3KMolBlock)
+        result = mol.get_v3Kmolblock();
+      if (targetNotation === MolNotation.Smarts)
+        result = mol.get_smarts();
+      // if (targetNotation === MolNotation.Inchi)
+      //   return mol.get_inchi();
     }
-    if (targetNotation === MolNotation.Smiles)
-      result = mol.get_smiles();
-    if (targetNotation === MolNotation.V3KMolBlock)
-      result = mol.get_v3Kmolblock();
-    if (targetNotation === MolNotation.Smarts)
-      result = mol.get_smarts();
-    // if (targetNotation === MolNotation.Inchi)
-    //   return mol.get_inchi();
   } catch (err) {
     console.error(errorToConsole(err));
   } finally {

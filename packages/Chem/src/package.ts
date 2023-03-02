@@ -51,6 +51,7 @@ import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversit
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {chemSpace, getEmbeddingColsNames} from './analysis/chem-space';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
+import {ChemSearchBaseViewer} from './analysis/chem-search-base-viewer';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
@@ -113,6 +114,19 @@ export async function initChem(): Promise<void> {
 
 //tags: autostart
 export async function initChemAutostart(): Promise<void> { }
+
+//name: chemTooltip
+//tags: tooltip
+//input: column col {semType: Molecule}
+//output: widget
+export async function chemTooltip(col: DG.Column): Promise<DG.Viewer> {
+  const tv = grok.shell.tv;
+  let viewer = new ChemDiversityViewer(true)//await tv.dataFrame.plot.fromType('diversitySearchViewer', {
+    viewer.limit = 9;
+    viewer.dataFrame = tv.dataFrame;
+
+  return viewer;
+}
 
 //name: Scaffold Tree
 //tags: viewer
@@ -553,7 +567,7 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
   }
 }
 
-//top-menu: Chem | Analyze SAR | Structural alerts
+//top-menu: Chem | Analyze SAR | Structural Alerts...
 //name: Structural Alerts...
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}
@@ -590,7 +604,7 @@ export function molColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
   return getMolColumnPropertyPanel(molColumn);
 }
 
-//name: Chem Descriptors
+//name: Chemistry | Descriptors
 //tags: panel, chem, widgets
 //input: string smiles { semType: Molecule }
 //output: widget result
@@ -598,7 +612,7 @@ export function descriptorsWidget(smiles: string): DG.Widget {
   return smiles ? getDescriptorsSingle(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Drug Likeness
+//name: Biology | Drug Likeness
 //description: Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.
 //help-url: /help/domains/chem/info-panels/drug-likeness.md
 //tags: panel, chem, widgets
@@ -617,7 +631,7 @@ export function molfile(smiles: string): DG.Widget {
   return smiles ? molfileWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Properties
+//name: Chemistry | Properties
 //description: Basic molecule properties
 //tags: panel, chem, widgets
 //input: semantic_value smiles { semType: Molecule }
@@ -626,7 +640,7 @@ export async function properties(smiles: DG.SemanticValue): Promise<DG.Widget> {
   return smiles ? propertiesWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Structural Alerts
+//name: Biology | Structural Alerts
 //description: Screening drug candidates against structural alerts i.e. fragments associated to a toxicological response
 //help-url: /help/domains/chem/info-panels/structural-alerts.md
 //tags: panel, chem, widgets
@@ -654,7 +668,7 @@ export async function structure3d(molecule: string): Promise<DG.Widget> {
   return molecule ? structure3dWidget(molecule) : new DG.Widget(ui.divText('Molecule is empty'));
 }
 
-//name: Toxicity
+//name: Biology | Toxicity
 //description: Toxicity prediction. Calculated by openchemlib
 //help-url: /help/domains/chem/info-panels/toxicity-risks.md
 //tags: panel, chem, widgets
@@ -695,7 +709,7 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
     molecule = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
   }
   sketcher.setMolecule(molecule);
-  ui.dialog()
+  const dlg = ui.dialog()
     .add(sketcher)
     .onOK(() => {
       if (unit === DG.chem.Notation.Smiles) {
@@ -709,7 +723,10 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
         cell.cell.value = sketcher.getMolFile();
       Sketcher.addToCollection(Sketcher.RECENT_KEY, sketcher.getMolFile());
     })
-    .show();
+    .show({resizable: true});
+    ui.onSizeChanged(dlg.root).subscribe((_) => {
+      sketcher.resize();
+    });
 }
 
 //name: OpenChemLib
@@ -845,19 +862,21 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
   });
 }
 
+//name: isSmiles
+//input: string s
+export function isSmiles(s: string) : boolean {
+  const ctx: IMolContext = getMolSafe(s, {}, _rdKitModule, true);
+  if (ctx.mol !== null) {
+    ctx.mol.delete();
+    return true;
+  }
+ return false;
+}
+
 //name: detectSmiles
 //input: column col
 //input: int min
 export function detectSmiles(col: DG.Column, min: number) : void {
-  function isSmiles(s: string) : boolean {
-    const ctx: IMolContext = getMolSafe(s, {}, _rdKitModule, true);
-    if (ctx.mol !== null) {
-      ctx.mol.delete();
-      return true;
-    }
-   return false;
-  }
-
   if (DG.Detector.sampleCategories(col, isSmiles, min, 10, 0.8)) {
     col.tags[DG.TAGS.UNITS] = DG.UNITS.Molecule.SMILES;
     col.semType = DG.SEMTYPE.MOLECULE;

@@ -2,6 +2,7 @@
 #language: python
 #environment: ulmo
 #output: dataframe df
+#test: Ulmo()
 
 from ulmo.nasa import daymet
 ornl_lat, ornl_long = 35.9313167, -84.3104124

@@ -2,17 +2,18 @@
 
 Commonly used platform enhancements
 
-Owner: [Andrew Skalkin](https://github.com/skalkin)  
-Issues: https://github.com/datagrok-ai/public/projects/2
+Owner: [Andrew Skalkin](https://github.com/skalkin)
+Issues: <https://github.com/datagrok-ai/public/projects/2>
 
 ## Power widgets
 
-A start page that contains widgets (annotated with the `dashboard` tag) that are dynamically 
+A start page that contains widgets (annotated with the `dashboard` tag) that are dynamically
 discovered from the packages available to the current user.
 
 ## Power search
 
 Ability to search for anything from the start screen, with the special support for the following:
+
 * Widgets
 * Functions
 * Applications
@@ -32,8 +33,8 @@ A collection of search templates is curated by the community (either global or
 within your organization). You can mix and match template collections by editing
 the `searchTemplatePaths` package property.
 
-The following example illustrates the template that binds a ChEMBL molecule identifier 
-(such as CHEMBL123456) with a web page containing the molecule summary. Here is the 
+The following example illustrates the template that binds a ChEMBL molecule identifier
+(such as CHEMBL123456) with a web page containing the molecule summary. Here is the
 corresponding entry in the chembl.json file:
 
 ```
@@ -55,6 +56,7 @@ Now, when you enter `CHEMBL123456` in the search box, the following page appears
 
 `Add New Column` dialog that lets you add derived columns by applying a formula to existing columns.
 To activate, click on the `Add New Column` icon on the toolbar. Here are some of the features:
+
 * Support for functions implemented with Python, R, Julia, JavaScript, C++, and others
 * Interactive preview of results as you type
 * Functions registry

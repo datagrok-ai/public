@@ -11,6 +11,8 @@ import { options, deepCopy } from './echarts-options';
 import { ColumnData, ColumnsData, Indexable, markerPosition, markerType, timePoint,
   visibilityMode, VISIBILITY_MODE } from './constants';
 
+import '../../../css/timelines-viewer.css';
+
 
 export class TimelinesViewer extends EChartViewer {
   splitByColumnName: string;

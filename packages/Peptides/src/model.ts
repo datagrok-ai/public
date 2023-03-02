@@ -830,7 +830,7 @@ export class PeptidesModel {
     const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
     const das = getDistributionAndStats(distributionTable, stats, `${position} : ${aar}`, 'Other', true);
     const resultMap: { [key: string]: any } = {...das.tableMap, ...colResults};
-    const distroStatsElem = wrapDistroAndStatsDefault(das.labels, das.histRoot, resultMap);
+    const distroStatsElem = wrapDistroAndStatsDefault(das.labels, das.histRoot, resultMap, true);
 
     ui.tooltip.show(distroStatsElem, x, y);
 

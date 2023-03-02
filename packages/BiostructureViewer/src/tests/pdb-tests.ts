@@ -1,3 +1,7 @@
+import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+
 import {category/*, expect*/, test} from '@datagrok-libraries/utils/src/test';
 import {
   _testRCSBAlive,
@@ -5,11 +9,6 @@ import {
   _testMolstarViewerIsOpening,
   /*requireText,*/
 } from './utils';
-/*
-import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-*/
 
 category('biosv', () => {
   test('pdb_entry.RCSB_is_alive', async () => {

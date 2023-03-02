@@ -16,4 +16,8 @@ export declare function fillVisibleViewportGridCells(arColRowIdxs: Array<number>
 export declare function getActiveGridRow(grid: DG.Grid): number;
 export declare function scaleFont(font: string, fFactor: number): string;
 export declare function paintColHeaderCell(g: CanvasRenderingContext2D | null, nX: number, nY: number, nW: number, nH: number, colGrid: DG.GridColumn): void;
+export declare const LeftArrow = "\u2190";
+export declare const RightArrow = "\u2192";
+export declare const UpArrow = "\u2191";
+export declare const DownArrow = "\u2193";
 //# sourceMappingURL=GridUtils.d.ts.map
