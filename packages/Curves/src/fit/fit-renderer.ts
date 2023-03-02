@@ -1,7 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {GridColumn} from 'datagrok-api/dg';
+import {GridColumn, Paint} from 'datagrok-api/dg';
 import {fitSeries, getChartData, getChartBounds, getFittedCurve} from './fit-data';
+import {fitResultProperties} from "@datagrok-libraries/statistics/src/parameter-estimation/fit-curve";
+import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
+import wu from "wu";
 
 interface ITransform {
   xToScreen(world: number): number;
@@ -19,6 +22,17 @@ class Transform {
       }
     };
   }
+}
+
+/** Performs a chart layout, returning [viewport, xAxis, yAxis] */
+function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
+  if (rect.width < 100 || rect.height < 100)
+    return [rect, undefined, undefined];
+  return [
+    rect.cutLeft(30).cutBottom(30),
+    rect.getBottom(30).cutLeft(30),
+    rect.getLeft(30).cutBottom(30)
+  ];
 }
 
 export class FitChartCellRenderer extends DG.GridCellRenderer {
@@ -44,20 +58,45 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     if (w < 20 || h < 10) return;
     const screenBounds = new DG.Rect(x, y, w, h).inflate(-6, -6);
+    const [dataBox, xAxisBox, yAxisBox] = layoutChart(screenBounds);
 
     const data = getChartData(gridCell);
     const dataBounds = getChartBounds(data);
-    const transform = Transform.linear(dataBounds, screenBounds);
+    const transform = Transform.linear(dataBounds, dataBox);
+
+    DG.Paint.coordinateGrid(g, dataBounds, xAxisBox, yAxisBox, dataBox);
 
     for (const series of data.series!) {
+      g.strokeStyle = series.pointColor ?? '0xFF40699c';
+
       if (series.showPoints ?? true) {
-        for (let i = 0; i < series.points.length!; i++) {
+        for (let i = 0, candleStart = null; i < series.points.length!; i++) {
           const p = series.points[i];
-          DG.Paint.marker(g,
-            p.outlier ? DG.MARKER_TYPE.OUTLIER : DG.MARKER_TYPE.CIRCLE,
-            transform.xToScreen(p.x), transform.yToScreen(p.y),
-            series.pointColor ? DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker,
-            p.outlier ? 6 : 4);
+          const nextSame = i + 1 < series.points.length && series.points[i + 1].x == p.x;
+          if (!candleStart && nextSame)
+            candleStart = i;
+          else if (candleStart != null && !nextSame) {
+            let minY = series.points[candleStart].y;
+            let maxY = minY;
+            for (let j = candleStart; j < i; j++) {
+              minY = Math.min(minY, series.points[j].y);
+              maxY = Math.max(minY, series.points[j].y);
+            }
+
+            g.beginPath();
+            g.moveTo(transform.xToScreen(p.x), transform.yToScreen(minY));
+            g.lineTo(transform.xToScreen(p.x), transform.yToScreen(maxY));
+            g.stroke();
+
+            candleStart = null;
+          }
+          else if (!candleStart) {
+            DG.Paint.marker(g,
+              p.outlier ? DG.MARKER_TYPE.OUTLIER : DG.MARKER_TYPE.CIRCLE,
+              transform.xToScreen(p.x), transform.yToScreen(p.y),
+              series.pointColor ? DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker,
+              p.outlier ? 6 : 4);
+          }
         }
       }
 
@@ -75,6 +114,21 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
             g.lineTo(x, y);
         }
         g.stroke();
+      }
+
+
+      if (data.chartOptions?.showStatistics) {
+        let fitResult = fitSeries(series, true);
+        for (let i = 0; i < data.chartOptions.showStatistics.length; i++) {
+          const statName = data.chartOptions.showStatistics[i];
+          const prop = fitResultProperties.find(p => p.name == statName);
+          if (prop) {
+            const s = StringUtils.formatNumber(prop.get(fitResult));
+            g.fillStyle = series.fitLineColor ?? 'black';
+            g.textAlign = "left";
+            g.fillText(prop.name + ': ' + s, dataBox.x + 5, dataBox.y + 20 + 20 * i);
+          }
+        }
       }
     }
 
