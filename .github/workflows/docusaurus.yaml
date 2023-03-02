@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: 18
       - name: Install markdownlint-cli2
-        run: npm install -g markdownlint-cli2 markdownlint-cli2-formatter-summarize
+        run: npm install -g markdownlint-cli2
       - name: Lint Markdown
         id: check
         run: |
@@ -37,6 +37,7 @@ jobs:
             echo "## Errors per input" >> "${GITHUB_STEP_SUMMARY}"
             echo ":no_entry_sign: Markdown Linter errors:"
             echo "To test locally use the [instructions](https://datagrok.ai/help/develop/how-to/help-pages#markdown-linter)" >> help/_lint-check-report.md
+            sed -i -r '/^To test locally use the .*/i ## Local execution' ${GITHUB_STEP_SUMMARY}
             cat help/_lint-check-report.md
             cat help/_lint-check-report.md >> "${GITHUB_STEP_SUMMARY}"
             exit 1
@@ -101,6 +102,7 @@ jobs:
             sed -i -r 's,(at line [0-9]+),**\1**,g' ${GITHUB_STEP_SUMMARY}
             sed -i -r 's,^(output/help.*\.html)$,### \1,g' ${GITHUB_STEP_SUMMARY}
             sed -i -r '/^Found [0-9]+ bad links/i ## Errors summary' ${GITHUB_STEP_SUMMARY}
+            sed -i -r '/^To test locally use the .*/i ## Local execution' ${GITHUB_STEP_SUMMARY}
             exit 1
           fi
       - name: 'Upload Artifact'

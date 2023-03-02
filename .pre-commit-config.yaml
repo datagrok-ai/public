@@ -27,4 +27,3 @@ repos:
     hooks:
       - id: markdownlint-cli2
         stages: [commit, merge-commit, push, manual]
-        additional_dependencies: ['markdownlint-cli2-formatter-summarize']
