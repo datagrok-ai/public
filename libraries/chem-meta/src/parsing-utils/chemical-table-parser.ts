@@ -3,48 +3,51 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-/** Interface for parsers of Molfile and Mol2 formats */
-interface ChemicalTableParser {
-  /** Number of atoms in a molecule  */
-  atomCount: number;
-  /** Number of bonds in a molecule  */
-  bondCount: number;
-  /** X coordinates of all atoms in a molecule  */
-  x: number[];
-  /** Y coordinates of all atoms in a molecule  */
-  y: number[];
-  /** Z coordinates of all atoms in a molecule  */
-  z: number[];
-  atomTypes: string[];
-}
-
 export type AtomAndBondCounts = {
   atomCount: number,
   bondCount: number
 }
 
-/** Base class for Molfile and Mol2 parsers/handlers */
-export abstract class AbstractChemicalTableParser implements ChemicalTableParser {
-  constructor(file: string) {
-    this.file = file.replaceAll('\r', '');
+type CoordinateArrays = {
+  x: number[],
+  y: number[],
+  z: number[],
+}
+
+/** Base singleton for Molfile and Mol2 parser/handler */
+export abstract class ChemicalTableParserBase {
+  protected constructor(file: string) {
+    this.reset(file);
   };
 
-  protected readonly file: string;
+  private static instance: ChemicalTableParserBase;
+
+  public static getInstance<T extends ChemicalTableParserBase>(file: string): T {
+    if (!this.instance)
+      this.instance = new (ChemicalTableParserBase as any)(file); // a workaround to define an abstract singleton
+    return this.instance as T;
+  }
+
+  public reset(file: string) {
+    this.file = file.replaceAll('\r', '');
+  }
+
+  protected file!: string;
 
   /** Index running along the string/file being parsed  */
-  protected currentIdx: number = 0;
   protected _atomCount?: number;
   protected _bondCount?: number;
-  /** The array of X, Y, Z arrays for atomic coordinates */
-  protected atomCoordinates?: number[][];
-  protected _atomTypes?: string[];
 
+  /** The array of X, Y, Z arrays for atomic coordinates */
+  protected atomCoordinates?: CoordinateArrays;
+  protected _atomTypes?: string[];
   protected abstract parseAtomAndBondCounts(): AtomAndBondCounts;
   protected abstract parseAtomTypes(): string[];
   /** Get idx of the first line of the atom block  */
   protected abstract getAtomBlockIdx(): number;
   /** Get idx of the first line of the bond block  */
   protected abstract getBondBlockIdx(): number;
+  protected abstract getXColumnIdx(): number;
 
   protected setAtomAndBondCounts(): void {
     const {atomCount, bondCount} = this.parseAtomAndBondCounts();
@@ -53,8 +56,7 @@ export abstract class AbstractChemicalTableParser implements ChemicalTableParser
   }
 
   /** Gets the idx of the next column relatively to this._currentIdx  */
-  protected getNextColumnIdx(): number {
-    let idx = this.currentIdx;
+  protected getNextColumnIdx(idx: number): number {
     // skip non-whitespace, if necessary
     while (!this.isWhitespace(idx))
       ++idx;
@@ -64,24 +66,24 @@ export abstract class AbstractChemicalTableParser implements ChemicalTableParser
     return idx;
   }
 
-  protected parseAtomCoordinates(): number[][] {
+  protected parseAtomCoordinates(): CoordinateArrays {
     const x = new Array<number>(this.atomCount);
     const y = new Array<number>(this.atomCount);
     const z = new Array<number>(this.atomCount);
     let idx = this.getAtomBlockIdx();
     for (let i = 0; i < this.atomCount; i ++) {
-      idx = this.getXCoordinateIdx();
-      x[i] = this.parseFloatValue();
+      idx = this.getXColumnIdx();
+      for (const item of [x, y, z]) {
+        item[i] = this.parseFloatValue(idx);
+        idx = this.getNextColumnIdx(idx);
+      }
     }
+    return {x: x, y: y, z: z};
   }
 
   /** Check if a character is whitespace including '\t'  */
   protected isWhitespace(idx: number): boolean {
     return /\s/.test(this.file.at(idx)!);
-  }
-
-  protected jumpToNextLine(): void {
-    this.currentIdx = this.getNextLineIdx(this.currentIdx);
   }
 
   /** Get index of the next line starting from idx  */
@@ -92,53 +94,61 @@ export abstract class AbstractChemicalTableParser implements ChemicalTableParser
       return this.file.indexOf('\n', idx + 1) + 1;
   }
 
-  /** Get a float value in the current column */
-  protected parseFloatValue(): number {
-    return this.parseNumericValue(parseFloat);
+  /** Get a float value in the current column (at idx) */
+  protected parseFloatValue(idx: number): number {
+    return this.parseNumericValue(parseFloat, idx);
   }
 
-  /** Get an int value in the current column */
-  protected parseIntValue(): number {
-    return this.parseNumericValue(parseInt);
+  /** Get an int value in the current column (at idx) */
+  protected parseIntValue(idx: number): number {
+    return this.parseNumericValue(parseInt, idx);
   }
 
   /** Parse a numeric value depending on the functional argument  */
-  protected parseNumericValue(parserFunction: (str: string) => number): number {
-    let end = this.currentIdx + 1;
+  protected parseNumericValue(
+    parserFunction: (str: string) => number,
+    idx: number
+  ): number {
+    let end = idx + 1;
     while (!this.isWhitespace(end))
       ++end;
-    const value = parserFunction(this.file.substring(this.currentIdx, end));
+    const value = parserFunction(this.file.substring(idx, end));
     return value;
   }
 
+  /** Number of atoms in a molecule  */
   get atomCount(): number {
     if (this._atomCount === undefined)
       this.setAtomAndBondCounts();
     return this._atomCount!;
   }
 
+  /** Number of bonds in a molecule  */
   get bondCount(): number {
     if (this._bondCount === undefined)
       this.setAtomAndBondCounts();
     return this._bondCount!;
   }
 
-  get x(): Float32Array {
+  /** X coordinates of all atoms in a molecule  */
+  get x(): number[] {
     if (this.atomCoordinates === undefined)
       this.atomCoordinates = this.parseAtomCoordinates();
-    return this.atomCoordinates![0];
+    return this.atomCoordinates.x;
   };
 
-  get y(): Float32Array {
+  /** Y coordinates of all atoms in a molecule  */
+  get y(): number[] {
     if (this.atomCoordinates === undefined)
       this.atomCoordinates = this.parseAtomCoordinates();
-    return this.atomCoordinates![1];
+    return this.atomCoordinates!.y;
   };
 
-  get z(): Float32Array {
+  /** Z coordinates of all atoms in a molecule  */
+  get z(): number[] {
     if (this.atomCoordinates === undefined)
       this.atomCoordinates = this.parseAtomCoordinates();
-    return this.atomCoordinates![2];
+    return this.atomCoordinates!.z;
   };
 
   get atomTypes(): string[] {
