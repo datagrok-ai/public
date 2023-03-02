@@ -1,4 +1,4 @@
-### Validation
+# Validation
 
 The view contains results of SDTM tables validation performed at the start of the application.
 
