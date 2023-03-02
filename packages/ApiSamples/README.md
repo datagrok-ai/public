@@ -1,3 +1,5 @@
+# ApiSamples
+
 ApiSamples is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
 It contains various examples of [Grok API](https://datagrok.ai/help/develop/js-api)
 
@@ -12,7 +14,7 @@ Here are the directories of particular interest:
   [chemical](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/domains/chem),
   [data science](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/domains/data-science)
 * [events](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/events)
-  : directory with events subsystem examples 
+  : directory with events subsystem examples
 * [functions](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/functions)
   : directory with examples how to work with [functions](https://datagrok.ai/help/datagrok/functions/function)
 * [grid](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/grid)
@@ -24,5 +26,5 @@ Here are the directories of particular interest:
 
 See also:
 
-  * [Grok API](https://datagrok.ai/help/develop/js-api)
-  * [Packages](https://datagrok.ai/help/develop/develop#packages)
+* [Grok API](https://datagrok.ai/help/develop/js-api)
+* [Packages](https://datagrok.ai/help/develop/develop#packages)

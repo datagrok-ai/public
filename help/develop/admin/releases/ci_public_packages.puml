@@ -1,0 +1,32 @@
+@startuml
+scale 800*500
+start
+:Developers;
+:Commit and push code;
+:GitHub Actions 'Packages' job start;
+:Install npm dependencies;
+:Build npm package;
+:Create test stand with latest Datagrok image (or bleeding-edge if required);
+:Publish package grok dependencies to stand;
+:Publish package to stand;
+:Test package;
+if (Tests passed?) then (Yes)
+:Build Docker image for package;
+if (Branch Master?) then (Yes)
+if (Version already exists in NPM?) then (Yes)
+:Save docker image to artifacts;
+else(No)
+:Publish to NPM registry;
+:Publish Docker image for package to Docker Hub;
+:Upgrade package version in Meta package;
+:Publish new version of Meta package to NPM registry;
+endif
+else (No)
+:Save docker image to artifacts;
+endif
+else (No)
+:Notify the developer;
+end
+endif
+stop
+@enduml

@@ -1,4 +1,4 @@
-### Laboratory
+# Laboratory
 
 This view contains several specific charts for analyzing laboratory results.
 
@@ -26,8 +26,8 @@ Color corresponds to treatment arm.
 
 * **Laboratory distribution**
 
-This box plot shows distribution of selected laboratory value among all subjects depending on study day. 
-In particular you can analyze median, min and max values, upper and lower quartiles and detect outliers. Additionally you can evaluate difference between distributions on different study days. 
+This box plot shows distribution of selected laboratory value among all subjects depending on study day.
+In particular you can analyze median, min and max values, upper and lower quartiles and detect outliers. Additionally you can evaluate difference between distributions on different study days.
 
 Laboratory value as well as study visit can be selected via dropdown lists on a context panel.
 
