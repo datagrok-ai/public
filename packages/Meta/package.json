@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.12",
+  "version": "3.2.16",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -432,6 +432,9 @@
         },
         "1.5.3": {
           "datagrok-api": "^1.13.0"
+        },
+        "1.5.5": {
+          "datagrok-api": "^1.13.2"
         }
       },
       "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Chem/README.md)",
@@ -1331,6 +1334,9 @@
         },
         "1.0.17": {
           "datagrok-api": "^1.6.7"
+        },
+        "1.0.18": {
+          "datagrok-api": "^1.6.7"
         }
       },
       "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
@@ -1415,6 +1421,9 @@
           "datagrok-api": "^1.11.1"
         },
         "1.0.5": {
+          "datagrok-api": "^1.11.1"
+        },
+        "1.0.6": {
           "datagrok-api": "^1.11.1"
         }
       },
@@ -1995,6 +2004,9 @@
           "datagrok-api": "^1.8.3"
         },
         "1.1.13": {
+          "datagrok-api": "^1.8.3"
+        },
+        "1.1.14": {
           "datagrok-api": "^1.8.3"
         }
       },

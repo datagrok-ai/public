@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import { V2000_ATOM_NAME_LEN, V2000_ATOM_NAME_POS } from '../constants';
 import { convertMolNotation } from '../package';
+import * as OCL from 'openchemlib/full';
 
 /** Gets map of chem elements to list with counts of atoms in rows */
 export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, number[]] {
@@ -8,6 +9,7 @@ export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, num
     const invalid: number[] = new Array<number>(molCol.length);
     let smiles = molCol.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES;
     let v3Kmolblock = molCol.get(0).includes('V3000');
+    elements.set('Molecule Charge', new Int32Array(molCol.length));
     for (let rowI = 0; rowI < molCol.length; rowI++) {
       let el: string = molCol.get(rowI);
       if (smiles) {
@@ -32,8 +34,11 @@ export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, num
       curPos = el.indexOf('\n', curPos) + 1;
 
       const atomCounts = parseInt(el.substring(curPos, curPos + 3));
+      let oclMolecule = OCL.Molecule.fromMolfile(el);
+      let moleculeCharge = 0;
   
       for (let atomRowI = 0; atomRowI < atomCounts; atomRowI++) {
+        moleculeCharge += oclMolecule.getAtomCharge(atomRowI);
         curPos = el.indexOf('\n', curPos) + 1;
         const elName: string = el
           .substring(curPos + V2000_ATOM_NAME_POS, curPos + V2000_ATOM_NAME_POS + V2000_ATOM_NAME_LEN)
@@ -44,6 +49,7 @@ export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, num
           
         ++elements.get(elName)![rowI];
       } 
+      elements.get('Molecule Charge')![rowI] = moleculeCharge;
     }
     return [elements, invalid];
   }

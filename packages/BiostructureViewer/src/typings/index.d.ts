@@ -1,10 +1,10 @@
 declare module 'NGL' {
   export type LoaderParameters = {
-    ext?: string,
-    compressed?: boolean,
-    binary?: boolean,
-    name?: string,
-    defaultRepresentation?: boolean
+    ext: string,
+    compressed: boolean,
+    binary: boolean,
+    name: string,
+    defaultRepresentation: boolean
   };
 
   export class ColormakerRegistryClass {
@@ -45,7 +45,7 @@ declare module 'NGL' {
 
     removeAllComponents(type?: string): undefined;
 
-    async loadFile(path: String | File | Blob, params: LoaderParameters): Promise<void>;
+    async loadFile(path: String | File | Blob, params: Partial<LoaderParameters>): Promise<void>;
 
     dispose(): undefined;
   }

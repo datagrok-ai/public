@@ -880,19 +880,21 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
   });
 }
 
+//name: isSmiles
+//input: string s
+export function isSmiles(s: string) : boolean {
+  const ctx: IMolContext = getMolSafe(s, {}, _rdKitModule, true);
+  if (ctx.mol !== null) {
+    ctx.mol.delete();
+    return true;
+  }
+ return false;
+}
+
 //name: detectSmiles
 //input: column col
 //input: int min
 export function detectSmiles(col: DG.Column, min: number) : void {
-  function isSmiles(s: string) : boolean {
-    const ctx: IMolContext = getMolSafe(s, {}, _rdKitModule, true);
-    if (ctx.mol !== null) {
-      ctx.mol.delete();
-      return true;
-    }
-   return false;
-  }
-
   if (DG.Detector.sampleCategories(col, isSmiles, min, 10, 0.8)) {
     col.tags[DG.TAGS.UNITS] = DG.UNITS.Molecule.SMILES;
     col.semType = DG.SEMTYPE.MOLECULE;

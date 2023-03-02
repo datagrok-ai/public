@@ -36,6 +36,7 @@ import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {createJsonMonomerLibFromSdf, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {LIB_PATH, LIB_STORAGE_NAME, MonomerLibHelper} from './utils/monomer-lib';
+import { getMacromoleculeColumn } from './utils/ui-utils';
 
 // /** Avoid reassinging {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
 // let monomerLib: MonomerLib | null = null;
@@ -472,7 +473,7 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
 }
 
 //name: Composition Analysis
-//top-menu: Bio | Composition Analysis
+//top-menu: Bio | Composition Analysis...
 //output: viewer result
 export async function compositionAnalysis(): Promise<void> {
   // Higher priority for columns with MSA data to show with WebLogo.
@@ -558,11 +559,10 @@ export function importFasta(fileContent: string): DG.DataFrame [] {
   return ffh.importFasta();
 }
 
-//name: Bio | Convert ...
-//friendly-name: Bio | Convert
-//tags: panel, bio
-//input: column col {semType: Macromolecule}
-export function convertPanel(col: DG.Column): void {
+//top-menu: Bio | Convert...
+//name: convertDialog
+export function convertDialog() {
+  const col = getMacromoleculeColumn();
   convert(col);
 }
 
@@ -625,10 +625,10 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
   return resDf;
 }
 
-//name: Bio | Split to monomers
-//tags: panel, bio
-//input: column col {semType: Macromolecule}
-export function splitToMonomers(col: DG.Column<string>): void {
+//top-menu: Bio | Split to monomers...
+//name: splitToMonomers
+export function splitToMonomers(): void {
+  const col = getMacromoleculeColumn();
   const tempDf = splitAlignedSequences(col);
   const originalDf = col.dataFrame;
   for (const tempCol of tempDf.columns) {
@@ -682,10 +682,10 @@ export function diversitySearchTopMenu() {
   view.dockManager.dock(viewer, 'down');
 }
 
-//name: Bio | Substructure search ...
-//tags: panel, bio
-//input: column col {semType: Macromolecule}
-export function bioSubstructureSearch(col: DG.Column): void {
+//top-menu: Bio | Substructure search ...
+//name: bioSubstructureSearch
+export function bioSubstructureSearch(): void {
+  const col = getMacromoleculeColumn();
   substructureSearchDialog(col);
 }
 

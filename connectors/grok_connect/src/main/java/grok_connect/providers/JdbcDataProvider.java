@@ -2,10 +2,16 @@ package grok_connect.providers;
 
 import java.io.*;
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.math.*;
 import java.text.*;
 import java.util.regex.*;
+
+import oracle.sql.TIMESTAMPTZ;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.text.StringEscapeUtils;
@@ -39,7 +45,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     public Properties getProperties(DataConnection conn) {
         return defaultConnectionProperties(conn);
     }
-//    what is this?
+
     public boolean autoInterpolation() {
         return true;
     }
@@ -330,7 +336,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             int columnCount = resultSetMetaData.getColumnCount();
             List<Column> columns = new ArrayList<>(columnCount);
             List<Boolean> supportedType = new ArrayList<>(columnCount);
-            List<Boolean> initColumn = new ArrayList<>(columnCount);
+             List<Boolean> initColumn = new ArrayList<>(columnCount);
             for (int c = 1; c < columnCount + 1; c++) {
                 Column column;
 
@@ -367,7 +373,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                     column = new StringColumn();
                 } else if (isBitString(type, precision, typeName)) {
                     column = new BigIntColumn();
-                } else {
+                } else if(isArray(type, typeName)) {
+                    column = new StringColumn();
+                }else {
                     column = new StringColumn();
                     supportedType.set(c - 1, false);
                     initColumn.set(c - 1, false);
@@ -403,7 +411,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 rowCount++;
 
                 for (int c = 1; c < columnCount + 1; c++) {
-                    Object value = resultSet.getObject(c);
+                    Object value = getObjectFromResultSet(resultSet, c);
 
                     if (queryRun.debugQuery && value != null)
                         numericColumnStats.get(c-1).updateStats(value);
@@ -432,7 +440,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 columns.get(c - 1).add(((Float)value).intValue());
                             else if (value instanceof BigDecimal)
                                 columns.get(c - 1).add(((BigDecimal)value).intValue());
-                            else
+                            else if (value instanceof Long) {
+                                columns.get(c - 1).add(((Long)value).intValue());
+                            } else
                                 columns.get(c - 1).add(value);
                         else if (isString(type, typeName)) {
                             if ((type == java.sql.Types.CLOB || value instanceof Clob) && value != null) {
@@ -442,6 +452,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 columns.get(c - 1).add(writer.toString());
                             } else
                                 columns.get(c - 1).add(value);
+                        } else if (isArray(type, typeName)) {
+                            columns.get(c - 1).add(convertArrayType(value));
                         } else if (isXml(type, typeName)) {
                             String valueToAdd = "";
                             if (value != null) {
@@ -481,9 +493,12 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 time = java.util.Date.from(((java.sql.Timestamp)value).toInstant());
                             else if (value instanceof java.time.ZonedDateTime)
                                 time = java.util.Date.from(((java.time.ZonedDateTime)value).toInstant());
-                            else
+                            else if (value instanceof oracle.sql.TIMESTAMPTZ) {
+                                OffsetDateTime offsetDateTime = timestamptzToOffsetDateTime((TIMESTAMPTZ) value);
+                                time = java.util.Date.from(offsetDateTime.toInstant());
+                            } else {
                                 time = ((java.util.Date) value);
-
+                            }
                             columns.get(c - 1).add((time == null) ? null : time.getTime() * 1000.0);
                         }
                     } else {
@@ -564,6 +579,22 @@ public abstract class JdbcDataProvider extends DataProvider {
             if (connection != null)
                 connection.close();
         }
+    }
+
+    protected Object getObjectFromResultSet(ResultSet resultSet, int c) {
+        try {
+            return resultSet.getObject(c);
+        }catch (SQLException e) {
+            throw new RuntimeException("Something went wrong when getting object from result set", e);
+        }
+    }
+
+    protected Object convertArrayType(Object value) {
+        return value.toString();
+    }
+
+    protected OffsetDateTime timestamptzToOffsetDateTime(TIMESTAMPTZ dbData) {
+        throw new UnsupportedOperationException("TIMESTAMPTZ is not supported");
     }
 
     private static String paramToNamesString(FuncParam param, PatternMatcher matcher, String type,
@@ -731,6 +762,10 @@ public abstract class JdbcDataProvider extends DataProvider {
         // TODO Investigate precision value for current case
     }
 
+    protected boolean isArray(int type, String typeName) {
+        return false;
+    }
+
     private static boolean isBitString(int type, int precision, String typeName) {
         return (type == java.sql.Types.BIT && precision > 1) || typeName.equalsIgnoreCase("varbit");
     }
@@ -740,9 +775,10 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     private static boolean isTime(int type, String typeName) {
-        return (type == java.sql.Types.DATE) || (type == java.sql.Types.TIME) || (type == java.sql.Types.TIMESTAMP) ||
-                typeName.equalsIgnoreCase("timetz") ||
-                typeName.equalsIgnoreCase("timestamptz");
+        return (type == java.sql.Types.DATE) || (type == java.sql.Types.TIME) || (type == java.sql.Types.TIMESTAMP)
+                || typeName.equalsIgnoreCase("timetz")
+                || typeName.equalsIgnoreCase("timestamptz")
+                || (typeName.equalsIgnoreCase("TIMESTAMP WITH TIME ZONE"));
     }
 
     protected boolean isBigInt(int type, String typeName, int precision, int scale) {
@@ -754,7 +790,9 @@ public abstract class JdbcDataProvider extends DataProvider {
         return (type == java.sql.Types.FLOAT) || (type == java.sql.Types.DOUBLE) || (type == java.sql.Types.REAL) ||
                 typeName.equalsIgnoreCase("float8") ||
                 typeName.equalsIgnoreCase("float4") ||
-                typeName.equalsIgnoreCase("money");
+                typeName.equalsIgnoreCase("money") ||
+                typeName.equalsIgnoreCase("binary_float") ||
+                typeName.equalsIgnoreCase("binary_double");
     }
 
     protected boolean isDecimal(int type, String typeName, int scale) {

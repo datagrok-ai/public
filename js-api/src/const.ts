@@ -125,6 +125,10 @@ export enum TYPE {
   NOTEBOOK = 'Notebook'
 }
 
+export enum GRID_COLUMN_TAGS {
+
+}
+
 /** Commonly used options on the function level */
 export enum FUNC_OPTIONS {
   DEMO_PATH = 'demoPath',    // Demo path, such as 'Viewers | Radar'
@@ -564,7 +568,7 @@ export type ElementOptions = {
   classes?: string;
   style?: object;
   processNode?: (node: HTMLElement) => void;
-  onClick?: (node: HTMLElement) => void;
+  onClick?: (event: PointerEvent) => void;
 };
 
 /** Metadata associated with the semantic type. */

@@ -13,8 +13,13 @@ import {IFormLookSettings, IGridLookSettings} from "./interfaces/d4";
 let api = <any>window;
 let _bytes = new Float64Array(4);
 
+export interface IPoint {
+  x: number;
+  y: number;
+}
+
 /** Represents a point. */
-export class Point {
+export class Point implements IPoint {
   x: number;
   y: number;
 
@@ -26,6 +31,26 @@ export class Point {
   /** Distance to the specified point. */
   distanceTo(p: Point): number {
     return Math.sqrt((this.x - p.x) * (this.x - p.x) + (this.y - p.y) * (this.y - p.y));
+  }
+
+  /** Returns the bounding rectangle for the specified points. */
+  static getBounds(points: IPoint[]): Rect {
+    if (!points || points.length == 0)
+      return new Rect(0, 0, 1, 1);
+
+    let minX = points[0].x;
+    let minY = points[0].y;
+    let maxX = points[0].x;
+    let maxY = points[0].y;
+
+    for (let i = 1; i < points.length; i++) {
+      minX = Math.min(minX, points[i].x);
+      minY = Math.min(minY, points[i].y);
+      maxX = Math.max(maxX, points[i].x);
+      maxY = Math.max(maxY, points[i].y);
+    }
+
+    return new Rect(minX, minY, maxX - minX, maxY - minY);
   }
 }
 
@@ -42,6 +67,12 @@ export class Rect {
     this.y = y;
     this.width = width;
     this.height = height;
+  }
+
+  static fromPoints(x1: number, y1: number, x2: number, y2: number): Rect {
+    let minX = Math.min(x1, x2);
+    let minY = Math.min(y1, y2);
+    return new Rect(minX, minY, Math.max(x1, x2) - minX, Math.max(y1, y2) - minY)
   }
 
   static fromDart(dart: any): Rect {
@@ -63,6 +94,18 @@ export class Rect {
   get midY(): number {
     return this.y + this.height / 2;
   }
+
+  /** Same as x */
+  get minX(): number { return this.x; }
+
+  /** Same as (x + width), or (right) */
+  get maxX(): number { return this.x + this.width; }
+
+  /** Same as (y) */
+  get minY(): number { return this.y; }
+
+  /** Same as x + width */
+  get maxY(): number { return this.bottom; }
 
   /** Left border position of the rectangle along the x-axis. */
   get left(): number {
@@ -383,6 +426,15 @@ export class Rect {
   containsPoint(p: Point): boolean {
     return this.contains(p.x, p.y);
   }
+
+  /** Returns a rectangle that contains both this and r. */
+  union(r: Rect): Rect {
+    return Rect.fromPoints(
+      Math.min(this.minX, r.minX),
+      Math.min(this.minY, r.minY),
+      Math.max(this.maxX, r.maxX),
+      Math.max(this.maxY, r.maxY));
+  }
 }
 
 /** Represents a grid cell */
@@ -574,6 +626,10 @@ export class GridColumn {
   get tooltipColumns(): string[] { return api.grok_GridColumn_Get_TooltipForm(this.dart); }
   set tooltipColumns(x: string[]) { api.grok_GridColumn_Set_TooltipForm(this.dart, x); }
 
+  /** isTextColorCoded. Whether to apply color to the text or background. */
+  get isTextColorCoded(): boolean { return api.grok_GridColumn_Get_isTextColorCoded(this.dart); }
+  set isTextColorCoded(x: boolean) { api.grok_GridColumn_Set_isTextColorCoded(this.dart, x); }
+
   /** Left border (in pixels in the virtual viewport) */
   get left(): number { return api.grok_GridColumn_Get_Left(this.dart); }
 
@@ -587,7 +643,10 @@ export class GridColumn {
   get settings(): any | null { return api.grok_GridColumn_Get_Settings(this.dart); }
   set settings(s: any | null) { api.grok_GridColumn_Set_Settings(this.dart, s); }
 
-  /** Use this field to keep auxiliary data. It is not serialized. */
+  /** Use this field to keep arbitrary auxiliary data. It is serialized as JSON, so be careful. See also {@link temp}. */
+  get tags(): {[indexer: string]: any} { return api.grok_GridColumn_Get_Tags(this.dart); }
+
+  /** Use this field to keep auxiliary data. It is not serialized. See also {@link tags}. */
   get temp(): {[indexer: string]: any} { return api.grok_GridColumn_Get_Temp(this.dart); }
 
   /** Moves the specified column to the specified position */
@@ -848,6 +907,12 @@ export class Grid extends Viewer<IGridLookSettings> {
     return toJs(api.grok_Grid_Get_VertScroll(this.dart));
   }
 
+  /** Converts table row index to grid index. See also {@link gridRowToTable} */
+  tableRowToGrid(tableRow: number): number { return api.grok_Grid_TableRowToGrid(this.dart, tableRow); }
+
+  /** Converts grid row index to table index. See also {@link tableRowToGrid} */
+  gridRowToTable(gridRow: number): number { return api.grok_Grid_GridRowToTable(this.dart, gridRow); }
+
   /** Horizontal scroll bar */
   get horzScroll(): RangeSlider {
     return toJs(api.grok_Grid_Get_HorzScroll(this.dart));
@@ -1067,6 +1132,9 @@ export class SemanticValue<T = any> {
   setMeta(name: string, value: any): void { api.grok_SemanticValue_Set_Meta(this.dart, name, toDart(value)); }
 
   get cell(): Cell { return api.grok_SemanticValue_Get_Cell(this.dart); }
+
   get gridCell(): GridCell { return this.getMeta('gridCell'); }
+  set gridCell(gc: GridCell) { this.setMeta('gridCell', gc); }
+
   get viewer(): Viewer { return this.getMeta('viewer'); }
 }

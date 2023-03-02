@@ -1,0 +1,18 @@
+{
+  "#type": "DataConnection",
+  "name": "OracleApiTests",
+  "friendlyName": "Tests",
+  "parameters": {
+    "server": "",
+    "port": 1,
+    "db": ""
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "Oracle",
+  "description": "Test data"
+}

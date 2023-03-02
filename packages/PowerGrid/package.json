@@ -14,10 +14,9 @@
 	},
 	"dependencies": {
 		"@datagrok-libraries/gridext": "^1.3.29",
-		"@datagrok-libraries/statistics": "^1.0.2",
 		"@types/wu": "latest",
 		"cash-dom": "latest",
-		"datagrok-api": "^1.8.3",
+		"datagrok-api": "^1.13.5",
 		"dayjs": "latest"
 	},
 	"devDependencies": {
@@ -33,7 +32,7 @@
 	"scripts": {
 		"lint": "eslint src --ext .ts",
 		"lint-fix": "eslint src --ext .ts --fix",
-		"link-all": "npm link datagrok-api  @datagrok-libraries/utils @datagrok-libraries/utils @datagrok-libraries/gridext",
+		"link-all": "npm link datagrok-api  @datagrok-libraries/utils @datagrok-libraries/statistics @datagrok-libraries/gridext",
 		"link-api": "npm link datagrok-api ",
 		"debug-powergrid": "grok publish",
 		"release-powergrid": "grok publish --release",

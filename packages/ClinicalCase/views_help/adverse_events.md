@@ -1,4 +1,4 @@
-### Adverse events
+# Adverse events
 
 View to explore Adverse events domain. Contains couple of charts along with Adverse events table view.
 
@@ -6,12 +6,11 @@ View to explore Adverse events domain. Contains couple of charts along with Adve
 
 Plots all adverse events registered during the study. Detailed information is available in tooltip. Also when selecting Adverse event on the plot corresponding row becomes current in Adverse event table. So Adverse event of interest can easily be analyzed in details. Selection also works vice versa - when selecting a row in a table corresponding Adverse event is selected on a scatter plot.
 
-Scatter plot can be zoomed in and out to drill down to particular patient or see picture in general. 
+Scatter plot can be zoomed in and out to drill down to particular patient or see picture in general.
 
 Color indicates severity of an Adverse event.
 
 <img src="https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/img/ae_all_events.gif" height="500" width='800'/>
-
 
 * **Events per week**
 
@@ -28,4 +27,3 @@ Color corresponds to treatment arm. So you can visually assess proportion of eac
 Barcharts are also interactive. By selecting one of the groups in a barchart (for instance, adverse events related to study drug for patients who took placebo) corresponding rows will be selected in the table and 'All events' scatter plot.
 
 <img src="https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/img/ae_barcharts.gif" height="500" width='800'/>
-
