@@ -14,7 +14,6 @@
 	},
 	"dependencies": {
 		"@datagrok-libraries/gridext": "^1.3.29",
-		"@datagrok-libraries/statistics": "^1.1.2",
 		"@types/wu": "latest",
 		"cash-dom": "latest",
 		"datagrok-api": "^1.13.5",
