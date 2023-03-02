@@ -37,6 +37,7 @@ public class OracleObjectsMother {
         String secondColumnName = "TABLE_NAME";
         String thirdColumnName = "COLUMN_NAME";
         String fourthColumnName = "DATA_TYPE";
+        String fifthColumnname = "IS_VIEW";
         String schema = "DATAGROK";
         String table = "MOCK_DATA";
         DataFrame expected = DataFrameBuilder.getBuilder()
@@ -52,6 +53,7 @@ public class OracleObjectsMother {
                 .setColumn(new StringColumn(), fourthColumnName, new String[] {"NUMBER", "VARCHAR2",
                         "VARCHAR2", "VARCHAR2", "VARCHAR2", "VARCHAR2",
                         "VARCHAR2", "DATE", "NUMBER"})
+                .setColumn(new IntColumn(), fifthColumnname, new Integer[]{0, 0, 0, 0, 0, 0, 0, 0, 0})
                 .build();
         return Stream.of(Arguments.of(expected));
     }
