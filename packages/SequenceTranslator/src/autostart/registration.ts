@@ -17,6 +17,7 @@ import {IDPS} from '../hardcode-to-be-eliminated/IDPs';
 import {sdfAddColumns} from '../utils/sdf-add-columns';
 import {sdfSaveTable} from '../utils/sdf-save-table';
 import {_package} from '../package';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 const enum PREFIXES {
   AS = 'AS',
@@ -166,7 +167,8 @@ export function autostartOligoSdFileSubscription() {
           oligoSdFileGrid(v);
           await oligoSdFile(v.dataFrame);
         } catch (err: any) {
-          grok.shell.error(err.toString());
+          const errStr = errorToConsole(err);
+          console.error(errStr);
         }
       }
 
@@ -228,6 +230,7 @@ export function autostartOligoSdFileSubscription() {
 export async function oligoSdFile(table: DG.DataFrame) {
   const saltsDf = DG.DataFrame.fromCsv(SALTS_CSV);
   const usersDf = await _package.dataLoader.getUsers();
+  console.log('users:', usersDf.toCsv().toString());
   const sourcesDf = DG.DataFrame.fromCsv(SOURCES);
   const icdsDf = DG.DataFrame.fromCsv(ICDS);
   const idpsDf = DG.DataFrame.fromCsv(IDPS);

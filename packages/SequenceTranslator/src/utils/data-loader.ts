@@ -26,14 +26,12 @@ export abstract class DataLoaderBase {
  * Translator <name>' */
 export class DataLoaderDB extends DataLoaderBase {
   public async init(): Promise<void> {
-    const dataQueryList = (await grok.dapi.queries.list())
+    const dataQueryList = (await grok.dapi.queries.include('params').list())
       .filter((dq) => dq.name.startsWith(QUERY_NAME.START));
     const usersQuery = dataQueryList.find(
       (dq) => dq.name.endsWith(QUERY_NAME.USERS)
     )!;
     this.usersDf = await this.getDatafame(usersQuery);
-    if (this.usersDf === undefined)
-      throw new Error('users undefined!');
   };
 
   private usersDf?: DG.DataFrame;
@@ -41,7 +39,6 @@ export class DataLoaderDB extends DataLoaderBase {
   private async getDatafame(query: DG.DataQuery) {
     const df: DG.DataFrame = (await query.prepare().call())
       .getOutputParamValue();
-    console.log('inside getDataframe: df:', df.toString());
     return df;
   }
 
