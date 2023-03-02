@@ -26,6 +26,7 @@ export class SequenceSpaceFunctionEditor extends SequenceSpaceBaseFuncEditor {
       
       this.plotEmbeddingsInput = ui.boolInput('Plot Embeddings', true);
       this.plotEmbeddingsInput.captionLabel.style.width = '130px';
+      this.plotEmbeddingsInput.input.style.marginLeft = '0px';
       
       this.funcParamsDiv = ui.form([
         this.tableInput,

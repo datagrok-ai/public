@@ -36,13 +36,15 @@ export class SequenceSpaceBaseFuncEditor {
       });
   
       this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype));
-      this.molColInput.input.style.width = '160px';
+      this.molColInput.root.style.width = '332px';
       this.moleculesColDiv.append(this.molColInput.root);
   
       this.methodInput = ui.choiceInput('Method Name', UMAP, [UMAP, T_SNE], () => {
-        this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
+        if(settingsOpened) {
+            this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
+        }
       });
-      this.methodInput.input.style.width = '160px';
+      this.methodInput.input.style.width = '185px';
       this.methodInput.captionLabel.style.width = '122px';
   
       this.methodSettingsIcon = ui.icons.settings(()=> {
@@ -74,7 +76,7 @@ export class SequenceSpaceBaseFuncEditor {
     onTableInputChanged(semtype: DG.SemType) {
         ui.empty(this.moleculesColDiv);
         this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype));
-        this.molColInput.input.style.width = '160px';
+        this.molColInput.root.style.width = '335px';
         this.moleculesColDiv.append(this.molColInput.root);
     }
   }

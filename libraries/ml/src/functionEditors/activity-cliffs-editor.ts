@@ -22,7 +22,7 @@ export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
     constructor(semtype: DG.SemType){
       super(semtype);
       this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!, this.tableInput.value!.columns.byIndex(0));
-      this.activitiesInput.input.style.width = '160px';
+      this.activitiesInput.root.style.width = '335px';
       this.activitiesColDiv.append(this.activitiesInput.root);
       
       this.similarityInput = ui.intInput('Similarity', 80);
@@ -58,7 +58,7 @@ export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
         super.onTableInputChanged(semtype);
         ui.empty(this.activitiesColDiv);
         this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!, this.tableInput.value!.columns.byIndex(0));
-        this.activitiesInput.input.style.width = '160px';
+        this.activitiesInput.root.style.width = '335px';
         this.activitiesColDiv.append(this.activitiesInput.root);
     }
   }

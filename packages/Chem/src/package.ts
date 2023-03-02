@@ -433,9 +433,10 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
 //input: string similarityMetric
 //input: string xAxis
 //input: string yAxis
+//input: object options {optional: true}
 //output: object result
 export async function getChemSpaceEmbeddings(col: DG.Column, methodName: string,
-  similarityMetric: string = 'Tanimoto', xAxis: string, yAxis: string): Promise<ISequenceSpaceResult> {
+  similarityMetric: string = 'Tanimoto', xAxis: string, yAxis: string, options?: any): Promise<ISequenceSpaceResult> {
   //need to create dataframe to add fingerprints column
   if (!col.dataFrame) {
     const dfForFp = DG.DataFrame.create(col.length);
@@ -446,6 +447,7 @@ export async function getChemSpaceEmbeddings(col: DG.Column, methodName: string,
     methodName: methodName,
     similarityMetric: similarityMetric,
     embedAxesNames: [xAxis, yAxis],
+    options: options
   };
   const chemSpaceRes = await chemSpace(chemSpaceParams);
   return chemSpaceRes;
