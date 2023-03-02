@@ -25,6 +25,20 @@ category('Dapi: functions.calls', async () => {
     expect(savedFuncCall.options['testName'], 'testValue');
   });
 
+  test('save parentFunccall', async () => {
+    const func: DG.Func = await grok.functions.eval('Sin');
+    const funcCall = await func.prepare({x: xValue}).call();
+    const parentFunc: DG.Func = await grok.functions.eval('Cos');
+    const parentFuncCall = await parentFunc.prepare({x: xValue}).call();
+    parentFuncCall.newId();
+    funcCall.newId();
+    funcCall.parentCall = parentFuncCall;
+    await GDF.calls.save(funcCall);
+
+    const loadedFunCall = await GDF.calls.include('parentCall').find(funcCall.id);
+    expect(loadedFunCall.parentCall.id, parentFuncCall.id); 
+  });
+
   test('list', async () => {
     const func: DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();

@@ -6,7 +6,7 @@
 //   const view: DG.TableView = grok.shell.tv;
 //   const pdbTag = view.dataFrame.getTag(pdbTAGS.PDB);
 //   if (pdbTag) {
-//     const viewer = (await view.dataFrame.plot.fromType('NglViewer', {})) as DG.JsViewer;
+//     const viewer = (await view.dataFrame.plot.fromType('Ngl', {})) as DG.JsViewer;
 //     view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'NGL viewer', 0.4);
 //   } else {
 //     const bsView: DG.TableView = grok.shell.tv;
@@ -27,7 +27,7 @@
 //             try {
 //               const pdbStr: string = await grok.dapi.files.readAsText(filePath);
 //
-//               const viewer: DG.JsViewer = (await view.dataFrame.plot.fromType('NglViewer',
+//               const viewer: DG.JsViewer = (await view.dataFrame.plot.fromType('Ngl',
 //                 {[nglPROPS.pdb]: pdbStr})) as DG.JsViewer;
 //               view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'NGL viewer', 0.4);
 //

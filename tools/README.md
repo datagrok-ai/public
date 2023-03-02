@@ -17,7 +17,7 @@ npm install datagrok-tools -g
     ```
 
    Enter developer keys and set the default server. The developer key can be retrieved from your user profile (for
-   example, see https://public.datagrok.ai/u).
+   example, see <https://public.datagrok.ai/u>).
 2. Create a new package by running this command:
 
     ```shell

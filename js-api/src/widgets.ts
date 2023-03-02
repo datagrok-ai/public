@@ -448,6 +448,10 @@ export class Accordion extends DartWidget {
   get header(): HTMLElement { return api.grok_Accordion_Get_Header(this.dart); }
   set header(header) { api.grok_Accordion_Set_Header(this.dart, header); }
 
+  /** Whether tab header should be hidden if there is only one tab */
+  get autoHideTabHeader(): boolean { return api.grok_Accordion_Get_AutoHideTabHeader(this.dart); }
+  set autoHideTabHeader(x) { api.grok_Accordion_Set_AutoHideTabHeader(this.dart, x); }
+
   /** Returns a pane with the specified name.
    * @param {string} name
    * @returns {AccordionPane} */
@@ -970,7 +974,7 @@ export class InputBase<T = any> {
 
   /** Input value */
   get value(): T { return toJs(api.grok_InputBase_Get_Value(this.dart)); }
-  set value(x: T) { toDart(api.grok_InputBase_Set_Value(this.dart, x)); }
+  set value(x: T) { api.grok_InputBase_Set_Value(this.dart, toDart(x)); }
 
   /** String representation of the {@link value} */
   get stringValue(): string { return api.grok_InputBase_Get_StringValue(this.dart); }

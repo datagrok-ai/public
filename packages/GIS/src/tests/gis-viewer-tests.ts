@@ -1,14 +1,14 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
-import {before, after, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {before, after, category, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
 
 import * as GUIUTILS from './gui-utils';
 import {SEMTYPEGIS} from '../gis-semtypes';
 import {GisViewer} from '../gis-viewer';
 
 
-category('GIS: MapViewer', async () => {
+category('MapViewer', async () => {
   let testDF: DG.DataFrame; // | null = null;
   let testDF2: DG.DataFrame; // | null = null;
 
@@ -21,7 +21,11 @@ category('GIS: MapViewer', async () => {
     // const v = grok.shell.getTableView('');
   });
 
-  test('GIS:openMapViewer', async () => {
+  test('Map', async () => {
+    await testViewer('Map', testDF2, true);
+  });
+
+  test('openMapViewer', async () => {
     const mapViewer = DG.Viewer.fromType('Map', testDF);
     expect(mapViewer instanceof DG.JsViewer, true);
     expect(mapViewer.type, 'Map');
@@ -33,7 +37,7 @@ category('GIS: MapViewer', async () => {
     // expect(allTableViews.every(item => grok.shell.view(item) !== undefined), true);
   });
 
-  test('GIS:viewerProperties', async () => {
+  test('viewerProperties', async () => {
     const mapViewer = (DG.Viewer.fromType('Map', testDF) as GisViewer);
     let options = await GUIUTILS.getOptions(mapViewer);
     expect(options.markerOpacity, 80);
@@ -49,7 +53,7 @@ category('GIS: MapViewer', async () => {
     expect(options.defaultColor, 0xff00ff);
   });
 
-  test('GIS:detectLonLat', async () => {
+  test('detectLonLat', async () => {
     if (!testDF)
       testDF = grok.data.demo.geo(300);
     if (testDF) {
@@ -61,7 +65,7 @@ category('GIS: MapViewer', async () => {
     }
   });
 
-  test('GIS:detectAddress', async () => {
+  test('detectAddress', async () => {
     if (!testDF2)
       testDF2 = DG.DataFrame.fromCsv(await GUIUTILS.loadFileAsText('gistesttable.csv'));
     if (testDF2) {
@@ -73,7 +77,7 @@ category('GIS: MapViewer', async () => {
     }
   });
 
-  test('GIS:detectCountry', async () => {
+  test('detectCountry', async () => {
     if (!testDF2)
       testDF2 = DG.DataFrame.fromCsv(await GUIUTILS.loadFileAsText('gistesttable.csv'));
     if (testDF2) {
@@ -85,7 +89,7 @@ category('GIS: MapViewer', async () => {
     }
   });
 
-  test('GIS:detectGisZipcode', async () => {
+  test('detectGisZipcode', async () => {
     if (!testDF2)
       testDF2 = DG.DataFrame.fromCsv(await GUIUTILS.loadFileAsText('gistesttable.csv'));
     if (testDF2) {

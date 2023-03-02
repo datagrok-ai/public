@@ -18,7 +18,7 @@ export async function initDrugBank(): Promise<void> {
   dbdfRowCount = dbdf.rowCount;
 }
 
-//name: DrugBank | Substructure Search
+//name: Databases | DrugBank Substructure Search
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result
@@ -27,7 +27,7 @@ export async function drugBankSubstructureSearchPanel(mol: string): Promise<DG.W
   return mol ? searchWidget(mol, 'substructure', dbdf) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: DrugBank | Similarity Search
+//name: Databases | DrugBank Similarity Search
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result

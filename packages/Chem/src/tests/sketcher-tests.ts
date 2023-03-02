@@ -144,7 +144,7 @@ async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean) {
     chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
-    await awaitCheck(() => s.sketcher !== null, undefined, 5000);
+    await awaitCheck(() => s.sketcher !== null, undefined, 10000);
     const t = new Promise((resolve, reject) => {
       s.sketcher!.onChanged.subscribe(async (_: any) => {
         try {

@@ -1,6 +1,9 @@
 package serialization;
 
 
+import java.util.Arrays;
+import java.util.Objects;
+
 // Integer column.
 public class IntColumn extends Column<Integer> {
     private static final String TYPE = Types.INT;
@@ -57,5 +60,9 @@ public class IntColumn extends Column<Integer> {
             System.arraycopy(data, 0, newData, 0, data.length);
             data = newData;
         }
+    }
+
+    public int[] getData() {
+        return data;
     }
 }
