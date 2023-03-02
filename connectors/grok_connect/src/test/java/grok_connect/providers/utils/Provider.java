@@ -2,9 +2,9 @@ package grok_connect.providers.utils;
 
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.JdbcDatabaseContainer;
+import org.testcontainers.containers.MSSQLServerContainer;
 import org.testcontainers.containers.OracleContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
-
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Properties;
@@ -13,6 +13,18 @@ import java.util.Properties;
  * Enum that contains all necessary data related to specific provider and it's container
  */
 public enum Provider {
+    MSSQL("src/test/resources/properties/mssql.properties") {
+        @Override
+        protected JdbcDatabaseContainer<?> newJdbcContainer() {
+            if (this.container == null) {
+                container = new MSSQLServerContainer(properties.get("image").toString())
+                        .withInitScript(properties.get("initScript").toString());
+                container.start();
+            }
+            return container;
+        }
+    },
+
     SNOWFLAKE("src/test/resources/properties/snowflake.properties"),
 
     ORACLE("src/test/resources/properties/oracle.properties") {
