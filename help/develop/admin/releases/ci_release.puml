@@ -1,7 +1,7 @@
 @startuml
 
 start
-scale 800*700
+scale 1000*800
 :Developers;
 :Commit and push code;
 if (Release version?) then (Yes)
