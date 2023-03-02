@@ -1,5 +1,5 @@
 @startuml
-scale 800*500
+scale 800*700
 start
 :Developers;
 :Commit and push code;
