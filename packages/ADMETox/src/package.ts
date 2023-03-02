@@ -34,7 +34,7 @@ export function admetWidget(smiles: string): DG.Widget<any> {
   });
 }*/
 
-//top-menu: Chem | Analyze Structure | ADME/Tox Calculations...
+//top-menu: Chem | ADME/Tox | Calculations...
 //name: ADME/Tox...
 export async function admetoxCalculators() {
   let table = grok.shell.tv.dataFrame;
@@ -44,8 +44,8 @@ export async function admetoxCalculators() {
   }
 }
 
-//top-menu: Chem | Analyze Structure | Add Form...
-//name: testLayout
+//top-menu: Chem | ADME/Tox | Add Form...
+//name: addForm
 export async function testLayout() {
   const df = grok.shell.tv.dataFrame;
   const col = df.columns.bySemType(DG.SEMTYPE.MOLECULE);
