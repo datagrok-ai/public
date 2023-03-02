@@ -42,7 +42,8 @@ class OracleDataProviderTest extends ContainerizedProviderBaseTest {
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource({"grok_connect.providers.arguments_provider.CommonObjectsMother#checkParameterSupport_ok",
             "grok_connect.providers.arguments_provider.OracleObjectsMother#checkMultipleParametersSupport_ok",
-            "grok_connect.providers.arguments_provider.CommonObjectsMother#checkListParameterSupport_ok",})
+            "grok_connect.providers.arguments_provider.CommonObjectsMother#checkListParameterSupport_ok",
+            "grok_connect.providers.arguments_provider.CommonObjectsMother#checkRegexSupport_ok"})
     public void checkParameterSupport_ok(FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         prepareDataFrame(expected);
