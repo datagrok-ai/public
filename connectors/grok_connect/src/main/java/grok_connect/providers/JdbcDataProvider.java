@@ -9,8 +9,10 @@ import java.time.ZoneOffset;
 import java.util.*;
 import java.math.*;
 import java.text.*;
+import java.util.Date;
 import java.util.regex.*;
 
+import microsoft.sql.DateTimeOffset;
 import oracle.sql.TIMESTAMPTZ;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.NotImplementedException;
@@ -457,8 +459,12 @@ public abstract class JdbcDataProvider extends DataProvider {
                         } else if (isXml(type, typeName)) {
                             String valueToAdd = "";
                             if (value != null) {
-                                SQLXML sqlxml = (SQLXML)value;
-                                valueToAdd = sqlxml.getString();
+                                if (value instanceof  SQLXML) {
+                                    SQLXML sqlxml = (SQLXML)value;
+                                    valueToAdd = sqlxml.getString();
+                                } else if(value instanceof java.lang.String) {
+                                    valueToAdd = value.toString();
+                                }
                             }
                             columns.get(c - 1).add(valueToAdd);
                         } else if (isBitString(type, precision, typeName)) {
@@ -496,7 +502,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                             else if (value instanceof oracle.sql.TIMESTAMPTZ) {
                                 OffsetDateTime offsetDateTime = timestamptzToOffsetDateTime((TIMESTAMPTZ) value);
                                 time = java.util.Date.from(offsetDateTime.toInstant());
-                            } else {
+                            } else if(value instanceof microsoft.sql.DateTimeOffset) {
+                                time = Date.from(((DateTimeOffset) value).getOffsetDateTime().toInstant());
+                            }else {
                                 time = ((java.util.Date) value);
                             }
                             columns.get(c - 1).add((time == null) ? null : time.getTime() * 1000.0);
@@ -778,7 +786,8 @@ public abstract class JdbcDataProvider extends DataProvider {
         return (type == java.sql.Types.DATE) || (type == java.sql.Types.TIME) || (type == java.sql.Types.TIMESTAMP)
                 || typeName.equalsIgnoreCase("timetz")
                 || typeName.equalsIgnoreCase("timestamptz")
-                || (typeName.equalsIgnoreCase("TIMESTAMP WITH TIME ZONE"));
+                || (typeName.equalsIgnoreCase("TIMESTAMP WITH TIME ZONE"))
+                || (typeName.equalsIgnoreCase("datetimeoffset"));
     }
 
     protected boolean isBigInt(int type, String typeName, int precision, int scale) {
