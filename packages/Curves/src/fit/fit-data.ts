@@ -7,7 +7,7 @@ import {TYPE} from 'datagrok-api/src/const';
 import {
   fit,
   FitErrorModel,
-  FitResult, IFitOptions,
+  FitResult, fitResultProperties, IFitOptions,
   sigmoid
 } from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 
@@ -83,8 +83,10 @@ export interface IFitChartOptions {
   xAxisName?: string;
   yAxisName?: string;
 
-  logX? : boolean;
-  logY? : boolean;
+  logX?: boolean;
+  logY?: boolean;
+
+  showStatistics?: string[];
 }
 
 
@@ -109,6 +111,7 @@ export const fitChartDataProperties: Property[] = [
     'Label to show on the Y axis. If not specified, corresponding data column name is used', nullable: true}),
   Property.js('logX', TYPE.BOOL, {defaultValue: false}),
   Property.js('logY', TYPE.BOOL, {defaultValue: false}),
+  Property.js('showStatistics', TYPE.STRING_LIST, { choices: fitResultProperties.map(frp => frp.name) }),
 ];
 
 

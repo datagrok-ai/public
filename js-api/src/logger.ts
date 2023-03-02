@@ -87,6 +87,7 @@ export class PackageLogger extends Logger {
     msg.params ??= {};
     //@ts-ignore
     msg.params['package'] = this.package.dart;
+    //@ts-ignore
     msg.params['packageName'] = this.package.name;
     super._log(msg);
   }

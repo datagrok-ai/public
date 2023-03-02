@@ -5,7 +5,7 @@
 	"description": "",
 	"dependencies": {
 		"@datagrok-libraries/statistics": "^1.1.2",
-		"@datagrok-libraries/utils": "latest",
+		"@datagrok-libraries/utils": "^2.3.4",
 		"@types/wu": "^2.1.42",
 		"cash-dom": "latest",
 		"datagrok-api": "^1.13.5",
@@ -18,7 +18,7 @@
 		"webpack-cli": "latest"
 	},
 	"scripts": {
-		"link-all": "",
+		"link-all": "npm link datagrok-api  @datagrok-libraries/utils @datagrok-libraries/statistics",
 		"debug-curves": "webpack && grok publish",
 		"release-curves": "webpack && grok publish --release",
 		"build-curves": "webpack",
