@@ -2,12 +2,12 @@
 
 Provides advanced tools for analyzing collections of peptides.
 
-Status: Beta  
-Owner: Leonid  
+Status: Beta
+Owner: Leonid
 
 ## Detection and usage
 
-Once a dataframe is opened with Datagrok, the column(s) containing peptides are detected automatically. Each amino acid is rendered with a different color, which helps to visually identify patterns. Clicking on the column header brings up the options to launch peptide-specific tools, such as [SAR](#SAR) and [Peptide space](#Peptides_space).
+Once a dataframe is opened with Datagrok, the column(s) containing peptides are detected automatically. Each amino acid is rendered with a different color, which helps to visually identify patterns. Clicking on the column header brings up the options to launch peptide-specific tools, such as [SAR](#sar) and [Peptide space](#peptides-space).
 
 ## Sar
 

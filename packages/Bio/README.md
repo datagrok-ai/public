@@ -4,7 +4,7 @@ Bio is a bioinformatics support [package](https://datagrok.ai/help/develop/devel
 [Datagrok](https://datagrok.ai) platform with an extensive toolset supporting SAR analisys for small molecules
 and antibodies.
 
-# Notations
+## Notations
 
 [@datagrok/bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio) can ingest data in multiple file
 formats (such as fasta o csv) and multiple notations for natural and modified residues, aligned and non-aligned forms,
@@ -18,7 +18,7 @@ See:
 * [detectMacromolecule()](../Bio/detectors.js)
 * [class NotationConverter](../../libraries/bio/src/utils/notation-converter.ts)
 
-# Atomic-Level structures from sequences
+## Atomic-Level structures from sequences
 
 For linear sequences, the linear form (see the illustration below) of molecules is reproduced. This is useful
 for better visual inspection of sequence and duplex comparison. Structure at atomic level could be saved in available
@@ -34,11 +34,10 @@ See:
 
 * [getMolfilesFromSeq()](./src/utils/atomic-works.ts)
 
-# MSA
+## MSA
 
 For multiple-sequence alignment, Datagrok uses the “kalign” that relies on Wu-Manber string-matching algorithm
-[Lassmann, Timo. _Kalign 3: multiple sequence alignment of large data sets._ **Bioinformatics** (2019).[pdf](
-https://academic.oup.com/bioinformatics/advance-article-pdf/doi/10.1093/bioinformatics/btz795/30314127/btz795.pdf)].
+[Lassmann, Timo. _Kalign 3: multiple sequence alignment of large data sets._ **Bioinformatics** (2019).pdf](https://academic.oup.com/bioinformatics/advance-article-pdf/doi/10.1093/bioinformatics/btz795/30314127/btz795.pdf).
 “kalign“ is suited for sequences containing only natural monomers. Sequences of a particular column can be analyzed
 using MSA algorithm available at the top menu. Aligned sequences can be inspected for base composition
 at the position of MSA result.
@@ -52,7 +51,7 @@ See:
 
 TODO: MSA with PepSeA
 
-# Splitting to monomers
+## Splitting to monomers
 
 Splitting to monomers allows splitting aligned sequences in separate monomers.
 
@@ -62,7 +61,7 @@ See:
 
 * [splitAlignedSequences()](../../libraries/bio/src/utils/splitter.ts)
 
-# Web Logo
+## Web Logo
 
 Web Logo visualizes a graphical representation of multiple sequence alignment (amino acids or nucleotides or
 modified residues with multi-char labels). Each logo consists of stacks of symbols, one for each position
@@ -81,13 +80,13 @@ You can customize the look of the viewer with properties. Properties ```startPos
 allow to display multiple alignment partially. If property  ```startPosition``` (```endPosition```)
 is not specified, then the Logo will be plotted from the first (till the last) position of sequences.
 
-## General
+### General
 
 |             |              |
 |-------------|--------------|
 | Right click | Context menu |
 
-## Properties
+### Properties
 
 | Property name        | Default  | Description                                                                                                             |
 |----------------------|----------|-------------------------------------------------------------------------------------------------------------------------|
@@ -116,7 +115,7 @@ See also:
 * [Viewers](../../help/visualize/viewers.md)
 * [Table view](../../help/datagrok/table-view.md)
 
-# Sequence space
+## Sequence space
 
 Datagrok allows visualizing multidimensional sequence space using a dimensionality reduction approach.
 Several distance-based dimensionality reduction algorithms are available, such as UMAP or t-SNE.
@@ -132,7 +131,7 @@ See:
 
 * [sequenceSpace()](src/utils/sequence-space.ts)
 
-# Sequence activity cliffs
+## Sequence activity cliffs
 
 Activity cliffs tool finds pairs of sequences where small changes in the sequence yield significant
 changes in activity or any other numerical property. open the tool from a top menu by selecting.

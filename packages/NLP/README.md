@@ -1,13 +1,15 @@
+# NLP
+
 *NLP* is a [Datagrok package](https://datagrok.ai/help/develop/develop#packages) for natural language processing. The package provides integration with [AWS Translate](https://aws.amazon.com/translate/), a neural machine translation service, and extends Datagrok with [info panels](https://datagrok.ai/help/discover/info-panels) for text files.
 
 *Natural Language Processing*, or *NLP* for short, is a branch of artificial intelligence that builds a bridge between computers and human languages. This field has many applications, including:
 
-  * [language identification](https://en.wikipedia.org/wiki/Language_identification)
-  * [machine translation](https://en.wikipedia.org/wiki/Machine_translation)
-  * [sentiment analysis](https://en.wikipedia.org/wiki/Sentiment_analysis)
-  * [text summarization](https://en.wikipedia.org/wiki/Automatic_summarization)
-  * [topic modeling](https://en.wikipedia.org/wiki/Topic_model)
-  * [entity extraction](https://en.wikipedia.org/wiki/Named-entity_recognition)
+* [language identification](https://en.wikipedia.org/wiki/Language_identification)
+* [machine translation](https://en.wikipedia.org/wiki/Machine_translation)
+* [sentiment analysis](https://en.wikipedia.org/wiki/Sentiment_analysis)
+* [text summarization](https://en.wikipedia.org/wiki/Automatic_summarization)
+* [topic modeling](https://en.wikipedia.org/wiki/Topic_model)
+* [entity extraction](https://en.wikipedia.org/wiki/Named-entity_recognition)
 
 ## Text extraction
 
@@ -47,8 +49,9 @@ into account various parameters: the average number of words per sentence or
 syllables per word, percentage of long words, etc.
 
 The `Text Statistics` info panel calculates two common formulas:
-  * [Flesch reading-ease](https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests) test for English
-  * [LIX](https://en.wikipedia.org/wiki/Lix_(readability_test)) formula for other languages
+
+* [Flesch reading-ease](https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests) test for English
+* [LIX](https://en.wikipedia.org/wiki/Lix_(readability_test)) formula for other languages
 
 ![Calculate text statistics](./gif/nlp-text-statistics.gif)
 
@@ -90,6 +93,6 @@ Refer to [src/package.js](https://github.com/datagrok-ai/public/blob/master/pack
 
 See also:
 
-  * [Natural language processing](https://en.wikipedia.org/wiki/Natural_language_processing)
-  * [Scripting](https://datagrok.ai/help/compute/scripting)
-  * [Info panels](https://datagrok.ai/help/discover/info-panels)
+* [Natural language processing](https://en.wikipedia.org/wiki/Natural_language_processing)
+* [Scripting](https://datagrok.ai/help/compute/scripting)
+* [Info panels](https://datagrok.ai/help/discover/info-panels)

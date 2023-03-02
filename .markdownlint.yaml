@@ -61,23 +61,7 @@ MD012:
   maximum: 1
 
 # MD013/line-length - Line length
-MD013:
-  # Number of characters
-  line_length: 120
-  # Number of characters for headings
-  heading_line_length: 150
-  # Number of characters for code blocks
-  code_block_line_length: 350
-  # Include code blocks
-  code_blocks: true
-  # Include tables
-  tables: false
-  # Include heading
-  headings: true
-  # Include exception when there is no whitespace beyond the configured line length
-  strict: false
-  # Warn for lines that are too long and could be fixed but allow lines without spaces
-  stern: false
+MD013: false
 
 # MD014/commands-show-output - Dollar signs used before commands without showing output
 MD014: true
@@ -154,21 +138,7 @@ MD031:
 MD032: true
 
 # MD033/no-inline-html - Inline HTML
-MD033:
-  # Allowed elements
-  allowed_elements:
-    - "a"
-    - "b"
-    - "table"
-    - "tr"
-    - "td"
-    - "ul"
-    - "li"
-    - "i"
-    - "br"
-    - "details"
-    - "summary"
-    - "sup"
+MD033: false
 
 # MD034/no-bare-urls - Bare URL used
 MD034: true
