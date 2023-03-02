@@ -8,6 +8,9 @@ FOLDER = 'folder'
 RUNTIME_SYSTEM = 'runtimeSystemFile'
 RUNTIME_SYSTEM_FOR_WEBWORKER= 'runtimeSystemForWebWorker'
 PACKAGE_FILE = 'packageFile'
+OPTIMIZATION_MODE = 'optimizationMode'
+TOTAL_MEMORY = 'totalMemory'
+PACKAGE_JSON_FILE = 'packageJsonFile'
 
 # constants for function specification
 ARGUMENTS = 'arguments'
@@ -16,6 +19,19 @@ ANNOTATION = 'annotation'
 PROTOTYPE = 'prototype'
 CALL_ARGS = 'callArgs'
 WW_PROTOTYPE = 'prototypeForWebWorker'
+TYPE = 'type'
+COLUMN = 'Column'
+COLUMNS = 'Columns'
+NUM = 'num'
+DATA = 'data'
+NEW = 'new'
+NUM_OF_ROWS = 'numOfRows'
+NUM_OF_COLUMNS = 'numOfColumns'
+REF = 'ref'
+VALUE = 'value'
+SOURCE = 'source'
+TABLE_FROM_COLUMNS = 'tableFromColumns'
+OBJECTS = 'objects'
 
 AUTOMATIC_GENERATION_LINE = '// The following code is generated automatically.'
 
@@ -40,11 +56,28 @@ WW_SUBSUBSPACE = ' ' * 6
 SPACE = ' ' * 2
 SUBSPACE = ' ' * 4
 SUBSUBSPACE = ' ' * 6
+SUBSUBSUBSPACE = ' ' * 8
 
 # file operating constants
 READ_MODE = 'r'
 WRITE_MODE = 'w'
 APPEND_MODE = 'a'
 
+# annotation constants
+ANNOT_INPUT = '//input:'
+ANNOT_OUTPUT = '//output:'
+ANNOT_NAME = '//name:'
+ANNOT_NEW = 'new'
+ANNOT_DATAFRAME = 'dataframe'
+ANNOT_COLUMN = 'column'
+ANNOT_COLUMN_LIST = 'column_list'
+ANNOT_DOT = '.'
+ANNOT_OBJECTS = 'objects'
+
 # auxiliry map 
 sizesMap = {'rowCount': 'numOfRows', 'columnCount': 'numOfColumns', 'data': 'data'}
+
+# Emscripten constants
+EM_MACROS = 'EMSCRIPTEN_KEEPALIVE'
+
+PJSN_SOURCES = 'sources'
