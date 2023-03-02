@@ -55,7 +55,7 @@ category('Examples', () => {
 Next, make sure to import your test files in `src/package-test.ts`. After that,
 build and publish your package. There are several options to runs the tests:
 [locally using Jest](test-packages.md#local-testing), via [DG
-console](test-packages.md#running-tests-in-the-console), and via [Test
+console](test-packages.md#running-tests-in-the-platform-console), and via [Test
 manager](test-packages.md#test-manager). All public packages in the
 [repository](../../collaborate/public-repository.md) are tested using GitHub
 Actions on every commit. There is an option to trigger GitHub Actions
@@ -101,19 +101,19 @@ export function square(x: number): number {
 Functions with the following input/output parameter types can be tested using
 the `test` annotation:
 
-| Parameter type | Support | Input/output example                                                                                                       |
-|----------------|---------|----------------------------------------------------------------------------------------------------------------------------|
-| int            | &check; | `test: f(123) == 246`                                                                                                      |
-| double         | &check; | `test: 10 < f(12.5) && f(12.5) < 20`                                                                                       |
+| Parameter type | Support | Input/output example                                                                                                         |
+|----------------|---------|------------------------------------------------------------------------------------------------------------------------------|
+| int            | &check; | `test: f(123) == 246`                                                                                                        |
+| double         | &check; | `test: 10 < f(12.5) && f(12.5) < 20`                                                                                         |
 | bool           | &check; | `test: f(true)`,<br />`test: returnsBool()`                                                                                  |
-| string         | &check; | `test: f("a") == "b"` (use `""` for strings)                                                                               |
+| string         | &check; | `test: f("a") == "b"` (use `""` for strings)                                                                                 |
 | datetime       | &check; | `test: f("1/1/2020") == Date(2020, 1, 1)`,<br />`test: DateDiff(DateTime(2020, 1, 1, 3, 0, 0, 0), "2020-01-01") == 10800000` |
 | map            | &check; | `f({"a": 10, "b": "c"})`,<br />`test: f("abc").testparam == "abc"`                                                           |
 | dataframe      | *       | Works via an additional function call<br />`f(getDataframe())`                                                               |
 | column_list    | *       | Requires a dataframe parameter<br />`f(getDataframe(), ["colname1", "colname2"])`                                            |
-| column         | *       | Works via an additional function call                                                                                      |
-| file           | *       | Works via an additional function call                                                                                      |
-| blob           | *       | Works via an additional function call                                                                                      |
+| column         | *       | Works via an additional function call                                                                                        |
+| file           | *       | Works via an additional function call                                                                                        |
+| blob           | *       | Works via an additional function call                                                                                        |
 
 See also:
 
