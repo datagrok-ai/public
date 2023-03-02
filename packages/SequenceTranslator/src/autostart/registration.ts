@@ -5,13 +5,9 @@ import {
   siRnaBioSpringToGcrs, siRnaAxolabsToGcrs, gcrsToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12,
   siRnaNucleotidesToGcrs
 } from '../hardcode-to-be-eliminated/converters';
-import {weightsObj, SYNTHESIZERS} from '../hardcode-to-be-eliminated/map';
 import {SEQUENCE_TYPES, COL_NAMES, GENERATED_COL_NAMES} from './constants';
-import {saltMass, saltMolWeigth, molecularWeight, batchMolWeight} from './calculations';
-import {isValidSequence} from '../sdf-tab/sequence-codes-tools';
-import {sequenceToMolV3000} from '../utils/structures-works/from-monomers';
-import {linkStrandsV3000} from '../utils/structures-works/mol-transformations';
-import {stringify, download, removeEmptyRows, differenceOfTwoArrays} from '../utils/helpers';
+import {saltMass, saltMolWeigth, batchMolWeight} from './calculations';
+import {stringify} from '../utils/helpers';
 
 import {SALTS_CSV} from '../hardcode-to-be-eliminated/salts';
 import {ICDS} from '../hardcode-to-be-eliminated/ICDs';
@@ -167,9 +163,8 @@ export function autostartOligoSdFileSubscription() {
       if (v.dataFrame.columns.contains(COL_NAMES.TYPE)) {
         try {
           await _package.initDataLoader();
-          console.log('here:', _package.dataLoader.users.toCsv());
           oligoSdFileGrid(v);
-          oligoSdFile(v.dataFrame);
+          await oligoSdFile(v.dataFrame);
         } catch (err: any) {
           grok.shell.error(err.toString());
         }
@@ -230,9 +225,9 @@ export function autostartOligoSdFileSubscription() {
   });
 }
 
-export function oligoSdFile(table: DG.DataFrame) {
+export async function oligoSdFile(table: DG.DataFrame) {
   const saltsDf = DG.DataFrame.fromCsv(SALTS_CSV);
-  const usersDf = _package.dataLoader.users;
+  const usersDf = await _package.dataLoader.getUsers();
   const sourcesDf = DG.DataFrame.fromCsv(SOURCES);
   const icdsDf = DG.DataFrame.fromCsv(ICDS);
   const idpsDf = DG.DataFrame.fromCsv(IDPS);
