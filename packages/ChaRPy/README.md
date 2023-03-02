@@ -21,13 +21,13 @@ In addition to scripting viewers, the package also showcases the following Datag
 
 Here are the files of particular interest:
 
-  * [src/package.js](https://github.com/datagrok-ai/public/blob/master/packages/ChaRPy/src/package.js): a function that defines and registers script generation logic, driven by templates stored in the below two files.
-  * [src/mapPy.json](https://github.com/datagrok-ai/public/blob/master/packages/ChaRPy/src/mapPy.json), [src/mapR.json](https://github.com/datagrok-ai/public/blob/master/packages/ChaRPy/src/mapR.json): templates used in forming Python and R scripts based on selected viewer's type.
+* [src/package.js](https://github.com/datagrok-ai/public/blob/master/packages/ChaRPy/src/package.js): a function that defines and registers script generation logic, driven by templates stored in the below two files.
+* [src/mapPy.json](https://github.com/datagrok-ai/public/blob/master/packages/ChaRPy/src/mapPy.json), [src/mapR.json](https://github.com/datagrok-ai/public/blob/master/packages/ChaRPy/src/mapR.json): templates used in forming Python and R scripts based on selected viewer's type.
 
 See also:
 
-  * [Scripting](https://datagrok.ai/help/compute/scripting)
-  * [Scripting Viewer](https://datagrok.ai/help/visualize/viewers/scripting-viewer)
-  * [Dialogs](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/ui/dialogs)
-  * [ggplot2 R package](https://cran.r-project.org/web/packages/ggplot2/index.html)
-  * [plotly Python library](https://plotly.com/python/)
+* [Scripting](https://datagrok.ai/help/compute/scripting)
+* [Scripting Viewer](https://datagrok.ai/help/visualize/viewers/scripting-viewer)
+* [Dialogs](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/ui/dialogs)
+* [ggplot2 R package](https://cran.r-project.org/web/packages/ggplot2/index.html)
+* [plotly Python library](https://plotly.com/python/)

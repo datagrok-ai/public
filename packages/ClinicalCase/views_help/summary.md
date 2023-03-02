@@ -1,4 +1,4 @@
-### Summary
+# Summary
 
 View contains basic information about the study and subject population.
 Here you can find number total number of subjects and sites along with the cumulative enrollment line chart which is useful to assess the enrollment dynamics throughout the study.

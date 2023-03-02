@@ -58,3 +58,7 @@ export const groupDescription: {[key: string]: {'description': string, aminoAcid
   },
   '-': {'description': 'Unknown Amino Acid', 'aminoAcids': ['-']},
 };
+
+export namespace PEPSEA {
+  export const SEPARATOR = '.';
+};

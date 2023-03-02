@@ -9,15 +9,15 @@ import java.util.List;
 import java.util.ListIterator;
 
 public class ProviderManager {
-    public Logger logger;
-    public QueryMonitor queryMonitor;
-    public List<DataProvider> Providers;
+    private final Logger logger; // we reuse this logger in providers, is this good practice?
+    private final QueryMonitor queryMonitor;
+    public List<DataProvider> providers;
 
     public ProviderManager(Logger logger) {
         this.queryMonitor = new QueryMonitor();
         this.logger = logger;
 
-        Providers = new ArrayList<DataProvider>() {{
+        providers = new ArrayList<DataProvider>() {{
             add(new AccessDataProvider(ProviderManager.this));
             add(new AthenaDataProvider(ProviderManager.this));
             add(new BigQueryDataProvider(ProviderManager.this));
@@ -52,15 +52,15 @@ public class ProviderManager {
     public List<String> getAllProvidersTypes() {
         List<String> types = new ArrayList<>();
 
-        for (DataProvider provider : Providers)
+        for (DataProvider provider : providers)
             types.add(provider.descriptor.type);
 
         return types;
     }
     public DataProvider getByName(String name) {
-        DataProvider provider = Providers.get(0);
+        DataProvider provider = providers.get(0);
 
-        for (ListIterator<DataProvider> providers = Providers.listIterator(); providers.hasNext(); ) {
+        for (ListIterator<DataProvider> providers = this.providers.listIterator(); providers.hasNext(); ) {
             DataProvider tmp = providers.next();
             if (tmp.descriptor.type.equals(name)) {
                 provider = tmp;
@@ -71,5 +71,11 @@ public class ProviderManager {
         return provider;
     }
 
+    public QueryMonitor getQueryMonitor() {
+        return queryMonitor;
+    }
 
+    public Logger getLogger() {
+        return logger;
+    }
 }

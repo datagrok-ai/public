@@ -1,10 +1,14 @@
 import * as DG from 'datagrok-api/dg';
 export declare class PinnedColumn {
+    private static MIN_COL_WIDTH;
+    private static MAX_COL_WIDTH;
     private static MIN_ROW_HEIGHT;
     private static MAX_ROW_HEIGHT;
     private static SELECTION_COLOR;
     private static ACTIVE_CELL_COLOR;
+    private static SORT_ARROW_COLOR;
     private static Y_RESIZE_SENSITIVITY;
+    private static X_RESIZE_SENSITIVITY;
     private m_fDevicePixelRatio;
     private m_colGrid;
     private m_root;
@@ -25,6 +29,10 @@ export declare class PinnedColumn {
     private m_nResizeRowGridDragging;
     private m_nYResizeDraggingAnchor;
     private m_nResizeRowGridMoving;
+    private m_nWResizeColPinBeforeDrag;
+    private m_bResizeColPinMoving;
+    private m_bResizeColPinDragging;
+    private m_nXResizeColPinDraggingAnchor;
     private m_nYDraggingAnchor;
     private m_nRowGridDragging;
     private m_nWheelCount;
@@ -32,6 +40,7 @@ export declare class PinnedColumn {
     private m_arXYMouseOnCellUp;
     private m_bSortedAscending;
     private m_cellCurrent;
+    private m_bThisColumnIsSorting;
     constructor(colGrid: DG.GridColumn);
     isPinned(): boolean;
     getGridColumn(): DG.GridColumn | null;
@@ -47,7 +56,7 @@ export declare class PinnedColumn {
     onMouseUp(e: MouseEvent): void;
     onContextMenu(e: MouseEvent): void;
     onMouseWheel(e: WheelEvent): void;
-    private paint;
+    paint(g: CanvasRenderingContext2D | null, grid: DG.Grid): void;
     private static hitTestRows;
 }
 //# sourceMappingURL=PinnedColumn.d.ts.map

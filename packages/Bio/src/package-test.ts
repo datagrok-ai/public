@@ -19,6 +19,8 @@ import './tests/WebLogo-positions-test';
 import './tests/checkInputColumn-tests';
 import './tests/similarity-diversity-tests';
 import './tests/substructure-filters-tests';
+import './tests/pepsea-tests';
+import './tests/viewers';
 
 export const _package = new DG.Package();
 export {tests};

@@ -34,7 +34,7 @@ export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataF
 
 }
 
-//name: Chembl Search Widget
+//name: ChEMBL Search Widget
 //tags: widgets
 //input: string mol {semType: Molecule}
 //input: string searchType
@@ -103,7 +103,7 @@ export async function getById(id: string): Promise<DG.DataFrame | null> {
   }
 }
 
-//name: Chembl API | Substructure Search
+//name: Databases | ChEMBL Substructure Search
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result
@@ -112,7 +112,7 @@ export function chemblSubstructureSearchPanel(mol: string): DG.Widget {
   return mol ? chemblSearchWidget(mol, true) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Chembl API | Similarity Search
+//name: Databases | ChEMBL Similarity Search
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result

@@ -27,11 +27,10 @@
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",
     "eslint": "latest",
-    "eslint-config-google": "latest"
-  },
-  "grokDependencies": {
+    "eslint-config-google": "latest",
     "@datagrok/chem": "latest"
   },
+  
   "scripts": {
     "install-dependencies": "npm install",
     "debug-drugbank": "grok publish",

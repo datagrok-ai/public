@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/chembl",
-  "version": "1.0.20",
+  "version": "1.0.24",
   "description": "Chembl integration, commonly used queries and browser",
   "author": {
     "name": "Leonid Stolbov",
@@ -11,9 +11,6 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/Chembl"
-  },
-  "grokDependencies": {
-    "@datagrok/chem": "latest"
   },
   "dependencies": {
     "@datagrok-libraries/utils": "^1.15.5",
@@ -31,7 +28,8 @@
     "eslint-config-google": "^0.14.0",
     "style-loader": "latest",
     "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack-cli": "latest",
+    "@datagrok/chem": "latest"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
