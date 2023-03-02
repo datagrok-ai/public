@@ -18,6 +18,41 @@ import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
 
 public class SnowflakeObjectsMother {
+    public static Stream<Arguments> getSchemas_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new StringColumn(new String[] {"INFORMATION_SCHEMA", "PUBLIC"}),
+                        "TABLE_SCHEMA")
+                .build();
+        return Stream.of(Arguments.of(expected));
+    }
+
+    public static Stream<Arguments> getSchema_ok() {
+        String firstColumnName = "TABLE_SCHEMA";
+        String secondColumnName = "TABLE_NAME";
+        String thirdColumnName = "COLUMN_NAME";
+        String fourthColumnName = "DATA_TYPE";
+        String fifthColumnName = "IS_VIEW";
+        String schema = "PUBLIC";
+        String table = "MOCK_DATA";
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(10)
+                .setColumn(new StringColumn(), firstColumnName, new String[] {schema, schema,
+                        schema, schema, schema, schema, schema,
+                        schema, schema, schema})
+                .setColumn(new StringColumn(), secondColumnName, new String[] {table, table,
+                        table, table, table, table,
+                        table, table, table, table})
+                .setColumn(new StringColumn(), thirdColumnName, new String[] {"COUNTRY", "IP_ADDRESS", "GENDER",
+                        "EMAIL", "DATE", "FIRST_NAME", "BOOL", "SOME_NUMBER", "ID", "LAST_NAME"})
+                .setColumn(new StringColumn(), fourthColumnName, new String[] {"TEXT", "TEXT",
+                        "TEXT", "TEXT", "DATE", "TEXT",
+                        "BOOLEAN", "FLOAT", "NUMBER", "TEXT"})
+                .setColumn(new IntColumn(), fifthColumnName, new Integer[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
+                .build();
+        return Stream.of(Arguments.of(expected));
+    }
+
     public static Stream<Arguments> checkOutputDataFrame_dateTypes_ok() {
         Parser parser = new DateParser();
         DataFrame expected = DataFrameBuilder.getBuilder()
