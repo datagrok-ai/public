@@ -8,7 +8,7 @@ const _KEY = 'selected';
 let _COLOR = 'true';
 
 export async function accessServer(csvString: string, queryParams: string) {
-  const dockerId = (await grok.dapi.dockerfiles.filter('admetox').first()).id;
+  const admetDockerfile = await grok.dapi.docker.dockerContainers.filter('admetox').first();
   const params: RequestInit = {
     method: 'POST',
     headers: {
@@ -19,7 +19,7 @@ export async function accessServer(csvString: string, queryParams: string) {
     body: csvString
   };
   const path = `/smiles/df_upload/?models=${queryParams}`;
-  const response = await grok.dapi.dockerfiles.request(dockerId, path, params);
+  const response = await grok.dapi.docker.dockerContainers.request(admetDockerfile.id, path, params);
   return response;
 }
 
@@ -136,13 +136,6 @@ export function getModelsSingle(smiles: string): DG.Accordion {
     ui.link('Detailed info', () => window.open('README.md link', '_blank'))]));
   let accHeader = document.getElementsByClassName('d4-accordion-pane-header')[17] as HTMLElement;
   accHeader.append(ui.icons.help(() => {window.open('README.md link', '_blank')}));
-  for (const property of Object.keys(properties)) {
-    const result = ui.div();
-    acc.addPane(property, () => {
-      update(result, property);
-      return result;
-    }, false);
-  }
   const update = (result: HTMLDivElement, modelName: string) => {
     let queryParams: string[] = [];
     let model = properties[modelName]['models']
@@ -166,6 +159,14 @@ export function getModelsSingle(smiles: string): DG.Accordion {
         result.appendChild(ui.tableFromMap(map));
     });
   };
+  
+  for (const property of Object.keys(properties)) {
+    const result = ui.div();
+    acc.addPane(property, () => {
+      update(result, property);
+      return result;
+    }, false);
+  }
 
   /*widget.root.appendChild(result);
   widget.root.appendChild(selectButton);
