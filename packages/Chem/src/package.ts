@@ -904,9 +904,3 @@ export async function installScaffoldGraph() : Promise<void> {
   await setupScaffold();
 }
 
-//name: Chem | Descriptors...
-//input: column col {semType: Molecule}
-export async function admetoxCalculators(col: DG.Column) {
-  let table = col.dataFrame;
-  return await addDescriptors(col, table);
-}
