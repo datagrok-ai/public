@@ -248,6 +248,7 @@ export class FuncCall extends Entity {
   /** Error message, if this call resulted in an exception, or null. */
   get errorMessage(): string | null { return api.grok_FuncCall_Get_ErrorMessage(this.dart); }
 
+  /** Returns the first output parameter value, or null. */
   getOutputParamValue(): any {
     return toJs(api.grok_FuncCall_Get_Output_Param_Value(this.dart));
   }
