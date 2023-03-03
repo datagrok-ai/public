@@ -9,10 +9,10 @@ import {SEQUENCE_TYPES, COL_NAMES, GENERATED_COL_NAMES} from './constants';
 import {saltMass, saltMolWeigth, batchMolWeight} from './calculations';
 import {stringify} from '../utils/helpers';
 
-import {SALTS_CSV} from '../hardcode-to-be-eliminated/salts';
-import {ICDS} from '../hardcode-to-be-eliminated/ICDs';
-import {SOURCES} from '../hardcode-to-be-eliminated/sources';
-import {IDPS} from '../hardcode-to-be-eliminated/IDPs';
+// import {SALTS_CSV} from '../hardcode-to-be-eliminated/salts';
+// import {ICDS} from '../hardcode-to-be-eliminated/ICDs';
+// import {SOURCES} from '../hardcode-to-be-eliminated/sources';
+// import {IDPS} from '../hardcode-to-be-eliminated/IDPs';
 
 import {sdfAddColumns} from '../utils/sdf-add-columns';
 import {sdfSaveTable} from '../utils/sdf-save-table';
@@ -180,21 +180,21 @@ export function autostartOligoSdFileSubscription() {
 
         const seqCol = grid.table.currentCol; // /^[fsACGUacgu]{6,}$/
         if (DG.Detector.sampleCategories(seqCol,
-          (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|A|U|G|C){6,}$/.test(s))) {
+          (s) => /(\(invAb\)|\(GalNAc2\)|A|U|G|C){6,}$/.test(s))) {
           menu.item('Convert raw nucleotides to GCRS', () => {
             grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
               return siRnaNucleotidesToGcrs(seqCol.get(i));
             });
           });
         } else if (DG.Detector.sampleCategories(seqCol,
-          (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|f|s|A|C|G|U|a|c|g|u){6,}$/.test(s))) {
+          (s) => /(\(invAb\)|\(GalNAc2\)|f|s|A|C|G|U|a|c|g|u){6,}$/.test(s))) {
           menu.item('Convert Axolabs to GCRS', () => {
             grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
               return siRnaAxolabsToGcrs(seqCol.get(i));
             });
           }); // /^[fmpsACGU]{6,}$/
         } else if (DG.Detector.sampleCategories(seqCol,
-          (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|f|m|ps|A|C|G|U){6,}$/.test(s)) ||
+          (s) => /(\(invAb\)|\(GalNAc2\)|f|m|ps|A|C|G|U){6,}$/.test(s)) ||
           DG.Detector.sampleCategories(seqCol, (s) => /^(?=.*moe)(?=.*5mC)(?=.*ps){6,}/.test(s))) {
           menu.item('Convert GCRS to raw', () => {
             grid.table.columns.addNewString(seqCol.name + ' to raw').init((i: number) => {
@@ -207,7 +207,7 @@ export function autostartOligoSdFileSubscription() {
             });
           }); // /^[*56789ATGC]{6,}$/
         } else if (DG.Detector.sampleCategories(seqCol,
-          (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|\*|5|6|7|8|9|A|T|G|C){6,}$/.test(s))) {
+          (s) => /(\(invAb\)|\(GalNAc2\)|\*|5|6|7|8|9|A|T|G|C){6,}$/.test(s))) {
           menu.item('Convert Biospring to GCRS', () => {
             const seqCol = grid.table.currentCol;
             grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
@@ -215,7 +215,7 @@ export function autostartOligoSdFileSubscription() {
             });
           }); // /^[*1-8]{6,}$/
         } else if (DG.Detector.sampleCategories(seqCol,
-          (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|\*|1|2|3|4|5|6|7|8){6,}$/.test(s))) {
+          (s) => /(\(invAb\)|\(GalNAc2\)|\*|1|2|3|4|5|6|7|8){6,}$/.test(s))) {
           menu.item('Convert Biospring to GCRS', () => {
             grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
               return siRnaBioSpringToGcrs(seqCol.get(i));
@@ -228,12 +228,20 @@ export function autostartOligoSdFileSubscription() {
 }
 
 export async function oligoSdFile(table: DG.DataFrame) {
-  const saltsDf = DG.DataFrame.fromCsv(SALTS_CSV);
   const usersDf = await _package.dataLoader.getUsers();
-  console.log('users:', usersDf.toCsv().toString());
-  const sourcesDf = DG.DataFrame.fromCsv(SOURCES);
-  const icdsDf = DG.DataFrame.fromCsv(ICDS);
-  const idpsDf = DG.DataFrame.fromCsv(IDPS);
+  console.log('usersDf:', usersDf.toCsv().toString());
+
+  const saltsDf = await _package.dataLoader.getSalts();
+  console.log('saltsDf:', saltsDf.toCsv().toString());
+
+  const sourcesDf = await _package.dataLoader.getSources();
+  console.log('sourcesDf:', sourcesDf.toCsv().toString());
+
+  const idpsDf = await _package.dataLoader.getIDPs();
+  console.log('idpsDf:', idpsDf.toCsv().toString());
+
+  const icdsDf = await _package.dataLoader.getICDs();
+  console.log('icdsDf:', icdsDf.toCsv().toString());
 
   const saltCol = table.getCol(COL_NAMES.SALT);
   const equivalentsCol = table.getCol(COL_NAMES.EQUIVALENTS);

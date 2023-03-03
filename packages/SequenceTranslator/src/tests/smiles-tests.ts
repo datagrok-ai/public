@@ -27,7 +27,7 @@ category('sequence-translator', () => {
   //   expect(sequenceToSmiles('AGGTCCTCTTGACTTAGGCC', false, SYNTHESIZERS.RAW_NUCLEOTIDES), expected);
   // });
 
-  // test('invabasic/galnac1', async () => {
+  // test('invAb/galnac1', async () => {
   //   const expected = 'O[C@@H]1C[C@@H]O[C@H]1COP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)[C@H](OC)[C@@H]1OP(=O)(O)' +
   //   'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)[C@H](OC)[C@@H]1OP(=O)(O)' +
@@ -35,10 +35,10 @@ category('sequence-translator', () => {
   //   'OCC(O)CNC(=O)CCCC(=O)NC(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)';
-  //   expect(sequenceToSmiles('(invabasic)sgg(invabasic)(GalNAc-2-JNJ)', false, SYNTHESIZERS.AXOLABS), expected);
+  //   expect(sequenceToSmiles('(invAb)sgg(invAb)(GalNAc2)', false, SYNTHESIZERS.AXOLABS), expected);
   // });
 
-  // test('invabasic/galnac2', async () => {
+  // test('invAb/galnac2', async () => {
   //   const expected = 'O[C@@H]1C[C@@H]O[C@H]1COP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)[C@H](OC)[C@@H]1OP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)[C@H](OC)[C@@H]1OP(=O)(O)' +
@@ -46,10 +46,10 @@ category('sequence-translator', () => {
   //   'OCC(O)CNC(=O)CCCC(=O)NC(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)';
-  //   expect(sequenceToSmiles('(invabasic)sgsg(invabasic)(GalNAc-2-JNJ)', false, SYNTHESIZERS.AXOLABS), expected);
+  //   expect(sequenceToSmiles('(invAb)sgsg(invAb)(GalNAc2)', false, SYNTHESIZERS.AXOLABS), expected);
   // });
 
-  // test('invabasic/galnac3', async () => {
+  // test('invAb/galnac3', async () => {
   //   const expected = 'O[C@@H]1C[C@@H]O[C@H]1COP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)[C@H](OC)[C@@H]1OP(=O)(O)' +
   //   'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)[C@H](OC)[C@@H]1OP(=O)(S)' +
@@ -57,10 +57,10 @@ category('sequence-translator', () => {
   //   'OCC(O)CNC(=O)CCCC(=O)NC(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)';
-  //   expect(sequenceToSmiles('(invabasic)sggs(invabasic)(GalNAc-2-JNJ)', false, SYNTHESIZERS.AXOLABS), expected);
+  //   expect(sequenceToSmiles('(invAb)sggs(invAb)(GalNAc2)', false, SYNTHESIZERS.AXOLABS), expected);
   // });
 
-  // test('invabasic/galnac4', async () => {
+  // test('invAb/galnac4', async () => {
   //   const expected = 'O[C@@H]1C[C@@H]O[C@H]1COP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)[C@H](OC)[C@@H]1OP(=O)(O)' +
   //   'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)[C@H](OC)[C@@H]1OP(=O)(O)' +
@@ -68,7 +68,7 @@ category('sequence-translator', () => {
   //   'OCC(O)CNC(=O)CCCC(=O)NC(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)';
-  //   expect(sequenceToSmiles('(invabasic)sgg(invabasic)s(GalNAc-2-JNJ)', false, SYNTHESIZERS.AXOLABS), expected);
+  //   expect(sequenceToSmiles('(invAb)sgg(invAb)s(GalNAc2)', false, SYNTHESIZERS.AXOLABS), expected);
   // });
 
   test('usCfCfUfGfAf', async () => {
@@ -164,7 +164,7 @@ category('sequence-translator', () => {
     expect(sequenceToSmiles('UfAfCfGfGfCfAfUf', false, SYNTHESIZERS.AXOLABS), expected);
   });
 
-  // test('(invabasic)sucuCfuUf', async () => {
+  // test('(invAb)sucuCfuUf', async () => {
   //   const expected =
   //   'O[C@@H]1C[C@@H]O[C@H]1COP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(O)' +
@@ -173,10 +173,10 @@ category('sequence-translator', () => {
   //   'OC[C@H]1O[C@@H](N2C=CC(N)=NC2(=O))[C@H](F)[C@@H]1OP(=O)(O)' +
   //   'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(O)' +
   //   'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](F)[C@@H]1O';
-  //   expect(sequenceToSmiles('(invabasic)sucuCfuUf', false, SYNTHESIZERS.AXOLABS), expected);
+  //   expect(sequenceToSmiles('(invAb)sucuCfuUf', false, SYNTHESIZERS.AXOLABS), expected);
   // });
 
-  // test('(invabasic)sAfgcugUf', async () => {
+  // test('(invAb)sAfgcugUf', async () => {
   //   const expected =
   //   'O[C@@H]1C[C@@H]O[C@H]1COP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C3N=CN=C(N)C=3N=C2)[C@H](F)[C@@H]1OP(=O)(O)' +
@@ -185,10 +185,10 @@ category('sequence-translator', () => {
   //   'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(O)' +
   //   'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)[C@H](OC)[C@@H]1OP(=O)(O)' +
   //   'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](F)[C@@H]1O';
-  //   expect(sequenceToSmiles('(invabasic)sAfgcugUf', false, SYNTHESIZERS.AXOLABS), expected);
+  //   expect(sequenceToSmiles('(invAb)sAfgcugUf', false, SYNTHESIZERS.AXOLABS), expected);
   // });
 
-  test('(invabasic)cuCfuUfsc', async () => {
+  test('(invAb)cuCfuUfsc', async () => {
     const expected =
     'O[C@@H]1C[C@@H]O[C@H]1COP(=O)(O)' +
     'OC[C@H]1O[C@@H](N2C=CC(N)=NC2(=O))[C@H](OC)[C@@H]1OP(=O)(O)' +
@@ -197,10 +197,10 @@ category('sequence-translator', () => {
     'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(O)' +
     'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](F)[C@@H]1OP(=O)(S)' +
     'OC[C@H]1O[C@@H](N2C=CC(N)=NC2(=O))[C@H](OC)[C@@H]1O';
-    expect(sequenceToSmiles('(invabasic)cuCfuUfsc', false, SYNTHESIZERS.AXOLABS), expected);
+    expect(sequenceToSmiles('(invAb)cuCfuUfsc', false, SYNTHESIZERS.AXOLABS), expected);
   });
 
-  // test('(invabasic)scususu(GalNAc-2-JNJ)', async () => {
+  // test('(invAb)scususu(GalNAc2)', async () => {
   //   const expected =
   //   'O[C@@H]1C[C@@H]O[C@H]1COP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C=CC(N)=NC2(=O))[C@H](OC)[C@@H]1OP(=O)(O)' +
@@ -210,10 +210,10 @@ category('sequence-translator', () => {
   //   'OCC(O)CNC(=O)CCCC(=O)NC(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)';
-  //   expect(sequenceToSmiles('(invabasic)scususu(GalNAc-2-JNJ)', false, SYNTHESIZERS.AXOLABS), expected);
+  //   expect(sequenceToSmiles('(invAb)scususu(GalNAc2)', false, SYNTHESIZERS.AXOLABS), expected);
   // });
 
-  test('(invabasic)usAfsucuCfuUfAfgcugUfgCfacususu', async () => {
+  test('(invAb)usAfsucuCfuUfAfgcugUfgCfacususu', async () => {
     const expected =
     'O[C@@H]1C[C@@H]O[C@H]1COP(=O)(O)' +
     'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(S)' +
@@ -237,10 +237,10 @@ category('sequence-translator', () => {
     'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(S)' +
     'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(S)' +
     'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1O';
-    expect(sequenceToSmiles('(invabasic)usAfsucuCfuUfAfgcugUfgCfacususu', false, SYNTHESIZERS.AXOLABS), expected);
+    expect(sequenceToSmiles('(invAb)usAfsucuCfuUfAfgcugUfgCfacususu', false, SYNTHESIZERS.AXOLABS), expected);
   });
 
-  test('(invabasic)asacgGfuGfCfAfacucuauuca', async () => {
+  test('(invAb)asacgGfuGfCfAfacucuauuca', async () => {
     const expected =
     'O[C@@H]1C[C@@H]O[C@H]1COP(=O)(O)' +
     'OC[C@H]1O[C@@H](N2C3N=CN=C(N)C=3N=C2)[C@H](OC)[C@@H]1OP(=O)(S)' +
@@ -262,10 +262,10 @@ category('sequence-translator', () => {
     'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(O)' +
     'OC[C@H]1O[C@@H](N2C=CC(N)=NC2(=O))[C@H](OC)[C@@H]1OP(=O)(O)' +
     'OC[C@H]1O[C@@H](N2C3N=CN=C(N)C=3N=C2)[C@H](OC)[C@@H]1O';
-    expect(sequenceToSmiles('(invabasic)asacgGfuGfCfAfacucuauuca', false, SYNTHESIZERS.AXOLABS), expected);
+    expect(sequenceToSmiles('(invAb)asacgGfuGfCfAfacucuauuca', false, SYNTHESIZERS.AXOLABS), expected);
   });
 
-  // test('(invabasic)scsgguGfcAfAfCfucuauucuga', async () => {
+  // test('(invAb)scsgguGfcAfAfCfucuauucuga', async () => {
   //   const expected =
   //   'O[C@@H]1C[C@@H]O[C@H]1COP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C=CC(N)=NC2(=O))[C@H](OC)[C@@H]1OP(=O)(S)' +
@@ -287,10 +287,10 @@ category('sequence-translator', () => {
   //   'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(O)' +
   //   'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)[C@H](OC)[C@@H]1OP(=O)(O)' +
   //   'OC[C@H]1O[C@@H](N2C3N=CN=C(N)C=3N=C2)[C@H](OC)[C@@H]1O';
-  //   expect(sequenceToSmiles('(invabasic)scsgguGfcAfAfCfucuauucuga', false, SYNTHESIZERS.AXOLABS), expected);
+  //   expect(sequenceToSmiles('(invAb)scsgguGfcAfAfCfucuauucuga', false, SYNTHESIZERS.AXOLABS), expected);
   // });
 
-  // test('(invabasic)scsaacUfcUfAfUfucuggacuua', async () => {
+  // test('(invAb)scsaacUfcUfAfUfucuggacuua', async () => {
   //   const expected =
   //   'O[C@@H]1C[C@@H]O[C@H]1COP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C=CC(N)=NC2(=O))[C@H](OC)[C@@H]1OP(=O)(S)' +
@@ -312,10 +312,10 @@ category('sequence-translator', () => {
   //   'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(O)' +
   //   'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(O)' +
   //   'OC[C@H]1O[C@@H](N2C3N=CN=C(N)C=3N=C2)[C@H](OC)[C@@H]1O';
-  //   expect(sequenceToSmiles('(invabasic)scsaacUfcUfAfUfucuggacuua', false, SYNTHESIZERS.AXOLABS), expected);
+  //   expect(sequenceToSmiles('(invAb)scsaacUfcUfAfUfucuggacuua', false, SYNTHESIZERS.AXOLABS), expected);
   // });
 
-  // test('(invabasic)sasacuCfuAfUfUfcuggacuuua', async () => {
+  // test('(invAb)sasacuCfuAfUfUfcuggacuuua', async () => {
   //   const expected =
   //   'O[C@@H]1C[C@@H]O[C@H]1COP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C3N=CN=C(N)C=3N=C2)[C@H](OC)[C@@H]1OP(=O)(S)' +
@@ -337,10 +337,10 @@ category('sequence-translator', () => {
   //   'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(O)' +
   //   'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(O)' +
   //   'OC[C@H]1O[C@@H](N2C3N=CN=C(N)C=3N=C2)[C@H](OC)[C@@H]1O';
-  //   expect(sequenceToSmiles('(invabasic)sasacuCfuAfUfUfcuggacuuua', false, SYNTHESIZERS.AXOLABS), expected);
+  //   expect(sequenceToSmiles('(invAb)sasacuCfuAfUfUfcuggacuuua', false, SYNTHESIZERS.AXOLABS), expected);
   // });
 
-  // test('(invabasic)usAfscug(invabasic)(GalNAc-2-JNJ)', async () => {
+  // test('(invAb)usAfscug(invAb)(GalNAc2)', async () => {
   //   const expected = 'O[C@@H]1C[C@@H]O[C@H]1COP(=O)(O)' +
   //   'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C3N=CN=C(N)C=3N=C2)[C@H](F)[C@@H]1OP(=O)(S)' +
@@ -351,10 +351,10 @@ category('sequence-translator', () => {
   //   'OCC(O)CNC(=O)CCCC(=O)NC(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)';
-  //   expect(sequenceToSmiles('(invabasic)usAfscug(invabasic)(GalNAc-2-JNJ)', false, SYNTHESIZERS.AXOLABS), expected);
+  //   expect(sequenceToSmiles('(invAb)usAfscug(invAb)(GalNAc2)', false, SYNTHESIZERS.AXOLABS), expected);
   // });
 
-  // test('(invabasic)sasuaaCfcUf(GalNAc-2-JNJ)', async () => {
+  // test('(invAb)sasuaaCfcUf(GalNAc2)', async () => {
   //   const expected = 'O[C@@H]1C[C@@H]O[C@H]1COP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C3N=CN=C(N)C=3N=C2)[C@H](OC)[C@@H]1OP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(O)' +
@@ -366,10 +366,10 @@ category('sequence-translator', () => {
   //   'OCC(O)CNC(=O)CCCC(=O)NC(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)';
-  //   expect(sequenceToSmiles('(invabasic)sasuaaCfcUf(GalNAc-2-JNJ)', false, SYNTHESIZERS.AXOLABS), expected);
+  //   expect(sequenceToSmiles('(invAb)sasuaaCfcUf(GalNAc2)', false, SYNTHESIZERS.AXOLABS), expected);
   // });
 
-  // test('(invabasic)sasuaaCfcUfCfUfuguaguuaua(GalNAc-2-JNJ)', async () => {
+  // test('(invAb)sasuaaCfcUfCfUfuguaguuaua(GalNAc2)', async () => {
   //   const expected = 'O[C@@H]1C[C@@H]O[C@H]1COP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C3N=CN=C(N)C=3N=C2)[C@H](OC)[C@@H]1OP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(O)' +
@@ -393,11 +393,11 @@ category('sequence-translator', () => {
   //   'OCC(O)CNC(=O)CCCC(=O)NC(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)';
-  //   expect(sequenceToSmiles('(invabasic)sasuaaCfcUfCfUfuguaguuaua(GalNAc-2-JNJ)', false, SYNTHESIZERS.AXOLABS),
+  //   expect(sequenceToSmiles('(invAb)sasuaaCfcUfCfUfuguaguuaua(GalNAc2)', false, SYNTHESIZERS.AXOLABS),
   //     expected);
   // });
 
-  // test('(invabasic)scsaucacguUfGfCfagccgucuua(invabasic)(GalNAc-2-JNJ)', async () => {
+  // test('(invAb)scsaucacguUfGfCfagccgucuua(invAb)(GalNAc2)', async () => {
   //   const expected = 'O[C@@H]1C[C@@H]O[C@H]1COP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C=CC(N)=NC2(=O))[C@H](OC)[C@@H]1OP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C3N=CN=C(N)C=3N=C2)[C@H](OC)[C@@H]1OP(=O)(O)' +
@@ -424,11 +424,11 @@ category('sequence-translator', () => {
   //   'OCC(O)CNC(=O)CCCC(=O)NC(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)';
-  //   expect(sequenceToSmiles('(invabasic)scsaucacguUfGfCfagccgucuua(invabasic)(GalNAc-2-JNJ)',
+  //   expect(sequenceToSmiles('(invAb)scsaucacguUfGfCfagccgucuua(invAb)(GalNAc2)',
   //     false, SYNTHESIZERS.AXOLABS), expected);
   // });
 
-  // test('(invabasic)susguuUfgCfCfUfacaucuacua(GalNAc-2-JNJ)', async () => {
+  // test('(invAb)susguuUfgCfCfUfacaucuacua(GalNAc2)', async () => {
   //   const expected = 'O[C@@H]1C[C@@H]O[C@H]1COP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(S)' +
   //   'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)[C@H](OC)[C@@H]1OP(=O)(O)' +
@@ -452,7 +452,7 @@ category('sequence-translator', () => {
   //   'OCC(O)CNC(=O)CCCC(=O)NC(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
   //   '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)';
-  //   expect(sequenceToSmiles('(invabasic)susguuUfgCfCfUfacaucuacua(GalNAc-2-JNJ)', false, SYNTHESIZERS.AXOLABS),
+  //   expect(sequenceToSmiles('(invAb)susguuUfgCfCfUfacaucuacua(GalNAc2)', false, SYNTHESIZERS.AXOLABS),
   //     expected);
   // });
 });
