@@ -13,7 +13,7 @@
 		"dayjs": "latest",
 		"worker-loader": "latest",
 		"@datagrok-libraries/utils": "latest",
-		"@datagrok-libraries/statistics": "1.0.2"
+		"@datagrok-libraries/statistics": "^1.1.2"
 	},
 	"devDependencies": {
 		"webpack": "latest",
