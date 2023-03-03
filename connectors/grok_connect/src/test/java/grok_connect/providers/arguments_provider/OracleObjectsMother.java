@@ -399,7 +399,7 @@ public class OracleObjectsMother {
                 .setColumn(new FloatColumn(new Float[]{1.2e-4f, 0.55f, 12.123f}), "FLOAT_VALUE")
                 .setColumn(new FloatColumn(new Float[]{1.17549E-38f, Float.POSITIVE_INFINITY,
                         Float.NEGATIVE_INFINITY}), "BINARY_FLOAT_VALUE")
-                .setColumn(new FloatColumn(new Float[]{0.0f, 0.2222f, 2.2222f}), "BINARY_DOUBLE_VALUE")
+                .setColumn(new FloatColumn(new Float[]{Float.NEGATIVE_INFINITY, 0.2222f, 2.2222f}), "BINARY_DOUBLE_VALUE")
                 .build();
         return Stream.of(Arguments.of(Named.of("NUMERIC TYPES SUPPORT",
                 FuncCallBuilder.fromQuery("SELECT * FROM numeric_type")), expected));
