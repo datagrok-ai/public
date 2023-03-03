@@ -113,6 +113,26 @@ are logged and fixed before the release of the software.
 a comprehensive set of test cases to ensure the software is ready for release
 and meets the specified quality standards.
 
+## Issue tracking
+
+We work on a reliable process to identify and address issues promptly. At
+Datagrok, we have multiple sources of getting feedback, and we track issues that we
+achieve from our clients through emails, Teams, meetings, and clients' QA.
+Additionally, we use manual tests, automatic tests, monitoring and logging
+systems, and our [community](https://community.datagrok.ai/) to gather feedback
+and identify issues.
+
+You can report an issue directly in one of our issue
+tracking systems. We use [JIRA](https://reddata.atlassian.net/) for internal
+issues, integrated with BitBucket, and [GitHub
+Tracker](https://github.com/datagrok-ai/public/issues) for all externally
+reported issues. We recommend reporting issues in JIRA if you have access to it,
+but if you don't, use GitHub Tracker.
+
+Tracking the issues, we stay on
+top of the platform's current status, including critical issues, promised
+features, and upcoming changes. You can also track our latest updates in [Release notes](../admin/releases/release-history.md).
+
 ## QA tools
 
 ### GrokTester
@@ -146,26 +166,6 @@ Analysis offers various viewers, enabling diverse information about
 usage statistics, platform events, and errors.
 See [Usage Analysis](../../govern/usage-analysis.md)
 to learn more.
-
-## Issue tracking
-
-We work on a reliable process to identify and address issues promptly. At
-Datagrok, we have multiple sources of getting feedback, and we track issues that we
-achieve from our clients through emails, Teams, meetings, and clients' QA.
-Additionally, we use manual tests, automatic tests, monitoring and logging
-systems, and our [community](https://community.datagrok.ai/) to gather feedback
-and identify issues.
-
-You can report an issue directly in one of our issue
-tracking systems. We use [JIRA](https://reddata.atlassian.net/) for internal
-issues, integrated with BitBucket, and [GitHub
-Tracker](https://github.com/datagrok-ai/public/issues) for all externally
-reported issues. We recommend reporting issues in JIRA if you have access to it,
-but if you don't, use GitHub Tracker.
-
-Tracking the issues, we stay on
-top of the platform's current status, including critical issues, promised
-features, and upcoming changes. You can also track our latest updates in [Release notes](../admin/releases/release-history.md).
 
 See also:
 
