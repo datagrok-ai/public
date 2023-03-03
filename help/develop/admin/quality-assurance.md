@@ -70,11 +70,13 @@ There are several types of automated tests that we use:
 
 * **Unit tests**. Our core libraries contain over 2,000 unit tests that execute
 automatically in the continuous integration process, enabling us to detect
-regression bugs.* **Integration tests**. These tests cover interactions
+regression bugs.
+* **Integration tests**. These tests cover interactions
 between different modules, while unit tests tend to address isolated modules.
 * **JS API tests**. We have a  a regular
 [Datagrok package](https://github.com/datagrok-ai/public/tree/master/packages/ApiTests)
-containing a suite of tests for the [JS API](../js-api.md). These tests are
+containing a suite of tests for the
+[JS API](../js-api.md). These tests are
 executed automatically on a server using a headless browser mode.
 * **UI tests**. We have over 100 complex UI tests for automated testing of the
 platform.  Each test is associated with a separate story, which describes the
@@ -120,8 +122,7 @@ Is an integrated monitoring system that runs automated package tests every hour.
 ### Test tracking system
 
 To monitor the results of test execution, we have developed a unique
-application on top of the Datagrok platform. This application provides a visual
-representation of the application's current state and enables QA engineers
+application on top of the Datagrok platform. This application visualizes the application's current state and enables QA engineers
 promptly access, execute, and report the completion status of stories.
 Additionally, it lets us quickly navigate to the corresponding JIRA issues as we
 have integrated JIRA with Datagrok's OpenAPI capabilities.
@@ -140,8 +141,8 @@ See [Test Manager](../how-to/test-packages.md#test-manager) to learn more.
 
 It is the
 [Datagrok package](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
-designed to provide insight into how the Datagrok platform is utilized. Usage
-Analysis offers various viewers, enabling diverse information pertaining to
+designed to provide insights into how the Datagrok platform is utilized. Usage
+Analysis offers various viewers, enabling diverse information about
 usage statistics, platform events, and errors.
 See [Usage Analysis](../../govern/usage-analysis.md)
 to learn more.
@@ -155,7 +156,7 @@ Additionally, we use manual tests, automatic tests, monitoring and logging
 systems, and our [community](https://community.datagrok.ai/) to gather feedback
 and identify issues.
 
-Users can report an issue directly in one of our issue
+You can report an issue directly in one of our issue
 tracking systems. We use [JIRA](https://reddata.atlassian.net/) for internal
 issues, integrated with BitBucket, and [GitHub
 Tracker](https://github.com/datagrok-ai/public/issues) for all externally
