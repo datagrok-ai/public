@@ -188,7 +188,12 @@ jobs:
       - name: Build package
         if: ${{ matrix.build == 'true' }}
         id: build
-        run: npm run build
+        run: |
+          if [[ jq -r '. | select( has("scripts") == true ).scripts | select( has("build") == true ).build' "package.json" == "webpack" ]]; then
+            npm run build -- --mode=production
+          else
+            npm run build
+          fi
         working-directory: packages/${{ matrix.package }}
       - name: Install datagrok tools
         if: ${{ matrix.test == 'true' }}
