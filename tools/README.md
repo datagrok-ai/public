@@ -98,3 +98,19 @@ Read more about package development in [Datagrok's documentation](https://datagr
   - `--suffix`: a string containing package version hash
 
   Running `grok publish` is the same as running `grok publish defaultHost --build --debug`.
+- `test` runs package tests. First, it builds a package and publishes it (these
+  steps can be skipped with flags `--skip-build` and `--skip-publish`
+  correspondingly).
+
+  ```shell
+  cd <package-name>
+  grok test
+  ```
+
+  The default host from the `config.yaml` file is used. You
+  can specify another server alias via the `--host` option (e.g., `grok test
+  --host=dev`). The results are printed to the terminal. To see tests execution,
+  pass the `--gui` flag that disables the headless browser mode. If you want to
+  save a test run result, add the `--csv` flag (the report will be saved in a
+  CSV file in the package folder). You can find more details in [local package testing
+  instructions](https://datagrok.ai/help/develop/how-to/test-packages#local-testing).
