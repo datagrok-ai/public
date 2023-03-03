@@ -52,4 +52,11 @@
   color: #4D5261;
   text-align: center;
   width: 100%;
+  align-self: end;
+}
+
+.pep-help-icon {
+  position: absolute;
+  left: 5px;
+  top: 1px;
 }

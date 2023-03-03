@@ -13,7 +13,7 @@ result of some standardized experiment.
 
 1. Click on *"smiles"* column
 
-1. Open *"Descriptors"* dialog in *"Active"* tab on [Property Panel](../../datagrok/navigation.md#properties)
+1. Open *"Descriptors"* dialog in *"Active"* tab on [Context Panel](../../datagrok/navigation.md#context-panel)
    (or use context menu for *"smiles"* column, **Chem | Descriptors...**)
 
 * *"Descriptors"* dialog is open

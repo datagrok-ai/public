@@ -22,7 +22,7 @@ Platform provides ability to add custom tags for entities.
 1. Upload project with name "Tags_Test"
 
 1. Open "Datasets..." page on "Welcome" view and open "Tags_Test"
-   on [Property Panel](../../datagrok/navigation.md#properties)
+   on [Context Panel](../../datagrok/navigation.md#context-panel)
 
 * \#test tag is present in "tags" field in "Details" tab
 
@@ -31,14 +31,14 @@ Platform provides ability to add custom tags for entities.
 * One more tag \#test2 added to project "Tags_Test"
 
 1. Add "Tags_Test" project to "Favorites" by clicking star near it's name
-   on [Property Panel](../../datagrok/navigation.md#properties)
+   on [Context Panel](../../datagrok/navigation.md#context-panel)
 
 * On toolbar there appeared drop-down menu containing added objects to "favorite"
 * When adding object to "Favorites" "star" icon flashes
 
 1. Open **Admin | Data Connections**
 
-1. Open "northwind" (PostgreSQL) connection on [Property Panel](../../datagrok/navigation.md#properties)
+1. Open "northwind" (PostgreSQL) connection on [Context Panel](../../datagrok/navigation.md#context-panel)
 
 * There is \#demo tag in "tags" field in "Details" tab
 
@@ -47,14 +47,14 @@ Platform provides ability to add custom tags for entities.
 * \#test tag added to "northwind" (PostgreSQL) connection
 
 1. Add "northwind" (PostgreSQL) connection to "Favorites" by clicking star near it's name
-   on [Property Panel](../../datagrok/navigation.md#properties)
+   on [Context Panel](../../datagrok/navigation.md#context-panel)
 
 * "northwind" (PostgreSQL) connection added to dropdown menu "Favorites" on toolbar
 * When adding object to "Favorites" "star" icon flashes
 
 1. Open **Admin | Data Queries**
 
-1. Open "Products" (PostgreSQL, northwind) query on [Property Panel](../../datagrok/navigation.md#properties)
+1. Open "Products" (PostgreSQL, northwind) query on [Context Panel](../../datagrok/navigation.md#context-panel)
 
 * There is \#demo tag in "tags" field in "Details" tab
 
@@ -63,14 +63,14 @@ Platform provides ability to add custom tags for entities.
 * \#test tag added to "Products" (PostgreSQL, northwind) query
 
 1. "Products" (PostgreSQL, northwind) query to "Favorites" by clicking star near it's name
-   on [Property Panel](../../datagrok/navigation.md#properties)
+   on [Context Panel](../../datagrok/navigation.md#context-panel)
 
 * "Products" (PostgreSQL, northwind) query added to dropdown menu "Favorites" on toolbar
 * When adding object to "Favorites" "star" icon flashes
 
 1. Open **Admin | Data Jobs**
 
-1. Open "Save Datlas Health statusd" job on [Property Panel](../../datagrok/navigation.md#properties)
+1. Open "Save Datlas Health statusd" job on [Context Panel](../../datagrok/navigation.md#context-panel)
 
 * There is \#demo tag in "tags" field in "Details" tab
 
@@ -79,14 +79,14 @@ Platform provides ability to add custom tags for entities.
 * \#test tag added to "Save Datlas Health status" Job
 
 1. Add "Save Datlas Health status" job to "Favorites" by clicking star near it's name
-   on [Property Panel](../../datagrok/navigation.md#properties)
+   on [Context Panel](../../datagrok/navigation.md#context-panel)
 
 * "Save Datlas Health status" job added to dropdown menu "Favorites" on toolbar
 * When adding object to "Favorites" "star" icon flashes
 
 1. Open **Tools | Scripting | Browse Scripts**
 
-1. Open "ACF" script on [Property Panel](../../datagrok/navigation.md#properties)
+1. Open "ACF" script on [Context Panel](../../datagrok/navigation.md#context-panel)
 
 * There is \#demo tag in "tags" field in "Details" tab
 
@@ -99,14 +99,14 @@ Platform provides ability to add custom tags for entities.
 * \#test tag added to "ACF" script
 
 1. Add "ACF" script to "Favorites" by clicking star near it's name
-   on [Property Panel](../../datagrok/navigation.md#properties)
+   on [Context Panel](../../datagrok/navigation.md#context-panel)
 
 * "ACF" script added to dropdown menu "Favorites" on toolbar
 * When adding object to "Favorites" "star" icon flashes
 
 1. Open **Tools | Predictive Modeling | Browse Models**
 
-1. Open "Predict country" model on [Property Panel](../../datagrok/navigation.md#properties)
+1. Open "Predict country" model on [Context Panel](../../datagrok/navigation.md#context-panel)
 
 * There is \#demo tag in "tags" field in "Details" tab
 
@@ -115,7 +115,7 @@ Platform provides ability to add custom tags for entities.
 * \#test tag added to "Save Datlas Health status" Job
 
 1. Add "Predict country" model to "Favorites" by clicking star near it's name
-   on [Property Panel](../../datagrok/navigation.md#properties)
+   on [Context Panel](../../datagrok/navigation.md#context-panel)
 
 * "Predict country" model added to dropdown menu "Favorites" on toolbar
 * When adding object to "Favorites" "star" icon flashes
@@ -128,9 +128,9 @@ Platform provides ability to add custom tags for entities.
 
 * In open view all entities, added in previous steps, are present
 
-1. Choose arbitrary entity from favorite on [Property Panel](../../datagrok/navigation.md#properties)
+1. Choose arbitrary entity from favorite on [Context Panel](../../datagrok/navigation.md#context-panel)
 
 1. Click on \#demo tag in "tags" field in "Details" tab
 
-* Tree with entities was opened on [Property Panel](../../datagrok/navigation.md#properties), to which
+* Tree with entities was opened on [Context Panel](../../datagrok/navigation.md#context-panel), to which
   # test tag was added in previous steps.

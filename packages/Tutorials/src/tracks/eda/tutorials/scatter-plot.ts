@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { filter } from 'rxjs/operators';
-import { Tutorial } from '../../../tutorial';
+import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 
 
 export class ScatterPlotTutorial extends Tutorial {
@@ -28,9 +28,9 @@ export class ScatterPlotTutorial extends Tutorial {
 
     this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
-    const plot = <DG.ScatterPlotViewer>(await this.openPlot(
+    const plot = (await this.openPlot(
       'scatter plot',
-      (x) => x.type === DG.VIEWER.SCATTER_PLOT));
+      (x) => x.type === DG.VIEWER.SCATTER_PLOT)) as unknown as DG.ScatterPlotViewer;
     const info = <{ [key: string]: any }>plot.getInfo();
     const columnCheck = (selector: DG.ColumnComboBox, col: string) =>
       selector.onChanged.pipe(filter((v) => v === col));
@@ -39,7 +39,7 @@ export class ScatterPlotTutorial extends Tutorial {
       'The easiest way to do this is to click on the column selector on the viewer. ' +
       'Alternatively, you can drag the column right from the spreadsheet, or from ' +
       'the column list (Windows | Columns, or Alt+C). Also, you can make this choice ' +
-      'from the property panel on the right (Windows | Properties, or F4). ' +
+      'from the context panel on the right (Windows | Properties, or F4). ' +
       'Please try different ways in the next steps.';
     await this.action('Set X to HEIGHT', columnCheck(info.xColSelector, 'HEIGHT'), info.xColSelector.root, colSelection);
     await this.action('Set Y to WEIGHT',  columnCheck(info.yColSelector, 'WEIGHT'), info.yColSelector.root);

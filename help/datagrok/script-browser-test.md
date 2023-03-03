@@ -26,40 +26,40 @@ manage them.
 * Access to the script is enabled for the selected user or group of users
 * Appropriate users received a notification and a letter to the mail
 
-1. Open the "General" tab in [Property Panel](../datagrok/navigation.md#properties)
+1. Open the "General" tab in [Context Panel](../datagrok/navigation.md#context-panel)
 
 * "General" tab is open
 * The correct and actually information for all fields is displayed (Created, Created by, Language)
 
-1. Open the "Details" tab in [Property Panel](../datagrok/navigation.md#properties)
+1. Open the "Details" tab in [Context Panel](../datagrok/navigation.md#context-panel)
 
 * "Details" tab is open
 * Display inputs and outputs values
 
-1.Open the "Script" tab in [Property Panel](../datagrok/navigation.md#properties)
+1.Open the "Script" tab in [Context Panel](../datagrok/navigation.md#context-panel)
 
 * "Script" tab is open. The text of the script is shown here.
 
-1. Open the "History" tab in [Property Panel](../datagrok/navigation.md#properties)
+1. Open the "History" tab in [Context Panel](../datagrok/navigation.md#context-panel)
 
 * "History" tab is open
 * Display actually information about running of script
-* Here you can see the status and start time. You can open the [Property Panel](../datagrok/navigation.md#properties)
+* Here you can see the status and start time. You can open the [Context Panel](../datagrok/navigation.md#context-panel)
   for a separate script run here
 
-1. Open the "Statistics" tab in [Property Panel](../datagrok/navigation.md#properties)
+1. Open the "Statistics" tab in [Context Panel](../datagrok/navigation.md#context-panel)
 
 * "Statistics" tab is open
 * Display information about runs count, first and last runs
 
-1. Open the "Activity" tab in [Property Panel](../datagrok/navigation.md#properties)
+1. Open the "Activity" tab in [Context Panel](../datagrok/navigation.md#context-panel)
 
 * "Activity" tab is open
 * Display information about actual actions with script
 
 1. Open last run of "ACF" R Script from "History" tab
 
-* The properties panel for the last run of the script was opened.
+* The context panel for the last run of the script was opened.
 * Here information about the user who made the run, start and end time, duration, input and output values
 
 See also:

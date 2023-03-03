@@ -13,19 +13,24 @@ import {ChemSearchBaseViewer} from './chem-search-base-viewer';
 export class ChemDiversityViewer extends ChemSearchBaseViewer {
   renderMolIds: number[];
   columnNames = [];
+  tooltipUse: boolean;
 
-  constructor() {
+  constructor(tooltipUse = false) {
     super('diversity');
     this.renderMolIds = [];
     this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
+    this.tooltipUse = tooltipUse;
   }
 
 
-  async render(computeData = true): Promise<void> {
+  async render(computeData = false): Promise<void> {
     if (!this.beforeRender())
       return;
     if (this.dataFrame && this.moleculeColumn) {
-      const progressBar = DG.TaskBarProgressIndicator.create(`Diversity search running...`);
+      let progressBar: DG.TaskBarProgressIndicator;
+      if (!this.tooltipUse)
+        progressBar = DG.TaskBarProgressIndicator.create(`Diversity search running...`);
+
       if (computeData) {
         const rowsWithoutEmptyValues = rowsWithoutEmptyValuesCount(this.moleculeColumn);
         if (this.limit > rowsWithoutEmptyValues)
@@ -43,11 +48,14 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
 
       panel[cnt++] = this.metricsDiv;
       for (let i = 0; i < this.limit; ++i) {
+        const molProps = this.createMoleculePropertiesDiv(this.renderMolIds[i]);
         const grid = ui.div([
           renderMolecule(
             this.moleculeColumn!.get(this.renderMolIds[i]),
             {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
-        ], {style: {margin: '5px'}});
+          molProps],
+        {style: {margin: '5px', padding: '3px', position: 'relative'}},
+        );
 
         let divClass = 'd4-flex-col';
 
@@ -80,7 +88,8 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
 
       panel[cnt++] = ui.div(grids, {classes: 'd4-flex-wrap'});
       this.root.appendChild(ui.div(panel, {style: {margin: '5px'}}));
-      progressBar.close();
+      if (!this.tooltipUse)
+        progressBar!.close();
     }
   }
 }

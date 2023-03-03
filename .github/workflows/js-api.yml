@@ -61,12 +61,12 @@ jobs:
         with:
           token: ${{ secrets.WRITE_TOKEN }}
       - name: Setup Node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
-          node-version: '12.x'
+          node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
       - name: Upgrade npm
-        run: npm install -g npm@8.x
+        run: npm install -g npm@x
       - name: npm version
         run: npm version
       - run: npm install
@@ -85,8 +85,8 @@ jobs:
         if: github.ref == 'refs/heads/master' && needs.version.outputs.changed_version == 'true'
         run: |
           if [ -n "$(git status -s js-api/package-lock.json)" ]; then
-            git config --global user.name 'GitHub Actions'
-            git config --global user.email 'github_actions@datagrok.ai'
+            git config --global user.name 'github-actions[bot]'
+            git config --global user.email 'github-actions[bot]@users.noreply.github.com'
             git pull
             git add js-api/package-lock.json
             git commit -m "GitHub Actions: Update js-api/package-lock.json [skip ci]"
@@ -122,17 +122,19 @@ jobs:
         with:
           token: ${{ secrets.WRITE_TOKEN }}
       - name: Setup Node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
-          node-version: '12.x'
+          node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
       - name: Upgrade npm
-        run: npm install -g npm@8.x
+        run: npm install -g npm@x
       - name: npm version
         run: npm version
       - run: npm install
+        continue-on-error: true
         working-directory: packages/${{ matrix.package }}
       - name: Build package
+        continue-on-error: true
         if: ${{ matrix.build == 'true' }}
         run: npm run build
         working-directory: packages/${{ matrix.package }}

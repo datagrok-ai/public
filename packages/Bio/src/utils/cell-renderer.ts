@@ -9,11 +9,11 @@ import {
   getPaletteByType,
   getSplitter,
   monomerToShort,
-  SeqPalette,
   SplitterFunc,
   TAGS as bioTAGS,
-  UnknownSeqPalettes
-} from '@datagrok-libraries/bio';
+} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
+import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
 
 const undefinedColor = 'rgb(100,100,100)';
 const monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = monomerToShort;
@@ -123,7 +123,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const palette = getPaletteByType(paletteType);
 
     const separator = gridCell.cell.column.getTag('separator') ?? '';
-    const splitLimit = gridCell.bounds.width / 5;
+    const splitLimit = w / 5;
     const splitterFunc: SplitterFunc = getSplitter(units, separator, splitLimit);
     const referenceSequence: string[] = splitterFunc(((gridCell.cell.column?.temp['reference-sequence'] != null) && (gridCell.cell.column?.temp['reference-sequence'] != ''))
       ? gridCell.cell.column.temp['reference-sequence'] : gridCell.cell.column.temp['current-word'] ?? '');
@@ -186,7 +186,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       g.fillStyle = undefinedColor;
       const last = index === subParts.length - 1;
       x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell, referenceSequence, maxLengthOfMonomer);
-      return x1 - minDistanceRenderer - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCell.bounds.x) <= gridCell.bounds.width;
+      return minDistanceRenderer <= w;
     });
 
     g.restore();

@@ -12,7 +12,7 @@ import {getRdKitModule} from '../utils/chem-common-rdkit';
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   isEditedFromSketcher: boolean = false;
   hotSearch: boolean;
-  sketchButton: HTMLButtonElement;
+  sketchButton: HTMLElement;
   sketchedMolecule: string = '';
   curIdx: number = 0;
   molCol: DG.Column | null = null;
@@ -32,7 +32,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     super('similarity');
     this.cutoff = this.float('cutoff', 0.01, {min: 0, max: 1});
     this.hotSearch = this.bool('hotSearch', true);
-    this.sketchButton = ui.button('Sketch', () => {
+    this.sketchButton = ui.button(ui.icons.edit(() => {}), () => {
       const sketcher = new grok.chem.Sketcher();
       const savedMolecule = this.targetMolecule;
       sketcher.setMolecule(this.targetMolecule);
@@ -45,15 +45,14 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             grok.shell.error(`Empty molecule cannot be used for similarity search`);
             this.sketchedMolecule = savedMolecule;
           } else {
-            this.sketchedMolecule = sketcher.getMolFile();         
+            this.sketchedMolecule = sketcher.getMolFile();
+            this.gridSelect = false; 
             this.render();
           }
         })
         .show();
-    });
-    this.sketchButton.id = 'reference';
-    this.sketchButton.style.width = '40px';
-    this.sketchButton.style.height = '10px';
+    })
+    this.sketchButton.classList.add('similarity-search-edit');
     this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', height: '10px'});
   }
 
@@ -66,10 +65,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   async render(computeData = true): Promise<void> {
     if (!this.beforeRender())
       return;
-    if (this.moleculeColumn) {      
+    if (this.moleculeColumn) {   
       const progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
-      if (!this.gridSelect && this.curIdx != this.dataFrame!.currentRowIdx)
-        this.isEditedFromSketcher = false;
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
@@ -96,24 +93,27 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             renderMolecule(
               this.targetMolecule, {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
             label],
-          {style: {margin: '5px'}},
+          {style: {margin: '5px', padding: '3px', position: 'relative'}},
           );
           let divClass = 'd4-flex-col';
           divClass += ' d4-current';
-          grid.style.borderStyle = 'solid';
-          grid.style.borderWidth = 'thin';
+          grid.style.boxShadow = '0px 0px 1px var(--grey-6)';
           $(grid).addClass(divClass);
           grids[cnt2++] = grid;
+          this.isEditedFromSketcher = false;
         }
         for (let i = 0; i < this.molCol.length; ++i) {
           const idx = this.idxs.get(i);
+          const similarity = this.scores.get(i).toPrecision(2);
           const label = idx === this.targetMoleculeIdx && !this.isEditedFromSketcher ?
-            this.sketchButton : ui.label(`${this.scores.get(i).toPrecision(2)}`, {style: {paddingTop: '5px'}});
+            this.sketchButton : ui.div();
+          const molProps = this.createMoleculePropertiesDiv(idx, similarity);
           const grid = ui.div([
             renderMolecule(
               this.molCol?.get(i), {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
-            label],
-          {style: {margin: '5px'}},
+            label,
+            molProps],
+          {style: {margin: '5px', padding: '3px', position: 'relative'}},
           );
           let divClass = 'd4-flex-col';
           if (idx == this.curIdx) {
@@ -122,8 +122,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           }
           if (idx == this.targetMoleculeIdx && !this.isEditedFromSketcher) {
             divClass += ' d4-current';
-            grid.style.borderStyle = 'solid';
-            grid.style.borderWidth = 'thin';
+            grid.style.boxShadow = '0px 0px 1px var(--grey-6)';
           }
           if (this.dataFrame!.selection.get(idx)) {
             divClass += ' d4-selected';

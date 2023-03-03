@@ -1,12 +1,12 @@
 {
   "name": "@datagrok/pubchem-api",
   "friendlyName": "PubChem",
-  "version": "1.1.5",
+  "description": "Integration with the PubChem web service.",
+  "version": "1.1.6",
   "author": {
     "name": "Volodymyr Dyma",
     "email": "vdyma@datagrok.ai"
   },
-  "description": "",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
@@ -24,16 +24,7 @@
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",
     "eslint": "latest",
-    "eslint-config-google": "latest",
-    "jest-html-reporter": "^3.5.0",
-    "jest": "^27.0.0",
-    "@types/jest": "^27.0.0",
-    "ts-jest": "^27.0.0",
-    "puppeteer": "^13.7.0",
-    "@types/js-yaml": "^4.0.5",
-    "js-yaml": "^4.1.0",
-    "@types/node-fetch": "^2.6.2",
-    "node-fetch": "^2.6.7"
+    "eslint-config-google": "latest"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
@@ -48,9 +39,9 @@
     "release-pubchemapi-local": "grok publish local --release",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
-    "test": "jest",
-    "test-dev": "set HOST=dev && jest",
-    "test-local": "set HOST=localhost && jest"
+    "test": "grok test",
+    "test-dev": "grok test --host dev",
+    "test-local": "grok test --host localhost"
   },
   "canEdit": [
     "Developers"

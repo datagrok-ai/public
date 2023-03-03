@@ -1,6 +1,9 @@
 package serialization;
 
 
+import java.util.Arrays;
+import java.util.Objects;
+
 // Bool column.
 public class BoolColumn extends Column<Boolean> {
     private static final String TYPE = Types.BOOL;
@@ -63,5 +66,9 @@ public class BoolColumn extends Column<Boolean> {
             System.arraycopy(data, 0, newData, 0, data.length);
             data = newData;
         }
+    }
+
+    public int[] getData() {
+        return data;
     }
 }

@@ -1,6 +1,6 @@
-<!-- TITLE: Develop column tooltips -->
-
-# Column tooltip
+---
+title: "Develop column tooltips"
+---
 
 Developers can extend Datagrok with column tooltips. This could be done by defining a function annotated with special
 comments. It should take a column with specified  `semType`,

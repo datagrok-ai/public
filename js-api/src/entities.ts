@@ -65,13 +65,13 @@ export class Entity {
   /** Who created entity **/
   get author(): User { return toJs(api.grok_Entity_Get_Author(this.dart)); }
 
-  /** Entity properties */
-  getProperties(): Promise<Map<string, any>> {
+  /** Gets entity properties */
+  getProperties(): Promise<{[index: string]: any}> {
     return new Promise((resolve, reject) => api.grok_EntitiesDataSource_GetProperties(grok.dapi.entities.dart, this.dart, (p: any) => resolve(p), (e: any) => reject(e)));
   }
 
   /** Sets entity properties */
-  setProperties(props: Map<string, any>): Promise<any> {
+  setProperties(props: {[index: string]: any}): Promise<any> {
     return new Promise((resolve, reject) => api.grok_EntitiesDataSource_SetProperties(grok.dapi.entities.dart, this.dart, props, (_: any) => resolve(_), (e: any) => reject(e)));
   }
 
@@ -138,6 +138,14 @@ export class User extends Entity {
 
   /** Security Group */
   get group(): Group { return toJs(api.grok_User_Get_Group(this.dart)); }
+
+  static get defaultUsersIds() {
+    return {
+      "Test": "ca1e672e-e3be-40e0-b79b-d2c68e68d380", 
+      "Admin": "878c42b0-9a50-11e6-c537-6bf8e9ab02ee", 
+      "System": "3e32c5fa-ac9c-4d39-8b4b-4db3e576b3c3", 
+    }
+  }
 }
 
 
@@ -171,11 +179,12 @@ export class UserSession extends Entity {
  * */
 export class Func extends Entity {
   public aux: any;
-  public options: any;
+  public options: { [key: string]: any; };
 
   constructor(dart: any) {
     super(dart);
     this.aux = new MapProxy(api.grok_Func_Get_Aux(this.dart));
+    // @ts-ignore
     this.options = new MapProxy(api.grok_Func_Get_Options(this.dart));
   }
 
@@ -185,8 +194,10 @@ export class Func extends Entity {
 
   get path(): string { return api.grok_Func_Get_Path(this.dart); }
 
+  /** Help URL. */
   get helpUrl(): string { return api.grok_Func_Get_HelpUrl(this.dart); }
 
+  /** A package this function belongs to. */
   get package(): Package { return api.grok_Func_Get_Package(this.dart); }
 
   /** Returns {@link FuncCall} object in a stand-by state */
@@ -346,6 +357,9 @@ export class DataQuery extends Func {
   /** Query text */
   get query(): string { return api.grok_Query_Query(this.dart); }
   set query(q: string) { api.grok_Query_Set_Query(this.dart, q); }
+
+  get connection(): DataConnection { return toJs(api.grok_Query_Get_Connection(this.dart)); }
+  set connection(c: DataConnection) { api.grok_Query_Set_Connection(this.dart, toDart(c)); }
 
   /** Executes query
    * @returns {Promise<DataFrame>} */
@@ -575,6 +589,20 @@ export class TableInfo extends Entity {
 
   get dataFrame(): DataFrame { return api.grok_TableInfo_Get_DataFrame(this.dart); }
 
+  get columns(): ColumnInfo[] { return api.grok_TableInfo_Get_Columns(this.dart); }
+}
+
+
+/** @extends Entity
+ * Represents a Column metadata
+ * */
+export class ColumnInfo extends Entity {
+
+  /** @constructs ColumnInfo */
+  constructor(dart: any) {
+    super(dart);
+  }
+
 }
 
 /** @extends Entity
@@ -676,6 +704,17 @@ export class Group extends Entity {
   get hidden(): boolean { return api.grok_Group_Get_Hidden(this.dart); }
   set hidden(e: boolean) { api.grok_Group_Set_Hidden(this.dart, e); }
 
+  static get defaultGroupsIds() {
+    return {
+      "All users": "a4b45840-9a50-11e6-9cc9-8546b8bf62e6", 
+      "Developers": "ba9cd191-9a50-11e6-9cc9-910bf827f0ab",
+      "Need to create": "00000000-0000-0000-0000-000000000000",
+      "Test": "ca1e672e-e3be-40e0-b79b-8546b8bf62e6", 
+      "Admin": "a4b45840-9a50-11e6-c537-6bf8e9ab02ee", 
+      "System": "a4b45840-ac9c-4d39-8b4b-4db3e576b3c3", 
+      "Administrators": "1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5",
+    }
+  }
 }
 
 /** @extends Func
@@ -942,7 +981,14 @@ export class Package extends Entity {
 }
 
 
-export class Dockerfile extends Entity {
+export class DockerImage extends Entity {
+  constructor(dart: any) {
+    super(dart);
+  }
+}
+
+
+export class DockerContainer extends Entity {
   constructor(dart: any) {
     super(dart);
   }
@@ -956,6 +1002,9 @@ export interface PropertyOptions {
 
   /** Property type */
   type?: string;
+
+  /** Whether an empty value is allowed. This is used by validators. */
+  nullable?: boolean;
 
   /** Property description */
   description?: string;
@@ -981,7 +1030,7 @@ export interface PropertyOptions {
   /** Custom editor (such as slider or text area) */
   editor?: string;
 
-  /** Corresponding category on the property panel */
+  /** Corresponding category on the context panel */
   category?: string;
 
   /** Value format */
@@ -1133,7 +1182,7 @@ export class Property {
   static fromOptions(options: PropertyOptions): Property { return Property.js(options.name!, options.type! as TYPE, options); }
 
   /** Registers the attached (dynamic) property for the specified type.
-   * It is editable via the property panel, and gets saved into the view layout as well.
+   * It is editable via the context panel, and gets saved into the view layout as well.
    * Property getter/setter typically uses Widget's "temp" property for storing the value. */
   static registerAttachedProperty(typeName: string, property: Property) {
     api.grok_Property_RegisterAttachedProperty(typeName, property.dart);

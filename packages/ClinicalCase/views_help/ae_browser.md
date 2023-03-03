@@ -1,10 +1,11 @@
-### AE browser
+# AE browser
 
 This view is useful for exploring adverse events in details including preceding events from domains other then ‘ae’.
 
 The view is basically 'ae' domain table which contains list of all registered adverse events. The table can be filtered.
 
-By selecting row in a table the following information will be displayed on a property panel:
+By selecting row in a table the following information will be displayed on a context panel:
+
 - subject ID (in a tooltip on mouse hover you will see basic demographic characteristics - age, sex, race, treatment arm)
 - AE name preceded by AE severity
 - Days of study in which AE occurred (in a tooltip on mouse hover you will see real AE dates)

@@ -345,3 +345,207 @@ NEUTRAL
 C21H18F4N8
 
 $$$$
+
+Malformed
+
+  0  0  0  0  0  0  0  0  0  0999 V2000
+M  END
+>  <col 1>
+2
+
+>  <ChEMBL ID>
+CHEMBL497863
+
+>  <Scaffold>
+[1*]c1ccc2c(cnn2[2*])c1
+
+>  <Name>
+
+
+>  <Synonyms>
+
+
+>  <Type>
+Small molecule
+
+>  <Max Phase>
+0
+
+>  <Molecular Weight>
+458.4200134277344
+
+>  <Targets>
+2
+
+>  <Bioactivities>
+3
+
+>  <AlogP>
+3.8299999237060547
+
+>  <PSA>
+106.04000091552734
+
+>  <HBA>
+8
+
+>  <HBD>
+3
+
+>  <#RO5 Violations>
+0
+
+>  <#Rotatable Bonds>
+7
+
+>  <Passes Ro3>
+false
+
+>  <QED Weighted>
+0.2199999988079071
+
+>  <CX ApKa>
+13.850000381469727
+
+>  <CX BpKa>
+4.329999923706055
+
+>  <CX LogP>
+3.7699999809265137
+
+>  <CX LogD>
+3.7699999809265137
+
+>  <Aromatic Rings>
+4
+
+>  <Structure Type>
+MOL
+
+>  <Inorganic Flag>
+-1
+
+>  <Heavy Atoms>
+33
+
+>  <HBA Lipinski>
+8
+
+>  <HBD Lipinski>
+4
+
+>  <#RO5 Violations (Lipinski)>
+0
+
+>  <Molecular Weight (Monoisotopic)>
+458.1590881347656
+
+>  <Molecular Species>
+NEUTRAL
+
+>  <Molecular Formula>
+C21H18F4N8
+
+$$$$
+
+Malformed
+
+  0  0  0  0  0  0  0  0  0  0999 V2000
+M  END
+>  <col 1>
+3
+
+>  <ChEMBL ID>
+CHEMBL497863
+
+>  <Scaffold>
+[1*]c1ccc2c(cnn2[2*])c1
+
+>  <Name>
+
+
+>  <Synonyms>
+
+
+>  <Type>
+Small molecule
+
+>  <Max Phase>
+0
+
+>  <Molecular Weight>
+458.4200134277344
+
+>  <Targets>
+2
+
+>  <Bioactivities>
+3
+
+>  <AlogP>
+3.8299999237060547
+
+>  <PSA>
+106.04000091552734
+
+>  <HBA>
+8
+
+>  <HBD>
+3
+
+>  <#RO5 Violations>
+0
+
+>  <#Rotatable Bonds>
+7
+
+>  <Passes Ro3>
+false
+
+>  <QED Weighted>
+0.2199999988079071
+
+>  <CX ApKa>
+13.850000381469727
+
+>  <CX BpKa>
+4.329999923706055
+
+>  <CX LogP>
+3.7699999809265137
+
+>  <CX LogD>
+3.7699999809265137
+
+>  <Aromatic Rings>
+4
+
+>  <Structure Type>
+MOL
+
+>  <Inorganic Flag>
+-1
+
+>  <Heavy Atoms>
+33
+
+>  <HBA Lipinski>
+8
+
+>  <HBD Lipinski>
+4
+
+>  <#RO5 Violations (Lipinski)>
+0
+
+>  <Molecular Weight (Monoisotopic)>
+458.1590881347656
+
+>  <Molecular Species>
+NEUTRAL
+
+>  <Molecular Formula>
+C21H18F4N8
+
+$$$$

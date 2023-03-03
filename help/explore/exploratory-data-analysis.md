@@ -1,7 +1,6 @@
-<!-- TITLE: Exploratory data analysis -->
-<!-- SUBTITLE: -->
-
-# Exploratory data analysis
+---
+title: "Exploratory data analysis"
+---
 
 Before we can learn from data, we need to understand
 it. [Exploratory data analysis](https://en.wikipedia.org/wiki/Exploratory_data_analysis) (EDA) is a process of
@@ -41,7 +40,7 @@ With Datagrok, you can:
   workspace. [Cluster data](cluster-data.md), [impute missing values](../transform/missing-values-imputation.md), find
   and treat duplicates and outliers.
 
-* Visualize data at the click of a button using [30+ native viewers](../visualize/viewers.md). We support all popular
+* Visualize data at the click of a button using [30+ native viewers](../visualize/viewers/viewers.md). We support all popular
   visualizations (
   like [scatterplots with built-in regression lines](../visualize/viewers/scatter-plot.md#regression-line)
   or [box-plots with built-in statistical tests](../visualize/viewers/box-plot.md#t-test)) and certain domain-specific
@@ -57,7 +56,7 @@ With Datagrok, you can:
 * Filter, zoom in and out, aggregate, pivot, and cross-link data. All our viewers work in tandem and are customizable,
   [high-performant, and interactive](../develop/advanced/performance.md#viewers).
 
-* Perform calculations on data using predefined statistical [functions](../datagrok/functions/function.md).
+* Perform calculations on data using predefined statistical [functions](../datagrok/functions/functions.md).
 * Get details on demand using a variety of [widgets](../visualize/widgets.md), including customizable
   [tooltips](../explore/select-tooltip-columns.md#viewer-tooltips) and
   context-driven [info panels](../discover/info-panels.md).
@@ -72,7 +71,7 @@ You can also leverage Datagrok's component-based architecture to extend or creat
 can [add custom viewers](../develop/how-to/develop-custom-viewer.md) or develop new functions
 in [R, Python, or Julia](../compute/scripting.md).
 
-Each of these actions can be [automated](../datagrok/functions/function.md#macros) and used in
+Each of these actions can be [automated](../datagrok/functions/functions.md#macros) and used in
 [pipelines](../access/data-pipeline.md). Sharing the results of your analysis is easy and
 [secure](../govern/security.md).<!--TODO rewrite for clarity-->
 
@@ -112,6 +111,6 @@ With Datagrok, anyone can use their domain knowledge and perceptive abilities to
 
 ## See also
 
-* [Viewers](../visualize/viewers.md)
+* [Viewers](../visualize/viewers/viewers.md)
 * [Data science](../learn/data-science.md)
 * [Predictive modeling](../learn/predictive-modeling.md)

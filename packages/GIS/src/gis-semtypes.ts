@@ -183,6 +183,7 @@ export class GisAreaHandler extends DG.ObjectHandler {
       grid = DG.Viewer.fromType('Grid', coordsDF);
 
     const acc = ui.accordion();
+    acc.addTitle(ui.label(`Object`));
     acc.addPane('Details', () => ui.tableFromMap(obj.attributes));
     acc.addPane('Coordinates', () => {
       if (!grid)
@@ -196,7 +197,7 @@ export class GisAreaHandler extends DG.ObjectHandler {
       return ui.div([canvas]);
     });
 
-    const panelProperties = ui.divV([ui.divText(`Properties for GisObject`), acc.root]);
+    const panelProperties = ui.divV([acc.root]);
     return panelProperties;
   }
 
@@ -299,9 +300,14 @@ export class GisPointHandler extends DG.ObjectHandler {
   renderIcon() { return ui.iconFA('bullseye'); }
   renderTooltip(obj: GisPoint) { return ui.divText(`[${obj.x} ; ${obj.y}]`); }
   renderProperties(obj: GisPoint) {
-    const panelProperties = ui.divV([]);
-    panelProperties.appendChild(ui.divText(`Properties for Point`));
-    panelProperties.appendChild(ui.divText(`[${obj.x} ; ${obj.y}]`));
+    const acc = ui.accordion();
+    acc.addTitle(ui.label(`Point`));
+    acc.addPane('Coordinates', () => ui.tableFromMap({
+      latitude: obj.x,
+      longitude: obj.y,
+    }));
+
+    const panelProperties = ui.divV([acc.root]);
     return panelProperties;
   }
 

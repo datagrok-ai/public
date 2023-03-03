@@ -1,7 +1,6 @@
-<!-- TITLE: ClickHouse -->
-<!-- SUBTITLE: -->
-
-# ClickHouse
+---
+title: "ClickHouse"
+---
 
 Provides access to the [ClickHouse](https://clickhouse.com/clickhouse) database using SQL queries via JDBC driver.
 
@@ -9,10 +8,10 @@ Provides access to the [ClickHouse](https://clickhouse.com/clickhouse) database 
 
 ```json
 {
-    "server": "",
-    "port": "",
-    "db": "",
-    "connString": ""
+  "server": "",
+  "port": "",
+  "db": "",
+  "connString": ""
 }
 ```
 

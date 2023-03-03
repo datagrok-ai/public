@@ -1,6 +1,8 @@
 import * as DG from 'datagrok-api/dg';
+
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
-import './tests/timelines-test';
+
+import './tests/timelines-viewer-test';
 import './tests/tree-viewer-test';
 import './tests/radar-viewer-test';
 import './tests/viewers';

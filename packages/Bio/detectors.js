@@ -227,12 +227,12 @@ class BioPackageDetectors extends DG.Package {
     return sepFreq / otherSumFreq > freqThreshold ? sep : null;
   }
 
-  /** With a separator, spaces are nor allowed in monomer names.
+  /** With a separator, spaces, dots and colons are nor allowed in monomer names.
    * The monomer name/label cannot contain digits only.
    */
   checkForbiddenWithSeparators(freq) {
-    const forbiddenRe = /[ ]|^\d+$/i;
-    return Object.keys(freq).filter((m) => forbiddenRe.test(m)).length > 0;
+    const forbiddenRe = /[ .:]|^\d+$/i;
+    return Object.keys(freq).some((m) => forbiddenRe.test(m));
   }
 
   // /** Without a separator, special symbols or digits are not allowed as monomers. */

@@ -417,6 +417,8 @@ export class PinnedColumn {
           headerThis.paint(g, grid);
         }
     );
+    const g = eCanvasThis.getContext('2d');
+    headerThis.paint(g, grid);
   }
 
   isPinned() : boolean {
@@ -1112,7 +1114,6 @@ export class PinnedColumn {
 
    paint(g : CanvasRenderingContext2D | null, grid : DG.Grid) : void {
     //const nWDiv = entry.contentBoxSize ? entry.contentBoxSize[0].inlineSize : entry.contentRect.width;
-
     if(g === null) {
       return;
     }
@@ -1125,6 +1126,9 @@ export class PinnedColumn {
       throw new Error('Column grid cannot be null.');
     }
     const dframe = grid.dataFrame;
+    if(dframe === null) //DG bug
+      return;
+
     const nW = this.m_root.offsetWidth;
     const nH = this.m_root.offsetHeight;
 

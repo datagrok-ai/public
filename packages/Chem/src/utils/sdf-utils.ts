@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as chemCommonRdKit from './chem-common-rdkit';
-import {MolNotation, _convertMolNotation} from './convert-notation-utils';
-import {isMolBlock} from './convert-notation-utils';
+import {_convertMolNotation} from './convert-notation-utils';
+import {geMolNotationConversions} from '../chem-searches';
 import $ from 'cash-dom';
 
 /**  Dialog for SDF file exporter */
@@ -37,6 +37,38 @@ export function saveAsSdfDialog() {
   }
 }
 
+export async function getSdfStringAsync(structureColumn: DG.Column): Promise<string> {
+  const table: DG.DataFrame = structureColumn.dataFrame;
+  const convertedStruct = await geMolNotationConversions(structureColumn, DG.chem.Notation.MolBlock);
+  const convertedOther = [];
+  for (const col of table.columns) {
+    if (col !== structureColumn) {
+      if (col.semType === DG.SEMTYPE.MOLECULE) {
+        convertedOther.push(await geMolNotationConversions(col, DG.chem.Notation.Smiles));
+      }
+    }
+  }
+  let result = '';
+  for (let i = 0; i < table.rowCount; i++) {
+    result += i == 0 ? '' : '\n';
+    result += `${convertedStruct[i]}\n`;
+    let molColIdx = 0;
+    for (const col of table.columns) {
+      if (col.name === structureColumn.name)
+        continue;
+
+      if (col.semType === DG.SEMTYPE.MOLECULE) {
+        result += `>  <${col.name}>\n${convertedOther[molColIdx]}\n\n`;
+        ++molColIdx;
+        continue;
+      }
+      result += `>  <${col.name}>\n${col.get(i)}\n\n`;
+    }
+    result += '$$$$';
+  }
+  return result;
+}
+
 export function getSdfString(
   table: DG.DataFrame,
   structureColumn: DG.Column, // non-null
@@ -44,8 +76,8 @@ export function getSdfString(
   let result = '';
   for (let i = 0; i < table.rowCount; i++) {
     const molecule: string = structureColumn.get(i);
-    const mol = isMolBlock(molecule) ? molecule :
-      _convertMolNotation(molecule, MolNotation.Unknown, MolNotation.MolBlock, chemCommonRdKit.getRdKitModule());
+    const mol = DG.chem.isMolBlock(molecule) ? molecule :
+      _convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, chemCommonRdKit.getRdKitModule());
     result += i == 0 ? '' : '\n';
     result += `${mol}\n`;
 
@@ -55,8 +87,8 @@ export function getSdfString(
         let cellValue = col.get(i);
         // convert to SMILES if necessary
         if (col.semType === DG.SEMTYPE.MOLECULE) {
-          cellValue = _convertMolNotation(cellValue, MolNotation.Unknown, 
-            MolNotation.Smiles, chemCommonRdKit.getRdKitModule());
+          cellValue = _convertMolNotation(cellValue, DG.chem.Notation.Unknown,
+            DG.chem.Notation.Smiles, chemCommonRdKit.getRdKitModule());
         }
         result += `>  <${col.name}>\n${cellValue}\n\n`;
       }
@@ -73,16 +105,9 @@ export function _saveAsSdf(
   //todo: load OpenChemLib (or use RDKit?)
   //todo: UI for choosing columns with properties
 
-  const pi = DG.TaskBarProgressIndicator.create('Saving as SDF...');
-
   if (structureColumn == null)
     return;
 
-  let result = '';
-  try {
-    result = getSdfString(table, structureColumn);
-    DG.Utils.download(table.name + '.sdf', result);
-  } finally {
-    pi.close();
-  }
+  const result = getSdfString(table, structureColumn);
+  DG.Utils.download(table.name + '.sdf', result);
 }

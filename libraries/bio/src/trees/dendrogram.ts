@@ -5,15 +5,19 @@ import * as DG from 'datagrok-api/dg';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import {NodeType} from '.';
 
+/**
+ * min - undefined for root at 0
+ * max - undefined for total length of the tree
+ */
 export type TreeCutOptions = {
-  min: number, max: number, dataDf: DG.DataFrame,
+  min?: number, max?: number, dataDf: DG.DataFrame,
   clusterDf: DG.DataFrame, clusterColName: string,
 }
 
 export interface IDendrogramService {
   /** Inject Dendrogram tree to {@see grid}. Requires Dendrogram package. */
   injectTreeForGrid(
-    grid: DG.Grid, treeRoot: NodeType, leafColName?: string, neighborWidth?: number, cut?: TreeCutOptions
+    grid: DG.Grid, treeRoot: NodeType | null, leafColName?: string, neighborWidth?: number, cut?: TreeCutOptions
   ): GridNeighbor;
 }
 

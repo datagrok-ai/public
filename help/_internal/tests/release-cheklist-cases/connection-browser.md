@@ -13,8 +13,8 @@ Read the table from the top, do not skip any steps until it is intentional, and 
 
 | Step No. | Action                                                               | Expected result                       | Description                                             |
 |:--------:|:---------------------------------------------------------------------|:--------------------------------------|:--------------------------------------------------------|
-|    1     | Click on “Manage” section on sidebar and then click on “Connections” | "Connections" view is open            | This view is onnections browser                         |
+|    1     | Click on “Manage” section on sidebar and then click on “Connections” | "Connections" view is open            | This view is connections browser                         |
 |    2     | Type "new_test" in the search field                                  | "new_test_postgres" connections found | It connection from [test-case](./adding-connections.md) |
-|    3     | Check all tabs on Property Panel for connection                      |                         |             | Select connection as current object                     |
+|    3     | Check all tabs in the context panel for connection                      |                         |             | Select connection as current object                     |
 |    4     | Expand “Filter” tab on Toolbox and check its content                 | Filter templates are displayed        |                                                         |
 |    5     | Expand “Actions” tab on Toolbox and check its content                | "Add new connection" action is shown  |                                                         |

@@ -13,7 +13,7 @@ module.exports = {
     },
   },
   resolve: {
-    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
+    extensions: ['.ts', '.tsx', '.wasm', '.mjs', '.js', '.json'],
     fallback: {
       'fs': false,
       'path': false, //require.resolve('path-browserify'),
@@ -53,10 +53,13 @@ module.exports = {
     'rxjs/operators': 'rxjs.operators',
     'cash-dom': '$',
     'dayjs': 'dayjs',
+    'wu': 'wu',
+    'exceljs': 'ExcelJS',
+    'NGL': 'NGL',
   },
   output: {
     filename: '[name].js',
-    library: 'biostructureviewer',
+    library: packageName,
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },

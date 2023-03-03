@@ -6,7 +6,7 @@ import $ from 'cash-dom';
 
 import {RadioButtonFilter} from './filters/radio-button-filter';
 import {MultiValueFilter} from './filters/multi-value-filter';
-import {SmilesLengthWidget, TimeWidget} from './widgets';
+import {TableSummaryViewer, TimeWidget} from './widgets';
 
 export const _package = new DG.Package();
 
@@ -33,20 +33,12 @@ export function timeWidget() {
   return new TimeWidget();
 }
 
-//name: SmilesLengthWidgetPanel
-//input: string smiles = CN1C=NC2=C1C(=O)N(C(=O)N2C)C {semType: Molecule}
-//tags: panel
-//output: widget result
-export function smilesLengthWidgetPanel(smiles: string) {
-  return new SmilesLengthWidget().apply({smiles: smiles});
+//name: TableSummary
+//tags: viewer
+//output: viewer result
+export function tableSummary() {
+  return new TableSummaryViewer();
 }
-
-//name: SmilesLengthWidget
-//output: widget result
-export function smilesLengthWidget() {
-  return new SmilesLengthWidget();
-}
-
 
 //name: inputDemo
 export function inputDemo() {

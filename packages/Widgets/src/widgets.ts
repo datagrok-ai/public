@@ -32,21 +32,33 @@ export class TimeWidget extends DG.Widget {
   }
 }
 
+export class TableSummaryViewer extends DG.JsViewer {
+  caption: string;
 
-export class SmilesLengthWidget extends DG.Widget {
-  smiles: string;
+  public get type(): string { return 'TableSummary' };
 
   constructor() {
-    super(ui.div());
+    super();
 
     // properties
-    this.smiles = this.addProperty('smiles', DG.TYPE.STRING, null, {semType: DG.SEMTYPE.MOLECULE});
+    this.caption = this.addProperty('caption', DG.TYPE.STRING, 'Table summary');
+
     this.render();
   }
 
-  onPropertyChanged(_: DG.Property) {this.render();}
+  onTableAttached() {
+    this.subs.push(this.dataFrame.onSelectionChanged.subscribe((_) => this.render()));
+    this.subs.push(this.dataFrame.onFilterChanged.subscribe((_) => this.render()));
+    this.render();
+  }
+
 
   render() {
-    this.root.innerText = `Length: ${this.smiles === null ? 'none' : this.smiles.length}`;
+    $(this.root).empty();
+    if (this.dataFrame) {
+      this.root.appendChild(ui.h1(this.dataFrame.name));
+      this.root.appendChild(ui.h2(this.dataFrame.selection.trueCount + ' selected'));
+      this.root.appendChild(ui.h2(this.dataFrame.filter.trueCount + ' filtered'));
+    }
   }
 }

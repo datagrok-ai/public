@@ -2,16 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {findMCS, findRGroups} from '../scripts-api';
-import {getRdKitModule} from '../package';
-import {MolNotation} from '../utils/convert-notation-utils';
+import {convertMolNotation, getRdKitModule} from '../package';
 
-export function convertToRDKit(smiles: string | null): string | null {
-  if (smiles !== null) {
-    const regexConv: RegExp = /(\[)(R)(\d+)(\])/g;
-    const match = regexConv.exec(smiles);
-    if (match !== null)
-      smiles = smiles.replace(regexConv, `${match[1]}*:${match[3]}${match[4]}`);
-  }
+
+export function convertToRDKit(smiles: string): string {
+  const regexConv: RegExp = /(\[)(R)(\d+)(\])/g;
+  const match = regexConv.exec(smiles);
+  if (match !== null)
+    smiles = smiles.replace(regexConv, `${match[1]}*:${match[3]}${match[4]}`);
+
   return smiles;
 }
 
@@ -33,7 +32,7 @@ export function rGroupAnalysis(col: DG.Column): void {
       let molCol = col.dataFrame.columns.byName(columnInput.value!);
       const smiles: string = await findMCS(molCol.name, molCol.dataFrame);
       ui.setUpdateIndicator(sketcher.root, false);
-      sketcher.setSmiles(smiles);
+      sketcher.setMolFile(convertMolNotation(smiles, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock));
     } catch (e: any) {
       grok.shell.error(e);
       dlg.close();
@@ -62,48 +61,50 @@ export function rGroupAnalysis(col: DG.Column): void {
         grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');
         return;
       }
-      const core = sketcher.getSmiles();
+      const core = sketcher.getMolFile();
       if (!core) {
         grok.shell.error('No core was provided');
         return;
       }
+      let progressBar;
       try {
-        const progressBar = DG.TaskBarProgressIndicator.create(`RGroup analysis running...`);
+        progressBar = DG.TaskBarProgressIndicator.create(`RGroup analysis running...`);
         const res = await findRGroups(col.name, col.dataFrame, core, columnPrefixInput.value);
         const module = getRdKitModule();
-  
-        for (const resCol of res.columns) {
-          const molsArray = new Array<string>(resCol.length);
-          for (let i = 0; i < resCol.length; i++) {
-            const molStr = resCol.get(i);
-            try {
-              const mol = module.get_mol(molStr);
-              molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
-              mol.delete();
-            } catch (e) {
-              console.warn(`RGroupAnalysisWarning: skipping invalid molecule '${molStr}' at index ${i}`);
+        if (res.rowCount) {
+          for (const resCol of res.columns) {
+            const molsArray = new Array<string>(resCol.length);
+            for (let i = 0; i < resCol.length; i++) {
+              const molStr = resCol.get(i);
+              try {
+                const mol = module.get_mol(molStr);
+                molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
+                mol.delete();
+              } catch (e) {
+                console.warn(`RGroupAnalysisWarning: skipping invalid molecule '${molStr}' at index ${i}`);
+              }
             }
+            const rCol = DG.Column.fromStrings(resCol.name, molsArray);
+    
+            rCol.semType = DG.SEMTYPE.MOLECULE;
+            rCol.setTag(DG.TAGS.UNITS, DG.chem.Notation.MolBlock);
+            col.dataFrame.columns.add(rCol);
           }
-          const rCol = DG.Column.fromStrings(resCol.name, molsArray);
-  
-          rCol.semType = DG.SEMTYPE.MOLECULE;
-          rCol.setTag(DG.TAGS.UNITS, MolNotation.MolBlock);
-          col.dataFrame.columns.add(rCol);
-        }
-        if (res.columns.length == 0)
+
+          const view = grok.shell.getTableView(col.dataFrame.name);
+          if (visualAnalysisCheck.value && view) {
+            view.trellisPlot({
+              xColumnNames: [res.columns.byIndex(0).name],
+              yColumnNames: [res.columns.byIndex(1).name],
+            });
+          } 
+        } else 
           grok.shell.error('None R-Groups were found');
-  
-        const view = grok.shell.getTableView(col.dataFrame.name);
-        if (visualAnalysisCheck.value && view) {
-          view.trellisPlot({
-            xColumnNames: [res.columns.byIndex(0).name],
-            yColumnNames: [res.columns.byIndex(1).name],
-          });
-        } 
         progressBar.close();
       } catch (e: any) {
         grok.shell.error(e);
         dlg.close();
+        progressBar?.close();
       }
     });
   dlg.show();

@@ -98,7 +98,7 @@ category('Viewers: Bar Chart', () => {
       throw 'Value column has not been deserialized';
     if (barChart!.props.valueAggrType != 'max')
       throw 'Aggregation has not been deserialized';
-  }); 
+  });
 
   after(async () => {
     grok.shell.closeAll();

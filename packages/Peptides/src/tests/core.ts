@@ -8,7 +8,7 @@ import {startAnalysis} from '../widgets/peptides';
 import {PeptidesModel} from '../model';
 import * as C from '../utils/constants';
 import {scaleActivity} from '../utils/misc';
-import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio';
+import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 category('Core', () => {
   let simpleTable: DG.DataFrame;
@@ -38,10 +38,8 @@ category('Core', () => {
     model = await startAnalysis(simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, '-lg');
     expect(model instanceof PeptidesModel, true);
 
-    if (model != null) {
+    if (model != null)
       model.mutationCliffsSelection = {'11': ['D']};
-      grok.shell.closeTable(model.df);
-    }
   });
 
   test('Start analysis: сomplex', async () => {
@@ -53,17 +51,15 @@ category('Core', () => {
     complexAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.UN);
     complexAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
     complexAlignedSeqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
-    complexAlignedSeqCol.tags[C.TAGS.SEPARATOR] = '/';
+    complexAlignedSeqCol.setTag(C.TAGS.SEPARATOR, '/');
     complexScaledCol = scaleActivity(complexActivityCol, '-lg');
 
     model = await startAnalysis(
       complexActivityCol, complexAlignedSeqCol, null, complexTable, complexScaledCol, '-lg');
     expect(model instanceof PeptidesModel, true);
 
-    if (model != null) {
+    if (model != null)
       model.mutationCliffsSelection = {'13': ['-']};
-      grok.shell.closeTable(model.df);
-    }
   });
 
   test('Save and load project', async () => {
@@ -95,9 +91,8 @@ category('Core', () => {
     grok.shell.closeTable(d);
     await delay(500);
 
-    await grok.dapi.projects.open('Peptides project unique test');
+    await sp.open();
     v = grok.shell.getTableView('Peptides analysis');
-    grok.shell.closeTable(v.dataFrame);
 
     await grok.dapi.layouts.delete(sl);
     await grok.dapi.tables.delete(sti);

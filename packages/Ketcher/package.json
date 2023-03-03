@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/ketcher",
   "friendlyName": "Ketcher",
-  "version": "2.0.1",
+  "version": "2.1.2",
   "author": {
     "name": "Maria Dolotova",
     "email": "maria.dolotova@arcadia.spb.ru"
@@ -14,8 +14,8 @@
   },
   "dependencies": {
     "@types/react-dom": "^17.0.9",
-    "datagrok-api": "^1.10.2",
-    "@datagrok-libraries/utils": "^1.15.5",
+    "datagrok-api": "^1.13.2",
+    "@datagrok-libraries/utils": "^1.19.3",
     "file-loader": "^6.2.0",
     "ketcher-core": "^1.5.0",
     "ketcher-react": "^2.5.1",
@@ -34,11 +34,7 @@
     "ts-loader": "latest",
     "typescript": "latest",
     "worker-loader": "latest",
-    "puppeteer": "^13.7.0",
-    "@types/jest": "^27.0.0",
-    "jest": "^27.0.0",
-    "jest-html-reporter": "^3.5.0",
-    "ts-jest": "^27.0.0"
+    "puppeteer": "^13.7.0"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
@@ -51,9 +47,9 @@
     "release-ketcher-dev": "grok publish dev --release",
     "debug-ketcher-public": "grok publish public",
     "release-ketcher-public": "grok publish public --release",
-    "test": "jest",
-    "test-dev": "set HOST=dev && jest",
-    "test-local": "set HOST=localhost && jest"
+    "test": "grok test",
+    "test-dev": "grok test --host dev",
+    "test-local": "grok test --host localhost"
   },
   "canEdit": [
     "Developers"

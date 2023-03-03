@@ -35,8 +35,8 @@
 | [Weather](https://github.com/datagrok-ai/public/tree/master/packages/Weather) | |
 | [Widgets](https://github.com/datagrok-ai/public/tree/master/packages/Widgets) | |
 
+See also:
 
-See also: 
-  * [Grok API](https://datagrok.ai/help/develop/js-api)
-  * [Packages](https://datagrok.ai/help/develop/develop#packages)
-  * [Application](https://datagrok.ai/help/develop/how-to/build-an-app)
+* [Grok API](https://datagrok.ai/help/develop/js-api)
+* [Packages](https://datagrok.ai/help/develop/develop#packages)
+* [Application](https://datagrok.ai/help/develop/how-to/build-an-app)

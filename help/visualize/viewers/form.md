@@ -1,7 +1,6 @@
-<!-- TITLE: Form -->
-<!-- SUBTITLE: -->
-
-# Form
+---
+title: "Form"
+---
 
 Form allows you to customize the appearance of the row by manually positioning the fields, and adding other visual
 elements, such as pictures or panels. A form can be used either as a stand-alone viewer, or as a row template of
@@ -15,7 +14,7 @@ To edit values via the form, click on the 'edit' icon on top.
 
 To reposition the fields, click on the 'presentation' icon, and then drag-and-drop fields to the new locations. To
 change visual properties of an element, click on it while in the designer mode; properties will appear in
-the [property panel](../../datagrok/navigation.md#properties)
+the [context panel](../../datagrok/navigation.md#context-panel)
 on the right.
 
 Field color-coding and format are picked up from the corresponding grid, if possible.

@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
-import {parseNewick} from '@datagrok-libraries/bio';
+import {NO_NAME_ROOT, parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 category('newickParser_phylocanvas', () => {
   const nwk0 = `;`;
@@ -33,35 +33,35 @@ category('newickParser_phylocanvas', () => {
     [Tests.nwk1NoNameNoHeight]: {
       nwk: '();',
       obj: {
-        name: '', // root
+        name: NO_NAME_ROOT, // root
         children: [{name: ''}]
       },
     },
     [Tests.nwk1NameNoHeight]: {
       nwk: '(single);',
       obj: {
-        name: '', // root
+        name: NO_NAME_ROOT, // root
         children: [{name: 'single'}]
       },
     },
     [Tests.nwk1NameHeight]: {
       nwk: '(single:1.2);',
       obj: {
-        name: '', // root
+        name: NO_NAME_ROOT, // root
         children: [{name: 'single', branch_length: 1.2}]
       },
     },
     [Tests.nwk1NoNameHeight]: {
       nwk: '(:1.2);',
       obj: {
-        name: '', // root
+        name: NO_NAME_ROOT, // root
         children: [{name: '', branch_length: 1.2}]
       },
     },
     [Tests.nwk3LeafsNoHeight]: {
       nwk: '((n1,n2),n3);',
       obj: {
-        name: '', // root
+        name: NO_NAME_ROOT, // root
         children: [
           {
             name: '',
@@ -74,7 +74,7 @@ category('newickParser_phylocanvas', () => {
     [Tests.nwk3LeafsIntNodesNoHeight]: {
       nwk: '((n1,n2)in1,n3);',
       obj: {
-        name: '', // root
+        name: NO_NAME_ROOT, // root
         children: [
           {
             name: 'in1',

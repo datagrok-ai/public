@@ -1,7 +1,6 @@
-<!-- TITLE: Data connection -->
-<!-- SUBTITLE: -->
-
-# Data connection
+---
+title: "Data connection"
+---
 
 Data connection is used for accessing data in a particular data source. Connection parameters depend on the data source.
 Typically, you would need to provide server name and login credentials.
@@ -162,7 +161,7 @@ for "Login" and "Password".
 
 ## Videos
 
-[![Data connection](../uploads/youtube/data_access.png "Open on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s)
+[![Data connection](../uploads/youtube/data_access.png "Open on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8\&t=1048s)
 
 See also:
 

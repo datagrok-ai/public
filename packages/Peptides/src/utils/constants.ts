@@ -7,7 +7,15 @@ export enum COLUMNS_NAMES {
   MEAN_DIFFERENCE = 'Mean difference',
   COUNT = 'Count',
   RATIO = 'Ratio',
+}
+
+export enum LST_COLUMN_NAMES {
   MEMBERS = 'Members',
+  WEB_LOGO = 'WebLogo',
+  DISTRIBUTION = 'Distribution',
+  MEAN_DIFFERENCE = 'Mean difference',
+  P_VALUE = 'P-Value',
+  RATIO = 'Ratio',
 }
 
 export enum CATEGORIES {
@@ -26,6 +34,8 @@ export enum TAGS {
   CLUSTER_SELECTION = 'clusterSelection',
   VISIBLE = 'visible',
   SETTINGS = 'settings',
+  CUSTOM_CLUSTER = 'customCluster',
+  UUID = 'pep-uuid',
 }
 
 export enum SEM_TYPES {
@@ -35,4 +45,4 @@ export enum SEM_TYPES {
 
 export const EMBEDDING_STATUS = 'embeddingStatus';
 
-export const PEPTIDES_ANALYSIS = 'isPeptidesAnalysis';
+export const MULTIPLE_VIEWS = 'isMultipleViews';

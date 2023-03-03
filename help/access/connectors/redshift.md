@@ -1,7 +1,6 @@
-<!-- TITLE: Redshift -->
-<!-- SUBTITLE: -->
-
-# Redshift
+---
+title: "Redshift"
+---
 
 Provides access to [Amazon Redshift](https://aws.amazon.com/en/redshift/)
 database using SQL queries via JDBC driver.
@@ -10,10 +9,10 @@ database using SQL queries via JDBC driver.
 
 ```json
 {
-    "server": "",
-    "port": "",
-    "db": "",
-    "connString": ""
+  "server": "",
+  "port": "",
+  "db": "",
+  "connString": ""
 }
 ```
 

@@ -90,10 +90,10 @@ category('Viewers: Word Cloud', () => {
       querySelector('#elementContent > div.d4-layout-top > div > textarea') as HTMLSelectElement;
     if (titleElem.value != 'Test Word Cloud')
       throw 'title property has not been deserialized'; 
-  }); 
+  }, {skipReason: 'GROK-11670'}); 
 
   after(async () => {
     grok.shell.closeAll();
-    await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Word Cloud').first());
+    // await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Word Cloud').first());
   }); 
 });

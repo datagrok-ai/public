@@ -16,6 +16,9 @@ export async function _testActivityCliffsOpen(df: DG.DataFrame, numberCliffs: nu
 
   expect(scatterPlot != null, true);
 
-  const cliffsLink = Array.from(scatterPlot!.root.children).filter(it => it.className === 'ui-btn ui-btn-ok');
-  expect((cliffsLink[0] as HTMLElement).innerText.toLowerCase(), `${numberCliffs} cliffs`);
+  const cliffsLink = Array.from(scatterPlot!.root.children).find((el) => {
+    const classList: string[] = el.className.split(' ');
+    return ['ui-btn', 'ui-btn-ok'].every((reqClassName) => classList.includes(reqClassName));
+  });
+  expect((cliffsLink as HTMLElement).innerText.toLowerCase(), `${numberCliffs} cliffs`);
 }

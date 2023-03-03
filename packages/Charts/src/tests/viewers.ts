@@ -1,9 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-//import * as ui from 'datagrok-api/ui';
 
 import {category, test, testViewer} from '@datagrok-libraries/utils/src/test';
-import {energyUK, demog} from './test-data';
 
 
 category('Viewers', () => {
@@ -11,11 +9,12 @@ category('Viewers', () => {
   const viewers = DG.Func.find({package: 'Charts', tags: ['viewer']}).map((f) => f.friendlyName);
   for (const v of viewers) {
     test(v, async () => {
-      await testViewer(v, (() => {
-        if (['SankeyViewer', 'ChordViewer'].includes(v)) return energyUK.clone();
-        else if (['TreeMapViewer', 'SunburstViewer'].includes(v)) return demog.clone();
+      await testViewer(v, await (async () => {
+        if (['SankeyViewer', 'ChordViewer'].includes(v)) return (await grok.data.getDemoTable('energy_uk.csv'));
+        else if (['TreeMapViewer', 'SunburstViewer'].includes(v)) return (await grok.data.getDemoTable('demog.csv'));
+        else if (v === 'GlobeViewer') return (await grok.data.getDemoTable('geo/earthquakes.csv'));
         return df.clone();
-      })());
-    }, {skipReason: 'GROK-11534'});
+      })(), true);
+    });
   }
 });

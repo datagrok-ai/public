@@ -1,7 +1,6 @@
-<!-- TITLE: Data connection credentials-->
-<!-- SUBTITLE: -->
-
-# Credentials
+---
+title: "Data connection credentials"
+---
 
 A data connection is associated with the access credentials (typically login/password). In Datagrok, these credentials
 could be specified either manually by providing login/password (that gets stored in the

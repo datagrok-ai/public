@@ -3,7 +3,8 @@ import * as DG from 'datagrok-api/dg';
 import * as C from './constants';
 import * as types from './types';
 import {PositionStats, SummaryStats, MonomerPositionStats} from '../model';
-import {monomerToShort, SeqPalette} from '@datagrok-libraries/bio';
+import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
+import {monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 function renderCellSelection(canvasContext: CanvasRenderingContext2D, bound: DG.Rect): void {
   canvasContext.strokeStyle = '#000';
@@ -91,15 +92,15 @@ export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, 
     renderCellSelection(canvasContext, bound);
 }
 
-export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, cellValue: string, cellRawData: number,
-  clusterSelection: number[], bound: DG.Rect): void {
+export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, cellValue: string,
+  clusterSelection: string[], bound: DG.Rect): void {
   canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
   canvasContext.textAlign = 'center';
   canvasContext.textBaseline = 'middle';
   canvasContext.fillStyle = '#000';
   canvasContext.fillText(cellValue.toString(), bound.x + (bound.width / 2), bound.y + (bound.height / 2), bound.width);
 
-  if (clusterSelection.includes(cellRawData))
+  if (clusterSelection.includes(cellValue))
     renderCellSelection(canvasContext, bound);
 }
 

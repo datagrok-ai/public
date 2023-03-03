@@ -1,0 +1,23 @@
+.sketch-link {
+    border: 1px solid var(--grey-2);
+    height: 25px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-left: 0px;
+    margin-left: 0px;
+  }
+  
+
+.sketcher-host {
+  width: 100%!important;
+  height: 100%!important;
+}
+
+.clear-button {
+  position: absolute;
+  right: 0px;
+  top: 0px;
+  font-size: 10px;
+  visibility: hidden;
+}

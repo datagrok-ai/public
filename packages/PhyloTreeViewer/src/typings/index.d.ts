@@ -6,12 +6,15 @@ declare module 'phylotree' {
     children: PhylotreeNode[];
     attribute: string; // height / branch length
     annotation: string;
+    depth?: number;
   }
 }
 
 declare module 'phylotree/src/formats/newick' {
   import {PhylotreeNode} from 'phylotree';
+  import {NO_NAME_ROOT} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
+  /** Does not correct empty root name to {@link NO_NAME_ROOT}*/
   function newickParser(newick: string): { json: PhylotreeNode, error: string | null } ;
 
   export = newickParser; // default
@@ -30,13 +33,20 @@ declare module 'phylotree' {
 
     select_all_descendants(node: PhylotreeNode, flag1: boolean, flag2: boolean);
 
-    getNodes(): PhylotreeNode[];
+    /** Get the root node */
+    getRootNode(): PhylotreeNode
 
-    render(props: { [propName: string]: any });
+    /** Implementation returns root node, the same {@link getRootNode} */
+    getNodes(): PhylotreeNode;
+
+    /** Update with new hiearchy layout */
+    update(json): void;
+
+    render(props: { [propName: string]: any }): TreeRender;
   }
 
   class TreeRender {
-    show();
+    show(): SVGSVGElement;
 
     modifySelection(predicate: () => boolean);
   }

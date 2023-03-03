@@ -20,10 +20,10 @@ There are two outcomes for each project:
 Project template defines the structure associated with the following:
 
 * Data Ingestion
-    * Data query + pre-processing
+  * Data query + pre-processing
 * Data Expansion
-    * Calculated Properties
-    * Data from External Sources
+  * Calculated Properties
+  * Data from External Sources
 * Property Filters
 * Outcome Report Format
 * Actions and Triggers (notifications, etc)
@@ -64,7 +64,7 @@ same database.
 Users would use the built-in Datagrok facilities for filtering that allow interactive filtering for both compounds and
 calculated properties. The UI would look like that:
 
-![](images/hit-triage-filtering.png)
+![hit-triage-filtering](images/hit-triage-filtering.png)
 
 Users will be able to filter out compounds manually, with an optional explanation.
 
@@ -90,7 +90,7 @@ The following HitTriage-related advanced analytics functionality is available ou
 
 In addition, the solution takes advantage of the built-in data augmentation system. Whenever a user clicks on a
 structure, the relevant information (assays, projects, dose-response curves, etc)
-gets shown in the property panel on the right.
+gets shown in the context panel on the right.
 
 ## Visualization and Reporting Outcomes
 
@@ -105,7 +105,6 @@ is used for authentication and authorization within HitTriage. With some app-spe
 
 * Define groups and associate them with privileges for objects (HitTriage projects, templates, etc)
   and corresponding actions (create, delete, submit, etc)
-*
 
 ## Notifications and Statuses
 

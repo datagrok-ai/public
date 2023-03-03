@@ -1,7 +1,6 @@
-<!-- TITLE: Database table -->
-<!-- SUBTITLE: -->
-
-# Database table
+---
+title: "Database table"
+---
 
 Because this table resides in an external database, the analysis is less interactive compared to the already imported
 tables. There are few options for working with it:

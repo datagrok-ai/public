@@ -5,7 +5,7 @@ import * as rxjs from 'rxjs';
 
 import {HoverType, ITreePlacer, MarkupNodeType} from './markup';
 import {Subject} from 'rxjs';
-import {isLeaf, NodeType} from '@datagrok-libraries/bio';
+import {isLeaf, NodeType} from '@datagrok-libraries/bio/src/trees';
 
 export type RectangleTreeHoverType<TNode extends NodeType> = HoverType<TNode> & {
   /** Node position along height axis */
@@ -122,7 +122,7 @@ export class RectangleTreePlacer<TNode extends MarkupNodeType> implements ITreeP
     return res;
   }
 
-  getNodeHeight(treeRoot: MarkupNodeType, node: MarkupNodeType): number | undefined {
+  getNodeHeight(treeRoot: MarkupNodeType | null, node: MarkupNodeType): number | undefined {
     function getNodeHeightInt(
       currentNode: MarkupNodeType, node: MarkupNodeType, currentHeight: number
     ): number | undefined {
@@ -139,7 +139,7 @@ export class RectangleTreePlacer<TNode extends MarkupNodeType> implements ITreeP
       return res;
     }
 
-    const res: number | undefined = getNodeHeightInt(treeRoot, node, 0);
+    const res: number | undefined = !treeRoot ? undefined : getNodeHeightInt(treeRoot, node, 0);
     return res;
   }
 }

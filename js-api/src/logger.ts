@@ -27,6 +27,10 @@ export class Logger {
     return new Logger(undefined, {staticLogger: true});
   }
 
+  static translateStackTrace(stackTrace: string): string {
+     return api.grok_Log_TranslateStackTrace(stackTrace);
+  }
+
   /** @Obsolete, for backward compatibility, use {audit} instead **/
   log(message: string, params: object, type: string = 'log'): void {
     this._log({level: LOG_LEVEL.AUDIT, message, params, type});
@@ -65,6 +69,7 @@ export class Logger {
   _log(msg: LogMessage) {
     if (this.putCallback != null)
       this.putCallback(msg);
+    msg.stackTrace ??= new Error().stack;
     api.grok_Log(this.dart, msg.level, msg.message, toDart(msg.params), msg.type, msg.stackTrace);
   }
 }
@@ -82,6 +87,8 @@ export class PackageLogger extends Logger {
     msg.params ??= {};
     //@ts-ignore
     msg.params['package'] = this.package.dart;
+    //@ts-ignore
+    msg.params['packageName'] = this.package.name;
     super._log(msg);
   }
 }

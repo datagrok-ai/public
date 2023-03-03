@@ -566,6 +566,11 @@ export class OpenLayers {
 
     if (recreate) {
       let previousLayer = this.olMarkersLayerGL;
+      if (previousLayer) {
+        this.olMap.removeLayer(previousLayer);
+        previousLayer.dispose();
+      }
+
       let src = this.olMarkersLayerGL?.getSource();
       this.olMarkersLayerGL = new WebGLPointsLayer({
         source: src ? src : this.olMarkersSource,
@@ -574,12 +579,13 @@ export class OpenLayers {
       this.olMarkersLayerGL.set('layerName', 'Markers GL');
       this.addLayer(this.olMarkersLayerGL);
 
+      //prepare markers selection layer
+      previousLayer = this.olMarkersSelLayerGL;
       if (previousLayer) {
         this.olMap.removeLayer(previousLayer);
         previousLayer.dispose();
       }
-      //prepare markers selection layer
-      previousLayer = this.olMarkersSelLayerGL;
+
       src = this.olMarkersSelLayerGL?.getSource();
       this.olMarkersSelLayerGL = new WebGLPointsLayer({
         source: src ? src : this.olMarkersSelSource,
@@ -589,11 +595,6 @@ export class OpenLayers {
       this.olMarkersSelLayerGL.set('layerName', 'Markers GL Selection');
       this.addLayer(this.olMarkersSelLayerGL);
       this.olMarkersSelLayerGL.setZIndex(100);
-
-      if (previousLayer) {
-        this.olMap.removeLayer(previousLayer);
-        previousLayer.dispose();
-      }
     } //<<if recreate
   }
 
@@ -1042,7 +1043,9 @@ export class OpenLayers {
       // here we can invoke properties panel for our selected object (comment: it if don't need)
       setTimeout(() => {
         // grok.shell.o = DG.SemanticValue.fromValueType(gisObj, gisObj.semtype);
-        grok.shell.o = gisObj;
+
+        // don't show GIS property panel
+        //grok.shell.o = gisObj;
         grok.shell.windows.showProperties = true;
       }, 50);
     }

@@ -1,7 +1,6 @@
-<!-- TITLE: Access data -->
-<!-- SUBTITLE: -->
-
-# Data access
+---
+title: "Access data"
+---
 
 This article will walk you through different ways of data extraction, from [managing connections](#connections) to data
 sources and running queries, to [using REST APIs](#rest-endpoints), and to [reading files](#reading-files) into
@@ -175,7 +174,7 @@ select * from protein_classification
 ```
 
 SQL statements are annotated with comments, just like [scripts](../../compute/scripting.md), since the underlying
-mechanism is essentially the same (read more on the concept of [functions](../../datagrok/functions/function.md)). Here
+mechanism is essentially the same (read more on the concept of [functions](../../datagrok/functions/functions.md)). Here
 we have two header parameters: the query `name` and the `connection` to use. In fact, this particular query could have
 been even simpler: there is no need to specify `connection` if the package only has one. Similarly, the tag `end` is not
 required if there is only one query per file: the parser needs it to understand where the current query ends and the
@@ -184,7 +183,7 @@ next one begins. So safely omit the name of `connection` and/or the `end` tag if
 To use an existing connection in a query, specify its name along with the namespace in the `connection` parameter. For
 example, the above `chembl` connection that lives in the `Chembl`
 package has the following path: `chembl:chembl`. When browsing connections on the platform, you can identify such path
-by opening `Links` in the tab `Details` of the property panel.
+by opening `Links` in the tab `Details` of the context panel.
 
 You can find a list of header parameters and other details related to the query annotation
 in [this article](../../access/parameterized-queries.md). In addition to this, examples of data queries are available in
@@ -358,5 +357,5 @@ See also:
 * [Data query](../../access/data-query.md)
 * [Data job](../../access/data-job.md)
 * [File shares](../../access/connect-a-file-share.md)
-* [Functions](../../datagrok/functions/function.md)
+* [Functions](../../datagrok/functions/functions.md)
 * [Parameterized queries](../../access/parameterized-queries.md)

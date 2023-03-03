@@ -1,5 +1,5 @@
-<!-- TITLE: Learning plan -->
-
-# Day 1
+---
+title: "Learning plan"
+---
 
 On day one...

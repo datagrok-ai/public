@@ -3,10 +3,14 @@
 HitTriage helps chemists assess the quality of hits and decide which compounds should make it to the next stage. It does
 it in a managed, reproducible manner, with the triage template consisting of separate steps.
 
-![](images/hit-triage-workflow.gif)
+![hit-triage-workflow](images/hit-triage-workflow.gif)
 
-To start the Hit Triage app, open the `Apps` pane and double-click on the `HitTriage` app.
-Alternatively, you can open it via the direct link: [https://public.datagrok.ai/apps/HitTriage](https://public.datagrok.ai/apps/HitTriage)
+Technically, HitTriage is a [package](https://datagrok.ai/help/develop/develop#packages)
+for the [Datagrok](https://datagrok.ai) platform that contains the the `HitTriage` application. There are multiple ways
+to start it:
+
+* Open the `Apps` pane and double-click on the `HitTriage` app
+* Open it via the direct link: [https://public.datagrok.ai/apps/HitTriage](https://public.datagrok.ai/apps/HitTriage)
 
 There are two outcomes for each project:
 
@@ -18,10 +22,10 @@ There are two outcomes for each project:
 Project template defines the structure associated with the following:
 
 * Data Ingestion
-    * Data query + pre-processing
+  * Data query + pre-processing
 * Data Expansion
-    * Calculated Properties
-    * Data from External Sources
+  * Calculated Properties
+  * Data from External Sources
 * Property Filters
 * Outcome Report Format
 * Actions and Triggers (notifications, etc)
@@ -60,7 +64,9 @@ same database.
 ## User Interactions
 
 Users would use the built-in Datagrok facilities for filtering that allow interactive filtering for both compounds and
-calculated properties. 
+calculated properties. The UI would look like that:
+
+![hit-triage-filtering](images/hit-triage-filtering.png)
 
 Users will be able to filter out compounds manually, with an optional explanation.
 
@@ -86,7 +92,7 @@ The following HitTriage-related advanced analytics functionality is available ou
 
 In addition, the solution takes advantage of the built-in data augmentation system. Whenever a user clicks on a
 structure, the relevant information (assays, projects, dose-response curves, etc)
-gets shown in the property panel on the right.
+gets shown in the context panel on the right.
 
 ## Visualization and Reporting Outcomes
 
@@ -101,7 +107,6 @@ is used for authentication and authorization within HitTriage. With some app-spe
 
 * Define groups and associate them with privileges for objects (HitTriage projects, templates, etc)
   and corresponding actions (create, delete, submit, etc)
-*
 
 ## Notifications and Statuses
 

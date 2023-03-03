@@ -6,5 +6,6 @@
 #input: dataframe table
 #output: graphics pic
 #condition: "acidiq" == table.name
+#test: Fit(Demo:getTable('acidiq'))
 
 pic = DemoScripts:Fittingdrc("acidiq", "dose", "rgr")

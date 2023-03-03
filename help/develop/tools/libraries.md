@@ -1,6 +1,6 @@
-<!-- TITLE: Library tour -->
-
-# Library tour
+---
+title: "Library tour"
+---
 
 This tour takes you through common libraries used to develop applications on top of the platform. Note that the list is
 not comprehensive, and other third-party tools may be used along with the ones we mention.
@@ -52,7 +52,7 @@ _Links:_
 ## Visualization
 
 The platform comes with a diverse set of visualizations (see the
-[Viewers](../../visualize/viewers.md) article). Moreover, it is possible to
+[Viewers](../../visualize/viewers/viewers.md) article). Moreover, it is possible to
 [create a custom viewer](../how-to/develop-custom-viewer.md) using our API. For this task, you can use such libraries
 as `d3`, `three.js`, or `echarts`. Datagrok's public repository contains packages with examples:
 [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers)

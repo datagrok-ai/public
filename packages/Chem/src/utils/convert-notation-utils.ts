@@ -1,17 +1,22 @@
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import * as DG from 'datagrok-api/dg';
+import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import MolNotation = DG.chem.Notation;
 
-export enum MolNotation {
-  Smiles = 'smiles',
-  Smarts = 'smarts',
-  MolBlock = 'molblock', // molblock V2000
-  V3KMolBlock = 'v3Kmolblock', // molblock V3000
-  // Inchi = 'inchi', // not fully supported yet
-  Unknown = 'unknown',
-}
+// datagrok libraries dependencies
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import { getMolSafe } from './mol-creation_rdkit';
 
-export function isMolBlock(s: string) {
-  return s.includes('M  END');
-}
+
+const MALFORMED_MOL_V2000 = `
+Malformed
+
+  0  0  0  0  0  0  0  0  0  0999 V2000
+M  END`;
+const MALFORMED_MOL_V3000 = `
+Malformed
+
+  0  0  0  0  0  0            999 V3000
+M  END`;
 
 /**
  * Convert between the following notations: SMILES, SMARTS, Molfile V2000 and Molfile V3000
@@ -32,26 +37,42 @@ export function _convertMolNotation(
 ): string {
   if (sourceNotation === targetNotation)
     throw new Error(`Convert molecule notation: source and target notations must differ: "${sourceNotation}"`);
-  const mol = rdKitModule.get_mol(moleculeString);
+  let result = (targetNotation === MolNotation.MolBlock) ? MALFORMED_MOL_V2000 :
+    (targetNotation === MolNotation.V3KMolBlock) ? MALFORMED_MOL_V3000 :
+      'MALFORMED_INPUT_VALUE';
+  let mol: RDMol | null = null;
   try {
-    if (targetNotation === MolNotation.MolBlock)
-      return mol.get_molblock();
-    if (targetNotation === MolNotation.Smiles)
-      return mol.get_smiles();
-    if (targetNotation === MolNotation.V3KMolBlock)
-      return mol.get_v3Kmolblock();
-    if (targetNotation === MolNotation.Smarts)
-      return mol.get_smarts();
-    // if (targetNotation === MolNotation.Inchi)
-    //   return mol.get_inchi();
-    throw new Error(`Failed to convert molucule notation, target notation unknown: ${targetNotation}`);
+    mol = getMolSafe(moleculeString, {}, rdKitModule).mol;
+    if (mol) {
+      if (targetNotation === MolNotation.MolBlock) {
+        //when converting from smiles set coordinates and rendering parameters
+        if (sourceNotation === MolNotation.Smiles) {
+          if (!mol.has_coords())
+            mol!.set_new_coords();
+          mol.normalize_depiction(1);
+          mol.straighten_depiction(false);
+        }
+        result = mol.get_molblock();
+      }
+      if (targetNotation === MolNotation.Smiles)
+        result = mol.get_smiles();
+      if (targetNotation === MolNotation.V3KMolBlock)
+        result = mol.get_v3Kmolblock();
+      if (targetNotation === MolNotation.Smarts)
+        result = mol.get_smarts();
+      // if (targetNotation === MolNotation.Inchi)
+      //   return mol.get_inchi();
+    }
+  } catch (err) {
+    console.error(errorToConsole(err));
   } finally {
     mol?.delete();
+    return result;
   }
 }
 
 export function molToMolblock(molStr: string, module: RDModule): string {
-  return isMolBlock(molStr) ?
+  return DG.chem.isMolBlock(molStr) ?
     molStr : _convertMolNotation(molStr, MolNotation.Unknown, MolNotation.MolBlock, module);
 }
 

@@ -125,6 +125,15 @@ export enum TYPE {
   NOTEBOOK = 'Notebook'
 }
 
+export enum GRID_COLUMN_TAGS {
+
+}
+
+/** Commonly used options on the function level */
+export enum FUNC_OPTIONS {
+  DEMO_PATH = 'demoPath',    // Demo path, such as 'Viewers | Radar'
+}
+
 // export type FILTER_TYPE =
 //   'histogram' | 'categorical' | 'multi-value' | 'bool-columns' |
 //   'free-text' | 'column-free-text' | 'Chem:substructureFilter';
@@ -181,12 +190,15 @@ export const SEMTYPE = {
   IP_ADDRESS: 'IP Address',
   MOLECULE: 'Molecule',
   MACROMOLECULE: 'Macromolecule',
+  MOLECULE3D: 'Molecule3D',
+  PDB_ID: 'PDB_ID',
   NEWICK: 'Newick',
   HELM: 'HELM',
   SUBSTRUCTURE: 'Substructure',
   MONEY: 'Money',
   IMAGE: 'Image',
   FILE: 'File',
+  CHEMICAL_REACTION: 'ChemicalReaction'
 }
 
 export const UNITS = {
@@ -246,7 +258,6 @@ export const TAGS = {
   MARKER_CODING: '.marker-coding',
   FORMULA_LINES: '.formula-lines',
 
-  MULTI_VALUE_SEPARATOR: '.multi-value-separator',
   /** When a dataframe is loaded from a CSV, the maximum number of significant digits
    in the fractional part for each numeric column is determined  */
   SOURCE_PRECISION: '.source-precision',
@@ -255,8 +266,15 @@ export const TAGS = {
   FORMULA: 'formula',
   SEMTYPE: 'quality',
 
+  /** Separator used to parse a cell value into multiple values for filter categories. */
+  MULTI_VALUE_SEPARATOR: '.multi-value-separator',
+  /** Boolean flag to control custom filters visibility. */
   IGNORE_CUSTOM_FILTER: '.ignore-custom-filter',
+  /** Filter type for molecular columns: "Sketch" | "Categorical". See [DG.STRUCTURE_FILTER_TYPE] */
   STRUCTURE_FILTER_TYPE: '.structure-filter-type',
+  /** Custom filter type to be used by default for a column: "<PackageName\>:<FilterType\>".
+   * Takes precedence over [IGNORE_CUSTOM_FILTER] */
+  CUSTOM_FILTER_TYPE: '.custom-filter-type',
 
   CELL_RENDERER: 'cell.renderer',
   UNITS: 'units',  // see DG.UNITS
@@ -274,7 +292,7 @@ export const FUNC_TYPES = {
     * Signature: app() */
   APP: 'app',
 
-  /** Context-specific widget that appears on the property panel
+  /** Context-specific widget that appears on the context panel
     * Signature: panel(x: any): Widget */
   PANEL: 'panel',
 
@@ -367,6 +385,7 @@ export enum VIEWER {
   TRELLIS_PLOT = 'Trellis plot',
   WORD_CLOUD = 'Word cloud',
   TIMELINES = 'TimelinesViewer',
+  RADAR_VIEWER = 'RadarViewer',
   SURFACE_PLOT = 'SurfacePlot'
 }
 
@@ -391,6 +410,12 @@ export enum SIMILARITY_METRIC {
   MC_CONNAUGHEY = 'mc-connaughey',
   ASYMMETRIC = 'asymmetric',
   BRAUN_BLANQUET = 'braun-blanquet'
+}
+
+/** @enum {STRUCTURE_FILTER_TYPE} */
+export enum STRUCTURE_FILTER_TYPE {
+  Sketch = 'Sketch',
+  Categorical = 'Categorical'
 }
 
 /** @enum {DEMO_DATASET} */
@@ -522,17 +547,18 @@ export type ViewerPropertyType = string;
 export type Type = `${TYPE}`;
 export type SemType = string;
 export type SimilarityMetric = `${SIMILARITY_METRIC}`;
+export type StructureFilterType = `${STRUCTURE_FILTER_TYPE}`;
 export type ColorType = number;
 export type ColorCodingType = `${COLOR_CODING_TYPE}`;
 export type MarkerCodingType = `${MARKER_TYPE}`;
 export type DemoDatasetName = `${DEMO_DATASET}`;
 export type DockType = `${DOCK_TYPE}`;
 export type LegendPosition = `${LEGEND_POSITION}`;
-export type ColumnInfo = {name: string, type?: string, semType?: string};
+export type CsvImportColumnOptions = {name: string, type?: string, semType?: string};
 export type CsvImportOptions = {
   delimiter?: string, decimalSeparator?: string, thousandSeparator?: string, headerRow?: boolean,
   columnFilterNames?: string[], columnFilterRegexp?: string, mergeDelimiters?: boolean, maxRows?: number,
-  rowFilterTop?: number, rowFilterProb?: number, nullStrings?: string[], columnImportOptions?: ColumnInfo[]};
+  rowFilterTop?: number, rowFilterProb?: number, nullStrings?: string[], columnImportOptions?: CsvImportColumnOptions[]};
 export type IndexPredicate = (ind: number) => boolean;
 export type StringPredicate = (str: string) => boolean;
 export type ScriptLanguage = `${SCRIPT_LANGUAGE}`;
@@ -542,7 +568,7 @@ export type ElementOptions = {
   classes?: string;
   style?: object;
   processNode?: (node: HTMLElement) => void;
-  onClick?: (node: HTMLElement) => void;
+  onClick?: (event: PointerEvent) => void;
 };
 
 /** Metadata associated with the semantic type. */
