@@ -354,14 +354,14 @@ class Preview {
     if (itemIdx < 0 && this._scrAxes)
       this._axes = this._scrAxes;
 
-    /** Duplicate the original item to display it even if it's hidden */
-    const item = this.items[itemIdx];
-    const previewItem = Object.assign({}, item);
-    previewItem.visible = true;
-
-    /** Trying to show the item */
-    this.scatterPlot.meta.formulaLines.clear();
     try {
+      /** Duplicate the original item to display it even if it's hidden */
+      const item = this.items[itemIdx];
+      const previewItem = Object.assign({}, item);
+      previewItem.visible = true;
+
+      /** Trying to show the item */
+      this.scatterPlot.meta.formulaLines.clear();
       this.scatterPlot.meta.formulaLines.add(previewItem);
       this._axes = this._getItemAxes(previewItem);
       return true;
@@ -885,7 +885,7 @@ export class FormulaLinesDialog {
   }
 
   _initPreview(src: DG.DataFrame | DG.Viewer): Preview {
-    const preview = new Preview(this.host.viewerItems!, src, this.creationControl.popupMenu);
+    const preview = new Preview(this.host.viewerItems! ?? this.host.dframeItems!, src, this.creationControl.popupMenu);
     preview.height = 300;
     return preview;
   }
@@ -898,7 +898,7 @@ export class FormulaLinesDialog {
   }
 
   _initEditor(): Editor {
-    return new Editor(this.host.viewerItems!, this.preview.dataFrame,
+    return new Editor(this.host.viewerItems! ?? this.host.dframeItems!, this.preview.dataFrame,
       (itemIdx: number): boolean => {
         this._currentTable.update(itemIdx);
         return this.preview.update(itemIdx);
@@ -922,9 +922,10 @@ export class FormulaLinesDialog {
         this.dframeTable = this._initTable(this.host.dframeItems!);
         return this.dframeTable.root;
       });
-    } else { // Overrides the standard component logic that hides the header containing only one tab
-      tabs.header.style.removeProperty('display');
     }
+    // Overrides the standard component logic that hides the header containing only one tab
+    tabs.header.style.removeProperty('display');
+    
 
     /** Display "Add new" button */
     tabs.header.append(this.creationControl.button);

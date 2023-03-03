@@ -1,20 +1,25 @@
 #name: Octave Params Test
 #language: octave
 #tags: test
-#input: int i
-#input: double d
-#input: bool b
-#input: string s 
-#input: dataframe df [Data table]
-#input: column col
-#input: column_list col_list
+#input: int i = 10
+#input: double d = -20.1
+#input: bool b = false
+#input: string s = 'abc'
+#input_: dataframe df [Data table]
+#input_: column col
+#input_: column_list col_list
 #output: int ri
 #output: double rd
 #output: bool rb
 #output: string rs
-#output: dataframe rdf
+#output_: dataframe rdf
+#test: ApiTests:getOutput('OctaveParamsTest', 'ri').val == 5
+#test: ApiTests:getOutput('OctaveParamsTest', 'rd').val == 39.9
+#test: ApiTests:getOutput('OctaveParamsTest', 'rb').val == true
+#test: ApiTests:getOutput('OctaveParamsTest', 'rs').val == 'abcabc'
+
+ri = i / 2
+rd = d + 60
 rb = ~b
-rs = [s "-" col_list{1}]
-rd = d + 30
-ri = rows(df) * columns(df) + i
-rdf = {"first_col", "second_col"; 1, 'two'}
+rs = strcat(s, s)
+#rdf = {"first_col", "second_col"; 1, 'two'}

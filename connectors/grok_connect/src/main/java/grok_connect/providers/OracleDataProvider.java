@@ -1,6 +1,8 @@
 package grok_connect.providers;
 
 import java.sql.Array;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -9,24 +11,27 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import grok_connect.connectors_info.DataConnection;
-import grok_connect.connectors_info.DataSource;
-import grok_connect.connectors_info.DbCredentials;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import grok_connect.connectors_info.*;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.Property;
 import grok_connect.utils.ProviderManager;
+import oracle.jdbc.OracleResultSet;
 import oracle.sql.TIMESTAMPTZ;
 import oracle.sql.ZONEIDMAP;
+import oracle.sql.json.OracleJsonObject;
 import serialization.Types;
 
 
 public class OracleDataProvider extends JdbcDataProvider {
     private static final String SYS_SCHEMAS_FILTER =
-            "OWNER != 'SYSTEM' AND OWNER != 'CTXSYS' AND OWNER != 'MDSYS' " +
-            "AND OWNER != 'XDB' AND OWNER != 'APEX_040000' AND OWNER != 'SYS' " +
-            "AND OWNER != 'WMSYS' AND OWNER != 'EXFSYS' AND OWNER != 'ORDSYS' " +
-            "AND OWNER != 'ORDDATA'";
+            "COL.OWNER != 'SYSTEM' AND COL.OWNER != 'CTXSYS' AND COL.OWNER != 'MDSYS' " +
+            "AND COL.OWNER != 'XDB' AND COL.OWNER != 'APEX_040000' AND COL.OWNER != 'SYS' " +
+            "AND COL.OWNER != 'WMSYS' AND COL.OWNER != 'EXFSYS' AND COL.OWNER != 'ORDSYS' " +
+            "AND COL.OWNER != 'ORDDATA'";
     private static final byte REGIONIDBIT = (byte) 0b1000_0000;
 
     public OracleDataProvider(ProviderManager providerManager) {
@@ -127,6 +132,45 @@ public class OracleDataProvider extends JdbcDataProvider {
         }
     }
 
+    @Override
+    protected Object getObjectFromResultSet(ResultSet resultSet, int c) {
+        try {
+            if (resultSet.getMetaData().getColumnTypeName(c).equals("JSON")) {
+                return resultSet.unwrap(OracleResultSet.class).getObject(c, OracleJsonObject.class);
+            }
+            return resultSet.getObject(c);
+        } catch (SQLException e) {
+            throw new RuntimeException("Something went wrong when getting object from result set");
+        }
+    }
+
+    @Override
+    protected void appendQueryParam(DataQuery dataQuery, String paramName, StringBuilder queryBuffer) {
+        FuncParam param = dataQuery.getParam(paramName);
+        if (param.propertyType.equals("list")) {
+            @SuppressWarnings("unchecked")
+            List<String> values = ((ArrayList<String>) param.value);
+            queryBuffer.append(values.stream().map(value -> "?").collect(Collectors.joining(", ")));
+        } else {
+            queryBuffer.append("?");
+        }
+    }
+
+    @Override
+    protected int setArrayParamValue(PreparedStatement statement, int n, FuncParam param) throws SQLException {
+        @SuppressWarnings (value="unchecked")
+        ArrayList<Object> lst = (ArrayList<Object>)param.value;
+        if (lst == null || lst.size() == 0) {
+            statement.setObject(n, null);
+            return 0;
+        }
+        for (int i = 0; i < lst.size(); i++) {
+            statement.setObject(n + i, lst.get(i));
+        }
+        return lst.size() - 1;
+    }
+
+    @Override
     public String getConnectionStringImpl(DataConnection conn) {
         conn.getPort();
         return "jdbc:oracle:thin:@(DESCRIPTION=" +
@@ -137,20 +181,24 @@ public class OracleDataProvider extends JdbcDataProvider {
                 "(CONNECT_DATA=(SERVICE_NAME=" + conn.getDb() + ")))";
     }
 
+    @Override
     public String getSchemasSql(String db) {
-        return "SELECT OWNER as TABLE_SCHEMA FROM ALL_TAB_COLUMNS WHERE " + SYS_SCHEMAS_FILTER +
-                " GROUP BY OWNER ORDER BY OWNER";
+        return "SELECT COL.OWNER as TABLE_SCHEMA FROM ALL_TAB_COLUMNS COL WHERE " + SYS_SCHEMAS_FILTER +
+                " GROUP BY COL.OWNER ORDER BY COL.OWNER";
     }
 
+    @Override
     public String getSchemaSql(String db, String schema, String table) {
         String whereClause = "WHERE " + SYS_SCHEMAS_FILTER;
 
         if (table != null)
-            whereClause = whereClause + " AND (TABLE_NAME = '" + table + "')";
+            whereClause = whereClause + " AND (COL.TABLE_NAME = '" + table + "')";
         if (schema != null)
-            whereClause = whereClause + " AND (OWNER = '" + schema + "')";
+            whereClause = whereClause + " AND (COL.OWNER = '" + schema + "')";
 
-        return "SELECT OWNER as TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM ALL_TAB_COLUMNS " + whereClause +
+        return "SELECT COL.OWNER as TABLE_SCHEMA, COL.TABLE_NAME AS TABLE_NAME, COL.COLUMN_NAME AS COLUMN_NAME, COL.DATA_TYPE AS DATA_TYPE, " +
+                "CASE WHEN O.OBJECT_TYPE = 'VIEW' THEN 1 ELSE 0 END AS IS_VIEW" +
+                " FROM ALL_TAB_COLUMNS COL INNER JOIN ALL_OBJECTS O ON O.OBJECT_NAME = COL.TABLE_NAME " + whereClause +
                 " ORDER BY TABLE_NAME";
     }
 
@@ -161,13 +209,13 @@ public class OracleDataProvider extends JdbcDataProvider {
     public String addBrackets(String name) {
         String brackets = descriptor.nameBrackets;
         return name.startsWith(brackets.substring(0, 1)) ? name :
-                brackets.substring(0, 1) + name + brackets.substring(brackets.length() - 1, brackets.length());
+                brackets.charAt(0) + name + brackets.substring(brackets.length() - 1);
     }
 
     private boolean isOracleFloatNumber(String typeName, int precision, int scale) {
         // https://markhoxey.wordpress.com/2016/05/31/maximum-number-precision/ ==>  Precision >= 38
         // https://stackoverflow.com/questions/29537292/why-can-number-type-in-oracle-scale-up-to-127 ==> scale >= 127
-        return typeName.equalsIgnoreCase("number") && (scale == 0 || scale >= 127) && (precision <= 0);
+        return typeName.equalsIgnoreCase("number") && (scale == 0 || scale >= 127) && (precision < 0);
     }
 
     private static OffsetDateTime extractUtc(byte[] bytes) {

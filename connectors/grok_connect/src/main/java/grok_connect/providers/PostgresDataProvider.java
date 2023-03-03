@@ -58,20 +58,22 @@ public class PostgresDataProvider extends JdbcDataProvider {
     public String getSchemaSql(String db, String schema, String table)
     {
         List<String> filters = new ArrayList<String>() {{
-            add("table_schema = '" + ((schema != null) ? schema : descriptor.defaultSchema) + "'");
+            add("c.table_schema = '" + ((schema != null) ? schema : descriptor.defaultSchema) + "'");
         }};
 
         if (db != null && db.length() != 0)
-            filters.add("table_catalog = '" + db + "'");
+            filters.add("c.table_catalog = '" + db + "'");
 
         if (table != null)
-            filters.add("table_name = '" + table + "'");
+            filters.add("c.table_name = '" + table + "'");
 
         String whereClause = "WHERE " + String.join(" AND \n", filters);
 
-        return "SELECT table_schema, table_name, column_name, data_type " +
-                "FROM information_schema.columns " + whereClause +
-                " ORDER BY table_name";
+        return "SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
+                + "c.data_type as data_type, "
+                + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
+                + "JOIN information_schema.tables t ON t.table_name = c.table_name " + whereClause +
+                " ORDER BY c.table_name";
     }
 
     private boolean isPostgresNumeric(String typeName) {

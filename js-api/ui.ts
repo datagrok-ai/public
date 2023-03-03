@@ -642,24 +642,25 @@ export function tree(): TreeViewGroup {
 }
 
 
-// Will come back later (-Andrew)
-//
-// export interface InputOptions {
-//   value?: any;
-//   onValueChanged?: (v: any) => void;
-// }
-//
-//
+export interface IInputInitOptions {
+  onCreated?: (input: InputBase) => void;
+  onValueChanged?: (input: InputBase) => void;
+}
+
+
 export namespace input {
 
   /** Creates input for the specified property, and optionally binds it to the specified object */
-  export function forProperty(property: Property, source: any = null): InputBase {
-    return InputBase.forProperty(property, source);
+  export function forProperty(property: Property, source: any = null, options?: IInputInitOptions): InputBase {
+    const input = InputBase.forProperty(property, source);
+    if (options?.onCreated)
+      options.onCreated(input);
+    return input;
   }
 
   /** Returns a form for the specified properties, bound to the specified object */
-  export function form(source: any, props: Property[]): HTMLElement {
-    return inputs(props.map((p) => forProperty(p, source)));
+  export function form(source: any, props: Property[], options?: IInputInitOptions): HTMLElement {
+    return inputs(props.map((p) => forProperty(p, source, options)));
   }
 
   // export function bySemType(semType: string) {
@@ -1111,7 +1112,7 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
           childs++;
         }
         totalHeigh = totalHeigh + $(b.childNodes[i]).height();
-      } 
+      }
 
       for (let i = 0; i < b.children.length; i++){
           if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
@@ -1119,7 +1120,7 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
           } else {
             $(b.childNodes[i]).css('height', 4);
           }
-      } 
+      }
 
     });
   } else {
@@ -1140,7 +1141,7 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
       $(b).addClass('ui-split-h').append(box(v))
       if (i != items.length - 1) {
         $(b).append(divider)
-        spliterResize(divider, items[i], items[i + 1], true);     
+        spliterResize(divider, items[i], items[i + 1], true);
       }
     })
 
@@ -1152,7 +1153,7 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
           childs++;
         }
         totalWidth = totalWidth + $(b.childNodes[i]).width();
-      } 
+      }
 
       for (let i = 0; i < b.children.length; i++){
           if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
@@ -1520,17 +1521,42 @@ export namespace hints {
     const horizontalOffset = 10;
     const wizard = new Wizard({title: options.title, helpUrl: options.helpUrl});
 
+    const cancelBtn = wizard.getButton('CANCEL');
+    $(cancelBtn)?.hide();
+    const prevBtn = wizard.getButton('<<');
+    $(prevBtn).empty();
+    const prevIcon = iconFA('chevron-left');
+    $(prevIcon).css('color', 'inherit');
+    prevBtn.append(prevIcon);
+    const nextBtn = wizard.getButton('>>');
+    nextBtn.innerText = 'OK';
+
     if (options.pages) {
+      nextBtn.innerText = (wizard.pageIndex === options.pages.length - 1) ? 'OK' : 'NEXT';
       const pageNumberStr = `${wizard.pageIndex + 1}/${options.pages.length}`;
-      wizard.addButton(pageNumberStr, () => {}, 3);
+      wizard.addButton(pageNumberStr, () => {}, 1);
       const pageNumberField = wizard.getButton(pageNumberStr);
       pageNumberField.classList.add('disabled');
-      $(pageNumberField).css('margin-right', 'auto');
       $(pageNumberField).css('font-weight', 500);
+
+      function ok() {
+        if (nextBtn.innerText === 'OK')
+          wizard.close();
+      }
 
       for (const p of options.pages) {
         const page = Object.assign({}, p);
         page.onActivated = () => {
+          if (wizard.pageIndex === options.pages!.length - 1) {
+            nextBtn.innerText = 'OK';
+            // Use delay to override default wizard behavior
+            setTimeout(() => nextBtn.classList.remove('disabled'), 10);
+            $(nextBtn).on('click', ok);
+          } else {
+            nextBtn.innerText = 'NEXT';
+            $(nextBtn).off('click', ok);
+          }
+
           pageNumberField.innerText = `${wizard.pageIndex + 1}/${options.pages!.length}`;
           if (p.showNextTo) {
             if (targetElement)
@@ -1549,6 +1575,7 @@ export namespace hints {
       }
     }
     wizard.onClose.subscribe(() => remove(targetElement));
+    $(overlay).on('click', () => wizard.close());
     const _x = $(wizard.root).css('left');
     const _y = $(wizard.root).css('top');
     wizard.show({width: 250, height: 200,

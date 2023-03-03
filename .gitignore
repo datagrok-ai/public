@@ -58,3 +58,8 @@ pubspec.lock
 
 # ack
 .ackrc
+
+# Docusaurus
+docusaurus/access.log
+docusaurus/error.log
+docusaurus/.env

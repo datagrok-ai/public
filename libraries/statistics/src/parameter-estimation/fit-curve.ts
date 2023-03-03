@@ -1,6 +1,9 @@
 import {limitedMemoryBFGS} from "../../lbfgs/lbfgs"
 //@ts-ignore: no types
 import * as jStat from 'jstat';
+import {Property} from "datagrok-api/src/entities";
+import {TYPE} from "datagrok-api/src/const";
+
 
 type Likelihood = {
   value: number, 
@@ -8,29 +11,108 @@ type Likelihood = {
   mult: number
 };
 
-type FitResult = {
+
+export type FitResult = {
   parameters: number[],
   fittedCurve: (x:number)=> number,
   confidenceTop: (x:number)=> number,
   confidenceBottom: (x:number)=> number,
-  rSquared: number,
-  auc: number;
+  rSquared?: number,
+  auc?: number;
 };
 
+
+/** Properties that describe {@link FitResult}. Useful for editing, initialization, transformations, etc. */
+export const fitResultProperties: Property[] = [
+  Property.js('rSquared', TYPE.FLOAT),
+  Property.js('auc', TYPE.FLOAT)
+];
+
+
 type ObjectiveFunction = (targetFunc: (params: number[], x: number) => number, 
-data: {x: number[], y: number[]},
-params: number[]) => Likelihood;
+  data: {x: number[], y: number[]},
+  params: number[]) => Likelihood;
+
 
 export enum FitErrorModel {
   Constant,
   Proportional
 }
 
+
+export const FIT_FUNCTION_SIGMOID = 'Sigmoid';
+export const FIT_FUNCTION_LINEAR = 'Linear';
+
+// export const FIT_STATS_RSQUARED = 'rSquared';
+// export const FIT_STATS_AUC = 'auc';
+
+
+export type FitFunctionType = 'Sigmoid' | 'Linear';
+
+abstract class FitFunction {
+  abstract get name(): string;
+  abstract get parameterNames(): string[];
+  abstract y(params: number[], x: number): number;
+  abstract getInitialParameters(x: number[], y: number[]): number[];
+}
+
+
+class LinearFunction extends FitFunction {
+  get name(): string { return FIT_FUNCTION_LINEAR; }
+
+  get parameterNames(): string[] {
+    return ['Slope', 'Intercept'];
+  }
+
+  y(params: number[], x: number): number {
+    throw 'Not implemented';
+  }
+
+  getInitialParameters(x: number[], y: number[]): number[] {
+    throw 'Not implemented';
+  }
+}
+
+
+class SigmoidFunction extends FitFunction {
+  get name(): string { return FIT_FUNCTION_SIGMOID; }
+
+  get parameterNames(): string[] {
+    return ['Top', 'Bottom', 'Slope', 'IC50'];
+  }
+
+  y(params: number[], x: number): number {
+    throw 'Not implemented';
+  }
+
+  getInitialParameters(x: number[], y: number[]): number[] {
+    throw 'Not implemented';
+  }
+}
+
+
+export const fitFunctions: {[index: string]: any} = {
+  FIT_FUNCTION_LINEAR: new LinearFunction(),
+  FIT_FUNCTION_SIGMOID: new SigmoidFunction(),
+};
+
+
+export interface IFitOptions {
+  errorModel: FitErrorModel;
+  confidenceLevel: number;
+  statistics: boolean;
+}
+
+
+/**
+ * statistics - whether or not to calculate fit statistics (potentially computationally intensive)
+ * */
 export function fit(data:{x: number[], y: number[]}, 
                     params: number[],
                     curveFunction: (params: number[], x: number) => number, 
                     errorModel: FitErrorModel,
-                    confidenceLevel: number = 0.05): FitResult {
+                    confidenceLevel: number = 0.05,
+                    statistics: boolean = true): FitResult {
 
   let of: ObjectiveFunction;
   switch(errorModel) {
@@ -96,8 +178,8 @@ export function fit(data:{x: number[], y: number[]},
     fittedCurve: fittedCurve,
     confidenceTop: top,
     confidenceBottom: bottom,
-    rSquared: getDetCoeff(fittedCurve, data),
-    auc: getAuc(fittedCurve, data)
+    rSquared: statistics ? getDetCoeff(fittedCurve, data) : undefined,
+    auc: statistics ? getAuc(fittedCurve, data) : undefined
   };
 
   return fitRes;
@@ -136,7 +218,7 @@ function getObjectiveDerivative(of: ObjectiveFunction, curveFunction: (params: n
 function getAuc(fittedCurve: (x: number) => number, 
                 data: {x: number[], y: number[]}): number {
   let auc = 0;
-  const integrationStep = 0.00001;
+  const integrationStep = 0.001;
   let min = Math.min(...data.x);
   let max = Math.max(...data.x);
 

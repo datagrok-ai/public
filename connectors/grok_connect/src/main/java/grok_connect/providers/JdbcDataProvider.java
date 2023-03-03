@@ -2,14 +2,17 @@ package grok_connect.providers;
 
 import java.io.*;
 import java.sql.*;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.math.*;
 import java.text.*;
+import java.util.Date;
 import java.util.regex.*;
 
+import microsoft.sql.DateTimeOffset;
 import oracle.sql.TIMESTAMPTZ;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.NotImplementedException;
@@ -44,7 +47,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     public Properties getProperties(DataConnection conn) {
         return defaultConnectionProperties(conn);
     }
-//    what is this?
+
     public boolean autoInterpolation() {
         return true;
     }
@@ -410,7 +413,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 rowCount++;
 
                 for (int c = 1; c < columnCount + 1; c++) {
-                    Object value = resultSet.getObject(c);
+                    Object value = getObjectFromResultSet(resultSet, c);
 
                     if (queryRun.debugQuery && value != null)
                         numericColumnStats.get(c-1).updateStats(value);
@@ -439,7 +442,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 columns.get(c - 1).add(((Float)value).intValue());
                             else if (value instanceof BigDecimal)
                                 columns.get(c - 1).add(((BigDecimal)value).intValue());
-                            else
+                            else if (value instanceof Long) {
+                                columns.get(c - 1).add(((Long)value).intValue());
+                            } else
                                 columns.get(c - 1).add(value);
                         else if (isString(type, typeName)) {
                             if ((type == java.sql.Types.CLOB || value instanceof Clob) && value != null) {
@@ -454,8 +459,12 @@ public abstract class JdbcDataProvider extends DataProvider {
                         } else if (isXml(type, typeName)) {
                             String valueToAdd = "";
                             if (value != null) {
-                                SQLXML sqlxml = (SQLXML)value;
-                                valueToAdd = sqlxml.getString();
+                                if (value instanceof  SQLXML) {
+                                    SQLXML sqlxml = (SQLXML)value;
+                                    valueToAdd = sqlxml.getString();
+                                } else if(value instanceof java.lang.String) {
+                                    valueToAdd = value.toString();
+                                }
                             }
                             columns.get(c - 1).add(valueToAdd);
                         } else if (isBitString(type, precision, typeName)) {
@@ -493,7 +502,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                             else if (value instanceof oracle.sql.TIMESTAMPTZ) {
                                 OffsetDateTime offsetDateTime = timestamptzToOffsetDateTime((TIMESTAMPTZ) value);
                                 time = java.util.Date.from(offsetDateTime.toInstant());
-                            } else {
+                            } else if(value instanceof microsoft.sql.DateTimeOffset) {
+                                time = Date.from(((DateTimeOffset) value).getOffsetDateTime().toInstant());
+                            }else {
                                 time = ((java.util.Date) value);
                             }
                             columns.get(c - 1).add((time == null) ? null : time.getTime() * 1000.0);
@@ -575,6 +586,14 @@ public abstract class JdbcDataProvider extends DataProvider {
         finally {
             if (connection != null)
                 connection.close();
+        }
+    }
+
+    protected Object getObjectFromResultSet(ResultSet resultSet, int c) {
+        try {
+            return resultSet.getObject(c);
+        }catch (SQLException e) {
+            throw new RuntimeException("Something went wrong when getting object from result set", e);
         }
     }
 
@@ -767,7 +786,8 @@ public abstract class JdbcDataProvider extends DataProvider {
         return (type == java.sql.Types.DATE) || (type == java.sql.Types.TIME) || (type == java.sql.Types.TIMESTAMP)
                 || typeName.equalsIgnoreCase("timetz")
                 || typeName.equalsIgnoreCase("timestamptz")
-                || (typeName.equalsIgnoreCase("TIMESTAMP WITH TIME ZONE"));
+                || (typeName.equalsIgnoreCase("TIMESTAMP WITH TIME ZONE"))
+                || (typeName.equalsIgnoreCase("datetimeoffset"));
     }
 
     protected boolean isBigInt(int type, String typeName, int precision, int scale) {
