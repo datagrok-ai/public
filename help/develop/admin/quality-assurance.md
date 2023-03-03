@@ -55,7 +55,6 @@ executed:
   1. API and UI Tests
   1. Package Tests
   1. Performance benchmarks
-  1. Stress testing
 * Docker Swarm, AWS ECS, and K8S are our orchestration tools for the deployment
 and scaling of containers.
 * We use Prometheus to track the performance and behavior of applications in
@@ -63,12 +62,11 @@ production.
 
 ## Automated testing
 
-We use automated testing to identify issues more quickly and ensure the software
-meets expected quality standards. With the help of CI/CD, automated testing is
-performed on code changes as they are integrated, making it possible to identify
-bugs and other issues in the software's functionality. All the results of the
-automated tests are kept in the test tracking system. There are several types of
-automated tests that we use:
+With the help of CI/CD, automated testing is
+performed on code changes as they are integrated. We also run automated tests every hour on our instances and encourage developers to use them when performing local package testing. All the results of the
+automated tests are kept in the test tracking system.
+
+There are several types of automated tests that we use:
 
 * **Unit tests**. Our core libraries contain over 2,000 unit tests that execute
 automatically in the continuous integration process, enabling us to detect
@@ -113,12 +111,16 @@ are logged and fixed before the release of the software.
 a comprehensive set of test cases to ensure the software is ready for release
 and meets the specified quality standards.
 
-## QA monitoring tools
+## QA tools
+
+### GrokTester
+
+Is an integrated monitoring system that runs automated package tests every hour. It's also possible to run [package testing locally](../how-to/test-packages#local-testing) before publishing.
 
 ### Test tracking system
 
-In order to monitor the results of test execution, we have developed a unique
-application using the Datagrok platform. This application provides a visual
+To monitor the results of test execution, we have developed a unique
+application on top of the Datagrok platform. This application provides a visual
 representation of the application's current state and enables QA engineers
 promptly access, execute, and report the completion status of stories.
 Additionally, it lets us quickly navigate to the corresponding JIRA issues as we
@@ -129,12 +131,12 @@ have integrated JIRA with Datagrok's OpenAPI capabilities.
 ### Test manager
 
 Is a tool within the Datagrok platform that provides a convenient interface for
-selecting and running packages unit tests with additional capabilities for
+selecting and running package unit tests with additional capabilities for
 exploring the test results. **Test manager** is a component of the
 [**DevTools** package](https://github.com/datagrok-ai/public/tree/master/packages/DevTools).
 See [Test Manager](../how-to/test-packages.md#test-manager) to learn more.
 
-### Usage Analysis package
+### Usage Analysis
 
 It is the
 [Datagrok package](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
@@ -144,21 +146,18 @@ usage statistics, platform events, and errors.
 See [Usage Analysis](../../govern/usage-analysis.md)
 to learn more.
 
-### Grok Tester
-
 ## Issue tracking
 
-Issue tracking is an essential component of any software development process,
-and we work on a reliable process to identify and address issues promptly. At
-Datagrok, we have multiple sources of getting feedback, and we track issues we
+We work on a reliable process to identify and address issues promptly. At
+Datagrok, we have multiple sources of getting feedback, and we track issues that we
 achieve from our clients through emails, Teams, meetings, and clients' QA.
-Additionally, we use manual tests, automatic tests, monitoring, a logging
-system, and our [community](https://community.datagrok.ai/) to gather feedback
+Additionally, we use manual tests, automatic tests, monitoring and logging
+systems, and our [community](https://community.datagrok.ai/) to gather feedback
 and identify issues.
 
 Users can report an issue directly in one of our issue
 tracking systems. We use [JIRA](https://reddata.atlassian.net/) for internal
-issues, integrated with BitBucket, and  [GitHub
+issues, integrated with BitBucket, and [GitHub
 Tracker](https://github.com/datagrok-ai/public/issues) for all externally
 reported issues. We recommend reporting issues in JIRA if you have access to it,
 but if you don't, use GitHub Tracker.
