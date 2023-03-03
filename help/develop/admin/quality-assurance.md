@@ -25,7 +25,7 @@ integrate with dependencies and interactions they bring.
 ## Continuous integration and deployment system
 
 To ensure quick and reliable code delivery, we apply the
-[CI/CD flow](../advanced/ci-flow.md)
+[CI/CD flow](../admin/releases/ci-flow.mdx)
 using the following tools:
 
 * We use Git as a VCS, and we follow the
