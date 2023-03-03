@@ -4,6 +4,7 @@ import {GridColumn, Paint} from 'datagrok-api/dg';
 import {fitSeries, getChartData, getChartBounds, getFittedCurve} from './fit-data';
 import {fitResultProperties} from "@datagrok-libraries/statistics/src/parameter-estimation/fit-curve";
 import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
+import {convertXMLToIFitChartData} from './fit-parser';
 import wu from "wu";
 
 interface ITransform {
@@ -60,7 +61,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const screenBounds = new DG.Rect(x, y, w, h).inflate(-6, -6);
     const [dataBox, xAxisBox, yAxisBox] = layoutChart(screenBounds);
 
-    const data = getChartData(gridCell);
+    const data = gridCell.cell.column.getTag('.fitChartFormat') === '3dx' ? convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
     const dataBounds = getChartBounds(data);
     const transform = Transform.linear(dataBounds, dataBox);
 
