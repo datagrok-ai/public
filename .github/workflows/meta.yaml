@@ -21,6 +21,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 1
+          token: ${{ secrets.WRITE_TOKEN }}
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
@@ -65,7 +66,7 @@ jobs:
                   repository=$(jq '. | select( has("repository") == true ).repository' "${DIR}/package.json")
                   category=$(jq -r '. | select( has("category") == true ).category' "${DIR}/package.json")
                   grok_args=(add --package "${name}" --description "${description}" --ver "${version}" --category "${category}" --repository "${repository}")
-                  dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"          
+                  dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
                   deps=''
                   if [ ! -z "$(jq  '. | select( has("datagrok-api") == true )' <<< "$dependencies")" ]; then
                     deps+="datagrok-api:$(jq -r '."datagrok-api"' <<<$dependencies) "
