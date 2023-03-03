@@ -593,14 +593,14 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
         const progressBar = DG.TaskBarProgressIndicator.create(`Activity cliffs running...`);
         await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, 'Tanimoto',
           methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
-          createTooltipElement, createPropPanelElement, null, options);
+          createTooltipElement, createPropPanelElement, undefined, options);
         progressBar.close();
       })
       .show();
   } else {
     await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, 'Tanimoto',
       methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
-      createTooltipElement, createPropPanelElement, null, options);
+      createTooltipElement, createPropPanelElement, undefined, options);
   }
 }
 
