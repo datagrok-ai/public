@@ -13,6 +13,9 @@ import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import Sketcher = DG.chem.Sketcher;
 import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {IUMAPOptions, ITSNEOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
+import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 import {elementsTable} from './constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
@@ -365,6 +368,21 @@ export function diversitySearchTopMenu(): void {
   (grok.shell.v as DG.TableView).addViewer('DiversitySearchViewer');
 }
 
+
+//name: ChemSpaceEditor
+//tags: editor
+//input: funccall call
+export function ChemSpaceEditor(call: DG.FuncCall) {
+  const funcEditor = new SequenceSpaceFunctionEditor(DG.SEMTYPE.MOLECULE);
+  ui.dialog({title: 'Chemical space'})
+    .add(funcEditor.paramsUI)
+    .onOK(async () => {      
+      call.func.prepare(funcEditor.funcParams).call(true);
+    })
+    .show();
+}
+
+
 //top-menu: Chem | Analyze Structure | Chemical Space...
 //name: Chem Space
 //input: dataframe table
@@ -372,9 +390,10 @@ export function diversitySearchTopMenu(): void {
 //input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: bool plotEmbeddings = true
+//input: object options {optional: true}
+//editor: Chem:ChemSpaceEditor
 export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: string,
-  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean): Promise<DG.Viewer | undefined> {
-
+  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean, options?: IUMAPOptions | ITSNEOptions): Promise<DG.Viewer | undefined> {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
@@ -390,8 +409,8 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     methodName: methodName,
     similarityMetric: similarityMetric,
     embedAxesNames: [embedColsNames[0], embedColsNames[1]],
+    options: options
   };
-
   const chemSpaceRes = await chemSpace(chemSpaceParams);
   const embeddings = chemSpaceRes.coordinates;
 
@@ -414,9 +433,10 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
 //input: string similarityMetric
 //input: string xAxis
 //input: string yAxis
+//input: object options {optional: true}
 //output: object result
 export async function getChemSpaceEmbeddings(col: DG.Column, methodName: string,
-  similarityMetric: string = 'Tanimoto', xAxis: string, yAxis: string): Promise<ISequenceSpaceResult> {
+  similarityMetric: string = 'Tanimoto', xAxis: string, yAxis: string, options?: any): Promise<ISequenceSpaceResult> {
   //need to create dataframe to add fingerprints column
   if (!col.dataFrame) {
     const dfForFp = DG.DataFrame.create(col.length);
@@ -427,6 +447,7 @@ export async function getChemSpaceEmbeddings(col: DG.Column, methodName: string,
     methodName: methodName,
     similarityMetric: similarityMetric,
     embedAxesNames: [xAxis, yAxis],
+    options: options
   };
   const chemSpaceRes = await chemSpace(chemSpaceParams);
   return chemSpaceRes;
@@ -530,6 +551,19 @@ export function groupAnalysisMenu(): void {
   }
 }
 
+//name: ActivityCliffsEditor
+//tags: editor
+//input: funccall call
+export function ActivityCliffsEditor(call: DG.FuncCall) {
+  const funcEditor = new ActivityCliffsFunctionEditor(DG.SEMTYPE.MOLECULE);
+  ui.dialog({title: 'Activity cliffs'})
+    .add(funcEditor.paramsUI)
+    .onOK(async () => {      
+      call.func.prepare(funcEditor.funcParams).call(true);
+    })
+    .show();
+}
+
 //top-menu: Chem | Analyze SAR | Activity Cliffs...
 //name: Activity Cliffs
 //description: detect activity cliffs
@@ -538,8 +572,10 @@ export function groupAnalysisMenu(): void {
 //input: column activities
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE"] }
+//input: object options {optional: true}
+//editor: Chem:ActivityCliffsEditor
 export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
-  similarity: number, methodName: string) {
+  similarity: number, methodName: string, options?: IUMAPOptions | ITSNEOptions) {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
@@ -556,14 +592,14 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
         const progressBar = DG.TaskBarProgressIndicator.create(`Activity cliffs running...`);
         await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, 'Tanimoto',
           methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
-          createTooltipElement, createPropPanelElement);
+          createTooltipElement, createPropPanelElement, null, options);
         progressBar.close();
       })
       .show();
   } else {
     await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, 'Tanimoto',
       methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
-      createTooltipElement, createPropPanelElement);
+      createTooltipElement, createPropPanelElement, null, options);
   }
 }
 
