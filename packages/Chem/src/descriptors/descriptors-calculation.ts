@@ -1,34 +1,32 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { getDescriptorsPy } from '../scripts-api';
-import {isMolBlock} from 'datagrok-api/dg';
+import {getDescriptorsPy} from '../scripts-api';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
-import { descriptors } from './const';
+import { _package } from '../package';
 
 const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
+let descriptors: any;
 
 /** Adds descriptors to table */
 export async function addDescriptors(smilesCol: DG.Column, viewTable: DG.DataFrame): Promise<void> {
   openDescriptorsDialog(await getSelected(), async (selected: any) => {
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
     selected = await getSelected();
-    let table: any;
-    const pi = DG.TaskBarProgressIndicator.create();
-    pi.update(0, 'Calculating descriptors..: 0% completed');
-    await getDescriptorsPy(
-      smilesCol.name, DG.DataFrame.fromColumns([smilesCol]), 'selected',
-      DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selected)]),
-    ).then((res) => {
-      table = res;
-      pi.update(70, 'Calculating descriptors..: 70% completed');
-    });
-    pi.update(90, 'Adding results..: 90% completed');
-    addResultColumns(table, viewTable);
-    pi.update(100, 'Descriptors are calculated');
-    pi.close();
+    const pi = DG.TaskBarProgressIndicator.create('Calculating descriptors...');
+    try {
+      const table = await getDescriptorsPy(
+        smilesCol.name, DG.DataFrame.fromColumns([smilesCol]), 'selected',
+        DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selected)]),
+      );
+      addResultColumns(table, viewTable);
+    } catch (e: any) {
+      grok.shell.error(e);
+    } finally {
+      pi.close();
+    }
   });
 }
 
@@ -40,7 +38,7 @@ export function getDescriptorsSingle(smiles: string): DG.Widget {
   } catch (e) {
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
-  const molecule = isMolBlock(smiles) ? `\"${smiles}\"` : smiles;
+  const molecule = DG.chem.isMolBlock(smiles) ? `\"${smiles}\"` : smiles;
   const widget = new DG.Widget(ui.div());
   const result = ui.div();
   const selectButton = ui.bigButton('SELECT', async () => {
@@ -135,6 +133,9 @@ export function getDescriptorsApp(): void {
 
 //description: Open descriptors selection dialog
 function openDescriptorsDialog(selected: any, onOK: any): void {
+  _package.files.readAsText('constants/descriptors_const.json').then((res) => {
+    descriptors = JSON.parse(res);
+  })
   const tree = ui.tree();
   tree.root.style.maxHeight = '400px';
 

@@ -1,4 +1,4 @@
-export const descriptors: any = {
+{
     "EState.EState": {
         "version": "1.0.0",
         "name": "EState", 
@@ -184,7 +184,7 @@ export const descriptors: any = {
         "descriptors": [
             {
                 "name": "BalabanJ", 
-                "description": "Balaban\'s J value", 
+                "description": "Balaban\\'s J value", 
                 "type": "double", 
                 "tags": ["2D"]
             }, 
@@ -305,7 +305,7 @@ export const descriptors: any = {
         "descriptors": [
             {
                 "name": "LabuteASA", 
-                "description": "Labute\'s Approximate Surface Area (ASA from MOE)",
+                "description": "Labute\\'s Approximate Surface Area (ASA from MOE)",
                 "type": "double", 
                 "tags": ["2D"]
             }, 
@@ -727,7 +727,7 @@ export const descriptors: any = {
     "Crippen": {
         "version": "1.2.0", 
         "name": "Crippen", 
-        "description": "Atom-based calculation of LogP and MR using Crippen\'s approach", 
+        "description": "Atom-based calculation of LogP and MR using Crippen\\'s approach", 
         "descriptors": [
             {
                 "name": "MolLogP", 
@@ -1259,7 +1259,7 @@ export const descriptors: any = {
     "Descriptors3D": {
         "version": "1.0.0", 
         "name": "Descriptors 3D", 
-        "description": "Descriptors derived from a molecule\'s 3D structure", "descriptors": [
+        "description": "Descriptors derived from a molecule\\'s 3D structure", "descriptors": [
             {
                 "name": "PMI1", 
                 "description": "First (smallest) principal moment of inertia", "type": "double", 
