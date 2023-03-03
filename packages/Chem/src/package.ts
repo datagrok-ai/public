@@ -35,6 +35,7 @@ import {toxicityWidget} from './widgets/toxicity';
 import {addInchiKeys, addInchis} from './panels/inchi';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import {checkForStructuralAlerts} from './panels/structural-alerts';
+import { addDescriptors } from './descriptors/descriptors-calculation';
 
 //utils imports
 import { ScaffoldTreeViewer} from "./widgets/scaffold-tree";
@@ -1006,3 +1007,4 @@ export function removeDuplicates(molecules: string[], molecule: string): string[
   mol1.delete();
   return filteredMolecules;
 }
+
