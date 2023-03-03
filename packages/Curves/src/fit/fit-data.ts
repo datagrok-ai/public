@@ -34,6 +34,9 @@ export const FIT_SEM_TYPE = 'fit';
 export const FIT_CELL_TYPE = 'fit';
 export const TAG_FIT = '.fit';
 
+export const CONFIDENCE_INTERVAL_STROKE_COLOR = 'rgba(255,191,63,0.9)';
+export const CONFIDENCE_INTERVAL_FILL_COLOR = 'rgba(255,238,204,0.3)';
+
 export type FitMarkerType = 'circle' | 'triangle up' | 'triangle down' | 'cross';
 
 /** A point in the fit series. Only x and y are required. Can override some fields defined in IFitSeriesOptions. */
@@ -55,6 +58,7 @@ export interface IFitSeriesOptions {
   parameters?: number[];         // auto-fitting when not defined
   pointColor?: string;
   fitLineColor?: string;
+  confidenceIntervalColor?: string;
   showFitLine?: boolean;
   showPoints?: boolean;
   showCurveConfidenceInterval?: boolean;   // show ribbon
@@ -253,6 +257,13 @@ export function getFittedCurve(series: IFitSeries): (x: number) => number {
     return (x) => sigmoid(series.parameters!, x);
   else
     return fitSeries(series).fittedCurve;
+}
+
+/** Returns confidence interval functions */
+export function getConfidenceIntrevals(series: IFitSeries): {top: (x: number) => number, bottom: (x: number) => number} {
+  const confTop = fitSeries(series).confidenceTop;
+  const confBottom = fitSeries(series).confidenceBottom;
+  return {top: confTop, bottom: confBottom};
 }
 
 /** Constructs {@link IFitChartData} from the grid cell, taking into account
