@@ -84,10 +84,12 @@ a {
     background-color: white;
 }
 .menu__link {
-    color: var(--link-color); 
+    color: var(--link-color);
+    font-weight: 400;
 }
 .menu__link:hover {
     color: var(--link-color); 
+    background: var(--ifm-menu-color-background-hover)!important;
 }
 .menu__link--active {
     color: var(--text-color); 
@@ -95,7 +97,7 @@ a {
 }
 .menu__link--active:hover {
     color: var(--text-color); 
-    background: var(--ifm-menu-color-background-hover);
+    background: var(--ifm-menu-color-background-hover)!important;
 }
 a.menu__link.menu__link--sublist.menu__link--sublist-caret.menu__link--active {
     background: var(--ifm-menu-color-background-hover)!important;
