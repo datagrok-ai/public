@@ -125,7 +125,7 @@ export async function initChemAutostart(): Promise<void> { }
 //output: widget
 export async function chemTooltip(col: DG.Column): Promise<DG.Viewer> {
   const tv = grok.shell.tv;
-  let viewer = new ChemDiversityViewer(true)//await tv.dataFrame.plot.fromType('diversitySearchViewer', {
+  let viewer = new ChemDiversityViewer(true, col)//await tv.dataFrame.plot.fromType('diversitySearchViewer', {
     viewer.limit = 9;
     viewer.dataFrame = tv.dataFrame;
 
