@@ -143,8 +143,10 @@ jobs:
           if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "simpkpd" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "dendrogram" ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "apitests" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"simpkpd"* ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"apitests"* ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"dendrogram"* ]]; then
             echo "Add Scripting as dependency for package ${{ matrix.package }}"
             profiles+=' --profile scripting'
@@ -237,7 +239,7 @@ jobs:
           retries=5
           until grok publish ${HOST}; do
             exit=$?
-            docker logs --tail 100 $(docker ps -q -f ancestor=datagrok/datagrok:bleeding-edge) 
+            docker logs --tail 100 $(docker ps -q -f ancestor=datagrok/datagrok:bleeding-edge)
             wait=$((2 ** count))
             count=$((count + 1))
             if [ "$count" -lt "$retries" ]; then

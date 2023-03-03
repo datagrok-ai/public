@@ -1,20 +1,26 @@
 package grok_connect.providers;
 
-import grok_connect.connectors_info.DataConnection;
-import grok_connect.connectors_info.DataSource;
-import grok_connect.connectors_info.DbCredentials;
+import grok_connect.connectors_info.*;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import grok_connect.utils.ProviderManager;
+import net.snowflake.client.jdbc.SnowflakePreparedStatement;
+import net.snowflake.client.jdbc.SnowflakeStatement;
 import serialization.Types;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class SnowflakeDataProvider extends JdbcDataProvider{
     private static final boolean CAN_BROWSE_SCHEMA = true;
@@ -40,6 +46,8 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
             properties.put(DbCredentials.DB, conn.getDb());
             properties.put(DbCredentials.WAREHOUSE, conn.get(DbCredentials.WAREHOUSE));
             properties.put(DbCredentials.ACCOUNT, buildAccount(conn));
+            String schema = conn.get(DbCredentials.SCHEMA);
+            properties.put(DbCredentials.SCHEMA, schema == null ? DEFAULT_SCHEMA : schema);
         }
         return properties;
     }
@@ -60,11 +68,50 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
 
     @Override
     public String getSchemaSql(String db, String schema, String table) {
-        schema = schema != null ? schema : DEFAULT_SCHEMA;
-        String query = "SELECT table_schema, table_name, column_name, data_type "
-                + "FROM information_schema.columns "
-                + "WHERE table_schema = '%s' ORDER BY table_name";
-        return String.format(query, schema);
+        return String.format("SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
+                + "c.data_type as data_type, "
+                + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
+                + "JOIN information_schema.tables t ON t.table_name = c.table_name WHERE c.table_schema = '%s' %s"
+                , schema, table == null ? "" : String.format("AND c.table_name = '%s'", table));
+    }
+
+    @Override
+    protected boolean isInteger(int type, String typeName, int precision, int scale) {
+        return typeName.equals("NUMBER") && precision < 10 && scale == 0;
+    }
+
+    @Override
+    protected boolean isBigInt(int type, String typeName, int precision, int scale) {
+        return typeName.equals("NUMBER") && precision >= 10 && scale == 0;
+    }
+
+    @Override
+    protected boolean isFloat(int type, String typeName, int precision, int scale) {
+        return typeName.equals("DOUBLE") || type == java.sql.Types.DOUBLE;
+    }
+
+    @Override
+    protected String getRegexQuery(String columnName, String regexExpression) {
+        return String.format("%s REGEXP '%s'", columnName, regexExpression);
+    }
+
+    @Override
+    protected void appendQueryParam(DataQuery dataQuery, String paramName, StringBuilder queryBuffer) {
+        FuncParam param = dataQuery.getParam(paramName);
+        if (param.propertyType.equals("list")) {
+            queryBuffer.append("SELECT TRIM(VALUE) FROM TABLE(SPLIT_TO_TABLE(?, ','))");
+        } else {
+            queryBuffer.append("?");
+        }
+    }
+
+    @Override
+    protected int setArrayParamValue(PreparedStatement statement, int n, FuncParam param) throws SQLException {
+        @SuppressWarnings("unchecked")
+        List<String> list = ((ArrayList<String>) param.value);
+        String values = String.join(",", list);
+        statement.setObject(n, values);
+        return 0;
     }
 
     private void init() {

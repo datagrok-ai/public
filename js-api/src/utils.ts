@@ -75,6 +75,21 @@ CanvasRenderingContext2D.prototype.polygon = function (pa: Point[]) {
 
 export namespace Paint {
 
+  export function coordinateGrid(g: CanvasRenderingContext2D, worldBounds: Rect, xAxis?: Rect, yAxis?: Rect, viewport?: Rect) {
+    if (xAxis != null)
+      horzAxis(g, worldBounds.minX, worldBounds.maxX, xAxis.x, xAxis.y, xAxis.width, xAxis.height);
+    if (yAxis != null)
+      vertAxis(g, worldBounds.minY, worldBounds.maxY, yAxis.x, yAxis.y, yAxis.width, yAxis.height);
+  }
+
+  export function horzAxis(g: CanvasRenderingContext2D, min: number, max: number, x: number, y: number, w: number, h: number) {
+    api.grok_Paint_HorzAxis(g, min, max, x, y, w, h);
+  }
+
+  export function vertAxis(g: CanvasRenderingContext2D, min: number, max: number, x: number, y: number, w: number, h: number) {
+    api.grok_Paint_VertAxis(g, min, max, x, y, w, h);
+  }
+
   export function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): CanvasRenderingContext2D {
     if (w < 2 * r) r = w / 2;
     if (h < 2 * r) r = h / 2;

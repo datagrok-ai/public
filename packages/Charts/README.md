@@ -12,9 +12,9 @@ This viewer displays the flow of events over time. `Timelines` is often used in 
 in particular, for clinical data visualization (see a usage example in the
 [Clinical Case](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase#timelines) application).
 
-![](./img/timelines.gif)
+![timelines](./img/timelines.gif)
 
-### Properties
+### Timelines Properties
 
 ```js
 grok.shell.v.addViewer(DG.VIEWER.TIMELINES, {
@@ -88,7 +88,7 @@ categories.
 Radar charts are used on multivariate data to plot groups of values over several common variables.
 Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/beer.csv>
 
-![](./img/radar.gif)
+![radar](./img/radar.gif)
 
 ## Chord
 
@@ -97,7 +97,7 @@ The `Chord` viewer is used to visualize weighted relationships between several e
 Status: `experimental`.
 Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/energy_uk.csv>
 
-![](./img/chord.gif)
+![chord](./img/chord.gif)
 
 The [D3.js](https://d3js.org/) version of the chart was used instead of
 [ECharts](https://echarts.apache.org/en/index.html) version due to better
@@ -110,7 +110,7 @@ The `Sankey` viewer is used to depict a flow from one set of values to another.
 Status: `experimental`.
 Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/energy_uk.csv>
 
-![](./img/sankey.gif)
+![sankey](./img/sankey.gif)
 
 The [D3.js](https://d3js.org/) version of the chart was used instead of
 [ECharts](https://echarts.apache.org/en/index.html) version due to better
@@ -124,7 +124,7 @@ The `Globe` viewer is used to represent data visualization layers on a
 Status: `experimental`.
 Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/covid-19-cases.csv>
 
-![](./img/globe.gif)
+![globe](./img/globe.gif)
 
 ## Group analysis
 
@@ -133,7 +133,7 @@ The `Group analysis` viewer is used to group data by different options.
 Status: `experimental`.
 Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
 
-![](./img/group-analysis.gif)
+![analysis](./img/group-analysis.gif)
 
 ## Sunburst
 
@@ -142,7 +142,7 @@ The `Sunburst` viewer is used to display hierarchical data.
 Status: `experimental`.
 Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
 
-![](./img/sunburst.gif)
+![sunburst](./img/sunburst.gif)
 
 ## Surface plot
 
@@ -152,7 +152,7 @@ as a mesh surface.
 Status: `experimental`.
 Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
 
-![](./img/surface-plot.gif)
+![surface](./img/surface-plot.gif)
 
 <!-- ## TreeMap
 
@@ -185,9 +185,9 @@ etc.
 
 Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
 
-![](./img/tree-viewer.gif)
+![tree](./img/tree-viewer.gif)
 
-### Properties
+### TreeViewer Properties
 
 ```js
 {
@@ -209,7 +209,7 @@ The `WordCloud` viewer is used to visualize unstructured text data.
 Status: `experimental`.
 Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
 
-![](./img/word-cloud.gif)
+![word](./img/word-cloud.gif)
 
 ## Common properties
 
