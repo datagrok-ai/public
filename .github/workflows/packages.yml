@@ -189,7 +189,7 @@ jobs:
         if: ${{ matrix.build == 'true' }}
         id: build
         run: |
-          if [[ jq -r '. | select( has("scripts") == true ).scripts | select( has("build") == true ).build' "package.json" == "webpack" ]]; then
+          if [[ $(jq -r '. | select( has("scripts") == true ).scripts | select( has("build") == true ).build' "package.json") == "webpack" ]]; then
             npm run build -- --mode=production
           else
             npm run build
