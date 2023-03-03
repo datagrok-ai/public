@@ -1,10 +1,10 @@
-""" export.py  March 02, 2023.   
+""" export.py  February 28, 2023.
+    OLD VERSION.   
     This script exports C/C++-functions to Datagrok package. 
 """
 
 import os
 import json
-import shutil
 
 from exportConstants import *
 
@@ -13,7 +13,7 @@ def getSettings(nameOfFile):
     """
     Return dictionary with settings of C/C++-functions export from json-file with settings.
     """
-    with open(nameOfFile, READ_MODE) as file:
+    with open(nameOfFile, 'r') as file:
          return json.load(file)
 
 class Function:
@@ -58,11 +58,11 @@ class Function:
     def processAnnotationLine(self, line):
         """ Process one line of annotation before exported C/C++-function.
         """
-        if line.startswith(ANNOT_INPUT):
+        if line.startswith('//input:'):
             self.processInputLine(line) 
-        elif line.startswith(ANNOT_OUTPUT):
+        elif line.startswith('//output:'):
             self.processOutputLine(line)
-        elif line.startswith(ANNOT_NAME):
+        elif line.startswith('//name:'):
             self.processNameLine(line)        
         else:
             self.annotation.append(line)
@@ -78,7 +78,7 @@ class Function:
     def processOutputLine(self, line):
         """ Process line containing '//output:'.
         """
-        if ANNOT_NEW in line:
+        if 'new' in line:
             self.processOutputLineWithNew(line)
         else:
             self.processOutputLineWithoutNew(line)        
@@ -97,23 +97,23 @@ class Function:
         self.prototype += argName + ', '
         self.prototypeForWebWorker += argName + ', '
 
-        if argType == ANNOT_DATAFRAME:
+        if argType == 'dataframe':
             return
 
         self.callArgs += argName + ', '
 
         currentType = self.typeList[self.cFuncTypeIndex]        
 
-        if argType == ANNOT_COLUMN:
-            self.arguments[argName] = {TYPE: currentType + COLUMN}
+        if argType == 'column':
+            self.arguments[argName] = {'type': currentType + 'Column'}
             self.cFuncTypeIndex += 2
 
-        elif argType == ANNOT_COLUMN_LIST:
-            self.arguments[argName] = {TYPE: currentType + COLUMNS}
+        elif argType == 'column_list':
+            self.arguments[argName] = {'type': currentType + 'Columns'}
             self.cFuncTypeIndex += 3
 
         else:
-            self.arguments[argName] = {TYPE: NUM}
+            self.arguments[argName] = {'type': 'num'}
             self.cFuncTypeIndex += 1
 
     def processOutputLineWithNew(self, line):
@@ -125,7 +125,7 @@ class Function:
         # get type and name of the argument
         argType, ignore, rest = rest.partition(' ')
 
-        if argType == ANNOT_DATAFRAME:
+        if argType == 'dataframe':
             return
 
         # extract name & specification
@@ -135,57 +135,57 @@ class Function:
         self.paramsWithNewSpecifier[argName] = argType
 
         # extract the main data
-        specification = specification.lstrip(f'[{ANNOT_NEW}(').rstrip(')]')        
+        specification = specification.lstrip('[new(').rstrip(')]')        
     
         currentType = self.typeList[self.cFuncTypeIndex]
         
-        if argType == ANNOT_COLUMN:
+        if argType == 'column':
             specification = specification.strip()
 
             ref = None
             value = None
 
-            if ANNOT_DOT not in specification:
+            if '.' not in specification:
                 ref = specification
-                value = DATA
+                value = 'data'
             else:
-                ref, ignore, value = specification.partition(ANNOT_DOT)
+                ref, ignore, value = specification.partition('.')
 
-            self.arguments[argName] = {TYPE: NEW + currentType.capitalize() + COLUMN}
-            self.arguments[argName][NUM_OF_ROWS] = {REF: ref, VALUE: sizesMap[value]} 
+            self.arguments[argName] = {'type': 'new' + currentType.capitalize() + 'Column'}
+            self.arguments[argName]['numOfRows'] = {'ref': ref, 'value': sizesMap[value]} 
             self.cFuncTypeIndex += 2
 
-        elif argType == ANNOT_COLUMN_LIST:
+        elif argType == 'column_list':
             
             first, ignore, last = specification.partition(',')
             first = first.strip()
             last = last.strip()          
 
-            self.arguments[argName] = {TYPE: NEW + currentType.capitalize() + COLUMNS}
+            self.arguments[argName] = {'type': 'new' + currentType.capitalize() + 'Columns'}
 
             ref = None
             value = None
 
-            if ANNOT_DOT not in first:
+            if '.' not in first:
                 ref = first
-                value = DATA
+                value = 'data'
             else:
-                ref, ignore, value = first.partition(ANNOT_DOT)
+                ref, ignore, value = first.partition('.')
 
-            self.arguments[argName][NUM_OF_ROWS] = {REF: ref, VALUE: sizesMap[value]}
+            self.arguments[argName]['numOfRows'] = {'ref': ref, 'value': sizesMap[value]}
 
-            if ANNOT_DOT not in last:
+            if '.' not in last:
                 ref = last
-                value = DATA
+                value = 'data'
             else:
-                ref, ignore, value = last.partition(ANNOT_DOT)
+                ref, ignore, value = last.partition('.')
 
-            self.arguments[argName][NUM_OF_COLUMNS] = {REF: ref, VALUE: sizesMap[value]}
+            self.arguments[argName]['numOfColumns'] = {'ref': ref, 'value': sizesMap[value]}
 
             self.cFuncTypeIndex += 3
 
         else:
-            self.arguments[argName] = {TYPE: NUM}
+            self.arguments[argName] = {'type': 'num'}
             self.cFuncTypeIndex += 1
 
     def processOutputLineWithoutNew(self, line):
@@ -201,25 +201,25 @@ class Function:
 
         outputSource = outputSource.strip().strip('[]')
         
-        if outputType == ANNOT_OBJECTS:
-            self.output[TYPE] = outputType
+        if outputType == 'objects':
+            self.output['type'] = outputType
             args = outputSource.split(',')
             sourceString = ''
 
             for arg in args:
                 sourceString += f"'{arg.strip()}', "           
 
-            self.output[SOURCE] = f"[{sourceString.rstrip(', ')}]"
+            self.output['source'] = f"[{sourceString.rstrip(', ')}]"
 
             return
 
-        elif outputType == ANNOT_DATAFRAME:
-            self.output[TYPE] = TABLE_FROM_COLUMNS
-            self.output[SOURCE] = f'{outputSource}'
+        elif outputType == 'dataframe':
+            self.output['type'] = 'tableFromColumns'
+            self.output['source'] = f'{outputSource}'
 
         else:
-            self.output[TYPE] = f'{outputType}'
-            self.output[SOURCE] = f'{outputSource}'
+            self.output['type'] = f'{outputType}'
+            self.output['source'] = f'{outputSource}'
 
         stringToAnnotation, ignore1, ignore2 = line.partition('[')
         self.annotation.append(stringToAnnotation)
@@ -232,11 +232,11 @@ class Function:
                 raise Warning
             elif len(self.paramsWithNewSpecifier) == 1:
                 argName = list(self.paramsWithNewSpecifier.keys())[0]
-                self.output[TYPE] = self.paramsWithNewSpecifier[argName]
-                self.output[SOURCE] = argName
-                self.annotation.append(f'{ANNOT_OUTPUT} {self.output[TYPE]} {argName}')
+                self.output['type'] = self.paramsWithNewSpecifier[argName]
+                self.output['source'] = argName
+                self.annotation.append(f'//output: {self.output["type"]} {argName}')
             else:
-                self.output[TYPE] = OBJECTS
+                self.output['type'] = 'objects'
                 sourceString = '['
 
                 for name in self.paramsWithNewSpecifier.keys():
@@ -244,7 +244,7 @@ class Function:
 
                 sourceString = sourceString.rstrip(', ')
                 sourceString += ']'
-                self.output[SOURCE] = sourceString
+                self.output['source'] = sourceString
 
     def getSpecification(self):
         return self.specification
@@ -253,13 +253,13 @@ def getFunctionsFromFile(nameOfFile):
     """
     Parse C/C++-file and return specification of exported functions.
     """    
-    with open(nameOfFile, READ_MODE) as file:
+    with open(nameOfFile, 'r') as file:
         listOfLines = file.readlines()
         dictionaryOfFunctions = {}     
 
         for lineIndex in range(len(listOfLines)):
             # the next line is function's prototype
-            if listOfLines[lineIndex].startswith(EM_MACROS):  
+            if listOfLines[lineIndex].startswith('EMSCRIPTEN_KEEPALIVE'):  
                 
                 # 1. Analyze function description
                 j = lineIndex + 1
@@ -303,8 +303,8 @@ def getFunctionsFromListOfFiles(settings):
     """
     functions = {} # dictionary: key - name of file; value - functions data  
     
-    for name in settings[SOURCE]:
-        functions[name] = getFunctionsFromFile(settings[FOLDER] + '/' + name)
+    for name in settings["source"]:
+        functions[name] = getFunctionsFromFile(settings["folder"] + '/' + name)
 
     return functions
 
@@ -312,7 +312,7 @@ def saveFunctionsDataToFile(functionsData, nameOfFile):
     """
     Save C-functions descriptors to json-file.
     """
-    with open(nameOfFile, WRITE_MODE) as file:
+    with open(nameOfFile, 'w') as file:
             json.dump(functionsData, file)
 
 def getCommand(settings, functionsData):
@@ -322,17 +322,17 @@ def getCommand(settings, functionsData):
     command = 'em++' # Emscripten command, starts with "emcc"
 
     # set optimization mode
-    command += ' ' + settings[OPTIMIZATION_MODE]
+    command += ' ' + settings['optimizationMode']
 
     # add names of C-files
-    for nameOfFile in settings[SOURCE]:
-        command += f' {settings[FOLDER]}/{nameOfFile}'        
+    for nameOfFile in settings['source']:
+        command += f' {settings["folder"]}/{nameOfFile}'        
     
     # add name of JS-library that is created by Emscripten
-    command += f' -o {settings[FOLDER]}/{settings[NAME]}.js'     
+    command += f' -o {settings["folder"]}/{settings["name"]}.js'     
 
     # specify memory restrictions
-    command += ' -s TOTAL_MEMORY=' + settings[TOTAL_MEMORY]
+    command += ' -s TOTAL_MEMORY=' + settings['totalMemory']
 
     # set that wasm-file must be created
     command += ' -s WASM=1'
@@ -344,7 +344,7 @@ def getCommand(settings, functionsData):
     command += ' -s MODULARIZE=1'
 
     # set export name
-    command += ' -s EXPORT_NAME="export' + settings[NAME] + '"'
+    command += ' -s EXPORT_NAME="export' + settings['name'] + '"'
 
     # set a list of exported functions
     command += ' -s EXPORTED_FUNCTIONS=['
@@ -369,7 +369,7 @@ def saveCommand(command, nameOfFile):
     """
     Save Emscripten command to txt-file.
     """
-    with open(nameOfFile, WRITE_MODE) as file:
+    with open(nameOfFile, "w") as file:
         file.write(command)
 
 def createJSwrapperForWasmInWebWorkerRun(settings):
@@ -433,22 +433,23 @@ def updatePackageJsonFile(settings):
     packageData = None 
 
     # get package data from package.json 
-    with open(settings[PACKAGE_JSON_FILE], READ_MODE) as file:
+    with open(settings['packageJsonFile'], 'r') as file:
         packageData = json.load(file)
 
     # create full name of JS-lib file that is added to package.json
-    fullNameOfLibFile = f"{settings[FOLDER].lstrip('../')}/{settings[NAME]}.js"
+    fullNameOfLibFile = f"{settings['folder'].lstrip('../')}/{settings['name']}.js"
 
     # add dependence to package data
-    if PJSN_SOURCES in packageData.keys():
-        # add JS-file if "source" does not contain it yet
-        if fullNameOfLibFile not in packageData[PJSN_SOURCES]: 
-            packageData[PJSN_SOURCES].append(fullNameOfLibFile)
+    if "sources" in packageData.keys():
+
+        if fullNameOfLibFile not in packageData["sources"]: # add JS-file if "source" does not contain it yet
+            packageData["sources"].append(fullNameOfLibFile)
+
     else:
-        packageData[PJSN_SOURCES] = [ fullNameOfLibFile ]
+        packageData["sources"] = [ fullNameOfLibFile ]
 
     # update package.json
-    with open(settings[PACKAGE_JSON_FILE], WRITE_MODE) as file:
+    with open(settings["packageJsonFile"], 'w') as file:
         json.dump(packageData, file)
 
 def completeJsWasmfile(settings, functionsData):
@@ -456,7 +457,7 @@ def completeJsWasmfile(settings, functionsData):
     Add exported C/C++-function specifications and the corresponding init-function
     to JS-file created by Emscripten.    
     """
-    with open(f'{settings[FOLDER]}/{settings[NAME]}.js', APPEND_MODE) as file:
+    with open(f'{settings["folder"]}/{settings["name"]}.js', 'a') as file:
         put = file.write
         put('\n\n')
 
@@ -466,18 +467,18 @@ def completeJsWasmfile(settings, functionsData):
             for funcName in functionsData[cppFile].keys():
                 exportedFuncsNames.append(funcName)
                 put(f'var {funcName} = ' + '{\n')
-                arguments = functionsData[cppFile][funcName][ARGUMENTS]
-                put(f'{SPACE}{ARGUMENTS}: ' + '{\n')
+                arguments = functionsData[cppFile][funcName]['arguments']
+                put('  arguments: {\n')
                 argCommasCount = len(arguments.keys()) - 1
 
                 for arg in arguments.keys():
-                    put(f'{SUBSPACE}{arg}: ' + '{\n')
+                    put(f'    {arg}: ' + '{\n')
                     attrCommasCount = len(arguments[arg].keys()) - 1
 
                     for attribute in arguments[arg].keys():                        
 
-                        if attribute == TYPE:
-                            put(f"{SUBSUBSPACE}{attribute}: '{arguments[arg][attribute]}'")
+                        if attribute == 'type':
+                            put(f"      {attribute}: '{arguments[arg][attribute]}'")
 
                             if attrCommasCount > 0:
                                 put(',')
@@ -486,12 +487,12 @@ def completeJsWasmfile(settings, functionsData):
                             put('\n')
 
                         else:
-                            put(f'{SUBSUBSPACE}{attribute}: ' + '{\n')
-                            ref = arguments[arg][attribute][REF]
-                            put(f"{SUBSUBSUBSPACE}{REF}: '{ref}',\n")
-                            value = arguments[arg][attribute][VALUE]
-                            put(f"{SUBSUBSUBSPACE}{VALUE}: '{value}'\n")
-                            put(SUBSUBSPACE + '}')
+                            put(f'      {attribute}: ' + '{\n')
+                            ref = arguments[arg][attribute]['ref']
+                            put('        ref: ' + f"'{ref}',\n")
+                            value = arguments[arg][attribute]['value']
+                            put('        value: ' + f"'{value}'\n")
+                            put('      }')
 
                             if attrCommasCount > 0:
                                 put(',')
@@ -499,7 +500,7 @@ def completeJsWasmfile(settings, functionsData):
                                 
                             put('\n')
 
-                    put(SUBSPACE + '}')
+                    put('    }')
 
                     if argCommasCount > 0:
                         put(',')
@@ -507,34 +508,34 @@ def completeJsWasmfile(settings, functionsData):
 
                     put('\n')
 
-                put(SPACE + '},\n')
-                put(f'{SPACE}{OUTPUT}: ' + '{\n')
-                outputType = functionsData[cppFile][funcName][OUTPUT][TYPE]
-                put(f"{SUBSPACE}{TYPE}: '{outputType}',\n")
-                outputSource = functionsData[cppFile][funcName][OUTPUT][SOURCE]
-                put(f'{SUBSPACE}{SOURCE}: ')
+                put('  },\n')
+                put('  output: {\n')
+                outputType = functionsData[cppFile][funcName]['output']['type']
+                put(f"    type: '{outputType}',\n")
+                outputSource = functionsData[cppFile][funcName]['output']['source']
+                put('    source: ')
 
-                if outputType != OBJECTS:
+                if outputType != 'objects':
                     put(f"'{outputSource}'")
                 else:
                     put(f'{outputSource}')
                 
-                put(f'\n{SPACE}' + '}\n')
+                put('\n  }\n')
                 put('}; ' + f'// {funcName}\n\n')
 
         # add init-function
-        put(f'var {settings[NAME]} = undefined;\n\n')
-        put(f'async function init{settings[NAME]}() ' + '{\n')
-        put(f'{SPACE}if ({settings[NAME]} === undefined) ' + '{\n')
-        put(f'{SUBSPACE}console.log("Wasm not Loaded, Loading");\n')
-        put(f'{SUBSPACE}{settings[NAME]} = await export{settings[NAME]}();\n')
+        put(f'var {settings["name"]} = undefined;\n\n')
+        put(f'async function init{settings["name"]}() ' + '{\n')
+        put(f'  if ({settings["name"]} === undefined) ' + '{\n')
+        put(f'    console.log("Wasm not Loaded, Loading");\n')
+        put(f'    {settings["name"]} = await export{settings["name"]}();\n')
 
         for name in exportedFuncsNames:
-            put(f'{SUBSPACE}{settings[NAME]}.{name} = {name};\n')
+            put(f'    {settings["name"]}.{name} = {name};\n')
         
-        put(SPACE + '} else {\n')
-        put(f'{SUBSPACE}console.log("Wasm Loaded, Passing");\n')
-        put(SPACE + '}\n')
+        put('  } else {\n')
+        put('    console.log("Wasm Loaded, Passing");\n')
+        put('  }\n')
         put('}') 
         
 def addExportedFunctionsToPackageFile(settings, functionsData):
@@ -598,7 +599,7 @@ def addExportedFunctionsToPackageFile(settings, functionsData):
         # put init-function
         put('//tags: init\n')
         put('export async function init() {\n')
-        put(f'{SPACE}await init{settings[NAME]}();\n')
+        put(f'  await init{settings[NAME]}();\n')
         put('}\n\n')
 
         # put call of each exported C/C++-function
@@ -607,6 +608,7 @@ def addExportedFunctionsToPackageFile(settings, functionsData):
                 generateFuncsForMainStreamRun(put, funcName, functionsData[cppFileName][funcName])
                 generateFuncsForWebWorker(put, funcName, functionsData[cppFileName][funcName])
                 
+
 
 def main(nameOfSettingsFile="module.json"):
     """
@@ -617,9 +619,11 @@ def main(nameOfSettingsFile="module.json"):
         4) execute Emscripten command;
         5) create JS-wrapper for wasm-functions run in webworkers;
         6) create worker files;
-        7) complete JS-file created by Emscripten;     
-        8) append Datagrok package file with exported functions;
-        9) update the file package.json: add JS-file name created by Emscripten to 'sources'.
+        7) complete JS-file created by Emscripten;
+        
+
+        ) append Datagrok package file with exported functions;
+        ) update the file package.json: add JS-file name created by Emscripten to 'sources'.
     """
     try:
         # 1) load settings
@@ -652,11 +656,8 @@ def main(nameOfSettingsFile="module.json"):
         # 8) append Datagrok package file with exported functions
         addExportedFunctionsToPackageFile(settings, functionsData) 
 
-        # 9) update the file package.json
+        # ) update the file package.json
         updatePackageJsonFile(settings)
-
-        # 10)* delete of the __pycache__ folder, otherwise it must be done further manually 
-        shutil.rmtree('__pycache__')
 
     except OSError:
         print("OS ERROR: check paths and file names!")
