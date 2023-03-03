@@ -174,4 +174,64 @@ public class MsSqlObjectsMother {
                 FuncCallBuilder.fromQuery("SELECT CONVERT(VARCHAR(max), binary_data, 0) as binary_data, "
                         + "CONVERT(int, varbinary_data, 1) as varbinary_data FROM binary_types")), expected));
     }
+
+    public static Stream<Arguments> checkOutputDataFrame_numericTypes_ok() {
+        DataFrame expected1 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new BigIntColumn(new String[]{"9223372036854775807"}), "bigint_data")
+                .setColumn(new IntColumn(new Integer[]{2147483647}), "int_data")
+                .setColumn(new IntColumn(new Integer[]{32767}), "smallint_data")
+                .setColumn(new IntColumn(new Integer[]{123}), "tinyint_data")
+                .setColumn(new BoolColumn(new Boolean[]{true}), "bit_data")
+                .setColumn(new FloatColumn(new Float[]{123.22f}), "decimal_data")
+                .setColumn(new FloatColumn(new Float[]{12345.12000f}), "numeric_data")
+                .build();
+        FuncCall funcCall1 = FuncCallBuilder.fromQuery("SELECT * FROM numeric_types");
+        DataFrame expected2 = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new FloatColumn(new Float[]{-1.79E30f, 34636.34661f }), "float_data1")
+                .setColumn(new FloatColumn(new Float[]{Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY}), "float_data2")
+                .setColumn(new FloatColumn(new Float[]{124124.23555f, 0.0f}), "real_data")
+                .build();
+        FuncCall funcCall2 = FuncCallBuilder.fromQuery("SELECT * FROM float_types");
+        return Stream.of(Arguments.of(Named.of("NUMERIC TYPES SUPPORT", funcCall1), expected1),
+                Arguments.of(Named.of("FLOAT TYPES SUPPORT", funcCall2), expected2));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_moneyTypes_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(3)
+                .setColumn(new FloatColumn(new Float[]{922337203685477.5807f, -922337203685477.5808f, 346.46f}), "money_type")
+                .setColumn(new FloatColumn(new Float[]{214748.3647f, -214748.3648f, 160.0f}), "small_money")
+                .build();
+        FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM money_types");
+        return Stream.of(Arguments.of(Named.of("MONEY TYPES SUPPORT", funcCall), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_spatialTypes_ok() {
+        DataFrame expected1 = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new IntColumn(new Integer[]{1, 2}), "id")
+                .setColumn(new StringColumn(new String[]{"LINESTRING (100 100, 20 180, 180 180)",
+                        "POLYGON ((0 0, 150 0, 150 150, 0 150, 0 0))"}), "GeomCol1")
+                .setColumn(new StringColumn(new String[]{"LINESTRING (100 100, 20 180, 180 180)",
+                        "POLYGON ((0 0, 150 0, 150 150, 0 150, 0 0))"}), "GeomCol2")
+                .build();
+        FuncCall funcCall1 = FuncCallBuilder.fromQuery("SELECT id, GeomCol1.ToString() as GeomCol1, "
+                + "GeomCol2 FROM SpatialTable1");
+        DataFrame expected2 = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new IntColumn(new Integer[]{1, 2}), "id")
+                .setColumn(new StringColumn(new String[]{"LINESTRING (-122.36 47.656, -122.343 47.656)",
+                        "POLYGON ((-122.358 47.653, -122.348 47.649, -122.348 47.658, -122.358 47.658, -122.358 47.653))"}),
+                        "GeogCol1")
+                .setColumn(new StringColumn(new String[]{"LINESTRING (-122.36 47.656, -122.343 47.656)",
+                                "POLYGON ((-122.358 47.653, -122.348 47.649, -122.348 47.658, -122.358 47.658, -122.358 47.653))"}),
+                        "GeogCol2")
+                .build();
+        FuncCall funcCall2 = FuncCallBuilder.fromQuery("SELECT id, GeogCol1.ToString() as GeogCol1, "
+                + "GeogCol2 FROM SpatialTable2");
+        return Stream.of(Arguments.of(Named.of("GEOMETRY TYPE SUPPORT", funcCall1), expected1),
+                Arguments.of(Named.of("GEOGRAPHY TYPE SUPPORT", funcCall2), expected2));
+    }
 }
