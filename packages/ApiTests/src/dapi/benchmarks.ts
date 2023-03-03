@@ -1,39 +1,27 @@
-import {after, before, category, test} from '@datagrok-libraries/utils/src/test';
+import {category, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 
-category('Benchmarks', () => {
-  let tv: DG.TableView;
-  const df = grok.data.demo.randomWalk(1000000, 1);
-  const dfSmall = grok.data.demo.randomWalk(100, 1);
-  let detectors: DG.Func[];
+category('Benchmarks: Detectors', () => {
+  const df = grok.data.demo.demog(100000);
+  const detectors: DG.Func[] = DG.Func.find({tags: ['semTypeDetector']});
+  const cols: DG.Column[] = df.columns.byNames(['site', 'age', 'started', 'height']);
+  grok.shell.closeTable(df);
 
-  before(async () => {
-    detectors = await grok.dapi.functions.filter('#semTypeDetector').list();
-    tv = grok.shell.addTableView(dfSmall);
-    const colSmall = dfSmall.columns.byIndex(0);
-    for (const d of detectors) d.apply({col: colSmall});
-    tv.close();
-    grok.shell.closeTable(dfSmall);
-  });
-
-  test('detectors', async () => {
-    const violatingDetectors: string[] = [];
-    const res: any = [];
-    let start: number;
-    const col = df.columns.byIndex(0);
-    for (const d of detectors) {
-      start = Date.now();
-      d.apply({col: col}).then(res.push([d.name, Date.now() - start]));
-    }
-    for (const i of res) if (i[1] > 10) violatingDetectors.push(`${i[0]}: ${i[1]}`);
-    if (violatingDetectors.length > 0) throw new Error(violatingDetectors.join(', '));
-  });
-
-  after(async () => {
-    tv.close();
-    grok.shell.closeTable(df);
-  });
+  for (const d of detectors) {
+    test(d.friendlyName, async () => {
+      const res: any = [];
+      let start: number;
+      for (const col of cols.slice()) {
+        start = Date.now();
+        await d.apply({col: col});
+        res.push(Date.now() - start);
+      }
+      const maxTime = Math.max(...res);
+      if (maxTime > 10) throw new Error(`time: ${maxTime} ms, expected <= 10 ms`);
+      return `${maxTime} ms`;
+    });
+  }
 });
