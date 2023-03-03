@@ -82,6 +82,7 @@ function createDemoDataFrame(rowCount: number, chartsCount: number, chartsPerCel
           parameters: j % 2 == 0 ? points.params : undefined,
           fitLineColor: color,
           pointColor: color,
+          showCurveConfidenceInterval: charts === 1 ? true: false,
           points: wu.count().take(seriesLength * pointsPerX)
             .map(function(i) { return {x: points.x[i], y: points.y[i]}; })
             .toArray()
