@@ -33,21 +33,25 @@ export abstract class ChemicalTableParserBase {
   }
 
   protected file!: string;
-
   /** Index running along the string/file being parsed  */
   protected _atomCount?: number;
   protected _bondCount?: number;
-
   /** The array of X, Y, Z arrays for atomic coordinates */
   protected atomCoordinates?: CoordinateArrays;
   protected _atomTypes?: string[];
+
   protected abstract parseAtomAndBondCounts(): AtomAndBondCounts;
-  protected abstract parseAtomTypes(): string[];
-  /** Get idx of the first line of the atom block  */
+  protected abstract getCountsLineIdx(): number;
+  /** Get idx of the first line of the atom block containing atom data  */
   protected abstract getAtomBlockIdx(): number;
-  /** Get idx of the first line of the bond block  */
+  /** Get idx of the first line of the bond block containing bond data */
   protected abstract getBondBlockIdx(): number;
-  protected abstract getXColumnIdx(): number;
+  /** Shift idx from the beginning of the line to X coordinate */
+  protected abstract shiftIdxToXColumn(lineStartIdx: number): number;
+  /** Shift idx from the beginning of the line to atom type column */
+  protected abstract shiftIdxToAtomType(lineStartIdx: number): number;
+  /** Parse atom type at idx */
+  protected abstract parseAtomType(idx: number): string;
 
   protected setAtomAndBondCounts(): void {
     const {atomCount, bondCount} = this.parseAtomAndBondCounts();
@@ -55,7 +59,7 @@ export abstract class ChemicalTableParserBase {
     this._bondCount = bondCount;
   }
 
-  /** Gets the idx of the next column relatively to this._currentIdx  */
+  /** Gets the idx of the next column relatively to this._currentIdx */
   protected getNextColumnIdx(idx: number): number {
     // skip non-whitespace, if necessary
     while (!this.isWhitespace(idx))
@@ -66,13 +70,33 @@ export abstract class ChemicalTableParserBase {
     return idx;
   }
 
+  /** Shift idx from beginning of the specified line to the specified column  */
+  protected shiftToSpecifiedColumn(lineStartIdx: number, columnNumber: number) {
+    let idx = lineStartIdx;
+    for (let i = 0; i < columnNumber; i++)
+      idx = this.getNextColumnIdx(idx);
+    return idx;
+  }
+
+  protected parseAtomTypes(): string[] {
+    const atomTypes = new Array<string>(this.atomCount);
+    let idx = this.getAtomBlockIdx();
+    const atomCount = this.atomCount;
+    for (let i = 0; i < atomCount; i++) {
+      idx = this.shiftIdxToAtomType(idx);
+      atomTypes[idx] = this.parseAtomType(idx);
+      idx = this.getNextLineIdx(idx);
+    }
+    return atomTypes;
+  };
+
   protected parseAtomCoordinates(): CoordinateArrays {
     const x = new Array<number>(this.atomCount);
     const y = new Array<number>(this.atomCount);
     const z = new Array<number>(this.atomCount);
     let idx = this.getAtomBlockIdx();
-    for (let i = 0; i < this.atomCount; i ++) {
-      idx = this.getXColumnIdx();
+    for (let i = 0; i < this.atomCount; i++) {
+      idx = this.shiftIdxToXColumn(idx);
       for (const item of [x, y, z]) {
         item[i] = this.parseFloatValue(idx);
         idx = this.getNextColumnIdx(idx);
