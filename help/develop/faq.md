@@ -36,3 +36,27 @@ If you publish a package in debug mode using the standard `grok publish` command
 package. Run `grok publish --release` so others could see your package, too.
 
 ---
+
+*Question:*
+What is the best approach to synchronize custom written filters between multiple
+filter viewers?
+
+*Answer:*
+We currently use a combination of events for synchronization and saving state
+while filtering to dataFrame to initiate new viewers from this state:
+
+* `d4-filter-criteria-changed` to notify other filters.
+* `dataFrame.rows.filterStates` to store the filter’s state - this array is
+emptied before each call of `onRowsFiltering`, and filters add their states
+while filtering.
+
+Depending on where you use the filtering, you have two options for saving the
+filter state:
+
+* For filtering within native grok places (the **Filter Panel** and **Context
+Pane**), save the filter state via the `RowList_AddFilterState` method. In
+this case Datagrok automatically finds and applies the state.
+* For filtering in other places, you can store the filter state in dataFrame
+tag. In this case you need to add the code for finding the saved state.
+
+---

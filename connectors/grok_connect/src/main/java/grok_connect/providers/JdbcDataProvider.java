@@ -3,13 +3,12 @@ package grok_connect.providers;
 import java.io.*;
 import java.sql.*;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.*;
 import java.math.*;
 import java.text.*;
+import java.util.Date;
 import java.util.regex.*;
-
+import microsoft.sql.DateTimeOffset;
 import oracle.sql.TIMESTAMPTZ;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.NotImplementedException;
@@ -44,7 +43,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     public Properties getProperties(DataConnection conn) {
         return defaultConnectionProperties(conn);
     }
-//    what is this?
+
     public boolean autoInterpolation() {
         return true;
     }
@@ -204,7 +203,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         int idx = 0;
         while (matcher.find()) {
             String name = matcher.group().substring(1);
-            queryBuffer.append(query.substring(idx, matcher.start()));
+            queryBuffer.append(query, idx, matcher.start());
             for (FuncParam param: dataQuery.getInputParams()) {
                 if (param.name.equals(name)) {
                 System.out.println(param.propertyType);
@@ -220,19 +219,17 @@ public abstract class JdbcDataProvider extends DataProvider {
                             queryBuffer.append(interpolateString(param));
                             break;
                         case Types.LIST: //todo: extract submethod
-                            switch (param.propertySubType) {
-                                case Types.STRING:
-                                    @SuppressWarnings (value="unchecked")
-                                    ArrayList<String> value = ((ArrayList<String>)param.value);
-                                    for (int i = 0; i < value.size(); i++) {
-                                        queryBuffer.append(String.format("'%s'", value.get(i)));
-                                        if (i < value.size() - 1)
-                                            queryBuffer.append(",");
-                                    }
-                                    break;
+                            if (param.propertySubType.equals(Types.STRING)) {
+                                @SuppressWarnings(value = "unchecked")
+                                ArrayList<String> value = ((ArrayList<String>) param.value);
+                                for (int i = 0; i < value.size(); i++) {
+                                    queryBuffer.append(String.format("'%s'", value.get(i)));
+                                    if (i < value.size() - 1)
+                                        queryBuffer.append(",");
+                                }
                                 //todo: implement other types
-                                default:
-                                    throw new NotImplementedException("Non-string lists are not implemented for manual param interpolation providers");
+                            } else {
+                                throw new NotImplementedException("Non-string lists are not implemented for manual param interpolation providers");
                             }
                             break;
                         default:
@@ -243,7 +240,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             }
             idx = matcher.end();
         }
-        queryBuffer.append(query.substring(idx, query.length()));
+        queryBuffer.append(query.substring(idx));
         query = queryBuffer.toString();
         return query;
     }
@@ -410,7 +407,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 rowCount++;
 
                 for (int c = 1; c < columnCount + 1; c++) {
-                    Object value = resultSet.getObject(c);
+                    Object value = getObjectFromResultSet(resultSet, c);
 
                     if (queryRun.debugQuery && value != null)
                         numericColumnStats.get(c-1).updateStats(value);
@@ -439,7 +436,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 columns.get(c - 1).add(((Float)value).intValue());
                             else if (value instanceof BigDecimal)
                                 columns.get(c - 1).add(((BigDecimal)value).intValue());
-                            else
+                            else if (value instanceof Long) {
+                                columns.get(c - 1).add(((Long)value).intValue());
+                            } else
                                 columns.get(c - 1).add(value);
                         else if (isString(type, typeName)) {
                             if ((type == java.sql.Types.CLOB || value instanceof Clob) && value != null) {
@@ -454,8 +453,12 @@ public abstract class JdbcDataProvider extends DataProvider {
                         } else if (isXml(type, typeName)) {
                             String valueToAdd = "";
                             if (value != null) {
-                                SQLXML sqlxml = (SQLXML)value;
-                                valueToAdd = sqlxml.getString();
+                                if (value instanceof  SQLXML) {
+                                    SQLXML sqlxml = (SQLXML)value;
+                                    valueToAdd = sqlxml.getString();
+                                } else if(value instanceof java.lang.String) {
+                                    valueToAdd = value.toString();
+                                }
                             }
                             columns.get(c - 1).add(valueToAdd);
                         } else if (isBitString(type, precision, typeName)) {
@@ -475,10 +478,18 @@ public abstract class JdbcDataProvider extends DataProvider {
                             columns.get(c - 1).add(valueToAdd);
                         }
                         else if (isFloat(type, typeName, precision, scale) || (colType.equals(Types.FLOAT)))
-                            if (value instanceof Double)
-                                columns.get(c - 1).add(new Float((Double)value));
-                            else
+                            if (value instanceof Double) {
+                                Double doubleValue = (Double) value;
+                                if (doubleValue == Double.POSITIVE_INFINITY || doubleValue > Float.MAX_VALUE) {
+                                    columns.get(c - 1).add(Float.POSITIVE_INFINITY);
+                                } else if (doubleValue == Double.NEGATIVE_INFINITY || doubleValue < Float.MIN_VALUE) {
+                                    columns.get(c - 1).add(Float.NEGATIVE_INFINITY);
+                                } else {
+                                    columns.get(c - 1).add(new Float((Double)value));
+                                }
+                            } else {
                                 columns.get(c - 1).add(value);
+                            }
                         else if (isBigInt(type, typeName, precision, scale) ||
                                 typeName.equalsIgnoreCase("uuid") ||
                                 typeName.equalsIgnoreCase("set") ||
@@ -493,7 +504,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                             else if (value instanceof oracle.sql.TIMESTAMPTZ) {
                                 OffsetDateTime offsetDateTime = timestamptzToOffsetDateTime((TIMESTAMPTZ) value);
                                 time = java.util.Date.from(offsetDateTime.toInstant());
-                            } else {
+                            } else if(value instanceof microsoft.sql.DateTimeOffset) {
+                                time = Date.from(((DateTimeOffset) value).getOffsetDateTime().toInstant());
+                            }else {
                                 time = ((java.util.Date) value);
                             }
                             columns.get(c - 1).add((time == null) ? null : time.getTime() * 1000.0);
@@ -578,6 +591,14 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
     }
 
+    protected Object getObjectFromResultSet(ResultSet resultSet, int c) {
+        try {
+            return resultSet.getObject(c);
+        }catch (SQLException e) {
+            throw new RuntimeException("Something went wrong when getting object from result set", e);
+        }
+    }
+
     protected Object convertArrayType(Object value) {
         return value.toString();
     }
@@ -590,7 +611,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                                              PatternMatcherResult result) {
         StringBuilder builder = new StringBuilder();
         for (int n = 0 ; n < matcher.values.size(); n++) {
-            String name = param.name + String.valueOf(n);
+            String name = param.name + n;
             builder.append("@");
             builder.append(name);
             builder.append(",");
@@ -704,7 +725,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     public String addBrackets(String name) {
         String brackets = descriptor.nameBrackets;
         return (name.contains(" ") && !name.startsWith(brackets.substring(0, 1)))
-                ? brackets.substring(0, 1) + name + brackets.substring(brackets.length() - 1, brackets.length())
+                ? brackets.charAt(0) + name + brackets.substring(brackets.length() - 1)
                 : name;
     }
 
@@ -767,7 +788,8 @@ public abstract class JdbcDataProvider extends DataProvider {
         return (type == java.sql.Types.DATE) || (type == java.sql.Types.TIME) || (type == java.sql.Types.TIMESTAMP)
                 || typeName.equalsIgnoreCase("timetz")
                 || typeName.equalsIgnoreCase("timestamptz")
-                || (typeName.equalsIgnoreCase("TIMESTAMP WITH TIME ZONE"));
+                || (typeName.equalsIgnoreCase("TIMESTAMP WITH TIME ZONE"))
+                || (typeName.equalsIgnoreCase("datetimeoffset"));
     }
 
     protected boolean isBigInt(int type, String typeName, int precision, int scale) {

@@ -1,7 +1,9 @@
 ---
-title: "JavaScript development"
+title: "Develop"
 sidebar_position: 0
 ---
+
+## JavaScript development
 
 JavaScript or TypeScript-based development is the preferred way to develop user-facing applications on top of the
 platform. Use the [JS API](js-api.md) to control pretty much anything within Datagrok,
