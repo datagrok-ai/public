@@ -3,32 +3,49 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {ChemicalTableParserBase, AtomAndBondCounts} from './chemical-table-parser';
+import {ChemicalTableParser, ChemicalTableParserBase, AtomAndBondCounts} from './chemical-table-parser';
 import {MOLFILE_VERSION, V2K, V3K} from './molfile-parsing-const';
 
 /** Class for handling MDL Molfiles V2000 and V3000 */
-class MolfileHandler extends ChemicalTableParserBase {
+export class MolfileHandler extends ChemicalTableParserBase implements ChemicalTableParser {
   constructor(molfile: string) {
     super(molfile);
-    this.molfileVersion = MolfileHandler.determineMolfileVersion(molfile);
-    this.parseAtomAndBondCounts = (this.molfileVersion === MOLFILE_VERSION.V2000) ? this.parseAtomAndBondCountsV2K :
-      this.parseAtomAndBondCountsV3K;
-    this.getAtomBlockIdx = (this.molfileVersion === MOLFILE_VERSION.V2000) ? this.getAtomBlockIdxV2K :
-      this.getAtomBlockIdxV3K;
-    this.getCountsLineIdx = (this.molfileVersion === MOLFILE_VERSION.V2000) ? this.getCountsLineV2KIdx :
-      this.getCountsLineV3KIdx;
-    this.shiftIdxToXColumn = (this.molfileVersion === MOLFILE_VERSION.V2000) ? this.shiftIdxToXColumnV2K :
-      this.shiftIdxToXColumnV3K;
-    this.shiftIdxToAtomType = (this.molfileVersion === MOLFILE_VERSION.V2000) ? this.shiftIdxToAtomTypeV2K :
-      this.shiftIdxToAtomTypeV3K;
+    this.init(molfile);
   }
 
-  private molfileVersion: MOLFILE_VERSION;
-  protected parseAtomAndBondCounts: () => AtomAndBondCounts;
-  protected getCountsLineIdx: () => number;
-  protected getAtomBlockIdx: () => number;
-  protected shiftIdxToXColumn: (lineStartIdx: number) => number;
-  protected shiftIdxToAtomType: (idx: number) => number;
+  // Public members
+
+  /** Init/reset the state of the handler for a new molfile  */
+  public init(molfile: string) {
+    super.init(molfile);
+
+    const molfileVersion = MolfileHandler.determineMolfileVersion(molfile);
+    const isV2K = (molfileVersion === MOLFILE_VERSION.V2000);
+
+    this.parseAtomAndBondCounts = isV2K ? this.parseAtomAndBondCountsV2K : this.parseAtomAndBondCountsV3K;
+
+    this.getAtomBlockIdx = isV2K ? this.getAtomBlockIdxV2K : this.getAtomBlockIdxV3K;
+
+    this.getCountsLineIdx = isV2K ? this.getCountsLineV2KIdx : this.getCountsLineV3KIdx;
+
+    this.shiftIdxToXColumn = isV2K ? this.shiftIdxToXColumnV2K : this.shiftIdxToXColumnV3K;
+
+    this.shiftIdxToAtomType = isV2K ? this.shiftIdxToAtomTypeV2K :
+      this.shiftIdxToAtomTypeV3K;
+
+    this.getBondBlockIdx = isV2K ? this.getBondBlockIdxV2K : this.getBondBlockIdxV3K;
+  }
+
+  // Protected members
+
+  protected parseAtomAndBondCounts!: () => AtomAndBondCounts;
+  protected getCountsLineIdx!: () => number;
+  protected getAtomBlockIdx!: () => number;
+  protected shiftIdxToXColumn!: (lineStartIdx: number) => number;
+  protected shiftIdxToAtomType!: (idx: number) => number;
+  protected getBondBlockIdx!: () => number;
+
+  // Private members
 
   /** Determine whether the file is V2000/V3000, or throw */
   private static determineMolfileVersion(molfile: string): MOLFILE_VERSION {
@@ -72,13 +89,6 @@ class MolfileHandler extends ChemicalTableParserBase {
     return idx;
   }
 
-  protected getBondBlockIdx(): number {
-    if (this.molfileVersion === MOLFILE_VERSION.V2000)
-      return this.getBondBlockIdxV2K();
-    else
-      return this.getBondBlockIdxV3K();
-  };
-
   private shiftIdxToXColumnV2K(lineStartIdx: number): number {
     return this.getNextLineIdx(lineStartIdx);
   }
@@ -115,11 +125,13 @@ class MolfileHandler extends ChemicalTableParserBase {
   }
 
   private parseAtomAndBondCountsV2K(): AtomAndBondCounts {
-    let idx = this.getCountsLineIdx();
-    // 3 is the # of digits allocated for each of the counts
-    const atomCount = parseInt(this.file.substring(idx, idx + 3));
-    idx += 3;
-    const bondCount = parseInt(this.file.substring(idx, idx + 3));
+    let begin = this.getCountsLineIdx();
+    // 3 is the # of digits allocated for atom/bond counts
+    let end = begin + 3;
+    const atomCount = parseInt(this.file.substring(begin, end));
+    begin = end;
+    end += 3;
+    const bondCount = parseInt(this.file.substring(begin, end));
     return {atomCount: atomCount, bondCount: bondCount};
   };
 

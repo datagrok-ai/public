@@ -3,34 +3,85 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+export interface ChemicalTableParser {
+  init(file: string): void;
+  atomCount: number;
+  bondCount: number;
+  x: Float32Array;
+  y: Float32Array;
+  z: Float32Array;
+}
+
 export type AtomAndBondCounts = {
   atomCount: number,
   bondCount: number
 }
 
 type CoordinateArrays = {
-  x: number[],
-  y: number[],
-  z: number[],
+  x: Float32Array,
+  y: Float32Array,
+  z: Float32Array,
 }
 
-/** Base singleton for Molfile and Mol2 parser/handler */
-export abstract class ChemicalTableParserBase {
+/** Base singleton for Molfile or Mol2 parser/handler */
+export abstract class ChemicalTableParserBase implements ChemicalTableParser {
   protected constructor(file: string) {
-    this.reset(file);
+    this.init(file);
   };
 
-  private static instance: ChemicalTableParserBase;
+  // Public members
 
-  public static getInstance<T extends ChemicalTableParserBase>(file: string): T {
+  public static createInstance<T extends ChemicalTableParserBase>(file: string): T {
     if (!this.instance)
       this.instance = new (ChemicalTableParserBase as any)(file); // a workaround to define an abstract singleton
     return this.instance as T;
   }
 
-  public reset(file: string) {
+  public init(file: string): void {
     this.file = file.replaceAll('\r', '');
   }
+
+  get atomCount(): number {
+    if (this._atomCount === undefined)
+      this.setAtomAndBondCounts();
+    return this._atomCount!;
+  }
+
+  /** Number of bonds in a molecule  */
+  get bondCount(): number {
+    if (this._bondCount === undefined)
+      this.setAtomAndBondCounts();
+    return this._bondCount!;
+  }
+
+  /** X coordinates of all atoms in a molecule  */
+  get x(): Float32Array {
+    if (this.atomCoordinates === undefined)
+      this.atomCoordinates = this.parseAtomCoordinates();
+    return this.atomCoordinates.x;
+  };
+
+  /** Y coordinates of all atoms in a molecule  */
+  get y(): Float32Array {
+    if (this.atomCoordinates === undefined)
+      this.atomCoordinates = this.parseAtomCoordinates();
+    return this.atomCoordinates!.y;
+  };
+
+  /** Z coordinates of all atoms in a molecule  */
+  get z(): Float32Array {
+    if (this.atomCoordinates === undefined)
+      this.atomCoordinates = this.parseAtomCoordinates();
+    return this.atomCoordinates!.z;
+  };
+
+  get atomTypes(): string[] {
+    if (this._atomTypes === undefined)
+      this._atomTypes = this.parseAtomTypes();
+    return this._atomTypes;
+  }
+
+  // Protected members
 
   protected file!: string;
   /** Index running along the string/file being parsed  */
@@ -91,9 +142,9 @@ export abstract class ChemicalTableParserBase {
   };
 
   protected parseAtomCoordinates(): CoordinateArrays {
-    const x = new Array<number>(this.atomCount);
-    const y = new Array<number>(this.atomCount);
-    const z = new Array<number>(this.atomCount);
+    const x = new Float32Array(this.atomCount);
+    const y = new Float32Array(this.atomCount);
+    const z = new Float32Array(this.atomCount);
     let idx = this.getAtomBlockIdx();
     for (let i = 0; i < this.atomCount; i++) {
       idx = this.shiftIdxToXColumn(idx);
@@ -140,44 +191,6 @@ export abstract class ChemicalTableParserBase {
     return value;
   }
 
-  /** Number of atoms in a molecule  */
-  get atomCount(): number {
-    if (this._atomCount === undefined)
-      this.setAtomAndBondCounts();
-    return this._atomCount!;
-  }
-
-  /** Number of bonds in a molecule  */
-  get bondCount(): number {
-    if (this._bondCount === undefined)
-      this.setAtomAndBondCounts();
-    return this._bondCount!;
-  }
-
-  /** X coordinates of all atoms in a molecule  */
-  get x(): number[] {
-    if (this.atomCoordinates === undefined)
-      this.atomCoordinates = this.parseAtomCoordinates();
-    return this.atomCoordinates.x;
-  };
-
-  /** Y coordinates of all atoms in a molecule  */
-  get y(): number[] {
-    if (this.atomCoordinates === undefined)
-      this.atomCoordinates = this.parseAtomCoordinates();
-    return this.atomCoordinates!.y;
-  };
-
-  /** Z coordinates of all atoms in a molecule  */
-  get z(): number[] {
-    if (this.atomCoordinates === undefined)
-      this.atomCoordinates = this.parseAtomCoordinates();
-    return this.atomCoordinates!.z;
-  };
-
-  get atomTypes(): string[] {
-    if (this._atomTypes === undefined)
-      this._atomTypes = this.parseAtomTypes();
-    return this._atomTypes;
-  }
+  // Private members
+  private static instance: ChemicalTableParserBase;
 }
