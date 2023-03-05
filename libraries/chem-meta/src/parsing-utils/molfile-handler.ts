@@ -15,7 +15,7 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
 
   // Public members
 
-  /** Init/reset the state of the handler for a new molfile  */
+  /** Init/reset the state of the handler for a new molfile */
   public init(molfile: string) {
     super.init(molfile);
 
@@ -44,6 +44,12 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
   protected shiftIdxToXColumn!: (lineStartIdx: number) => number;
   protected shiftIdxToAtomType!: (idx: number) => number;
   protected getBondBlockIdx!: () => number;
+
+  protected parseAtomType(idx: number): string {
+    const begin = idx;
+    const end = this.file.indexOf(' ', begin);
+    return this.file.substring(begin, end);
+  }
 
   // Private members
 
