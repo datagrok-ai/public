@@ -171,6 +171,14 @@ class SnowflakeDataProviderTest {
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
+    @DisplayName("Snowflake Null safety")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.CommonObjectsMother#checkNullSupport_ok")
+    public void checkNullSupport_ok(FuncCall funcCall) {
+        funcCall.func.connection = connection;
+        Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+    }
+
     private void prepareDataFrame(DataFrame dataFrame) {
         dataFrame.columns.forEach(column -> column.name = column.name.toUpperCase());
     }
