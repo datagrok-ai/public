@@ -1,12 +1,14 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import {GridColumn} from 'datagrok-api/dg';
+
 import {
   fit,
   sigmoid,
   FitErrorModel,
   FitResult
 } from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
-import {GridColumn} from 'datagrok-api/dg';
+
 import {getChartData} from './fit-data';
 
 
