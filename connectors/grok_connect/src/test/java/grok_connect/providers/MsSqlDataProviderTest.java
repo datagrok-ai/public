@@ -176,6 +176,16 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
+    @DisplayName("SQL SERVER null safety")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.CommonObjectsMother#checkNullSupport_ok")
+    @Sql(path = "scripts/mssql/mssql_null.sql",
+            restorePath = "scripts/mssql/drop.sql")
+    public void checkNullSupport_ok(FuncCall funcCall) {
+        funcCall.func.connection = connection;
+        Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+    }
+
     private void prepareDataFrame(DataFrame dataFrame) {
         // in order to save time reuse some common's
         dataFrame.columns.removeIf(column -> column.name.equals("bool")); // mssql doesn't have boolean type
