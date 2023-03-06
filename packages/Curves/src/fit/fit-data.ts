@@ -154,14 +154,13 @@ function createFromProperties(properties: Property[]): any {
 /** Merges properties of the two objects by iterating over the specified {@link properties}
  * and assigning properties from {@link source} to {@link target} only when
  * the property is not defined in target and is defined in source. */
-function mergeProperties(properties: Property[],
-  source: IFitChartOptions | IFitSeriesOptions | undefined, target: IFitChartOptions | IFitSeries | undefined) {
+function mergeProperties(properties: Property[], source: any, target: any) {
   if (!source || !target)
     return;
 
   for (const p of properties) {
-    if (p.name !in target && p.name in source)
-      p.set(target, p.get(source));
+    if (!(p.name in target) && p.name in source)
+      target[p.name] = source[p.name];
   }
 }
 
@@ -176,7 +175,7 @@ function createDefaultChartData(): IFitChartData {
 
 /** Returns existing, or creates new column default chart options. */
 export function getColumnChartOptions(gridColumn: DG.GridColumn): IFitChartData {
-  return gridColumn.tags[TAG_FIT] ??= createDefaultChartData();
+  return gridColumn.temp[TAG_FIT] ??= createDefaultChartData();
 }
 
 
