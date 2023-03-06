@@ -1,0 +1,42 @@
+{
+	"name": "viewer-package",
+	"friendlyName": "viewer-package",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"@datagrok-libraries/utils": "latest",
+		"cash-dom": "latest",
+		"datagrok-api": "latest",
+		"dayjs": "latest"
+	},
+	"devDependencies": {
+		"ts-loader": "latest",
+		"typescript": "latest",
+		"webpack": "latest",
+		"webpack-cli": "latest"
+	},
+	"scripts": {
+		"link-all": "",
+		"debug-viewer-package": "webpack && grok publish",
+		"release-viewer-package": "webpack && grok publish --release",
+		"build-viewer-package": "webpack",
+		"build": "webpack",
+		"debug-viewer-package-public": "webpack && grok publish public",
+		"release-viewer-package-public": "webpack && grok publish public --release",
+		"debug-viewer-package-local": "webpack && grok publish local",
+		"release-viewer-package-local": "webpack && grok publish local --release",
+		"debug-viewer-package-release": "webpack && grok publish release",
+		"release-viewer-package-release": "webpack && grok publish release --release"
+	},
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/datagrok-ai/public.git",
+		"directory": "viewer-package"
+	}
+}
