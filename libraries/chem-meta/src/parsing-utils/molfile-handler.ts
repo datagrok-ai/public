@@ -36,6 +36,12 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
     this.getBondBlockIdx = isV2K ? this.getBondBlockIdxV2K : this.getBondBlockIdxV3K;
   }
 
+  public static createInstance(file: string): MolfileHandler {
+    if (!this.instance)
+      this.instance = new MolfileHandler(file); // a workaround to define an abstract singleton
+    return this.instance as MolfileHandler;
+  }
+
   // Protected members
 
   protected parseAtomAndBondCounts!: () => AtomAndBondCounts;

@@ -31,11 +31,7 @@ export abstract class ChemicalTableParserBase implements ChemicalTableParser {
 
   // Public members
 
-  public static createInstance<T extends ChemicalTableParserBase>(file: string): T {
-    if (!this.instance)
-      this.instance = new (ChemicalTableParserBase as any)(file); // a workaround to define an abstract singleton
-    return this.instance as T;
-  }
+  // public abstract static createInstance(file: string): ChemicalTableParserBase;
 
   public init(file: string): void {
     this.file = file.replaceAll('\r', '');
@@ -191,6 +187,5 @@ export abstract class ChemicalTableParserBase implements ChemicalTableParser {
     return value;
   }
 
-  // Private members
-  private static instance: ChemicalTableParserBase;
+  protected static instance: ChemicalTableParserBase;
 }
