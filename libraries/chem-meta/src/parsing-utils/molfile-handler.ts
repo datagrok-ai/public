@@ -106,7 +106,7 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
   }
 
   private shiftIdxToXColumnV3K(lineStartIdx: number): number {
-    return this.shiftToSpecifiedColumn(lineStartIdx, 5);
+    return this.shiftToSpecifiedColumn(lineStartIdx, 4);
   }
 
   private getBondBlockIdxV2K(): number {
