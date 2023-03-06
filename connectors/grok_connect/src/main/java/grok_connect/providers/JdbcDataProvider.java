@@ -469,11 +469,13 @@ public abstract class JdbcDataProvider extends DataProvider {
                             columns.get(c - 1).add(valueToAdd);
                         } else if (isDecimal(type, typeName, scale)) {
                             Float valueToAdd = null;
-                            if (value.toString().equals("NaN")
-                                    && value.getClass().getName().equals("java.lang.Double")) {
-                                valueToAdd = Float.NaN;
-                            } else if (value != null){
-                                valueToAdd = ((BigDecimal)value).floatValue();
+                            if (value != null) {
+                                if (value.toString().equals("NaN")
+                                        && value.getClass().getName().equals("java.lang.Double")) {
+                                    valueToAdd = Float.NaN;
+                                } else {
+                                    valueToAdd = ((BigDecimal)value).floatValue();
+                                }
                             }
                             columns.get(c - 1).add(valueToAdd);
                         }

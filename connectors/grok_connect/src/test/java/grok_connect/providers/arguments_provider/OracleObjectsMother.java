@@ -93,7 +93,7 @@ public class OracleObjectsMother {
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
                                 now.toString(),
                                 dayOfWeek == 1 ? null : yesterday.toString(),
-                                lastDayOfWeek.toString())),
+                                lastDayOfWeek.equals(now) ? null : lastDayOfWeek.toString())),
                         "dat")
                 .build();
         FuncCall funcCall2 = FuncCallBuilder.getBuilder()
@@ -111,7 +111,7 @@ public class OracleObjectsMother {
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
                                 now.toString(),
                                 dayOfMonth == 1 ? null : yesterday.toString(),
-                                lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() ?
+                                lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
                                         null : lastDayOfWeek.toString())),
                         "dat")
                 .build();
@@ -130,7 +130,8 @@ public class OracleObjectsMother {
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
                                 now.toString(),
                                 dayOfMonth == 1 ? null : yesterday.toString(),
-                                lastDayOfWeek.getYear() > lastDayOfYear.getYear() ? null : lastDayOfWeek.toString())),
+                                lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
+                                        null : lastDayOfWeek.toString())),
                         "dat")
                 .build();
         FuncCall funcCall4 = FuncCallBuilder.getBuilder()
@@ -176,7 +177,8 @@ public class OracleObjectsMother {
         DataFrame expected7 = DataFrameBuilder.getBuilder()
                 .setRowCount(5)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, now.toString(),
-                                yesterday.toString(), lastDayOfWeek.toString(), dayOfLastYear.toString(),
+                                yesterday.toString(), lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
+                                        null : lastDayOfWeek.toString(), dayOfLastYear.toString(),
                                 "2021-04-09")),
                         "dat")
                 .build();
@@ -217,7 +219,8 @@ public class OracleObjectsMother {
         DataFrame expected9 = DataFrameBuilder.getBuilder()
                 .setRowCount(4)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, now.toString(),
-                                yesterday.toString(), lastDayOfWeek.toString(), dayOfLastYear.toString())),
+                                yesterday.toString(), lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
+                                        null : lastDayOfWeek.toString(), dayOfLastYear.toString())),
                         "dat")
                 .build();
         FuncCall funcCall10 = FuncCallBuilder.getBuilder()
