@@ -5,7 +5,7 @@ export enum MOLFILE_VERSION {
 
 /** Constants relevant for parsing of Molfile V3K */
 export const enum V3K {
-  HEADER = '999 V3000\n',
+  HEADER = 'V3000',
   BEGIN_COUNTS_LINE = 'M  V30 COUNTS ',
   /** Index shift from the beginning of the 'COUNTS' line to the number of atoms  */
   COUNTS_SHIFT = 14,
@@ -16,7 +16,7 @@ export const enum V3K {
 
 /** Constants relevant for parsing of Molfile V2K */
 export enum V2K {
-  HEADER = '999 V2000\n',
+  HEADER = 'V2000',
   END = 'M  END',
 }
 

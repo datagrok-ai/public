@@ -12,6 +12,7 @@ import {SemanticValue} from './grid';
 import $ from 'cash-dom';
 import { FuncCall } from '../dg';
 import '../css/styles.css';
+import { MolfileHandler } from "@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler";
 
 let api = <any>window;
 declare let grok: any;
@@ -40,6 +41,7 @@ export namespace chem {
   export let SKETCHER_LOCAL_STORAGE = 'sketcher';
   export const STORAGE_NAME = 'sketcher';
   export const KEY = 'selected';
+  const molfileHandler = MolfileHandler.createInstance(WHITE_MOLBLOCK);
 
   export enum Notation {
     Smiles = 'smiles',
@@ -297,9 +299,14 @@ export namespace chem {
         if (!(this.isEmpty()) && this.extSketcherDiv.parentElement) {
           ui.empty(this.extSketcherDiv);
           const currentMolfile = this.getMolFile();
-          const deltaX = 11;
-          const deltaY = 10;
-          const tooltip = (deltaX > 10 || deltaY > 10) ? this.drawToCanvas(deltaX*30, deltaY*30, currentMolfile) : ui.divText('Click to edit');
+          molfileHandler.init(currentMolfile);
+          const maxDelta = 15;
+          const zoom = 15;
+          const xCoords = molfileHandler.x;
+          const yCoords = molfileHandler.y;
+          const deltaX = Math.max(...xCoords) - Math.min(...xCoords);
+          const deltaY = Math.max(...yCoords) - Math.min(...yCoords);
+          const tooltip = (deltaX > maxDelta || deltaY > maxDelta) ? this.drawToCanvas(deltaX*zoom, deltaY*zoom, currentMolfile) : ui.divText('Click to edit');
           ui.tooltip.bind(this.extSketcherCanvas, () => tooltip);
           canvasMol(0, 0, width, height, this.extSketcherCanvas, this.getMolFile()!, null, { normalizeDepiction: true, straightenDepiction: true })
             .then((_) => {
