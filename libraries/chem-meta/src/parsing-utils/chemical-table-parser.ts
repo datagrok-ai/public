@@ -35,6 +35,10 @@ export abstract class ChemicalTableParserBase implements ChemicalTableParser {
 
   public init(file: string): void {
     this.file = file.replaceAll('\r', '');
+    this._atomCount = undefined;
+    this._atomTypes = undefined;
+    this._bondCount = undefined;
+    this.atomCoordinates = undefined;
   }
 
   get atomCount(): number {
