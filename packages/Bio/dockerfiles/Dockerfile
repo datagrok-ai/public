@@ -1,7 +1,7 @@
 # Add ability to easily change python version
 ARG PYTHON_VERSION=3.8
 
-# Use our base image which is optimised and secured by our flow 
+# Use our base image which is optimised and secured by our flow
 FROM datagrok/python:${PYTHON_VERSION}
 
 MAINTAINER Volodymyr Dyma <vdyma@datagrok.ai>
@@ -24,7 +24,7 @@ RUN savedAptMark="$(apt-mark showmanual)" ; \
     ; \
     apt-mark auto '.*' > /dev/null ; \
     [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark ; \
-	wget https://mafft.cbrc.jp/alignment/software/mafft_7.490-1_amd64.deb -O mafft.deb; \
+	wget https://mafft.cbrc.jp/alignment/software/mafft_7.511-1_amd64.deb -O mafft.deb; \
 	apt install -y ./mafft.deb; \
 	rm -rf mafft.deb; \
     wget https://github.com/Merck/PepSeA/archive/refs/heads/main.zip -O PepSeA.zip; \
@@ -33,7 +33,29 @@ RUN savedAptMark="$(apt-mark showmanual)" ; \
     chown -R grok:grok /opt/PepSeA-main ; \
     apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false ; \
     apt-get clean ; \
-    rm -rf /var/lib/apt/lists/* /var/cache/* /var/tmp/* /tmp/* /opt/PepSeA-main/alignment/mafft /opt/PepSeA-main/local.env;
+    rm -rf /var/lib/apt/lists/* /var/cache/* /var/tmp/* /tmp/* /opt/PepSeA-main/alignment/mafft /opt/PepSeA-main/local.env; \
+    sed -i "s/files = glob.glob(f'\*{timestamp}\*')/files = glob.glob(f'\*{timestamp}\*.txt')/" /opt/PepSeA-main/alignment/AlignSubPeptides.py; \
+    echo $'\n\
+@api.get("/distout", response_class=PlainTextResponse)\n\
+def distout():\n\
+    """Returns the output of --distout parameter as a plain text."""\n\
+    \n\
+    distout_output = None\n\
+\n\
+    for file in os.listdir("./"):\n\
+        if not file.endswith(".hat2"):\n\
+            continue\n\
+\n\
+        path = os.path.join("./", file)\n\
+        with open(path, "r", encoding="utf-8") as f:\n\
+            distout_output = "".join(f.readlines())\n\
+        os.remove(path)\n\
+        break\n\
+\n\
+    if distout_output is None:\n\
+        raise FileNotFoundError("distance matrix is not found")\n\
+\n\
+    return distout_output\n' >> /opt/PepSeA-main/alignment/api.py;
 
 USER grok:grok
 
