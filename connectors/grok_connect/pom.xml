@@ -399,12 +399,13 @@
         </dependency>
         <dependency>
             <groupId>com.oracle.database.xml</groupId>
-            <artifactId>xdb6</artifactId>
-            <version>18.3.0.0</version>
+            <artifactId>xdb</artifactId>
+            <version>21.9.0.0</version>
         </dependency>
+
         <dependency>
             <groupId>com.oracle.database.xml</groupId>
-            <artifactId>xmlparserv2</artifactId>
+            <artifactId>xmlparserv2_sans_jaxp_services</artifactId>
             <version>21.9.0.0</version>
         </dependency>
 
@@ -413,9 +414,6 @@
             <artifactId>mssql-jdbc</artifactId>
             <version>9.4.1.jre8</version>
         </dependency>
-
-
-
 
         <dependency>
             <groupId>mysql</groupId>
