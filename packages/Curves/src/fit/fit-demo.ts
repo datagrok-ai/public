@@ -93,6 +93,5 @@ function createDemoDataFrame(rowCount: number, chartsCount: number, chartsPerCel
 export async function curveFitDemo() {
   const df = createDemoDataFrame(30, 5, 2);
   const grid = grok.shell.addTableView(df).grid;
-  grid.columns.add({gridColumnName: 'tables', cellType: 'fit-old'}).width = 200;
   grid.props.rowHeight = 150;
 }
