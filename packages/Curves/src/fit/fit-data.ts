@@ -4,10 +4,11 @@
 import * as DG from 'datagrok-api/dg';
 import {Property} from 'datagrok-api/src/entities';
 import {TYPE} from 'datagrok-api/src/const';
+
 import {
   fit,
   FitErrorModel,
-  FitResult, fitResultProperties, IFitOptions,
+  FitResult, fitResultProperties,
   sigmoid
 } from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 
@@ -188,7 +189,7 @@ export function getChartBounds(chartData: IFitChartData): DG.Rect {
   } else {
     let bounds = getDataBounds(chartData.series[0].points);
     for (let i = 1; i < chartData.series!.length; i++)
-      bounds = union(bounds, getDataBounds(chartData.series[i].points));
+      bounds = bounds.union(getDataBounds(chartData.series[i].points));
     return bounds;
   }
 }
@@ -209,24 +210,6 @@ export function getDataBounds(points: IFitPoint[]): DG.Rect {
   }
 
   return new DG.Rect(minX, minY, maxX - minX, maxY - minY);
-}
-
-
-//TODO: move to DG.Rect
-function fromPoints(x1: number, y1: number, x2: number, y2: number): DG.Rect {
-  const minX = Math.min(x1, x2);
-  const minY = Math.min(y1, y2);
-  return new DG.Rect(minX, minY, Math.max(x1, x2) - minX, Math.max(y1, y2) - minY);
-}
-
-
-//TODO: move to DG.Rect
-function union(r1: DG.Rect, r2: DG.Rect): DG.Rect {
-  return fromPoints(
-    Math.min(r1.left, r2.left),
-    Math.min(r1.top, r2.top),
-    Math.max(r1.right, r2.right),
-    Math.max(r1.bottom, r2.bottom));
 }
 
 
@@ -300,8 +283,9 @@ const sample: IFitChartData = {
     'pointColor': 'blue',
     'fitLineColor': 'red',
     'clickToToggle': true,
+    'showPoints': true,
     'showFitLine': true,
-    'showPoints': true
+    'showCurveConfidenceInterval': true
   },
   'series': [
     {
