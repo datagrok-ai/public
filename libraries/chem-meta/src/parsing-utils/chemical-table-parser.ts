@@ -126,12 +126,12 @@ export abstract class ChemicalTableParserBase implements ChemicalTableParser {
   }
 
   protected parseAtomTypes(): string[] {
-    const atomTypes = new Array<string>(this.atomCount);
-    let idx = this.getAtomBlockIdx();
     const atomCount = this.atomCount;
+    const atomTypes = new Array<string>(atomCount);
+    let idx = this.getAtomBlockIdx();
     for (let i = 0; i < atomCount; i++) {
       idx = this.shiftIdxToAtomType(idx);
-      atomTypes[idx] = this.parseAtomType(idx);
+      atomTypes[i] = this.parseAtomType(idx);
       idx = this.getNextLineIdx(idx);
     }
     return atomTypes;
@@ -148,6 +148,7 @@ export abstract class ChemicalTableParserBase implements ChemicalTableParser {
         item[i] = this.parseFloatValue(idx);
         idx = this.getNextColumnIdx(idx);
       }
+      idx = this.getNextLineIdx(idx);
     }
     return {x: x, y: y, z: z};
   }
@@ -162,7 +163,7 @@ export abstract class ChemicalTableParserBase implements ChemicalTableParser {
     if (this.file.at(idx) !== '\n')
       return this.file.indexOf('\n', idx) + 1;
     else
-      return this.file.indexOf('\n', idx + 1) + 1;
+      return idx + 1;
   }
 
   /** Get a float value in the current column (at idx) */

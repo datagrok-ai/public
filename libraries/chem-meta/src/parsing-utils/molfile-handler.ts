@@ -64,7 +64,7 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
     if (MolfileHandler.validateV3K(molfile))
       return MOLFILE_VERSION.V3000;
     else if (MolfileHandler.validateV2K(molfile))
-      return MOLFILE_VERSION.V3000;
+      return MOLFILE_VERSION.V2000;
     else
       throw new Error('Malformed molfile');
   }
@@ -102,7 +102,7 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
   }
 
   private shiftIdxToXColumnV2K(lineStartIdx: number): number {
-    return this.getNextLineIdx(lineStartIdx);
+    return this.getNextColumnIdx(lineStartIdx);
   }
 
   private shiftIdxToXColumnV3K(lineStartIdx: number): number {
