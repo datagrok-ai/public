@@ -5,8 +5,6 @@ import {fit, sigmoid, FitErrorModel} from '@datagrok-libraries/statistics/src/pa
 
 import {scaleCoordinates, getParams} from './fit-curve';
 
-// import {FitCellRenderer} from './sparklines/fit-curve';
-
 
 export class FitViewer extends DG.JsViewer {
   initialized: boolean = false;
@@ -25,11 +23,6 @@ export class FitViewer extends DG.JsViewer {
       const ctx = this.canvas?.getContext('2d')!;
       ctx.clearRect(0, 0, this.canvas?.width!, this.canvas?.height!);
 
-      // const df = this.dataFrame
-      //   .groupBy(['dataframes'])
-      //   .whereRowMask(this.dataFrame.selection)
-      //   .aggregate();
-
       const selectedIndexes = this.dataFrame.selection.getSelectedIndexes();
       const dfColumn = this.dataFrame.columns.toList().filter((col) => col.type === DG.COLUMN_TYPE.DATA_FRAME)![0];
 
@@ -41,9 +34,6 @@ export class FitViewer extends DG.JsViewer {
 
       for (let i = 0; i < valueList.length; i++) {
         const currentDf = valueList[i];
-        // if (!coordinateDf) return;
-        // console.log(coordinateDf.toCsv());
-
 
         const coordinateColumns = currentDf.columns.byNames(['x', 'y']);
         const coordinates: {x: number[], y: number[]} = {x: coordinateColumns[0].toList(),
