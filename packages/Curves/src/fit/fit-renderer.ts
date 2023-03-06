@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import {GridColumn, Paint} from 'datagrok-api/dg';
 
 import {fitResultProperties} from "@datagrok-libraries/statistics/src/parameter-estimation/fit-curve";
@@ -53,20 +54,23 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   }
 
   render(g: CanvasRenderingContext2D,
-    x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+         x: number, y: number, w: number, h: number,
+         gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+    if (w < 20 || h < 10) return;
+
     g.save();
     g.beginPath();
     g.rect(x, y, w, h);
     g.clip();
 
-    if (w < 20 || h < 10) return;
     const screenBounds = new DG.Rect(x, y, w, h).inflate(-6, -6);
     const [dataBox, xAxisBox, yAxisBox] = layoutChart(screenBounds);
 
     const data = gridCell.cell.column.getTag('.fitChartFormat') === '3dx' ? convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
     const dataBounds = getChartBounds(data);
     const transform = Transform.linear(dataBounds, dataBox);
+    const minSize = Math.min(dataBox.width, dataBox.height);
+    const ratio = minSize > 100 ? 1 : 0.2 + (minSize / 100) * 0.8;
 
     DG.Paint.coordinateGrid(g, dataBounds, xAxisBox, yAxisBox, dataBox);
 
@@ -98,13 +102,14 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
               p.outlier ? DG.MARKER_TYPE.OUTLIER : DG.MARKER_TYPE.CIRCLE,
               transform.xToScreen(p.x), transform.yToScreen(p.y),
               series.pointColor ? DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker,
-              p.outlier ? 6 : 4);
+              (p.outlier ? 6 : 4) * ratio);
           }
         }
       }
 
       if (series.showFitLine ?? true ) {
         g.strokeStyle = series.fitLineColor ?? 'black';
+        g.lineWidth = 2 * ratio;
         const curve = getFittedCurve(series);
 
         g.beginPath();
@@ -186,5 +191,14 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     }
 
     g.restore();
+  }
+
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent) {
+    if (gridCell.bounds.width < 50) {
+      const canvas = ui.canvas(300, 200);
+      this.render(canvas.getContext("2d")!, 0, 0, 300, 200, gridCell, null as any);
+      const content = ui.divV([canvas]);
+      ui.tooltip.show(content, e.x, e.y);
+    }
   }
 }
