@@ -16,9 +16,9 @@ export function demoPainter(input: string): HTMLSpanElement[] {
     'blue'];
   const spans: HTMLSpanElement[] = [];
   for (let i = 0; i < input.length; ++i) {
-    const span = ui.span([input.at(i)]);
+    const span = ui.span([input.charAt(i)]);
     // $(span).css('-webkit-text-fill-color', colors.at(Math.round(Math.random() * colors.length))!);
-    $(span).css('-webkit-text-fill-color', colors.at(i % colors.length)!);
+    $(span).css('-webkit-text-fill-color', colors[i % colors.length]!);
     spans.push(span);
   }
   return spans;

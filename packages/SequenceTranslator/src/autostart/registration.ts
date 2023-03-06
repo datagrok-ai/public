@@ -1,6 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
+import {_package} from '../package';
 import {
   siRnaBioSpringToGcrs, siRnaAxolabsToGcrs, gcrsToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12,
   siRnaNucleotidesToGcrs
@@ -9,15 +11,10 @@ import {SEQUENCE_TYPES, COL_NAMES, GENERATED_COL_NAMES} from './constants';
 import {saltMass, saltMolWeigth, batchMolWeight} from './calculations';
 import {stringify} from '../utils/helpers';
 
-// import {SALTS_CSV} from '../hardcode-to-be-eliminated/salts';
-// import {ICDS} from '../hardcode-to-be-eliminated/ICDs';
-// import {SOURCES} from '../hardcode-to-be-eliminated/sources';
-// import {IDPS} from '../hardcode-to-be-eliminated/IDPs';
-
 import {sdfAddColumns} from '../utils/sdf-add-columns';
 import {sdfSaveTable} from '../utils/sdf-save-table';
-import {_package} from '../package';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import {DataLoaderBase} from '../utils/data-loader';
 
 const enum PREFIXES {
   AS = 'AS',
@@ -165,7 +162,7 @@ export function autostartOligoSdFileSubscription() {
         try {
           await _package.initDataLoader();
           oligoSdFileGrid(v);
-          await oligoSdFile(v.dataFrame);
+          await oligoSdFile(_package.dataLoader, v.dataFrame);
         } catch (err: any) {
           const errStr = errorToConsole(err);
           console.error(errStr);
@@ -173,10 +170,10 @@ export function autostartOligoSdFileSubscription() {
       }
 
       // Should be removed after fixing bug https://github.com/datagrok-ai/public/issues/808
-      grok.events.onContextMenu.subscribe((args) => {
-        if (!(args.args.context instanceof DG.Grid)) return;
-        const grid: DG.Grid = args.args.context as DG.Grid;
-        const menu: DG.Menu = args.args.menu;
+      grok.events.onContextMenu.subscribe((event: DG.EventData) => {
+        if (!(event.args.context instanceof DG.Grid)) return;
+        const grid: DG.Grid = event.args.context as DG.Grid;
+        const menu: DG.Menu = event.args.menu;
 
         const seqCol = grid.table.currentCol; // /^[fsACGUacgu]{6,}$/
         if (DG.Detector.sampleCategories(seqCol,
@@ -194,7 +191,7 @@ export function autostartOligoSdFileSubscription() {
             });
           }); // /^[fmpsACGU]{6,}$/
         } else if (DG.Detector.sampleCategories(seqCol,
-          (s) => /(\(invAb\)|\(GalNAc2\)|f|m|ps|A|C|G|U){6,}$/.test(s)) ||
+            (s) => /(\(invAb\)|\(GalNAc2\)|f|m|ps|A|C|G|U){6,}$/.test(s)) ||
           DG.Detector.sampleCategories(seqCol, (s) => /^(?=.*moe)(?=.*5mC)(?=.*ps){6,}/.test(s))) {
           menu.item('Convert GCRS to raw', () => {
             grid.table.columns.addNewString(seqCol.name + ' to raw').init((i: number) => {
@@ -227,27 +224,12 @@ export function autostartOligoSdFileSubscription() {
   });
 }
 
-export async function oligoSdFile(table: DG.DataFrame) {
-  const usersDf = await _package.dataLoader.getUsers();
-  console.log('usersDf:', usersDf.toCsv().toString());
-
-  const saltsDf = await _package.dataLoader.getSalts();
-  console.log('saltsDf:', saltsDf.toCsv().toString());
-
-  const sourcesDf = await _package.dataLoader.getSources();
-  console.log('sourcesDf:', sourcesDf.toCsv().toString());
-
-  const idpsDf = await _package.dataLoader.getIDPs();
-  console.log('idpsDf:', idpsDf.toCsv().toString());
-
-  const icdsDf = await _package.dataLoader.getICDs();
-  console.log('icdsDf:', icdsDf.toCsv().toString());
-
+export async function oligoSdFile(dl: DataLoaderBase, table: DG.DataFrame) {
   const saltCol = table.getCol(COL_NAMES.SALT);
   const equivalentsCol = table.getCol(COL_NAMES.EQUIVALENTS);
 
-  const saltsMolWeightList: number[] = saltsDf.getCol('MOLWEIGHT').toList();
-  const saltNamesList: string[] = saltsDf.getCol('DISPLAY').toList();
+  const saltsMolWeightList: number[] = dl.Salts.getCol('MOLWEIGHT').toList();
+  const saltNamesList: string[] = dl.Salts.getCol('DISPLAY').toList();
 
   let newDf: DG.DataFrame | undefined = undefined;
 
@@ -276,16 +258,18 @@ export async function oligoSdFile(table: DG.DataFrame) {
       const view = grok.shell.getTableView(table.name);
       view.grid.setOptions({rowHeight: 45});
       view.dataFrame.getCol(COL_NAMES.TYPE).setTag(DG.TAGS.CHOICES, stringify(Object.values(SEQUENCE_TYPES)));
-      view.dataFrame.getCol(COL_NAMES.OWNER).setTag(DG.TAGS.CHOICES, stringify(usersDf.columns.byIndex(0).toList()));
-      view.dataFrame.getCol(COL_NAMES.SALT).setTag(DG.TAGS.CHOICES, stringify(saltsDf.columns.byIndex(0).toList()));
-      view.dataFrame.getCol(COL_NAMES.SOURCE).setTag(DG.TAGS.CHOICES, stringify(sourcesDf.columns.byIndex(0).toList()));
-      view.dataFrame.getCol(COL_NAMES.ICD).setTag(DG.TAGS.CHOICES, stringify(icdsDf.columns.byIndex(0).toList()));
-      view.dataFrame.getCol(COL_NAMES.IDP).setTag(DG.TAGS.CHOICES, stringify(idpsDf.columns.byIndex(0).toList()));
+      /* eslint-disable max-len */
+      view.dataFrame.getCol(COL_NAMES.OWNER).setTag(DG.TAGS.CHOICES, stringify(dl.Users.columns.byIndex(0).toList()));
+      view.dataFrame.getCol(COL_NAMES.SALT).setTag(DG.TAGS.CHOICES, stringify(dl.Salts.columns.byIndex(0).toList()));
+      view.dataFrame.getCol(COL_NAMES.SOURCE).setTag(DG.TAGS.CHOICES, stringify(dl.Sources.columns.byIndex(0).toList()));
+      view.dataFrame.getCol(COL_NAMES.ICD).setTag(DG.TAGS.CHOICES, stringify(dl.ICDs.columns.byIndex(0).toList()));
+      view.dataFrame.getCol(COL_NAMES.IDP).setTag(DG.TAGS.CHOICES, stringify(dl.IDPs.columns.byIndex(0).toList()));
+      /* eslint-enable max-len */
 
-      grok.events.onContextMenu.subscribe((args) => {
-        if (!(args.args.context instanceof DG.Grid)) return;
-        const grid: DG.Grid = args.args.context as DG.Grid;
-        const menu: DG.Menu = args.args.menu;
+      grok.events.onContextMenu.subscribe((event: DG.EventData) => {
+        if (!(event.args.context instanceof DG.Grid)) return;
+        const grid: DG.Grid = event.args.context as DG.Grid;
+        const menu: DG.Menu = event.args.menu;
 
         if ([COL_NAMES.TYPE, COL_NAMES.OWNER, COL_NAMES.SALT, COL_NAMES.SOURCE, COL_NAMES.ICD, COL_NAMES.IDP]
           .includes(grid.table.currentCol.name)) {

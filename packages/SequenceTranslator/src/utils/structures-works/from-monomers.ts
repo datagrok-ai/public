@@ -65,9 +65,10 @@ export function sequenceToMolV3000(
   //return getMonomerWorks()?.getAtomicLevel(monomers, 'RNA')!;
 }
 
+// eslint-disable-next-line camelcase
 export function sequenceToMolV3000_new(
   sequence: string, inverted: boolean = false, oclRender: boolean = false,
-  format: string,
+  format: string
 ): string {
   const monomerNameFromCode = getCodeToNameMap(sequence, format);
   let codes = sortByStringLengthInDescendingOrder(Object.keys(monomerNameFromCode));
@@ -89,9 +90,9 @@ export function sequenceToMolV3000_new(
     if (links.includes(codesList[i]) ||
       includesStandardLinkAlready.includes(codesList[i]) ||
       (i < codesList.length - 1 && links.includes(codesList[i + 1]))
-    )
+    ) {
       monomers.push(monomerNameFromCode[codesList[i]]);
-    else {
+    } else {
       monomers.push(monomerNameFromCode[codesList[i]]);
       monomers.push('p linkage');
     }

@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {_package} from '../package';
 
 // import {_package} from '../package';
 
@@ -15,70 +16,53 @@ const enum QUERY_NAME {
 }
 
 export abstract class DataLoaderBase {
-  abstract getUsers(): Promise<DG.DataFrame>;
-  abstract getICDs(): Promise<DG.DataFrame>;
-  abstract getIDPs(): Promise<DG.DataFrame>;
-  abstract getSources(): Promise<DG.DataFrame>;
-  abstract getSalts(): Promise<DG.DataFrame>;
+  abstract get Users(): DG.DataFrame;
+
+  abstract get ICDs(): DG.DataFrame;
+
+  abstract get IDPs(): DG.DataFrame;
+
+  abstract get Sources(): DG.DataFrame;
+
+  abstract get Salts(): DG.DataFrame;
 }
 
-/** Load data for users, salts, ICDs, IDPs and sources. In order for that to
- * work, we suppose that the queries have standard names of the form 'Sequence
- * Translator <name>' */
+/** Load data for entities as Users, Salts, ICDs, IDPs and Sources.
+ * In order for that to work, we suppose that the queries have tags
+ * 'app-SequenceTranslator' and 'entity-<Entity>' (e.g. 'entity-Users').
+ */
 export class DataLoaderDB extends DataLoaderBase {
+  private _users: DG.DataFrame;
+  private _ICDs: DG.DataFrame;
+  private _IDPs: DG.DataFrame;
+  private _sources: DG.DataFrame;
+  private _salts: DG.DataFrame;
+
+  get Users(): DG.DataFrame { return this._users; }
+
+  get ICDs(): DG.DataFrame { return this._ICDs; }
+
+  get IDPs(): DG.DataFrame { return this._IDPs; }
+
+  get Sources(): DG.DataFrame { return this._sources; }
+
+  get Salts(): DG.DataFrame { return this._salts; }
+
   public async init(): Promise<void> {
-    let dataQueryList = (await grok.dapi.queries.include('params').list());
-    console.log('non-fitered list:', dataQueryList.map((dq) => dq.name));
-    dataQueryList = dataQueryList.filter((dq) => dq.name.toLowerCase().startsWith(QUERY_NAME.START));
-    console.log('filtered list:', dataQueryList.map((dq) => dq.name));
-    console.log('query list length:', dataQueryList.length);
-    for (const tableName of this.tableNames) {
-      console.log('tableName:', tableName);
-      const query = dataQueryList.find(
-        (dq) => dq.name.toLowerCase().endsWith(tableName)
-      )!;
-      const df = await this.getDatafameFromQuery(query);
-      console.log('df:', df);
-      this.dataframes.set(tableName, df);
-      console.log(tableName, df.toCsv().toString());
-    }
+    // Server side filter by tag requires '#' sign prefix
+    const dataQueryList: DG.DataQuery[] = (await grok.dapi.queries.include('connection,params,entityTags')
+      .filter('#app-SequenceTranslator').list());
+
+    const usersDQ: DG.DataQuery = dataQueryList.find((dq) => dq.hasTag('entity-Users'))!;
+    const icdsDQ: DG.DataQuery = dataQueryList.find((dq) => dq.hasTag('entity-ICDs'))!;
+    const idpsDQ: DG.DataQuery = dataQueryList.find((dq) => dq.hasTag('entity-IDPs'))!;
+    const sourcesDQ: DG.DataQuery = dataQueryList.find((dq) => dq.hasTag('entity-Sources'))!;
+    const saltsDQ: DG.DataQuery = dataQueryList.find((dq) => dq.hasTag('entity-Salts'))!;
+
+    this._users = (await usersDQ.prepare().call()).getOutputParamValue();
+    this._ICDs = (await icdsDQ.prepare().call()).getOutputParamValue();
+    this._IDPs = (await idpsDQ.prepare().call()).getOutputParamValue();
+    this._sources = (await sourcesDQ.prepare().call()).getOutputParamValue();
+    this._salts = (await saltsDQ.prepare().call()).getOutputParamValue();
   };
-
-  // todo: define a map of names to DFs
-  private tableNames = [QUERY_NAME.USERS, QUERY_NAME.ICDS, QUERY_NAME.IDPS, QUERY_NAME.SOURCES, QUERY_NAME.SALTS];
-
-  private dataframes = new Map<QUERY_NAME, DG.DataFrame>();
-
-  private async getDatafameFromQuery(query: DG.DataQuery) {
-    const df: DG.DataFrame = (await query.prepare().call())
-      .getOutputParamValue();
-    return df;
-  }
-
-  private async getDataframeByName(name: QUERY_NAME): Promise<DG.DataFrame> {
-    if (this.dataframes === undefined)
-      await this.init();
-
-    return this.dataframes.get(name)!;
-  }
-
-  public async getUsers(): Promise<DG.DataFrame> {
-    return this.getDataframeByName(QUERY_NAME.USERS);
-  }
-
-  public async getICDs(): Promise<DG.DataFrame> {
-    return this.getDataframeByName(QUERY_NAME.ICDS);
-  }
-
-  public async getIDPs(): Promise<DG.DataFrame> {
-    return this.getDataframeByName(QUERY_NAME.IDPS);
-  }
-
-  public async getSalts(): Promise<DG.DataFrame> {
-    return this.getDataframeByName(QUERY_NAME.SALTS);
-  }
-
-  public async getSources(): Promise<DG.DataFrame> {
-    return this.getDataframeByName(QUERY_NAME.SOURCES);
-  }
 }
