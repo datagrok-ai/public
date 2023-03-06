@@ -1169,7 +1169,7 @@ export class Property {
   static js(name: string, type: TYPE, options?: PropertyOptions): Property {
     return Property.create(name, type,
       (x: any) => x[name],
-      (x: any, v: any) => x[name] = v,
+      function (x: any, v: any) { x[name] = v; },
       options?.defaultValue).fromOptions(options);
   }
 
