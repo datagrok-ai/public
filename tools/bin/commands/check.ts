@@ -19,10 +19,8 @@ export function check(args: { [x: string]: string | string[]; }) {
     fs.readdirSync(packagesDir).forEach((file) => {
       const filepath = path.join(packagesDir, file);
       const stats = fs.statSync(filepath);
-      if (stats.isDirectory() && utils.isPackageDir(filepath)) {
-        console.log(`Checking package ${file}...`);
+      if (stats.isDirectory() && utils.isPackageDir(filepath))
         runChecks(filepath);
-      }
     });
   } else {
     if (!utils.isPackageDir(curDir)) {
@@ -30,7 +28,6 @@ export function check(args: { [x: string]: string | string[]; }) {
       return false;
     }
 
-    console.log(`Checking package ${path.basename(curDir)}...`);
     runChecks(curDir);
   }
 
@@ -40,6 +37,7 @@ export function check(args: { [x: string]: string | string[]; }) {
     const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
       'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
     const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
+    const warnings: string[] = [];
 
     const webpackConfigPath = path.join(packagePath, 'webpack.config.js');
     const isWebpack = fs.existsSync(webpackConfigPath);
@@ -47,11 +45,17 @@ export function check(args: { [x: string]: string | string[]; }) {
       const content = fs.readFileSync(webpackConfigPath, { encoding: 'utf-8' });
       const externals = extractExternals(content);
       if (externals)
-        warn(checkImportStatements(packagePath, jsTsFiles, externals));
+        warnings.push(...checkImportStatements(packagePath, jsTsFiles, externals));
     }
 
-    warn(checkFuncSignatures(packagePath, funcFiles));
-    warn(checkPackageFile(packagePath));
+    warnings.push(...checkFuncSignatures(packagePath, funcFiles));
+    warnings.push(...checkPackageFile(packagePath));
+
+    if (warnings.length) {
+      console.log(`Checking package ${path.basename(packagePath)}...`);
+      warn(warnings);
+    } else
+      console.log(`Checking package ${path.basename(packagePath)}...\t\t\t\u2713 OK`);
   }
 
   return true;

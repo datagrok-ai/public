@@ -100,11 +100,12 @@ export function getGridColumnHeaderHeight(grid : DG.Grid) : number {
   if(nHColHeader === null || nHColHeader === undefined) {//DG bug
 
     const cellGrid = grid.hitTest(2,2);//.cell(col.name, 0);
-    if(cellGrid !== null) {
+    if(cellGrid !== null && cellGrid !== undefined) {
       const rc = cellGrid.bounds;
       return rc.y;
       //console.log('rc.y ' + rc.y + " rc.h= " + rc.height + " row " + cellGrid.gridRow + " name " +  cellGrid.gridColumn.name);
     }
+    else return 30;
   }
   return nHColHeader;
 }

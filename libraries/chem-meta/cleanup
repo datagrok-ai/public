@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# remove results of a prevoius build
+
+for file in $(fd --extension=ts)
+do
+  template=$(dirname $file)/$(basename $file .ts)
+  dts=$template.d.ts
+  map=$dts.map
+  js=$template.js
+  if [[ -f $js && -f $map && -f $js ]]; then
+    rm --verbose -- $dts $map $js
+  fi
+done

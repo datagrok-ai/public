@@ -5,5 +5,6 @@ Alation package provides integration with the [Alation](https://www.alation.com/
 _Note that to open a table or run a query you need to provide access credentials._
 
 See also:
+
 * [Data Connection](https://datagrok.ai/help/access/data-connection)
 * [Security overview](https://datagrok.ai/help/govern/security)
