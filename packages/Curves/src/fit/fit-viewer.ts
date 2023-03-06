@@ -3,9 +3,48 @@ import * as ui from 'datagrok-api/ui';
 
 import {fit, sigmoid, FitErrorModel} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 
-import {scaleCoordinates, getParams} from './fit-curve';
 
-// import {FitCellRenderer} from './sparklines/fit-curve';
+function scaleCoordinates(coordinates: {x: number[], y: number[]}, canvasWidth: number, canvasHeight: number):
+  {x: number[], y: number[]} {
+  const xMin = Math.min(...coordinates.x);
+  const xMax = Math.max(...coordinates.x);
+  const yMin = Math.min(...coordinates.y);
+  const yMax = Math.max(...coordinates.y);
+
+  const xDiff = xMax - xMin;
+  const yDiff = yMax - yMin;
+  const xMid = (xMax + xMin) / 2;
+  const yMid = (yMax + yMin) / 2;
+
+  const coeff = xDiff * canvasHeight >= yDiff * canvasWidth ? canvasWidth / xDiff : canvasHeight / yDiff;
+  const canvasXCenter = canvasWidth / 2;
+  const canvasYCenter = canvasHeight / 2;
+
+  const scaledCoordinates: {x: number[], y: number[]} = {x: [], y: []};
+  for (let i = 0; i < coordinates.x.length; i++) {
+    scaledCoordinates.x[i] = canvasXCenter + coeff * (coordinates.x[i] - xMid);
+    scaledCoordinates.y[i] = canvasYCenter + coeff * (coordinates.y[i] - yMid);
+  }
+
+  return scaledCoordinates;
+}
+
+function getParams(columns: DG.Column[]): number[] {
+  const coordinates: {x: number[], y: number[]} = {x: columns[0].toList(), y: columns[1].toList()};
+
+  const minY = columns[1].min;
+  const maxY = columns[1].max;
+  const medY = columns[1].stats.med;
+  let xAtMedY = -1;
+  for (let i = 0; i < coordinates.y.length; i++) {
+    if (coordinates.y[i] === medY) {
+      xAtMedY = coordinates.x[i];
+      break;
+    }
+  }
+
+  return [maxY, 1.2, xAtMedY, minY];
+}
 
 
 export class FitViewer extends DG.JsViewer {
@@ -25,11 +64,6 @@ export class FitViewer extends DG.JsViewer {
       const ctx = this.canvas?.getContext('2d')!;
       ctx.clearRect(0, 0, this.canvas?.width!, this.canvas?.height!);
 
-      // const df = this.dataFrame
-      //   .groupBy(['dataframes'])
-      //   .whereRowMask(this.dataFrame.selection)
-      //   .aggregate();
-
       const selectedIndexes = this.dataFrame.selection.getSelectedIndexes();
       const dfColumn = this.dataFrame.columns.toList().filter((col) => col.type === DG.COLUMN_TYPE.DATA_FRAME)![0];
 
@@ -41,9 +75,6 @@ export class FitViewer extends DG.JsViewer {
 
       for (let i = 0; i < valueList.length; i++) {
         const currentDf = valueList[i];
-        // if (!coordinateDf) return;
-        // console.log(coordinateDf.toCsv());
-
 
         const coordinateColumns = currentDf.columns.byNames(['x', 'y']);
         const coordinates: {x: number[], y: number[]} = {x: coordinateColumns[0].toList(),

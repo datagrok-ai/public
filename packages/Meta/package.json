@@ -435,6 +435,9 @@
         },
         "1.5.5": {
           "datagrok-api": "^1.13.2"
+        },
+        "1.5.7": {
+          "datagrok-api": "^1.13.2"
         }
       },
       "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Chem/README.md)",

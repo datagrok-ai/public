@@ -2,16 +2,12 @@ package grok_connect.providers;
 
 import java.io.*;
 import java.sql.*;
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.*;
 import java.math.*;
 import java.text.*;
 import java.util.Date;
 import java.util.regex.*;
-
 import microsoft.sql.DateTimeOffset;
 import oracle.sql.TIMESTAMPTZ;
 import org.apache.commons.io.IOUtils;
@@ -207,7 +203,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         int idx = 0;
         while (matcher.find()) {
             String name = matcher.group().substring(1);
-            queryBuffer.append(query.substring(idx, matcher.start()));
+            queryBuffer.append(query, idx, matcher.start());
             for (FuncParam param: dataQuery.getInputParams()) {
                 if (param.name.equals(name)) {
                 System.out.println(param.propertyType);
@@ -223,19 +219,17 @@ public abstract class JdbcDataProvider extends DataProvider {
                             queryBuffer.append(interpolateString(param));
                             break;
                         case Types.LIST: //todo: extract submethod
-                            switch (param.propertySubType) {
-                                case Types.STRING:
-                                    @SuppressWarnings (value="unchecked")
-                                    ArrayList<String> value = ((ArrayList<String>)param.value);
-                                    for (int i = 0; i < value.size(); i++) {
-                                        queryBuffer.append(String.format("'%s'", value.get(i)));
-                                        if (i < value.size() - 1)
-                                            queryBuffer.append(",");
-                                    }
-                                    break;
+                            if (param.propertySubType.equals(Types.STRING)) {
+                                @SuppressWarnings(value = "unchecked")
+                                ArrayList<String> value = ((ArrayList<String>) param.value);
+                                for (int i = 0; i < value.size(); i++) {
+                                    queryBuffer.append(String.format("'%s'", value.get(i)));
+                                    if (i < value.size() - 1)
+                                        queryBuffer.append(",");
+                                }
                                 //todo: implement other types
-                                default:
-                                    throw new NotImplementedException("Non-string lists are not implemented for manual param interpolation providers");
+                            } else {
+                                throw new NotImplementedException("Non-string lists are not implemented for manual param interpolation providers");
                             }
                             break;
                         default:
@@ -246,7 +240,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             }
             idx = matcher.end();
         }
-        queryBuffer.append(query.substring(idx, query.length()));
+        queryBuffer.append(query.substring(idx));
         query = queryBuffer.toString();
         return query;
     }
@@ -475,19 +469,29 @@ public abstract class JdbcDataProvider extends DataProvider {
                             columns.get(c - 1).add(valueToAdd);
                         } else if (isDecimal(type, typeName, scale)) {
                             Float valueToAdd = null;
-                            if (value.toString().equals("NaN")
-                                    && value.getClass().getName().equals("java.lang.Double")) {
-                                valueToAdd = Float.NaN;
-                            } else if (value != null){
-                                valueToAdd = ((BigDecimal)value).floatValue();
+                            if (value != null) {
+                                if (value.toString().equals("NaN")
+                                        && value.getClass().getName().equals("java.lang.Double")) {
+                                    valueToAdd = Float.NaN;
+                                } else {
+                                    valueToAdd = ((BigDecimal)value).floatValue();
+                                }
                             }
                             columns.get(c - 1).add(valueToAdd);
                         }
                         else if (isFloat(type, typeName, precision, scale) || (colType.equals(Types.FLOAT)))
-                            if (value instanceof Double)
-                                columns.get(c - 1).add(new Float((Double)value));
-                            else
+                            if (value instanceof Double) {
+                                Double doubleValue = (Double) value;
+                                if (doubleValue == Double.POSITIVE_INFINITY || doubleValue > Float.MAX_VALUE) {
+                                    columns.get(c - 1).add(Float.POSITIVE_INFINITY);
+                                } else if (doubleValue == Double.NEGATIVE_INFINITY || doubleValue < Float.MIN_VALUE) {
+                                    columns.get(c - 1).add(Float.NEGATIVE_INFINITY);
+                                } else {
+                                    columns.get(c - 1).add(new Float((Double)value));
+                                }
+                            } else {
                                 columns.get(c - 1).add(value);
+                            }
                         else if (isBigInt(type, typeName, precision, scale) ||
                                 typeName.equalsIgnoreCase("uuid") ||
                                 typeName.equalsIgnoreCase("set") ||
@@ -609,7 +613,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                                              PatternMatcherResult result) {
         StringBuilder builder = new StringBuilder();
         for (int n = 0 ; n < matcher.values.size(); n++) {
-            String name = param.name + String.valueOf(n);
+            String name = param.name + n;
             builder.append("@");
             builder.append(name);
             builder.append(",");
@@ -723,7 +727,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     public String addBrackets(String name) {
         String brackets = descriptor.nameBrackets;
         return (name.contains(" ") && !name.startsWith(brackets.substring(0, 1)))
-                ? brackets.substring(0, 1) + name + brackets.substring(brackets.length() - 1, brackets.length())
+                ? brackets.charAt(0) + name + brackets.substring(brackets.length() - 1)
                 : name;
     }
 

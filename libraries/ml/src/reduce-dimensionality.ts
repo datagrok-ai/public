@@ -18,6 +18,51 @@ import {Measure, KnownMetrics, AvailableMetrics, isBitArrayMetric, AvailableData
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {UMAPParameters} from 'umap-js';
 
+export const UMAP = 'UMAP';
+export const T_SNE = 't-SNE';
+
+export interface IUMAPOptions {
+  learningRate?: number;
+  nComponents?: number;
+  nEpochs?: number;
+  nNeighbors?: number;
+  spread?: number;
+  minDist?: number;
+}
+
+export interface ITSNEOptions {
+  epsilon?: number;
+  perplexity?: number;
+  dim?: number;
+}
+
+export interface IDimReductionParam {
+  uiName: string;
+  value: number | null;
+  tooltip: string;
+  placeholder?: string;
+}
+
+export class UMAPOptions {
+  learningRate: IDimReductionParam =  {uiName: 'Learinig rate', value: 1, tooltip: 'The initial learning rate for the embedding optimization'};
+  nComponents: IDimReductionParam = {uiName: 'Components', value: 2, tooltip: 'The number of components (dimensions) to project the data to'};
+  nEpochs: IDimReductionParam = {uiName: 'Epochs', value: 0, tooltip: 'The number of epochs to optimize embeddings via SGD. Computed automatically if set to 0'};
+  nNeighbors: IDimReductionParam = {uiName: 'Neighbors', value: 15, tooltip: 'The number of nearest neighbors to construct the fuzzy manifold'};
+  spread: IDimReductionParam = {uiName: 'Spread', value: 1, tooltip: 'The effective scale of embedded points, used with min distance to control the clumped/dispersed nature of the embedding'};
+  minDist: IDimReductionParam = {uiName: 'Min distance', value: 0.1, tooltip: 'The effective minimum distance between embedded points, used with spread to control the clumped/dispersed nature of the embedding'};
+
+  constructor() {};
+}
+
+export class TSNEOptions {
+  epsilon: IDimReductionParam =  {uiName: 'Epsilon', value: 10, tooltip: 'Epsilon is learning rate'};
+  perplexity: IDimReductionParam = {uiName: 'Perplexity', value: 30, tooltip: 'Roughly how many neighbors each point influences'};
+  dim: IDimReductionParam = {uiName: 'Dimensionality', value: 2, tooltip: 'Dimensionality of the embedding'};
+
+  constructor() {};
+}
+
+
 /** Abstract dimensionality reducer */
 abstract class Reducer {
   protected data: Vectors;

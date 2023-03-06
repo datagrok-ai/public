@@ -38,6 +38,7 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
         connection.parameters.put(DbCredentials.SERVER, container.getHost());
         connection.parameters.put(DbCredentials.PORT, (double) container.getFirstMappedPort());
         connection.parameters.put(DbCredentials.DB, DEFAULT_DATABASE_NAME); // CAN'T GET DB NAME FROM MSSQL CONTAINER
+        System.out.println(container.getJdbcUrl());
     }
 
     @DisplayName("Test of getSchemas() method with correct DataConnection")
@@ -140,6 +141,49 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support for SQL SERVER numeric types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.MsSqlObjectsMother#checkOutputDataFrame_numericTypes_ok")
+    @Sql(path = "scripts/mssql/mssql_numeric_types.sql",
+            restorePath = "scripts/mssql/drop.sql")
+    public void checkOutputDataFrame_numericTypes_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support for SQL SERVER money types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.MsSqlObjectsMother#checkOutputDataFrame_moneyTypes_ok")
+    @Sql(path = "scripts/mssql/mssql_money_type.sql",
+            restorePath = "scripts/mssql/drop.sql")
+    public void checkOutputDataFrame_moneyTypes_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support for SQL SERVER spatial types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.MsSqlObjectsMother#checkOutputDataFrame_spatialTypes_ok")
+    @Sql(path = "scripts/mssql/mssql_spatial_identifier.sql",
+            restorePath = "scripts/mssql/drop.sql")
+    public void checkOutputDataFrame_spatialTypes_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("SQL SERVER null safety")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.CommonObjectsMother#checkNullSupport_ok")
+    @Sql(path = "scripts/mssql/mssql_null.sql",
+            restorePath = "scripts/mssql/drop.sql")
+    public void checkNullSupport_ok(FuncCall funcCall) {
+        funcCall.func.connection = connection;
+        Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
     }
 
     private void prepareDataFrame(DataFrame dataFrame) {

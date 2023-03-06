@@ -807,6 +807,10 @@ export class tools {
     let interval = setInterval(() => {
       let newWidth = element.clientWidth;
       let newHeight = element.clientHeight;
+      if ((newWidth === 0 && newHeight === 0)) {
+        return
+      }
+
       if (newWidth !== width || newHeight !== height) {
         width = newWidth;
         height = newHeight;

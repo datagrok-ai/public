@@ -204,4 +204,24 @@ class PostgresDataProviderTest extends ContainerizedProviderBaseTest {
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
+
+    @DisplayName("Postgres Null safety")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.CommonObjectsMother#checkNullSupport_ok")
+    @Sql(path = "scripts/postgres/postgres_null.sql",
+            restorePath = "scripts/postgres/drop.sql")
+    public void checkNullSupport_ok(FuncCall funcCall) {
+        funcCall.func.connection = connection;
+        Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+    }
+
+    @DisplayName("Postgresql operators support")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.PostgresObjectsMother#checkPostgresOperatorsSupport_ok")
+    @Sql(path = "scripts/postgres/postgres_operators.sql", restorePath = "scripts/postgres/drop.sql")
+    public void checkPostgresOperatorsSupport_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
 }
