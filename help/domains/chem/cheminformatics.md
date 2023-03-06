@@ -18,18 +18,18 @@ With Datagrok, you can:
 
   ![SMILES rendering](smiles-rendering.gif "SMILES rendering")
 
-* Visualize your data with [viewers](../../visualize/viewers/). Our viewers, including [chemically aware viewers](chemically-aware-viewers) for molecular data, offer the following functionality:
+* Visualize your data with [viewers](../../visualize/viewers/). Our viewers, including [chemically aware viewers](chemically-aware-viewers.md) for molecular data, offer the following functionality:
 
   * Visualization of molecules on axes.
 
     ![Molecules on axis](structures-on-axis.gif "Molecules on axis")
 
   * Synchronized filtering across selected viewers.
-  
+
     ![Synchronized filtering](synchronized-filtering.gif "Synchronized filtering")
-  
+
   * Useful tooltips for each datapoint.
-  
+
     ![Datapoint tooltip](datapoint-tooltip.gif "Datapoint tooltip")
 
 * Sketch a new molecule, edit an existing one, or retrieve one by entering compound identifier/trivial name with [sketcher](sketcher.md). Datagrok supports the following sketchers: Marvin, ChemDraw, OpenChemLib, Ketcher.
@@ -62,8 +62,8 @@ Extract more information about your data with [info panels](../../discover/info-
 By opening, info panels automatically show the general functions:
 
 * Structure 2D – visualizes a molecule in 2D.
-* Structure 3D – visualizes a molecule in 3D through generating .mol file.
-* Molfile – provides a .mol file.
+* Structure 3D – visualizes a molecule in 3D through generating a MOL file.
+* Molfile – provides a MOL file.
 
 All the rest functions fall into Chemistry, Biology, Databases groups:
 
@@ -88,7 +88,7 @@ Biology group helps explore drug design related features and includes:
 * [Toxicity](info-panels/toxicity-risks.md) –  predicts the toxicity scores. Consists of such categories as mutagenicity, tumorogenicity, irritating effects, reproductive effects.
 * [Structural alerts](info-panels/structural-alerts.md) – highlights the fragments in structures that might greatly increase the toxicity and other problematic structural features.
 * [Drug likeness](info-panels/structural-alerts.md) – predicts a score that shows how likely this molecule is to be a drug.
-* ADME/Tox - performs ADME and Toxicity analysis.
+* ADME/Tox - performs ADME and Toxicity prediction.
 
 ```mdx-code-block
 </TabItem>
