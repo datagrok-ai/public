@@ -1,4 +1,10 @@
-import {IFitChartData, IFitChartOptions, IFitSeriesOptions, IFitSeries, IFitPoint} from './fit-data';
+import {
+  IFitChartData,
+  IFitChartOptions,
+  IFitSeriesOptions,
+  IFitSeries,
+  IFitPoint
+} from './fit-data';
 
 const AXES = {x: 'xAxis', y: 'yAxis'};
 const EXTREMUMS = {min: 'min', max: 'max'};

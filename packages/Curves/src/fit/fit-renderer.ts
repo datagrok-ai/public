@@ -1,12 +1,14 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {GridColumn, Paint} from 'datagrok-api/dg';
-import {fitSeries, getChartData, getChartBounds, getFittedCurve, getConfidenceIntrevals,
-  CONFIDENCE_INTERVAL_FILL_COLOR, CONFIDENCE_INTERVAL_STROKE_COLOR} from './fit-data';
+
 import {fitResultProperties} from "@datagrok-libraries/statistics/src/parameter-estimation/fit-curve";
 import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
+
+import {fitSeries, getChartData, getChartBounds, getFittedCurve, getConfidenceIntrevals,
+  CONFIDENCE_INTERVAL_FILL_COLOR, CONFIDENCE_INTERVAL_STROKE_COLOR} from './fit-data';
 import {convertXMLToIFitChartData} from './fit-parser';
-import wu from "wu";
+
 
 interface ITransform {
   xToScreen(world: number): number;
