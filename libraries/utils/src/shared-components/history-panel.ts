@@ -397,8 +397,10 @@ export class HistoryPanel {
     });
 
     this.allRunsFetch.subscribe(async () => {
+      ui.setUpdateIndicator(this.root, true);
       const allRuns = (await historyUtils.pullRunsByName(this.func.name, [], {order: 'started'}, ['session.user', 'options'])).reverse();
       this.store.allRuns.next(allRuns);
+      ui.setUpdateIndicator(this.root, false);
     });
 
     const clearMetadata = (funcCall: DG.FuncCall) => {
