@@ -26,8 +26,6 @@ export const passErrorToShell = () => {
   };
 };
 
-export const INTERACTIVE_CSS_CLASS = 'cv-interactive';
-
 export abstract class FunctionView extends DG.ViewBase {
   protected _funcCall?: DG.FuncCall;
   protected _lastCall?: DG.FuncCall;
@@ -352,10 +350,10 @@ export abstract class FunctionView extends DG.ViewBase {
   protected historyRoot: HTMLDivElement = ui.divV([], {style: {'justify-content': 'center'}});
 
   protected defaultExportFilename = (format: string) => {
-    return `${this.name} - ${new Date().toLocaleString()}.${this.exportConfig!.supportedExtensions[format]}`;
+    return `${this.name} - ${new Date().toLocaleString('en-US').replaceAll(/:|\//g, '-')}.${this.exportConfig!.supportedExtensions[format]}`;
   };
 
-  protected defaultSupportedExportExtensions = () => {
+  protected defaultSupportedExportExtensions: () => Record<string, string> = () => {
     return {
       'Excel': 'xlsx'
     };
