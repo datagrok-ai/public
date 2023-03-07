@@ -1,8 +1,3 @@
-/* Do not change these import lines to match external modules in webpack configuration */
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
-
 import {ChemicalTableParser, ChemicalTableParserBase, AtomAndBondCounts} from './chemical-table-parser';
 import {MOLFILE_VERSION, V2K, V3K} from './molfile-parsing-const';
 
@@ -19,7 +14,7 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
   public init(molfile: string) {
     super.init(molfile);
 
-    const molfileVersion = MolfileHandler.determineMolfileVersion(molfile);
+    const molfileVersion = MolfileHandler.determineMolfileVersion(this.file);
     const isV2K = (molfileVersion === MOLFILE_VERSION.V2000);
 
     this.parseAtomAndBondCounts = isV2K ? this.parseAtomAndBondCountsV2K : this.parseAtomAndBondCountsV3K;
