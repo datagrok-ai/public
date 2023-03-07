@@ -103,7 +103,7 @@ public class TableQuery
             List<String> orders = new ArrayList<>();
             sql += "order by\n";
             for (FieldOrder order: orderBy)
-                orders.add(order.field + (order.asc ? " asc" : " desc"));
+                orders.add("\"" + order.field + "\"" +(order.asc ? " asc" : " desc"));
             sql += StringUtils.join(pad(orders), ", ") + "\n";
         }
 
