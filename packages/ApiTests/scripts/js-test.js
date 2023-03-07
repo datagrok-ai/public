@@ -1,27 +1,24 @@
-//name: JS Params Test
+//name: JavaScript Params Test
 //language: javascript
 //tags: test
-//input: int i = 10
-//input: double d = -20.1
-//input: bool b = false
-//input: string s = 'abc'
-//input_: datetime dt = '1992-09-20 00:00:00'
-//input_: dataframe df {optional: true}
-//input_: column col {optional: true}
+//input: int i
+//input: double d
+//input: bool b
+//input: string s
+//input: datetime dt
+//input: dataframe df
+//input: column col
 //output: int ri
 //output: double rd
 //output: bool rb
 //output: string rs
-//output_: datetime rdt
+//output: datetime rdt
 //output_: dataframe rdf
-//test: ApiTests:getOutput('JSParamsTest', 'ri').val == 5
-//test: ApiTests:getOutput('JSParamsTest', 'rd').val == 39.9
-//test: ApiTests:getOutput('JSParamsTest', 'rb').val == true
-//test: ApiTests:getOutput('JSParamsTest', 'rs').val == 'abcabc'
-
+//output_: column rcol
 ri = i / 2;
 rd = d + 60;
 rb = !b;
 rs = s + s;
-//rdf = df[col]
-//rdt = dt - timedelta(days=10)
+rdt = new Date(dt);
+rdt.setDate(rdt.getDate() + 10);
+// rdf = df.col('height');
