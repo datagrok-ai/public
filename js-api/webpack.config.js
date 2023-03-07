@@ -5,7 +5,7 @@ module.exports = {
   entry: {'grok': './grok.ts', 'ui': './ui.ts', 'DG': './dg.ts'},
   devtool: 'source-map',
   resolve: {
-    extensions: ['.js', '.ts', '.tsx']
+    extensions: ['.ts', '.tsx', '.js']
   },
   module: {
     rules: [
