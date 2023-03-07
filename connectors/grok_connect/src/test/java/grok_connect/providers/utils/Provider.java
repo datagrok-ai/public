@@ -13,6 +13,7 @@ import java.util.Properties;
  * Enum that contains all necessary data related to specific provider and it's container
  */
 public enum Provider {
+    ATHENA("src/test/resources/properties/athena.properties"),
     MSSQL("src/test/resources/properties/mssql.properties") {
         @Override
         protected JdbcDatabaseContainer<?> newJdbcContainer() {
