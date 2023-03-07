@@ -5,8 +5,34 @@ title: "Substructure search"
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-Substructure search is a technique of finding molecules or compounds that contain the query substructure.  
-You can set the query substructure by either drawing it in [sketcher](sketcher.md) or just selecting a molecule in your dataset.
+You can use a substructure search to filter your dataset and display molecules that contain a specific fragment (substructure). Unlike the [similarity search](similarity-search.md), substructure search returns molecules that have the entire fragment, rather than just similar parts. Substructure search is commonly used to analyze hits and establish a preliminary [structure-activity relationship](link).
+
+You can define the substructure by either [sketching it manually](sketcher.md) or selecting a molecule from your dataset:
+
+* To manually sketch a substructure, in the **Top menu**, click **Chem** > **Sketcher**. Alternatively, use the **Filter** icon on the **Toolbox**, then click the molecule in the **Filter panel** to to modify. Draw the substructure, then click **Filter** or **Select**. 
+  
+  :::note
+  
+  Aromatic bonds....
+  
+  :::
+ 
+* To use the existing molecule, right click it and select **Current Value** > **Use as filter**.  To modify the selected substructure, click it to open the sketcher and make edits.   
+
+[GIF placeholder]
+
+:::tip
+
+You can also use the [**Scaffold Tree** viewer](link) to ...
+
+:::
+
+## Substructure search queries in databases
+
+
+## 
+
+------------
 
 ## Data sources
 
@@ -55,13 +81,7 @@ In uploaded datasets, you can run substructure search in three ways:
 
 ### Public databases
 
-  We support substructure search for 3 public databases: PubChem, Drugbank, and ChEMBL. You can access ChEMBL by either API or our internal backup.
-
-  To run substructure search in public databases:
-
-  1. In info panels, go to **Databases**.
-  2. Open the **PubChem/Drugbank/ChEMBL** tab.
-  3. Open the **Substructure search** tab.
+  We support substructure search for 3 public databases: PubChem, Drugbank, and ChEMBL. You can access ChEMBL by either API or our internal backup. To run substructure search in public databases, go to **Databases** > **PubChem/Drugbank/ChEMBL** tab > **Substructure search** tab.
 
 <!-- GIF, but not all the public DBs work -->
 
