@@ -26,6 +26,11 @@ public class DbCredentials
     public static final String CLOUD = "cloud";
     public static final String WAREHOUSE = "warehouse";
     public static final String ACCOUNT = "account";
+    public static final String S3OutputLocation = "S3OutputLocation";
+    public static final String S3OutputEncOption = "S3OutputEncOption";
+    public static final String ACCESS_KEY = "accessKey";
+    public static final String SECRET_KEY = "secretKey";
+    public static final String VPC_ENDPOINT = "VPCEndpoint";
 
     public String server;
     public String port;
