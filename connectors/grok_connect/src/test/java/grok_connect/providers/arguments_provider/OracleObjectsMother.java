@@ -131,7 +131,8 @@ public class OracleObjectsMother {
                                 now.toString(),
                                 dayOfMonth == 1 ? null : yesterday.toString(),
                                 lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
-                                        null : lastDayOfWeek.toString())),
+                                        null : lastDayOfWeek.toString(),
+                                dayOfLastYear.getYear() == now.getYear() ? dayOfLastYear.toString() : null)),
                         "dat")
                 .build();
         FuncCall funcCall4 = FuncCallBuilder.getBuilder()
@@ -162,7 +163,7 @@ public class OracleObjectsMother {
         DataFrame expected6 = DataFrameBuilder.getBuilder()
                 .setRowCount(1)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
-                                dayOfLastYear.toString())),
+                                dayOfLastYear.getYear() < now.getYear() ? dayOfLastYear.toString() : null)),
                         "dat")
                 .build();
         FuncCall funcCall6 = FuncCallBuilder.getBuilder()
@@ -285,7 +286,7 @@ public class OracleObjectsMother {
                 .build();
         FuncCall funcCall1 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string first_name = \"starts with p\" {pattern: string}\n"
-                        + "--input: string id = \">1\" {pattern :int}\n"
+                        + "--input: string id = \">1\" {pattern: int}\n"
                         + "--input: string email = \"contains com\" {pattern: string}\n"
                         + "--input: string some_number = \">20\" {pattern: double}\n"
                         + "--input: string country = \"in (Indonesia)\" {pattern: string}\n"
