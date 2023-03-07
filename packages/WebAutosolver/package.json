@@ -1,5 +1,5 @@
 {
-    "name": "webautosolver",
+    "name": "@datagrok/webautosolver",
     "friendlyName": "WebAutosolver",
     "version": "0.0.1",
     "description": "WebAutosolver of initial value problems.",
