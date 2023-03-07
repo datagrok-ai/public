@@ -89,6 +89,10 @@ const config = {
   ],
 
   themeConfig: {
+    colorMode: {
+      defaultMode: 'light',
+      disableSwitch: true,
+    },
     navbar: {
       title: 'datagrok',
       logo: {
@@ -111,8 +115,9 @@ const config = {
         },
         {
           href: 'https://public.datagrok.ai',
-          label: 'Launch',
+          label: 'LAUNCH',
           position: 'right',
+          className: 'btn btn-primary px-4',
         },
       ],
     },

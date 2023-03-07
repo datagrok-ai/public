@@ -138,6 +138,14 @@ export class User extends Entity {
 
   /** Security Group */
   get group(): Group { return toJs(api.grok_User_Get_Group(this.dart)); }
+
+  static get defaultUsersIds() {
+    return {
+      "Test": "ca1e672e-e3be-40e0-b79b-d2c68e68d380", 
+      "Admin": "878c42b0-9a50-11e6-c537-6bf8e9ab02ee", 
+      "System": "3e32c5fa-ac9c-4d39-8b4b-4db3e576b3c3", 
+    }
+  }
 }
 
 
@@ -696,6 +704,17 @@ export class Group extends Entity {
   get hidden(): boolean { return api.grok_Group_Get_Hidden(this.dart); }
   set hidden(e: boolean) { api.grok_Group_Set_Hidden(this.dart, e); }
 
+  static get defaultGroupsIds() {
+    return {
+      "All users": "a4b45840-9a50-11e6-9cc9-8546b8bf62e6", 
+      "Developers": "ba9cd191-9a50-11e6-9cc9-910bf827f0ab",
+      "Need to create": "00000000-0000-0000-0000-000000000000",
+      "Test": "ca1e672e-e3be-40e0-b79b-8546b8bf62e6", 
+      "Admin": "a4b45840-9a50-11e6-c537-6bf8e9ab02ee", 
+      "System": "a4b45840-ac9c-4d39-8b4b-4db3e576b3c3", 
+      "Administrators": "1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5",
+    }
+  }
 }
 
 /** @extends Func
@@ -962,7 +981,14 @@ export class Package extends Entity {
 }
 
 
-export class Dockerfile extends Entity {
+export class DockerImage extends Entity {
+  constructor(dart: any) {
+    super(dart);
+  }
+}
+
+
+export class DockerContainer extends Entity {
   constructor(dart: any) {
     super(dart);
   }
@@ -1143,7 +1169,7 @@ export class Property {
   static js(name: string, type: TYPE, options?: PropertyOptions): Property {
     return Property.create(name, type,
       (x: any) => x[name],
-      (x: any, v: any) => x[name] = v,
+      function (x: any, v: any) { x[name] = v; },
       options?.defaultValue).fromOptions(options);
   }
 

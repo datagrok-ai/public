@@ -974,7 +974,7 @@ export class InputBase<T = any> {
 
   /** Input value */
   get value(): T { return toJs(api.grok_InputBase_Get_Value(this.dart)); }
-  set value(x: T) { toDart(api.grok_InputBase_Set_Value(this.dart, x)); }
+  set value(x: T) { api.grok_InputBase_Set_Value(this.dart, toDart(x)); }
 
   /** String representation of the {@link value} */
   get stringValue(): string { return api.grok_InputBase_Get_StringValue(this.dart); }

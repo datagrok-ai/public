@@ -9,15 +9,17 @@ import {HtmlTestCellRenderer, TestCellRenderer} from './cell-types/test-cell-ren
 import {BarCellRenderer} from './cell-types/bar-cell-renderer';
 import {BinaryImageCellRenderer} from './cell-types/binary-image-cell-renderer';
 
-import {SparklineCellRenderer, FitCellRenderer} from './sparklines/sparklines-lines';
+import {SparklineCellRenderer} from './sparklines/sparklines-lines';
 import {BarChartCellRenderer} from './sparklines/bar-chart';
 import {PieChartCellRenderer} from './sparklines/piechart';
 import {RadarChartCellRender} from './sparklines/radar-chart';
-import {ScatterPlotCellRenderer} from "./sparklines/scatter-plot";
-import {names, SparklineType, sparklineTypes} from "./sparklines/shared";
+import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
+import {names, SparklineType, sparklineTypes} from './sparklines/shared';
 import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
 
+
 export const _package = new DG.Package();
+
 
 //name: imageUrlCellRenderer
 //tags: cellRenderer
@@ -68,15 +70,6 @@ export function sparklineCellRenderer() {
   return new SparklineCellRenderer();
 }
 
-//name: Fit
-//tags: cellRenderer
-//meta.cellType: sparkline
-//meta.virtual: true
-//output: grid_cell_renderer result
-export function fitCellRenderer() {
-  return new FitCellRenderer();
-}
-
 //name: Scatter Plot
 //tags: cellRenderer
 //meta.cellType: scatterplot
@@ -117,24 +110,24 @@ export function radarCellRenderer() {
 //input: list columns { type: numerical }
 //meta.action: Sparklines...
 export function summarizeColumns(columns: DG.Column[]) {
-  let table = columns[0].dataFrame;
-  let name = ui.stringInput('Name', table.columns.getUnusedName('Summary'));
-  let sparklineType = ui.choiceInput('Type', SparklineType.Sparkline, sparklineTypes);
-  let columnsSelector = ui.columnsInput('Columns', table, (_) => {}, {
+  const table = columns[0].dataFrame;
+  const name = ui.stringInput('Name', table.columns.getUnusedName('Summary'));
+  const sparklineType = ui.choiceInput('Type', SparklineType.Sparkline, sparklineTypes);
+  const columnsSelector = ui.columnsInput('Columns', table, (_) => {}, {
     available: names(table.columns.numerical),
     checked: names(columns),
   });
-  let hide = ui.boolInput('Hide', false);
+  const hide = ui.boolInput('Hide', false);
   hide.setTooltip('Hide source columns in the grid');
 
   function addSummaryColumn() {
-    let grid = grok.shell.tv.grid;
-    let left = grid.horzScroll.min;
-    let columnNames = names(columnsSelector.value);
-    let options = { gridColumnName: name.value, cellType: sparklineType.value! };
-    let gridCol = grid.columns.add(options);
-    gridCol.move(grid.columns.byName(columnNames[0])!.idx)
-    gridCol.settings = { columnNames: columnNames };
+    const grid = grok.shell.tv.grid;
+    const left = grid.horzScroll.min;
+    const columnNames = names(columnsSelector.value);
+    const options = {gridColumnName: name.value, cellType: sparklineType.value!};
+    const gridCol = grid.columns.add(options);
+    gridCol.move(grid.columns.byName(columnNames[0])!.idx);
+    gridCol.settings = {columnNames: columnNames};
     if (hide.value) {
       for (const name of columnNames)
         grid.columns.byName(name)!.visible = false;
@@ -175,7 +168,7 @@ export function testUnitsTonCellRenderer() {
 
 //name: demoTestUnitsCellRenderer
 export function demoTestUnitsCellRenderer() {
-  let t = DG.DataFrame.fromColumns([
+  const t = DG.DataFrame.fromColumns([
     DG.Column.fromStrings('kg', ['a', 'b']).setTag('quality', 'test').setTag('foo', 'bar').setTag('units', 'kg'),
     DG.Column.fromStrings('ton', ['a', 'b']).setTag('quality', 'test').setTag('foo', 'bar').setTag('units', 'ton')
   ]);
@@ -184,7 +177,6 @@ export function demoTestUnitsCellRenderer() {
   grok.shell.info('Different renderers even though semantic types are the same');
 }
 
-//description: autoPowerGrid
 //tags: autostart
 export function _autoPowerGrid(): void {
   PinnedUtils.registerPinnedColumns();

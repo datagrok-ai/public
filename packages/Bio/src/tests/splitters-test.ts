@@ -92,7 +92,7 @@ category('splitters', () => {
     dfList.push(df);
     tvList.push(tv);
 
-    splitToMonomers(seqCol);
+    splitToMonomers();
     expect(df.columns.names().includes('17'), true);
   });
 

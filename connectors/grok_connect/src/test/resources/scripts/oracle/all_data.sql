@@ -61,8 +61,9 @@ CREATE TABLE dates_patterns (
 
 INSERT INTO dates_patterns(dat) VALUES (SYSDATE); --TODAY
 INSERT INTO dates_patterns(dat) VALUES (SYSDATE - 1); --YESTERDAY
-INSERT INTO dates_patterns(dat) VALUES (TRUNC(SYSDATE + 6, 'DAY')); --THIS WEEK
-INSERT INTO dates_patterns(dat) VALUES (SYSDATE - 150); --THIS YEAR
+INSERT INTO dates_patterns(dat) SELECT TRUNC(SYSDATE + 6, 'DAY') FROM dual
+WHERE NOT EXISTS (SELECT * FROM dates_patterns WHERE to_date(dat) = to_date(TRUNC(SYSDATE + 6, 'DAY')));
+INSERT INTO dates_patterns(dat) VALUES (SYSDATE - 150);
 INSERT INTO dates_patterns(dat) VALUES (TO_DATE('2021-04-09', 'YYYY-MM-DD'));
 
 CREATE TABLE dates_type (
@@ -129,3 +130,22 @@ INSERT INTO XML_DATA (data) VALUES ('<book><title>Manual</title><chapter>...</ch
 CREATE TABLE lobs (blob_type BLOB, clob_type CLOB, nclob_type NCLOB);
 
 INSERT INTO lobs (blob_type, clob_type, nclob_type) VALUES (UTL_RAW.CAST_TO_RAW('Grok'), TO_CLOB('Grok'), TO_NCLOB('Grok'));
+
+CREATE TABLE NULL_SAFETY(ch CHAR(10),
+                        varch VARCHAR2(10),
+                        nch NCHAR(10),
+                        nvarch NVARCHAR2(50), dat DATE, stamp TIMESTAMP,
+                        zoned_stamp TIMESTAMP WITH TIME ZONE,
+                        interval1 INTERVAL YEAR TO MONTH,
+                        interval2 INTERVAL DAY TO SECOND, data JSON, number_value NUMBER(6, 2),
+                        small_value NUMBER(9),
+                        float_value FLOAT(126),
+                        binary_float_value BINARY_FLOAT,
+                        binary_double_value BINARY_DOUBLE,  uri URIType, members mem_type, xml_data XMLType,
+                        blob_type BLOB, clob_type CLOB, nclob_type NCLOB);
+
+INSERT INTO NULL_SAFETY(ch, varch, nch, nvarch, dat, stamp, zoned_stamp, interval1, interval2, data, number_value,
+                        small_value, float_value, binary_float_value, binary_double_value, uri,
+                        members, xml_data, blob_type, clob_type, nclob_type)
+VALUES (NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+        NULL, NULL, NULL);

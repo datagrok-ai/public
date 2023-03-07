@@ -12,6 +12,7 @@ import {SemanticValue} from './grid';
 import $ from 'cash-dom';
 import { FuncCall } from '../dg';
 import '../css/styles.css';
+import { MolfileHandler } from "@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler";
 
 let api = <any>window;
 declare let grok: any;
@@ -40,6 +41,7 @@ export namespace chem {
   export let SKETCHER_LOCAL_STORAGE = 'sketcher';
   export const STORAGE_NAME = 'sketcher';
   export const KEY = 'selected';
+  const molfileHandler = MolfileHandler.createInstance(WHITE_MOLBLOCK);
 
   export enum Notation {
     Smiles = 'smiles',
@@ -248,7 +250,7 @@ export namespace chem {
       const extractor = extractors
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
 
-      if (extractor != null)
+      if (extractor != null && !checkSmiles(x))
         extractor
           .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
           .then((mol) => this.setMolecule(mol));
@@ -274,7 +276,7 @@ export namespace chem {
     }
 
     resize() {
-      if (this.sketcherInDom) {
+      if (this.sketcherInDom && this.sketcher?.isInitialized) {
         this.sketcher?.resize();
         this.resized = true;
       }
@@ -296,7 +298,16 @@ export namespace chem {
         const height = width / 2;
         if (!(this.isEmpty()) && this.extSketcherDiv.parentElement) {
           ui.empty(this.extSketcherDiv);
-          ui.tooltip.bind(this.extSketcherCanvas, 'Click to edit');
+          const currentMolfile = this.getMolFile();
+          molfileHandler.init(currentMolfile);
+          const maxDelta = 15;
+          const zoom = 15;
+          const xCoords = molfileHandler.x;
+          const yCoords = molfileHandler.y;
+          const deltaX = Math.max(...xCoords) - Math.min(...xCoords);
+          const deltaY = Math.max(...yCoords) - Math.min(...yCoords);
+          const tooltip = (deltaX > maxDelta || deltaY > maxDelta) ? this.drawToCanvas(deltaX*zoom, deltaY*zoom, currentMolfile) : ui.divText('Click to edit');
+          ui.tooltip.bind(this.extSketcherCanvas, () => tooltip);
           canvasMol(0, 0, width, height, this.extSketcherCanvas, this.getMolFile()!, null, { normalizeDepiction: true, straightenDepiction: true })
             .then((_) => {
               ui.empty(this.extSketcherDiv);
@@ -422,10 +433,12 @@ export namespace chem {
           .endGroup()
           .separator()
           .items(this.sketcherFunctions.map((f) => f.friendlyName), (friendlyName: string) => {
-            grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, friendlyName, true);
-            currentSketcherType = friendlyName;
-            this.sketcherType = currentSketcherType;
-            },
+            if (currentSketcherType !== friendlyName) {
+                grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, friendlyName, true);
+                currentSketcherType = friendlyName;
+                this.sketcherType = currentSketcherType;
+            }
+          },
             {
               isChecked: (item) => item === currentSketcherType, toString: item => item,
               radioGroup: 'sketcher type'
@@ -457,6 +470,8 @@ export namespace chem {
         this.changedSub?.unsubscribe();
         const sketcherFunc = this.sketcherFunctions.find(e => e.friendlyName == sketcherType|| e.name === sketcherType) ?? this.sketcherFunctions.find(e => e.friendlyName == DEFAULT_SKETCHER);
         this.sketcher = await sketcherFunc!.apply();
+        if(currentSketcherType !== sketcherFunc!.friendlyName) //in case sketcher type has been changed while previous sketcher was loading
+          return;
         this._setSketcherSize(); //update sketcher size according to base sketcher width and height
         this.host.appendChild(this.sketcher!.root);
         await ui.tools.waitForElementInDom(this.root);
@@ -734,6 +749,14 @@ export namespace chem {
     funcCall.callSync();
     const resultMolecule = funcCall.getOutputParamValue();
     return resultMolecule;
+  }
+
+  export function checkSmiles(s: string): boolean {
+    const isSmilesFunc = Func.find({package: 'Chem', name: 'isSmiles'})[0];
+    const funcCall: FuncCall = isSmilesFunc.prepare({s});
+    funcCall.callSync();
+    const resultBool = funcCall.getOutputParamValue();
+    return resultBool;
   }
 
   export function smilesFromSmartsWarning(): string {

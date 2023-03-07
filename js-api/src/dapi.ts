@@ -4,7 +4,8 @@ import {
   DataConnection,
   DataJob,
   DataQuery,
-  Dockerfile,
+  DockerImage,
+  DockerContainer,
   Entity,
   Group,
   Model,
@@ -150,11 +151,7 @@ export class Dapi {
     return new HttpDataSource(api.grok_Dapi_Environments());
   }
 
-  /**Dockerfiles API endpoint
-   * @type {HttpDataSource<Dockerfile>} */
-  get dockerfiles(): DockerfilesDataSource {
-    return new DockerfilesDataSource(api.grok_Dapi_Dockerfiles(), 'Dockerfile');
-  }
+  docker = new DockerDataSource();
 
   /** Users Data Storage API endpoint
    *  @type {UserDataStorage} */
@@ -782,27 +779,56 @@ export class TablesDataSource extends HttpDataSource<TableInfo> {
   }
 }
 
+export class DockerDataSource {
+  /**DockerImages API endpoint
+   * @type {HttpDataSource<DockerImage>} */
+  get dockerImages(): DockerImagesDataSource {
+    return new DockerImagesDataSource(api.grok_Dapi_DockerImages());
+  }
+
+  /**Dockerfiles API endpoint
+   * @type {HttpDataSource<DockerImage>} */
+  get dockerContainers(): DockerContainersDataSource {
+    return new DockerContainersDataSource(api.grok_Dapi_DockerContainers());
+  }
+}
+
 /** Functionality to work with Dockerfiles
  * @extends HttpDataSource */
-export class DockerfilesDataSource extends HttpDataSource<Dockerfile> {
+export class DockerImagesDataSource extends HttpDataSource<DockerImage> {
   /** @constructs DockerfilesDataSource */
-  constructor(s: any, clsName: string) {
-    super(s, clsName);
+  constructor(s: any) {
+    super(s);
+  }
+
+  /* Reebuilds image */
+  rebuild(id: string): Promise<boolean> {
+    return api.grok_Dapi_DockerImagesDataSource_Rebuild(this.dart, id);
+  }
+
+}
+
+/** Functionality to work with Dockerfiles
+ * @extends HttpDataSource */
+export class DockerContainersDataSource extends HttpDataSource<DockerContainer> {
+  /** @constructs DockerfilesDataSource */
+  constructor(s: any) {
+    super(s);
   }
 
   /* Runs container */
-  run(dockerfileId: string): Promise<boolean> {
-    return api.grok_Dapi_DockerfilesDataSource_Run(this.dart, dockerfileId);
+  run(id: string): Promise<boolean> {
+    return api.grok_Dapi_DockerContainersDataSource_Run(this.dart, id);
   }
 
   /* Stops container */
-  stop(dockerfileId: string): Promise<boolean> {
-    return api.grok_Dapi_DockerfilesDataSource_Stop(this.dart, dockerfileId);
+  stop(id: string): Promise<boolean> {
+    return api.grok_Dapi_DockerContainersDataSource_Stop(this.dart, id);
   }
 
   /* Makes a request to container with dockerfileId */
-  request(dockerfileId: string, path: string, params: ResponseInit): Promise<string | null> {
-    return api.grok_Dapi_DockerfilesDataSource_ProxyRequest(this.dart, dockerfileId, path, params);
+  request(id: string, path: string, params: ResponseInit): Promise<string | null> {
+    return api.grok_Dapi_DockerContainersDataSource_ProxyRequest(this.dart, id, path, params);
   }
 }
 

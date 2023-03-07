@@ -7,7 +7,7 @@ import 'echarts-gl';
 
 
 type AxisArray = {data: number[], min: number, max: number, type: string}
-
+/** Represents a surface plot viewer */
 export class SurfacePlot extends EChartViewer {
   XColumnName: string;
   YColumnName: string;
