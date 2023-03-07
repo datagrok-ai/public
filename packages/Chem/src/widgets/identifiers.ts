@@ -4,6 +4,9 @@ import * as DG from 'datagrok-api/dg';
 import {getRdKitModule, getRdKitWebRoot} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 
+const CHEMBL = 'Chembl';
+const PUBCHEM = 'PubChem';
+
 let unichemSources: DG.DataFrame;
 
 export async function getOrLoadUnichemSources(): Promise<DG.DataFrame> {
@@ -23,7 +26,7 @@ class UniChemSource {
   static _sources: {[key: number]: UniChemSource} = {};
 
   static idNames : {[key: number]: string} = {
-    1: 'chembl',
+    1: CHEMBL.toLowerCase(),
     2: 'drugbank',
     3: 'pdb',
     4: 'gtopdb',
@@ -41,7 +44,7 @@ class UniChemSource {
     18: 'hmdb',
     20: 'selleck',
     21: 'pubchem_tpharma',
-    22: 'pubchem',
+    22: PUBCHEM.toLowerCase(),
     23: 'mcule',
     24: 'nmrshiftdb2',
     25: 'lincs',
@@ -113,11 +116,7 @@ async function getCompoundsIds(inchiKey: string): Promise<{[k:string]: any} | un
     {} : Object.fromEntries(sources.map((m) => [UniChemSource.idNames[(m['src_id'] as number)], m['src_compound_id']]));
 }
 
-export async function getIdMap(smiles: string): Promise<{[k:string]: any} | null> {
-  const rdKitModule = getRdKitModule();
-  const mol = rdKitModule.get_mol(smiles);
-  const inchiKey = rdKitModule.get_inchikey_for_inchi(mol.get_inchi());
-  mol.delete();
+export async function getIdMap(inchiKey: string): Promise<{[k:string]: any} | null> {
   const idMap = await getCompoundsIds(inchiKey);
 
   if (typeof idMap === 'undefined')
@@ -132,22 +131,69 @@ export async function getIdMap(smiles: string): Promise<{[k:string]: any} | null
   return idMap;
 }
 
-export async function identifiersWidget(smiles: string): Promise<DG.Widget> {
+async function getIUPACName(smiles: string): Promise<string> {
+  const preparedSmiles = smiles.replaceAll(`#`, `%23`); // need to escape # sign (triple bond) in URL
+  const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${preparedSmiles}/property/IUPACName/JSON`;
+  const response = await fetch(url);
+  const responseJson = await response.json();
+  const result = responseJson.PropertyTable?.Properties;
+  return (result && result[0].hasOwnProperty('IUPACName')) ? result[0].IUPACName : 'Not found in PubChem';
+}
+
+export async function identifiers(molfile: string): Promise<HTMLElement> {
   const rdKitModule = getRdKitModule();
-  try {
-    smiles = _convertMolNotation(smiles, 'unknown', 'smiles', rdKitModule);
-  } catch (e) {
-    return new DG.Widget(ui.divText('Molecule is possibly malformed'));
-  }
+  const mol = rdKitModule.get_mol(molfile);
+  const inchi = mol.get_inchi();
+  const inchiKey = rdKitModule.get_inchikey_for_inchi(inchi);
+  mol.delete();
+
   let idMap: {[k: string]: any} | null = null;
   try {
-    idMap = await getIdMap(smiles);
+    idMap = await getIdMap(inchiKey);
   } catch (e) {
     console.warn(e);
   }
+
+  const identifiersDiv = ui.div();
+  const mainIdentifiers = createMainIdentifiersMap(molfile, inchi, inchiKey, idMap);
+  identifiersDiv.append(ui.tableFromMap(mainIdentifiers));
+  
   if (idMap === null)
-    return new DG.Widget(ui.divText('Not found in UniChem'));
-  for (const [source, identifier] of Object.entries(idMap))
-    idMap[source] = ui.link(identifier.id, () => window.open(identifier.link));
-  return new DG.Widget(ui.tableFromMap(idMap));
+    identifiersDiv.append(ui.divText('Not found in UniChem'));
+  else {
+    const otherIdentifiers: {[k: string]: any} = {};
+    for (const [source, identifier] of Object.entries(idMap))
+    otherIdentifiers[source] = ui.link(identifier.id, () => window.open(identifier.link));
+    const acc = ui.accordion();
+    acc.addPane(`Other identifiers`, 
+      () => Object.keys(otherIdentifiers).length === 0 ? 
+        ui.divText('No otehr identifiers found') :  ui.tableFromMap(otherIdentifiers));
+    identifiersDiv.append(acc.root);
+  }
+
+  return identifiersDiv;
+}
+
+
+function createMainIdentifiersMap(molfile: string, inchi: string, inchiKey: string, idMap: {[k: string]: any} | null): {[k: string]: any} {
+  const map: {[k: string]: any} = {};
+  const smiles =  _convertMolNotation(molfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles, getRdKitModule());
+  map['Name'] = ui.wait(async () => ui.divText(await getIUPACName(smiles)));
+  map['Smiles'] = smiles;
+  map['Inchi'] = inchi;
+  map['Inchi key'] = inchiKey;
+  extractMainIdentifier(CHEMBL, map, idMap);
+  extractMainIdentifier(PUBCHEM, map, idMap);
+  function extractMainIdentifier(source: string, map: {[k: string]: any}, idMap: {[k: string]: any} | null) {
+    if (idMap) {
+      const identifier = idMap[source.toLowerCase()];
+      if (identifier) {
+        map[source] = ui.link(identifier.id, () => window.open(identifier.link));
+        delete idMap[source.toLowerCase()];
+      } else {
+        map[source] = '-';
+      }
+    }
+  }
+  return map;
 }

@@ -23,12 +23,9 @@ import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-meth
 //widget imports
 import {SubstructureFilter} from './widgets/chem-substructure-filter';
 import {drugLikenessWidget} from './widgets/drug-likeness';
-import {identifiersWidget} from './widgets/identifiers';
-import {molfileWidget} from './widgets/molfile';
 import {propertiesWidget} from './widgets/properties';
 import {structuralAlertsWidget} from './widgets/structural-alerts';
-import {structure2dWidget} from './widgets/structure2d';
-import {structure3dWidget} from './widgets/structure3d';
+import {moleculeOverviewWidget} from './widgets/molecule-overview';
 import {toxicityWidget} from './widgets/toxicity';
 
 //panels imports
@@ -659,14 +656,6 @@ export function drugLikeness(smiles: string): DG.Widget {
   return smiles ? drugLikenessWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Molfile
-//description: Molecule as Molfile
-//tags: panel, chem, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export function molfile(smiles: string): DG.Widget {
-  return smiles ? molfileWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
-}
 
 //name: Chemistry | Properties
 //description: Basic molecule properties
@@ -687,23 +676,15 @@ export async function structuralAlerts(smiles: string): Promise<DG.Widget> {
   return smiles ? structuralAlertsWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Structure 2D
-//description: 2D molecule representation
+//name: Molecule Overview
+//description: molecule overview including 2D/3D molecule representation and identifiers
 //tags: panel, chem, widgets
 //input: string molecule { semType: Molecule }
 //output: widget result
-export function structure2d(molecule: string): DG.Widget {
-  return molecule ? structure2dWidget(molecule) : new DG.Widget(ui.divText('Molecule is empty'));
+export function moleculeOverview(molecule: string): DG.Widget {
+  return molecule ? moleculeOverviewWidget(molecule) : new DG.Widget(ui.divText('Molecule is empty'));
 }
 
-//name: Structure 3D
-//description: 3D molecule representation
-//tags: panel, chem, widgets
-//input: string molecule { semType: Molecule }
-//output: widget result
-export async function structure3d(molecule: string): Promise<DG.Widget> {
-  return molecule ? structure3dWidget(molecule) : new DG.Widget(ui.divText('Molecule is empty'));
-}
 
 //name: Biology | Toxicity
 //description: Toxicity prediction. Calculated by openchemlib
@@ -715,13 +696,6 @@ export function toxicity(smiles: string): DG.Widget {
   return smiles ? toxicityWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Identifiers
-//tags: panel, chem, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export async function identifiers(smiles: string): Promise<DG.Widget> {
-  return smiles ? await identifiersWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
-}
 
 //name: convertMolNotation
 //description: RDKit-based conversion for SMILES, SMARTS, InChi, Molfile V2000 and Molfile V3000
