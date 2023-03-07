@@ -1,8 +1,8 @@
 {
-    "ivpFile": "FAEextra.txt",
+    "ivpFile": "FAEupd.txt",
     "folder": "../wasm",
     "emscripten": "emscripten.h",
-    "eigen": "../../../Eigen/Eigen/Dense",
+    "eigen": "../../../../../Eigen/Eigen/Dense",
     "optimizationMode": "-O3",
     "packageFile": "../src/package.js",
     "packageFileUpdateMode": "rewrite",

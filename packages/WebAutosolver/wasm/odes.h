@@ -18,7 +18,7 @@
 #ifndef ODES_H
 #define ODES_H
 
-#include "../../../Eigen/Eigen/Dense"
+#include "../../../../../Eigen/Eigen/Dense"
 using namespace Eigen;
 
 namespace odes {
@@ -92,7 +92,7 @@ namespace odes {
 
 		auto dimCount = y.size();
 
-		// Quantities used in Rosenbrock method (see papers [3, 4] for more details)		
+		// Quantities used in Rosenbrock method (see papers [3, 4] for more details)
 		const ArgType d = static_cast<ArgType>(1.0 - sqrt(2.0) / 2.0);
 		const ArgType e32 = static_cast<ArgType>(6.0 + sqrt(2.0));
 		MatType I = MatType::Identity(dimCount, dimCount);
@@ -118,7 +118,7 @@ namespace odes {
 		yOut = y + k2 * h;
 		f2 = f(t + h, yOut);
 		k3 = invW * (f2 - e32 * (k2 - f1) - 2.0 * (k1 - f0) + hdT); // h * d * T(t, y, EPS));
-		yErr = (k1 - 2.0 * k2 + k3) * h / 6;	
+		yErr = (k1 - 2.0 * k2 + k3) * h / 6;
 
 		return NO_ERRORS;
 	} // MRT
@@ -159,11 +159,11 @@ namespace odes {
 		while (true)
 		{
 			// one stage of the modified Rosenbrok triple approach
-			int resultCode = MRT(f, T, J, y, dydt, t, h, yTemp, yErr);			
+			int resultCode = MRT(f, T, J, y, dydt, t, h, yTemp, yErr);
 
 			// check result code
 			if (resultCode != NO_ERRORS)
-				return resultCode;			
+				return resultCode;
 
 			// estimating error
 			ArgType errmax = 0.0;
@@ -227,7 +227,7 @@ namespace odes {
 		MatType(*J)(ArgType, VecType&, ArgType),
 		DataType t0, DataType t1, const DataType step, DataType* y0, DataType tol,
 		DataType* dataFrame, int rowCount, int colCount)
-	{		
+	{
 		// dimension of solution
 		int dim = colCount - 1;
 
@@ -279,7 +279,7 @@ namespace odes {
 				h = t1 - t;
 				flag = false;
 			}
-						
+
 			// call of adaptive step modified Rosenbrok triple method
 			int resultCode = adaptiveMRT(f, T, J, y, dydt, t, h, yScale, hNext, tolerance);
 
@@ -316,7 +316,7 @@ namespace odes {
 
 			tPrev = t;
 			yPrev = y;
-		} // while	
+		} // while
 
 		// 3. solution at the point t1
 		dataFrame[rowCount - 1] = t1;
@@ -400,7 +400,7 @@ namespace odes {
 	} // adaptiveRKCK
 
 
-	/*  Solver of the initial ODE problem dy/dt = f(t,y), y(t0) = y0.	 
+	/*  Solver of the initial ODE problem dy/dt = f(t,y), y(t0) = y0.
 		Solves the problem on the segment [t0, t1], and linearly interpolated are stored in the dataframe.
 		Explicit adaptive step Runge-Kutta Cash-Karp method is applied.
 		Spatial complexity reduction is applied: additional memory costs are O(1).
@@ -514,7 +514,7 @@ namespace odes {
 
 			tPrev = t;
 			yPrev = y;
-		} // while	
+		} // while
 
 		// 3. solution at the point t1
 		dataFrame[rowCount - 1] = t1;
@@ -532,4 +532,3 @@ namespace odes {
 
 
 #endif
-
