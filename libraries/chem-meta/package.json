@@ -9,7 +9,6 @@
   "description": "",
   "dependencies": {
     "@datagrok-libraries/utils": "^2.1.2",
-    "datagrok-api": "^1.11.2",
     "wu": "latest"
   },
   "devDependencies": {
