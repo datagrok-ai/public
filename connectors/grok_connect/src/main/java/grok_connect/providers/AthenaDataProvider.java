@@ -84,7 +84,7 @@ public class AthenaDataProvider extends JdbcDataProvider {
     public String getConnectionStringImpl(DataConnection conn) {
         String formatString;
         String vpc = conn.get(DbCredentials.VPC_ENDPOINT);
-        if (vpc.isEmpty()) {
+        if (vpc == null || vpc.isEmpty()) {
             formatString = "jdbc:awsathena://athena.%s.amazonaws.com:443;User=%s;"
             + "Password=%s;S3OutputLocation=%s;%s%s";
         } else {
@@ -99,8 +99,8 @@ public class AthenaDataProvider extends JdbcDataProvider {
                 accessKey,
                 secretKey,
                 conn.get(DbCredentials.S3OutputLocation),
-                database.isEmpty() ? "" : String.format("Schema=%s;", database),
-                encode.isEmpty() ? "" : String.format("S3OutputEncOption=%s;", encode)
+                database == null || database.isEmpty() ? "" : String.format("Schema=%s;", database),
+                encode == null || encode.isEmpty() ? "" : String.format("S3OutputEncOption=%s;", encode)
                 );
     }
 
@@ -129,6 +129,16 @@ public class AthenaDataProvider extends JdbcDataProvider {
 
     @Override
     public String castParamValueToSqlDateTime(FuncParam param) {
-        return "from_iso8601_timestamp('" + param.value.toString() + "')";
+        return "TIMESTAMP'" + param.value.toString() + "'";
+    }
+
+    @Override
+    protected String interpolateBool(FuncParam param) {
+        return ((boolean) param.value) ? "true" : "false";
+    }
+
+    @Override
+    protected String getRegexQuery(String columnName, String regexExpression) {
+        return String.format("REGEXP_LIKE(%s, '%s')", columnName, regexExpression);
     }
 }
