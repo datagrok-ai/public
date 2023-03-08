@@ -292,7 +292,6 @@ public abstract class JdbcDataProvider extends DataProvider {
             // Remove header lines
             DataQuery dataQuery = queryRun.func;
             String query = dataQuery.query;
-            connection = getConnection(dataQuery.connection);
             String commentStart = descriptor.commentStart;
 
             ResultSet resultSet = null;
@@ -330,7 +329,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public SchemeInfo resultSetScheme(FuncCall queryRun, ResultSet resultSet) throws QueryCancelledByUser, SQLException {
-        
+
         try {
             // if (resultSet == null)
             //     return new DataFrame();
@@ -394,7 +393,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 columns.add(c - 1, column);
             }
             return new SchemeInfo(columns, supportedType, initColumn);
-        
+
         } catch (SQLException e) {
             if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
                 throw new QueryCancelledByUser();
@@ -403,7 +402,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,
-                                       List<Boolean> supportedType,List<Boolean> initColumn, int maxIterations) 
+                                       List<Boolean> supportedType,List<Boolean> initColumn, int maxIterations)
             throws IOException, SQLException, QueryCancelledByUser {
         if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
             throw new QueryCancelledByUser();
@@ -413,7 +412,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         int memoryLimit = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_MEMORY_LIMIT_MB))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_MEMORY_LIMIT_MB)).intValue() : 0;
         try {
-            int columnCount = columns.size(); 
+            int columnCount = columns.size();
 
             if (resultSet == null)
                 return new DataFrame();
