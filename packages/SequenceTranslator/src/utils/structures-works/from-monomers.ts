@@ -13,6 +13,8 @@ const CODES = 'codes';
 // const SMILES = 'smiles';
 const MOL = 'molfile';
 
+const LINKS = ['s', 'ps', '*', 'Rpn', 'Spn', 'Rps', 'Sps'];
+
 export function sequenceToMolV3000(
   sequence: string, inverted: boolean = false, oclRender: boolean = false,
   format: string
@@ -21,7 +23,7 @@ export function sequenceToMolV3000(
   let codes = sortByStringLengthInDescendingOrder(Object.keys(monomerNameFromCode));
   let i = 0;
   const codesList = [];
-  const links = ['s', 'ps', '*'];
+  const links = LINKS;
   const includesStandardLinkAlready = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
   const dropdowns = Object.keys(MODIFICATIONS);
   codes = codes.concat(dropdowns).concat(DELIMITER);
@@ -74,7 +76,7 @@ export function sequenceToMolV3000_new(
   let codes = sortByStringLengthInDescendingOrder(Object.keys(monomerNameFromCode));
   let i = 0;
   const codesList = [];
-  const links = ['s', 'ps', '*'];
+  const links = LINKS;
   const includesStandardLinkAlready = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
   const dropdowns = Object.keys(MODIFICATIONS);
   codes = codes.concat(dropdowns).concat(DELIMITER);
@@ -107,7 +109,7 @@ export function sequenceToSmiles(sequence: string, inverted: boolean = false, fo
   let i = 0;
   let smiles = '';
   const codesList = [];
-  const links = ['s', 'ps', '*'];
+  const links = LINKS;
   const includesStandardLinkAlready = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
   const dropdowns = Object.keys(MODIFICATIONS);
   codes = codes.concat(dropdowns).concat(DELIMITER);
