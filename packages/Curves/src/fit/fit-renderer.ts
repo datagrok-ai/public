@@ -8,7 +8,7 @@ import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
 
 import {fitSeries, getChartData, getChartBounds, getFittedCurve, getConfidenceIntrevals,
   CONFIDENCE_INTERVAL_FILL_COLOR, CONFIDENCE_INTERVAL_STROKE_COLOR, IFitChartData,
-  TAG_FIT_CHART_NAME, TAG_FIT_CHART_VALUE} from './fit-data';
+  TAG_FIT_CHART_NAME, TAG_FIT_CHART_FORMAT} from './fit-data';
 import {convertXMLToIFitChartData} from './fit-parser';
 
 
@@ -69,7 +69,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     let isXMLFitChart = false;
     let data: IFitChartData = {};
-    if (gridCell.cell.column.getTag(TAG_FIT_CHART_NAME) === TAG_FIT_CHART_VALUE) {
+    if (gridCell.cell.column.getTag(TAG_FIT_CHART_NAME) === TAG_FIT_CHART_FORMAT) {
       data = convertXMLToIFitChartData(gridCell.cell.value);
       isXMLFitChart = true;
     }
