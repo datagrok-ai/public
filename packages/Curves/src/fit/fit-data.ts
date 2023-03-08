@@ -35,7 +35,7 @@ export const FIT_SEM_TYPE = 'fit';
 export const FIT_CELL_TYPE = 'fit';
 export const TAG_FIT = '.fit';
 export const TAG_FIT_CHART_NAME = '.fitChartFormat';
-export const TAG_FIT_CHART_VALUE = '3dx';
+export const TAG_FIT_CHART_FORMAT = '3dx';
 
 export const CONFIDENCE_INTERVAL_STROKE_COLOR = 'rgba(255,191,63,0.7)';
 export const CONFIDENCE_INTERVAL_FILL_COLOR = 'rgba(255,238,204,0.3)';
