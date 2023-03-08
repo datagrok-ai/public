@@ -34,8 +34,10 @@ import {
 export const FIT_SEM_TYPE = 'fit';
 export const FIT_CELL_TYPE = 'fit';
 export const TAG_FIT = '.fit';
+export const TAG_FIT_CHART_NAME = '.fitChartFormat';
+export const TAG_FIT_CHART_VALUE = '3dx';
 
-export const CONFIDENCE_INTERVAL_STROKE_COLOR = 'rgba(255,191,63,0.9)';
+export const CONFIDENCE_INTERVAL_STROKE_COLOR = 'rgba(255,191,63,0.7)';
 export const CONFIDENCE_INTERVAL_FILL_COLOR = 'rgba(255,238,204,0.3)';
 
 export type FitMarkerType = 'circle' | 'triangle up' | 'triangle down' | 'cross';
@@ -193,6 +195,15 @@ export function getChartBounds(chartData: IFitChartData): DG.Rect {
   }
 }
 
+export function logarithmData(data: IFitChartData): IFitChartData {
+  for (let i = 0; i < data.series?.length!; i++) {
+    for (let j = 0; j < data.series![i].points.length!; j++) {
+      data.series![i].points[j].x = Math.log10(data.series![i].points[j].x);
+    }
+  }
+
+  return data;
+}
 
 //TODO: move to DG.Rect
 export function getDataBounds(points: IFitPoint[]): DG.Rect {
@@ -216,19 +227,31 @@ export function getDataBounds(points: IFitPoint[]): DG.Rect {
 export function fitSeries(series: IFitSeries, statistics: boolean = false): FitResult {
   //TODO: optimize the calculation of the initial parameters
   const dataBounds = getDataBounds(series.points);
-  const ys = series.points.map((p) => p.y);
-  const medY = ys[Math.floor(series.points.length / 2)];
+  // const ys = series.points.map((p) => p.y);
+  // const medY = ys[Math.floor(series.points.length / 2)];
+  const medY = (dataBounds.bottom - dataBounds.top) / 2 + dataBounds.top;
   let xAtMedY = -1;
+  // for (let i = 0; i < series.points.length; i++) {
+  //   if (series.points[i].y === medY) {
+  //     xAtMedY = series.points[i].x;
+  //     break;
+  //   }
+  // }
+  let maxYInterval = dataBounds.bottom - dataBounds.top;
+  let nearestXIndex = 0;
   for (let i = 0; i < series.points.length; i++) {
-    if (series.points[i].y === medY) {
-      xAtMedY = series.points[i].x;
-      break;
+    const currentInterval = Math.abs(series.points[i].y - medY);
+    if (currentInterval < maxYInterval) {
+      maxYInterval = currentInterval;
+      nearestXIndex = i;
     }
   }
-  const initialParams = [dataBounds.bottom, 1.2, xAtMedY, dataBounds.top];
+  xAtMedY = series.points[nearestXIndex].x;
+  // params are: [max, tan, IC50, min]
+  const initialParams = [dataBounds.bottom, -1.2, xAtMedY, dataBounds.top];
 
   return fit(
-    {x: series.points.map((p) => p.x), y: series.points.map((p) => p.x)},
+    {x: series.points.map((p) => p.x), y: series.points.map((p) => p.y)},
     initialParams, sigmoid, FitErrorModel.Constant, 0.05, statistics);
 }
 

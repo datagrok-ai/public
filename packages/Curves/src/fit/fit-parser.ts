@@ -31,6 +31,8 @@ function getChartOptions(grid: Element): IFitChartOptions {
 */
 function getSeriesOptions(series: Element): IFitSeriesOptions {
   const params = (series.getElementsByTagName('params')[0].childNodes[0].nodeValue)?.split(',')!.map(Number)!;
+  // params there are: [IC50, min, max, tan] (also log IC50) - so we place them correctly: [max, tan, IC50, min]
+  const newParams = [params[2], params[3], Math.log10(params[0]), params[1]];
   let funcType = series.getElementsByTagName('function')[0].getAttribute('type')!;
   funcType = funcType === 'sigif' ? 'Sigmoid': funcType;
   const markerColor = series.getElementsByTagName('settings')[0].getAttribute('markerColor')!;
@@ -39,7 +41,7 @@ function getSeriesOptions(series: Element): IFitSeriesOptions {
   const seriesName = series.getAttribute('name')!;
 
   const fitSeriesOptions: IFitSeriesOptions = {
-    parameters: params,
+    parameters: newParams,
     fitFunction: funcType,
     pointColor: markerColor,
     fitLineColor: lineColor,
@@ -62,7 +64,7 @@ function getPoints(series: Element): IFitPoint[] {
   const points: IFitPoint[] = [];
   for (let j = 0; j < xCoords.length; j++) {
     points[j] = {
-      x: +xCoords[j],
+      x: Math.log10(+xCoords[j]), // +xCoords[j]
       y: +yCoords[j],
       // outlier: !!mask[j],
     };
