@@ -1,7 +1,9 @@
 """ constants.py
-    Definition of constants required for parsing initial value problem (IVP) 
+    Definition of constants required for parsing initial value problem (IVP)
     specification file.
 """
+
+# 1. IVP SPECIFICATION CONSTANTS
 
 # Names of special categories specifying IVP
 NAME = 'name'
@@ -15,6 +17,31 @@ PARAMS = 'parameters'
 
 # tag that defines a start of category specification
 CONTROL_TAG = '#'
+
+# separator of category name and data
+SEPARATOR = ':'
+
+# separator between left & right parts
+EQ_SIGN = '='
+
+# Argumnent specification constants
+ARG_SPEC_NAME = 'name'
+ARG_SPEC_TITLE = 'title'
+ARG_SPEC_INITIAL = 'initial'
+ARG_SPEC_FINAL = 'final'
+ARG_SPEC_STEP = 'step'
+ARG_SPEC_VALUE = 'value'
+
+# Quantities specification constants
+QUAN_SPEC_VALUE = 'value'
+QUAN_SPEC_UNITS = 'units'
+
+# Fraction separator: it separates numerator and denominator
+FRAC_SEP = '/'
+
+# Derivative symbol: 'd' for the case dy/dt
+DERIV_SYMBOL = 'd'
+
 
 # name of file with C++-to-wasm settings
 EXPORT_SETTINGS_FILE = 'createSettings.json'
@@ -32,9 +59,9 @@ SUBSUBSPACE = ' ' * 12
 DATA_TYPE = 'float' # dataframe type
 ARG_TYPE = 'double' # solver operating type
 VEC_TYPE = 'VectorXd' # solver operating vector type
-MATRIX_TYPE = 'MatrixXd' # solver operating matrix type 
+MATRIX_TYPE = 'MatrixXd' # solver operating matrix type
 
-# ODEs solver objects 
+# ODEs solver objects
 SOLVER_PREFIX = 'solve'
 TOLLERANCE_NAME = '_tol'
 TOLLERANCE_VALUE = '0.00005f'
@@ -43,7 +70,7 @@ PARAMETERS_INIT_VALUE = '0.0'
 ODES_RIGHT_PART_NAME = '_f'
 VEC_ARG_NAME = '_y'
 VEC_OUTPUT_NAME = '_res'
-JACOBIAN_NAME = '_J' 
+JACOBIAN_NAME = '_J'
 T_DERIVATIVE_NAME = '_T'
 EPS_NAME = '_eps'
 MAT_OUTPUT_NAME = '_res'
@@ -81,6 +108,8 @@ export function info() {
 import { callWasm } from '../wasm/callWasm';\n
 '''
 
-# MISC
-REWRITE_MODE = 'w'
+# File operating constants
+WRITE_MODE = 'w'
 APPEND_MODE = 'a'
+READ_MODE = 'r'
+REWRITE = 'rewrite'

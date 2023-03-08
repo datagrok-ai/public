@@ -1,5 +1,5 @@
 """ create.py
-    This script parses a file with initial value problem (IVP) 
+    This script parses a file with initial value problem (IVP)
     and creates webautosolver Datagrok function.
 """
 
@@ -8,14 +8,15 @@ import json
 import shutil
 import re
 
-from constants import *
-from export import getFunctionsFromListOfFiles, getCommand, completeJsWasmfile, updatePackageJsonFile 
+from createConstants import *
+from settingsConstants import *
+from export import getFunctionsFromListOfFiles, getCommand, completeJsWasmfile, updatePackageJsonFile
 
 def loadSettings():
     """
     Load export settings.
     """
-    with open(EXPORT_SETTINGS_FILE, 'r') as file:
+    with open(EXPORT_SETTINGS_FILE, READ_MODE) as file:
         return json.load(file)
 
 
@@ -27,28 +28,28 @@ def getRawIVPfromFile(ivProblemFileName):
     ivpRaw = {NAME: None, METHOD: None, DIF_EQUATIONS: [], EXPRESSIONS: [],
     ARGUMENT: [], INIT_VALS: [], CONSTANTS: [], PARAMS: [] }
 
-    # process file with IVP 
-    with open(ivProblemFileName, 'r') as file:
+    # process file with IVP
+    with open(ivProblemFileName, READ_MODE) as file:
         listOfLines = file.readlines()
 
         category = None
 
         # process each line of the IVP file
         for line in listOfLines:
-            if line.startswith(CONTROL_TAG):                
-                category, ignore, rest = line.partition(':') # extract category data
-                category = category.lstrip('#').strip() # extract name of category
+            if line.startswith(CONTROL_TAG):
+                category, ignore, rest = line.partition(SEPARATOR) # extract category data
+                category = category.lstrip(CONTROL_TAG).strip() # extract name of category
 
                 # process specific categories
-                if category in {NAME, METHOD}:                
+                if category in {NAME, METHOD}:
                     ivpRaw[category] = rest.strip()
                 elif category == ARGUMENT:
-                    ivpRaw[ARGUMENT].append(rest.strip())                        
+                    ivpRaw[ARGUMENT].append(rest.strip())
 
             else:
-                line = line.strip()           
+                line = line.strip()
                 if(line != ''):
-                    ivpRaw[category].append(line)        
+                    ivpRaw[category].append(line)
 
     return ivpRaw
 
@@ -59,36 +60,35 @@ def getSpecificationFromRawIVP(ivProblemRaw):
     """
 
     def extractArgSpecification(argData):
-        """ 
+        """
         Processes raw description of argument and returns it specification.
         """
-
         argSpecification = {}
 
         # 1) get name of argument & its title
         argName, ignore, argTitle = argData[0].partition(' ') # 0-th element contains arg's data
         argName = argName.strip()
         argTitle = argTitle.strip(' ()')
-        argSpecification['name'] = argName
-        argSpecification['title'] = argTitle
+        argSpecification[ARG_SPEC_NAME] = argName
+        argSpecification[ARG_SPEC_TITLE] = argTitle
 
         # 2) get initial value data
-        name, ignore, value = argData[1].partition('=') # 1-st element contains arg's initial data
+        name, ignore, value = argData[1].partition(EQ_SIGN) # 1-st element contains arg's initial data
         name = name.strip()
         value = value.strip()
-        argSpecification['initial'] = {'name': name, 'value': value} 
+        argSpecification[ARG_SPEC_INITIAL] = {ARG_SPEC_NAME: name, ARG_SPEC_VALUE: value}
 
         # 3) get final value data
-        name, ignore, value = argData[2].partition('=') # 2-nd element contains arg's final data
+        name, ignore, value = argData[2].partition(EQ_SIGN) # 2-nd element contains arg's final data
         name = name.strip()
         value = value.strip()
-        argSpecification['final'] = {'name': name, 'value': value}
+        argSpecification[ARG_SPEC_FINAL] = {ARG_SPEC_NAME: name, ARG_SPEC_VALUE: value}
 
         # 4) get step data
-        name, ignore, value = argData[3].partition('=') # 3-rd element contains arg's step data
+        name, ignore, value = argData[3].partition(EQ_SIGN) # 3-rd element contains arg's step data
         name = name.strip()
         value = value.strip()
-        argSpecification['step'] = {'name': name, 'value': value}
+        argSpecification[ARG_SPEC_STEP] = {ARG_SPEC_NAME: name, ARG_SPEC_VALUE: value}
 
         return argSpecification
 
@@ -97,11 +97,11 @@ def getSpecificationFromRawIVP(ivProblemRaw):
         Processes quantities raw description and returns their specification.
         """
         specification = {}
-        
+
         for line in rawDescription:
-            
+
             # extract name
-            name, ignore, rest = line.partition('=')
+            name, ignore, rest = line.partition(EQ_SIGN)
             name = name.strip()
 
             # extract value and units
@@ -110,7 +110,7 @@ def getSpecificationFromRawIVP(ivProblemRaw):
             units = units.strip(' )')
 
             # store data
-            specification[name] = {'value': value, 'units': units}
+            specification[name] = {QUAN_SPEC_VALUE: value, QUAN_SPEC_UNITS: units}
 
         return specification
 
@@ -122,7 +122,7 @@ def getSpecificationFromRawIVP(ivProblemRaw):
         if len(formulas) == 0:
             return formulas
 
-        joinedFormulas = []        
+        joinedFormulas = []
 
         currentFormula = formulas[0]
 
@@ -133,7 +133,7 @@ def getSpecificationFromRawIVP(ivProblemRaw):
             else:
                 joinedFormulas.append(currentFormula)
                 currentFormula = formulas[i]
-        
+
         joinedFormulas.append(currentFormula)
 
         return joinedFormulas
@@ -145,9 +145,9 @@ def getSpecificationFromRawIVP(ivProblemRaw):
         specification = {}
 
         for line in expressions:
-            name, ignore, formula = line.partition('=')
+            name, ignore, formula = line.partition(EQ_SIGN)
             specification[name.strip()] = formula.strip() # spaces are removed
-        
+
         return specification
 
     def extractDifEqsSpecification(expressions):
@@ -159,13 +159,13 @@ def getSpecificationFromRawIVP(ivProblemRaw):
         for line in expressions:
 
             # get left & right parts
-            left, ignore, right = line.partition('=')
+            left, ignore, right = line.partition(EQ_SIGN)
 
             # get expression with the name
-            numerator, ignore, denominator = left.partition('/')
+            numerator, ignore, denominator = left.partition(FRAC_SEP)
 
             # get name: from 'dy' we extract 'y'
-            ignore1, ignore, name = numerator.partition('d')           
+            ignore1, ignore, name = numerator.partition(DERIV_SYMBOL)
 
             # store results: spaces and parenthesis are removed
             specification[name.strip(' ()')] = right.strip()
@@ -181,19 +181,19 @@ def getSpecificationFromRawIVP(ivProblemRaw):
     ivProblem[INIT_VALS] = extractQuantitiesSpecification(ivProblemRaw[INIT_VALS])
 
     # 3. Process constants' description
-    ivProblem[CONSTANTS] = extractQuantitiesSpecification(ivProblemRaw[CONSTANTS])    
+    ivProblem[CONSTANTS] = extractQuantitiesSpecification(ivProblemRaw[CONSTANTS])
 
     # 4. Process parameters' description
     ivProblem[PARAMS] = extractQuantitiesSpecification(ivProblemRaw[PARAMS])
-    
+
     # 5. Process expressions' description
     ivProblem[EXPRESSIONS] = extractExpressionsSpecification(joinMultilineFormulas(ivProblemRaw[EXPRESSIONS]))
 
     # 6. Process differential equations' description
-    ivProblem[DIF_EQUATIONS] = extractDifEqsSpecification(joinMultilineFormulas(ivProblemRaw[DIF_EQUATIONS])) 
+    ivProblem[DIF_EQUATIONS] = extractDifEqsSpecification(joinMultilineFormulas(ivProblemRaw[DIF_EQUATIONS]))
 
 
-    # 7. Check results TODO: this section should be improved! 
+    # 7. Check results TODO: this section should be improved!
 
     # 7.1) check differential variables
     if set(ivProblem[DIF_EQUATIONS].keys()) != set(ivProblem[INIT_VALS].keys()):
@@ -206,13 +206,14 @@ def generateCppCode(ivProblem):
     """
     Generates C++-code that solves the problem.
     """
+
     def replaceIntsByDoubles(expression):
         """
         Replace each integer value by the corresponding double number.
         """
-        # add '.0' after each number        
+        # add '.0' after each number
         bufferLine1 = re.sub(r'([^.A-Za-z_0-9]\d+)', r'\1.0', f' {expression}')
-        
+
         # put spaces before/after artihmetic operations symbols
         bufferLine2 = re.sub(r'(\+|\*|-|/)', r' \1 ', bufferLine1)
 
@@ -220,7 +221,7 @@ def generateCppCode(ivProblem):
         result = bufferLine2.replace('.0.', '.').replace('  ', ' ')
 
         return result
-  
+
     def putExternBlock(put, ivProblem):
         """
         Put the 'extern "C"' block required for Emscripten compiling.
@@ -231,9 +232,9 @@ def generateCppCode(ivProblem):
         put(f'{SPACE} int {SOLVER_PREFIX}{ivProblem[NAME]}(')
 
         # arguments
-        put(f'{DATA_TYPE} {ivProblem[ARGUMENT]["initial"]["name"]},')
-        put(f' {DATA_TYPE} {ivProblem[ARGUMENT]["final"]["name"]},')
-        put(f' {DATA_TYPE} {ivProblem[ARGUMENT]["step"]["name"]},\n')
+        put(f'{DATA_TYPE} {ivProblem[ARGUMENT][ARG_SPEC_INITIAL][ARG_SPEC_NAME]},')
+        put(f' {DATA_TYPE} {ivProblem[ARGUMENT][ARG_SPEC_FINAL][ARG_SPEC_NAME]},')
+        put(f' {DATA_TYPE} {ivProblem[ARGUMENT][ARG_SPEC_STEP][ARG_SPEC_NAME]},\n')
 
         # initial values
         line = SUBSPACE
@@ -251,7 +252,7 @@ def generateCppCode(ivProblem):
 
         put(line + '\n')
 
-        put(f'{SUBSPACE}int _{ivProblem[ARGUMENT]["name"]}Count, ')
+        put(f'{SUBSPACE}int _{ivProblem[ARGUMENT][ARG_SPEC_NAME]}Count, ')
         put('int _varsCount,\n')
 
         # dataframe
@@ -283,10 +284,10 @@ def generateCppCode(ivProblem):
             put(f'{SPACE}{ARG_TYPE} {name} = {PARAMETERS_INIT_VALUE};\n')
 
         # operating name of the argument, for example, t
-        argName = ivProblem['argument']['name']
+        argName = ivProblem[ARGUMENT][ARG_SPEC_NAME]
 
         put(f'\n{SPACE}//the right part of the ODEs\n')
-        
+
         # put ODEs right-hand side header, for example, f(...)
         put(SPACE)
         put(f'{VEC_TYPE} {ODES_RIGHT_PART_NAME}({ARG_TYPE} {argName}, ')
@@ -302,8 +303,8 @@ def generateCppCode(ivProblem):
 
         # put constants
         for name in ivProblem[CONSTANTS]:
-            put(f'{SUBSPACE}const {ARG_TYPE} {name} = {ivProblem[CONSTANTS][name]["value"]};\n')
-      
+            put(f'{SUBSPACE}const {ARG_TYPE} {name} = {ivProblem[CONSTANTS][name][QUAN_SPEC_VALUE]};\n')
+
         index = 0
         put(f'\n{SUBSPACE}// extract variables\n')
 
@@ -329,10 +330,10 @@ def generateCppCode(ivProblem):
             expression = replaceIntsByDoubles(ivProblem[DIF_EQUATIONS][name])
             put(f'{SUBSPACE}{VEC_OUTPUT_NAME}({index}) = {expression};\n')
             #put(f'{SUBSPACE}{VEC_OUTPUT_NAME}({index}) = {ivProblem[DIF_EQUATIONS][name]};\n')
-            index += 1        
+            index += 1
 
         put(f'\n{SUBSPACE}return {VEC_OUTPUT_NAME};\n')
-        
+
         put(SPACE + '}' + f' // {ODES_RIGHT_PART_NAME}\n\n')
 
         # 1. PUT JACOBIAN
@@ -340,7 +341,7 @@ def generateCppCode(ivProblem):
         put(f'{SPACE}// Jacobian (it is required, when applying implicit method)\n')
 
         # header
-        put(f'{SPACE}{MATRIX_TYPE} {JACOBIAN_NAME}(')                
+        put(f'{SPACE}{MATRIX_TYPE} {JACOBIAN_NAME}(')
         put(f'{ARG_TYPE} {argName}, ')
         put(f'{VEC_TYPE} & {VEC_ARG_NAME}, ')
         put(f'{ARG_TYPE} {EPS_NAME}) noexcept\n')
@@ -374,7 +375,7 @@ def generateCppCode(ivProblem):
         put(f'{SPACE}// Derivative with respect to t (it is required, when applying implicit method)\n')
 
         # header
-        put(f'{SPACE}{VEC_TYPE} {T_DERIVATIVE_NAME}(')                
+        put(f'{SPACE}{VEC_TYPE} {T_DERIVATIVE_NAME}(')
         put(f'{ARG_TYPE} {argName}, ')
         put(f'{VEC_TYPE} & {VEC_ARG_NAME}, ')
         put(f'{ARG_TYPE} {EPS_NAME}) noexcept\n')
@@ -394,28 +395,28 @@ def generateCppCode(ivProblem):
     def putAnnotation(put, ivProblem):
         """
         Put ReachFunctionView annotation.
-        """        
+        """
         put(f'\n//name: {SOLVER_PREFIX + ivProblem[NAME]}\n')
 
         # 1. PUT ANNOTATION CONCERNING ARGUMENT
 
         # initial value
-        put(f'//input: {ANNOT_ARG_TYPE} {ivProblem[ARGUMENT]["initial"]["name"]}')
-        put(f' = {ivProblem[ARGUMENT]["initial"]["value"]}')
-        put(' {caption: ' + ivProblem[ARGUMENT]["initial"]["name"] + ';')
-        put(f' category: {ivProblem[ARGUMENT]["title"]}' + '}\n')
+        put(f'//input: {ANNOT_ARG_TYPE} {ivProblem[ARGUMENT][ARG_SPEC_INITIAL][ARG_SPEC_NAME]}')
+        put(f' = {ivProblem[ARGUMENT][ARG_SPEC_INITIAL][ARG_SPEC_VALUE]}')
+        put(' {caption: ' + ivProblem[ARGUMENT][ARG_SPEC_INITIAL][ARG_SPEC_NAME] + ';')
+        put(f' category: {ivProblem[ARGUMENT][ARG_SPEC_TITLE]}' + '}\n')
 
         # final value
-        put(f'//input: {ANNOT_ARG_TYPE} {ivProblem[ARGUMENT]["final"]["name"]}')
-        put(f' = {ivProblem[ARGUMENT]["final"]["value"]}')
-        put(' {caption: ' + ivProblem[ARGUMENT]["final"]["name"] + ';')
-        put(f' category: {ivProblem[ARGUMENT]["title"]}' + '}\n')
+        put(f'//input: {ANNOT_ARG_TYPE} {ivProblem[ARGUMENT][ARG_SPEC_FINAL][ARG_SPEC_NAME]}')
+        put(f' = {ivProblem[ARGUMENT][ARG_SPEC_FINAL][ARG_SPEC_VALUE]}')
+        put(' {caption: ' + ivProblem[ARGUMENT][ARG_SPEC_FINAL][ARG_SPEC_NAME] + ';')
+        put(f' category: {ivProblem[ARGUMENT][ARG_SPEC_TITLE]}' + '}\n')
 
          # step value
-        put(f'//input: {ANNOT_ARG_TYPE} {ivProblem[ARGUMENT]["step"]["name"]}')
-        put(f' = {ivProblem[ARGUMENT]["step"]["value"]}')
-        put(' {caption: ' + ivProblem[ARGUMENT]["step"]["name"] + ';')
-        put(f' category: {ivProblem[ARGUMENT]["title"]}' + '}\n')
+        put(f'//input: {ANNOT_ARG_TYPE} {ivProblem[ARGUMENT][ARG_SPEC_STEP][ARG_SPEC_NAME]}')
+        put(f' = {ivProblem[ARGUMENT][ARG_SPEC_STEP][ARG_SPEC_VALUE]}')
+        put(' {caption: ' + ivProblem[ARGUMENT][ARG_SPEC_STEP][ARG_SPEC_NAME] + ';')
+        put(f' category: {ivProblem[ARGUMENT][ARG_SPEC_TITLE]}' + '}\n')
 
         # 2. INITIAL VALUES
 
@@ -424,10 +425,10 @@ def generateCppCode(ivProblem):
 
         # put annotation
         for name in data.keys():
-            put(f'//input: {ANNOT_ARG_TYPE} _{name}Initial = {data[name]["value"]}')
-            put(' {' + f'units: {data[name]["units"]};')
+            put(f'//input: {ANNOT_ARG_TYPE} _{name}Initial = {data[name][QUAN_SPEC_VALUE]}')
+            put(' {' + f'units: {data[name][QUAN_SPEC_UNITS]};')
             put(f' caption: {name}; category: {INIT_VALS}' + '}\n')
-        
+
         # 3. PARAMETERS
 
         # dict with parameters specification
@@ -435,32 +436,32 @@ def generateCppCode(ivProblem):
 
         # put annotation
         for name in data.keys():
-            put(f'//input: {ANNOT_ARG_TYPE} _{name}Val = {data[name]["value"]}')
-            put(' {' + f'units: {data[name]["units"]};')
+            put(f'//input: {ANNOT_ARG_TYPE} _{name}Val = {data[name][QUAN_SPEC_VALUE]}')
+            put(' {' + f'units: {data[name][QUAN_SPEC_UNITS]};')
             put(f' caption: {name}; category: {PARAMS}' + '}\n')
 
-        # 4. SPECIAL INput
-        put(f'//input: int _{ivProblem[ARGUMENT]["name"]}Count\n')
+        # 4. SPECIAL Input
+        put(f'//input: int _{ivProblem[ARGUMENT][ARG_SPEC_NAME]}Count\n')
         put(f'//input: int _varsCount\n')
 
         # 5. OUTPUT COLUMNS
         put(f'//output: column_list {SOLVER_RESULT_NAME} ')
-        put(f'[new(_{ivProblem[ARGUMENT]["name"]}Count, _varsCount)')
+        put(f'[new(_{ivProblem[ARGUMENT][ARG_SPEC_NAME]}Count, _varsCount)')
 
         # create new columns names
-        line = "; '" + ivProblem[ARGUMENT]["name"] + "'"       
+        line = f"; '{ivProblem[ARGUMENT][ARG_SPEC_NAME]}'"
 
         for name in ivProblem[DIF_EQUATIONS]:
-            line += "; '" + name + f'({ivProblem[ARGUMENT]["name"]})' + "'"
+            line += f"; '{name}({ivProblem[ARGUMENT][ARG_SPEC_NAME]})'"
 
-        put(line + ']\n')     
+        put(line + ']\n')
 
         # 6. OUTPUT DATAFRAME
         put(f'//output: dataframe {DF_SOLUTION_NAME} [{SOLVER_RESULT_NAME}] {DF_OUTPUT_ANNOT}\n')
 
         # 7. EDITOR
         put(EDITOR_LINE + '\n')
-    
+
     def putSolverHeader(put, ivProblem):
         """
         Put IVP solving function header.
@@ -471,9 +472,9 @@ def generateCppCode(ivProblem):
         put(f'int {SOLVER_PREFIX}{ivProblem[NAME]}(')
 
         # arguments
-        put(f'{DATA_TYPE} {ivProblem[ARGUMENT]["initial"]["name"]},')
-        put(f' {DATA_TYPE} {ivProblem[ARGUMENT]["final"]["name"]},')
-        put(f' {DATA_TYPE} {ivProblem[ARGUMENT]["step"]["name"]},\n')
+        put(f'{DATA_TYPE} {ivProblem[ARGUMENT][ARG_SPEC_INITIAL][ARG_SPEC_NAME]},')
+        put(f' {DATA_TYPE} {ivProblem[ARGUMENT][ARG_SPEC_FINAL][ARG_SPEC_NAME]},')
+        put(f' {DATA_TYPE} {ivProblem[ARGUMENT][ARG_SPEC_STEP][ARG_SPEC_NAME]},\n')
 
         # initial values
         line = SPACE
@@ -491,14 +492,14 @@ def generateCppCode(ivProblem):
 
         put(line + '\n')
 
-        put(f'{SPACE}int _{ivProblem[ARGUMENT]["name"]}Count, ')
+        put(f'{SPACE}int _{ivProblem[ARGUMENT][ARG_SPEC_NAME]}Count, ')
         put('int _varsCount,\n')
 
         # dataframe
         put(f'{SPACE}{DATA_TYPE} * {SOLVER_RESULT_NAME}, ')
         put(f'int {SOLVER_RESULT_ROW_COUNT_NAME}, ')
         put(f'int {SOLVER_RESULT_COL_COUNT_NAME}) noexcept\n')
-    
+
     def putSolverBody(put, ivProblem):
         """
         Put IVP solving function body.
@@ -508,14 +509,14 @@ def generateCppCode(ivProblem):
         put(f'{SPACE}using namespace {ivProblem[NAME]};\n\n')
 
         put(f'{SPACE}{DATA_TYPE} {INIT_VALS_ARR_NAME}[DIM];\n\n')
-        
+
         put(f'{SPACE}// initial values\n')
 
         index = 0
 
         # put initial values
         #for name in ivProblem[INIT_VALS]:
-        for name in ivProblem[DIF_EQUATIONS]:         
+        for name in ivProblem[DIF_EQUATIONS]:
             put(f'{SPACE}{INIT_VALS_ARR_NAME}[{index}] = _{name}Initial;\n')
             index += 1
 
@@ -526,29 +527,29 @@ def generateCppCode(ivProblem):
             put(f'{SPACE}{name} = _{name}Val;\n')
 
         # creating return-line
-        line = f'\n{SPACE}return solveODE({ODES_RIGHT_PART_NAME}, ' 
+        line = f'\n{SPACE}return solveODE({ODES_RIGHT_PART_NAME}, '
 
         if ivProblem[METHOD] == 'implicit':
             line += f'{T_DERIVATIVE_NAME}, {JACOBIAN_NAME}, '
 
-        line += f'{ivProblem[ARGUMENT]["initial"]["name"]}, '
-        line += f'{ivProblem[ARGUMENT]["final"]["name"]}, '
-        line += f'{ivProblem[ARGUMENT]["step"]["name"]}, '
+        line += f'{ivProblem[ARGUMENT][ARG_SPEC_INITIAL][ARG_SPEC_NAME]}, '
+        line += f'{ivProblem[ARGUMENT][ARG_SPEC_FINAL][ARG_SPEC_NAME]}, '
+        line += f'{ivProblem[ARGUMENT][ARG_SPEC_STEP][ARG_SPEC_NAME]}, '
         line += f'{INIT_VALS_ARR_NAME}, {TOLLERANCE_NAME},\n' + SUBSUBSPACE
-        line += f'{SOLVER_RESULT_NAME}, _{ivProblem[ARGUMENT]["name"]}Count, _varsCount);\n'
-        
+        line += f'{SOLVER_RESULT_NAME}, _{ivProblem[ARGUMENT][ARG_SPEC_NAME]}Count, _varsCount);\n'
+
         put(line)
-        
+
         put('} //' + SOLVER_PREFIX + ivProblem[NAME])
-    
+
     settings = {}
 
     # load settings
-    with open(EXPORT_SETTINGS_FILE, 'r') as file:
+    with open(EXPORT_SETTINGS_FILE, READ_MODE) as file:
          settings = json.load(file)
-    
+
     # generate C++-code
-    with open(settings['folder'] + '/' + ivProblem[NAME] + '.cpp', 'w') as file:
+    with open(f'{settings[SET_FOLDER]}/{ivProblem[NAME]}.cpp', WRITE_MODE) as file:
         put = file.write
 
         put(f'// {ivProblem[NAME]}.cpp\n')
@@ -558,13 +559,13 @@ def generateCppCode(ivProblem):
         put('using namespace std;\n')
 
         # Emscripten tools
-        put(f'\n#include <{settings["emscripten"]}>\n')
+        put(f'\n#include <{settings[SET_EMSCRIPTEN]}>\n')
 
         # the 'extern "C"' block - it's required for Emscripten
         putExternBlock(put, ivProblem)
 
         # Eigen tools
-        put(f'''\n#include "{settings['eigen']}"\n''')
+        put(f'\n#include "{settings[SET_EIGEN]}"\n')
         put('using namespace Eigen;\n')
 
         # ODEs solver tools
@@ -588,8 +589,8 @@ def updateExportSettings(settings, ivProblem):
     """
     Update C++-to-wasm export settings.
     """
-    settings['name'] = ivProblem[NAME]
-    settings['source'] = [ivProblem[NAME] + '.cpp']
+    settings[SET_NAME] = ivProblem[NAME]
+    settings[SET_SOURCE] = [f'{ivProblem[NAME]}.cpp']
 
 
 def cppToWasmExport(settings):
@@ -606,7 +607,7 @@ def cppToWasmExport(settings):
     os.system(command)
 
     # complete JS-file created by Emscripten
-    completeJsWasmfile(settings, functionsData) 
+    completeJsWasmfile(settings, functionsData)
 
     # update the file package.json
     updatePackageJsonFile(settings)
@@ -626,22 +627,22 @@ def addSolverToPackageFile(settings, ivProblem):
         # 1. PUT ANNOTATION CONCERNING ARGUMENT
 
         # initial value
-        put(f'//input: {ANNOT_ARG_TYPE} {ivProblem[ARGUMENT]["initial"]["name"]}')
-        put(f' = {ivProblem[ARGUMENT]["initial"]["value"]}')
-        put(' {caption: ' + ivProblem[ARGUMENT]["initial"]["name"] + ';')
-        put(f' category: {ivProblem[ARGUMENT]["title"]}' + '}\n')
+        put(f'//input: {ANNOT_ARG_TYPE} {ivProblem[ARGUMENT][ARG_SPEC_INITIAL][ARG_SPEC_NAME]}')
+        put(f' = {ivProblem[ARGUMENT][ARG_SPEC_INITIAL][ARG_SPEC_VALUE]}')
+        put(' {caption: ' + ivProblem[ARGUMENT][ARG_SPEC_INITIAL][ARG_SPEC_NAME] + ';')
+        put(f' category: {ivProblem[ARGUMENT][ARG_SPEC_TITLE]}' + '}\n')
 
         # final value
-        put(f'//input: {ANNOT_ARG_TYPE} {ivProblem[ARGUMENT]["final"]["name"]}')
-        put(f' = {ivProblem[ARGUMENT]["final"]["value"]}')
-        put(' {caption: ' + ivProblem[ARGUMENT]["final"]["name"] + ';')
-        put(f' category: {ivProblem[ARGUMENT]["title"]}' + '}\n')
+        put(f'//input: {ANNOT_ARG_TYPE} {ivProblem[ARGUMENT][ARG_SPEC_FINAL][ARG_SPEC_NAME]}')
+        put(f' = {ivProblem[ARGUMENT][ARG_SPEC_FINAL][ARG_SPEC_VALUE]}')
+        put(' {caption: ' + ivProblem[ARGUMENT][ARG_SPEC_FINAL][ARG_SPEC_NAME] + ';')
+        put(f' category: {ivProblem[ARGUMENT][ARG_SPEC_TITLE]}' + '}\n')
 
          # step value
-        put(f'//input: {ANNOT_ARG_TYPE} {ivProblem[ARGUMENT]["step"]["name"]}')
-        put(f' = {ivProblem[ARGUMENT]["step"]["value"]}')
-        put(' {caption: ' + ivProblem[ARGUMENT]["step"]["name"] + ';')
-        put(f' category: {ivProblem[ARGUMENT]["title"]}' + '}\n')
+        put(f'//input: {ANNOT_ARG_TYPE} {ivProblem[ARGUMENT][ARG_SPEC_STEP][ARG_SPEC_NAME]}')
+        put(f' = {ivProblem[ARGUMENT][ARG_SPEC_STEP][ARG_SPEC_VALUE]}')
+        put(' {caption: ' + ivProblem[ARGUMENT][ARG_SPEC_STEP][ARG_SPEC_NAME] + ';')
+        put(f' category: {ivProblem[ARGUMENT][ARG_SPEC_TITLE]}' + '}\n')
 
         # 2. INITIAL VALUES
 
@@ -650,10 +651,10 @@ def addSolverToPackageFile(settings, ivProblem):
 
         # put annotation
         for name in data.keys():
-            put(f'//input: {ANNOT_ARG_TYPE} _{name}Initial = {data[name]["value"]}')
-            put(' {' + f'units: {data[name]["units"]};')
+            put(f'//input: {ANNOT_ARG_TYPE} _{name}Initial = {data[name][QUAN_SPEC_VALUE]}')
+            put(' {' + f'units: {data[name][QUAN_SPEC_UNITS]};')
             put(f' caption: {name}; category: {INIT_VALS}' + '}\n')
-        
+
         # 3. PARAMETERS
 
         # dict with parameters specification
@@ -661,26 +662,28 @@ def addSolverToPackageFile(settings, ivProblem):
 
         # put annotation
         for name in data.keys():
-            put(f'//input: {ANNOT_ARG_TYPE} _{name}Val = {data[name]["value"]}')
-            put(' {' + f'units: {data[name]["units"]};')
-            put(f' caption: {name}; category: {PARAMS}' + '}\n')                 
+            put(f'//input: {ANNOT_ARG_TYPE} _{name}Val = {data[name][QUAN_SPEC_VALUE]}')
+            put(' {' + f'units: {data[name][QUAN_SPEC_UNITS]};')
+            put(f' caption: {name}; category: {PARAMS}' + '}\n')
 
         # 4. OUTPUT DATAFRAME
         put(f'//output: dataframe {DF_SOLUTION_NAME} {DF_OUTPUT_ANNOT}\n')
 
         # 5. EDITOR
         put(EDITOR_LINE + '\n')
-        
+
     def putHeader(put, ivProblem):
         """
         Put header of the function.
         """
         # name
         put(f'export async function {SOLVER_PREFIX + ivProblem[NAME]}(')
-        
+
         # argument
         arg = ivProblem[ARGUMENT]
-        put(f'{arg["initial"]["name"]}, {arg["final"]["name"]}, {arg["step"]["name"]},\n')
+        put(f'{arg[ARG_SPEC_INITIAL][ARG_SPEC_NAME]}, ')
+        put(f'{arg[ARG_SPEC_FINAL][ARG_SPEC_NAME]}, ')
+        put(f'{arg[ARG_SPEC_STEP][ARG_SPEC_NAME]},\n')
 
         # initial values
         line = ''
@@ -705,11 +708,12 @@ def addSolverToPackageFile(settings, ivProblem):
 
         # put computation of dataframe size: rows count
         arg = ivProblem[ARGUMENT]
-        put(f'{JS_SPACE}let _{ivProblem[ARGUMENT]["name"]}Count = ')
-        put(f'Math.trunc(({arg["final"]["name"]} - {arg["initial"]["name"]}) ')
-        put(f'/ {arg["step"]["name"]}) + 1;\n')
+        put(f'{JS_SPACE}let _{ivProblem[ARGUMENT][ARG_SPEC_NAME]}Count = ')
+        put(f'Math.trunc(({arg[ARG_SPEC_FINAL][ARG_SPEC_NAME]} ')
+        put(f'- {arg[ARG_SPEC_INITIAL][ARG_SPEC_NAME]}) ')
+        put(f'/ {arg[ARG_SPEC_STEP][ARG_SPEC_NAME]}) + 1;\n')
 
-        # put computation of dataframe size: columns count        
+        # put computation of dataframe size: columns count
         put(f'{JS_SPACE}let _varsCount = ')
         put(f'{len(ivProblem[INIT_VALS].keys()) + 1};\n\n')
 
@@ -719,7 +723,9 @@ def addSolverToPackageFile(settings, ivProblem):
         # put argument
         put(f'{JS_SUBSPACE}[')
         arg = ivProblem[ARGUMENT]
-        put(f' {arg["initial"]["name"]}, {arg["final"]["name"]}, {arg["step"]["name"]},\n')
+        put(f' {arg[ARG_SPEC_INITIAL][ARG_SPEC_NAME]}, ')
+        put(f'{arg[ARG_SPEC_FINAL][ARG_SPEC_NAME]}, ')
+        put(f'{arg[ARG_SPEC_STEP][ARG_SPEC_NAME]},\n')
 
         # put initial values
         line = ''
@@ -734,20 +740,20 @@ def addSolverToPackageFile(settings, ivProblem):
         put(JS_SUBSPACE + line + '\n')
 
         # put row- and col- counts
-        put(f'{JS_SUBSPACE} _{ivProblem[ARGUMENT]["name"]}Count, _varsCount ] );\n')
+        put(f'{JS_SUBSPACE} _{ivProblem[ARGUMENT][ARG_SPEC_NAME]}Count, _varsCount ] );\n')
 
         put('}\n')
-        
+
 
     # set mode for openning file
-    openMode = REWRITE_MODE if settings['packageFileUpdateMode'] == 'rewrite' else APPEND_MODE        
+    openMode = WRITE_MODE if settings[SET_PCKG_FILE_UPD_MODE] == REWRITE else APPEND_MODE
 
     # put code to the package file
-    with open(settings['packageFile'], openMode) as file:
+    with open(settings[SET_PACKAGE_FILE], openMode) as file:
         put = file.write
 
         # put first lines if package file is opened in the write mode
-        if openMode == REWRITE_MODE:        
+        if openMode == WRITE_MODE:
             put(PACKAGE_FILE_FIRST_LINES)
 
         # put init-function
@@ -760,13 +766,13 @@ def addSolverToPackageFile(settings, ivProblem):
         # put header of the function
         putHeader(put, ivProblem)
 
-        # put body of the function 
+        # put body of the function
         putBody(put, ivProblem)
 
 
 def main():
     """
-    The main script: 
+    The main script:
         1) load settings;
         2) get initial value problem from file;
         3) get specification of IVP from its raw description;
@@ -774,23 +780,23 @@ def main():
         5) update settings for C++-to-wasm export;
         6) C++-to-wasm export;
         7) add IVP solver function to DATAGROK package file;
-        8) delete of the __pycache__ folder.      
+        8) delete of the __pycache__ folder.
     """
     try:
         # 1) load settings
         settings = loadSettings()
 
         # 2) get initial value problem from file
-        ivProblemRaw = getRawIVPfromFile(settings["ivpFile"])       
+        ivProblemRaw = getRawIVPfromFile(settings[SET_IVP_FILE])
 
-        # save raw IVP data
+        # save raw IVP data, it's useful when debugging
         #with open('rawIVP.json', 'w') as file:
         #    json.dump(ivpRaw, file)
-        
+
         # 3) get specification of IVP from its raw description
         ivProblem = getSpecificationFromRawIVP(ivProblemRaw)
 
-        # save parsed IVP specification
+        # save parsed IVP specification, it's useful when debugging
         #with open('IVP.json', 'w') as file:
         #    json.dump(ivp, file)
 
@@ -806,12 +812,12 @@ def main():
         # 7) add IVP solver function to DATAGROK package file
         addSolverToPackageFile(settings, ivProblem)
 
-        # 8) delete of the __pycache__ folder, otherwise it must be done further manually 
+        # 8) delete of the __pycache__ folder, otherwise it must be done further manually
         shutil.rmtree('__pycache__')
 
     except OSError:
         print("OS ERROR: check paths and file names!")
-    
+
     except KeyError:
         print("PARSING ERROR: check specificaition of the initial value problem!")
 
@@ -819,7 +825,7 @@ def main():
         print("PARSING ERROR: check C/C++-code!")
 
     except Warning:
-        print("ADD")
+        print("IVP SPECIFICATION ERROR: check names ODEs and initial values!")
 
 
 if __name__ == '__main__':
