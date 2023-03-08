@@ -15,6 +15,7 @@ import {sdfAddColumns} from '../utils/sdf-add-columns';
 import {sdfSaveTable} from '../utils/sdf-save-table';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {DataLoaderBase} from '../utils/data-loader';
+import {Unsubscribable} from 'rxjs';
 
 const enum PREFIXES {
   AS = 'AS',
@@ -155,73 +156,68 @@ function oligoSdFileGrid(view: DG.TableView): void {
   });
 }
 
-export function autostartOligoSdFileSubscription() {
-  grok.events.onViewAdded.subscribe(async (v: any) => {
-    if (v.type === DG.VIEW_TYPE.TABLE_VIEW) {
-      if (v.dataFrame.columns.contains(COL_NAMES.TYPE)) {
-        try {
-          await _package.initDataLoader();
-          oligoSdFileGrid(v);
-          await oligoSdFile(_package.dataLoader, v.dataFrame);
-        } catch (err: any) {
-          const errStr = errorToConsole(err);
-          console.error(errStr);
-        }
-      }
+export async function engageViewForOligoSdFileUI(view: DG.TableView) {
+  await _package.initDataLoader();
+  oligoSdFileGrid(view);
+  await oligoSdFile(_package.dataLoader, view.dataFrame);
 
-      // Should be removed after fixing bug https://github.com/datagrok-ai/public/issues/808
-      grok.events.onContextMenu.subscribe((event: DG.EventData) => {
-        if (!(event.args.context instanceof DG.Grid)) return;
-        const grid: DG.Grid = event.args.context as DG.Grid;
-        const menu: DG.Menu = event.args.menu;
+  const subs: Unsubscribable[] = [];
 
-        const seqCol = grid.table.currentCol; // /^[fsACGUacgu]{6,}$/
-        if (DG.Detector.sampleCategories(seqCol,
-          (s) => /(\(invAb\)|\(GalNAc2\)|A|U|G|C){6,}$/.test(s))) {
-          menu.item('Convert raw nucleotides to GCRS', () => {
-            grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
-              return siRnaNucleotidesToGcrs(seqCol.get(i));
-            });
-          });
-        } else if (DG.Detector.sampleCategories(seqCol,
-          (s) => /(\(invAb\)|\(GalNAc2\)|f|s|A|C|G|U|a|c|g|u){6,}$/.test(s))) {
-          menu.item('Convert Axolabs to GCRS', () => {
-            grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
-              return siRnaAxolabsToGcrs(seqCol.get(i));
-            });
-          }); // /^[fmpsACGU]{6,}$/
-        } else if (DG.Detector.sampleCategories(seqCol,
-            (s) => /(\(invAb\)|\(GalNAc2\)|f|m|ps|A|C|G|U){6,}$/.test(s)) ||
-          DG.Detector.sampleCategories(seqCol, (s) => /^(?=.*moe)(?=.*5mC)(?=.*ps){6,}/.test(s))) {
-          menu.item('Convert GCRS to raw', () => {
-            grid.table.columns.addNewString(seqCol.name + ' to raw').init((i: number) => {
-              return gcrsToNucleotides(seqCol.get(i));
-            });
-          });
-          menu.item('Convert GCRS to MM12', () => {
-            grid.table.columns.addNewString(seqCol.name + ' to MM12').init((i: number) => {
-              return gcrsToMermade12(seqCol.get(i));
-            });
-          }); // /^[*56789ATGC]{6,}$/
-        } else if (DG.Detector.sampleCategories(seqCol,
-          (s) => /(\(invAb\)|\(GalNAc2\)|\*|5|6|7|8|9|A|T|G|C){6,}$/.test(s))) {
-          menu.item('Convert Biospring to GCRS', () => {
-            const seqCol = grid.table.currentCol;
-            grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
-              return asoGapmersBioSpringToGcrs(seqCol.get(i));
-            });
-          }); // /^[*1-8]{6,}$/
-        } else if (DG.Detector.sampleCategories(seqCol,
-          (s) => /(\(invAb\)|\(GalNAc2\)|\*|1|2|3|4|5|6|7|8){6,}$/.test(s))) {
-          menu.item('Convert Biospring to GCRS', () => {
-            grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
-              return siRnaBioSpringToGcrs(seqCol.get(i));
-            });
-          });
-        }
+  // Should be removed after fixing bug https://github.com/datagrok-ai/public/issues/808
+  subs.push(grok.events.onContextMenu.subscribe((event: DG.EventData) => {
+    if (!(event.args.context instanceof DG.Grid)) return;
+    const grid: DG.Grid = event.args.context as DG.Grid;
+    const menu: DG.Menu = event.args.menu;
+
+    const seqCol = grid.table.currentCol; // /^[fsACGUacgu]{6,}$/
+    if (DG.Detector.sampleCategories(seqCol,
+      (s) => /(\(invAb\)|\(GalNAc2\)|A|U|G|C){6,}$/.test(s))) {
+      menu.item('Convert raw nucleotides to GCRS', () => {
+        grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
+          return siRnaNucleotidesToGcrs(seqCol.get(i));
+        });
+      });
+    } else if (DG.Detector.sampleCategories(seqCol,
+      (s) => /(\(invAb\)|\(GalNAc2\)|f|s|A|C|G|U|a|c|g|u){6,}$/.test(s))) {
+      menu.item('Convert Axolabs to GCRS', () => {
+        grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
+          return siRnaAxolabsToGcrs(seqCol.get(i));
+        });
+      }); // /^[fmpsACGU]{6,}$/
+    } else if (DG.Detector.sampleCategories(seqCol,
+        (s) => /(\(invAb\)|\(GalNAc2\)|f|m|ps|A|C|G|U){6,}$/.test(s)) ||
+      DG.Detector.sampleCategories(seqCol, (s) => /^(?=.*moe)(?=.*5mC)(?=.*ps){6,}/.test(s))) {
+      menu.item('Convert GCRS to raw', () => {
+        grid.table.columns.addNewString(seqCol.name + ' to raw').init((i: number) => {
+          return gcrsToNucleotides(seqCol.get(i));
+        });
+      });
+      menu.item('Convert GCRS to MM12', () => {
+        grid.table.columns.addNewString(seqCol.name + ' to MM12').init((i: number) => {
+          return gcrsToMermade12(seqCol.get(i));
+        });
+      }); // /^[*56789ATGC]{6,}$/
+    } else if (DG.Detector.sampleCategories(seqCol,
+      (s) => /(\(invAb\)|\(GalNAc2\)|\*|5|6|7|8|9|A|T|G|C){6,}$/.test(s))) {
+      menu.item('Convert Biospring to GCRS', () => {
+        const seqCol = grid.table.currentCol;
+        grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
+          return asoGapmersBioSpringToGcrs(seqCol.get(i));
+        });
+      }); // /^[*1-8]{6,}$/
+    } else if (DG.Detector.sampleCategories(seqCol,
+      (s) => /(\(invAb\)|\(GalNAc2\)|\*|1|2|3|4|5|6|7|8){6,}$/.test(s))) {
+      menu.item('Convert Biospring to GCRS', () => {
+        grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
+          return siRnaBioSpringToGcrs(seqCol.get(i));
+        });
       });
     }
-  });
+  }));
+
+  subs.push(grok.events.onViewRemoved.subscribe((view: DG.View) => {
+    for (const sub of subs) sub.unsubscribe();
+  }));
 }
 
 export async function oligoSdFile(dl: DataLoaderBase, table: DG.DataFrame) {

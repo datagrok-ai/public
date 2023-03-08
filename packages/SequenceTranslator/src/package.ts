@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {DataLoaderBase, DataLoaderDB} from './utils/data-loader';
 
-import {autostartOligoSdFileSubscription} from './autostart/registration';
+import {engageViewForOligoSdFileUI} from './autostart/registration';
 import {OligoSdFileApp} from './apps/oligo-sd-file-app';
 import {SequenceTranslatorUI} from './view/view';
 import {LIB_PATH, DEFAULT_LIB_FILENAME} from './utils/const';
@@ -14,6 +14,7 @@ import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/sr
 
 export class StPackage extends DG.Package {
   private _dataLoader?: DataLoaderBase;
+
   get dataLoader(): DataLoaderBase {
     if (!this._dataLoader)
       throw new Error('dataLoader is not initialized');
@@ -21,7 +22,7 @@ export class StPackage extends DG.Package {
   };
 
   public async initDataLoader(): Promise<void> {
-    if (this._dataLoader == undefined) {
+    if (this._dataLoader === undefined) {
       const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(
         'Initializing Sequence Translator data loader ...');
       try {
@@ -55,9 +56,12 @@ export function getMonomerLib() {
 
 //name: Sequence Translator
 //tags: app
-export async function sequenceTranslator(): Promise<void> {
+export async function sequenceTranslatorApp(): Promise<void> {
+  _package.logger.debug('ST: sequenceTranslatorApp() ');
+
   const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create('Loading Sequence Translator app ...');
   try {
+    _package.initDataLoader().then(() => {}); // Do not wait for lists loaded from the database
     try {
       const libHelper: IMonomerLibHelper = await getMonomerLibHelper();
       monomerLib = await libHelper.readLibrary(LIB_PATH, DEFAULT_LIB_FILENAME);
@@ -74,16 +78,10 @@ export async function sequenceTranslator(): Promise<void> {
   } catch (err: any) {
     const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
     grok.shell.error(`Loading Sequence Translator application error: ` + errMsg);
-    const k = 11;
     throw err;
   } finally {
     pi.close();
   }
-}
-
-//tags: autostart
-export async function autostartST() {
-  autostartOligoSdFileSubscription();
 }
 
 //name: oligoSdFileApp
@@ -99,4 +97,10 @@ export async function oligoSdFileApp() {
   } finally {
     pi.close();
   }
+}
+
+//name: engageViewForOligoSdFile()
+//description: Function to modify the view for SequenceTranslator registration
+export async function engageViewForOligoSdFile(view: DG.TableView): Promise<void> {
+  await engageViewForOligoSdFileUI(view);
 }
