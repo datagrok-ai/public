@@ -1,19 +1,18 @@
-""" export.py
+""" export.py  January 12, 2023.
     This script exports C/C++-functions to Datagrok package.
 """
 
 import os
 import json
-import shutil
 
-from exportConstants import *
-
+# auxiliry map
+sizesMap = {'rowCount': 'numOfRows', 'columnCount': 'numOfColumns', 'data': 'data'}
 
 def getSettings(nameOfFile):
     """
     Return dictionary with settings of C/C++-functions export from json-file with settings.
     """
-    with open(nameOfFile, READ_MODE) as file:
+    with open(nameOfFile, 'r') as file:
          return json.load(file)
 
 class Function:
@@ -23,7 +22,6 @@ class Function:
         self.annotation = []
         self.arguments = {}
         self.prototype = ''
-        self.prototypeForWebWorker = ''
         self.callArgs = '['
         self.typeList = typeList
         self.cFuncTypeIndex = 0
@@ -37,32 +35,29 @@ class Function:
         # complete output of specification
         self.finalizeOutput()
 
-        # final preparation of prototypes
+        # final preparation of prototype
         self.prototype = self.prototype.rstrip(', ')
         self.prototype += ')'
-        self.prototypeForWebWorker = self.prototypeForWebWorker.rstrip(', ')
-        self.prototypeForWebWorker += ')'
 
         # final preparation of call args string
         self.callArgs = self.callArgs.rstrip(', ')
         self.callArgs += ']'
 
         # create specification dict
-        self.specification = {ARGUMENTS: self.arguments,
-        OUTPUT: self.output,
-        ANNOTATION: self.annotation,
-        PROTOTYPE: self.prototype,
-        WW_PROTOTYPE: self.prototypeForWebWorker,
-        CALL_ARGS: self.callArgs}
+        self.specification = {'arguments': self.arguments,
+        'output': self.output,
+        'annotation': self.annotation,
+        'prototype': self.prototype,
+        'callArgs': self.callArgs}
 
     def processAnnotationLine(self, line):
         """ Process one line of annotation before exported C/C++-function.
         """
-        if line.startswith(ANNOT_INPUT):
+        if line.startswith('//input:'):
             self.processInputLine(line)
-        elif line.startswith(ANNOT_OUTPUT):
+        elif line.startswith('//output:'):
             self.processOutputLine(line)
-        elif line.startswith(ANNOT_NAME):
+        elif line.startswith('//name:'):
             self.processNameLine(line)
         else:
             self.annotation.append(line)
@@ -71,14 +66,13 @@ class Function:
         """ Process line containing '//name:'.
         """
         ignore1, ignore2, name = line.partition(' ')
-        self.prototype += f'{name}('
-        self.prototypeForWebWorker += f'{name}{IN_WEBWORKER_SUFFIX}('
+        self.prototype += (name + '(')
         self.annotation.append(line)
 
     def processOutputLine(self, line):
         """ Process line containing '//output:'.
         """
-        if ANNOT_NEW in line:
+        if 'new' in line:
             self.processOutputLineWithNew(line)
         else:
             self.processOutputLineWithoutNew(line)
@@ -98,25 +92,24 @@ class Function:
         argName, ignore, rest = rest.partition(' ')
 
         self.prototype += argName + ', '
-        self.prototypeForWebWorker += argName + ', '
 
-        if argType == ANNOT_DATAFRAME:
+        if argType == 'dataframe':
             return
 
         self.callArgs += argName + ', '
 
         currentType = self.typeList[self.cFuncTypeIndex]
 
-        if argType == ANNOT_COLUMN:
-            self.arguments[argName] = {TYPE: currentType + COLUMN}
+        if argType == 'column':
+            self.arguments[argName] = {'type': currentType + 'Column'}
             self.cFuncTypeIndex += 2
 
-        elif argType == ANNOT_COLUMN_LIST:
-            self.arguments[argName] = {TYPE: currentType + COLUMNS}
+        elif argType == 'column_list':
+            self.arguments[argName] = {'type': currentType + 'Columns'}
             self.cFuncTypeIndex += 3
 
         else:
-            self.arguments[argName] = {TYPE: NUM}
+            self.arguments[argName] = {'type': 'num'}
             self.cFuncTypeIndex += 1
 
     def processOutputLineWithNew(self, line):
@@ -128,7 +121,7 @@ class Function:
         # get type and name of the argument
         argType, ignore, rest = rest.partition(' ')
 
-        if argType == ANNOT_DATAFRAME:
+        if argType == 'dataframe':
             return
 
         # extract name & specification
@@ -138,58 +131,55 @@ class Function:
         self.paramsWithNewSpecifier[argName] = argType
 
         # extract the main data
-        specification = specification.lstrip(f'[{ANNOT_NEW}(').rstrip(')]')
+        specification = specification.lstrip('[new(').rstrip(']')
 
         currentType = self.typeList[self.cFuncTypeIndex]
 
-        if argType == ANNOT_COLUMN:
+        if argType == 'column':
             specification = specification.strip()
 
             ref = None
             value = None
 
-            if ANNOT_DOT not in specification:
+            if '.' not in specification:
                 ref = specification
-                value = DATA
+                value = 'data'
             else:
-                ref, ignore, value = specification.partition(ANNOT_DOT)
+                ref, ignore, value = specification.partition('.')
 
-            self.arguments[argName] = {TYPE: NEW + currentType.capitalize() + COLUMN}
-            self.arguments[argName][NUM_OF_ROWS] = {REF: ref, VALUE: sizesMap[value]}
+            self.arguments[argName] = {'type': 'new' + currentType.capitalize() + 'Column'}
+            self.arguments[argName]['numOfRows'] = {'ref': ref, 'value': sizesMap[value]}
             self.cFuncTypeIndex += 2
 
-        elif argType == ANNOT_COLUMN_LIST:
+        elif argType == 'column_list':
 
-            #first, ignore, last = specification.partition(',')
-            #first = first.strip()
-            #last = last.strip()
             first, ignore, rest = specification.partition(',')
             first = first.strip()
             rest = rest.strip()
 
-            self.arguments[argName] = {TYPE: NEW + currentType.capitalize() + COLUMNS}
+            self.arguments[argName] = {'type': 'new' + currentType.capitalize() + 'Columns'}
 
             ref = None
             value = None
 
-            if ANNOT_DOT not in first:
+            if '.' not in first:
                 ref = first
-                value = DATA
+                value = 'data'
             else:
-                ref, ignore, value = first.partition(ANNOT_DOT)
+                ref, ignore, value = first.partition('.')
 
-            self.arguments[argName][NUM_OF_ROWS] = {REF: ref, VALUE: sizesMap[value]}
+            self.arguments[argName]['numOfRows'] = {'ref': ref, 'value': sizesMap[value]}
 
             colCountStr, ignore, namesStr = rest.partition(')')
             colCountStr = colCountStr.strip()
 
-            if ANNOT_DOT not in colCountStr:
+            if '.' not in colCountStr:
                 ref = colCountStr
-                value = DATA
+                value = 'data'
             else:
-                ref, ignore, value = colCountStr.partition(ANNOT_DOT)
+                ref, ignore, value = colCountStr.partition('.')
 
-            self.arguments[argName][NUM_OF_COLUMNS] = {REF: ref, VALUE: sizesMap[value]}
+            self.arguments[argName]['numOfColumns'] = {'ref': ref, 'value': sizesMap[value]}
 
             namesStr = namesStr.strip(';').strip().replace(';', ',')
 
@@ -198,7 +188,7 @@ class Function:
             self.cFuncTypeIndex += 3
 
         else:
-            self.arguments[argName] = {TYPE: NUM}
+            self.arguments[argName] = {'type': 'num'}
             self.cFuncTypeIndex += 1
 
     def processOutputLineWithoutNew(self, line):
@@ -214,28 +204,28 @@ class Function:
 
         outputSource, ignore1, rest = rest.strip().strip('[').partition(']')
 
-        if outputType == ANNOT_OBJECTS:
-            self.output[TYPE] = outputType
+        if outputType == 'objects':
+            self.output['type'] = outputType
             args = outputSource.split(',')
             sourceString = ''
 
             for arg in args:
                 sourceString += f"'{arg.strip()}', "
 
-            self.output[SOURCE] = f"[{sourceString.rstrip(', ')}]"
+            self.output['source'] = f"[{sourceString.rstrip(', ')}]"
 
             return
 
-        elif outputType == ANNOT_DATAFRAME:
-            self.output[TYPE] = TABLE_FROM_COLUMNS
-            self.output[SOURCE] = f'{outputSource}'
+        elif outputType == 'dataframe':
+            self.output['type'] = 'tableFromColumns'
+            self.output['source'] = f'{outputSource}'
 
         else:
-            self.output[TYPE] = f'{outputType}'
-            self.output[SOURCE] = f'{outputSource}'
+            self.output['type'] = f'{outputType}'
+            self.output['source'] = f'{outputSource}'
 
         stringToAnnotation, ignore1, ignore2 = line.partition('[')
-        self.annotation.append(stringToAnnotation)
+        self.annotation.append(stringToAnnotation + rest.strip())
 
     def finalizeOutput(self):
         """ Complete output part of the function specification.
@@ -245,11 +235,11 @@ class Function:
                 raise Warning
             elif len(self.paramsWithNewSpecifier) == 1:
                 argName = list(self.paramsWithNewSpecifier.keys())[0]
-                self.output[TYPE] = self.paramsWithNewSpecifier[argName]
-                self.output[SOURCE] = argName
-                self.annotation.append(f'{ANNOT_OUTPUT} {self.output[TYPE]} {argName}')
+                self.output['type'] = self.paramsWithNewSpecifier[argName]
+                self.output['source'] = argName
+                self.annotation.append(f'//output: {self.output["type"]} {argName}')
             else:
-                self.output[TYPE] = OBJECTS
+                self.output['type'] = 'objects'
                 sourceString = '['
 
                 for name in self.paramsWithNewSpecifier.keys():
@@ -257,7 +247,7 @@ class Function:
 
                 sourceString = sourceString.rstrip(', ')
                 sourceString += ']'
-                self.output[SOURCE] = sourceString
+                self.output['source'] = sourceString
 
     def getSpecification(self):
         return self.specification
@@ -266,13 +256,12 @@ def getFunctionsFromFile(nameOfFile):
     """
     Parse C/C++-file and return specification of exported functions.
     """
-    with open(nameOfFile, READ_MODE) as file:
+    with open(nameOfFile, 'r') as file:
         listOfLines = file.readlines()
         dictionaryOfFunctions = {}
 
         for lineIndex in range(len(listOfLines)):
-            # the next line is function's prototype
-            if listOfLines[lineIndex].startswith(EM_MACROS):
+            if listOfLines[lineIndex] == "EMSCRIPTEN_KEEPALIVE\n":  # the next line is function's prototype
 
                 # 1. Analyze function description
                 j = lineIndex + 1
@@ -316,8 +305,8 @@ def getFunctionsFromListOfFiles(settings):
     """
     functions = {} # dictionary: key - name of file; value - functions data
 
-    for name in settings[SOURCE]:
-        functions[name] = getFunctionsFromFile(settings[FOLDER] + '/' + name)
+    for name in settings["source"]:
+        functions[name] = getFunctionsFromFile(settings["folder"] + '/' + name)
 
     return functions
 
@@ -325,7 +314,7 @@ def saveFunctionsDataToFile(functionsData, nameOfFile):
     """
     Save C-functions descriptors to json-file.
     """
-    with open(nameOfFile, WRITE_MODE) as file:
+    with open(nameOfFile, 'w') as file:
             json.dump(functionsData, file)
 
 def getCommand(settings, functionsData):
@@ -335,17 +324,17 @@ def getCommand(settings, functionsData):
     command = 'em++' # Emscripten command, starts with "emcc"
 
     # set optimization mode
-    command += ' ' + settings[OPTIMIZATION_MODE]
+    command += ' ' + settings['optimizationMode']
 
     # add names of C-files
-    for nameOfFile in settings[SOURCE]:
-        command += f' {settings[FOLDER]}/{nameOfFile}'
+    for nameOfFile in settings['source']:
+        command += f' {settings["folder"]}/{nameOfFile}'
 
     # add name of JS-library that is created by Emscripten
-    command += f' -o {settings[FOLDER]}/{settings[NAME]}.js'
+    command += f' -o {settings["folder"]}/{settings["name"]}.js'
 
     # specify memory restrictions
-    command += ' -s TOTAL_MEMORY=' + settings[TOTAL_MEMORY]
+    command += ' -s TOTAL_MEMORY=' + settings['totalMemory']
 
     # set that wasm-file must be created
     command += ' -s WASM=1'
@@ -357,7 +346,7 @@ def getCommand(settings, functionsData):
     command += ' -s MODULARIZE=1'
 
     # set export name
-    command += ' -s EXPORT_NAME="export' + settings[NAME] + '"'
+    command += ' -s EXPORT_NAME="export' + settings['name'] + '"'
 
     # set a list of exported functions
     command += ' -s EXPORTED_FUNCTIONS=['
@@ -382,62 +371,8 @@ def saveCommand(command, nameOfFile):
     """
     Save Emscripten command to txt-file.
     """
-    with open(nameOfFile, WRITE_MODE) as file:
+    with open(nameOfFile, "w") as file:
         file.write(command)
-
-def createJSwrapperForWasmInWebWorkerRun(settings):
-    """
-    Create JS-wrapper for wasm-functions run in webworkers.
-    """
-    folder = settings[FOLDER]
-    name = settings[NAME]
-
-    # open JS-file generated by Emscripten
-    with open(f'{folder}/{name}{EM_LIB_EXTENSION}', READ_MODE) as emFile:
-        listOfLines = emFile.readlines()
-
-        # this modification provides further usage of the module in webworker
-        listOfLines[NUM_OF_LINE_TO_MODIFY] = KEY_WORD_TO_ADD + listOfLines[NUM_OF_LINE_TO_MODIFY]
-
-        # create JS-wrapper for call wasm-functions in webworker
-        with open(f'{folder}/{name}{WW_FILE_SUFFIX}{EM_LIB_EXTENSION}',WRITE_MODE) as file:
-
-            replacement = f"fetch(new URL('{folder}/{name}.wasm', import.meta.url))"
-
-            # put lines (replacement is required for further usage in webworkers)
-            for line in listOfLines:
-                file.write(line.replace(LINE_TO_REPLACE, replacement))
-
-def createWorkerFiles(settings, functionsData):
-    """
-    Create worker files corresponding to each exported function.
-    """
-    folder = settings[FOLDER]
-    name = settings[NAME]
-    runtimeSystem = settings[RUNTIME_SYSTEM_FOR_WEBWORKER]
-
-    # generation of workers for each file and each exported function
-    for nameOfFile in functionsData.keys():
-        for funcName in functionsData[nameOfFile].keys():
-
-            # create name of worker
-            workerName = f'{folder}/{funcName}{WORKER_SUFFIX}{WORKER_EXTENSION}'
-
-            # create file and generate code of the current worker
-            with open(workerName, WRITE_MODE) as file:
-                put = file.write
-                put(f'{AUTOMATIC_GENERATION_LINE}\n\n')
-                libFile = f'{folder}/{name}{WW_FILE_SUFFIX}'
-                put('import {export' + name + '}' + f" from '{libFile}';\n")
-                put('import {' + CPP_WRAPPER_FUNCTION + '}' + f" from '{runtimeSystem}';\n\n")
-                put('onmessage = async function (evt) {\n')
-                put(f'{WW_SPACE}export{name}().then(module => \n')
-                put(WW_SUBSPACE + '{\n')
-                put(f'{WW_SUBSUBSPACE}let args = evt.data;\n')
-                line = f"let result = cppWrapper(module, args, '{funcName}', 'number');"
-                put(f'{WW_SUBSUBSPACE}{line}\n')
-                put(WW_SUBSUBSPACE + "postMessage({'callResult': result, 'args': args});\n")
-                put(WW_SUBSPACE + '} )\n}')
 
 def updatePackageJsonFile(settings):
     """ Add JS-file with exported C/C++-functions to "sources" of package.json.
@@ -446,22 +381,17 @@ def updatePackageJsonFile(settings):
     packageData = None
 
     # get package data from package.json
-    with open(settings[PACKAGE_JSON_FILE], READ_MODE) as file:
+    with open(settings['packageJsonFile'], 'r') as file:
         packageData = json.load(file)
 
     # create full name of JS-lib file that is added to package.json
-    fullNameOfLibFile = f"{settings[FOLDER].lstrip('../')}/{settings[NAME]}.js"
+    fullNameOfLibFile = f"{settings['folder'].lstrip('../')}/{settings['name']}.js"
 
     # add dependence to package data
-    if PJSN_SOURCES in packageData.keys():
-        # add JS-file if "source" does not contain it yet
-        if fullNameOfLibFile not in packageData[PJSN_SOURCES]:
-            packageData[PJSN_SOURCES].append(fullNameOfLibFile)
-    else:
-        packageData[PJSN_SOURCES] = [ fullNameOfLibFile ]
+    packageData["sources"] = [ fullNameOfLibFile ]
 
     # update package.json
-    with open(settings[PACKAGE_JSON_FILE], WRITE_MODE) as file:
+    with open(settings["packageJsonFile"], 'w') as file:
         json.dump(packageData, file)
 
 def completeJsWasmfile(settings, functionsData):
@@ -469,7 +399,7 @@ def completeJsWasmfile(settings, functionsData):
     Add exported C/C++-function specifications and the corresponding init-function
     to JS-file created by Emscripten.
     """
-    with open(f'{settings[FOLDER]}/{settings[NAME]}.js', APPEND_MODE) as file:
+    with open(f'{settings["folder"]}/{settings["name"]}.js', 'a') as file:
         put = file.write
         put('\n\n')
 
@@ -479,29 +409,29 @@ def completeJsWasmfile(settings, functionsData):
             for funcName in functionsData[cppFile].keys():
                 exportedFuncsNames.append(funcName)
                 put(f'var {funcName} = ' + '{\n')
-                arguments = functionsData[cppFile][funcName][ARGUMENTS]
-                put(f'{SPACE}{ARGUMENTS}: ' + '{\n')
+                arguments = functionsData[cppFile][funcName]['arguments']
+                put('  arguments: {\n')
                 argCommasCount = len(arguments.keys()) - 1
 
                 for arg in arguments.keys():
-                    put(f'{SUBSPACE}{arg}: ' + '{\n')
+                    put(f'    {arg}: ' + '{\n')
                     attrCommasCount = len(arguments[arg].keys()) - 1
 
                     for attribute in arguments[arg].keys():
 
-                        if attribute == TYPE:
-                            put(f"{SUBSUBSPACE}{attribute}: '{arguments[arg][attribute]}'")
+                        if attribute == 'type':
+                            put(f"      {attribute}: '{arguments[arg][attribute]}'")
 
-                        elif attribute == NAMES:
-                            put(f'{SUBSUBSPACE}{attribute}: [{arguments[arg][attribute]}]')
+                        elif attribute == 'names':
+                            put(f'      {attribute}: [{arguments[arg][attribute]}]')
 
                         else:
-                            put(f'{SUBSUBSPACE}{attribute}: ' + '{\n')
-                            ref = arguments[arg][attribute][REF]
-                            put(f"{SUBSUBSUBSPACE}{REF}: '{ref}',\n")
-                            value = arguments[arg][attribute][VALUE]
-                            put(f"{SUBSUBSUBSPACE}{VALUE}: '{value}'\n")
-                            put(SUBSUBSPACE + '}')
+                            put(f'      {attribute}: ' + '{\n')
+                            ref = arguments[arg][attribute]['ref']
+                            put('        ref: ' + f"'{ref}',\n")
+                            value = arguments[arg][attribute]['value']
+                            put('        value: ' + f"'{value}'\n")
+                            put('      }')
 
                         if attrCommasCount > 0:
                             put(',')
@@ -509,7 +439,7 @@ def completeJsWasmfile(settings, functionsData):
 
                         put('\n')
 
-                    put(SUBSPACE + '}')
+                    put('    }')
 
                     if argCommasCount > 0:
                         put(',')
@@ -517,119 +447,79 @@ def completeJsWasmfile(settings, functionsData):
 
                     put('\n')
 
-                put(SPACE + '},\n')
-                put(f'{SPACE}{OUTPUT}: ' + '{\n')
-                outputType = functionsData[cppFile][funcName][OUTPUT][TYPE]
-                put(f"{SUBSPACE}{TYPE}: '{outputType}',\n")
-                outputSource = functionsData[cppFile][funcName][OUTPUT][SOURCE]
-                put(f'{SUBSPACE}{SOURCE}: ')
+                put('  },\n')
+                put('  output: {\n')
+                outputType = functionsData[cppFile][funcName]['output']['type']
+                put(f"    type: '{outputType}',\n")
+                outputSource = functionsData[cppFile][funcName]['output']['source']
+                put('    source: ')
 
-                if outputType != OBJECTS:
+                if outputType != 'objects':
                     put(f"'{outputSource}'")
                 else:
                     put(f'{outputSource}')
 
-                put(f'\n{SPACE}' + '}\n')
+                put('\n  }\n')
                 put('}; ' + f'// {funcName}\n\n')
 
         # add init-function
-        put(f'var {settings[NAME]} = undefined;\n\n')
-        put(f'async function init{settings[NAME]}() ' + '{\n')
-        put(f'{SPACE}if ({settings[NAME]} === undefined) ' + '{\n')
-        put(f'{SUBSPACE}console.log("Wasm not Loaded, Loading");\n')
-        put(f'{SUBSPACE}{settings[NAME]} = await export{settings[NAME]}();\n')
+        put(f'var {settings["name"]} = undefined;\n\n')
+        put(f'async function init{settings["name"]}() ' + '{\n')
+        put(f'  if ({settings["name"]} === undefined) ' + '{\n')
+        put(f'    console.log("Wasm not Loaded, Loading");\n')
+        put(f'    {settings["name"]} = await export{settings["name"]}();\n')
 
         for name in exportedFuncsNames:
-            put(f'{SUBSPACE}{settings[NAME]}.{name} = {name};\n')
+            put(f'    {settings["name"]}.{name} = {name};\n')
 
-        put(SPACE + '} else {\n')
-        put(f'{SUBSPACE}console.log("Wasm Loaded, Passing");\n')
-        put(SPACE + '}\n')
+        put('  } else {\n')
+        put('    console.log("Wasm Loaded, Passing");\n')
+        put('  }\n')
         put('}')
 
 def addExportedFunctionsToPackageFile(settings, functionsData):
     """ Generate code in the package-file.
     """
-    def generateFuncsForMainStreamRun(put, funcName, funcData):
-        """
-        Generate code of functions for run in the main stream.
-        """
-        # put annotation lines
-        for line in funcData[ANNOTATION]:
-            put(line + '\n')
-
-        # put package function code
-        put(f'export function {funcData[PROTOTYPE]} ' + '{\n')
-        put(f"{SPACE}return callWasm({settings[NAME]}, '{funcName}', {funcData[CALL_ARGS]});\n")
-        put('}\n\n')
-
-    def generateFuncsForWebWorker(put, funcName, funcData):
-        """
-        Generate code of functions for run in webworker.
-        """
-        # put annotation lines
-        for line in funcData[ANNOTATION]:
-            if 'output' not in line: # skip line that contains "//output"
-                put(line + '\n')
-
-        # put package function code
-        put(f'export function {funcData[WW_PROTOTYPE]} ' + '{\n')
-
-        workerName = f'{settings[FOLDER]}/{funcName}{WORKER_SUFFIX}{WORKER_EXTENSION}'
-        put(f"{SPACE}var worker = new Worker(new URL('{workerName}', import.meta.url));\n")
-
-        put(f"{SPACE}worker.postMessage(getCppInput({settings[NAME]}['{funcName}'].arguments,")
-        put(f"{funcData[CALL_ARGS]}));\n")
-
-        put(SPACE + 'worker.onmessage = function(e) {\n')
-
-        put(f"{SUBSPACE}let output = getResult({settings[NAME]}['{funcName}'], e.data);\n")
-
-        put(f'\n{SUBSPACE}// Provide output usage!\n')
-
-        put(SPACE + '}\n')
-        put('}\n\n')
-
-    with open(settings[PACKAGE_FILE], APPEND_MODE) as file:
+    with open(settings['packageFile'], 'a') as file:
         put = file.write
 
-        put('\n// Imports for call wasm runtime-system: in the main stream and in webworkers\n')
-
-        # put import-line: wasm-computations in the main stream
-        put('import { ' + CALL_WASM + ' } from ')
-        callWasm = settings[RUNTIME_SYSTEM].rstrip('.js')
-        put(f"'{callWasm}';\n")
-
-        # put import-line: wasm-computations in webworkers
-        put('import { ' + f'{GET_CPP_INPUT}, {GET_RESULT}' + ' } from ')
-        callWasmWW = settings[RUNTIME_SYSTEM_FOR_WEBWORKER].rstrip('.js')
-        put(f"'{callWasmWW}';\n\n")
+        # put 'import...' line
+        put('\nimport { callWasm } from ')
+        callWasm = settings['runtimeSystemFile'].rstrip('.js')
+        put(f"'{callWasm}';\n\n")
 
         # put init-function
         put('//tags: init\n')
         put('export async function init() {\n')
-        put(f'{SPACE}await init{settings[NAME]}();\n')
+        put(f'  await init{settings["name"]}();\n')
         put('}\n\n')
 
         # put call of each exported C/C++-function
         for cppFileName in functionsData.keys():
             for funcName in functionsData[cppFileName].keys():
-                generateFuncsForMainStreamRun(put, funcName, functionsData[cppFileName][funcName])
-                #generateFuncsForWebWorker(put, funcName, functionsData[cppFileName][funcName])
+                annotation = functionsData[cppFileName][funcName]['annotation']
+                prototype = functionsData[cppFileName][funcName]['prototype']
+                callArgs = functionsData[cppFileName][funcName]['callArgs']
 
+                # put annotation lines
+                for line in annotation:
+                    put(line + '\n')
 
-def main(nameOfSettingsFile="module.json"):
+                # put package function code
+                put(f'export async function {prototype} ' + '{\n')
+                put(f"  return callWasm({settings['name']}, '{funcName}', {callArgs});\n")
+                put('}\n\n')
+
+def main(nameOfSettingsFile="exportSettings.json"):
     """
     The main script:
         1) load export settings from json-file;
         2) parse C/C++-files and get C/C++-functions to be exported;
         3) create Emscripten command;
         4) execute Emscripten command;
-        5) create JS-wrapper for wasm-functions run in webworkers;
-        6) create worker files;
-        7) complete JS-file created by Emscripten;
-        8) append Datagrok package file with exported functions;
-        9) update the file package.json: add JS-file name created by Emscripten to 'sources'.
+        5) complete JS-file created by Emscripten;
+        6) append Datagrok package file with exported functions;
+        7) update the file package.json: add JS-file name created by Emscripten to 'sources'.
     """
     try:
         # 1) load settings
@@ -639,34 +529,25 @@ def main(nameOfSettingsFile="module.json"):
         functionsData = getFunctionsFromListOfFiles(settings)
 
         # write functions descriptors to json-file
-        saveFunctionsDataToFile(functionsData, 'func.json')
+        #saveFunctionsDataToFile(functionsData, 'func.json')
 
         # 3) get command for Emscripten tool
         command = getCommand(settings, functionsData)
 
         # save command to file
-        saveCommand(command, 'command.txt')
+        #saveCommand(command, 'command.txt')
 
         # 4) execute command by Emscripten
         os.system(command)
 
-        # 5) create JS-wrapper for wasm-functions run in webworkers
-        createJSwrapperForWasmInWebWorkerRun(settings)
-
-        # 6) create worker files
-        createWorkerFiles(settings, functionsData)
-
-        # 7) complete JS-file created by Emscripten
+        # 5) complete JS-file created by Emscripten
         completeJsWasmfile(settings, functionsData)
 
-        # 8) append Datagrok package file with exported functions
+        # 6) append Datagrok package file with exported functions
         addExportedFunctionsToPackageFile(settings, functionsData)
 
-        # 9) update the file package.json
+        # 7) update the file package.json
         updatePackageJsonFile(settings)
-
-        # 10)* delete of the __pycache__ folder, otherwise it must be done further manually
-        shutil.rmtree('__pycache__')
 
     except OSError:
         print("OS ERROR: check paths and file names!")

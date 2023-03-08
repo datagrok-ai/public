@@ -19,7 +19,6 @@ def loadSettings():
     with open(EXPORT_SETTINGS_FILE, READ_MODE) as file:
         return json.load(file)
 
-
 def getRawIVPfromFile(ivProblemFileName):
     """"
     Returns raw specification of IVP extracted from the file.
@@ -52,7 +51,6 @@ def getRawIVPfromFile(ivProblemFileName):
                     ivpRaw[category].append(line)
 
     return ivpRaw
-
 
 def getSpecificationFromRawIVP(ivProblemRaw):
     """
@@ -200,7 +198,6 @@ def getSpecificationFromRawIVP(ivProblemRaw):
         raise Warning
 
     return ivProblem
-
 
 def generateCppCode(ivProblem):
     """
@@ -584,14 +581,12 @@ def generateCppCode(ivProblem):
         # solving function's body
         putSolverBody(put, ivProblem)
 
-
 def updateExportSettings(settings, ivProblem):
     """
     Update C++-to-wasm export settings.
     """
     settings[SET_NAME] = ivProblem[NAME]
     settings[SET_SOURCE] = [f'{ivProblem[NAME]}.cpp']
-
 
 def cppToWasmExport(settings):
     """
@@ -611,7 +606,6 @@ def cppToWasmExport(settings):
 
     # update the file package.json
     updatePackageJsonFile(settings)
-
 
 def addSolverToPackageFile(settings, ivProblem):
     """
@@ -769,7 +763,6 @@ def addSolverToPackageFile(settings, ivProblem):
         # put body of the function
         putBody(put, ivProblem)
 
-
 def main():
     """
     The main script:
@@ -791,14 +784,14 @@ def main():
 
         # save raw IVP data, it's useful when debugging
         #with open('rawIVP.json', 'w') as file:
-        #    json.dump(ivpRaw, file)
+        #    json.dump(ivProblemRaw, file)
 
         # 3) get specification of IVP from its raw description
         ivProblem = getSpecificationFromRawIVP(ivProblemRaw)
 
         # save parsed IVP specification, it's useful when debugging
         #with open('IVP.json', 'w') as file:
-        #    json.dump(ivp, file)
+        #    json.dump(ivProblem, file)
 
         # 4) generate C++ code
         generateCppCode(ivProblem)
@@ -826,7 +819,6 @@ def main():
 
     except Warning:
         print("IVP SPECIFICATION ERROR: check names ODEs and initial values!")
-
 
 if __name__ == '__main__':
     main()
