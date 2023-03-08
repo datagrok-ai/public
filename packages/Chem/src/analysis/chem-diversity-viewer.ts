@@ -63,7 +63,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
           divClass += ' d4-current';
           grid.style.backgroundColor = '#ddffd9';
         }
-        if (this.dataFrame.selection.get(this.renderMolIds[i])) {
+        if (!this.tooltipUse && this.dataFrame.selection.get(this.renderMolIds[i])) {
           divClass += ' d4-selected';
           if (divClass == 'd4-flex-col d4-selected')
             grid.style.backgroundColor = '#f8f8df';
