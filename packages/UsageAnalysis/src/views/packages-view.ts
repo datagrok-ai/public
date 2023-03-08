@@ -26,13 +26,8 @@ export class PackagesView extends UaView {
           size: 'count',
           color: 'user',
         }).root;
-        // viewer.style.height = '1000px !important';
         return viewer;
       },
-      // (host: HTMLElement) => {
-      //   host.style.overflow='auto';
-      //   host.style.height='1000px !important';
-      // },
     );
     this.viewers.push(packagesViewer);
 

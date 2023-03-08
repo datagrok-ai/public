@@ -13,6 +13,7 @@ export class UaView extends DG.ViewBase {
     super();
     this.uaToolbox = uaToolbox;
     this.toolbox = uaToolbox.rootAccordion.root;
+    this.box = true;
   }
 
   tryToinitViewers() {
