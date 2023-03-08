@@ -2,26 +2,21 @@
 
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+
 import * as fit from './fit-data';
+import {IFitChartData} from './fit-data';
 import * as fitMath from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
-import {FIT_CELL_TYPE, IFitChartData} from './fit-data';
+
 import wu from 'wu';
 
 function rnd(min: number, max: number) {
   return Math.random() * (max - min) + min;
 }
 
-function sigmoid(x: number) {
-  return 1 / (1 + Math.exp(-x));
-}
-
 function createSigmoidPoints(length: number, step: number, pointsPerX: number = 1):
     { x: Float32Array, y: Float32Array, params: number[] } {
   const x = new Float32Array(length * pointsPerX);
   const y = new Float32Array(length * pointsPerX);
-
-  if (pointsPerX > 1)
-    console.log('here');
 
   // random curve parameters; fitting will reconstruct them
   const params = [rnd(1, 2), rnd(1, 2), rnd(1, 2), rnd(-5, 5)];
@@ -64,7 +59,7 @@ function createDemoDataFrame(rowCount: number, chartsCount: number, chartsPerCel
   for (let colIdx = 0; colIdx < chartsCount; colIdx++) {
     const pointsPerX = colIdx == 3 ? 5 : 1;
 
-    const jsonColumn = df.columns.addNewString('json chart ' + colIdx);          // charts as json
+    const jsonColumn = df.columns.addNewString(`json chart ${colIdx}`);          // charts as json
     jsonColumn.semType = fit.FIT_SEM_TYPE;
     let charts = colIdx % 2 == 0 ? chartsPerCell : 1;
 
@@ -82,6 +77,7 @@ function createDemoDataFrame(rowCount: number, chartsCount: number, chartsPerCel
           parameters: j % 2 == 0 ? points.params : undefined,
           fitLineColor: color,
           pointColor: color,
+          showCurveConfidenceInterval: charts === 1 ? true: false,
           points: wu.count().take(seriesLength * pointsPerX)
             .map(function(i) { return {x: points.x[i], y: points.y[i]}; })
             .toArray()
@@ -97,6 +93,5 @@ function createDemoDataFrame(rowCount: number, chartsCount: number, chartsPerCel
 export async function curveFitDemo() {
   const df = createDemoDataFrame(30, 5, 2);
   const grid = grok.shell.addTableView(df).grid;
-  grid.columns.add({gridColumnName: 'tables', cellType: 'fit-old'}).width = 200;
   grid.props.rowHeight = 150;
 }

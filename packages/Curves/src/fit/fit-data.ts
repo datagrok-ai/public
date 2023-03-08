@@ -4,10 +4,11 @@
 import * as DG from 'datagrok-api/dg';
 import {Property} from 'datagrok-api/src/entities';
 import {TYPE} from 'datagrok-api/src/const';
+
 import {
   fit,
   FitErrorModel,
-  FitResult, fitResultProperties, IFitOptions,
+  FitResult, fitResultProperties,
   sigmoid
 } from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 
@@ -34,6 +35,9 @@ export const FIT_SEM_TYPE = 'fit';
 export const FIT_CELL_TYPE = 'fit';
 export const TAG_FIT = '.fit';
 
+export const CONFIDENCE_INTERVAL_STROKE_COLOR = 'rgba(255,191,63,0.9)';
+export const CONFIDENCE_INTERVAL_FILL_COLOR = 'rgba(255,238,204,0.3)';
+
 export type FitMarkerType = 'circle' | 'triangle up' | 'triangle down' | 'cross';
 
 /** A point in the fit series. Only x and y are required. Can override some fields defined in IFitSeriesOptions. */
@@ -55,6 +59,7 @@ export interface IFitSeriesOptions {
   parameters?: number[];         // auto-fitting when not defined
   pointColor?: string;
   fitLineColor?: string;
+  confidenceIntervalColor?: string;
   showFitLine?: boolean;
   showPoints?: boolean;
   showCurveConfidenceInterval?: boolean;   // show ribbon
@@ -149,14 +154,13 @@ function createFromProperties(properties: Property[]): any {
 /** Merges properties of the two objects by iterating over the specified {@link properties}
  * and assigning properties from {@link source} to {@link target} only when
  * the property is not defined in target and is defined in source. */
-function mergeProperties(properties: Property[],
-  source: IFitChartOptions | IFitSeriesOptions | undefined, target: IFitChartOptions | IFitSeries | undefined) {
+function mergeProperties(properties: Property[], source: any, target: any) {
   if (!source || !target)
     return;
 
   for (const p of properties) {
-    if (p.name !in target && p.name in source)
-      p.set(target, p.get(source));
+    if (!(p.name in target) && p.name in source)
+      target[p.name] = source[p.name];
   }
 }
 
@@ -171,7 +175,7 @@ function createDefaultChartData(): IFitChartData {
 
 /** Returns existing, or creates new column default chart options. */
 export function getColumnChartOptions(gridColumn: DG.GridColumn): IFitChartData {
-  return gridColumn.tags[TAG_FIT] ??= createDefaultChartData();
+  return gridColumn.temp[TAG_FIT] ??= createDefaultChartData();
 }
 
 
@@ -184,7 +188,7 @@ export function getChartBounds(chartData: IFitChartData): DG.Rect {
   } else {
     let bounds = getDataBounds(chartData.series[0].points);
     for (let i = 1; i < chartData.series!.length; i++)
-      bounds = union(bounds, getDataBounds(chartData.series[i].points));
+      bounds = bounds.union(getDataBounds(chartData.series[i].points));
     return bounds;
   }
 }
@@ -205,24 +209,6 @@ export function getDataBounds(points: IFitPoint[]): DG.Rect {
   }
 
   return new DG.Rect(minX, minY, maxX - minX, maxY - minY);
-}
-
-
-//TODO: move to DG.Rect
-function fromPoints(x1: number, y1: number, x2: number, y2: number): DG.Rect {
-  const minX = Math.min(x1, x2);
-  const minY = Math.min(y1, y2);
-  return new DG.Rect(minX, minY, Math.max(x1, x2) - minX, Math.max(y1, y2) - minY);
-}
-
-
-//TODO: move to DG.Rect
-function union(r1: DG.Rect, r2: DG.Rect): DG.Rect {
-  return fromPoints(
-    Math.min(r1.left, r2.left),
-    Math.min(r1.top, r2.top),
-    Math.max(r1.right, r2.right),
-    Math.max(r1.bottom, r2.bottom));
 }
 
 
@@ -253,6 +239,13 @@ export function getFittedCurve(series: IFitSeries): (x: number) => number {
     return (x) => sigmoid(series.parameters!, x);
   else
     return fitSeries(series).fittedCurve;
+}
+
+/** Returns confidence interval functions */
+export function getConfidenceIntrevals(series: IFitSeries): {top: (x: number) => number, bottom: (x: number) => number} {
+  const confTop = fitSeries(series).confidenceTop;
+  const confBottom = fitSeries(series).confidenceBottom;
+  return {top: confTop, bottom: confBottom};
 }
 
 /** Constructs {@link IFitChartData} from the grid cell, taking into account
@@ -289,8 +282,9 @@ const sample: IFitChartData = {
     'pointColor': 'blue',
     'fitLineColor': 'red',
     'clickToToggle': true,
+    'showPoints': true,
     'showFitLine': true,
-    'showPoints': true
+    'showCurveConfidenceInterval': true
   },
   'series': [
     {

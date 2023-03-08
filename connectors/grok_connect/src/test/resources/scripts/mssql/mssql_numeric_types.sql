@@ -7,5 +7,5 @@ INSERT INTO numeric_types(bigint_data, int_data, smallint_data, tinyint_data, bi
 VALUES (9223372036854775807, 2147483647, 32767, 123, 1, 123.22, 12345.12000);
 
 CREATE TABLE float_types (float_data1 float(24), float_data2 float(53), real_data real);
-INSERT INTO float_types(float_data1, float_data2, real_data) VALUES (- 1.79E+308,   -2.23E-308, 124124.23555);
+INSERT INTO float_types(float_data1, float_data2, real_data) VALUES (- 1.79E+30,   -2.23E-308, 124124.23555);
 INSERT INTO float_types(float_data1, float_data2, real_data) VALUES (34636.34661,  2.23E-308, 0.0);

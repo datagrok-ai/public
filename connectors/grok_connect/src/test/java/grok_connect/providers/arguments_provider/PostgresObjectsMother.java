@@ -1,5 +1,6 @@
 package grok_connect.providers.arguments_provider;
 
+import grok_connect.connectors_info.FuncCall;
 import grok_connect.providers.utils.DataFrameBuilder;
 import grok_connect.providers.utils.DateParser;
 import grok_connect.providers.utils.FuncCallBuilder;
@@ -226,7 +227,7 @@ public class PostgresObjectsMother {
         DataFrame expected2 = DataFrameBuilder.getBuilder()
                 .setRowCount(4)
                 .setColumn(new FloatColumn(new Float[]{Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY,
-                        0.0f, Float.POSITIVE_INFINITY}), "data")
+                        Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY}), "data")
                 .build();
         DataFrame expected3 = DataFrameBuilder.getBuilder()
                 .setRowCount(2)
@@ -299,6 +300,47 @@ public class PostgresObjectsMother {
         return Stream.of(Arguments.of(
                 Named.of("XML TYPE SUPPORT", FuncCallBuilder.fromQuery("SELECT * FROM xml_data")), expected
             )
+        );
+    }
+
+    public static Stream<Arguments> checkPostgresOperatorsSupport_ok() {
+        DataFrame expected1 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new FloatColumn(new Float[]{5.0f}), "value")
+                .build();
+        DataFrame expected2 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new BigIntColumn(new String[]{"1"}), "id")
+                .setColumn(new StringColumn(new String[]{"{\"reading\": 0.00001230}"}), "json_data")
+                .setColumn(new FloatColumn(new Float[]{2.0f}), "length")
+                .setColumn(new StringColumn(new String[]{"(0.0,0.0)"}), "center")
+                .build();
+        FuncCall funcCall2 = FuncCallBuilder.getBuilder()
+                .addQuery("--input: string id = \"=1\" {pattern: int}\n"
+                        + "SELECT id, json_data, @-@ path_data AS length, @@ circle_data AS center FROM operators WHERE @id(id)\n"
+                        + "--end")
+                .addFuncParam("string", "", "id", "=1", "int")
+                .addFuncCallOptionsPattern("id", "=1", "=",
+                        null, null, 1)
+                .build();
+        DataFrame expected3 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new BigIntColumn(new String[]{"2"}), "id")
+                .setColumn(new StringColumn(new String[]{"{\"bar\": \"baz\", \"active\": false, \"balance\": 7.77}"}), "json_data")
+                .setColumn(new FloatColumn(new Float[]{2.4122634f}), "length")
+                .setColumn(new StringColumn(new String[]{"(0.0,0.0)"}), "center")
+                .build();
+        FuncCall funcCall3 = FuncCallBuilder.getBuilder()
+                .addQuery("--input: int id = 2\n"
+                        + "SELECT id, json_data, @-@ path_data AS length, @@ circle_data AS center FROM operators "
+                        + "WHERE id = @id AND json_data @> '{\"bar\": \"baz\"}'::jsonb\n"
+                        + "--end")
+                .addFuncParam("int", "", "id", 2, "")
+                .build();
+        return Stream.of(
+                Arguments.of(Named.of("ABSOLUTE VALUE @", FuncCallBuilder.fromQuery("SELECT @ -5.0 AS VALUE")), expected1),
+                Arguments.of(Named.of("PATH LENGTH @-@, CIRCLE CENTER @@, PATTERN @ID(ID)", funcCall2), expected2),
+                Arguments.of(Named.of("PATH LENGTH @-@, CIRCLE CENTER @@, JSON @>, ID = @ID", funcCall3), expected3)
         );
     }
 }

@@ -129,6 +129,7 @@ export class PinnedColumn {
   //private m_observerResize : ResizeObserver | null;
   private m_observerResizeGrid : ResizeObserver | null;
   private m_handlerKeyDown : rxjs.Subscription | null;
+  private m_handlerKeyUp : rxjs.Subscription | null;
   private m_handlerColsRemoved : rxjs.Subscription | null;
   private m_handlerColNameChanged : rxjs.Subscription | null;
   private m_handlerVScroll : rxjs.Subscription | null;
@@ -150,6 +151,8 @@ export class PinnedColumn {
   private m_bResizeColPinMoving = false;
   private m_bResizeColPinDragging = false;
   private m_nXResizeColPinDraggingAnchor = -1;
+
+  private m_bColSelect = false;
 
   private m_nYDraggingAnchor = -1;
   private m_nRowGridDragging = -1;
@@ -320,18 +323,31 @@ export class PinnedColumn {
 
 
     this.m_handlerKeyDown = rxjs.fromEvent<KeyboardEvent>(eCanvasThis, 'keydown').subscribe((e : KeyboardEvent) => {
+      //alert('down');
+      if(e.ctrlKey && e.code === 'KeyC') {
+        grid.overlay.tabIndex = -1;
+        grid.overlay.focus();
+      }
 
-      //alert('up');
       setTimeout(() =>{
         const ee = new KeyboardEvent(e.type, e);
-        try{grid.overlay.dispatchEvent(ee);}
+        try {grid.overlay.dispatchEvent(ee);}
         catch(ex) {
           //console.error(ex.message);
         }
       }, 1);
-
     });
 
+    this.m_handlerKeyUp = rxjs.fromEvent<KeyboardEvent>(eCanvasThis, 'keyup').subscribe((e : KeyboardEvent) => {
+      //alert('down');
+      setTimeout(() =>{
+        const ee = new KeyboardEvent(e.type, e);
+        try {grid.overlay.dispatchEvent(ee);}
+        catch(ex) {
+          //console.error(ex.message);
+        }
+      }, 1);
+    });
 
     this.m_handlerColorCoding = grok.events.onEvent('d4-grid-color-coding-changed').subscribe(() => {
       const g = eCanvasThis.getContext('2d');
@@ -456,6 +472,9 @@ export class PinnedColumn {
 
     this.m_handlerKeyDown?.unsubscribe();
     this.m_handlerKeyDown = null;
+
+    this.m_handlerKeyUp?.unsubscribe();
+    this.m_handlerKeyUp = null;
 
     this.m_handlerColsRemoved?.unsubscribe();
     this.m_handlerColsRemoved = null;
@@ -822,7 +841,6 @@ export class PinnedColumn {
           return;
         }
     */
-
     if(this.m_colGrid === null)
       return;
 
@@ -834,11 +852,9 @@ export class PinnedColumn {
     if(e.buttons !== 1)
       return;
 
-
     //PinnedUtils.setPinnedColumnWidth(this, 150);
-
     let eCanvasThis = this.m_root;
-    if(eCanvasThis === null)
+    if (eCanvasThis === null)
       return;
 
     this.m_nResizeRowGridMoving = -1;
@@ -852,16 +868,15 @@ export class PinnedColumn {
       this.m_nHResizeRowsBeforeDrag = nHRows;
     }
     else {
-     nRowGrid = PinnedColumn.hitTestRows(eCanvasThis, grid, e, false, this.m_arXYMouseOnCellDown);
+      nRowGrid = PinnedColumn.hitTestRows(eCanvasThis, grid, e, false, this.m_arXYMouseOnCellDown);
 
       this.m_nRowGridDragging = nRowGrid;
       this.m_nYDraggingAnchor = e.clientY;
 
       const cell = grid.cell(this.m_colGrid.name, nRowGrid);
       const renderer = getRenderer(cell);
-      if(renderer instanceof GridCellRendererEx) {
+      if (renderer instanceof GridCellRendererEx)
         renderer.onMouseDownEx(cell, e, this.m_arXYMouseOnCellDown[0], this.m_arXYMouseOnCellDown[1]);
-      }
     }
 
     this.m_bResizeColPinMoving = false;
@@ -872,18 +887,21 @@ export class PinnedColumn {
 
     const eDivHamb = GridUtils.getToolIconDiv(colGrid.grid);
     const nHColHeader = GridUtils.getGridColumnHeaderHeight(colGrid.grid);
-    if(0 <= e.offsetY && e.offsetY < nHColHeader && this.m_root.offsetWidth -PinnedColumn.X_RESIZE_SENSITIVITY <= e.offsetX && e.offsetX <= this.m_root.offsetWidth) {
-      //Resizing Columns
-      const eDivHamb = GridUtils.getToolIconDiv(colGrid.grid);
-      // @ts-ignore
-      eDivHamb?.style.visibility = 'hidden';
+    if(0 <= e.offsetY && e.offsetY < nHColHeader) {
 
-      this.m_bResizeColPinDragging = true;
-      this.m_nXResizeColPinDraggingAnchor = e.clientX;
-      this.m_nWResizeColPinBeforeDrag = eCanvasThis.offsetWidth;
-      return;
+     if(this.m_root.offsetWidth -PinnedColumn.X_RESIZE_SENSITIVITY <= e.offsetX && e.offsetX <= this.m_root.offsetWidth) { //column resize
+       //Resizing Columns
+       const eDivHamb = GridUtils.getToolIconDiv(colGrid.grid);
+       // @ts-ignore
+       eDivHamb?.style.visibility = 'hidden';
+
+       this.m_bResizeColPinDragging = true;
+       this.m_nXResizeColPinDraggingAnchor = e.clientX;
+       this.m_nWResizeColPinBeforeDrag = eCanvasThis.offsetWidth;
+       return;
+     } else if (bAddToSel) //column select
+       this.m_bColSelect = true;
     }
-
   }
 
   public onMouseUp(e : MouseEvent) : void {
@@ -903,9 +921,8 @@ export class PinnedColumn {
     const grid = this.m_colGrid?.grid;
     const viewTable = grid?.view;
 
-    if(DG.toDart(grok.shell.v) !== DG.toDart(viewTable)) {
+    if(DG.toDart(grok.shell.v) !== DG.toDart(viewTable))
       return;
-    }
 
     if(e.button === 2) {
       if( this.m_colGrid.name == '')
@@ -915,7 +932,17 @@ export class PinnedColumn {
       return;
     }
 
-    if(this.m_nResizeRowGridDragging >= 0) {
+
+    if (this.m_bColSelect) {
+      const bColSel = this.m_colGrid.selected;
+      this.m_colGrid.selected = !bColSel;
+      const g = this.getRoot()!.getContext('2d');
+      this.paint(g, grid);
+      this.m_bColSelect = false;
+      return;
+    }
+
+    if (this.m_nResizeRowGridDragging >= 0) {
       const nHRow = GridUtils.getGridRowHeight(grid);
       notifyAllPinnedColsRowsResized(this, nHRow, false);
       notifyAllColsRowsResized(grid, nHRow, false);
@@ -930,7 +957,6 @@ export class PinnedColumn {
     this.m_bResizeColPinMoving = false;
     this.m_bResizeColPinDragging = false;
     this.m_nXResizeColPinDraggingAnchor = -1;
-
 
     document.body.style.cursor = "auto";
 
@@ -975,7 +1001,6 @@ export class PinnedColumn {
       else
       {
         const bitsetSel = dframe.selection;
-
         let nRowGridMin = this.m_nRowGridDragging < nRowGrid ? this.m_nRowGridDragging : nRowGrid;
         let nRowGridMax = this.m_nRowGridDragging > nRowGrid ? this.m_nRowGridDragging : nRowGrid;
 
@@ -999,10 +1024,8 @@ export class PinnedColumn {
             nRowGridMax = nRowGridActive > nRowGrid ? nRowGridActive : nRowGrid;
           }
         }
-        else {
+        else
           bitsetSel.setAll(false, false);
-        }
-
 
         //if(!bCtrl || bRangeSel)
         //bitsetSel.setAll(false, true);
@@ -1114,13 +1137,11 @@ export class PinnedColumn {
 
    paint(g : CanvasRenderingContext2D | null, grid : DG.Grid) : void {
     //const nWDiv = entry.contentBoxSize ? entry.contentBoxSize[0].inlineSize : entry.contentRect.width;
-    if(g === null) {
+    if(g === null)
       return;
-    }
 
-    if(this.m_root === null) {
+    if(this.m_root === null)
       throw new Error('Root cannot be null.');
-    }
 
     if(this.m_colGrid === null) {
       throw new Error('Column grid cannot be null.');
@@ -1145,9 +1166,7 @@ export class PinnedColumn {
 
     //column Header
     const options : any = grid.getOptions(true);
-
     const fontCellDefault = options.look.defaultCellFont;
-
     let font = options.look.colHeaderFont == null || options.look.colHeaderFont === undefined ? "bold 14px Volta Text, Arial" : options.look.colHeaderFont;
     let fontScaled = GridUtils.scaleFont(font, window.devicePixelRatio);
     g.font = fontScaled;
@@ -1156,7 +1175,6 @@ export class PinnedColumn {
 
     const tm = g.measureText(str);
     const nWLabel = tm.width;
-
     const nAscent = Math.abs(tm.actualBoundingBoxAscent);
     const nDescent = tm.actualBoundingBoxDescent;
     const nHFont =  nAscent + nDescent;// + 2*nYInset;
@@ -1174,7 +1192,6 @@ export class PinnedColumn {
     let nYY = (nY + nHCH - Math.ceil(3*window.devicePixelRatio));//-2*window.devicePixelRatio);
     //onsole.log("nXX " + nXX + " nYY = " + nYY + " CHH " + nHCH);
     g.fillText(str, nXX, nYY);
-
 
     //Paint Sort Arrow
     if(this.m_colGrid.idx > 0) {
@@ -1216,12 +1233,10 @@ export class PinnedColumn {
 
     const arTableRows = new Array(nRowMax - nRowMin +1);
     let nRowTable = -1;
-    let bSel = false;
-    for(let nRG=nRowMin; nRG<=nRowMax; ++nRG) {
+    for (let nRG=nRowMin; nRG<=nRowMax; ++nRG) {
       try {
         cellRH = grid.cell(this.m_colGrid.name, nRG);
-      } catch (e) //to address DG bug when everything is filtered
-      {
+      } catch (e) {//to address DG bug when everything is filtered
         continue;
       }
 
@@ -1289,8 +1304,8 @@ export class PinnedColumn {
     const colPinned = PinnedUtils.getPinnedColumn(nPinnedColCount -1, grid);
     const bLast = this === colPinned;
 
-    for(let nRG=nRowMin; nRG<=nRowMax; ++nRG)
-    {
+    let bSel = false;
+    for(let nRG=nRowMin; nRG<=nRowMax; ++nRG) {
       nYY = nYOffset + (nRG - nRowMin) * nHRowGrid;
       //if(options.look.showRowGridlines) {
       g.strokeStyle = "Gainsboro";
@@ -1312,13 +1327,17 @@ export class PinnedColumn {
         g.stroke();
       }
 
-      //}
       nRowTable = arTableRows[nRG - nRowMin];
-      try{bSel = nRowTable === undefined || nRowTable < 0 ? false : bitsetSel.get(nRowTable);}
-      catch (e){
-        console.error('PaintError: row_min: ' + nRowMin + ' row_max: ' + nRowMax + ' nR ' + nRG + ' ' + nRowTable);
-        throw e;
+      bSel = this.m_colGrid.selected;
+      if (!bSel) {
+        try {
+          bSel = nRowTable === undefined || nRowTable < 0 ? false : bitsetSel.get(nRowTable);
+        } catch (e) {
+          console.error('PaintError: row_min: ' + nRowMin + ' row_max: ' + nRowMax + ' nR ' + nRG + ' ' + nRowTable);
+          throw e;
+        }
       }
+
       if(bSel)
       {
         g.globalAlpha = 0.2;
@@ -1336,7 +1355,6 @@ export class PinnedColumn {
       }
     }//for
   }
-
 
   private static hitTestRows(eCanvasPinned : HTMLCanvasElement, grid : DG.Grid, e : MouseEvent, bBorder : boolean, arXYOnCell : Array<number> | undefined)
   {

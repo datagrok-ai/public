@@ -98,4 +98,4 @@ jobs:
           configFile: commitlint.config.js
           firstParent: true
           failOnWarnings: false
-          helpURL: http://localhost:3000/help/develop/advanced/git-policy#commit-message-policy
+          helpURL: https://datagrok.ai/help/develop/advanced/git-policy#commit-message-policy

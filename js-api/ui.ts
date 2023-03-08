@@ -655,6 +655,8 @@ export namespace input {
     const input = InputBase.forProperty(property, source);
     if (options?.onCreated)
       options.onCreated(input);
+    if (options?.onValueChanged)
+      input.onChanged(() => options.onValueChanged!(input));
     return input;
   }
 

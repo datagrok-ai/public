@@ -1,11 +1,15 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import {GridColumn, Paint} from 'datagrok-api/dg';
-import {fitSeries, getChartData, getChartBounds, getFittedCurve} from './fit-data';
+
 import {fitResultProperties} from "@datagrok-libraries/statistics/src/parameter-estimation/fit-curve";
 import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
+
+import {fitSeries, getChartData, getChartBounds, getFittedCurve, getConfidenceIntrevals,
+  CONFIDENCE_INTERVAL_FILL_COLOR, CONFIDENCE_INTERVAL_STROKE_COLOR} from './fit-data';
 import {convertXMLToIFitChartData} from './fit-parser';
-import wu from "wu";
+
 
 interface ITransform {
   xToScreen(world: number): number;
@@ -50,27 +54,29 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   }
 
   render(g: CanvasRenderingContext2D,
-    x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+         x: number, y: number, w: number, h: number,
+         gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+    if (w < 20 || h < 10) return;
+
     g.save();
     g.beginPath();
     g.rect(x, y, w, h);
     g.clip();
 
-    if (w < 20 || h < 10) return;
     const screenBounds = new DG.Rect(x, y, w, h).inflate(-6, -6);
     const [dataBox, xAxisBox, yAxisBox] = layoutChart(screenBounds);
 
     const data = gridCell.cell.column.getTag('.fitChartFormat') === '3dx' ? convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
     const dataBounds = getChartBounds(data);
     const transform = Transform.linear(dataBounds, dataBox);
+    const minSize = Math.min(dataBox.width, dataBox.height);
+    const ratio = minSize > 100 ? 1 : 0.2 + (minSize / 100) * 0.8;
 
     DG.Paint.coordinateGrid(g, dataBounds, xAxisBox, yAxisBox, dataBox);
 
     for (const series of data.series!) {
-      g.strokeStyle = series.pointColor ?? '0xFF40699c';
-
       if (series.showPoints ?? true) {
+        g.strokeStyle = series.pointColor ?? '0xFF40699c';
         for (let i = 0, candleStart = null; i < series.points.length!; i++) {
           const p = series.points[i];
           const nextSame = i + 1 < series.points.length && series.points[i + 1].x == p.x;
@@ -96,13 +102,14 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
               p.outlier ? DG.MARKER_TYPE.OUTLIER : DG.MARKER_TYPE.CIRCLE,
               transform.xToScreen(p.x), transform.yToScreen(p.y),
               series.pointColor ? DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker,
-              p.outlier ? 6 : 4);
+              (p.outlier ? 6 : 4) * ratio);
           }
         }
       }
 
       if (series.showFitLine ?? true ) {
         g.strokeStyle = series.fitLineColor ?? 'black';
+        g.lineWidth = 2 * ratio;
         const curve = getFittedCurve(series);
 
         g.beginPath();
@@ -115,6 +122,56 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
             g.lineTo(x, y);
         }
         g.stroke();
+      }
+
+      if (series.showCurveConfidenceInterval ?? true) {
+        g.strokeStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_STROKE_COLOR;
+        g.fillStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_FILL_COLOR;
+        const confidence = getConfidenceIntrevals(series);
+
+        // draw confidence top
+        g.beginPath();
+        for (let i = 0; i < series.points.length!; i++) {
+          const x = transform.xToScreen(series.points[i].x);
+          const y = transform.yToScreen(confidence.top(series.points[i].x));
+          if (i == 0)
+            g.moveTo(x, y);
+          else
+            g.lineTo(x, y);
+        }
+        g.stroke();
+
+        // draw confidence bottom
+        g.beginPath();
+        for (let i = 0; i < series.points.length!; i++) {
+          const x = transform.xToScreen(series.points[i].x);
+          const y = transform.yToScreen(confidence.bottom(series.points[i].x));
+          if (i == 0)
+            g.moveTo(x, y);
+          else
+            g.lineTo(x, y);
+        }
+        g.stroke();
+
+        // fill the interval
+        g.beginPath();
+        for (let i = 0; i < series.points.length!; i++) {
+          const x = transform.xToScreen(series.points[i].x);
+          const y = transform.yToScreen(confidence.top(series.points[i].x));
+          if (i == 0)
+            g.moveTo(x, y);
+          else
+            g.lineTo(x, y);
+        }
+
+        // reverse traverse to make a shape of confidence interval to fill it
+        for (let i = series.points.length! - 1; i >= 0; i--) {
+          const x = transform.xToScreen(series.points[i].x);
+          const y = transform.yToScreen(confidence.bottom(series.points[i].x));
+          g.lineTo(x, y);
+        }
+        g.closePath();
+        g.fill();
       }
 
 
@@ -134,5 +191,14 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     }
 
     g.restore();
+  }
+
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent) {
+    if (gridCell.bounds.width < 50) {
+      const canvas = ui.canvas(300, 200);
+      this.render(canvas.getContext("2d")!, 0, 0, 300, 200, gridCell, null as any);
+      const content = ui.divV([canvas]);
+      ui.tooltip.show(content, e.x, e.y);
+    }
   }
 }

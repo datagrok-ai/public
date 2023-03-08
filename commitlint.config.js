@@ -76,7 +76,7 @@ const Configuration = {
    * Custom URL to show upon failure
    */
   helpUrl:
-    'http://localhost:3000/help/develop/advanced/git-policy#commit-message-policy',
+    'https://datagrok.ai/help/develop/advanced/git-policy#commit-message-policy',
 };
 
 module.exports = Configuration;
