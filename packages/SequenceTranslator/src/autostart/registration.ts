@@ -256,15 +256,19 @@ export async function oligoSdFile(dl: DataLoaderBase, table: DG.DataFrame) {
       );
 
       const view = grok.shell.getTableView(table.name);
+      const typesList: string[] = Object.values(SEQUENCE_TYPES);
+      const usersList: string[] = dl.Users.getCol('DISPLAY').toList();
+      const icdsList: string[] = dl.ICDs.getCol('DISPLAY').toList();
+      const idpsList: string[] = dl.IDPs.getCol('DISPLAY').toList();
+      const sourcesList: string[] = dl.Sources.getCol('DISPLAY').toList();
+      const saltsList: string[] = dl.Salts.getCol('DISPLAY').toList();
       view.grid.setOptions({rowHeight: 45});
-      view.dataFrame.getCol(COL_NAMES.TYPE).setTag(DG.TAGS.CHOICES, stringify(Object.values(SEQUENCE_TYPES)));
-      /* eslint-disable max-len */
-      view.dataFrame.getCol(COL_NAMES.OWNER).setTag(DG.TAGS.CHOICES, stringify(dl.Users.columns.byIndex(0).toList()));
-      view.dataFrame.getCol(COL_NAMES.SALT).setTag(DG.TAGS.CHOICES, stringify(dl.Salts.columns.byIndex(0).toList()));
-      view.dataFrame.getCol(COL_NAMES.SOURCE).setTag(DG.TAGS.CHOICES, stringify(dl.Sources.columns.byIndex(0).toList()));
-      view.dataFrame.getCol(COL_NAMES.ICD).setTag(DG.TAGS.CHOICES, stringify(dl.ICDs.columns.byIndex(0).toList()));
-      view.dataFrame.getCol(COL_NAMES.IDP).setTag(DG.TAGS.CHOICES, stringify(dl.IDPs.columns.byIndex(0).toList()));
-      /* eslint-enable max-len */
+      view.dataFrame.getCol(COL_NAMES.TYPE).setTag(DG.TAGS.CHOICES, stringify(typesList));
+      view.dataFrame.getCol(COL_NAMES.OWNER).setTag(DG.TAGS.CHOICES, stringify(usersList));
+      view.dataFrame.getCol(COL_NAMES.ICD).setTag(DG.TAGS.CHOICES, stringify(icdsList));
+      view.dataFrame.getCol(COL_NAMES.IDP).setTag(DG.TAGS.CHOICES, stringify(idpsList));
+      view.dataFrame.getCol(COL_NAMES.SOURCE).setTag(DG.TAGS.CHOICES, stringify(sourcesList));
+      view.dataFrame.getCol(COL_NAMES.SALT).setTag(DG.TAGS.CHOICES, stringify(saltsList));
 
       grok.events.onContextMenu.subscribe((event: DG.EventData) => {
         if (!(event.args.context instanceof DG.Grid)) return;

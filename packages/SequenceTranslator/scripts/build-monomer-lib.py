@@ -1,4 +1,5 @@
 # pylint: disable=no-member
+import os.path
 from io import TextIOWrapper
 from typing import Optional
 
@@ -48,13 +49,13 @@ def mol_add_collection(mol: Mol,
     if len(steabs) > 0:
         steabs_str: str = "M  V30 MDLV30/STEABS ATOMS=({count} {list})" \
             .format(
-                count=len(steabs),
-                list=' '.join([str(idx) for idx in steabs])
-            )
+            count=len(steabs),
+            list=' '.join([str(idx) for idx in steabs])
+        )
 
         mb_line_list = mb_line_list[:(end_bond_idx + 1)] + \
-            ["M  V30 BEGIN COLLECTION", steabs_str, "M  V30 END COLLECTION"] + \
-            mb_line_list[(end_bond_idx + 1):]
+                       ["M  V30 BEGIN COLLECTION", steabs_str, "M  V30 END COLLECTION"] + \
+                       mb_line_list[(end_bond_idx + 1):]
 
     return '\n'.join(mb_line_list)
 
@@ -162,30 +163,43 @@ def cli():
               'lib_f',
               help='Output library (HELM format) file.',
               type=click.File('wb', 'utf-8'))
-@click.option('--add',
-              'monomer_files_list',
-              multiple=False,
+@click.option('--add-list',
+              'monomer_list_file_list',
+              multiple=True,
               help='Additional libraries to build.',
               type=click.File('r', 'utf-8'))
 def main(ctx, initial_f: TextIOWrapper, lib_f: TextIOWrapper,
-         monomer_files_list: TextIOWrapper):
+         monomer_list_file_list: list[TextIOWrapper]):
     initial_json_str = initial_f.read()
 
     initial_json = orjson.loads(initial_json_str)
 
     monomers: dict[str, Monomer] = codes2monomers(initial_json)
 
-    monomer_file_list = list(
-        filter(lambda string: string != '',
-               monomer_files_list.read().split('\n')))
+    monomer_fn_list = []
+    for monomer_list_file in monomer_list_file_list:
+        for monomer_fn in [fn for fn in monomer_list_file.read().split('\n') if fn]:
+            monomer_fn_list.append(monomer_fn);
 
-    print(monomer_file_list)
+    print(monomer_fn_list)
 
-    for file in monomer_file_list:
-        with open(file, 'r') as f:
-            add_json_str = f.read()
+    for add_json_fn in monomer_fn_list:
+        # trying to load mol data if file with .mol extension exists
+
+        with open(add_json_fn, 'r') as add_json_f:
+            add_json_str = add_json_f.read()
             add_json = orjson.loads(add_json_str)
             for add_m in add_json:
+                if not add_m['molfile']:
+                    monomer_mol_fn = os.path.join(os.path.dirname(add_json_fn), add_m['name'] + '.mol')
+                    if not os.path.isfile(monomer_mol_fn):
+                        raise FileNotFoundError(monomer_mol_fn)
+                    else:
+                        with open(monomer_mol_fn, 'r') as monomer_mol_f:
+                            monomer_mol_lines = [line.rstrip() for line in monomer_mol_f.readlines()]
+                            monomer_mol_txt = '\n'.join(monomer_mol_lines)
+                            add_m['molfile'] = monomer_mol_txt
+
                 m = Monomer.from_json(add_m)
                 monomers[m.name] = m
 

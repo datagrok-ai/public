@@ -22,9 +22,19 @@ export class StPackage extends DG.Package {
 
   public async initDataLoader(): Promise<void> {
     if (this._dataLoader == undefined) {
-      const dl = new DataLoaderDB();
-      await dl.init();
-      this._dataLoader = dl;
+      const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create(
+        'Initializing Sequence Translator data loader ...');
+      try {
+        const dl = new DataLoaderDB();
+        await dl.init();
+        this._dataLoader = dl;
+      } catch (err: any) {
+        const errMsg = err.hasOwnProperty('message') ? err.message : err.toString();
+        grok.shell.error(errMsg);
+        throw new Error('Initializing Sequence Translator data loader error: ' + errMsg);
+      } finally {
+        pi.close();
+      }
     }
   }
 }
@@ -52,7 +62,7 @@ export async function sequenceTranslator(): Promise<void> {
       const libHelper: IMonomerLibHelper = await getMonomerLibHelper();
       monomerLib = await libHelper.readLibrary(LIB_PATH, DEFAULT_LIB_FILENAME);
     } catch (err: any) {
-      const errMsg: string = err.hasOwnProperty('message') ? err.message() : err.toString();
+      const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
       throw new Error('Loading monomer library error: ' + errMsg);
     }
 

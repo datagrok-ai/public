@@ -2,9 +2,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {_package} from '../package';
-
-// import {_package} from '../package';
 
 const enum QUERY_NAME {
   START = 'sequence',
@@ -59,10 +56,12 @@ export class DataLoaderDB extends DataLoaderBase {
     const sourcesDQ: DG.DataQuery = dataQueryList.find((dq) => dq.hasTag('entity-Sources'))!;
     const saltsDQ: DG.DataQuery = dataQueryList.find((dq) => dq.hasTag('entity-Salts'))!;
 
-    this._users = (await usersDQ.prepare().call()).getOutputParamValue();
-    this._ICDs = (await icdsDQ.prepare().call()).getOutputParamValue();
-    this._IDPs = (await idpsDQ.prepare().call()).getOutputParamValue();
-    this._sources = (await sourcesDQ.prepare().call()).getOutputParamValue();
-    this._salts = (await saltsDQ.prepare().call()).getOutputParamValue();
+    await Promise.all([
+      usersDQ.prepare().call().then((fc) => { this._users = fc.getOutputParamValue(); }),
+      icdsDQ.prepare().call().then((fc) => { this._ICDs = fc.getOutputParamValue(); }),
+      idpsDQ.prepare().call().then((fc) => { this._IDPs = fc.getOutputParamValue(); }),
+      sourcesDQ.prepare().call().then((fc) => {this._sources = fc.getOutputParamValue(); }),
+      saltsDQ.prepare().call().then((fc) => { this._salts = fc.getOutputParamValue(); }),
+    ]);
   };
 }
