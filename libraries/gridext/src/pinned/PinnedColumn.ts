@@ -1221,9 +1221,12 @@ export class PinnedColumn {
     GridUtils.fillVisibleViewportRows(arRowsMinMax, grid);
     const nRowMin = arRowsMinMax[0];
     const nRowMax = arRowsMinMax[1];
-
     //console.log(nRowMin + " " + nRowMax);
     const nHRow = GridUtils.getGridRowHeight(grid);
+    const nVRowCountEst = Math.floor(grid.root.offsetHeight / nHRow);
+    if (nRowMax - nRowMin > nVRowCountEst +5)
+      return; //layout is loading, will be subsequent calls with right nRowMin, nRowMax
+
     nYOffset = nHCH;
     const nHRowGrid = nHRow*window.devicePixelRatio;
     let cellRH = null;
