@@ -1,5 +1,4 @@
 import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
@@ -29,6 +28,10 @@ category('converters', () => {
     fastaGaps = 'fastaGaps',
     separatorGaps = 'separatorGaps',
     helmGaps = 'helmGaps',
+
+    fastaUn = 'fastaUn',
+    separatorUn = 'separatorUn',
+    helmUn = 'helmUn',
 
     helmLoneDeoxyribose = 'helmLoneDeoxyribose',
     helmLoneRibose = 'helmLoneRibose',
@@ -99,6 +102,22 @@ PEPTIDE1{F.W.*.P.H.*.E.Y.Y}$$$
 PEPTIDE1{F.Y.N.R.Q.W.Y.V.*}$$$
 PEPTIDE1{F.K.P.*.Q.*.S.E.Y.V}$$$
 `,
+
+    fastaUn: `seq
+[meI][hHis][Aca]NT[dE][Thr_PO3H2][Aca]D
+[meI][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2]
+[Lys_Boc][hHis][Aca][Cys_SEt]T[dK][Thr_PO3H2][Aca][Tyr_PO3H2]
+`,
+    separatorUn: `seq
+meI-hHis-Aca-N-T-dE-Thr_PO3H2-Aca-D
+meI-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2
+Lys_Boc-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2
+`,
+    helmUn: `seq
+PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D}$$$
+PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$
+PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$
+`,
     helmLoneDeoxyribose: `seq
 DNA1{D(A).D(C).D(G).D(T).D(C)}$$$
 DNA1{D(C).D(A).D(G).D(T).D(G).D(T)P}$$$
@@ -116,23 +135,17 @@ RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$
 `,
   };
 
-  const _csvDfs: { [key: string]: Promise<DG.DataFrame> } = {};
-
   /** Also detects semantic types
    * @param {string} key
    * @return {Promise<DG.DataFrame>}
    */
-  function readCsv(key: string): Promise<DG.DataFrame> {
-    if (!(key in _csvDfs)) {
-      _csvDfs[key] = (async (): Promise<DG.DataFrame> => {
-        const csv: string = _csvTxts[key];
-        const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
-        await grok.data.detectSemanticTypes(df);
-        return df;
-      })();
-    }
-    return _csvDfs[key];
-  };
+  async function readCsv(key: string): Promise<DG.DataFrame> {
+    // Always recreate test data frame from CSV for reproducible detector behavior in tests.
+    const csv: string = _csvTxts[key];
+    const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+    await grok.data.detectSemanticTypes(df);
+    return df;
+  }
 
   function converter(tgtNotation: NOTATION, tgtSeparator: string | null = null): ConverterFunc {
     if (tgtNotation === NOTATION.SEPARATOR && !tgtSeparator)
@@ -144,9 +157,9 @@ RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$
       expect(resCol.getTag('units'), tgtNotation);
       return resCol;
     };
-  };
+  }
 
-  async function _testConvert(srcKey: string, converter: ConverterFunc, tgtKey: string) {
+  async function _testConvert(srcKey: Samples, converter: ConverterFunc, tgtKey: Samples) {
     const srcDf: DG.DataFrame = await readCsv(srcKey);
     const srcCol: DG.Column = srcDf.getCol('seq');
 
@@ -175,6 +188,9 @@ RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$
   test('testFastaGapsToSeparator', async () => {
     await _testConvert(Samples.fastaGaps, converter(NOTATION.SEPARATOR, '/'), Samples.separatorGaps);
   });
+  test('testFastaUnToSeparator', async () => {
+    await _testConvert(Samples.fastaUn, converter(NOTATION.SEPARATOR, '-'), Samples.separatorUn);
+  });
 
   // fasta -> helm
   test('testFastaPtToHelm', async () => {
@@ -189,6 +205,10 @@ RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$
   test('testFastaGapsToHelm', async () => {
     await _testConvert(Samples.fastaGaps, converter(NOTATION.HELM), Samples.helmGaps);
   });
+  // TODO: testFastaUnToHelm
+  // test('testFastaUnToHelm', async () => {
+  //   await _testConvert(Samples.fastaUn, converter(NOTATION.HELM), Samples.helmUn);
+  // });
 
 
   // SEPARATOR tests
@@ -205,6 +225,9 @@ RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$
   test('testSeparatorGapsToFasta', async () => {
     await _testConvert(Samples.separatorGaps, converter(NOTATION.FASTA), Samples.fastaGaps);
   });
+  test('testSeparatorUnToFasta', async () => {
+    await _testConvert(Samples.separatorUn, converter(NOTATION.FASTA), Samples.fastaUn);
+  });
 
   // separator -> helm
   test('testSeparatorPtToHelm', async () => {
@@ -219,6 +242,10 @@ RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$
   test('testSeparatorGapsToHelm', async () => {
     await _testConvert(Samples.separatorGaps, converter(NOTATION.HELM), Samples.helmGaps);
   });
+  // TODO: testSeparatorUnToHelm
+  // test('testSeparatorUnToHelm', async () => {
+  //   await _testConvert(Samples.separatorUn, converter(NOTATION.HELM), Samples.helmUn);
+  // });
 
 
   // HELM tests
@@ -232,6 +259,9 @@ RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$
   test('testHelmPtToFasta', async () => {
     await _testConvert(Samples.helmPt, converter(NOTATION.FASTA), Samples.fastaPt);
   });
+  test('testHelmUnToFasta', async () => {
+    await _testConvert(Samples.helmUn, converter(NOTATION.FASTA), Samples.fastaUn);
+  });
 
   // helm -> separator
   test('testHelmDnaToSeparator', async () => {
@@ -242,6 +272,9 @@ RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$
   });
   test('testHelmPtToSeparator', async () => {
     await _testConvert(Samples.helmPt, converter(NOTATION.SEPARATOR, '-'), Samples.separatorPt);
+  });
+  test('testHelmUnToSeparator', async () => {
+    await _testConvert(Samples.helmUn, converter(NOTATION.SEPARATOR, '-'), Samples.separatorUn);
   });
 
   // helm miscellaneous
