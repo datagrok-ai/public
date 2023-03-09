@@ -1,7 +1,7 @@
 --name: PostgresqlPatternsAll
 --connection: PostgreSQLApiTests
 --test: ApiTests:expectTable(PostgresqlPatternsAll(), OpenFile('System:AppData/ApiTests/datasets/tests/postgresql/data1-30.d42'))
-SELECT * FROM mock_data;
+SELECT * FROM mock_data
 --end
 
 -- INT PATTERN
@@ -124,21 +124,21 @@ SELECT * FROM mock_data WHERE country = @country;
 --name: PostgresqlStringTypePatternStringOpContains
 --connection: PostgreSQLApiTests
 --input: string first_name = "contains Z" {pattern: string}
---test: ApiTests:expectTable(PostgresqlStringTypePatternStringOpContains(), OpenFile('System:AppData/ApiTests/datasets/tests/postgresql/data25.d42'))
+--test: ApiTests:expectTable(PostgresqlStringTypePatternStringOpContains(first_name = 'contains Z'), OpenFile('System:AppData/ApiTests/datasets/tests/postgresql/data25.d42'))
 SELECT * FROM mock_data WHERE @first_name(first_name);
 --end
 
 --name: PostgresqlStringTypePatternStringOpStartsWith
 --connection: PostgreSQLApiTests
 --input: string first_name = "starts with W" {pattern: string}
---test: ApiTests:expectTable(PostgresqlStringTypePatternStringOpStartsWith(), OpenFile('System:AppData/ApiTests/datasets/tests/postgresql/data23.d42'))
+--test: ApiTests:expectTable(PostgresqlStringTypePatternStringOpStartsWith(first_name='starts with W'), OpenFile('System:AppData/ApiTests/datasets/tests/postgresql/data23.d42'))
 SELECT * FROM mock_data WHERE @first_name(first_name);
 --end
 
 --name: PostgresqlStringTypePatternStringOpEndsWith
 --connection: PostgreSQLApiTests
 --input: string first_name = "ends with y" {pattern: string}
---test: ApiTests:expectTable(PostgresqlStringTypePatternStringOpEndsWith(), OpenFile('System:AppData/ApiTests/datasets/tests/postgresql/data6,23,25.d42'))
+--test: ApiTests:expectTable(PostgresqlStringTypePatternStringOpEndsWith(first_name = 'ends with y'), OpenFile('System:AppData/ApiTests/datasets/tests/postgresql/data6,23,25.d42'))
 SELECT * FROM mock_data WHERE @first_name(first_name);
 --end
 
@@ -152,7 +152,7 @@ SELECT * FROM mock_data WHERE @country(country);
 --name: PostgresqlStringTypePatternStringOpRegex
 --connection: PostgreSQLApiTests
 --input: string email = "regex ^([A-Za-z0-9_]+@google.com.au)$" {pattern: string}
---test: ApiTests:expectTable(PostgresqlStringTypePatternStringOpRegex(), OpenFile('System:AppData/ApiTests/datasets/tests/postgresql/data9.d42'))
+--test: ApiTests:expectTable(PostgresqlStringTypePatternStringOpRegex(email = 'regex ^([A-Za-z0-9_]+@google.com.au)$'), OpenFile('System:AppData/ApiTests/datasets/tests/postgresql/data9.d42'))
 SELECT * FROM mock_data WHERE @email(email);
 --end
 
@@ -165,7 +165,7 @@ SELECT * FROM mock_data WHERE @email(email);
 --input: string some_number = ">20" {pattern: double}
 --input: string country = "in (Indonesia)" {pattern: string}
 --input: string date = "before 1/1/2022" {pattern: datetime}
---test: ApiTests:expectTable(PostgresqlPatternsAllParams(), OpenFile("System:AppData/ApiTests/datasets/tests/postgresql/data13.d42"))
+--test: ApiTests:expectTable(PostgresqlPatternsAllParams(first_name = "starts with p", id = ">1", false, email = "contains com", some_number = ">20", country = "in (Indonesia)", date = "before 1/1/2022"), OpenFile("System:AppData/ApiTests/datasets/tests/postgresql/data13.d42"))
 SELECT * FROM mock_data
 WHERE @first_name(first_name)
   AND @id(id)
