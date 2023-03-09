@@ -6,7 +6,7 @@ import {GridColumn, Paint} from 'datagrok-api/dg';
 import {fitResultProperties} from "@datagrok-libraries/statistics/src/parameter-estimation/fit-curve";
 import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
 
-import {fitSeries, getChartData, getChartBounds, getFittedCurve, getConfidenceIntrevals,
+import {fitSeries, getChartData, getChartBounds, getFittedCurve, getConfidenceIntrevals, logarithmData,
   CONFIDENCE_INTERVAL_FILL_COLOR, CONFIDENCE_INTERVAL_STROKE_COLOR, IFitChartData,
   TAG_FIT_CHART_NAME, TAG_FIT_CHART_FORMAT} from './fit-data';
 import {convertXMLToIFitChartData} from './fit-parser';
@@ -75,6 +75,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     }
     else
       data = getChartData(gridCell);
+    if (data.chartOptions?.logX)
+      data = logarithmData(data);
     // const data = gridCell.cell.column.getTag('.fitChartFormat') === '3dx' ? convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
     // const data = logarithmData(data1);
     const dataBounds = getChartBounds(data);
