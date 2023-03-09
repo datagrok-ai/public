@@ -14,6 +14,8 @@ import {debounceTime, filter} from 'rxjs/operators';
 import wu from 'wu';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import { chem } from 'datagrok-api/dg';
+import { _convertMolNotation } from '../utils/convert-notation-utils';
+import { getRdKitModule } from '../package';
 
 const FILTER_SYNC_EVENT = 'chem-substructure-filter';
 let id = 0;
@@ -40,7 +42,7 @@ export class SubstructureFilter extends DG.Filter {
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
 
   get filterSummary(): string {
-    return this.sketcher.getSmiles();
+    return _convertMolNotation(this.sketcher.getMolFile(), DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
   }
 
   get isFiltering(): boolean {
