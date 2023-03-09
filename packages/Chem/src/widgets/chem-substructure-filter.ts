@@ -23,6 +23,7 @@ interface ISubstructureFilterState {
   molblock: string;
   colName: string;
   filterId: number;
+  tableName: string
 }
 export class SubstructureFilter extends DG.Filter {
   // @ts-ignore
@@ -33,6 +34,7 @@ export class SubstructureFilter extends DG.Filter {
   active: boolean = true;
   syncEvent = false;
   filterId: number;
+  tableName: string = '';
 
   get calculating(): boolean {return this.loader.style.display == 'initial';}
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
@@ -63,7 +65,7 @@ export class SubstructureFilter extends DG.Filter {
       this.updateExternalSketcher();
     } }));
     this.subs.push(grok.events.onCustomEvent(FILTER_SYNC_EVENT).subscribe((state: ISubstructureFilterState) => {
-      if (state.colName === this.columnName && this.filterId !== state.filterId) {
+      if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
         this.syncEvent = true;
         this.bitset = state.bitset;
         this.sketcher.setMolFile(state.molblock);
@@ -89,6 +91,7 @@ export class SubstructureFilter extends DG.Filter {
 
     this.column ??= dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
     this.columnName ??= this.column?.name;
+    this.tableName = dataFrame.name;
     this.onSketcherChangedSubs?.unsubscribe();
 
     // hide the scaffold when user deactivates the filter
@@ -161,7 +164,7 @@ export class SubstructureFilter extends DG.Filter {
       if (this.column?.temp['chem-scaffold-filter'])
         delete this.column.temp['chem-scaffold-filter'];
       grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset, colName: this.columnName, 
-        molblock: this.sketcher.getMolFile(), filterId: this.filterId});
+        molblock: this.sketcher.getMolFile(), filterId: this.filterId, tableName: this.tableName});
       this.dataFrame?.rows.requestFilter();
     } else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`)) {
       // some other filter is already filtering for the exact same thing
@@ -175,7 +178,7 @@ export class SubstructureFilter extends DG.Filter {
         this.bitset = bitset;
         this.calculating = false;
         grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset, 
-          molblock: this.sketcher.getMolFile(), colName: this.columnName, filterId: this.filterId});
+          molblock: this.sketcher.getMolFile(), colName: this.columnName, filterId: this.filterId, tableName: this.tableName});
         this.dataFrame?.rows.requestFilter();
       } finally {
         this.calculating = false;
