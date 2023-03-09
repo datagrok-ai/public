@@ -5,7 +5,7 @@ import {after, before, category, delay, expect, test} from '@datagrok-libraries/
 
 import {importFasta, multipleSequenceAlignmentAny} from '../package';
 import {convertDo} from '../utils/convert';
-import {SEM_TYPES, TAGS} from '../utils/constants';
+import * as C from '../utils/constants';
 import {generateLongSequence, generateManySequences, performanceTest} from './utils/sequences-generators';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -107,7 +107,7 @@ category('renderers', () => {
       ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
     seqDiffCol.tags[DG.TAGS.UNITS] = NOTATION.SEPARATOR;
     seqDiffCol.tags[bioTAGS.separator] = '/';
-    seqDiffCol.semType = SEM_TYPES.MACROMOLECULE_DIFFERENCE;
+    seqDiffCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
     const df = DG.DataFrame.fromColumns([seqDiffCol]);
 
     const tv: DG.TableView = grok.shell.addTableView(df);
@@ -118,7 +118,7 @@ category('renderers', () => {
     tvList.push(tv);
 
     const resCellRenderer = seqDiffCol.getTag(DG.TAGS.CELL_RENDERER);
-    expect(resCellRenderer, 'MacromoleculeDifference');
+    expect(resCellRenderer, C.SEM_TYPES.MACROMOLECULE_DIFFERENCE);
   }
 
   async function _testAfterMsa() {
@@ -194,7 +194,7 @@ category('renderers', () => {
       ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
     seqDiffCol.tags[DG.TAGS.UNITS] = NOTATION.SEPARATOR;
     seqDiffCol.tags[bioTAGS.separator] = '/';
-    seqDiffCol.semType = SEM_TYPES.MACROMOLECULE_DIFFERENCE;
+    seqDiffCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
     const df = DG.DataFrame.fromColumns([seqDiffCol]);
     const tv = grok.shell.addTableView(df);
     dfList.push(df);

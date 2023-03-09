@@ -44,25 +44,25 @@ const UnitsHandler = {
 const isUrlRe = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/i;
 
 class BioPackageDetectors extends DG.Package {
-  PeptideFastaAlphabet = new Set([
+  peptideFastaAlphabet = new Set([
     'G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',
     'K', 'R', 'H', 'C', 'V', 'P', 'W', 'I', 'M', 'T',
     'MeNle', 'MeA', 'MeG', 'MeF',
   ]);
 
-  DnaFastaAlphabet = new Set(['A', 'C', 'G', 'T']);
+  dnaFastaAlphabet = new Set(['A', 'C', 'G', 'T']);
 
-  RnaFastaAlphabet = new Set(['A', 'C', 'G', 'U']);
+  rnaFastaAlphabet = new Set(['A', 'C', 'G', 'U']);
 
-  NumbersRawAlphabet = new Set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
+  numbersRawAlphabet = new Set(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
 
-  SmilesRawAlphabet = new Set([
+  smilesRawAlphabet = new Set([
     'A', 'B', 'C', 'E', 'F', 'H', 'I', 'K', 'L', 'M', 'N', 'O', 'P', 'R', 'S', 'Z',
     'a', 'c', 'e', 'g', 'i', 'l', 'n', 'o', 'r', 's', 't', 'u',
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
     '+', '-', '.', , '/', '\\', '@', '[', ']', '(', ')', '#', '%', '=']);
 
-  SmartsRawAlphabet = new Set([
+  smartsRawAlphabet = new Set([
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
     '!', '#', '$', '&', '(', ')', '*', '+', ',', '-', '.', ':', ';', '=', '@', '~', '[', ']',
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M',
@@ -93,7 +93,7 @@ class BioPackageDetectors extends DG.Package {
       // To collect alphabet freq three strategies can be used:
       // as chars, as fasta (single or within square brackets), as with the separator.
       if (
-        !(col.categories.length == 1 && !col.categories[0]) && // TODO: Remove with tests for single empty category value
+        !(col.categories.length === 1 && !col.categories[0]) && // TODO: Remove with tests for single empty category
         DG.Detector.sampleCategories(col, (s) => this.isHelm(s), 1, SEQ_SAMPLE_LIMIT)
       ) {
         const statsAsHelm = this.getStats(categoriesSample, 2,
@@ -110,15 +110,15 @@ class BioPackageDetectors extends DG.Package {
       }
 
       const decoyAlphabets = [
-        ['NUMBERS', this.NumbersRawAlphabet, 0.25],
-        ['SMILES', this.SmilesRawAlphabet, 0.25],
-        ['SMARTS', this.SmartsRawAlphabet, 0.43],
+        ['NUMBERS', this.numbersRawAlphabet, 0.25],
+        ['SMILES', this.smilesRawAlphabet, 0.25],
+        ['SMARTS', this.smartsRawAlphabet, 0.43],
       ];
 
       const candidateAlphabets = [
-        [ALPHABET.PT, this.PeptideFastaAlphabet, 0.50],
-        [ALPHABET.DNA, this.DnaFastaAlphabet, 0.55],
-        [ALPHABET.RNA, this.RnaFastaAlphabet, 0.55],
+        [ALPHABET.PT, this.peptideFastaAlphabet, 0.50],
+        [ALPHABET.DNA, this.dnaFastaAlphabet, 0.55],
+        [ALPHABET.RNA, this.rnaFastaAlphabet, 0.55],
       ];
 
       // Check for url column, maybe it is too heavy check
@@ -144,7 +144,7 @@ class BioPackageDetectors extends DG.Package {
       if (Object.keys(statsAsChars.freq).length === 0) return null;
 
       const decoy = this.detectAlphabet(statsAsChars.freq, decoyAlphabets, null);
-      if (decoy != ALPHABET.UN) return null;
+      if (decoy !== ALPHABET.UN) return null;
 
       const separator = this.detectSeparator(statsAsChars.freq);
       if (this.checkForbiddenSeparator(separator)) return null;
@@ -171,9 +171,9 @@ class BioPackageDetectors extends DG.Package {
         if (Object.keys(stats.freq).length === 0) return null;
         // Long monomer names for sequences with separators have constraints
         if (
-          ((units == NOTATION.SEPARATOR || (units == NOTATION.FASTA && alphabetIsMultichar)) &&
+          ((units === NOTATION.SEPARATOR || (units === NOTATION.FASTA && alphabetIsMultichar)) &&
             this.checkForbiddenMultichar(stats.freq)) ||
-          ((units == NOTATION.FASTA && !alphabetIsMultichar) &&
+          ((units === NOTATION.FASTA && !alphabetIsMultichar) &&
             this.checkForbiddenSinglechar(stats.freq))
         ) return null;
 
@@ -220,10 +220,10 @@ class BioPackageDetectors extends DG.Package {
     const cleanFreq = Object.assign({}, ...Object.entries(freq)
       .filter(([m, f]) =>
         !noSeparatorChemRe.test(m) && !noSeparatorAlphaDigitRe.test(m) && !noSeparatorBracketsRe.test(m) &&
-        !this.PeptideFastaAlphabet.has(m) &&
-        !this.DnaFastaAlphabet.has(m))
+        !this.peptideFastaAlphabet.has(m) &&
+        !this.dnaFastaAlphabet.has(m))
       .map(([m, f]) => ({[m]: f})));
-    if (Object.keys(cleanFreq).length == 0) return null;
+    if (Object.keys(cleanFreq).length === 0) return null;
 
     const maxFreq = Math.max(...Object.values(cleanFreq));
 
@@ -270,7 +270,7 @@ class BioPackageDetectors extends DG.Package {
     for (const seq of values) {
       const mSeq = splitter(seq);
 
-      if (firstLength == null) {
+      if (firstLength === null) {
         //
         firstLength = mSeq.length;
       } else if (mSeq.length !== firstLength) {
@@ -300,7 +300,7 @@ class BioPackageDetectors extends DG.Package {
     let alphabetName;
     const maxSim = Math.max(...candidatesSims.map((cs) => cs[4] > cs[2] ? cs[4] : -1));
     if (maxSim > 0) {
-      const sim = candidatesSims.find((cs) => cs[4] == maxSim);
+      const sim = candidatesSims.find((cs) => cs[4] === maxSim);
       alphabetName = sim[0];
     } else {
       alphabetName = ALPHABET.UN;
@@ -331,7 +331,7 @@ class BioPackageDetectors extends DG.Package {
   }
 
   vectorDotProduct(v1, v2) {
-    if (v1.length != v2.length)
+    if (v1.length !== v2.length)
       throw Error('The dimensionality of the vectors must match');
 
     let prod = 0;
