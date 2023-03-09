@@ -75,10 +75,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     }
     else
       data = getChartData(gridCell);
+
     if (data.chartOptions?.logX)
       data = logarithmData(data);
-    // const data = gridCell.cell.column.getTag('.fitChartFormat') === '3dx' ? convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
-    // const data = logarithmData(data1);
+
     const dataBounds = getChartBounds(data);
     const transform = Transform.linear(dataBounds, dataBox);
     const minSize = Math.min(dataBox.width, dataBox.height);
