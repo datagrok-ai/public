@@ -174,7 +174,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     api.grok_Viewer_Set_HelpUrl(this.dart, s);
   }
 
-  static grid(t: DataFrame, options: object | null = null): Grid<interfaces.IGridLookSettings> {
+  static grid(t: DataFrame, options: object | null = null): Grid {
     return new DG.Grid(api.grok_Viewer_Grid(t.dart, _toJson(options)));
   }
 
@@ -482,6 +482,8 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotLookSetting
   /** Convert coords */
   worldToScreen(x: number, y: number): Point { return toJs(api.grok_ScatterPlotViewer_WorldToScreen(this.dart, x, y)); }
   screenToWorld(x: number, y: number): Point { return toJs(api.grok_ScatterPlotViewer_ScreenToWorld(this.dart, x, y)); }
+  render(g: CanvasRenderingContext2D): void { api.grok_ScatterPlotViewer_Render(this.dart, g); }
+  getRowTooltip(rowIdx: number): HTMLDivElement { return api.grok_ScatterPlotViewer_GetRowTooltip(this.dart, rowIdx); }
 
   get onZoomed(): rxjs.Observable<Rect> { return this.onEvent('d4-scatterplot-zoomed'); }
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-scatterplot-reset-view'); }

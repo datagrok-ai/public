@@ -12,18 +12,14 @@ export enum COLUMNS_NAMES {
 export enum TAGS {
   AAR = 'AAR',
   POSITION = 'Pos',
-  SEPARATOR = 'separator',
   SELECTION = 'selection',
-  ALPHABET = 'alphabet',
-  ALIGNED = 'aligned',
 }
 
 export enum SEM_TYPES {
   MONOMER = 'Monomer',
   MACROMOLECULE_DIFFERENCE = 'MacromoleculeDifference',
   ACTIVITY = 'activity',
-  ACTIVITY_SCALED = 'activityScaled',
-  MACROMOLECULE = 'Macromolecule',
+  ACTIVITY_SCALED = 'activityScaled'
 }
 
 export const MSA = 'MSA';
@@ -47,7 +43,7 @@ export const aarGroups = {
   '-': '-',
 };
 
-export const groupDescription: {[key: string]: {'description': string, aminoAcids: string[]}} = {
+export const groupDescription: { [key: string]: { 'description': string, aminoAcids: string[] } } = {
   'PC': {'description': 'Positive Amino Acids, with Electrically Charged Side Chains', 'aminoAcids': ['R', 'H', 'K']},
   'NC': {'description': 'Negative Amino Acids, with Electrically Charged Side Chains', 'aminoAcids': ['D', 'E']},
   'U': {'description': 'Amino Acids with Polar Uncharged Side Chains', 'aminoAcids': ['S', 'T', 'N', 'Q']},
@@ -58,3 +54,8 @@ export const groupDescription: {[key: string]: {'description': string, aminoAcid
   },
   '-': {'description': 'Unknown Amino Acid', 'aminoAcids': ['-']},
 };
+
+export namespace PEPSEA {
+  export const SEPARATOR = '.';
+}
+

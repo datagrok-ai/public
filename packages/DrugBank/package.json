@@ -1,12 +1,12 @@
 {
   "name": "@datagrok/drug-bank",
   "friendlyName": "DrugBank",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "author": {
     "name": "Volodymyr Dyma",
     "email": "vdyma@datagrok.ai"
   },
-  "description": "DrugBank is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
+  "description": "Molecular similarity and substructure search capabilities in the [DrugBank](https://go.drugbank.com/) [Open Structures](https://go.drugbank.com/releases/latest#open-data) dataset.",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
@@ -28,15 +28,9 @@
     "@typescript-eslint/parser": "latest",
     "eslint": "latest",
     "eslint-config-google": "latest",
-    "puppeteer": "^13.7.0",
-    "@types/js-yaml": "^4.0.5",
-    "js-yaml": "^4.1.0",
-    "@types/node-fetch": "^2.6.2",
-    "node-fetch": "^2.6.7"
-  },
-  "grokDependencies": {
     "@datagrok/chem": "latest"
   },
+  
   "scripts": {
     "install-dependencies": "npm install",
     "debug-drugbank": "grok publish",
@@ -59,5 +53,8 @@
   "canView": [
     "All users"
   ],
-  "category": "Cheminformatics"
+  "category": "Cheminformatics",
+  "sources": [
+    "common/openchemlib-full.js"
+  ]
 }

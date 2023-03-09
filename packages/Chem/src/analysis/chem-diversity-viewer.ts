@@ -13,11 +13,13 @@ import {ChemSearchBaseViewer} from './chem-search-base-viewer';
 export class ChemDiversityViewer extends ChemSearchBaseViewer {
   renderMolIds: number[];
   columnNames = [];
+  tooltipUse: boolean;
 
-  constructor() {
-    super('diversity');
+  constructor(tooltipUse = false, col?: DG.Column) {
+    super('diversity', col);
     this.renderMolIds = [];
     this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
+    this.tooltipUse = tooltipUse;
   }
 
 
@@ -25,7 +27,10 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
     if (!this.beforeRender())
       return;
     if (this.dataFrame && this.moleculeColumn) {
-      const progressBar = DG.TaskBarProgressIndicator.create(`Diversity search running...`);
+      let progressBar: DG.TaskBarProgressIndicator;
+      if (!this.tooltipUse)
+        progressBar = DG.TaskBarProgressIndicator.create(`Diversity search running...`);
+
       if (computeData) {
         const rowsWithoutEmptyValues = rowsWithoutEmptyValuesCount(this.moleculeColumn);
         if (this.limit > rowsWithoutEmptyValues)
@@ -58,7 +63,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
           divClass += ' d4-current';
           grid.style.backgroundColor = '#ddffd9';
         }
-        if (this.dataFrame.selection.get(this.renderMolIds[i])) {
+        if (!this.tooltipUse && this.dataFrame.selection.get(this.renderMolIds[i])) {
           divClass += ' d4-selected';
           if (divClass == 'd4-flex-col d4-selected')
             grid.style.backgroundColor = '#f8f8df';
@@ -83,7 +88,8 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
 
       panel[cnt++] = ui.div(grids, {classes: 'd4-flex-wrap'});
       this.root.appendChild(ui.div(panel, {style: {margin: '5px'}}));
-      progressBar.close();
+      if (!this.tooltipUse)
+        progressBar!.close();
     }
   }
 }

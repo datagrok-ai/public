@@ -43,7 +43,7 @@ export class PredictiveModelingTutorial extends Tutorial {
 
       const hasNulls = this.t!.columns
         .byNames(['AGE', 'HEIGHT', 'WEIGHT'])
-        .some((col: DG.Column) => col?.stats.missingValueCount > 0);
+        .some((col) => col?.stats.missingValueCount > 0);
 
       await this.choiceInputAction(pmv.root, 'Set "Table" to "demog"', 'Table', 'demog');
       await this.columnInpAction(pmv.root, 'Set "Predict" to "SEX"', 'Predict', 'SEX');

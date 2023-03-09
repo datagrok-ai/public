@@ -8,7 +8,11 @@ export function tryParseJson(s: string): any {
   }
 }
 
+const _format = new Intl.NumberFormat('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
 export class StringUtils {
+
+
   /**
    * Returns a name that does not exist in [existingNames].
    * If [existingNames] does not contain [initialName], returns [initialName].
@@ -23,4 +27,9 @@ export class StringUtils {
   static isEmpty(s: string | null): boolean {
     return s == null || s == '';
   }
+
+  static formatNumber(x: number) {
+    return _format.format(x);
+  }
 }
+

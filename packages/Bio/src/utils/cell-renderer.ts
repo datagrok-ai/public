@@ -9,11 +9,23 @@ import {
   getPaletteByType,
   getSplitter,
   monomerToShort,
+  NOTATION,
   SplitterFunc,
   TAGS as bioTAGS,
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
+
+const enum tempTAGS {
+  referenceSequence = 'reference-sequence',
+  currentWord = 'current-word',
+  monomerWidth = 'monomer-width',
+  bioSumMaxLengthWords = 'bio-sum-maxLengthWords',
+  bioMaxIndex = 'bio-maxIndex',
+  bioMaxLengthWords = 'bio-maxLengthWords',
+}
+
+type TempType = { [tagName: string]: any };
 
 const undefinedColor = 'rgb(100,100,100)';
 const monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = monomerToShort;
@@ -50,7 +62,8 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   get defaultWidth(): number { return 230; }
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
-    gridCell.cell.column.temp['current-word'] = gridCell.cell.value;
+    const colTemp: TempType = gridCell.cell.column.temp;
+    colTemp[tempTAGS.currentWord] = gridCell.cell.value;
     gridCell.grid.invalidate();
   }
 
@@ -58,8 +71,9 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     if (gridCell.cell.column.getTag(bioTAGS.aligned) !== ALIGNMENT.SEQ_MSA)
       return;
 
-    const maxLengthWordsSum = gridCell.cell.column.temp['bio-sum-maxLengthWords'];
-    const maxIndex = gridCell.cell.column.temp['bio-maxIndex'];
+    const colTemp: TempType = gridCell.cell.column.temp;
+    const maxLengthWordsSum = colTemp[tempTAGS.bioSumMaxLengthWords];
+    const maxIndex = colTemp[tempTAGS.bioMaxIndex];
     const argsX = e.offsetX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCell.bounds.x);
     let left = 0;
     let right = maxIndex;
@@ -107,7 +121,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   ) {
     const grid = gridCell.gridRow !== -1 ? gridCell.grid : null;
     const cell = gridCell.cell;
-    const paletteType = gridCell.cell.column.getTag(C.TAGS.ALPHABET);
+    const paletteType = gridCell.cell.column.getTag(bioTAGS.alphabet);
     const minDistanceRenderer = 50;
     w = getUpdatedWidth(grid, g, x, w);
     g.save();
@@ -118,20 +132,29 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     g.textBaseline = 'top';
 
     //TODO: can this be replaced/merged with splitSequence?
-    const units = gridCell.cell.column.getTag(DG.TAGS.UNITS);
+    const units = gridCell.tableColumn!.getTag(DG.TAGS.UNITS);
+    const aligned: string = gridCell.tableColumn!.getTag(bioTAGS.aligned);
 
     const palette = getPaletteByType(paletteType);
 
-    const separator = gridCell.cell.column.getTag('separator') ?? '';
-    const splitLimit = gridCell.bounds.width / 5;
+    const separator = gridCell.cell.column.getTag(bioTAGS.separator) ?? '';
+    const splitLimit = w / 5;
     const splitterFunc: SplitterFunc = getSplitter(units, separator, splitLimit);
-    const referenceSequence: string[] = splitterFunc(((gridCell.cell.column?.temp['reference-sequence'] != null) && (gridCell.cell.column?.temp['reference-sequence'] != ''))
-      ? gridCell.cell.column.temp['reference-sequence'] : gridCell.cell.column.temp['current-word'] ?? '');
-    const monomerWidth = (gridCell.cell.column?.temp['monomer-width'] != null) ? gridCell.cell.column.temp['monomer-width'] : 'short';
+
+    // TODO: Store temp data to GridColumn
+    // Now the renderer requires data frame table Column underlying GridColumn
+    const colTemp: TempType = gridCell.tableColumn!.temp;
+
+    const tempReferenceSequence: string | null = colTemp[tempTAGS.referenceSequence];
+    const tempCurrentWord: string | null = colTemp[tempTAGS.currentWord];
+    const tempMonomerWidth: string | null = colTemp[tempTAGS.monomerWidth];
+    const referenceSequence: string[] = splitterFunc(
+      ((tempReferenceSequence != null) && (tempReferenceSequence != '')) ?
+        tempReferenceSequence : tempCurrentWord ?? '');
+    const monomerWidth: string = (tempMonomerWidth != null) ? tempMonomerWidth : 'short';
+
     let gapRenderer = 5;
-
     let maxIndex = 0;
-
     let maxLengthOfMonomer = 8;
 
     if (monomerWidth === 'short') {
@@ -149,44 +172,42 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
           const textSize = monomerToShortFunction(amino, maxLengthOfMonomer).length * 7 + gapRenderer;
           if (textSize > (maxLengthWords[index] ?? 0))
             maxLengthWords[index] = textSize;
-          if (index > maxIndex) {
-            maxIndex = index;
-          }
+          if (index > maxIndex) maxIndex = index;
         });
         samples += 1;
       }
       const minLength = 3 * 7;
       for (let i = 0; i <= maxIndex; i++) {
-        if (maxLengthWords[i] < minLength) {
-          maxLengthWords[i] = minLength;
-        }
+        if (maxLengthWords[i] < minLength) maxLengthWords[i] = minLength;
         const maxLengthWordSum: any = {};
         maxLengthWordSum[0] = maxLengthWords[0];
-        for (let i = 1; i <= maxIndex; i++) {
-          maxLengthWordSum[i] = maxLengthWordSum[i - 1] + maxLengthWords[i];
-        }
-        gridCell.cell.column.temp['bio-sum-maxLengthWords'] = maxLengthWordSum;
-        gridCell.cell.column.temp['bio-maxIndex'] = maxIndex;
-        gridCell.cell.column.temp['bio-maxLengthWords'] = maxLengthWords;
+        for (let i = 1; i <= maxIndex; i++) maxLengthWordSum[i] = maxLengthWordSum[i - 1] + maxLengthWords[i];
+        colTemp[tempTAGS.bioSumMaxLengthWords] = maxLengthWordSum;
+        colTemp[tempTAGS.bioMaxIndex] = maxIndex;
+        colTemp[tempTAGS.bioMaxLengthWords] = maxLengthWords;
         gridCell.cell.column.setTag('.calculatedCellRender', splitLimit.toString());
       }
     } else {
-      maxLengthWords = gridCell.cell.column.temp['bio-maxLengthWords'];
+      maxLengthWords = colTemp[tempTAGS.bioMaxLengthWords];
     }
 
     const subParts: string[] = splitterFunc(cell.value);
     let x1 = x;
     let color = undefinedColor;
     let drawStyle = DrawStyle.classic;
-    if (gridCell.cell.column.getTag('aligned').includes('MSA') && gridCell.cell.column.getTag('units') === 'separator')
+
+
+    if (aligned && aligned.includes('MSA') && units == NOTATION.SEPARATOR)
       drawStyle = DrawStyle.MSA;
 
     subParts.every((amino, index) => {
       color = palette.get(amino);
       g.fillStyle = undefinedColor;
       const last = index === subParts.length - 1;
-      x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell, referenceSequence, maxLengthOfMonomer);
-      return x1 - minDistanceRenderer - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCell.bounds.x) <= gridCell.bounds.width;
+      x1 = printLeftOrCentered(x1, y, w, h,
+        g, amino, color, 0, true, 1.0, separator, last, drawStyle,
+        maxLengthWords, index, gridCell, referenceSequence, maxLengthOfMonomer);
+      return minDistanceRenderer <= w;
     });
 
     g.restore();
@@ -221,7 +242,7 @@ export class MonomerCellRenderer extends DG.GridCellRenderer {
     g.textBaseline = 'middle';
     g.textAlign = 'center';
 
-    const palette = getPaletteByType(gridCell.cell.column.getTag(C.TAGS.ALPHABET));
+    const palette = getPaletteByType(gridCell.cell.column.getTag(bioTAGS.alphabet));
     const s: string = gridCell.cell.value;
     if (!s)
       return;
@@ -259,7 +280,7 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
     const grid = gridCell.grid;
     const cell = gridCell.cell;
     const s: string = cell.value ?? '';
-    const separator = gridCell.tableColumn!.tags[C.TAGS.SEPARATOR];
+    const separator = gridCell.tableColumn!.tags[bioTAGS.separator];
     const units: string = gridCell.tableColumn!.tags[DG.TAGS.UNITS];
     w = getUpdatedWidth(grid, g, x, w);
     //TODO: can this be replaced/merged with splitSequence?

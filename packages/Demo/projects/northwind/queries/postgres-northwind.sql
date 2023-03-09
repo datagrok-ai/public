@@ -31,7 +31,7 @@ select * from customers
 --name: order details by @quantity, @productName, @country
 --connection: PostgresNorthwind
 --input: int quantity = '40'
---input: string productName = 'Manjimup Dried Apples'
+--input: string productName = 'Manjimup Dried Apples' {suggestions: northwind:productLookup}
 --input: string country { choices: northwind:countries }
 select
   order_details.orderid,
@@ -61,3 +61,15 @@ where
 --input: string country
 select * from customers where country = @country
 --end
+
+
+--name: productLookup
+--connection: PostgresNorthwind
+--input: string lookup
+select productname from products where productname like (@lookup || '%')
+
+
+--name: productDetails
+--connection: PostgresNorthwind
+--input: string productName {suggestions: northwind:productLookup}
+select * from products where productname = @productName

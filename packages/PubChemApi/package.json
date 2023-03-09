@@ -1,12 +1,12 @@
 {
   "name": "@datagrok/pubchem-api",
   "friendlyName": "PubChem",
-  "version": "1.1.5",
+  "description": "Integration with the PubChem web service.",
+  "version": "1.1.6",
   "author": {
     "name": "Volodymyr Dyma",
     "email": "vdyma@datagrok.ai"
   },
-  "description": "",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
@@ -24,12 +24,7 @@
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",
     "eslint": "latest",
-    "eslint-config-google": "latest",
-    "puppeteer": "^13.7.0",
-    "@types/js-yaml": "^4.0.5",
-    "js-yaml": "^4.1.0",
-    "@types/node-fetch": "^2.6.2",
-    "node-fetch": "^2.6.7"
+    "eslint-config-google": "latest"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",

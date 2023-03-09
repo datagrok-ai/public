@@ -14,7 +14,19 @@ import {debounceTime, filter} from 'rxjs/operators';
 import wu from 'wu';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import { chem } from 'datagrok-api/dg';
+import { _convertMolNotation } from '../utils/convert-notation-utils';
+import { getRdKitModule } from '../package';
 
+const FILTER_SYNC_EVENT = 'chem-substructure-filter';
+let id = 0;
+
+interface ISubstructureFilterState {
+  bitset: DG.BitSet;
+  molblock: string;
+  colName: string;
+  filterId: number;
+  tableName: string
+}
 export class SubstructureFilter extends DG.Filter {
   // @ts-ignore
   sketcher: DG.chem.Sketcher = new DG.chem.Sketcher();
@@ -22,12 +34,15 @@ export class SubstructureFilter extends DG.Filter {
   loader: HTMLDivElement = ui.loader();
   onSketcherChangedSubs?: Subscription;
   active: boolean = true;
+  syncEvent = false;
+  filterId: number;
+  tableName: string = '';
 
   get calculating(): boolean {return this.loader.style.display == 'initial';}
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
 
   get filterSummary(): string {
-    return this.sketcher.getSmiles();
+    return _convertMolNotation(this.sketcher.getMolFile(), DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
   }
 
   get isFiltering(): boolean {
@@ -42,11 +57,23 @@ export class SubstructureFilter extends DG.Filter {
   constructor() {
     super();
     initRdKitService(); // No await
+    this.filterId = id++;
     this.root = ui.divV([]);
     this.calculating = false;
     this.root.appendChild(this.sketcher.root);
     this.root.appendChild(this.loader);
-    this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => { this.sketcher.setMolFile(DG.WHITE_MOLBLOCK); }));
+    this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => { {
+      this.sketcher.setMolFile(DG.WHITE_MOLBLOCK);
+      this.updateExternalSketcher();
+    } }));
+    this.subs.push(grok.events.onCustomEvent(FILTER_SYNC_EVENT).subscribe((state: ISubstructureFilterState) => {
+      if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
+        this.syncEvent = true;
+        this.bitset = state.bitset;
+        this.sketcher.setMolFile(state.molblock);
+        this.updateExternalSketcher();
+      }
+    }))
   }
 
   get _debounceTime(): number {
@@ -64,8 +91,9 @@ export class SubstructureFilter extends DG.Filter {
   attach(dataFrame: DG.DataFrame): void {
     super.attach(dataFrame);
 
-    this.column = dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-    this.columnName = this.column?.name;
+    this.column ??= dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+    this.columnName ??= this.column?.name;
+    this.tableName = dataFrame.name;
     this.onSketcherChangedSubs?.unsubscribe();
 
     // hide the scaffold when user deactivates the filter
@@ -78,10 +106,10 @@ export class SubstructureFilter extends DG.Filter {
 
     let onChangedEvent: any = this.sketcher.onChanged;
     onChangedEvent = onChangedEvent.pipe(debounceTime(this._debounceTime));
-    this.onSketcherChangedSubs = onChangedEvent.subscribe(async (_: any) => await this._onSketchChanged());
+    this.onSketcherChangedSubs = onChangedEvent.subscribe(async (_: any) => {
+      this.syncEvent === true ? this.syncEvent = false : await this._onSketchChanged();
+    });
 
-    if (this.column?.temp['chem-scaffold-filter'])
-      this.sketcher.setMolFile(this.column?.temp['chem-scaffold-filter']);
   }
 
   refresh() {
@@ -99,6 +127,7 @@ export class SubstructureFilter extends DG.Filter {
       this.dataFrame?.filter.and(this.bitset);
       this.dataFrame?.rows.addFilterState(this.saveState());
       this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile();
+      this.active = true;
     }
   }
 
@@ -112,14 +141,18 @@ export class SubstructureFilter extends DG.Filter {
 
   /** Override to load filter state. */
   applyState(state: any): void {
-    super.applyState(state);
-    this.active = state.active;
-    if (state.molBlock)
-      this.sketcher.setMolFile(state.molBlock);
-
-    const that = this;
-    if (state.molBlock)
-      setTimeout(function() {that._onSketchChanged();}, 1000);
+      super.applyState(state);
+      this.active = state.active ?? true;
+      if (this.column?.temp['chem-scaffold-filter'])
+        state.molBlock = this.column?.temp['chem-scaffold-filter'];
+      if (state.molBlock) {
+        this.sketcher.setMolFile(state.molBlock);
+        this.updateExternalSketcher();
+      }
+  
+      const that = this;
+      if (state.molBlock)
+        setTimeout(function() {that._onSketchChanged();}, 1000);
   }
 
   /**
@@ -129,10 +162,11 @@ export class SubstructureFilter extends DG.Filter {
    */
   async _onSketchChanged(): Promise<void> {
     if (!this.isFiltering) {
-      if (!this.active)
-        this.bitset = await this.getFilterBitset();
+      this.bitset = !this.active ? await this.getFilterBitset() : null;
       if (this.column?.temp['chem-scaffold-filter'])
         delete this.column.temp['chem-scaffold-filter'];
+      grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset, colName: this.columnName, 
+        molblock: this.sketcher.getMolFile(), filterId: this.filterId, tableName: this.tableName});
       this.dataFrame?.rows.requestFilter();
     } else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`)) {
       // some other filter is already filtering for the exact same thing
@@ -145,6 +179,8 @@ export class SubstructureFilter extends DG.Filter {
           return;
         this.bitset = bitset;
         this.calculating = false;
+        grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset, 
+          molblock: this.sketcher.getMolFile(), colName: this.columnName, filterId: this.filterId, tableName: this.tableName});
         this.dataFrame?.rows.requestFilter();
       } finally {
         this.calculating = false;
@@ -156,7 +192,12 @@ export class SubstructureFilter extends DG.Filter {
     const smarts = await this.sketcher.getSmarts();
         if (StringUtils.isEmpty(smarts) && StringUtils.isEmpty(this.sketcher.getMolFile()))
           return null;
-
     return await chemSubstructureSearchLibrary(this.column!, this.sketcher.getMolFile(), smarts!);
   }
+
+  updateExternalSketcher() {
+    if (this.sketcher._mode === DG.chem.SKETCHER_MODE.EXTERNAL)
+      this.sketcher.updateExtSketcherContent(); //updating image in minimized sketcher panel
+  }
+
 }

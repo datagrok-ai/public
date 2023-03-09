@@ -1,7 +1,9 @@
 ---
-title: "JavaScript development"
+title: "Develop"
 sidebar_position: 0
 ---
+
+## JavaScript development
 
 JavaScript or TypeScript-based development is the preferred way to develop user-facing applications on top of the
 platform. Use the [JS API](js-api.md) to control pretty much anything within Datagrok,
@@ -35,7 +37,7 @@ the [step-by-step guide](how-to/create-package.md) for creating your own package
 
 ## Package structure
 
-A simplest JavaScript package consists of the following files:
+The simplest JavaScript package consists of the following files:
 
 | file                                  | description           |
 |---------------------------------------|-----------------------|
@@ -44,7 +46,7 @@ A simplest JavaScript package consists of the following files:
 | [detectors.js](#detectorsjs)          | detectors file        |
 | [webpack.config.js](#webpackconfigjs) | webpack configuration |
 | README.md                             | package summary       |
-| package.PNG                           | package icon          |
+| package.png                           | package icon          |
 
 In addition to that, it might contain the following folders:
 
@@ -84,6 +86,10 @@ In addition to that, it might contain the following folders:
   "dependencies": {
     "datagrok-api": "latest"
   },
+  "devDependencies": {
+    "webpack": "latest",
+    "webpack-cli": "latest"
+  },
   "scripts": {
     "debug-sequence": "webpack && grok publish",
     "release-sequence": "webpack && grok publish --release",
@@ -96,8 +102,7 @@ In addition to that, it might contain the following folders:
 The package template first includes only one dependency — `datagrok-api`. You can add more packages to the dependencies
 list and install them via `npm install`.
 
-The file `package.json` also contains `scripts`
-for [debugging and publishing your package](#publishing).
+The file `package.json` also contains `scripts` for [debugging and publishing your package](#publishing).
 
 ### <a href="#" id="package.js"></a>package.js
 
@@ -207,7 +212,7 @@ introduce changes to the code or, for example, rename the package without creati
 sure the name is accurately substituted: set the `name` field in `package.json` and `library` in `webpack.config.js` to
 the desired name in lower case, and rename a class `<package_name>PackageDetectors` using camel case in `detectors.js`.
 
-### Naming conventions
+## Naming conventions
 
 Continuing the topic we have just touched on, here are naming guidelines and general recommendations that you might
 consider:
@@ -275,7 +280,15 @@ for the current package until the developer deletes it or changes their develope
 see objects from their version of package, and changes will not affect other users package representation. This version
 will no longer exist after the developer releases their package.
 
-### Deployment modes
+### Building package
+
+`Webpack` is required for your package source code to work successfully in the browser. You need to build your package
+with `webpack` locally. To do that, run the script `"build": "webpack"`
+before publishing. For convenience, publication scripts in `package.json` combine these two steps:
+`webpack && grok publish`. The `build` script is reserved for server-side build, so don't change or remove it. The
+platform will build a package on the server side, if you call `grok publish` with the `--rebuild` option.
+
+### Publishing modes
 
 Use the following flags to specify who can access your package:
 
@@ -332,14 +345,58 @@ If necessary, you can specify additional settings and then publish the package.
 
 ### Continuous integration
 
-`Webpack` is required for your package source code to work successfully in the browser. You can build your package
-with `webpack` locally. To do that, run the script `"build": "webpack"`
-before publishing. For convenience, publication scripts in `package.json` combine these two steps:
-`webpack && grok publish`. The `build` script is reserved for server-side build, so don't change or remove it. The
-platform will build a package on the server side, if you call `grok publish` with the `--rebuild` option.
+Standard package development includes the stages below:
+
+1. Development
+2. Build
+3. Test
+4. Publication
+
+Most of the above steps can be automated
+using [CI/CD tools](https://www.redhat.com/en/topics/devops/what-is-ci-cd#ci/cd-tools). You can use [our
+workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yml)
+in [GitHub Actions](https://github.com/features/actions) as an example. It builds, tests, and publishes
+our [public packages](https://github.com/datagrok-ai/public/tree/master/packages).
+
+#### Tests in automation tools
+
+To test a package in CI, you need the following:
+
+1. Set up a stand for workflow. It is elementary to do using [docker-compose](admin/docker-compose.md)
+2. Install the latest [datagrok-tools](https://www.npmjs.com/package/datagrok-tools)
+3. [Publish package](#publication-with-automation-tools) to the stand
+4. Run tests using [grok test](how-to/test-packages.md#local-testing)
+
+##### Install dependencies in GitHub Actions
+
+To install dependent grok packages in [our
+workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yml), you can
+use `grokDependencies` in [package.json](#packagejson)
+
+```json
+{
+  "grokDependencies": {
+    "@datagrok/chem": "latest"
+  }
+}
+```
+
+##### Skip tests in GitHub Actions
+
+To skip running tests in [our
+workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yml) you can use `skipCI`
+in [package.json](#packagejson)
+
+```json
+{
+  "skipCI": "true"
+}
+```
+
+#### Publication with automation tools
 
 Package publication is compatible with automation tools. You can pass your server URL and developer key explicitly
-without configuring:
+through command line:
 
 ```js
 grok publish <url> -k <dev-key>

@@ -3,6 +3,7 @@
 #tags: python, libs
 #language: python
 #output: dataframe x
+#test: PythonLibs().columns.length == 2
 
 x = !pip freeze
 x = pd.DataFrame(x)

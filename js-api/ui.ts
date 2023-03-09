@@ -25,12 +25,13 @@ import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
 import $ from 'cash-dom';
 import {__obs, StreamSubscription} from './src/events';
-import {_isDartium, _options} from './src/utils';
+import {HtmlUtils, _isDartium, _options} from './src/utils';
 import * as rxjs from 'rxjs';
 import { CanvasRenderer, GridCellRenderer, SemanticValue } from './src/grid';
 import {Entity, Property} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
+import { Wizard, WizardPage } from './src/ui/wizard';
 
 
 let api = <any>window;
@@ -522,7 +523,7 @@ export function link(
 }
 
 /** Creates a [Dialog]. */
-export function dialog(options?: { title?: string, helpUrl?: string } | string): Dialog {
+export function dialog(options?: { title?: string, helpUrl?: string, showHeader?: boolean, showFooter?: boolean } | string): Dialog {
   return Dialog.create(options);
 }
 
@@ -641,24 +642,27 @@ export function tree(): TreeViewGroup {
 }
 
 
-// Will come back later (-Andrew)
-//
-// export interface InputOptions {
-//   value?: any;
-//   onValueChanged?: (v: any) => void;
-// }
-//
-//
+export interface IInputInitOptions {
+  onCreated?: (input: InputBase) => void;
+  onValueChanged?: (input: InputBase) => void;
+}
+
+
 export namespace input {
 
   /** Creates input for the specified property, and optionally binds it to the specified object */
-  export function forProperty(property: Property, source: any = null): InputBase {
-    return InputBase.forProperty(property, source);
+  export function forProperty(property: Property, source: any = null, options?: IInputInitOptions): InputBase {
+    const input = InputBase.forProperty(property, source);
+    if (options?.onCreated)
+      options.onCreated(input);
+    if (options?.onValueChanged)
+      input.onChanged(() => options.onValueChanged!(input));
+    return input;
   }
 
   /** Returns a form for the specified properties, bound to the specified object */
-  export function form(source: any, props: Property[]): HTMLElement {
-    return inputs(props.map((p) => forProperty(p, source)));
+  export function form(source: any, props: Property[], options?: IInputInitOptions): HTMLElement {
+    return inputs(props.map((p) => forProperty(p, source, options)));
   }
 
   // export function bySemType(semType: string) {
@@ -805,6 +809,10 @@ export class tools {
     let interval = setInterval(() => {
       let newWidth = element.clientWidth;
       let newHeight = element.clientHeight;
+      if ((newWidth === 0 && newHeight === 0)) {
+        return
+      }
+
       if (newWidth !== width || newHeight !== height) {
         width = newWidth;
         height = newHeight;
@@ -1110,7 +1118,7 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
           childs++;
         }
         totalHeigh = totalHeigh + $(b.childNodes[i]).height();
-      } 
+      }
 
       for (let i = 0; i < b.children.length; i++){
           if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
@@ -1118,7 +1126,7 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
           } else {
             $(b.childNodes[i]).css('height', 4);
           }
-      } 
+      }
 
     });
   } else {
@@ -1139,7 +1147,7 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
       $(b).addClass('ui-split-h').append(box(v))
       if (i != items.length - 1) {
         $(b).append(divider)
-        spliterResize(divider, items[i], items[i + 1], true);     
+        spliterResize(divider, items[i], items[i + 1], true);
       }
     })
 
@@ -1151,7 +1159,7 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
           childs++;
         }
         totalWidth = totalWidth + $(b.childNodes[i]).width();
-      } 
+      }
 
       for (let i = 0; i < b.children.length; i++){
           if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
@@ -1231,8 +1239,8 @@ function spliterResize(divider: HTMLElement, previousSibling: HTMLElement, nextS
   }
 }
 
-export function ribbonPanel(items, options = null) {
-  let root = document.createElement('div');
+export function ribbonPanel(items: HTMLElement[] | null): HTMLDivElement {
+  const root = document.createElement('div');
   $(root).addClass('d4-ribbon');
   if (items != null) {
     $(root).append(items.map(item => {
@@ -1240,9 +1248,9 @@ export function ribbonPanel(items, options = null) {
       $(itemBox).addClass('d4-ribbon-item');
       $(itemBox).append(item);
       return render(itemBox)
-    }))
+    }));
   }
-  let wrapSpacer = document.createElement('div');
+  const wrapSpacer = document.createElement('div');
   $(wrapSpacer).addClass('d4-ribbon-wrap-spacer');
   $(root).prepend(wrapSpacer);
   return root;
@@ -1418,60 +1426,199 @@ export namespace labels {
 /** Visual hints attached to an element. They can be used to introduce a new app to users. */
 export namespace hints {
 
-  /** Adds a hint indication to the provided element and returns it. */
-  export function addHint(el: HTMLElement): HTMLElement {
-    el.classList.add('ui-hint-target');
-    const hintIndicator = div([], 'ui-hint-blob');
-    el.append(hintIndicator);
+  export enum POSITION {
+    TOP = 'top',
+    BOTTOM = 'bottom',
+    LEFT = 'left',
+    RIGHT = 'right',
+  }
 
-    const closeIcon = iconFA('times', () => {
-      remove(el);
-      // fire an event?
-    }, 'Remove hints');
-    closeIcon.classList.add('ui-hint-close-btn');
-    el.append(closeIcon);
+  /** Adds a popup window with the specified [content] next to an [element].
+   * Set [position] to control where the popup will appear. The default position is [POSITION.RIGHT]. */
+  export function addHint(el: HTMLElement, content: HTMLElement, position: `${POSITION}` = POSITION.RIGHT) {
+    const root = document.createElement('div');
+    root.className = 'ui-hint-popup';
 
-    const width = el ? el.clientWidth : 0;
-    const height = el ? el.clientHeight : 0;
+    const closeBtn = iconFA('times', () => root.remove());
+    closeBtn.style.cssText = `
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      color: var(--grey-4);
+    `;
 
-    const hintNode = el.getBoundingClientRect();
-    const indicatorNode = hintIndicator.getBoundingClientRect();
+    const node = el.getBoundingClientRect();
 
-    type elementPosition = 'static' | 'relative' | 'absolute' | 'fixed' | 'sticky';
-    const hintPosition = <elementPosition>($(el).css('position') ?? 'static');
+    root.append(closeBtn);
+    root.append(content);
+    $('body').append(root);
 
-    function setDefaultStyles() {
-      $(hintIndicator).css('position', 'absolute');
-      $(hintIndicator).css('left', '0');
-      $(hintIndicator).css('top', '0');
-    };
-
-    const positions = {
-      static: () => {
-        $(hintIndicator).css('position', 'absolute');
-        $(hintIndicator).css('margin-left', hintNode.left + 1 == indicatorNode.left ? 0 : -width);
-        $(hintIndicator).css('margin-top', hintNode.top + 1 == indicatorNode.top ? 0 : -height);
-      },
-      relative: setDefaultStyles,
-      fixed: setDefaultStyles,
-      absolute: setDefaultStyles,
-      sticky: setDefaultStyles,
-    };
-
-    positions[hintPosition]();
-
-    if ($(el).hasClass('d4-ribbon-item')){
-      $(hintIndicator).css('margin-left', '0px')
+    if (position == POSITION.RIGHT) {
+      const right = node.right + 8;
+      root.style.left = right + 'px';
+      root.style.top = node.top + (el.offsetHeight / 2) - 17 + 'px';
+      root.classList.add(`ui-hint-popup-${position}`);
+    } else if (position == POSITION.LEFT) {
+      let left = node.left - root.offsetWidth - 8;
+      if (left < 0)
+        left = 0;
+      root.style.left = left + 'px';
+      root.style.top = node.top + (el.offsetHeight / 2) - 17 + 'px';
+      root.classList.add(`ui-hint-popup-${position}`);
+    } else if (position == POSITION.TOP) {
+      let top = node.top - root.offsetHeight - 8;
+      if (top < 0)
+        top = 0;
+      root.style.left = node.left + (el.offsetWidth / 2) - 17 + 'px';
+      root.style.top = top + 'px';
+      root.classList.add(`ui-hint-popup-${position}`);
+    } else if (position == POSITION.BOTTOM) {
+      let bottom = node.bottom + 8;
+      if (bottom + root.offsetHeight > window.innerHeight)
+        bottom = window.innerHeight - root.offsetHeight;
+      root.style.left = node.left + (el.offsetWidth / 2) - 17 + 'px';
+      root.style.top = bottom + 'px';
+      root.classList.add(`ui-hint-popup-${position}`);
     }
 
+    return root;
+  }
+
+  /** Adds a hint indication to the provided element and returns it. */
+  export function addHintIndicator(el: HTMLElement, clickToClose: boolean = true, autoClose?: number): HTMLElement {
+    const id = Math.floor(Math.random() * 1000);
+    const hintIndicator = document.createElement('div');
+    hintIndicator.className = 'ui-hint-blob';
+
+    hintIndicator.setAttribute('data-target', 'hint-target-' + id);
+    el.setAttribute('data-target', 'hint-target-' + id);
+
+    el.classList.add('ui-hint-target');
+    $('body').append(hintIndicator);
+
+    const indicatorNode = el.getBoundingClientRect();
+    hintIndicator.style.position = 'fixed';
+    hintIndicator.style.zIndex = '4000';
+    hintIndicator.style.left = indicatorNode.left + 'px';
+    hintIndicator.style.top = indicatorNode.top + 'px';
+
+    if (clickToClose) {
+      $(el).on('click', () => {
+        remove(el);
+      });
+    }
+
+    if (autoClose! > 0) {
+      setTimeout(() => remove(el), autoClose);
+    }
     return el;
+  }
+
+  /** Describes series of visual components in the wizard. Each wizard page is associated with the
+   * [showNextTo] element. Provide either [text] or [root] parameter to populate the page, the other
+   * parameters are optional. The wizard header is shown only if [title] or [helpUrl] are provided.
+   * The user can use the arrow buttons to navigate the set of instructions. The wizard can be closed
+   * from the dialog header (the "x" icon), via the "Cancel" button, or via the [Wizard.close()] method.
+   * Example: {@link https://public.datagrok.ai/js/samples/ux/Interactivity/hints}:*/
+  export function addTextHint(options: {title?: string, helpUrl?: string, pages?: HintPage[]}): Wizard {
+    let targetElement: HTMLElement | undefined;
+    const overlay = div([], 'ui-hint-overlay');
+    $('body').prepend(overlay);
+    const horizontalOffset = 10;
+    const wizard = new Wizard({title: options.title, helpUrl: options.helpUrl});
+
+    const cancelBtn = wizard.getButton('CANCEL');
+    $(cancelBtn)?.hide();
+    const prevBtn = wizard.getButton('<<');
+    $(prevBtn).empty();
+    const prevIcon = iconFA('chevron-left');
+    $(prevIcon).css('color', 'inherit');
+    prevBtn.append(prevIcon);
+    const nextBtn = wizard.getButton('>>');
+    nextBtn.innerText = 'OK';
+
+    if (options.pages) {
+      nextBtn.innerText = (wizard.pageIndex === options.pages.length - 1) ? 'OK' : 'NEXT';
+      const pageNumberStr = `${wizard.pageIndex + 1}/${options.pages.length}`;
+      wizard.addButton(pageNumberStr, () => {}, 1);
+      const pageNumberField = wizard.getButton(pageNumberStr);
+      pageNumberField.classList.add('disabled');
+      $(pageNumberField).css('font-weight', 500);
+
+      function ok() {
+        if (nextBtn.innerText === 'OK')
+          wizard.close();
+      }
+
+      for (const p of options.pages) {
+        const page = Object.assign({}, p);
+        page.onActivated = () => {
+          if (wizard.pageIndex === options.pages!.length - 1) {
+            nextBtn.innerText = 'OK';
+            // Use delay to override default wizard behavior
+            setTimeout(() => nextBtn.classList.remove('disabled'), 10);
+            $(nextBtn).on('click', ok);
+          } else {
+            nextBtn.innerText = 'NEXT';
+            $(nextBtn).off('click', ok);
+          }
+
+          pageNumberField.innerText = `${wizard.pageIndex + 1}/${options.pages!.length}`;
+          if (p.showNextTo) {
+            if (targetElement)
+              targetElement.classList.remove('ui-text-hint-target');
+            targetElement = p.showNextTo;
+            p.showNextTo.classList.add('ui-text-hint-target');
+            const rect = HtmlUtils.htmlGetBounds(p.showNextTo);
+            $(wizard.root).css('left', rect.right + horizontalOffset);
+            $(wizard.root).css('top', rect.top);
+          }
+          if (p.onActivated)
+            p.onActivated();
+        };
+        page.root = p.root ?? divText(p.text ?? '');
+        wizard.page(<WizardPage>page);
+      }
+    }
+    wizard.onClose.subscribe(() => remove(targetElement));
+    $(overlay).on('click', () => wizard.close());
+    const _x = $(wizard.root).css('left');
+    const _y = $(wizard.root).css('top');
+    wizard.show({width: 250, height: 200,
+      x: _x ? parseInt(_x) : undefined, y: _y ? parseInt(_y) : undefined});
+    return wizard;
   }
 
   /** Removes the hint indication from the provided element and returns it. */
-  export function remove(el: HTMLElement): HTMLElement {
-    $(el).find('div.ui-hint-blob')[0]?.remove();
-    $(el).find('i.fa-times')[0]?.remove();
-    el.classList.remove('ui-hint-target');
-    return el;
+  export function remove(el?: HTMLElement): HTMLElement | null {
+    if (el != null) {
+      const id = el.getAttribute('data-target');
+      $(`div.ui-hint-blob[data-target="${id}"]`)[0]?.remove();
+      el.classList.remove('ui-hint-target', 'ui-text-hint-target');
+    }
+    $('div.ui-hint-overlay')?.remove();
+    return el ?? null;
   }
+}
+
+interface HintPage {
+
+  /** Displays the wizard next to the specified element when the page is current. */
+  showNextTo: HTMLElement;
+
+  /** Page root. Can also be set via [text] property */
+  root?: HTMLDivElement;
+
+  /** Adds a div with the specified text as the page root. */
+  text?: string;
+
+  /** Caption to be displayed on top of the panel */
+  caption?: HTMLElement | string;
+
+  /** Called when the page is activated */
+  onActivated?: () => void;
+
+  /** Returns error message (and stops wizard from proceeding to the next page),
+   * or null if validated */
+  validate?: () => string | null;
 }

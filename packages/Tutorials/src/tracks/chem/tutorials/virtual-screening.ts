@@ -25,7 +25,7 @@ export class VirtualScreeningTutorial extends Tutorial {
     return 46;
   }
 
-  prerequisites = ['Chem', 'PowerPack'];
+  prerequisites = {packages: ['Chem', 'PowerPack']};
   demoTable: string = 'chem/tutorials/training-data.csv';
   helpUrl: string = 'https://datagrok.ai/help/domains/chem/chem-curate';
 

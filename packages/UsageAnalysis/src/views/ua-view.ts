@@ -1,32 +1,32 @@
-import * as DG from "datagrok-api/dg";
-import * as ui from "datagrok-api/ui";
-import * as grok from "datagrok-api/grok";
-import {UaFilter} from "../filter2";
-import {UaToolbox} from "../ua-toolbox";
-import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
-import {UaQueryViewer} from "../viewers/abstract/ua-query-viewer";
+import * as DG from 'datagrok-api/dg';
 
-export abstract class UaView extends DG.ViewBase {
+import {UaToolbox} from '../ua-toolbox';
+import {UaQueryViewer} from '../viewers/abstract/ua-query-viewer';
+
+export class UaView extends DG.ViewBase {
+  static viewName = 'Usage Analysis View';
   uaToolbox: UaToolbox;
   viewers: UaQueryViewer[] = [];
   initialized: boolean = false;
 
-  protected constructor(viewName: string, uaToolbox: UaToolbox) {
+  constructor(uaToolbox: UaToolbox) {
     super();
-    this.name = viewName;
     this.uaToolbox = uaToolbox;
     this.toolbox = uaToolbox.rootAccordion.root;
+    this.box = true;
   }
 
   tryToinitViewers() {
-    if(!this.initialized) {
+    if (!this.initialized) {
       this.initialized = true;
       this.initViewers();
     }
   }
 
-  abstract initViewers() : any; // for sync and async code
+  async initViewers(): Promise<void> {
 
-  handleUrlParams(params: Map<string,string>) : void {
+  }
+
+  handleUrlParams(params: Map<string, string>) : void {
   }
 }

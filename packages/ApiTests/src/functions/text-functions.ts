@@ -28,6 +28,9 @@ category('Functions: Text', () => {
     'Eq("", "")': true,
     'Eq("SKY", "sky")': false,
     'Eq(" sky ", "sky")': false,
+    'Eq("1", 1)': false,
+    'Eq("", null)': false,
+    'Eq(null, null)': true,
   }));
 
   test('IsEmpty', () => check({

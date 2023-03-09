@@ -18,10 +18,19 @@ public class DbCredentials
     public static final String CACHE_SCHEMA = "cacheSchema";
     public static final String CACHE_RESULTS = "cacheResults";
     public static final String CACHE_INVALIDATE_SCHEDULE = "cacheInvalidateSchedule";
-
     public static final String DB_DESCRIPTION = "Database name";
     public static final String CONNECTION_STRING_DESCRIPTION = "When specified, this connection string overrides " +
             "all other parameters except 'login' and 'password'";
+    public static final String ACCOUNT_LOCATOR = "accountLocator";
+    public static final String REGION_ID = "region";
+    public static final String CLOUD = "cloud";
+    public static final String WAREHOUSE = "warehouse";
+    public static final String ACCOUNT = "account";
+    public static final String S3OutputLocation = "S3OutputLocation";
+    public static final String S3OutputEncOption = "S3OutputEncOption";
+    public static final String ACCESS_KEY = "accessKey";
+    public static final String SECRET_KEY = "secretKey";
+    public static final String VPC_ENDPOINT = "VPCEndpoint";
 
     public String server;
     public String port;

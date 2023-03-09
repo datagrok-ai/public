@@ -423,7 +423,9 @@ export class PeptidesModel {
 
     this.createScaledCol();
 
-    this.initSelections();
+    // this.initSelections();
+    this.initInvariantMapSelection();
+    this.initMutationCliffsSelection();
 
     this.setWebLogoInteraction();
     this.webLogoBounds = {};
@@ -437,15 +439,25 @@ export class PeptidesModel {
     this.postProcessGrids();
   }
 
-  initSelections(): void {
+  initInvariantMapSelection(cleanInit = false): void {
     const tempInvariantMapSelection: type.PositionToAARList = this.invariantMapSelection;
+    const positionColumns = this.splitSeqDf.columns.names();
+    for (const pos of positionColumns) {
+      if (cleanInit || !tempInvariantMapSelection.hasOwnProperty(pos))
+        tempInvariantMapSelection[pos] = [];
+    }
+
+    this.invariantMapSelection = tempInvariantMapSelection;
+  }
+
+  initMutationCliffsSelection(cleanInit = false): void {
     const mutationCliffsSelection: type.PositionToAARList = this.mutationCliffsSelection;
     const positionColumns = this.splitSeqDf.columns.names();
     for (const pos of positionColumns) {
-      tempInvariantMapSelection[pos] ??= [];
-      mutationCliffsSelection[pos] ??= [];
+      if (cleanInit || !mutationCliffsSelection.hasOwnProperty(pos))
+        mutationCliffsSelection[pos] = [];
     }
-    this.invariantMapSelection = tempInvariantMapSelection;
+
     this.mutationCliffsSelection = mutationCliffsSelection;
   }
 
@@ -830,7 +842,7 @@ export class PeptidesModel {
     const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
     const das = getDistributionAndStats(distributionTable, stats, `${position} : ${aar}`, 'Other', true);
     const resultMap: { [key: string]: any } = {...das.tableMap, ...colResults};
-    const distroStatsElem = wrapDistroAndStatsDefault(das.labels, das.histRoot, resultMap);
+    const distroStatsElem = wrapDistroAndStatsDefault(das.labels, das.histRoot, resultMap, true);
 
     ui.tooltip.show(distroStatsElem, x, y);
 
@@ -1025,9 +1037,6 @@ export class PeptidesModel {
         visibleColumns.includes(tableColName);
       gridCol.width = 60;
     }
-    setTimeout(() => {
-      sourceGridProps.rowHeight = 20;
-    }, 500);
   }
 
   getSplitColValueAt(index: number, aar: string, position: string, aarLabel: string): string {
@@ -1054,6 +1063,11 @@ export class PeptidesModel {
       const settingsButton = ui.iconFA('wrench', () => getSettingsDialog(this), 'Peptides analysis settings');
       this.analysisView.setRibbonPanels([[settingsButton]], false);
       this.isRibbonSet = true;
+      grok.events.onResetFilterRequest.subscribe(() => {
+        this.isInvariantMapTrigger = true;
+        this.initInvariantMapSelection(true);
+        this.isInvariantMapTrigger = false;
+      });
     }
 
     this.updateGrid();

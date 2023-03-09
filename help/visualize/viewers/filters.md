@@ -45,10 +45,19 @@ their choice.
   parse multiple values as separate filter categories. The most common
   separators are `\n`, `,`, `;`.
 
+* To work with custom filters, use such column tags as `.custom-filter-type` and
+  `.ignore-custom-filter`. The `.custom-filter-type` tag contains a custom
+  filter name to be used by default for a column. Its value consists of two
+  parts: the namespace and the function name (`<PackageName>:<FilterType>`,
+  e.g., `Chem:substructureFilter`). Use the `.ignore-custom-filter` tag to
+  control custom filters visibility. If both tags are used,
+  `DG.TAGS.CUSTOM_FILTER_TYPE` takes precedence over
+  `DG.TAGS.IGNORE_CUSTOM_FILTER`.
+
 To set the column tag value via the UI:
 
 1. Right-click the column’s header and select **Column Properties** from the
-   context menu. A **Structure** dialog opens.
+   context menu. A dialog with column metadata opens.
 1. In the dialog, use the **Plus** icon to add a new tag.
 1. Enter the tag name and value.
 1. Click **OK** to save changes.

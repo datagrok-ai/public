@@ -136,20 +136,32 @@ jobs:
         run: |
           commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
-          grok_deps="$(jq  -r '. | select( has("grokDependencies") == true ).grokDependencies | to_entries[] | .key' packages/${{ matrix.package }}/package.json)"
+          echo "Find grok dependencies packages"
+          grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' packages/${{ matrix.package }}/package.json)"
           profiles='--profile datagrok --profile db --profile grok_spawner'
+          echo "Check if CVM is required for the package"
           if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "simpkpd" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "dendrogram" ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "apitests" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"simpkpd"* ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"apitests"* ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"dendrogram"* ]]; then
-            profiles+=' --profile cvm'
+            echo "Add Scripting as dependency for package ${{ matrix.package }}"
+            profiles+=' --profile scripting'
           fi
-
+          if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]]; then
+            echo "Add Grok Compute as dependency for package ${{ matrix.package }}"
+            profiles+=' --profile grok_compute'
+          fi
+          echo "Run datagrok stand with profiles ${profiles}"
           docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
+          echo "Set docker_sha"
           docker_sha=$(docker images --quiet datagrok/datagrok:bleeding-edge)
           echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
+          echo "Notify abour version used for tests"
           echo "::notice title=${{ matrix.package }}::datagrok/datagrok:bleeding-edge SHA=$docker_sha docker version was used for tests"
       - name: Setup Node
         uses: actions/setup-node@v3
@@ -161,7 +173,8 @@ jobs:
         run: npm install -g npm@x
       - name: npm version
         run: npm version
-      - run: npm install
+      - name: Do npm install for packages
+        run: npm install
         id: install
         working-directory: packages/${{ matrix.package }}
       - name: js-api dependencies
@@ -175,7 +188,12 @@ jobs:
       - name: Build package
         if: ${{ matrix.build == 'true' }}
         id: build
-        run: npm run build
+        run: |
+          if [[ $(jq -r '. | select( has("scripts") == true ).scripts | select( has("build") == true ).build' "package.json") == "webpack" ]]; then
+            npm run build -- --mode=production
+          else
+            npm run build
+          fi
         working-directory: packages/${{ matrix.package }}
       - name: Install datagrok tools
         if: ${{ matrix.test == 'true' }}
@@ -196,31 +214,28 @@ jobs:
       - name: Install Grok Dependencies before package publish to Datagrok
         if: ${{ matrix.test == 'true' }}
         run: |
-          grok_deps="$(jq  -r '. | select( has("grokDependencies") == true ).grokDependencies | to_entries[] | .key' package.json)"
-          for dep in $grok_deps; do
-            current_dir=$(pwd);
-            cd ../;
-            dep_dir=$(grep -l "\"name\": \"$dep\"" */package.json | xargs -I {} dirname {});
-            cd $dep_dir;
-            npm install;
-            npm run build;
-            count=0
-            retries=5
-            until grok publish ${HOST}; do
-              exit=$?
-              wait=$((2 ** count))
-              count=$((count + 1))
-              if [ $count -lt "$retries" ]; then
-                echo "Retry $count/$retries exited $exit, retrying 'grok publish ${HOST}' in $wait seconds..."
-                sleep $wait
-                git pull --rebase
-              else
-                echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${HOST}'."
-                exit $exit
-              fi
+          grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' package.json)"
+          if [ -n "$grok_deps" ]; then
+            for dep in $grok_deps; do
+              current_dir=$(pwd)
+              cd node_modules/$dep
+              count=0
+              retries=5
+              until grok publish ${HOST}; do
+                exit=$?
+                wait=$((2 ** count))
+                count=$((count + 1))
+                if [ $count -lt "$retries" ]; then
+                  echo "Retry $count/$retries exited $exit, retrying 'grok publish ${HOST}' in $wait seconds..."
+                  sleep $wait
+                else
+                  echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${HOST}'."
+                  exit $exit
+                fi
+              done
+              cd $current_dir
             done
-            cd $current_dir;
-          done
+          fi
         working-directory: packages/${{ matrix.package }}
       - name: Publish package to Datagrok
         if: ${{ matrix.test == 'true' }}
@@ -229,12 +244,12 @@ jobs:
           retries=5
           until grok publish ${HOST}; do
             exit=$?
+            docker logs --tail 100 $(docker ps -q -f ancestor=datagrok/datagrok:bleeding-edge)
             wait=$((2 ** count))
             count=$((count + 1))
-            if [ $count -lt "$retries" ]; then
+            if [ "$count" -lt "$retries" ]; then
               echo "Retry $count/$retries exited $exit, retrying 'grok publish ${HOST}' in $wait seconds..."
               sleep $wait
-              git pull --rebase
             else
               echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${HOST}'."
               exit $exit
@@ -251,6 +266,7 @@ jobs:
       - name: Create error notification
         if: failure() && steps.test-package.outcome == 'failure'
         run: |
+          docker logs $(docker ps -q -f ancestor=datagrok/datagrok:bleeding-edge)
           echo "::error title=${{ matrix.package }}: failed tests with datagrok:bleeding-edge SHA=${{ steps.datagrok-image.outputs.docker_sha }}::Check test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html report for results"
           echo "status=error" >> $GITHUB_OUTPUT
 

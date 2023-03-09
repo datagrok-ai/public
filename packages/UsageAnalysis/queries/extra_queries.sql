@@ -1,4 +1,5 @@
 --name: GetUsersInGroups
+--meta.cache: true
 --input: list groups
 --connection: System:Datagrok
 with recursive selected_groups as (

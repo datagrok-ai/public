@@ -6,7 +6,7 @@
     "email": "vdyma@datagrok.ai"
   },
   "version": "1.0.1",
-  "description": "SQLite is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform that provides support for importing and previewing SQLite files.",
+  "description": "Support for importing and previewing SQLite files.",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
@@ -26,12 +26,7 @@
     "eslint": "latest",
     "eslint-config-google": "latest",
     "webpack": "latest",
-    "webpack-cli": "latest",
-    "puppeteer": "^13.7.0",
-    "@types/js-yaml": "^4.0.5",
-    "js-yaml": "^4.1.0",
-    "@types/node-fetch": "^2.6.2",
-    "node-fetch": "^2.6.7"
+    "webpack-cli": "latest"
   },
   "browser": {
     "fs": false,

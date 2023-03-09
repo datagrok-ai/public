@@ -15,13 +15,6 @@ const config = {
   favicon: 'favicon/favicon.ico',
   staticDirectories: ['static'],
 
-  stylesheets: [
-    {
-      href: '/docusaurus_css/datagrok.css',
-      type: 'text/css',
-    },
-  ],
-
   scripts: [
     'https://code.jquery.com/jquery-3.5.1.slim.min.js',
     'https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js'
@@ -90,17 +83,22 @@ const config = {
           path: '../help',
           routeBasePath: 'help',
           exclude: ['**/_*/**', '_*/**', '**/_*', '**/*-test.md'],
-        },
+        }
       }),
     ],
   ],
 
   themeConfig: {
+    colorMode: {
+      defaultMode: 'light',
+      disableSwitch: true,
+    },
     navbar: {
-      title: 'Datagrok',
+      title: 'datagrok',
       logo: {
         alt: 'Datagrok',
         src: 'docusaurus_img/logo.svg',
+        srcDark: 'docusaurus_img/logo_dark.svg',
         href: 'https://datagrok.ai', // Default to `siteConfig.baseUrl`.
       },
       items: [
@@ -117,8 +115,9 @@ const config = {
         },
         {
           href: 'https://public.datagrok.ai',
-          label: 'Launch',
+          label: 'LAUNCH',
           position: 'right',
+          className: 'btn btn-primary px-4',
         },
       ],
     },
@@ -158,7 +157,7 @@ const config = {
             protocol: 'https',
           }
         ],
-        apiKey: '3LbGdYhCmSueDct7u9AQDv3Ga9Z2u4HA',
+        apiKey: 'MC5hVJHferjSjVseov0jpS8awVaIJGl0',
       },
 
       // Optional: Typesense search parameters: https://typesense.org/docs/0.21.0/api/search.md#search-parameters

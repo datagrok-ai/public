@@ -9,6 +9,7 @@ import './tests/msa-tests';
 import './tests/sequence-space-test';
 import './tests/activity-cliffs-tests';
 import './tests/splitters-test';
+import './tests/monomer-libraries-tests';
 import './tests/renderers-test';
 import './tests/converters-test';
 import './tests/fasta-handler-test';
@@ -18,6 +19,8 @@ import './tests/WebLogo-positions-test';
 import './tests/checkInputColumn-tests';
 import './tests/similarity-diversity-tests';
 import './tests/substructure-filters-tests';
+import './tests/pepsea-tests';
+import './tests/viewers';
 
 export const _package = new DG.Package();
 export {tests};
