@@ -17,6 +17,7 @@ export class ErrorsView extends UaView {
   }
 
   async initViewers() : Promise<void> {
+    /*
     const errorsViewer = new UaFilterableQueryViewer(
       this.uaToolbox.filterStream,
       'Errors',
@@ -43,5 +44,6 @@ export class ErrorsView extends UaView {
       ui.divH([ui.block50([topErrorsViewer.root]), ui.block50([topNotErrorsViewer.root])]),
       ui.div([ui.block50([topErrorSourcesViewer.root])]),
     ]));
+  */
   }
 }
