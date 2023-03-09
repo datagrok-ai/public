@@ -14,7 +14,7 @@ export class UaToolbox {
   filterStream: BehaviorSubject<UaFilter>;
 
   static async construct() {
-    const date = 'this month';
+    const date = 'today';
     const users = ['all'];
 
     const dateInput = ui.stringInput('Date', date);
