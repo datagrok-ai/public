@@ -12,6 +12,7 @@ import serialization.BoolColumn;
 import serialization.DataFrame;
 import serialization.DateTimeColumn;
 import serialization.FloatColumn;
+import serialization.IntColumn;
 import serialization.StringColumn;
 import java.time.LocalDate;
 import java.time.Year;
@@ -21,10 +22,246 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * Provides data that is common for all tests
-  */
-public class CommonObjectsMother {
+ * Provides data for Athena provider tests, all queries should be ordered
+ */
+public class AthenaObjectsMother {
     private static final Parser parser = new DateParser();
+
+    public static Stream<Arguments> getSchemas_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new StringColumn(new String[] {"information_schema", "test_db"}),
+                        "table_schema")
+                .build();
+        return Stream.of(Arguments.of(expected));
+    }
+
+    public static Stream<Arguments> getSchema_ok() {
+        String firstColumnName = "table_schema";
+        String secondColumnName = "table_name";
+        String thirdColumnName = "column_name";
+        String fourthColumnName = "data_type";
+        String fifthColumnName = "is_view";
+        String schema = "test_db";
+        String table = "mock_data";
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(10)
+                .setColumn(new StringColumn(), firstColumnName, new String[] {schema, schema,
+                        schema, schema, schema, schema, schema,
+                        schema, schema, schema})
+                .setColumn(new StringColumn(), secondColumnName, new String[] {table, table,
+                        table, table, table, table,
+                        table, table, table, table})
+                .setColumn(new StringColumn(), thirdColumnName, new String[] {"id", "first_name", "last_name", "email",
+                        "gender", "ip_address", "bool", "country", "date", "some_number"})
+                .setColumn(new StringColumn(), fourthColumnName, new String[] {"bigint", "varchar(50)",
+                        "varchar(50)", "varchar(50)", "varchar(50)", "varchar(50)",
+                        "boolean", "varchar(50)", "date", "real"})
+                .setColumn(new IntColumn(), fifthColumnName, new Integer[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
+                .build();
+        return Stream.of(Arguments.of(expected));
+    }
+
+    public static Stream<Arguments> checkDatesParameterSupport_ok() {
+        String datePattern = "yyyy-MM-dd";
+        LocalDate now = LocalDate.now();
+        int dayOfWeek = now.getDayOfWeek().getValue();
+        int dayOfMonth = now.getDayOfMonth();
+        int dayOfYear = now.getDayOfYear();
+        LocalDate firstDayOfWeek = now.minusDays(dayOfWeek - 1);
+        LocalDate lastDayOfWeek = now.plusDays(7 - dayOfWeek);
+        LocalDate firstDayOfMonth = now.with(TemporalAdjusters.firstDayOfMonth());
+        LocalDate lastDayOfMonth = now.with(TemporalAdjusters.lastDayOfMonth());
+        LocalDate firstDayOfYear = now.with(TemporalAdjusters.firstDayOfYear());
+        LocalDate lastDayOfYear = now.with(TemporalAdjusters.lastDayOfYear());
+        LocalDate yesterday = now.minusDays(1);
+        LocalDate dayOfLastYear = now.minusDays(150);
+        // --input: string date = "today" {pattern: datetime}
+        DataFrame expected1 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble(datePattern, now.toString())}),
+                        "date")
+                .build();
+        FuncCall funcCall1 = FuncCallBuilder.getBuilder()
+                .addQuery("--input: string date = \"today\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date) ORDER BY date\n"
+                        + "--end")
+                .addFuncParam("string", "","date", "today", "datetime")
+                .addFuncCallOptionsPattern("date", "", "range", true, false,
+                        now.toString(), now.plusDays(1).toString())
+                .build();
+        // --input: string date = "this week" {pattern: datetime}
+        DataFrame expected2 = DataFrameBuilder.getBuilder()
+                .setRowCount(dayOfWeek == 1 ? 2 : 3)
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+                                dayOfWeek == 1 ? null : yesterday.toString(),
+                                now.toString(),
+                                lastDayOfWeek.equals(now) ? null : lastDayOfWeek.toString())),
+                        "date")
+                .build();
+        FuncCall funcCall2 = FuncCallBuilder.getBuilder()
+                .addQuery("--input: string date = \"this week\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date) ORDER BY date\n"
+                        + "--end")
+                .addFuncParam("string", "","date", "this week", "datetime")
+                .addFuncCallOptionsPattern("date", "", "range", true, false,
+                        firstDayOfWeek.toString(),
+                        lastDayOfWeek.plusDays(1).toString())
+                .build();
+        // --input: string date = "this month" {pattern: datetime}
+        DataFrame expected3 = DataFrameBuilder.getBuilder()
+                .setRowCount(dayOfMonth > 1 && dayOfMonth < 31 - 6 ? 3 : 2)
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+                                dayOfMonth == 1 ? null : yesterday.toString(),
+                                now.toString(),
+                                lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
+                                        null : lastDayOfWeek.toString())),
+                        "date")
+                .build();
+        FuncCall funcCall3 = FuncCallBuilder.getBuilder()
+                .addQuery("--input: string date = \"this month\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date) ORDER BY date\n"
+                        + "--end")
+                .addFuncParam("string", "","date", "this month", "datetime")
+                .addFuncCallOptionsPattern("date", "", "range", true, false,
+                        firstDayOfMonth.toString(),
+                        lastDayOfMonth.plusDays(1).toString())
+                .build();
+        // --input: string date = "this year" {pattern: datetime}
+        DataFrame expected4 = DataFrameBuilder.getBuilder()
+                .setRowCount(dayOfYear > 1 && dayOfYear < Year.of(now.getYear()).length() - 6 ? 3 : 2)
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+                                dayOfLastYear.getYear() == now.getYear() ? dayOfLastYear.toString() : null,
+                                dayOfMonth == 1 ? null : yesterday.toString(),
+                                now.toString(),
+                                lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
+                                        null : lastDayOfWeek.toString())),
+                        "date")
+                .build();
+        FuncCall funcCall4 = FuncCallBuilder.getBuilder()
+                .addQuery("--input: string date = \"this year\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date) ORDER BY date\n"
+                        + "--end")
+                .addFuncParam("string","", "date", "this year", "datetime")
+                .addFuncCallOptionsPattern("date", "", "range", true, false,
+                        firstDayOfYear.toString(),
+                        lastDayOfYear.plusDays(1).toString())
+                .build();
+        // --input: string date = "yesterday" {pattern: datetime}
+        DataFrame expected5 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, yesterday.toString())),
+                        "date")
+                .build();
+        FuncCall funcCall5 = FuncCallBuilder.getBuilder()
+                .addQuery("--input: string date = \"yesterday\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date)\n"
+                        + "--end")
+                .addFuncParam("string","", "date", "yesterday", "datetime")
+                .addFuncCallOptionsPattern("date", "", "range", true, false,
+                        yesterday.toString(),
+                        now.toString())
+                .build();
+        // --input: string date = "last year" {pattern: datetime}
+        DataFrame expected6 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+                                dayOfLastYear.getYear() < now.getYear() ? dayOfLastYear.toString() : null)),
+                        "date")
+                .build();
+        FuncCall funcCall6 = FuncCallBuilder.getBuilder()
+                .addQuery("--input: string date = \"last year\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date)\n"
+                        + "--end")
+                .addFuncParam("string","","date", "last year", "datetime")
+                .addFuncCallOptionsPattern("date", "", "range", true, false,
+                        firstDayOfYear.minusYears(1).toString(), firstDayOfYear.toString())
+                .build();
+        // --input: string date = "anytime" {pattern: datetime}
+        DataFrame expected7 = DataFrameBuilder.getBuilder()
+                .setRowCount(5)
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,  "2021-04-09",
+                                dayOfLastYear.toString(),
+                                yesterday.toString(), now.toString(),
+                                lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue()
+                                        || lastDayOfWeek.equals(now)?
+                                        null : lastDayOfWeek.toString())),
+                        "date")
+                .build();
+        FuncCall funcCall7 = FuncCallBuilder.getBuilder()
+                .addQuery( "--input: string date = \"anytime\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date) ORDER BY date\n"
+                        + "--end")
+                .addFuncParam("string", "","date", "anytime", "datetime")
+                .addFuncCallOptionsPattern("date", "", "none", true, true)
+                .build();
+        // --input: string date = "2021-2022" {pattern: datetime}
+        DataFrame expected8 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2021-04-09")),
+                        "date")
+                .build();
+
+        FuncCall funcCall8 = FuncCallBuilder.getBuilder()
+                .addQuery( "--input: string date = \"2021-2021\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date)\n"
+                        + "--end")
+                .addFuncParam("string", "","date", "2021-2022", "datetime")
+                .addFuncCallOptionsPattern("date", "", "range", true, true,
+                        Year.of(2021).atDay(1).toString(),
+                        Year.of(2022).atDay(1).toString())
+                .build();
+        // --input: string date = "before 1/1/2022" {pattern: datetime}
+
+        FuncCall funcCall9 = FuncCallBuilder.getBuilder()
+                .addQuery("--input: string date = \"before 1/1/2022\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date) ORDER BY date\n"
+                        + "--end")
+                .addFuncParam("string", "","date", "before 1/1/2022", "datetime")
+                .addFuncCallOptionsPattern("date", "", "before", true, true,
+                        Year.of(2022).atDay(1).toString())
+                .build();
+        // --input: string date = "after 1/1/2022" {pattern: datetime}
+        DataFrame expected9 = DataFrameBuilder.getBuilder()
+                .setRowCount(4)
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, dayOfLastYear.toString(),
+                                yesterday.toString(), now.toString(), lastDayOfWeek.getMonthValue() >
+                                        lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
+                                        null : lastDayOfWeek.toString())),
+                        "date")
+                .build();
+        FuncCall funcCall10 = FuncCallBuilder.getBuilder()
+                .addQuery("--input: string date = \"after 1/1/2022\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date) ORDER BY date\n"
+                        + "--end")
+                .addFuncParam("string", "","date", "after 1/1/2022", "datetime")
+                .addFuncCallOptionsPattern("date", "", "after", true, true,
+                        LocalDate.parse("2022-01-01").toString())
+                .build();
+        // --input: string date = "April 2021" {pattern: datetime}
+        FuncCall funcCall11 = FuncCallBuilder.getBuilder()
+                .addQuery("--input: string date = \"April 2021\" {pattern: datetime}\n"
+                        + "SELECT * FROM dates_patterns WHERE @date(date)\n"
+                        + "--end")
+                .addFuncParam("string", "","date", "April 2021", "datetime")
+                .addFuncCallOptionsPattern("date", "", "range", true, false,
+                        Year.of(2021).atMonth(4).atDay(1).toString(),
+                        Year.of(2021).atMonth(5).atDay(1).toString())
+                .build();
+        return Stream.of(
+                Arguments.of(Named.of("type: string; operator: today; pattern: datetime", funcCall1), expected1),
+                Arguments.of(Named.of("type: string; operator: this week; pattern: datetime", funcCall2), expected2),
+                Arguments.of(Named.of("type: string; operator: this month; pattern: datetime", funcCall3), expected3),
+                Arguments.of(Named.of("type: string; operator: this year; pattern: datetime", funcCall4), expected4),
+                Arguments.of(Named.of("type: string; operator: yesterday; pattern: datetime", funcCall5), expected5),
+                Arguments.of(Named.of("type: string; operator: last year; pattern: datetime", funcCall6), expected6),
+                Arguments.of(Named.of("type: string; operator: anytime; pattern: datetime", funcCall7), expected7),
+                Arguments.of(Named.of("type: string; operator: range -; pattern: datetime", funcCall8), expected8),
+                Arguments.of(Named.of("type: string; operator: before; pattern: datetime", funcCall9), expected8),
+                Arguments.of(Named.of("type: string; operator: after; pattern: datetime", funcCall10), expected9),
+                Arguments.of(Named.of("type: string; operator: April 2021; pattern: datetime", funcCall11), expected8)
+        );
+    }
 
     public static Stream<Arguments> checkParameterSupport_ok() {
         String datePattern = "yyyy-MM-dd";
@@ -71,7 +308,7 @@ public class CommonObjectsMother {
 
         FuncCall funcCall2 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string id = \">28\" {pattern: int}\n"
-                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "SELECT * FROM mock_data WHERE @id(id) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "id", ">28", "int")
                 .addFuncCallOptionsPattern("id", ">28", ">",
@@ -80,7 +317,7 @@ public class CommonObjectsMother {
         // input: string id = ">=29" {pattern: int}
         FuncCall funcCall3 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string id = \">=29\" {pattern: int}\n"
-                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "SELECT * FROM mock_data WHERE @id(id) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "id", ">=29", "int")
                 .addFuncCallOptionsPattern("id", ">=29", ">=",
@@ -105,7 +342,7 @@ public class CommonObjectsMother {
                 .build();
         FuncCall funcCall4 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string id = \"<=1\" {pattern: int}\n"
-                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "SELECT * FROM mock_data WHERE @id(id) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "id", "<=1", "int")
                 .addFuncCallOptionsPattern("id", "<=1", "<=",
@@ -114,7 +351,7 @@ public class CommonObjectsMother {
         // --input: string id = "<2" {pattern: int}
         FuncCall funcCall5 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string id = \"<2\" {pattern: int}\n"
-                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "SELECT * FROM mock_data WHERE @id(id) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "id", "<2", "int")
                 .addFuncCallOptionsPattern("id", "<2", "<",
@@ -123,7 +360,7 @@ public class CommonObjectsMother {
         // --input: string id = "in(29, 30)" {pattern: int}
         FuncCall funcCall6 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string id = \"in(29, 30)\" {pattern: int}\n"
-                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "SELECT * FROM mock_data WHERE @id(id) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "","id", "in(29, 30)", "int")
                 .addFuncCallOptionsPattern("id", "in(29, 30)", "in",
@@ -166,7 +403,7 @@ public class CommonObjectsMother {
         FuncCall funcCall7 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string id = \"not in(11, 12, 13, 14, 15, 16, 17, 18, 19, 20, "
                         + "21, 22, 23, 24, 25, 26, 27, 28, 29, 30)\" {pattern: int}\n"
-                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "SELECT * FROM mock_data WHERE @id(id) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "id", "not in(11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, " +
                                 "22, 23, 24, 25, 26, 27, 28, 29, 30)",
@@ -179,7 +416,7 @@ public class CommonObjectsMother {
         // --input: string id = "min-max 29-30" {pattern: int}
         FuncCall funcCall8 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string id = \"min-max 29-30\" {pattern: int}\n"
-                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "SELECT * FROM mock_data WHERE @id(id) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "id", "min-max 29-30",
                         "int")
@@ -189,7 +426,7 @@ public class CommonObjectsMother {
         //--input: double some_number = 510.32
         FuncCall funcCall9 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: double some_number = 510.32\n"
-                        + "SELECT * FROM mock_data WHERE some_number = @some_number\n"
+                        + "SELECT * FROM mock_data WHERE some_number = cast(@some_number as real)\n"
                         + "--end")
                 .addFuncParam("double", "", "some_number", 510.32, "double")
                 .build();
@@ -214,7 +451,7 @@ public class CommonObjectsMother {
                 .build();
         FuncCall funcCall10 =  FuncCallBuilder.getBuilder()
                 .addQuery("--input: string some_number = \">975\" {pattern: double}\n"
-                        + "SELECT * FROM mock_data WHERE @some_number(some_number)\n"
+                        + "SELECT * FROM mock_data WHERE @some_number(some_number) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string",  "", "some_number", ">975", "double")
                 .addFuncCallOptionsPattern("some_number", ">975", ">",
@@ -223,7 +460,7 @@ public class CommonObjectsMother {
         // --input: string some_number = ">=975" {pattern: double}
         FuncCall funcCall11 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string some_number = \">=975\" {pattern: double}\n"
-                        + "SELECT * FROM mock_data WHERE @some_number(some_number)\n"
+                        + "SELECT * FROM mock_data WHERE @some_number(some_number) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "some_number", ">=975", "double")
                 .addFuncCallOptionsPattern("some_number", ">=975", ">=",
@@ -248,7 +485,7 @@ public class CommonObjectsMother {
                 .build();
         FuncCall funcCall12 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string some_number = \"<20\" {pattern: double}\n"
-                        + "SELECT * FROM mock_data WHERE @some_number(some_number)\n"
+                        + "SELECT * FROM mock_data WHERE @some_number(some_number) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "some_number", "<20", "double")
                 .addFuncCallOptionsPattern("some_number", "<20", "<",
@@ -257,7 +494,7 @@ public class CommonObjectsMother {
         // --input: string some_number = "<=20" {pattern: double}
         FuncCall funcCall13 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string some_number = \"<=20\" {pattern: double}\n"
-                        + "SELECT * FROM mock_data WHERE @some_number(some_number)\n"
+                        + "SELECT * FROM mock_data WHERE @some_number(some_number) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "some_number", "<=20", "double")
                 .addFuncCallOptionsPattern("some_number", "<=20", "<=",
@@ -282,7 +519,7 @@ public class CommonObjectsMother {
                 .build();
         FuncCall funcCall14 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string first_name = 'contains Z' {pattern: string}\n"
-                        + "SELECT * FROM mock_data WHERE @first_name(first_name)\n"
+                        + "SELECT * FROM mock_data WHERE @first_name(first_name) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "","first_name", "contains Z", "string")
                 .addFuncCallOptionsPattern("first_name", "contains Z", "contains",
@@ -308,7 +545,7 @@ public class CommonObjectsMother {
                 .build();
         FuncCall funcCall15 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string first_name = 'starts with W' {pattern: string}\n"
-                        + "SELECT * FROM mock_data WHERE @first_name(first_name)\n"
+                        + "SELECT * FROM mock_data WHERE @first_name(first_name) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "","first_name", "starts with W", "string")
                 .addFuncCallOptionsPattern("first_name", "starts with W", "starts with",
@@ -334,7 +571,7 @@ public class CommonObjectsMother {
                 .build();
         FuncCall funcCall16 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string first_name = 'ends with s' {pattern: string}\n"
-                        + "SELECT * FROM mock_data WHERE @first_name(first_name)\n"
+                        + "SELECT * FROM mock_data WHERE @first_name(first_name) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "","first_name", "ends with s", "string")
                 .addFuncCallOptionsPattern("first_name", "ends with s", "ends with",
@@ -362,7 +599,7 @@ public class CommonObjectsMother {
                 .build();
         FuncCall funcCall17 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string country = 'in (Poland, Brazil)' {pattern: string}\n" +
-                        "SELECT * FROM mock_data WHERE @country(country)\n" +
+                        "SELECT * FROM mock_data WHERE @country(country) ORDER BY id\n" +
                         "--end")
                 .addFuncParam("string", "", "country", "in (Poland, Brazil)", "string")
                 .addFuncCallOptionsPattern("country", "in (Poland, Brazil)", "in",
@@ -410,7 +647,7 @@ public class CommonObjectsMother {
                 .build();
         FuncCall funcCall = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string email = 'regex ^([A-Za-z0-9_]+@google.com.au)$' {pattern: string}\n"
-                        + "SELECT * FROM mock_data WHERE @email(email)\n"
+                        + "SELECT * FROM mock_data WHERE @email(email) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "email", "regex ^([A-Za-z0-9_]+@google.com.au)$", "string")
                 .addFuncCallOptionsPattern("email", "regex ^([A-Za-z0-9_]+@google.com.au)$",
@@ -418,204 +655,6 @@ public class CommonObjectsMother {
                 .build();
         return Stream.of(Arguments.of(Named.of("type: string; operator: regex; pattern: string",
                 funcCall), expected));
-    }
-
-    public static Stream<Arguments> checkDatesParameterSupport_ok() {
-        String datePattern = "yyyy-MM-dd";
-        LocalDate now = LocalDate.now();
-        int dayOfWeek = now.getDayOfWeek().getValue();
-        int dayOfMonth = now.getDayOfMonth();
-        int dayOfYear = now.getDayOfYear();
-        LocalDate firstDayOfWeek = now.minusDays(dayOfWeek - 1);
-        LocalDate lastDayOfWeek = now.plusDays(7 - dayOfWeek);
-        LocalDate firstDayOfMonth = now.with(TemporalAdjusters.firstDayOfMonth());
-        LocalDate lastDayOfMonth = now.with(TemporalAdjusters.lastDayOfMonth());
-        LocalDate firstDayOfYear = now.with(TemporalAdjusters.firstDayOfYear());
-        LocalDate lastDayOfYear = now.with(TemporalAdjusters.lastDayOfYear());
-        LocalDate yesterday = now.minusDays(1);
-        LocalDate dayOfLastYear = now.minusDays(150);
-        // --input: string date = "today" {pattern: datetime}
-        DataFrame expected1 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble(datePattern, now.toString())}),
-                        "date")
-                .build();
-        FuncCall funcCall1 = FuncCallBuilder.getBuilder()
-                .addQuery("--input: string date = \"today\" {pattern: datetime}\n"
-                        + "SELECT * FROM dates_patterns WHERE @date(date)\n"
-                        + "--end")
-                .addFuncParam("string", "","date", "today", "datetime")
-                .addFuncCallOptionsPattern("date", "", "range", true, false,
-                        now.toString(), now.plusDays(1).toString())
-                .build();
-        // --input: string date = "this week" {pattern: datetime}
-        DataFrame expected2 = DataFrameBuilder.getBuilder()
-                .setRowCount(dayOfWeek == 1 ? 2 : 3)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
-                                now.toString(),
-                                dayOfWeek == 1 ? null : yesterday.toString(),
-                                lastDayOfWeek.equals(now) ? null : lastDayOfWeek.toString())),
-                        "date")
-                .build();
-        FuncCall funcCall2 = FuncCallBuilder.getBuilder()
-                .addQuery("--input: string date = \"this week\" {pattern: datetime}\n"
-                        + "SELECT * FROM dates_patterns WHERE @date(date)\n"
-                        + "--end")
-                .addFuncParam("string", "","date", "this week", "datetime")
-                .addFuncCallOptionsPattern("date", "", "range", true, false,
-                        firstDayOfWeek.toString(),
-                        lastDayOfWeek.plusDays(1).toString())
-                .build();
-        // --input: string date = "this month" {pattern: datetime}
-        DataFrame expected3 = DataFrameBuilder.getBuilder()
-                .setRowCount(dayOfMonth > 1 && dayOfMonth < 31 - 6 ? 3 : 2)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
-                                now.toString(),
-                                dayOfMonth == 1 ? null : yesterday.toString(),
-                                lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
-                                        null : lastDayOfWeek.toString())),
-                        "date")
-                .build();
-        FuncCall funcCall3 = FuncCallBuilder.getBuilder()
-                .addQuery("--input: string date = \"this month\" {pattern: datetime}\n"
-                        + "SELECT * FROM dates_patterns WHERE @date(date)\n"
-                        + "--end")
-                .addFuncParam("string", "","date", "this month", "datetime")
-                .addFuncCallOptionsPattern("date", "", "range", true, false,
-                        firstDayOfMonth.toString(),
-                        lastDayOfMonth.plusDays(1).toString())
-                .build();
-        // --input: string date = "this year" {pattern: datetime}
-        DataFrame expected4 = DataFrameBuilder.getBuilder()
-                .setRowCount(dayOfYear > 1 && dayOfYear < Year.of(now.getYear()).length() - 6 ? 3 : 2)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
-                                now.toString(),
-                                dayOfMonth == 1 ? null : yesterday.toString(),
-                                lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
-                                        null : lastDayOfWeek.toString(),
-                                dayOfLastYear.getYear() == now.getYear() ? dayOfLastYear.toString() : null)),
-                        "date")
-                .build();
-        FuncCall funcCall4 = FuncCallBuilder.getBuilder()
-                .addQuery("--input: string date = \"this year\" {pattern: datetime}\n"
-                        + "SELECT * FROM dates_patterns WHERE @date(date)\n"
-                        + "--end")
-                .addFuncParam("string","", "date", "this year", "datetime")
-                .addFuncCallOptionsPattern("date", "", "range", true, false,
-                        firstDayOfYear.toString(),
-                        lastDayOfYear.plusDays(1).toString())
-                .build();
-        // --input: string date = "yesterday" {pattern: datetime}
-        DataFrame expected5 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, yesterday.toString())),
-                        "date")
-                .build();
-        FuncCall funcCall5 = FuncCallBuilder.getBuilder()
-                .addQuery("--input: string date = \"yesterday\" {pattern: datetime}\n"
-                        + "SELECT * FROM dates_patterns WHERE @date(date)\n"
-                        + "--end")
-                .addFuncParam("string","", "date", "yesterday", "datetime")
-                .addFuncCallOptionsPattern("date", "", "range", true, false,
-                        yesterday.toString(),
-                        now.toString())
-                .build();
-        // --input: string date = "last year" {pattern: datetime}
-        DataFrame expected6 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
-                                dayOfLastYear.getYear() < now.getYear() ? dayOfLastYear.toString() : null)),
-                        "date")
-                .build();
-        FuncCall funcCall6 = FuncCallBuilder.getBuilder()
-                .addQuery("--input: string date = \"last year\" {pattern: datetime}\n"
-                        + "SELECT * FROM dates_patterns WHERE @date(date)\n"
-                        + "--end")
-                .addFuncParam("string","","date", "last year", "datetime")
-                .addFuncCallOptionsPattern("date", "", "range", true, false,
-                        firstDayOfYear.minusYears(1).toString(), firstDayOfYear.toString())
-                .build();
-        // --input: string date = "anytime" {pattern: datetime}
-        DataFrame expected7 = DataFrameBuilder.getBuilder()
-                .setRowCount(5)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, now.toString(),
-                                yesterday.toString(), lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
-                                        null : lastDayOfWeek.toString(), dayOfLastYear.toString(),
-                                "2021-04-09")),
-                        "date")
-                .build();
-        FuncCall funcCall7 = FuncCallBuilder.getBuilder()
-                .addQuery( "--input: string date = \"anytime\" {pattern: datetime}\n"
-                        + "SELECT * FROM dates_patterns WHERE @date(date)\n"
-                        + "--end")
-                .addFuncParam("string", "","date", "anytime", "datetime")
-                .addFuncCallOptionsPattern("date", "", "none", true, true)
-                .build();
-        // --input: string date = "2021-2022" {pattern: datetime}
-        DataFrame expected8 = DataFrameBuilder.getBuilder()
-                .setRowCount(1)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, "2021-04-09")),
-                        "date")
-                .build();
-
-        FuncCall funcCall8 = FuncCallBuilder.getBuilder()
-                .addQuery( "--input: string date = \"2021-2021\" {pattern: datetime}\n"
-                        + "SELECT * FROM dates_patterns WHERE @date(date)\n"
-                        + "--end")
-                .addFuncParam("string", "","date", "2021-2022", "datetime")
-                .addFuncCallOptionsPattern("date", "", "range", true, true,
-                        Year.of(2021).atDay(1).toString(),
-                        Year.of(2022).atDay(1).toString())
-                .build();
-        // --input: string date = "before 1/1/2022" {pattern: datetime}
-
-        FuncCall funcCall9 = FuncCallBuilder.getBuilder()
-                .addQuery("--input: string date = \"before 1/1/2022\" {pattern: datetime}\n"
-                        + "SELECT * FROM dates_patterns WHERE @date(date)\n"
-                        + "--end")
-                .addFuncParam("string", "","date", "before 1/1/2022", "datetime")
-                .addFuncCallOptionsPattern("date", "", "before", true, true,
-                        Year.of(2022).atDay(1).toString())
-                .build();
-        // --input: string date = "after 1/1/2022" {pattern: datetime}
-        DataFrame expected9 = DataFrameBuilder.getBuilder()
-                .setRowCount(4)
-                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, now.toString(),
-                                yesterday.toString(), lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
-                                        null : lastDayOfWeek.toString(), dayOfLastYear.toString())),
-                        "date")
-                .build();
-        FuncCall funcCall10 = FuncCallBuilder.getBuilder()
-                .addQuery("--input: string date = \"after 1/1/2022\" {pattern: datetime}\n"
-                        + "SELECT * FROM dates_patterns WHERE @date(date);\n"
-                        + "--end")
-                .addFuncParam("string", "","date", "after 1/1/2022", "datetime")
-                .addFuncCallOptionsPattern("date", "", "after", true, true,
-                        LocalDate.parse("2022-01-01").toString())
-                .build();
-        // --input: string date = "April 2021" {pattern: datetime}
-        FuncCall funcCall11 = FuncCallBuilder.getBuilder()
-                .addQuery("--input: string date = \"April 2021\" {pattern: datetime}\n"
-                        + "SELECT * FROM dates_patterns WHERE @date(date)\n"
-                        + "--end")
-                .addFuncParam("string", "","date", "April 2021", "datetime")
-                .addFuncCallOptionsPattern("date", "", "range", true, false,
-                        Year.of(2021).atMonth(4).atDay(1).toString(),
-                        Year.of(2021).atMonth(5).atDay(1).toString())
-                .build();
-        return Stream.of(
-                Arguments.of(Named.of("type: string; operator: today; pattern: datetime", funcCall1), expected1),
-                Arguments.of(Named.of("type: string; operator: this week; pattern: datetime", funcCall2), expected2),
-                Arguments.of(Named.of("type: string; operator: this month; pattern: datetime", funcCall3), expected3),
-                Arguments.of(Named.of("type: string; operator: this year; pattern: datetime", funcCall4), expected4),
-                Arguments.of(Named.of("type: string; operator: yesterday; pattern: datetime", funcCall5), expected5),
-                Arguments.of(Named.of("type: string; operator: last year; pattern: datetime", funcCall6), expected6),
-                Arguments.of(Named.of("type: string; operator: anytime; pattern: datetime", funcCall7), expected7),
-                Arguments.of(Named.of("type: string; operator: range -; pattern: datetime", funcCall8), expected8),
-                Arguments.of(Named.of("type: string; operator: before; pattern: datetime", funcCall9), expected8),
-                Arguments.of(Named.of("type: string; operator: after; pattern: datetime", funcCall10), expected9),
-                Arguments.of(Named.of("type: string; operator: April 2021; pattern: datetime", funcCall11), expected8)
-        );
     }
 
     public static Stream<Arguments> checkMultipleParametersSupport_ok() {
@@ -646,7 +685,7 @@ public class CommonObjectsMother {
                 .build();
         FuncCall funcCall1 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string first_name = \"starts with p\" {pattern: string}\n"
-                        + "--input: string id = \">1\" {pattern :int}\n"
+                        + "--input: string id = \">1\" {pattern: int}\n"
                         + "--input: bool bool = false\n"
                         + "--input: string email = \"contains com\" {pattern: string}\n"
                         + "--input: string some_number = \">20\" {pattern: double}\n"
@@ -654,7 +693,7 @@ public class CommonObjectsMother {
                         + "--input: string date = \"before 1/1/2022\" {pattern: datetime}\n"
                         + "SELECT * FROM mock_data WHERE @first_name(first_name) AND @id(id) AND bool = @bool "
                         + "AND @email(email) AND @some_number(some_number) "
-                        + "AND @country(country) AND @date(date)\n"
+                        + "AND @country(country) AND @date(date) ORDER BY date\n"
                         + "--end")
                 .addFuncParam("string", "","first_name", "starts with p", "string")
                 .addFuncParam("string", "","id", ">1", "int")
@@ -706,14 +745,14 @@ public class CommonObjectsMother {
                 .build();
         FuncCall funcCall1 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: list<string> values\n" +
-                        "SELECT * FROM mock_data WHERE country = ANY(@values)")
+                        "SELECT * FROM mock_data WHERE country IN (@values) ORDER BY id")
                 .addFuncParam("list", "string", "values", values, "")
                 .addFuncCallOptionsPattern("country", "", "",
                         null, null, "Poland", "Brazil")
                 .build();
         FuncCall funcCall2 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: list<string> values = ['Poland','Brazil']\n" +
-                        "SELECT * FROM mock_data WHERE country = ANY(@values)")
+                        "SELECT * FROM mock_data WHERE country IN (@values) ORDER BY id")
                 .addFuncParam("list", "string", "values", values, "")
                 .addFuncCallOptionsPattern("country", "", "",
                         null, null, "Poland", "Brazil")
@@ -721,11 +760,5 @@ public class CommonObjectsMother {
         return Stream.of(
                 Arguments.of(Named.of("type: list<string>; operator: none; pattern: none", funcCall1), expected),
                 Arguments.of(Named.of("type: list<string>; operator: none; pattern: none", funcCall2), expected));
-    }
-
-    public static Stream<Arguments> checkNullSupport_ok() {
-        return Stream.of(Arguments.of(
-                Named.of("NULL COLUMNS SUPPORT", FuncCallBuilder.fromQuery("SELECT * FROM null_safety")))
-        );
     }
 }

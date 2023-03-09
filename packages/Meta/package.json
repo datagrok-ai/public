@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.18",
+  "version": "3.2.22",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -438,6 +438,9 @@
         },
         "1.5.7": {
           "datagrok-api": "^1.13.2"
+        },
+        "1.5.8": {
+          "datagrok-api": "^1.13.2"
         }
       },
       "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Chem/README.md)",
@@ -873,6 +876,9 @@
           "datagrok-api": "^1.6.0"
         },
         "3.1.0": {
+          "datagrok-api": "^1.13.0"
+        },
+        "3.1.1": {
           "datagrok-api": "^1.13.0"
         }
       },
@@ -2017,6 +2023,12 @@
         },
         "1.1.16": {
           "datagrok-api": "^1.13.5"
+        },
+        "1.1.17": {
+          "datagrok-api": "^1.13.5"
+        },
+        "1.1.18": {
+          "datagrok-api": "^1.13.5"
         }
       },
       "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
@@ -2262,6 +2274,9 @@
         },
         "1.1.0": {
           "datagrok-api": "^1.13.0"
+        },
+        "1.1.2": {
+          "datagrok-api": "^1.13.2"
         }
       },
       "description": "ChemDraw is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",

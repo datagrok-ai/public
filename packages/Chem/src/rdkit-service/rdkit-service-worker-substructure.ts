@@ -41,11 +41,15 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   initMoleculesStructures(dict: string[]) : void {
     this.freeMoleculesStructures();
     this._rdKitMols = [];
+    let logged = false;
     for (let i = 0; i < dict.length; ++i) {
       const item = dict[i];
       let mol = getMolSafe(item, {}, this._rdKitModule).mol;
       if (mol === null) {
-        console.error('Chem | Possibly a malformed molString at init: `' + item + '`');
+        if (!logged) {
+          const errorMessage = 'Chem | Possibly a malformed molString at init: `' + item + '`';
+          logged = true;
+        }
         mol = this._rdKitModule.get_mol('');
       }
       this._rdKitMols.push(mol);

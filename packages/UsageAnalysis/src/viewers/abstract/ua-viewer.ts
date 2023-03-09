@@ -34,7 +34,7 @@ export abstract class UaViewer {
   };
 
   protected constructor(name: string, setStyle?: Function | null, showName: boolean = true) {
-    this.root = ui.div();
+    this.root = ui.box();
     this.name = name;
 
     if (setStyle)
@@ -45,7 +45,7 @@ export abstract class UaViewer {
 
   reloadViewer() {
     this.root.innerHTML = '';
-    const host = ui.block([]);
+    const host = ui.box();
     if (this.setStyle)
       this.setStyle(host);
 
