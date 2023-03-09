@@ -8,7 +8,7 @@ import * as C from '../utils/constants';
 import {createDifferenceCanvas, createDifferencesWithPositions} from './sequence-activity-cliffs';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
-import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {TAGS as bioTAGS, getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   hotSearch: boolean;
@@ -83,7 +83,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     const propPanel = ui.div();
     const molDifferences: { [key: number]: HTMLCanvasElement } = {};
     const units = resDf.col('sequence')!.getTag(DG.TAGS.UNITS);
-    const separator = resDf.col('sequence')!.getTag(C.TAGS.SEPARATOR);
+    const separator = resDf.col('sequence')!.getTag(bioTAGS.separator);
     const splitter = getSplitter(units, separator);
     const subParts1 = splitter(this.moleculeColumn!.get(this.targetMoleculeIdx));
     const subParts2 = splitter(resDf.get('sequence', resDf.currentRowIdx));

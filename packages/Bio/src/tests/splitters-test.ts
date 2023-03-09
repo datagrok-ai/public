@@ -6,7 +6,7 @@ import {after, before, category, test, expect, expectArray, expectObject} from '
 import * as C from '../utils/constants';
 import {splitToMonomers, _package, getHelmMonomers} from '../package';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
-import {splitterAsFasta, splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {TAGS as bioTAGS, splitterAsFasta, splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 
 category('splitters', () => {
@@ -83,7 +83,7 @@ category('splitters', () => {
     const semType = await grok.functions.call('Bio:detectMacromolecule', {col: seqCol});
     if (semType)
       seqCol.semType = semType;
-    seqCol.setTag(C.TAGS.ALIGNED, C.MSA);
+    seqCol.setTag(bioTAGS.aligned, C.MSA);
 
     const tv: DG.TableView = grok.shell.addTableView(df);
     // call to calculate 'cell.renderer' tag

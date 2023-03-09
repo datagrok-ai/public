@@ -11,7 +11,9 @@ import {runKalign} from './utils/multiple-sequence-alignment';
 import {SequenceAlignment} from './seq_align';
 import {getEmbeddingColsNames, sequenceSpaceByFingerprints} from './analysis/sequence-space';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {createLinesGrid, createPropPanelElement, createTooltipElement, getChemSimilaritiesMarix,} from './analysis/sequence-activity-cliffs';
+import {
+  createLinesGrid, createPropPanelElement, createTooltipElement, getChemSimilaritiesMatrix,
+} from './analysis/sequence-activity-cliffs';
 import {HELM_CORE_LIB_FILENAME} from '@datagrok-libraries/bio/src/utils/const';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
@@ -28,7 +30,13 @@ import {substructureSearchDialog} from './substructure-search/substructure-searc
 import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {delay} from '@datagrok-libraries/utils/src/test';
-import {getStats, NOTATION, splitterAsHelm, TAGS as bioTAGS, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {
+  getStats,
+  NOTATION,
+  splitterAsHelm,
+  TAGS as bioTAGS,
+  ALPHABET
+} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {pepseaMethods, runPepsea} from './utils/pepsea';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
@@ -104,7 +112,7 @@ export async function initBio() {
 //output: widget result
 export async function sequenceTooltip(col: DG.Column): Promise<DG.Widget<any>> {
   const tv = grok.shell.tv;
-  let viewer = await tv.dataFrame.plot.fromType('WebLogo', {
+  const viewer = await tv.dataFrame.plot.fromType('WebLogo', {
     sequenceColumnName: col.name,
     backgroundColor: 0xFFfdffe5,
     fitArea: false,
@@ -327,7 +335,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     DG.SEMTYPE.MACROMOLECULE,
     tags,
     sequenceSpaceByFingerprints,
-    getChemSimilaritiesMarix,
+    getChemSimilaritiesMatrix,
     createTooltipElement,
     createPropPanelElement,
     createLinesGrid,
@@ -446,7 +454,7 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
     return;
   }
 
-  let performAlignment: () => Promise<DG.Column<string> | null> = async () => null; 
+  let performAlignment: () => Promise<DG.Column<string> | null> = async () => null;
   const methodInput = ui.choiceInput('Method', pepseaMethods[0], pepseaMethods);
   methodInput.setTooltip('Alignment method');
   const gapOpenInput = ui.floatInput('Gap open', 1.53);
@@ -458,7 +466,7 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
   const colInput = ui.columnInput('Sequence', table, seqCol, () => {
     const potentialCol = colInput.value;
     const unusedName = table.columns.getUnusedName(`msa(${potentialCol.name})`);
-  
+
     if (checkInputColumnUi(
       potentialCol, potentialCol.name, [NOTATION.FASTA], [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT], false)) {
       for (const inputRootStyle of inputRootStyles)
@@ -666,7 +674,7 @@ export function splitToMonomers(): void {
     const newCol = originalDf.columns.add(tempCol);
     newCol.semType = C.SEM_TYPES.MONOMER;
     newCol.setTag(DG.TAGS.CELL_RENDERER, C.SEM_TYPES.MONOMER);
-    newCol.setTag(C.TAGS.ALPHABET, col.getTag(C.TAGS.ALPHABET));
+    newCol.setTag(bioTAGS.alphabet, col.getTag(bioTAGS.alphabet));
   }
   grok.shell.tv.grid.invalidate();
 }
