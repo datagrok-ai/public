@@ -34,16 +34,17 @@ We separated the Git Flow into two types: flow for experienced contributors and 
    <TabItem value="master" label="Master branch" default>
    ```
 
-   Do not create unnecessary merge loops. Always use the --rebase flag to pull changes from the `master` branch. For
-   more information on how to work with git, check the detailed instructions in [codeowners flow](#codeowners-flow).
+   Do not create unnecessary merge loops. Always use the --rebase flag to pull changes from the `master` branch.
 
+   Set the git configuration to enforce rebase pull strategy for master branch
    ```bash
-   git stash
-   git pull --rebase
-   git stash pop
-   # Resolve the conflicts if any occurred
-   git reset
+   git config --global pull.rebase false
+   git config --global branch.master.rebase true
+   git config --global branch.main.rebase true
+   git config --global rebase.autostash true
    ```
+
+   For more information on how to work with git, check the detailed instructions in [codeowners flow](#codeowners-flow).
 
    ```mdx-code-block
    </TabItem>
