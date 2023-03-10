@@ -299,15 +299,7 @@ export namespace chem {
         if (!(this.isEmpty()) && this.extSketcherDiv.parentElement) {
           ui.empty(this.extSketcherDiv);
           const currentMolfile = this.getMolFile();
-          molfileHandler.init(currentMolfile);
-          const maxDelta = 15;
-          const zoom = 15;
-          const xCoords = molfileHandler.x;
-          const yCoords = molfileHandler.y;
-          const deltaX = Math.max(...xCoords) - Math.min(...xCoords);
-          const deltaY = Math.max(...yCoords) - Math.min(...yCoords);
-          const tooltip = (deltaX > maxDelta || deltaY > maxDelta) ? this.drawToCanvas(deltaX*zoom, deltaY*zoom, currentMolfile) : ui.divText('Click to edit');
-          ui.tooltip.bind(this.extSketcherCanvas, () => tooltip);
+          ui.tooltip.bind(this.extSketcherCanvas, () => this.createMoleculeTooltip(currentMolfile));
           canvasMol(0, 0, width, height, this.extSketcherCanvas, this.getMolFile()!, null, { normalizeDepiction: true, straightenDepiction: true })
             .then((_) => {
               ui.empty(this.extSketcherDiv);
@@ -320,6 +312,24 @@ export namespace chem {
         }
       });
     };
+
+    createMoleculeTooltip(currentMolfile: string): HTMLElement{
+      molfileHandler.init(currentMolfile);
+      const maxDelta = 10; // in case deltaX or deltaY exceeds maxDelata we assume molecule is large one and draw it in a tooltip
+      const zoom = 20; // coefficient we use to calculate size of canvas to feet molecule
+      const xCoords = molfileHandler.x;
+      const yCoords = molfileHandler.y;
+      let tooltip: HTMLElement;
+      if (xCoords.length > 1 && yCoords.length > 1) {
+        const distance = Math.sqrt(Math.pow((xCoords[0] - xCoords[1]), 2) + Math.pow((yCoords[0] - yCoords[1]), 2));
+        const deltaX = (Math.max(...xCoords) - Math.min(...xCoords))/distance;
+        const deltaY = (Math.max(...yCoords) - Math.min(...yCoords))/distance;
+        tooltip = (deltaX > maxDelta || deltaY > maxDelta) ? this.drawToCanvas(deltaX*zoom, deltaY*zoom, currentMolfile) : ui.divText('Click to edit');
+      } else {
+        tooltip = ui.divText('Click to edit');
+      }
+      return tooltip;
+    }
 
     createClearSketcherButton(canvas: HTMLCanvasElement): HTMLButtonElement {
       const clearButton = ui.button('Clear', () => {
