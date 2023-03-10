@@ -131,14 +131,14 @@ SELECT * FROM mock_data WHERE @first_name(first_name);
 --name: MSSQLStringTypePatternStringOpStartsWith
 --connection: MSSQLApiTests
 --input: string first_name = "starts with W" {pattern: string}
---test: ApiTests:expectTable(MSSQLStringTypePatternStringOpStartsWith(), OpenFile('System:AppData/ApiTests/datasets/tests/mssql/data23.d42'))
+--test: ApiTests:expectTable(MSSQLStringTypePatternStringOpStartsWith(first_name='starts with W'), OpenFile('System:AppData/ApiTests/datasets/tests/mssql/data23.d42'))
 SELECT * FROM mock_data WHERE @first_name(first_name);
 --end
 
 --name: MSSQLStringTypePatternStringOpEndsWith
 --connection: MSSQLApiTests
 --input: string first_name = "ends with y" {pattern: string}
---test: ApiTests:expectTable(MSSQLStringTypePatternStringOpEndsWith(), OpenFile('System:AppData/ApiTests/datasets/tests/mssql/data6,23,25.d42'))
+--test: ApiTests:expectTable(MSSQLStringTypePatternStringOpEndsWith(first_name = 'ends with y'), OpenFile('System:AppData/ApiTests/datasets/tests/mssql/data6,23,25.d42'))
 SELECT * FROM mock_data WHERE @first_name(first_name);
 --end
 
@@ -157,7 +157,7 @@ SELECT * FROM mock_data WHERE @country(country);
 --input: string some_number = ">20" {pattern: double}
 --input: string country = "in (Indonesia)" {pattern: string}
 --input: string date = "before 1/1/2022" {pattern: datetime}
---test: ApiTests:expectTable(MSSQLPatternsAllParams(), OpenFile("System:AppData/ApiTests/datasets/tests/mssql/data13.d42"))
+--test: ApiTests:expectTable(MSSQLPatternsAllParams(first_name = "starts with p", id = ">1", email = "contains com", some_number = ">20", country = "in (Indonesia)", date = "before 1/1/2022"), OpenFile("System:AppData/ApiTests/datasets/tests/mssql/data13.d42"))
 SELECT * FROM mock_data WHERE @first_name(first_name)
 AND @id(id) AND @email(email) AND @some_number(some_number) AND @country(country) AND @date(date);
 --end
