@@ -3,14 +3,14 @@
   "name": "MSSQLApiTests",
   "friendlyName": "Tests",
   "parameters": {
-    "server": "datagrok.ai",
-    "port": 1433,
-    "db": "master"
+    "server": "db.datagrok.ai",
+    "port": 1434,
+    "db": "test"
   },
   "credentials" : {
     "parameters" : {
-      "login": "sa",
-      "password": "yourStrong(!)Password"
+      "login": "datagrok",
+      "password": "datagrok"
     }
   },
   "dataSource": "MS SQL",
