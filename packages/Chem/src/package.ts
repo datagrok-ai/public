@@ -124,8 +124,9 @@ export async function initChemAutostart(): Promise<void> { }
 //input: column col {semType: Molecule}
 //output: widget
 export async function chemTooltip(col: DG.Column): Promise<DG.Viewer | undefined> {
-  if (isSmarts(col.get(0))) {
-    return;
+  for (let i = 0; i < col.length; ++i) {
+    if (!col.isNone(i) && isSmarts(col.get(i)))
+      return;
   }
   const tv = grok.shell.tv;
   let viewer = new ChemDiversityViewer(true, col)//await tv.dataFrame.plot.fromType('diversitySearchViewer', {
