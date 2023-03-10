@@ -2,18 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-function grokViewer(options?: {
-  name?: string,
-  description?: string,
-  icon?: string,
-  toolbox?: boolean,
-}) {
-  return function(constructor: Function) {
-  };
-}
-
-
-@grokViewer({
+@grok.functions.decorators.grokViewer({
   icon: 'images/1.png',
   toolbox: true,
 })

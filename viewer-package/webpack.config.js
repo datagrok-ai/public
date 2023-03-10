@@ -10,7 +10,7 @@ module.exports = {
   entry: {
     test: {filename: 'package-test.js', library: {type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},
     package: './src/package.ts',
-    functions: {filename: 'package-functions.js', library: {type: 'var', name:`${packageName}_functions`}, import: fileNames},
+    functions: {filename: 'package-functions.js', library: {type: 'var', name:`${packageName}_functions`}, import: './package.g.ts'}, // Can't resolve './package.g.ts' if the file doesn't exist yet
   },
   resolve: {
     extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],

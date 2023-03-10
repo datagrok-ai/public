@@ -17,7 +17,7 @@ module.exports = function loader(source) {
       if (node.decorators && node.decorators.length > 0) {
         for (const decorator of node.decorators) {
           const exp = decorator.expression;
-          const name = exp.callee.name;
+          const name = exp.callee.property.name;
           const options = {};
           if (name in reservedDecorators) {
             if (exp.arguments && exp.arguments.length === 1) {
@@ -38,5 +38,5 @@ module.exports = function loader(source) {
 
   fs.appendFileSync('package.g.ts', functions.join('\n'), 'utf-8');
 
-  return source;
+  return JSON.stringify(source);
 }

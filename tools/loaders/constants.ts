@@ -27,7 +27,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
   return s;
 }
 
-export const reservedDecorators = {
+export const reservedDecorators: {[decorator: string]: {metadata: FuncMetadata, genFunc: Function}} = {
   grokViewer: {
     metadata: {
       tags: ['viewer'],
@@ -40,9 +40,9 @@ export const reservedDecorators = {
 };
 
 /** Generates a DG function. */
-export function generateViewerFunc(annotation: string, className: string): string {
+export function generateViewerFunc(annotation: string, className: string, sep: string = '\n'): string {
   // TODO: add an import statement for the class
-  return annotation + `export function _${className}() {\n  return new ${className}();\n}`;
+  return annotation + `export function _${className}() {${sep}  return new ${className}();${sep}}${sep.repeat(2)}`;
 }
 
 export interface Indexable {

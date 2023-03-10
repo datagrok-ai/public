@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 // See also https://datagrok.ai/help/develop/how-to/develop-custom-viewer
+@grok.functions.decorators.grokViewer()
 export class SecondViewer extends DG.JsViewer {
   color: string;
   size: number;
