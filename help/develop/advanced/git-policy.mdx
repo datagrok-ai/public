@@ -37,6 +37,7 @@ We separated the Git Flow into two types: flow for experienced contributors and 
    Do not create unnecessary merge loops. Always use the --rebase flag to pull changes from the `master` branch.
 
    Set the git configuration to enforce rebase pull strategy for master branch. It is a one-time procedure.
+
    ```bash
    git config --global pull.rebase false
    git config --global branch.master.rebase true
