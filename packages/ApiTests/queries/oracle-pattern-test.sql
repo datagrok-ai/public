@@ -4,12 +4,10 @@
 SELECT * FROM mock_data
 --end
 
--- INT PATTERN
-
 --name: OracleIntTypePatternNone
 --connection: OracleApiTests
 --input: int id = 20
---test: ApiTests:expectTable(OracleIntTypePatternNone(), OpenFile('System:AppData/ApiTests/datasets/tests/oracle/data20.d42'))
+--test: ApiTests:expectTable(OracleIntTypePatternNone(20), OpenFile('System:AppData/ApiTests/datasets/tests/oracle/data20.d42'))
 SELECT * FROM mock_data WHERE id = @id
 --end
 
@@ -69,13 +67,10 @@ SELECT * FROM mock_data WHERE @id(id)
 SELECT * FROM mock_data WHERE @id(id)
 --end
 
-
---DOUBLE PATTERN
-
 --name: OracleDoubleTypePatternNone
 --connection: OracleApiTests
 --input: double some_number = 510.32
---test: ApiTests:expectTable(OracleDoubleTypePatternNone(), OpenFile('System:AppData/ApiTests/datasets/tests/oracle/data1.d42'))
+--test: ApiTests:expectTable(OracleDoubleTypePatternNone(510.32), OpenFile('System:AppData/ApiTests/datasets/tests/oracle/data1.d42'))
 SELECT * FROM mock_data WHERE some_number = @some_number
 --end
 
@@ -107,38 +102,24 @@ SELECT * FROM mock_data WHERE @some_number(some_number)
 SELECT * FROM mock_data WHERE @some_number(some_number)
 --end
 
---CHOICES - should be used for end-to-end tests
-
---name: OracleByStringChoices
---input: string country = "France" {choices: ["France", "China", "USA", "Finland"]}
-SELECT * FROM mock_data WHERE country = @country
---end
-
---name: OracleByStringChoices
---input: string country = "France" {choices: Query("SELECT DISTINCT country FROM mock_data")}
-SELECT * FROM mock_data WHERE country = @country
---end
-
---STRING PATTERN
-
 --name: OracleStringTypePatternStringOpContains
 --connection: OracleApiTests
 --input: string first_name = "contains Z" {pattern: string}
---test: ApiTests:expectTable(OracleStringTypePatternStringOpContains(), OpenFile('System:AppData/ApiTests/datasets/tests/oracle/data25.d42'))
+--test: ApiTests:expectTable(OracleStringTypePatternStringOpContains(first_name = 'contains Z'), OpenFile('System:AppData/ApiTests/datasets/tests/oracle/data25.d42'))
 SELECT * FROM mock_data WHERE @first_name(first_name)
 --end
 
 --name: OracleStringTypePatternStringOpStartsWith
 --connection: OracleApiTests
 --input: string first_name = "starts with W" {pattern: string}
---test: ApiTests:expectTable(OracleStringTypePatternStringOpStartsWith(), OpenFile('System:AppData/ApiTests/datasets/tests/oracle/data23.d42'))
+--test: ApiTests:expectTable(OracleStringTypePatternStringOpStartsWith(first_name='starts with W'), OpenFile('System:AppData/ApiTests/datasets/tests/oracle/data23.d42'))
 SELECT * FROM mock_data WHERE @first_name(first_name)
 --end
 
 --name: OracleStringTypePatternStringOpEndsWith
 --connection: OracleApiTests
 --input: string first_name = "ends with y" {pattern: string}
---test: ApiTests:expectTable(OracleStringTypePatternStringOpEndsWith(), OpenFile('System:AppData/ApiTests/datasets/tests/oracle/data6,23,25.d42'))
+--test: ApiTests:expectTable(OracleStringTypePatternStringOpEndsWith(first_name = 'ends with y'), OpenFile('System:AppData/ApiTests/datasets/tests/oracle/data6,23,25.d42'))
 SELECT * FROM mock_data WHERE @first_name(first_name)
 --end
 
@@ -152,7 +133,7 @@ SELECT * FROM mock_data WHERE @country(country)
 --name: OracleStringTypePatternStringOpRegex
 --connection: OracleApiTests
 --input: string email = "regex ^([A-Za-z0-9_]+@google.com.au)$" {pattern: string}
---test: ApiTests:expectTable(OracleStringTypePatternStringOpRegex(), OpenFile('System:AppData/ApiTests/datasets/tests/oracle/data9.d42'))
+--test: ApiTests:expectTable(OracleStringTypePatternStringOpRegex(email = 'regex ^([A-Za-z0-9_]+@google.com.au)$'), OpenFile('System:AppData/ApiTests/datasets/tests/oracle/data9.d42'))
 SELECT * FROM mock_data WHERE @email(email)
 --end
 
@@ -164,7 +145,7 @@ SELECT * FROM mock_data WHERE @email(email)
 --input: string some_number = ">20" {pattern: double}
 --input: string country = "in (Indonesia)" {pattern: string}
 --input: string dat = "before 1/1/2022" {pattern: datetime}
---test: ApiTests:expectTable(OraclePatternsAllParams(), OpenFile("System:AppData/ApiTests/datasets/tests/oracle/data13.d42"))
+--test: ApiTests:expectTable(OraclePatternsAllParams(first_name = "starts with p", id = ">1", email = "contains com", some_number = ">20", country = "in (Indonesia)", dat = "before 1/1/2022"), OpenFile("System:AppData/ApiTests/datasets/tests/oracle/data13.d42"))
 SELECT * FROM mock_data WHERE @first_name(first_name)
 AND @id(id) AND @email(email) AND @some_number(some_number) AND @country(country) AND @dat(dat)
 --end
