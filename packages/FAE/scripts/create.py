@@ -627,7 +627,7 @@ def addSolverToPackageFile(settings, ivProblem):
         Put RichFunctionView annotation.
         """
         # 0. PUT FUNCTION NAME ANNOTATION
-        put(f'\n//name: {SOLVER_PREFIX + ivProblem[NAME]}')
+        put(f'\n//name: {ivProblem[NAME] + SIMULATE_SUFFIX}')
         put('\n' if inMainStreamComutation else f'{IN_WEBWORKER_SUFFIX}\n')
 
         # put description line
@@ -690,7 +690,7 @@ def addSolverToPackageFile(settings, ivProblem):
         Put header of the function.
         """
         # name
-        put(f'export async function {SOLVER_PREFIX + ivProblem[NAME]}')
+        put(f'export async function {ivProblem[NAME]+SIMULATE_SUFFIX}')
         put('(' if inMainStreamComutation else f'{IN_WEBWORKER_SUFFIX}(')
 
         # argument
@@ -812,7 +812,7 @@ def addSolverToPackageFile(settings, ivProblem):
 
         put(JS_SPACE + '}\n')
 
-        put('}\n\n')
+        put('}\n')
 
 
     # set mode for openning file

@@ -437,7 +437,7 @@ def createWorkerFiles(settings, functionsData):
                 line = f"let result = cppWrapper(module, args, '{funcName}', 'number');"
                 put(f'{WW_SUBSUBSPACE}{line}\n')
                 put(WW_SUBSUBSPACE + "postMessage({'callResult': result, 'args': args});\n")
-                put(WW_SUBSPACE + '} )\n}')
+                put(WW_SUBSPACE + '} )\n}\n')
 
 def updatePackageJsonFile(settings):
     """ Add JS-file with exported C/C++-functions to "sources" of package.json.

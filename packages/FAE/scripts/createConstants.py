@@ -74,6 +74,7 @@ MATRIX_TYPE = 'MatrixXd' # solver operating matrix type
 
 # ODEs solver objects
 SOLVER_PREFIX = 'solve'
+SIMULATE_SUFFIX = 'sim'
 IN_WEBWORKER_SUFFIX = 'InWebWorker'
 TOLLERANCE_NAME = '_tol'
 TOLLERANCE_VALUE = '0.00005f'
