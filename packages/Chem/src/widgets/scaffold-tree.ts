@@ -793,15 +793,19 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     if (this.bitset === null)
       this.bitset = DG.BitSet.create(this.molColumn.length);
-
+    let hasYes = false;
     this.bitset.setAll( this.bitOperation === BitwiseOp.AND, false);
     for (let n = 0; n < checkedNodes.length; ++n) {
       if (value(checkedNodes[n]).bitwiseNot)
         continue;
 
+      hasYes = true;
       let bitset = value(checkedNodes[n]).bitset!;
       this.bitset = this.bitOperation === BitwiseOp.AND ? this.bitset.and(bitset) : this.bitset.or(bitset);
     }
+
+    if (!hasYes && this.bitOperation === BitwiseOp.AND)
+      this.bitset.setAll(false, false);
 
     for (let n = 0; n < checkedNodes.length; ++n) {
       if (!value(checkedNodes[n]).bitwiseNot)
