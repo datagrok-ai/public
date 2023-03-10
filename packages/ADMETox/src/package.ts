@@ -2,8 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { addPredictions } from './admet-analysis/admet-calculation';
-import { getModelsSingle, addForm, addTooltip } from './admet-analysis/admet-calculation';
+import { getModelsSingle, addForm, addTooltip, addColorCoding, addPredictions } from './admet-analysis/admet-calculation';
 
 export const _package = new DG.Package();
 
@@ -58,5 +57,6 @@ export async function testLayout() {
   //console.log(JSON.parse(modifiedLayout));
   let view = grok.shell.tv;
   view.loadLayout(DG.ViewLayout.fromJson(modifiedLayout));
+  addColorCoding(df.columns.names());
   addTooltip();
 }

@@ -58,10 +58,14 @@ export function addTooltip() {
   });
 }
 
-export function addColorCoding(columnNames: string[], viewTable: DG.DataFrame) {
+export function addColorCoding(columnNames: string[]) {
+  const tv = grok.shell.tv;
   for (const columnName of columnNames) {
-    viewTable.col(columnName)!.tags['.color-coding-type'] = 'Conditional';
-    viewTable.col(columnName)!.tags['.color-coding-conditional'] = `{"0-0.5":"#f1b6b4","0.5-1":"#b4f1bc"}`;
+    tv.grid.col(columnName)!.isTextColorCoded = true;
+    tv.grid.col(columnName)!.categoryColors = {
+      '<0.5': 0xFFF1B6B4,
+      '>0.5': 0xFFB4F1BC
+    };
   }   
 }
 
@@ -70,7 +74,6 @@ export async function addForm(smilesCol: DG.Column, viewTable: DG.DataFrame) {
   let csvString = await accessServer(DG.DataFrame.fromColumns([smilesCol]).toCsv(), queryParams);
   const table = processCsv(csvString);
   addResultColumns(table, viewTable);
-  addColorCoding(table.columns.names(), viewTable);
 }
 
 export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFrame): Promise<void> {
@@ -94,7 +97,7 @@ export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFra
     console.log(_COLOR);
     if (_COLOR === 'true') {
       let columnNames = table.columns.names();
-      addColorCoding(columnNames, viewTable);
+      addColorCoding(columnNames);
     }
     pi.close();
   });
@@ -132,10 +135,12 @@ function processCsv(csvString: string | null): DG.DataFrame {
 
 export function getModelsSingle(smiles: string): DG.Accordion {
   const acc = ui.accordion('ADME/Tox');
-  acc.root.appendChild(ui.divV([
-    ui.link('Detailed info', () => window.open('README.md link', '_blank'))]));
-  let accHeader = document.getElementsByClassName('d4-accordion-pane-header')[17] as HTMLElement;
-  accHeader.append(ui.icons.help(() => {window.open('README.md link', '_blank')}));
+  const accPanes = document.getElementsByClassName('d4-accordion-pane-header');
+  for (let i = 0; i < accPanes.length; ++i) {
+    if (accPanes[i].innerHTML === 'ADME/Tox') {
+      accPanes[i].append(ui.icons.help(() => {window.open('https://github.com/datagrok-ai/public/blob/1ef0f6c050754a432640301139f41fcc26e2b6c3/packages/ADMETox/README.md', '_blank')}));
+    }
+  }
   const update = (result: HTMLDivElement, modelName: string) => {
     let queryParams: string[] = [];
     let model = properties[modelName]['models']
