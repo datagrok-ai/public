@@ -69,7 +69,6 @@ SELECT * FROM mock_data WHERE @id(id)
 SELECT * FROM mock_data WHERE @id(id)
 --end
 
-
 --DOUBLE PATTERN
 
 --name: PostgresqlDoubleTypePatternNone
@@ -105,18 +104,6 @@ SELECT * FROM mock_data WHERE @some_number(some_number);
 --input: string some_number = "<=20" {pattern: double}
 --test: ApiTests:expectTable(PostgresqlStringTypePatternDoubleOpLessEq(), OpenFile('System:AppData/ApiTests/datasets/tests/postgresql/data5.d42'))
 SELECT * FROM mock_data WHERE @some_number(some_number);
---end
-
---CHOICES - should be used for end-to-end tests
-
---name: PostgresqlByStringChoices
---input: string country = "France" {choices: ["France", "China", "USA", "Finland"]}
-SELECT * FROM mock_data WHERE country = @country;
---end
-
---name: PostgresqlByStringChoices
---input: string country = "France" {choices: Query("SELECT DISTINCT country FROM mock_data")}
-SELECT * FROM mock_data WHERE country = @country;
 --end
 
 --STRING PATTERN
