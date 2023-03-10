@@ -36,13 +36,15 @@ We separated the Git Flow into two types: flow for experienced contributors and 
 
    Do not create unnecessary merge loops. Always use the --rebase flag to pull changes from the `master` branch.
 
-   Set the git configuration to enforce rebase pull strategy for master branch
+   Set the git configuration to enforce rebase pull strategy for master branch. It is a one-time procedure.
    ```bash
    git config --global pull.rebase false
    git config --global branch.master.rebase true
    git config --global branch.main.rebase true
    git config --global rebase.autostash true
    ```
+
+   Then you should be able to update master branch using simple `git pull` command.
 
    For more information on how to work with git, check the detailed instructions in [codeowners flow](#codeowners-flow).
 
