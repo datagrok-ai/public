@@ -45,6 +45,10 @@ export function generateViewerFunc(annotation: string, className: string, sep: s
   return annotation + `export function _${className}() {${sep}  return new ${className}();${sep}}${sep.repeat(2)}`;
 }
 
+export function generateImport(className: string, path: string, sep: string = '\n'): string {
+  return `import {${className}} from '${path}';${sep}`;
+}
+
 export interface Indexable {
   [key: string]: any,
 }
