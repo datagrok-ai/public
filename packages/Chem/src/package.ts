@@ -41,7 +41,7 @@ import { addDescriptors } from './descriptors/descriptors-calculation';
 import { ScaffoldTreeViewer} from "./widgets/scaffold-tree";
 import {Fingerprint} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
-import {IMolContext, getMolSafe} from './utils/mol-creation_rdkit';
+import {IMolContext, getMolSafe, isSmarts} from './utils/mol-creation_rdkit';
 import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
 import {_convertMolNotation} from './utils/convert-notation-utils';
 import {molToMolblock} from './utils/convert-notation-utils';
@@ -123,12 +123,15 @@ export async function initChemAutostart(): Promise<void> { }
 //tags: tooltip
 //input: column col {semType: Molecule}
 //output: widget
-export async function chemTooltip(col: DG.Column): Promise<DG.Viewer> {
+export async function chemTooltip(col: DG.Column): Promise<DG.Viewer | undefined> {
+  for (let i = 0; i < col.length; ++i) {
+    if (!col.isNone(i) && isSmarts(col.get(i)))
+      return;
+  }
   const tv = grok.shell.tv;
   let viewer = new ChemDiversityViewer(true, col)//await tv.dataFrame.plot.fromType('diversitySearchViewer', {
     viewer.limit = 9;
     viewer.dataFrame = tv.dataFrame;
-
   return viewer;
 }
 

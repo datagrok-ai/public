@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.5.7",
+  "version": "1.5.9",
   "author": {
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
@@ -85,7 +85,7 @@
     "link-all": "npm install && npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/ml",
     "build-chem-local": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm run build",
     "build": "webpack",
-    "debug-local": "grok publish local",
+    "debug-local": "tsc && webpack && grok publish local",
     "release-local": "grok publish local --release",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",

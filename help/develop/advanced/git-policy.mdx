@@ -34,16 +34,20 @@ We separated the Git Flow into two types: flow for experienced contributors and 
    <TabItem value="master" label="Master branch" default>
    ```
 
-   Do not create unnecessary merge loops. Always use the --rebase flag to pull changes from the `master` branch. For
-   more information on how to work with git, check the detailed instructions in [codeowners flow](#codeowners-flow).
+   Do not create unnecessary merge loops. Always use the --rebase flag to pull changes from the `master` branch.
+
+   Set the git configuration to enforce rebase pull strategy for master branch. It is a one-time procedure.
 
    ```bash
-   git stash
-   git pull --rebase
-   git stash pop
-   # Resolve the conflicts if any occurred
-   git reset
+   git config --global pull.rebase false
+   git config --global branch.master.rebase true
+   git config --global branch.main.rebase true
+   git config --global rebase.autostash true
    ```
+
+   Then you should be able to update master branch using simple `git pull` command.
+
+   For more information on how to work with git, check the detailed instructions in [codeowners flow](#codeowners-flow).
 
    ```mdx-code-block
    </TabItem>
@@ -115,7 +119,7 @@ requests to the master branch. They are the owners of the code quality of the pr
 
    ```bash
    # git commit -m '<commit message>'
-   git commit -m '<scope>: [closes] <ticket ID>: <subject>
+   git commit -m '[closes] <ticket ID>: <scope>: <subject>
    [optional description]
    '
    ```
@@ -204,7 +208,7 @@ the [trunk-based development flow](https://www.atlassian.com/continuous-delivery
 
    ```bash
    # git commit -m '<commit message>'
-   git commit -m '<scope>: [closes] <ticket ID>: <subject>
+   git commit -m '[closes] <ticket ID>: <scope>: <subject>
    [optional description]
    '
    ```
@@ -329,7 +333,7 @@ understand the basics of committing to our products.
 Each commit message consists of a header and a body structured as follows:
 
 ```bash
-<scope>: [closes] <ticket ID>: <subject>
+[closes] <ticket ID>: <scope>: <subject>
 
 [optional description]
 ```
@@ -340,7 +344,7 @@ Every line in the commit should be 70 chars or less.
   <summary>Samples</summary>
 
 ```
-JS API: GROK-123: Update rxjs dependency version
+GROK-123: JS API: Update rxjs dependency version
 
 Fix the CVE-0000-99999 vulnerability of old version rxjs in
 JS API package.json
@@ -348,17 +352,17 @@ https://community.datagrok.ai/t/topic-for-dependency/000
 ```
 
 ```
-Chem: closes #123: New super incredible feature release
+closes #123: Chem | Descriptors: New super incredible feature release
 
 BREAKING CHANGE: deleted the method superCool in chem.ts
 ```
 
 ```
-GitHub Actions: GROK-456: Change in the release notes generation flow
+GROK-456: GitHub Actions: Change in the release notes generation flow
 ```
 
 ```
-Library Bio: #456: Create documentation for package usage (WIP)
+#456: Library Bio: Create documentation for package usage (WIP)
 ```
 
 </details>
@@ -367,34 +371,17 @@ Library Bio: #456: Create documentation for package usage (WIP)
 
 The header is an essential part in the commit message. It should be 70 chars or less.
 
-`<scope>: [closes] <ticket ID>: <subject>`
+`[closes] <ticket ID>: <scope>: <subject>`
 
 Example:
 
 ```
-Grok Connect: GROK-321: Fix vulnerability in Postgres provider (WIP)
+GROK-321: Grok Connect: Fix vulnerability in Postgres provider (WIP)
 ```
 
 ```
-Grok Connect: closes #321: Fix vulnerability in Postgres provider
+closes #321: Grok Connect | Postgres: Fix vulnerability in provider
 ```
-
-##### Scope
-
-The scope is REQUIRED in the commit message. Use the software name that was changed as scope. For example, the scope for
-package-specific changes is the package name.
-
-Example:
-
-- `JS API`
-- `Bio`
-- `Chem`
-- `Library Bio`
-- `Grok Tools`
-- `Grok Connect`
-- `GitHub Actions`
-- `Help`
-- etc.
 
 ##### Ticket ID (references in commitlint)
 
@@ -409,8 +396,24 @@ Commits without ticket ID won't be included to release notes
 Example:
 
 - `GROK-1234` - Jira issue in GROK project
-- `NEO-1234` - Jira issue in NEO project
 - `#1093` - GitHub issue
+
+##### Scope
+
+The scope is REQUIRED in the commit message. Use the software name that was changed as scope. For example, the scope for
+package-specific changes is the package name.
+
+Example:
+
+- `JS API`
+- `Bio`
+- `Chem`
+- `Library Bio`
+- `Tools`
+- `Grok Connect`
+- `GitHub Actions`
+- `Help`
+- etc.
 
 ##### Subject
 
@@ -433,6 +436,7 @@ CHANGE: <description what change breaks>` to the body.
 Example:
 
 ```
+
 Fix the Uncontrolled Resource Consumption vulnerability in log4j
 dependency for Grok Connect (CVE-2021-44228)
 ```

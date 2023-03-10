@@ -10,8 +10,8 @@ const Configuration = {
    */
   parserPreset: {
     parserOpts: {
-      headerPattern: /^([\w ]*): ?(?:closes )?(?:((?:GROK-[0-9]+)|(?:#[0-9]+)): )?((?:(?!(?:GROK-[0-9]+)|(?:#[0-9]+))\w)+.*)$/,
-      headerCorrespondence: ['scope', 'references', 'subject'],
+      headerPattern: /^(?:(?:closes )?((?:GROK-[0-9]+)|(?:#[0-9]+))[: ])? ?(?:((?:(?<=^|[: ])[a-zA-Z ]+))[:|] )((?:\w)+.*)$/,
+      headerCorrespondence: ['references', 'scope', 'subject'],
       issuePrefixes: ['GROK-', '#']
     }
   },
@@ -37,17 +37,17 @@ const Configuration = {
     "footer-max-length": [0, "always", "Infinity"],
     "footer-max-line-length": [1, "always", 70],
     "footer-min-length": [0, "always", 0],
-    "header-case": [1, "always", "sentence-case"],
+    "header-case": [0, "always", "sentence-case"],
     "header-full-stop": [1, "never", "."],
     "header-max-length": [2, "always", 80],
     "header-min-length": [2, "always", 1],
     "references-empty": [1, "never"],
     "scope-enum": [2, "always"],
-    "scope-case": [1, "always", "pascal-case"],
+    "scope-case": [1, "always", ["pascal-case", "sentence-case"]],
     "scope-empty": [2, "never"],
     "scope-max-length": [2, "always", 25],
     "scope-min-length": [2, "always", 1],
-    "subject-case": [2, "always", ['sentence-case', 'start-case', 'lower-case']],
+    "subject-case": [2, "always", ['sentence-case']],
     "subject-empty": [2, "never"],
     "subject-full-stop": [2, "never", "."],
     "subject-max-length": [2, "always", 60],

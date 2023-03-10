@@ -6,8 +6,9 @@ import {GridColumn, Paint} from 'datagrok-api/dg';
 import {fitResultProperties} from "@datagrok-libraries/statistics/src/parameter-estimation/fit-curve";
 import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
 
-import {fitSeries, getChartData, getChartBounds, getFittedCurve, getConfidenceIntrevals,
-  CONFIDENCE_INTERVAL_FILL_COLOR, CONFIDENCE_INTERVAL_STROKE_COLOR} from './fit-data';
+import {fitSeries, getChartData, getChartBounds, getFittedCurve, getConfidenceIntrevals, logarithmData,
+  CONFIDENCE_INTERVAL_FILL_COLOR, CONFIDENCE_INTERVAL_STROKE_COLOR, IFitChartData,
+  TAG_FIT_CHART_NAME, TAG_FIT_CHART_FORMAT} from './fit-data';
 import {convertXMLToIFitChartData} from './fit-parser';
 
 
@@ -66,7 +67,18 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const screenBounds = new DG.Rect(x, y, w, h).inflate(-6, -6);
     const [dataBox, xAxisBox, yAxisBox] = layoutChart(screenBounds);
 
-    const data = gridCell.cell.column.getTag('.fitChartFormat') === '3dx' ? convertXMLToIFitChartData(gridCell.cell.value) : getChartData(gridCell);
+    let isXMLFitChart = false;
+    let data: IFitChartData = {};
+    if (gridCell.cell.column.getTag(TAG_FIT_CHART_NAME) === TAG_FIT_CHART_FORMAT) {
+      data = convertXMLToIFitChartData(gridCell.cell.value);
+      isXMLFitChart = true;
+    }
+    else
+      data = getChartData(gridCell);
+
+    if (data.chartOptions?.logX)
+      data = logarithmData(data);
+
     const dataBounds = getChartBounds(data);
     const transform = Transform.linear(dataBounds, dataBox);
     const minSize = Math.min(dataBox.width, dataBox.height);
@@ -80,9 +92,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         for (let i = 0, candleStart = null; i < series.points.length!; i++) {
           const p = series.points[i];
           const nextSame = i + 1 < series.points.length && series.points[i + 1].x == p.x;
-          if (!candleStart && nextSame)
+          if (!isXMLFitChart && !candleStart && nextSame)
             candleStart = i;
-          else if (candleStart != null && !nextSame) {
+          else if (!isXMLFitChart && candleStart != null && !nextSame) {
             let minY = series.points[candleStart].y;
             let maxY = minY;
             for (let j = candleStart; j < i; j++) {

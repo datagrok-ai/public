@@ -18,6 +18,11 @@ const CELL_WIDTH = 180;
 const CELL_CANVAS_HEIGHT = CELL_HEIGHT * window.devicePixelRatio;
 const CELL_CANVAS_WIDTH = CELL_WIDTH * window.devicePixelRatio;
 
+enum BitwiseOp {
+  AND = "AND",
+  OR = "OR"
+}
+
 interface INode {
   scaffold?: string;
   child_nodes?: INode[];
@@ -27,6 +32,7 @@ interface ITreeNode {
   smiles: string;
   autocreated: boolean;
   bitset: DG.BitSet | null;
+  bitwiseNot: boolean;
   orphansBitset: DG.BitSet | null;
   init: boolean;
   orphans: boolean;
@@ -238,8 +244,9 @@ let gOffscreen : OffscreenCanvasRenderingContext2D | null = null;
 
 
 function renderMolecule(molStr: string, width: number, height: number, skipDraw: boolean = false): HTMLDivElement {
-  if (offscreen === null) {
-    offscreen = new OffscreenCanvas(CELL_CANVAS_WIDTH, CELL_CANVAS_HEIGHT);
+  const r = window.devicePixelRatio;
+  if (offscreen === null || offscreen.width !== Math.floor(width*r) || offscreen.height !== Math.floor(height*r)) {
+    offscreen = new OffscreenCanvas(Math.floor(width*r), Math.floor(height*r));
     gOffscreen = offscreen.getContext('2d', {willReadFrequently : true});
   }
 
@@ -258,7 +265,7 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
     const molCtx = getMolSafe(molStr, {}, _rdKitModule);
     const mol = molCtx.mol;
     if (mol !== null) {
-      drawRdKitMoleculeToOffscreenCanvas(molCtx, CELL_CANVAS_WIDTH, CELL_CANVAS_HEIGHT, offscreen, null);
+      drawRdKitMoleculeToOffscreenCanvas(molCtx, offscreen.width, offscreen.height, offscreen, null);
       mol.delete();
     }
   }
@@ -266,8 +273,6 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
   const bitmap : ImageBitmap = offscreen.transferToImageBitmap();
   const moleculeHost = ui.canvas(width, height);
   $(moleculeHost).addClass('chem-canvas');
-
-  const r = window.devicePixelRatio;
   moleculeHost.width = width * r;
   moleculeHost.height = height * r;
   moleculeHost.style.width = width.toString() + 'px';
@@ -283,6 +288,17 @@ function getFlagIcon(group: TreeViewGroup) : HTMLElement | null {
  return c.length === 0 ? null : c[0] as HTMLElement;
 }
 
+function getNotIcon(group: TreeViewGroup) : HTMLElement | null {
+  const molHost: HTMLElement = group.captionLabel;
+  const c = molHost.getElementsByClassName('fa-times-circle');
+  return c.length === 0 ? null : c[0] as HTMLElement;
+}
+
+function isNotBitOperation(group: TreeViewGroup) : boolean {
+  const isNot = (group.value as ITreeNode).bitwiseNot;
+  return isNot;
+}
+
 const GENERATE_ERROR_MSG = 'Generating tree failed...Please check the dataset';
 const NO_MOL_COL_ERROR_MSG = 'There is no molecule column available';
 
@@ -295,6 +311,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   molColumns: Array<DG.Column> = [];
   molColumnIdx: number = -1;
   threshold: number;
+  bitOperation: string;
   ringCutoff: number = 10;
   dischargeAndDeradicalize: boolean = false;
   cancelled: boolean = false;
@@ -336,6 +353,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       min: 0,
       max: 20,
       description: 'Hide scaffolds that match less then the specified percentage of molecules'
+    });
+
+    this.bitOperation = this.string('bitOperation', BitwiseOp.OR, {
+      choices: Object.values(BitwiseOp),
+      category: 'Misc',
+      description: 'Bitwise operation for filtering hits'
     });
 
     this.ringCutoff = this.int('ringCutoff', 10, {
@@ -536,7 +559,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.clear();
     const json = JSON.parse(jsonStr);
 
-    this.progressBar!.update(50, 'Initializing Tree..: 50% completed');
+    if (this.progressBar !== null)
+      this.progressBar.update(50, 'Initializing Tree..: 50% completed');
 
     const thisViewer = this;
     ScaffoldTreeViewer.deserializeTrees(json, this.tree, (molStr: string, rootGroup: TreeViewGroup) => {
@@ -545,7 +569,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     await updateVisibleNodesHits(this); //first visible N nodes
     ui.setUpdateIndicator(this.root, false);
-    this.progressBar!.update(100, 'Tree is ready');
+    if (this.progressBar !== null)
+      this.progressBar!.update(100, 'Tree is ready');
 
     this.updateSizes();
     this.updateUI();
@@ -770,11 +795,26 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     if (this.bitset === null)
       this.bitset = DG.BitSet.create(this.molColumn.length);
-
-    this.bitset.setAll(false, false);
+    let hasYes = false;
+    this.bitset.setAll( this.bitOperation === BitwiseOp.AND, false);
     for (let n = 0; n < checkedNodes.length; ++n) {
+      if (value(checkedNodes[n]).bitwiseNot)
+        continue;
+
+      hasYes = true;
       let bitset = value(checkedNodes[n]).bitset!;
-      this.bitset = this.bitset.or(bitset);
+      this.bitset = this.bitOperation === BitwiseOp.AND ? this.bitset.and(bitset) : this.bitset.or(bitset);
+    }
+
+    if (!hasYes && this.bitOperation === BitwiseOp.AND)
+      this.bitset.setAll(false, false);
+
+    for (let n = 0; n < checkedNodes.length; ++n) {
+      if (!value(checkedNodes[n]).bitwiseNot)
+        continue;
+
+      let bitset = value(checkedNodes[n]).bitset!;
+      this.bitset = this.bitset.andNot(bitset);
     }
 
     this.dataFrame.rows.requestFilter();
@@ -801,7 +841,43 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
   }
 
+  setNotBitOperation(group: TreeViewGroup, isNot: boolean) : void {
+    if ((group.value as ITreeNode).bitwiseNot === isNot)
+      return;
+
+    (group.value as ITreeNode).bitwiseNot = isNot;
+    this.updateFilters();
+
+    // update ui
+    const notIcon = getNotIcon(group);
+    const color = isNot ? 'hotpink !important' : 'var(--blue-1) !important';
+    notIcon!.style.cssText += ('color: ' + color);
+
+    if (isNot) {
+      notIcon!.classList.remove('fal');
+      notIcon!.classList.add('fas');//, 'icon-fill');
+      notIcon!.style.visibility = 'visible';
+    } else {
+      notIcon!.classList.remove('fas');
+      notIcon!.classList.add('fal');//, 'icon-fill');
+      notIcon!.style.removeProperty('visibility');
+    }
+  }
+
   addIcons(molHost: HTMLDivElement, label: string, group: TreeViewGroup): void {
+    const thisViewer = this;
+    const notIcon = ui.iconFA('times-circle', () => thisViewer.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot), 'Switch bitwise NOT');
+    notIcon.onclick = (e) => e.stopImmediatePropagation();
+    notIcon.onmousedown = (e) => e.stopImmediatePropagation();
+
+    const zoomIcon = ui.iconFA('search-plus');
+    zoomIcon.onclick = (e) => e.stopImmediatePropagation();
+    zoomIcon.onmousedown = (e) => e.stopImmediatePropagation();
+    zoomIcon.onmouseenter = (e) => ui.tooltip.show(renderMolecule(value(group).smiles, 300, 200), e.clientX, e.clientY);
+    zoomIcon.onmouseleave = (e) => ui.tooltip.hide();
+
+    const iconsDivLeft = ui.divV([notIcon, zoomIcon], 'chem-mol-box-info-buttons');
+
     const iconsDiv = ui.divV([
       ui.iconFA('plus', () => this.openAddSketcher(group), 'Add new scaffold'),
       ui.iconFA('pencil', () => this.openEditSketcher(group), 'Edit scaffold'),
@@ -838,6 +914,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     iconsInfo.onclick = (e) => e.stopImmediatePropagation();
     iconsInfo.onmousedown = (e) => e.stopImmediatePropagation();
     molHost.appendChild(ui.divV([iconsInfo, iconsDiv], 'chem-mol-box-info'));
+    molHost.insertBefore(ui.divV([iconsDivLeft], 'chem-mol-box-info'), c[0]);
   }
 
 
@@ -847,7 +924,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     const bitset =  DG.BitSet.create(this.molColumn.length);
     const molHost = renderMolecule(molStr, CELL_WIDTH, CELL_HEIGHT, skipDraw);
-    const group = rootGroup.group(molHost, {smiles: molStr, bitset: bitset, orphansBitset : null});
+    const group = rootGroup.group(molHost, {smiles: molStr, bitset: bitset, orphansBitset : null, bitwiseNot: false});
     this.addIcons(molHost, bitset.trueCount === 0 ? "" : bitset.trueCount.toString(), group);
 
     group.enableCheckBox(false);
@@ -958,6 +1035,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       updateAllNodesHits(this, () => thisViewer.filterTree(this.threshold)); // async
     } else if (p.name === 'threshold')
       this.filterTree(this.threshold);
+    else if (p.name === 'bitOperation')
+      this.updateFilters();
   }
 
   onFrameAttached(dataFrame: DG.DataFrame): void {
@@ -1091,7 +1170,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const nodes = this.root.getElementsByClassName('d4-tree-view-node');
     for (let n = 0; n < nodes.length; ++n) {
       (nodes[n] as HTMLElement).style.height = CELL_HEIGHT + 'px';
-      (nodes[n] as HTMLElement).style.width = '280px';
+      (nodes[n] as HTMLElement).style.width = '300px';
     }
   }
 
@@ -1118,6 +1197,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
   render() {
     const thisViewer = this;
+    // const bitOpInput = ui.choiceInput('', 'OR', ['AND', 'OR'], () => {}).root;
+    // bitOpInput.style.marginLeft = '20px';
     const iconHost = ui.box(ui.divH([
       this._iconAdd = ui.iconFA('plus', () => thisViewer.openAddSketcher(thisViewer.tree), 'Add New Root Structure'),
       ui.iconFA('filter', () => thisViewer.clearFilters(), 'Clear Filter'),
@@ -1125,6 +1206,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       ui.iconFA('arrow-to-bottom', () => this.saveTree(), 'Save this tree to disk'),
       ui.divText(' '),
       this._iconDelete = ui.iconFA('trash-alt', () => { thisViewer.cancelled = true; thisViewer.clear();}, 'Drop All Trees'),
+      ui.divText(' '),
+      //bitOpInput decide about providing a shortcut here
     ]), 'chem-scaffold-tree-toolbar');
     this.root.appendChild(ui.splitV([iconHost, this.tree.root]));
 
