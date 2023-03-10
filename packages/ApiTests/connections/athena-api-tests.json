@@ -1,0 +1,20 @@
+{
+  "#type": "DataConnection",
+  "name": "AthenaApiTests",
+  "friendlyName": "Tests",
+  "parameters": {
+    "region": "",
+    "db": "",
+    "S3OutputLocation": "",
+    "VPCEndpoint":"",
+    "S3OutputEncOption":""
+  },
+  "credentials" : {
+    "parameters" : {
+      "accessKey": "",
+      "secretKey": ""
+    }
+  },
+  "dataSource": "Athena",
+  "description": "Test data"
+}
