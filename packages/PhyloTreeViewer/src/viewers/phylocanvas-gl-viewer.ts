@@ -11,13 +11,49 @@ import {Observable, Subject, Unsubscribable} from 'rxjs';
 import {PickingInfo} from '@deck.gl/core/typed';
 import {MjolnirPointerEvent} from 'mjolnir.js';
 import {PhylocanvasGL} from '@phylocanvas/phylocanvas.gl';
+import {intToHtml} from '@datagrok-libraries/utils/src/color';
 import {IPhylocanvasGlViewer, TreeTypesNames} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
+import {TreeDefaultPalette} from '@datagrok-libraries/bio/src/trees';
 import {parseNewick, Shapes, TreeTypes} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 
 // TODO: add test for these properties existing.
 
+const enum PROPS {
+  // -- Data --
+  nodeColumnName = 'nodeColumnName',
+  parentColumnName = 'parentColumnName',
 
-enum PROPS_CATS {
+  // -- Style --
+  alignLabels = 'alignLabels',
+  treeType = 'treeType',
+  strokeWidth = 'strokeWidth',
+  nodeSize = 'nodeSize',
+  strokeColor = 'strokeColor',
+  showShapes = 'showShapes',
+  nodeShape = 'nodeShape',
+  haloRadius = 'haloRadius',
+  haloWidth = 'haloWidth',
+  fillColor = 'fillColor',
+  showShapeBorders = 'showShapeBorders',
+  shapeBorderWidth = 'shapeBorderWidth',
+  shapeBorderAlpha = 'shapeBorderAlpha',
+  highlightColor = 'highlightColor',
+  showBranchLengths = 'showBranchLengths',
+  showEdges = 'showEdges',
+  showLabels = 'showLabels',
+  showLeafLabels = 'showLeafLabels',
+  showInternalLabels = 'showInternalLabels',
+  fontFamily = 'fontFamily',
+  fontSize = 'fontSize',
+  padding = 'padding',
+  treeToCanvasRatio = 'treeToCanvasRatio',
+  interactive = 'interactive',
+  branchZoom = 'branchZoom',
+  stepZoom = 'stepZoom',
+  zoom = 'zoom',
+}
+
+const enum PROPS_CATS {
   APPEARANCE = 'Appearance',
   BEHAVIOR = 'Behavior',
   LAYOUT = 'Layout',
@@ -32,44 +68,47 @@ const TreeTypesTypes: { [treeType: string]: string } = {
   [TreeTypesNames.Orthogonal]: TreeTypes.Hierarchical, // rectangular edges, leaves listed horizontally
 };
 
+function setProps(value: any) {
+
+}
 
 export class PhylocanvasGlViewer extends DG.JsViewer implements IPhylocanvasGlViewer {
   private viewed: boolean = false;
 
-  alignLabels: boolean;
+  [PROPS.alignLabels]: boolean;
 
-  treeType: string;
-  lineWidth: number;
-  nodeSize: number;
-  strokeColor: number;
-  showShapes: boolean;
-  nodeShape: string;
-  haloRadius: number;
-  haloWidth: number;
+  [PROPS.treeType]: string;
+  [PROPS.strokeWidth]: number;
+  [PROPS.nodeSize]: number;
+  [PROPS.strokeColor]: number;
+  [PROPS.showShapes]: boolean;
+  [PROPS.nodeShape]: string;
+  [PROPS.haloRadius]: number;
+  [PROPS.haloWidth]: number;
 
-  branchZoom: number;
-  fillColor: number;
-  showShapeBorders: boolean;
-  shapeBorderWidth: number;
-  shapeBorderAlpha: number;
-  highlightColor: number;
-  showBranchLengths: boolean;
-  showEdges: boolean;
-  showLabels: boolean;
-  showLeafLabels: boolean;
-  showInternalLabels: boolean;
-  fontFamily: string;
-  fontSize: number;
+  [PROPS.branchZoom]: number;
+  [PROPS.fillColor]: number;
+  [PROPS.showShapeBorders]: boolean;
+  [PROPS.shapeBorderWidth]: number;
+  [PROPS.shapeBorderAlpha]: number;
+  [PROPS.highlightColor]: number;
+  [PROPS.showBranchLengths]: boolean;
+  [PROPS.showEdges]: boolean;
+  [PROPS.showLabels]: boolean;
+  [PROPS.showLeafLabels]: boolean;
+  [PROPS.showInternalLabels]: boolean;
+  [PROPS.fontFamily]: string;
+  [PROPS.fontSize]: number;
 
-  padding: number;
-  treeToCanvasRatio: number;
+  [PROPS.padding]: number;
+  [PROPS.treeToCanvasRatio]: number;
 
-  interactive: boolean;
-  stepZoom: number;
-  zoom: number;
+  [PROPS.interactive]: boolean;
+  [PROPS.stepZoom]: number;
+  [PROPS.zoom]: number;
 
-  nodeColumnName: string;
-  parentColumnName: string;
+  [PROPS.nodeColumnName]: string;
+  [PROPS.parentColumnName]: string;
 
   newick: string | null = null;
 
@@ -83,7 +122,11 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements IPhylocanvasGlVi
   treeDiv: HTMLDivElement | null;
   viewer: PhylocanvasGL | null;
   /** Container to store prop values while phylocanvasViewer is not created yet */
-  phylocanvasProps: { [p: string]: any } = {};
+  phylocanvasProps: { [p: string]: any } = {
+    strokeColour /* [PROPS.strokeColor] */: intToHtml(TreeDefaultPalette.Main),
+    fillColour /* [PROPS.fillColor] */: intToHtml(TreeDefaultPalette.Main),
+    highlightColour /* [PROPS.highlightColor] */: intToHtml(TreeDefaultPalette.Selection),
+  };
 
   private _onAfterRender = new Subject<{ gl: WebGLRenderingContext }>();
 
@@ -98,54 +141,66 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements IPhylocanvasGlVi
   constructor() {
     super();
 
-    this.alignLabels = this.bool('alignLabels', false);
+    // -- Data --
+    this.nodeColumnName = this.string(PROPS.nodeColumnName, 'node',
+      {category: PROPS_CATS.DATA});
+    this.parentColumnName = this.string(PROPS.parentColumnName, 'parent',
+      {category: PROPS_CATS.DATA});
 
-    this.treeType = this.string('treeType', TreeTypesNames.Rectangular,
+    // -- Style --
+    this.alignLabels = this.bool(PROPS.alignLabels, false,
+      {category: PROPS_CATS.APPEARANCE});
+
+    this.treeType = this.string(PROPS.treeType, TreeTypesNames.Rectangular,
       {category: PROPS_CATS.APPEARANCE, choices: Object.values(TreeTypesNames)});
-    this.lineWidth = this.float('lineWidth', 1, {category: PROPS_CATS.APPEARANCE});
-    this.nodeSize = this.float('nodeSize', 14,
-      {category: PROPS_CATS.APPEARANCE, editor: 'slider', min: 1, max: 32});
-    this.strokeColor = this.int('strokeColor', 0x222222, {category: PROPS_CATS.APPEARANCE});
-    this.showShapes = this.bool('showShapes', true, {category: PROPS_CATS.APPEARANCE});
-    this.nodeShape = this.string('nodeShape', 'Circle',
+    this.strokeWidth = this.float(PROPS.strokeWidth, 1,
+      {category: PROPS_CATS.APPEARANCE, editor: 'slider', min: 0, max: 16, step: 0.1});
+    this.nodeSize = this.float(PROPS.nodeSize, 14,
+      {category: PROPS_CATS.APPEARANCE, editor: 'slider', min: 1, max: 16, step: 0.1});
+    this.strokeColor = this.int(PROPS.strokeColor, TreeDefaultPalette.Main,
+      {category: PROPS_CATS.APPEARANCE});
+    this.showShapes = this.bool(PROPS.showShapes, true, {category: PROPS_CATS.APPEARANCE});
+    this.nodeShape = this.string(PROPS.nodeShape, 'Circle',
       {category: PROPS_CATS.APPEARANCE, choices: Object.keys(Shapes)});
-    this.haloRadius = this.float('haloRadius', 12,
+    this.haloRadius = this.float(PROPS.haloRadius, 12,
       {category: PROPS_CATS.APPEARANCE, editor: 'slider', min: 1, max: 32});
-    this.haloWidth = this.float('haloWidth', 4,
+    this.haloWidth = this.float(PROPS.haloWidth, 4,
       {category: PROPS_CATS.APPEARANCE, editor: 'slider', min: 1, max: 32});
-    this.fillColor = this.int('fillColor', 0x333333, {category: PROPS_CATS.APPEARANCE});
-    this.showShapeBorders = this.bool('showShapeBorders', false, {category: PROPS_CATS.APPEARANCE});
-    this.shapeBorderWidth = this.float('shapeBorderWidth', 1,
+    this.fillColor = this.int(PROPS.fillColor, TreeDefaultPalette.Main, {category: PROPS_CATS.APPEARANCE});
+    this.showShapeBorders = this.bool(PROPS.showShapeBorders, false, {category: PROPS_CATS.APPEARANCE});
+    this.shapeBorderWidth = this.float(PROPS.shapeBorderWidth, 1,
       {category: PROPS_CATS.APPEARANCE, editor: 'slider', min: 0, max: 50.});
-    this.shapeBorderAlpha = this.float('shapeBorderAlpha', 0.14,
+    this.shapeBorderAlpha = this.float(PROPS.shapeBorderAlpha, 0.14,
       {category: PROPS_CATS.APPEARANCE, editor: 'slider', min: 0.0, max: 1.0});
-    this.highlightColor = this.int('highlightColor', 0x3C7383, {category: PROPS_CATS.APPEARANCE});
-    this.showBranchLengths = this.bool('showBranchLengths', false, {category: PROPS_CATS.APPEARANCE});
-    this.showEdges = this.bool('showEdges', true, {category: PROPS_CATS.APPEARANCE});
-    this.showLabels = this.bool('showLabels', false, {category: PROPS_CATS.APPEARANCE});
-    this.showLeafLabels = this.bool('showLeafLabels', false, {category: PROPS_CATS.APPEARANCE});
-    this.showInternalLabels = this.bool('showInternalLabels', false, {category: PROPS_CATS.APPEARANCE});
-    this.fontFamily = this.string('fontFamily', 'monospace', {category: PROPS_CATS.APPEARANCE});
-    this.fontSize = this.float('fontSize', 16,
+    this.highlightColor = this.int(PROPS.highlightColor, TreeDefaultPalette.Selection,
+      {category: PROPS_CATS.APPEARANCE});
+    this.showBranchLengths = this.bool(PROPS.showBranchLengths, false,
+      {category: PROPS_CATS.APPEARANCE});
+    this.showEdges = this.bool(PROPS.showEdges, true,
+      {category: PROPS_CATS.APPEARANCE});
+    this.showLabels = this.bool(PROPS.showLabels, false,
+      {category: PROPS_CATS.APPEARANCE});
+    this.showLeafLabels = this.bool(PROPS.showLeafLabels, false,
+      {category: PROPS_CATS.APPEARANCE});
+    this.showInternalLabels = this.bool(PROPS.showInternalLabels, false,
+      {category: PROPS_CATS.APPEARANCE});
+    this.fontFamily = this.string(PROPS.fontFamily, 'monospace',
+      {category: PROPS_CATS.APPEARANCE});
+    this.fontSize = this.float(PROPS.fontSize, 16,
       {category: PROPS_CATS.APPEARANCE, editor: 'slider', min: 2, max: 48});
 
-    this.padding = this.float('padding', 16,
+    this.padding = this.float(PROPS.padding, 16,
       {category: PROPS_CATS.LAYOUT, editor: 'slider', min: 0, max: 50});
-    this.treeToCanvasRatio = this.float('treeToCanvasRatio', 0.25,
+    this.treeToCanvasRatio = this.float(PROPS.treeToCanvasRatio, 0.25,
       {category: PROPS_CATS.BEHAVIOR, editor: 'slider', min: 0.01, max: 2, step: 0.01});
 
-    this.interactive = this.bool('interactive', true, {category: PROPS_CATS.BEHAVIOR});
-    this.branchZoom = this.float('branchZoom', 0,
+    this.interactive = this.bool(PROPS.interactive, true, {category: PROPS_CATS.BEHAVIOR});
+    this.branchZoom = this.float(PROPS.branchZoom, 0,
       {category: PROPS_CATS.BEHAVIOR, editor: 'slider', min: -4, max: 4, step: 0.1});
-    this.stepZoom = this.float('stepZoom', 0,
+    this.stepZoom = this.float(PROPS.stepZoom, 0,
       {category: PROPS_CATS.BEHAVIOR, editor: 'slider', min: -4, max: 4, step: 0.1});
-    this.zoom = this.float('zoom', 0,
+    this.zoom = this.float(PROPS.zoom, 0,
       {category: PROPS_CATS.BEHAVIOR, editor: 'slider', min: -4, max: +4, step: 0.1});
-
-    this.nodeColumnName = this.string('nodeColumnName', 'node',
-      {category: PROPS_CATS.DATA});
-    this.parentColumnName = this.string('parentColumnName', 'parent',
-      {category: PROPS_CATS.DATA});
 
     this.subs.push(
       ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
@@ -313,65 +368,65 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements IPhylocanvasGlVi
       return;
     }
 
-    const setProps = (props: { [p: string]: any }) => {
-      Object.assign(this.phylocanvasProps, props);
+    const setProps = (updater: { [p: string]: any }) => {
+      Object.assign(this.phylocanvasProps, updater);
       if (this.viewer)
-        this.viewer.setProps(props);
+        this.viewer.setProps(updater);
     };
 
     switch (property.name) {
-    case 'treeType':
+    case PROPS.treeType:
       const treeTypeValue = TreeTypesTypes[this.treeType];
       setProps({type: treeTypeValue});
       break;
 
-    case 'nodeShape':
+    case PROPS.nodeShape:
       const nodeShapeValue: string = Shapes[this.nodeShape as keyof typeof Shapes];
       setProps({nodeShape: nodeShapeValue});
       break;
 
-    case 'strokeColor':
-      const strokeColorValue: string = `#${(this.strokeColor & 0xFFFFFF).toString(16).padStart(6, '0')}`;
+    case PROPS.strokeColor:
+      const strokeColorValue: string = intToHtml(this.strokeColor);
       setProps({strokeColour: strokeColorValue});
       console.debug('PhyloTreeViewer: PhylocanvasGlViewer.onPropertyChanged() ' +
         `${property.name} = ${strokeColorValue} .`);
       break;
 
-    case 'fillColor':
-      const fillColorValue: string = `#${(this.fillColor & 0x00FFFFFF).toString(16).padStart(6, '0')}`;
+    case PROPS.fillColor:
+      const fillColorValue: string = intToHtml(this.fillColor);
       setProps({fillColour: fillColorValue});
       console.debug('PhyloTreeViewer: PhylocanvasGlViewer.onPropertyChanged() ' +
         `${property.name} = ${fillColorValue} .`);
       break;
 
-    case 'highlightColor':
-      const highlightColorValue = `#${(this.highlightColor & 0xFFFFFF).toString(16).padStart(6, '0')}`;
+    case PROPS.highlightColor:
+      const highlightColorValue: string = intToHtml(this.highlightColor);
       setProps({highlightColour: highlightColorValue});
       console.debug('PhyloTreeViewer: PhylocanvasGlViewer.onPropertyChanged() ' +
         `${property.name} = ${highlightColorValue} .`);
       break;
 
-    case 'lineWidth':
-    case 'nodeSize':
-    case 'showShapes':
-    case 'haloRadius':
-    case 'haloWidth':
-    case 'branchZoom':
-    case 'showShapeBorders':
-    case 'shapeBorderWidth':
-    case 'shapeBorderAlpha':
-    case 'showBranchLengths':
-    case 'showEdges':
-    case 'showLabels':
-    case 'showLeafLabels':
-    case 'showInternalLabels':
-    case 'fontFamily':
-    case 'fontSize':
-    case 'padding':
-    case 'treeToCanvasRatio':
-    case 'interactive':
-    case 'stepZoom':
-    case 'zoom':
+    case PROPS.strokeWidth:
+    case PROPS.nodeSize:
+    case PROPS.showShapes:
+    case PROPS.haloRadius:
+    case PROPS.haloWidth:
+    case PROPS.branchZoom:
+    case PROPS.showShapeBorders:
+    case PROPS.shapeBorderWidth:
+    case PROPS.shapeBorderAlpha:
+    case PROPS.showBranchLengths:
+    case PROPS.showEdges:
+    case PROPS.showLabels:
+    case PROPS.showLeafLabels:
+    case PROPS.showInternalLabels:
+    case PROPS.fontFamily:
+    case PROPS.fontSize:
+    case PROPS.padding:
+    case PROPS.treeToCanvasRatio:
+    case PROPS.interactive:
+    case PROPS.stepZoom:
+    case PROPS.zoom:
       const propValue: any = this[property.name];
       setProps({[property.name]: propValue});
       console.debug('PhyloTreeViewer: PhylocanvasGlViewer.onPropertyChanged() ' +
