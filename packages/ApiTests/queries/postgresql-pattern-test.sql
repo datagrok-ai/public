@@ -4,12 +4,10 @@
 SELECT * FROM mock_data
 --end
 
--- INT PATTERN
-
 --name: PostgresqlIntTypePatternNone
 --connection: PostgreSQLApiTests
 --input: int id = 20
---test: ApiTests:expectTable(PostgresqlIntTypePatternNone(), OpenFile('System:AppData/ApiTests/datasets/tests/postgresql/data20.d42'))
+--test: ApiTests:expectTable(PostgresqlIntTypePatternNone(20), OpenFile('System:AppData/ApiTests/datasets/tests/postgresql/data20.d42'))
 SELECT * FROM mock_data WHERE id = @id;
 --end
 
@@ -69,12 +67,10 @@ SELECT * FROM mock_data WHERE @id(id)
 SELECT * FROM mock_data WHERE @id(id)
 --end
 
---DOUBLE PATTERN
-
 --name: PostgresqlDoubleTypePatternNone
 --connection: PostgreSQLApiTests
 --input: double some_number = 510.32
---test: ApiTests:expectTable(PostgresqlDoubleTypePatternNone(), OpenFile('System:AppData/ApiTests/datasets/tests/postgresql/data1.d42'))
+--test: ApiTests:expectTable(PostgresqlDoubleTypePatternNone(510.32), OpenFile('System:AppData/ApiTests/datasets/tests/postgresql/data1.d42'))
 SELECT * FROM mock_data WHERE some_number = @some_number;
 --end
 
@@ -105,8 +101,6 @@ SELECT * FROM mock_data WHERE @some_number(some_number);
 --test: ApiTests:expectTable(PostgresqlStringTypePatternDoubleOpLessEq(), OpenFile('System:AppData/ApiTests/datasets/tests/postgresql/data5.d42'))
 SELECT * FROM mock_data WHERE @some_number(some_number);
 --end
-
---STRING PATTERN
 
 --name: PostgresqlStringTypePatternStringOpContains
 --connection: PostgreSQLApiTests
