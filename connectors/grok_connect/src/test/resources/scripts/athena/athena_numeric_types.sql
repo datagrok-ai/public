@@ -17,4 +17,4 @@ TBLPROPERTIES (
 INSERT INTO NUMERIC_TYPES (tinyint_data, smallint_data, int_data, bigint_data) VALUES (56, 1241, 2600000, 9223372036854775807);
 
 
-INSERT INTO NUMERIC_TYPES (tinyint_data, smallint_data, int_data, bigint_data) VALUES (0, -1000, -2E+30, -9223372036854775807);
+INSERT INTO NUMERIC_TYPES (tinyint_data, smallint_data, int_data, bigint_data) VALUES (0, -1000, -2600000, -9223372036854775807);

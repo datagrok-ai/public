@@ -1,5 +1,5 @@
 CREATE EXTERNAL TABLE `character_types`(
-  `char_type` char(20),
+  `char_data` char(20),
   `varchar_data` varchar(20),
   `string_data` string)
 ROW FORMAT SERDE

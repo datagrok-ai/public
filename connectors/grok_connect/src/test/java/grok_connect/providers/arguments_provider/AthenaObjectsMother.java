@@ -26,6 +26,7 @@ import java.util.stream.Stream;
  */
 public class AthenaObjectsMother {
     private static final Parser parser = new DateParser();
+    private static final String datePattern = "yyyy-MM-dd";
 
     public static Stream<Arguments> getSchemas_ok() {
         DataFrame expected = DataFrameBuilder.getBuilder()
@@ -658,7 +659,6 @@ public class AthenaObjectsMother {
     }
 
     public static Stream<Arguments> checkMultipleParametersSupport_ok() {
-        String datePattern = "yyyy-MM-dd";
         // --input: string first_name = "starts with p" {pattern: string}
         //--input: string id = ">1" {pattern :int}
         //--input: bool bool = false
@@ -760,5 +760,102 @@ public class AthenaObjectsMother {
         return Stream.of(
                 Arguments.of(Named.of("type: list<string>; operator: none; pattern: none", funcCall1), expected),
                 Arguments.of(Named.of("type: list<string>; operator: none; pattern: none", funcCall2), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_arrayType_ok() {
+        DataFrame expected1 = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new IntColumn(new Integer[]{1, 2}), "id")
+                .setColumn(new StringColumn(new String[]{"1, 2, 3", "1, null, 3"}), "array_data")
+                .build();
+        FuncCall funcCall1 = FuncCallBuilder.fromQuery("SELECT * FROM array_type_int ORDER BY id");
+        DataFrame expected2 = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new IntColumn(new Integer[]{1}), "id")
+                .setColumn(new StringColumn(new String[]{"Hello, World, Datagrok"}), "array_data")
+                .build();
+        FuncCall funcCall2 = FuncCallBuilder.fromQuery("SELECT * FROM array_type_string ORDER BY id");
+        return Stream.of(
+                Arguments.of(Named.of("ARRAY<INT> TYPE SUPPORT", funcCall1), expected1),
+                Arguments.of(Named.of("ARRAY<STRING> TYPE SUPPORT", funcCall2), expected2));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_characterTypes_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new StringColumn(new String[]{"Datagrok"}),
+                        "char_data")
+                .setColumn(new StringColumn(new String[]{"Hello, World"}),
+                        "varchar_data")
+                .setColumn(new StringColumn(new String[]{"Hello, Datagrok!"}),
+                        "string_data")
+                .build();
+        FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM character_types");
+        return Stream.of(
+                Arguments.of(Named.of("CHARACTER TYPES SUPPORT", funcCall), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_dateTypes_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
+                        "1996-08-26", "2023-08-26")), "date_type")
+                .setColumn(new DateTimeColumn(new Double[]{
+                        parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss", "2018-04-01 00:00:00"),
+                        parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss.SSS",
+                        "2023-04-05 12:00:00.123")}), "timestamp_type")
+                .build();
+        FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM date_types ORDER BY id");
+        return Stream.of(
+                Arguments.of(Named.of("DATE TYPES SUPPORT", funcCall), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_floatTypes_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new FloatColumn(new Float[]{Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY}),
+                        "double_type")
+                .setColumn(new FloatColumn(new Float[]{3.40282346638528860e+38f, 1.40129846432481707e-45f}),
+                        "float_type")
+                .setColumn(new FloatColumn(new Float[]{0.12f, 0.50f}), "decimal_type")
+                .build();
+        FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM float_types ORDER BY double_type DESC");
+        return Stream.of(
+                Arguments.of(Named.of("FLOAT TYPES SUPPORT", funcCall), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_mapType_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new StringColumn(new String[]{"{bar=2, Datagrok=2023, foo=1}"}), "map_data")
+                .build();
+        FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM map_type");
+        return Stream.of(
+                Arguments.of(Named.of("MAP TYPE SUPPORT", funcCall), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_numericTypes_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new IntColumn(new Integer[]{56, 0}), "tinyint_data")
+                .setColumn(new IntColumn(new Integer[]{1241, -1000}), "smallint_data")
+                .setColumn(new IntColumn(new Integer[]{2600000, -2600000}), "int_data")
+                .setColumn(new BigIntColumn(new String[] {"9223372036854775807", "-9223372036854775807"}),
+                        "bigint_data")
+                .build();
+        FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM numeric_types ORDER BY tinyint_data DESC");
+        return Stream.of(
+                Arguments.of(Named.of("NUMERIC TYPES SUPPORT", funcCall), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_structType_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new StringColumn(new String[]{"{name=Bob, age=38}"}),
+                        "struct_data")
+                .build();
+        FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM struct_type");
+        return Stream.of(
+                Arguments.of(Named.of("STRUCT TYPE SUPPORT", funcCall), expected));
     }
 }
