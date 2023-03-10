@@ -42,7 +42,7 @@ is made to the codebase in Git. It automatically executes the following tasks:
   4. Packaging the platform in Docker containers
   5. [Snyk](https://snyk.io/) and [Grype](https://github.com/anchore/grype/)
   check for vulnerabilities
-* Docker Hub stores built artifacts, such as compiled code and packages, that
+* Docker Hub stores built artifacts, such as compiled code and packages that
 are generated during the build process.
 * Ansible automates the process of provisioning and configuring servers for
 deployment.
@@ -149,9 +149,9 @@ have integrated JIRA with Datagrok's OpenAPI capabilities.
 
 ![Test Tracking System](test-tracking-system.png)
 
-### Test manager
+### Test Manager
 
-Is a tool within the Datagrok platform that provides a convenient interface for
+Test Manager is a tool within the Datagrok platform that provides a convenient interface for
 selecting and running package unit tests with additional capabilities for
 exploring the test results. **Test manager** is a component of the
 [**DevTools** package](https://github.com/datagrok-ai/public/tree/master/packages/DevTools).
@@ -159,11 +159,8 @@ See [Test Manager](../how-to/test-packages.md#test-manager) to learn more.
 
 ### Usage Analysis
 
-It is the
-[Datagrok package](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
-designed to provide insights into how the Datagrok platform is utilized. Usage
-Analysis offers various viewers, enabling diverse information about
-usage statistics, platform events, and errors.
+Usage Analysis is the
+[Datagrok package](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis) that facilitates understanding of Datagrok platform usage through different viewers, displaying data on usage statistics, errors, and platform events.
 See [Usage Analysis](../../govern/usage-analysis.md)
 to learn more.
 

@@ -2,7 +2,7 @@
 title: "Report bugs and feature requests"
 ---
 
-This guide provides an easy set of rules for reporting issues and managing
+This guide provides a set of rules for reporting issues and managing
 tickets in Datagrok. We use two issue tracking systems:
 
 * [JIRA](https://reddata.atlassian.net/)
@@ -35,7 +35,7 @@ epics. Here we provide recommendations for each item:
 |Bug report| [Platform module] or [Package name] : [Unexpected behavior]| Line chart: Y-axis label is broken|
 |New feature or Improvement| [Platform module] or [Package name] : [New feature name] or [Improvement summary]| Bar Chart: context menu harmonization|
 
-* **Description**. Is important for testing and writing release notes. For an
+* **Description** is important for testing and writing release notes. For an
 enhancement, write the description of the new functionality. A bug description
 should include the following items:
   * **Instance and its version**. If the bug concerns a package functionality,
