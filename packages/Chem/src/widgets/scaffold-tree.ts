@@ -559,7 +559,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.clear();
     const json = JSON.parse(jsonStr);
 
-    this.progressBar!.update(50, 'Initializing Tree..: 50% completed');
+    if (this.progressBar !== null)
+      this.progressBar.update(50, 'Initializing Tree..: 50% completed');
 
     const thisViewer = this;
     ScaffoldTreeViewer.deserializeTrees(json, this.tree, (molStr: string, rootGroup: TreeViewGroup) => {
@@ -568,7 +569,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     await updateVisibleNodesHits(this); //first visible N nodes
     ui.setUpdateIndicator(this.root, false);
-    this.progressBar!.update(100, 'Tree is ready');
+    if (this.progressBar !== null)
+      this.progressBar!.update(100, 'Tree is ready');
 
     this.updateSizes();
     this.updateUI();
