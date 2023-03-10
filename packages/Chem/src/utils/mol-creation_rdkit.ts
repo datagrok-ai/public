@@ -6,7 +6,7 @@ export interface IMolContext {
   isQMol: boolean;
 }
 
-function isSmarts(molString: string): boolean {
+export function isSmarts(molString: string): boolean {
   return !!molString.match(/\[.?#\d|\$|&|;|,|!|:|\*.?\]/g) && !molString.includes('\n');
 }
  
