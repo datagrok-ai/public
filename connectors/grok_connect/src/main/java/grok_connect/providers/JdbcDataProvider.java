@@ -287,27 +287,16 @@ public abstract class JdbcDataProvider extends DataProvider {
     protected void appendQueryParam(DataQuery dataQuery, String paramName, StringBuilder queryBuffer) {
         queryBuffer.append("?");
     }
-//    very long and unreadable
-    @SuppressWarnings("unchecked")
-    public DataFrame execute(FuncCall queryRun)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
 
-        DateTime connectionPreparationStart = DateTime.now();
-
-        int count = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_COUNT))
-                ? ((Double)queryRun.options.get(DataProvider.QUERY_COUNT)).intValue() : 0;
-        int memoryLimit = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_MEMORY_LIMIT_MB))
-                ? ((Double)queryRun.options.get(DataProvider.QUERY_MEMORY_LIMIT_MB)).intValue() : 0;
+    public ResultSet getResultSet(FuncCall queryRun, Connection connection) throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
         Integer providerTimeout = getTimeout();
         int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
 
-        Connection connection = null;
         try {
             // Remove header lines
             DataQuery dataQuery = queryRun.func;
             String query = dataQuery.query;
-            connection = getConnection(dataQuery.connection);
             String commentStart = descriptor.commentStart;
 
             ResultSet resultSet = null;
@@ -327,10 +316,28 @@ public abstract class JdbcDataProvider extends DataProvider {
                     resultSet = executeQuery(currentQuery, queryRun, connection, timeout); // IT WON'T WORK?
             }
 
-            DateTime columnAssignmentStart = DateTime.now();
+            return resultSet;
+        } catch (SQLException e) {
+            if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
+                throw new QueryCancelledByUser();
+            else throw e;
+        }
+        // finally {
+        //     if (connection != null)
+        //         connection.close();
+        // }
+    }
 
-            if (resultSet == null)
-                return new DataFrame();
+    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,
+            List<Boolean> supportedType,List<Boolean> initColumn) throws IOException, SQLException, QueryCancelledByUser {
+        return getResultSetSubDf(queryRun, resultSet, columns, supportedType, initColumn, 10000);
+    }
+
+    public SchemeInfo resultSetScheme(FuncCall queryRun, ResultSet resultSet) throws QueryCancelledByUser, SQLException {
+
+        try {
+            // if (resultSet == null)
+            //     return new DataFrame();
 
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 
@@ -390,6 +397,32 @@ public abstract class JdbcDataProvider extends DataProvider {
                 column.name = resultSetMetaData.getColumnLabel(c); // duplicate method call
                 columns.add(c - 1, column);
             }
+            return new SchemeInfo(columns, supportedType, initColumn);
+
+        } catch (SQLException e) {
+            if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
+                throw new QueryCancelledByUser();
+            else throw e;
+        }
+    }
+
+    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,
+                                       List<Boolean> supportedType,List<Boolean> initColumn, int maxIterations)
+            throws IOException, SQLException, QueryCancelledByUser {
+        if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
+            throw new QueryCancelledByUser();
+
+        int count = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_COUNT))
+                ? ((Double)queryRun.options.get(DataProvider.QUERY_COUNT)).intValue() : 0;
+        int memoryLimit = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_MEMORY_LIMIT_MB))
+                ? ((Double)queryRun.options.get(DataProvider.QUERY_MEMORY_LIMIT_MB)).intValue() : 0;
+        try {
+            int columnCount = columns.size();
+
+            if (resultSet == null)
+                return new DataFrame();
+
+            ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 
             DateTime fillingDataframeStart = DateTime.now();
 // why can't we do it in previous for loop?
@@ -408,7 +441,8 @@ public abstract class JdbcDataProvider extends DataProvider {
             for (int i = 0; i < columnCount; i++)
                 numericColumnStats.add(new DebugUtils.NumericColumnStats());
 
-            while (resultSet.next()) {
+            int size = 0;
+            while ((maxIterations < 0 || rowCount < maxIterations) && resultSet.next() && (size < 100)  ) {
                 rowCount++;
 
                 for (int c = 1; c < columnCount + 1; c++) {
@@ -548,9 +582,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                         column.add(value);
                     }
                 }
-//                what if rowCount % 1000 != 0? then we don't count memory consumption?
+
                 if (rowCount % 1000 == 0) {
-                    int size = 0;
+                    size = 0;
                     for (Column column : columns)
                         size += column.memoryInBytes();
                     size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000; // count? it's 200 lines up
@@ -570,10 +604,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             }
             DateTime finish = DateTime.now();
 
-            String logString = String.format("Execution time by steps: connection preparation: %s s, query execution: %s s, column assignment: %s s, dataframe filling: %s s \n",
-                    (queryExecutionStart.getMillis() - connectionPreparationStart.getMillis())/ 1000.0,
-                    (columnAssignmentStart.getMillis() - queryExecutionStart.getMillis())/ 1000.0,
-                    (fillingDataframeStart.getMillis() - columnAssignmentStart.getMillis())/ 1000.0,
+            String logString = String.format(" dataframe filling: %s s \n",
                     (finish.getMillis() - fillingDataframeStart.getMillis())/ 1000.0);
             if (queryRun.debugQuery)
                 queryRun.log += logString;
@@ -586,6 +617,24 @@ public abstract class JdbcDataProvider extends DataProvider {
             dataFrame.addColumns(columns);
 
             return dataFrame;
+        } catch (SQLException e) {
+            throw e;
+        }
+    };
+
+    @SuppressWarnings("unchecked")
+    public DataFrame execute(FuncCall queryRun)
+            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+        Connection connection = null;
+        try {
+            connection = getConnection(queryRun.func.connection);
+            ResultSet resultSet = getResultSet(queryRun, connection);
+
+            if (resultSet == null)
+                return new DataFrame();
+
+            SchemeInfo schemeInfo = resultSetScheme(queryRun, resultSet);
+            return getResultSetSubDf(queryRun, resultSet, schemeInfo.columns, schemeInfo.supportedType, schemeInfo.initColumn, -1);
         }
         catch (SQLException e) {
             if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))

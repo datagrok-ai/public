@@ -15,6 +15,11 @@ public class DateTimeColumn extends Column<Double> {
         return TYPE;
     }
 
+    public void empty() {
+        length = 0;
+        data = new double[100];
+    }
+
     public DateTimeColumn() {
         data = new double[100];
     }
