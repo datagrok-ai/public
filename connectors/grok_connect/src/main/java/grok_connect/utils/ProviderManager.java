@@ -11,13 +11,13 @@ import java.util.ListIterator;
 public class ProviderManager {
     private final Logger logger; // we reuse this logger in providers, is this good practice?
     private final QueryMonitor queryMonitor;
-    public List<DataProvider> providers;
+    public List<JdbcDataProvider> providers;
 
     public ProviderManager(Logger logger) {
         this.queryMonitor = new QueryMonitor();
         this.logger = logger;
 
-        providers = new ArrayList<DataProvider>() {{
+        providers = new ArrayList<JdbcDataProvider>() {{
             add(new AccessDataProvider(ProviderManager.this));
             add(new AthenaDataProvider(ProviderManager.this));
             add(new BigQueryDataProvider(ProviderManager.this));
@@ -57,11 +57,11 @@ public class ProviderManager {
 
         return types;
     }
-    public DataProvider getByName(String name) {
-        DataProvider provider = providers.get(0);
+    public JdbcDataProvider getByName(String name) {
+        JdbcDataProvider provider = providers.get(0);
 
-        for (ListIterator<DataProvider> providers = this.providers.listIterator(); providers.hasNext(); ) {
-            DataProvider tmp = providers.next();
+        for (ListIterator<JdbcDataProvider> providers = this.providers.listIterator(); providers.hasNext(); ) {
+            JdbcDataProvider tmp = providers.next();
             if (tmp.descriptor.type.equals(name)) {
                 provider = tmp;
                 break;
