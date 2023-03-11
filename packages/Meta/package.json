@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.18",
+  "version": "3.2.24",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -198,14 +198,6 @@
         "directory": "packages/SQLite"
       },
       "category": "Development"
-    },
-    "demo-scripts": {
-      "dependencies": {
-        "1.0.1": {
-          "datagrok-api": "^0.151.6"
-        }
-      },
-      "description": "*DemoScripts* is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It demonstrates the [scripting](https://datagrok.ai/help/compute/scripting) functionality for [Python](https://www.python.org"
     },
     "tutorials": {
       "dependencies": {
@@ -437,6 +429,12 @@
           "datagrok-api": "^1.13.2"
         },
         "1.5.7": {
+          "datagrok-api": "^1.13.2"
+        },
+        "1.5.8": {
+          "datagrok-api": "^1.13.2"
+        },
+        "1.5.9": {
           "datagrok-api": "^1.13.2"
         }
       },
@@ -873,6 +871,9 @@
           "datagrok-api": "^1.6.0"
         },
         "3.1.0": {
+          "datagrok-api": "^1.13.0"
+        },
+        "3.1.1": {
           "datagrok-api": "^1.13.0"
         }
       },
@@ -2017,6 +2018,12 @@
         },
         "1.1.16": {
           "datagrok-api": "^1.13.5"
+        },
+        "1.1.17": {
+          "datagrok-api": "^1.13.5"
+        },
+        "1.1.18": {
+          "datagrok-api": "^1.13.5"
         }
       },
       "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
@@ -2184,19 +2191,6 @@
       },
       "category": "Visualizations"
     },
-    "demoxl": {
-      "dependencies": {
-        "1.1.0": {
-          "datagrok-api": "^1.0.0"
-        }
-      },
-      "description": "*Demo* is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It demonstrates the [scripting](https://datagrok.ai/help/compute/scripting) functionality for [Python](https://www.python.org/), [R](https://www.r-project.org/), [Julia](https://julialang.org/), [NodeJS](https://nodejs.org/), [Octave](https://octave.org/).",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/DemoXL"
-      }
-    },
     "simpkpd": {
       "dependencies": {
         "1.0.0": {
@@ -2262,6 +2256,9 @@
         },
         "1.1.0": {
           "datagrok-api": "^1.13.0"
+        },
+        "1.1.2": {
+          "datagrok-api": "^1.13.2"
         }
       },
       "description": "ChemDraw is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",

@@ -492,7 +492,8 @@ public class CommonObjectsMother {
                                 now.toString(),
                                 dayOfMonth == 1 ? null : yesterday.toString(),
                                 lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
-                                        null : lastDayOfWeek.toString())),
+                                        null : lastDayOfWeek.toString(),
+                                dayOfLastYear.getYear() == now.getYear() ? dayOfLastYear.toString() : null)),
                         "date")
                 .build();
         FuncCall funcCall4 = FuncCallBuilder.getBuilder()
@@ -523,7 +524,7 @@ public class CommonObjectsMother {
         DataFrame expected6 = DataFrameBuilder.getBuilder()
                 .setRowCount(1)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
-                                dayOfLastYear.toString())),
+                                dayOfLastYear.getYear() < now.getYear() ? dayOfLastYear.toString() : null)),
                         "date")
                 .build();
         FuncCall funcCall6 = FuncCallBuilder.getBuilder()
@@ -656,7 +657,7 @@ public class CommonObjectsMother {
                         + "AND @country(country) AND @date(date)\n"
                         + "--end")
                 .addFuncParam("string", "","first_name", "starts with p", "string")
-                .addFuncParam("string", "","id", ">1", "string")
+                .addFuncParam("string", "","id", ">1", "int")
                 .addFuncParam("bool", "","bool", false, "")
                 .addFuncParam("string", "","email", "contains com", "string")
                 .addFuncParam("string", "","some_number", ">20", "double")

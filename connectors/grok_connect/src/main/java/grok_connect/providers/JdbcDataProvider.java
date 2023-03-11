@@ -204,45 +204,50 @@ public abstract class JdbcDataProvider extends DataProvider {
         while (matcher.find()) {
             String name = matcher.group().substring(1);
             queryBuffer.append(query, idx, matcher.start());
-            for (FuncParam param: dataQuery.getInputParams()) {
-                if (param.name.equals(name)) {
-                System.out.println(param.propertyType);
-                System.out.println(param.propertySubType);
-                    switch (param.propertyType) {
-                        case Types.DATE_TIME:
-                            queryBuffer.append(castParamValueToSqlDateTime(param));
-                            break;
-                        case Types.BOOL:
-                            queryBuffer.append(interpolateBool(param));
-                            break;
-                        case Types.STRING: //todo: support escaping
-                            queryBuffer.append(interpolateString(param));
-                            break;
-                        case Types.LIST: //todo: extract submethod
-                            if (param.propertySubType.equals(Types.STRING)) {
-                                @SuppressWarnings(value = "unchecked")
-                                ArrayList<String> value = ((ArrayList<String>) param.value);
-                                for (int i = 0; i < value.size(); i++) {
-                                    queryBuffer.append(String.format("'%s'", value.get(i)));
-                                    if (i < value.size() - 1)
-                                        queryBuffer.append(",");
-                                }
-                                //todo: implement other types
-                            } else {
-                                throw new NotImplementedException("Non-string lists are not implemented for manual param interpolation providers");
-                            }
-                            break;
-                        default:
-                            queryBuffer.append(param.value.toString());
-                    }
-                    break;
-                }
-            }
+            interpolateParameters(queryBuffer, dataQuery, name);
             idx = matcher.end();
         }
         queryBuffer.append(query.substring(idx));
         query = queryBuffer.toString();
         return query;
+    }
+
+    protected void interpolateParameters(StringBuilder queryBuffer, DataQuery dataQuery, String paramName) {
+        for (FuncParam param: dataQuery.getInputParams()) {
+            if (param.name.equals(paramName)) {
+                switch (param.propertyType) {
+                    case Types.DATE_TIME:
+                        queryBuffer.append(castParamValueToSqlDateTime(param));
+                        return;
+                    case Types.BOOL:
+                        queryBuffer.append(interpolateBool(param));
+                        return;
+                    case Types.STRING: //todo: support escaping
+                        queryBuffer.append(interpolateString(param));
+                        return;
+                    case Types.LIST: //todo: extract submethod
+                        if (param.propertySubType.equals(Types.STRING)) {
+                            @SuppressWarnings(value = "unchecked")
+                            ArrayList<String> value = ((ArrayList<String>) param.value);
+                            for (int i = 0; i < value.size(); i++) {
+                                queryBuffer.append(String.format("'%s'", value.get(i)));
+                                if (i < value.size() - 1)
+                                    queryBuffer.append(",");
+                            }
+                            return;
+                            //todo: implement other types
+                        } else {
+                            throw new NotImplementedException("Non-string lists are not implemented for manual param interpolation providers");
+                        }
+                    default:
+                        queryBuffer.append(param.value.toString());
+                }
+                return;
+            }
+        }
+        queryBuffer
+                .append("@")
+                .append(paramName); // there are no such FuncParam, so it means that it is not a param
     }
 
     protected String interpolateString(FuncParam param) {

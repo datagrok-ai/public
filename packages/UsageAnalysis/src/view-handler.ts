@@ -3,12 +3,12 @@ import * as ui from 'datagrok-api/ui';
 
 import {UaView} from './views/ua-view';
 import {UaToolbox} from './ua-toolbox';
-import {OverviewView} from './views/overview-view';
-import {EventsView} from './views/events-view';
+// import {OverviewView} from './views/overview-view';
+// import {EventsView} from './views/events-view';
 import {ErrorsView} from './views/errors-view';
-import {FunctionsView} from './views/function-errors-view';
-import {UsersView} from './views/users-view';
-import {DataView} from './views/data-view';
+// import {FunctionsView} from './views/function-errors-view';
+// import {UsersView} from './views/users-view';
+// import {DataView} from './views/data-view';
 import {PackagesView} from './views/packages-view';
 
 const APP_PREFIX: string = `/apps/UsageAnalysis/`;
@@ -36,8 +36,8 @@ export class ViewHandler {
     tabs.root.style.width = 'inherit';
     tabs.root.style.height = 'inherit';
 
-    const viewClasses: (typeof UaView)[] = [OverviewView, EventsView,
-      ErrorsView, FunctionsView, UsersView, DataView, PackagesView];
+    // [OverviewView, EventsView, FunctionsView, UsersView, DataView];
+    const viewClasses: (typeof UaView)[] = [PackagesView, ErrorsView];
 
     for (let i = 0; i < viewClasses.length; ++i) {
       tabs.addPane(viewClasses[i].viewName, () => {
@@ -71,7 +71,8 @@ export class ViewHandler {
       await toolbox.applyFilter();
     }
 
-    grok.shell.newView('Usage Analysis', [tabs]);
+    const UAView = grok.shell.newView('Usage Analysis', [tabs]);
+    UAView.toolbox = toolbox.rootAccordion.root;
   }
 
   getSearchParameters() : Map<string, string> {

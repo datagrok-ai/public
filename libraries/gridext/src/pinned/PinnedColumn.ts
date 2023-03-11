@@ -129,6 +129,7 @@ export class PinnedColumn {
   //private m_observerResize : ResizeObserver | null;
   private m_observerResizeGrid : ResizeObserver | null;
   private m_handlerKeyDown : rxjs.Subscription | null;
+  private m_handlerKeyUp : rxjs.Subscription | null;
   private m_handlerColsRemoved : rxjs.Subscription | null;
   private m_handlerColNameChanged : rxjs.Subscription | null;
   private m_handlerVScroll : rxjs.Subscription | null;
@@ -322,18 +323,31 @@ export class PinnedColumn {
 
 
     this.m_handlerKeyDown = rxjs.fromEvent<KeyboardEvent>(eCanvasThis, 'keydown').subscribe((e : KeyboardEvent) => {
+      //alert('down');
+      if(e.ctrlKey && e.code === 'KeyC') {
+        grid.overlay.tabIndex = -1;
+        grid.overlay.focus();
+      }
 
-      //alert('up');
       setTimeout(() =>{
         const ee = new KeyboardEvent(e.type, e);
-        try{grid.overlay.dispatchEvent(ee);}
+        try {grid.overlay.dispatchEvent(ee);}
         catch(ex) {
           //console.error(ex.message);
         }
       }, 1);
-
     });
 
+    this.m_handlerKeyUp = rxjs.fromEvent<KeyboardEvent>(eCanvasThis, 'keyup').subscribe((e : KeyboardEvent) => {
+      //alert('down');
+      setTimeout(() =>{
+        const ee = new KeyboardEvent(e.type, e);
+        try {grid.overlay.dispatchEvent(ee);}
+        catch(ex) {
+          //console.error(ex.message);
+        }
+      }, 1);
+    });
 
     this.m_handlerColorCoding = grok.events.onEvent('d4-grid-color-coding-changed').subscribe(() => {
       const g = eCanvasThis.getContext('2d');
@@ -458,6 +472,9 @@ export class PinnedColumn {
 
     this.m_handlerKeyDown?.unsubscribe();
     this.m_handlerKeyDown = null;
+
+    this.m_handlerKeyUp?.unsubscribe();
+    this.m_handlerKeyUp = null;
 
     this.m_handlerColsRemoved?.unsubscribe();
     this.m_handlerColsRemoved = null;
@@ -1204,9 +1221,12 @@ export class PinnedColumn {
     GridUtils.fillVisibleViewportRows(arRowsMinMax, grid);
     const nRowMin = arRowsMinMax[0];
     const nRowMax = arRowsMinMax[1];
-
     //console.log(nRowMin + " " + nRowMax);
     const nHRow = GridUtils.getGridRowHeight(grid);
+    const nVRowCountEst = Math.floor(grid.root.offsetHeight / nHRow);
+    if (nRowMax - nRowMin > nVRowCountEst +5)
+      return; //layout is loading, will be subsequent calls with right nRowMin, nRowMax
+
     nYOffset = nHCH;
     const nHRowGrid = nHRow*window.devicePixelRatio;
     let cellRH = null;

@@ -84,7 +84,7 @@ SELECT * FROM cars;
 
 --name: PostgresqlBigSerial
 --connection: PostgreSQLApiTests
---test: ApiTests:expectTable(PostgresqlBigSerial(), OpenFile('System:AppData/ApiTests/datasets/postgresql/tests/postgres_output_serial.d42'))
+--test: ApiTests:expectTable(PostgresqlBigSerial(), OpenFile('System:AppData/ApiTests/datasets/tests/postgresql/postgres_output_bigserial.d42'))
 SELECT * FROM cars_big;
 --end
 
