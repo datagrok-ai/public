@@ -39,7 +39,7 @@ function createSigmoidPoints(length: number, step: number, pointsPerX: number = 
   return {x: x, y: y, params: params};
 }
 
-function createDemoDataFrame(rowCount: number, chartsCount: number, chartsPerCell: number) {
+export function createDemoDataFrame(rowCount: number, chartsCount: number, chartsPerCell: number) {
   const df = DG.DataFrame.create(rowCount);
   const seriesLength = 15;
   const step = 0.5;
@@ -77,7 +77,7 @@ function createDemoDataFrame(rowCount: number, chartsCount: number, chartsPerCel
           parameters: j % 2 == 0 ? points.params : undefined,
           fitLineColor: color,
           pointColor: color,
-          showCurveConfidenceInterval: charts === 1 ? true: false,
+          showCurveConfidenceInterval: charts === 1,
           points: wu.count().take(seriesLength * pointsPerX)
             .map(function(i) { return {x: points.x[i], y: points.y[i]}; })
             .toArray()
@@ -90,8 +90,8 @@ function createDemoDataFrame(rowCount: number, chartsCount: number, chartsPerCel
   return df;
 }
 
-export async function curveFitDemo() {
+export function curveFitDemo() {
   const df = createDemoDataFrame(30, 5, 2);
   const grid = grok.shell.addTableView(df).grid;
-  grid.props.rowHeight = 150;
+  //grid.props.rowHeight = 150;
 }
