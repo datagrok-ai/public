@@ -30,6 +30,7 @@
   },
   "scripts": {
     "link": "npm link",
+    "link-all": "npm link @datagrok-libraries/utils @datagrok-libraries/chem-meta",
     "build-ts": "tsc && eslint ./src/*.js ./dg.js ./ui.js ./grok.js --fix",
     "build-js-api": "tsc && webpack",
     "build": "tsc && webpack",
