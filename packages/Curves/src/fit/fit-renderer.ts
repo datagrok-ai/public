@@ -6,7 +6,7 @@ import {GridColumn, Paint} from 'datagrok-api/dg';
 import {fitResultProperties} from "@datagrok-libraries/statistics/src/parameter-estimation/fit-curve";
 import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
 
-import {fitSeries, getChartData, getChartBounds, getFittedCurve, getConfidenceIntrevals, logarithmData,
+import {fitSeries, getChartData, getChartBounds, getFittedCurve, getConfidenceIntrevals,
   CONFIDENCE_INTERVAL_FILL_COLOR, CONFIDENCE_INTERVAL_STROKE_COLOR, IFitChartData,
   TAG_FIT_CHART_NAME, TAG_FIT_CHART_FORMAT} from './fit-data';
 import {convertXMLToIFitChartData} from './fit-parser';
@@ -54,11 +54,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     grok.shell.o = gridCell;
   }
 
-  render(g: CanvasRenderingContext2D,
-         x: number, y: number, w: number, h: number,
-         gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
-    if (w < 20 || h < 10) return;
-
+  renderCurves(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, data: IFitChartData) {
     g.save();
     g.beginPath();
     g.rect(x, y, w, h);
@@ -66,18 +62,6 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     const screenBounds = new DG.Rect(x, y, w, h).inflate(-6, -6);
     const [dataBox, xAxisBox, yAxisBox] = layoutChart(screenBounds);
-
-    let isXMLFitChart = false;
-    let data: IFitChartData = {};
-    if (gridCell.cell.column.getTag(TAG_FIT_CHART_NAME) === TAG_FIT_CHART_FORMAT) {
-      data = convertXMLToIFitChartData(gridCell.cell.value);
-      isXMLFitChart = true;
-    }
-    else
-      data = getChartData(gridCell);
-
-    if (data.chartOptions?.logX)
-      data = logarithmData(data);
 
     const dataBounds = getChartBounds(data);
     const transform = Transform.linear(dataBounds, dataBox);
@@ -92,9 +76,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         for (let i = 0, candleStart = null; i < series.points.length!; i++) {
           const p = series.points[i];
           const nextSame = i + 1 < series.points.length && series.points[i + 1].x == p.x;
-          if (!isXMLFitChart && !candleStart && nextSame)
+          if (!candleStart && nextSame)
             candleStart = i;
-          else if (!isXMLFitChart && candleStart != null && !nextSame) {
+          else if (candleStart != null && !nextSame) {
             let minY = series.points[candleStart].y;
             let maxY = minY;
             for (let j = candleStart; j < i; j++) {
@@ -203,6 +187,18 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     }
 
     g.restore();
+  }
+
+  render(g: CanvasRenderingContext2D,
+         x: number, y: number, w: number, h: number,
+         gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+    if (w < 20 || h < 10) return;
+
+    const data = gridCell.cell.column.getTag(TAG_FIT_CHART_NAME) === TAG_FIT_CHART_FORMAT
+      ? convertXMLToIFitChartData(gridCell.cell.value)
+      : getChartData(gridCell);
+
+    this.renderCurves(g, x, y, w, h, data);
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent) {
