@@ -105,6 +105,13 @@ export interface IFitChartData {
 }
 
 
+export class FitChartData implements IFitChartData {
+  chartOptions: IFitChartOptions = {};
+  seriesOptions: IFitSeriesOptions = {};  // Default series options. Individual series can override it.
+  series: IFitSeries[] = [];
+}
+
+
 /** Properties that describe {@link IFitChartOptions}. Useful for editing, initialization, transformations, etc. */
 export const fitChartDataProperties: Property[] = [
   // Style and zoom
@@ -156,7 +163,7 @@ function createFromProperties(properties: Property[]): any {
 /** Merges properties of the two objects by iterating over the specified {@link properties}
  * and assigning properties from {@link source} to {@link target} only when
  * the property is not defined in target and is defined in source. */
-function mergeProperties(properties: Property[], source: any, target: any) {
+export function mergeProperties(properties: Property[], source: any, target: any) {
   if (!source || !target)
     return;
 
@@ -195,15 +202,6 @@ export function getChartBounds(chartData: IFitChartData): DG.Rect {
   }
 }
 
-export function logarithmData(data: IFitChartData): IFitChartData {
-  for (let i = 0; i < data.series?.length!; i++) {
-    for (let j = 0; j < data.series![i].points.length!; j++) {
-      data.series![i].points[j].x = Math.log10(data.series![i].points[j].x);
-    }
-  }
-
-  return data;
-}
 
 //TODO: move to DG.Rect
 export function getDataBounds(points: IFitPoint[]): DG.Rect {
