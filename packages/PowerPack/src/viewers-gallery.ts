@@ -54,16 +54,35 @@ let jsViewers: any = {};
 let rootViewers = ui.divH([], 'viewer-gallery');
 let dlg: DG.Dialog;
 let search: InputBase;
+let viewersCount = ui.div([], 'vg-counter-label');
 
-export async function viewersDialog(view:DG.TableView, table:DataFrame) {
+export async function viewersDialog(current_view:DG.TableView, current_table:DataFrame) {
     getViewers(viewers);
     getJsViewers(jsViewers);
-    view = view;
-    table = table;
-    
-    dlg = ui.dialog('Viewer Gallery');
+
+    view = current_view;
+    table = current_table;
+
+    dlg = ui.dialog('Add Viewer');
+    $(dlg.root.lastChild).hide();
+
     search = ui.searchInput('','',(v:string)=>findViewer(v));
     search.input.setAttribute('tabindex','-1');
+    search.input.setAttribute('placeholder', 'Search by name, keywords, description, tag, or package');
+    
+    search.input.addEventListener('keydown', (e)=>{
+        if (e.key === "Escape") {
+            console.log('done')
+            e.preventDefault();
+            search.value = '';
+            search.fireChanged();
+        }
+    });
+
+    let searchIcon = ui.iconFA('search');
+    searchIcon.classList.add('vg-search-icon');
+
+    rootViewers.innerHTML = '';
 
     for (let i in viewers){
         rootViewers.append(renderCard(viewers, i));
@@ -71,11 +90,24 @@ export async function viewersDialog(view:DG.TableView, table:DataFrame) {
     for (let i in jsViewers){
         rootViewers.append(renderCard(jsViewers, i));
     }
-    dlg.add(ui.block([ui.div([search.input], 'd4-search-ba')], 'vg-controls grok-gallery-search-bar'));
-    dlg.add(ui.div(`Total viewers: ${getTotalViewer()}`, {style:{color:'var(--grey-4)'}}));
-    dlg.add(ui.splitH([rootViewers, ui.divV([ui.div('Relevant tags', {style:{color:'var(--grey-4)'}}),generateTags()], {style:{maxWidth:'200px'}})]))
+
+    let tags = ui.divV([
+        ui.label('Relative tags:'),
+        generateTags()
+    ], 'vg-tags');
+
+    let root = ui.divH([
+        ui.block([viewersCount, rootViewers], 'viewer-gallery-root'),
+        tags
+    ]);
+
+    dlg.add(ui.block([ui.div([searchIcon, search.input], 'd4-search-ba')], 'vg-controls grok-gallery-search-bar'));
+    dlg.add(root);
     dlg.showModal(true);
+    
+    getTotalViewer();
     setTabIndex(rootViewers);
+
 };
 
 function getViewers(viewers:{[v:string]:{[k: string]: any}}){
@@ -91,10 +123,10 @@ function getViewers(viewers:{[v:string]:{[k: string]: any}}){
                     type: 'viewer'
                 }
             });
-            if (group_comparisons.includes(value)){viewers[i]['group']='Comparisons'}
-            else if (group_correlations.includes(value)){viewers[i]['group']='Correlations'}
-            else if (group_relationships.includes(value)){viewers[i]['group']='Relationships'}
-            else if (group_trends.includes(value)){viewers[i]['group']='Trends'}
+            if (group_comparisons.includes(value)){viewers[i]['group']='Comparison'}
+            else if (group_correlations.includes(value)){viewers[i]['group']='Correlation'}
+            else if (group_relationships.includes(value)){viewers[i]['group']='Relationship'}
+            else if (group_trends.includes(value)){viewers[i]['group']='Trend'}
             else if (group_maps.includes(value)){viewers[i]['group']='Map'}
             else {viewers[i]['group']='Other'}
         }
@@ -122,7 +154,7 @@ function getJsViewers(jsViewers:{}){
 
 function findViewer (value:string) {
     rootViewers.innerHTML = '';
-    if (value != null) {
+    if (value != '') {
         for (const i in viewers){
             if (viewers[i].name.toLowerCase().includes(value.toLowerCase()) || viewers[i].group.toLowerCase().includes(value.toLowerCase())) {
                 rootViewers.append(renderCard(viewers, i));
@@ -141,12 +173,13 @@ function findViewer (value:string) {
         }
     } else {
         for (const i in viewers){
-            rootViewers.append(ui.div([viewers[i].name], {style:{padding:'6px', border:'1px solid var(--grey-2)'}}))
+            rootViewers.append(renderCard(viewers, i))
         }
         for (const i in jsViewers){
-            rootViewers.append(ui.div([viewers[i].name], {style:{padding:'6px', border:'1px solid var(--grey-2)'}}))
+            rootViewers.append(renderCard(jsViewers, i))
         }
     }
+    getTotalViewer();
     setTabIndex(rootViewers);
 }
 
@@ -178,7 +211,7 @@ function renderCard(viewers:{[v:string]:{[k: string]: any}}, index:string) {
     ], 'd4-item-card viewer-gallery vg-card-small');
 
     card.addEventListener('click', ()=>{
-        dockViewers(viewers[index].name, table, view);
+        dockViewers(viewers[index].name, view, table);
         dlg.close();
     });
 
@@ -221,9 +254,10 @@ function getTotalViewer(){
     for (let i = 0; i < rootViewers.childElementCount; i++){
         count++;
     }
-    return count;
+    viewersCount.innerHTML = '';
+    viewersCount.append(`Viewers: ${count}`);
 }
 
-function dockViewers(viewer: string, table: DG.DataFrame, view: DG.TableView) {
+function dockViewers(viewer: string, view: DG.TableView, table: DG.DataFrame) {
     view.addViewer(DG.Viewer.fromType(viewer, table));
 }
