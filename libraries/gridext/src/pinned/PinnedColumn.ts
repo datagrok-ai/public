@@ -232,11 +232,11 @@ export class PinnedColumn {
       colGrid.settings.idxPinned = dart.m_arPinnedCols.length - 1;
     }
 
-    grid.canvas.style.left = (grid.canvas.offsetLeft + nW).toString() + "px";
-    grid.overlay.style.left= (grid.overlay.offsetLeft + nW).toString() + "px";
+    grid.canvas.style.left = (GridUtils.getLeft(grid.canvas) + nW).toString() + "px"; // (grid.canvas.offsetLeft + nW).toString() + "px";
+    grid.overlay.style.left= (GridUtils.getLeft(grid.overlay) + nW).toString() + "px"; //(grid.overlay.offsetLeft + nW).toString() + "px";
 
-    grid.canvas.style.width = (grid.canvas.offsetWidth - nW).toString() + "px";
-    grid.overlay.style.width= (grid.overlay.offsetWidth - nW).toString() + "px";
+    grid.canvas.style.width =  (GridUtils.getWidth(grid.canvas) - nW).toString() + "px";//(grid.canvas.offsetWidth - nW).toString() + "px";
+    grid.overlay.style.width=  (GridUtils.getWidth(grid.overlay) - nW).toString() + "px"; //(grid.overlay.offsetWidth - nW).toString() + "px";
 
     const nHeight = grid.canvas.height;//canvas pixel height
     const eCanvasThis = ui.canvas(nW*window.devicePixelRatio, nHeight);
@@ -293,7 +293,7 @@ export class PinnedColumn {
         return;
 
       if(headerThis.m_fDevicePixelRatio !== window.devicePixelRatio || grid.canvas.height !== eCanvasThis.height) {
-        const nWCanvas = eCanvasThis.offsetWidth;
+        const nWCanvas = GridUtils.getWidth(eCanvasThis); //eCanvasThis.offsetWidth;
 
         eCanvasThis.width = nWCanvas*window.devicePixelRatio;
         eCanvasThis.height = grid.canvas.height;
@@ -315,12 +315,15 @@ export class PinnedColumn {
       //headerThis.m_root.height = grid.root.offsetHeight;
       const g = eCanvasThis.getContext('2d');
       for (let entry of entries) {
-        setTimeout(()=> {headerThis.paint(g, grid);}, 100);
+        setTimeout(()=> {
+          if (GridUtils.isRowHeader(colGrid) && colGrid.visible)
+            colGrid.visible = false;
+          headerThis.paint(g, grid);
+        }, 100);
       }
     });
 
     this.m_observerResizeGrid?.observe(grid.canvas); //
-
 
     this.m_handlerKeyDown = rxjs.fromEvent<KeyboardEvent>(eCanvasThis, 'keydown').subscribe((e : KeyboardEvent) => {
       //alert('down');
@@ -446,7 +449,8 @@ export class PinnedColumn {
   }
 
   getWidth() : number {
-    return this.m_root === null ? -1 : this.m_root.offsetWidth;
+    //return this.m_root === null ? -1 : this.m_root.offsetWidth;
+    return this.m_root === null ? -1 : GridUtils.getWidth(this.m_root);
   }
 
   getRoot() : HTMLCanvasElement | null {
