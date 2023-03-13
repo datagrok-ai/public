@@ -37,10 +37,11 @@ export function _ChordViewer() {
   return new ChordViewer();
 }
 
-//name: GlobeViewer
+//name: Globe
 //description: Creates a globe viewer
 //tags: viewer
 //output: viewer result
+//meta.icon: icons/globe-viewer.svg
 export function _GlobeViewer() {
   return new GlobeViewer();
 }
