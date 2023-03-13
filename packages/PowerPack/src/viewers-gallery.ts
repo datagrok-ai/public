@@ -198,6 +198,7 @@ function renderCard(viewers:{[v:string]:{[k: string]: any}}, index:string) {
     if (viewers[index].type == 'js-viewer'){
         if (viewers[index].icon != 'svg-project'){
             icon = ui.iconImage('',viewers[index].icon);
+            icon.classList.add('svg-icon');
         } else {
             icon = ui.iconFA('');
             icon.className = 'grok-icon svg-icon ' + viewers[index].icon;
