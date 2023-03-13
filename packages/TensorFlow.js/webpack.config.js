@@ -8,7 +8,7 @@ module.exports = {
     nn: './src/nn.js',
     'train.worker': './src/train.worker.js'
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

@@ -43,7 +43,7 @@ module.exports = {
   plugins: [
     new MiniCssExtractPlugin({filename: 'molstar.css'}),
   ],
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

@@ -11,7 +11,7 @@ module.exports = {
       import: './src/package-test.ts',
     },
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   devServer: {
     contentBase: './dist',
   },
