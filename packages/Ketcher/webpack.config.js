@@ -21,7 +21,7 @@ module.exports = {
       { test: /\.(jpe?g|gif|png|svg|sdf)$/, loader: "file-loader" }
     ],
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
