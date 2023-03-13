@@ -2,6 +2,7 @@ package grok_connect.providers;
 
 import java.io.*;
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.math.*;
@@ -545,9 +546,11 @@ public abstract class JdbcDataProvider extends DataProvider {
                             else if (value instanceof oracle.sql.TIMESTAMPTZ) {
                                 OffsetDateTime offsetDateTime = timestamptzToOffsetDateTime((TIMESTAMPTZ) value);
                                 time = java.util.Date.from(offsetDateTime.toInstant());
-                            } else if(value instanceof microsoft.sql.DateTimeOffset) {
+                            } else if (value instanceof microsoft.sql.DateTimeOffset) {
                                 time = Date.from(((DateTimeOffset) value).getOffsetDateTime().toInstant());
-                            }else {
+                            } else if (value instanceof LocalDateTime) {
+                                time = java.sql.Timestamp.valueOf((LocalDateTime) value);
+                            } else {
                                 time = ((java.util.Date) value);
                             }
                             columns.get(c - 1).add((time == null) ? null : time.getTime() * 1000.0);
@@ -869,7 +872,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     private static boolean isBoolean(int type, String typeName, int precision) {
         return (type == java.sql.Types.BOOLEAN) ||
-                typeName.equalsIgnoreCase("bool");
+                typeName.equalsIgnoreCase("bool") || (type == java.sql.Types.BIT && precision == 1);
     }
 
     private static boolean isString(int type, String typeName) {
