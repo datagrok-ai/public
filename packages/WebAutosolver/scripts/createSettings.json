@@ -1,5 +1,5 @@
 {
-    "ivpFile": "FAE.txt",
+    "ivpFile": "Next.txt",
     "folder": "../wasm",
     "emscripten": "emscripten.h",
     "eigen": "../../../Eigen/Eigen/Dense",

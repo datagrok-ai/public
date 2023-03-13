@@ -362,6 +362,9 @@ def getCommand(settings, functionsData):
     # add exported runtime methods
     command += ' -s EXPORTED_RUNTIME_METHODS=["cwrap","ccall"]'  # also, "ccall" can be added 
 
+    # the following is required when running in webworker
+    command += ' -sENVIRONMENT=web,worker'
+
     return command
    
 def saveCommand(command, nameOfFile):

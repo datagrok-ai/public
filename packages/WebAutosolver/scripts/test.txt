@@ -10,5 +10,5 @@
   step = 0.1
 
 #initial values:
-  x = 0.0 (fhfhf)
-  y = 1.0 (adasda)
+  x = 0.0 (some units)
+  y = 1.0 (other units)
