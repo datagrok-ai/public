@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import '../css/viwes-gallery.css';
+//import '../css/viwes-gallery.css';
 import { DataFrame, InputBase, TableView, View } from 'datagrok-api/dg';
 
 const table = grok.shell.t;
@@ -48,7 +48,7 @@ const group_maps = [
 
 let viewers: any = {};
 let jsViewers: any = {};
-let root = ui.div([], 'viewer-gallery-root');
+let rootViewers = ui.divH([], 'viewer-gallery');
 let dlg: DG.Dialog;
 let search: InputBase;
 
@@ -61,16 +61,16 @@ export async function viewersDialog() {
     search.input.setAttribute('tabindex','-1');
 
     for (let i in viewers){
-        root.append(renderCard(viewers, i));
+        rootViewers.append(renderCard(viewers, i));
     }
     for (let i in jsViewers){
-        root.append(renderCard(jsViewers, i));
+        rootViewers.append(renderCard(jsViewers, i));
     }
-    dlg.add(search);
-    dlg.add(generateTags())
-    dlg.add(root);
+    dlg.add(ui.block([ui.div([search.input], 'd4-search-ba')], 'vg-controls grok-gallery-search-bar'));
+    dlg.add(ui.div(`Total viewers: ${getTotalViewer()}`, {style:{color:'var(--grey-4)'}}));
+    dlg.add(ui.splitH([rootViewers, ui.divV([ui.div('Relevant tags', {style:{color:'var(--grey-4)'}}),generateTags()], {style:{maxWidth:'200px'}})]))
     dlg.showModal(true);
-    setTabIndex(root);
+    setTabIndex(rootViewers);
 };
 
 function getViewers(viewers:{}){
@@ -118,33 +118,33 @@ function getJsViewers(jsViewers:{}){
 }
 
 function findViewer (value:string) {
-    root.innerHTML = '';
+    rootViewers.innerHTML = '';
     if (value != null) {
         for (const i in viewers){
             if (viewers[i].name.toLowerCase().includes(value.toLowerCase()) || viewers[i].group.toLowerCase().includes(value.toLowerCase())) {
-                root.append(renderCard(viewers, i));
+                rootViewers.append(renderCard(viewers, i));
             }
         }
         for (const i in jsViewers){
             if (jsViewers[i].name.toLowerCase().includes(value.toLowerCase())) {
-                root.append(renderCard(jsViewers, i));
+                rootViewers.append(renderCard(jsViewers, i));
             } else if (jsViewers[i].group.toLowerCase().includes(value.toLowerCase())) {
-                root.append(renderCard(jsViewers, i));
+                rootViewers.append(renderCard(jsViewers, i));
             } else if (jsViewers[i].description.toLowerCase().includes(value.toLowerCase())) {
-                root.append(renderCard(jsViewers, i));
+                rootViewers.append(renderCard(jsViewers, i));
             } else if (jsViewers[i].keywords.toLowerCase().includes(value.toLowerCase()))    {
-                root.append(renderCard(jsViewers, i));
+                rootViewers.append(renderCard(jsViewers, i));
             }
         }
     } else {
         for (const i in viewers){
-            root.append(ui.div([viewers[i].name], {style:{padding:'6px', border:'1px solid var(--grey-2)'}}))
+            rootViewers.append(ui.div([viewers[i].name], {style:{padding:'6px', border:'1px solid var(--grey-2)'}}))
         }
         for (const i in jsViewers){
-            root.append(ui.div([viewers[i].name], {style:{padding:'6px', border:'1px solid var(--grey-2)'}}))
+            rootViewers.append(ui.div([viewers[i].name], {style:{padding:'6px', border:'1px solid var(--grey-2)'}}))
         }
     }
-    setTabIndex(root);
+    setTabIndex(rootViewers);
 }
 
 function setTabIndex(root: HTMLDivElement) {
@@ -169,13 +169,10 @@ function renderCard(viewers:{}, index:string) {
         }
     }
     let name = ui.label(viewers[index].name);
-    let card = ui.divH([
-        icon, name  
-    ]);
-
-    card.style.margin = '5px';
-    card.style.padding = '5px';
-    card.style.gap = '5px';
+    name.classList.add('card-label');
+    let card = ui.div([
+        ui.divH([icon, name])  
+    ], 'd4-item-card viewer-gallery vg-card-small');
 
     card.addEventListener('click', ()=>{
         dockViewers(viewers[index].name, table, view);
@@ -214,6 +211,14 @@ function generateTags(){
     }
 
     return root;
+}
+
+function getTotalViewer(){
+    let count = 0;
+    for (let i = 0; i < rootViewers.childElementCount; i++){
+        count++;
+    }
+    return count;
 }
 
 function dockViewers(viewer: string, table: DG.DataFrame, view: DG.TableView) {

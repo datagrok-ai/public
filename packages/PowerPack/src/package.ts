@@ -17,8 +17,8 @@ import { functionSearch, pdbSearch, pubChemSearch, scriptsSearch, usersSearch, w
 import { KpiWidget } from "./widgets/kpi-widget";
 import { HtmlWidget } from "./widgets/html-widget";
 import { PowerPackSettingsEditor } from "./settings-editor";
-import { viewersGallery } from "./viewers-gallery";
-import { VIEWER } from 'datagrok-api/dg';
+import { viewersDialog } from "./viewers-gallery";
+import { TableView, VIEWER } from 'datagrok-api/dg';
 
 export let _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -173,13 +173,15 @@ export async function powerPackInit() {
 //description: ViewerGallery
 //tags: autostart
 export function _viewerGallery(): void {
-  //grok.shell.topMenu.find('Add').separator().item('Add viewer...', ()=>viewersGallery())
+  //const table = grok.shell.t;
+//const view = grok.shell.tableView(table.name);
+  //grok.shell.topMenu.find('Add').separator().item('Add viewer...', ()=>viewersDialog())
   grok.events.onViewAdded.subscribe((view) => {
     if (view.type == 'TableView') {
       let panel = view.getRibbonPanels();
       panel[0][1].remove();
 
-      let icon = ui.iconFA('', () => { viewersGallery() }, 'Add viewer');
+      let icon = ui.iconFA('', () => { viewersDialog(view as TableView, (view as TableView).table!) }, 'Add viewer');
       icon.className = 'grok-icon svg-icon svg-add-viewer';
 
       let btn = ui.div([icon]);
