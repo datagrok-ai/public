@@ -10,6 +10,7 @@ import {TestManager} from './package-testing';
 import {functionSignatureEditor} from './function-signature-editor';
 import {addToJSContextCommand, getMinifiedClassNameMap, hasSupportedType, _renderDevPanel} from './dev-panel';
 import {_testDetectorsDialog, _testDetectorsStandard} from './utils/test-detectors';
+import { viewersDialog } from "./viewers-gallery";
 
 export const _package = new DG.Package();
 let minifiedClassNameMap = {};
@@ -137,4 +138,11 @@ export async function testFunctions(scope: object) {
   const resultColumn = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'result', results);
   const timeColumn = DG.Column.fromList(DG.COLUMN_TYPE.INT, 'ms', testTime);
   return DG.DataFrame.fromColumns([functionColumn, resultColumn, timeColumn]);
+}
+
+//name: Viewer Gallery
+//description: ViewerGallery
+//top-menu: Add | Viewer Gallery...
+export function viewerGallery() {
+  return viewersDialog();
 }
