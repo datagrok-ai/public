@@ -1,4 +1,4 @@
-.ui-drop-down-root { 
+.ui-drop-down-root {
     position: relative;
     border-radius: 3px;
     display: inline-flex;
@@ -7,29 +7,47 @@
     padding: 0;
     align-self: flex-start;
     cursor: pointer;
-    margin: 8px 0;
-}
-.ui-drop-down-root:hover {
-    background-color: var(--grey-1);
+    min-height: 24px;
 }
 .ui-drop-down-root::after {
-    content: ' ';
-    margin: 0 4px;
-    border-style: solid;
-    border-width: 4px 4px 0 4px;
-    border-color: #40607f transparent transparent transparent;
-    rotate:0deg;
-    transition: rotate 200ms ease-in-out;
+    content: "";
+    display: block;
+    box-sizing: border-box;
+    width: 6px;
+    height: 6px;
+    margin: 0 6px;
+    margin-bottom: 2px;
+    border-bottom: 1px solid;
+    border-right: 1px solid;
+    transform: rotate(45deg);
+    transition: transform 200ms ease-in-out;
+    color: var(--grey-5);
 }
 .ui-drop-down-root.ui-drop-down-expanded::after {
-    rotate:180deg;
-    transition: rotate 200ms ease-in-out;
-}
-i.ui-drop-down-item {
-    font-size: 16px;
+    margin-bottom: -2px;
+    transform: rotate(225deg);
+    transition: transform 200ms ease-in-out;
 }
 .ui-drop-down-item {
-    margin-left:4px;
+    padding-left: 2px;
+}
+
+.ui-drop-down-item > i{
+    font-size: 16px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--steel-5);
+}
+
+.ui-drop-down-item-label {
+    margin:0 2px;
+}
+
+.ui-drop-down-item {
+    font-size: 13px;
     height: 24px;
     display: flex;
     align-items: center;
@@ -37,25 +55,11 @@ i.ui-drop-down-item {
 }
 
 .ui-drop-down-root.ui-drop-down-expanded {
-    box-shadow: 0px 0px 2px #40607f;
     z-index: 4000;
     border-radius: 0;
-    background-color: #ECEFF2;
-    padding-left: 2px;
+    background-color: var(--grey-1);
     padding-top: 0;
-    flex-grow: 1;
-    margin-left: -2px;
-}
-
-.ui-drop-down-root.ui-drop-down-expanded:before {
-    content: ' ';
-    bottom: -1px;
-    position: absolute;
-    width: 100%;
-    height: 5px;
-    left: 0;
-    z-index: 4002;
-    background-color: #ECEFF2;
+    border-radius: 3px;
 }
 
 .ui-drop-down-root > .ui-drop-down-menu-fixed {
@@ -66,15 +70,19 @@ i.ui-drop-down-item {
 
 .ui-drop-down-root .ui-drop-down-menu {
     position: absolute;
-    left: -2px;
-    top: 24px;
-    box-shadow: 0px 0px 2px #40607f;
+    left: 0px;
+    top: 26px;
+    border-top: 1px solid var(--grey-1);
+    box-shadow: 0px 1px 3px var(--grey-3);
     z-index: 4000;
-    background: #ECEFF2;
-    padding-top: 3px;
-    min-width: 110px;
+    background: white;
+    min-width: 44px;
+    width: max-content;
     display: flex;
     flex-direction: column;
+    justify-content: left;
+    text-align: left;
+    border-radius: 3px;
 }
 
 .ui-drop-down-root .ui-drop-down-menu .ui-drop-down-menu-list {
@@ -85,22 +93,47 @@ i.ui-drop-down-item {
     cursor: pointer;
 }
 
-.ui-drop-down-root .ui-drop-down-menu .ui-drop-down-menu-list-item-item {
-    border-bottom: 1px solid #D7DFE7;
-    min-height: 24px;
+.ui-drop-down-root .ui-drop-down-menu .ui-drop-down-menu-list-item {
+    min-height: 36px;
     display: flex;
     align-items: center;
-    padding: 4px 12px 4px 4px;
+    padding: 4px;
     box-sizing: border-box;
+    color: var(--grey-6);
 }
 
 .ui-drop-down-root .ui-drop-down-menu .ui-drop-down-menu-list-item {
     height: 24px;
     display: flex;
     align-items: center;
-    padding: 0px 8px;
+}
+
+.ui-drop-down-root .ui-drop-down-menu .ui-drop-down-menu-list-item {
+    position: relative;
+    color: var(--grey-6);
+    width: 100%;
+}
+
+.ui-drop-down-root .ui-drop-down-menu .ui-drop-down-menu-list-item > *{
+    width: 100%;
+    align-items: center;
+}
+
+.ui-drop-down-root .ui-drop-down-menu .ui-drop-down-menu-list-item i{
+    margin: 0 6px;
+    font-size: 16px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--steel-5);
+}
+.ui-drop-down-root .ui-drop-down-menu .ui-drop-down-menu-list-item div{
+    margin: 0 6px;
 }
 
 .ui-drop-down-root .ui-drop-down-menu .ui-drop-down-menu-list-item:hover {
-    background: #D7DFE7;
+    background: #f9fafb;
+    color: var(--grey-6)!important;
 }
