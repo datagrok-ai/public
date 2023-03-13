@@ -19,7 +19,7 @@ export async function init() {
   await initFAE();
 }
 
-//name: solveFAE
+//name: solveFAEold
 //input: double initial = 0.0 {caption: initial; category: time, minutes}
 //input: double final = 1000.0 {caption: final; category: time, minutes}
 //input: double step = 0.1 {caption: step; category: time, minutes}
@@ -46,7 +46,7 @@ export async function init() {
 //input: double _PVal = 1.0 {units: atma; caption: P; category: parameters}
 //output: dataframe dfSolution {caption: Solution; viewer: Line chart(x: "t, time (minutes)", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
 //editor: Compute:RichFunctionViewEditor
-export async function solveFAE(initial, final, step,
+export async function solveFAEold(initial, final, step,
   _FFoxInitial, _KKoxInitial, _FFredInitial, _KKredInitial, _FfreeInitial, _KfreeInitial, _FKredInitial, _FKoxInitial, _MEAthiolInitial, _CO2Initial, _yO2PInitial, _CystamineInitial, _VLInitial, 
   _qinVal, _percentO2saturationVal, _yO2inVal, _pKa2MEAVal, _HVal, _TVal, _RVal, _PVal)
 {
