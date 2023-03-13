@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.24",
+  "version": "3.2.25",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -2282,6 +2282,19 @@
         "directory": "packages/MolecularLiabilityBrowser"
       },
       "category": "Bioinformatics"
+    },
+    "fae": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "latest"
+        }
+      },
+      "description": "Bispecifics FAE simulation V2.0",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public",
+        "directory": "packages/FAE"
+      }
     }
   }
 }
