@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.26",
+  "version": "3.2.27",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -706,9 +706,12 @@
         },
         "1.1.5": {
           "datagrok-api": "^1.9.1"
+        },
+        "1.1.6": {
+          "datagrok-api": "^1.9.1"
         }
       },
-      "description": "",
+      "description": "Integration with the PubChem web service.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -1791,9 +1794,12 @@
         },
         "2.1.11": {
           "datagrok-api": "^1.8.2"
+        },
+        "2.3.9": {
+          "datagrok-api": "^1.13.3"
         }
       },
-      "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
+      "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
