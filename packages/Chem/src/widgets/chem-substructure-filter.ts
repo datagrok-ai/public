@@ -68,7 +68,8 @@ export class SubstructureFilter extends DG.Filter {
     } }));
     this.subs.push(grok.events.onCustomEvent(FILTER_SYNC_EVENT).subscribe((state: ISubstructureFilterState) => {
       if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
-        this.syncEvent = true;
+        if (this.sketcher.sketcher?.isInitialized) //setting syncEvent to true only if base sketcher is initialized. If base sketcher is initialized, it will fire onChange event
+          this.syncEvent = true;
         this.bitset = state.bitset;
         this.sketcher.setMolFile(state.molblock);
         this.updateExternalSketcher();
