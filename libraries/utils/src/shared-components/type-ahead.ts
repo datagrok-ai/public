@@ -26,5 +26,11 @@ export namespace u2 {
       this.root.getElementsByClassName('tt-list')[0].className = 'ui-input-list';
       this.root.getElementsByClassName('tt-input')[0].className = 'ui-input-editor';
     }
+
+    onAutocomplete(callback: Function) {
+      this.input.addEventListener('change', () => {
+        callback();
+      }, false);
+    }
   }
 }
