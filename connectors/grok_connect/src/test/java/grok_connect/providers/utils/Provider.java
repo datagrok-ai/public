@@ -1,10 +1,7 @@
 package grok_connect.providers.utils;
 
-import org.testcontainers.containers.BindMode;
-import org.testcontainers.containers.JdbcDatabaseContainer;
-import org.testcontainers.containers.MSSQLServerContainer;
-import org.testcontainers.containers.OracleContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.*;
+
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Properties;
@@ -13,6 +10,21 @@ import java.util.Properties;
  * Enum that contains all necessary data related to specific provider and it's container
  */
 public enum Provider {
+    MYSQL("src/test/resources/properties/mysql.properties") {
+        @Override
+        protected JdbcDatabaseContainer<?> newJdbcContainer() {
+            if (this.container == null) {
+                container = new MySQLContainer<>(properties.get("image").toString())
+                        .withDatabaseName(properties.get("database").toString())
+                        .withUsername(properties.get("user").toString())
+                        .withPassword(properties.get("password").toString())
+                        .withEnv("MYSQL_ROOT_PASSWORD", "datagrok")
+                        .withInitScript(properties.get("initScript").toString());
+                container.start();
+            }
+            return container;
+        }
+    },
     ATHENA("src/test/resources/properties/athena.properties"),
     MSSQL("src/test/resources/properties/mssql.properties") {
         @Override
