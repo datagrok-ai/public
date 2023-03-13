@@ -1,4 +1,5 @@
 import * as ui from 'datagrok-api/ui';
+
 import '../../css/drop-down.css';
 
 export class DropDown {
@@ -7,7 +8,7 @@ export class DropDown {
   private _dropDownElement: HTMLDivElement;
 
   private _isMouseOverElement: boolean;
-  private _expanded: boolean;
+  isExpanded: boolean;
 
   root: HTMLDivElement;
   private _rootElement: HTMLElement;
@@ -19,7 +20,7 @@ export class DropDown {
     this._dropDownElement = document.createElement('div');
 
     this._isMouseOverElement = false;
-    this._expanded = false;
+    this.isExpanded = false;
 
     this._rootElement = document.createElement('div');
     this.root = document.createElement('div');
@@ -38,7 +39,7 @@ export class DropDown {
       if (e.button !== 0) return;
       if (this._isMouseOverElement) return;
 
-      this._setExpandedState(this._expanded);
+      this._setExpandedState(this.isExpanded);
     });
 
     this._dropDownElement.addEventListener('mouseover', () => {
@@ -50,9 +51,9 @@ export class DropDown {
     }, false);
   }
 
-  private _setExpandedState(expanded: boolean) {
-    this._expanded = !expanded;
-    if (expanded) {
+  private _setExpandedState(isExpanded: boolean) {
+    this.isExpanded = !isExpanded;
+    if (isExpanded) {
       this.root.classList.remove('ui-drop-down-expanded');
       this._dropDownElement.style.visibility = 'hidden';
       return;
@@ -78,5 +79,20 @@ export class DropDown {
 
     this.root = ui.div([this._rootElement, dropDown]);
     this.root.className = 'ui-drop-down-root';
+  }
+
+
+  onExpand(callback: Function) {
+    this.root.addEventListener('click', () => {
+      if (!this._isMouseOverElement)
+        callback();
+    }, false);
+  }
+
+  onElementClick(callback: Function) {
+    this._dropDownElement.addEventListener('click', (event) => {
+      event.stopImmediatePropagation();
+      callback();
+    }, false);
   }
 }
