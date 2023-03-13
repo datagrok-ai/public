@@ -6,11 +6,16 @@ import {_convertMolNotation} from '../utils/convert-notation-utils';
 import { structure3d } from './structure3d';
 import { identifiers } from './identifiers';
 
-const STRUCT_2D_TAB = '2D';
-const STRUCT_3D_TAB = '3D';
 const WIDTH = 200;
-const HEIGHT = 200;
-let lastSelectedTab = STRUCT_2D_TAB;
+const HEIGHT = 100;
+const WIDTH3D = 300;
+const HEIGHT3D = 300;
+const MORE_ICON_FONT_WEIGHT = '500';
+const NOTATIONS: {[key: string]: DG.chem.Notation} = {
+  'Smiles': DG.chem.Notation.Smiles, 
+  'Molfile V2000': DG.chem.Notation.MolBlock, 
+  'Molfile V3000': DG.chem.Notation.V3KMolBlock, 
+  'Smarts': DG.chem.Notation.Smarts}
 
 export function moleculeOverviewWidget(molecule: string): DG.Widget {
   const rdKitModule = getRdKitModule();
@@ -21,35 +26,34 @@ export function moleculeOverviewWidget(molecule: string): DG.Widget {
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
 
-  let tabControl = ui.tabControl({
-    [STRUCT_2D_TAB]: () => {
-      return ui.div([
-        renderMolecule(molecule, { renderer: 'RDKit', width: WIDTH, height: HEIGHT }), 
-        copyAsMolfileIcon(molecule, molblock!)],
-        {style: {position: 'relative'}});
-    },
-    [STRUCT_3D_TAB]: () => {
-      return ui.div([ui.wait(async () => await structure3d(molecule, WIDTH, HEIGHT)), copyAsMolfileIcon(molecule, molblock!)], {style: {position: 'relative'}});
-    }
-  });
-  tabControl.currentPane = tabControl.getPane(lastSelectedTab);
-  tabControl.root.style.height = `${HEIGHT + 40}px`
-
-  tabControl.onTabChanged.subscribe((_) => {
-    lastSelectedTab = tabControl.currentPane.name;
-  });
+  const acc = ui.accordion('chem-molecule-overview');
+  acc.addPane(`Identifiers`, () => ui.wait(async () => await identifiers(molblock)));
+  acc.addPane(`3D Structure`, () => ui.wait(async () => await structure3d(molecule, WIDTH3D, HEIGHT3D)));
+  acc.addPane(`Copy As`, () => getFormats(molecule));
 
   return new DG.Widget(ui.divV([
-    tabControl.root,
-    ui.wait(async () => await identifiers(molblock))
+    get2dMolecule(molecule),
+    acc.root
   ]));
 }
 
-function copyAsMolfileIcon(molecule: string, molblock: string): HTMLButtonElement {
-  const copyButton = ui.button(ui.icons.copy(()=>{}, 'Copy as molfile'), ()=>{
-    navigator.clipboard.writeText(DG.chem.isMolBlock(molecule) ? molecule : molblock);
-  });
-  copyButton.classList.add('copy-as-molfile-icon');
-  copyButton.style.left = `${WIDTH}px`;
-  return copyButton;
+function get2dMolecule(molecule: string): HTMLElement{
+  const molecule2d = renderMolecule(molecule, { renderer: 'RDKit', width: WIDTH, height: HEIGHT });
+  const moreIcon = molecule2d.querySelector('.chem-mol-view-icon.pep-more-icon') as HTMLElement;
+  moreIcon.style.left = `${WIDTH}px`;
+  moreIcon.style.fontWeight = MORE_ICON_FONT_WEIGHT;
+  moreIcon.classList.remove('pep-more-icon');
+  return molecule2d;
+}
+
+function getFormats(molecule: string): HTMLDivElement {
+  const convertedMolecule = _convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, getRdKitModule());
+  const moleculeField = ui.textInput('', convertedMolecule);
+  const formatChoices = ui.choiceInput('', Object.keys(NOTATIONS)[0],  Object.keys(NOTATIONS), () => {
+    moleculeField.value = _convertMolNotation(molecule, DG.chem.Notation.Unknown, NOTATIONS[formatChoices.value!], getRdKitModule());
+  })
+  return ui.inputs([
+    formatChoices,
+    moleculeField
+  ]);
 }

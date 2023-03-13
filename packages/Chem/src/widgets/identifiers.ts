@@ -154,28 +154,12 @@ export async function identifiers(molfile: string): Promise<HTMLElement> {
     console.warn(e);
   }
 
-  const identifiersDiv = ui.div();
-  const mainIdentifiers = createMainIdentifiersMap(molfile, inchi, inchiKey, idMap);
-  identifiersDiv.append(ui.tableFromMap(mainIdentifiers));
-  
-  if (idMap === null)
-    identifiersDiv.append(ui.divText('Not found in UniChem'));
-  else {
-    const otherIdentifiers: {[k: string]: any} = {};
-    for (const [source, identifier] of Object.entries(idMap))
-    otherIdentifiers[source] = ui.link(identifier.id, () => window.open(identifier.link));
-    const acc = ui.accordion();
-    acc.addPane(`Other identifiers`, 
-      () => Object.keys(otherIdentifiers).length === 0 ? 
-        ui.divText('No otehr identifiers found') :  ui.tableFromMap(otherIdentifiers));
-    identifiersDiv.append(acc.root);
-  }
-
-  return identifiersDiv;
+  const mainIdentifiers = createIdentifiersMap(molfile, inchi, inchiKey, idMap);
+  return ui.tableFromMap(mainIdentifiers);
 }
 
 
-function createMainIdentifiersMap(molfile: string, inchi: string, inchiKey: string, idMap: {[k: string]: any} | null): {[k: string]: any} {
+function createIdentifiersMap(molfile: string, inchi: string, inchiKey: string, idMap: {[k: string]: any} | null): {[k: string]: any} {
   const map: {[k: string]: any} = {};
   const smiles =  _convertMolNotation(molfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles, getRdKitModule());
   map['Name'] = ui.wait(async () => ui.divText(await getIUPACName(smiles)));
@@ -184,16 +168,18 @@ function createMainIdentifiersMap(molfile: string, inchi: string, inchiKey: stri
   map['Inchi key'] = inchiKey;
   extractMainIdentifier(CHEMBL, map, idMap);
   extractMainIdentifier(PUBCHEM, map, idMap);
+  if (idMap) {
+    for (const [source, identifier] of Object.entries(idMap))
+      map[source] = ui.link(identifier.id, () => window.open(identifier.link));
+  }
   function extractMainIdentifier(source: string, map: {[k: string]: any}, idMap: {[k: string]: any} | null) {
-    if (idMap) {
-      const identifier = idMap[source.toLowerCase()];
+      const identifier = idMap ? idMap[source.toLowerCase()] : null;
       if (identifier) {
         map[source] = ui.link(identifier.id, () => window.open(identifier.link));
-        delete idMap[source.toLowerCase()];
+        delete idMap![source.toLowerCase()];
       } else {
         map[source] = '-';
       }
     }
-  }
   return map;
 }

@@ -676,7 +676,7 @@ export async function structuralAlerts(smiles: string): Promise<DG.Widget> {
   return smiles ? structuralAlertsWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Molecule Overview
+//name: Structure
 //description: molecule overview including 2D/3D molecule representation and identifiers
 //tags: panel, chem, widgets
 //input: string molecule { semType: Molecule }
