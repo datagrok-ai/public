@@ -50,6 +50,7 @@ export function _GlobeViewer() {
 //description: Creates a group analysis viewer
 //tags: viewer
 //output: viewer result
+//meta.icon: icons/groupanalysis-viewer.svg
 export function _GroupAnalysisViewer() {
   return new GroupAnalysisViewer();
 }
