@@ -8,12 +8,19 @@ import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getRdKitModule} from '../package';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 
-category('converters', () => {
+// import {_package} from '../package-test';
+import {loadFileAsText} from './utils';
+
+category('converters', async () => {
+  let molfileV2K: string;
+  let molfileV3K: string;
   before(async () => { // wait until RdKit module gets initialized
     if (!chemCommonRdKit.moduleInitialized) {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
       await chemCommonRdKit.initRdKitModuleLocal();
     }
+    molfileV2K = await loadFileAsText('tests/molfileV2000.mol');
+    molfileV3K = await loadFileAsText('tests/molfileV3000.mol');
   });
 
   const molecules: { [key: string]: string[]} = {
@@ -21,53 +28,7 @@ category('converters', () => {
     smarts: [
       '[#6]-[#7]1-[#6](=[#8])-[#6]-[#7]=[#6](-[#6]2-[#6]-[#6]-[#6]-[#6]-[#6]-2)-[#6]2:[#6]:[#6]:[#6]:[#6]:[#6]:2-1',
     ],
-    molblock: [
-      `
-     RDKit          2D
-
- 19 21  0  0  0  0  0  0  0  0999 V2000
-   -4.0300   -1.5401    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -2.5342   -1.4280    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
-   -1.7842   -2.7270    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -2.6292   -3.9664    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.3009   -2.9506    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    0.7986   -1.9303    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
-    0.6865   -0.4345    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    1.9856    0.3155    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    3.2846   -0.4345    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    4.5837    0.3155    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    4.5837    1.8155    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    3.2846    2.5655    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    1.9856    1.8155    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.5528    0.4104    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.2190    1.8728    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -1.3186    2.8931    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -2.7520    2.4510    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -3.0858    0.9886    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -1.9862   -0.0317    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-  1  2  1  0
-  2  3  1  0
-  3  4  2  0
-  3  5  1  0
-  5  6  1  0
-  6  7  2  0
-  7  8  1  0
-  8  9  1  0
-  9 10  1  0
- 10 11  1  0
- 11 12  1  0
- 12 13  1  0
-  7 14  1  0
- 14 15  2  0
- 15 16  1  0
- 16 17  2  0
- 17 18  1  0
- 18 19  2  0
- 19  2  1  0
- 13  8  1  0
- 19 14  1  0
-M  END
-`],
+    molblock: [molfileV2K],
     v3Kmolblock: [
       `
      RDKit          2D
@@ -122,19 +83,12 @@ M  V30 END BOND
 M  V30 END CTAB
 M  END
 `],
-    // inchi: [
-    //   'InChI=1S/C16H20N2O/c1-18-14-10-6-5-9-13(14)16(17-11-15(18)19)12-7-3-2-4-8-12/h5-6,9-10,12H,2-4,7-8,11H2,1H3'
-    // ],
   };
 
   function _testConvert(srcNotation: DG.chem.Notation, tgtNotation: DG.chem.Notation) {
     const result = [];
     for (const mol of molecules[srcNotation])
       result.push(_convertMolNotation(mol, srcNotation, tgtNotation, getRdKitModule()));
-    console.log('The result is');
-    console.log([result.toString()]);
-    console.log('The expected value is');
-    console.log(molecules[tgtNotation]);
     expectArray(result, molecules[tgtNotation]);
   }
 
@@ -159,12 +113,4 @@ M  END
   test('testMolfileV3000ToSmiles', async () => {
     _testConvert(DG.chem.Notation.V3KMolBlock, DG.chem.Notation.Smiles);
   });
-  // test('testSmartsToSmiles', async () => {
-  //   _testConvert(MolNotation.Smarts, MolNotation.Smiles);
-  // });
-  // test('testSmartsToInchi', async () => {
-  //   _testConvert(MolNotation.Smarts, MolNotation.Inchi);
-  // test('testInchiToSmiles', async () => {
-  //   _testConvert(MolNotation.Inchi, MolNotation.Smiles);
-  // });
 });
