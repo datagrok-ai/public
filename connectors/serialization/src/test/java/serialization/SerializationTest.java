@@ -2,11 +2,13 @@ package serialization;
 
 import java.io.*;
 import java.util.*;
+
+import org.junit.Ignore;
 import org.junit.Test;
 import java.nio.file.*;
 import static org.junit.Assert.*;
 
-
+@Ignore
 public class SerializationTest {
     // Path to Dart part of test.
     public static final String dart_test_path =

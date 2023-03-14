@@ -23,6 +23,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import serialization.DataFrame;
 
+@Disabled("Until test instance of Athena will be available")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AthenaDataProviderTest {
     private static final Provider type = Provider.ATHENA;
