@@ -47,7 +47,7 @@ export function convert(col: DG.Column): void {
   });
 
   if (convertDialog == null) {
-    convertDialog = ui.dialog('Convert sequence notation')
+    convertDialog = ui.dialog('Convert Sequence Notation')
       .add(ui.div([
         ui.divText(
           'Current notation: ' + currentNotation,
