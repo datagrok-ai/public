@@ -273,9 +273,10 @@ export function sequenceAlignment(alignType: string, alignTable: string, gap: nu
 }
 
 //name: WebLogo
-//description: WebLogo viewer
+//description: WebLogo
 //tags: viewer, panel
 //output: viewer result
+//meta.icon: files/icons/weblogo-viewer.svg
 export function webLogoViewer() {
   return new WebLogoViewer();
 }
@@ -687,14 +688,14 @@ export function getHelmMonomers(sequence: DG.Column<string>): string[] {
 }
 
 
-//name: SequenceSimilaritySearchViewer
+//name: Sequence Similarity Search
 //tags: viewer
 //output: viewer result
 export function similaritySearchViewer(): SequenceSimilarityViewer {
   return new SequenceSimilarityViewer();
 }
 
-//top-menu: Bio | Similarity Search...
+//top-menu: Bio | Search | Similarity Search...
 //name: similaritySearch
 //description: finds the most similar sequence
 //output: viewer result
@@ -704,14 +705,14 @@ export function similaritySearchTopMenu(): void {
   view.dockManager.dock(viewer, 'down');
 }
 
-//name: SequenceDiversitySearchViewer
+//name: Sequence Diversity Search
 //tags: viewer
 //output: viewer result
 export function diversitySearchViewer(): SequenceDiversityViewer {
   return new SequenceDiversityViewer();
 }
 
-//top-menu: Bio | Diversity Search...
+//top-menu: Bio | Search | Diversity Search...
 //name: diversitySearch
 //description: finds the most diverse molecules
 //output: viewer result
