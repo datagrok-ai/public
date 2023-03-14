@@ -378,7 +378,7 @@ export function diversitySearchTopMenu(): void {
 //input: funccall call
 export function ChemSpaceEditor(call: DG.FuncCall) {
   const funcEditor = new SequenceSpaceFunctionEditor(DG.SEMTYPE.MOLECULE);
-  ui.dialog({title: 'Chemical space'})
+  ui.dialog({title: 'Chemical Space'})
     .add(funcEditor.paramsUI)
     .onOK(async () => {      
       call.func.prepare(funcEditor.funcParams).call(true);
@@ -475,7 +475,7 @@ export async function getChemSimilaritiesMatrix(dim: number, col: DG.Column,
 }
 
 //top-menu: Chem | Analyze Structure | Elemental Analysis...
-//name: Elemental analysis
+//name: Elemental Analysis
 //description: function that implements elemental analysis
 //input: dataframe table
 //input: column molCol { semType: Molecule }
@@ -560,7 +560,7 @@ export function groupAnalysisMenu(): void {
 //input: funccall call
 export function ActivityCliffsEditor(call: DG.FuncCall) {
   const funcEditor = new ActivityCliffsFunctionEditor(DG.SEMTYPE.MOLECULE);
-  ui.dialog({title: 'Activity cliffs'})
+  ui.dialog({title: 'Activity Cliffs'})
     .add(funcEditor.paramsUI)
     .onOK(async () => {      
       call.func.prepare(funcEditor.funcParams).call(true);
@@ -608,23 +608,23 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
 }
 
 //top-menu: Chem | Analyze SAR | Structural Alerts...
-//name: Structural Alerts...
+//name: Structural Alerts
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}
 export async function getStructuralAlerts(col: DG.Column<string>): Promise<void> {
   await checkForStructuralAlerts(col);
 }
 
-//top-menu: Chem | Calculate | To InchI
-//name: To InchI...
+//top-menu: Chem | Calculate | To InchI...
+//name: To InchI
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}
 export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column): void {
   addInchis(table, col);
 }
 
-//top-menu: Chem | Calculate | To InchI Keys
-//name: To InchI Keys...
+//top-menu: Chem | Calculate | To InchI Keys...
+//name: To InchI Keys
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}
 export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void {
@@ -959,7 +959,7 @@ export async function callChemDiversitySearch(
 }
 
 
-//top-menu: Chem | Analyze Structure | Scaffold Tree...
+//top-menu: Chem | Analyze Structure | Scaffold Tree
 //name: addScaffoldTree
 export function addScaffoldTree(): void {
   grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
