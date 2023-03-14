@@ -1,4 +1,4 @@
-#name: CurateChemStructures
+#name: Curate
 #description: curating a molecules set for structural data homogenization
 #top-menu: Chem | Transform | Curate...
 #language: python
