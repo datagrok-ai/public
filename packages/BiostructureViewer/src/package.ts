@@ -220,6 +220,7 @@ export function nglViewer(): DG.JsViewer {
 // eslint-disable-next-line max-len
 //description: 3D structure molstar RCSB viewer for large biological molecules (proteins, DNA, and RNA)
 //meta.keywords: Molstar, PDB
+//meta.icon: files/icons/biostructure-viewer.svg
 //tags: viewer, panel
 //output: viewer result
 export function molstarViewer(): DG.JsViewer {
