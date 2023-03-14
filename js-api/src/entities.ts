@@ -588,9 +588,9 @@ export class TableInfo extends Entity {
 
   static fromDataFrame(t: DataFrame): TableInfo {return toJs(api.grok_DataFrame_Get_TableInfo(t.dart)); }
 
-  get dataFrame(): DataFrame { return api.grok_TableInfo_Get_DataFrame(this.dart); }
+  get dataFrame(): DataFrame { return toJs(api.grok_TableInfo_Get_DataFrame(this.dart)); }
 
-  get columns(): ColumnInfo[] { return api.grok_TableInfo_Get_Columns(this.dart); }
+  get columns(): ColumnInfo[] { return toJs(api.grok_TableInfo_Get_Columns(this.dart)); }
 }
 
 
@@ -604,6 +604,7 @@ export class ColumnInfo extends Entity {
     super(dart);
   }
 
+  get type(): string { return toJs(api.grok_ColumnInfo_Get_Type(this.dart)); }
 }
 
 /** @extends Entity
