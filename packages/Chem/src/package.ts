@@ -344,9 +344,10 @@ export async function saveAsSdf(): Promise<void> {
 
 //#region Top menu
 
-//name: SimilaritySearchViewer
+//name: Chem Similarity Search
 //tags: viewer
 //output: viewer result
+//meta.icon: files/icons/chem-similarity-search-viewer.svg
 export function similaritySearchViewer(): ChemSimilarityViewer {
   return new ChemSimilarityViewer();
 }
@@ -358,9 +359,10 @@ export function similaritySearchTopMenu(): void {
   (grok.shell.v as DG.TableView).addViewer('SimilaritySearchViewer');
 }
 
-//name: DiversitySearchViewer
+//name: Chem Diversity Search
 //tags: viewer
 //output: viewer result
+//meta.icon: files/icons/chem-diversity-search-viewer.svg
 export function diversitySearchViewer(): ChemDiversityViewer {
   return new ChemDiversityViewer();
 }
