@@ -32,6 +32,7 @@ export class ComputationView extends FunctionView {
     const runId = url.searchParams.get('id');
     super();
 
+    // TODO: replace grok.functions.getCurrentCall() with single call
     this.parentCall = grok.functions.getCurrentCall();
     this.parentView = grok.functions.getCurrentCall()?.parentCall.aux['view'];
     this.basePath = `/${grok.functions.getCurrentCall()?.func.name}`;

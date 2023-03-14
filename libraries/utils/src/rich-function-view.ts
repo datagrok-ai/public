@@ -59,7 +59,7 @@ export class RichFunctionView extends FunctionView {
     public options: { exportEnabled: boolean, historyEnabled: boolean, isTabbed: boolean} =
     {exportEnabled: true, historyEnabled: true, isTabbed: false}
   ) {
-    super();
+    super(funcCall, options);
 
     this.basePath = `scripts/${funcCall.func.id}/view`;
 
@@ -92,7 +92,7 @@ export class RichFunctionView extends FunctionView {
     savedCall.options['isHistorical'] = false;
     this.linkFunccall(savedCall);
     if (this.options.historyEnabled) this.buildHistoryBlock();
-    this.path = `?id=${savedCall.id}`;
+    if (!this.options.isTabbed) this.path = `?id=${savedCall.id}`;
     await this.onAfterSaveRun(savedCall);
     return savedCall;
   }
@@ -101,7 +101,6 @@ export class RichFunctionView extends FunctionView {
   public override build(): void {
     ui.empty(this.root);
     this.root.appendChild(this.buildIO());
-
     if (this.options.historyEnabled)
       this.buildHistoryBlock();
 
@@ -359,6 +358,18 @@ export class RichFunctionView extends FunctionView {
     return map;
   }
 
+  public override async run(): Promise<void> {
+    if (!this.funcCall) throw new Error('The correspoding function is not specified');
+
+    await this.onBeforeRun(this.funcCall);
+    const pi = DG.TaskBarProgressIndicator.create('Calculating...');
+    this.funcCall.newId();
+    await this.funcCall.call(); // mutates the funcCall field
+    pi.close();
+    await this.onAfterRun(this.funcCall);
+    this.lastCall = this.options.isTabbed ? this.funcCall.clone() : await this.saveRun(this.funcCall);
+  }
+
   private renderRunSection(): HTMLElement {
     const runButton = ui.bigButton('Run', async () => {
       this.isRunning = true;
@@ -384,7 +395,7 @@ export class RichFunctionView extends FunctionView {
     ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
 
     this.checkDisability.subscribe(() => {
-      const isValid = (wu(this.funcCall!.inputs.values()).every((v) => !!v)) && !this.isRunning;
+      const isValid = (wu(this.funcCall!.inputs.values()).every((v) => v !== null && v !== undefined)) && !this.isRunning;
       runButton.disabled = !isValid;
     });
 

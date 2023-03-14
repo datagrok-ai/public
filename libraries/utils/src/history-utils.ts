@@ -39,12 +39,17 @@ const getSearchStringByPattern = (datePattern: DateOptions) => {
 
 export namespace historyUtils {
   const scriptsCache = {} as Record<string, DG.Script>;
+  // TO DO: add users and groups cache
 
-  export async function loadChildRuns(funcCallId: string, skipDfLoad = false): Promise<{parentRun: DG.FuncCall, childRuns: DG.FuncCall[]}> {
+  export async function loadChildRuns(
+    funcCallId: string,
+    skipDfLoad = false
+  ): Promise<{parentRun: DG.FuncCall, childRuns: DG.FuncCall[]}> {
     const parentRun = await grok.dapi.functions.calls.allPackageVersions().find(funcCallId);
 
     const childRuns = await grok.dapi.functions.calls.allPackageVersions()
-      .include('inputs, outputs').filter(`options.parentCallId="${funcCallId}"`).list();
+    // EXPLAIN WHY func.params
+      .include('func.params').filter(`options.parentCallId="${funcCallId}"`).list();
 
     await Promise.all(childRuns.map(async (pulledRun) => {
       const id = pulledRun.func.id;
@@ -102,6 +107,7 @@ export namespace historyUtils {
     return pulledRun;
   }
 
+  // EXPLAIN WHY REPLCE DF-s
   export async function saveRun(callToSave: DG.FuncCall) {
     const dfOutputs = wu(callToSave.outputParams.values() as DG.FuncCallParam[])
       .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
@@ -216,8 +222,6 @@ export namespace historyUtils {
           pulledRun.outputs[output.name] = await grok.dapi.tables.getTable(pulledRun.outputs[output.name]);
       }
     }
-
-    console.log(result);
 
     return result;
   }

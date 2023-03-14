@@ -14,6 +14,7 @@ class DatabaseService {
       const res = await historyUtils.pullRunsByName(
         funcName, [
           {isShared: true}, {author: grok.shell.user},
+          // EXPLAIN WHY FUNC.PARAMS
         ], {order: 'started'}, ['func.params', 'session.user', 'options']
       );
       return res;
