@@ -26,6 +26,7 @@ import './tests/substructure-filter-tests';
 import './tests/viewers';
 
 import './tests/mol2-importer-tests';
+import './tests/chemical-table-parsing';
 
 export const _package = new DG.Package();
 export {tests};

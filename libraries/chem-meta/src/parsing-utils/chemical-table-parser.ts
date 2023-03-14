@@ -154,14 +154,14 @@ export abstract class ChemicalTableParserBase implements ChemicalTableParser {
   protected parseBondedAtomPairs(): Uint16Array[] {
     const bondedAtomPairs = new Array<Uint16Array>(this.bondCount);
     let idx = this.getBondBlockIdx();
-    idx = this.getNextLineIdx(idx);
     for (let i = 0; i < this.bondCount; i++) {
-      const pair = new Uint16Array(2);
       idx = this.shiftIdxToBondedAtomsPair(idx);
+      const pair = new Uint16Array(2);
       pair[0] = this.parseIntValue(idx);
       idx = this.getNextColumnIdx(idx);
       pair[1] = this.parseIntValue(idx);
       bondedAtomPairs[i] = pair;
+      idx = this.getNextLineIdx(idx);
     }
     return bondedAtomPairs;
   }

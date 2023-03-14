@@ -42,7 +42,6 @@ category('converters', async () => {
 
   test('SMILES to Molfile V2000', async () => {
     _testConvert(DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
-    console.log('We are here:', molecules);
   });
 
   test('SMILES to SMARTS', async () => {
