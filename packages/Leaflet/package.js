@@ -4,6 +4,7 @@ class LeafletPackage extends DG.Package {
   //description: Leaflet map
   //tags: viewer
   //output: viewer result
+  //meta.icon: icons/leaflet-viewer.svg
   leafletViewer() {
     return new LeafletViewer();
   }
