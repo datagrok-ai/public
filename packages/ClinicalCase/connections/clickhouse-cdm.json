@@ -1,11 +1,11 @@
 {
   "#type": "DataConnection",
-  "name": "PostgresCDM",
+  "name": "ClickHouseCDM",
   "friendlyName": "CDM",
   "parameters": {
     "server": "db.datagrok.ai",
-    "port": 54321,
-    "db": "cdm_souffleur"
+    "db": "cdm_synthea",
+    "port": 8123
   },
   "credentials": {
     "parameters": {
@@ -13,10 +13,9 @@
       "password": "datagrok"
     }
   },
-  "dataSource": "Postgres",
+  "dataSource": "ClickHouse",
   "description": "CDM sample database",
   "tags": [
-    "demo",
     "cdm"
   ]
 }
