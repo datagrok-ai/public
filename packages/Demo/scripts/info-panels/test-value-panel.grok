@@ -5,6 +5,6 @@
 #condition: true
 #input: column col {type:numerical}
 #output: double avg
+#test: ColumnSummary(ApiTests:getColumn(ApiTests:getTable('demog'), 'height')) == 169.03699383882477
 
 avg = col.stats.avg
-

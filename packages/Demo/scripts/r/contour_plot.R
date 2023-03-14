@@ -7,6 +7,7 @@
 #input: dataframe data {columns:numerical} [Input data table]
 #input: column_list columns {type:numerical} [Input data table columns]
 #output: graphics [Contour plot]
+#test: ContourPlot(ApiTests:getDT(), ['height', 'weight']) != null
 
 library(fields)
 
