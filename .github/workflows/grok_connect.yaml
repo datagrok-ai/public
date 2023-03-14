@@ -22,7 +22,7 @@ jobs:
           cache: maven
       - name: Build with Maven
         working-directory: ./connectors
-        run: mvn -Dmaven.test.skip=true package
+        run: mvn package
       - name: Get version
         id: get_version
         working-directory: ./connectors
