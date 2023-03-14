@@ -77,7 +77,7 @@ export function _SankeyViewer() {
 //description: Creates a sunburst viewer
 //tags: viewer
 //output: viewer result
-//meta.icon: icons/sunbrust-viewer.svg
+//meta.icon: icons/sunburst-viewer.svg
 export function _SunburstViewer() {
   return new SunburstViewer();
 }
