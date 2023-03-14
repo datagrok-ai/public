@@ -40,7 +40,7 @@ export function OutliersSelection() {
 //input: funccall call
 //output: view result
 export function RichFunctionViewEditor(call: DG.FuncCall) {
-  return new RichFunctionView(call);
+  return new RichFunctionView(call, {exportEnabled: true, historyEnabled: true, isTabbed: false});
 }
 
 //name: PipelineStepEditor
