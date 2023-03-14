@@ -1,6 +1,7 @@
 #name: Octave Script 2
 #language: octave
 #output: graphics Graph
+#test: OctaveScript2() != null
 
 # https://octave.org/doc/v5.2.0/One_002ddimensional-Interpolation.html
 
