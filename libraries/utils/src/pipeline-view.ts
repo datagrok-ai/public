@@ -2,16 +2,20 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {from} from 'rxjs';
-import {filter} from 'rxjs/operators';
 import JSZip from 'jszip';
+import {Subject} from 'rxjs';
 import {historyUtils} from './history-utils';
 import {FunctionView} from './function-view';
 import {ComputationView} from './computation-view';
 
 export class PipelineView extends ComputationView {
-  public stepViews: { [nqName: string]: FunctionView } = {};
-  public stepTabs: DG.TabControl | null = null;
+  public steps = {} as {[scriptNqName: string]: { funcCall: DG.FuncCall, editor: string, view: FunctionView }};
+  public get stepFuncNames() {
+    return this.stepsConfig.map((step) => step.funcName);
+  }
+  public onStepCompleted = new Subject<DG.FuncCall>();
+
+  private stepTabs: DG.TabControl | null = null;
 
   protected defaultExportFilename = (format: string) => {
     return `${this.name} - ${new Date()
@@ -38,7 +42,8 @@ export class PipelineView extends ComputationView {
 
     const zip = new JSZip();
 
-    for (const [nqName, stepView] of Object.entries(this.stepViews)) {
+    for (const {nqName, stepView} of Object.entries(this.steps)
+      .map(([nqName, step]) => ({nqName, stepView: step.view}))) {
       this.stepTabs.currentPane = this.stepTabs?.getPane(nqName);
       await new Promise((r) => setTimeout(r, 100));
       const stepBlob = await stepView.exportConfig!.export('Excel');
@@ -49,15 +54,9 @@ export class PipelineView extends ComputationView {
     return await zip.generateAsync({type: 'blob'});
   };
 
-  scriptCalls = {} as {[scriptNqName: string]: DG.FuncCall};
-  editorFuncs = {} as {[editor: string]: DG.Func};
-  scriptEditors = {} as {[scriptName: string]: string};
-  views = {} as {[script: string]: HTMLElement};
-  scripts: DG.Script[] = [];
-
   constructor(
     funcName: string,
-    private scriptStepNames: string[]
+    private stepsConfig: {funcName: string}[]
   ) {
     super(funcName);
 
@@ -67,61 +66,74 @@ export class PipelineView extends ComputationView {
       export: this.defaultExport,
       filename: this.defaultExportFilename,
     };
+
+    stepsConfig.forEach((stepConfig) => {
+      //@ts-ignore
+      this.steps[stepConfig.funcName] = {};
+    });
   }
 
   public override async init() {
-    const scriptStepNames = this.scriptStepNames;
-
-    const stepScripts = scriptStepNames.map((stepScriptName) => {
-      const stepScript = (grok.functions.eval(stepScriptName) as Promise<DG.Func>);
+    const stepScripts = Object.keys(this.steps).map((stepNqName) => {
+      const stepScript = (grok.functions.eval(stepNqName) as Promise<DG.Func>);
       return stepScript;
     });
-    const allStepsLoaded = Promise.all(stepScripts) as Promise<DG.Script[]>;
-
+    const allStepsLoading = Promise.all(stepScripts) as Promise<DG.Script[]>;
     this.root.classList.remove('ui-panel');
 
-    this.scripts = await allStepsLoaded;
+    const loadedScripts = await allStepsLoading;
 
-    const editorTag = 'editor:' as const;
-    const newlineSymbol = '\n' as const;
-    const defaultEditor = 'Compute:PipelineStepEditor';
+    const editorFuncs = {} as {[editor: string]: DG.Func};
+
+    const EDITOR_TAG = 'editor:' as const;
+    const NEWLINE = '\n' as const;
+    const DEFAULT_EDITOR = 'Compute:PipelineStepEditor';
     const extractEditor = (script: DG.Script) => {
       const scriptCode = script.script;
-      const editorTagIndex = scriptCode.indexOf(editorTag);
+      const editorTagIndex = scriptCode.indexOf(EDITOR_TAG);
       if (editorTagIndex < 0)
-        return defaultEditor;
+        return DEFAULT_EDITOR;
 
-      const newlineIndex = scriptCode.indexOf(newlineSymbol, editorTagIndex);
-      const editorFuncName = scriptCode.substring(editorTagIndex + editorTag.length, newlineIndex).trim();
+      const newlineIndex = scriptCode.indexOf(NEWLINE, editorTagIndex);
+      const editorFuncName = scriptCode.substring(editorTagIndex + EDITOR_TAG.length, newlineIndex).trim();
 
       return editorFuncName;
     };
 
-    for (const script of this.scripts) {
+    const editorsLoading = loadedScripts.map(async (loadedScript) => {
       // TO DO: replace for type guard
-      const editorName = (script.script) ? extractEditor(script): defaultEditor;
+      const editorName = (loadedScript.script) ? extractEditor(loadedScript): DEFAULT_EDITOR;
+      if (!editorFuncs[editorName])
+        editorFuncs[editorName] = await(grok.functions.eval(editorName.split(' ').join('')) as Promise<DG.Func>);
+      this.steps[loadedScript.nqName].editor = editorName;
 
-      if (!this.editorFuncs[editorName])
-        this.editorFuncs[editorName] = await(grok.functions.eval(editorName.split(' ').join('')) as Promise<DG.Func>);
+      return Promise.resolve();
+    });
 
-      this.scriptEditors[script.nqName] = editorName;
-    };
+    await Promise.all(editorsLoading);
 
-    for (const script of this.scripts) {
-      const scriptCall = script.prepare();
-      const view: FunctionView = await this.editorFuncs[this.scriptEditors[script.nqName]].apply({'call': scriptCall});
+    const viewsLoading = loadedScripts.map(async (loadedScript) => {
+      const scriptCall: DG.FuncCall = loadedScript.prepare();
 
-      // scriptCall.options['parentCallId'] = wrapperCall.id;
-      this.scriptCalls[script.nqName] = scriptCall;
-      this.views[script.nqName] = view.root;
+      this.steps[loadedScript.nqName].funcCall = scriptCall;
+      this.steps[loadedScript.nqName].view =
+        await editorFuncs[this.steps[loadedScript.nqName].editor].apply({'call': scriptCall}) as FunctionView;
 
-      // TEMP WAY TO DEAL WITH IT
-      this.stepViews[script.nqName] = view;
-    }
+      return Promise.resolve();
+    });
+
+    await Promise.all(viewsLoading);
   }
 
   public override buildIO() {
-    const pipelineTabs = ui.tabControl(this.views);
+    const tabs = Object.entries(this.steps)
+      .reduce((prev, [funcName, step]) => ({
+        ...prev,
+        [funcName]: step.view.root
+      }), {} as Record<string, HTMLElement>);
+
+    const pipelineTabs = ui.tabControl(tabs);
+
     for (let i = 0; i < pipelineTabs.panes.length - 1; i++) {
       pipelineTabs.panes[i].header.classList.add('arrow-tab');
       pipelineTabs.panes[i].header.insertAdjacentElement('afterend', ui.div(undefined, 'empty-box'));
@@ -143,10 +155,12 @@ export class PipelineView extends ComputationView {
     await this.funcCall.call(); // mutates the funcCall field
     pi.close();
 
-    Object.values(this.scriptCalls).forEach(async (scriptCall) => {
-      scriptCall.options['parentCallId'] = this.funcCall!.id;
-      await this.stepViews[scriptCall.func.nqName].saveRun(scriptCall);
-    });
+    Object.values(this.steps)
+      .map((step) => step.funcCall)
+      .forEach(async (scriptCall) => {
+        scriptCall.options['parentCallId'] = this.funcCall!.id;
+        await this.steps[scriptCall.func.nqName].view.saveRun(scriptCall);
+      });
 
     await this.onAfterRun(this.funcCall);
 
@@ -164,8 +178,8 @@ export class PipelineView extends ComputationView {
     const {parentRun: pulledParentRun, childRuns: pulledChildRuns} = await historyUtils.loadChildRuns(funcCallId);
 
     pulledChildRuns.forEach(async (pulledChildRun) => {
-      await this.stepViews[pulledChildRun.func.nqName].onAfterLoadRun(pulledChildRun);
-      this.stepViews[pulledChildRun.func.nqName].linkFunccall(pulledChildRun);
+      await this.steps[pulledChildRun.func.nqName].view.onAfterLoadRun(pulledChildRun);
+      this.steps[pulledChildRun.func.nqName].view.linkFunccall(pulledChildRun);
     });
 
     await this.onAfterLoadRun(pulledParentRun);
