@@ -117,7 +117,7 @@ public class MySqlObjectsMother {
                 FuncCallBuilder.fromQuery("SELECT BIN(bit_type1) AS bit_type1, bit_type2 FROM BIT_TYPE")), expected));
     }
 
-    public static Stream<Arguments>checkOutputDataFrame_dateTypes_ok() {
+    public static Stream<Arguments> checkOutputDataFrame_dateTypes_ok() {
         DataFrame expected = DataFrameBuilder.getBuilder()
                 .setRowCount(1)
                 .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("yyyy-MM-dd",
@@ -134,5 +134,75 @@ public class MySqlObjectsMother {
                 .build();
         return Stream.of(Arguments.of(Named.of("DATE TYPES SUPPORT",
                 FuncCallBuilder.fromQuery("SELECT * FROM DATE_TYPES")), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_spatialTypes_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new StringColumn(new String[]{"POLYGON((0 0,10 0,10 10,0 10,0 0),(5 5,7 5,7 7,5 7,5 5))",
+                "GEOMETRYCOLLECTION(POINT(1 1),LINESTRING(0 0,1 1,2 2,3 3,4 4))"}), "geometry_type")
+                .setColumn(new StringColumn(new String[]{"POINT(1 1)", "POINT(1 0)"}), "point_type")
+                .build();
+        return Stream.of(Arguments.of(Named.of("SPATIAL TYPES SUPPORT",
+                FuncCallBuilder.fromQuery("SELECT ST_AsText(geometry_type) AS geometry_type, " +
+                        "ST_AsText(point_type) AS point_type FROM GEOMETRY_TYPE")),
+                expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_integerTypes_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new IntColumn(new Integer[]{12, 0}), "tinyint_type")
+                .setColumn(new IntColumn(new Integer[]{32000, 1212}), "smallint_type")
+                .setColumn(new IntColumn(new Integer[]{167772, -1000}), "mediumint_type")
+                .setColumn(new IntColumn(new Integer[]{2147483647, -2147483648}), "int_type")
+                .setColumn(new BigIntColumn(new String[]{"9223372036854775807", "-9223372036854775808"}),
+                        "bigint_type")
+                .build();
+        return Stream.of(Arguments.of(Named.of("INTEGER TYPES SUPPORT",
+                        FuncCallBuilder.fromQuery("SELECT * FROM INTEGER_TYPES")),
+                expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_floatTypes_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(4)
+                .setColumn(new FloatColumn(new Float[]{-3.40282E+38f, 3.40282E+38f, -4.54654f,
+                        -0.000124f}), "float_type")
+                .setColumn(new FloatColumn(new Float[]{Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY,
+                        4.457745745745457f, 0.002f}), "double_type")
+                .setColumn(new FloatColumn(new Float[]{999.9999f, 0.9999f, 23542363246234234234.46456456f, 0.00001f}),
+                        "decimal_type")
+                .build();
+        return Stream.of(Arguments.of(Named.of("FLOAT TYPES SUPPORT",
+                        FuncCallBuilder.fromQuery("SELECT * FROM FLOAT_TYPES")),
+                expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_characterTypes_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new StringColumn(new String[]{"datagrok"}), "char_type1")
+                .setColumn(new StringColumn(new String[]{"A"}), "char_type2")
+                .setColumn(new StringColumn(new String[]{"Hello World"}), "varchar_type")
+                .setColumn(new StringColumn(new String[]{"Hello Datagrok"}), "text_type")
+                .setColumn(new StringColumn(new String[]{"HelloolleH"}), "mediumtext_type")
+                .setColumn(new StringColumn(new String[]{"Datagrok"}), "longtext_type")
+                .build();
+        return Stream.of(Arguments.of(Named.of("CHARACTER TYPES SUPPORT",
+                        FuncCallBuilder.fromQuery("SELECT * FROM CHARACTER_TYPES")),
+                expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_binaryTypes_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new StringColumn(new String[]{"Hello"}), "binary_type")
+                .setColumn(new StringColumn(new String[]{"datagrok"}), "varbinary_type")
+                .build();
+        return Stream.of(Arguments.of(Named.of("BINARY TYPES SUPPORT",
+                        FuncCallBuilder.fromQuery("SELECT CAST(binary_type as CHAR(5)) as binary_type, CAST(varbinary_type AS CHAR(8)) "
+                                + "as varbinary_type FROM BINARY_TYPES")),
+                expected));
     }
 }

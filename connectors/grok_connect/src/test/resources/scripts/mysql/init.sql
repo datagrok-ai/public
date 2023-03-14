@@ -82,13 +82,13 @@ CREATE TABLE FLOAT_TYPES(float_type float, double_type double, decimal_type deci
 INSERT INTO FLOAT_TYPES(float_type, double_type, decimal_type) VALUES (-3.402823466E+38, 1.7976931348623157E+308,
                                                                        999.9999);
 
-INSERT INTO FLOAT_TYPES(float_type, double_type, decimal_type) VALUES (-3.402823466E+38, 1.7976931348623157E+308,
-                                                                       999.9999);
+INSERT INTO FLOAT_TYPES(float_type, double_type, decimal_type) VALUES (3.402823466E+38, -1.7976931348623157E+308,
+                                                                       0.9999);
 
 INSERT INTO FLOAT_TYPES(float_type, double_type, decimal_type) VALUES (-4.546544545, 4.457745745745457,
                                                                        23542363246234234234.46456456);
 
-INSERT INTO FLOAT_TYPES(float_type, double_type, decimal_type) VALUES (-0.000124, -1.7976931348623157E+308,
+INSERT INTO FLOAT_TYPES(float_type, double_type, decimal_type) VALUES (-0.000124, 0.002,
                                                                        0.00001);
 
 CREATE TABLE JSON_TYPE(json_type json);
@@ -106,11 +106,24 @@ VALUES (12, 32000, 167772, 2147483647, 9223372036854775807);
 INSERT INTO INTEGER_TYPES(tinyint_type, smallint_type, mediumint_type, int_type, bigint_type)
 VALUES (0, 1212, -1000, -2147483648, -9223372036854775808);
 
-CREATE TABLE geom (geometry_type GEOMETRY, point_type POINT);
-INSERT INTO geom(geometry_type, point_type) VALUES (ST_GeomFromText('POLYGON((0 0,10 0,10 10,0 10,0 0),(5 5,7 5,7 7,5 7, 5 5))'),
-                            ST_GeomFromText('POINT(1 1)'));
+CREATE TABLE GEOMETRY_TYPE (geometry_type GEOMETRY, point_type POINT);
+INSERT INTO GEOMETRY_TYPE(geometry_type, point_type)VALUES (ST_GeomFromText('POLYGON((0 0,10 0,10 10,0 10,0 0),(5 5,7 5,7 7,5 7, 5 5))'),
+                                                            ST_GeomFromText('POINT(1 1)'));
 
-INSERT INTO geom(geometry_type, point_type) VALUES (ST_GeomFromText('GEOMETRYCOLLECTION(POINT(1 1),LINESTRING(0 0,1 1,2 2,3 3,4 4))'),
-                            ST_GeomFromText('POINT(1 0)'));
+INSERT INTO GEOMETRY_TYPE(geometry_type, point_type)VALUES (ST_GeomFromText('GEOMETRYCOLLECTION(POINT(1 1),LINESTRING(0 0,1 1,2 2,3 3,4 4))'),
+                                                            ST_GeomFromText('POINT(1 0)'));
 
--- SELECT ST_AsText(geometry_type), ST_AsText(point_type) FROM geom;
+
+CREATE TABLE null_safety (binary_type BINARY(5), varbinary_type VARBINARY(10), bit_type1 bit(64), bit_type2 bit(1),
+                          char_type1 CHAR(8), char_type2 CHAR, varchar_type VARCHAR(255), text_type TEXT,
+                          mediumtext_type MEDIUMTEXT, longtext_type LONGTEXT, date_type date, time_type time, timestamp_type timestamp,
+                          datetime_type datetime, year_type year, float_type float, double_type double, decimal_type decimal(65, 30),
+                          json_type json, tinyint_type tinyint, smallint_type smallint, mediumint_type mediumint,
+                          int_type int, bigint_type bigint, geometry_type GEOMETRY, point_type POINT);
+
+INSERT INTO null_safety(binary_type, varbinary_type, bit_type1, bit_type2, char_type1, char_type2, varchar_type, text_type,
+                        mediumtext_type, longtext_type, date_type, time_type, timestamp_type, datetime_type, year_type, float_type,
+                        double_type, decimal_type, json_type, tinyint_type, smallint_type, mediumint_type, int_type, bigint_type,
+                        geometry_type, point_type) VALUES (NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                                                           NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                                                           NULL, NULL, NULL, NULL, NULL, NULL);
