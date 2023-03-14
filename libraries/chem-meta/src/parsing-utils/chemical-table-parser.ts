@@ -29,7 +29,7 @@ export abstract class ChemicalTableParserBase implements ChemicalTableParser {
   // public abstract static createInstance(file: string): ChemicalTableParserBase;
 
   public init(file: string): void {
-    this.file = file.replaceAll('\r', '');
+    this.file = file.replace(/\r/g, '');
     this._atomCount = undefined;
     this._atomTypes = undefined;
     this._bondCount = undefined;
