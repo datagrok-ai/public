@@ -19,9 +19,8 @@ export class ClickableTextRenderer extends GridCellRendererEx {
   render(g : CanvasRenderingContext2D, nX : number, nY : number, nW : number, nH : number, cellGrid : DG.GridCell, style : DG.GridCellStyle) : void {
     const cell : DG.Cell = cellGrid.cell;
     let str = isNullText(cell) ? null : cell.value.toString();
-    if (str === null) {
+    if (str === null)
       return;
-    }
 
     //str = TextUtils.trimText(str, g, nW);
     const strFont : string  = style.font;
@@ -55,9 +54,9 @@ export class ClickableTextRenderer extends GridCellRendererEx {
     const nDeltaY = Math.floor((nHRow - nHFont) / 2);
     const nXX = 0 + ((cellGrid.gridColumn.width - nWLabel) / 2);
     const bX = nXX <= 0 || (nXOnCell >= nXX && nXOnCell <= nXX + nWLabel);
-    if (!bX) {
+    if (!bX)
       return false;
-    }
+
     const bY = nDeltaY < 0 || (nYOnCell >= nDeltaY && nYOnCell <= nDeltaY + nHFont);
     return bY;
   }
