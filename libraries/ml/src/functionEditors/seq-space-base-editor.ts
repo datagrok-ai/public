@@ -39,7 +39,7 @@ export class SequenceSpaceBaseFuncEditor {
       this.molColInput.root.style.width = '332px';
       this.moleculesColDiv.append(this.molColInput.root);
   
-      this.methodInput = ui.choiceInput('Method Name', UMAP, [UMAP, T_SNE], () => {
+      this.methodInput = ui.choiceInput('Method name', UMAP, [UMAP, T_SNE], () => {
         if(settingsOpened) {
             this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
         }

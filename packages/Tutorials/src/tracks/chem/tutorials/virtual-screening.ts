@@ -98,7 +98,7 @@ export class VirtualScreeningTutorial extends Tutorial {
         'with different counterions, and there might be different inconsistencies in the raw data. Let\'s curate ' +
         'the chemical structures given in the dataset. We will assume that all these compounds are present in the ' +
         'body in a neutralized form.';
-      const curationDlg = await this.openDialog('Open "Chem | Curate"', 'CurateChemStructures', chemMenu, curationInfo);
+      const curationDlg = await this.openDialog('Open "Chem | Curate"', 'Curate Chem Structures', chemMenu, curationInfo);
 
       const neutralizationInfo = 'Perform "Neutralization" to remove charges.';
       await this.dlgInputAction(curationDlg, 'Check "Neutralization"', 'Neutralization', 'true', neutralizationInfo);
