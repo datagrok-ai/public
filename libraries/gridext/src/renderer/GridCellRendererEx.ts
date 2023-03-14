@@ -1,8 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {PinnedColumn} from "../pinned/PinnedColumn";
 
-export class GridCellRendererEx { //extends DG.GridCellRenderer { // temporary to address a bug of importing during tests | extends DG.GridCellRenderer {
-
+export class GridCellRendererEx extends DG.GridCellRenderer { // temporary to address a bug of importing during tests | extends DG.GridCellRenderer {
   onMouseDownEx(cellGrid : DG.GridCell, e : MouseEvent, nXOnCell : number, nYOnCell : number) : void {
     //this.onMouseDown(cellGrid, e);
   }
