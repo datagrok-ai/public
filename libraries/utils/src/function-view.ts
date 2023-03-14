@@ -31,7 +31,10 @@ export abstract class FunctionView extends DG.ViewBase {
   protected _lastCall?: DG.FuncCall;
   protected _type: string = 'function';
 
-  constructor(funcCall?: DG.FuncCall) {
+  constructor(
+    funcCall?: DG.FuncCall,
+    public options: {historyEnabled: boolean, isTabbed: boolean} = {historyEnabled: true, isTabbed: false}
+  ) {
     super();
     this.box = true;
 
@@ -162,7 +165,7 @@ export abstract class FunctionView extends DG.ViewBase {
     ui.empty(this.root);
     this.root.appendChild(this.buildIO());
 
-    this.buildHistoryBlock();
+    if (this.options.historyEnabled) this.buildHistoryBlock();
     this.buildRibbonMenu();
   }
 
@@ -259,8 +262,8 @@ export abstract class FunctionView extends DG.ViewBase {
     const savedCall = await historyUtils.saveRun(callToSave);
     savedCall.options['isHistorical'] = false;
     this.linkFunccall(savedCall);
-    this.buildHistoryBlock();
-    this.path = `?id=${savedCall.id}`;
+    if (this.options.historyEnabled) this.buildHistoryBlock();
+    if (!this.options.isTabbed) this.path = `?id=${savedCall.id}`;
     await this.onAfterSaveRun(savedCall);
     return savedCall;
   }
@@ -343,7 +346,6 @@ export abstract class FunctionView extends DG.ViewBase {
     await this.funcCall.call(); // mutates the funcCall field
     pi.close();
     await this.onAfterRun(this.funcCall);
-
     this.lastCall = await this.saveRun(this.funcCall);
   }
 
