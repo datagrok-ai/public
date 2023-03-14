@@ -57,6 +57,7 @@ export async function nwkTreeViewer(file: DG.FileInfo) {
 //name: PhylocanvasGL
 //description: Phylogenetic tree visualization
 //tags: viewer
+//meta.icon: files/icons/phylocanvasgl-viewer.svg
 //output: viewer result
 export function phylocanvasGlViewer(): PhylocanvasGlViewer {
   return new PhylocanvasGlViewer();
@@ -65,6 +66,7 @@ export function phylocanvasGlViewer(): PhylocanvasGlViewer {
 //name: PhyloTree
 //description: Phylogenetic tree visualization
 //tags: viewer
+//meta.icon: files/icons/phylotree-viewer.svg
 //output: viewer result
 export function phyloTreeViewer(): PhyloTreeViewer {
   return new PhyloTreeViewer();

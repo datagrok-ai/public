@@ -1,0 +1,20 @@
+<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M10 21L10 13.5L10 6" stroke="#A2AEBA"/>
+<path d="M14 27L14 21L14 15" stroke="#A2AEBA"/>
+<path d="M20 18L20 15L20 12" stroke="#A2AEBA"/>
+<path d="M20 30L20 27L20 24" stroke="#A2AEBA"/>
+<path d="M4 14H7L10 14" stroke="#A2AEBA" stroke-linecap="round"/>
+<path d="M9.5 6H19.5H29.5" stroke="#A2AEBA"/>
+<path d="M9.5 21H11.75H14" stroke="#A2AEBA"/>
+<path d="M13.5 15H16.75H20" stroke="#A2AEBA"/>
+<path d="M19.5 18H21.5H23.5" stroke="#A2AEBA"/>
+<path d="M19.5 24H24.5H29.5" stroke="#A2AEBA"/>
+<path d="M19.5 30H21.5H23.5" stroke="#A2AEBA"/>
+<path d="M19.5 12H24.5H29.5" stroke="#A2AEBA"/>
+<path d="M13.5 27H16.75H20" stroke="#A2AEBA"/>
+<circle cx="30" cy="6" r="2" fill="#50C587"/>
+<circle cx="30" cy="12" r="2" fill="#50C587"/>
+<circle cx="24" cy="18" r="2" fill="#48A7F3"/>
+<circle cx="30" cy="24" r="2" fill="#50C587"/>
+<circle cx="24" cy="30" r="2" fill="#48A7F3"/>
+</svg>
