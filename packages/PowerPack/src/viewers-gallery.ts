@@ -156,7 +156,7 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }) {
     let list = DG.Func.find({ returnType: 'viewer' });
     let i = 0;
     for (let v of list) {
-        if (v.package.name != 'ApiTest') {
+        if (v.package.name != 'ApiTests') {
             Object.assign(jsViewers, {
                 [i]: {
                     name: v.friendlyName,
