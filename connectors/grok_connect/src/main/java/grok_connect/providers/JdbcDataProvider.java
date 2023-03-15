@@ -130,7 +130,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                 List<String> names = getParameterNames(query, dataQuery, queryBuffer);
                 query = queryBuffer.toString();
                 System.out.println(query);
+                connection.setAutoCommit(false);
                 PreparedStatement statement = connection.prepareStatement(query);
+                statement.setFetchSize(10000);
                 providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 List<String> stringValues = new ArrayList<>();
                 System.out.println(names);
@@ -169,7 +171,9 @@ public abstract class JdbcDataProvider extends DataProvider {
             } else {
                 query = manualQueryInterpolation(query, dataQuery);
 
+                connection.setAutoCommit(false);
                 Statement statement = connection.createStatement();
+                statement.setFetchSize(10000);
                 providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 statement.setQueryTimeout(timeout);
                 String logString = String.format("Query: %s \n", query);
@@ -182,7 +186,9 @@ public abstract class JdbcDataProvider extends DataProvider {
             }
         } else {
             // Query without parameters
+            connection.setAutoCommit(false);
             Statement statement = connection.createStatement();
+            statement.setFetchSize(10000);
             providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
             statement.setQueryTimeout(timeout);
             String logString = String.format("Query: %s \n", query);
@@ -323,10 +329,6 @@ public abstract class JdbcDataProvider extends DataProvider {
                 throw new QueryCancelledByUser();
             else throw e;
         }
-        // finally {
-        //     if (connection != null)
-        //         connection.close();
-        // }
     }
 
     public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,

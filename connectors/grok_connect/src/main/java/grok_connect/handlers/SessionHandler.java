@@ -52,9 +52,13 @@ public class SessionHandler {
 
                     qm = new QueryManager(message);
                     qm.getResultSet();
-                    qm.initScheme();
+                    if (qm.resultSet != null) {
+                        qm.initScheme();
+                        dataFrame = qm.getSubDF(rowsPerChunk);
+                    } else {
+                        dataFrame = new DataFrame(); 
+                    }
 
-                    dataFrame = qm.getSubDF(rowsPerChunk);
                 } else if (message.startsWith(logRecievedMessage)) {
                     session.getRemote().sendString(endMessage);
                     session.close();
@@ -74,8 +78,8 @@ public class SessionHandler {
                     else {
                         firstTry = true;
                         oneDfSent = true;
-                        dataFrame = fdf.get();
-                        // dataFrame = qm.getSubDF(rowsPerChunk);
+                        if (qm.resultSet != null)
+                            dataFrame = fdf.get();
                     }
                 }
                 if (dataFrame != null && (dataFrame.rowCount != 0 || !oneDfSent)) {   

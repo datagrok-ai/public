@@ -21,7 +21,7 @@ public class QueryManager {
 
     SchemeInfo schemeInfo;
 
-    ResultSet resultSet;
+    public ResultSet resultSet;
     public FuncCall query;
     Connection connection;
 
@@ -71,6 +71,7 @@ public class QueryManager {
 
     public void closeConnection() throws SQLException {
         if (connection != null && !connection.isClosed()) {
+            connection.commit();
             connection.close();
         }
     }
