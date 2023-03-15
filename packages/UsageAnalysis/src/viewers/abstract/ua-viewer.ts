@@ -50,15 +50,14 @@ export abstract class UaViewer {
       this.setStyle(host);
 
     const nameDiv = ui.divH([], {style: {alignItems: 'center'}});
+    nameDiv.style.flexGrow = '0';
     if (this.showName)
-      nameDiv.append(ui.h1(this.name, {style: {margin: '6px 0'}}));
+      nameDiv.append(ui.h1(this.name, {style: {marginTop: '15px'}}));
     host.appendChild(nameDiv);
 
     const loader = ui.loader();
     host.appendChild(loader);
-
     this.setViewer(loader, host, nameDiv);
-
     this.root.append(host);
   }
 
