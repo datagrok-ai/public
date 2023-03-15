@@ -50,11 +50,14 @@ public class MySqlDataProvider extends JdbcDataProvider {
             put("#char.*", Types.STRING);
             put("#varchar.*", Types.STRING);
             put("#text.*", Types.STRING);
+            put("#mediumtext.*", Types.STRING);
+            put("#longtext.*", Types.STRING);
             put("#tinytext.*", Types.STRING);
             put("date", Types.DATE_TIME);
             put("#datetime.*", Types.DATE_TIME);
             put("#timestamp.*", Types.DATE_TIME);
             put("#time.*", Types.DATE_TIME);
+            put("year", Types.DATE_TIME);
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "std(#)", Types.dataFrameNumericTypes));
     }
