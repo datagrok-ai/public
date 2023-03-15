@@ -14,6 +14,21 @@ import java.util.Properties;
  * Enum that contains all necessary data related to specific provider and it's container
  */
 public enum Provider {
+    REDSHIFT("src/test/resources/properties/redshift.properties") {
+        @Override
+        protected JdbcDatabaseContainer<?> newJdbcContainer() {
+
+            container = new MySQLContainer<>(properties.get("image").toString())
+                    .withDatabaseName(properties.get("database").toString())
+                    .withUsername(properties.get("user").toString())
+                    .withPassword(properties.get("password").toString())
+                    .withEnv("MYSQL_ROOT_PASSWORD", "datagrok")
+                    .withInitScript(properties.get("initScript").toString());
+            container.start();
+            return container;
+        }
+    },
+
     MYSQL("src/test/resources/properties/mysql.properties") {
         @Override
         protected JdbcDatabaseContainer<?> newJdbcContainer() {
