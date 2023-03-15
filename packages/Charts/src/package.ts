@@ -77,14 +77,15 @@ export function _SankeyViewer() {
 //description: Creates a sunburst viewer
 //tags: viewer
 //output: viewer result
-//meta.icon: icons/sunbrust-viewer.svg
+//meta.icon: icons/sunburst-viewer.svg
 export function _SunburstViewer() {
   return new SunburstViewer();
 }
 
-//name: SurfacePlot
+//name: Surface plot
 //description: Creates a surface plot viewer
 //tags: viewer
+//meta.icon: icons/surfaceplot-viewer.svg
 //output: viewer result
 export function _SurfacePlot() {
   return new SurfacePlot();

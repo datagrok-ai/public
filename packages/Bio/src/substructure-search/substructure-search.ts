@@ -53,7 +53,7 @@ export function substructureSearchDialog(col: DG.Column<string>): void {
 
   updateDivInnerHTML(inputsDiv, inputs);
 
-  ui.dialog('Substructure search')
+  ui.dialog('Substructure Search')
     .add(ui.divV([
       ui.divText(`Notation: ${units}`),
       inputsDiv
