@@ -65,8 +65,8 @@ export class Breadcrumbs {
     this.activeTab = (currentHeaderElement as HTMLDivElement);
   }
 
-  getTabContent(name: string) {
-    return this.content.getElementsByClassName(`${name}-content-element`)[0];
+  getTabContent(name: string): HTMLElement {
+    return (this.content.getElementsByClassName(`${name}-content-element`)[0] as HTMLElement);
   }
 
   editTab(tabName: string, newName: string, content: HTMLElement) {
