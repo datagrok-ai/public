@@ -7,21 +7,30 @@ import { FuncMetadata, FuncParam, FuncValidator, ValidationResult } from '../val
 import { PackageFile } from '../utils/interfaces';
 
 
-export function check(args: { [x: string]: string | string[]; }) {
+export function check(args: CheckArgs): boolean {
   const nOptions = Object.keys(args).length - 1;
-  if (args['_'].length !== 1 || (nOptions > 0 && (!args.dir || typeof args.dir !== 'string')) || nOptions > 1)
+  if (args['_'].length !== 1 || nOptions > 2 || (nOptions > 0 && !args.r && !args.recursive))
     return false;
 
   const curDir = process.cwd();
 
-  if (args.dir && typeof args.dir === 'string') {
-    const packagesDir = path.isAbsolute(args.dir) ? args.dir : path.join(curDir, args.dir);
-    fs.readdirSync(packagesDir).forEach((file) => {
-      const filepath = path.join(packagesDir, file);
-      const stats = fs.statSync(filepath);
-      if (stats.isDirectory() && utils.isPackageDir(filepath))
-        runChecks(filepath);
-    });
+  if (args.recursive) {
+    function runChecksRec(dir: string) {
+      const files = fs.readdirSync(dir);
+      for (const file of files) {
+        const filepath = path.join(dir, file);
+        const stats = fs.statSync(filepath);
+        if (stats.isDirectory()) {
+          if (utils.isPackageDir(filepath))
+            runChecks(filepath);
+          else {
+            if (file !== 'node_modules' && !file.startsWith('.'))
+              runChecksRec(path.join(dir, file));
+          }
+        }
+      }
+    }
+    runChecksRec(curDir);
   } else {
     if (!utils.isPackageDir(curDir)) {
       color.error('File `package.json` not found. Run the command from the package directory');
@@ -311,4 +320,10 @@ function getFuncMetadata(script: string): FuncMetadata[] {
   }
 
   return funcData;
+}
+
+interface CheckArgs {
+  _: string[],
+  r?: boolean,
+  recursive?: boolean,
 }
