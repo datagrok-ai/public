@@ -4,38 +4,45 @@ import * as grok from 'datagrok-api/grok';
 import {BehaviorSubject} from 'rxjs';
 import {UaFilter} from './filter';
 import {ViewHandler} from './view-handler';
-import {ChoiceInput} from './elements/choice-input';
+import {ChoiceInputGroups} from './elements/choice-input-groups';
+import {ChoiceInputPackages} from './elements/choice-input-packages';
 import $ from 'cash-dom';
 
 export class UaToolbox {
   rootAccordion: DG.Accordion;
   dateInput: DG.InputBase;
-  usersInput: ChoiceInput;
+  usersInput: ChoiceInputGroups;
+  packagesInput: ChoiceInputPackages;
   filterStream: BehaviorSubject<UaFilter>;
 
   static async construct() {
-    const date = 'today';
+    const date = 'this week';
     const users = ['all'];
+    const packages = ['all'];
 
     const dateInput = ui.stringInput('Date', date);
     dateInput.addPatternMenu('datetime');
     dateInput.setTooltip('Set the date period');
-    const usersInput = await ChoiceInput.construct();
+    const usersInput = await ChoiceInputGroups.construct();
+    const packagesInput = await ChoiceInputPackages.construct();
 
     const filterStream = new BehaviorSubject(new UaFilter({
       date: date,
       users: users,
+      packages: packages,
     }));
 
-    return new UaToolbox(dateInput, usersInput, filterStream);
+    return new UaToolbox(dateInput, usersInput, packagesInput, filterStream);
   }
 
-  private constructor(dateInput: DG.InputBase, usersInput: ChoiceInput, filterStream: BehaviorSubject<UaFilter>) {
+  private constructor(dateInput: DG.InputBase, usersInput: ChoiceInputGroups,
+    packagesInput: ChoiceInputPackages, filterStream: BehaviorSubject<UaFilter>) {
     this.rootAccordion = ui.accordion();
     this.rootAccordion.addPane('Filters', () => {
       const form = ui.narrowForm([
         dateInput,
         usersInput.field,
+        packagesInput.field,
       ]);
       $(form).append(ui.bigButton('Apply', () => this.applyFilter()));
       return form;
@@ -43,6 +50,7 @@ export class UaToolbox {
 
     this.dateInput = dateInput;
     this.usersInput = usersInput;
+    this.packagesInput = packagesInput;
     this.filterStream = filterStream;
   }
 
@@ -50,6 +58,7 @@ export class UaToolbox {
     return new UaFilter({
       date: this.dateInput.value,
       users: await UaToolbox.getUsersInGroups(this.usersInput.getSelectedGroups()),
+      packages: this.packagesInput.getSelectedPackages(),
     });
   }
 
@@ -61,11 +70,11 @@ export class UaToolbox {
     return res;
   }
 
-
   async applyFilter() {
     this.filterStream.next(await this.getFilter());
     ViewHandler.getInstance().setUrlParam('date', this.dateInput.value, true);
     ViewHandler.getInstance().setUrlParam('users', this.usersInput.getSelectedGroups().join(','), true);
+    ViewHandler.getInstance().setUrlParam('packages', this.packagesInput.getSelectedPackages().join(','), true);
   }
 
   setDate(value: string) {
@@ -74,5 +83,9 @@ export class UaToolbox {
 
   async setUsers(value: string) {
     this.usersInput.addItems(value.split(','));
+  }
+
+  async setPackages(value: string) {
+    this.packagesInput.addItems(value.split(','));
   }
 }
