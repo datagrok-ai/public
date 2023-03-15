@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import '../../css/usage_analysis.css';
 import {UaToolbox} from '../ua-toolbox';
-import {UaView} from './ua-view';
+import {UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {UaDataFrameQueryViewer} from '../viewers/ua-data-frame-query-viewer';
 import {TopPackagesViewer} from '../drilldown_viewers/events/top-packages-viewer';
