@@ -22,7 +22,7 @@ category('newickParser_phylotree', () => {
 
     expect(res.error, null);
     expect(res.json.name, 'root');
-    expect(res.json.children, undefined);
+    expect(res.json.children == undefined);
   });
 
   test('nwk1NoNameNoHeight', async () => {

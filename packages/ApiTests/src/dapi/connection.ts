@@ -17,6 +17,6 @@ category('Dapi: connection', () => {
     expect(dc.friendlyName, 'Local DG Test');
     expect((await GDC.find(dc.id)).id, dc.id);
     await GDC.delete(dc);
-    expect(await GDC.find(dc.id), undefined);
+    expect(await GDC.find(dc.id) == undefined);
   });
 });
