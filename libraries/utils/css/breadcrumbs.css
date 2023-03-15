@@ -1,0 +1,35 @@
+.breadcrumbs-header-stripe {
+    display: flex;
+    flex-direction: row;
+    flex-shrink: 0;
+}
+
+.breadcrumbs-header-element {
+    cursor: pointer;
+    color: var(--blue-1);
+    padding: 8px 16px;
+    position: relative;
+    border-bottom: 2px solid transparent;
+}
+
+.breadcrumbs-header-element.selected {
+    border-bottom: 2px solid var(--blue-1);
+    color: var(--blue-1);
+    cursor: default;
+    pointer-events: none;
+}
+
+
+.breadcrumbs-content-element {
+    background-color: rgb(238, 238, 255);
+    display: none;
+}
+
+.breadcrumbs-content-element.visible {
+    display: block;
+}
+
+
+div.ui-panel + div.ui-panel {
+    padding-top: 12px;
+}
