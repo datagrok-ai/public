@@ -12,6 +12,11 @@ module.exports = {
   module: {
     rules: [
       {
+        test: /\.js$/,
+        enforce: 'pre',
+        use: ['source-map-loader'],
+      },
+      {
         test: /\.ts$/,
         loader: 'ts-loader',
         exclude: /node_modules/,

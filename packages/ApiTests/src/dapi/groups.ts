@@ -13,7 +13,7 @@ category('Dapi: groups', () => {
   });
 
   test('Dapi: groups - find group', async () => {
-    expect((await grok.dapi.groups.filter('unexisting group').first()), undefined);
+    expect((await grok.dapi.groups.filter('unexisting group').first()) == undefined);
   });
 
   test('Dapi: groups - create group', async () => {
@@ -71,7 +71,7 @@ category('Dapi: groups', () => {
     const localTestGroup = await grok.dapi.groups.createNew(localTestGroupName);
     expect((await grok.dapi.groups.filter(localTestGroupName).first())?.name, localTestGroupName);
     await grok.dapi.groups.delete(localTestGroup);
-    expect((await grok.dapi.groups.filter(localTestGroupName).first()), undefined);
+    expect((await grok.dapi.groups.filter(localTestGroupName).first()) == undefined);
   });
 
   after(async () => {

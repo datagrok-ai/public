@@ -42,6 +42,6 @@ category('Dapi: user data storage', () => {
     await grok.dapi.userDataStorage.remove(storageName, key);
 
     const receivedValue = await grok.dapi.userDataStorage.getValue(storageName, key);
-    expect(receivedValue, undefined);
+    expect(receivedValue == undefined);
   });
 });
