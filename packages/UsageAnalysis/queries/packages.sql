@@ -1,6 +1,7 @@
 --name: PackagesUsage
 --input: string date {pattern: datetime}
 --input: list users
+--input: list packages
 --meta.cache: true
 --connection: System:Datagrok
 select t.package, t.user, sum(t.count)::bigint as count, t.time
@@ -16,7 +17,7 @@ inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
 where @date(e.event_time)
 and (u.login = any(@users) or @users = ARRAY['all'])
--- where e.event_time::TIMESTAMP between 'now'::TIMESTAMP - interval '7 day' and 'now'::TIMESTAMP
+and (pp.name = any(@packages) or @packages = ARRAY['all'])
 group by pp.name, u.friendly_name, time
 limit 100000)
 union all
@@ -30,7 +31,7 @@ inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
 where @date(e.event_time)
 and (u.login = any(@users) or @users = ARRAY['all'])
--- where e.event_time::TIMESTAMP between 'now'::TIMESTAMP - interval '7 day' and 'now'::TIMESTAMP
+and (pp.name = any(@packages) or @packages = ARRAY['all'])
 group by pp.name, u.friendly_name, time
 limit 100000)
 ) t
