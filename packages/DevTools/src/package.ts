@@ -65,7 +65,7 @@ export function _IconTool(): void {
   grok.shell.newView('Icon Tool', [new IconTool('Icon Tool')]);
 }
 
-//name: TestManager
+//name: Test Manager
 //top-menu: Tools | Dev | Test Manager
 //tags: app
 export async function testManager(): Promise<void> {

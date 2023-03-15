@@ -16,7 +16,7 @@ import { ImportScriptGeneratorApp } from './import-script-generator/view';
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
 
-//name: Import script generator
+//name: Import Script Generator
 //description: Creates and registers a new script based on the input config
 //tags: higher-order function, app
 //meta.icon: icons/flux.png
