@@ -96,7 +96,7 @@ export function chemblSimilaritySearchPanel(mol: string): DG.Widget {
   return mol ? chemblSearchWidgetLocalDb(mol) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: ChemblBrowser
+//name: Chembl Browser
 //tags: app
 export async function Browser() {
   // Filter inputs
