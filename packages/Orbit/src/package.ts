@@ -10,7 +10,7 @@ export function info() {
   grok.shell.info(_package.webRoot);
 }
 
-//name: orbit
+//name: Orbit
 //tags: app
 export async function app() {
   // ?c.dataSource=S3&c.parameters.bucket=datagrok-orbit&c.parameters.region=us-east-2&folder=202208269918
