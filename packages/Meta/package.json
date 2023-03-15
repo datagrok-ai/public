@@ -1353,9 +1353,6 @@
         },
         "1.0.18": {
           "datagrok-api": "^1.6.7"
-        },
-        "1.0.19": {
-          "datagrok-api": "^1.6.7"
         }
       },
       "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
@@ -1800,9 +1797,6 @@
         },
         "2.1.11": {
           "datagrok-api": "^1.8.2"
-        },
-        "2.3.9": {
-          "datagrok-api": "^1.13.3"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
