@@ -57,7 +57,7 @@ Usage: grok config
 Create or update a configuration file
 
 Options:
-[--reset] [--server] [--alias] [--key]
+[--reset] [--server] [--alias] [-k | --key]
 
 --reset     Restore the default config file template
 --server    Use to add a server to the config (\`grok config add --alias alias --server url --key key\`)
@@ -77,7 +77,7 @@ grok create <name>  Create a package in a folder with the specified name
 Please note that the package name may only include letters, numbers, underscores, or hyphens
 
 Options:
-[--eslint] [--ide] [--js|--ts]
+[--eslint] [--ide] [--js | --ts]
 
 --eslint    Add a configuration for eslint
 --ide       Add an IDE-specific configuration for debugging (vscode)
@@ -91,7 +91,7 @@ Usage: grok publish [host]
 Upload a package
 
 Options:
-[--build|--rebuild] [--debug|--release] [--key] [--suffix]
+[--build|--rebuild] [--debug|--release] [-k | --key] [--suffix]
 
 Running \`grok publish\` is the same as running \`grok publish defaultHost --build --debug\`
 `;
@@ -100,9 +100,9 @@ const HELP_CHECK = `
 Usage: grok check
 
 Options:
-[--dir]
+[-r | --recursive]
 
---dir       Check all packages in a specified directory
+--recursive       Check all packages in the current directory
 
 Check package content (function signatures, import statements of external modules, etc.)
 `;
