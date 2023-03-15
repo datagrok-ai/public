@@ -14,7 +14,7 @@ category('View: Docking', () => {
   });
 
   test('dock', async () => {
-    expect(wu(tv.viewers).find((v) => v.tags['test']), undefined);
+    expect(wu(tv.viewers).find((v) => v.tags['test']) == undefined);
     const viewer = df.plot.scatter();
     viewer.tags['test'] = 'true';
     tv.dockManager.dock(viewer, DG.DOCK_TYPE.DOWN);
