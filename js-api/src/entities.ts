@@ -521,8 +521,8 @@ export class DataConnection extends Entity {
     return new Promise((resolve, reject) => api.grok_DataConnection_Test(this.dart, (s: any) => resolve(toJs(s)), (e: any) => reject(e)));
   }
 
-  query(name: string, sql: string, params: {[key: string]: string} = {}): DataQuery {
-    return toJs(api.grok_DataConnection_Query(this.dart, name, sql, params));
+  query(name: string, sql: string): DataQuery {
+    return toJs(api.grok_DataConnection_Query(this.dart, name, sql));
   }
 
   /** Creates a database connection
