@@ -45,6 +45,18 @@ Available tags:
 panel, init
 `;
 
+const HELP_INIT = `
+Usage: grok init
+
+Options:
+[--eslint] [--ide] [--test] [--ts]
+
+--eslint    Add a configuration for eslint
+--ide       Add an IDE-specific configuration for debugging (vscode)
+--test      Add tests support (TypeScript packages only)
+--ts        Convert a JavaScript package to TypeScript
+`;
+
 const HELP_API = `
 Usage: grok api
 
@@ -150,6 +162,7 @@ export const help = {
   check: HELP_CHECK,
   config: HELP_CONFIG,
   create: HELP_CREATE,
+  init: HELP_INIT,
   link: HELP_LINK,
   unlink: HELP_UNLINK,
   publish: HELP_PUBLISH,
