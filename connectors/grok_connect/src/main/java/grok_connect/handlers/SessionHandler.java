@@ -101,6 +101,8 @@ public class SessionHandler {
             } catch (Throwable ex) {
                 if (ex instanceof OutOfMemoryError)
                     GrokConnect.needToReboot = true;
+                if (ex.getCause() instanceof QueryCancelledByUser)
+                    ex = ex.getCause();
                 session.getRemote().sendString(socketErrorMessage(ex));
                 session.close();
                 qm.closeConnection();
