@@ -3,15 +3,15 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import '../../css/choice_input.css';
-
 import Choices from 'choices.js';
 
-export class ChoiceInput {
+
+export class ChoiceInputPackages {
   choices: Choices;
   field: DG.InputBase;
 
   static async construct() {
-    const field = ui.choiceInput('Groups', [], []);
+    const field = ui.choiceInput('Packages', [], []);
 
     field.input.setAttribute('multiple', '');
     const choices = new Choices(field.input, {
@@ -23,16 +23,18 @@ export class ChoiceInput {
       itemSelectText: '',
     });
 
+    const packages = (await grok.dapi.packages.list()).filter((value, index, self) =>
+      index === self.findIndex((t) => (t.name === value.name)));
     field.input.addEventListener('search', async (event) => {
-      const newGroups: DG.Group[] = await grok.dapi.groups.getGroupsLookup(choices.input.value);
+      const newPackages: DG.Package[] = packages.filter((p) => p.name.toLowerCase()
+        .includes(choices.input.value.toLowerCase()));
       choices.clearChoices();
-      choices.setChoices(() => newGroups.map((g: DG.Group) => {
-        return {value: g.name, label: g.name};
+      choices.setChoices(() => newPackages.map((p: DG.Package) => {
+        return {value: p.name, label: p.name};
       }));
     });
 
-
-    return new ChoiceInput(choices, field);
+    return new ChoiceInputPackages(choices, field);
   }
 
   private constructor(choices: Choices, field: DG.InputBase) {
@@ -40,10 +42,10 @@ export class ChoiceInput {
     this.field = field;
   }
 
-  getSelectedGroups() : string[] {
-    const users = this.choices?.getValue(true) as string[];
-    if (users && users.length > 0)
-      return users;
+  getSelectedPackages(): string[] {
+    const packages = this.choices?.getValue(true) as string[];
+    if (packages && packages.length > 0)
+      return packages;
     else
       return ['all'];
   }

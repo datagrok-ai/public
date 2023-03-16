@@ -54,3 +54,12 @@ export function expectTable(actual: DG.DataFrame, expected: DG.DataFrame): boole
   _expectTable(actual, expected);
   return true;
 }
+
+//name: dummyPackageFunction
+//input: int a
+//input: int b
+//output: int c
+export function dummyPackageFunction(a: number, b: number) {
+  const c = a + b;
+  return c;
+}

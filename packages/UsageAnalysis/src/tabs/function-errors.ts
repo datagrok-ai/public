@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import '../../css/usage_analysis.css';
 import {UaToolbox} from '../ua-toolbox';
-import {UaView} from './ua-view';
+import {UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {UaQueryViewer} from '../viewers/abstract/ua-query-viewer';
 import {TopFunctionErrorsViewer} from '../drilldown_viewers/function_errors/top-function-errors-viewer';
