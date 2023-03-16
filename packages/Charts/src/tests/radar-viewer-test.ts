@@ -7,7 +7,7 @@ import {getOptions} from './utils';
 
 
 category('Radar', () => {
-  const TYPE = 'RadarViewer';
+  const TYPE = 'Radar';
   let df: DG.DataFrame;
   let tv: DG.TableView;
   const subs: Subscription[] = [];
