@@ -28,83 +28,93 @@ export function flagCellRenderer() {
 }
 
 
-//name: ChordViewer
+//name: Chord
 //description: Creates a chord viewer
 //tags: viewer
 //output: viewer result
+//meta.icon: icons/chord-viewer.svg
 export function _ChordViewer() {
   return new ChordViewer();
 }
 
-//name: GlobeViewer
+//name: Globe
 //description: Creates a globe viewer
 //tags: viewer
 //output: viewer result
+//meta.icon: icons/globe-viewer.svg
 export function _GlobeViewer() {
   return new GlobeViewer();
 }
 
-//name: GroupAnalysisViewer
+//name: Group Analysis
 //description: Creates a group analysis viewer
 //tags: viewer
 //output: viewer result
+//meta.icon: icons/groupanalysis-viewer.svg
 export function _GroupAnalysisViewer() {
   return new GroupAnalysisViewer();
 }
 
-//name: RadarViewer
+//name: Radar
 //description: Creates a radar viewer
 //tags: viewer
 //output: viewer result
+//meta.icon: icons/radar-viewer.svg
 export function _RadarViewer() {
   return new RadarViewer();
 }
 
-//name: SankeyViewer
+//name: Sankey
 //description: Creates a sankey viewer
 //tags: viewer
 //output: viewer result
+//meta.icon: icons/sankey-viewer.svg
 export function _SankeyViewer() {
   return new SankeyViewer();
 }
 
-//name: SunburstViewer
+//name: Sunburst
 //description: Creates a sunburst viewer
 //tags: viewer
 //output: viewer result
+//meta.icon: icons/sunburst-viewer.svg
 export function _SunburstViewer() {
   return new SunburstViewer();
 }
 
-//name: SurfacePlot
+//name: Surface plot
 //description: Creates a surface plot viewer
 //tags: viewer
+//meta.icon: icons/surfaceplot-viewer.svg
 //output: viewer result
 export function _SurfacePlot() {
   return new SurfacePlot();
 }
 
-//name: TimelinesViewer
+//name: Timelines
 //description: Creates a timelines viewer
 //tags: viewer
 //output: viewer result
+//meta.icon: icons/timelines-viewer.svg
 export function _TimelinesViewer() {
   return new TimelinesViewer();
 }
 
-//name: TreeViewer
+//name: Tree
 //description: Creates a tree viewer
 //tags: viewer
 //meta.trellisable: true
 //output: viewer result
+//meta.icon: icons/tree-viewer.svg
 export function _TreeViewer() {
   return new TreeViewer();
 }
 
-//name: WordCloudViewer
+//name: Word Cloud
 //description: Creates a word cloud viewer
 //tags: viewer
 //output: viewer result
+//meta.icon: icons/wordcloud-viewer.svg
 export function _WordCloudViewer() {
   return new WordCloudViewer();
 }

@@ -17,7 +17,7 @@ module.exports = {
       },
     ],
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {                    // external modules won't be loaded to the output, but taken from the environment
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

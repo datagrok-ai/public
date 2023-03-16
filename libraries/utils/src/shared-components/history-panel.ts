@@ -207,6 +207,8 @@ export class HistoryPanel {
       .add(ui.divText('The deleted run is impossible to restore. Are you sure?'))
       .onOK(async () => {
         this.beforeRunDeleted.next(funcCall.id);
+        await historyUtils.deleteRun(funcCall);
+        this.afterRunDeleted.next(funcCall.id);
       })
       .show({center: true});
   };

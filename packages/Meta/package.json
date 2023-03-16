@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.24",
+  "version": "3.2.31",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -436,6 +436,9 @@
         },
         "1.5.9": {
           "datagrok-api": "^1.13.2"
+        },
+        "1.5.10": {
+          "datagrok-api": "^1.13.2"
         }
       },
       "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Chem/README.md)",
@@ -703,9 +706,12 @@
         },
         "1.1.5": {
           "datagrok-api": "^1.9.1"
+        },
+        "1.1.6": {
+          "datagrok-api": "^1.9.1"
         }
       },
-      "description": "",
+      "description": "Integration with the PubChem web service.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -875,6 +881,9 @@
         },
         "3.1.1": {
           "datagrok-api": "^1.13.0"
+        },
+        "3.1.2": {
+          "datagrok-api": "^1.13.0"
         }
       },
       "description": "marvin is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
@@ -1020,6 +1029,9 @@
           "datagrok-api": "^1.8.1"
         },
         "1.5.10": {
+          "datagrok-api": "^1.13.0"
+        },
+        "1.5.11": {
           "datagrok-api": "^1.13.0"
         }
       },
@@ -1787,7 +1799,7 @@
           "datagrok-api": "^1.8.2"
         }
       },
-      "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
+      "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -2023,6 +2035,9 @@
           "datagrok-api": "^1.13.5"
         },
         "1.1.18": {
+          "datagrok-api": "^1.13.5"
+        },
+        "1.1.19": {
           "datagrok-api": "^1.13.5"
         }
       },
@@ -2282,6 +2297,19 @@
         "directory": "packages/MolecularLiabilityBrowser"
       },
       "category": "Bioinformatics"
+    },
+    "fae": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "latest"
+        }
+      },
+      "description": "Bispecifics FAE simulation V2.0",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public",
+        "directory": "packages/FAE"
+      }
     }
   }
 }
