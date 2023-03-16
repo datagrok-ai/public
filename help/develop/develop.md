@@ -223,6 +223,8 @@ consider:
   field of `package.json`
 * When defining new [views](how-to/custom-views.md) and [viewers](how-to/develop-custom-viewer.md), we recommend
   postfixing your classes with `View` and `Viewer` respectively
+* Functions that register an application don't need an `App` prefix/postfix. Split multi-word names with spaces and use
+  title case, e.g., `Test Manager` instead of `testManagerApp`.
 * The names of semantic type detectors typically start with the `detect` prefix, e.g., `detectNucleotides`
   or `detectRDSmiles`
 * Filenames can be written in lower case, with dashes between words: `tika-extractor.py`
