@@ -27,7 +27,7 @@ export abstract class UaQueryViewer extends UaViewer {
     this.init();
   }
 
-  setViewer(loader: any, host: HTMLDivElement, nameDiv: HTMLElement) {
+  setViewer(loader: any, host: HTMLDivElement, nameDiv?: HTMLElement) {
     const filter = {...this.filter, ...this.staticFilter};
 
     grok.data.query('UsageAnalysis:' + this.queryName, filter).then((dataFrame) => {
@@ -61,7 +61,7 @@ export abstract class UaQueryViewer extends UaViewer {
       tableIcon.addEventListener('mouseover', function() {tableIcon.style.color = 'var(--blue-1)';});
       tableIcon.addEventListener('mouseleave', function() {tableIcon.style.color = 'var(--grey-4)';});
 
-      nameDiv.append(ui.tooltip.bind(tableIcon, 'Show grid'));
+      nameDiv?.append(ui.tooltip.bind(tableIcon, 'Show grid'));
 
       const tableViewIcon = ui.button(ui.iconFA('external-link-square'), () => {
         grok.shell.v = grok.shell.addTableView(dataFrame);
@@ -75,7 +75,7 @@ export abstract class UaQueryViewer extends UaViewer {
       tableViewIcon.addEventListener('mouseover', function() {tableViewIcon.style.color = 'var(--blue-1)';});
       tableViewIcon.addEventListener('mouseleave', function() {tableViewIcon.style.color = 'var(--grey-4)';});
 
-      nameDiv.append(ui.tooltip.bind(tableViewIcon, 'Open grid'));
+      nameDiv?.append(ui.tooltip.bind(tableViewIcon, 'Open grid'));
 
       host.appendChild(viewer);
       host.removeChild(loader);
