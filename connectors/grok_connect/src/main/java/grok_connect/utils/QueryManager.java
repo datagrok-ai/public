@@ -29,8 +29,6 @@ public class QueryManager {
         .registerTypeAdapter(Property.class, new PropertyAdapter())
         .create();
 
-    private static ProviderManager providerManager = new ProviderManager(Logger.getLogger(GrokConnect.class.getName()));
-
     public QueryManager(FuncCall query, JdbcDataProvider provider) {
         this.query = query;
         this.provider = provider;
@@ -44,7 +42,7 @@ public class QueryManager {
         System.out.println(query.func.query);
 
         // DateTime startTime = DateTime.now();
-        provider = providerManager.getByName(query.func.connection.dataSource);
+        provider = GrokConnect.getProviderManager().getByName(query.func.connection.dataSource);
     }
 
     public void getResultSet() throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
@@ -72,7 +70,10 @@ public class QueryManager {
     public void closeConnection() throws SQLException {
         if (connection != null && !connection.isClosed()) {
             connection.commit();
+            provider.providerManager.getQueryMonitor().removeResultSet(query.id);
             connection.close();
+        } else {
+            provider.providerManager.getQueryMonitor().removeResultSet(query.id);
         }
     }
 }
