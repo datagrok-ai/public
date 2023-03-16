@@ -33,7 +33,7 @@ export abstract class UaViewer {
     style: 'dashboard',
   };
 
-  protected constructor(name: string, setStyle?: Function | null, showName: boolean = true) {
+  protected constructor(name: string, setStyle?: Function | null, showName: boolean = false) {
     this.root = ui.box();
     this.name = name;
 
@@ -43,24 +43,23 @@ export abstract class UaViewer {
     this.showName = showName;
   }
 
-  reloadViewer() {
+  reloadViewer(header: boolean = true) {
     this.root.innerHTML = '';
     const host = ui.box();
     if (this.setStyle)
       this.setStyle(host);
-
-    const nameDiv = ui.divH([], {style: {alignItems: 'center'}});
-    nameDiv.style.flexGrow = '0';
-    if (this.showName)
-      nameDiv.append(ui.h1(this.name, {style: {marginTop: '15px'}}));
-    host.appendChild(nameDiv);
-
     const loader = ui.loader();
+    if (header) {
+      const nameDiv = ui.divH([], {style: {alignItems: 'end'}});
+      nameDiv.style.flexGrow = '0';
+      if (this.showName)
+        nameDiv.append(ui.h1(this.name, {style: {margin: '15px 0 3px 15px'}}));
+      host.appendChild(nameDiv);
+      this.setViewer(loader, host, nameDiv);
+    } else this.setViewer(loader, host);
     host.appendChild(loader);
-    this.setViewer(loader, host, nameDiv);
     this.root.append(host);
   }
 
-  setViewer(loader: any, host: HTMLDivElement, nameDiv: HTMLElement): void {
-  }
+  setViewer(loader: any, host: HTMLDivElement, nameDiv?: HTMLElement): void {}
 }

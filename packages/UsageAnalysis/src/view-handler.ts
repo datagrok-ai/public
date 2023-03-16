@@ -73,8 +73,9 @@ export class ViewHandler {
       await toolbox.applyFilter();
     }
 
-    const UAView = grok.shell.newView('Usage Analysis', [tabs]);
-    UAView.toolbox = toolbox.rootAccordion.root;
+    const UA = grok.shell.newView('Usage Analysis', [tabs]);
+    UA.box = true;
+    UA.toolbox = toolbox.rootAccordion.root;
   }
 
   getSearchParameters() : Map<string, string> {

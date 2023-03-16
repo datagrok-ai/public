@@ -8,6 +8,6 @@ export class UaDataFrameQueryViewer extends UaQueryViewer {
   }
 
   init(): void {
-    this.reloadViewer();
+    this.reloadViewer(false);
   }
 }
