@@ -149,6 +149,7 @@ export namespace chem {
     emptySketcherLink: HTMLDivElement;
     resized = false;
     _sketcherTypeChanged = false;
+    _autoResized = true;
 
     set sketcherType(type: string) {
       this._setSketcherType(type);
@@ -164,6 +165,10 @@ export namespace chem {
 
     get isResizing(): boolean {
       return this.resized;
+    }
+
+    get autoResized(): boolean {
+      return this._autoResized;
     }
 
     get sketcherTypeChanged(): boolean {
@@ -353,6 +358,7 @@ export namespace chem {
       const closeDlg = () => {
         this.sketcherDialogOpened = false;
         this.resized = false;
+        this._autoResized = true;
       } 
 
       this.extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
@@ -361,7 +367,6 @@ export namespace chem {
         if (!this.sketcherDialogOpened) {
           this.sketcherDialogOpened = true;
           let savedMolFile = this.getMolFile();
-          let justOpened = true;
 
           let dlg = ui.dialog();
           dlg.add(this.createInplaceModeSketcher())
@@ -377,11 +382,11 @@ export namespace chem {
             .show({ resizable: true });
           ui.onSizeChanged(dlg.root).subscribe((_) => {
             if (this.sketcherDialogOpened)
-            //not calling resize when dialog has just been opened. Call resize only when resized manually
               if (!this.sketcher?.isInitialized)
                 return;
               else
-                justOpened ? justOpened = false : this.resize();
+                //for some sketchers onSizeChanged is called once after dialog is just opened. We call resize() only when resized manually
+                this._autoResized ? this._autoResized = false : this.resize();
           });
         }
       };
@@ -454,6 +459,8 @@ export namespace chem {
                 currentSketcherType = friendlyName;
                 grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, friendlyName, true);
                 this.sketcherType = currentSketcherType;
+                if (!this.resized)
+                  this._autoResized = true;
             }
           },
             {
