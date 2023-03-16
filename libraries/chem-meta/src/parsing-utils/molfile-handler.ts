@@ -1,14 +1,11 @@
 import {ChemicalTableParser, ChemicalTableParserBase, AtomAndBondCounts} from './chemical-table-parser';
-import {MOLFILE_VERSION, V2K, V3K} from './molfile-parsing-const';
+import {MOLFILE_VERSION, V2K_CONST, V3K_CONST} from './molfile-parsing-const';
 
-/** Class for handling MDL Molfiles V2000 and V3000 */
 export class MolfileHandler extends ChemicalTableParserBase implements ChemicalTableParser {
   constructor(molfile: string) {
     super(molfile);
     this.init(molfile);
   }
-
-  // Public members
 
   /** Init/reset the state of the handler for a new molfile */
   public init(molfile: string) {
@@ -29,15 +26,15 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
       this.shiftIdxToAtomTypeV3K;
 
     this.getBondBlockIdx = isV2K ? this.getBondBlockIdxV2K : this.getBondBlockIdxV3K;
+
+    this.shiftIdxToBondedAtomsPair = isV2K ? this.shiftIdxToBondedAtomsPairV2K : this.shiftIdxToBondedAtomsPairV3K;
   }
 
   public static createInstance(file: string): MolfileHandler {
     if (!this.instance)
-      this.instance = new MolfileHandler(file); // a workaround to define an abstract singleton
+      this.instance = new MolfileHandler(file);
     return this.instance as MolfileHandler;
   }
-
-  // Protected members
 
   protected parseAtomAndBondCounts!: () => AtomAndBondCounts;
   protected getCountsLineIdx!: () => number;
@@ -45,14 +42,13 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
   protected shiftIdxToXColumn!: (lineStartIdx: number) => number;
   protected shiftIdxToAtomType!: (idx: number) => number;
   protected getBondBlockIdx!: () => number;
+  protected shiftIdxToBondedAtomsPair!: (lineStartIdx: number) => number;
 
   protected parseAtomType(idx: number): string {
     const begin = idx;
     const end = this.file.indexOf(' ', begin);
     return this.file.substring(begin, end);
   }
-
-  // Private members
 
   /** Determine whether the file is V2000/V3000, or throw */
   private static determineMolfileVersion(molfile: string): MOLFILE_VERSION {
@@ -65,23 +61,22 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
   }
 
   private shiftIdxToAtomTypeV2K(lineStartIdx: number): number {
-    return this.shiftToSpecifiedColumn(lineStartIdx, 4);
+    return this.shiftIdxToSpecifiedColumn(lineStartIdx, V2K_CONST.ATOM_TYPE_COL);
   }
 
   private shiftIdxToAtomTypeV3K(lineStartIdx: number): number {
-    return this.shiftToSpecifiedColumn(lineStartIdx, 3);
+    return this.shiftIdxToSpecifiedColumn(lineStartIdx, V3K_CONST.ATOM_TYPE_COL);
   }
 
   private getCountsLineV2KIdx(): number {
     let idx = 0;
-    // 3 is for the number of header lines in molfiles
-    for (let i = 0; i < 3; ++i)
+    for (let i = 0; i < V2K_CONST.NUM_OF_HEADER_LINES; ++i)
       idx = this.getNextLineIdx(idx);
     return idx;
   }
 
   private getCountsLineV3KIdx(): number {
-    return this.file.indexOf(V3K.BEGIN_COUNTS_LINE);
+    return this.file.indexOf(V3K_CONST.BEGIN_COUNTS_LINE);
   }
 
   private getAtomBlockIdxV2K(): number {
@@ -91,7 +86,7 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
   }
 
   private getAtomBlockIdxV3K(): number {
-    let idx = this.file.indexOf(V3K.BEGIN_ATOM_BLOCK);
+    let idx = this.file.indexOf(V3K_CONST.BEGIN_ATOM_BLOCK);
     idx = this.getNextLineIdx(idx);
     return idx;
   }
@@ -101,9 +96,16 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
   }
 
   private shiftIdxToXColumnV3K(lineStartIdx: number): number {
-    return this.shiftToSpecifiedColumn(lineStartIdx, 4);
+    return this.shiftIdxToSpecifiedColumn(lineStartIdx, V3K_CONST.X_COL);
   }
 
+  private shiftIdxToBondedAtomsPairV2K(lineStartIdx: number): number {
+    return this.shiftIdxToSpecifiedColumn(lineStartIdx, V2K_CONST.FIRST_BONDED_ATOM_COL);
+  }
+
+  private shiftIdxToBondedAtomsPairV3K(lineStartIdx: number): number {
+    return this.shiftIdxToSpecifiedColumn(lineStartIdx, V3K_CONST.FIRST_BONDED_ATOM_COL);
+  }
   private getBondBlockIdxV2K(): number {
     let idx = this.getAtomBlockIdx();
     for (let i = 0; i < this.atomCount; i++)
@@ -112,39 +114,32 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
   }
 
   private getBondBlockIdxV3K(): number {
-    return this.getNextLineIdx(this.file.indexOf(V3K.BEGIN_BOND_BLOCK));
+    return this.getNextLineIdx(this.file.indexOf(V3K_CONST.BEGIN_BOND_BLOCK));
   }
 
-  // todo: devise a more reliable validation
   private static validateV3K(molfile: string): boolean {
-    if (molfile.indexOf(V3K.HEADER) !== -1 &&
-    molfile.indexOf(V3K.END) !== -1)
-      return true;
-    return false;
+    return (molfile.indexOf(V3K_CONST.HEADER) !== -1 &&
+    molfile.indexOf(V3K_CONST.END) !== -1);
   }
 
-  // todo: devise a more reliable validation
   private static validateV2K(molfile: string): boolean {
-    if (molfile.indexOf(V2K.HEADER) !== -1 &&
-    molfile.indexOf(V2K.END) !== -1)
-      return true;
-    return false;
+    return (molfile.indexOf(V2K_CONST.HEADER) !== -1 &&
+    molfile.indexOf(V2K_CONST.END) !== -1);
   }
 
   private parseAtomAndBondCountsV2K(): AtomAndBondCounts {
     let begin = this.getCountsLineIdx();
-    // 3 is the # of digits allocated for atom/bond counts
-    let end = begin + 3;
+    let end = begin + V2K_CONST.NUM_OF_COUNTS_DIGITS;
     const atomCount = parseInt(this.file.substring(begin, end));
     begin = end;
-    end += 3;
+    end += V2K_CONST.NUM_OF_COUNTS_DIGITS;
     const bondCount = parseInt(this.file.substring(begin, end));
     return {atomCount: atomCount, bondCount: bondCount};
   };
 
   private parseAtomAndBondCountsV3K(): AtomAndBondCounts {
     // parse atom count
-    let begin = this.file.indexOf(V3K.BEGIN_COUNTS_LINE) + V3K.COUNTS_SHIFT;
+    let begin = this.file.indexOf(V3K_CONST.BEGIN_COUNTS_LINE) + V3K_CONST.COUNTS_SHIFT;
     let end = this.file.indexOf(' ', begin + 1);
     const numOfAtoms = parseInt(this.file.substring(begin, end));
 
