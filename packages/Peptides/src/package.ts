@@ -104,6 +104,7 @@ export function peptidesPanel(col: DG.Column): DG.Widget {
 //name: peptide-sar-viewer
 //description: Peptides SAR Viewer
 //tags: viewer
+//meta.icon: files/icons/peptide-sar-viewer.svg
 //output: viewer result
 export function sar(): MonomerPosition {
   return new MonomerPosition();
@@ -112,6 +113,7 @@ export function sar(): MonomerPosition {
 //name: peptide-sar-viewer-vertical
 //description: Peptides Vertical SAR Viewer
 //tags: viewer
+//meta.icon: files/icons/peptide-sar-vertical-viewer.svg
 //output: viewer result
 export function sarVertical(): MostPotentResiduesViewer {
   return new MostPotentResiduesViewer();
@@ -119,6 +121,7 @@ export function sarVertical(): MostPotentResiduesViewer {
 
 //name: logo-summary-viewer
 //tags: viewer
+//meta.icon: files/icons/logo-summary-viewer.svg
 //output: viewer result
 export function logoSummary(): LogoSummary {
   return new LogoSummary();
@@ -127,6 +130,7 @@ export function logoSummary(): LogoSummary {
 //name: peptide-space-viewer
 //description: Peptide Space Viewer
 //tags: viewer
+//meta.icon: files/icons/peptide-space-viewer.svg
 //output: viewer result
 export function peptideSpace(): PeptideSpaceViewer {
   return new PeptideSpaceViewer();
