@@ -906,12 +906,12 @@ export class Menu {
 export class Balloon {
 
   /** Shows information message (green background) */
-  info(s: string): void {
+  info(s: string | HTMLElement): void {
     api.grok_Balloon(s, 'info');
   }
 
   /** Shows information message (red background) */
-  error(s: string): void {
+  error(s: string | HTMLElement): void {
     api.grok_Balloon(s, 'error');
   }
 
