@@ -156,9 +156,9 @@ export async function _testGetSimilarities(getSimilaritiesFunction: (...args: an
 
 async function _testSimilaritySearchViewerOpen() {
   const molecules = await createTableView('tests/sar-small_test.csv');
-  const viewer = molecules.addViewer('SimilaritySearchViewer');
+  const viewer = molecules.addViewer('Chem Similarity Search');
   await delay(1000);
-  const similaritySearchviewer = getSearchViewer(viewer, 'SimilaritySearchViewer');
+  const similaritySearchviewer = getSearchViewer(viewer, 'Chem Similarity Search');
   expect(similaritySearchviewer.fingerprint, 'Morgan');
   expect(similaritySearchviewer.distanceMetric, 'Tanimoto');
   expect(similaritySearchviewer.scores!.get(0), 1);
@@ -187,9 +187,9 @@ async function _testSimilaritySearchFunctionality(distanceMetric: string, finger
 
 async function _testDiversitySearchViewerOpen() {
   const molecules = await createTableView('tests/sar-small_test.csv');
-  const viewer = molecules.addViewer('DiversitySearchViewer');
+  const viewer = molecules.addViewer('Chem Diversity Search');
   await delay(500);
-  const diversitySearchviewer = getSearchViewer(viewer, 'DiversitySearchViewer');
+  const diversitySearchviewer = getSearchViewer(viewer, 'Chem Diversity Search');
   expect(diversitySearchviewer.fingerprint, 'Morgan');
   expect(diversitySearchviewer.distanceMetric, 'Tanimoto');
   expect(diversitySearchviewer.initialized, true);

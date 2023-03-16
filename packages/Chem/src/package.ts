@@ -356,7 +356,7 @@ export function similaritySearchViewer(): ChemSimilarityViewer {
 //name: similaritySearch
 //description: finds the most similar molecule
 export function similaritySearchTopMenu(): void {
-  (grok.shell.v as DG.TableView).addViewer('SimilaritySearchViewer');
+  (grok.shell.v as DG.TableView).addViewer('Chem Similarity Search');
 }
 
 //name: Chem Diversity Search
@@ -371,7 +371,7 @@ export function diversitySearchViewer(): ChemDiversityViewer {
 //name: diversitySearch
 //description: finds the most diverse molecules
 export function diversitySearchTopMenu(): void {
-  (grok.shell.v as DG.TableView).addViewer('DiversitySearchViewer');
+  (grok.shell.v as DG.TableView).addViewer('Chem Diversity Search');
 }
 
 

@@ -29,7 +29,7 @@ category('top menu script based', () => {
     main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
     const v = grok.shell.addTableView(t);
 
-    t = await grok.functions.call('Chem:CurateChemStructures', {'data': t, 'molecules': 'smiles',
+    t = await grok.functions.call('Chem:Curate', {'data': t, 'molecules': 'smiles',
       'kekulization': false, 'normalization': true, 'reionization': true,
       'neutralization': true, 'tautomerization': true, 'mainFragment': true});
     v.close();
