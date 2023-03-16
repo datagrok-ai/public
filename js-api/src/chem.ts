@@ -326,9 +326,11 @@ export namespace chem {
       const zoom = 20; // coefficient we use to calculate size of canvas to feet molecule
       const xCoords = molfileHandler.x;
       const yCoords = molfileHandler.y;
+      const bondedAtoms = molfileHandler.pairsOfBondedAtoms;
       let tooltip: HTMLElement;
-      if (xCoords.length > 1 && yCoords.length > 1) {
-        const distance = Math.sqrt(Math.pow((xCoords[0] - xCoords[1]), 2) + Math.pow((yCoords[0] - yCoords[1]), 2));
+      if (xCoords.length > 1 && yCoords.length > 1 && bondedAtoms.length) {
+        const distance = Math.sqrt(Math.pow((xCoords[bondedAtoms[0][0] - 1] - xCoords[bondedAtoms[0][1] - 1]), 2) +
+          Math.pow((yCoords[bondedAtoms[0][0] - 1] - yCoords[bondedAtoms[0][1] - 1]), 2));
         const deltaX = (Math.max(...xCoords) - Math.min(...xCoords))/distance;
         const deltaY = (Math.max(...yCoords) - Math.min(...yCoords))/distance;
         tooltip = (deltaX > maxDelta || deltaY > maxDelta) ? this.drawToCanvas(deltaX*zoom, deltaY*zoom, currentMolfile) : ui.divText('Click to edit');
