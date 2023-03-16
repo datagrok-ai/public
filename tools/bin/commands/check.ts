@@ -123,6 +123,24 @@ export function checkImportStatements(packagePath: string, files: string[], exte
 export function checkFuncSignatures(packagePath: string, files: string[]): string[] {
   const warnings: string[] = [];
   const checkFunctions: { [role: string]: FuncValidator } = {
+    app: ({name}: {name?: string}) => {
+      let value = true;
+      let message = '';
+
+      if (name && typeof name === 'string') {
+        const lowerCaseName = name.toLocaleLowerCase();
+        if (lowerCaseName.startsWith('app')) {
+          value = false;
+          message += 'Prefix "App" is not needed. Consider removing it.\n';
+        }
+        if (lowerCaseName.endsWith('app')) {
+          value = false;
+          message += 'Postfix "App" is not needed. Consider removing it.\n';
+        }
+      }
+
+      return { value, message };
+    },
     semTypeDetector: ({inputs, outputs}: {inputs: FuncParam[], outputs: FuncParam[]}) => {
       let value = true;
       let message = '';
