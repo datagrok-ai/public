@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/api-tests",
   "friendlyName": "API Tests",
-  "version": "1.5.10",
+  "version": "1.5.11",
   "author": {
     "name": "Alexander Paramonov",
     "email": "aparamonov@datagrok.ai"
@@ -13,7 +13,7 @@
     "directory": "packages/ApiTests"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^2.3.3",
+    "@datagrok-libraries/utils": "^2.4.1",
     "cash-dom": "^8.1.1",
     "datagrok-api": "^1.13.0",
     "dayjs": "latest",
@@ -31,7 +31,8 @@
     "ts-loader": "^9.2.6",
     "typescript": "^4.4.4",
     "webpack": "^5.59.1",
-    "webpack-cli": "^4.9.1"
+    "webpack-cli": "^4.9.1",
+    "source-map-loader": "^4.0.1"
   },
   "scripts": {
     "debug-js-api-tests": "webpack && grok publish localhost",

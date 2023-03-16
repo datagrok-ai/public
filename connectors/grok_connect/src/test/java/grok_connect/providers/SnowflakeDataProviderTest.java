@@ -14,6 +14,7 @@ import org.apache.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -22,6 +23,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import serialization.DataFrame;
 
+@Disabled("Until test instance of Snowflake will be available")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SnowflakeDataProviderTest {
     private static final Provider type = Provider.SNOWFLAKE;
@@ -73,11 +75,41 @@ class SnowflakeDataProviderTest {
         Assertions.assertTrue(result.startsWith("ERROR"));
     }
 
+    @DisplayName("Test of getSchemas() method with correct DataConnection")
+    @ParameterizedTest(name = "CORRECT ARGUMENTS")
+    @MethodSource("grok_connect.providers.arguments_provider.SnowflakeObjectsMother#getSchemas_ok")
+    public void getSchemas_ok(DataFrame expected) {
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchemas(connection));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @Disabled
+    @Test
+    public void getSchemas_notOk() {
+        // method probably should throw something when bad input
+    }
+
+    @DisplayName("Test of getSchema() method with correct DataConnection")
+    @ParameterizedTest(name = "CORRECT ARGUMENTS")
+    @MethodSource("grok_connect.providers.arguments_provider.SnowflakeObjectsMother#getSchema_ok")
+    public void getSchema_ok(DataFrame expected) {
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchema(connection,
+                "PUBLIC", "MOCK_DATA"));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @Disabled
+    @Test
+    public void getSchema_notOk() {
+        // method probably should throw something when bad input
+    }
+
     @DisplayName("Parameters support")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource({"grok_connect.providers.arguments_provider.CommonObjectsMother#checkParameterSupport_ok",
             "grok_connect.providers.arguments_provider.CommonObjectsMother#checkMultipleParametersSupport_ok",
-            "grok_connect.providers.arguments_provider.CommonObjectsMother#checkListParameterSupport_ok"})
+            "grok_connect.providers.arguments_provider.CommonObjectsMother#checkListParameterSupport_ok",
+            "grok_connect.providers.arguments_provider.CommonObjectsMother#checkRegexSupport_ok"})
     public void checkParameterSupport_ok(FuncCall funcCall, DataFrame expected) {
         prepareDataFrame(expected);
         funcCall.func.connection = connection;
@@ -138,6 +170,14 @@ class SnowflakeDataProviderTest {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Snowflake Null safety")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.CommonObjectsMother#checkNullSupport_ok")
+    public void checkNullSupport_ok(FuncCall funcCall) {
+        funcCall.func.connection = connection;
+        Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
     }
 
     private void prepareDataFrame(DataFrame dataFrame) {

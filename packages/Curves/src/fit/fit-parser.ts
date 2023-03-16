@@ -1,19 +1,30 @@
-import {IFitChartData, IFitChartOptions, IFitSeriesOptions, IFitSeries, IFitPoint} from './fit-data';
+import {
+  IFitChartData,
+  IFitChartOptions,
+  IFitSeriesOptions,
+  IFitSeries,
+  IFitPoint
+} from './fit-data';
 
 const AXES = {x: 'xAxis', y: 'yAxis'};
 const EXTREMUMS = {min: 'min', max: 'max'};
 
 
-/** Constructs {@link IFitChartOptions} from the grid xml tag.
+/** Constructs {@link IFitChartOptions} from grid and settings xml tags.
  * @param {Element} grid XML grid tag
+ * @param {Element} settings XML settings tag
  * @return {IFitChartOptions} IFitChartOptions for the fitted curve
 */
-function getChartOptions(grid: Element): IFitChartOptions {
+function getChartOptions(grid: Element, settings: Element): IFitChartOptions {
   const fitChartOptions: IFitChartOptions = {
     minX: +grid.getElementsByTagName(AXES.x)[0].getAttribute(EXTREMUMS.min)!,
     minY: +grid.getElementsByTagName(AXES.y)[0].getAttribute(EXTREMUMS.min)!,
     maxX: +grid.getElementsByTagName(AXES.x)[0].getAttribute(EXTREMUMS.max)!,
     maxY: +grid.getElementsByTagName(AXES.y)[0].getAttribute(EXTREMUMS.max)!,
+
+    xAxisName: settings.getAttribute('xLabel')!,
+    yAxisName: settings.getAttribute('yLabel')!,
+    logX: !!settings.getAttribute('logX')!,
   };
 
   return fitChartOptions;
@@ -25,6 +36,8 @@ function getChartOptions(grid: Element): IFitChartOptions {
 */
 function getSeriesOptions(series: Element): IFitSeriesOptions {
   const params = (series.getElementsByTagName('params')[0].childNodes[0].nodeValue)?.split(',')!.map(Number)!;
+  // params there are: [IC50, min, max, tan] (also log IC50) - so we place them correctly: [max, tan, IC50, min]
+  const newParams = [params[2], params[3], Math.log10(params[0]), params[1]];
   let funcType = series.getElementsByTagName('function')[0].getAttribute('type')!;
   funcType = funcType === 'sigif' ? 'Sigmoid': funcType;
   const markerColor = series.getElementsByTagName('settings')[0].getAttribute('markerColor')!;
@@ -33,7 +46,7 @@ function getSeriesOptions(series: Element): IFitSeriesOptions {
   const seriesName = series.getAttribute('name')!;
 
   const fitSeriesOptions: IFitSeriesOptions = {
-    parameters: params,
+    parameters: newParams,
     fitFunction: funcType,
     pointColor: markerColor,
     fitLineColor: lineColor,
@@ -108,7 +121,8 @@ export function convertXMLToIFitChartData(xmlText: string): IFitChartData {
 
   // get IFitChartOptions from grid
   const gridElement = xmlDoc.getElementsByTagName('grid')[0];
-  const fitChartOptions: IFitChartOptions = getChartOptions(gridElement);
+  const settingsElement = xmlDoc.getElementsByTagName('settings')[0];
+  const fitChartOptions: IFitChartOptions = getChartOptions(gridElement, settingsElement);
 
   // get the whole series collection
   const seriesCollection = xmlDoc.getElementsByTagName('seriesCollection')[0];

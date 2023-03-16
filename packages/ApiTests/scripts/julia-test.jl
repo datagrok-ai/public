@@ -1,27 +1,27 @@
 #name: Julia Params Test
 #language: julia
 #tags: test
-#input: int i = 10
-#input: double d = -20.1
-#input: bool b = false
-#input: string s = 'abc'
-#input_: datetime dt = '1992-09-20 00:00:00'
-#input_: dataframe df {optional: true}
-#input_: column col {optional: true}
+#input: int i
+#input: double d 
+#input_: bool b
+#input: string s
+#input: datetime dt
+#input_: map m
+#input: dataframe df
+#input_: column col
 #output: int ri
 #output: double rd
-#output: bool rb
+#output_: bool rb
 #output: string rs
-#output_: datetime rdt
-#output_: dataframe rdf
-#test: ApiTests:getOutput('JuliaParamsTest', 'ri').val == 5
-#test: ApiTests:getOutput('JuliaParamsTest', 'rd').val == 39.9
-#test: ApiTests:getOutput('JuliaParamsTest', 'rb').val == true
-#test: ApiTests:getOutput('JuliaParamsTest', 'rs').val == 'abcabc'
-
+#output: datetime rdt
+#output_: map rm
+#output: dataframe rdf
+#output_: column rcol
 ri = i / 2
 rd = d + 60
-rb = !b
+#rb = !b
 rs = s^2
-#rdf = df[col]
-#rdt = dt - timedelta(days=10)
+rdt = DateTime(dt, "yyyy-mm-ddTH:M:S.s") + Dates.Day(10)
+df.column = col
+rdf = df
+#rcol = df[:, "height"]

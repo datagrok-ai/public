@@ -16,7 +16,7 @@ import { ImportScriptGeneratorApp } from './import-script-generator/view';
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
 
-//name: Import script generator
+//name: Import Script Generator
 //description: Creates and registers a new script based on the input config
 //tags: higher-order function, app
 //meta.icon: icons/flux.png
@@ -40,9 +40,16 @@ export function OutliersSelection() {
 //input: funccall call
 //output: view result
 export function RichFunctionViewEditor(call: DG.FuncCall) {
-  return new RichFunctionView(call);
+  return new RichFunctionView(call, {exportEnabled: true, historyEnabled: true, isTabbed: false});
 }
 
+//name: PipelineStepEditor
+//tags: editor
+//input: funccall call
+//output: view result
+export function PipelineStepEditor(call: DG.FuncCall) {
+  return new RichFunctionView(call, {exportEnabled: true, historyEnabled: false, isTabbed: true});
+}
 
 /*//output: widget result
 //tags: dashboard
@@ -74,7 +81,7 @@ export function hof() {
 
 
 //name: hof2
-//tags: 
+//tags:
 //description: some description 2 2 2
 //sidebar: @compute
 //meta.icon: package1.png

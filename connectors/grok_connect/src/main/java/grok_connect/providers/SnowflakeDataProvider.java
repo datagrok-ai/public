@@ -6,10 +6,7 @@ import grok_connect.table_query.Stats;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import grok_connect.utils.ProviderManager;
-import net.snowflake.client.jdbc.SnowflakePreparedStatement;
-import net.snowflake.client.jdbc.SnowflakeStatement;
 import serialization.Types;
-
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -18,9 +15,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class SnowflakeDataProvider extends JdbcDataProvider{
     private static final boolean CAN_BROWSE_SCHEMA = true;
@@ -71,8 +65,8 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
         return String.format("SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
                 + "c.data_type as data_type, "
                 + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
-                + "JOIN information_schema.tables t ON t.table_name = c.table_name WHERE c.table_schema = '%s'"
-                + " ORDER BY c.table_name", schema);
+                + "JOIN information_schema.tables t ON t.table_name = c.table_name WHERE c.table_schema = '%s' %s"
+                , schema, table == null ? "" : String.format("AND c.table_name = '%s'", table));
     }
 
     @Override

@@ -3,13 +3,10 @@
   "publishConfig": {
     "access": "public"
   },
-  "beta": true,
   "friendlyName": "Datagrok chem-meta library",
-  "version": "1.0.3",
+  "version": "1.0.7",
   "description": "",
   "dependencies": {
-    "@datagrok-libraries/utils": "^2.1.2",
-    "datagrok-api": "^1.11.2",
     "wu": "latest"
   },
   "devDependencies": {

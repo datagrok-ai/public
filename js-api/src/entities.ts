@@ -19,6 +19,7 @@ type DataConnectionParams = {server: string, db: string, port: number, schema: s
 type FieldPredicate = {field: string, pattern: string};
 type FieldOrder = {field: string, asc?: boolean};
 type GroupAggregation = {aggType: string, colName: string, resultColName?: string, function?: string};
+type DockerContainerStatus = 'stopped' | 'started' | 'pending change' | 'changing' | 'error' | 'checking';
 
 /** @class
  * Base class for system objects stored in the database in a structured manner.
@@ -141,9 +142,9 @@ export class User extends Entity {
 
   static get defaultUsersIds() {
     return {
-      "Test": "ca1e672e-e3be-40e0-b79b-d2c68e68d380", 
-      "Admin": "878c42b0-9a50-11e6-c537-6bf8e9ab02ee", 
-      "System": "3e32c5fa-ac9c-4d39-8b4b-4db3e576b3c3", 
+      "Test": "ca1e672e-e3be-40e0-b79b-d2c68e68d380",
+      "Admin": "878c42b0-9a50-11e6-c537-6bf8e9ab02ee",
+      "System": "3e32c5fa-ac9c-4d39-8b4b-4db3e576b3c3",
     }
   }
 }
@@ -409,12 +410,12 @@ export class TableQuery extends DataQuery {
   set orderBy(wl: FieldOrder[]) { api.grok_TableQuery_SetOrderByDB(this.dart, wl.map(param => toDart(param))); }
 
   /** Creates {@link TableQueryBuilder} from table name
-   * @param {string} table - Table name 
+   * @param {string} table - Table name
    * @returns {TableQueryBuilder} */
   static from(table: string): TableQueryBuilder {return toJs(api.grok_TableQuery_From(table)); }
-  
+
   /** Creates {@link TableQueryBuilder} from {@link TableInfo}
-   * @param {TableInfo} table - TableInfo object 
+   * @param {TableInfo} table - TableInfo object
    * @returns {TableQueryBuilder} */
   static fromTable(table: TableInfo): TableQueryBuilder {return toJs(api.grok_TableQuery_FromTable(table.dart)); }
 }
@@ -427,18 +428,18 @@ export class TableQueryBuilder {
   constructor(dart: any) { this.dart = dart; }
 
   /** Creates {@link TableQueryBuilder} from table name
-   * @param {string} table - Table name 
+   * @param {string} table - Table name
    * @returns {TableQueryBuilder} */
   static from(table: string): TableQueryBuilder { return toJs(api.grok_TableQueryBuilder_From(table)); }
 
   /** Creates {@link TableQueryBuilder} from {@link TableInfo}
-   * @param {TableInfo} table - TableInfo object 
+   * @param {TableInfo} table - TableInfo object
    * @returns {TableQueryBuilder} */
   static fromTable(table: TableInfo): TableQueryBuilder {
     return toJs(api.grok_TableQueryBuilder_FromTable(table.dart));
   }
 
-  /** Selects all fields of the table 
+  /** Selects all fields of the table
    * @returns {TableQueryBuilder} */
   selectAll(): TableQueryBuilder { return toJs(api.grok_TableQueryBuilder_SelectAll(this.dart)); }
 
@@ -520,8 +521,8 @@ export class DataConnection extends Entity {
     return new Promise((resolve, reject) => api.grok_DataConnection_Test(this.dart, (s: any) => resolve(toJs(s)), (e: any) => reject(e)));
   }
 
-  query(name: string, sql: string, params: {[key: string]: string} = {}): DataQuery {
-    return toJs(api.grok_DataConnection_Query(this.dart, name, sql, params));
+  query(name: string, sql: string): DataQuery {
+    return toJs(api.grok_DataConnection_Query(this.dart, name, sql));
   }
 
   /** Creates a database connection
@@ -587,9 +588,9 @@ export class TableInfo extends Entity {
 
   static fromDataFrame(t: DataFrame): TableInfo {return toJs(api.grok_DataFrame_Get_TableInfo(t.dart)); }
 
-  get dataFrame(): DataFrame { return api.grok_TableInfo_Get_DataFrame(this.dart); }
+  get dataFrame(): DataFrame { return toJs(api.grok_TableInfo_Get_DataFrame(this.dart)); }
 
-  get columns(): ColumnInfo[] { return api.grok_TableInfo_Get_Columns(this.dart); }
+  get columns(): ColumnInfo[] { return toJs(api.grok_TableInfo_Get_Columns(this.dart)); }
 }
 
 
@@ -603,6 +604,7 @@ export class ColumnInfo extends Entity {
     super(dart);
   }
 
+  get type(): string { return toJs(api.grok_ColumnInfo_Get_Type(this.dart)); }
 }
 
 /** @extends Entity
@@ -706,12 +708,12 @@ export class Group extends Entity {
 
   static get defaultGroupsIds() {
     return {
-      "All users": "a4b45840-9a50-11e6-9cc9-8546b8bf62e6", 
+      "All users": "a4b45840-9a50-11e6-9cc9-8546b8bf62e6",
       "Developers": "ba9cd191-9a50-11e6-9cc9-910bf827f0ab",
       "Need to create": "00000000-0000-0000-0000-000000000000",
-      "Test": "ca1e672e-e3be-40e0-b79b-8546b8bf62e6", 
-      "Admin": "a4b45840-9a50-11e6-c537-6bf8e9ab02ee", 
-      "System": "a4b45840-ac9c-4d39-8b4b-4db3e576b3c3", 
+      "Test": "ca1e672e-e3be-40e0-b79b-8546b8bf62e6",
+      "Admin": "a4b45840-9a50-11e6-c537-6bf8e9ab02ee",
+      "System": "a4b45840-ac9c-4d39-8b4b-4db3e576b3c3",
       "Administrators": "1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5",
     }
   }
@@ -992,6 +994,10 @@ export class DockerContainer extends Entity {
   constructor(dart: any) {
     super(dart);
   }
+
+  get status(): DockerContainerStatus {
+    return api.grok_DockerContainer_Status(this.dart);
+  }
 }
 
 
@@ -1169,7 +1175,7 @@ export class Property {
   static js(name: string, type: TYPE, options?: PropertyOptions): Property {
     return Property.create(name, type,
       (x: any) => x[name],
-      (x: any, v: any) => x[name] = v,
+      function (x: any, v: any) { x[name] = v; },
       options?.defaultValue).fromOptions(options);
   }
 

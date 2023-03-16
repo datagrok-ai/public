@@ -1,0 +1,18 @@
+{
+  "#type": "DataConnection",
+  "name": "MSSQLApiTests",
+  "friendlyName": "Tests",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "port": 1434,
+    "db": "test"
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "MS SQL",
+  "description": "Test data"
+}

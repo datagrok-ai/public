@@ -1,8 +1,9 @@
 {
   "name": "datagrok-api",
-  "version": "1.13.5",
+  "version": "1.13.7",
   "description": "",
   "dependencies": {
+    "@datagrok-libraries/chem-meta": "^1.0.6",
     "@types/react": "latest",
     "@types/wu": "latest",
     "cash-dom": "^8.0.0",
@@ -22,6 +23,7 @@
     "style-loader": "^2.0.0",
     "svg-loader": "^0.0.2",
     "ts-loader": "^8.1.0",
+    "source-map-loader": "^4.0.1",
     "tui-jsdoc-template": "^1.2.2",
     "typedoc": "0.21.x",
     "webpack": "^5.64.1",
@@ -29,6 +31,7 @@
   },
   "scripts": {
     "link": "npm link",
+    "link-all": "npm link @datagrok-libraries/utils @datagrok-libraries/chem-meta",
     "build-ts": "tsc && eslint ./src/*.js ./dg.js ./ui.js ./grok.js --fix",
     "build-js-api": "tsc && webpack",
     "build": "tsc && webpack",

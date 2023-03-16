@@ -7,6 +7,7 @@ import org.joda.time.*;
 import javax.servlet.*;
 import com.google.gson.*;
 import org.apache.log4j.*;
+
 import static spark.Spark.*;
 import serialization.*;
 import org.restlet.data.Status;
@@ -14,6 +15,7 @@ import javax.ws.rs.core.MediaType;
 import grok_connect.utils.*;
 import grok_connect.table_query.*;
 import grok_connect.connectors_info.*;
+import grok_connect.handlers.QueryHandler;
 
 
 public class GrokConnect {
@@ -23,7 +25,7 @@ public class GrokConnect {
     private static final Gson gson = new GsonBuilder()
             .registerTypeAdapter(Property.class, new PropertyAdapter())
             .create();
-    private static boolean needToReboot = false;
+    public static boolean needToReboot = false;
 
     public static void main(String[] args) {
         int port = 1234;
@@ -33,7 +35,7 @@ public class GrokConnect {
             BasicConfigurator.configure();
             logger = Logger.getLogger(GrokConnect.class.getName());
             logger.setLevel(Level.INFO);
-
+            
             logMemory();
 
             providerManager = new ProviderManager(logger);
@@ -41,9 +43,9 @@ public class GrokConnect {
             connectorsModule();
 
             logger.info("grok_connect with Hikari pool");
-            System.out.printf("grok_connect: Running on %s\n", uri);
-            System.out.println("grok_connect: Connectors: " + String.join(", ",
-                    providerManager.getAllProvidersTypes()));
+            logger.info("grok_connect: Running on %s\n" + uri);
+            logger.info("grok_connect: Connectors: " + String.join(", ",
+            providerManager.getAllProvidersTypes()));
         } catch (Throwable ex) {
             System.out.println("ERROR: " + ex.toString());
             System.out.print("STACK TRACE: ");
@@ -52,6 +54,9 @@ public class GrokConnect {
     }
 
     private static void connectorsModule() {
+        webSocket("/query_socket", new QueryHandler());
+        // webSocket("/query_table", new QueryHandler(QueryType.tableQuery));
+
         post("/query", (request, response) -> {
             logMemory();
 
@@ -131,21 +136,21 @@ public class GrokConnect {
             return provider.testConnection(connection);
         });
 
-        post("/query_table", (request, response) -> {
-            logMemory();
-            try {
-                DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
-                TableQuery query = gson.fromJson((String)connection.parameters.get("queryTable"), TableQuery.class);
-                DataProvider provider = providerManager.getByName(connection.dataSource);
-                DataFrame result = provider.queryTable(connection, query);
-                buildResponse(response, result.toByteArray());
-            } catch (Throwable ex) {
-                buildExceptionResponse(response, printError(ex));
-            }
+        // post("/query_table", (request, response) -> {
+        //     logMemory();
+        //     try {
+        //         DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
+        //         TableQuery query = gson.fromJson((String)connection.parameters.get("queryTable"), TableQuery.class);
+        //         DataProvider provider = providerManager.getByName(connection.dataSource);
+        //         DataFrame result = provider.queryTable(connection, query);
+        //         buildResponse(response, result.toByteArray());
+        //     } catch (Throwable ex) {
+        //         buildExceptionResponse(response, printError(ex));
+        //     }
 
-            logMemory();
-            return response;
-        });
+        //     logMemory();
+        //     return response;
+        // });
 
         post("/query_table_sql", (request, response) -> {
             logMemory();
@@ -283,7 +288,7 @@ public class GrokConnect {
         return buffer;
     }
 
-    private static BufferAccessor packException(DataQueryRunResult result, Throwable ex) {
+    public static BufferAccessor packException(DataQueryRunResult result, Throwable ex) {
         Map<String, String> exception = printError(ex);
         result.errorMessage = exception.get("errorMessage");
         result.errorStackTrace = exception.get("errorStackTrace");
@@ -315,7 +320,7 @@ public class GrokConnect {
         response.status(Status.SERVER_ERROR_INTERNAL.getCode());
     }
 
-    private static Map<String, String> printError(Throwable ex) {
+    public static Map<String, String> printError(Throwable ex) {
         String errorMessage = ex.toString();
         StringWriter stackTrace = new StringWriter();
         ex.printStackTrace(new PrintWriter(stackTrace));
@@ -330,7 +335,7 @@ public class GrokConnect {
         }};
     }
 
-    private static String logMemory() {
+    public static String logMemory() {
         long used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
         long free = Runtime.getRuntime().maxMemory() - used;
         long total = Runtime.getRuntime().maxMemory();

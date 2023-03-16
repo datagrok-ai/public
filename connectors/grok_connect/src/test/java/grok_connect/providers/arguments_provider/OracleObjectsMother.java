@@ -37,6 +37,7 @@ public class OracleObjectsMother {
         String secondColumnName = "TABLE_NAME";
         String thirdColumnName = "COLUMN_NAME";
         String fourthColumnName = "DATA_TYPE";
+        String fifthColumnname = "IS_VIEW";
         String schema = "DATAGROK";
         String table = "MOCK_DATA";
         DataFrame expected = DataFrameBuilder.getBuilder()
@@ -52,6 +53,7 @@ public class OracleObjectsMother {
                 .setColumn(new StringColumn(), fourthColumnName, new String[] {"NUMBER", "VARCHAR2",
                         "VARCHAR2", "VARCHAR2", "VARCHAR2", "VARCHAR2",
                         "VARCHAR2", "DATE", "NUMBER"})
+                .setColumn(new IntColumn(), fifthColumnname, new Integer[]{0, 0, 0, 0, 0, 0, 0, 0, 0})
                 .build();
         return Stream.of(Arguments.of(expected));
     }
@@ -91,7 +93,7 @@ public class OracleObjectsMother {
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
                                 now.toString(),
                                 dayOfWeek == 1 ? null : yesterday.toString(),
-                                lastDayOfWeek.toString())),
+                                lastDayOfWeek.equals(now) ? null : lastDayOfWeek.toString())),
                         "dat")
                 .build();
         FuncCall funcCall2 = FuncCallBuilder.getBuilder()
@@ -109,7 +111,7 @@ public class OracleObjectsMother {
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
                                 now.toString(),
                                 dayOfMonth == 1 ? null : yesterday.toString(),
-                                lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() ?
+                                lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
                                         null : lastDayOfWeek.toString())),
                         "dat")
                 .build();
@@ -128,7 +130,9 @@ public class OracleObjectsMother {
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
                                 now.toString(),
                                 dayOfMonth == 1 ? null : yesterday.toString(),
-                                lastDayOfWeek.getYear() > lastDayOfYear.getYear() ? null : lastDayOfWeek.toString())),
+                                lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
+                                        null : lastDayOfWeek.toString(),
+                                dayOfLastYear.getYear() == now.getYear() ? dayOfLastYear.toString() : null)),
                         "dat")
                 .build();
         FuncCall funcCall4 = FuncCallBuilder.getBuilder()
@@ -159,7 +163,7 @@ public class OracleObjectsMother {
         DataFrame expected6 = DataFrameBuilder.getBuilder()
                 .setRowCount(1)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
-                                dayOfLastYear.toString())),
+                                dayOfLastYear.getYear() < now.getYear() ? dayOfLastYear.toString() : null)),
                         "dat")
                 .build();
         FuncCall funcCall6 = FuncCallBuilder.getBuilder()
@@ -174,7 +178,8 @@ public class OracleObjectsMother {
         DataFrame expected7 = DataFrameBuilder.getBuilder()
                 .setRowCount(5)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, now.toString(),
-                                yesterday.toString(), lastDayOfWeek.toString(), dayOfLastYear.toString(),
+                                yesterday.toString(), lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
+                                        null : lastDayOfWeek.toString(), dayOfLastYear.toString(),
                                 "2021-04-09")),
                         "dat")
                 .build();
@@ -215,7 +220,8 @@ public class OracleObjectsMother {
         DataFrame expected9 = DataFrameBuilder.getBuilder()
                 .setRowCount(4)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, now.toString(),
-                                yesterday.toString(), lastDayOfWeek.toString(), dayOfLastYear.toString())),
+                                yesterday.toString(), lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
+                                        null : lastDayOfWeek.toString(), dayOfLastYear.toString())),
                         "dat")
                 .build();
         FuncCall funcCall10 = FuncCallBuilder.getBuilder()
@@ -280,7 +286,7 @@ public class OracleObjectsMother {
                 .build();
         FuncCall funcCall1 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string first_name = \"starts with p\" {pattern: string}\n"
-                        + "--input: string id = \">1\" {pattern :int}\n"
+                        + "--input: string id = \">1\" {pattern: int}\n"
                         + "--input: string email = \"contains com\" {pattern: string}\n"
                         + "--input: string some_number = \">20\" {pattern: double}\n"
                         + "--input: string country = \"in (Indonesia)\" {pattern: string}\n"
@@ -397,7 +403,7 @@ public class OracleObjectsMother {
                 .setColumn(new FloatColumn(new Float[]{1.2e-4f, 0.55f, 12.123f}), "FLOAT_VALUE")
                 .setColumn(new FloatColumn(new Float[]{1.17549E-38f, Float.POSITIVE_INFINITY,
                         Float.NEGATIVE_INFINITY}), "BINARY_FLOAT_VALUE")
-                .setColumn(new FloatColumn(new Float[]{0.0f, 0.2222f, 2.2222f}), "BINARY_DOUBLE_VALUE")
+                .setColumn(new FloatColumn(new Float[]{Float.NEGATIVE_INFINITY, 0.2222f, 2.2222f}), "BINARY_DOUBLE_VALUE")
                 .build();
         return Stream.of(Arguments.of(Named.of("NUMERIC TYPES SUPPORT",
                 FuncCallBuilder.fromQuery("SELECT * FROM numeric_type")), expected));

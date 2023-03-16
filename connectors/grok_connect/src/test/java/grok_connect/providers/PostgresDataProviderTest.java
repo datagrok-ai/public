@@ -184,7 +184,8 @@ class PostgresDataProviderTest extends ContainerizedProviderBaseTest {
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource({"grok_connect.providers.arguments_provider.CommonObjectsMother#checkParameterSupport_ok",
             "grok_connect.providers.arguments_provider.CommonObjectsMother#checkMultipleParametersSupport_ok",
-            "grok_connect.providers.arguments_provider.CommonObjectsMother#checkListParameterSupport_ok"})
+            "grok_connect.providers.arguments_provider.CommonObjectsMother#checkListParameterSupport_ok",
+            "grok_connect.providers.arguments_provider.CommonObjectsMother#checkRegexSupport_ok"})
     @Sql(path = "scripts/postgres/postgres_basic_types.sql",
             restorePath = "scripts/postgres/drop.sql")
     public void checkParameterSupport_ok(FuncCall funcCall, DataFrame expected) {
@@ -199,6 +200,26 @@ class PostgresDataProviderTest extends ContainerizedProviderBaseTest {
     @Sql(path = "scripts/postgres/postgres_dates_patterns.sql",
             restorePath = "scripts/postgres/drop.sql")
     public void checkDatesParameterSupport_ok(FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Postgres Null safety")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.CommonObjectsMother#checkNullSupport_ok")
+    @Sql(path = "scripts/postgres/postgres_null.sql",
+            restorePath = "scripts/postgres/drop.sql")
+    public void checkNullSupport_ok(FuncCall funcCall) {
+        funcCall.func.connection = connection;
+        Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+    }
+
+    @DisplayName("Postgresql operators support")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.PostgresObjectsMother#checkPostgresOperatorsSupport_ok")
+    @Sql(path = "scripts/postgres/postgres_operators.sql", restorePath = "scripts/postgres/drop.sql")
+    public void checkPostgresOperatorsSupport_ok(FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));

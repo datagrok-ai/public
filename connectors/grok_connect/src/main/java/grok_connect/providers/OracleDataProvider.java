@@ -13,8 +13,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import grok_connect.connectors_info.*;
+import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataQuery;
+import grok_connect.connectors_info.DataSource;
+import grok_connect.connectors_info.DbCredentials;
+import grok_connect.connectors_info.FuncParam;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.Property;
@@ -24,7 +27,6 @@ import oracle.sql.TIMESTAMPTZ;
 import oracle.sql.ZONEIDMAP;
 import oracle.sql.json.OracleJsonObject;
 import serialization.Types;
-
 
 public class OracleDataProvider extends JdbcDataProvider {
     private static final String SYS_SCHEMAS_FILTER =
@@ -183,8 +185,8 @@ public class OracleDataProvider extends JdbcDataProvider {
 
     @Override
     public String getSchemasSql(String db) {
-        return "SELECT OWNER as TABLE_SCHEMA FROM ALL_TAB_COLUMNS WHERE " + SYS_SCHEMAS_FILTER +
-                " GROUP BY OWNER ORDER BY OWNER";
+        return "SELECT COL.OWNER as TABLE_SCHEMA FROM ALL_TAB_COLUMNS COL WHERE " + SYS_SCHEMAS_FILTER +
+                " GROUP BY COL.OWNER ORDER BY COL.OWNER";
     }
 
     @Override
@@ -215,7 +217,7 @@ public class OracleDataProvider extends JdbcDataProvider {
     private boolean isOracleFloatNumber(String typeName, int precision, int scale) {
         // https://markhoxey.wordpress.com/2016/05/31/maximum-number-precision/ ==>  Precision >= 38
         // https://stackoverflow.com/questions/29537292/why-can-number-type-in-oracle-scale-up-to-127 ==> scale >= 127
-        return typeName.equalsIgnoreCase("number") && (scale == 0 || scale >= 127) && (precision <= 0);
+        return typeName.equalsIgnoreCase("number") && (scale == 0 || scale >= 127) && (precision < 0);
     }
 
     private static OffsetDateTime extractUtc(byte[] bytes) {

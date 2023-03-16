@@ -3,11 +3,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {FitCellRenderer} from './fit/fit-curve';
 import {FitGridCellHandler} from './fit/fit-grid-cell-handler';
 import {FitChartCellRenderer} from './fit/fit-renderer';
-import {FitViewer} from './fit/fit-viewer';
-import {curveFitDemo} from './fit/fit-demo';
+import {MultiCurveViewer} from './fit/multi-curve-viewer';
+import {createDemoDataFrame, curveFitDemo} from './fit/fit-demo';
 
 
 export const _package = new DG.Package();
@@ -22,26 +21,18 @@ export function fitCellRenderer() {
   return new FitChartCellRenderer();
 }
 
-//tags: cellRenderer
-//meta.cellType: fit-old
-//meta.virtual: true
-//output: grid_cell_renderer result
-export function fitOldCellRenderer() {
-  return new FitCellRenderer();
-}
-
-//name: FitViewer
-//description: Creates a fit viewer
+//name: MultiCurveViewer
+//description: A viewer that superimposes multiple in-cell curves on one chart
 //tags: viewer
 //output: viewer result
 export function _FitViewer() {
-  return new FitViewer();
+  return new MultiCurveViewer();
 }
 
 //tags: app
 //name: Curve Fit Demo
 export function curveFitDemoApp() {
-  curveFitDemo();
+  grok.shell.addTableView(createDemoDataFrame(30, 5, 2));
 }
 
 //tags: autostart

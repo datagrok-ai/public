@@ -28,6 +28,16 @@ export class OutliersSelectionViewer extends DG.JsViewer {
     const OUTLIER_COUNT_COL_LABEL = 'Count';
     const IS_GROUP_CONFIRMED_LABEL = 'isConfirmed';
 
+    if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
+      inputData.columns
+        .add(DG.Column.fromBitSet(IS_OUTLIER_COL_LABEL, DG.BitSet.create(inputData.rowCount, () => false)));
+    }
+
+    if (!inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL)) {
+      inputData.columns
+        .add(DG.Column.fromStrings(OUTLIER_RATIONALE_COL_LABEL, Array.from({length: inputData.rowCount}, () => '')));
+    }
+
     const clearTable = () => {
       return DG.DataFrame.fromColumns([
         DG.Column.fromStrings(OUTLIER_RATIONALE_COL_LABEL, []),
@@ -50,16 +60,6 @@ export class OutliersSelectionViewer extends DG.JsViewer {
       const confirmBtn = () => ui.div(
         ui.iconFA('check', () => {
           if (!groupsListGrid.dataFrame) return;
-
-          if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
-            inputData.columns
-              .add(DG.Column.fromBitSet(IS_OUTLIER_COL_LABEL, DG.BitSet.create(inputData.rowCount, () => false)));
-          }
-
-          if (!inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL)) {
-            inputData.columns
-              .add(DG.Column.fromStrings(OUTLIER_RATIONALE_COL_LABEL, Array.from({length: inputData.rowCount}, () => '')));
-          }
 
           //@ts-ignore
           inputData.col(IS_OUTLIER_COL_LABEL)?.markers.assign('true', DG.MARKER_TYPE.OUTLIER);

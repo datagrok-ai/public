@@ -11,7 +11,9 @@ import {runKalign} from './utils/multiple-sequence-alignment';
 import {SequenceAlignment} from './seq_align';
 import {getEmbeddingColsNames, sequenceSpaceByFingerprints} from './analysis/sequence-space';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {createLinesGrid, createPropPanelElement, createTooltipElement, getChemSimilaritiesMarix,} from './analysis/sequence-activity-cliffs';
+import {
+  createLinesGrid, createPropPanelElement, createTooltipElement, getChemSimilaritiesMatrix,
+} from './analysis/sequence-activity-cliffs';
 import {HELM_CORE_LIB_FILENAME} from '@datagrok-libraries/bio/src/utils/const';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
@@ -28,7 +30,13 @@ import {substructureSearchDialog} from './substructure-search/substructure-searc
 import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {delay} from '@datagrok-libraries/utils/src/test';
-import {getStats, NOTATION, splitterAsHelm, TAGS as bioTAGS, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {
+  getStats,
+  NOTATION,
+  splitterAsHelm,
+  TAGS as bioTAGS,
+  ALPHABET
+} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {pepseaMethods, runPepsea} from './utils/pepsea';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
@@ -37,6 +45,9 @@ import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {createJsonMonomerLibFromSdf, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {LIB_PATH, LIB_STORAGE_NAME, MonomerLibHelper} from './utils/monomer-lib';
 import { getMacromoleculeColumn } from './utils/ui-utils';
+import {IUMAPOptions, ITSNEOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
+import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
 
 // /** Avoid reassinging {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
 // let monomerLib: MonomerLib | null = null;
@@ -101,7 +112,7 @@ export async function initBio() {
 //output: widget result
 export async function sequenceTooltip(col: DG.Column): Promise<DG.Widget<any>> {
   const tv = grok.shell.tv;
-  let viewer = await tv.dataFrame.plot.fromType('WebLogo', {
+  const viewer = await tv.dataFrame.plot.fromType('WebLogo', {
     sequenceColumnName: col.name,
     backgroundColor: 0xFFfdffe5,
     fitArea: false,
@@ -262,9 +273,10 @@ export function sequenceAlignment(alignType: string, alignTable: string, gap: nu
 }
 
 //name: WebLogo
-//description: WebLogo viewer
+//description: WebLogo
 //tags: viewer, panel
 //output: viewer result
+//meta.icon: files/icons/weblogo-viewer.svg
 export function webLogoViewer() {
   return new WebLogoViewer();
 }
@@ -277,22 +289,34 @@ export function vdRegionViewer() {
   return new VdRegionsViewer();
 }
 
+//name: SeqActivityCliffsEditor
+//tags: editor
+//input: funccall call
+export function SeqActivityCliffsEditor(call: DG.FuncCall) {
+  const funcEditor = new ActivityCliffsFunctionEditor(DG.SEMTYPE.MACROMOLECULE);
+  ui.dialog({title: 'Activity Cliffs'})
+    .add(funcEditor.paramsUI)
+    .onOK(async () => {      
+      call.func.prepare(funcEditor.funcParams).call(true);
+    })
+    .show();
+}
+
 //top-menu: Bio | Sequence Activity Cliffs...
 //name: Sequence Activity Cliffs
 //description: detect activity cliffs
 //input: dataframe table [Input data table]
-//input: column macroMolecule {semType: Macromolecule}
+//input: column molecules {semType: Macromolecule}
 //input: column activities
 //input: double similarity = 80 [Similarity cutoff]
-//input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
+//input: string methodName { choices:["UMAP", "t-SNE"] }
+//input: object options {optional: true}
+//editor: Bio:SeqActivityCliffsEditor
 export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column, activities: DG.Column,
-  similarity: number, methodName: string): Promise<DG.Viewer | undefined> {
+  similarity: number, methodName: string, options?: IUMAPOptions | ITSNEOptions): Promise<DG.Viewer | undefined> {
   if (!checkInputColumnUi(macroMolecule, 'Activity Cliffs'))
     return;
   const axesNames = getEmbeddingColsNames(df);
-  const options = {
-    'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
-  };
   const tags = {
     'units': macroMolecule.getTag(DG.TAGS.UNITS),
     'aligned': macroMolecule.getTag(bioTAGS.aligned),
@@ -312,23 +336,38 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     DG.SEMTYPE.MACROMOLECULE,
     tags,
     sequenceSpaceByFingerprints,
-    getChemSimilaritiesMarix,
+    getChemSimilaritiesMatrix,
     createTooltipElement,
     createPropPanelElement,
     createLinesGrid,
-    (options as any)[methodName]);
+    options);
   return sp;
+}
+
+//name: SequenceSpaceEditor
+//tags: editor
+//input: funccall call
+export function SequenceSpaceEditor(call: DG.FuncCall) {
+  const funcEditor = new SequenceSpaceFunctionEditor(DG.SEMTYPE.MACROMOLECULE);
+  ui.dialog({title: 'Sequence Space'})
+    .add(funcEditor.paramsUI)
+    .onOK(async () => {      
+      call.func.prepare(funcEditor.funcParams).call(true);
+    })
+    .show();
 }
 
 //top-menu: Bio | Sequence Space...
 //name: Sequence Space
 //input: dataframe table
-//input: column macroMolecule { semType: Macromolecule }
-//input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
+//input: column molecules { semType: Macromolecule }
+//input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: bool plotEmbeddings = true
+//input: object options {optional: true}
+//editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: string,
-  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean): Promise<DG.Viewer | undefined> {
+  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean, options?: IUMAPOptions | ITSNEOptions): Promise<DG.Viewer | undefined> {
   // Delay is required for initial function dialog to close before starting invalidating of molfiles.
   // Otherwise, dialog is freezing
   await delay(10);
@@ -343,7 +382,8 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
     seqCol: withoutEmptyValues.col(macroMolecule.name)!,
     methodName: methodName,
     similarityMetric: similarityMetric,
-    embedAxesNames: embedColsNames
+    embedAxesNames: embedColsNames,
+    options: options
   };
   const sequenceSpaceRes = await sequenceSpaceByFingerprints(chemSpaceParams);
   const embeddings = sequenceSpaceRes.coordinates;
@@ -415,7 +455,7 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
     return;
   }
 
-  let performAlignment: () => Promise<DG.Column<string> | null> = async () => null; 
+  let performAlignment: () => Promise<DG.Column<string> | null> = async () => null;
   const methodInput = ui.choiceInput('Method', pepseaMethods[0], pepseaMethods);
   methodInput.setTooltip('Alignment method');
   const gapOpenInput = ui.floatInput('Gap open', 1.53);
@@ -427,7 +467,7 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
   const colInput = ui.columnInput('Sequence', table, seqCol, () => {
     const potentialCol = colInput.value;
     const unusedName = table.columns.getUnusedName(`msa(${potentialCol.name})`);
-  
+
     if (checkInputColumnUi(
       potentialCol, potentialCol.name, [NOTATION.FASTA], [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT], false)) {
       for (const inputRootStyle of inputRootStyles)
@@ -473,7 +513,7 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
 }
 
 //name: Composition Analysis
-//top-menu: Bio | Composition Analysis...
+//top-menu: Bio | Composition Analysis
 //output: viewer result
 export async function compositionAnalysis(): Promise<void> {
   // Higher priority for columns with MSA data to show with WebLogo.
@@ -530,8 +570,8 @@ export async function compositionAnalysis(): Promise<void> {
   await handler(col);
 }
 
-//top-menu: Bio | Sdf to Json lib...
-//name: sdfToJsonLib
+//top-menu: Bio | SDF to JSON lib...
+//name: SDF to JSON Lib
 //input: dataframe table
 export async function sdfToJsonLib(table: DG.DataFrame) {
   const jsonMonomerLibrary = createJsonMonomerLibFromSdf(table);
@@ -625,7 +665,7 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
   return resDf;
 }
 
-//top-menu: Bio | Split to monomers...
+//top-menu: Bio | Split to monomers
 //name: splitToMonomers
 export function splitToMonomers(): void {
   const col = getMacromoleculeColumn();
@@ -635,7 +675,7 @@ export function splitToMonomers(): void {
     const newCol = originalDf.columns.add(tempCol);
     newCol.semType = C.SEM_TYPES.MONOMER;
     newCol.setTag(DG.TAGS.CELL_RENDERER, C.SEM_TYPES.MONOMER);
-    newCol.setTag(C.TAGS.ALPHABET, col.getTag(C.TAGS.ALPHABET));
+    newCol.setTag(bioTAGS.alphabet, col.getTag(bioTAGS.alphabet));
   }
   grok.shell.tv.grid.invalidate();
 }
@@ -648,14 +688,14 @@ export function getHelmMonomers(sequence: DG.Column<string>): string[] {
 }
 
 
-//name: SequenceSimilaritySearchViewer
+//name: Sequence Similarity Search
 //tags: viewer
 //output: viewer result
 export function similaritySearchViewer(): SequenceSimilarityViewer {
   return new SequenceSimilarityViewer();
 }
 
-//top-menu: Bio | Similarity Search...
+//top-menu: Bio | Search | Similarity Search
 //name: similaritySearch
 //description: finds the most similar sequence
 //output: viewer result
@@ -665,14 +705,14 @@ export function similaritySearchTopMenu(): void {
   view.dockManager.dock(viewer, 'down');
 }
 
-//name: SequenceDiversitySearchViewer
+//name: Sequence Diversity Search
 //tags: viewer
 //output: viewer result
 export function diversitySearchViewer(): SequenceDiversityViewer {
   return new SequenceDiversityViewer();
 }
 
-//top-menu: Bio | Diversity Search...
+//top-menu: Bio | Search | Diversity Search
 //name: diversitySearch
 //description: finds the most diverse molecules
 //output: viewer result
@@ -682,7 +722,7 @@ export function diversitySearchTopMenu() {
   view.dockManager.dock(viewer, 'down');
 }
 
-//top-menu: Bio | Substructure search ...
+//top-menu: Bio | Substructure Search ...
 //name: bioSubstructureSearch
 export function bioSubstructureSearch(): void {
   const col = getMacromoleculeColumn();

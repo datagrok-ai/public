@@ -7,6 +7,7 @@
 #input: dataframe data {columns:numerical} [Input data table]
 #input: column_list columns {type:numerical; allowNulls:false} [Input data table columns]
 #output: graphics acf [Autocorrelation plot]
+#test: ACF(ApiTests:getDT(), ['height', 'weight']) != null
 
 require(graphics)
 

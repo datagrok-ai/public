@@ -1,10 +1,11 @@
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as fit from './fit-data';
-import {FitResult, fitResultProperties} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
-import {fitSeries, IFitChartData} from './fit-data';
-import {divV} from 'datagrok-api/ui';
+import * as ui from 'datagrok-api/ui';
 import {GridCell} from 'datagrok-api/dg';
+import {divV} from 'datagrok-api/ui';
+
+import * as fit from './fit-data';
+import {fitSeries} from './fit-data';
+import {fitResultProperties} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
 
 
 function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property): void {
@@ -28,8 +29,13 @@ export class FitGridCellHandler extends DG.ObjectHandler {
   renderProperties(gridCell: DG.GridCell, context: any = null): HTMLElement {
     const acc = ui.accordion();
     const chartData = fit.getChartData(gridCell);
+    const columnChartOptions = fit.getColumnChartOptions(gridCell.gridColumn);
+    const refresh = {onValueChanged: (_: any) => gridCell.grid.invalidate()};
 
-    acc.addPane('Options', () => ui.input.form(chartData.chartOptions, fit.fitChartDataProperties));
+    acc.addPane('Options', () => ui.divV([
+        ui.input.form(columnChartOptions.seriesOptions, fit.fitSeriesProperties, refresh),
+        ui.input.form(chartData.chartOptions, fit.fitChartDataProperties, refresh),
+      ]));
     acc.addPane('Results', () => {
       const host = divV([]);
 
