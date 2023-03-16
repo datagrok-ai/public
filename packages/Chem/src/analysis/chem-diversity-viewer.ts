@@ -9,6 +9,7 @@ import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
 import {Fingerprint} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer} from './chem-search-base-viewer';
+import { malformedDataWarning } from '../utils/malformed-data-utils';
 
 export class ChemDiversityViewer extends ChemSearchBaseViewer {
   renderMolIds: number[];
@@ -23,7 +24,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
   }
 
 
-  async render(computeData = false): Promise<void> {
+  async render(computeData = true): Promise<void> {
     if (!this.beforeRender())
       return;
     if (this.dataFrame && this.moleculeColumn) {
@@ -32,9 +33,6 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         progressBar = DG.TaskBarProgressIndicator.create(`Diversity search running...`);
 
       if (computeData) {
-        const rowsWithoutEmptyValues = rowsWithoutEmptyValuesCount(this.moleculeColumn);
-        if (this.limit > rowsWithoutEmptyValues)
-          this.limit = rowsWithoutEmptyValues;
         this.renderMolIds =
           await chemDiversitySearch(
             this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit, this.fingerprint as Fingerprint);
@@ -47,12 +45,12 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
       let cnt = 0; let cnt2 = 0;
 
       panel[cnt++] = this.metricsDiv;
-      for (let i = 0; i < this.limit; ++i) {
+      for (let i = 0; i < this.renderMolIds.length; ++i) {
         const molProps = this.createMoleculePropertiesDiv(this.renderMolIds[i]);
         const grid = ui.div([
           renderMolecule(
             this.moleculeColumn!.get(this.renderMolIds[i]),
-            {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
+            {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height, popupMenu: !this.tooltipUse}),
           molProps],
         {style: {margin: '5px', padding: '3px', position: 'relative'}},
         );
@@ -94,20 +92,17 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
   }
 }
 
-function rowsWithoutEmptyValuesCount(col: DG.Column): number {
-  const categories = col.categories;
-  const rawData = col.getRawData();
-  return rawData.filter((it) => categories[it]).length;
-}
-
 export async function chemDiversitySearch(
   moleculeColumn: DG.Column, similarity: (a: BitArray, b: BitArray) => number,
-  limit: number, fingerprint: Fingerprint): Promise<number[]> {
-  limit = Math.min(limit, moleculeColumn.length);
+  limit: number, fingerprint: Fingerprint, showWarning?: boolean): Promise<number[]> {
   const fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint);
-  const indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => f != null);
+  
+  if (showWarning)
+    malformedDataWarning(fingerprintArray);
+  const indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => !f.allFalse);
+  limit = Math.min(limit, indexes.length);
 
-  const diverseIndexes = getDiverseSubset(fingerprintArray, indexes.length, limit,
+  const diverseIndexes = getDiverseSubset(indexes.length, limit,
     (i1, i2) => 1 - similarity(fingerprintArray[indexes[i1]], fingerprintArray[indexes[i2]]));
 
   const molIds: number[] = [];

@@ -8,6 +8,7 @@ import {Fingerprint} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer} from './chem-search-base-viewer';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
+import { malformedDataWarning } from '../utils/malformed-data-utils';
 
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   isEditedFromSketcher: boolean = false;
@@ -192,15 +193,15 @@ export async function chemSimilaritySearch(
   minScore: number,
   fingerprint: Fingerprint,
 ) : Promise<DG.DataFrame> {
-  limit = Math.min(limit, smiles.length);
   const targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint);
   const fingerprintCol = await chemSearches.chemGetFingerprints(smiles, fingerprint);
+  malformedDataWarning(fingerprintCol);
   const distances: number[] = [];
 
   const fpSim = similarityMetric[metricName];
   for (let row = 0; row < fingerprintCol.length; row++) {
     const fp = fingerprintCol[row];
-    distances[row] = fp == null ? 100.0 : fpSim(targetFingerprint, fp);
+    distances[row] = fp.allFalse ? 100.0 : fpSim(targetFingerprint, fp);
   }
 
   function range(end: number) {
@@ -218,12 +219,12 @@ export async function chemSimilaritySearch(
   }
 
   const indexes = range(table.rowCount)
-    .filter((idx) => fingerprintCol[idx] != null)
+    .filter((idx) => !fingerprintCol[idx].allFalse)
     .sort(compare);
   const molsList = [];
   const scoresList = [];
   const molsIdxs = [];
-
+  limit = Math.min(indexes.length, limit);
   for (let n = 0; n < limit; n++) {
     const idx = indexes[n];
     const score = distances[idx];

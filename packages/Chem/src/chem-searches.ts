@@ -64,9 +64,8 @@ function _chemGetSimilarities(queryMolString: string, fingerprints: BitArray[]):
 function _chemGetDiversities(limit: number, molStringsColumn: DG.Column, fingerprints: BitArray[]): string[] {
   limit = Math.min(limit, fingerprints.length);
   const indexes = ArrayUtils.indexesOf(fingerprints, (f) => f != null);
-
-  const diverseIndexes = getDiverseSubset(fingerprints, indexes.length, limit,
-    (i1, i2) => 1 - tanimotoSimilarity(fingerprints[indexes[i1]], fingerprints[indexes[i2]]));
+  const diverseIndexes = getDiverseSubset(indexes.length, limit,
+    (i1: number, i2: number) => 1 - tanimotoSimilarity(fingerprints[indexes[i1]], fingerprints[indexes[i2]]));
 
   const molIds: number[] = [];
   const diversities = new Array(limit).fill('');
