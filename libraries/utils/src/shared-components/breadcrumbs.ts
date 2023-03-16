@@ -8,25 +8,32 @@ export class Breadcrumbs {
   content: HTMLDivElement;
   root: HTMLDivElement;
   activeTab: HTMLDivElement;
+  disabledTabNames: string[];
 
 
-  constructor(nameList: string[], contentList: HTMLElement[]) {
+  constructor(nameList: string[], contentList: HTMLElement[], disabledTabNames?: string[]) {
     this.header = document.createElement('div');
     this.content = document.createElement('div');
     this.root = document.createElement('div');
     this.activeTab = document.createElement('div');
+    this.disabledTabNames = [];
 
-    this._updateElements(nameList, contentList);
+    this._updateElements(nameList, contentList, disabledTabNames);
     this._initEventListeners();
   }
 
 
-  private _updateElements(nameList: string[], contentList: HTMLElement[]) {
-    const headerElements = nameList.map((name) => ui.div(name,
-      `${name}-header-element breadcrumbs-header-element`));
+  private _updateElements(nameList: string[], contentList: HTMLElement[], disabledTabNames?: string[]) {
+    const headerElements = nameList.map((name) => {
+      const element = ui.div(name, `${name}-header-element breadcrumbs-header-element`);
+      if (disabledTabNames?.includes(name))
+        element.classList.add('disabled');
+      return element;
+    });
     this.header = ui.divH(headerElements, 'breadcrumbs-header-stripe');
     (this.header.firstChild as HTMLElement).classList.add('selected');
     this.activeTab = headerElements[0];
+    this.disabledTabNames = disabledTabNames!;
 
     const contentElements = contentList.map((content, index) => ui.panel([content],
       `${nameList[index]}-content-element breadcrumbs-content-element`));
@@ -65,11 +72,29 @@ export class Breadcrumbs {
     this.activeTab = (currentHeaderElement as HTMLDivElement);
   }
 
+  changeTabState(name: string, disabled: boolean) {
+    const currentHeaderElement = this.header.getElementsByClassName(`${name}-header-element`)![0];
+    if (disabled) {
+      this.disabledTabNames[this.disabledTabNames.length] = name;
+      currentHeaderElement.classList.add('disabled');
+      return;
+    }
+
+    const index = this.disabledTabNames.indexOf(name);
+    this.disabledTabNames.splice(index, 1);
+    currentHeaderElement.classList.remove('disabled');
+  }
+
   getTabContent(name: string): HTMLElement {
     return (this.content.getElementsByClassName(`${name}-content-element`)[0] as HTMLElement);
   }
 
   editTab(tabName: string, newName: string, content: HTMLElement) {
+    if (this.disabledTabNames.includes(tabName)) {
+      const index = this.disabledTabNames.indexOf(tabName);
+      this.disabledTabNames.splice(index, 1);
+    }
+
     const currentHeaderElement = this.header.getElementsByClassName(`${tabName}-header-element`)![0];
     const newHeaderElement = ui.div(newName, `${newName}-header-element breadcrumbs-header-element`);
     this.header.replaceChild(newHeaderElement, currentHeaderElement);
@@ -81,9 +106,13 @@ export class Breadcrumbs {
     this._addHeaderElementClickEvent(newHeaderElement, newName);
   }
 
-  appendTab(name: string, content: HTMLElement) {
+  appendTab(name: string, content: HTMLElement, disabled?: boolean) {
     const newHeaderElement = ui.div(name, `${name}-header-element breadcrumbs-header-element`);
     this.header.appendChild(newHeaderElement);
+    if (disabled) {
+      this.disabledTabNames[this.disabledTabNames.length] = name;
+      newHeaderElement.classList.add('disabled');
+    }
 
     const newContentElement = ui.panel([content], `${name}-content-element breadcrumbs-content-element`);
     this.content.appendChild(newContentElement);

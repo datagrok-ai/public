@@ -19,6 +19,11 @@
     pointer-events: none;
 }
 
+.breadcrumbs-header-element.disabled {
+    pointer-events: none;
+    color: var(--grey-5);
+}
+
 
 .breadcrumbs-content-element {
     background-color: rgb(238, 238, 255);
