@@ -109,18 +109,18 @@ export class Shell {
   /** Shows information message (green background)
    * @param {string} x - message */
   info(x: any): void {
-    api.grok_Balloon(typeof x == "string" ? x : JSON.stringify(x), 'info');
+    api.grok_Balloon(typeof x == "string" || x instanceof HTMLElement ? x : JSON.stringify(x), 'info');
   }
 
   /** Shows information message (red background)
    * @param {string} s - message */
-  error(s: string): void {
+  error(s: string | HTMLElement): void {
     api.grok_Balloon(s, 'error');
   }
 
   /** Shows warning message (yellow background)
    * @param {string} s - message */
-  warning(s: string): void {
+  warning(s: string | HTMLElement): void {
     api.grok_Balloon(s, 'warning');
   }
 
