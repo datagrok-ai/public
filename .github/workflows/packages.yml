@@ -361,10 +361,10 @@ jobs:
           continue=false
           if [ -n "$(git status -s packages/${{ matrix.package }}/package-lock.json)" ]; then
             git add packages/${{ matrix.package }}/package-lock.json
-            git commit -m "GitHub Actions: Update packages/${{ matrix.package }}/package-lock.json [skip ci]
+            git commit -m 'GitHub Actions: Update packages/${{ matrix.package }}/package-lock.json [skip ci]
 
-Workflow ${{ github.workflow }} ${{ github.run_number }}
-https://github.com/datagrok/public/actions/runs/${{ github.run_id }}"
+            Workflow ${{ github.workflow }} ${{ github.run_number }}
+            https://github.com/datagrok/public/actions/runs/${{ github.run_id }}'
             continue=true
           fi
           if [[ "${continue}" == "true" ]]; then
