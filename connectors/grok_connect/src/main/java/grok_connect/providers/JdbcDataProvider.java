@@ -597,7 +597,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                         size += column.memoryInBytes();
                     size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000; // count? it's 200 lines up
 
-                    if (size > 20) {                        
+                    if (size > 20) {
                         DataFrame dataFrame = new DataFrame();
                         dataFrame.addColumns(columns);
                         return dataFrame;
@@ -660,8 +660,9 @@ public abstract class JdbcDataProvider extends DataProvider {
             else throw e;
         }
         finally {
-            if (connection != null)
+            if (connection != null) {
                 connection.close();
+            }
         }
     }
 

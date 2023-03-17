@@ -175,11 +175,15 @@
         </repository>
 
         <repository>
+            <id>cloudera</id>
+            <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+        </repository>
+
+        <repository>
             <id>redshift</id>
             <url>https://s3.amazonaws.com/redshift-maven-repository/release</url>
         </repository>
     </repositories>
-
     <dependencies>
         <dependency>
             <groupId>commons-beanutils</groupId>
@@ -411,36 +415,24 @@
             <artifactId>guava</artifactId>
             <version>31.0.1-jre</version>
         </dependency>
+    <!--        Hive2-->
         <dependency>
             <groupId>org.apache.hive</groupId>
             <artifactId>hive-jdbc</artifactId>
-            <version>2.1.1</version>
+            <version>4.0.0-alpha-2</version>
             <exclusions>
                 <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-1.2-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-slf4j-impl</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-web</artifactId>
+                    <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+    <!--Hive1-->
+        <dependency>
+            <groupId>org.apache.hadoop.hive</groupId>
+            <artifactId>hive-jdbc</artifactId>
+            <version>0.7.1-cdh3u6</version>
+            <type>pom</type>
         </dependency>
         <dependency>
             <groupId>com.zaxxer</groupId>
@@ -482,7 +474,13 @@
             <artifactId>snowflake-jdbc</artifactId>
             <version>3.13.27</version>
         </dependency>
-<!--        TEST DEPENDENCIES-->
+        <dependency>
+            <groupId>javassist</groupId>
+            <artifactId>javassist</artifactId>
+            <version>3.12.1.GA</version>
+        </dependency>
+
+        <!--        TEST DEPENDENCIES-->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
@@ -501,6 +499,13 @@
             <version>5.8.1</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>1.9.2</version>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
