@@ -16,9 +16,15 @@ export class ClickableTextRenderer extends GridCellRendererEx {
 
     this.onTextClickCallback = onTextClicked !== undefined ? onTextClicked : null;
   }
-  render(g : CanvasRenderingContext2D, nX : number, nY : number, nW : number, nH : number, cellGrid : DG.GridCell, style : DG.GridCellStyle) : void {
+
+  formatValue(cellGrid : DG.GridCell) : string | null {
     const cell : DG.Cell = cellGrid.cell;
-    let str = isNullText(cell) ? null : cell.value.toString();
+    const str = isNullText(cell) ? null : cell.value.toString();
+    return str;
+  }
+
+  render(g : CanvasRenderingContext2D, nX : number, nY : number, nW : number, nH : number, cellGrid : DG.GridCell, style : DG.GridCellStyle) : void {
+    let str = this.formatValue(cellGrid);
     if (str === null)
       return;
 
