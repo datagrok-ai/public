@@ -123,37 +123,37 @@ export function _WordCloudViewer() {
 //name: chordViewerDemo
 //meta.demoPath: Viewers | Chord
 export function _chordViewerDemo() {
-  viewerDemo('ChordViewer');
+  viewerDemo('Chord');
 }
 
 //name: globeViewerDemo
 //meta.demoPath: Viewers | Globe
 export function _globeViewerDemo() {
-  viewerDemo('GlobeViewer');
+  viewerDemo('Globe');
 }
 
 //name: groupAnalysisViewerDemo
 //meta.demoPath: Viewers | GroupAnalysis
 export function _groupAnalysisViewerDemo() {
-  viewerDemo('GroupAnalysisViewer');
+  viewerDemo('GroupAnalysis');
 }
 
 //name: radarViewerDemo
 //meta.demoPath: Viewers | Radar
 export function _radarViewerDemo() {
-  viewerDemo('RadarViewer');
+  viewerDemo('Radar');
 }
 
 //name: sankeyViewerDemo
 //meta.demoPath: Viewers | Sankey
 export function _sankeyViewerDemo() {
-  viewerDemo('SankeyViewer');
+  viewerDemo('Sankey');
 }
 
 //name: sunburstViewerDemo
 //meta.demoPath: Viewers | Sunburst
 export function _sunburstViewerDemo() {
-  viewerDemo('SunburstViewer');
+  viewerDemo('Sunburst');
 }
 
 //name: surfacePlotDemo
@@ -165,17 +165,17 @@ export function _surfacePlotDemo() {
 //name: timelinesViewerDemo
 //meta.demoPath: Viewers | Timelines
 export function _timelinesViewerDemo() {
-  viewerDemo('TimelinesViewer', {lineWidth: 4, markerPosition: 'above main line'});
+  viewerDemo('Timelines', {lineWidth: 4, markerPosition: 'above main line'});
 }
 
 //name: treeViewerDemo
 //meta.demoPath: Viewers | Tree
 export function _treeViewerDemo() {
-  viewerDemo('TreeViewer');
+  viewerDemo('Tree');
 }
 
 //name: wordCloudViewerDemo
 //meta.demoPath: Viewers | WordCloud
 export function _wordCloudViewerDemo() {
-  viewerDemo('WordCloudViewer');
+  viewerDemo('WordCloud');
 }

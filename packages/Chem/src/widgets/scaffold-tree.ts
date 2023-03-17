@@ -1317,7 +1317,7 @@ class SketcherDialogWrapper {
     validLabel.style.height = "30px";
     validLabel.style.color = SketcherDialogWrapper.validationColor(true);
 
-    this.sketcher = new Sketcher();
+    this.sketcher = new DG.chem.Sketcher();
     this.isMolBlock ? this.sketcher.setMolFile(molStr) : this.sketcher.setSmiles(molStr);
 
     const molStrTmp = thisWrapper.sketcher.getMolFile();

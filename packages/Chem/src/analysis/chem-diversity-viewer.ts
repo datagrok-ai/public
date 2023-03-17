@@ -6,10 +6,11 @@ import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-meth
 import {chemGetFingerprints} from '../chem-searches';
 import $ from 'cash-dom';
 import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
-import {Fingerprint} from '../utils/chem-common';
+import {defaultMorganFpLength, defaultMorganFpRadius, Fingerprint, rdKitFingerprintToBitArray} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer} from './chem-search-base-viewer';
 import { malformedDataWarning } from '../utils/malformed-data-utils';
+import { getRdKitModule } from '../package';
 
 export class ChemDiversityViewer extends ChemSearchBaseViewer {
   renderMolIds: number[];
@@ -35,7 +36,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
       if (computeData) {
         this.renderMolIds =
           await chemDiversitySearch(
-            this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit, this.fingerprint as Fingerprint);
+            this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit, this.fingerprint as Fingerprint, this.tooltipUse);
       }
       if (this.root.hasChildNodes())
         this.root.removeChild(this.root.childNodes[0]);
@@ -94,9 +95,28 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
 
 export async function chemDiversitySearch(
   moleculeColumn: DG.Column, similarity: (a: BitArray, b: BitArray) => number,
-  limit: number, fingerprint: Fingerprint, showWarning?: boolean): Promise<number[]> {
-  const fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint);
-  
+  limit: number, fingerprint: Fingerprint, tooltipUse: boolean = false, showWarning?: boolean): Promise<number[]> {
+
+  let fingerprintArray: BitArray[] = [];
+  if (tooltipUse) {
+    const size = moleculeColumn.length <= 1000 ? moleculeColumn.length : 1000;
+    const randomIndexes = Array.from({ length: size }, () => Math.floor(Math.random() * moleculeColumn.length));
+    limit = Math.min(limit, size);
+    for (let i = 0; i < randomIndexes.length; ++i) {
+      try {
+        let mol = getRdKitModule().get_mol(moleculeColumn.get(randomIndexes[i]));
+        let fp = mol.get_morgan_fp_as_uint8array(JSON.stringify({
+          radius: defaultMorganFpRadius,
+          nBits: defaultMorganFpLength,
+        }));
+        fingerprintArray[i] = rdKitFingerprintToBitArray(fp);
+      } catch (e) {
+        continue;
+      }
+    }
+  } else {
+    fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint);
+  }
   if (showWarning)
     malformedDataWarning(fingerprintArray);
   const indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => !f.allFalse);

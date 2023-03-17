@@ -16,10 +16,9 @@ import {RadarChartCellRender} from './sparklines/radar-chart';
 import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
 import {names, SparklineType, sparklineTypes} from './sparklines/shared';
 import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
-
+import {PinnedColumn} from "@datagrok-libraries/gridext/src/pinned/PinnedColumn";
 
 export const _package = new DG.Package();
-
 
 //name: imageUrlCellRenderer
 //tags: cellRenderer
@@ -164,6 +163,13 @@ export function testUnitsKgCellRenderer() {
 //output: grid_cell_renderer result
 export function testUnitsTonCellRenderer() {
   return new HtmlTestCellRenderer();
+}
+
+//name: addPinnedColumn
+//input: object gridCol
+//output: object result
+export function addPinnedColumn(gridCol: DG.GridColumn) : PinnedColumn {
+  return PinnedUtils.addPinnedColumn(gridCol);
 }
 
 //name: demoTestUnitsCellRenderer
