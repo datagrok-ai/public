@@ -95,13 +95,12 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
 
 export async function chemDiversitySearch(
   moleculeColumn: DG.Column, similarity: (a: BitArray, b: BitArray) => number,
-  limit: number, fingerprint: Fingerprint, tooltipUse: boolean = false, showWarning?: boolean): Promise<number[]> {
+  limit: number, fingerprint: Fingerprint, tooltipUse: boolean = false): Promise<number[]> {
 
   let fingerprintArray: BitArray[] = [];
   if (tooltipUse) {
     const size = moleculeColumn.length <= 1000 ? moleculeColumn.length : 1000;
     const randomIndexes = Array.from({ length: size }, () => Math.floor(Math.random() * moleculeColumn.length));
-    limit = Math.min(limit, size);
     for (let i = 0; i < randomIndexes.length; ++i) {
       try {
         let mol = getRdKitModule().get_mol(moleculeColumn.get(randomIndexes[i]));
@@ -117,7 +116,7 @@ export async function chemDiversitySearch(
   } else {
     fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint);
   }
-  if (showWarning)
+  if (!tooltipUse)
     malformedDataWarning(fingerprintArray);
   const indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => !f.allFalse);
   limit = Math.min(limit, indexes.length);
