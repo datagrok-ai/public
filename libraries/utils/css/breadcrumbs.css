@@ -1,7 +1,59 @@
-.breadcrumbs-header-stripe {
-    display: flex;
+/* .breadcrumbs-header-stripe {
+    display: table;
+    width: 100%;
+    padding: 0px;
+    margin: 0px;
+    position: relative;
     flex-direction: row;
     flex-shrink: 0;
+} */
+
+/* .breadcrumbs-header-stripe > .breadcrumbs-header-element {
+    display: table-cell;
+    height: 30px;
+    position: relative;
+    padding: 0px;
+    margin: 0px;
+    text-align: center;
+    border: 1px solid #d68a3a;
+} */
+
+/* .breadcrumbs-header-stripe > .breadcrumbs-header-element > span {
+    position: relative;
+    line-height: 30px;
+    height: 100%;
+    width: 100%;
+} */
+
+/* .breadcrumbs-header-stripe > .breadcrumbs-header-element > span::after, .breadcrumbs-header-stripe > .breadcrumbs-header-element > span::before {
+    content:"";
+    display: inline-block;
+    border-width: 16px;
+    border-style: solid;
+    width: 0px;
+    height: 0px;
+    left: 100%;
+    top: -1px;
+    position: absolute;
+    z-index: 1;
+}
+
+.breadcrumbs-header-stripe > .breadcrumbs-header-element > span::after, .breadcrumbs-header-stripe > .breadcrumbs-header-element:hover > span::before {
+    border-color: transparent transparent transparent #d68a3a;
+}
+
+.breadcrumbs-header-stripe > .breadcrumbs-header-element > span::before {
+    border-width: 14px;
+    display: block;
+    border-color: transparent transparent transparent #ffffff;
+    z-index: 2;
+    top:1px;
+}
+
+.breadcrumbs-header-stripe > .breadcrumbs-header-element:hover {
+    background-color: #d68a3a;
+    cursor: pointer;
+    color: white;
 }
 
 .breadcrumbs-header-element {
@@ -32,9 +84,30 @@
 
 .breadcrumbs-content-element.visible {
     display: block;
+} */
+
+
+/* div.ui-panel + div.ui-panel {
+    padding-top: 12px;
+} */
+
+.list {
+    padding: 10px 16px;
+    list-style: none;
 }
 
+.list-elem {
+    display: inline;
+    font-size: 16px;
+    color: #0275d8;
+}
 
-div.ui-panel + div.ui-panel {
-    padding-top: 12px;
+.list span+span::before {
+    padding: 8px;
+    color: black;
+    content: "/\00a0";
+}
+
+.list span:last-child {
+    color: var(--grey-6);
 }
