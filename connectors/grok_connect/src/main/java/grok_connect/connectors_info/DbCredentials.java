@@ -8,11 +8,15 @@ public class DbCredentials
 {
     public static final String ACCESS_SERVER = "accessServer";
     public static final String SERVER = "server";
+    public static final String META_STORE_SERVER = "metaStoreServer";
     public static final String DB = "db";
     public static final String SCHEMA = "schema";
     public static final String LOGIN = "login";
     public static final String PASSWORD = "password";
+    public static final String META_STORE_LOGIN = "metaStoreLogin";
+    public static final String META_STORE_PASSWORD = "metaStorePassword";
     public static final String PORT = "port";
+    public static final String META_STORE_PORT = "metaStorePort";
     public static final String CONNECTION_STRING = "connString";
     public static final String SSL = "ssl";
     public static final String CACHE_SCHEMA = "cacheSchema";
@@ -31,6 +35,7 @@ public class DbCredentials
     public static final String ACCESS_KEY = "accessKey";
     public static final String SECRET_KEY = "secretKey";
     public static final String VPC_ENDPOINT = "VPCEndpoint";
+    public static final String META_STORE = "metaStore";
 
     public String server;
     public String port;

@@ -1,0 +1,165 @@
+package grok_connect.providers;
+
+import grok_connect.connectors_info.Credentials;
+import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataProvider;
+import grok_connect.connectors_info.DbCredentials;
+import grok_connect.providers.utils.DataFrameComparator;
+import grok_connect.providers.utils.Provider;
+import grok_connect.utils.ProviderManager;
+import grok_connect.utils.QueryMonitor;
+import grok_connect.utils.SettingsManager;
+import org.apache.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
+import org.testcontainers.containers.ContainerState;
+import org.testcontainers.containers.DockerComposeContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import serialization.DataFrame;
+import java.io.File;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.Optional;
+
+/**
+ * Test class for Hive2Provider. !Use Hyper-V engine for Docker on Windows system.
+ */
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@Testcontainers
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class Hive2DataProviderTest {
+    private static final Provider type = Provider.HIVE2;
+    private static final String META_STORE_PROVIDER = "Postgres";
+    private static final String SERVICE_NAME = "hive-server";
+    private static final String META_STORE_NAME = "hive-metastore-postgresql";
+    private static final int SERVICE_PORT = 10000;
+    private static final int META_STORE_PORT = 5432;
+
+    @Container
+    private static final DockerComposeContainer<?> dockerComposeContainer =
+            new DockerComposeContainer<>(new File("src/test/resources/scripts/hive2/docker-compose.yml"))
+                    .withExposedService(SERVICE_NAME, SERVICE_PORT,
+                            Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(80)))
+                    .withExposedService(META_STORE_NAME, META_STORE_PORT,
+                            Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(30)));
+
+    private JdbcDataProvider provider;
+    private DataConnection connection;
+    private DataFrameComparator dataFrameComparator;
+    private ContainerState hiveServiceContainerState;
+
+    @BeforeAll
+    public void init() {
+        dataFrameComparator = new DataFrameComparator();
+        SettingsManager settingsManager = SettingsManager.getInstance();
+        settingsManager.initSettingsWithDefaults();
+        Logger mockLogger = Mockito.mock(Logger.class);
+        QueryMonitor mockMonitor = Mockito.mock(QueryMonitor.class);
+        ProviderManager providerManager = new ProviderManager(mockLogger);
+        ProviderManager spy = Mockito.spy(providerManager);
+        Mockito.when(spy.getQueryMonitor()).thenReturn(mockMonitor);
+        provider = spy.getByName(type.getProperties().get("providerName").toString());
+        dockerComposeContainer.waitingFor(SERVICE_NAME, new WaitAllStrategy());
+        Optional<ContainerState> hiveServer = dockerComposeContainer.getContainerByServiceName(SERVICE_NAME);
+        if (hiveServer.isPresent()) {
+            hiveServiceContainerState = hiveServer.get();
+            try {
+                hiveServiceContainerState.execInContainer("/opt/hive/bin/hive", "-f",
+                        "../scripts/hive_all.hql");
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException("Something went wrong when executing init script", e);
+            }
+        }
+    }
+
+    @BeforeEach
+    public void beforeEach() {
+        Credentials credentials = new Credentials();
+        credentials.parameters.put(DbCredentials.LOGIN, null);
+        credentials.parameters.put(DbCredentials.PASSWORD, null);
+        connection = new DataConnection();
+        connection.credentials = credentials;
+        connection.dataSource = provider.descriptor.type;
+        connection.parameters.put(DbCredentials.DB, type.getProperties().getProperty("database"));
+        connection.parameters.put(DbCredentials.SERVER,
+                dockerComposeContainer.getServiceHost(SERVICE_NAME, SERVICE_PORT));
+        connection.parameters.put(DbCredentials.PORT,
+                (double) dockerComposeContainer.getServicePort(SERVICE_NAME, SERVICE_PORT));
+        connection.parameters.put(DbCredentials.META_STORE, META_STORE_PROVIDER);
+        connection.parameters.put(DbCredentials.META_STORE_SERVER, dockerComposeContainer.getServiceHost(META_STORE_NAME,
+                META_STORE_PORT));
+        connection.parameters.put(DbCredentials.META_STORE_PORT,
+                (double) dockerComposeContainer.getServicePort(META_STORE_NAME,
+                META_STORE_PORT));
+        connection.parameters.put(DbCredentials.META_STORE_LOGIN, "postgres");
+        connection.parameters.put(DbCredentials.META_STORE_PASSWORD, "");
+    }
+
+    @Order(1)
+    @DisplayName("Test whether container with db is running")
+    @Test
+    public void docker_isRunning_ok() {
+        Assertions.assertTrue(hiveServiceContainerState.isRunning());
+    }
+
+    @Order(2)
+    @DisplayName("Tests of testConnection(DataConnection conn)")
+    @Test
+    public void testConnection() {
+        String expected = DataProvider.CONN_AVAILABLE;
+        String actual = Assertions.assertDoesNotThrow(() -> provider.testConnection(connection));
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Order(3)
+    @DisplayName("Test of testConnection(DataConnection conn) when wrong db")
+    @Test
+    public void testConnection_notOk() {
+        connection.parameters.put(DbCredentials.DB, "dummyFooBar");
+        String result = Assertions.assertDoesNotThrow(() -> provider.testConnection(connection));
+        Assertions.assertTrue(result.startsWith("ERROR"));
+    }
+
+    @DisplayName("Test of getSchemas() method with correct DataConnection")
+    @ParameterizedTest(name = "CORRECT ARGUMENTS")
+    @MethodSource("grok_connect.providers.arguments_provider.Hive2ObjectsMother#getSchemas_ok")
+    public void getSchemas_ok(DataFrame expected) {
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchemas(connection));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @Disabled
+    @Test
+    public void getSchemas_notOk() {
+        // method probably should throw something when bad input
+    }
+
+    @DisplayName("Test of getSchema() method with correct DataConnection")
+    @ParameterizedTest(name = "CORRECT ARGUMENTS")
+    @MethodSource("grok_connect.providers.arguments_provider.Hive2ObjectsMother#getSchema_ok")
+    public void getSchema_ok(DataFrame expected) {
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchema(connection,
+                "datagrok", "mock_data"));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @Disabled
+    @Test
+    public void getSchema_notOk() {
+        // method probably should throw something when bad input
+    }
+}
