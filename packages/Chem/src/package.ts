@@ -327,7 +327,7 @@ export async function searchSubstructure(
   }
 }
 
-//name: Descriptors App
+//name: Molecular Descriptors
 //tags: app
 export function descriptorsApp(): void {
   getDescriptorsApp();
@@ -356,7 +356,7 @@ export function similaritySearchViewer(): ChemSimilarityViewer {
 //name: similaritySearch
 //description: finds the most similar molecule
 export function similaritySearchTopMenu(): void {
-  (grok.shell.v as DG.TableView).addViewer('SimilaritySearchViewer');
+  (grok.shell.v as DG.TableView).addViewer('Chem Similarity Search');
 }
 
 //name: Chem Diversity Search
@@ -371,7 +371,7 @@ export function diversitySearchViewer(): ChemDiversityViewer {
 //name: diversitySearch
 //description: finds the most diverse molecules
 export function diversitySearchTopMenu(): void {
-  (grok.shell.v as DG.TableView).addViewer('DiversitySearchViewer');
+  (grok.shell.v as DG.TableView).addViewer('Chem Diversity Search');
 }
 
 
@@ -382,7 +382,7 @@ export function ChemSpaceEditor(call: DG.FuncCall) {
   const funcEditor = new SequenceSpaceFunctionEditor(DG.SEMTYPE.MOLECULE);
   ui.dialog({title: 'Chemical Space'})
     .add(funcEditor.paramsUI)
-    .onOK(async () => {      
+    .onOK(async () => {
       call.func.prepare(funcEditor.funcParams).call(true);
     })
     .show();
@@ -488,7 +488,7 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
     grok.shell.info(`The column ${molCol.name} doesn't contain molecules`);
     return;
   }
-   
+
   const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molCol);
   let columnNames: string[] = [];
 
@@ -564,7 +564,7 @@ export function ActivityCliffsEditor(call: DG.FuncCall) {
   const funcEditor = new ActivityCliffsFunctionEditor(DG.SEMTYPE.MOLECULE);
   ui.dialog({title: 'Activity Cliffs'})
     .add(funcEditor.paramsUI)
-    .onOK(async () => {      
+    .onOK(async () => {
       call.func.prepare(funcEditor.funcParams).call(true);
     })
     .show();
@@ -895,7 +895,7 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
     molblock = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
   else
     molblock = molToMolblock(molecule, getRdKitModule());
-  
+
   tv.getFiltersGroup({createDefaultFilters: false}).add({
     type: DG.FILTER_TYPE.SUBSTRUCTURE,
     column: molCol.name,
@@ -983,14 +983,14 @@ export async function getScaffoldTree(data: DG.DataFrame,
   const smilesList: string[] = new Array<string>(data.columns.length);
   for (let rowI = 0; rowI < molColumn!.length; rowI++) {
     let el: string = molColumn?.get(rowI);
-    if (!smiles) 
+    if (!smiles)
       try {
         el = convertMolNotation(el, DG.UNITS.Molecule.MOLBLOCK, DG.UNITS.Molecule.SMILES);
-      } 
+      }
       catch {
         invalid[rowI] = rowI;
       }
-    
+
     smilesList[rowI] = el;
   }
   const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
@@ -1012,4 +1012,3 @@ export function removeDuplicates(molecules: string[], molecule: string): string[
   mol1.delete();
   return filteredMolecules;
 }
-

@@ -143,8 +143,12 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
 
   $(onscreenCanvas).addClass('chem-canvas');
   const r = window.devicePixelRatio;
-  onscreenCanvas.width = w * r;
-  onscreenCanvas.height = h * r;
+
+  const nW = w * r;
+  const nH = h * r;
+
+  onscreenCanvas.width = nW;// w * r;
+  onscreenCanvas.height = nH;// h * r;
   onscreenCanvas.style.width = (w).toString() + 'px';
   onscreenCanvas.style.height = (h).toString() + 'px';
 
@@ -152,7 +156,7 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
   if (!isMol)
     molString = convertToRDKit(molString);
 
-  const offscreenCanvas = new OffscreenCanvas(w, h);
+  const offscreenCanvas = new OffscreenCanvas(nW, nH);
   const molCtx = getMolSafe(molString, {}, getRdKitModule());
   const mol : RDMol | null = molCtx.mol;
   if (mol === null) {
@@ -180,8 +184,8 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
         substructJson = '{}';
     }
     const substruct = JSON.parse(substructJson);
-    drawRdKitMoleculeToOffscreenCanvas(molCtx, w, h, offscreenCanvas, substruct);
-    const image = offscreenCanvas!.getContext('2d')!.getImageData(0, 0, w, h);
+    drawRdKitMoleculeToOffscreenCanvas(molCtx, nW, nH, offscreenCanvas, substruct);
+    const image = offscreenCanvas!.getContext('2d')!.getImageData(0, 0, nW, nH);
     const context = onscreenCanvas.getContext('2d')!;
     context.putImageData(image, x, y);
   } finally {

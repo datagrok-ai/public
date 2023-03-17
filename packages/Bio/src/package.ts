@@ -284,6 +284,7 @@ export function webLogoViewer() {
 //name: VdRegions
 //description: V-Domain regions viewer
 //tags: viewer, panel
+//meta.icon: files/icons/vdregions-viewer.svg
 //output: viewer result
 export function vdRegionViewer() {
   return new VdRegionsViewer();
@@ -514,6 +515,7 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
 
 //name: Composition Analysis
 //top-menu: Bio | Composition Analysis
+//meta.icon: files/icons/composition-analysis.svg
 //output: viewer result
 export async function compositionAnalysis(): Promise<void> {
   // Higher priority for columns with MSA data to show with WebLogo.
@@ -690,6 +692,7 @@ export function getHelmMonomers(sequence: DG.Column<string>): string[] {
 
 //name: Sequence Similarity Search
 //tags: viewer
+//meta.icon: files/icons/sequence-similarity-viewer.svg
 //output: viewer result
 export function similaritySearchViewer(): SequenceSimilarityViewer {
   return new SequenceSimilarityViewer();
@@ -707,6 +710,7 @@ export function similaritySearchTopMenu(): void {
 
 //name: Sequence Diversity Search
 //tags: viewer
+//meta.icon: files/icons/sequence-diversity-viewer.svg
 //output: viewer result
 export function diversitySearchViewer(): SequenceDiversityViewer {
   return new SequenceDiversityViewer();
