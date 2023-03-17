@@ -23,6 +23,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import serialization.DataFrame;
 
+@Disabled("Until test instance of Redshift will be available")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RedshiftDataProviderTest {
     private static final Provider type = Provider.REDSHIFT;
