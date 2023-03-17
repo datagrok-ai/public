@@ -41,7 +41,7 @@ class SnowflakeDataProviderTest {
         ProviderManager providerManager = new ProviderManager(mockLogger);
         ProviderManager spy = Mockito.spy(providerManager);
         Mockito.when(spy.getQueryMonitor()).thenReturn(mockMonitor);
-        provider = (JdbcDataProvider) spy.getByName(type.getProperties().get("providerName").toString());
+        provider = spy.getByName(type.getProperties().get("providerName").toString());
     }
 
     @BeforeEach
