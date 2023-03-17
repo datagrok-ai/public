@@ -327,7 +327,7 @@ export async function searchSubstructure(
   }
 }
 
-//name: Mol Descriptors
+//name: Molecular Descriptors
 //tags: app
 export function descriptorsApp(): void {
   getDescriptorsApp();
