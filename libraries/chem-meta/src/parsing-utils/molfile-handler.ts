@@ -1,5 +1,11 @@
 import {ChemicalTableParser, ChemicalTableParserBase, AtomAndBondCounts} from './chemical-table-parser';
-import {MOLFILE_VERSION, V2K_CONST, V3K_CONST} from './molfile-parsing-const';
+import {V2K_CONST} from '../formats/molfile-v2k-const';
+import {V3K_CONST} from '../formats/molfile-v3k-const';
+
+const enum MOLFILE_VERSION {
+  V2000 = 'V2000',
+  V3000 = 'V3000',
+}
 
 export class MolfileHandler extends ChemicalTableParserBase implements ChemicalTableParser {
   constructor(molfile: string) {
