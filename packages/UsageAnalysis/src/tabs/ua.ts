@@ -8,12 +8,14 @@ export class UaView extends DG.ViewBase {
   uaToolbox: UaToolbox;
   viewers: UaQueryViewer[] = [];
   initialized: boolean = false;
+  view: DG.View | undefined;
 
-  constructor(uaToolbox: UaToolbox) {
+  constructor(uaToolbox: UaToolbox, view?: DG.View) {
     super();
     this.uaToolbox = uaToolbox;
     this.toolbox = uaToolbox.rootAccordion.root;
     this.box = true;
+    this.view = view;
   }
 
   tryToinitViewers() {
@@ -23,10 +25,5 @@ export class UaView extends DG.ViewBase {
     }
   }
 
-  async initViewers(): Promise<void> {
-
-  }
-
-  handleUrlParams(params: Map<string, string>) : void {
-  }
+  async initViewers(): Promise<void> {}
 }
