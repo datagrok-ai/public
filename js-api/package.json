@@ -3,7 +3,7 @@
   "version": "1.13.7",
   "description": "",
   "dependencies": {
-    "@datagrok-libraries/chem-meta": "^1.0.6",
+    "@datagrok-libraries/chem-meta": "^1.0.7",
     "@types/react": "latest",
     "@types/wu": "latest",
     "cash-dom": "^8.0.0",
