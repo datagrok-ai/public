@@ -103,7 +103,7 @@ export function setGridColumnRenderer(colGrid : DG.GridColumn, renderer : GridCe
 export function getGridColumnRenderer(colGrid : DG.GridColumn) : GridCellRendererEx | null {
   const dart : any = DG.toDart(colGrid);
   const renderer = dart.m_renderer;
-  if(renderer === undefined)
+  if (renderer === undefined)
     return null;
 
   return renderer;

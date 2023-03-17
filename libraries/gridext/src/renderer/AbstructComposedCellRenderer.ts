@@ -11,26 +11,30 @@ export class AbstractComposedCellRenderer extends GridCellRendererEx {
     this.m_renderer = renderer;
   }
 
+  getChildRenderer() {return this.m_renderer;}
+
    renderExternalContent(g: CanvasRenderingContext2D, cellGrid: DG.GridCell, nX: number, nY: number, nW: number, nH: number): void {
-    this.m_renderer!.render(g, nX, nY, nW, nH, cellGrid, cellGrid.style);
+   if (this.m_renderer === null)
+     return;
+
+    this.m_renderer.render(g, nX, nY, nW, nH, cellGrid, cellGrid.style);
   }
 
-  fillLabelsAndUI(cell: DG.Cell, arTextLabels : string[], arTextFonts: string[], arTextColors : string[], arBackColors: string[]) : void {
+  fillLabelsAndUI(cell: DG.GridCell, arTextLabels : string[], arTextFonts: string[], arTextColors : string[], arBackColors: string[]) : void {
     throw new Error('Not Implemented');
   }
 
   render(g: CanvasRenderingContext2D, nX: number, nY: number, nW: number, nH: number, cellGrid: DG.GridCell, style: DG.GridCellStyle): void {
+    super.render(g, nX, nY, nW, nH, cellGrid, style);
+
     if (nW <= 3 || nH <= 3)
       return;
-
-    const cell: DG.Cell = cellGrid.cell;
-    const value = cell.value;
 
     const arTextLabels : string[] = [];
     const arTextFonts : string[] = [];
     const arTextColors : string[] = [];
     const arBackColors : string[] = [];
-    this.fillLabelsAndUI(value, arTextLabels, arTextFonts, arTextColors, arBackColors);
+    this.fillLabelsAndUI(cellGrid, arTextLabels, arTextFonts, arTextColors, arBackColors);
 
     const font = style.font;
     const nHFont = TextUtils.getFontSize(font);

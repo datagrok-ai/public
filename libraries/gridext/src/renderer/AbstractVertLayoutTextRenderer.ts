@@ -7,16 +7,14 @@ export class AbstractVertLayoutTextRenderer extends GridCellRendererEx {
     super();
   }
 
-  fillLabelsAndUI(entity : any, arTextLabels : string[], arTextFonts: string[], arTextColors : string[], arBackColors: string[]) : void {
+  fillLabelsAndUI(cellGrid : DG.GridCell, arTextLabels : string[], arTextFonts: string[], arTextColors : string[], arBackColors: string[]) : void {
     throw new Error('Not Implemented');
   }
 
   render(g: CanvasRenderingContext2D, nX: number, nY: number, nW: number, nH: number, cellGrid: DG.GridCell, style: DG.GridCellStyle): void {
-    const cell : DG.Cell = cellGrid.cell;
-    const value = cell.value;
-    if (value === null)
-      return;
+    super.render(g, nX, nY, nW, nH, cellGrid, style);
 
+    const cell : DG.Cell = cellGrid.cell;
     const crBack = DG.Color.toHtml(style.backColor);
     if (crBack !== undefined) {
       g.fillStyle = crBack;
@@ -27,7 +25,7 @@ export class AbstractVertLayoutTextRenderer extends GridCellRendererEx {
     const arTextFonts : string[] = [];
     const arTextColors : string[] = [];
     const arBackColors : string[] = [];
-    this.fillLabelsAndUI(value, arTextLabels, arTextFonts, arTextColors, arBackColors);
+    this.fillLabelsAndUI(cellGrid, arTextLabels, arTextFonts, arTextColors, arBackColors);
     this.paintLabels(g, arTextLabels, arTextFonts, arTextColors, arBackColors, nX, nY, nW, nH);
   }
 

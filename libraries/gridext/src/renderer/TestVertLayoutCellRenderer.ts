@@ -1,7 +1,8 @@
+import * as DG from 'datagrok-api/dg';
 import {AbstractVertLayoutTextRenderer} from "./AbstractVertLayoutTextRenderer";
 
 export class TestVertLayoutCellRenderer extends AbstractVertLayoutTextRenderer {
-  fillLabelsAndUI(entity : any, arTextLabels : string[], arTextFonts: string[], arTextColors : string[], arBackColors: string[]) : void {
+  fillLabelsAndUI(cellGrid : DG.GridCell, arTextLabels : string[], arTextFonts: string[], arTextColors : string[], arBackColors: string[]) : void {
     arTextLabels.push('test 1');
     arTextLabels.push('test 2');
     arTextLabels.push('test 3');
