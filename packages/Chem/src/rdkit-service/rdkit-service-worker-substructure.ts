@@ -1,7 +1,7 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {syncQueryAromatics} from "../utils/aromatic-utils";
-import {getMolSafe} from "../utils/mol-creation_rdkit";
+import {syncQueryAromatics} from '../utils/aromatic-utils';
+import {getMolSafe} from '../utils/mol-creation_rdkit';
 import {isMolBlock} from '../utils/chem-common';
 
 export enum MolNotation {
