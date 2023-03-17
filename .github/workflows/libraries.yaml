@@ -135,10 +135,10 @@ jobs:
             git config --global user.email 'github-actions[bot]@users.noreply.github.com'
             git pull
             git add libraries/${{ matrix.project }}/package-lock.json
-            git commit -m "GitHub Actions: Update libraries/${{ matrix.project }}/package-lock.json [skip ci]
+            git commit -m 'GitHub Actions: Update libraries/${{ matrix.project }}/package-lock.json [skip ci]
 
-Workflow ${{ github.workflow }} ${{ github.run_number }}
-https://github.com/datagrok/public/actions/runs/${{ github.run_id }}"
+            Workflow ${{ github.workflow }} ${{ github.run_number }}
+            https://github.com/datagrok/public/actions/runs/${{ github.run_id }}'
             count=0
             retries=10
             until git push; do
