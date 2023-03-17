@@ -61,7 +61,7 @@ Read more about package development in [Datagrok's documentation](https://datagr
   - `--ide` adds an IDE-specific configuration for debugging (vscode)
   - `--js` creates a JavaScript package template
   - `--ts` creates a TypeScript package template (default)
-  - `--jest` adds a basic configuration for `jest`
+  - `--test` adds tests support to package
 - `add` puts an object template to your package:
 
   ```shell
