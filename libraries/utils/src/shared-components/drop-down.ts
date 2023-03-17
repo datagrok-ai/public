@@ -1,37 +1,54 @@
 import * as ui from 'datagrok-api/ui';
+import {Observable, fromEvent} from 'rxjs';
+import {filter} from 'rxjs/operators';
 
 import '../../css/drop-down.css';
 
+
 export class DropDown {
-  // private _elements: HTMLElement[];
   private _element: HTMLElement;
   private _dropDownElement: HTMLDivElement;
 
   private _isMouseOverElement: boolean;
   isExpanded: boolean;
 
-  root: HTMLDivElement;
+  private _label: string | Element;
   private _rootElement: HTMLElement;
-  private _icon: HTMLElement;
-  private _label: HTMLElement;
+  root: HTMLDivElement;
 
-  constructor(iconName: string = '', label: string = '', element: HTMLElement) {
-    this._element = document.createElement('div');
-    this._dropDownElement = document.createElement('div');
+  // string | Element instead of iconName and label
+  // instead of element make a creation function
+  constructor(label: string | Element, elementCreation: () => HTMLElement) {
+    this._element = ui.div();
+    this._dropDownElement = ui.div();
 
     this._isMouseOverElement = false;
     this.isExpanded = false;
 
-    this._rootElement = document.createElement('div');
-    this.root = document.createElement('div');
+    this._label = label;
+    this.root = ui.div();
+    this._rootElement = ui.div();
 
-    this._icon = iconName ? ui.iconFA(iconName) : document.createElement('div');
-    this._label = label ? ui.divText(label, 'ui-drop-down-item-label') : document.createElement('div');
-
-    this._updateElements(element);
+    this._updateElement(elementCreation);
     this._initEventListeners();
   }
 
+  private _updateElement(elementCreation: () => HTMLElement) {
+    this._element = elementCreation();
+
+    this._dropDownElement = ui.div(ui.div(this._element));
+    this._dropDownElement.style.visibility = 'hidden';
+    this._dropDownElement.className = 'ui-drop-down-menu';
+
+    const dropDown = ui.div(this._dropDownElement);
+    dropDown.className = 'ui-drop-down-menu-fixed';
+
+    this._rootElement = ui.div([this._label]);
+    this._rootElement.className = 'ui-drop-down-item';
+
+    this.root = ui.div([this._rootElement, dropDown]);
+    this.root.className = 'ui-drop-down-root';
+  }
 
   private _initEventListeners() {
     this.root.addEventListener('mousedown', (e) => {
@@ -63,36 +80,16 @@ export class DropDown {
     this._dropDownElement.style.visibility = 'visible';
   }
 
-  private _updateElements(element: HTMLElement) {
-    this._element = element;
-
-    // this._dropDownElements = ui.div(this._elements.map((item)=> ui.div(item, 'ui-drop-down-menu-list-item')));
-    this._dropDownElement = ui.div(ui.div(this._element, 'ui-drop-down-menu-list-item'));
-    this._dropDownElement.style.visibility = 'hidden';
-    this._dropDownElement.className = 'ui-drop-down-menu';
-
-    const dropDown = ui.div(this._dropDownElement);
-    dropDown.className = 'ui-drop-down-menu-fixed';
-
-    this._rootElement = ui.div([this._icon, this._label]);
-    this._rootElement.className = 'ui-drop-down-item';
-
-    this.root = ui.div([this._rootElement, dropDown]);
-    this.root.className = 'ui-drop-down-root';
+  // take styles from native dropdown !!!!
+  // write all events with rxjs (Observable)
+  get onExpand(): Observable<MouseEvent> {
+    return fromEvent<MouseEvent>(this.root, 'click')
+      .pipe(
+        filter(() => !this._isMouseOverElement)
+      );
   }
 
-
-  onExpand(callback: Function) {
-    this.root.addEventListener('click', () => {
-      if (!this._isMouseOverElement)
-        callback();
-    }, false);
-  }
-
-  onElementClick(callback: Function) {
-    this._dropDownElement.addEventListener('click', (event) => {
-      event.stopImmediatePropagation();
-      callback();
-    }, false);
+  get onElementClick(): Observable<MouseEvent> {
+    return fromEvent<MouseEvent>(this._dropDownElement, 'click');
   }
 }
