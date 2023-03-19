@@ -100,6 +100,8 @@ Read more about package development in [Datagrok's documentation](https://datagr
   Running `grok publish` is the same as running `grok publish defaultHost --build --debug`.
 - `check` checks package content (function signatures, import statements of external modules,
   etc.). The check is also run during package publication.
+- `init` modifies a package template by adding config files for linters, IDE, and so on
+  (applies the same options as `create`).
 - `test` runs package tests. First, it builds a package and publishes it (these
   steps can be skipped with flags `--skip-build` and `--skip-publish`
   correspondingly).
