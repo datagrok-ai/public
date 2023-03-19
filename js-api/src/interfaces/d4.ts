@@ -376,6 +376,8 @@ export interface IScatterPlotLookSettings {
   /// Regression line visibility (toggle by pressing R)
   showRegressionLine: boolean;
 
+  showRegressionLineEquation: boolean;
+
   /// Control the visibility of dataframe-originated formula lines.
   /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
   /// Requires the PowerPack plugin.
@@ -520,6 +522,8 @@ export interface ILineChartLookSettings {
 
   showXSelector: boolean;
 
+  xAxisLabelOrientation: string;
+
   /// Numerical columns to be used on Y axes.
   /// Depending on the *
   yColumnNames: Array<string>;
@@ -590,6 +594,13 @@ export interface ILineChartLookSettings {
 
   histogramWidth: number;
 
+  /// If true, *X Axis Height* is calculated automatically to fit the required precision.
+  /// If false, the specified *X Axis Height*
+  autoAxisSize: boolean;
+
+  /// Requires *Auto Axis Size* to be turned off.
+  xAxisHeight: number;
+
   chartTypes: Array<string>;
 
   lineColoringType: string;
@@ -601,6 +612,8 @@ export interface ILineChartLookSettings {
   axisLineColor: number;
 
   axisTextColor: number;
+
+  axisFont: string;
 
   markerColor: number;
 
@@ -641,6 +654,15 @@ export interface ILineChartLookSettings {
   xAxisCustomTickmarks: Array<number>;
 
   yAxisCustomTickmarks: Array<number>;
+
+  /// Controls scatter plot tooltip visibility
+  showTooltip: string;
+
+  /// Newline-separated list of column names to be used in a tooltip.
+  /// Requires *showTooltip* to be enabled.
+  rowTooltip: string;
+
+  rowGroupTooltip: string;
 
   formulaLines: string;
 
@@ -1536,6 +1558,10 @@ export interface IFormLookSettings {
 
   showColumnSelector: boolean;
 
+  showSaveFile: boolean;
+
+  showOpenFile: boolean;
+
   sketchState: Map<any, any>;
 
   //StreamController _changes;
@@ -1760,7 +1786,11 @@ export interface ICardLookSettings {
 }
 
 export interface ITileViewerLookSettings {
+  lanesColumnName: string;
+
   cardMarkup: string;
+
+  allowDragBetweenLanes: boolean;
 
   /// Whether the form auto-generates whenever columns change
   autoGenerate: boolean;

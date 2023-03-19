@@ -15,7 +15,7 @@ import {
 } from './utils';
 import {findSimilar, getSimilarities} from '../package';
 import {chemDiversitySearch} from '../analysis/chem-diversity-viewer';
-import {chemSimilaritySearch} from '../analysis/chem-similarity-viewer';
+import {chemSimilaritySearch, ChemSimilarityViewer} from '../analysis/chem-similarity-viewer';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
 const testSimilarityResults = {
@@ -82,11 +82,13 @@ category('top menu similarity/diversity', () => {
   });
 });
 
-function getSearchViewer(viewer: DG.Viewer, name: string) {
-  for (const v of viewer.view.viewers) {
+function getSearchViewer(viewer: DG.Viewer, name: string): ChemSimilarityViewer {
+  for (const v of viewer.tableView!.viewers) {
     if (v.type === name)
-      return v;
+      return v as ChemSimilarityViewer;
   }
+
+  throw 'Search viewer not found.';
 }
 
 export async function _testFindSimilar(findSimilarFunction: (...args: any) => Promise<DG.DataFrame | null>,
@@ -189,7 +191,7 @@ async function _testDiversitySearchViewerOpen() {
   const molecules = await createTableView('tests/sar-small_test.csv');
   const viewer = molecules.addViewer('Chem Diversity Search');
   await delay(500);
-  const diversitySearchviewer = getSearchViewer(viewer, 'Chem Diversity Search');
+  const diversitySearchviewer = getSearchViewer(viewer, 'Chem Diversity Search')! as any;
   expect(diversitySearchviewer.fingerprint, 'Morgan');
   expect(diversitySearchviewer.distanceMetric, 'Tanimoto');
   expect(diversitySearchviewer.initialized, true);
