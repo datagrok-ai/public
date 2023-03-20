@@ -1,26 +1,28 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import { DataFrame, InputBase, TableView, View } from 'datagrok-api/dg';
-const cat_comparisons = [
+import { DataFrame, InputBase } from 'datagrok-api/dg';
+
+let view: DG.TableView;
+let table: DataFrame;
+
+const groupСomparisons = [
     'Bar chart',
-    'Radar viewer',
+    'Radar',
     'Chord viewer',
     'Matrix plot',
     'Word cloud',
     'Word cloud viewer',
     'Pie chart',
     'Tree map',
-    'Tree map viewer'
 ];
-const cat_trends = [
+const groupTrends = [
     'Line chart',
     'Histogram',
     'Box plot',
-    'Sunbrust viewer',
+    'Sunburst',
 ];
-const cat_correlations = [
+const groupCorrelations = [
     'Scatter plot',
     'Density plot',
     '3d scatter plot',
@@ -28,451 +30,254 @@ const cat_correlations = [
     'Correlation plot',
     'Heat map',
 ];
-const cat_relationships = [
-    'Sankey viewer',
+const groupRelationships = [
+    'Sankey',
     'Network diagram',
-    'Tree viewer',
-    'Phylo tree'
+    'Tree',
+    'Phylo tree',
+    'Scaffold Tree',
+    'PhylocanvasGL',
 ];
-const cat_maps = [
+const groupMaps = [
     'Shape map',
-    'Google map',
+    'Leaflet',
     'Globe',
     'Map',
 ];
-const viewerOptions = {
-    "showXAxis": false,
-    "showYAxis": false,
-    "showXSelector": false,
-    "showYSelector": false,
-    "showYSelectors": false,
-    "showXSelectors": false,
-    "showSizeSelector": false,
-    "showColorSelector": false,
-    "showVerticalGridLines": false,
-    "showHorizontallGridLines": false,
-    "showContextMenu": false,
-    "showColumnSelector": false,
-    "showBinSelector": false,
-    "showCurrentRow": false,
-    "showRangeSlider": false,
-    "showRangeInputs": false,
-    "showTopPanel": false,
-    "showAggrSelectors": false,
-    "showValueAxis": false,
-    "showValueSelector": false,
-    "showCategorySelector": false,
-    "showStackSelector": false,
-    "multiAxis": true,
-    "showSplitSelector": false,
-    "showColumnSelectionPanel": false,
-    "legendVisibility": "Never",
-    "marginLeft": 10,
-    "marginRight": 10,
-    "marginTop": 10,
-    "marginBottom": 10,
-}
-let tempName = '';
 
-let contentBox = ui.box();
-contentBox.classList.add('vg-root-content');
+const viewers: any = {};
+const jsViewers: any = {};
+const rootViewers = ui.divH([], 'viewer-gallery');
+let dlg: DG.Dialog;
+let search: InputBase;
+const viewersCount = ui.div([], 'vg-counter-label');
 
-let descriptionBox = ui.box();
-descriptionBox.classList.add('vg-root-description');
+export function viewersDialog(currentView: DG.TableView, currentTable: DataFrame) {
+    getViewers(viewers);
+    getJsViewers(jsViewers);
 
-let filterBox = ui.box();
-filterBox.classList.add('vg-root-filters');
+    view = currentView;
+    table = currentTable;
 
-filterBox.style.maxWidth = '230px';
+    dlg = ui.dialog('Add Viewer');
+    $(dlg.root.lastChild).hide();
 
-let dlgTitle: any;
-let dlgFooter: any;
-let dlg: any;
-let view: DG.TableView;
+    search = ui.searchInput('', '', (v: string) => findViewer(v));
+    search.input.setAttribute('tabindex', '-1');
+    search.input.setAttribute('placeholder', 'Search by name, keywords, description, tag, or package');
 
-let okBtn: any;
-
-let backBtn = ui.iconFA('arrow-left', () => {
-    dlgFooter.hide();
-    $('.vg-selection-text').html('Selected: ');
-    dlgTitle.text('Add viewer');
-    $(okBtn).hide();
-    $(backBtn).hide();
-    $(descriptionBox).hide();
-    $(contentBox).show();
-    $(filterBox).show();
-})
-backBtn.style.marginRight = '10px';
-backBtn.style.fontSize = '16px';
-backBtn.classList.remove('fal');
-backBtn.classList.add('far');
-
-export async function viewersGallery() {
-
-    let viewers: any = {};
-    const table = grok.shell.t;
-    view = grok.shell.tableView(table.name);
-    let root = ui.box();
-
-    let recommend = ui.divH([], 'viewer-gallery');
-    let selectioText = ui.div(['Selected: '], 'vg-selection-text');
-    let cards = ui.divH([], 'viewer-gallery');
-
-    $(recommend).css('min-height', '360px');
-    $(recommend).css('overflow', 'hidden');
-
-
-    let showMore = ui.link('Show more', () => {
-        if ($(showMore).hasClass('vg-link-expand')) {
-            $(showMore).text('Show less');
-            $(showMore).addClass('vg-link-collapse');
-            $(showMore).removeClass('vg-link-expand');
-            console.log($(showMore))
-        } else if ($(showMore).hasClass('vg-link-collapse')) {
-            $(showMore).text('Show more');
-            $(showMore).addClass('vg-link-expand');
-            $(showMore).removeClass('vg-link-collapse');
-            console.log($(showMore))
-        }
-
-        $(recommend).toggleClass('vg-expanded');
-
-        if ($(recommend).hasClass('vg-expanded')) {
-            $(recommend).css('min-height', 'auto');
-            $(recommend).css('overflow', 'initial');
-        } else {
-            $(recommend).css('min-height', '360px');
-            $(recommend).css('overflow', 'hidden');
+    search.input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            search.value = '';
+            search.fireChanged();
         }
     });
-    showMore.className = 'ui-link vg-link vg-link-expand';
-    $(showMore).attr('data-content', '\f078');
 
-    let search = ui.searchInput('', '', (value: String) => {
-        clearRoot([recommend]);
-        clearRoot([cards]);
-        $(okBtn).hide();
-        tempName = '';
-        let filter_value = getFilter([filters_type, filters_cat], viewers);
+    const searchIcon = ui.iconFA('search');
+    searchIcon.classList.add('vg-search-icon');
 
-        if (filter_value.length === 0) {
-            for (let i in viewers) {
-                filter_value.push(viewers[i].name)
-            }
-        }
+    rootViewers.innerHTML = '';
 
-        if (value != '') {
-            for (let i in viewers) {
-                if (filter_value.indexOf(viewers[i].name) != -1 && viewers[i].name.toLowerCase().includes(value.toLowerCase())) {
-                    if (viewers[i].recommend)
-                        recommend.append(render(viewers[i], table, Number(i)+1))
-                    else
-                        cards.append(render(viewers[i], table, Number(i)+1));
-                }
-            }
-        }
-        else {
-            for (let i in viewers) {
-                if (filter_value.indexOf(viewers[i].name) != -1) {
-                    if (viewers[i].recommend)
-                        recommend.append(render(viewers[i], table, Number(i)+1))
-                    else
-                        cards.append(render(viewers[i], table, Number(i)+1));
-                }
-            }
-        }
-        if ($(recommend).children().length == 0) {
-            $(recommend).css('min-height', '0px');
-            $(showMore).hide();
-        } else {
-            $(recommend).css('min-height', '360px');
-            $(showMore).show();
-        }
-        $('.vg-selection-text').html('Selected: ' + $('.viewer-gallery').find('.fa-minus').length);
-    });
-    search.input.setAttribute('tabindex','-1');
-
-    //@ts-ignore
-    let filters_type = ui.multiChoiceInput('', [''], ['Viewer', 'Widget'], (value) => {
-        getFilter([filters_type, filters_cat], viewers);
-        search.fireChanged();
-    });
-
-    //@ts-ignore
-    let filters_cat = ui.multiChoiceInput('', [''], ['Comparisons', 'Trends', 'Correlations', 'Relationships', 'Maps', 'Others'], (value) => {
-        getFilter([filters_type, filters_cat], viewers);
-        search.fireChanged();
-    })
-
-    //@ts-ignore
-    search.input.placeholder = 'Search by name or type';
-
-    let searchBlock = ui.block([ui.div([search.input], 'd4-search-ba')], 'vg-controls grok-gallery-search-bar');
-
-    clearRoot([filterBox, contentBox, descriptionBox]);
-
-    for (let i = 0; i < DG.Viewer.getViewerTypes().length; i++) {
-
-        Object.assign(viewers, {
-            [i]: {
-                icon: 'grok-icon svg-icon svg-' + DG.Viewer.getViewerTypes()[i].toLowerCase().replace(/(\s)/g, '-'),
-                name: insertSpaces(DG.Viewer.getViewerTypes()[i]),
-                type: 'Viewer',
-                recommend: false,
-                category: 'Other',
-                disabled: false
-            }
-        });
-        /*
-        if (i < 7) {
-            viewers[i].recommend = true;
-        }
-        */
-        if (cat_comparisons.indexOf(viewers[i].name) != -1) {
-            viewers[i].category = 'Comparisons';
-        } else if (cat_trends.indexOf(viewers[i].name) != -1) {
-            viewers[i].category = 'Trends';
-        } else if (cat_correlations.indexOf(viewers[i].name) != -1) {
-            viewers[i].category = 'Correlations';
-        } else if (cat_relationships.indexOf(viewers[i].name) != -1) {
-            viewers[i].category = 'Relationships';
-        } else if (cat_maps.indexOf(viewers[i].name) != -1) {
-            viewers[i].category = 'Maps';
-        } else {
-            viewers[i].category = 'Others';
-        }
-
-        if (viewers[i].name.includes('widget')) {
-            viewers[i].type = 'Widget';
-            viewers[i].icon = 'grok-icon svg-icon svg-project';
-        }
-
-        //disable viewers
-        /*
-        if (i > 40) {
-            viewers[i].disabled = true;
-        }
-        */
-    }
-
-    filterBox.append(ui.divV([
-        ui.h3('Type'),
-        filters_type.root,
-        ui.h3('Category'),
-        filters_cat.root
-    ], 'vg-filter-panel'));
+    for (const i in viewers)
+        rootViewers.append(renderCard(viewers, i));
 
 
-    contentBox.append(
-        ui.divV([
-            searchBlock,
-            ui.h1('Recommend'),
-            recommend,
-            showMore,
-            ui.h1('All viewers'),
-            cards,
-        ], 'viewer-gallery-root')
-    );
+    for (const i in jsViewers)
+        rootViewers.append(renderCard(jsViewers, i));
 
-    $(descriptionBox).hide();
-    $(backBtn).hide();
-    $(contentBox).show();
-    $(filterBox).show();
 
-    //root.innerHTML = '';
-    root = ui.splitH([
-        filterBox,
-        contentBox,
-        descriptionBox
-    ])
+    const tags = ui.divV([
+        ui.label('Relative tags:'),
+        generateTags(),
+    ], 'vg-tags');
 
-    dlg = ui.dialog('Add viewer')
-        .add(root
-            //viewerRoot
-        )
-        .onOK(() => {
-            if (tempName != '') { view.addViewer(DG.Viewer.fromType(tempName, table)) }
-            clearRoot([filterBox, contentBox, descriptionBox]);
-            clearRoot([root])
-            clearRoot([recommend]);
-            clearRoot([cards]);
-            tempName = '';
-        });
+    const root = ui.divH([
+        ui.block([viewersCount, rootViewers], 'viewer-gallery-root'),
+        tags,
+    ]);
 
-    $(dlg.root).find('.d4-dialog-contents').removeClass('ui-form');
-    $(dlg.root).find('.d4-dialog-contents').removeClass('ui-panel');
-    $(dlg.root).find('.d4-dialog-contents').addClass('ui-box');
-    $(dlg.root).find('.d4-command-bar').append(selectioText);
+    dlg.add(ui.block([ui.div([searchIcon, search.input], 'd4-search-ba')], 'vg-controls grok-gallery-search-bar'));
+    dlg.add(root);
+    dlg.showModal(true);
 
-    $(dlg.root).find('.d4-dialog-contents').css('padding', '0px');
-    $(dlg.root).find('.d4-dialog-header').css('border-bottom', '1px solid var(--grey-2)');
-    $(dlg.root).find('.d4-dialog-header').prepend(backBtn);
-
-    $(dlg.root).find('.d4-command-bar').css('border-top', '1px solid var(--grey-2)');
-
-    okBtn = $(dlg.root).find('.d4-command-bar > button').first();
-    okBtn.addClass('ui-btn-raised');
-    okBtn.text('ADD')
-    $(okBtn).hide();
-
-    dlgTitle = $(dlg.root).find('.d4-dialog-header>.d4-dialog-title');
-    dlgFooter = $(dlg.root).find('.d4-dialog-footer');
-    dlgFooter.hide();
-
-    if (grok.shell.v.type == 'TableView') {
-        dlg.showModal(true);
-        setTimeout(function(){
-            $(search.input).trigger('focus');
-        }, 200);
-    }
-
-    for (let i in viewers) {
-        if (viewers[i].recommend)
-            recommend.append(render(viewers[i], table, Number(i)+1))
-        else {
-            cards.append(render(viewers[i], table, Number(i)+1));
-        }
-    }
-
-    if ($(recommend).children().length == 0) {
-        $(recommend).css('min-height', '0px');
-        $(showMore).hide();
-    } else {
-        $(recommend).css('min-height', '360px');
-        $(showMore).show();
-    }
-
-}
-
-function getFilter(inputs: InputBase[], viewers: any) {
-    let arr: any[] = [];
-    let values = [];
-    for (let i in inputs) {
-        arr = arr.concat(inputs[i].value);
-    }
-
-    if (arr.length > 0) {
-        for (let i in viewers) {
-            if (arr.indexOf(viewers[i].category) != -1) {
-                values.push(viewers[i].name);
-            }
-            if (arr.indexOf(viewers[i].type) != -1) {
-                values.push(viewers[i].name);
-            }
-        }
-    }
-
-    return values;
+    getTotalViewer();
+    setTabIndex(rootViewers);
 };
 
-function insertSpaces(string: string) {
-    string = string.replace(/^(_|-)/g, '')
-    string = string.replace(/(_|-)/g, ' ');
-    string = string.replace(/([a-z]\s)/g, m => m.toLowerCase());
-    string = string.replace(/([a-z])([A-Z])/g, '$1 $2');
-    string = string.replace(/([A-Z])([A-Z][a-z])/g, '$1 $2');
-    string = string.replace(/([A-Z])([a-z])/g, m => m.toLowerCase());
-    string = string.replace(/^./g, m => m.toUpperCase())
-    return string
-}
+function getViewers(viewers: { [v: string]: { [k: string]: any } }) {
+    const viewerList = [];
 
-function clearRoot(root: HTMLDivElement[]) {
-    for (const i in root) {
-        root[i].innerHTML = '';
+    for (const [key, value] of Object.entries(DG.VIEWER)) {
+        switch (String(value)) {
+            case 'Globe': break;
+            case 'Google map': break;
+            case 'RadarViewer': break;
+            case 'SurfacePlot': break;
+            case 'TimelinesViewer': break;
+            case 'Word cloud': break;
+            default:
+                viewerList.push(value);
+                break;
+        }
+    }
+    viewerList.push('Pivot table');
+    viewerList.push('Column viewer');
+    viewerList.push('Web viewer');
+    viewerList.push('Card');
+    viewerList.push('Viewer host');
+    viewerList.push('Info panel');
+    viewerList.push('Scripting viewer');
+
+    for (const i in viewerList) {
+        Object.assign(viewers, {
+            [i]: {
+                name: viewerList[i],
+                icon: 'grok-icon svg-icon svg-' + viewerList[i].toLowerCase().replace(/(\s)/g, '-'),
+                group: '',
+                type: 'viewer',
+            },
+        });
+        if (groupСomparisons.includes(viewerList[i])) viewers[i]['group'] = 'Comparison';
+        else if (groupCorrelations.includes(viewerList[i])) viewers[i]['group'] = 'Correlation';
+        else if (groupRelationships.includes(viewerList[i])) viewers[i]['group'] = 'Relationship';
+        else if (groupTrends.includes(viewerList[i])) viewers[i]['group'] = 'Trend';
+        else if (groupMaps.includes(viewerList[i])) viewers[i]['group'] = 'Map';
+        else viewers[i]['group'] = 'Misc';
     }
 }
 
-function render(viewer: any, table: DG.DataFrame, index:number) {
-    let root = ui.div([]);
-    root.setAttribute('tabindex', String(index));
-    let icon = ui.iconFA('');
-    icon.className = 'grok-icon svg-icon ' + viewer.icon;
-    let label = ui.div([viewer.name], 'card-label');
-    let add = ui.button(ui.iconFA('plus'), () => {
-        root.click();
-    });
-
-    let details = ui.button(ui.icons.help(() => { }, 'Click to read more about ' + viewer.name), () => {
-        dlgFooter.show();
-
-        tempName = viewer.name;
-        $('.vg-selection-text').html('Selected: ' + viewer.name);
-
-        dlgTitle.text(viewer.name);
-        //show details block
-        $(okBtn).show();
-        $('.vg-selection-text').html('Selected: ' + viewer.name);
-
-        $(backBtn).show();
-        $(descriptionBox).show();
-        $(contentBox).hide();
-        $(filterBox).hide();
-
-        let markup = ui.panel();
-        let options = ui.div();
-        let viewerbox = ui.box();
-        viewerbox.append(DG.Viewer.fromType(viewer.name, table).root);
-        let tabs = ui.box();
-        tabs.append(ui.tabControl({
-            'Description': () => markup,
-            'Options': () => options
-        }).root);
-        tabs.style.paddingLeft = '20px';
-
-        clearRoot([descriptionBox])
-        descriptionBox.append(ui.splitH([viewerbox, tabs], { style: { height: '100%' } }));
-
-        //@ts-ignore
-        let link = DG.Viewer.fromType(viewer.name, table).helpUrl;
-        grok.dapi.fetchProxy('https://raw.githubusercontent.com/datagrok-ai/public/master' + link)
-            .then(response => response.text())
-            .then(data => {
-                let res = data.replace(new RegExp('../../', 'g'), 'https://raw.githubusercontent.com/datagrok-ai/public/master/help/')
-                markup.append(ui.markdown(res));
-                $(markup).find('img').css('width', '300px');
+function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }) {
+    const list = DG.Func.find({ returnType: 'viewer' });
+    let i = 0;
+    for (const v of list) {
+        if (v.package.name != 'ApiTests') {
+            Object.assign(jsViewers, {
+                [i]: {
+                    name: v.friendlyName,
+                    icon: (v.options['icon'] != undefined) ? `${v.package.webRoot}${v.options['icon']}` : 'svg-project',
+                    description: v.description,
+                    keywords: (v.options['keywords'] != null) ? v.options['keywords'] : '',
+                    group: '',
+                    package: v.package.name,
+                    type: 'js-viewer',
+                },
             });
-    });
-
-    $(add).hide();
-
-    if (viewer.recommend) {
-        let viewerRoot = ui.box(DG.Viewer.fromType(viewer.name, table, viewerOptions).root);
-        root.className = 'd4-item-card viewer-gallery vg-card';
-        root.append(ui.block([viewerRoot, ui.divH([label, add, details])]));
-    } else {
-        root.className = 'd4-item-card viewer-gallery vg-card-small';
-        if (viewer.disabled)
-            root.classList.add('disabled')
-        root.append(ui.divH([icon, label, add, details]));
-    }
-    root.addEventListener('click', () => {
-        //view.addViewer(DG.Viewer.fromType(tempName, table))
-        if (root.classList.contains('disabled') != true) {
-            dockViewers(viewer.name, table, view);
-            dlg.close();
+            if (groupСomparisons.includes(v.friendlyName)) jsViewers[i]['group'] = 'Comparison';
+            else if (groupCorrelations.includes(v.friendlyName)) jsViewers[i]['group'] = 'Correlation';
+            else if (groupRelationships.includes(v.friendlyName)) jsViewers[i]['group'] = 'Relationship';
+            else if (groupTrends.includes(v.friendlyName)) jsViewers[i]['group'] = 'Trend';
+            else if (groupMaps.includes(v.friendlyName)) jsViewers[i]['group'] = 'Map';
+            else jsViewers[i]['group'] = 'Misc';
         }
-    });
-
-    root.addEventListener('keydown', function(event){
-        if (event.key === "Enter") {
-            event.preventDefault();
-            root.click();
-        }
-    });
-
-    if (viewer.disabled != true) {
-        root.addEventListener('mouseover', () => {
-            $(add).show();
-            ui.tooltip.bind(add, 'Click to add ' + viewer.name)
-        });
-        root.addEventListener('mouseout', () => {
-            $(add).hide();
-        });
+        i++;
     }
-
-    return root
 }
 
-function dockViewers(viewer: string, table: DG.DataFrame, view: DG.TableView) {
+function findViewer(value: string) {
+    rootViewers.innerHTML = '';
+    if (value != '') {
+        for (const i in viewers) {
+            if (viewers[i].name.toLowerCase().includes(value.toLowerCase()) || viewers[i].group.toLowerCase().includes(value.toLowerCase()))
+                rootViewers.append(renderCard(viewers, i));
+        }
+        for (const i in jsViewers) {
+            if (jsViewers[i].name.toLowerCase().includes(value.toLowerCase()))
+                rootViewers.append(renderCard(jsViewers, i));
+            else if (jsViewers[i].group.toLowerCase().includes(value.toLowerCase()))
+                rootViewers.append(renderCard(jsViewers, i));
+            else if (jsViewers[i].description.toLowerCase().includes(value.toLowerCase()))
+                rootViewers.append(renderCard(jsViewers, i));
+            else if (jsViewers[i].keywords.toLowerCase().includes(value.toLowerCase()))
+                rootViewers.append(renderCard(jsViewers, i));
+            else if (jsViewers[i].package.toLowerCase().includes(value.toLowerCase()))
+                rootViewers.append(renderCard(jsViewers, i));
+        }
+    } else {
+        for (const i in viewers)
+            rootViewers.append(renderCard(viewers, i));
+
+        for (const i in jsViewers)
+            rootViewers.append(renderCard(jsViewers, i));
+    }
+    getTotalViewer();
+    setTabIndex(rootViewers);
+}
+
+function setTabIndex(root: HTMLDivElement) {
+    for (let i = 0; i < root.childElementCount; i++)
+        root.children[i].setAttribute('tabindex', String(i + 1));
+}
+
+function renderCard(viewers: { [v: string]: { [k: string]: any } }, index: string) {
+    let icon: HTMLElement;
+    if (viewers[index].type == 'viewer') {
+        icon = ui.iconFA('');
+        icon.className = 'grok-icon svg-icon ' + viewers[index].icon;
+    }
+    if (viewers[index].type == 'js-viewer') {
+        if (viewers[index].icon != 'svg-project') {
+            icon = ui.iconImage('', viewers[index].icon);
+            icon.classList.add('svg-icon');
+        } else {
+            icon = ui.iconFA('');
+            icon.className = 'grok-icon svg-icon ' + viewers[index].icon;
+            icon.style.filter = 'grayscale(.5) invert(.5) contrast(120%)';
+        }
+    }
+    const name = ui.label(viewers[index].name);
+    name.classList.add('card-label');
+    const card = ui.div([
+        ui.divH([icon!, name]),
+    ], 'd4-item-card viewer-gallery vg-card-small');
+
+    card.addEventListener('click', () => {
+        dockViewers(viewers[index].name, view, table);
+        dlg.close();
+    });
+
+    card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            card.click();
+        }
+    });
+
+    return card;
+}
+
+function generateTags() {
+    const root = ui.div([]);
+    const list = [];
+    for (const i in viewers)
+        list.push(viewers[i].group);
+
+    for (const i in jsViewers)
+        list.push(jsViewers[i].group);
+
+    for (const i in jsViewers)
+        list.push(jsViewers[i].package);
+
+    const tags = [...new Set(list)];
+
+    for (const i in tags) {
+        const tag = ui.div(tags[i], 'd4-tag');
+        tag.addEventListener('click', () => {
+            search.value = tags[i];
+            search.fireChanged();
+            search.input.focus();
+        });
+        root.append(tag);
+    }
+
+    return root;
+}
+
+function getTotalViewer() {
+    viewersCount.innerHTML = '';
+    viewersCount.append(`Viewers: ${rootViewers.childElementCount}`);
+}
+
+function dockViewers(viewer: string, view: DG.TableView, table: DG.DataFrame) {
     view.addViewer(DG.Viewer.fromType(viewer, table));
 }
