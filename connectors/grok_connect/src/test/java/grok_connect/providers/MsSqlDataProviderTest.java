@@ -4,6 +4,7 @@ import grok_connect.connectors_info.Credentials;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncCall;
+import grok_connect.providers.utils.NamedArgumentConverter;
 import grok_connect.providers.utils.Provider;
 import grok_connect.providers.utils.Sql;
 import grok_connect.providers.utils.SqlScriptRunner;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.MethodSource;
 import serialization.DataFrame;
 
@@ -81,7 +83,7 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
             "grok_connect.providers.arguments_provider.CommonObjectsMother#checkListParameterSupport_ok"})
     @Sql(path = "scripts/mssql/mssql_basic_types.sql",
             restorePath = "scripts/mssql/drop.sql")
-    public void checkParameterSupport_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class)FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         prepareDataFrame(expected);
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
@@ -93,7 +95,7 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
     @MethodSource("grok_connect.providers.arguments_provider.CommonObjectsMother#checkDatesParameterSupport_ok")
     @Sql(path = "scripts/mssql/mssql_dates_patterns.sql",
             restorePath = "scripts/mssql/drop.sql")
-    public void checkDatesParameterSupport_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkDatesParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class)FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -104,7 +106,7 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
     @MethodSource("grok_connect.providers.arguments_provider.MsSqlObjectsMother#checkOutputDataFrame_dateTypes_ok")
     @Sql(path = "scripts/mssql/mssql_date_types.sql",
             restorePath = "scripts/mssql/drop.sql")
-    public void checkOutputDataFrame_dateTypes_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_dateTypes_ok(@ConvertWith(NamedArgumentConverter.class)FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -115,7 +117,7 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
     @MethodSource("grok_connect.providers.arguments_provider.MsSqlObjectsMother#checkOutputDataFrame_characterTypes_ok")
     @Sql(path = "scripts/mssql/mssql_character_types.sql",
             restorePath = "scripts/mssql/drop.sql")
-    public void checkOutputDataFrame_characterTypes_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_characterTypes_ok(@ConvertWith(NamedArgumentConverter.class)FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -126,7 +128,7 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
     @MethodSource("grok_connect.providers.arguments_provider.MsSqlObjectsMother#checkOutputDataFrame_xmlType_ok")
     @Sql(path = "scripts/mssql/mssql_xml_type.sql",
             restorePath = "scripts/mssql/drop.sql")
-    public void checkOutputDataFrame_xmlType_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_xmlType_ok(@ConvertWith(NamedArgumentConverter.class)FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -137,7 +139,7 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
     @MethodSource("grok_connect.providers.arguments_provider.MsSqlObjectsMother#checkOutputDataFrame_binaryTypes_ok")
     @Sql(path = "scripts/mssql/mssql_binary_types.sql",
             restorePath = "scripts/mssql/drop.sql")
-    public void checkOutputDataFrame_binaryTypes_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_binaryTypes_ok(@ConvertWith(NamedArgumentConverter.class)FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -148,7 +150,7 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
     @MethodSource("grok_connect.providers.arguments_provider.MsSqlObjectsMother#checkOutputDataFrame_numericTypes_ok")
     @Sql(path = "scripts/mssql/mssql_numeric_types.sql",
             restorePath = "scripts/mssql/drop.sql")
-    public void checkOutputDataFrame_numericTypes_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_numericTypes_ok(@ConvertWith(NamedArgumentConverter.class)FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -159,7 +161,7 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
     @MethodSource("grok_connect.providers.arguments_provider.MsSqlObjectsMother#checkOutputDataFrame_moneyTypes_ok")
     @Sql(path = "scripts/mssql/mssql_money_type.sql",
             restorePath = "scripts/mssql/drop.sql")
-    public void checkOutputDataFrame_moneyTypes_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_moneyTypes_ok(@ConvertWith(NamedArgumentConverter.class)FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -170,7 +172,7 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
     @MethodSource("grok_connect.providers.arguments_provider.MsSqlObjectsMother#checkOutputDataFrame_spatialTypes_ok")
     @Sql(path = "scripts/mssql/mssql_spatial_identifier.sql",
             restorePath = "scripts/mssql/drop.sql")
-    public void checkOutputDataFrame_spatialTypes_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_spatialTypes_ok(@ConvertWith(NamedArgumentConverter.class)FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -181,7 +183,7 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
     @MethodSource("grok_connect.providers.arguments_provider.CommonObjectsMother#checkNullSupport_ok")
     @Sql(path = "scripts/mssql/mssql_null.sql",
             restorePath = "scripts/mssql/drop.sql")
-    public void checkNullSupport_ok(FuncCall funcCall) {
+    public void checkNullSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall) {
         funcCall.func.connection = connection;
         Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
     }
