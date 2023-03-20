@@ -14,17 +14,10 @@ import {attachDivToGrid} from '../utils';
 import {
   PROPS as D_PROPS,
   PROPS_CATS as D_PROPS_CATS,
-  TreeDefaultPalette,
-  TreeColorNames,
-  TRANS_ALPHA, IDendrogram
 } from './dendrogram';
-import {DendrogramTreeStyler} from './tree-renderers/dendrogram-tree-styler';
-import {setAlpha, toRgba} from '@datagrok-libraries/utils/src/color';
-import wu from 'wu';
 import {RectangleTreeHoverType} from './tree-renderers/rectangle-tree-placer';
 import {GridTreePlacer} from './tree-renderers/grid-tree-placer';
 import {Unsubscribable} from 'rxjs';
-import {render} from 'datagrok-api/ui';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 
 export function injectTreeForGridUI2(
@@ -329,4 +322,3 @@ export function injectTreeForGridUI2(
 
   return treeNb;
 }
-
