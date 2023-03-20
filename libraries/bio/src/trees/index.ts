@@ -28,3 +28,19 @@ export enum TAGS {
 export function isLeaf(node: NodeType) {
   return !node.children || node.children.length == 0;
 }
+
+export enum TreeColorNames {
+  Main = 'Main',
+  Light = 'Light',
+  Current = 'Current',
+  MouseOver = 'MouseOver',
+  Selection = 'Selection',
+}
+
+export const TreeDefaultPalette: { [name: string]: number } = {
+  [TreeColorNames.Main]: DG.Color.categoricalPalette[12],
+  [TreeColorNames.Light]: DG.Color.categoricalPalette[13],
+  [TreeColorNames.Current]: DG.Color.currentRow,
+  [TreeColorNames.MouseOver]: DG.Color.mouseOverRows,
+  [TreeColorNames.Selection]: DG.Color.selectedRows,
+};
