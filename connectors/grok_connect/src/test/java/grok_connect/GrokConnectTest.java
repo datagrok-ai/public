@@ -1,19 +1,7 @@
 package grok_connect;
 
 import grok_connect.utils.ConnectionPool;
-import grok_connect.utils.Settings;
-import grok_connect.utils.SettingsManager;
-import org.junit.Test;
-
-import java.sql.Connection;
-import java.sql.Statement;
-import java.util.Properties;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.CountDownLatch;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import org.junit.jupiter.api.Test;
 
 
 public class GrokConnectTest {

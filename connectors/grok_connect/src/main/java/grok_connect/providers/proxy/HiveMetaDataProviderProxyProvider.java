@@ -29,8 +29,6 @@ public class HiveMetaDataProviderProxyProvider {
 
     private MethodHandler getHandler() {
         return (self, thisMethod, proceed, args) -> {
-            System.out.println("THIS METHOD: " + thisMethod.getName());
-            System.out.println("THIS PROCEED: " + proceed.getName());
             if (thisMethod.getName().equals("getSchemaSql")) {
                 return handleGetSchemaImpl(args);
             }
