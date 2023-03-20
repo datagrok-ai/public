@@ -10,7 +10,7 @@ import {loadFileAsText, loadFileAsBytes} from './utils';
 import {getSdfString} from '../utils/sdf-utils';
 import {_importTripos} from '../file-importers/mol2-importer';
 
-category('mol2toSdf', async () => {
+category('mol2 to SDF', async () => {
   let mol2InputBytes: Uint8Array;
   let mol2InputDF: DG.DataFrame;
   let sdfOutputString: string;
@@ -20,11 +20,10 @@ category('mol2toSdf', async () => {
     mol2InputDF = _importTripos(mol2InputBytes)[0];
     await grok.data.detectSemanticTypes(mol2InputDF);
     sdfOutputString = await loadFileAsText('tests/mol2-test.sdf');
-    // mol2InputDF = mol2InputDF.replace(/\r/g, '');
     sdfOutputString = sdfOutputString.replace(/\r/g, '');
   });
 
-  test('saveSmilesColumn', async () => {
+  test('Save SMILES column', async () => {
     const col = mol2InputDF.col('molecules')!;
     expect(getSdfString(mol2InputDF, col), sdfOutputString);
   });

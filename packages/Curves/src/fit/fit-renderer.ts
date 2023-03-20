@@ -6,11 +6,10 @@ import {GridColumn, Paint} from 'datagrok-api/dg';
 import {fitResultProperties} from "@datagrok-libraries/statistics/src/parameter-estimation/fit-curve";
 import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
 
-import {fitSeries, getChartData, getChartBounds, getFittedCurve, getConfidenceIntrevals, logarithmData,
-  CONFIDENCE_INTERVAL_FILL_COLOR, CONFIDENCE_INTERVAL_STROKE_COLOR, IFitChartData,
-  TAG_FIT_CHART_NAME, TAG_FIT_CHART_FORMAT} from './fit-data';
+import {fitSeries, getChartData, getChartBounds, getFittedCurve,IFitChartData, IFitSeries,
+  CONFIDENCE_INTERVAL_FILL_COLOR, CONFIDENCE_INTERVAL_STROKE_COLOR, CURVE_CONFIDENCE_INTERVAL_BOUNDS,
+  TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX} from './fit-data';
 import {convertXMLToIFitChartData} from './fit-parser';
-
 
 interface ITransform {
   xToScreen(world: number): number;
@@ -41,6 +40,44 @@ function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
   ];
 }
 
+/** Performs a curve confidence interval drawing */
+function drawConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries, confidenceType: string, transform: ITransform) {
+  g.beginPath();
+  for (let i = 0; i < series.points.length!; i++) {
+    const x = transform.xToScreen(series.points[i].x);
+    const y = confidenceType === CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP
+    ? transform.yToScreen(fitSeries(series).confidenceTop(series.points[i].x))
+    : transform.yToScreen(fitSeries(series).confidenceBottom(series.points[i].x));
+    if (i === 0)
+      g.moveTo(x, y);
+    else
+      g.lineTo(x, y);
+  }
+  g.stroke();
+}
+
+/** Performs a curve confidence interval filling */
+function fillConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries, transform: ITransform) {
+  g.beginPath();
+  for (let i = 0; i < series.points.length!; i++) {
+    const x = transform.xToScreen(series.points[i].x);
+    const y = transform.yToScreen(fitSeries(series).confidenceTop(series.points[i].x));
+    if (i === 0)
+      g.moveTo(x, y);
+    else
+      g.lineTo(x, y);
+  }
+
+  // reverse traverse to make a shape of confidence interval to fill it
+  for (let i = series.points.length! - 1; i >= 0; i--) {
+    const x = transform.xToScreen(series.points[i].x);
+    const y = transform.yToScreen(fitSeries(series).confidenceBottom(series.points[i].x));
+    g.lineTo(x, y);
+  }
+  g.closePath();
+  g.fill();
+}
+
 export class FitChartCellRenderer extends DG.GridCellRenderer {
   get name() { return 'fit'; }
 
@@ -54,11 +91,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     grok.shell.o = gridCell;
   }
 
-  render(g: CanvasRenderingContext2D,
-         x: number, y: number, w: number, h: number,
-         gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
-    if (w < 20 || h < 10) return;
-
+  renderCurves(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, data: IFitChartData) {
     g.save();
     g.beginPath();
     g.rect(x, y, w, h);
@@ -66,18 +99,6 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
     const screenBounds = new DG.Rect(x, y, w, h).inflate(-6, -6);
     const [dataBox, xAxisBox, yAxisBox] = layoutChart(screenBounds);
-
-    let isXMLFitChart = false;
-    let data: IFitChartData = {};
-    if (gridCell.cell.column.getTag(TAG_FIT_CHART_NAME) === TAG_FIT_CHART_FORMAT) {
-      data = convertXMLToIFitChartData(gridCell.cell.value);
-      isXMLFitChart = true;
-    }
-    else
-      data = getChartData(gridCell);
-
-    if (data.chartOptions?.logX)
-      data = logarithmData(data);
 
     const dataBounds = getChartBounds(data);
     const transform = Transform.linear(dataBounds, dataBox);
@@ -92,9 +113,9 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         for (let i = 0, candleStart = null; i < series.points.length!; i++) {
           const p = series.points[i];
           const nextSame = i + 1 < series.points.length && series.points[i + 1].x == p.x;
-          if (!isXMLFitChart && !candleStart && nextSame)
+          if (!candleStart && nextSame)
             candleStart = i;
-          else if (!isXMLFitChart && candleStart != null && !nextSame) {
+          else if (candleStart != null && !nextSame) {
             let minY = series.points[candleStart].y;
             let maxY = minY;
             for (let j = candleStart; j < i; j++) {
@@ -139,51 +160,10 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
       if (series.showCurveConfidenceInterval ?? true) {
         g.strokeStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_STROKE_COLOR;
         g.fillStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_FILL_COLOR;
-        const confidence = getConfidenceIntrevals(series);
 
-        // draw confidence top
-        g.beginPath();
-        for (let i = 0; i < series.points.length!; i++) {
-          const x = transform.xToScreen(series.points[i].x);
-          const y = transform.yToScreen(confidence.top(series.points[i].x));
-          if (i == 0)
-            g.moveTo(x, y);
-          else
-            g.lineTo(x, y);
-        }
-        g.stroke();
-
-        // draw confidence bottom
-        g.beginPath();
-        for (let i = 0; i < series.points.length!; i++) {
-          const x = transform.xToScreen(series.points[i].x);
-          const y = transform.yToScreen(confidence.bottom(series.points[i].x));
-          if (i == 0)
-            g.moveTo(x, y);
-          else
-            g.lineTo(x, y);
-        }
-        g.stroke();
-
-        // fill the interval
-        g.beginPath();
-        for (let i = 0; i < series.points.length!; i++) {
-          const x = transform.xToScreen(series.points[i].x);
-          const y = transform.yToScreen(confidence.top(series.points[i].x));
-          if (i == 0)
-            g.moveTo(x, y);
-          else
-            g.lineTo(x, y);
-        }
-
-        // reverse traverse to make a shape of confidence interval to fill it
-        for (let i = series.points.length! - 1; i >= 0; i--) {
-          const x = transform.xToScreen(series.points[i].x);
-          const y = transform.yToScreen(confidence.bottom(series.points[i].x));
-          g.lineTo(x, y);
-        }
-        g.closePath();
-        g.fill();
+        drawConfidenceInterval(g, series, CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP, transform);
+        drawConfidenceInterval(g, series, CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM, transform);
+        fillConfidenceInterval(g, series, transform);
       }
 
 
@@ -203,6 +183,18 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     }
 
     g.restore();
+  }
+
+  render(g: CanvasRenderingContext2D,
+         x: number, y: number, w: number, h: number,
+         gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+    if (w < 20 || h < 10) return;
+
+    const data = gridCell.cell.column.getTag(TAG_FIT_CHART_FORMAT) === TAG_FIT_CHART_FORMAT_3DX
+      ? convertXMLToIFitChartData(gridCell.cell.value)
+      : getChartData(gridCell);
+
+    this.renderCurves(g, x, y, w, h, data);
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent) {

@@ -1,78 +1,73 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
 
-import {UaView} from './views/ua-view';
+import {UaView} from './tabs/ua';
 import {UaToolbox} from './ua-toolbox';
 // import {OverviewView} from './views/overview-view';
 // import {EventsView} from './views/events-view';
-import {ErrorsView} from './views/errors-view';
+// import {ErrorsView} from './tabs/errors';
 // import {FunctionsView} from './views/function-errors-view';
 // import {UsersView} from './views/users-view';
 // import {DataView} from './views/data-view';
-import {PackagesView} from './views/packages-view';
+import {PackagesView} from './tabs/packages';
+import {FunctionsView} from './tabs/functions';
 
 const APP_PREFIX: string = `/apps/UsageAnalysis/`;
+
+
 export class ViewHandler {
   private static instance: ViewHandler;
   private urlParams: Map<string, string> = new Map<string, string>();
+  tabs: DG.TabControl = ui.tabControl();
 
   public static getInstance(): ViewHandler {
     if (!ViewHandler.instance)
       ViewHandler.instance = new ViewHandler();
-
-
     return ViewHandler.instance;
   }
-
-  private constructor() { }
 
   async init() {
     const pathSplits = decodeURI(window.location.pathname).split('/');
     const params = this.getSearchParameters();
-
     const toolbox = await UaToolbox.construct();
-
-    const tabs = ui.tabControl();
-    tabs.root.style.width = 'inherit';
-    tabs.root.style.height = 'inherit';
-
-    // [OverviewView, EventsView, FunctionsView, UsersView, DataView];
-    const viewClasses: (typeof UaView)[] = [PackagesView, ErrorsView];
+    this.tabs.root.style.width = 'inherit';
+    this.tabs.root.style.height = 'inherit';
+    // [OverviewView, EventsView, ErrorsView, FunctionsView, UsersView, DataView];
+    const viewClasses: (typeof UaView)[] = [PackagesView, FunctionsView];
 
     for (let i = 0; i < viewClasses.length; ++i) {
-      tabs.addPane(viewClasses[i].viewName, () => {
+      this.tabs.addPane(viewClasses[i].viewName, () => {
         const currentView = new viewClasses[i](toolbox);
         currentView.tryToinitViewers();
         return currentView.root;
       });
     }
-
     if (pathSplits.length > 3 && pathSplits[3] != '') {
       const viewName = pathSplits[3];
-
-      if (tabs.panes.map((p) => p.name).includes(viewName))
-        tabs.currentPane = tabs.getPane(viewName);
+      if (this.tabs.panes.map((p) => p.name).includes(viewName))
+        this.tabs.currentPane = this.tabs.getPane(viewName);
       else
-        tabs.currentPane = tabs.getPane(viewClasses[0].viewName);
+        this.tabs.currentPane = this.tabs.getPane(viewClasses[0].viewName);
     } else
-      tabs.currentPane = tabs.getPane(viewClasses[0].viewName);
+      this.tabs.currentPane = this.tabs.getPane(viewClasses[0].viewName);
 
     const paramsHaveDate = params.has('date');
     const paramsHaveUsers = params.has('users');
-    if (paramsHaveDate || paramsHaveUsers) {
+    const paramsHavePackages = params.has('packages');
+    if (paramsHaveDate || paramsHaveUsers || paramsHavePackages) {
       if (paramsHaveDate)
         toolbox.setDate(params.get('date')!);
-
-
       if (paramsHaveUsers)
         await toolbox.setUsers(params.get('users')!);
-
-
+      if (paramsHavePackages)
+        await toolbox.setPackages(params.get('packages')!);
       await toolbox.applyFilter();
     }
 
-    const UAView = grok.shell.newView('Usage Analysis', [tabs]);
-    UAView.toolbox = toolbox.rootAccordion.root;
+    const UA = grok.shell.newView('Usage Analysis', [this.tabs]);
+    UA.box = true;
+    UA.toolbox = toolbox.rootAccordion.root;
   }
 
   getSearchParameters() : Map<string, string> {

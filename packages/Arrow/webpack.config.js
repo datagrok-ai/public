@@ -7,7 +7,7 @@ module.exports = {
     package: ['./src/arrow1_bg.wasm', './src/package.ts'],
     test: {
       filename: 'package-test.js',
-      library: {type: 'var', name: `${packageName}_test`},
+      library: { type: 'var', name: `${packageName}_test` },
       import: './src/package-test.ts',
     },
   },
@@ -32,7 +32,7 @@ module.exports = {
       },
     ],
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

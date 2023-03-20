@@ -1,0 +1,18 @@
+{
+  "#type": "DataConnection",
+  "name": "MySqlApiTests",
+  "friendlyName": "Tests",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "port": 3306,
+    "db": "test"
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "MySQL",
+  "description": "Test data"
+}

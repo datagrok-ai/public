@@ -59,7 +59,7 @@ export class RichFunctionView extends FunctionView {
     public options: { exportEnabled: boolean, historyEnabled: boolean, isTabbed: boolean} =
     {exportEnabled: true, historyEnabled: true, isTabbed: false}
   ) {
-    super();
+    super(funcCall, options);
 
     this.basePath = `scripts/${funcCall.func.id}/view`;
 
@@ -92,7 +92,7 @@ export class RichFunctionView extends FunctionView {
     savedCall.options['isHistorical'] = false;
     this.linkFunccall(savedCall);
     if (this.options.historyEnabled) this.buildHistoryBlock();
-    this.path = `?id=${savedCall.id}`;
+    if (!this.options.isTabbed) this.path = `?id=${savedCall.id}`;
     await this.onAfterSaveRun(savedCall);
     return savedCall;
   }
@@ -101,7 +101,6 @@ export class RichFunctionView extends FunctionView {
   public override build(): void {
     ui.empty(this.root);
     this.root.appendChild(this.buildIO());
-
     if (this.options.historyEnabled)
       this.buildHistoryBlock();
 
@@ -359,19 +358,33 @@ export class RichFunctionView extends FunctionView {
     return map;
   }
 
-  private renderRunSection(): HTMLElement {
-    const runButton = ui.bigButton('Run', async () => {
-      this.isRunning = true;
+  public override async run(): Promise<void> {
+    if (!this.funcCall) throw new Error('The correspoding function is not specified');
+
+    await this.onBeforeRun(this.funcCall);
+    const pi = DG.TaskBarProgressIndicator.create('Calculating...');
+    this.funcCall.newId();
+    await this.funcCall.call(); // mutates the funcCall field
+    pi.close();
+    await this.onAfterRun(this.funcCall);
+    this.lastCall = this.options.isTabbed ? this.funcCall.clone() : await this.saveRun(this.funcCall);
+  }
+
+  private async doRun(): Promise<void> {
+    this.isRunning = true;
+    this.checkDisability.next();
+    try {
+      await this.run();
+    } catch (e: any) {
+      grok.shell.error(e);
+    } finally {
+      this.isRunning = false;
       this.checkDisability.next();
-      try {
-        await this.run();
-      } catch (e: any) {
-        grok.shell.error(e);
-      } finally {
-        this.isRunning = false;
-        this.checkDisability.next();
-      }
-    });
+    }
+  }
+
+  private renderRunSection(): HTMLElement {
+    const runButton = ui.bigButton('Run', this.doRun);
     // REPLACE BY TYPE GUARD
     const isFuncScript = () => {
       //@ts-ignore
@@ -384,7 +397,7 @@ export class RichFunctionView extends FunctionView {
     ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
 
     this.checkDisability.subscribe(() => {
-      const isValid = (wu(this.funcCall!.inputs.values()).every((v) => !!v)) && !this.isRunning;
+      const isValid = (wu(this.funcCall!.inputs.values()).every((v) => v !== null && v !== undefined)) && !this.isRunning;
       runButton.disabled = !isValid;
     });
 
@@ -408,6 +421,11 @@ export class RichFunctionView extends FunctionView {
           let t = prop.propertyType === DG.TYPE.DATA_FRAME ?
             ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables):
             ui.input.forProperty(prop);
+
+          t.input.onkeydown = ev => {
+            if (ev.key == 'Enter')
+              this.doRun().then((_) => {});
+          }
 
           t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
           if (prop.options['units']) t.addPostfix(prop.options['units']);

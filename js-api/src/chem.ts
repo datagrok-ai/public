@@ -129,7 +129,6 @@ export namespace chem {
     sketcher: SketcherBase | null = null;
     onChanged: Subject<any> = new Subject<any>();
     sketcherFunctions: Func[] = [];
-    selectedSketcher: Func | undefined = undefined;
     sketcherDialogOpened = false;
 
     /** Whether the currently drawn molecule becomes the current object as you sketch it */
@@ -148,8 +147,9 @@ export namespace chem {
     inplaceSketcherDiv: HTMLDivElement | null = null;
     clearSketcherButton: HTMLButtonElement;
     emptySketcherLink: HTMLDivElement;
-    sketcherInDom = false;
     resized = false;
+    _sketcherTypeChanged = false;
+    _autoResized = true;
 
     set sketcherType(type: string) {
       this._setSketcherType(type);
@@ -167,6 +167,13 @@ export namespace chem {
       return this.resized;
     }
 
+    get autoResized(): boolean {
+      return this._autoResized;
+    }
+
+    get sketcherTypeChanged(): boolean {
+      return this._sketcherTypeChanged;
+    }
 
     getSmiles(): string {
       return this.sketcher?.isInitialized ? this.sketcher.smiles : this._smiles === null ?
@@ -276,7 +283,7 @@ export namespace chem {
     }
 
     resize() {
-      if (this.sketcherInDom && this.sketcher?.isInitialized) {
+      if (this.sketcher?.isInitialized) {
         this.sketcher?.resize();
         this.resized = true;
       }
@@ -319,9 +326,11 @@ export namespace chem {
       const zoom = 20; // coefficient we use to calculate size of canvas to feet molecule
       const xCoords = molfileHandler.x;
       const yCoords = molfileHandler.y;
+      const bondedAtoms = molfileHandler.pairsOfBondedAtoms;
       let tooltip: HTMLElement;
-      if (xCoords.length > 1 && yCoords.length > 1) {
-        const distance = Math.sqrt(Math.pow((xCoords[0] - xCoords[1]), 2) + Math.pow((yCoords[0] - yCoords[1]), 2));
+      if (xCoords.length > 1 && yCoords.length > 1 && bondedAtoms.length) {
+        const distance = Math.sqrt(Math.pow((xCoords[bondedAtoms[0][0] - 1] - xCoords[bondedAtoms[0][1] - 1]), 2) +
+          Math.pow((yCoords[bondedAtoms[0][0] - 1] - yCoords[bondedAtoms[0][1] - 1]), 2));
         const deltaX = (Math.max(...xCoords) - Math.min(...xCoords))/distance;
         const deltaY = (Math.max(...yCoords) - Math.min(...yCoords))/distance;
         tooltip = (deltaX > maxDelta || deltaY > maxDelta) ? this.drawToCanvas(deltaX*zoom, deltaY*zoom, currentMolfile) : ui.divText('Click to edit');
@@ -351,6 +360,7 @@ export namespace chem {
       const closeDlg = () => {
         this.sketcherDialogOpened = false;
         this.resized = false;
+        this._autoResized = true;
       } 
 
       this.extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
@@ -371,11 +381,15 @@ export namespace chem {
               this.setMolFile(savedMolFile!);
               closeDlg();
             })
-            .show({resizable: true});
-            ui.onSizeChanged(dlg.root).subscribe((_) => {
-              if (this.sketcherDialogOpened)
-                this.resize();
-            });
+            .show({ resizable: true });
+          ui.onSizeChanged(dlg.root).subscribe((_) => {
+            if (this.sketcherDialogOpened)
+              if (!this.sketcher?.isInitialized)
+                return;
+              else
+                //for some sketchers onSizeChanged is called once after dialog is just opened. We call resize() only when resized manually
+                this._autoResized ? this._autoResized = false : this.resize();
+          });
         }
       };
 
@@ -444,9 +458,11 @@ export namespace chem {
           .separator()
           .items(this.sketcherFunctions.map((f) => f.friendlyName), (friendlyName: string) => {
             if (currentSketcherType !== friendlyName) {
-                grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, friendlyName, true);
                 currentSketcherType = friendlyName;
+                grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, friendlyName, true);
                 this.sketcherType = currentSketcherType;
+                if (!this.resized)
+                  this._autoResized = true;
             }
           },
             {
@@ -473,21 +489,22 @@ export namespace chem {
           await this.getSmarts() : this.getMolFile() : this.getSmiles();
       };
       getMolecule().then(async (molecule) => {
-        ui.empty(this.host);
-        this.sketcherInDom = false;
+        this._sketcherTypeChanged = true; //variable to check if refresh should be called on filter
         this._setSketcherSize(); //set default size to show update indicator
         ui.setUpdateIndicator(this.host, true);
         this.changedSub?.unsubscribe();
         const sketcherFunc = this.sketcherFunctions.find(e => e.friendlyName == sketcherType|| e.name === sketcherType) ?? this.sketcherFunctions.find(e => e.friendlyName == DEFAULT_SKETCHER);
-        this.sketcher = await sketcherFunc!.apply();
-        if(currentSketcherType !== sketcherFunc!.friendlyName) //in case sketcher type has been changed while previous sketcher was loading
-          return;
-        this._setSketcherSize(); //update sketcher size according to base sketcher width and height
-        this.host.appendChild(this.sketcher!.root);
+        const sketcher = await sketcherFunc!.apply();
         await ui.tools.waitForElementInDom(this.root);
-        this.sketcherInDom = true;
+        if(currentSketcherType !== sketcherType) //in case sketcher type has been changed while previous sketcher was loading
+          return;
+        this.sketcher = sketcher; //setting this.sketcher only after ensuring that this is last selected sketcher
+        ui.empty(this.host);
+        this.host.appendChild(this.sketcher!.root);
+        this._setSketcherSize(); //update sketcher size according to base sketcher width and height
         await this.sketcher!.init(this);
-        ui.setUpdateIndicator(this.host, false);      
+        ui.setUpdateIndicator(this.host, false);
+        this._sketcherTypeChanged = false; 
         this.changedSub = this.sketcher!.onChanged.subscribe((_: any) => {
           this.onChanged.next(null);
           for (let callback of this.listeners)

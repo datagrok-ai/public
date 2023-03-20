@@ -51,7 +51,7 @@ public abstract class ContainerizedProviderBaseTest {
         ProviderManager providerManager = new ProviderManager(mockLogger);
         ProviderManager spy = Mockito.spy(providerManager);
         Mockito.when(spy.getQueryMonitor()).thenReturn(mockMonitor);
-        provider = (JdbcDataProvider) spy.getByName(type.getProperties().get("providerName").toString());
+        provider = spy.getByName(type.getProperties().get("providerName").toString());
     }
 
     @BeforeEach
@@ -75,6 +75,7 @@ public abstract class ContainerizedProviderBaseTest {
     }
 
     @DisplayName("Tests of testConnection(DataConnection conn)")
+    @Order(2)
     @Test
     public void testConnection() {
         String expected = DataProvider.CONN_AVAILABLE;
@@ -85,6 +86,7 @@ public abstract class ContainerizedProviderBaseTest {
     // I think, it would be better to implement some Global exception handler
     // and not return String, when something went wrong in this method
     @DisplayName("Test of testConnection(DataConnection conn) when no credentials provided")
+    @Order(3)
     @Test
     public void testConnection_notOk() {
         connection.credentials = null;

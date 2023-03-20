@@ -1,0 +1,18 @@
+<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M28 10H21V11H28V10Z" fill="#CAD6E2"/>
+<path d="M28 13H22L23 14H28V13Z" fill="#CAD6E2"/>
+<path d="M28 16H24V17H28V16Z" fill="#CAD6E2"/>
+<path d="M28 19H23V20H28V19Z" fill="#CAD6E2"/>
+<path d="M28 22H21V23H28V22Z" fill="#CAD6E2"/>
+<path d="M28 25H21V26H28V25Z" fill="#CAD6E2"/>
+<path d="M15 10H8V11H15V10Z" fill="#CAD6E2"/>
+<path d="M12 13H8V14H11L12 13Z" fill="#CAD6E2"/>
+<path d="M11 16H8V17H11V16Z" fill="#CAD6E2"/>
+<path d="M11 19H8V20H11V19Z" fill="#CAD6E2"/>
+<path d="M13 22H8V23H15L13 22Z" fill="#CAD6E2"/>
+<path d="M15 25H8V26H15V25Z" fill="#CAD6E2"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M19 11V8V7H20H29H30V8V28V29H29H19V28V23H20V28H29L29 8L20 8V11H19Z" fill="#CAD6E2"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M17 11V8V7H16H7H6V8V28V29H7H17V28V24H16V28H7L7 8L16 8V11H17Z" fill="#CAD6E2"/>
+<circle cx="17.0576" cy="17.0576" r="6.30762" fill="#50C587" fill-opacity="0.15" stroke="#50C587" stroke-width="1.5"/>
+<rect x="21" y="22.4142" width="2" height="6.33826" transform="rotate(-45 21 22.4142)" fill="#50C587"/>
+</svg>

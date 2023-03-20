@@ -1,0 +1,14 @@
+<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M18 8V14M18 32V22M18 32H12M18 32H24M18 22L12 18M18 22L24 18M18 22V14M12 18L6 14M12 18L8 24M24 18L30 14M24 18L28 24M18 14L24 10M18 14L12 10" stroke="#A2AEBA"/>
+<circle cx="18" cy="14" r="2" fill="#50C587"/>
+<circle cx="6" cy="14" r="2" fill="#48A7F3"/>
+<circle cx="12" cy="18" r="2" fill="#48A7F3"/>
+<circle cx="8" cy="24" r="2" fill="#48A7F3"/>
+<circle cx="28" cy="24" r="2" fill="#48A7F3"/>
+<circle cx="24" cy="18" r="2" fill="#48A7F3"/>
+<circle cx="30" cy="14" r="2" fill="#48A7F3"/>
+<circle cx="18" cy="22" r="2" fill="#48A7F3"/>
+<circle cx="12" cy="10" r="2" fill="#50C587"/>
+<circle cx="24" cy="10" r="2" fill="#50C587"/>
+<circle cx="18" cy="8" r="2" fill="#50C587"/>
+</svg>
