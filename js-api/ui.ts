@@ -170,6 +170,30 @@ export function tabControl(pages: { [key: string]: any; } | null = null, vertica
       tabs.addPane(key, value instanceof Function ? value : () => render(value));
     }
   }
+
+  let leftIcon = iconFA('chevron-left', ()=> {
+    try{
+      let currentIndex = $(tabs.header).find('.selected').index()-2;
+      if (currentIndex > 0)
+        tabs.currentPane = tabs.panes[currentIndex-1];
+    }catch{
+    }
+  });
+  leftIcon.classList.add('d4-tab-header-icon');
+
+  let rightIcon = iconFA('chevron-right', ()=> {
+    try{
+      let currentIndex = $(tabs.header).find('.selected').index()-2;
+      if (currentIndex < tabs.panes.length)
+        tabs.currentPane = tabs.panes[currentIndex+1];
+    }catch{
+    }
+  });
+  rightIcon.classList.add('d4-tab-header-icon');
+
+  tabs.header.insertBefore(leftIcon, tabs.header.firstChild);
+  tabs.header.appendChild(rightIcon);
+
   return tabs;
 }
 

@@ -9,6 +9,7 @@ import { filter } from 'rxjs/operators';
 import $ from "cash-dom";
 import {MapProxy} from "./utils";
 import dayjs from "dayjs";
+import { iconFA, tabControl } from "../ui";
 
 declare let grok: any;
 declare let DG: any;
@@ -557,6 +558,27 @@ export class TabControl {
   /** Removes all panes */
   clear(): void {
     api.grok_TabControlBase_Clear(this.dart);
+  }
+
+  /** Add horisontal scroll to the header */
+  set headerScroll(scroll:boolean){
+    if (scroll)
+      this.header.className = 'd4-tab-header-stripe d4-tab-header-scroll';
+    else
+      this.header.className = 'd4-tab-header-stripe';
+  }
+
+  get headerScroll(): boolean{
+     return this.header.classList.contains('d4-tab-header-scroll');
+  }
+  /** Add navigation arrow to header */
+  set condensed(x:boolean){
+    if (x){
+      this.header.className = 'd4-tab-header-stripe d4-tab-header-condensed';
+    }
+    else{
+      this.header.className = 'd4-tab-header-condensed';
+    }
   }
 
   /** Currently visible pane */
