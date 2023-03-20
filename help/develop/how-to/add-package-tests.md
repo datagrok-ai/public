@@ -12,11 +12,10 @@ We use a custom test framework that is similar to `Jest`, and it supports
 Datagrok API. To learn more about that, see our [guide for
 packages](https://github.com/datagrok-ai/public/blob/master/packages/GUIDE.MD#tests).
 
-To add tests and `Jest` configuration for local testing, run the following
-command:
+To add tests for local testing, run the following command:
 
 ```shell
-grok create <package-name> --jest
+grok create <package-name> --test
 ```
 
 If you need to add tests support to an existing package, run this command
@@ -54,7 +53,7 @@ category('Examples', () => {
 
 Next, make sure to import your test files in `src/package-test.ts`. After that,
 build and publish your package. There are several options to runs the tests:
-[locally using Jest](test-packages.md#local-testing), via [DG
+[locally using datagrok-tools](test-packages.md#local-testing), via [DG
 console](test-packages.md#running-tests-in-the-platform-console), and via [Test
 manager](test-packages.md#test-manager). All public packages in the
 [repository](../../collaborate/public-repository.md) are tested using GitHub
@@ -64,7 +63,7 @@ wrong during the auto-check.
 
 For some real-life examples, please refer to the
 [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem) package,
-which has `Jest` properly configured and all tests written properly.
+which has everything properly configured and all tests written properly.
 
 ## Skipping tests
 
