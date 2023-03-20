@@ -46,7 +46,13 @@ class HistoryPanelStore {
   }
 
   get filteredMyRuns() {
-    return this.myRuns.filter((val) => (this.filteringOptions.startedAfter ? val.started > this.filteringOptions.startedAfter : true));
+    return this.myRuns.filter((val) => {
+      const startedAfter = (this.filteringOptions.startedAfter ? val.started > this.filteringOptions.startedAfter : true);
+      const titleContainsText = (!this.filteringOptions.text.length) ? true : (!!val.options['title']) ? val.options['title'].includes(this.filteringOptions.text): false;
+      const descContainsText = (!this.filteringOptions.text.length) ? true : (!!val.options['description']) ? val.options['description'].includes(this.filteringOptions.text): false;
+
+      return (titleContainsText || descContainsText) && startedAfter;
+    });
   }
 
   get filteredFavoriteRuns() {
@@ -142,9 +148,9 @@ export class HistoryPanel {
         const filteringText = new Subject();
 
         const textInput = ui.stringInput('Search', '', (v: string) => filteringText.next(v));
-        textInput.root.style.display = 'none';
         DG.debounce(filteringText.asObservable(), 600).subscribe(() => {
           this.store.filteringOptions.text = textInput.stringValue;
+          this.myRunsFilter.next();
           this.favRunsFilter.next();
           this.sharedRunsFilter.next();
         });
@@ -177,17 +183,14 @@ export class HistoryPanel {
         this.tabs.onTabChanged.subscribe(() => {
           const currentTabName = this.tabs.currentPane.name;
           if (currentTabName === 'HISTORY') {
-            textInput.root.style.display = 'none';
             dateInput.root.style.removeProperty('display');
             authorInput.root.style.display = 'none';
           }
           if (currentTabName === 'FAVORITES') {
-            textInput.root.style.removeProperty('display');
             dateInput.root.style.removeProperty('display');
             authorInput.root.style.display = 'none';
           }
           if (currentTabName === 'SHARED') {
-            textInput.root.style.removeProperty('display');
             dateInput.root.style.removeProperty('display');
             authorInput.root.style.removeProperty('display');
           }
