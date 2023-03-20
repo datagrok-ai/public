@@ -38,7 +38,8 @@ export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
       (bodies[clusterId] ??= []).push({ID: rowIndex.toString(), HELM: helmSeq});
   }
 
-  const pepseaDockerfile = await grok.dapi.docker.dockerContainers.filter('bio').first();
+  // const pepseaDockerfile = await grok.dapi.docker.dockerContainers.filter('bio').first();
+  const pepseaDockerfile = await grok.dapi.dockerfiles.filter('bio').first();
   const alignedSequences: string[] = new Array(peptideCount);
   for (const body of bodies) { // getting aligned sequences for each cluster
     const alignedObject = await requestAlignedObjects(pepseaDockerfile.id, body, method, gapOpen, gapExtend);
@@ -70,6 +71,7 @@ async function requestAlignedObjects(dockerfileId: string, body: PepseaBodyUnit[
     body: JSON.stringify(body),
   };
   const path = `/align?method=${method}&gap_open=${gapOpen}&gap_extend=${gapExtend}`;
-  const response = await grok.dapi.docker.dockerContainers.request(dockerfileId, path, params);
+  // const response = await grok.dapi.docker.dockerContainers.request(dockerfileId, path, params);
+  const response = await grok.dapi.dockerfiles.request(dockerfileId, path, params);
   return JSON.parse(response ?? '{}');
 }
