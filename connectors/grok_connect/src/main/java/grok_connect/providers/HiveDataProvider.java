@@ -1,10 +1,7 @@
 package grok_connect.providers;
 
-
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.sql.*;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,10 +9,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
-import grok_connect.connectors_info.Credentials;
-import grok_connect.connectors_info.DataConnection;
-import grok_connect.connectors_info.DataSource;
-import grok_connect.connectors_info.DbCredentials;
+import java.util.stream.Collectors;
+
+import grok_connect.connectors_info.*;
 import grok_connect.providers.proxy.HiveMetaDataProviderProxyProvider;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
@@ -102,6 +98,37 @@ public class HiveDataProvider extends JdbcDataProvider {
             GrokConnectException {
         return getProxyMetaStoreProvider(connection)
                 .getSchema(prepareMetaStoreConnection(connection), schema, table);
+    }
+
+    @Override
+    protected String getRegexQuery(String columnName, String regexExpression) {
+        return String.format("%s RLIKE '%s'", columnName, regexExpression);
+    }
+
+    @Override
+    protected void appendQueryParam(DataQuery dataQuery, String paramName, StringBuilder queryBuffer) {
+        FuncParam param = dataQuery.getParam(paramName);
+        if (param.propertyType.equals("list")) {
+            @SuppressWarnings("unchecked")
+            List<String> values = ((ArrayList<String>) param.value);
+            queryBuffer.append(values.stream().map(value -> "?").collect(Collectors.joining(", ")));
+        } else {
+            queryBuffer.append("?");
+        }
+    }
+
+    @Override
+    protected int setArrayParamValue(PreparedStatement statement, int n, FuncParam param) throws SQLException {
+        @SuppressWarnings (value="unchecked")
+        ArrayList<Object> lst = (ArrayList<Object>)param.value;
+        if (lst == null || lst.size() == 0) {
+            statement.setObject(n, null);
+            return 0;
+        }
+        for (int i = 0; i < lst.size(); i++) {
+            statement.setObject(n + i, lst.get(i));
+        }
+        return lst.size() - 1;
     }
 
     private JdbcDataProvider getProxyMetaStoreProvider(DataConnection connection) {
