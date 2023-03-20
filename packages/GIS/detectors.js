@@ -102,6 +102,7 @@ class GisPackageDetectors extends DG.Package {
     if ((col.type !== DG.COLUMN_TYPE.STRING) && (col.type !== DG.COLUMN_TYPE.INT))
       return null;
     let estCoeff = 0; //coefficient of estimation [0 - >100] the more value - the more probability
+    let colSemType = null;
 
     const zipcodePatterns = new Map([
       ['zipUS1EU1', /[\b\d{4,6}\b|\b\d{9}\b]/i],
@@ -143,11 +144,16 @@ class GisPackageDetectors extends DG.Package {
 
     //TODO: should we add checking for "Почтовый индекс"?
     const colName = col.name.toLowerCase();
-    if (colName.includes('zip') || colName.includes('code') || colName.includes('post'))
+    if (colName.includes('zip') || colName.includes('code') || colName.includes('post')) {
+      colSemType = SEMTYPEGIS.GISZIPCODE;
       estCoeff += 40;
+    }
+
+    if (colSemType === null)
+      return null;
 
     if (estCoeff > 75) {
-      col.semType = SEMTYPEGIS.GISZIPCODE;
+      col.semType = colSemType;
       return col.semType;
     }
 
@@ -162,6 +168,7 @@ class GisPackageDetectors extends DG.Package {
     if (col.type !== DG.TYPE.STRING)
       return null;
 
+    let colSemType = null;
     let estCoeff = 0; //coefficient of estimation [0-100] the more value - the more probability
     const colName = col.name.toLowerCase();
 
@@ -187,6 +194,7 @@ class GisPackageDetectors extends DG.Package {
       const oldValue = estCoeff;
       for (const value of addressPatterns.values()) {
         if ((col.categories[i].match(value) !== null)) {
+          colSemType = SEMTYPEGIS.GISADDRESS;
           estCoeff += caseWeight;
           break;
         }
@@ -194,8 +202,11 @@ class GisPackageDetectors extends DG.Package {
       if (estCoeff === oldValue) estCoeff -= caseWeight * 2;
     }
 
+    if (colSemType === null)
+      return null;
+
     if (estCoeff > 75) {
-      col.semType = SEMTYPEGIS.GISADDRESS;
+      col.semType = colSemType;
       return col.semType;
     }
     return null;
