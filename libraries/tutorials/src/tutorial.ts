@@ -21,6 +21,12 @@ export abstract class Tutorial extends DG.Widget {
     return this._t;
   }
 
+  get url(): string {
+    const removeSpaces = (s: string) => s.split(' ').join('');
+    const root = window.location.origin;
+    return `${root}/apps/tutorials/${removeSpaces(this.track!.name)}/${removeSpaces(this.name)}`;
+  }
+
   imageUrl: string = '';
   nextLink: HTMLAnchorElement = ui.link('next',
     '',
@@ -212,8 +218,13 @@ export abstract class Tutorial extends DG.Widget {
 
     const closeTutorial = ui.button(ui.iconFA('times-circle'), () => this.close());
 
+    const linkIcon = ui.button(ui.iconFA('link'), () => {
+      navigator.clipboard.writeText(this.url);
+      grok.shell.info('Link copied to clipboard');
+    }, `Copy the tutorial link`);
+
     closeTutorial.style.minWidth = '30px';
-    this.headerDiv.append(this.header);
+    this.headerDiv.append(ui.divH([this.header, linkIcon], {style: {alignItems: 'center'}}));
     this.headerDiv.append(closeTutorial);
   }
 
