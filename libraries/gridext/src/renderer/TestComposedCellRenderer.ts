@@ -6,7 +6,7 @@ export class TestComposedCellRenderer extends AbstractComposedCellRenderer {
     super(renderer);
   }
 
-  fillLabelsAndUI(cell: DG.Cell, arTextLabels : string[], arTextFonts: string[], arTextColors : string[], arBackColors: string[]) : void {
+  fillLabelsAndUI(cell: DG.GridCell, arTextLabels : string[], arTextFonts: string[], arTextColors : string[], arBackColors: string[]) : void {
     arTextLabels.push('test 1');
     arTextLabels.push('test 2');
     arTextFonts.push('Roboto 12px');

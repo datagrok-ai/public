@@ -8,6 +8,7 @@ import java.util.*;
 import java.math.*;
 import java.text.*;
 import java.util.Date;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.*;
 import microsoft.sql.DateTimeOffset;
 import oracle.sql.TIMESTAMPTZ;
@@ -25,7 +26,7 @@ import serialization.Types;
 public abstract class JdbcDataProvider extends DataProvider {
     protected String driverClassName;
 
-    protected ProviderManager providerManager;
+    public ProviderManager providerManager;
 
     public JdbcDataProvider(ProviderManager providerManager) {
         this.providerManager = providerManager;
@@ -199,6 +200,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                 resultSet = statement.getResultSet();
             providerManager.getQueryMonitor().removeStatement(mainCallId);
         }
+
+        providerManager.getQueryMonitor().addNewResultSet(mainCallId, resultSet);
         return resultSet;
     }
 
@@ -594,7 +597,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                         size += column.memoryInBytes();
                     size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000; // count? it's 200 lines up
 
-                    if (size > 20) {                        
+                    if (size > 20) {
                         DataFrame dataFrame = new DataFrame();
                         dataFrame.addColumns(columns);
                         return dataFrame;
@@ -629,8 +632,11 @@ public abstract class JdbcDataProvider extends DataProvider {
             dataFrame.addColumns(columns);
 
             return dataFrame;
-        } catch (SQLException e) {
-            throw e;
+        } catch (Exception e) {
+            if (resultSet != null && resultSet.isClosed())
+                throw new QueryCancelledByUser();
+            else 
+                throw e;
         }
     };
 
@@ -654,8 +660,9 @@ public abstract class JdbcDataProvider extends DataProvider {
             else throw e;
         }
         finally {
-            if (connection != null)
+            if (connection != null) {
                 connection.close();
+            }
         }
     }
 

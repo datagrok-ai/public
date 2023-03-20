@@ -30,7 +30,7 @@ export function _FitViewer() {
 }
 
 //tags: app
-//name: Curve Fit Demo
+//name: Curves Demo
 export function curveFitDemoApp() {
   grok.shell.addTableView(createDemoDataFrame(30, 5, 2));
 }

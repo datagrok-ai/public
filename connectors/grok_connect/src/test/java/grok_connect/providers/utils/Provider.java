@@ -14,6 +14,8 @@ import java.util.Properties;
  * Enum that contains all necessary data related to specific provider and it's container
  */
 public enum Provider {
+    HIVE2("src/test/resources/properties/hive2.properties"),
+
     REDSHIFT("src/test/resources/properties/redshift.properties") {
         @Override
         protected JdbcDatabaseContainer<?> newJdbcContainer() {
