@@ -370,19 +370,21 @@ export class RichFunctionView extends FunctionView {
     this.lastCall = this.options.isTabbed ? this.funcCall.clone() : await this.saveRun(this.funcCall);
   }
 
-  private renderRunSection(): HTMLElement {
-    const runButton = ui.bigButton('Run', async () => {
-      this.isRunning = true;
+  private async doRun(): Promise<void> {
+    this.isRunning = true;
+    this.checkDisability.next();
+    try {
+      await this.run();
+    } catch (e: any) {
+      grok.shell.error(e);
+    } finally {
+      this.isRunning = false;
       this.checkDisability.next();
-      try {
-        await this.run();
-      } catch (e: any) {
-        grok.shell.error(e);
-      } finally {
-        this.isRunning = false;
-        this.checkDisability.next();
-      }
-    });
+    }
+  }
+
+  private renderRunSection(): HTMLElement {
+    const runButton = ui.bigButton('Run', this.doRun);
     // REPLACE BY TYPE GUARD
     const isFuncScript = () => {
       //@ts-ignore
@@ -419,6 +421,11 @@ export class RichFunctionView extends FunctionView {
           let t = prop.propertyType === DG.TYPE.DATA_FRAME ?
             ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables):
             ui.input.forProperty(prop);
+
+          t.input.onkeydown = ev => {
+            if (ev.key == 'Enter')
+              this.doRun().then((_) => {});
+          }
 
           t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
           if (prop.options['units']) t.addPostfix(prop.options['units']);
