@@ -6,6 +6,7 @@ import grok_connect.connectors_info.DataProvider;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.providers.utils.DataFrameComparator;
+import grok_connect.providers.utils.NamedArgumentConverter;
 import grok_connect.providers.utils.Provider;
 import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryMonitor;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import serialization.DataFrame;
@@ -102,7 +104,7 @@ class AthenaDataProviderTest {
             "grok_connect.providers.arguments_provider.AthenaObjectsMother#checkRegexSupport_ok",
             "grok_connect.providers.arguments_provider.AthenaObjectsMother#checkMultipleParametersSupport_ok",
             "grok_connect.providers.arguments_provider.AthenaObjectsMother#checkListParameterSupport_ok"})
-    public void checkParameterSupport_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -111,7 +113,7 @@ class AthenaDataProviderTest {
     @DisplayName("Parameters support for datetime")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.AthenaObjectsMother#checkDatesParameterSupport_ok")
-    public void checkDatesParameterSupport_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkDatesParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -120,7 +122,7 @@ class AthenaDataProviderTest {
     @DisplayName("Output support for athena array type")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.AthenaObjectsMother#checkOutputDataFrame_arrayType_ok")
-    public void checkOutputDataFrame_arrayType_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_arrayType_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -129,7 +131,7 @@ class AthenaDataProviderTest {
     @DisplayName("Output support for athena character types")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.AthenaObjectsMother#checkOutputDataFrame_characterTypes_ok")
-    public void checkOutputDataFrame_characterTypes_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_characterTypes_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -138,7 +140,7 @@ class AthenaDataProviderTest {
     @DisplayName("Output support for athena date types")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.AthenaObjectsMother#checkOutputDataFrame_dateTypes_ok")
-    public void checkOutputDataFrame_dateTypes_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_dateTypes_ok(@ConvertWith(NamedArgumentConverter.class)FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -147,7 +149,7 @@ class AthenaDataProviderTest {
     @DisplayName("Output support for athena float types")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.AthenaObjectsMother#checkOutputDataFrame_floatTypes_ok")
-    public void checkOutputDataFrame_floatTypes_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_floatTypes_ok(@ConvertWith(NamedArgumentConverter.class)FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -156,7 +158,7 @@ class AthenaDataProviderTest {
     @DisplayName("Output support for athena map type")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.AthenaObjectsMother#checkOutputDataFrame_mapType_ok")
-    public void checkOutputDataFrame_mapType_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_mapType_ok(@ConvertWith(NamedArgumentConverter.class)FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -165,7 +167,7 @@ class AthenaDataProviderTest {
     @DisplayName("Output support for athena numeric types")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.AthenaObjectsMother#checkOutputDataFrame_numericTypes_ok")
-    public void checkOutputDataFrame_numericTypes_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_numericTypes_ok(@ConvertWith(NamedArgumentConverter.class)FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -174,7 +176,7 @@ class AthenaDataProviderTest {
     @DisplayName("Output support for athena struct type")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.AthenaObjectsMother#checkOutputDataFrame_structType_ok")
-    public void checkOutputDataFrame_structType_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_structType_ok(@ConvertWith(NamedArgumentConverter.class)FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
