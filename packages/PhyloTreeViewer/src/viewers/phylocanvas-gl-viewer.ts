@@ -68,10 +68,6 @@ const TreeTypesTypes: { [treeType: string]: string } = {
   [TreeTypesNames.Orthogonal]: TreeTypes.Hierarchical, // rectangular edges, leaves listed horizontally
 };
 
-function setProps(value: any) {
-
-}
-
 export class PhylocanvasGlViewer extends DG.JsViewer implements IPhylocanvasGlViewer {
   private viewed: boolean = false;
 

@@ -36,6 +36,7 @@ export function htmlToInt(value: string): number {
 
 /** Converts color Hex string ('#000bff22' , alpha=0x22) to int number with alpha */
 export function htmlToIntA(value: string): number {
+  /* regexp: dies sign + (group 1 six hex digits for rgb) + (group 2 two hex digits for alpha) */
   const m: RegExpExecArray = /#([0-9A-Fa-f]{6})([0-9A-Fa-f]{2})/.exec(value)!;
   return parseInt(m[1], 16) | (parseInt(m[2], 16) << 24);
 }
