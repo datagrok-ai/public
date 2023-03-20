@@ -8,8 +8,9 @@ We recommend you the practices below with debugging your package code.
 
 ## One-click debugging with Visual Studio Code
 
-Use an `--ide=vscode` key of [grok tools](../getting-started.md) to set up a `.vscode` debugging integration with
-Datagrok.
+To set up a `.vscode` debugging configuration for your package, use `grok create <package-name> --ide=vscode` when
+creating a package, or `grok init --ide=vscode` in the directory of an existing package (see [datagrok-tools
+docs](https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools) for details).
 
 This parameter coupled with `grok create` adds an additional `.vscode` folder with two files to your package folder.
 These files bring you development experience close to building native apps, where you modify the code, hit the "Run",

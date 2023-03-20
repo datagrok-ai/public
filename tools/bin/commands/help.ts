@@ -9,6 +9,7 @@ Commands:
     check     Check package content (function signatures, etc.)
     config    Create and manage config files
     create    Create a package
+    init      Modify a package template
     link      Link \`datagrok-api\` and libraries for local development
     unlink    Revert \`grok link\`
     publish   Upload a package
@@ -45,6 +46,20 @@ Available tags:
 panel, init
 `;
 
+const HELP_INIT = `
+Usage: grok init
+
+Modify a package template by adding config files for linters, IDE, etc.
+
+Options:
+[--eslint] [--ide] [--test] [--ts]
+
+--eslint    Add a configuration for eslint
+--ide       Add an IDE-specific configuration for debugging (vscode)
+--test      Add tests support (TypeScript packages only)
+--ts        Convert a JavaScript package to TypeScript
+`;
+
 const HELP_API = `
 Usage: grok api
 
@@ -77,12 +92,13 @@ grok create <name>  Create a package in a folder with the specified name
 Please note that the package name may only include letters, numbers, underscores, or hyphens
 
 Options:
-[--eslint] [--ide] [--js | --ts]
+[--eslint] [--ide] [--js | --ts] [--test]
 
 --eslint    Add a configuration for eslint
 --ide       Add an IDE-specific configuration for debugging (vscode)
 --js        Create a JavaScript package
 --ts        Create a TypeScript package (default)
+--test      Add tests support (TypeScript packages only)
 `;
 
 const HELP_PUBLISH = `
@@ -150,6 +166,7 @@ export const help = {
   check: HELP_CHECK,
   config: HELP_CONFIG,
   create: HELP_CREATE,
+  init: HELP_INIT,
   link: HELP_LINK,
   unlink: HELP_UNLINK,
   publish: HELP_PUBLISH,
