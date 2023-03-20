@@ -86,8 +86,8 @@ export function init(args: InitArgs) {
           config['servers'][config.default]['url']) ? 'http://localhost:63343/login.html'
           : (new URL(config['servers'][config.default]['url'])).origin);
         fs.writeFileSync(path.join(ideConfPath, file), contents, 'utf-8');
-        color.success('IDE configuration has been added.');
       }
+      color.success('IDE configuration has been added.');
     }
   }
 
