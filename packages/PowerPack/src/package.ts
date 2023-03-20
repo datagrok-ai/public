@@ -2,25 +2,25 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { welcomeView } from "./welcome-view";
+import { welcomeView } from './welcome-view';
 import { compareColumns } from './compare-columns';
 import { AddNewColumnDialog } from './dialogs/add-new-column';
 import { FormulaLinesDialog, DEFAULT_OPTIONS, EditorOptions } from './dialogs/formula-lines';
 import { DistributionProfilerViewer } from './distribution-profiler';
-import { SystemStatusWidget } from "./widgets/system-status-widget";
-import { RecentProjectsWidget } from "./widgets/recent-projects-widget";
+import { SystemStatusWidget } from './widgets/system-status-widget';
+import { RecentProjectsWidget } from './widgets/recent-projects-widget';
 import { CommunityWidget } from './widgets/community-widget';
 import { WebWidget } from './widgets/web-widget';
-import { LearningWidget } from "./widgets/learning-widget";
-import { AboutWidget } from "./widgets/about-widget";
+import { LearningWidget } from './widgets/learning-widget';
+import { AboutWidget } from './widgets/about-widget';
 import { functionSearch, pdbSearch, pubChemSearch, scriptsSearch, usersSearch, wikiSearch } from './search/entity-search';
-import { KpiWidget } from "./widgets/kpi-widget";
-import { HtmlWidget } from "./widgets/html-widget";
-import { PowerPackSettingsEditor } from "./settings-editor";
-import { viewersDialog } from "./viewers-gallery";
+import { KpiWidget } from './widgets/kpi-widget';
+import { HtmlWidget } from './widgets/html-widget';
+import { PowerPackSettingsEditor } from './settings-editor';
+import { viewersDialog } from './viewers-gallery';
 import { TableView, VIEWER } from 'datagrok-api/dg';
 
-export let _package = new DG.Package();
+export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
 
 //name: compareColumns
@@ -157,9 +157,9 @@ export function formulaLinesDialog(src: DG.DataFrame | DG.Viewer): FormulaLinesD
 
 // Adds "Formula Lines" menu group to the Scatter Plot context menu:
 grok.events.onContextMenu.subscribe((args) => {
-  let src = args.args.context;
+  const src = args.args.context;
   if (src instanceof DG.ScatterPlotViewer || (src instanceof DG.Viewer && src.getOptions()['type'] == VIEWER.LINE_CHART)) {
-    let menu = args.args.menu.find('Tools');
+    const menu = args.args.menu.find('Tools');
     if (menu != null)
       menu.item('Formula Lines...', () => { formulaLinesDialog(src); });
   }
@@ -172,21 +172,18 @@ export async function powerPackInit() {
 
 //description: ViewerGallery
 //tags: autostart
-export function _viewerGallery(): void {
-  //const table = grok.shell.t;
-//const view = grok.shell.tableView(table.name);
-  //grok.shell.topMenu.find('Add').separator().item('Add viewer...', ()=>viewersDialog())
+export function viewerGallery(): void {
   grok.events.onViewAdded.subscribe((view) => {
     if (view.type == 'TableView') {
-      let panel = view.getRibbonPanels();
+      const panel = view.getRibbonPanels();
       panel[0][1].remove();
 
-      let icon = ui.iconFA('', () => { viewersDialog(view as TableView, (view as TableView).table!) }, 'Add viewer');
+      const icon = ui.iconFA('', () => { viewersDialog(view as TableView, (view as TableView).table!); }, 'Add viewer');
       icon.className = 'grok-icon svg-icon svg-add-viewer';
 
-      let btn = ui.div([icon]);
+      const btn = ui.div([icon]);
       btn.className = 'd4-ribbon-item';
-      panel[0][0].after(btn)
+      panel[0][0].after(btn);
     }
   });
 }
