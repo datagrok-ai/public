@@ -31,9 +31,9 @@ category('similarity/diversity', async () => {
 
 async function _testSimilaritySearchViewer() {
   const molecules = await createTableView('tests/sample_MSA_data.csv');
-  const viewer = molecules.addViewer('SequenceSimilaritySearchViewer');
+  const viewer = molecules.addViewer('Sequence Similarity Search');
   await delay(100);
-  const similaritySearchViewer = getSearchViewer(viewer, 'SequenceSimilaritySearchViewer');
+  const similaritySearchViewer = getSearchViewer(viewer, 'Sequence Similarity Search');
   viewList.push(similaritySearchViewer);
   viewList.push(molecules);
   if (!similaritySearchViewer.molCol)
@@ -59,9 +59,9 @@ async function _testSimilaritySearchViewer() {
 
 async function _testDiversitySearchViewer() {
   const molecules = await createTableView('tests/sample_MSA_data.csv');
-  const viewer = molecules.addViewer('SequenceDiversitySearchViewer');
+  const viewer = molecules.addViewer('Sequence Diversity Search');
   await delay(10);
-  const diversitySearchviewer = getSearchViewer(viewer, 'SequenceDiversitySearchViewer');
+  const diversitySearchviewer = getSearchViewer(viewer, 'Sequence Diversity Search');
   viewList.push(diversitySearchviewer);
   viewList.push(molecules);
   if (!diversitySearchviewer.renderMolIds)
