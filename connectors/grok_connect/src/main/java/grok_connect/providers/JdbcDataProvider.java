@@ -483,7 +483,10 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 columns.get(c - 1).add(((BigDecimal)value).intValue());
                             else if (value instanceof Long) {
                                 columns.get(c - 1).add(((Long)value).intValue());
-                            } else
+                            } else if (value instanceof Byte) {
+                                columns.get(c - 1).add(((Byte) value).intValue());
+                            }
+                            else
                                 columns.get(c - 1).add(value);
                         else if (isString(type, typeName)) {
                             if ((type == java.sql.Types.CLOB || value instanceof Clob) && value != null) {
@@ -529,7 +532,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 Double doubleValue = (Double) value;
                                 if (doubleValue == Double.POSITIVE_INFINITY || doubleValue > Float.MAX_VALUE) {
                                     columns.get(c - 1).add(Float.POSITIVE_INFINITY);
-                                } else if (doubleValue == Double.NEGATIVE_INFINITY || doubleValue < Float.MIN_VALUE) {
+                                } else if (doubleValue == Double.NEGATIVE_INFINITY || doubleValue < -Float.MAX_VALUE) {
                                     columns.get(c - 1).add(Float.NEGATIVE_INFINITY);
                                 } else {
                                     columns.get(c - 1).add(new Float((Double)value));
@@ -635,7 +638,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         } catch (Exception e) {
             if (resultSet != null && resultSet.isClosed())
                 throw new QueryCancelledByUser();
-            else 
+            else
                 throw e;
         }
     };
