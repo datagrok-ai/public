@@ -5,6 +5,10 @@ import {RendererUIManager} from '../renderer/RendererUIManager';
 import {TooltipManager} from "../tooltip/TooltipManager";
 
 export class GridCellRendererEx extends DG.GridCellRenderer { // temporary to address a bug of importing during tests | extends DG.GridCellRenderer {
+  constructor() {
+    super();
+  }
+
   onMouseDownEx(cellGrid : DG.GridCell, e : MouseEvent, nXOnCell : number, nYOnCell : number) : void {
     //this.onMouseDown(cellGrid, e);
   }

@@ -17,6 +17,14 @@ export class ClickableTextRenderer extends GridCellRendererEx {
     this.onTextClickCallback = onTextClicked !== undefined ? onTextClicked : null;
   }
 
+  get name(): string {
+    return 'UrlLink';
+  }
+
+  get cellType(): string {
+    throw 'UrlLink';
+  }
+
   formatValue(cellGrid : DG.GridCell) : string | null {
     const cell : DG.Cell = cellGrid.cell;
     const str = isNullText(cell) ? null : cell.value.toString();
