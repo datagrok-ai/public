@@ -44,6 +44,10 @@ const UnitsHandler = {
 const isUrlRe = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/i;
 
 class BioPackageDetectors extends DG.Package {
+
+  /** Parts of the column name required in the column's name under the detector. It must be in lowercase. */
+  requiredColNamePartList = ['seq', 'msa', 'dna', 'rna', 'fasta', 'helm', 'sense', 'protein'];
+
   peptideFastaAlphabet = new Set([
     'G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',
     'K', 'R', 'H', 'C', 'V', 'P', 'W', 'I', 'M', 'T',
@@ -84,6 +88,11 @@ class BioPackageDetectors extends DG.Package {
   detectMacromolecule(col) {
     const t1 = Date.now();
     try {
+      const colName = col.name;
+      if (!this.requiredColNamePartList.some(
+        (requiredColNamePart) => colName.toLowerCase().includes(requiredColNamePart),
+      )) return null;
+
       // Fail early
       if (col.type !== DG.TYPE.STRING) return null;
 
