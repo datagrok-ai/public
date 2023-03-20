@@ -61,7 +61,7 @@ Read more about package development in [Datagrok's documentation](https://datagr
   - `--ide` adds an IDE-specific configuration for debugging (vscode)
   - `--js` creates a JavaScript package template
   - `--ts` creates a TypeScript package template (default)
-  - `--jest` adds a basic configuration for `jest`
+  - `--test` adds tests support to package
 - `add` puts an object template to your package:
 
   ```shell
@@ -100,6 +100,8 @@ Read more about package development in [Datagrok's documentation](https://datagr
   Running `grok publish` is the same as running `grok publish defaultHost --build --debug`.
 - `check` checks package content (function signatures, import statements of external modules,
   etc.). The check is also run during package publication.
+- `init` modifies a package template by adding config files for linters, IDE, and so on
+  (applies the same options as `create`).
 - `test` runs package tests. First, it builds a package and publishes it (these
   steps can be skipped with flags `--skip-build` and `--skip-publish`
   correspondingly).
