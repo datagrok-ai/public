@@ -49,6 +49,7 @@ import './ui/sharing';
 import './utils/color';
 import './package/upload';
 import './viewers/viewers';
+import './viewers/filters';
 import './grid/grid';
 import './grid/color-coding';
 // import './connections/queries-test';
