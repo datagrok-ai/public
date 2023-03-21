@@ -69,7 +69,8 @@ public class QueryManager {
 
     public void closeConnection() throws SQLException {
         if (connection != null && !connection.isClosed()) {
-            connection.commit();
+            if (!connection.getAutoCommit())
+                connection.commit();
             provider.providerManager.getQueryMonitor().removeResultSet(query.id);
             connection.close();
         } else {
