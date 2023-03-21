@@ -1,6 +1,10 @@
 package grok_connect.providers;
 
-import grok_connect.connectors_info.*;
+import grok_connect.connectors_info.Credentials;
+import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataProvider;
+import grok_connect.connectors_info.DbCredentials;
+import grok_connect.connectors_info.FuncCall;
 import grok_connect.providers.utils.DataFrameComparator;
 import grok_connect.providers.utils.NamedArgumentConverter;
 import grok_connect.providers.utils.Provider;
@@ -35,7 +39,7 @@ import java.time.Duration;
 import java.util.Optional;
 
 /**
- * Test class for Hive2Provider. !Use Hyper-V engine for Docker on Windows system.
+ * Test class for Hive2Provider.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Testcontainers
@@ -47,14 +51,15 @@ class Hive2DataProviderTest {
     private static final String META_STORE_NAME = "hive-metastore-postgresql";
     private static final int SERVICE_PORT = 10000;
     private static final int META_STORE_PORT = 5432;
+    private static final int WAITING_TIME = 180;
 
     @Container
     private static final DockerComposeContainer<?> dockerComposeContainer =
             new DockerComposeContainer<>(new File("src/test/resources/scripts/hive2/docker-compose.yml"))
                     .withExposedService(SERVICE_NAME, SERVICE_PORT,
-                            Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(180)))
+                            Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(WAITING_TIME)))
                     .withExposedService(META_STORE_NAME, META_STORE_PORT,
-                            Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(180)));
+                            Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(WAITING_TIME)));
 
     private JdbcDataProvider provider;
     private DataConnection connection;
