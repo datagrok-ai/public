@@ -9,5 +9,11 @@ void testCreateDataset();
 
 void testTrainModelSimpleLinear();
 
+void testGeneratorLinearSeparable();
+
+void testGeneratorLinearNonSeparable();
+
+void testTrainModelComplexLinear();
+
 #endif // TESTS_H
 

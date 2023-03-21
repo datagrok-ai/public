@@ -166,16 +166,17 @@ namespace svm {
 
 		// solve the system required: 
 		x = A.partialPivLu().solve(b);
+		//x = A.fullPivLu().solve(b);
 
 		// The following is for testing!
 		/*cout << "\nA:\n" << A << endl;
 
 		cout << "\nrigth part:\n"
-			<< b << endl;
+			<< b << endl;*/
 
 		Vector<Float, Dynamic> params = A.partialPivLu().solve(b);
 		
-		cout << "\nsolution:\n" << params << endl;
+		//cout << "\nsolution:\n" << params << endl;
 
 		Vector<Float, Dynamic> w = Vector<Float, Dynamic>::Zero(featuresCount);
 
@@ -184,7 +185,7 @@ namespace svm {
 		for (int i = 0; i < samplesCount; i++)
 			w += params(i) * yTrain[i] * X.row(i);
 
-		cout << "\nw:\n" << w << endl;*/
+		cout << "\nw:\n" << w << endl;
 
 		return NO_ERRORS;
 	} // trainModel

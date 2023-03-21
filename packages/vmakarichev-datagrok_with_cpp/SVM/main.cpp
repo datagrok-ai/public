@@ -10,7 +10,13 @@ int main()
 {
 	//testCreateDataset();
 
-	testTrainModelSimpleLinear();
+	//testTrainModelSimpleLinear();
+
+	//testGeneratorLinearSeparable();
+
+	//testGeneratorLinearNonSeparable();
+
+	testTrainModelComplexLinear();
 
 	return 0;
 }
