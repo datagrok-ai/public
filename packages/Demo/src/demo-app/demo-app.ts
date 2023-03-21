@@ -1,7 +1,7 @@
-import * as grok from 'datagrok-api/grok';
+// import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {filter} from "rxjs/operators";
+// import {filter} from "rxjs/operators";
 
 export class DemoView extends DG.ViewBase {
   tree: DG.TreeViewGroup = ui.tree();
@@ -18,13 +18,13 @@ export class DemoView extends DG.ViewBase {
   }
 
   _initToolbox() {
-    for (let f of DG.Func.find({meta: {'demoPath': null}})) {
-      let pathOption = f.options[DG.FUNC_OPTIONS.DEMO_PATH];
-      let path = pathOption.split('|').map((s) => s.trim());
-      let folder = this.tree.getOrCreateGroup(path.slice(0, path.length - 1).join(' | '));
-      let item = folder.item(path[path.length - 1]);
+    for (const f of DG.Func.find({meta: {'demoPath': null}})) {
+      const pathOption = f.options[DG.FUNC_OPTIONS.DEMO_PATH];
+      const path = pathOption.split('|').map((s) => s.trim());
+      const folder = this.tree.getOrCreateGroup(path.slice(0, path.length - 1).join(' | '));
+      const item = folder.item(path[path.length - 1]);
       item.root.onmousedown = (_) => {
-        grok.shell.closeAll();
+        // grok.shell.closeAll();
         f.apply().then((_) => { });
       };
     }

@@ -19,6 +19,7 @@ const VIEWER_TABLES_PATH: {[key: string]: string} = {
 
 
 export async function viewerDemo(viewerName: string, options?: object | null) {
+  const pathName = window.location.pathname.split('/');
   let df: DG.DataFrame;
 
   if (['GroupAnalysis', 'SurfacePlot', 'Timelines'].includes(viewerName))
@@ -34,4 +35,8 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
   }
 
   tableView.addViewer(viewerName, options);
+
+  tableView.basePath = `${pathName.join('/')}/${viewerName}`;
+  tableView.path = `/All`;
+  grok.shell.v = tableView;
 }
