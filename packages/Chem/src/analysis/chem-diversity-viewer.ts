@@ -11,6 +11,7 @@ import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer} from './chem-search-base-viewer';
 import { malformedDataWarning } from '../utils/malformed-data-utils';
 import { getRdKitModule } from '../package';
+import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 export class ChemDiversityViewer extends ChemSearchBaseViewer {
   renderMolIds: number[];
@@ -85,6 +86,8 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         grids[cnt2++] = grid;
       }
 
+      if (this.tooltipUse)
+        panel[cnt++] = ui.divText('Most diverse structures');
       panel[cnt++] = ui.div(grids, {classes: 'd4-flex-wrap'});
       this.root.appendChild(ui.div(panel, {style: {margin: '5px'}}));
       if (!this.tooltipUse)
@@ -99,18 +102,20 @@ export async function chemDiversitySearch(
 
   let fingerprintArray: BitArray[] = [];
   if (tooltipUse) {
-    const size = moleculeColumn.length <= 1000 ? moleculeColumn.length : 1000;
-    const randomIndexes = Array.from({ length: size }, () => Math.floor(Math.random() * moleculeColumn.length));
+    const size = Math.min(moleculeColumn.length, 1000);
+    const randomIndexes = Array.from({length: size}, () => Math.floor(Math.random() * moleculeColumn.length));
     for (let i = 0; i < randomIndexes.length; ++i) {
+      let mol: RDMol | null = null;
       try {
-        let mol = getRdKitModule().get_mol(moleculeColumn.get(randomIndexes[i]));
+        mol = getRdKitModule().get_mol(moleculeColumn.get(randomIndexes[i]));
         let fp = mol.get_morgan_fp_as_uint8array(JSON.stringify({
           radius: defaultMorganFpRadius,
           nBits: defaultMorganFpLength,
         }));
         fingerprintArray[i] = rdKitFingerprintToBitArray(fp);
       } catch (e) {
-        continue;
+      } finally {
+        mol?.delete();
       }
     }
   } else {

@@ -36,7 +36,7 @@ INSERT INTO REALS (data) VALUES (1E+37); -- max value for float
 
 INSERT INTO DOUBLES (data) VALUES ('-Infinity'::float); --edge case
 INSERT INTO DOUBLES (data) VALUES ('+Infinity'::float); ----edge case
-INSERT INTO DOUBLES (data) VALUES (1E-307); -- min value for double
+INSERT INTO DOUBLES (data) VALUES (1E-307); -- close zero value
 INSERT INTO DOUBLES (data) VALUES (1E+308); -- max value for double
 
 INSERT INTO NUMERIC_DATA (data) VALUES ('NaN'::numeric); --edge case

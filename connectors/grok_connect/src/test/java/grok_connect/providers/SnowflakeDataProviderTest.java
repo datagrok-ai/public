@@ -6,6 +6,7 @@ import grok_connect.connectors_info.DataProvider;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.providers.utils.DataFrameComparator;
+import grok_connect.providers.utils.NamedArgumentConverter;
 import grok_connect.providers.utils.Provider;
 import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryMonitor;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import serialization.DataFrame;
@@ -41,7 +43,7 @@ class SnowflakeDataProviderTest {
         ProviderManager providerManager = new ProviderManager(mockLogger);
         ProviderManager spy = Mockito.spy(providerManager);
         Mockito.when(spy.getQueryMonitor()).thenReturn(mockMonitor);
-        provider = (JdbcDataProvider) spy.getByName(type.getProperties().get("providerName").toString());
+        provider = spy.getByName(type.getProperties().get("providerName").toString());
     }
 
     @BeforeEach
@@ -110,7 +112,7 @@ class SnowflakeDataProviderTest {
             "grok_connect.providers.arguments_provider.CommonObjectsMother#checkMultipleParametersSupport_ok",
             "grok_connect.providers.arguments_provider.CommonObjectsMother#checkListParameterSupport_ok",
             "grok_connect.providers.arguments_provider.CommonObjectsMother#checkRegexSupport_ok"})
-    public void checkParameterSupport_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         prepareDataFrame(expected);
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
@@ -120,7 +122,7 @@ class SnowflakeDataProviderTest {
     @DisplayName("Parameters support for datetime")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.CommonObjectsMother#checkDatesParameterSupport_ok")
-    public void checkDatesParameterSupport_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkDatesParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         prepareDataFrame(expected);
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
@@ -130,7 +132,7 @@ class SnowflakeDataProviderTest {
     @DisplayName("Output support for snowflake date, time, timestamp types")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.SnowflakeObjectsMother#checkOutputDataFrame_dateTypes_ok")
-    public void checkOutputDataFrame_dateTypes_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_dateTypes_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -139,7 +141,7 @@ class SnowflakeDataProviderTest {
     @DisplayName("Output support for snowflake numeric types")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.SnowflakeObjectsMother#checkOutputDataFrame_numericTypes_ok")
-    public void checkOutputDataFrame_numericTypes_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_numericTypes_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -148,7 +150,7 @@ class SnowflakeDataProviderTest {
     @DisplayName("Output support for snowflake binary type")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.SnowflakeObjectsMother#checkOutputDataFrame_binaryType_ok")
-    public void checkOutputDataFrame_binaryType_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_binaryType_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -157,7 +159,7 @@ class SnowflakeDataProviderTest {
     @DisplayName("Output support for snowflake geo type")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.SnowflakeObjectsMother#checkOutputDataFrame_geoType_ok")
-    public void checkOutputDataFrame_geoType_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_geoType_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -166,7 +168,7 @@ class SnowflakeDataProviderTest {
     @DisplayName("Output support for snowflake semi-structured types")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.SnowflakeObjectsMother#checkOutputDataFrame_semiStructuredTypes_ok")
-    public void checkOutputDataFrame_semiStructuredTypes_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_semiStructuredTypes_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -175,7 +177,7 @@ class SnowflakeDataProviderTest {
     @DisplayName("Snowflake Null safety")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.CommonObjectsMother#checkNullSupport_ok")
-    public void checkNullSupport_ok(FuncCall funcCall) {
+    public void checkNullSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall) {
         funcCall.func.connection = connection;
         Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
     }

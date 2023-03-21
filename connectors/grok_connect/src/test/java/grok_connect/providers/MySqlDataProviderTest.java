@@ -1,6 +1,7 @@
 package grok_connect.providers;
 
 import grok_connect.connectors_info.FuncCall;
+import grok_connect.providers.utils.NamedArgumentConverter;
 import grok_connect.providers.utils.Provider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.MethodSource;
 import serialization.DataFrame;
 
@@ -55,7 +57,7 @@ class MySqlDataProviderTest extends ContainerizedProviderBaseTest {
             "grok_connect.providers.arguments_provider.CommonObjectsMother#checkMultipleParametersSupport_ok",
             "grok_connect.providers.arguments_provider.MySqlObjectsMother#checkListParameterSupport_ok",
             "grok_connect.providers.arguments_provider.CommonObjectsMother#checkRegexSupport_ok"})
-    public void checkParameterSupport_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -64,7 +66,7 @@ class MySqlDataProviderTest extends ContainerizedProviderBaseTest {
     @DisplayName("Parameters support for datetime")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.CommonObjectsMother#checkDatesParameterSupport_ok")
-    public void checkDatesParameterSupport_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkDatesParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -73,7 +75,7 @@ class MySqlDataProviderTest extends ContainerizedProviderBaseTest {
     @DisplayName("Output support for mysql json type")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.MySqlObjectsMother#checkOutputDataFrame_jsonType_ok")
-    public void checkOutputDataFrame_jsonType_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_jsonType_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -82,7 +84,7 @@ class MySqlDataProviderTest extends ContainerizedProviderBaseTest {
     @DisplayName("Output support for mysql bit type")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.MySqlObjectsMother#checkOutputDataFrame_bitType_ok")
-    public void checkOutputDataFrame_bitType_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_bitType_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -91,7 +93,7 @@ class MySqlDataProviderTest extends ContainerizedProviderBaseTest {
     @DisplayName("Output support for mysql date types")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.MySqlObjectsMother#checkOutputDataFrame_dateTypes_ok")
-    public void checkOutputDataFrame_dateTypes_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_dateTypes_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -100,7 +102,7 @@ class MySqlDataProviderTest extends ContainerizedProviderBaseTest {
     @DisplayName("Output support for mysql spatial types")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.MySqlObjectsMother#checkOutputDataFrame_spatialTypes_ok")
-    public void checkOutputDataFrame_spatialTypes_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_spatialTypes_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -109,7 +111,7 @@ class MySqlDataProviderTest extends ContainerizedProviderBaseTest {
     @DisplayName("Output support for mysql integer types")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.MySqlObjectsMother#checkOutputDataFrame_integerTypes_ok")
-    public void checkOutputDataFrame_integerTypes_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_integerTypes_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -118,7 +120,7 @@ class MySqlDataProviderTest extends ContainerizedProviderBaseTest {
     @DisplayName("Output support for mysql float types")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.MySqlObjectsMother#checkOutputDataFrame_floatTypes_ok")
-    public void checkOutputDataFrame_floatTypes_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_floatTypes_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -127,7 +129,7 @@ class MySqlDataProviderTest extends ContainerizedProviderBaseTest {
     @DisplayName("Output support for mysql character types")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.MySqlObjectsMother#checkOutputDataFrame_characterTypes_ok")
-    public void checkOutputDataFrame_characterTypes_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_characterTypes_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -136,7 +138,7 @@ class MySqlDataProviderTest extends ContainerizedProviderBaseTest {
     @DisplayName("Output support for mysql binary types")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.MySqlObjectsMother#checkOutputDataFrame_binaryTypes_ok")
-    public void checkOutputDataFrame_binaryTypes_ok(FuncCall funcCall, DataFrame expected) {
+    public void checkOutputDataFrame_binaryTypes_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
@@ -145,7 +147,7 @@ class MySqlDataProviderTest extends ContainerizedProviderBaseTest {
     @DisplayName("MySQL Null safety")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.CommonObjectsMother#checkNullSupport_ok")
-    public void checkNullSupport_ok(FuncCall funcCall) {
+    public void checkNullSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall) {
         funcCall.func.connection = connection;
         Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
     }

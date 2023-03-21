@@ -9,13 +9,16 @@ import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {UaDataFrameQueryViewer} from '../viewers/ua-data-frame-query-viewer';
 // import {UaQueryViewer} from '../viewers/abstract/ua-query-viewer';
 import {PropertyPanel} from '../property-panel';
+import {ViewHandler} from '../view-handler';
+import {FunctionsView} from './functions';
 
 
 export class PackagesView extends UaView {
   static viewName = 'Packages';
+  private mainView = ViewHandler.getInstance();
 
-  constructor(uaToolbox: UaToolbox) {
-    super(uaToolbox);
+  constructor(uaToolbox: UaToolbox, view: DG.View) {
+    super(uaToolbox, view);
   }
 
   async initViewers(): Promise<void> {
@@ -46,13 +49,14 @@ export class PackagesView extends UaView {
               false,
             ),
             ], `Info: ${params[1]}, ${params[0]}`, 'Info');
-          pp.getRoot().appendChild(ui.button('Functions', () => {
+          pp.getRoot().appendChild(ui.button('Functions', async () => {
             this.uaToolbox.usersInput.choices.removeActiveItems(-1);
-            const user = params[4].charAt(0).toUpperCase() + params[4].slice(1);
-            this.uaToolbox.usersInput.choices._addItem({value: user, label: user});
+            const userGroup = (await grok.dapi.groups.find(params[5])).name;
+            this.uaToolbox.usersInput.choices._addItem({value: userGroup, label: userGroup});
             this.uaToolbox.packagesInput.choices.removeActiveItems(-1);
             this.uaToolbox.packagesInput.choices._addItem({value: params[0], label: params[0]});
             this.uaToolbox.applyFilter();
+            this.mainView.tabs.currentPane = this.mainView.tabs.getPane(FunctionsView.viewName);
           }));
           grok.shell.o = pp.getRoot();
         });

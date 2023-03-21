@@ -10,6 +10,7 @@ const commands = {
   check: require('./commands/check').check,
   config: require('./commands/config').config,
   create: require('./commands/create').create,
+  init: require('./commands/init').init,
   link: require('./commands/link').link,
   unlink: require('./commands/link').unlink,
   publish: require('./commands/publish').publish,
