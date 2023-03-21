@@ -132,7 +132,7 @@ M  END
                 if (molHasOwnCoords) {
                   mol.straighten_depiction(true);
                 }
-              } else 
+              } else
                 substruct = JSON.parse(substructJson);
             }
           }
@@ -189,6 +189,7 @@ M  END
       drawRdKitMoleculeToOffscreenCanvas(rdKitMolCtx, width, height, canvas, highlightScaffold ? substruct : null);
     else {
       // draw a crossed rectangle
+      ctx.clearRect(0, 0, width, height);
       drawErrorCross(ctx, width, height);
     }
 
