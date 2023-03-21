@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.35",
+  "version": "3.2.36",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1194,9 +1194,12 @@
         },
         "0.9.2": {
           "datagrok-api": "^1.4.4"
+        },
+        "1.0.0": {
+          "datagrok-api": "latest"
         }
       },
-      "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md)",
+      "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
