@@ -120,6 +120,12 @@ export function drawRdKitMoleculeToOffscreenCanvas(
   if (!kekulize)
     Object.assign(opts, { kekulize });
 
+  const useMolBlockWedging = molCtx.useMolBlockWedging;
+  const wedgeBonds = false;
+  const addChiralHs = false;
+  if (useMolBlockWedging)
+    Object.assign(opts, { useMolBlockWedging, wedgeBonds, addChiralHs });
+
   try { rdKitMol.draw_to_canvas_with_highlights((offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(opts));}
   catch(e) {
     console.error('Molecule ffailed to render ' + rdKitMol.get_molblock());
