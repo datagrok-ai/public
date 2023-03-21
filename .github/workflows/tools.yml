@@ -65,7 +65,7 @@ jobs:
             git commit -m 'GitHub Actions: Update tools/package-lock.json [skip ci]
 
             Workflow ${{ github.workflow }} ${{ github.run_number }}
-            https://github.com/datagrok/public/actions/runs/${{ github.run_id }}'
+            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}'
             count=0
             until git push; do
               exit=$?

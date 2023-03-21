@@ -364,7 +364,7 @@ jobs:
             git commit -m 'GitHub Actions: Update packages/${{ matrix.package }}/package-lock.json [skip ci]
 
             Workflow ${{ github.workflow }} ${{ github.run_number }}
-            https://github.com/datagrok/public/actions/runs/${{ github.run_id }}'
+            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}'
             continue=true
           fi
           if [[ "${continue}" == "true" ]]; then
