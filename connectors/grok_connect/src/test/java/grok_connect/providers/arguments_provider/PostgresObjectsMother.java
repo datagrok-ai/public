@@ -227,7 +227,7 @@ public class PostgresObjectsMother {
         DataFrame expected2 = DataFrameBuilder.getBuilder()
                 .setRowCount(4)
                 .setColumn(new FloatColumn(new Float[]{Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY,
-                        Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY}), "data")
+                        0.0f, Float.POSITIVE_INFINITY}), "data")
                 .build();
         DataFrame expected3 = DataFrameBuilder.getBuilder()
                 .setRowCount(2)
