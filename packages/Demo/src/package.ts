@@ -16,4 +16,13 @@ export const _package = new DG.Package();
 //description: Interactive demo of major Datagrok capabilities
 export function demoApp() {
   grok.shell.addView(new DemoView());
+  const pathSegments = window.location.pathname.split('/');
+  if (pathSegments.length > 3) {
+    const category = pathSegments[3];
+    if (category === 'Viewers') {
+      const viewerName = pathSegments[4];
+      const f = DemoView.findDemoFunc(`${category} | ${viewerName}`);
+      f?.apply();
+    }
+  }
 }

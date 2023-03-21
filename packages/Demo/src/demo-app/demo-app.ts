@@ -13,6 +13,10 @@ export class DemoView extends DG.ViewBase {
     this._initContent();
   }
 
+  static findDemoFunc(demoPath: string) {
+    return DG.Func.find({meta: {'demoPath': demoPath}})[0];
+  }
+
   _initContent() {
     this.root.appendChild(ui.divText('Select a demo from the toolbox on the right'));
   }
