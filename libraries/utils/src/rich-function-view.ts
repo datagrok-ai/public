@@ -73,6 +73,8 @@ export class RichFunctionView extends FunctionView {
     this.tabsElem.panes.forEach((tab) => {
       tab.header.style.removeProperty('display');
     });
+    const firstOutputTab = this.tabsElem.panes.find((tab) => tab.name !== 'Input');
+    if (firstOutputTab) this.tabsElem.currentPane = firstOutputTab;
 
     return Promise.resolve();
   }
@@ -98,7 +100,7 @@ export class RichFunctionView extends FunctionView {
       });
     }
 
-    const out = ui.splitH([inputBlock, ui.panel([outputBlock])], null, true);
+    const out = ui.splitH([inputBlock, ui.panel([outputBlock], {style: {'padding-top': '0px'}})], null, true);
     out.style.padding = '0 12px';
 
     inputBlock.parentElement!.style.maxWidth = '450px';
@@ -192,7 +194,8 @@ export class RichFunctionView extends FunctionView {
         }
 
         return ui.divV([
-          ui.h2(dfBlockTitle),
+          // Removing title margin on top of block titles
+          ui.h2(dfBlockTitle, {...(dfIndex > 0) ? {style: {'margin-top': '0px'}} : {}}),
           dfBlock
         ], {style: {...(fullBlockWidth > 0) ? {'width': `${fullBlockWidth}%`}: {'width': `100%`}}});
       });
@@ -222,7 +225,7 @@ export class RichFunctionView extends FunctionView {
 
       const dfSections = [] as HTMLElement[];
       let currentWidth = 0;
-      let currentSection = ui.divH([]);
+      let currentSection = ui.divH([], {style: {'margin-bottom': '25px'}}); // Adding small margin between sections
       dfBlocks.forEach((dfBlock, dfIndex) => {
         const blockWidth = parseInt(dfBlock.style.width);
 
@@ -358,10 +361,12 @@ export class RichFunctionView extends FunctionView {
       //@ts-ignore
       return !!this.func.script;
     };
+    // TO DO: move button somewhere
     const openScriptBtn = ui.button('Open script', async () => {
       window.open(`${window.location.origin}/script/${(this.func as DG.Script).id}`, '_blank');
     });
-    const buttonWrapper = ui.div([...this.options.isTabbed && isFuncScript() ? [openScriptBtn]: [], runButton]);
+    // const buttonWrapper = ui.div([...this.options.isTabbed && isFuncScript() ? [openScriptBtn]: [], runButton]);
+    const buttonWrapper = ui.div([runButton]);
     ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
 
     this.checkDisability.subscribe(() => {
