@@ -118,6 +118,7 @@ jobs:
             COMMIT_PUBLIC=${{ github.sha }}
 
       - name: Build and push bleeding-edge
+        if: startsWith(github.ref,'release/') != true
         uses: docker/build-push-action@v3
         with:
           context: ./connectors
