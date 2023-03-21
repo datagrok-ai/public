@@ -105,7 +105,7 @@ jobs:
         with:
           context: ./connectors
           platforms: ${{ steps.param.outputs.platform }}
-          push: ${{ (needs.build.outputs.image_exists == 'false') && (github.ref == 'refs/heads/master' || startsWith(github.ref,'release/') == true) }}
+          push: ${{ (needs.build.outputs.image_exists == 'false') && (github.ref == 'refs/heads/master' || startsWith(github.ref,'refs/heads/release/') == true) }}
           tags: ${{ steps.param.outputs.tags }}
           cache-from: type=registry,ref=datagrok/grok_connect:cache
           cache-to: ${{ steps.param.outputs.cache_to }}
@@ -118,7 +118,7 @@ jobs:
             COMMIT_PUBLIC=${{ github.sha }}
 
       - name: Build and push bleeding-edge
-        if: startsWith(github.ref,'release/') != true
+        if: startsWith(github.ref, 'refs/heads/release/') == true
         uses: docker/build-push-action@v3
         with:
           context: ./connectors
@@ -135,7 +135,7 @@ jobs:
             COMMIT_PUBLIC=${{ github.sha }}
 
       - name: Upload Artifact
-        if: github.ref != 'refs/heads/master' && startsWith(github.ref,'release/') != true
+        if: github.ref != 'refs/heads/master' && startsWith(github.ref,'refs/heads/release/') != true
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.param.outputs.tar }}
