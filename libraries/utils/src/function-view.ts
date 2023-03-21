@@ -3,9 +3,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {Subject, BehaviorSubject} from 'rxjs';
 import {historyUtils} from './history-utils';
 import {UiUtils} from './shared-components/ui-utils';
 
+const url = new URL(grok.shell.startUri);
 /**
    * Decorator to pass all thrown errors to grok.shell.error
    * @returns The actual funccall associated with the view
@@ -31,15 +33,35 @@ export abstract class FunctionView extends DG.ViewBase {
   protected _lastCall?: DG.FuncCall;
   protected _type: string = 'function';
 
+  // emitted when after a new FuncCall is linked
+  protected funcCallReplaced = new Subject<true>();
+
+  // emitted when after an initial FuncCall is linked
+  public onFuncCallReady = new BehaviorSubject<false>(false);
+
   constructor(
-    funcCall?: DG.FuncCall,
+    protected funcName: string,
     public options: {historyEnabled: boolean, isTabbed: boolean} = {historyEnabled: true, isTabbed: false}
   ) {
     super();
     this.box = true;
 
-    if (!funcCall) return;
-    this.name = funcCall.func.friendlyName;
+    this.onFuncCallReady.subscribe({
+      complete: () => {
+        this.changeViewName(this.funcCall.func.friendlyName);
+        this.build();
+      }
+    });
+
+    this.linkFunccall(grok.functions.getCurrentCall());
+    this.init();
+  }
+
+  protected changeViewName(newName: string) {
+    this.name = newName;
+
+    // FIX ME: view name does not change in models
+    document.querySelector('div.d4-ribbon-name')?.replaceChildren(ui.span([newName]));
   }
 
   /**
@@ -47,8 +69,8 @@ export abstract class FunctionView extends DG.ViewBase {
    * @returns The actual funccall associated with the view
    * @stability Stable
  */
-  public get funcCall(): DG.FuncCall | undefined {
-    return this._funcCall;
+  public get funcCall(): DG.FuncCall {
+    return this._funcCall!;
   }
 
   /**
@@ -132,22 +154,37 @@ export abstract class FunctionView extends DG.ViewBase {
     const isPreviousHistorical = this._funcCall?.options['isHistorical'];
     this._funcCall = funcCall;
 
-    if (funcCall.options['isHistorical']) {
-      if (!isPreviousHistorical)
-        this.name = `${this.name} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`;
-      else
-        this.name = `${this.name.substring(0, this.name.indexOf(' — '))} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`;
+    if (!this.options.isTabbed) {
+      if (funcCall.options['isHistorical']) {
+        if (!isPreviousHistorical)
+          this.changeViewName(`${this.name} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`);
+        else
+          this.changeViewName(`${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`);
+        this.path = `?id=${this._funcCall!.id}`;
+      } else {
+        this.path = ``;
 
-
-      // FIX ME: view name does not change in models
-      document.querySelector('div.d4-ribbon-name')?.replaceChildren(ui.span([this.name]));
-      this.path = `?id=${this._funcCall.id}`;
-    } else {
-      this.path = ``;
-
-      this.name = `${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)}`;
+        this.changeViewName(`${this.name.substring(0, (this.name.indexOf(' — ') > 0) ? this.name.indexOf(' — ') : undefined)}`);
+      }
     }
-    this.buildRibbonPanels();
+
+    this.funcCallReplaced.next(true);
+  }
+
+  protected async loadFuncCallById() {
+    const runId = url.searchParams.get('id');
+
+    ui.setUpdateIndicator(this.root, true);
+
+    if (runId && !this.options.isTabbed) {
+      this.linkFunccall(await this.loadRun(runId));
+      url.searchParams.delete('id');
+    } else {
+      const func: DG.Func = await grok.functions.eval(this.funcName);
+      this.linkFunccall(func.prepare({}));
+    }
+
+    ui.setUpdateIndicator(this.root, false);
   }
 
   /**
@@ -155,7 +192,11 @@ export abstract class FunctionView extends DG.ViewBase {
    * Any async methods and most of the logic should be placed here.
    * @stability Stable
  */
-  public async init() {}
+  public async init() {
+    await this.loadFuncCallById();
+
+    this.onFuncCallReady.complete();
+  }
 
   /**
    * Override to create a fully custom UI including ribbon menus and panels
@@ -167,6 +208,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
     if (this.options.historyEnabled) this.buildHistoryBlock();
     this.buildRibbonMenu();
+    this.buildRibbonPanels();
   }
 
   /**
@@ -319,6 +361,7 @@ export abstract class FunctionView extends DG.ViewBase {
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
     await this.onBeforeLoadRun();
     const pulledRun = await historyUtils.loadRun(funcCallId);
+    this.lastCall = pulledRun;
     await this.onAfterLoadRun(pulledRun);
     return pulledRun;
   }
@@ -346,7 +389,9 @@ export abstract class FunctionView extends DG.ViewBase {
     await this.funcCall.call(); // mutates the funcCall field
     pi.close();
     await this.onAfterRun(this.funcCall);
-    this.lastCall = await this.saveRun(this.funcCall);
+
+    if (!this.options.isTabbed)
+      this.lastCall = await this.saveRun(this.funcCall);
   }
 
   protected historyRoot: HTMLDivElement = ui.divV([], {style: {'justify-content': 'center'}});

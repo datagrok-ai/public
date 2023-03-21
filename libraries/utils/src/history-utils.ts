@@ -42,38 +42,21 @@ export namespace historyUtils {
   // TO DO: add users and groups cache
 
   export async function loadChildRuns(
-    funcCallId: string,
-    skipDfLoad = false
+    funcCallId: string
   ): Promise<{parentRun: DG.FuncCall, childRuns: DG.FuncCall[]}> {
     const parentRun = await grok.dapi.functions.calls.allPackageVersions().find(funcCallId);
+    parentRun.options['isHistorical'] = true;
 
     const childRuns = await grok.dapi.functions.calls.allPackageVersions()
-    // EXPLAIN WHY func.params
-      .include('func.params').filter(`options.parentCallId="${funcCallId}"`).list();
+      .filter(`options.parentCallId="${funcCallId}"`).list();
 
-    await Promise.all(childRuns.map(async (pulledRun) => {
-      const id = pulledRun.func.id;
+    await Promise.all(childRuns.map(async (childRun) => {
+      const id = childRun.func.id;
       // FIX ME: manually get script since pulledRun contains empty Func
       const script = scriptsCache[id] ?? await grok.dapi.functions.allPackageVersions().find(id);
 
       if (!scriptsCache[id]) scriptsCache[id] = script;
-
-      pulledRun.func = script;
-      pulledRun.options['isHistorical'] = true;
-
-      if (!skipDfLoad) {
-        const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
-          .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
-        for (const output of dfOutputs)
-          pulledRun.outputs[output.name] = await grok.dapi.tables.getTable(pulledRun.outputs[output.name]);
-
-        const dfInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
-          .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
-        for (const input of dfInputs)
-          pulledRun.inputs[input.name] = await grok.dapi.tables.getTable(pulledRun.inputs[input.name]);
-      }
-
-      return Promise.resolve();
+      childRun.func = script;
     }));
 
     return {parentRun, childRuns};
