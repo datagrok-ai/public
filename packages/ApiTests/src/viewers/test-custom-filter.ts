@@ -25,6 +25,5 @@ export class TestCustomFilter extends DG.Filter {
   // -- Filter --
 
   applyFilter(): void {
-    const k = 11;
   }
 }

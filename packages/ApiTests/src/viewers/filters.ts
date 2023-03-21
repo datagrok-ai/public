@@ -3,14 +3,10 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {
-  after,
-  before,
   category,
-  expect,
   test,
-  delay,
   awaitCheck,
-  expectArray
+  expectArray,
 } from '@datagrok-libraries/utils/src/test';
 import {TableView} from 'datagrok-api/dg';
 import {_package} from '../package-test';
@@ -32,18 +28,15 @@ id1_0003,id2_003,id3_3`;
       {column: 'id2', type: DG.FILTER_TYPE.CATEGORICAL, label: 'id2 label'},
     ];
     const filtersViewer = view.filters({filters: filterList}) as DG.Viewer;
-    const filtersViewerDn: DG.DockNode = view.dockManager.dock(
-      filtersViewer, DG.DOCK_TYPE.LEFT, null, 'Filters', 0.4);
+    view.dockManager.dock(filtersViewer, DG.DOCK_TYPE.LEFT, null, 'Filters', 0.4);
 
     await awaitCheck(() => {
-      let ok: boolean = true;
-
       const fltColNameList = $(filtersViewer.root)
         .find('div.d4-flex-row.d4-filter-header label.d4-filter-column-name').get()
         .map((lbl) => lbl.innerText);
 
       expectArray(fltColNameList, ['id1', 'id2']);
-      return ok;
+      return true;
     }, 'cannot find all filters', 3000);
   });
 
@@ -57,18 +50,14 @@ id1_0003,id2_003,id3_3`;
       {column: 'id2', type: DG.FILTER_TYPE.CATEGORICAL, label: 'id2 label'},
     ];
     const filtersViewer = view.filters({filters: filterList}) as DG.Viewer;
-    const filtersViewerDn: DG.DockNode = view.dockManager.dock(
-      filtersViewer, DG.DOCK_TYPE.LEFT, null, 'Filters', 0.4);
 
     await awaitCheck(() => {
-      let ok: boolean = true;
-
       const fltColNameList = $(filtersViewer.root)
         .find('div.d4-flex-row.d4-filter-header label.d4-filter-column-name').get()
         .map((lbl) => lbl.innerText);
 
       expectArray(fltColNameList, ['id1', 'id3', 'id2']);
-      return ok;
+      return true;
     }, 'cannot find all filters', 3000);
   });
 });
