@@ -359,7 +359,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.bitOperation = this.string('bitOperation', BitwiseOp.OR, {
       choices: Object.values(BitwiseOp),
       category: 'Misc',
-      description: 'AND: all selected substructures match\n OR: any selected substructures matchs'
+      description: 'AND: all selected substructures match\n OR: any selected substructures match'
     });
 
     this.ringCutoff = this.int('ringCutoff', 10, {
