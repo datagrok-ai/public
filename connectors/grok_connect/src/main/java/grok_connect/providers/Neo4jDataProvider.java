@@ -1,9 +1,11 @@
 package grok_connect.providers;
 
-import java.util.*;
-import grok_connect.utils.*;
-import grok_connect.connectors_info.*;
-
+import java.util.ArrayList;
+import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataSource;
+import grok_connect.connectors_info.DbCredentials;
+import grok_connect.utils.Property;
+import grok_connect.utils.ProviderManager;
 
 public class Neo4jDataProvider extends JdbcDataProvider {
     public Neo4jDataProvider(ProviderManager providerManager) {
@@ -13,6 +15,7 @@ public class Neo4jDataProvider extends JdbcDataProvider {
         descriptor = new DataSource();
         descriptor.type = "Neo4j";
         descriptor.description = "Query Neo4j database";
+        descriptor.commentStart = "//";
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
