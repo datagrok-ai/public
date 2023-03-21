@@ -55,9 +55,14 @@ function _chemFindSimilar(molStringsColumn: DG.Column, fingerprints: BitArray[],
 // Only this function receives {sorted} in settings
 function _chemGetSimilarities(queryMolString: string, fingerprints: BitArray[]): number[] {
   const distances = new Array(fingerprints.length).fill(0.0);
-  const sample = chemGetFingerprint(queryMolString, Fingerprint.Morgan);
-  for (let i = 0; i < fingerprints.length; ++i)
-    distances[i] = tanimotoSimilarity(fingerprints[i], sample);
+  try{
+    const sample = chemGetFingerprint(queryMolString, Fingerprint.Morgan);
+    for (let i = 0; i < fingerprints.length; ++i)
+    //@ts-ignore
+      distances[i] = tanimotoSimilarity(fingerprints[i], sample);
+  } catch {
+    return distances;
+  }
   return distances;
 }
 
