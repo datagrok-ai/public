@@ -138,7 +138,7 @@ jobs:
             git commit -m 'GitHub Actions: Update libraries/${{ matrix.project }}/package-lock.json [skip ci]
 
             Workflow ${{ github.workflow }} ${{ github.run_number }}
-            https://github.com/datagrok/public/actions/runs/${{ github.run_id }}'
+            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}'
             count=0
             retries=10
             until git push; do
