@@ -41,8 +41,8 @@ public class HiveMetaDataProviderProxyProvider {
     }
 
     private String handleGetSchemaImpl(Object[] args) {
-        String schema = args[1].toString();
-        String table = args[2].toString();
+        Object schema = args[1];
+        Object table = args[2];
         return String.format("SELECT \"DBS\".\"NAME\" as table_schema, \"TBL_NAME\" "
                 + "as table_name, \"COLUMN_NAME\" as column_name, \"TYPE_NAME\" as data_type, \n"
                 + "CASE WHEN \"TBL_TYPE\" = 'VIRTUAL_VIEW' THEN 1 ELSE 0 END AS is_view FROM \"TBLS\", "
