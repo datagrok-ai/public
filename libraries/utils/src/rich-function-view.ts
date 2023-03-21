@@ -352,7 +352,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   private renderRunSection(): HTMLElement {
-    const runButton = ui.bigButton('Run', this.doRun);
+    const runButton = ui.bigButton('Run', async () => await this.doRun());
     // REPLACE BY TYPE GUARD
     const isFuncScript = () => {
       //@ts-ignore
@@ -390,9 +390,9 @@ export class RichFunctionView extends FunctionView {
             ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables):
             ui.input.forProperty(prop);
 
-          t.input.onkeydown = (ev) => {
+          t.input.onkeydown = async (ev) => {
             if (ev.key == 'Enter')
-              this.doRun().then((_) => {});
+              await this.doRun();
           };
 
           t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
