@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
-
 import grok_connect.connectors_info.*;
 import grok_connect.providers.proxy.HiveMetaDataProviderProxyProvider;
 import grok_connect.table_query.AggrFunctionInfo;
@@ -26,7 +25,7 @@ import serialization.Types;
 public class HiveDataProvider extends JdbcDataProvider {
     private static final List<String> AVAILABLE_META_STORES =
             Collections.unmodifiableList(Arrays.asList("MySQL", "Postgres", "Oracle", "MS SQL"));
-    private static final String META_STORE_DB = "metastore";
+    private static final String DEFAULT_META_STORE_DB = "metastore";
 
     public HiveDataProvider(ProviderManager providerManager) {
         super(providerManager);
@@ -44,8 +43,10 @@ public class HiveDataProvider extends JdbcDataProvider {
         descriptor.connectionTemplate.add(metaStores);
         descriptor.connectionTemplate.add(new Property(Property.STRING_TYPE, DbCredentials.META_STORE_SERVER,
                 "Hostname or IP address of server on which Hive Metastore is available"));
-        descriptor.connectionTemplate.add(new Property(Property.STRING_TYPE, DbCredentials.META_STORE_PORT,
+        descriptor.connectionTemplate.add(new Property(Property.INT_TYPE, DbCredentials.META_STORE_PORT,
                 "Port of Hive Metastore"));
+        descriptor.connectionTemplate.add(new Property(Property.STRING_TYPE, DbCredentials.META_STORE_DB,
+                "Database name of metastore. Defaults to \"metastore\""));
         descriptor.connectionTemplate.add(new Property(Property.STRING_TYPE, DbCredentials.META_STORE_LOGIN,
                 "Hive Metastore login"));
         descriptor.connectionTemplate.add(new Property(Property.STRING_TYPE, DbCredentials.META_STORE_PASSWORD,
@@ -149,7 +150,8 @@ public class HiveDataProvider extends JdbcDataProvider {
         credentials.parameters.put(DbCredentials.PASSWORD, connection.get(DbCredentials.META_STORE_PASSWORD));
         DataConnection metaStoreConnection = new DataConnection();
         metaStoreConnection.credentials = credentials;
-        metaStoreConnection.parameters.put(DbCredentials.DB, META_STORE_DB);
+        String metaStoreDb = (String) connection.parameters.get(DbCredentials.META_STORE_DB);
+        metaStoreConnection.parameters.put(DbCredentials.DB, metaStoreDb == null ? DEFAULT_META_STORE_DB : metaStoreDb);
         metaStoreConnection.parameters.put(DbCredentials.SERVER, connection.get(DbCredentials.META_STORE_SERVER));
         metaStoreConnection.parameters.put(DbCredentials.PORT, connection.parameters.get(DbCredentials.META_STORE_PORT));
         return metaStoreConnection;
