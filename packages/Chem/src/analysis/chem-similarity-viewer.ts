@@ -47,7 +47,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             this.sketchedMolecule = savedMolecule;
           } else {
             this.sketchedMolecule = sketcher.getMolFile();
-            this.gridSelect = false; 
+            this.gridSelect = false;
             this.render();
           }
         })
@@ -66,7 +66,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   async render(computeData = true): Promise<void> {
     if (!this.beforeRender())
       return;
-    if (this.moleculeColumn) {   
+    if (this.moleculeColumn) {
       const progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
@@ -195,7 +195,7 @@ export async function chemSimilaritySearch(
 ) : Promise<DG.DataFrame> {
   const targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint);
   const fingerprintCol = await chemSearches.chemGetFingerprints(smiles, fingerprint);
-  malformedDataWarning(fingerprintCol);
+  malformedDataWarning(fingerprintCol, table);
   const distances: number[] = [];
 
   const fpSim = similarityMetric[metricName];

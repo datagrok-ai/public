@@ -14,7 +14,7 @@ import { malformedDataWarning } from '../utils/malformed-data-utils';
 
 export async function chemSpace(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
   const fpColumn = await chemGetFingerprints(spaceParams.seqCol, Fingerprint.Morgan);
-  const malformedIdxs = malformedDataWarning(fpColumn);
+  const malformedIdxs = malformedDataWarning(fpColumn, spaceParams.seqCol.dataFrame);
   const chemSpaceResult: IReduceDimensionalityResult = await reduceDimensinalityWithNormalization(
     fpColumn,
     spaceParams.methodName,
@@ -32,7 +32,7 @@ export async function chemSpace(spaceParams: ISequenceSpaceParams): Promise<ISeq
 
 function setNullForMalformedData(matrix: Matrix, idx: number) {
   for (const col of matrix) {
-    col[idx] = DG.FLOAT_NULL; 
+    col[idx] = DG.FLOAT_NULL;
   };
 }
 

@@ -117,7 +117,7 @@ export async function chemDiversitySearch(
     fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint);
   }
   if (!tooltipUse)
-    malformedDataWarning(fingerprintArray);
+    malformedDataWarning(fingerprintArray, moleculeColumn.dataFrame);
   const indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => !f.allFalse);
   limit = Math.min(limit, indexes.length);
 
