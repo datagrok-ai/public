@@ -9,7 +9,7 @@
             "type": "chrome",
             "request": "launch",
             "name": "Debug Dev",
-            "url": "https://dev.datagrok.ai/package/Charts",
+            "url": "https://dev.datagrok.ai/",
             "webRoot": "${workspaceFolder}"
         }
     ]
