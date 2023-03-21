@@ -105,7 +105,7 @@ jobs:
         with:
           context: ./connectors
           platforms: ${{ steps.param.outputs.platform }}
-          push: ${{ (needs.build.outputs.image_exists == 'false') && (github.ref == 'refs/heads/master' || startWith(github.ref,'release/') == true) }}
+          push: ${{ (needs.build.outputs.image_exists == 'false') && (github.ref == 'refs/heads/master' || startsWith(github.ref,'release/') == true) }}
           tags: ${{ steps.param.outputs.tags }}
           cache-from: type=registry,ref=datagrok/grok_connect:cache
           cache-to: ${{ steps.param.outputs.cache_to }}
