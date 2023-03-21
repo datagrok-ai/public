@@ -55,6 +55,7 @@ export async function initRdKitModuleLocal(): Promise<void> {
   if (!_rdKitModule)
     throw 'RdKit Module is not loaded';
   _rdKitModule.prefer_coordgen(false);
+  _rdKitModule.use_legacy_stereo_perception(false);
   console.log('RDKit module package instance was initialized');
   moduleInitialized = true;
   _rdKitService = new RdKitService();
@@ -128,7 +129,7 @@ export function drawRdKitMoleculeToOffscreenCanvas(
 
   try { rdKitMol.draw_to_canvas_with_highlights((offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(opts));}
   catch(e) {
-    console.error('Molecule ffailed to render ' + rdKitMol.get_molblock());
+    console.error('Molecule failed to render ' + rdKitMol.get_molblock());
     drawErrorCross(g, w, h);
     return;
   }
