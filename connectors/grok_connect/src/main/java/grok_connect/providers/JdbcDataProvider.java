@@ -118,6 +118,11 @@ public abstract class JdbcDataProvider extends DataProvider {
 
 //    why do we need 3 variables query, queryRun and connection if queryRun consists of all of them
     public ResultSet executeQuery(String query, FuncCall queryRun, Connection connection, int timeout)  throws ClassNotFoundException, SQLException {
+        boolean supportsTransactions = connection.getMetaData().supportsTransactions();
+        
+        if (supportsTransactions)
+            connection.setAutoCommit(false);
+
         DataQuery dataQuery = queryRun.func;
         String mainCallId = (String) queryRun.aux.get("mainCallId");
 
@@ -131,9 +136,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                 List<String> names = getParameterNames(query, dataQuery, queryBuffer);
                 query = queryBuffer.toString();
                 System.out.println(query);
-                connection.setAutoCommit(false);
                 PreparedStatement statement = connection.prepareStatement(query);
-                statement.setFetchSize(10000);
+                if (supportsTransactions)
+                    statement.setFetchSize(10000);
                 providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 List<String> stringValues = new ArrayList<>();
                 System.out.println(names);
@@ -172,9 +177,9 @@ public abstract class JdbcDataProvider extends DataProvider {
             } else {
                 query = manualQueryInterpolation(query, dataQuery);
 
-                connection.setAutoCommit(false);
                 Statement statement = connection.createStatement();
-                statement.setFetchSize(10000);
+                if (supportsTransactions)
+                    statement.setFetchSize(10000);
                 providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 statement.setQueryTimeout(timeout);
                 String logString = String.format("Query: %s \n", query);
@@ -187,9 +192,9 @@ public abstract class JdbcDataProvider extends DataProvider {
             }
         } else {
             // Query without parameters
-            connection.setAutoCommit(false);
             Statement statement = connection.createStatement();
-            statement.setFetchSize(10000);
+            if (supportsTransactions)
+                statement.setFetchSize(10000);
             providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
             statement.setQueryTimeout(timeout);
             String logString = String.format("Query: %s \n", query);
@@ -201,7 +206,6 @@ public abstract class JdbcDataProvider extends DataProvider {
             providerManager.getQueryMonitor().removeStatement(mainCallId);
         }
 
-        providerManager.getQueryMonitor().addNewResultSet(mainCallId, resultSet);
         return resultSet;
     }
 
@@ -483,10 +487,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 columns.get(c - 1).add(((BigDecimal)value).intValue());
                             else if (value instanceof Long) {
                                 columns.get(c - 1).add(((Long)value).intValue());
-                            } else if (value instanceof Byte) {
-                                columns.get(c - 1).add(((Byte) value).intValue());
-                            }
-                            else
+                            } else
                                 columns.get(c - 1).add(value);
                         else if (isString(type, typeName)) {
                             if ((type == java.sql.Types.CLOB || value instanceof Clob) && value != null) {
@@ -532,7 +533,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 Double doubleValue = (Double) value;
                                 if (doubleValue == Double.POSITIVE_INFINITY || doubleValue > Float.MAX_VALUE) {
                                     columns.get(c - 1).add(Float.POSITIVE_INFINITY);
-                                } else if (doubleValue == Double.NEGATIVE_INFINITY || doubleValue < -Float.MAX_VALUE) {
+                                } else if (doubleValue == Double.NEGATIVE_INFINITY || doubleValue < Float.MIN_VALUE) {
                                     columns.get(c - 1).add(Float.NEGATIVE_INFINITY);
                                 } else {
                                     columns.get(c - 1).add(new Float((Double)value));
@@ -594,21 +595,31 @@ public abstract class JdbcDataProvider extends DataProvider {
                     }
                 }
 
-                if (rowCount % 100 == 0) {
-                    size = 0;
-                    for (Column column : columns)
-                        size += column.memoryInBytes();
-                    size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000; // count? it's 200 lines up
-
-                    if (size > 20) {
+                if (rowCount % 10 == 0) {
+                    if (providerManager.getQueryMonitor().checkCancelledIdResultSet(queryRun.id)) {
                         DataFrame dataFrame = new DataFrame();
                         dataFrame.addColumns(columns);
+    
+                        resultSet.close();
+                        providerManager.getQueryMonitor().removeResultSet(queryRun.id);
                         return dataFrame;
                     }
+                    if (rowCount % 100 == 0) {
+                        size = 0;
+                        for (Column column : columns)
+                            size += column.memoryInBytes();
+                        size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000; // count? it's 200 lines up
 
-                    if (rowCount % 1000 == 0 && memoryLimit > 0 && size > memoryLimit)
-                        throw new SQLException("Too large query result: " +
+                        if (size > 20) {                        
+                            DataFrame dataFrame = new DataFrame();
+                            dataFrame.addColumns(columns);
+                            return dataFrame;
+                        }
+
+                        if (rowCount % 1000 == 0 && memoryLimit > 0 && size > memoryLimit)
+                            throw new SQLException("Too large query result: " +
                                 size + " > " + memoryLimit + " MB");
+                    }
                 }
             }
             if (queryRun.debugQuery) {
@@ -638,7 +649,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         } catch (Exception e) {
             if (resultSet != null && resultSet.isClosed())
                 throw new QueryCancelledByUser();
-            else
+            else 
                 throw e;
         }
     };
@@ -663,9 +674,8 @@ public abstract class JdbcDataProvider extends DataProvider {
             else throw e;
         }
         finally {
-            if (connection != null) {
+            if (connection != null)
                 connection.close();
-            }
         }
     }
 

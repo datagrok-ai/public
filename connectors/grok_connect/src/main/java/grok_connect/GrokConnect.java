@@ -239,7 +239,7 @@ public class GrokConnect {
         post("/cancel", (request, response) -> {
             FuncCall call = gson.fromJson(request.body(), FuncCall.class);
             providerManager.getQueryMonitor().cancelStatement(call.id);
-            providerManager.getQueryMonitor().cancelResultSet(call.id);
+            providerManager.getQueryMonitor().addCancelledResultSet(call.id);
             return null;
         });
 // how it works, who sends this request?
