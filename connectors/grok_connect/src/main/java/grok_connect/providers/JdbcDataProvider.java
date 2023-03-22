@@ -119,7 +119,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 //    why do we need 3 variables query, queryRun and connection if queryRun consists of all of them
     public ResultSet executeQuery(String query, FuncCall queryRun, Connection connection, int timeout)  throws ClassNotFoundException, SQLException {
         boolean supportsTransactions = connection.getMetaData().supportsTransactions();
-        
+
         if (supportsTransactions)
             connection.setAutoCommit(false);
 
@@ -533,7 +533,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 Double doubleValue = (Double) value;
                                 if (doubleValue == Double.POSITIVE_INFINITY || doubleValue > Float.MAX_VALUE) {
                                     columns.get(c - 1).add(Float.POSITIVE_INFINITY);
-                                } else if (doubleValue == Double.NEGATIVE_INFINITY || doubleValue < Float.MIN_VALUE) {
+                                } else if (doubleValue == Double.NEGATIVE_INFINITY || doubleValue < - Float.MAX_VALUE) {
                                     columns.get(c - 1).add(Float.NEGATIVE_INFINITY);
                                 } else {
                                     columns.get(c - 1).add(new Float((Double)value));
@@ -599,7 +599,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                     if (providerManager.getQueryMonitor().checkCancelledIdResultSet(queryRun.id)) {
                         DataFrame dataFrame = new DataFrame();
                         dataFrame.addColumns(columns);
-    
+
                         resultSet.close();
                         providerManager.getQueryMonitor().removeResultSet(queryRun.id);
                         return dataFrame;
@@ -610,7 +610,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                             size += column.memoryInBytes();
                         size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000; // count? it's 200 lines up
 
-                        if (size > 20) {                        
+                        if (size > 20) {
                             DataFrame dataFrame = new DataFrame();
                             dataFrame.addColumns(columns);
                             return dataFrame;
@@ -649,7 +649,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         } catch (Exception e) {
             if (resultSet != null && resultSet.isClosed())
                 throw new QueryCancelledByUser();
-            else 
+            else
                 throw e;
         }
     };
