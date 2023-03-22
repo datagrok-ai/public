@@ -19,7 +19,8 @@ const APP_PREFIX: string = `/apps/UsageAnalysis/`;
 export class ViewHandler {
   private static instance: ViewHandler;
   private urlParams: Map<string, string> = new Map<string, string>();
-  tabs: DG.TabControl = ui.tabControl();
+  public static UAname = 'Usage Analysis';
+  private static tabs: DG.TabControl;
 
   public static getInstance(): ViewHandler {
     if (!ViewHandler.instance)
@@ -31,13 +32,14 @@ export class ViewHandler {
     const pathSplits = decodeURI(window.location.pathname).split('/');
     const params = this.getSearchParameters();
     const toolbox = await UaToolbox.construct();
-    this.tabs.root.style.width = 'inherit';
-    this.tabs.root.style.height = 'inherit';
+    ViewHandler.tabs = ui.tabControl();
+    ViewHandler.tabs.root.style.width = 'inherit';
+    ViewHandler.tabs.root.style.height = 'inherit';
     // [OverviewView, EventsView, ErrorsView, FunctionsView, UsersView, DataView];
     const viewClasses: (typeof UaView)[] = [PackagesView, FunctionsView];
 
     for (let i = 0; i < viewClasses.length; ++i) {
-      this.tabs.addPane(viewClasses[i].viewName, () => {
+      ViewHandler.tabs.addPane(viewClasses[i].viewName, () => {
         const currentView = new viewClasses[i](toolbox);
         currentView.tryToinitViewers();
         return currentView.root;
@@ -45,12 +47,12 @@ export class ViewHandler {
     }
     if (pathSplits.length > 3 && pathSplits[3] != '') {
       const viewName = pathSplits[3];
-      if (this.tabs.panes.map((p) => p.name).includes(viewName))
-        this.tabs.currentPane = this.tabs.getPane(viewName);
+      if (ViewHandler.tabs.panes.map((p) => p.name).includes(viewName))
+        ViewHandler.tabs.currentPane = ViewHandler.tabs.getPane(viewName);
       else
-        this.tabs.currentPane = this.tabs.getPane(viewClasses[0].viewName);
+        ViewHandler.tabs.currentPane = ViewHandler.tabs.getPane(viewClasses[0].viewName);
     } else
-      this.tabs.currentPane = this.tabs.getPane(viewClasses[0].viewName);
+      ViewHandler.tabs.currentPane = ViewHandler.tabs.getPane(viewClasses[0].viewName);
 
     const paramsHaveDate = params.has('date');
     const paramsHaveUsers = params.has('users');
@@ -59,15 +61,19 @@ export class ViewHandler {
       if (paramsHaveDate)
         toolbox.setDate(params.get('date')!);
       if (paramsHaveUsers)
-        await toolbox.setUsers(params.get('users')!);
+        await toolbox.setGroups(params.get('users')!);
       if (paramsHavePackages)
         await toolbox.setPackages(params.get('packages')!);
-      await toolbox.applyFilter();
+      toolbox.applyFilter();
     }
 
-    const UA = grok.shell.newView('Usage Analysis', [this.tabs]);
+    const UA = grok.shell.newView(ViewHandler.UAname, [ViewHandler.tabs]);
     UA.box = true;
     UA.toolbox = toolbox.rootAccordion.root;
+  }
+
+  public static changeTab(name: string) {
+    ViewHandler.tabs.currentPane = ViewHandler.tabs.getPane(name);
   }
 
   getSearchParameters() : Map<string, string> {
