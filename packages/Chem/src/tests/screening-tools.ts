@@ -1,15 +1,61 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import {category, test, expect, delay, expectFloat, before} from '@datagrok-libraries/utils/src/test';
+// import * as ui from 'datagrok-api/ui';
+
+import {category, test, before, after, expect} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {runStructuralAlertsDetection} from '../panels/structural-alerts';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {elementalAnalysis} from '../../src/package';
+import {readDataframe} from './utils';
 
 
-category('screening tools benchmarks', () => {
+category('screening tools', () => {
+  let spgi100: DG.DataFrame;
+  let approvedDrugs100: DG.DataFrame;
+  let molecules: DG.DataFrame;
+
+  before(async () => {
+    chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+    chemCommonRdKit.initRdKitModuleLocal();
+    spgi100 = await readDataframe('tests/spgi-100.csv');
+    approvedDrugs100 = await readDataframe('tests/approved-drugs-100.csv');
+    molecules = grok.data.demo.molecules(100);
+    await grok.data.detectSemanticTypes(spgi100);
+    await grok.data.detectSemanticTypes(approvedDrugs100);
+    await grok.data.detectSemanticTypes(molecules);
+  });
+
+  test('elementalAnalysis.smiles', async () => {
+    const df = molecules.clone();
+    const tv = grok.shell.addTableView(df);
+    elementalAnalysis(df, df.getCol('smiles'), false, false);
+    tv.close();
+    expect(df.columns.length, 11);
+  });
+
+  test('elementalAnalysis.molV2000', async () => {
+    const df = spgi100.clone();
+    elementalAnalysis(df, df.getCol('Structure'), false, false);
+    expect(df.columns.length, 58);
+  });
+
+  test('elementalAnalysis.molV3000', async () => {
+    const df = approvedDrugs100.clone();
+    elementalAnalysis(df, df.getCol('molecule'), false, false);
+    expect(df.columns.length, 41);
+  });
+
+  after(async () => {
+    grok.shell.closeAll();
+    DG.Balloon.closeAll();
+  });
+});
+
+
+// To do: move to separate Benchmarks category
+category('screening tools: benchmarks', () => {
   before(async () => {
     chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
     chemCommonRdKit.initRdKitModuleLocal();
@@ -41,5 +87,5 @@ category('screening tools benchmarks', () => {
     DG.time('Elemental Analysis', async () => {
       await elementalAnalysis(df, col, false, false);
     });
-  })
+  });
 });
