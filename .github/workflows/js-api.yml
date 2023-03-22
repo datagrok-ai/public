@@ -127,7 +127,8 @@ jobs:
         working-directory: ./js-api
       - run: npm run build-ts
         working-directory: ./js-api
-      - run: |
+      - name: npm publish
+        run: |
           tag=""
           if [[ ${{ needs.version.outputs.latest }} == 'true' ]]; then
             tag="--tag stable"
