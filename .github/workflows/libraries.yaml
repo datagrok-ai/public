@@ -44,6 +44,7 @@ jobs:
             DIR="libraries/$LIB"
             if [ -f "${DIR}/package.json" ]; then
               scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
+              dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
 
               if [ -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
                 build='false'
@@ -60,14 +61,17 @@ jobs:
               current_version="$(jq .version "${DIR}/package.json" | sed 's/"//g')"
               npm_version="$(curl --retry 3 -s "https://registry.npmjs.org/${name}/${current_version}" | jq -r '.? | select( has("version") == true ).version')"
               if [[ $npm_version != ${current_version} ]]; then
-                CHANGED_VERSION='true'
-                packages=$(grep -l "$name" packages/*/package.json | awk -F'/' '{printf ("%s ", $2)}' | sort -u)
+                unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match('\\.\\./.*')).key)' <<<$dependencies)"
+                if [[ $unpublished_deps == "[]"] ]]; then
+                  CHANGED_VERSION='true'
+                  packages=$(grep -l "$name" packages/*/package.json | awk -F'/' '{printf ("%s ", $2)}' | sort -u)
+                fi
               else
                 CHANGED_VERSION='false'
                 packages=''
               fi
 
-              MATRIX_PUBLISH_JSON+="{\"project\": \"${LIB}\", \"version\":\"$current_version\", \"changed_version\": \"${CHANGED_VERSION}\", \"build\": \"${build}\", \"test\": \"${test}\", \"packages\":\"$packages\"}"
+              MATRIX_PUBLISH_JSON+="{\"project\": \"${LIB}\", \"name\": \"${name}\", \"version\":\"$current_version\", \"changed_version\": \"${CHANGED_VERSION}\", \"build\": \"${build}\", \"test\": \"${test}\", \"packages\":\"$packages\"}"
             fi
           done
 
@@ -155,20 +159,56 @@ jobs:
               fi
             done
           fi
-      - name: Test packages compatibility
+      - name: Check packages
         if: ${{ matrix.packages != '' }}
-        id: test-packages
-        continue-on-error: true
+        id: commit
         run: |
           crnt=$(pwd)
+          git pull
+          changed=""
           for package in ${{ matrix.packages }}; do
             cd packages/$package
-            npm install
-            failed=false
-            webpack || failed=true
-            if [[ $failed == "true" ]]; then
-              old_version=$(jq '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies) | ."@datagrok-libraries/${{ matrix.project }}"' package.json | sed 's/"//g')
-              echo "::warning title=$package library ${{ matrix.project }}::Changed rule for ${{ matrix.project }} in $package: $old_version --> $(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies) | ."@datagrok-libraries/${{ matrix.project }}"' "package.json" | sed 's/"//g')"
+            sed -i -e 's#"${{ matrix.name }}": "../../libraries/${{ matrix.project }}"#"${{ matrix.name }}": "^${{ matrix.version }}"#g' package.json
+            if [ -n "$(git status -s package.json)" ]; then
+              changed+="$package "
+              npm install
+              git add package.json
+              git add package-lock.json
+              git commit -m "GitHub Actions: Update package $package ${{ matrix.name }} dependency
+
+              Workflow ${{ github.workflow }} ${{ github.run_number }}
+              https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             fi
             cd $crnt
           done
+          echo "changed=$changed" >> $GITHUB_OUTPUT
+          if [ -n "$(git log @{u}..)" ]; then
+            count=0
+            until git push; do
+              exit=$?
+              wait=$((2 ** count))
+              count=$((count + 1))
+              if [ $count -lt "10" ]; then
+              echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
+              sleep $wait
+              git pull --rebase
+              else
+                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
+                exit $exit
+              fi
+            done
+          fi
+      - name: Send mail
+        if: always() && steps.commit.outcome == 'failure'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.mailgun.org
+          server_port: 587
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "Github Actions: Failed update for library ${{ matrix.project }}"
+          to: ${{ matrix.author }}
+          from: monitoring@grok.datagrok.ai
+          body: "Failed to update ${{ matrix.name }} dependency for packages ${{ steps.commit.outputs.changed }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          reply_to: monitoring@datagrok.ai

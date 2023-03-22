@@ -62,7 +62,10 @@ jobs:
               npm_version="$(curl --retry 3 -s "https://registry.npmjs.org/${name}/${current_version}" | jq -r '.? | select( has("version") == true ).version')"
               if [[ $npm_version != ${current_version} ]]; then
                 if [ "$(awk -F. '{print $1}' <<<$current_version)" -gt "0" ]; then
-                  MATRIX_PUBLISH_JSON+=", \"publish\": \"true\""
+                  unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match('\\.\\./.*')).key)' <<<$dependencies)"
+                  if [[ $unpublished_deps == "[]"] ]]; then
+                    MATRIX_PUBLISH_JSON+=", \"publish\": \"true\""
+                  fi
                 else
                   echo "::notice title=${PACKAGE}::Version ${current_version} is under 1.0.0 and is not going to be published"
                 fi
