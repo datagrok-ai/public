@@ -92,6 +92,7 @@ jobs:
               if [[ $unpublished_dep == "datagrok-api"] ]]; then
                 MATRIX_JSON+=", \"unpublished_dep\": \"true\""
                 MATRIX_JSON+=", \"dep\": \"$unpublished_dep\""
+                MATRIX_JSON+=", \"author\": \"$(jq -r '.author.email // "monitoring@datagrok.ai"' "${DIR}/package.json")\""
               fi
             fi
             MATRIX_JSON+="}"
@@ -138,7 +139,7 @@ jobs:
         if: needs.version.outputs.changed_version == 'true'
       - name: Commit package-lock.json
         continue-on-error: true
-        if: needs.version.outputs.changed_version == 'true'
+        if: github.ref == 'refs/heads/master' && needs.version.outputs.changed_version == 'true'
         run: |
           if [ -n "$(git status -s js-api/package-lock.json)" ]; then
             git config --global user.name 'github-actions[bot]'
@@ -148,7 +149,7 @@ jobs:
             git commit -m 'GitHub Actions: Update js-api/package-lock.json [skip ci]
 
             Workflow ${{ github.workflow }} ${{ github.run_number }}
-            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}'
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
             count=0
             until git push; do
               exit=$?
@@ -194,15 +195,13 @@ jobs:
         id: deps
         if: ${{ matrix.unpublished_dep == 'true' }}
         run: |
-          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "${{ needs.version.outputs.current_version }}"#g' package.json
+          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${{ needs.version.outputs.current_version }}"#g' package.json
         working-directory: libraries/${{ matrix.library }}
       - run: npm install
         working-directory: libraries/${{ matrix.library }}
-      - run: npm run build
-        working-directory: libraries/${{ matrix.library }}
       - name: Commit package.json
-        continue-on-error: true
         if: needs.version.outputs.changed_version == 'true'
+        id: commit
         run: |
           if [ -n "$(git status -s libraries/${{ matrix.library }}/package.json)" ]; then
             git config --global user.name 'github-actions[bot]'
@@ -213,7 +212,7 @@ jobs:
             git commit -m 'GitHub Actions: Update library ${{ matrix.library }} js-api dependency
 
             Workflow ${{ github.workflow }} ${{ github.run_number }}
-            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}'
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
             count=0
             until git push; do
               exit=$?
@@ -229,6 +228,20 @@ jobs:
               fi
             done
           fi
+      - name: Send mail
+        if: always() && steps.commit.outcome == 'failure'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.mailgun.org
+          server_port: 587
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "Github Actions: Failed update for library ${{ matrix.library }}"
+          to: ${{ matrix.author }}
+          from: monitoring@grok.datagrok.ai
+          body: "Failed to update JS API dependency for library ${{ matrix.library }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          reply_to: monitoring@datagrok.ai
 
   packages:
     name: Check packages
@@ -259,15 +272,13 @@ jobs:
         id: deps
         if: ${{ matrix.unpublished_dep == 'true' }}
         run: |
-          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "${{ needs.version.outputs.current_version }}"#g' package.json
+          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${{ needs.version.outputs.current_version }}"#g' package.json
         working-directory: packages/${{ matrix.package }}
       - run: npm install
         working-directory: packages/${{ matrix.package }}
-      - run: npm run build
-        working-directory: packages/${{ matrix.package }}
       - name: Commit package.json
-        continue-on-error: true
         if: needs.version.outputs.changed_version == 'true'
+        id: commit
         run: |
           if [ -n "$(git status -s packages/${{ matrix.package }}/package.json)" ]; then
             git config --global user.name 'github-actions[bot]'
@@ -278,7 +289,7 @@ jobs:
             git commit -m 'GitHub Actions: Update package ${{ matrix.package }} js-api dependency
 
             Workflow ${{ github.workflow }} ${{ github.run_number }}
-            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}'
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
             count=0
             until git push; do
               exit=$?
@@ -294,3 +305,17 @@ jobs:
               fi
             done
           fi
+      - name: Send mail
+        if: always() && steps.commit.outcome == 'failure'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.mailgun.org
+          server_port: 587
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "Github Actions: Failed update for package ${{ matrix.package }}"
+          to: ${{ matrix.author }}
+          from: monitoring@grok.datagrok.ai
+          body: "Failed to update JS API dependency for package ${{ matrix.package }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          reply_to: monitoring@datagrok.ai
