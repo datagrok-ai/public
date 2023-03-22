@@ -30,7 +30,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
     return;
   }
 
-  tableView.basePath = `/apps/Demo/Viewers/${viewerName}`;
+  tableView.basePath = `/apps/Tutorials/Demo/Viewers/${viewerName}`;
   grok.shell.addView(tableView);
   tableView.addViewer(viewerName, options);
 }
