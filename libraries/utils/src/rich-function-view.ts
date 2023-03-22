@@ -300,7 +300,7 @@ export class RichFunctionView extends FunctionView {
   protected get outputTabsLabels() {
     return [
       ...this.outUniqueParamCategories,
-      ...this.outUniqueParamCategories.find((val) => val === 'Misc') ? ['Output'] : [], // if no categories are stated, the default category is added
+      ...this.outUniqueParamCategories.find((val) => val === 'Misc' || val === 'Output') ? ['Output'] : [], // if no categories are stated, the default category is added
     ];
   }
 
@@ -553,7 +553,7 @@ export class RichFunctionView extends FunctionView {
         for (const outputParam of outputParams.filter(
           (outputParam) => outputParam.property.propertyType === DG.TYPE.DATA_FRAME &&
           (
-            (tabLabel === 'Output' && outputParam.property.category === 'Misc') ||
+            (tabLabel === 'Output' && outputParam.property.category === 'Misc' || outputParam.property.category === 'Output') ||
             (tabLabel !== 'Output' && outputParam.property.category === tabLabel)
           )
         )) {
