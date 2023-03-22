@@ -1,11 +1,11 @@
 {
   "name": "@datagrok/usage-analysis",
   "author": {
-    "name": "Volodymyr Dyma",
-    "email": "vdyma@datagrok.ai"
+    "name": "Anna Muzychyna",
+    "email": "amuzychyna@datagrok.ai"
   },
   "friendlyName": "Usage Analysis",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Platform usage analysis system",
   "repository": {
     "type": "git",

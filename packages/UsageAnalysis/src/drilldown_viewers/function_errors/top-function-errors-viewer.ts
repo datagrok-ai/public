@@ -40,7 +40,7 @@ export class TopFunctionErrorsViewer extends UaFilterableQueryViewer {
                 const grid = DG.Viewer.grid(t);
                 return grid.root;
               },
-              false)],
+            )],
             `Errors: ${args.args.categories[0]}`,
             'Errors');
 
@@ -70,7 +70,6 @@ export class TopFunctionErrorsViewer extends UaFilterableQueryViewer {
       },
       null,
       staticFilter,
-      showName,
     );
   }
 }

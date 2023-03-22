@@ -9,6 +9,7 @@ import Choices from 'choices.js';
 export class ChoiceInputGroups {
   choices: Choices;
   field: DG.InputBase;
+  allUsers: string[];
 
   static async construct() {
     const field = ui.choiceInput('Groups', [], []);
@@ -23,21 +24,21 @@ export class ChoiceInputGroups {
       itemSelectText: '',
     });
 
-    const groups = grok.dapi.groups;
     field.input.addEventListener('search', async (event) => {
-      const newGroups: DG.Group[] = await groups.getGroupsLookup(choices.input.value);
+      const newGroups: DG.Group[] = await grok.dapi.groups.getGroupsLookup(choices.input.value);
       choices.clearChoices();
       choices.setChoices(() => newGroups.map((g: DG.Group) => {
-        return {value: g.name, label: g.name};
+        return {value: g.id, label: g.friendlyName};
       }));
     });
 
-    return new ChoiceInputGroups(choices, field);
+    return new ChoiceInputGroups(choices, field, (await grok.dapi.groups.getGroupsLookup('All users'))[0].id);
   }
 
-  private constructor(choices: Choices, field: DG.InputBase) {
+  private constructor(choices: Choices, field: DG.InputBase, allUsers: string) {
     this.choices = choices;
     this.field = field;
+    this.allUsers = [allUsers];
   }
 
   getSelectedGroups(): string[] {
@@ -45,7 +46,7 @@ export class ChoiceInputGroups {
     if (users && users.length > 0)
       return users;
     else
-      return ['all'];
+      return this.allUsers;
   }
 
   addItems(items: string[]) {
