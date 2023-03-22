@@ -8,45 +8,35 @@ import '../../css/drop-down.css';
 export class DropDown {
   private _element: HTMLElement;
   private _dropDownElement: HTMLDivElement;
-
   private _isMouseOverElement: boolean;
-  isExpanded: boolean;
-
   private _label: string | Element;
-  private _rootElement: HTMLElement;
+
+  isExpanded: boolean;
   root: HTMLDivElement;
 
-  // string | Element instead of iconName and label
-  // instead of element make a creation function
+
   constructor(label: string | Element, elementCreation: () => HTMLElement) {
     this._element = ui.div();
     this._dropDownElement = ui.div();
-
     this._isMouseOverElement = false;
-    this.isExpanded = false;
-
     this._label = label;
+
+    this.isExpanded = false;
     this.root = ui.div();
-    this._rootElement = ui.div();
 
     this._updateElement(elementCreation);
     this._initEventListeners();
   }
 
+
   private _updateElement(elementCreation: () => HTMLElement) {
     this._element = elementCreation();
 
-    this._dropDownElement = ui.div(ui.div(this._element));
+    this._dropDownElement = ui.div(ui.div(this._element, 'ui-drop-down-element'));
     this._dropDownElement.style.visibility = 'hidden';
-    this._dropDownElement.className = 'ui-drop-down-menu';
+    this._dropDownElement.className = 'ui-drop-down';
 
-    const dropDown = ui.div(this._dropDownElement);
-    dropDown.className = 'ui-drop-down-menu-fixed';
-
-    this._rootElement = ui.div([this._label]);
-    this._rootElement.className = 'ui-drop-down-item';
-
-    this.root = ui.div([this._rootElement, dropDown]);
+    this.root = ui.div([this._label, this._dropDownElement]);
     this.root.className = 'ui-drop-down-root';
   }
 
@@ -71,17 +61,16 @@ export class DropDown {
   private _setExpandedState(isExpanded: boolean) {
     this.isExpanded = !isExpanded;
     if (isExpanded) {
-      this.root.classList.remove('ui-drop-down-expanded');
+      this.root.classList.remove('ui-drop-down-root-expanded');
       this._dropDownElement.style.visibility = 'hidden';
       return;
     }
 
-    this.root.classList.add('ui-drop-down-expanded');
+    this.root.classList.add('ui-drop-down-root-expanded');
     this._dropDownElement.style.visibility = 'visible';
   }
 
-  // take styles from native dropdown !!!!
-  // write all events with rxjs (Observable)
+
   get onExpand(): Observable<MouseEvent> {
     return fromEvent<MouseEvent>(this.root, 'click')
       .pipe(
