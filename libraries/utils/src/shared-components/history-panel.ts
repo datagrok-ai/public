@@ -77,6 +77,10 @@ class HistoryPanelStore {
   }
 }
 
+const MY_PANE_LABEL = 'HISTORY' as const;
+const FAVORITES_LABEL = 'FAVORITES' as const;
+const SHARED_LABEL = 'SHARED' as const;
+
 export class HistoryPanel {
   // Emitted when FuncCall should is chosen. Contains FuncCall ID
   public onRunChosen = new Subject<string>();
@@ -122,19 +126,14 @@ export class HistoryPanel {
   historyTab = ui.div();
   favTab = ui.div();
   sharedTab = ui.div();
-  tabs = ui.tabControl({
-    'HISTORY': ui.box(this.historyTab),
-    'FAVORITES': ui.box(this.favTab),
-    'SHARED': ui.box(this.sharedTab),
-  });
   filterPane = ui.div();
+  tabs = ui.tabControl({
+    [MY_PANE_LABEL]: ui.box(this.historyTab),
+    [FAVORITES_LABEL]: ui.box(this.favTab),
+    [SHARED_LABEL]: ui.box(this.sharedTab),
+  });
 
   private _root = ui.divV([
-    ui.panel([
-      ui.h2('History'),
-      this.filterPane,
-    ]),
-    ui.element('div', 'splitbar-horizontal'),
     this.tabs.root,
   ], {style: {width: '100%', height: '100%'}});
 
@@ -142,68 +141,62 @@ export class HistoryPanel {
   favoriteCards = [] as HTMLElement[];
   sharedCards = [] as HTMLElement[];
 
-  updateFilterPane() {
-    const buildFilterPane = () => {
-      return ui.wait(async () => {
-        const filteringText = new Subject();
+  buildFilterPane(currentTabName: string) {
+    return ui.wait(async () => {
+      const filteringText = new Subject();
 
-        const textInput = ui.stringInput('Search', '', (v: string) => filteringText.next(v));
-        DG.debounce(filteringText.asObservable(), 600).subscribe(() => {
-          this.store.filteringOptions.text = textInput.stringValue;
-          this.myRunsFilter.next();
-          this.favRunsFilter.next();
-          this.sharedRunsFilter.next();
-        });
-
-        const dateInput = ui.dateInput('Started after', dayjs().subtract(1, 'week'), (v: dayjs.Dayjs) => {
-          this.store.filteringOptions.startedAfter = v;
-          this.myRunsFilter.next();
-          this.favRunsFilter.next();
-          this.sharedRunsFilter.next();
-        });
-
-        const defaultUsers = Object.values(defaultUsersIds);
-        const allUsers = await grok.dapi.users.list() as DG.User[];
-        const filteredUsers = allUsers.filter((user) => !defaultUsers.includes(user.id));
-
-        const authorInput = ui.choiceInput<DG.User | string>('Author', 'Anyone', ['Anyone', ...filteredUsers], (v: DG.User | string) => {
-          this.store.filteringOptions.author = (v === 'Anyone') ? undefined : v as DG.User;
-          this.sharedRunsFilter.next();
-        });
-        authorInput.root.style.display = 'none';
-
-        dateInput.addPatternMenu('datetime');
-        const form = ui.divV([
-          textInput,
-          dateInput,
-          authorInput,
-        ], 'ui-form ui-form-wide ui-form-left');
-        form.style.padding = '0px';
-
-        this.tabs.onTabChanged.subscribe(() => {
-          const currentTabName = this.tabs.currentPane.name;
-          if (currentTabName === 'HISTORY') {
-            dateInput.root.style.removeProperty('display');
-            authorInput.root.style.display = 'none';
-          }
-          if (currentTabName === 'FAVORITES') {
-            dateInput.root.style.removeProperty('display');
-            authorInput.root.style.display = 'none';
-          }
-          if (currentTabName === 'SHARED') {
-            dateInput.root.style.removeProperty('display');
-            authorInput.root.style.removeProperty('display');
-          }
-        });
-
-        return form;
+      const textInput = ui.stringInput('Search', '', (v: string) => filteringText.next(v));
+      DG.debounce(filteringText.asObservable(), 600).subscribe(() => {
+        this.store.filteringOptions.text = textInput.stringValue;
+        this.myRunsFilter.next();
+        this.favRunsFilter.next();
+        this.sharedRunsFilter.next();
       });
-    };
 
-    const newFilterPane = buildFilterPane();
-    this.filterPane.replaceWith(newFilterPane);
-    this.filterPane = newFilterPane;
+      const dateInput = ui.dateInput('Started after', dayjs().subtract(1, 'week'), (v: dayjs.Dayjs) => {
+        this.store.filteringOptions.startedAfter = v;
+        this.myRunsFilter.next();
+        this.favRunsFilter.next();
+        this.sharedRunsFilter.next();
+      });
+
+      const defaultUsers = Object.values(defaultUsersIds);
+      const allUsers = await grok.dapi.users.list() as DG.User[];
+      const filteredUsers = allUsers.filter((user) => !defaultUsers.includes(user.id));
+
+      const authorInput = ui.choiceInput<DG.User | string>('Author', 'Anyone', ['Anyone', ...filteredUsers], (v: DG.User | string) => {
+        this.store.filteringOptions.author = (v === 'Anyone') ? undefined : v as DG.User;
+        this.sharedRunsFilter.next();
+      });
+      authorInput.root.style.display = 'none';
+
+      dateInput.addPatternMenu('datetime');
+      const form = ui.divV([
+        textInput,
+        dateInput,
+        authorInput,
+      ], 'ui-form ui-form-wide ui-form-left');
+
+      if (currentTabName === MY_PANE_LABEL) {
+        dateInput.root.style.removeProperty('display');
+        authorInput.root.style.display = 'none';
+      }
+      if (currentTabName === FAVORITES_LABEL) {
+        dateInput.root.style.removeProperty('display');
+        authorInput.root.style.display = 'none';
+      }
+      if (currentTabName === SHARED_LABEL) {
+        dateInput.root.style.removeProperty('display');
+        authorInput.root.style.removeProperty('display');
+      }
+
+      return form;
+    });
   };
+
+  myPaneFilter = this.buildFilterPane(MY_PANE_LABEL);
+  favoritesPaneFilter =this.buildFilterPane(FAVORITES_LABEL);
+  sharedPaneFilter = this.buildFilterPane(SHARED_LABEL);
 
   showDeleteRunDialog(funcCall: DG.FuncCall) {
     ui.dialog({title: 'Delete run'})
@@ -218,19 +211,30 @@ export class HistoryPanel {
 
   updateSharedPane(sharedRuns: DG.FuncCall[]) {
     const newTab = (sharedRuns.length > 0) ? this.renderSharedCards(sharedRuns) : ui.divText('No runs are marked as shared', 'no-elements-label');
-    this.sharedTab.replaceWith(newTab);
+    this.sharedTab.replaceWith(ui.divV([
+      this.sharedPaneFilter,
+      ui.element('div', 'splitbar-horizontal'),
+      newTab]));
     this.sharedTab = newTab;
   };
 
   updateFavoritesPane(favoriteRuns: DG.FuncCall[]) {
     const newTab = (favoriteRuns.length > 0) ? this.renderFavoriteCards(favoriteRuns) : ui.divText('No runs are marked as favorites', 'no-elements-label');
-    this.favTab.replaceWith(newTab);
+    this.favTab.replaceWith(ui.divV([
+      this.favoritesPaneFilter,
+      ui.element('div', 'splitbar-horizontal'),
+      newTab
+    ]));
     this.favTab = newTab;
   };
 
   updateMyPane(myRuns: DG.FuncCall[]) {
     const newTab = (myRuns.length > 0) ? this.renderHistoryCards(myRuns) : ui.divText('No runs are found in history', 'no-elements-label');
-    this.historyTab.replaceWith(newTab);
+    this.historyTab.replaceWith(ui.divV([
+      this.myPaneFilter,
+      ui.element('div', 'splitbar-horizontal'),
+      newTab
+    ]));
     this.historyTab = newTab;
   };
 
@@ -327,7 +331,7 @@ export class HistoryPanel {
         funcCall.options['title'] = title;
         funcCall.options['description'] = description;
 
-        if (isShared === funcCall.options['isShared'] && isFavorite === funcCall.options['isFavorite']) {
+        if (!!isShared === !!funcCall.options['isShared'] && !!isFavorite === !!funcCall.options['isFavorite']) {
           await historyUtils.saveRun(funcCall);
 
           const editedRun = this.store.allRuns.value.find((call) => call.id === funcCall.id);
@@ -450,7 +454,6 @@ export class HistoryPanel {
     });
 
     this.allRunsFetch.next();
-    this.updateFilterPane();
   }
 
   private async addRunToFavorites(callToFavorite: DG.FuncCall): Promise<DG.FuncCall> {
