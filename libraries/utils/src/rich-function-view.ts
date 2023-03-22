@@ -200,13 +200,14 @@ export class RichFunctionView extends FunctionView {
         ], {style: {...(fullBlockWidth > 0) ? {'width': `${fullBlockWidth}%`}: {'width': `100%`}}});
       });
 
-
-      const generateScalarsTable = () => ui.tableFromMap(
-        tabScalarProps.reduce((acc, scalar) => {
-          acc[scalar.name] = this.funcCall?.outputs[scalar.name];
-          return acc;
-        }, {} as {[key: string]: string})
-      );
+      const generateScalarsTable = () => {
+        const table = DG.HtmlTable.create(
+          tabScalarProps,
+          (scalarProp: DG.Property) => [scalarProp.name, this.funcCall?.outputs[scalarProp.name], scalarProp.options['units']]
+        ).root;
+        table.style.maxWidth = '400px';
+        return table;
+      };
 
       let scalarsTable = generateScalarsTable();
 
