@@ -33,6 +33,7 @@ category('Dapi: functions.calls', async () => {
     parentFuncCall.newId();
     funcCall.newId();
     funcCall.parentCall = parentFuncCall;
+    await GDF.calls.save(parentFuncCall);
     await GDF.calls.save(funcCall);
 
     const loadedFunCall = await GDF.calls.include('parentCall').find(funcCall.id);
