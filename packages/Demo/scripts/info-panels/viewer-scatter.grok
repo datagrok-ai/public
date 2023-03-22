@@ -5,7 +5,7 @@
 #input: dataframe table
 #condition: table.name == "demog" && table.columns.containsAll(["height", "weight", "age", "sex"])
 #output: viewer plot
-#test: ScatterPlot(OpenServerFile('System:AppData/ApiTests/datasets/demog.csv'))
+#test: ScatterPlot(ApiTests:getTable('demog')) != null
 
 plot = ScatterPlot(table, x = "height", y = "weight", size = "age", color = "sex")
 plot.showRegressionLine = true

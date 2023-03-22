@@ -28,83 +28,93 @@ export function flagCellRenderer() {
 }
 
 
-//name: ChordViewer
+//name: Chord
 //description: Creates a chord viewer
 //tags: viewer
 //output: viewer result
+//meta.icon: icons/chord-viewer.svg
 export function _ChordViewer() {
   return new ChordViewer();
 }
 
-//name: GlobeViewer
+//name: Globe
 //description: Creates a globe viewer
 //tags: viewer
 //output: viewer result
+//meta.icon: icons/globe-viewer.svg
 export function _GlobeViewer() {
   return new GlobeViewer();
 }
 
-//name: GroupAnalysisViewer
+//name: Group Analysis
 //description: Creates a group analysis viewer
 //tags: viewer
 //output: viewer result
+//meta.icon: icons/groupanalysis-viewer.svg
 export function _GroupAnalysisViewer() {
   return new GroupAnalysisViewer();
 }
 
-//name: RadarViewer
+//name: Radar
 //description: Creates a radar viewer
 //tags: viewer
 //output: viewer result
+//meta.icon: icons/radar-viewer.svg
 export function _RadarViewer() {
   return new RadarViewer();
 }
 
-//name: SankeyViewer
+//name: Sankey
 //description: Creates a sankey viewer
 //tags: viewer
 //output: viewer result
+//meta.icon: icons/sankey-viewer.svg
 export function _SankeyViewer() {
   return new SankeyViewer();
 }
 
-//name: SunburstViewer
+//name: Sunburst
 //description: Creates a sunburst viewer
 //tags: viewer
 //output: viewer result
+//meta.icon: icons/sunburst-viewer.svg
 export function _SunburstViewer() {
   return new SunburstViewer();
 }
 
-//name: SurfacePlot
+//name: Surface plot
 //description: Creates a surface plot viewer
 //tags: viewer
+//meta.icon: icons/surfaceplot-viewer.svg
 //output: viewer result
 export function _SurfacePlot() {
   return new SurfacePlot();
 }
 
-//name: TimelinesViewer
+//name: Timelines
 //description: Creates a timelines viewer
 //tags: viewer
 //output: viewer result
+//meta.icon: icons/timelines-viewer.svg
 export function _TimelinesViewer() {
   return new TimelinesViewer();
 }
 
-//name: TreeViewer
+//name: Tree
 //description: Creates a tree viewer
 //tags: viewer
 //meta.trellisable: true
 //output: viewer result
+//meta.icon: icons/tree-viewer.svg
 export function _TreeViewer() {
   return new TreeViewer();
 }
 
-//name: WordCloudViewer
+//name: Word Cloud
 //description: Creates a word cloud viewer
 //tags: viewer
 //output: viewer result
+//meta.icon: icons/wordcloud-viewer.svg
 export function _WordCloudViewer() {
   return new WordCloudViewer();
 }
@@ -113,37 +123,37 @@ export function _WordCloudViewer() {
 //name: chordViewerDemo
 //meta.demoPath: Viewers | Chord
 export function _chordViewerDemo() {
-  viewerDemo('ChordViewer');
+  viewerDemo('Chord');
 }
 
 //name: globeViewerDemo
 //meta.demoPath: Viewers | Globe
 export function _globeViewerDemo() {
-  viewerDemo('GlobeViewer');
+  viewerDemo('Globe');
 }
 
 //name: groupAnalysisViewerDemo
 //meta.demoPath: Viewers | GroupAnalysis
 export function _groupAnalysisViewerDemo() {
-  viewerDemo('GroupAnalysisViewer');
+  viewerDemo('GroupAnalysis');
 }
 
 //name: radarViewerDemo
 //meta.demoPath: Viewers | Radar
 export function _radarViewerDemo() {
-  viewerDemo('RadarViewer');
+  viewerDemo('Radar');
 }
 
 //name: sankeyViewerDemo
 //meta.demoPath: Viewers | Sankey
 export function _sankeyViewerDemo() {
-  viewerDemo('SankeyViewer');
+  viewerDemo('Sankey');
 }
 
 //name: sunburstViewerDemo
 //meta.demoPath: Viewers | Sunburst
 export function _sunburstViewerDemo() {
-  viewerDemo('SunburstViewer');
+  viewerDemo('Sunburst');
 }
 
 //name: surfacePlotDemo
@@ -155,17 +165,17 @@ export function _surfacePlotDemo() {
 //name: timelinesViewerDemo
 //meta.demoPath: Viewers | Timelines
 export function _timelinesViewerDemo() {
-  viewerDemo('TimelinesViewer', {lineWidth: 4, markerPosition: 'above main line'});
+  viewerDemo('Timelines', {lineWidth: 4, markerPosition: 'above main line'});
 }
 
 //name: treeViewerDemo
 //meta.demoPath: Viewers | Tree
 export function _treeViewerDemo() {
-  viewerDemo('TreeViewer');
+  viewerDemo('Tree');
 }
 
 //name: wordCloudViewerDemo
 //meta.demoPath: Viewers | WordCloud
 export function _wordCloudViewerDemo() {
-  viewerDemo('WordCloudViewer');
+  viewerDemo('WordCloud');
 }

@@ -1,16 +1,14 @@
 --name: MSSQLPatternsAll
 --connection: MSSQLApiTests
 --test: ApiTests:expectTable(MSSQLPatternsAll(), OpenFile('System:AppData/ApiTests/datasets/tests/mssql/data1-30.d42'))
-SELECT * FROM mock_data;
+SELECT * FROM mock_data
 --end
-
--- INT PATTERN
 
 --name: MSSQLIntTypePatternNone
 --connection: MSSQLApiTests
 --input: int id = 20
---test: ApiTests:expectTable(MSSQLIntTypePatternNone(), OpenFile('System:AppData/ApiTests/datasets/tests/mssql/data20.d42'))
-SELECT * FROM mock_data WHERE id = @id;
+--test: ApiTests:expectTable(MSSQLIntTypePatternNone(20), OpenFile('System:AppData/ApiTests/datasets/tests/mssql/data20.d42'))
+SELECT * FROM mock_data WHERE id = @id
 --end
 
 --name: MSSQLStringTypeIntPatternOpMore
@@ -69,35 +67,32 @@ SELECT * FROM mock_data WHERE @id(id)
 SELECT * FROM mock_data WHERE @id(id)
 --end
 
-
---DOUBLE PATTERN
-
 --name: MSSQLDoubleTypePatternNone
 --connection: MSSQLApiTests
 --input: double some_number = 510.32
---test: ApiTests:expectTable(MSSQLDoubleTypePatternNone(), OpenFile('System:AppData/ApiTests/datasets/tests/mssql/data1.d42'))
-SELECT * FROM mock_data WHERE some_number = @some_number;
+--test: ApiTests:expectTable(MSSQLDoubleTypePatternNone(510.32), OpenFile('System:AppData/ApiTests/datasets/tests/mssql/data1.d42'))
+SELECT * FROM mock_data WHERE some_number = @some_number
 --end
 
 --name: MSSQLStringTypePatternDoubleOpMore
 --connection: MSSQLApiTests
 --input: string some_number = ">975" {pattern: double}
 --test: ApiTests:expectTable(MSSQLStringTypePatternDoubleOpMore(), OpenFile('System:AppData/ApiTests/datasets/tests/mssql/data10,26.d42'))
-SELECT * FROM mock_data WHERE @some_number(some_number);
+SELECT * FROM mock_data WHERE @some_number(some_number)
 --end
 
 --name: MSSQLStringTypePatternDoubleOpMoreEq
 --connection: MSSQLApiTests
 --input: string some_number = ">=975" {pattern: double}
 --test: ApiTests:expectTable(MSSQLStringTypePatternDoubleOpMoreEq(), OpenFile('System:AppData/ApiTests/datasets/tests/mssql/data10,26.d42'))
-SELECT * FROM mock_data WHERE @some_number(some_number);
+SELECT * FROM mock_data WHERE @some_number(some_number)
 --end
 
 --name: MSSQLStringTypePatternDoubleOpLess
 --connection: MSSQLApiTests
 --input: string some_number = "<20" {pattern: double}
 --test: ApiTests:expectTable(MSSQLStringTypePatternDoubleOpLess(), OpenFile('System:AppData/ApiTests/datasets/tests/mssql/data5.d42'))
-SELECT * FROM mock_data WHERE @some_number(some_number);
+SELECT * FROM mock_data WHERE @some_number(some_number)
 --end
 
 --name: MSSQLStringTypePatternDoubleOpLessEq
@@ -107,46 +102,32 @@ SELECT * FROM mock_data WHERE @some_number(some_number);
 SELECT * FROM mock_data WHERE @some_number(some_number);
 --end
 
---CHOICES - should be used for end-to-end tests
-
---name: MSSQLByStringChoices
---input: string country = "France" {choices: ["France", "China", "USA", "Finland"]}
-SELECT * FROM mock_data WHERE country = @country;
---end
-
---name: MSSQLByStringChoices
---input: string country = "France" {choices: Query("SELECT DISTINCT country FROM mock_data")}
-SELECT * FROM mock_data WHERE country = @country;
---end
-
---STRING PATTERN
-
 --name: MSSQLStringTypePatternStringOpContains
 --connection: MSSQLApiTests
 --input: string first_name = "contains Z" {pattern: string}
---test: ApiTests:expectTable(MSSQLStringTypePatternStringOpContains(), OpenFile('System:AppData/ApiTests/datasets/tests/mssql/data25.d42'))
-SELECT * FROM mock_data WHERE @first_name(first_name);
+--test: ApiTests:expectTable(MSSQLStringTypePatternStringOpContains(first_name = "contains Z"), OpenFile('System:AppData/ApiTests/datasets/tests/mssql/data25.d42'))
+SELECT * FROM mock_data WHERE @first_name(first_name)
 --end
 
 --name: MSSQLStringTypePatternStringOpStartsWith
 --connection: MSSQLApiTests
 --input: string first_name = "starts with W" {pattern: string}
---test: ApiTests:expectTable(MSSQLStringTypePatternStringOpStartsWith(), OpenFile('System:AppData/ApiTests/datasets/tests/mssql/data23.d42'))
-SELECT * FROM mock_data WHERE @first_name(first_name);
+--test: ApiTests:expectTable(MSSQLStringTypePatternStringOpStartsWith(first_name='starts with W'), OpenFile('System:AppData/ApiTests/datasets/tests/mssql/data23.d42'))
+SELECT * FROM mock_data WHERE @first_name(first_name)
 --end
 
 --name: MSSQLStringTypePatternStringOpEndsWith
 --connection: MSSQLApiTests
 --input: string first_name = "ends with y" {pattern: string}
---test: ApiTests:expectTable(MSSQLStringTypePatternStringOpEndsWith(), OpenFile('System:AppData/ApiTests/datasets/tests/mssql/data6,23,25.d42'))
-SELECT * FROM mock_data WHERE @first_name(first_name);
+--test: ApiTests:expectTable(MSSQLStringTypePatternStringOpEndsWith(first_name = 'ends with y'), OpenFile('System:AppData/ApiTests/datasets/tests/mssql/data6,23,25.d42'))
+SELECT * FROM mock_data WHERE @first_name(first_name)
 --end
 
 --name: MSSQLStringTypePatternStringOpIn
 --connection: MSSQLApiTests
 --input: string country = "in (Poland, Brazil)" {pattern: string}
 --test: ApiTests:expectTable(MSSQLStringTypePatternStringOpIn(), OpenFile('System:AppData/ApiTests/datasets/tests/mssql/data2,5,20.d42'))
-SELECT * FROM mock_data WHERE @country(country);
+SELECT * FROM mock_data WHERE @country(country)
 --end
 
 --name: MSSQLPatternsAllParams
@@ -157,7 +138,7 @@ SELECT * FROM mock_data WHERE @country(country);
 --input: string some_number = ">20" {pattern: double}
 --input: string country = "in (Indonesia)" {pattern: string}
 --input: string date = "before 1/1/2022" {pattern: datetime}
---test: ApiTests:expectTable(MSSQLPatternsAllParams(), OpenFile("System:AppData/ApiTests/datasets/tests/mssql/data13.d42"))
+--test: ApiTests:expectTable(MSSQLPatternsAllParams(first_name = "starts with p", id = ">1", email = "contains com", some_number = ">20", country = "in (Indonesia)", date = "before 1/1/2022"), OpenFile("System:AppData/ApiTests/datasets/tests/mssql/data13.d42"))
 SELECT * FROM mock_data WHERE @first_name(first_name)
-AND @id(id) AND @email(email) AND @some_number(some_number) AND @country(country) AND @date(date);
+AND @id(id) AND @email(email) AND @some_number(some_number) AND @country(country) AND @date(date)
 --end

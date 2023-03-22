@@ -6,7 +6,7 @@ title: "Release History"
 
 | Service                                                  | Docker Image                                                                                      |
 |----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../infrastructure.md#datagrok-components)     | [datagrok/datagrok:1.13.3](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Datagrok](../infrastructure.md#datagrok-components)     | [datagrok/datagrok:1.13.7](https://hub.docker.com/r/datagrok/datagrok)                            |
 | [Grok Connect](../../../access/data-connection.md)       | [datagrok/grok_connect:1.3.2](https://hub.docker.com/r/datagrok/grok_connect)                     |
 | Grok Spawner                                             | [datagrok/grok_spawner:1.3.2](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../infrastructure.md#grok-compute)        | [datagrok/grok_compute:1.4.1](https://hub.docker.com/r/datagrok/grok_compute)                     |
@@ -18,6 +18,13 @@ title: "Release History"
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose.md)
+
+
+## 2023-03-14 1.13.7
+
+### Addressed Issues
+
+* fixes #1609 FilterGroup.add issue
 
 
 ## 2023-02-22 1.13.3

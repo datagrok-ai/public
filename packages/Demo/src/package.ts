@@ -16,43 +16,13 @@ export const _package = new DG.Package();
 //description: Interactive demo of major Datagrok capabilities
 export function demoApp() {
   grok.shell.addView(new DemoView());
-}
-
-//name: getTable
-//input: string name
-//input: string path {optional: true}
-//output: dataframe result
-export async function getTable(name: string, path: string): Promise<DG.DataFrame> {
-  const file = (await grok.dapi.files.list(path ? `system:appdata/${path}/` : 'Demo:Files/', true, name))[0];
-  const str = await file.readAsString();
-  const result = DG.DataFrame.fromCsv(str);
-  return result;
-}
-
-//name: getColumn
-//input: dataframe table
-//input: string columnName
-//output: column col
-export function getColumn(table: DG.DataFrame, columnName: string): DG.Column {
-  const col = table.getCol(columnName);
-  return col;
-}
-
-//name: getColumns
-//input: dataframe table
-//input: string_list columnNames
-//output: column_list cols
-export function getColumns(table: DG.DataFrame, columnNames: string[]): DG.Column[] {
-  const cols = columnNames.map((c) => table.getCol(c));
-  return cols;
-}
-
-//name: compareObjects
-//input: map actual
-//input: map expected
-//output: bool equals
-export function compareObjects(actual: {[key: string]: any}, expected: {[key: string]: any}): boolean {
-  expectObject(actual, expected);
-  const equals = true;
-  return equals;
+  const pathSegments = window.location.pathname.split('/');
+  if (pathSegments.length > 3) {
+    const category = pathSegments[3];
+    if (category === 'Viewers') {
+      const viewerName = pathSegments[4];
+      const f = DemoView.findDemoFunc(`${category} | ${viewerName}`);
+      f?.apply();
+    }
+  }
 }

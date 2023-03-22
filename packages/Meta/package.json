@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.22",
+  "version": "3.2.37",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -198,14 +198,6 @@
         "directory": "packages/SQLite"
       },
       "category": "Development"
-    },
-    "demo-scripts": {
-      "dependencies": {
-        "1.0.1": {
-          "datagrok-api": "^0.151.6"
-        }
-      },
-      "description": "*DemoScripts* is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It demonstrates the [scripting](https://datagrok.ai/help/compute/scripting) functionality for [Python](https://www.python.org"
     },
     "tutorials": {
       "dependencies": {
@@ -440,6 +432,15 @@
           "datagrok-api": "^1.13.2"
         },
         "1.5.8": {
+          "datagrok-api": "^1.13.2"
+        },
+        "1.5.9": {
+          "datagrok-api": "^1.13.2"
+        },
+        "1.5.10": {
+          "datagrok-api": "^1.13.2"
+        },
+        "1.5.13": {
           "datagrok-api": "^1.13.2"
         }
       },
@@ -708,9 +709,12 @@
         },
         "1.1.5": {
           "datagrok-api": "^1.9.1"
+        },
+        "1.1.6": {
+          "datagrok-api": "^1.9.1"
         }
       },
-      "description": "",
+      "description": "Integration with the PubChem web service.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -880,6 +884,9 @@
         },
         "3.1.1": {
           "datagrok-api": "^1.13.0"
+        },
+        "3.1.2": {
+          "datagrok-api": "^1.13.0"
         }
       },
       "description": "marvin is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
@@ -1025,6 +1032,9 @@
           "datagrok-api": "^1.8.1"
         },
         "1.5.10": {
+          "datagrok-api": "^1.13.0"
+        },
+        "1.5.11": {
           "datagrok-api": "^1.13.0"
         }
       },
@@ -1184,9 +1194,15 @@
         },
         "0.9.2": {
           "datagrok-api": "^1.4.4"
+        },
+        "1.0.0": {
+          "datagrok-api": "latest"
+        },
+        "1.0.1": {
+          "datagrok-api": "latest"
         }
       },
-      "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md)",
+      "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -1792,7 +1808,7 @@
           "datagrok-api": "^1.8.2"
         }
       },
-      "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
+      "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -2029,6 +2045,15 @@
         },
         "1.1.18": {
           "datagrok-api": "^1.13.5"
+        },
+        "1.1.19": {
+          "datagrok-api": "^1.13.5"
+        },
+        "1.1.20": {
+          "datagrok-api": "^1.13.5"
+        },
+        "1.1.21": {
+          "datagrok-api": "^1.13.5"
         }
       },
       "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
@@ -2196,19 +2221,6 @@
       },
       "category": "Visualizations"
     },
-    "demoxl": {
-      "dependencies": {
-        "1.1.0": {
-          "datagrok-api": "^1.0.0"
-        }
-      },
-      "description": "*Demo* is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It demonstrates the [scripting](https://datagrok.ai/help/compute/scripting) functionality for [Python](https://www.python.org/), [R](https://www.r-project.org/), [Julia](https://julialang.org/), [NodeJS](https://nodejs.org/), [Octave](https://octave.org/).",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/DemoXL"
-      }
-    },
     "simpkpd": {
       "dependencies": {
         "1.0.0": {
@@ -2257,6 +2269,9 @@
         },
         "1.2.4": {
           "datagrok-api": "^1.8.2"
+        },
+        "1.2.6": {
+          "datagrok-api": "^1.8.2"
         }
       },
       "description": "*PhyloTreeViewer* is a [Datagrok package](https://datagrok.ai/help/develop/develop#packages) for phylogenetic trees visualization.",
@@ -2300,6 +2315,19 @@
         "directory": "packages/MolecularLiabilityBrowser"
       },
       "category": "Bioinformatics"
+    },
+    "fae": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "latest"
+        }
+      },
+      "description": "Bispecifics FAE simulation V2.0",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public",
+        "directory": "packages/FAE"
+      }
     }
   }
 }

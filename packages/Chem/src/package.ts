@@ -41,7 +41,7 @@ import { addDescriptors } from './descriptors/descriptors-calculation';
 import { ScaffoldTreeViewer} from "./widgets/scaffold-tree";
 import {Fingerprint} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
-import {IMolContext, getMolSafe} from './utils/mol-creation_rdkit';
+import {IMolContext, getMolSafe, isSmarts} from './utils/mol-creation_rdkit';
 import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
 import {_convertMolNotation} from './utils/convert-notation-utils';
 import {molToMolblock} from './utils/convert-notation-utils';
@@ -123,12 +123,15 @@ export async function initChemAutostart(): Promise<void> { }
 //tags: tooltip
 //input: column col {semType: Molecule}
 //output: widget
-export async function chemTooltip(col: DG.Column): Promise<DG.Viewer> {
+export async function chemTooltip(col: DG.Column): Promise<DG.Viewer | undefined> {
+  for (let i = 0; i < col.length; ++i) {
+    if (!col.isNone(i) && isSmarts(col.get(i)))
+      return;
+  }
   const tv = grok.shell.tv;
   let viewer = new ChemDiversityViewer(true, col)//await tv.dataFrame.plot.fromType('diversitySearchViewer', {
     viewer.limit = 9;
     viewer.dataFrame = tv.dataFrame;
-
   return viewer;
 }
 
@@ -324,7 +327,7 @@ export async function searchSubstructure(
   }
 }
 
-//name: Descriptors App
+//name: Molecular Descriptors
 //tags: app
 export function descriptorsApp(): void {
   getDescriptorsApp();
@@ -341,9 +344,10 @@ export async function saveAsSdf(): Promise<void> {
 
 //#region Top menu
 
-//name: SimilaritySearchViewer
+//name: Chem Similarity Search
 //tags: viewer
 //output: viewer result
+//meta.icon: files/icons/chem-similarity-search-viewer.svg
 export function similaritySearchViewer(): ChemSimilarityViewer {
   return new ChemSimilarityViewer();
 }
@@ -352,12 +356,13 @@ export function similaritySearchViewer(): ChemSimilarityViewer {
 //name: similaritySearch
 //description: finds the most similar molecule
 export function similaritySearchTopMenu(): void {
-  (grok.shell.v as DG.TableView).addViewer('SimilaritySearchViewer');
+  (grok.shell.v as DG.TableView).addViewer('Chem Similarity Search');
 }
 
-//name: DiversitySearchViewer
+//name: Chem Diversity Search
 //tags: viewer
 //output: viewer result
+//meta.icon: files/icons/chem-diversity-search-viewer.svg
 export function diversitySearchViewer(): ChemDiversityViewer {
   return new ChemDiversityViewer();
 }
@@ -366,7 +371,7 @@ export function diversitySearchViewer(): ChemDiversityViewer {
 //name: diversitySearch
 //description: finds the most diverse molecules
 export function diversitySearchTopMenu(): void {
-  (grok.shell.v as DG.TableView).addViewer('DiversitySearchViewer');
+  (grok.shell.v as DG.TableView).addViewer('Chem Diversity Search');
 }
 
 
@@ -375,9 +380,9 @@ export function diversitySearchTopMenu(): void {
 //input: funccall call
 export function ChemSpaceEditor(call: DG.FuncCall) {
   const funcEditor = new SequenceSpaceFunctionEditor(DG.SEMTYPE.MOLECULE);
-  ui.dialog({title: 'Chemical space'})
+  ui.dialog({title: 'Chemical Space'})
     .add(funcEditor.paramsUI)
-    .onOK(async () => {      
+    .onOK(async () => {
       call.func.prepare(funcEditor.funcParams).call(true);
     })
     .show();
@@ -472,7 +477,7 @@ export async function getChemSimilaritiesMatrix(dim: number, col: DG.Column,
 }
 
 //top-menu: Chem | Analyze Structure | Elemental Analysis...
-//name: Elemental analysis
+//name: Elemental Analysis
 //description: function that implements elemental analysis
 //input: dataframe table
 //input: column molCol { semType: Molecule }
@@ -483,7 +488,7 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
     grok.shell.info(`The column ${molCol.name} doesn't contain molecules`);
     return;
   }
-   
+
   const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molCol);
   let columnNames: string[] = [];
 
@@ -557,9 +562,9 @@ export function groupAnalysisMenu(): void {
 //input: funccall call
 export function ActivityCliffsEditor(call: DG.FuncCall) {
   const funcEditor = new ActivityCliffsFunctionEditor(DG.SEMTYPE.MOLECULE);
-  ui.dialog({title: 'Activity cliffs'})
+  ui.dialog({title: 'Activity Cliffs'})
     .add(funcEditor.paramsUI)
-    .onOK(async () => {      
+    .onOK(async () => {
       call.func.prepare(funcEditor.funcParams).call(true);
     })
     .show();
@@ -605,23 +610,23 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
 }
 
 //top-menu: Chem | Analyze SAR | Structural Alerts...
-//name: Structural Alerts...
+//name: Structural Alerts
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}
 export async function getStructuralAlerts(col: DG.Column<string>): Promise<void> {
   await checkForStructuralAlerts(col);
 }
 
-//top-menu: Chem | Calculate | To InchI
-//name: To InchI...
+//top-menu: Chem | Calculate | To InchI...
+//name: To InchI
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}
 export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column): void {
   addInchis(table, col);
 }
 
-//top-menu: Chem | Calculate | To InchI Keys
-//name: To InchI Keys...
+//top-menu: Chem | Calculate | To InchI Keys...
+//name: To InchI Keys
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}
 export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void {
@@ -890,7 +895,7 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
     molblock = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
   else
     molblock = molToMolblock(molecule, getRdKitModule());
-  
+
   tv.getFiltersGroup({createDefaultFilters: false}).add({
     type: DG.FILTER_TYPE.SUBSTRUCTURE,
     column: molCol.name,
@@ -956,7 +961,7 @@ export async function callChemDiversitySearch(
 }
 
 
-//top-menu: Chem | Analyze Structure | Scaffold Tree...
+//top-menu: Chem | Analyze Structure | Scaffold Tree
 //name: addScaffoldTree
 export function addScaffoldTree(): void {
   grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
@@ -978,14 +983,14 @@ export async function getScaffoldTree(data: DG.DataFrame,
   const smilesList: string[] = new Array<string>(data.columns.length);
   for (let rowI = 0; rowI < molColumn!.length; rowI++) {
     let el: string = molColumn?.get(rowI);
-    if (!smiles) 
+    if (!smiles)
       try {
         el = convertMolNotation(el, DG.UNITS.Molecule.MOLBLOCK, DG.UNITS.Molecule.SMILES);
-      } 
+      }
       catch {
         invalid[rowI] = rowI;
       }
-    
+
     smilesList[rowI] = el;
   }
   const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
@@ -1007,4 +1012,3 @@ export function removeDuplicates(molecules: string[], molecule: string): string[
   mol1.delete();
   return filteredMolecules;
 }
-

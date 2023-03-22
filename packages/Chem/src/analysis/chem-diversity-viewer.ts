@@ -6,9 +6,11 @@ import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-meth
 import {chemGetFingerprints} from '../chem-searches';
 import $ from 'cash-dom';
 import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
-import {Fingerprint} from '../utils/chem-common';
+import {defaultMorganFpLength, defaultMorganFpRadius, Fingerprint, rdKitFingerprintToBitArray} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer} from './chem-search-base-viewer';
+import { getRdKitModule } from '../package';
+import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 export class ChemDiversityViewer extends ChemSearchBaseViewer {
   renderMolIds: number[];
@@ -37,11 +39,11 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
           this.limit = rowsWithoutEmptyValues;
         this.renderMolIds =
           await chemDiversitySearch(
-            this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit, this.fingerprint as Fingerprint);
+            this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit, this.fingerprint as Fingerprint, this.tooltipUse);
       }
       if (this.root.hasChildNodes())
         this.root.removeChild(this.root.childNodes[0]);
-
+  
       const panel = [];
       const grids = [];
       let cnt = 0; let cnt2 = 0;
@@ -86,6 +88,8 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         grids[cnt2++] = grid;
       }
 
+      if (this.tooltipUse) 
+        panel[cnt++] = ui.divText('Most diverse structures');
       panel[cnt++] = ui.div(grids, {classes: 'd4-flex-wrap'});
       this.root.appendChild(ui.div(panel, {style: {margin: '5px'}}));
       if (!this.tooltipUse)
@@ -102,9 +106,30 @@ function rowsWithoutEmptyValuesCount(col: DG.Column): number {
 
 export async function chemDiversitySearch(
   moleculeColumn: DG.Column, similarity: (a: BitArray, b: BitArray) => number,
-  limit: number, fingerprint: Fingerprint): Promise<number[]> {
+  limit: number, fingerprint: Fingerprint, tooltipUse: boolean = false): Promise<number[]> {
   limit = Math.min(limit, moleculeColumn.length);
-  const fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint);
+  let fingerprintArray: BitArray[] = [];
+  if (tooltipUse) {
+    const size = Math.min(moleculeColumn.length, 1000);
+    const randomIndexes = Array.from({length: size}, () => Math.floor(Math.random() * moleculeColumn.length));
+    limit = Math.min(limit, size);
+    for (let i = 0; i < randomIndexes.length; ++i) {
+      let mol: RDMol | null = null;
+      try {
+        mol = getRdKitModule().get_mol(moleculeColumn.get(randomIndexes[i]));
+        let fp = mol.get_morgan_fp_as_uint8array(JSON.stringify({
+          radius: defaultMorganFpRadius,
+          nBits: defaultMorganFpLength,
+        }));
+        fingerprintArray[i] = rdKitFingerprintToBitArray(fp);
+      } catch (e) {
+      } finally {
+        mol?.delete();
+      }
+    }
+  } else {
+    fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint);
+  }
   const indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => f != null);
 
   const diverseIndexes = getDiverseSubset(fingerprintArray, indexes.length, limit,

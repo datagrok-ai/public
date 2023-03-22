@@ -17,6 +17,7 @@ public class NeptuneDataProvider extends JdbcDataProvider {
         driverClassName = "software.aws.neptune.NeptuneDriver";
         descriptor = new DataSource();
         descriptor.type = "Neptune";
+        descriptor.commentStart = "//";
         descriptor.description = "Amazon Neptune is a fully managed graph database service";
         descriptor.connectionTemplate = new ArrayList<Property>() {{
             add(new Property(Property.STRING_TYPE, DbCredentials.SERVER));

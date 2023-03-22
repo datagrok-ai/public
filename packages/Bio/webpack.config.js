@@ -17,18 +17,12 @@ module.exports = {
   },
   module: {
     rules: [
-      {
-        test: /\.ts(x?)$/,
-        use: 'ts-loader',
-        exclude: /node_modules/,
-      },
-      {
-        test: /\.css$/,
-        use: ['style-loader', 'css-loader'],
-      },
+      {test: /\.js$/, enforce: 'pre', use: ['source-map-loader']},
+      {test: /\.ts(x?)$/, use: 'ts-loader', exclude: /node_modules/},
+      {test: /\.css$/, use: ['style-loader', 'css-loader']},
     ],
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

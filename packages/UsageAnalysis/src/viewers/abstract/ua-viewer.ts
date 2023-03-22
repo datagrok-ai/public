@@ -1,10 +1,10 @@
 import * as ui from 'datagrok-api/ui';
 
+
 export abstract class UaViewer {
   root: HTMLElement;
   name: string;
   setStyle: Function = null as any;
-  showName: boolean;
 
   static splineStyle: Object = {
     'aggrType': 'count',
@@ -33,14 +33,11 @@ export abstract class UaViewer {
     style: 'dashboard',
   };
 
-  protected constructor(name: string, setStyle?: Function | null, showName: boolean = true) {
+  protected constructor(name: string, setStyle?: Function | null) {
     this.root = ui.box();
     this.name = name;
-
     if (setStyle)
       this.setStyle = setStyle;
-
-    this.showName = showName;
   }
 
   reloadViewer() {
@@ -48,20 +45,11 @@ export abstract class UaViewer {
     const host = ui.box();
     if (this.setStyle)
       this.setStyle(host);
-
-    const nameDiv = ui.divH([], {style: {alignItems: 'center'}});
-    if (this.showName)
-      nameDiv.append(ui.h1(this.name, {style: {margin: '6px 0'}}));
-    host.appendChild(nameDiv);
-
     const loader = ui.loader();
+    this.setViewer(loader, host);
     host.appendChild(loader);
-
-    this.setViewer(loader, host, nameDiv);
-
     this.root.append(host);
   }
 
-  setViewer(loader: any, host: HTMLDivElement, nameDiv: HTMLElement): void {
-  }
+  setViewer(loader: any, host: HTMLDivElement): void {}
 }

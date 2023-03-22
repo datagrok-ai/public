@@ -1,7 +1,8 @@
 export class UaFilter {
-  date: String = 'today';
-  users: String[] = ['all'];
-  events: String[] = ['all'];
+  date: string = 'this week';
+  groups: string[] = [];
+  packages: string[] = ['all'];
+  events: string[] = ['all'];
   isExactly: boolean = false;
 
   public constructor(init?:Partial<UaFilter>) {

@@ -1,0 +1,21 @@
+{
+  "#type": "DataConnection",
+  "name": "PostgresCDM",
+  "friendlyName": "CDM",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "db": "cdm_souffleur",
+    "port": 54328
+  },
+  "credentials": {
+    "parameters": {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "Postgres",
+  "description": "CDM sample database",
+  "tags": [
+    "cdm"
+  ]
+}

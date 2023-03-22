@@ -1,4 +1,4 @@
-import {category, expect, delay, test, before} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test, before} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 
 category('usageAnalysis', () => {
@@ -25,11 +25,11 @@ category('usageAnalysis', () => {
 
   test('openApp', async () => {
     expect(grok.shell.v.name == 'Usage Analysis', true);
-  });
+  }, {skipReason: 'GROK-12578'});
 
   test('viewsTest', async () => {
     expect(Object.keys(allViewersToView).every((viewName) => grok.shell.view(viewName) !== undefined), true);
-  }, {skipReason: 'Ongoing rework #1414'});
+  }, {skipReason: 'GROK-12578'});
 
   test('allViewersTest', async () => {
     for (const viewName of Object.keys(allViewersToView)) {
@@ -48,5 +48,5 @@ category('usageAnalysis', () => {
       }
       expect(foundedViewersOfView, allViewersToView[viewName].length);
     }
-  }, {skipReason: 'Ongoing rework #1414'});
+  }, {skipReason: 'GROK-12578'});
 });

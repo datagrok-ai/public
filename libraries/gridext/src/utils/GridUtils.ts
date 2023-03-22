@@ -11,11 +11,31 @@ x = r * x; y = r * y;
 w = r * w; h = r * h;
 */
 
-export function getGridDartPopupMenu() : HTMLElement | null {
+function parseStyleValue(str: string) : number {
+  const idx = str.indexOf('px');
+  if (idx < 0)
+    return NaN;
 
+  const strVal = str.substring(0, idx);
+  return parseInt(strVal);
+}
+
+export function getLeft(canvas: HTMLCanvasElement) : number {
+  const str = canvas.style.left;
+  const left = parseStyleValue(str);
+  return left;
+}
+
+export function getWidth(canvas: HTMLCanvasElement) : number {
+  const str = canvas.style.width;
+  const width = parseStyleValue(str);
+  return width;
+}
+
+export function getGridDartPopupMenu() : HTMLElement | null {
   let eDiv = null;
   const cDiv = document.getElementsByClassName('d4-menu-item-container d4-vert-menu d4-menu-popup');
-  for(let n=0; n<cDiv.length; ++n) {
+  for (let n=0; n<cDiv.length; ++n) {
     eDiv = (cDiv.item(n) as HTMLElement);
     return eDiv;
   }
@@ -24,12 +44,10 @@ export function getGridDartPopupMenu() : HTMLElement | null {
 
 
 export function getToolIconDiv(grid : DG.Grid) : HTMLElement | null {
-
   const cImg = document.getElementsByClassName('grok-icon grok-font-icon-menu');
-
   let eDivHamb : HTMLElement | null = null;
   let eParent = null;
-  for(let n=0; n<cImg.length; ++n) {
+  for (let n=0; n<cImg.length; ++n) {
     eDivHamb = (cImg.item(n) as HTMLElement).parentElement;
     if(eDivHamb == null)
       return null;
@@ -46,8 +64,6 @@ export function getToolIconDiv(grid : DG.Grid) : HTMLElement | null {
   }
   return null;
 }
-
-
 
 export function isHitTestOnElement(eElem: HTMLElement, eMouse : MouseEvent) : boolean {
   const eElemHit = document.elementFromPoint(eMouse.clientX, eMouse.clientY);
@@ -79,7 +95,6 @@ export function installGridForColumn(grid : DG.Grid, colGrid : DG.GridColumn) : 
   return true;
 }
 
-
 export function setGridColumnRenderer(colGrid : DG.GridColumn, renderer : GridCellRendererEx) : void {
   const dart : any = DG.toDart(colGrid);
   dart.m_renderer = renderer;
@@ -88,7 +103,7 @@ export function setGridColumnRenderer(colGrid : DG.GridColumn, renderer : GridCe
 export function getGridColumnRenderer(colGrid : DG.GridColumn) : GridCellRendererEx | null {
   const dart : any = DG.toDart(colGrid);
   const renderer = dart.m_renderer;
-  if(renderer === undefined)
+  if (renderer === undefined)
     return null;
 
   return renderer;
