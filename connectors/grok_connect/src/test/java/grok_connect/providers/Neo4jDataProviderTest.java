@@ -1,21 +1,24 @@
 package grok_connect.providers;
 
-import grok_connect.connectors_info.Credentials;
-import grok_connect.connectors_info.DataConnection;
-import grok_connect.connectors_info.DataProvider;
-import grok_connect.connectors_info.DbCredentials;
+import grok_connect.connectors_info.*;
 import grok_connect.providers.utils.DataFrameComparator;
+import grok_connect.providers.utils.NamedArgumentConverter;
 import grok_connect.providers.utils.Provider;
 import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryMonitor;
 import grok_connect.utils.SettingsManager;
 import org.apache.log4j.Logger;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.converter.ConvertWith;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
+import serialization.DataFrame;
+
 import java.io.IOException;
 
 @Testcontainers
@@ -77,5 +80,15 @@ class Neo4jDataProviderTest {
         String expected = DataProvider.CONN_AVAILABLE;
         String actual = Assertions.assertDoesNotThrow(() -> provider.testConnection(connection));
         Assertions.assertEquals(expected, actual);
+    }
+
+    @DisplayName("Parameters support")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource({"grok_connect.providers.arguments_provider.Neo4jObjectsMother#checkParameterSupport_ok",
+            "grok_connect.providers.arguments_provider.Neo4jObjectsMother#checkRegexSupport_ok"})
+    public void checkParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 }

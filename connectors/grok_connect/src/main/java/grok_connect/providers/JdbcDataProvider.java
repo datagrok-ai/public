@@ -695,7 +695,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         throw new UnsupportedOperationException("TIMESTAMPTZ is not supported");
     }
 
-    private static String paramToNamesString(FuncParam param, PatternMatcher matcher, String type,
+    protected static String paramToNamesString(FuncParam param, PatternMatcher matcher, String type,
                                              PatternMatcherResult result) {
         StringBuilder builder = new StringBuilder();
         for (int n = 0 ; n < matcher.values.size(); n++) {
@@ -721,12 +721,16 @@ public abstract class JdbcDataProvider extends DataProvider {
             result.params.add(new FuncParam(type, name1, matcher.values.get(1)));
         } else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
             String names = paramToNamesString(param, matcher, type, result);
-            result.query = "(" + matcher.colName + " " + matcher.op + " (" + names + "))";
+            result.query = getInQuery(matcher, names);
         } else {
             result.query = "(" + matcher.colName + " " + matcher.op + " @" + param.name + ")";
             result.params.add(new FuncParam(type, param.name, matcher.values.get(0)));
         }
         return result;
+    }
+
+    protected String getInQuery(PatternMatcher matcher, String names) {
+        return String.format("(%s %s (%s))", matcher.colName, matcher.op, names);
     }
 
     public PatternMatcherResult stringPatternConverter(FuncParam param, PatternMatcher matcher) {
@@ -758,7 +762,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             result.params.add(new FuncParam(type, param.name, value));
         } else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
             String names = paramToNamesString(param, matcher, type, result);
-            result.query = "(" + matcher.colName + " " + matcher.op + " (" + names + "))";
+            result.query = getInQuery(matcher, names);
         } else {
             result.query = "(1 = 1)";
         }
