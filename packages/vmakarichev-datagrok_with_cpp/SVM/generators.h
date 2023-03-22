@@ -22,7 +22,6 @@ namespace gener
 	const unsigned SEED = 10214313;
 	const int RAND_SCALE = 1000;
 
-
 	/* Generate dataset: vectors are linearly separable by the hyperplane x * w + b = 0.
 	   Features are generated randomly using the uniform distribution.
 	   Each feature belongs to the corresponding segment [min, max].
@@ -151,5 +150,19 @@ namespace gener
 		// create violators
 		return changeLabels(labels, samplesCount, violatorsPercentage / 100, percentageOfActualViolators);
 	} // generateLinearNonSeparable
+
+	/**/
+	template<typename Float>
+	int generateModelParams(Float* weights, Float& bias, int featuresCount)
+	{
+		srand(SEED);
+
+		for (int i = 0; i < featuresCount; i++)
+			weights[i] = static_cast<Float>(rand() % (2 * RAND_SCALE) - RAND_SCALE) / RAND_SCALE;
+
+		bias = static_cast<Float>(rand() % (2 * RAND_SCALE) - RAND_SCALE) / RAND_SCALE;
+
+		return NO_ERRORS;
+	} // generateModelParams
 
 }; // gener

@@ -10,13 +10,19 @@ int main()
 {
 	//testCreateDataset();
 
+	//testCreateNormalizedDataset();
+
 	//testTrainModelSimpleLinear();
 
 	//testGeneratorLinearSeparable();
 
 	//testGeneratorLinearNonSeparable();
 
-	testTrainModelComplexLinear();
+	//testTrainModelNormalizedDataLinear();
+
+	testTrainModelNormalizedDataLinearHighDim(false);
+
+	//testTrainModelNormalizedDataLinearHighDimDouble();
 
 	return 0;
 }

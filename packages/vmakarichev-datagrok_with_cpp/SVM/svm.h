@@ -10,6 +10,10 @@
 #ifndef SVM_H
 #define SVM_H
 
+#include <cmath>
+using std::sqrt;
+using std::fabs;
+
 // TODO: this include should be removed
 #include<iostream>
 using namespace std;
@@ -31,6 +35,8 @@ namespace svm {
 	enum KernelType {LINEAR = 0, POLYNOMIAL, RBF, SIGMOID};
 
 	const int MAX_NUM_OF_KERNEL_PARAM = 2;
+
+	const double TINY = 0.0001;
 
 
 	/* Create dataset from columns data.
@@ -54,6 +60,57 @@ namespace svm {
 
 		return NO_ERRORS;
 	}
+
+
+	/* Create normalized dataset from columns data.
+	   Each column of the ouput is centered and normalized.
+		  columsDataPtr - pointer to columns data
+		  rowCount - number of rows
+		  colCount - number of columns
+		  datasetPtr - pointer to dataset
+		  means - mean values of source columns
+		  stdDevs - standard deviations of source columns
+
+	   REMARKS. 1. In DATAGROK, column-oriented data storage is used,
+			       but row-oriented approach is preffered in SVM, and
+			       this function provides it.
+				2. Further, means and stdDevs are used in predicting. */
+	template<typename Float>
+	int createNormalizedDataset(Float* columsDataPtr, int rowCount, int colCount, 
+		Float* datasetPtr, Float* means, Float* stdDevs) noexcept
+	{
+		// pointers-to-matrices assignment
+		Map < Matrix<Float, Dynamic, Dynamic, ColMajor>> A(columsDataPtr, rowCount, colCount);
+		Map < Matrix<Float, Dynamic, Dynamic, RowMajor>> B(datasetPtr, rowCount, colCount);
+		Map < Vector<Float, Dynamic> > mu(means, colCount);
+		Map < Vector<Float, Dynamic> > sigma(stdDevs, colCount);
+
+		// compute mean values & standard deviations
+		for (int i = 0; i < colCount; i++)
+		{
+			mu(i) = A.col(i).mean();
+			sigma(i) = sqrt(A.col(i).squaredNorm() / rowCount - mu(i) * mu(i));
+		}	
+
+		// get A centered
+		B = A.rowwise() - mu.transpose();
+
+		// norm columns of B
+		for (int i = 0; i < colCount; i++)
+		{
+			Float current = sigma(i);
+
+			if (current > static_cast<Float>(0))
+				B.col(i) /= current;
+		}
+
+		// The following is for testing
+		/*cout << "\nB:\n" << B << endl;
+		cout << "\nVariances of B columns:\n" << B.colwise().squaredNorm() / rowCount << endl;
+		cout << "\nMeans of B columns:\n" << B.colwise().mean() << endl;*/
+
+		return NO_ERRORS;
+	} // createNormalizedDataset
 
 
 	/* Compute matrix of the linear system for the LS-SVM method 
@@ -172,11 +229,11 @@ namespace svm {
 		/*cout << "\nA:\n" << A << endl;
 
 		cout << "\nrigth part:\n"
-			<< b << endl;*/
+			<< b << endl;
 
 		Vector<Float, Dynamic> params = A.partialPivLu().solve(b);
 		
-		//cout << "\nsolution:\n" << params << endl;
+		cout << "\nsolution:\n" << params << endl;
 
 		Vector<Float, Dynamic> w = Vector<Float, Dynamic>::Zero(featuresCount);
 
@@ -185,10 +242,141 @@ namespace svm {
 		for (int i = 0; i < samplesCount; i++)
 			w += params(i) * yTrain[i] * X.row(i);
 
-		cout << "\nw:\n" << w << endl;
+		cout << "\nw:\n" << w << endl;*/
 
 		return NO_ERRORS;
 	} // trainModel
+
+	/*
+	*/
+	template<typename Float>
+	int predictByLSSVMwithLinearKernel(int kernelType, 
+		Float* xTrain, Float* yTrain, int samplesCount, int featuresCount,
+		Float* means, Float* stdDevs, Float* modelParams,
+		Float* targetData, Float * labels, int targetSamplesCount)
+	{
+		Map<Matrix<Float, Dynamic, Dynamic, ColMajor>> TD(targetData, targetSamplesCount, featuresCount);
+		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> Xi(xTrain, samplesCount, featuresCount);
+		Map<Vector<Float, Dynamic>> mu(means, featuresCount);
+		Matrix<Float, Dynamic, Dynamic, RowMajor> X(targetSamplesCount, featuresCount);
+
+		//cout << "\nTD:\n" << TD << endl;
+
+		X = TD.rowwise() - mu.transpose();
+
+		for (int i = 0; i < featuresCount; i++)
+		{
+			Float sigma = stdDevs[i];
+
+			if (sigma > static_cast<Float>(0))
+				X.col(i) /= sigma;
+		}
+
+		Vector<Float, Dynamic> w = Vector<Float, Dynamic>::Zero(featuresCount);		
+
+		for (int i = 0; i < samplesCount; i++)
+			w += modelParams[i] * yTrain[i] * Xi.row(i);
+
+		//cout << "\nw:\n" << w << endl;
+
+		//cout << "\nPredicted:\n";
+		for (int i = 0; i < targetSamplesCount; i++)
+		{
+			Float cost = modelParams[samplesCount] + w.dot(X.row(i));
+
+			if (cost > static_cast<Float>(0))
+				labels[i] = static_cast<Float>(1);
+			else
+				labels[i] = static_cast<Float>(-1);
+
+			//cout << cost << "  " << labels[i] << endl;
+		}
+
+		return NO_ERRORS;
+	} // predictByLSSVMwithLinearKernel
+	/* //OLD VERSION!
+	{
+		Map<Matrix<Float, Dynamic, Dynamic, ColMajor>> S(targetData, targetSamplesCount, featuresCount);
+		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> Xi(xTrain, samplesCount, featuresCount);
+		Map<Vector<Float, Dynamic>> mu(means, featuresCount);
+
+		//cout << "\nSource:\n" << S << endl;
+
+		Matrix<Float, Dynamic, Dynamic, ColMajor> X(featuresCount, targetSamplesCount);
+
+		cout << "\nmu:\n" << mu << endl;
+
+		X = S.transpose().colwise() - mu;
+
+		//cout << "\nX:\n" << X << endl;
+
+		for (int i = 0; i < featuresCount; i++)
+		{
+			Float sigma = stdDevs[i];
+
+			if (sigma > static_cast<Float>(0))
+				X.row(i) /= sigma;
+		}
+
+		cout << "\nX:\n" << X << endl;
+
+		Vector<Float, Dynamic> c(samplesCount);
+
+		for (int i = 0; i < samplesCount; i++)
+			c(i) = yTrain[i] * modelParams[i];
+
+		//cout << "\nc:\n" << c.transpose() << endl;
+
+		Matrix<Float, Dynamic, Dynamic, ColMajor> K(samplesCount, targetSamplesCount);
+		K = Xi * X;
+
+		cout << "\nK:\n" << K << endl;
+
+		for (int j = 0; j < targetSamplesCount; j++)
+		{
+			Float val = modelParams[samplesCount] + c.dot(K.col(j));
+			cout << val << "\n\n";
+		}	
+
+		return NO_ERRORS;
+	} // predictByLSSVMwithLinearKernel*/
+
+
+	/*
+	*/
+	template<typename Float>
+	int predictByLSSVM(int kernelType, Float kernelParams[MAX_NUM_OF_KERNEL_PARAM], 
+		Float* xTrain, Float* yTrain, int trainSamplesCount, int featuresCount, 
+		Float* means, Float* stdDevs, Float* modelParams,
+		Float* targetData, Float * labels, int targetSamplesCount)
+	{
+		switch (kernelType)
+		{
+		case LINEAR:
+			return predictByLSSVMwithLinearKernel(kernelType, 
+				xTrain, yTrain, trainSamplesCount, featuresCount, 
+				means, stdDevs, modelParams, 
+				targetData, labels, targetSamplesCount);
+		default:
+			return UNKNOWN_KERNEL_TYPE;
+		}
+	} // predictByLSSVM
+
+	/*
+	*/
+	template<typename Float>
+	int evalutaeErrorPercent(Float* labels, Float* predictedLabels, int samplesCount, Float& percentage)
+	{
+		int counter = 0;
+
+		for (int i = 0; i < samplesCount; i++)
+			if (fabs(labels[i] - predictedLabels[i]) > TINY)
+				counter++;
+
+		percentage = static_cast<Float>(counter) / samplesCount * 100;
+
+		return NO_ERRORS;
+	}
 
 }; // svm
 
