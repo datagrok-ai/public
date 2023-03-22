@@ -13,15 +13,15 @@
     "directory": "packages/Tutorials"
   },
   "dependencies": {
-    "@datagrok-libraries/tutorials": "^1.0.3",
     "@datagrok-libraries/utils": "^1.15.5",
     "cash-dom": "^8.1.0",
-    "datagrok-api": "^1.12.0",
+    "datagrok-api": "^1.13.7",
     "dayjs": "^1.10.6",
     "rxjs": "6.6.7",
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@datagrok-libraries/tutorials": "^1.0.3",
     "@types/wu": "^2.1.42",
     "@typescript-eslint/eslint-plugin": "^4.29.1",
     "@typescript-eslint/parser": "^4.29.1",
