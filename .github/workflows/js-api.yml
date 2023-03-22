@@ -63,6 +63,7 @@ jobs:
               if [[ $unpublished_dep == "datagrok-api"] ]]; then
                 MATRIX_JSON+=", \"unpublished_dep\": \"true\""
                 MATRIX_JSON+=", \"dep\": \"$unpublished_dep\""
+                MATRIX_JSON+=", \"author\": \"$(jq -r '.author.email // "monitoring@datagrok.ai"' "${DIR}/package.json")\""
               fi
             fi
             MATRIX_JSON+="}"
