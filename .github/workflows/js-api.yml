@@ -14,7 +14,8 @@ jobs:
       name: ${{ steps.check-version.outputs.name }}
       packages_matrix: ${{ steps.packages.outputs.matrix }}
       libraries_matrix: ${{ steps.libraries.outputs.matrix }}
-      latest: ${{ steps.get_version.outputs.latest }}
+      latest: ${{ steps.check-version.outputs.latest }}
+      replace_dep: ${{ steps.check-version.outputs.replace_dep }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -47,26 +48,26 @@ jobs:
 
       - name: Check dependent packages
         id: packages
-        if: steps.get_version.outputs.replace_dep == 'true'
+        if: steps.check-version.outputs.replace_dep == 'true'
         run: |
           MATRIX_JSON="["
-          for PACKAGE in $(grep -lr datagrok-api packages/*/package.json | awk -F'/' '{print $2}' | sort -u); do
+          for PACKAGE in $(grep -lr "${{ steps.check-version.outputs.name }}" packages/*/package.json | awk -F'/' '{print $2}' | sort -u); do
             DIR="packages/${PACKAGE}"
             if [ -f "${DIR}/package.json" ]; then
-              MATRIX_JSON+="{\"package\": \"${PACKAGE}\""
-              scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
-              if [ ! -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
-                MATRIX_JSON+=", \"build\": \"true\""
-              fi
               dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
               unpublished_dep="$(jq -cr '. | to_entries | map(select(.value | match("\\.\\./js-api")).key)[]' <<<$dependencies)"
-              if [[ $unpublished_dep == "datagrok-api"] ]]; then
+              if [[ $unpublished_dep == "datagrok-api" ]]; then
+                MATRIX_JSON+="{\"package\": \"${PACKAGE}\""
+                scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
+                if [ ! -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
+                  MATRIX_JSON+=", \"build\": \"true\""
+                fi
                 MATRIX_JSON+=", \"unpublished_dep\": \"true\""
                 MATRIX_JSON+=", \"dep\": \"$unpublished_dep\""
                 MATRIX_JSON+=", \"author\": \"$(jq -r '.author.email // "monitoring@datagrok.ai"' "${DIR}/package.json")\""
+                MATRIX_JSON+="}"
               fi
             fi
-            MATRIX_JSON+="}"
           done
 
           MATRIX_JSON="${MATRIX_JSON//\}\{/\}, \{}"
@@ -75,33 +76,43 @@ jobs:
           echo "matrix=${JSON}" >> $GITHUB_OUTPUT
 
       - name: Check dependent libraries
-        if: steps.get_version.outputs.replace_dep == 'true'
+        if: steps.check-version.outputs.replace_dep == 'true'
         id: libraries
         run: |
           MATRIX_JSON="["
-          for LIB in $(echo -e "utils\ngridext\n$(grep -lr datagrok-api libraries/*/package.json | awk -F'/' '{print $2}' | sort)" | awk '!x[$0]++'); do
+          for LIB in $(echo -e "utils\ngridext\n$(grep -lr "${{ steps.check-version.outputs.name }}" libraries/*/package.json | awk -F'/' '{print $2}' | sort)" | awk '!x[$0]++'); do
             DIR="libraries/${LIB}"
             if [ -f "${DIR}/package.json" ]; then
-              MATRIX_JSON+="{\"library\": \"${LIB}\""
-              scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
-              if [ ! -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
-                MATRIX_JSON+=", \"build\": \"true\""
-              fi
               dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
               unpublished_dep="$(jq -cr '. | to_entries | map(select(.value | match("\\.\\./js-api")).key)[]' <<<$dependencies)"
-              if [[ $unpublished_dep == "datagrok-api"] ]]; then
+              if [[ $unpublished_dep == "datagrok-api" ]]; then
+                MATRIX_JSON+="{\"library\": \"${LIB}\""
+                scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
+                if [ ! -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
+                  MATRIX_JSON+=", \"build\": \"true\""
+                fi
                 MATRIX_JSON+=", \"unpublished_dep\": \"true\""
                 MATRIX_JSON+=", \"dep\": \"$unpublished_dep\""
                 MATRIX_JSON+=", \"author\": \"$(jq -r '.author.email // "monitoring@datagrok.ai"' "${DIR}/package.json")\""
+                MATRIX_JSON+="}"
               fi
             fi
-            MATRIX_JSON+="}"
           done
 
           MATRIX_JSON="${MATRIX_JSON//\}\{/\}, \{}"
           MATRIX_JSON+="]"
           JSON="{\"include\": ${MATRIX_JSON}}"
           echo "matrix=${JSON}" >> $GITHUB_OUTPUT
+
+      - name: Output
+        run: |
+          echo -e "changed_version: ${{ steps.check-version.outputs.changed_version }}"
+          echo -e "current_version: ${{ steps.check-version.outputs.current_version }}"
+          echo -e "name: ${{ steps.check-version.outputs.name }}"
+          echo -e "packages_matrix: ${{ steps.packages.outputs.matrix }}"
+          echo -e "libraries_matrix: ${{ steps.libraries.outputs.matrix }}"
+          echo -e "latest: ${{ steps.check-version.outputs.latest }}"
+          echo -e "replace_dep: ${{ steps.check-version.outputs.replace_dep }}"
 
   build:
     name: Build and publish to npm
@@ -130,8 +141,8 @@ jobs:
       - name: npm publish
         run: |
           tag=""
-          if [[ ${{ needs.version.outputs.latest }} == 'true' ]]; then
-            tag="--tag stable"
+          if [[ "${{ needs.version.outputs.latest }}" != 'true' ]]; then
+            tag="--tag patch"
           fi
           npm publish ${tag}
         working-directory: ./js-api
@@ -170,7 +181,7 @@ jobs:
   libraries:
     name: Check libraries
     runs-on: ubuntu-20.04
-    if: needs.version.outputs.changed_version == 'true'
+    if: needs.version.outputs.replace_dep == 'true'
     needs:
       - build
       - version
@@ -247,7 +258,7 @@ jobs:
   packages:
     name: Check packages
     runs-on: ubuntu-20.04
-    if: needs.version.outputs.changed_version == 'true'
+    if: needs.version.outputs.replace_dep == 'true'
     needs:
       - build
       - version
