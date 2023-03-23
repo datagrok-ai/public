@@ -1,6 +1,10 @@
 package grok_connect.providers;
 
-import grok_connect.connectors_info.*;
+import grok_connect.connectors_info.Credentials;
+import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataProvider;
+import grok_connect.connectors_info.DbCredentials;
+import grok_connect.connectors_info.FuncCall;
 import grok_connect.providers.utils.DataFrameComparator;
 import grok_connect.providers.utils.NamedArgumentConverter;
 import grok_connect.providers.utils.Provider;
@@ -8,7 +12,15 @@ import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryMonitor;
 import grok_connect.utils.SettingsManager;
 import org.apache.log4j.Logger;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -18,7 +30,6 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 import serialization.DataFrame;
-
 import java.io.IOException;
 
 @Testcontainers
@@ -41,11 +52,7 @@ class Neo4jDataProviderTest {
 
     @BeforeAll
     public void init() {
-        try {
-            container.execInContainer("cypher-shell", "-f", CONTAINER_SCRIPT_PATH);
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException("Something went wrong when executing init script", e);
-        }
+        initScript();
         dataFrameComparator = new DataFrameComparator();
         SettingsManager settingsManager = SettingsManager.getInstance();
         settingsManager.initSettingsWithDefaults();
@@ -85,10 +92,37 @@ class Neo4jDataProviderTest {
     @DisplayName("Parameters support")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource({"grok_connect.providers.arguments_provider.Neo4jObjectsMother#checkParameterSupport_ok",
-            "grok_connect.providers.arguments_provider.Neo4jObjectsMother#checkRegexSupport_ok"})
+            "grok_connect.providers.arguments_provider.Neo4jObjectsMother#checkRegexSupport_ok",
+            "grok_connect.providers.arguments_provider.Neo4jObjectsMother#checkMultipleParametersSupport_ok"})
     public void checkParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Parameters support for datetime")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.Neo4jObjectsMother#checkDatesParameterSupport_ok")
+    public void checkDatesParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Parameters support for all property types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.Neo4jObjectsMother#checkAllTypesSupport_ok")
+    public void checkAllTypesSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    private void initScript() {
+        try {
+            container.execInContainer("cypher-shell", "-f", CONTAINER_SCRIPT_PATH);
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException("Something went wrong when executing init script", e);
+        }
     }
 }
