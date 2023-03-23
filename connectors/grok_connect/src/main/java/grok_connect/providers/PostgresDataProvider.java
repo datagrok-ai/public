@@ -31,6 +31,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
         descriptor.typesMap = new HashMap<String, String>() {{
             put("smallint", Types.INT);
             put("int", Types.INT);
+            put("integer", Types.INT);
             put("bigint", Types.BIG_INT);
             put("real", Types.FLOAT);
             put("double precision", Types.FLOAT);
@@ -38,6 +39,14 @@ public class PostgresDataProvider extends JdbcDataProvider {
             put("#character.*", Types.STRING);
             put("#varchar.*", Types.STRING);
             put("text", Types.STRING);
+            put("boolean", Types.BOOL);
+            put("date", Types.DATE_TIME);
+            put("cidr", Types.STRING);
+            put("ARRAY", Types.LIST);
+            put("USER_DEFINED", Types.STRING);
+            put("bit.*", Types.BIG_INT);
+            put("uuid", Types.STRING);
+            put("xml", Types.STRING);
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stddev(#)", Types.dataFrameNumericTypes));
     }
