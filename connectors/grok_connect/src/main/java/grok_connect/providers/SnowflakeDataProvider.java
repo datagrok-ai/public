@@ -115,13 +115,11 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
         descriptor.description = DESCRIPTION;
         descriptor.canBrowseSchema = CAN_BROWSE_SCHEMA;
         descriptor.defaultSchema = DEFAULT_SCHEMA;
-        Prop notNullProperty = new Prop();
-        notNullProperty.nullable = false;
-        Property cloudProviders = new Property(Property.STRING_TYPE, DbCredentials.CLOUD, notNullProperty);
+        Property cloudProviders = new Property(Property.STRING_TYPE, DbCredentials.CLOUD);
         cloudProviders.choices = AVAILABLE_CLOUDS;
         descriptor.connectionTemplate = new ArrayList<Property>(){{
-            add(new Property(Property.STRING_TYPE, DbCredentials.ACCOUNT_LOCATOR, notNullProperty));
-            add(new Property(Property.STRING_TYPE, DbCredentials.REGION_ID, notNullProperty));
+            add(new Property(Property.STRING_TYPE, DbCredentials.ACCOUNT_LOCATOR));
+            add(new Property(Property.STRING_TYPE, DbCredentials.REGION_ID));
             add(cloudProviders);
             add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
             add(new Property(Property.STRING_TYPE, DbCredentials.WAREHOUSE));
