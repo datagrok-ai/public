@@ -9,7 +9,7 @@ title: "Release History"
 | [Datagrok](../infrastructure.md#datagrok-components)     | [datagrok/datagrok:1.13.8](https://hub.docker.com/r/datagrok/datagrok)                            |
 | [Grok Connect](../../../access/data-connection.md)       | [datagrok/grok_connect:1.3.6](https://hub.docker.com/r/datagrok/grok_connect)                     |
 | Grok Spawner                                             | [datagrok/grok_spawner:1.3.2](https://hub.docker.com/r/datagrok/grok_spawner)                     |
-| [Grok Compute](../infrastructure.md#grok-compute)        | [datagrok/grok_compute:1.5.0](https://hub.docker.com/r/datagrok/grok_compute)                     |
+| [Grok Compute](../infrastructure.md#grok-compute)        | [datagrok/grok_compute:1.5.1](https://hub.docker.com/r/datagrok/grok_compute)                     |
 | [Jupyter Kernel Gateway](../../../compute/scripting.md)  | [datagrok/jupyter_kernel_gateway:1.5.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
 | [Jupyter Notebook](../../../compute/jupyter-notebook.md) | [datagrok/jupyter_notebook:1.1.0](https://hub.docker.com/r/datagrok/jupyter_notebook)             |
 | [H2O](../infrastructure.md#h2o)                          | [datagrok/h2o:1.1.0](https://hub.docker.com/r/datagrok/h2o)                                       |
