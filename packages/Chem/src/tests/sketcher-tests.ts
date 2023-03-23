@@ -20,11 +20,11 @@ category('sketcher testing', () => {
 
   test('smiles', async () => {
     await testSmiles(rdkitModule, funcs);
-  }, {skipReason: 'GROK-12227'});
+  });
 
   test('input_smiles', async () => {
     await testSmiles(rdkitModule, funcs, true);
-  }, {skipReason: 'GROK-12227'});
+  });
 
   test('molV2000', async () => {
     await testMolblock(rdkitModule, funcs, 'V2000');
@@ -32,7 +32,7 @@ category('sketcher testing', () => {
 
   test('paste_input_molV2000', async () => {
     await testMolblock(rdkitModule, funcs, 'V2000', true);
-  }, {skipReason: 'GROK-12227'});
+  });
 
   test('molV3000', async () => {
     await testMolblock(rdkitModule, funcs, 'V3000');
@@ -40,7 +40,7 @@ category('sketcher testing', () => {
 
   test('paste_input_molV3000', async () => {
     await testMolblock(rdkitModule, funcs, 'V3000', true);
-  }, {skipReason: 'GROK-12227'});
+  });
 
   test('smarts', async () => {
     await testSmarts(rdkitModule, funcs);
@@ -48,7 +48,7 @@ category('sketcher testing', () => {
 
   test('inchi', async () => {
     await testInchi(rdkitModule, funcs);
-  });
+  }, {skipReason: 'GROK-12588'});
 
   after(async () => {
     grok.shell.closeAll();
