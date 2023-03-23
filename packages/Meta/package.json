@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.38",
+  "version": "3.2.39",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -442,6 +442,9 @@
         },
         "1.5.13": {
           "datagrok-api": "^1.13.2"
+        },
+        "1.5.15": {
+          "datagrok-api": "^1.13.8"
         }
       },
       "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Chem/README.md)",
