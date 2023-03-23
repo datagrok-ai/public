@@ -509,6 +509,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     const molCol: DG.Column = DG.Column.fromStrings('smiles', ar);
     molCol.semType = DG.SEMTYPE.MOLECULE;
+    molCol.setTag(DG.TAGS.UNITS, DG.UNITS.Molecule.SMILES);
     const dataFrame = DG.DataFrame.fromColumns([molCol]);
 
     if (currentCancelled)
