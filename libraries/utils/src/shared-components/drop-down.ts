@@ -32,12 +32,10 @@ export class DropDown {
   private _updateElement(elementCreation: () => HTMLElement) {
     this._element = elementCreation();
 
-    this._dropDownElement = ui.div(ui.div(this._element, 'ui-drop-down-element'));
+    this._dropDownElement = ui.div(ui.div(this._element), 'ui-drop-down-content');
     this._dropDownElement.style.visibility = 'hidden';
-    this._dropDownElement.className = 'ui-drop-down';
 
-    this.root = ui.div([this._label, this._dropDownElement]);
-    this.root.className = 'ui-drop-down-root';
+    this.root = ui.div([this._label, this._dropDownElement], 'ui-drop-down-root');
   }
 
   private _initEventListeners() {
@@ -56,6 +54,13 @@ export class DropDown {
     this._dropDownElement.addEventListener('mouseleave', () => {
       this._isMouseOverElement = false;
     }, false);
+
+    document.addEventListener('click', (event) => {
+      if (this.root.contains(event.target as Node)) return;
+      if (!this.isExpanded) return;
+
+      this._setExpandedState(this.isExpanded);
+    });
   }
 
   private _setExpandedState(isExpanded: boolean) {
