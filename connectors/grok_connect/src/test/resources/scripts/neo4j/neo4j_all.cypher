@@ -117,3 +117,20 @@ CREATE (p30:Person {id:30, first_name:'Bran', last_name:'Longlands', email:'blon
                     gender:'Genderqueer', ip_address:'14.92.3.30/32', bool:false, country:'France',
                     date: date("2016-07-10"),
                     some_number:879.94});
+
+CREATE (d1:TestDate {date:date()});
+CREATE (d2:TestDate {date:(date() - Duration({days:1}))});
+MERGE (d:TestDate {date:(date() + Duration({days:7 -date().dayOfWeek}))}) SET d.date = date() + Duration({days:7 -date().dayOfWeek});
+CREATE (d4:TestDate {date:(date() - Duration({days:150}))});
+CREATE (d5:TestDate {date:date("2021-04-09")});
+
+CREATE (t1:PropertyTest {datetime:datetime("2022-06-14T10:02:28.192Z"),
+localdatetime:localdatetime("2022-06-14T10:02:30.447"),
+localtime:localtime("10:02:31.596"), time:time("10:02:32.192Z"),
+float:1.7976931348623157e+308, integer:99999999999999, point:point({latitude:toFloat('13.43'), longitude:toFloat('56.21')})});
+
+CREATE (t2:PropertyTest {datetime:datetime("1969-01-12T10:02:28.192Z"), localdatetime:localdatetime("2001-02-11T10:02:10.445"),
+localtime:localtime("12:02:31.596"), time:time("05:01:59.102Z"), float:-1.7976931348623157e+308, integer:-132442423112, point:point({x: 0, y: 4, z: 1})});
+
+CREATE (t3:PropertyTest {datetime:datetime("1909-06-12T10:02:28.192Z"), localdatetime:localdatetime("1909-01-10T00:02:00.405"),
+localtime:localtime("00:00:00.000"), time:time("00:00:00.000Z"), float:4.9e-324, integer:-3453463646, point:point({x: 15, y: 6})});

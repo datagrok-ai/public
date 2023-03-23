@@ -147,10 +147,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                     FuncParam param = dataQuery.getParam(names.get(n));
                     String stringValue;
                     if (param.propertyType.equals(Types.DATE_TIME)) {
-                        Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)param.value);
-                        Timestamp ts = new Timestamp(calendar.getTime().getTime());
-                        stringValue = ts.toString();
-                        statement.setTimestamp(n + i + 1, ts);
+                        stringValue = setDateTimeValue(param, statement, n + i + 1);
                     } else if (param.propertyType.equals(Types.LIST) && param.propertySubType.equals(Types.STRING)) {
                         if (param.value == null)
                             stringValue = "null";
@@ -207,6 +204,18 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
 
         return resultSet;
+    }
+
+    protected String setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
+        Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
+        Timestamp ts = new Timestamp(calendar.getTime().getTime());
+        try {
+            statement.setTimestamp(parameterIndex, ts);
+            return ts.toString();
+        } catch (SQLException e) {
+            throw new RuntimeException(String.format("Something went wrong when setting datetime parameter at %s index",
+                    parameterIndex), e);
+        }
     }
 
     protected String manualQueryInterpolation(String query, DataQuery dataQuery) {
@@ -354,10 +363,9 @@ public abstract class JdbcDataProvider extends DataProvider {
             int columnCount = resultSetMetaData.getColumnCount();
             List<Column> columns = new ArrayList<>(columnCount);
             List<Boolean> supportedType = new ArrayList<>(columnCount);
-             List<Boolean> initColumn = new ArrayList<>(columnCount);
+            List<Boolean> initColumn = new ArrayList<>(columnCount);
             for (int c = 1; c < columnCount + 1; c++) {
                 Column column;
-
                 String label = resultSetMetaData.getColumnLabel(c);
                 int type = resultSetMetaData.getColumnType(c);
                 String typeName = resultSetMetaData.getColumnTypeName(c);
@@ -878,6 +886,8 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     private static boolean isTime(int type, String typeName) {
         return (type == java.sql.Types.DATE) || (type == java.sql.Types.TIME) || (type == java.sql.Types.TIMESTAMP)
+                || type == java.sql.Types.TIMESTAMP_WITH_TIMEZONE
+                || type == java.sql.Types.TIME_WITH_TIMEZONE
                 || typeName.equalsIgnoreCase("timetz")
                 || typeName.equalsIgnoreCase("timestamptz")
                 || (typeName.equalsIgnoreCase("TIMESTAMP WITH TIME ZONE"))
