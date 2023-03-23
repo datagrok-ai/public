@@ -15,9 +15,7 @@ jobs:
     name: Check changes
     runs-on: ubuntu-20.04
     outputs:
-      matrix_test: ${{ steps.generate-matrix.outputs.matrix_test }}
       matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}
-      test: ${{ steps.generate-matrix.outputs.test }}
       publish: ${{ steps.generate-matrix.outputs.publish }}
     steps:
       - name: Checkout
@@ -60,21 +58,15 @@ jobs:
               name="$(jq .name "${DIR}/package.json" | sed -E 's/(^"|"$)//g')"
               current_version="$(jq .version "${DIR}/package.json" | sed -E 's/(^"|"$)//g')"
               npm_version="$(curl --retry 3 -s "https://registry.npmjs.org/${name}/${current_version}" | jq -r '.? | select( has("version") == true ).version')"
+              unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match("\\.\\./.*")))[] | "\(.key)=\(.value)"' <<<$dependencies | tr '\n' ' ')"
+              MATRIX_PUBLISH_JSON+=", \"unpublished_deps\": \"$unpublished_deps\""
               if [[ $npm_version != ${current_version} ]]; then
                 if [ "$(awk -F. '{print $1}' <<<$current_version)" -gt "0" ]; then
-                  unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match('\\.\\./.*')).key)' <<<$dependencies)"
-                  if [[ $unpublished_deps == "[]"] ]]; then
+                  if [[ $unpublished_deps == "" ]]; then
                     MATRIX_PUBLISH_JSON+=", \"publish\": \"true\""
                   fi
                 else
                   echo "::notice title=${PACKAGE}::Version ${current_version} is under 1.0.0 and is not going to be published"
-                fi
-
-                if [ ! -z "$(jq  '. | select( has("datagrok-api") == true )' <<< "$dependencies")" ]; then
-                  MATRIX_PUBLISH_JSON+=", \"install_jsapi\": \"true\""
-                fi
-                if [ ! -z "$(jq  '. | select( has("datagrok-tools") == true )' <<< "$dependencies")" ]; then
-                  MATRIX_PUBLISH_JSON+=", \"install_tools\": \"true\""
                 fi
               fi
 
@@ -90,12 +82,15 @@ jobs:
           CONTINUE_PUBLISH_JOB="no"
           if [[ "${MATRIX_PUBLISH_JSON}" != "[]" ]]; then
             CONTINUE_PUBLISH_JOB="yes"
-
-            echo 'Result GitHub Actions Matrix JSON'
-            echo "${MATRIX_PUBLISH_JSON}"
           fi
           echo "publish=${CONTINUE_PUBLISH_JOB}" >> $GITHUB_OUTPUT
           echo "matrix_publish=${PUBLISH_JSON}" >> $GITHUB_OUTPUT
+
+
+      - name: Output
+        run: |
+          echo -e "matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}"
+          echo -e "publish: ${{ steps.generate-matrix.outputs.publish }}"
 
   publish:
     name: Test and publish to npm
@@ -179,14 +174,17 @@ jobs:
         run: npm install
         id: install
         working-directory: packages/${{ matrix.package }}
-      - name: js-api dependencies
-        run: npm install
-        working-directory: ./js-api
-        if: ${{ matrix.install_jsapi == 'true' }}
-      - name: tools dependencies
-        run: npm install
-        working-directory: ./tools
-        if: ${{ matrix.install_tools == 'true' }}
+      - name: unpublished dependencies
+        if: ${{ matrix.unpublished_deps != '' }}
+        run: |
+          crnt=$(pwd)
+          for dep in $(echo -e ${{ matrix.unpublished_deps }}); do
+            cd $(awk -F'=' '{print $2}' <<<$dep)
+            echo "Install dependencies for $(awk -F'=' '{print $2}' <<<$dep)"
+            npm install
+            cd $crnt
+          done
+        working-directory: packages/${{ matrix.package }}
       - name: Build package
         if: ${{ matrix.build == 'true' }}
         id: build
