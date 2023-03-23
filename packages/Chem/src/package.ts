@@ -544,7 +544,7 @@ export function rGroupsAnalysisMenu(): void {
 export function groupAnalysisMenu(): void {
   const packageExists = checkPackage('Charts', '_GroupAnalysisViewer');
   if (packageExists) {
-    const groupAnalysisViewer = DG.Viewer.fromType('GroupAnalysisViewer', grok.shell.tv.dataFrame, {});
+    const groupAnalysisViewer = DG.Viewer.fromType('Group Analysis', grok.shell.tv.dataFrame, {});
     grok.shell.tv.addViewer(groupAnalysisViewer);
   } else {
     grok.shell.warning('Charts package is not installed');
@@ -761,7 +761,9 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
     })
     .show({resizable: true});
     ui.onSizeChanged(dlg.root).subscribe((_) => {
-      sketcher.resize();
+      if(!sketcher.sketcher?.isInitialized)
+        return;
+      sketcher._autoResized ? sketcher._autoResized = false : sketcher.resize();
     });
 }
 
@@ -900,6 +902,7 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
 
 //name: isSmiles
 //input: string s
+//output: bool res
 export function isSmiles(s: string) : boolean {
   const ctx: IMolContext = getMolSafe(s, {}, _rdKitModule, true);
   if (ctx.mol !== null) {

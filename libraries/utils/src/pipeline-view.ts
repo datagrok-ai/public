@@ -7,33 +7,26 @@ import {Subject} from 'rxjs';
 import {historyUtils} from './history-utils';
 import {FunctionView} from './function-view';
 import {ComputationView} from './computation-view';
+import {filter} from 'rxjs/operators';
+import '../css/pipeline-view.css';
 
 export class PipelineView extends ComputationView {
-  public steps = {} as {[scriptNqName: string]: { funcCall: DG.FuncCall, editor: string, view: FunctionView }};
-  public get stepFuncNames() {
-    return this.stepsConfig.map((step) => step.funcName);
-  }
+  public steps = {} as {[scriptNqName: string]: { editor: string, view: FunctionView }};
   public onStepCompleted = new Subject<DG.FuncCall>();
 
   private stepTabs: DG.TabControl | null = null;
 
-  protected defaultExportFilename = (format: string) => {
-    return `${this.name} - ${new Date()
-      .toLocaleString('en-US')
-      .replaceAll(/:|\//g, '-')}.${this.exportConfig!.supportedExtensions[format]}`;
-  };
-
-  protected defaultSupportedExportExtensions: () => Record<string, string> = () => {
+  protected pipelineViewExportExtensions: () => Record<string, string> = () => {
     return {
       'Archive': 'zip'
     };
   };
 
-  protected defaultSupportedExportFormats = () => {
+  protected pipelineViewExportFormats = () => {
     return ['Archive'];
   };
 
-  protected defaultExport = async (format: string) => {
+  protected pipelineViewExport = async (format: string) => {
     if (format !== 'Archive')
       throw new Error('This export format is not supported');
 
@@ -54,26 +47,39 @@ export class PipelineView extends ComputationView {
     return await zip.generateAsync({type: 'blob'});
   };
 
+  exportConfig = {
+    supportedExtensions: this.pipelineViewExportExtensions(),
+    supportedFormats: this.pipelineViewExportFormats(),
+    export: this.pipelineViewExport,
+    filename: this.defaultExportFilename,
+  };
+
   constructor(
     funcName: string,
     private stepsConfig: {funcName: string}[]
   ) {
-    super(funcName);
-
-    this.exportConfig = {
-      supportedExtensions: this.defaultSupportedExportExtensions(),
-      supportedFormats: this.defaultSupportedExportFormats(),
-      export: this.defaultExport,
-      filename: this.defaultExportFilename,
-    };
-
-    stepsConfig.forEach((stepConfig) => {
-      //@ts-ignore
-      this.steps[stepConfig.funcName] = {};
-    });
+    super(
+      funcName,
+      {historyEnabled: true, isTabbed: false}
+    );
   }
 
   public override async init() {
+    await this.loadFuncCallById();
+
+    this.stepsConfig.forEach((stepConfig) => {
+      //@ts-ignore
+      this.steps[stepConfig.funcName] = {};
+    });
+
+    grok.functions.onAfterRunAction.pipe(
+      filter((run) => Object.keys(this.steps).includes(run.func.nqName))
+    ).subscribe((run) => {
+      this.onStepCompleted.next(run);
+
+      if (run.func.nqName === this.stepsConfig[this.stepsConfig.length-1].funcName) this.run();
+    });
+
     const stepScripts = Object.keys(this.steps).map((stepNqName) => {
       const stepScript = (grok.functions.eval(stepNqName) as Promise<DG.Func>);
       return stepScript;
@@ -88,6 +94,7 @@ export class PipelineView extends ComputationView {
     const EDITOR_TAG = 'editor:' as const;
     const NEWLINE = '\n' as const;
     const DEFAULT_EDITOR = 'Compute:PipelineStepEditor';
+
     const extractEditor = (script: DG.Script) => {
       const scriptCode = script.script;
       const editorTagIndex = scriptCode.indexOf(EDITOR_TAG);
@@ -115,14 +122,18 @@ export class PipelineView extends ComputationView {
     const viewsLoading = loadedScripts.map(async (loadedScript) => {
       const scriptCall: DG.FuncCall = loadedScript.prepare();
 
-      this.steps[loadedScript.nqName].funcCall = scriptCall;
       this.steps[loadedScript.nqName].view =
         await editorFuncs[this.steps[loadedScript.nqName].editor].apply({'call': scriptCall}) as FunctionView;
 
-      return Promise.resolve();
+      if (!this.steps[loadedScript.nqName].view.onFuncCallReady.value) {
+        const prom = this.steps[loadedScript.nqName].view.onFuncCallReady.toPromise();
+        return prom;
+      } else { return Promise.resolve(); }
     });
 
     await Promise.all(viewsLoading);
+
+    this.onFuncCallReady.complete();
   }
 
   public override buildIO() {
@@ -134,10 +145,16 @@ export class PipelineView extends ComputationView {
 
     const pipelineTabs = ui.tabControl(tabs);
 
-    for (let i = 0; i < pipelineTabs.panes.length - 1; i++) {
-      pipelineTabs.panes[i].header.classList.add('arrow-tab');
-      pipelineTabs.panes[i].header.insertAdjacentElement('afterend', ui.div(undefined, 'empty-box'));
+    const tabsLine = pipelineTabs.panes[0].header.parentElement!;
+    tabsLine.classList.add('d4-ribbon', 'pipeline-view');
+    tabsLine.classList.remove('d4-tab-header-stripe');
+    tabsLine.firstChild!.remove();
+    for (let i = 0; i < pipelineTabs.panes.length; i++) {
+      pipelineTabs.panes[i].header.classList.add('d4-ribbon-name');
+      pipelineTabs.panes[i].header.classList.remove('d4-tab-header');
     }
+    pipelineTabs.panes[0].header.style.marginLeft = '12px';
+
     pipelineTabs.root.style.height = '100%';
     pipelineTabs.root.style.width = '100%';
 
@@ -156,10 +173,13 @@ export class PipelineView extends ComputationView {
     pi.close();
 
     Object.values(this.steps)
-      .map((step) => step.funcCall)
-      .forEach(async (scriptCall) => {
+      .forEach(async (step) => {
+        const scriptCall = step.view.funcCall;
+
         scriptCall.options['parentCallId'] = this.funcCall!.id;
-        await this.steps[scriptCall.func.nqName].view.saveRun(scriptCall);
+
+        this.steps[scriptCall.func.nqName].view.lastCall =
+          await this.steps[scriptCall.func.nqName].view.saveRun(scriptCall);
       });
 
     await this.onAfterRun(this.funcCall);
@@ -174,15 +194,19 @@ export class PipelineView extends ComputationView {
    * @stability Stable
  */
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
-    await this.onBeforeLoadRun();
     const {parentRun: pulledParentRun, childRuns: pulledChildRuns} = await historyUtils.loadChildRuns(funcCallId);
 
-    pulledChildRuns.forEach(async (pulledChildRun) => {
-      await this.steps[pulledChildRun.func.nqName].view.onAfterLoadRun(pulledChildRun);
-      this.steps[pulledChildRun.func.nqName].view.linkFunccall(pulledChildRun);
-    });
+    this.onFuncCallReady.subscribe({
+      complete: async () => {
+        await this.onBeforeLoadRun();
 
-    await this.onAfterLoadRun(pulledParentRun);
+        pulledChildRuns.forEach(async (pulledChildRun) => {
+          this.steps[pulledChildRun.func.nqName].view.loadRun(pulledChildRun.id);
+        });
+
+        await this.onAfterLoadRun(pulledParentRun);
+      }
+    });
     return pulledParentRun;
   }
 }

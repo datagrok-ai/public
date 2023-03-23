@@ -359,7 +359,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.bitOperation = this.string('bitOperation', BitwiseOp.OR, {
       choices: Object.values(BitwiseOp),
       category: 'Misc',
-      description: 'AND: all selected substructures match\n OR: any selected substructures matchs'
+      description: 'AND: all selected substructures match\n OR: any selected substructures match'
     });
 
     this.ringCutoff = this.int('ringCutoff', 10, {
@@ -509,6 +509,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     const molCol: DG.Column = DG.Column.fromStrings('smiles', ar);
     molCol.semType = DG.SEMTYPE.MOLECULE;
+    molCol.setTag(DG.TAGS.UNITS, DG.UNITS.Molecule.SMILES);
     const dataFrame = DG.DataFrame.fromColumns([molCol]);
 
     if (currentCancelled)

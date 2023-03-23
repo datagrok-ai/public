@@ -119,7 +119,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 //    why do we need 3 variables query, queryRun and connection if queryRun consists of all of them
     public ResultSet executeQuery(String query, FuncCall queryRun, Connection connection, int timeout)  throws ClassNotFoundException, SQLException {
         boolean supportsTransactions = connection.getMetaData().supportsTransactions();
-        
+
         if (supportsTransactions)
             connection.setAutoCommit(false);
 
@@ -533,7 +533,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 Double doubleValue = (Double) value;
                                 if (doubleValue == Double.POSITIVE_INFINITY || doubleValue > Float.MAX_VALUE) {
                                     columns.get(c - 1).add(Float.POSITIVE_INFINITY);
-                                } else if (doubleValue == Double.NEGATIVE_INFINITY || doubleValue < Float.MIN_VALUE) {
+                                } else if (doubleValue == Double.NEGATIVE_INFINITY || doubleValue < - Float.MAX_VALUE) {
                                     columns.get(c - 1).add(Float.NEGATIVE_INFINITY);
                                 } else {
                                     columns.get(c - 1).add(new Float((Double)value));
@@ -599,7 +599,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                     if (providerManager.getQueryMonitor().checkCancelledIdResultSet(queryRun.id)) {
                         DataFrame dataFrame = new DataFrame();
                         dataFrame.addColumns(columns);
-    
+
                         resultSet.close();
                         providerManager.getQueryMonitor().removeResultSet(queryRun.id);
                         return dataFrame;
@@ -610,7 +610,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                             size += column.memoryInBytes();
                         size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000; // count? it's 200 lines up
 
-                        if (size > 20) {                        
+                        if (size > 20) {
                             DataFrame dataFrame = new DataFrame();
                             dataFrame.addColumns(columns);
                             return dataFrame;
@@ -649,7 +649,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         } catch (Exception e) {
             if (resultSet != null && resultSet.isClosed())
                 throw new QueryCancelledByUser();
-            else 
+            else
                 throw e;
         }
     };
@@ -695,7 +695,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         throw new UnsupportedOperationException("TIMESTAMPTZ is not supported");
     }
 
-    private static String paramToNamesString(FuncParam param, PatternMatcher matcher, String type,
+    protected static String paramToNamesString(FuncParam param, PatternMatcher matcher, String type,
                                              PatternMatcherResult result) {
         StringBuilder builder = new StringBuilder();
         for (int n = 0 ; n < matcher.values.size(); n++) {
@@ -721,12 +721,16 @@ public abstract class JdbcDataProvider extends DataProvider {
             result.params.add(new FuncParam(type, name1, matcher.values.get(1)));
         } else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
             String names = paramToNamesString(param, matcher, type, result);
-            result.query = "(" + matcher.colName + " " + matcher.op + " (" + names + "))";
+            result.query = getInQuery(matcher, names);
         } else {
             result.query = "(" + matcher.colName + " " + matcher.op + " @" + param.name + ")";
             result.params.add(new FuncParam(type, param.name, matcher.values.get(0)));
         }
         return result;
+    }
+
+    protected String getInQuery(PatternMatcher matcher, String names) {
+        return String.format("(%s %s (%s))", matcher.colName, matcher.op, names);
     }
 
     public PatternMatcherResult stringPatternConverter(FuncParam param, PatternMatcher matcher) {
@@ -758,7 +762,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             result.params.add(new FuncParam(type, param.name, value));
         } else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
             String names = paramToNamesString(param, matcher, type, result);
-            result.query = "(" + matcher.colName + " " + matcher.op + " (" + names + "))";
+            result.query = getInQuery(matcher, names);
         } else {
             result.query = "(1 = 1)";
         }
