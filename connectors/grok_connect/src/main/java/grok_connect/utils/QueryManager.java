@@ -24,12 +24,11 @@ public class QueryManager {
     public ResultSet resultSet;
     public FuncCall query;
     Connection connection;
+    private boolean changedFetchSize = false; 
 
     static Gson gson = new GsonBuilder()
         .registerTypeAdapter(Property.class, new PropertyAdapter())
         .create();
-
-    private static ProviderManager providerManager = new ProviderManager(Logger.getLogger(GrokConnect.class.getName()));
 
     public QueryManager(FuncCall query, JdbcDataProvider provider) {
         this.query = query;
@@ -44,7 +43,7 @@ public class QueryManager {
         System.out.println(query.func.query);
 
         // DateTime startTime = DateTime.now();
-        provider = providerManager.getByName(query.func.connection.dataSource);
+        provider = GrokConnect.getProviderManager().getByName(query.func.connection.dataSource);
     }
 
     public void getResultSet() throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
@@ -64,6 +63,12 @@ public class QueryManager {
         for (int i = 0; i < columns.size(); i++) {
             columns.get(i).empty();
         }
+        
+        if (!changedFetchSize) {
+            if (connection.getMetaData().supportsTransactions())
+                resultSet.setFetchSize(maxIterations);
+            changedFetchSize = true;
+        }
 
         DataFrame df = provider.getResultSetSubDf(query, resultSet, columns, schemeInfo.supportedType, schemeInfo.initColumn, maxIterations);
         return df;
@@ -71,8 +76,12 @@ public class QueryManager {
 
     public void closeConnection() throws SQLException {
         if (connection != null && !connection.isClosed()) {
-            connection.commit();
+            if (!connection.getAutoCommit())
+                connection.commit();
+            provider.providerManager.getQueryMonitor().removeResultSet(query.id);
             connection.close();
+        } else {
+            provider.providerManager.getQueryMonitor().removeResultSet(query.id);
         }
     }
 }

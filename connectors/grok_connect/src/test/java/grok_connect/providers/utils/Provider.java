@@ -1,11 +1,7 @@
 package grok_connect.providers.utils;
 
-import org.testcontainers.containers.BindMode;
-import org.testcontainers.containers.JdbcDatabaseContainer;
-import org.testcontainers.containers.MSSQLServerContainer;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.containers.OracleContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.*;
+
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Properties;
@@ -14,6 +10,10 @@ import java.util.Properties;
  * Enum that contains all necessary data related to specific provider and it's container
  */
 public enum Provider {
+    NEO4J("src/test/resources/properties/neo4j.properties"),
+
+    HIVE2("src/test/resources/properties/hive2.properties"),
+
     REDSHIFT("src/test/resources/properties/redshift.properties") {
         @Override
         protected JdbcDatabaseContainer<?> newJdbcContainer() {

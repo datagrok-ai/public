@@ -1,5 +1,7 @@
 package grok_connect;
 
+import serialization.BufferAccessor;
+import serialization.DataFrame;
 import spark.*;
 import java.io.*;
 import java.util.*;
@@ -9,7 +11,6 @@ import com.google.gson.*;
 import org.apache.log4j.*;
 
 import static spark.Spark.*;
-import serialization.*;
 import org.restlet.data.Status;
 import javax.ws.rs.core.MediaType;
 import grok_connect.utils.*;
@@ -21,6 +22,11 @@ import grok_connect.handlers.QueryHandler;
 public class GrokConnect {
 
     private static ProviderManager providerManager;
+
+    public static ProviderManager getProviderManager() {
+        return providerManager;
+    }
+
     private static Logger logger;
     private static final Gson gson = new GsonBuilder()
             .registerTypeAdapter(Property.class, new PropertyAdapter())
@@ -35,7 +41,7 @@ public class GrokConnect {
             BasicConfigurator.configure();
             logger = Logger.getLogger(GrokConnect.class.getName());
             logger.setLevel(Level.INFO);
-            
+
             logMemory();
 
             providerManager = new ProviderManager(logger);
@@ -136,22 +142,6 @@ public class GrokConnect {
             return provider.testConnection(connection);
         });
 
-        // post("/query_table", (request, response) -> {
-        //     logMemory();
-        //     try {
-        //         DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
-        //         TableQuery query = gson.fromJson((String)connection.parameters.get("queryTable"), TableQuery.class);
-        //         DataProvider provider = providerManager.getByName(connection.dataSource);
-        //         DataFrame result = provider.queryTable(connection, query);
-        //         buildResponse(response, result.toByteArray());
-        //     } catch (Throwable ex) {
-        //         buildExceptionResponse(response, printError(ex));
-        //     }
-
-        //     logMemory();
-        //     return response;
-        // });
-
         post("/query_table_sql", (request, response) -> {
             logMemory();
             if (SettingsManager.getInstance().settings == null)
@@ -249,6 +239,7 @@ public class GrokConnect {
         post("/cancel", (request, response) -> {
             FuncCall call = gson.fromJson(request.body(), FuncCall.class);
             providerManager.getQueryMonitor().cancelStatement(call.id);
+            providerManager.getQueryMonitor().addCancelledResultSet(call.id);
             return null;
         });
 // how it works, who sends this request?

@@ -284,6 +284,7 @@ export function webLogoViewer() {
 //name: VdRegions
 //description: V-Domain regions viewer
 //tags: viewer, panel
+//meta.icon: files/icons/vdregions-viewer.svg
 //output: viewer result
 export function vdRegionViewer() {
   return new VdRegionsViewer();
@@ -296,7 +297,7 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
   const funcEditor = new ActivityCliffsFunctionEditor(DG.SEMTYPE.MACROMOLECULE);
   ui.dialog({title: 'Activity Cliffs'})
     .add(funcEditor.paramsUI)
-    .onOK(async () => {      
+    .onOK(async () => {
       call.func.prepare(funcEditor.funcParams).call(true);
     })
     .show();
@@ -351,7 +352,7 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
   const funcEditor = new SequenceSpaceFunctionEditor(DG.SEMTYPE.MACROMOLECULE);
   ui.dialog({title: 'Sequence Space'})
     .add(funcEditor.paramsUI)
-    .onOK(async () => {      
+    .onOK(async () => {
       call.func.prepare(funcEditor.funcParams).call(true);
     })
     .show();
@@ -514,6 +515,7 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
 
 //name: Composition Analysis
 //top-menu: Bio | Composition Analysis
+//meta.icon: files/icons/composition-analysis.svg
 //output: viewer result
 export async function compositionAnalysis(): Promise<void> {
   // Higher priority for columns with MSA data to show with WebLogo.
@@ -690,6 +692,7 @@ export function getHelmMonomers(sequence: DG.Column<string>): string[] {
 
 //name: Sequence Similarity Search
 //tags: viewer
+//meta.icon: files/icons/sequence-similarity-viewer.svg
 //output: viewer result
 export function similaritySearchViewer(): SequenceSimilarityViewer {
   return new SequenceSimilarityViewer();
@@ -701,12 +704,13 @@ export function similaritySearchViewer(): SequenceSimilarityViewer {
 //output: viewer result
 export function similaritySearchTopMenu(): void {
   const view = (grok.shell.v as DG.TableView);
-  const viewer = view.addViewer('SequenceSimilaritySearchViewer');
+  const viewer = view.addViewer('Sequence Similarity Search');
   view.dockManager.dock(viewer, 'down');
 }
 
 //name: Sequence Diversity Search
 //tags: viewer
+//meta.icon: files/icons/sequence-diversity-viewer.svg
 //output: viewer result
 export function diversitySearchViewer(): SequenceDiversityViewer {
   return new SequenceDiversityViewer();
@@ -718,7 +722,7 @@ export function diversitySearchViewer(): SequenceDiversityViewer {
 //output: viewer result
 export function diversitySearchTopMenu() {
   const view = (grok.shell.v as DG.TableView);
-  const viewer = view.addViewer('SequenceDiversitySearchViewer');
+  const viewer = view.addViewer('Sequence Diversity Search');
   view.dockManager.dock(viewer, 'down');
 }
 

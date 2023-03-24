@@ -23,7 +23,11 @@ public class SessionManager {
     }
 
     static void delete(Session s) throws Throwable {
-        sessions.get(s).qm.closeConnection();
-        sessions.remove(s);
+        if (sessions.containsKey(s)) {
+            SessionHandler sh = sessions.get(s);
+            if (sh.qm != null)
+                sessions.get(s).qm.closeConnection();
+            sessions.remove(s);
+        } 
     }
 }

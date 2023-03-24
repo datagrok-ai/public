@@ -1,7 +1,14 @@
 import * as DG from 'datagrok-api/dg';
 import {PinnedColumn} from "../pinned/PinnedColumn";
+import * as GridUtils from '../utils/GridUtils';
+import {RendererUIManager} from '../renderer/RendererUIManager';
+import {TooltipManager} from "../tooltip/TooltipManager";
 
 export class GridCellRendererEx extends DG.GridCellRenderer { // temporary to address a bug of importing during tests | extends DG.GridCellRenderer {
+  constructor() {
+    super();
+  }
+
   onMouseDownEx(cellGrid : DG.GridCell, e : MouseEvent, nXOnCell : number, nYOnCell : number) : void {
     //this.onMouseDown(cellGrid, e);
   }
@@ -33,7 +40,19 @@ export class GridCellRendererEx extends DG.GridCellRenderer { // temporary to ad
 
   }
 
-  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, value: any, context: any): void {
+  render(g: CanvasRenderingContext2D, nX: number, nY: number, nW: number, nH: number, cellGrid: DG.GridCell,  style: DG.GridCellStyle): void {
+    const r = GridUtils.getGridColumnRenderer(cellGrid.gridColumn);
+    if (r === null)
+      GridUtils.setGridColumnRenderer(cellGrid.gridColumn, this);
 
+    if (!RendererUIManager.isRegistered(cellGrid.grid))
+      RendererUIManager.register(cellGrid.grid);
+
+    if (!TooltipManager.isRegisted(cellGrid.grid))
+      TooltipManager.register(cellGrid.grid)
+  }
+
+  tooltip(cell: DG.GridCell) : HTMLElement | null{
+    return null;
   }
 }

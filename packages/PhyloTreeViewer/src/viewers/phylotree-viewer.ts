@@ -3,15 +3,44 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 
+import {_package} from '../package';
 import $ from 'cash-dom';
 import {phylotree as Phylotree, PhylotreeNode, TreeRender} from 'phylotree';
 import * as d3 from 'd3';
 import {default as newickParser} from 'phylotree/src/formats/newick';
-import {_package} from '../package';
-import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
-import {NodeType} from '@datagrok-libraries/bio/src/trees';
+import {NodeType, TreeDefaultPalette} from '@datagrok-libraries/bio/src/trees';
+import {intToHtml} from '@datagrok-libraries/utils/src/color';
 
 type ParsedNewickType = { error: string, json: any, };
+
+enum PROPS {
+  // -- Layout --
+  leftRightSpacing = 'leftRightSpacing',
+  topBottomSpacing = 'topBottomSpacing',
+  radialLayout = 'radialLayout',
+  margin = 'margin',
+  showScale = 'showScale',
+  scaleBarFontSize = 'scaleBarFontSize',
+  showLabels = 'showLabels',
+  alignTips = 'alignTips',
+  drawSizeBubbles = 'drawSizeBubbles',
+
+  // -- Style --
+  strokeColor = 'strokeColor',
+  fillColor = 'fillColor',
+  strokeWidth = 'strokeWidth',
+  nodeSize = 'nodeSize',
+  brush = 'brush',
+  fontSize = 'fontSize',
+  labelNodesWithName = 'labelNodesWithName',
+
+  // -- Behaviour --
+  selection = 'selection',
+  zoom = 'zoom',
+  bootstrap = 'bootstrap',
+  collapsible = 'collapsible',
+  selectable = 'selectable',
+}
 
 enum PROPS_CATS {
   LAYOUT = 'Layout',
@@ -41,26 +70,32 @@ enum SpacingType {
  */
 export class PhyloTreeViewer extends DG.JsViewer {
   // -- Layout properties --
-  leftRightSpacing: string;
-  topBottomSpacing: string;
-  radialLayout: boolean;
-  showScale: boolean;
-  scaleBarFontSize: number;
-  showLabels: boolean;
-  alignTips: boolean;
-  margin: number;
-  fontSize: string;
-  brush: boolean;
-  drawSizeBubbles: boolean;
+  [PROPS.leftRightSpacing]: string;
+  [PROPS.topBottomSpacing]: string;
+  [PROPS.radialLayout]: boolean;
+  [PROPS.showScale]: boolean;
+  [PROPS.scaleBarFontSize]: number;
+  [PROPS.showLabels]: boolean;
+  [PROPS.alignTips]: boolean;
+  [PROPS.margin]: number;
+  [PROPS.fontSize]: string;
+
+  // -- Style --
+  [PROPS.strokeColor]: number;
+  [PROPS.fillColor]: number;
+  [PROPS.strokeWidth]: number;
+  [PROPS.nodeSize]: number;
+  [PROPS.brush]: boolean;
+  [PROPS.drawSizeBubbles]: boolean;
 
   // -- Behaviour properties --
-  selection: string;
+  [PROPS.selection]: string;
   // binarySelectable: boolean;
-  labelNodesWithName: boolean;
-  zoom: boolean;
-  bootstrap: boolean;
-  collapsible: boolean;
-  selectable: boolean;
+  [PROPS.labelNodesWithName]: boolean;
+  [PROPS.zoom]: boolean;
+  [PROPS.bootstrap]: boolean;
+  [PROPS.collapsible]: boolean;
+  [PROPS.selectable]: boolean;
 
   tooltipOffset: number;
   defaultSize: number;
@@ -83,43 +118,49 @@ export class PhyloTreeViewer extends DG.JsViewer {
     super();
 
     // -- Layout --
-    this.leftRightSpacing = this.string('leftRightSpacing', SpacingType.FixedStep,
+    this.leftRightSpacing = this.string(PROPS.leftRightSpacing, SpacingType.FixedStep,
       {category: PROPS_CATS.LAYOUT, choices: Object.values(SpacingType)});
-    this.topBottomSpacing = this.string('topBottomSpacing', SpacingType.FixedStep,
+    this.topBottomSpacing = this.string(PROPS.topBottomSpacing, SpacingType.FixedStep,
       {category: PROPS_CATS.LAYOUT, choices: Object.values(SpacingType)});
-    this.radialLayout = this.bool('radialLayout', false,
+    this.radialLayout = this.bool(PROPS.radialLayout, false,
       {category: PROPS_CATS.LAYOUT});
-    this.margin = this.float('margin', 20,
+    this.margin = this.float(PROPS.margin, 20,
       {category: PROPS_CATS.LAYOUT});
-    this.showScale = this.bool('showScale', true,
+    this.showScale = this.bool(PROPS.showScale, true,
       {category: PROPS_CATS.LAYOUT});
-    this.scaleBarFontSize = this.float('scaleBarFontSize', 12,
+    this.scaleBarFontSize = this.float(PROPS.scaleBarFontSize, 12,
       {category: PROPS_CATS.LAYOUT});
-    this.showLabels = this.bool('showLabels', false,
+    this.showLabels = this.bool(PROPS.showLabels, false,
       {category: PROPS_CATS.LAYOUT});
-    this.alignTips = this.bool('alignTips', false,
+    this.alignTips = this.bool(PROPS.alignTips, false,
       {category: PROPS_CATS.LAYOUT});
-    this.drawSizeBubbles = this.bool('drawSizeBubbles', true,
+    this.drawSizeBubbles = this.bool(PROPS.drawSizeBubbles, true,
       {category: PROPS_CATS.LAYOUT});
 
     // -- Style --
-    this.brush = this.bool('brush', true,
+    this.strokeColor = this.int(PROPS.strokeColor, TreeDefaultPalette.Main);
+    this.fillColor = this.int(PROPS.fillColor, TreeDefaultPalette.Main);
+    this.strokeWidth = this.float(PROPS.strokeWidth, window.devicePixelRatio,
+      {category: PROPS_CATS.STYLE, editor: 'slider', min: 0.0, max: 16, step: 0.1});
+    this.nodeSize = this.float(PROPS.nodeSize, window.devicePixelRatio * 5,
+      {category: PROPS_CATS.STYLE, editor: 'slider', min: 0.0, max: 16, step: 0.1});
+    this.brush = this.bool(PROPS.brush, true,
       {category: PROPS_CATS.STYLE});
-    this.fontSize = this.string('fontSize', '9px',
+    this.fontSize = this.string(PROPS.fontSize, '9px',
       {category: PROPS_CATS.STYLE});
-    this.labelNodesWithName = this.bool('labelNodesWithName', true,
+    this.labelNodesWithName = this.bool(PROPS.labelNodesWithName, true,
       {category: PROPS_CATS.STYLE});
 
     // -- Behaviour --
-    this.selection = this.string('selection', SelectionType.PathToRootAndDescendants,
+    this.selection = this.string(PROPS.selection, SelectionType.PathToRootAndDescendants,
       {category: PROPS_CATS.BEHAVIOUR, choices: Object.values(SelectionType)});
-    this.zoom = this.bool('zoom', false,
+    this.zoom = this.bool(PROPS.zoom, false,
       {category: PROPS_CATS.BEHAVIOUR});
-    this.bootstrap = this.bool('bootstrap', false,
+    this.bootstrap = this.bool(PROPS.bootstrap, false,
       {category: PROPS_CATS.BEHAVIOUR});
-    this.collapsible = this.bool('collapsible', true,
+    this.collapsible = this.bool(PROPS.collapsible, true,
       {category: PROPS_CATS.BEHAVIOUR});
-    this.selectable = this.bool('selectable', true,
+    this.selectable = this.bool(PROPS.selectable, true,
       {category: PROPS_CATS.BEHAVIOUR});
     // this.binarySelectable = this.bool('binarySelectable', true,
     //   {category: PROPS_CATS.BEHAVIOUR});
@@ -205,12 +246,14 @@ export class PhyloTreeViewer extends DG.JsViewer {
     const node = this.nodes.get(nodeId);
     if (!node || node.name === 'root' || node.depth === 0) return;
 
+    /* eslint-disable max-len*/
     const selection = (this.selection === 'path to root') ? this.tree.path_to_root(node) :
       (this.selection === 'descendants') ? this.tree.select_all_descendants(node, true, true) :
         (this.selection === 'path to root & descendants') ? this.tree.path_to_root(node).concat(this.tree.select_all_descendants(node, true, true)) :
           (this.selection === 'incident branch') ? [node] :
             (this.selection === 'internal branches') ? this.tree.select_all_descendants(node, false, true) :
               (this.selection === 'terminal branches') ? this.tree.select_all_descendants(node, true, false) : [];
+    /* eslint-enable max-len */
 
     this.tree.modify_selection(selection);
   }
@@ -221,7 +264,8 @@ export class PhyloTreeViewer extends DG.JsViewer {
     const selection = container.selectAll('path.branch, g.internal-node, g.node');
     const data = selection.data();
     selection.each(function() {
-      g.append(() => this);
+      // eslint-disable-next-line
+      g.append(() => this); // this is some specific object, not the viewer
     });
     g.selectAll('path.branch, g.internal-node, g.node').data(data);
 
@@ -306,6 +350,7 @@ export class PhyloTreeViewer extends DG.JsViewer {
       'node-span': null
     });
 
+
     // let treeEl: SVGSVGElement;
     // if (this.radialLayout){
     //
@@ -314,6 +359,28 @@ export class PhyloTreeViewer extends DG.JsViewer {
     // }
     display.modifySelection(() => false);
     const treeEl: SVGSVGElement = display.show();
+    const strokeColorValue = intToHtml(this.strokeColor);
+    const fillColorValue = intToHtml(this.fillColor);
+    $(treeEl).find('g.phylotree-container path.branch').get()
+      .forEach((pathEl) => {
+        pathEl.style.strokeWidth = `${this.strokeWidth}px`;
+        pathEl.style.stroke = strokeColorValue;
+      });
+    $(treeEl).find('g.phylotree-container g.node circle').get()
+      .forEach((circleEl) => {
+        // @ts-ignore
+        circleEl.style.r = `${this.nodeSize}px`;
+        circleEl.style.strokeWidth = `${this.strokeWidth}px`;
+        circleEl.style.stroke = strokeColorValue;
+        circleEl.style.fill = fillColorValue;
+      });
+    $(treeEl).find('g.phylotree-container g.internal-node circle').get()
+      .forEach((circleEl) => {
+        // @ts-ignore
+        circleEl.style.r = this.strokeWidth / 2;
+        circleEl.style.strokeWidth = '0';
+        circleEl.style.fill = fillColorValue;
+      });
     this.root.append(treeEl);
 
     const idx = this.dataFrame.currentRowIdx;

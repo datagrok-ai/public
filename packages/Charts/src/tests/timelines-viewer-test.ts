@@ -8,7 +8,7 @@ import {getOptions} from './utils';
 
 
 category('Timelines', () => {
-  const TYPE = 'TimelinesViewer';
+  const TYPE = 'Timelines';
   let df: DG.DataFrame;
   let tv: DG.TableView;
   const subs: Subscription[] = [];

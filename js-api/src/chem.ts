@@ -60,7 +60,7 @@ export namespace chem {
 
   export function isMolBlock(s: string | null) {
     return s != null && s.includes('M  END');
-  }  
+  }
 
   /** A common interface that all sketchers should implement */
   export abstract class SketcherBase extends Widget {
@@ -257,7 +257,7 @@ export namespace chem {
       const extractor = extractors
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
 
-      if (extractor != null && !checkSmiles(x))
+      if (extractor != null && !checkSmiles(x) && !isMolBlock(x))
         extractor
           .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
           .then((mol) => this.setMolecule(mol));
@@ -361,7 +361,7 @@ export namespace chem {
         this.sketcherDialogOpened = false;
         this.resized = false;
         this._autoResized = true;
-      } 
+      }
 
       this.extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
 
@@ -504,7 +504,7 @@ export namespace chem {
         this._setSketcherSize(); //update sketcher size according to base sketcher width and height
         await this.sketcher!.init(this);
         ui.setUpdateIndicator(this.host, false);
-        this._sketcherTypeChanged = false; 
+        this._sketcherTypeChanged = false;
         this.changedSub = this.sketcher!.onChanged.subscribe((_: any) => {
           this.onChanged.next(null);
           for (let callback of this.listeners)
@@ -515,7 +515,7 @@ export namespace chem {
               grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
           }
         });
-        if (molecule)              
+        if (molecule)
         this.setMolecule(molecule!, this._smarts !== null);
       });
     }
@@ -531,7 +531,7 @@ export namespace chem {
     static getCollection(key: string): string[] {
       return JSON.parse(localStorage.getItem(key) ?? '[]');
     }
-    
+
     static addToCollection(key: string, molecule: string) {
       const molecules = Sketcher.getCollection(key);
       Sketcher.checkDuplicatesAndAddToStorage(molecules, molecule, key);
@@ -790,6 +790,5 @@ export namespace chem {
     grok.shell.warning(`Smarts cannot be converted to smiles`);
     return '';
   }
-  
-}
 
+}

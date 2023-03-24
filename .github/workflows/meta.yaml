@@ -120,10 +120,10 @@ jobs:
           if [ -n "$(git status -s packages/Meta/package.json)" ]; then
             git add packages/Meta/package.json
             git add packages/Meta/package-lock.json
-            git commit -m "GitHub Actions: Bump Meta package version
+            git commit -m 'GitHub Actions: Bump Meta package version
 
-Workflow ${{ github.workflow }} ${{ github.run_number }}
-https://github.com/datagrok/public/actions/runs/${{ github.run_id }}"
+            Workflow ${{ github.workflow }} ${{ github.run_number }}
+            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}'
             continue=true
           fi
           if [[ "${continue}" == "true" ]]; then

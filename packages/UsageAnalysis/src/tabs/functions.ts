@@ -21,10 +21,17 @@ export class FunctionsView extends UaView {
       'FunctionsUsage',
       (t: DG.DataFrame) => {
         const viewer = DG.Viewer.scatterPlot(t, {
-          x: 'time',
+          x: 'time_start',
           y: 'function',
           size: 'count',
           color: 'user',
+          jitterSize: 5,
+          markerMinSize: 10,
+          markerMaxSize: 30,
+          showColorSelector: false,
+          showSizeSelector: false,
+          showXSelector: false,
+          showYSelector: false,
         }).root;
         return viewer;
       },

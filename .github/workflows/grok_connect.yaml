@@ -11,6 +11,7 @@ jobs:
     outputs:
       version: ${{ steps.get_version.outputs.version }}
       image_exists: ${{ steps.get_version.outputs.image_exists }}
+      latest: ${{ steps.get_version.outputs.latest }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -26,14 +27,6 @@ jobs:
       - name: Test
         working-directory: ./connectors
         run: mvn -DtestFailureIgnore=true test
-      - name: Report
-        uses: dorny/test-reporter@v1
-        if: always()
-        with:
-          name: Maven Tests
-          path: ./connectors/grok_connect/target/surefire-reports/*.xml
-          reporter: java-junit
-          fail-on-error: true
       - name: Get version
         id: get_version
         working-directory: ./connectors
@@ -47,6 +40,13 @@ jobs:
             echo "image_exists=false" >> $GITHUB_OUTPUT
           else
             echo "image_exists=true" >> $GITHUB_OUTPUT
+          fi
+          latest_pushed=$(curl --retry 5 -LsS "https://registry.hub.docker.com/v2/repositories/datagrok/grok_connect/tags?page_size=20" | jq -r '[.results[] | select(.name | test("[0-9]+\\.[0-9]+\\.[0-9]+"))] | sort_by(.tag_last_pushed) | reverse[0].name')
+          newest_version=$(echo -e "$latest_pushed\n$current_version" | sort -V | tail -n1)
+          if [[ "${newest_version}" == "${current_version}" ]] ; then
+            echo "latest=true" >> $GITHUB_OUTPUT
+          else
+            echo "latest=false" >> $GITHUB_OUTPUT
           fi
 
   docker:
@@ -70,25 +70,29 @@ jobs:
         run: |
           commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
           branch=$(echo ${GITHUB_REF#refs/heads/})
-          echo "::set-output name=commit_sha::${commit_sha}"
-          echo "::set-output name=branch::${branch}"
+          echo "commit_sha=${commit_sha}" >> $GITHUB_OUTPUT
+          echo "branch=${branch}" >> $GITHUB_OUTPUT
           if [[ ${{ needs.build.outputs.image_exists }} == 'true' ]]; then
             platform='linux/amd64'
-            echo "::set-output name=platform::${platform}"
+            echo "platform=${platform}" >> $GITHUB_OUTPUT
             tar="grok_connect_${{ needs.build.outputs.version }}-$(echo ${platform#linux/})-${commit_sha}-${{ github.run_id }}-${{ github.run_attempt }}.tar"
-            echo "::set-output name=tar::${tar}"
-            echo "::set-output name=dest::type=docker,dest=/tmp/${tar}"
+            echo "tar=${tar}" >> $GITHUB_OUTPUT
+            echo "dest=type=docker,dest=/tmp/${tar}" >> $GITHUB_OUTPUT
 
             platform_add='linux/arm64'
-            echo "::set-output name=platform_add::${platform_add}"
+            echo "platform_add=${platform_add}" >> $GITHUB_OUTPUT
             tar_add="grok_connect_${{ needs.build.outputs.version }}-$(echo ${platform_add#linux/})-${commit_sha}-${{ github.run_id }}-${{ github.run_attempt }}.tar"
-            echo "::set-output name=tar_add::${tar_add}"
-            echo "::set-output name=dest_add::type=docker,dest=/tmp/${tar_add}"
-            echo "::set-output name=tags::datagrok/grok_connect:${{ needs.build.outputs.version }}-${commit_sha}"
+            echo "tar_add=${tar_add}" >> $GITHUB_OUTPUT
+            echo "dest_add=type=docker,dest=/tmp/${tar_add}" >> $GITHUB_OUTPUT
+            echo "tags=datagrok/grok_connect:${{ needs.build.outputs.version }}-${commit_sha}" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=cache_to::type=registry,ref=datagrok/grok_connect:cache,mode=max"
-            echo "::set-output name=platform::linux/amd64,linux/arm64"
-            echo "::set-output name=tags::datagrok/grok_connect:latest,datagrok/grok_connect:${{ needs.build.outputs.version }}"
+            echo "platform=linux/amd64,linux/arm64" >> $GITHUB_OUTPUT
+            if [[ ${{ needs.build.outputs.latest }} == 'true' ]]; then
+              echo "cache_to=type=registry,ref=datagrok/grok_connect:cache,mode=max" >> $GITHUB_OUTPUT
+              echo "tags=datagrok/grok_connect:latest,datagrok/grok_connect:${{ needs.build.outputs.version }}" >> $GITHUB_OUTPUT
+            else
+              echo "tags=datagrok/grok_connect:${{ needs.build.outputs.version }}" >> $GITHUB_OUTPUT
+            fi
           fi
 
       - uses: hadolint/hadolint-action@v2.0.0
@@ -101,7 +105,7 @@ jobs:
         with:
           context: ./connectors
           platforms: ${{ steps.param.outputs.platform }}
-          push: ${{ (needs.build.outputs.image_exists == 'false') && (github.ref == 'refs/heads/master') }}
+          push: ${{ (needs.build.outputs.image_exists == 'false') && (github.ref == 'refs/heads/master' || startsWith(github.ref,'refs/heads/release/') == true) }}
           tags: ${{ steps.param.outputs.tags }}
           cache-from: type=registry,ref=datagrok/grok_connect:cache
           cache-to: ${{ steps.param.outputs.cache_to }}
@@ -114,6 +118,7 @@ jobs:
             COMMIT_PUBLIC=${{ github.sha }}
 
       - name: Build and push bleeding-edge
+        if: startsWith(github.ref, 'refs/heads/release/') != true
         uses: docker/build-push-action@v3
         with:
           context: ./connectors
@@ -130,7 +135,7 @@ jobs:
             COMMIT_PUBLIC=${{ github.sha }}
 
       - name: Upload Artifact
-        if: github.ref != 'refs/heads/master'
+        if: github.ref != 'refs/heads/master' && startsWith(github.ref,'refs/heads/release/') != true
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.param.outputs.tar }}

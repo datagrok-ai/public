@@ -6,6 +6,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -34,6 +36,7 @@ public class SessionHandler {
     static String sizeRecievedMessage = "DATAFRAME PART SIZE RECEIVED";
     static String logRecievedMessage = "LOG RECEIVED";
 
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
     SessionHandler(Session session) {
         this.session = session;
     }
@@ -41,7 +44,8 @@ public class SessionHandler {
     public void onError(Throwable err) throws Throwable {
         session.getRemote().sendString(socketErrorMessage(err));
         session.close();
-        qm.closeConnection();
+        if (qm != null)
+            qm.closeConnection();
     }
 
     public void onMessage(String message) throws Throwable {
@@ -49,12 +53,27 @@ public class SessionHandler {
             try {
                 if (message.startsWith("QUERY")) {
                     message = message.substring(6);
-
                     qm = new QueryManager(message);
+                    if (qm.query.debugQuery) {
+                        qm.query.log += "Getting resultSet, " + sdf.format(new Date());
+                        System.out.println("Getting resultSet, " + sdf.format(new Date()));
+                    }
                     qm.getResultSet();
+                    if (qm.query.debugQuery) {
+                        qm.query.log += "Got resultSet, " + sdf.format(new Date());
+                        System.out.println("Got resultSet, " + sdf.format(new Date()));
+                    }
                     if (qm.resultSet != null) {
+                        if (qm.query.debugQuery) {
+                            qm.query.log += "initting scheme, " + sdf.format(new Date());
+                            System.out.println("initting scheme, " + sdf.format(new Date()));
+                        }
                         qm.initScheme();
-                        dataFrame = qm.getSubDF(rowsPerChunk);
+                        if (qm.query.debugQuery) {
+                            qm.query.log += "inited scheme, " + sdf.format(new Date());
+                            System.out.println("inited scheme, " + sdf.format(new Date()));
+                        }
+                        dataFrame = qm.getSubDF(100);
                     } else {
                         dataFrame = new DataFrame(); 
                     }
@@ -101,6 +120,8 @@ public class SessionHandler {
             } catch (Throwable ex) {
                 if (ex instanceof OutOfMemoryError)
                     GrokConnect.needToReboot = true;
+                if (ex.getCause() instanceof QueryCancelledByUser)
+                    ex = ex.getCause();
                 session.getRemote().sendString(socketErrorMessage(ex));
                 session.close();
                 qm.closeConnection();
