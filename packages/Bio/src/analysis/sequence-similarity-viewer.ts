@@ -20,7 +20,6 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   cutoff: number;
   gridSelect: boolean = false;
   targetMoleculeIdx: number = 0;
-  computeCompleted = new Subject<boolean>();
 
   constructor() {
     super('similarity');
@@ -73,7 +72,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
           this.gridSelect = false;
         });
         updateDivInnerHTML(this.root, grid.root);
-        this.computeCompleted.next(true);
+        this._computeCompleted.next(true);
       }
     }
   }

@@ -5,6 +5,7 @@ import * as grok from 'datagrok-api/grok';
 import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import * as C from '../utils/constants';
+import {Observable, Subject} from 'rxjs';
 
 export class SequenceSearchBaseViewer extends DG.JsViewer {
   name: string = '';
@@ -17,6 +18,10 @@ export class SequenceSearchBaseViewer extends DG.JsViewer {
   moleculeColumnName: string;
   initialized: boolean = false;
   tags = [DG.TAGS.UNITS, bioTAGS.aligned, bioTAGS.separator, bioTAGS.alphabet];
+
+  protected _computeCompleted = new Subject<boolean>();
+
+  public get computeCompleted(): Observable<boolean> { return this._computeCompleted; }
 
   constructor(name: string) {
     super();

@@ -44,9 +44,8 @@ const UnitsHandler = {
 const isUrlRe = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/i;
 
 class BioPackageDetectors extends DG.Package {
-
   /** Parts of the column name required in the column's name under the detector. It must be in lowercase. */
-  requiredColNamePartList = ['seq', 'msa', 'dna', 'rna', 'fasta', 'helm', 'sense', 'protein'];
+  likelyColNamePartList = ['seq', 'msa', 'dna', 'rna', 'fasta', 'helm', 'sense', 'protein'];
 
   peptideFastaAlphabet = new Set([
     'G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',
@@ -87,11 +86,15 @@ class BioPackageDetectors extends DG.Package {
   //output: string semType
   detectMacromolecule(col) {
     const t1 = Date.now();
+    let likely = false;
     try {
       const colName = col.name;
-      if (!this.requiredColNamePartList.some(
-        (requiredColNamePart) => colName.toLowerCase().includes(requiredColNamePart),
-      )) return null;
+      if (this.likelyColNamePartList.some(
+        (likelyColNamePart) => colName.toLowerCase().includes(likelyColNamePart),
+      )) {
+        //TODO: Soften some thresholds
+        likely = true;
+      }
 
       // Fail early
       if (col.type !== DG.TYPE.STRING) return null;
@@ -216,7 +219,7 @@ class BioPackageDetectors extends DG.Package {
    * Does not use any splitting strategies, estimates just by single characters.
    * */
   detectSeparator(freq) {
-    // To detect a separator we analyse col's sequences character frequencies.
+    // To detect a separator we analyze col's sequences character frequencies.
     // If there is an exceptionally frequent symbol, then we will call it the separator.
     // The most frequent symbol should occur with a rate of at least 0.15
     // of all other symbols in sum to be called the separator.

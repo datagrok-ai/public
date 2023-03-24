@@ -177,7 +177,7 @@ MWRSWY-CKHP
     [Samples.testAlertCollection]: 'System:AppData/Bio/tests/testAlertCollection.csv',
     [Samples.testSpgi100]: 'System:AppData/Bio/tests/testSpgi100.csv',
     [Samples.testSpgi]: 'System:AppData/Bio/tests/SPGI-derived.csv',
-    [Samples.testUrl]: 'System:AppData/Bio/tests/testUrl.csv',
+    [Samples.testUrl]: 'System:AppData/Bio/tests/testUrl.csv', // 10 rows
   };
 
   const _samplesDfs: { [key: string]: Promise<DG.DataFrame> } = {};

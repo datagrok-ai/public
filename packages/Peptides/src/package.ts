@@ -80,7 +80,7 @@ export function Peptides(): void {
   ]);
 }
 
-//top-menu: Bio | Peptides...
+//top-menu: Bio | SAR | Peptides...
 //name: Bio Peptides
 export function peptidesDialog(): DG.Dialog {
   const analyzeObject = analyzePeptidesUI(grok.shell.t);

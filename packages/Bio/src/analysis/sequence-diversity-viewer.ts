@@ -14,7 +14,6 @@ import {Subject} from 'rxjs';
 export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
   renderMolIds: number[] | null = null;
   columnNames = [];
-  computeCompleted = new Subject<boolean>();
 
   constructor() {
     super('diversity');
@@ -42,7 +41,7 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
         this.tags.forEach((tag) => resCol.setTag(tag, this.moleculeColumn!.getTag(tag)));
         const resDf = DG.DataFrame.fromColumns([resCol]);
         updateDivInnerHTML(this.root, resDf.plot.grid().root);
-        this.computeCompleted.next(true);
+        this._computeCompleted.next(true);
       }
     }
   }
