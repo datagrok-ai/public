@@ -71,15 +71,22 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        if (this.isEmptyValue() || this.checkMalformedTargetMolecule()) {
+        if (this.isEmptyValue()) {
           progressBar.close();
           return;
         }
-        const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
-          this.targetMolecule, this.distanceMetric, this.limit, this.cutoff, this.fingerprint as Fingerprint);
-        this.molCol = df.getCol('smiles');
-        this.idxs = df.getCol('indexes');
-        this.scores = df.getCol('score');
+        try {
+          const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
+            this.targetMolecule, this.distanceMetric, this.limit, this.cutoff, this.fingerprint as Fingerprint);
+          this.molCol = df.getCol('smiles');
+          this.idxs = df.getCol('indexes');
+          this.scores = df.getCol('score');
+        } catch (e: any){
+          grok.shell.error(e.message);
+          return;
+        } finally {
+          progressBar.close();
+        }
       } else if (this.gridSelect)
         this.gridSelect = false;
       this.clearResults();
@@ -164,20 +171,6 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     return false;
   }
 
-  checkMalformedTargetMolecule(): boolean {
-    let mol;
-    try {
-      mol = getRdKitModule().get_mol(this.targetMolecule);
-      return false;
-    } catch (e: any) {
-      grok.shell.error(`Possibly malformed target molecule`);
-      this.clearResults();
-      return true;
-    } finally {
-      if (mol) mol.delete();
-    }
-  }
-
   clearResults() {
     if (this.root.hasChildNodes())
       this.root.removeChild(this.root.childNodes[0]);
@@ -201,7 +194,7 @@ export async function chemSimilaritySearch(
   const fpSim = similarityMetric[metricName];
   for (let row = 0; row < fingerprintCol.length; row++) {
     const fp = fingerprintCol[row];
-    distances[row] = fp.allFalse ? 100.0 : fpSim(targetFingerprint, fp);
+    distances[row] = (!fp || fp!.allFalse) ? 100.0 : fpSim(targetFingerprint, fp!);
   }
 
   function range(end: number) {
@@ -219,7 +212,7 @@ export async function chemSimilaritySearch(
   }
 
   const indexes = range(table.rowCount)
-    .filter((idx) => !fingerprintCol[idx].allFalse)
+    .filter((idx) => fingerprintCol[idx] && !fingerprintCol[idx]!.allFalse)
     .sort(compare);
   const molsList = [];
   const scoresList = [];

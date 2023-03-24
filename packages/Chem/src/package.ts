@@ -235,9 +235,9 @@ export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Co
 
   try {
     const fingerprints = await chemSearches.chemGetFingerprints(molColumn, Fingerprint.Morgan);
-    const fingerprintsBitsets: DG.BitSet[] = [];
+    const fingerprintsBitsets: (DG.BitSet | null)[] = [];
     for (let i = 0; i < fingerprints.length; ++i) {
-      const fingerprint = DG.BitSet.fromBytes(fingerprints[i].getRawData().buffer, fingerprints[i].length);
+      const fingerprint = fingerprints[i] ? DG.BitSet.fromBytes(fingerprints[i]!.getRawData().buffer, fingerprints[i]!.length) : null;
       fingerprintsBitsets.push(fingerprint);
     }
     return DG.Column.fromList('object', 'fingerprints', fingerprintsBitsets);

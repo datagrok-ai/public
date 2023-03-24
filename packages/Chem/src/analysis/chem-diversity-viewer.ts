@@ -100,7 +100,7 @@ export async function chemDiversitySearch(
   moleculeColumn: DG.Column, similarity: (a: BitArray, b: BitArray) => number,
   limit: number, fingerprint: Fingerprint, tooltipUse: boolean = false): Promise<number[]> {
 
-  let fingerprintArray: BitArray[] = [];
+  let fingerprintArray: (BitArray | null)[] = [];
   if (tooltipUse) {
     const size = Math.min(moleculeColumn.length, 1000);
     const randomIndexes = Array.from({length: size}, () => Math.floor(Math.random() * moleculeColumn.length));
@@ -121,13 +121,13 @@ export async function chemDiversitySearch(
   } else {
     fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint);
   }
+  const indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => !!f && !f.allFalse);
   if (!tooltipUse)
     malformedDataWarning(fingerprintArray, moleculeColumn.dataFrame);
-  const indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => !f.allFalse);
   limit = Math.min(limit, indexes.length);
 
   const diverseIndexes = getDiverseSubset(indexes.length, limit,
-    (i1, i2) => 1 - similarity(fingerprintArray[indexes[i1]], fingerprintArray[indexes[i2]]));
+    (i1, i2) => 1 - similarity(fingerprintArray[indexes[i1]]!, fingerprintArray[indexes[i2]]!));
 
   const molIds: number[] = [];
   for (let i = 0; i < limit; i++)
