@@ -206,14 +206,14 @@ docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok -
    ```shell
    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all logs
    ```
-   
+
    You can also watch the logs of the desired service in real time
 
    ```shell
    # Get list of running containers and choose a nessesary one
    docker ps
    # Replace datagrok_datagrok_1 with nessesary container name
-   # Replace 50 with desired log lines to watch or remove --tail 50 at all, if you need to 
+   # Replace 50 with desired log lines to watch or remove --tail 50 at all, if you need to
    # watch full log
    docker logs -f --tail 50  datagrok_datagrok_1
    ```
@@ -239,6 +239,6 @@ docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok -
 ## Useful links
 
 * [Docker Compose](https://docs.docker.com/compose/)
-* [Infrastructure](infrastructure.md)
+* [Infrastructure](../infrastructure.md)
 * [Deployment](deploy.md)
-* [Configuration](configuration.md)
+* [Configuration](../configuration.md)

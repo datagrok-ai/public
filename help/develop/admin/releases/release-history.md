@@ -17,7 +17,7 @@ title: "Release History"
 
 See also:
 - [Versioning policy](versioning-policy.md)
-- [Docker-Compose](../docker-compose.md)
+- [Docker-Compose](../deploy/docker-compose.md)
 
 
 ## 2023-03-29 1.13.10
@@ -582,14 +582,14 @@ We've released a new version of the Datagrok platform (1.12.0). This release foc
 and usability and traditionally on platform stability.
 Here are some of the biggest improvements:
 
-* New [Scaffold Tree](release-history.md/#enhancements-in-packages ) visualization that organizes molecular data sets by
+* New [Scaffold Tree](release-history.md#enhancements-in-packages ) visualization that organizes molecular data sets by
   arranging molecules into a tree hierarchy based on their scaffolds. For details,
   see [Scaffold tree](../../../domains/chem/scaffold-tree.md).
-* [Dendrogram](release-history.md/#enhancements-in-packages) for interactive exploration of the hierarchical clustering.
+* [Dendrogram](release-history.md#enhancements-in-packages) for interactive exploration of the hierarchical clustering.
   For details, see [Dendrogram](https://community.datagrok.ai/t/dendrogram/721).
-* Brand new [Map](release-history.md/#enhancements-in-packages). To learn more,
+* Brand new [Map](release-history.md#enhancements-in-packages). To learn more,
   see [Map viewer](https://community.datagrok.ai/t/visualization-related-updates/521/27)
-* [Peptides](release-history.md/#enhancements-in-packages) new features and capabilities, such as custom clustering and
+* [Peptides](release-history.md#enhancements-in-packages) new features and capabilities, such as custom clustering and
   multiple views, as well as a slightly redesigned user interface and improved application stability. To learn more,
   see [Macromolecules updates](https://community.datagrok.ai/t/macromolecules-updates/661/11)
 
@@ -597,7 +597,7 @@ Here are some of the biggest improvements:
 
 * Color coding
   * Scatter plot now has a legend for continuous color coding.
-  * In a grid, you can apply [color coding](../../../visualize/viewers/grid.md/#column-color-coding) to the text or
+  * In a grid, you can apply [color coding](../../../visualize/viewers/grid.md#column-color-coding) to the text or
     background. This option is available for all linear, categorical, and conditional schemas.
   * When inheriting the color coding from the grid, adjustments to the min/max made in the plot are reflected in the
     grid. However, if the original column is not color-coded and selected for the color column in the scatter plot, the

@@ -365,7 +365,7 @@ our [public packages](https://github.com/datagrok-ai/public/tree/master/packages
 
 To test a package in CI, you need the following:
 
-1. Set up a stand for workflow. It is elementary to do using [docker-compose](admin/docker-compose.md)
+1. Set up a stand for workflow. It is elementary to do using [docker-compose](admin/deploy/docker-compose.md)
 2. Install the latest [datagrok-tools](https://www.npmjs.com/package/datagrok-tools)
 3. [Publish package](#publication-with-automation-tools) to the stand
 4. Run tests using [grok test](how-to/test-packages.md#local-testing)

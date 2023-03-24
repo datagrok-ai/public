@@ -2,8 +2,8 @@
 title: "Deployment on AWS ECS using CloudFormation"
 ---
 
-Datagrok is based on Docker containers, [database](infrastructure.md#database)
-and [persistent file storage](infrastructure.md#storage).
+Datagrok is based on Docker containers, [database](../infrastructure.md#database)
+and [persistent file storage](../infrastructure.md#storage).
 
 This document contains instructions to deploy Datagrok using [CloudFormation](https://aws.amazon.com/cloudformation/)
 on [AWS ECS cluster](https://aws.amazon.com/ecs/) with [AWS RDS](https://aws.amazon.com/rds/)
@@ -14,8 +14,8 @@ create a Datagrok infrastructure in AWS that applies to all standard security po
 
 More information about Datagrok design and components:
 
-* [Architecture](architecture.md)
-* [Infrastructure](infrastructure.md)
+* [Architecture](../architecture.md)
+* [Infrastructure](../infrastructure.md)
 
 ## Prerequisites
 
@@ -98,7 +98,7 @@ More information about Datagrok design and components:
 3. CloudFormation Stack creation takes around 10 minutes. It will create RDS, S3, ECS Cluster, and other required
    resources.
    Cloudformation template is large, so you need to upload it, for example, to S3 bucket and launch it from there
-   in AWS CLI: 
+   in AWS CLI:
 
    ```shell
    aws cloudformation create-stack \
