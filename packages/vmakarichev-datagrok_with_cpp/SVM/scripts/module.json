@@ -1,0 +1,12 @@
+{
+    "name": "SVMlib",    
+    "folder": "../wasm",
+    "source": ["api.cpp"],    
+    "optimizationMode": "-O3",    
+    "packageFile": "../src/package.js",
+    "packageJsonFile": "../package.json",    
+    "runtimeSystemFile": "../wasm/callWasm.js",
+    "runtimeSystemForWebWorker": "../wasm/callWasmForWebWorker.js",
+    "totalMemory": "2147483648",
+    "inWebWorkerRun": true
+}
