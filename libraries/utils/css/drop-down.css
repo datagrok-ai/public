@@ -5,7 +5,7 @@
     min-width: initial;
     width: initial;
     padding: 0 2px;
-    margin: 2px;
+    margin: 2px 11px 2px 2px;
 }
 
 .ui-drop-down-root::after {
@@ -49,4 +49,8 @@
     width: max-content;
     padding: 10px 12px;
     visibility: hidden;
+}
+
+.d4-ribbon-item > .ui-drop-down-root {
+    margin-right: 11px;
 }

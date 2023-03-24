@@ -86,4 +86,6 @@ export class DropDown {
   get onElementClick(): Observable<MouseEvent> {
     return fromEvent<MouseEvent>(this._dropDownElement, 'click');
   }
+
+  // TODO: add list constructor to DropDown
 }
