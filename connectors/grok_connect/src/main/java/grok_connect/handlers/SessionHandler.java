@@ -44,7 +44,8 @@ public class SessionHandler {
     public void onError(Throwable err) throws Throwable {
         session.getRemote().sendString(socketErrorMessage(err));
         session.close();
-        qm.closeConnection();
+        if (qm != null)
+            qm.closeConnection();
     }
 
     public void onMessage(String message) throws Throwable {
@@ -72,7 +73,7 @@ public class SessionHandler {
                             qm.query.log += "inited scheme, " + sdf.format(new Date());
                             System.out.println("inited scheme, " + sdf.format(new Date()));
                         }
-                        dataFrame = qm.getSubDF(rowsPerChunk);
+                        dataFrame = qm.getSubDF(100);
                     } else {
                         dataFrame = new DataFrame(); 
                     }

@@ -24,7 +24,9 @@ public class SessionManager {
 
     static void delete(Session s) throws Throwable {
         if (sessions.containsKey(s)) {
-            sessions.get(s).qm.closeConnection();
+            SessionHandler sh = sessions.get(s);
+            if (sh.qm != null)
+                sessions.get(s).qm.closeConnection();
             sessions.remove(s);
         } 
     }
