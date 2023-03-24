@@ -1,36 +1,26 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import typeahead from 'typeahead-standalone'; // imports library (js)
+import typeahead from 'typeahead-standalone';
+import {Dictionary, typeaheadConfig} from 'typeahead-standalone/dist/types';
 import '../../css/typeahead-input.css';
+
+
+type TypeAheadConfig = Omit<typeaheadConfig<Dictionary>, 'input' | 'className'>
 
 export namespace u2 {
   export class TypeAhead extends DG.InputBase {
-    constructor(label: string = '', source: string[] = [],
-      options?: {minLength?: number, limit?: number}) {
-      const inputElement = ui.stringInput(label, '');
+    constructor(config: TypeAheadConfig) {
+      const inputElement = ui.stringInput('', '');
       super(inputElement.dart);
 
-      (this.input as HTMLInputElement).placeholder = 'Search';
+      const typeAheadConfig: typeaheadConfig<Dictionary> = Object.assign(
+        {input: <HTMLInputElement> this.input}, config);
 
-      typeahead({
-        input: <HTMLInputElement> this.input,
-        source: {
-          local: source,
-        },
-        minLength: options?.minLength ?? 1,
-        limit: options?.limit ?? 5,
-        hint: false,
-      });
+      typeahead(typeAheadConfig);
 
       this.root.getElementsByClassName('tt-list')[0].className = 'ui-input-list';
       this.root.getElementsByClassName('tt-input')[0].className = 'ui-input-editor';
-    }
-
-    onAutocomplete(callback: Function) {
-      this.input.addEventListener('change', () => {
-        callback();
-      }, false);
     }
   }
 }
