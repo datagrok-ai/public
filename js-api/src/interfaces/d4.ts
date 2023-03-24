@@ -152,9 +152,18 @@ export interface IHistogramLookSettings {
 
   showColumnSelector: boolean;
 
+  /// Whether the values should be normalized when multiple histograms are shown.
+  /// If true, you are comparing distributions; if false, you are comparing absolute values.
+  /// Requires *Split Column Name* to be set.
+  normalizeValues: boolean;
+
   /// Spline tension in case multiple histograms are shown.
   /// Requires *Split Column Name* to be set.
   splineTension: number;
+
+  /// Whether markers should be drown when multiple histograms are shown.
+  /// Requires *Split Column Name* to be set.
+  showMarkers: boolean;
 
   /// Numerical column to be used for color-coding.
   /// The values in the bin get aggregated using the *Color Aggr Type* property.
