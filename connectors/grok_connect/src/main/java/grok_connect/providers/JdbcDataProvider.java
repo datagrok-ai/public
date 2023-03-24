@@ -138,7 +138,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 System.out.println(query);
                 PreparedStatement statement = connection.prepareStatement(query);
                 if (supportsTransactions)
-                    statement.setFetchSize(10000);
+                    statement.setFetchSize(100);
                 providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 List<String> stringValues = new ArrayList<>();
                 System.out.println(names);
@@ -176,7 +176,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
                 Statement statement = connection.createStatement();
                 if (supportsTransactions)
-                    statement.setFetchSize(10000);
+                    statement.setFetchSize(100);
                 providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 statement.setQueryTimeout(timeout);
                 String logString = String.format("Query: %s \n", query);
@@ -191,7 +191,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             // Query without parameters
             Statement statement = connection.createStatement();
             if (supportsTransactions)
-                statement.setFetchSize(10000);
+                statement.setFetchSize(100);
             providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
             statement.setQueryTimeout(timeout);
             String logString = String.format("Query: %s \n", query);
