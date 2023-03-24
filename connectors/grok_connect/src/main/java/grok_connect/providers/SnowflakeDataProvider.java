@@ -132,31 +132,19 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.nameBrackets = "\"";
 
-        //TODO: .*
         descriptor.typesMap = new HashMap<String, String>() {{
             put("number", Types.FLOAT);
-            put("decimal", Types.FLOAT);
-            put("numeric", Types.FLOAT);
-            put("int", Types.INT);
-            put("integer", Types.INT);
-            put("bigint", Types.BIG_INT);
-            put("smallint", Types.INT);
             put("float", Types.FLOAT);
-            put("float4", Types.FLOAT);
-            put("float8", Types.FLOAT);
-            put("double", Types.FLOAT);
-            put("double precision", Types.FLOAT);
-            put("real", Types.FLOAT);
-            put("varchar", Types.STRING);
-            put("char", Types.STRING);
-            put("character", Types.STRING);
-            put("string", Types.STRING);
             put("text", Types.STRING);
             put("boolean", Types.BOOL);
             put("date", Types.DATE_TIME);
-            put("datetime", Types.DATE_TIME);
             put("time", Types.DATE_TIME);
-            put("timestamp", Types.DATE_TIME);
+            put("#timestamp.*", Types.DATE_TIME);
+            put("array", Types.LIST);
+            put("object", Types.OBJECT);
+            put("variant", Types.OBJECT);
+            put("geography", Types.OBJECT);
+            put("binary", Types.BLOB);
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stddev(#)", Types.dataFrameNumericTypes));
     }
