@@ -10,7 +10,7 @@ const Configuration = {
    */
   parserPreset: {
     parserOpts: {
-      headerPattern: /^(?:(?:closes )?((?:GROK-[0-9]+)|(?:#[0-9]+))[: ])? ?(?:((?:(?<=^|[: ])[a-zA-Z ]+))[:|] )((?:\w)+.*)$/,
+      headerPattern: /^(?:(?:closes )?((?:GROK-[0-9]+)|(?:#[0-9]+))[: ])? ?(?:((?:(?<=^|[: ])[a-zA-Z0-9 ]+))[:|] )((?:\w)+.*)$/,
       headerCorrespondence: ['references', 'scope', 'subject'],
       issuePrefixes: ['GROK-', '#']
     }
