@@ -119,6 +119,11 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
     cellStyle: DG.GridCellStyle
   ) {
+    /* Can not render anything without tableColumn annotated with tags ('units', 'aligned', 'alphabet') */
+    let tableCol: DG.Column | null = null;
+    try { tableCol = gridCell.tableColumn; } catch { }
+    if (!tableCol) return;
+
     const grid = gridCell.gridRow !== -1 ? gridCell.grid : null;
     const cell = gridCell.cell;
     const paletteType = gridCell.cell.column.getTag(bioTAGS.alphabet);
@@ -132,8 +137,8 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     g.textBaseline = 'top';
 
     //TODO: can this be replaced/merged with splitSequence?
-    const units = gridCell.cell.column.getTag(DG.TAGS.UNITS);
-    const aligned: string = gridCell.cell.column.getTag(bioTAGS.aligned);
+    const units = tableCol.getTag(DG.TAGS.UNITS);
+    const aligned: string = tableCol.getTag(bioTAGS.aligned);
 
     const palette = getPaletteByType(paletteType);
 
@@ -143,7 +148,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
     // TODO: Store temp data to GridColumn
     // Now the renderer requires data frame table Column underlying GridColumn
-    const colTemp: TempType = gridCell.cell.column.temp;
+    const colTemp: TempType = tableCol.temp;
 
     const tempReferenceSequence: string | null = colTemp[tempTAGS.referenceSequence];
     const tempCurrentWord: string | null = colTemp[tempTAGS.currentWord];
@@ -276,12 +281,18 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
    */
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
-    _cellStyle: DG.GridCellStyle): void {
+    _cellStyle: DG.GridCellStyle
+  ): void {
+    /* Can not render anything without tableColumn annotated with tags ('units', 'aligned', 'alphabet') */
+    let tableCol: DG.Column | null = null;
+    try { tableCol = gridCell.tableColumn; } catch { }
+    if (!tableCol) return;
+
     const grid = gridCell.grid;
     const cell = gridCell.cell;
     const s: string = cell.value ?? '';
-    const separator = gridCell.tableColumn!.tags[bioTAGS.separator];
-    const units: string = gridCell.tableColumn!.tags[DG.TAGS.UNITS];
+    const separator = tableCol.tags[bioTAGS.separator];
+    const units: string = tableCol.tags[DG.TAGS.UNITS];
     w = getUpdatedWidth(grid, g, x, w);
     //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');

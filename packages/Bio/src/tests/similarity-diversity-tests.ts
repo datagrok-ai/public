@@ -3,19 +3,23 @@ import * as DG from 'datagrok-api/dg';
 import {createTableView, readDataframe} from './utils';
 import * as grok from 'datagrok-api/grok';
 import {SequenceSimilarityViewer} from '../analysis/sequence-similarity-viewer';
+import {SequenceDiversityViewer} from '../analysis/sequence-diversity-viewer';
+import {SequenceSearchBaseViewer} from '../analysis/sequence-search-base-viewer';
 
 let viewList: DG.ViewBase[];
+let viewerList: DG.Viewer[];
 let dfList: DG.DataFrame[];
 
 
 category('similarity/diversity', async () => {
-
   before(async () => {
     viewList = [];
+    viewerList = [];
     dfList = [];
   });
 
   after(async () => {
+    for (const viewer of viewerList) viewer.close();
     for (const view of viewList) view.close();
     for (const df of dfList) grok.shell.closeTable(df);
   });
@@ -33,8 +37,9 @@ async function _testSimilaritySearchViewer() {
   const molecules = await createTableView('tests/sample_MSA_data.csv');
   const viewer = molecules.addViewer('Sequence Similarity Search');
   await delay(100);
-  const similaritySearchViewer = getSearchViewer(viewer, 'Sequence Similarity Search');
-  viewList.push(similaritySearchViewer);
+  const similaritySearchViewer: SequenceSimilarityViewer =
+    getSearchViewer(viewer, 'Sequence Similarity Search')! as SequenceSimilarityViewer;
+  viewerList.push(similaritySearchViewer);
   viewList.push(molecules);
   if (!similaritySearchViewer.molCol)
     await waitForCompute(similaritySearchViewer);
@@ -61,25 +66,28 @@ async function _testDiversitySearchViewer() {
   const molecules = await createTableView('tests/sample_MSA_data.csv');
   const viewer = molecules.addViewer('Sequence Diversity Search');
   await delay(10);
-  const diversitySearchviewer = getSearchViewer(viewer, 'Sequence Diversity Search');
-  viewList.push(diversitySearchviewer);
+  const diversitySearchViewer: SequenceDiversityViewer =
+    getSearchViewer(viewer, 'Sequence Diversity Search')! as SequenceDiversityViewer;
+  viewerList.push(diversitySearchViewer);
   viewList.push(molecules);
-  if (!diversitySearchviewer.renderMolIds)
-    await waitForCompute(diversitySearchviewer);
-  expect(diversitySearchviewer.fingerprint, 'Morgan');
-  expect(diversitySearchviewer.distanceMetric, 'Tanimoto');
-  expect(diversitySearchviewer.initialized, true);
-  expect(diversitySearchviewer.renderMolIds.length > 0, true);
+  if (!diversitySearchViewer.renderMolIds)
+    await waitForCompute(diversitySearchViewer);
+  expect(diversitySearchViewer.fingerprint, 'Morgan');
+  expect(diversitySearchViewer.distanceMetric, 'Tanimoto');
+  expect(diversitySearchViewer.initialized, true);
+  expect(!!diversitySearchViewer.renderMolIds, true);
+  expect(diversitySearchViewer.renderMolIds!.length > 0, true);
 }
 
-function getSearchViewer(viewer: DG.Viewer, name: string) {
-  for (const v of viewer.view.viewers) {
+function getSearchViewer(viewer: DG.Viewer, name: string): DG.Viewer | null {
+  for (const v of (viewer.view as DG.TableView).viewers) {
     if (v.type === name)
       return v;
   }
+  return null;
 }
 
-async function waitForCompute(viewer: SequenceSimilarityViewer) {
+async function waitForCompute(viewer: SequenceSearchBaseViewer) {
   const t = new Promise((resolve, reject) => {
     viewer.computeCompleted.subscribe(async (_: any) => {
       try {
