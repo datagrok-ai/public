@@ -10,24 +10,7 @@ import {fitSeries, getChartData, getChartBounds, getFittedCurve,IFitChartData, I
   CONFIDENCE_INTERVAL_FILL_COLOR, CONFIDENCE_INTERVAL_STROKE_COLOR, CURVE_CONFIDENCE_INTERVAL_BOUNDS,
   TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX} from './fit-data';
 import {convertXMLToIFitChartData} from './fit-parser';
-
-interface ITransform {
-  xToScreen(world: number): number;
-  yToScreen(world: number): number;
-}
-
-class Transform {
-  static linear(world: DG.Rect, screen: DG.Rect): ITransform {
-    return {
-      xToScreen(worldX: number): number {
-        return screen.left + screen.width * (worldX - world.left) / world.width;
-      },
-      yToScreen(worldY: number): number {
-        return screen.bottom - screen.height * (worldY - world.top) / world.height;
-      }
-    };
-  }
-}
+import {ITransform, Transform} from "./transform";
 
 /** Performs a chart layout, returning [viewport, xAxis, yAxis] */
 function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
