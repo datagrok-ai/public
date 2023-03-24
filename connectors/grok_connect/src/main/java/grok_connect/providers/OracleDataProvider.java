@@ -51,15 +51,21 @@ public class OracleDataProvider extends JdbcDataProvider {
 
         descriptor.typesMap = new HashMap<String, String>() {{
             put("long", Types.INT);
-            put("#float.*", Types.FLOAT);
-            put("#number.*", Types.FLOAT);
+            put("float", Types.FLOAT);
+            put("number", Types.FLOAT);
             put("binary_float", Types.FLOAT);
             put("binary_double", Types.FLOAT);
-            put("#.char.*", Types.STRING);
-            put("#.varchar.*", Types.STRING);
-            put("#.clob.*", Types.STRING);
+            put("#.*char.*", Types.STRING);
+            put("#.*varchar.*", Types.STRING);
             put("date", Types.DATE_TIME);
-            put("timestamp", Types.DATE_TIME);
+            put("#timestamp.*", Types.DATE_TIME);
+            put("#interval.*", Types.DATE_TIME);
+            put("json", Types.OBJECT);
+            put("#.*clob.*", Types.BLOB);
+            put("blob", Types.BLOB);
+            put("uritype", Types.OBJECT);
+            put("mem_type", Types.OBJECT);
+            put("xmltype", Types.OBJECT);
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stddev(#)", Types.dataFrameNumericTypes));
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "median(#)", Types.dataFrameNumericTypes));

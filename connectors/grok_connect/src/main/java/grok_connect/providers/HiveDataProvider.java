@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import grok_connect.connectors_info.*;
 import grok_connect.providers.proxy.HiveMetaDataProviderProxyProvider;
 import grok_connect.table_query.AggrFunctionInfo;
+import grok_connect.table_query.GroupAggregation;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Prop;
@@ -55,14 +56,21 @@ public class HiveDataProvider extends JdbcDataProvider {
         descriptor.canBrowseSchema = true;
         descriptor.typesMap = new HashMap<String, String>() {{
             put("smallint", Types.INT);
+            put("tinyint", Types.INT);
             put("int", Types.INT);
             put("bigint", Types.BIG_INT);
-            put("real", Types.FLOAT);
-            put("double precision", Types.FLOAT);
+            put("boolean", Types.BOOL);
+            put("double", Types.FLOAT);
             put("float", Types.FLOAT);
+            put("#decimal.*", Types.FLOAT);
+            put("date", Types.DATE_TIME);
+            put("timestamp", Types.DATE_TIME);
             put("#char.*", Types.STRING);
             put("#varchar.*", Types.STRING);
             put("string", Types.STRING);
+            put("#array.*", Types.OBJECT);
+            put("#map.*", Types.OBJECT);
+            put("#struct.*", Types.OBJECT);
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stddev(#)", Types.dataFrameNumericTypes));
     }
