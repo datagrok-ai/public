@@ -495,6 +495,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 columns.get(c - 1).add(((BigDecimal)value).intValue());
                             else if (value instanceof Long) {
                                 columns.get(c - 1).add(((Long)value).intValue());
+                            } else if (value instanceof Byte) {
+                                columns.get(c - 1).add(((Byte) value).intValue());
                             } else
                                 columns.get(c - 1).add(value);
                         else if (isString(type, typeName)) {
@@ -807,7 +809,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         return result;
     }
 
-    private String aggrToSql(GroupAggregation aggr) {
+    protected String aggrToSql(GroupAggregation aggr) {
         AggrFunctionInfo funcInfo = null;
         for (AggrFunctionInfo info: descriptor.aggregations) {
             if (info.functionName.equals(aggr.aggType)) {

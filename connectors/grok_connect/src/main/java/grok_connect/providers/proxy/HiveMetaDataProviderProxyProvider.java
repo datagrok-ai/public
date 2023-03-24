@@ -47,7 +47,7 @@ public class HiveMetaDataProviderProxyProvider {
                 + "as table_name, \"COLUMN_NAME\" as column_name, \"TYPE_NAME\" as data_type, \n"
                 + "CASE WHEN \"TBL_TYPE\" = 'VIRTUAL_VIEW' THEN 1 ELSE 0 END AS is_view FROM \"TBLS\", "
                 + "\"COLUMNS_V2\", \"DBS\" WHERE \"TBL_ID\"=\"CD_ID\" AND \"DBS\".\"DB_ID\" = \"TBLS\".\"DB_ID\"" +
-                " AND %s%s;", schema != null ? String.format("\"DBS\".\"NAME\" = '%s'%s",schema, table != null ? " AND " : "") : "",
+                "%s%s;", schema != null ? String.format(" AND \"DBS\".\"NAME\" = '%s'%s",schema, table != null ? " AND " : "") : "",
                 table != null ? String.format("\"TBL_NAME\" = '%s'", table) : "");
     }
 }
