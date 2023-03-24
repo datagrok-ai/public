@@ -1,15 +1,7 @@
 package grok_connect.providers;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.sql.Types;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
@@ -153,6 +145,4 @@ public class Neo4jDataProvider extends JdbcDataProvider {
         }
         return result;
     }
-
-
 }
