@@ -282,6 +282,17 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
   return ui.divH([moleculeHost], 'chem-mol-box');
 }
 
+function getMoleculePropertyDiv() : HTMLDivElement | null {
+  const c = document.getElementsByClassName('property-grid-item-view-label');
+  let name = null;
+  for (let n = 0; n< c.length; ++n) {
+    name = c[n].getAttribute('name');
+    if (name !== null && name === 'prop-view-molecule-column')
+      return c[n] as HTMLDivElement;
+  }
+  return null;
+}
+
 function getFlagIcon(group: TreeViewGroup) : HTMLElement | null {
   const molHost: HTMLElement = group.captionLabel;
   const c = molHost.getElementsByClassName('icon-fill');
@@ -308,8 +319,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   tree: DG.TreeViewGroup;
   bitset: DG.BitSet | null = null;
   wrapper: SketcherDialogWrapper | null = null;
-  molColumns: Array<DG.Column> = [];
+  molColumns: Array<DG.Column[]> = [];
   molColumnIdx: number = -1;
+  tableIdx: number = -1;
   threshold: number;
   bitOperation: string;
   ringCutoff: number = 10;
@@ -318,6 +330,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   treeBuildCount: number = -1;
   checkBoxesUpdateInProgress: boolean = false;
   treeEncodeUpdateInProgress: boolean = false;
+  dataFrameSwitchgInProgress: boolean = false;
+
   _generateLink?: HTMLElement;
   _message?: HTMLElement | null = null;
   _iconAdd: HTMLElement | null = null;
@@ -327,6 +341,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   workersInit: boolean = false;
   progressBar: DG.TaskBarProgressIndicator | null = null;
   MoleculeColumn: string;
+
+  molColPropObserver: MutationObserver | null = null;
+  Table: string;
   treeEncode: string;
 
   constructor() {
@@ -334,15 +351,32 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.tree = ui.tree();
     // this.tree.root.classList.add('d4-tree-view-lines');
-    const dataFrame = grok.shell.tv.dataFrame;
-    this.molColumns = dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
     this.helpUrl = '/help/visualize/viewers/scaffold-tree.md';
 
-    const molColNames = new Array(this.molColumns.length);
-    for (let n = 0; n < molColNames.length; ++n) {
-      molColNames[n] = this.molColumns[n].name;
+    const dataFrames = grok.shell.tables;
+    for (let n = 0; n < dataFrames.length; ++n) {
+      const molCols = dataFrames[n].columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
+      if (molCols.length > 0) {
+        this.molColumns.push(molCols);
+      }
     }
-    this.molColumnIdx = this.molColumns.length > 0 ? 0 : -1;
+
+    const tableNames = new Array(this.molColumns.length);
+    for (let n = 0; n < tableNames.length; ++n) {
+      tableNames[n] =this.molColumns[n][0].dataFrame.name;
+    }
+    this.tableIdx = this.molColumns.length > 0 ? 0 : -1;
+    this.Table = this.string('Table', tableNames.length === 0 ? null : tableNames[0], {
+      choices: tableNames,
+      category: 'Data',
+      userEditable: tableNames.length > 0
+    });
+
+    const molColNames = new Array(this.molColumns[this.tableIdx].length);
+    for (let n = 0; n < molColNames.length; ++n) {
+      molColNames[n] = this.molColumns[this.tableIdx][n].name;
+    }
+    this.molColumnIdx = this.molColumns[this.tableIdx].length > 0 ? 0 : -1;
 
     this.MoleculeColumn = this.string('MoleculeColumn', molColNames.length === 0 ? null : molColNames[0], {
       choices: molColNames,
@@ -373,9 +407,47 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     });
 
     this.treeEncode = this.string('treeEncode', '[]', {userEditable: false});
-
+    this.molColPropObserver = this.registerPropertySelectListener(document.body);
     this._initMenu();
   }
+
+  registerPropertySelectListener(parent: HTMLElement) : MutationObserver {
+    const thisViewer = this;
+    const observer = new MutationObserver((mutationsList: MutationRecord[]) => {
+    for (let mutation of mutationsList) {
+      if (mutation.type == 'childList') {
+        for (let n = 0; n < mutation.addedNodes.length; ++n) {
+          const node : any = mutation.addedNodes[n];
+          if (node.className === 'property-grid-item-editor-spinner') {
+            const c = (node.parentElement as HTMLElement).children;
+            for (let i = 0; i < c.length; ++i) {
+              if (c[n].className === 'property-grid-item-view-label' && c[n].getAttribute('name') === 'prop-view-molecule-column') {
+                const select : HTMLSelectElement = node;
+                while (select.firstChild != null) {
+                  select.removeChild(select.firstChild);
+                }
+
+                let option: HTMLOptionElement | null = null;
+                for (let i = 0; i < thisViewer.molColumns[thisViewer.tableIdx].length; ++i) {
+                  option = document.createElement('OPTION') as HTMLOptionElement;
+                  option.value = thisViewer.molColumns[thisViewer.tableIdx][i].name;
+                  option.label = thisViewer.molColumns[thisViewer.tableIdx][i].name;
+                  option.selected = i === thisViewer.molColumnIdx;
+                  select.appendChild(option);
+                }
+                // console.log('Added spinner: ' + select);
+                return;
+              }
+            }
+          }
+        }
+      }
+    }
+    });
+    observer.observe(parent, {childList: true, subtree: true});
+    return observer;
+  }
+
 
   get treeRoot(): DG.TreeViewGroup { return this.tree }
 
@@ -587,7 +659,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   get molColumn(): DG.Column | null {
-    return this.molColumns.length === 0 ? null : this.molColumns[this.molColumnIdx];
+    return this.molColumns.length === 0 ? null : this.molColumns[this.tableIdx][this.molColumnIdx];
   }
 
   private openEditSketcher(group: TreeViewGroup) {
@@ -1006,17 +1078,39 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   onPropertyChanged(p: DG.Property): void {
-    if (p.name === 'MoleculeColumn') {
+    if (p.name === 'Table') {
+      for (let n = 0; n < this.molColumns.length; ++n) {
+        if (this.molColumns[n][0].dataFrame.name === this.Table) {
+          if (this.tableIdx === n)
+            return;
+
+          this.tableIdx = n;
+          break;
+        }
+      }
+      this.dataFrameSwitchgInProgress = true;
       this.clear();
 
-      for (let n = 0; n < this.molColumns.length; ++n) {
-        if (this.molColumns[n].name === this.MoleculeColumn) {
+      this.molColumnIdx = this.molColumns[this.tableIdx].length > 0 ? 0 : -1;
+      this.MoleculeColumn = this.molColumns[this.tableIdx][this.molColumnIdx].name;
+      this.dataFrameSwitchgInProgress = false;
+
+      const div = getMoleculePropertyDiv();
+      if (div !== null)
+        div.innerHTML = this.MoleculeColumn;
+
+    } else if (p.name === 'MoleculeColumn') {
+      for (let n = 0; n < this.molColumns[this.tableIdx].length; ++n) {
+        if (this.molColumns[this.tableIdx][n].name === this.MoleculeColumn) {
+          if (this.molColumnIdx === n)
+            return;
+
           this.molColumnIdx = n;
           break;
         }
       }
-
-      //this.molColumn = this.dataFrame.columns.byName(this.MoleculeColumn);
+      this.clear();
+     //this.molColumn = this.dataFrame.columns.byName(this.MoleculeColumn);
       //console.log('Property changed: ' + p.name);
     } else if (p.name === 'treeEncode') {
       if (this.treeEncodeUpdateInProgress)
@@ -1041,8 +1135,13 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   onFrameAttached(dataFrame: DG.DataFrame): void {
+    if (this.dataFrameSwitchgInProgress) {
+      this.dataFrameSwitchgInProgress = true;
+      return;
+    }
+
     if (this.molColumnIdx >= 0)
-      this.MoleculeColumn = this.molColumns[this.molColumnIdx].name;
+      this.MoleculeColumn = this.molColumns[this.tableIdx][this.molColumnIdx].name;
 
     const thisViewer = this;
     this.tree.root.onscroll = async (e) => await updateVisibleNodesHits(thisViewer)
@@ -1075,7 +1174,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         });
     });
 
-    this.tree.onSelectedNodeChanged.subscribe(async(node: DG.TreeViewNode) => {
+    this.tree.onSelectedNodeChanged.subscribe((node: DG.TreeViewNode) => {
        if (node.value !== null) {
          if (value(node).bitset === undefined)
            return;
@@ -1086,7 +1185,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         thisViewer.resetFilters();
         thisViewer.updateFilters();
         const molFile = value(node).smiles;
-        grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
+        setTimeout(() =>
+        grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK), 50);
       }
       //update the sketcher if open
       if (thisViewer.wrapper === null)
@@ -1156,6 +1256,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.progressBar.close();
       this.progressBar = null;
     }
+
+    this.molColPropObserver!.disconnect();
+    this.molColPropObserver = null;
 
     this.clearFilters();
     super.detach();
