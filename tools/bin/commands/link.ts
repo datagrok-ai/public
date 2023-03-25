@@ -61,44 +61,46 @@ export function link(args: LinkArgs) {
     const f = () => {
       for (const lib of libs) {
         if (`${libScope}/${lib.name}` in dependencies) {
-          if (lib.isSymbolicLink()) {
-            console.log(`Package "${lib.name}" is linked. Skipping...`);
-          } else {
-            console.log(`Linking "${lib.name}"...`);
-            exec('npm install && npm run build && npm link',  { cwd: path.join(paths[libScope], lib.name) }, (err, stdout, stderr) => {
+          const libPath = path.join(paths[libScope], lib.name);
+          const isLinked = lib.isSymbolicLink();
+          console.log(isLinked ?
+            `Package "${lib.name}" is linked. Updating dependencies and running the build script...`
+            : `Linking "${lib.name}"...`);
+          exec(isLinked ? 'npm update && npm run build' : 'npm install && npm run build && npm link',
+            { cwd: libPath }, (err, stdout, stderr) => {
               if (err) throw err;
               else console.log(stderr, stdout);
             });
-          }
         }
       }
     };
     if (hasUtils) {
       const utilsModule = libs.splice(libs.findIndex((m) => m.name === 'utils'), 1)[0];
-      if (utilsModule.isSymbolicLink()) {
-        console.log(`Package "${utilsModule.name}" is linked. Skipping...`);
-      } else {
-        console.log(`Linking "${utilsModule.name}"...`);
-        exec('npm install && npm run build && npm link',  { cwd: path.join(paths[libScope], 'utils') }, (err, stdout, stderr) => {
+      const libPath = path.join(paths[libScope], 'utils');
+      const isLinked = utilsModule.isSymbolicLink();
+      console.log(isLinked ?
+        `Package "${utilsModule.name}" is linked. Updating dependencies and running the build script...`
+        : `Linking "${utilsModule.name}"...`);
+      exec(isLinked ? 'npm update && npm run build' : 'npm install && npm run build && npm link',
+        { cwd: libPath }, (err, stdout, stderr) => {
           if (err) throw err;
           else {
             console.log(stderr, stdout);
             f();
           }
         });
-      }
     } else {
       f();
     }
   }
 
   if (apiModule != null) {
-    if (apiModule.isSymbolicLink()) {
-      console.log(`Package "${apiModule.name}" is linked. Skipping...`);
-      installLibs(libs);
-    } else {
-      console.log(`Linking "${apiModule.name}"...`);
-      exec(`npm install && npm run build && npm link`, { cwd: paths[apiPackageName] }, (err, stdout, stderr) => {
+    const isLinked = apiModule.isSymbolicLink();
+    console.log(isLinked ?
+      `Package "${apiModule.name}" is linked. Updating dependencies and running the build script...`
+      : `Linking "${apiModule.name}"...`);
+    exec(isLinked ? `npm update && npm run build` : `npm install && npm run build && npm link`,
+      { cwd: paths[apiPackageName] }, (err, stdout, stderr) => {
         if (err) throw err;
         else {
           console.log(stderr, stdout);
@@ -108,7 +110,6 @@ export function link(args: LinkArgs) {
         }
       });
     }
-  }
 
   return true;
 }
