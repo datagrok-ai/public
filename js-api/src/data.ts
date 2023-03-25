@@ -95,7 +95,7 @@ export class Db {
 
   /** Executes a specified {@link sql} against the specified {@link connectionId}. */
   async query(connectionId: string, sql: string): Promise<DataFrame> {
-    let connection: DataConnection = await new Functions().eval('System:Datagrok');
+    let connection: DataConnection = await new Functions().eval(connectionId);
     let q = connection.query('adhoc', sql);
     let result = await q.apply();
     return result;
