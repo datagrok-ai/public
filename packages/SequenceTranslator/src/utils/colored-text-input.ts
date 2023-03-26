@@ -13,7 +13,7 @@ import '../view/css/colored-text-input.css';
 /** Class for colorizing input in the textarea of DG.InputBase.  */
 export class ColoredTextInput {
   constructor(
-    textInputBase: DG.InputBase<string>,
+    private textInputBase: DG.InputBase<string>,
     painter: (str: string) => HTMLSpanElement[],
     /** Resize, no scrolls  */
     resizeable: boolean = true
@@ -33,11 +33,11 @@ export class ColoredTextInput {
     }
     this.highlights = ui.div([]);
     this.root.appendChild(this.highlights);
+    this.colorize();
 
     this.textInputBase.onInput(() => this.colorize());
   }
 
-  private textInputBase: DG.InputBase<string>;
   private highlights: HTMLDivElement;
   /** Divide input value into an array of spans, each with its own text color, use -webkit-text-fill-color. */
   private painter: (str: string) => HTMLSpanElement[];
