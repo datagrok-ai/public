@@ -9,7 +9,8 @@ import * as rxjs from 'rxjs';
 /* datagrok dependencies */
 
 /* internal dependencies */
-import {map} from '../../hardcode-to-be-eliminated/map';// todo: elminate completely
+import {INPUT_FORMATS} from '../../model/const';
+// import {map} from '../../hardcode-to-be-eliminated/map';// todo: elminate completely
 // import {MODIFICATIONS} from '../../hardcode-to-be-eliminated/const';
 // todo: unify with lib bio monomers works
 import {sequenceToSmiles, sequenceToMolV3000} from '../../utils/structures-works/from-monomers';
@@ -100,7 +101,7 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
 
   const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
 
-  const inputFormatChoiceInput = ui.choiceInput('Input format: ', 'Janssen GCRS Codes', Object.keys(map));
+  const inputFormatChoiceInput = ui.choiceInput('Input format: ', 'Janssen GCRS Codes', Object.values(INPUT_FORMATS));
   inputFormatChoiceInput.onInput(async () => {
     await updateTableAndMolecule(inputSequenceField.value.replace(/\s/g, ''));
   });
