@@ -74,9 +74,8 @@ function getSdfTab(): HTMLDivElement {
   const asLabel = ui.label('Anti Sense');
   const as2Label = ui.label('Anti Sense 2');
 
-  // table layout
   const tableLayout = ui.table(
-    ['ss', 'as1', 'as2'], (row, index) => {
+    ['ss', 'as1', 'as2'], (row) => {
       switch (row) {
       case 'ss':
         return [ssLabel, ssColoredInput.root, ssDirection.root];
