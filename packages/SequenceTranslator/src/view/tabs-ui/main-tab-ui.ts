@@ -19,28 +19,23 @@ import {download} from '../../utils/helpers';
 import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, DEFAULT_INPUT} from '../../view/const/main-tab-const';
 
 
-/** Interface for 'Main' tab UI  */
 export class MainTabUI {
   constructor(onInputChanged: (input: string) => void) {
     this._inputSequence = DEFAULT_INPUT;
     this._onInputChanged = onInputChanged;
   }
 
-  /** Sequence inserted on the Main tab to be translated  */
   private _inputSequence: string;
-
   private _onInputChanged: (input: string) => void;
 
   get inputSequence() { return this._inputSequence; }
 
-  /** Get the HTMLElement of the tab, async because of the internal
-   * grok.functions.call() used to draw the sequence */
   async getHtmlElement(): Promise<HTMLDivElement> {
     return await getMainTab(this._onInputChanged);
   }
 
-  // todo: add validation of the inserted sequence here!
   set inputSequence(newSequence: string) {
+    // todo: validation of the inserted sequence
     this._inputSequence = newSequence;
   }
 }
@@ -138,34 +133,38 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
     },
     'Copy SMILES');
 
-  const moleculeImgDiv = ui.block([]);
+  const upperBlock = ui.div([
+    downloadMolfileButton,
+    copySmilesButton,
+    ui.h1('Input sequence'),
+    ui.div([], 'st-input-base'),
+    inputSequenceField.root,
+  ], 'st-main-input-sequence');
+
+  const formatChoiceInput = ui.div([inputFormatChoiceInput], {style: {padding: '5px 0'}});
+
   const outputTableDiv = ui.div([]);
-  await updateTableAndMolecule(DEFAULT_INPUT);
+  const outputTable = ui.block([
+    ui.h1('Output'),
+    outputTableDiv,
+  ]);
+
+  const moleculeImgDiv = ui.block([]);
 
   const mainTabBody = ui.box(
     ui.splitH([
       ui.splitV([
         ui.panel([
           // appMainDescription,
-          ui.div([
-            downloadMolfileButton,
-            copySmilesButton,
-            ui.h1('Input sequence'),
-            ui.div([], 'input-base'),
-            inputSequenceField.root,
-          ], 'main-input-sequence'),
-          ui.div([inputFormatChoiceInput], {style: {padding: '5px 0'}}),
-          ui.block([
-            ui.h1('Output'),
-            outputTableDiv,
-          ]),
+          upperBlock,
+          formatChoiceInput,
+          outputTable,
           moleculeImgDiv,
-        ], 'main-sequence'),
+        ], 'st-main-sequence'),
       ]),
     ], {style: {height: '100%', width: '100%'}})
   );
 
+  await updateTableAndMolecule(DEFAULT_INPUT);
   return mainTabBody;
 }
-
-

@@ -1,5 +1,6 @@
 // import {map, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS, DELIMITER} from './map';
-import {map, SYNTHESIZERS, TECHNOLOGIES, DELIMITER} from '../../hardcode-to-be-eliminated/map';
+import {map} from '../../hardcode-to-be-eliminated/map';
+import {SYNTHESIZERS, DELIMITER, TECHNOLOGIES} from '../../model/const';
 import {isValidSequence} from '../../sdf-tab/sequence-codes-tools';
 import {sortByStringLengthInDescendingOrder} from '../helpers';
 import {getMonomerWorks} from '../../package';

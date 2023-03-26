@@ -1,6 +1,6 @@
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {sequenceToSmiles} from '../utils/structures-works/from-monomers';
-import {SYNTHESIZERS} from '../hardcode-to-be-eliminated/map';
+import {SYNTHESIZERS} from '../model/const';
 
 category('sequence-translator', () => {
   // test('AGGTCCTCTTGACTTAGGCC', async () => {

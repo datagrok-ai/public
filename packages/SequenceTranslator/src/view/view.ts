@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-// inner dependencies
 import {MAIN_TAB, AXOLABS_TAB, SDF_TAB} from './const/view-const';
 import {MainTabUI} from './tabs-ui/main-tab-ui';
 import {SdfTabUI} from './tabs-ui/sdf-tab-ui';
@@ -57,27 +56,19 @@ export class SequenceTranslatorUI {
 
 class TabLayout {
   constructor(
-    mainTab: MainTabUI,
-    axolabsTab: AxolabsTabUI,
-    sdfTab: SdfTabUI
+    private readonly mainTab: MainTabUI,
+    private readonly axolabsTab: AxolabsTabUI,
+    private readonly sdfTab: SdfTabUI
     // onTabChanged: () => void
-  ) {
-    this._mainTab = mainTab;
-    this._axolabsTab = axolabsTab;
-    this._sdfTab = sdfTab;
-    // this._onTabChanged = onTabChanged;
-  }
+  ) {}
 
-  private readonly _mainTab: MainTabUI;
-  private readonly _axolabsTab: AxolabsTabUI;
-  private readonly _sdfTab: SdfTabUI;
   // private readonly _onTabChanged: () => void;
 
   async getControl(): Promise<DG.TabControl> {
     const control = ui.tabControl({
-      [MAIN_TAB]: await this._mainTab.getHtmlElement(),
-      [AXOLABS_TAB]: this._axolabsTab.htmlDivElement,
-      [SDF_TAB]: this._sdfTab.htmlDivElement,
+      [MAIN_TAB]: await this.mainTab.getHtmlElement(),
+      [AXOLABS_TAB]: this.axolabsTab.htmlDivElement,
+      [SDF_TAB]: this.sdfTab.htmlDivElement,
     });
 
     // bind tooltips to each tab

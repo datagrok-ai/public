@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {COL_NAMES, GENERATED_COL_NAMES, SEQUENCE_TYPES} from '../autostart/constants';
 import {differenceOfTwoArrays, download} from '../utils/helpers';
 import * as grok from 'datagrok-api/grok';
-import {SYNTHESIZERS} from '../hardcode-to-be-eliminated/map';
+import {SYNTHESIZERS} from '../model/const';
 import {sequenceToMolV3000} from '../utils/structures-works/from-monomers';
 import {parseStrandsFromDuplexCell, parseStrandsFromTriplexOrDimerCell} from './parse';
 import {linkStrandsV3000} from '../utils/structures-works/mol-transformations';

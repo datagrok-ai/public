@@ -3,16 +3,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-// external modules dependencies
 import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
 
-// datagrok libraries dependencies
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
-// inner dependencies
 import {drawMolecule} from '../../utils/structures-works/draw-molecule';
-import {highlightInvalidSubsequence, demoPainter} from '../input-painters';
+import {highlightInvalidSubsequence} from '../input-painters';
 import {getLinkedMolfile, saveSdf} from '../../sdf-tab/sdf-tab';
 import {ColoredTextInput} from '../../utils/colored-text-input';
 

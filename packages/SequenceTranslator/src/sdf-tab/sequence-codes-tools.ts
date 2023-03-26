@@ -1,6 +1,7 @@
 import {
-  map, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS, DELIMITER, gcrsCodesWithoutSmiles, NUCLEOTIDES
+  map, MODIFICATIONS, gcrsCodesWithoutSmiles,
 } from '../hardcode-to-be-eliminated/map';
+import {SYNTHESIZERS, TECHNOLOGIES, DELIMITER, NUCLEOTIDES} from '../model/const';
 import {sortByStringLengthInDescendingOrder} from '../utils/helpers';
 import {
   asoGapmersNucleotidesToBioSpring, asoGapmersNucleotidesToGcrs,

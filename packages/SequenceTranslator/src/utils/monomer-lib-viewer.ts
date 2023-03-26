@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {drawZoomedInMolecule} from '../utils/structures-works/draw-molecule';
 
 import {LIB_PATH, DEFAULT_LIB_FILENAME} from './const';
-import {SYNTHESIZERS, TECHNOLOGIES} from '../hardcode-to-be-eliminated/map';
+import {SYNTHESIZERS, TECHNOLOGIES} from '../model/const';
 
 import {Monomer} from '@datagrok-libraries/bio/src/types';
 
