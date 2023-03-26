@@ -63,7 +63,7 @@ The `Text Statistics` info panel calculates two common formulas:
 
 The package demonstrates two ways of developing [info panels](https://datagrok.ai/help/discover/info-panels) for Datagrok: with panel scripts and with JavaScript panel functions.
 
-To write a panel script in any of the [languages supported by the platform](https://datagrok.ai/help/compute/scripting#supported-languages), you should indicate the `panel` tag and specify conditions for the panel to be shown (in the `condition` [header parameter](https://datagrok.ai/help/compute/scripting#header-parameters)):
+To write a panel script in any of the [languages supported by the platform](https://datagrok.ai/help/compute/scripting#supported-languages), you should indicate the `panel` tag and specify conditions for the panel to be shown (in the `condition` [header parameter](https://datagrok.ai/help/datagrok/functions/func-params-annotation#header-parameters)):
 
 ```python
 # name: language detection
