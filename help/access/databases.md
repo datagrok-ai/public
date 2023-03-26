@@ -282,7 +282,38 @@ Use this tool to merge tables:
 
 ### Parameterized queries
 
+<<<<<<< HEAD
 Similar to functions in JavaScript, queries in Datagrok are functions that can be annotated to support parameters. To define query parameters, use SQL/Sparql comments in the query header : `--` for SQL, and `#` for Sparql. The syntax for defining query parameters is based on [scripting](https://datagrok.ai/help/datagrok/functions/func-params-annotation), with additions specific to queries.
+=======
+When you want a query to ask for input every time you run it, you can create a _parameterized query_. Doing so lets you
+use the same query to retrieve data matching different criteria.
+
+#### Query parameters
+
+The syntax for defining query parameters is based on [functions syntax](../datagrok/functions/func-params-annotation.md)
+with additions specific to queries.
+
+Queries have a special `connection` parameter corresponding to the query connection name. It is optional, just like the
+rest of parameters.
+
+Another addition is the `list<T>` parameter type. It denotes a list of objects of type `T`. Currently only strings are
+supported. You can add an input/output of type `list<string>`.
+
+#### Add a parameter
+
+1. Right-click a query and select **Edit**. A **Query View** opens.
+
+2. In the **Query** tab, annotate parameters in the box provided using SQL/Sparql comments. Use `--` for SQL and `#` for
+   Sparql.
+   > Example:
+   >
+   >```sql
+   >--input: string productName
+   >select * from products where productname = @productName
+   >```
+
+3. Click **Save**.
+>>>>>>> a683a6145 (Wiki: GROK-12341 Functions: Parameter annotations)
 
 #### Input parameters
 

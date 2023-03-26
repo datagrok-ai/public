@@ -317,7 +317,7 @@ Your package might contain the following additional folders, depending on your n
 
 [grok CLI section]: https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools
 
-[header parameters]: ../../compute/scripting.md#header-parameters
+[header parameters]: ../../datagrok/functions/func-params-annotation.md#header-parameters
 
 [javaScript API]: https://datagrok.ai/help/develop/js-api
 
