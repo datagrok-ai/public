@@ -23,7 +23,7 @@ export class DemoView extends DG.ViewBase {
 
   _initToolbox() {
     for (const f of DG.Func.find({meta: {'demoPath': null}})) {
-      const pathOption = f.options[DG.FUNC_OPTIONS.DEMO_PATH];
+      const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
       const path = pathOption.split('|').map((s) => s.trim());
       const folder = this.tree.getOrCreateGroup(path.slice(0, path.length - 1).join(' | '));
       const item = folder.item(path[path.length - 1]);
