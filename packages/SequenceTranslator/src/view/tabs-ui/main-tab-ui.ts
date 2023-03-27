@@ -56,21 +56,10 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
       const tableRows = [];
 
       for (const key of Object.keys(outputSequenceObj).slice(1)) {
-        const indexOfFirstInvalidChar = ('indexOfFirstInvalidChar' in outputSequenceObj) ?
-          JSON.parse(outputSequenceObj.indexOfFirstInvalidChar!).indexOfFirstInvalidChar :
-          -1;
-
         tableRows.push({
-          'key': key,
-          'value': ('indexOfFirstInvalidChar' in outputSequenceObj) ?
-            ui.divH([
-              ui.divText(sequence.slice(0, indexOfFirstInvalidChar), {style: {color: 'grey'}}),
-              ui.tooltip.bind(
-                ui.divText(sequence.slice(indexOfFirstInvalidChar), {style: {color: 'red'}}),
-                'Expected format: ' + JSON.parse(outputSequenceObj.indexOfFirstInvalidChar!).synthesizer +
-                '. See tables with valid codes'
-              ),
-            ]) : //@ts-ignore
+          format: key,
+          sequence: ('indexOfFirstInvalidChar' in outputSequenceObj) ?
+            ui.divH([]) : //@ts-ignore
             ui.link(outputSequenceObj[key], () => navigator.clipboard.writeText(outputSequenceObj[key])
               .then(() => grok.shell.info(SEQUENCE_COPIED_MSG)), SEQ_TOOLTIP_MSG, ''),
         });
@@ -78,9 +67,12 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
 
       outputTableDiv.append(
         ui.div([
-          DG.HtmlTable.create(tableRows, (item: { key: string; value: string; }) =>
-            [item.key, item.value], ['Format', 'Sequence']).root,
+          ui.table(tableRows, (item) => [item.format, item.sequence], ['OUTPUT FORMAT', 'OUTPUT SEQUENCE'])
         ])
+        // ui.div([
+        //   DG.HtmlTable.create(tableRows, (item: { key: string; value: string; }) =>
+        //     [item.key, item.value], ['Format', 'Sequence']).root,
+        // ])
       );
 
       if (outputSequenceObj.type !== undefinedInputSequence && outputSequenceObj.Error !== undefinedInputSequence) {
@@ -101,7 +93,7 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
 
   const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
 
-  const inputFormatChoiceInput = ui.choiceInput('Format: ', INPUT_FORMATS.GCRS, Object.values(INPUT_FORMATS));
+  const inputFormatChoiceInput = ui.choiceInput('', INPUT_FORMATS.GCRS, Object.values(INPUT_FORMATS));
   inputFormatChoiceInput.onInput(async () => {
     await updateTableAndMolecule(inputSequenceBase.value.replace(/\s/g, ''));
   });
@@ -134,11 +126,12 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
       navigator.clipboard.writeText(
         sequenceToSmiles(inputSequenceBase.value.replace(/\s/g, ''), false, inputFormatChoiceInput.value!)
       ).then(() => grok.shell.info(SEQUENCE_COPIED_MSG));
-    });
+    },
+    'Copy SMILES string corresponding to the sequence');
 
   const formatChoiceInput = ui.div([inputFormatChoiceInput], {style: {padding: '5px 0'}});
 
-  const sequenceInputLabel = ui.label('Sequence');
+  // const sequenceInputLabel = ui.label('Sequence:');
 
   // const upperBlock = ui.divH([
   //   ui.label('Sequence'), sequenceColoredInput.root,
@@ -150,14 +143,15 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
     ['ss'], (row) => {
       switch (row) {
       case 'ss':
-        return [sequenceInputLabel, sequenceColoredInput.root, formatChoiceInput];
+        // return [sequenceInputLabel, sequenceColoredInput.root, formatChoiceInput];
+        return [formatChoiceInput, sequenceColoredInput.root];
       }
-    }, ['']
+    }, ['INPUT FORMAT', 'INPUT SEQUENCE']
   );
 
   const outputTableDiv = ui.div([]);
   const outputTable = ui.block([
-    ui.h1('Output'),
+    // ui.h1('Output'),
     outputTableDiv,
     downloadMolfileButton,
     copySmilesButton,
@@ -182,7 +176,7 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
       upperBlock,
       outputTable,
       moleculeImgDiv,
-    ])
+    ], {style: {paddingTop: '20px', paddingLeft: '20px'}})
   );
 
   await updateTableAndMolecule(DEFAULT_INPUT);
