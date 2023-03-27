@@ -19,7 +19,8 @@
     "@deck.gl/core": "8.8.12",
     "mjolnir.js": "^2.7.0",
     "rxjs": "^6.5.5",
-    "wu": "latest"
+    "wu": "latest",
+    "jstat": "latest"
   },
   "devDependencies": {
     "@types/wu": "latest",
