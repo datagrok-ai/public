@@ -16,6 +16,7 @@ export class PipelineView extends ComputationView {
 
   private stepTabs: DG.TabControl | null = null;
 
+  // PipelineView unites several export files into single ZIP file
   protected pipelineViewExportExtensions: () => Record<string, string> = () => {
     return {
       'Archive': 'zip'
@@ -188,11 +189,12 @@ export class PipelineView extends ComputationView {
   }
 
   /**
-   * Loads the specified historical run. See also {@link saveRun}.
-   * @param funcCallId ID of FuncCall to look for. Get it using {@see funcCall.id} field
-   * @returns FuncCall augemented with inputs' and outputs' values
-   * @stability Stable
- */
+   * Overrided to use {@link loadChildRuns} during run load.
+   * This implementation takes "parentCallId" and looks for the funcCalls with options.parentCallId = parentCallId.
+   * Each child run is related to the particular pipeline step.
+   * @param funcCallId ID of the parent FuncCall
+   * @returns Parent FuncCall
+   */
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
     const {parentRun: pulledParentRun, childRuns: pulledChildRuns} = await historyUtils.loadChildRuns(funcCallId);
 
