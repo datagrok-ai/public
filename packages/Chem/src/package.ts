@@ -374,7 +374,7 @@ export function ChemSpaceEditor(call: DG.FuncCall) {
   const funcEditor = new SequenceSpaceFunctionEditor(DG.SEMTYPE.MOLECULE);
   ui.dialog({title: 'Chemical space'})
     .add(funcEditor.paramsUI)
-    .onOK(async () => {      
+    .onOK(async () => {
       call.func.prepare(funcEditor.funcParams).call(true);
     })
     .show();
@@ -480,7 +480,7 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
     grok.shell.info(`The column ${molCol.name} doesn't contain molecules`);
     return;
   }
-   
+
   const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molCol);
   let columnNames: string[] = [];
 
@@ -556,7 +556,7 @@ export function ActivityCliffsEditor(call: DG.FuncCall) {
   const funcEditor = new ActivityCliffsFunctionEditor(DG.SEMTYPE.MOLECULE);
   ui.dialog({title: 'Activity cliffs'})
     .add(funcEditor.paramsUI)
-    .onOK(async () => {      
+    .onOK(async () => {
       call.func.prepare(funcEditor.funcParams).call(true);
     })
     .show();
@@ -864,7 +864,7 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
     molblock = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
   else
     molblock = molToMolblock(molecule, getRdKitModule());
-  
+
   tv.getFiltersGroup({createDefaultFilters: false}).add({
     type: DG.FILTER_TYPE.SUBSTRUCTURE,
     column: molCol.name,
@@ -872,6 +872,44 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
     molBlock: molblock,
   });
 }
+
+//name: Copy as SMILES
+//description: Copies structure as smiles
+//tags: exclude-actions-panel
+//meta.action: Copy as SMILES
+//input: semantic_value value { semType: Molecule }
+export function copyAsSmiles(value: DG.SemanticValue): void {
+  navigator.clipboard.writeText(_convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, getRdKitModule()));
+}
+
+//name: Copy as MOLFILE V2000
+//description: Copies structure as molfile V2000
+//tags: exclude-actions-panel
+//meta.action: Copy as MOLFILE V2000
+//input: semantic_value value { semType: Molecule }
+export function copyAsMolfileV2000(value: DG.SemanticValue): void {
+  navigator.clipboard.writeText(_convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, getRdKitModule()));
+}
+
+
+//name: Copy as MOLFILE V3000
+//description: Copies structure as molfile V3000
+//tags: exclude-actions-panel
+//meta.action: Copy as MOLFILE V3000
+//input: semantic_value value { semType: Molecule }
+export function copyAsMolfileV3000(value: DG.SemanticValue): void {
+  navigator.clipboard.writeText(_convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.V3KMolBlock, getRdKitModule()));
+}
+
+//name: Copy as SMARTS
+//description: Copies structure as smarts
+//tags: exclude-actions-panel
+//meta.action: Copy as SMARTS
+//input: semantic_value value { semType: Molecule }
+export function copyAsSmarts(value: DG.SemanticValue): void {
+  navigator.clipboard.writeText(_convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, getRdKitModule()));
+}
+
 
 //name: isSmiles
 //input: string s
@@ -952,14 +990,14 @@ export async function getScaffoldTree(data: DG.DataFrame,
   const smilesList: string[] = new Array<string>(data.columns.length);
   for (let rowI = 0; rowI < molColumn!.length; rowI++) {
     let el: string = molColumn?.get(rowI);
-    if (!smiles) 
+    if (!smiles)
       try {
         el = convertMolNotation(el, DG.UNITS.Molecule.MOLBLOCK, DG.UNITS.Molecule.SMILES);
-      } 
+      }
       catch {
         invalid[rowI] = rowI;
       }
-    
+
     smilesList[rowI] = el;
   }
   const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
@@ -981,4 +1019,3 @@ export function removeDuplicates(molecules: string[], molecule: string): string[
   mol1.delete();
   return filteredMolecules;
 }
-
