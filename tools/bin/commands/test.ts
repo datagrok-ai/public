@@ -98,23 +98,26 @@ export function test(args: TestArgs): boolean {
     let page: puppeteer.Page;
     type resultObject = { failReport: string, skipReport: string, passReport: string, failed: boolean, csv?: string };
 
-    function init(timeout: number): Promise<string> {
+    function init(timeout: number): Promise<void> {
       const params = Object.assign({}, testUtils.defaultLaunchParameters);
       if (args.gui)
         params['headless'] = false;
       return testUtils.runWithTimeout(timeout, async () => {
-        let out = await testUtils.getBrowserPage(puppeteer, params);
-        browser = out.browser;
-        page = out.page;
-        return 'Initialization completed.';
+        try {
+          let out = await testUtils.getBrowserPage(puppeteer, params);
+          browser = out.browser;
+          page = out.page;
+        } catch (e) {
+          throw e;
+        }
       })
     }
-    
+
     function runTest(timeout: number): Promise<resultObject> {
       return testUtils.runWithTimeout(timeout, async () => {
         const targetPackage: string = process.env.TARGET_PACKAGE ?? '#{PACKAGE_NAMESPACE}';
         console.log(`Testing ${targetPackage} package...\n`);
-    
+
         let r: resultObject = await page.evaluate((targetPackage): Promise<resultObject> => {
           return new Promise<resultObject>((resolve, reject) => {
             (<any>window).grok.functions.eval(targetPackage + ':test()').then((df: any) => {
@@ -122,13 +125,13 @@ export function test(args: TestArgs): boolean {
               let skipReport = '';
               let passReport = '';
               let failReport = '';
-      
+
               if (df == null) {
                 failed = true;
                 failReport = 'Fail reason: No package tests found';
                 resolve({failReport, skipReport, passReport, failed});
               }
-      
+
               const cStatus = df.columns.byName('success');
               const cSkipped = df.columns.byName('skipped');
               const cMessage = df.columns.byName('result');
@@ -152,15 +155,20 @@ export function test(args: TestArgs): boolean {
             }).catch((e: any) => reject(e));
           });
         }, targetPackage);
-    
+
         return r;
       });
     }
 
     (async () => {
-      const initMessage = await init(P_START_TIMEOUT);
-      console.log(initMessage);
-    
+      try {
+        await init(P_START_TIMEOUT);
+        color.success('Initialization completed.');
+      } catch (e) {
+        color.error('Initialization failed.');
+        throw e;
+      }
+
       const r = await runTest(7200000);
 
       if (r.csv && args.csv) {
@@ -182,7 +190,7 @@ export function test(args: TestArgs): boolean {
         color.success('Tests passed.');
         testUtils.exitWithCode(0);
       }
-    
+
       //@ts-ignore
       if (browser != null)
         await browser.close();
