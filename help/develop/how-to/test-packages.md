@@ -18,11 +18,16 @@ cd <package-dir>
 grok test [--host]
 ```
 
-It will publish your package in the debug mode to a specified host and run the
-tests. The `host` option should correspond to one of the server aliases provided
-in the configuration file. If not given, the default host is used for testing.
-For your local setup, there may be additional steps to successfully launch tests
-(see the full algorithm below).
+It will build your package and publish it in the debug mode to a specified host and run the tests. The `host` option
+should correspond to one of the server aliases provided in the configuration file (`.grok/config.yaml`). If not given,
+the default host is used for testing. The building and publishing steps can be skipped with flags `--skip-build` and
+`--skip-publish` correspondingly.
+
+The results are printed to the terminal. If you want to save a test run result, add the `--csv` flag (the report will be
+saved in a CSV file in the package folder).
+
+To see tests execution, pass the `--gui` flag that disables the headless browser mode. This option can help you debug
+your tests.
 
 If you do not have any datagrok instance run locally, you can use [docker-compose](../admin/docker-compose.md) to run
 the stand.
