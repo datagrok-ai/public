@@ -5,6 +5,7 @@ export abstract class UaViewer {
   root: HTMLElement;
   name: string;
   setStyle: Function = null as any;
+  loader: HTMLElement;
 
   static splineStyle: Object = {
     'aggrType': 'count',
@@ -38,18 +39,20 @@ export abstract class UaViewer {
     this.name = name;
     if (setStyle)
       this.setStyle = setStyle;
-  }
-
-  reloadViewer() {
-    this.root.innerHTML = '';
-    const host = ui.box();
-    if (this.setStyle)
-      this.setStyle(host);
+    const div = ui.div();
+    div.style.position = 'absolute';
+    div.style.backgroundColor = 'rgb(25 36 64 / 50%)';
+    div.style.height = '100%';
+    div.style.width = '100%';
+    div.style.zIndex = '10000';
     const loader = ui.loader();
-    this.setViewer(loader, host);
-    host.appendChild(loader);
-    this.root.append(host);
+    loader.style.top = '50%';
+    loader.style.left = '45%';
+    div.appendChild(loader);
+    this.loader = div;
   }
 
-  setViewer(loader: any, host: HTMLDivElement): void {}
+  reloadViewer() {}
+
+  setViewer(loader?: any, host?: HTMLDivElement): void {}
 }
