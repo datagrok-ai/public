@@ -147,7 +147,7 @@ export interface IMonomerLibHelper {
 export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {
   const funcList = DG.Func.find({package: 'Bio', name: 'getMonomerLibHelper'});
   if (funcList.length === 0)
-    throw new Error('Package "Bio" must be installer for MonomerLibraryHelper.');
+    throw new Error('Package "Bio" must be installed for MonomerLibHelper.');
 
   const res: IMonomerLibHelper = (await funcList[0].prepare().call()).getOutputParamValue() as IMonomerLibHelper;
   return res;

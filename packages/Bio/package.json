@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@biowasm/aioli": "^3.1.0",
-    "@datagrok-libraries/bio": "^5.24.0",
+    "@datagrok-libraries/bio": "^5.26.1",
     "@datagrok-libraries/chem-meta": "^1.0.1",
     "@datagrok-libraries/ml": "^6.3.13",
     "@datagrok-libraries/utils": "^2.1.3",
