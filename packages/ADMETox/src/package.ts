@@ -11,7 +11,7 @@ export function info() {
   grok.shell.info(_package.webRoot);
 }
 
-//name: ADME/Tox
+//name: Biology | ADME/Tox
 //tags: panel, chem, widgets
 //input: string smiles { semType: Molecule }
 //output: widget result
