@@ -6,18 +6,14 @@ import '../../css/usage_analysis.css';
 import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
-// import {UaDataFrameQueryViewer} from '../viewers/ua-data-frame-query-viewer';
-// import {UaQueryViewer} from '../viewers/abstract/ua-query-viewer';
-// import {PropertyPanel} from '../property-panel';
 import {ViewHandler} from '../view-handler';
-import {FunctionsView} from './functions';
 
 
 export class PackagesView extends UaView {
-  static viewName = 'Packages';
+  viewName = 'Packages';
 
-  constructor(uaToolbox: UaToolbox, view: DG.View) {
-    super(uaToolbox, view);
+  constructor(uaToolbox: UaToolbox) {
+    super(uaToolbox, 'package');
   }
 
   async initViewers(): Promise<void> {
@@ -26,42 +22,30 @@ export class PackagesView extends UaView {
       'Packages',
       'PackagesUsage',
       (t: DG.DataFrame) => {
-        const viewer = DG.Viewer.scatterPlot(t, {
-          x: 'time_start',
-          y: 'package',
-          size: 'count',
-          color: 'user',
-          jitterSize: 5,
-          markerMinSize: 10,
-          markerMaxSize: 30,
-          showColorSelector: false,
-          showSizeSelector: false,
-          showXSelector: false,
-          showYSelector: false,
-        });
+        const FunctionsView = ViewHandler.getView('Functions');
         t.onCurrentRowChanged.subscribe(async () => {
           const rowValues = Array.from(t.currentRow.cells).map((c) => c.value);
           const row = Object.fromEntries(t.columns.names().map((k, i) => [k, rowValues[i]]));
           row.time_start = row.time_start.a;
           row.time_end = row.time_end.a;
-          const filter = {time_start: row.time_start / 1000, time_end: row.time_end / 1000, user: row.uid,
-            package: row.package, ...this.uaToolbox.filterStream.getValue()};
+          const filter = {time_start: row.time_start / 1000, time_end: row.time_end / 1000,
+            user: row.uid, package: row.package};
           const cp = DG.Accordion.create();
+          const dateFrom = new Date(row.time_start).toLocaleString();
+          const dateTo = new Date(row.time_end).toLocaleString();
           const user = await grok.dapi.users.find(row.uid);
           const package_ = (await grok.dapi.packages.filter(`package.name = "${row.package}"`).list())[0];
           cp.addPane('Details', () => {
             return ui.tableFromMap({'User': ui.render(user), 'Package': ui.render(package_),
-              'From': new Date(row.time_start).toLocaleString(),
-              'To': new Date(row.time_end).toLocaleString()});
+              'From': dateFrom, 'To': dateTo});
           }, true);
           const button = ui.button('Details', async () => {
-            this.uaToolbox.groupsInput.choices.removeActiveItems(-1);
-            const userGroup = (await grok.dapi.groups.find(row.ugid)).friendlyName;
-            this.uaToolbox.groupsInput.choices._addItem({value: row.ugid, label: userGroup});
-            this.uaToolbox.packagesInput.choices.removeActiveItems(-1);
-            this.uaToolbox.packagesInput.choices._addItem({value: row.package, label: row.package});
-            this.uaToolbox.applyFilter();
-            ViewHandler.changeTab(FunctionsView.viewName);
+            this.uaToolbox.dateFromDD.value = dateFrom;
+            this.uaToolbox.dateToDD.value = dateTo;
+            this.uaToolbox.usersDD.value = row.user;
+            this.uaToolbox.packagesDD.value = row.package;
+            FunctionsView.viewers[0].reloadViewer({date: 'this week', groups: [row.ugid], packages: [row.package]});
+            ViewHandler.changeView(FunctionsView.viewName);
           });
           button.style.height = '100%';
           button.style.verticalAlign = 'middle';
@@ -99,8 +83,7 @@ export class PackagesView extends UaView {
           }, true);
           grok.shell.o = cp.root;
         });
-        return viewer.root;
-      },
+      }, null, null, this.viewer,
     );
     this.viewers.push(packagesViewer);
     this.root.append(packagesViewer.root);
