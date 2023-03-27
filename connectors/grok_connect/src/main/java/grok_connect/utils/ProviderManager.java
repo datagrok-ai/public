@@ -1,12 +1,39 @@
 package grok_connect.utils;
 
 import grok_connect.connectors_info.DataProvider;
-import grok_connect.providers.*;
+import grok_connect.providers.AccessDataProvider;
+import grok_connect.providers.AthenaDataProvider;
+import grok_connect.providers.BigQueryDataProvider;
+import grok_connect.providers.CassandraDataProvider;
+import grok_connect.providers.ClickHouseProvider;
+import grok_connect.providers.Db2DataProvider;
+import grok_connect.providers.DenodoDataProvider;
+import grok_connect.providers.DynamoDBDataProvider;
+import grok_connect.providers.FirebirdDataProvider;
+import grok_connect.providers.HBaseDataProvider;
+import grok_connect.providers.Hive2DataProvider;
+import grok_connect.providers.HiveDataProvider;
+import grok_connect.providers.ImpalaDataProvider;
+import grok_connect.providers.JdbcDataProvider;
+import grok_connect.providers.MariaDbDataProvider;
+import grok_connect.providers.MongoDbDataProvider;
+import grok_connect.providers.MsSqlDataProvider;
+import grok_connect.providers.MySqlDataProvider;
+import grok_connect.providers.Neo4jDataProvider;
+import grok_connect.providers.NeptuneDataProvider;
+import grok_connect.providers.OracleDataProvider;
+import grok_connect.providers.PIDataProvider;
+import grok_connect.providers.PostgresDataProvider;
+import grok_connect.providers.RedshiftDataProvider;
+import grok_connect.providers.SQLiteDataProvider;
+import grok_connect.providers.SapHanaDataProvider;
+import grok_connect.providers.SnowflakeDataProvider;
+import grok_connect.providers.TeradataDataProvider;
+import grok_connect.providers.VerticaDataProvider;
+import grok_connect.providers.VirtuosoDataProvider;
 import org.apache.log4j.Logger;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ListIterator;
 
 public class ProviderManager {
     private final Logger logger; // we reuse this logger in providers, is this good practice?
@@ -45,6 +72,7 @@ public class ProviderManager {
             add(new SnowflakeDataProvider(ProviderManager.this));
             add(new ClickHouseProvider(ProviderManager.this));
             add(new NeptuneDataProvider(ProviderManager.this));
+            add(new DynamoDBDataProvider(ProviderManager.this));
             add(new SapHanaDataProvider(ProviderManager.this));
         }};
     }
@@ -60,8 +88,7 @@ public class ProviderManager {
     public JdbcDataProvider getByName(String name) {
         JdbcDataProvider provider = providers.get(0);
 
-        for (ListIterator<JdbcDataProvider> providers = this.providers.listIterator(); providers.hasNext(); ) {
-            JdbcDataProvider tmp = providers.next();
+        for (JdbcDataProvider tmp : this.providers) {
             if (tmp.descriptor.type.equals(name)) {
                 provider = tmp;
                 break;
