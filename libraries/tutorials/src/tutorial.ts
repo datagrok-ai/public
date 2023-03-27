@@ -45,6 +45,7 @@ export abstract class Tutorial extends DG.Widget {
     'jupyter': 'Jupyter',
     'grokCompute': 'GrokCompute',
     'grokConnect': 'Grok Connect',
+    'h2o': 'H2O',
   };
 
   async updateStatus(): Promise<void> {
@@ -91,9 +92,11 @@ export abstract class Tutorial extends DG.Widget {
       }
     }
 
+    const services = await grok.dapi.admin.getServiceInfos();
+
     for (const [service, flag] of Object.entries(this.prerequisites)) {
       if (service in Tutorial.SERVICES && flag === true) {
-        const serviceAvailable = await this.checkService(Tutorial.SERVICES[service]);
+        const serviceAvailable = await this.checkService(Tutorial.SERVICES[service], services);
         if (!serviceAvailable)
           return;
       }
@@ -183,8 +186,9 @@ export abstract class Tutorial extends DG.Widget {
     }
   }
 
-  async checkService(name: string): Promise<boolean> {
-    const services = await grok.dapi.admin.getServiceInfos();
+  async checkService(name: string, services?: DG.ServiceInfo[]): Promise<boolean> {
+    if (!services)
+      services = await grok.dapi.admin.getServiceInfos();
     const service = services.find((si) => si.name === name);
     const serviceAvailable = service == null ? false : service.enabled && service.status === 'Running';
     if (!serviceAvailable) {
@@ -568,4 +572,5 @@ export interface TutorialPrerequisites {
   jupyter?: boolean,
   grokCompute?: boolean,
   grokConnect?: boolean,
+  h2o?: boolean,
 }
