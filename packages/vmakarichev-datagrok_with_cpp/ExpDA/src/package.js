@@ -21,27 +21,55 @@ export async function init() {
 
 //top-menu: Tools | Data Science | PCA
 //name: PCA
-//input: dataframe table
-//input: column_list columns
-//input: int componentsCount
-//output: dataframe PCA 
-export function PCA(table, columns, componentsCount) {
-  return callWasm(EDALib, 'principalComponentAnalysis', [columns, componentsCount]);
+//input: dataframe Table
+//input: column_list features
+//input: int components = 2
+//output: dataframe PCA {action:join(Table)}
+export function PCA(Table, features, components) {
+  // check components count
+  if(components <= 0) {
+    let bal = new DG.Balloon();
+    bal.error('components must be positive');
+    return;
+  }
+
+  // call wasm computation of PCA
+  let pca = callWasm(EDALib, 'principalComponentAnalysis', [features, components]);  
+
+  // rename PCA-columns
+  for(const col of pca.columns.toList())
+    col.name = 'PCA' + col.name;
+
+  return pca;
 }
 
 //name: PCA
-//input: dataframe table
-//input: column_list columns
-//input: int componentsCount
-export function PCAInWebWorker(table, columns, componentsCount) {
-  var worker = new Worker(new URL('../wasm/principalComponentAnalysisWorker.js', import.meta.url));
-  worker.postMessage(getCppInput(EDALib['principalComponentAnalysis'].arguments,[columns, componentsCount]));
-  worker.onmessage = function(e) {
-    let output = getResult(EDALib['principalComponentAnalysis'], e.data);
+//input: dataframe Table
+//input: column_list features
+//input: int components = 2
+export function PCAInWebWorker(Table, features, components) {
+  // check components count
+  if(components <= 0) {
+    let bal = new DG.Balloon();
+    bal.error('components must be positive');
+    return;
+  }
 
-    // Provide output usage!
-    output.name = 'Principal components';
-    grok.shell.addTableView(output);
+  var worker = new Worker(new URL('../wasm/principalComponentAnalysisWorker.js', import.meta.url));
+  worker.postMessage(getCppInput(EDALib['principalComponentAnalysis'].arguments,
+    [features, components]));
+
+  worker.onmessage = function(e) {
+    let pca = getResult(EDALib['principalComponentAnalysis'], e.data);
+
+    // rename PCA-columns and add them to Table
+    for(const col of pca.columns.toList()) {
+      col.name = 'PCA' + col.name;
+      Table.columns.add(col);
+    }
+
+    /*output.name = 'Principal components';
+    grok.shell.addTableView(output);*/
   }
 }
 
@@ -74,12 +102,18 @@ export function errorInWebWorker(df, col1, col2) {
 //input: dataframe table
 //input: column_list features
 //input: column predict
-//input: int componentsCount
-export function pls(table, features, predict, componentsCount) {
-  //return callWasm(EDALib, 'partialLeastSquareRegression', [features, predict, componentsCount]);
+//input: int components = 3
+export function pls(table, features, predict, components) {
+  // check components count
+  if(components <= 0) {
+    let bal = new DG.Balloon();
+    bal.error('components must be positive');
+    return;
+  }
 
    // ALL the following is added manually
-   let callOutput = callWasm(EDALib, 'partialLeastSquareRegression', [features, predict, componentsCount]);
+   let callOutput = callWasm(EDALib, 'partialLeastSquareRegression', 
+     [features, predict, components]);
 
    let dfView = grok.shell.getTableView(table.name);
  
@@ -174,10 +208,19 @@ export function pls(table, features, predict, componentsCount) {
 //input: dataframe table
 //input: column_list features
 //input: column predict
-//input: int componentsCount
-export function plsInWebWorker(table, features, predict, componentsCount) {
+//input: int components = 3
+export function plsInWebWorker(table, features, predict, components) {
+  // check components count
+  if(components <= 0) {
+    let bal = new DG.Balloon();
+    bal.error('components must be positive');
+    return;
+  }
+
   var worker = new Worker(new URL('../wasm/partialLeastSquareRegressionWorker.js', import.meta.url));
-  worker.postMessage(getCppInput(EDALib['partialLeastSquareRegression'].arguments,[features, predict, componentsCount]));
+  worker.postMessage(getCppInput(EDALib['partialLeastSquareRegression'].arguments,
+    [features, predict, components]));
+
   worker.onmessage = function(e) {
     let output = getResult(EDALib['partialLeastSquareRegression'], e.data);
 
@@ -275,4 +318,3 @@ export function plsInWebWorker(table, features, predict, componentsCount) {
       }));
   }
 }
-
