@@ -10,14 +10,15 @@ import java.util.*;
 
 public class QueryMonitor {
     private List<String> statementIdsToCancel;
+    private Set<String> resultSetIdsToCancel;
     private Multimap<String, Statement> runningStatements;
-    private Multimap<String, ResultSet> runningResultSets;
+    
     private List<String> cancelledStatementIds;
 
     public QueryMonitor() {
         statementIdsToCancel = Collections.synchronizedList(new ArrayList<>());
+        resultSetIdsToCancel = Collections.synchronizedSet(new HashSet<>());
         runningStatements = ArrayListMultimap.create();
-        runningResultSets = ArrayListMultimap.create();
         cancelledStatementIds = Collections.synchronizedList(new ArrayList<>());
     }
 
@@ -34,14 +35,8 @@ public class QueryMonitor {
         }
     }
 
-    public boolean addNewResultSet(String id, ResultSet rs) {
-        synchronized(QueryMonitor.class) {
-            if (id == null)
-                return true;
-            
-            runningResultSets.put(id, rs);
-            return true;
-        }
+    public boolean addCancelledResultSet(String id) {
+        return resultSetIdsToCancel.add(id);
     }
 
     public void removeStatement(String id) {
@@ -66,33 +61,15 @@ public class QueryMonitor {
         }
     }
 
-    public void cancelResultSet(String id) {
-        synchronized(QueryMonitor.class) {
-            if (runningResultSets.containsKey(id)) {
-                runningResultSets.get(id).forEach(rs -> {
-                    try {
-                        if (!rs.isClosed())
-                            rs.close();
-                        runningResultSets.removeAll(id);
-                    }
-                    catch (SQLException throwables) {
-                        throwables.printStackTrace();
-                    }
-                    
-                });
-            }
-        }
-    }
-
     public boolean removeResultSet(String id) {
-        if (runningResultSets.containsKey(id)) {
-            runningResultSets.removeAll(id);
-            return true;
-        } 
-        return false;
+        return resultSetIdsToCancel.remove(id);
     }
 
     public boolean checkCancelledId(String id) {
         return cancelledStatementIds.remove(id);
+    }
+
+    public boolean checkCancelledIdResultSet(String id) {
+        return resultSetIdsToCancel.contains(id);
     }
 }

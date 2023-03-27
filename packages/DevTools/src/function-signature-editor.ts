@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import CodeMirror from 'codemirror';
-import {BehaviorSubject} from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import 'codemirror/mode/javascript/javascript';
 import 'codemirror/mode/python/python';
 import 'codemirror/mode/octave/octave';
@@ -44,41 +44,41 @@ const obligatoryFuncProps = ['name', 'description', 'helpUrl', 'language'];
 
 const functionPropsLabels = (key: FUNC_PROPS_FIELDS) => {
   switch (key) {
-  case FUNC_PROPS_FIELDS.NAME: return 'Name';
-  case FUNC_PROPS_FIELDS.DESCRIPTION: return 'Description';
-  case FUNC_PROPS_FIELDS.LOGIN: return 'Author';
-  case FUNC_PROPS_FIELDS.HELP_URL: return 'Help URL';
-  case FUNC_PROPS_FIELDS.LANGUAGE: return 'Language';
-  case FUNC_PROPS_FIELDS.REFERENCE: return 'Reference';
-  case FUNC_PROPS_FIELDS.SAMPLE: return 'Sample';
-  case FUNC_PROPS_FIELDS.ENVIRONMENT: return 'Environment';
-  case FUNC_PROPS_FIELDS.TAGS: return 'Tags';
+    case FUNC_PROPS_FIELDS.NAME: return 'Name';
+    case FUNC_PROPS_FIELDS.DESCRIPTION: return 'Description';
+    case FUNC_PROPS_FIELDS.LOGIN: return 'Author';
+    case FUNC_PROPS_FIELDS.HELP_URL: return 'Help URL';
+    case FUNC_PROPS_FIELDS.LANGUAGE: return 'Language';
+    case FUNC_PROPS_FIELDS.REFERENCE: return 'Reference';
+    case FUNC_PROPS_FIELDS.SAMPLE: return 'Sample';
+    case FUNC_PROPS_FIELDS.ENVIRONMENT: return 'Environment';
+    case FUNC_PROPS_FIELDS.TAGS: return 'Tags';
   }
 };
 
 const highlightModeByLang = (key: LANGUAGE) => {
   switch (key) {
-  case LANGUAGE.JS:
-  case LANGUAGE.NODEJS: return 'javascript';
-  case LANGUAGE.PYTHON:
-  case LANGUAGE.GROK: return 'python';
-  case LANGUAGE.OCTAVE: return 'octave';
-  case LANGUAGE.JULIA: return 'julia';
-  case LANGUAGE.R: return 'r';
+    case LANGUAGE.JS:
+    case LANGUAGE.NODEJS: return 'javascript';
+    case LANGUAGE.PYTHON:
+    case LANGUAGE.GROK: return 'python';
+    case LANGUAGE.OCTAVE: return 'octave';
+    case LANGUAGE.JULIA: return 'julia';
+    case LANGUAGE.R: return 'r';
   }
 };
 
 const functionPropsCode = (key: string) => {
   switch (key) {
-  case FUNC_PROPS_FIELDS.NAME: return 'name';
-  case FUNC_PROPS_FIELDS.DESCRIPTION: return 'description';
-  case FUNC_PROPS_FIELDS.LOGIN: return 'author';
-  case FUNC_PROPS_FIELDS.HELP_URL: return 'helpUrl';
-  case FUNC_PROPS_FIELDS.LANGUAGE: return 'language';
-  case FUNC_PROPS_FIELDS.REFERENCE: return 'reference';
-  case FUNC_PROPS_FIELDS.SAMPLE: return 'sample';
-  case FUNC_PROPS_FIELDS.ENVIRONMENT: return 'environment';
-  case FUNC_PROPS_FIELDS.TAGS: return 'tags';
+    case FUNC_PROPS_FIELDS.NAME: return 'name';
+    case FUNC_PROPS_FIELDS.DESCRIPTION: return 'description';
+    case FUNC_PROPS_FIELDS.LOGIN: return 'author';
+    case FUNC_PROPS_FIELDS.HELP_URL: return 'helpUrl';
+    case FUNC_PROPS_FIELDS.LANGUAGE: return 'language';
+    case FUNC_PROPS_FIELDS.REFERENCE: return 'reference';
+    case FUNC_PROPS_FIELDS.SAMPLE: return 'sample';
+    case FUNC_PROPS_FIELDS.ENVIRONMENT: return 'environment';
+    case FUNC_PROPS_FIELDS.TAGS: return 'tags';
   }
 };
 
@@ -104,8 +104,8 @@ const enum FUNC_PARAM_FIELDS {
 }
 
 const enum DIRECTION {
-  INPUT= 'input',
-  OUTPUT= 'output',
+  INPUT = 'input',
+  OUTPUT = 'output',
 }
 
 const functionParamsMapping = {
@@ -157,17 +157,17 @@ const INT_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.MIN,
 
 const optionTags = ((param: DG.Property) => {
   switch (param.propertyType) {
-  case DG.TYPE.INT:
-    return INT_TAG_NAMES;
-  case DG.TYPE.DATA_FRAME:
-    return DF_TAG_NAMES;
-  case DG.TYPE.COLUMN_LIST:
-  case DG.TYPE.COLUMN:
-    return COLUMN_TAG_NAMES;
-  case DG.TYPE.STRING:
-    return STRING_TAG_NAMES;
-  default:
-    return COMMON_TAG_NAMES;
+    case DG.TYPE.INT:
+      return INT_TAG_NAMES;
+    case DG.TYPE.DATA_FRAME:
+      return DF_TAG_NAMES;
+    case DG.TYPE.COLUMN_LIST:
+    case DG.TYPE.COLUMN:
+      return COLUMN_TAG_NAMES;
+    case DG.TYPE.STRING:
+      return STRING_TAG_NAMES;
+    default:
+      return COMMON_TAG_NAMES;
   }
 });
 
@@ -183,15 +183,15 @@ enum LANGUAGE {
 const languages = ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok'];
 const headerSign = (lang: LANGUAGE) => {
   switch (lang) {
-  case LANGUAGE.JS:
-  case LANGUAGE.NODEJS:
-    return '//';
-  case LANGUAGE.R:
-  case LANGUAGE.GROK:
-  case LANGUAGE.JULIA:
-  case LANGUAGE.PYTHON:
-  case LANGUAGE.OCTAVE:
-    return '#';
+    case LANGUAGE.JS:
+    case LANGUAGE.NODEJS:
+      return '//';
+    case LANGUAGE.R:
+    case LANGUAGE.GROK:
+    case LANGUAGE.JULIA:
+    case LANGUAGE.PYTHON:
+    case LANGUAGE.OCTAVE:
+      return '#';
   }
 };
 
@@ -218,11 +218,11 @@ async function openFse(v: DG.View, functionCode: string) {
   const generateParamLine = (param: DG.Property, direction: string) => {
     const optionTagsPreview = optionTags(param)
       .map((tag) => {
-        return {tag: tag, val: param.options[tag]};
+        return { tag: tag, val: param.options[tag] };
       })
       .filter((value) => !!value.val)
-      .map(({tag, val}) => `${tag}: ${val}`)
-      .concat(...(param.category && param.category!== DEFAULT_CATEGORY)? [`category: ${param.category}`]:[])
+      .map(({ tag, val }) => `${tag}: ${val}`)
+      .concat(...(param.category && param.category !== DEFAULT_CATEGORY) ? [`category: ${param.category}`] : [])
       .join('; ');
     return `${headerSign(inputScriptCopy.language as LANGUAGE)}${direction}: ${param.propertyType} ${param.name ? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
   };
@@ -243,7 +243,7 @@ async function openFse(v: DG.View, functionCode: string) {
         FUNC_PROPS_FIELDS.LANGUAGE, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.LANGUAGE],
         (x: any, v) => updateFuncPropValue(FUNC_PROPS_FIELDS.LANGUAGE, v),
         '');
-      temp.fromOptions({choices: languages});
+      temp.fromOptions({ choices: languages });
       return temp;
     })(),
     [functionPropsLabels(FUNC_PROPS_FIELDS.HELP_URL)]: DG.Property.create(
@@ -293,30 +293,30 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const functionPropsInput = (prop: DG.Property) => {
     switch (prop.name) {
-    case FUNC_PROPS_FIELDS.LANGUAGE:
-      return ui.choiceInput(
-        functionPropsLabels(prop.name as FUNC_PROPS_FIELDS),
-        prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
-        prop.choices,
-      );
+      case FUNC_PROPS_FIELDS.LANGUAGE:
+        return ui.choiceInput(
+          functionPropsLabels(prop.name as FUNC_PROPS_FIELDS),
+          prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
+          prop.choices,
+        );
       // case FUNC_PROPS_FIELDS.TAGS:
       //   return ui.multiChoiceInput(
       //     functionPropsLabels(prop.name as FUNC_PROPS_FIELDS),
       //     prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
       //     prop.choices,
       //   );
-    default:
-      return ui.stringInput(functionPropsLabels(prop.name as FUNC_PROPS_FIELDS),
-        prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name]);
+      default:
+        return ui.stringInput(functionPropsLabels(prop.name as FUNC_PROPS_FIELDS),
+          prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name]);
     }
   };
 
   const renderAddPropButton = () => {
     if (!getNewProps().length) return ui.div();
 
-    const onItemClick = (item: DG.Property) => {
-      item.set(inputScriptCopy, ' ');
-      const newInputs = ui.inputs(
+    const onItemClick = async (item: DG.Property) => {
+      inputScriptCopy[item.name] = ' ';
+      const newInputs = ui.inputs(  
         Object.values(functionProps)
           .filter((prop) => !!prop.get(inputScriptCopy) || !!(inputScriptCopy as any)[prop.name])
           .map((prop) => addFullWidthInput(
@@ -336,7 +336,7 @@ async function openFse(v: DG.View, functionCode: string) {
       (prop) => menu.item(functionPropsLabels(prop.name as FUNC_PROPS_FIELDS), () => onItemClick(prop)),
     );
 
-    const button = ui.button([ui.icons.add(()=>{})], () => {
+    const button = ui.button([ui.icons.add(() => { })], () => {
       menu.show();
     });
 
@@ -346,24 +346,24 @@ async function openFse(v: DG.View, functionCode: string) {
   };
 
   const addFullWidthInput = (input: DG.InputBase, prop: DG.Property) => {
-    (input.root.lastChild as HTMLElement).style.cssText+='width: 400px; max-width: inherit;';
+    (input.root.lastChild as HTMLElement).style.cssText += 'width: 400px; max-width: inherit;';
     input.onInput(() => {
-      prop.set(inputScriptCopy, input.stringValue);
+      inputScriptCopy[prop.name] = input.stringValue;
       refreshPreview();
     });
     (input.root as HTMLInputElement).placeholder = 'Enter your value...';
-    input.root.appendChild(ui.button(ui.icons.delete(()=>{}), () => {
-      prop.set(inputScriptCopy, prop.defaultValue);
+    input.root.appendChild(ui.button(ui.icons.delete(() => { }), () => {
+      inputScriptCopy[prop.name] = prop.defaultValue;
       refreshPreview();
       input.root.remove();
       const newAddButton = renderAddPropButton();
       addButton.replaceWith(newAddButton);
       addButton = newAddButton;
     }));
-    (input.root.lastChild as HTMLElement).style.cssText+='display: inline-flex; justify-content: center; flex-direction: column';
+    (input.root.lastChild as HTMLElement).style.cssText += 'display: inline-flex; justify-content: center; flex-direction: column';
     if (obligatoryFuncProps.includes(prop.name)) {
       input.root.style.cssText += 'padding-right: 35.375px';
-      (input.root.lastChild as HTMLElement).style.cssText+='display: none;';
+      (input.root.lastChild as HTMLElement).style.cssText += 'display: none;';
     }
     return input;
   };
@@ -414,7 +414,7 @@ async function openFse(v: DG.View, functionCode: string) {
   const updateValue = (param: DG.Property, propName: string, v: any) => {
     (param as any)[propName] = v;
     const globalParam =
-        functionParamsCopy.find((copy) => copy.name === param.name);
+      functionParamsCopy.find((copy) => copy.name === param.name);
     if (globalParam) globalParam.options[propName] = v;
     functionParamsState.next(functionParamsCopy);
     refreshPreview();
@@ -425,7 +425,7 @@ async function openFse(v: DG.View, functionCode: string) {
       const temp = DG.Property.create(FUNC_PARAM_FIELDS.DIRECTION, DG.TYPE.STRING,
         (x: any) => x.options?.[FUNC_PARAM_FIELDS.DIRECTION],
         (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.DIRECTION, v), '');
-      temp.fromOptions({choices: [DIRECTION.INPUT, DIRECTION.OUTPUT]});
+      temp.fromOptions({ choices: [DIRECTION.INPUT, DIRECTION.OUTPUT] });
       return temp;
     })(),
     DG.Property.create(FUNC_PARAM_FIELDS.NAME, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.NAME],
@@ -433,7 +433,7 @@ async function openFse(v: DG.View, functionCode: string) {
     (() => {
       const temp = DG.Property.create(FUNC_PARAM_FIELDS.TYPE, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.TYPE],
         (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.TYPE, v), '');
-      temp.fromOptions({choices: funcParamTypes});
+      temp.fromOptions({ choices: funcParamTypes });
       return temp;
     })(),
     DG.Property.create(FUNC_PARAM_FIELDS.DEFAULT_VALUE, DG.TYPE.STRING,
@@ -441,7 +441,7 @@ async function openFse(v: DG.View, functionCode: string) {
       (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.DEFAULT_VALUE, v), ''),
     (() => {
       const temp = DG.Property.create(FUNC_PARAM_FIELDS.DESCRIPTION, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.DESCRIPTION], (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.DESCRIPTION, v), '');
-      temp.fromOptions({editor: 'textarea'});
+      temp.fromOptions({ editor: 'textarea' });
       return temp;
     })(),
     DG.Property.create(FUNC_PARAM_FIELDS.CATEGORY, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.CATEGORY],
@@ -487,7 +487,7 @@ async function openFse(v: DG.View, functionCode: string) {
       const temp = DG.Property.create(OPTIONAL_TAG_NAME.COLUMNS, DG.TYPE.STRING,
         (x: any) => x.options[OPTIONAL_TAG_NAME.COLUMNS],
         (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.COLUMNS, v), '');
-      temp.fromOptions({choices: ['numerical', 'categorical']});
+      temp.fromOptions({ choices: ['numerical', 'categorical'] });
       return temp;
     })(),
 
@@ -511,7 +511,7 @@ async function openFse(v: DG.View, functionCode: string) {
       const temp = DG.Property.create(OPTIONAL_TAG_NAME.TYPE, DG.TYPE.STRING,
         (x: any) => x.options[OPTIONAL_TAG_NAME.TYPE],
         (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.TYPE, v), '');
-      temp.fromOptions({choices: ['numerical', 'categorical', 'dateTime']});
+      temp.fromOptions({ choices: ['numerical', 'categorical', 'dateTime'] });
       return temp;
     })(),
   ];
@@ -534,7 +534,7 @@ async function openFse(v: DG.View, functionCode: string) {
     .setTag(DG.TAGS.CHOICES, `["${funcParamTypes.join(`", "`)}"]`);
   paramsGrid.dataFrame?.getCol(functionParamsMapping[FUNC_PARAM_FIELDS.DIRECTION as keyof typeof functionParamsMapping])
     .setTag(DG.TAGS.CHOICES, `["${[DIRECTION.INPUT, DIRECTION.OUTPUT].join(`", "`)}"]`);
-  paramsGrid.setOptions({'showColumnGridlines': false});
+  paramsGrid.setOptions({ 'showColumnGridlines': false });
 
   const col = paramsGrid.columns.byName('+');
   col.cellType = 'html';
@@ -548,7 +548,7 @@ async function openFse(v: DG.View, functionCode: string) {
       ui.icons.delete(() => {
         functionParamsCopy = functionParamsCopy.filter((param) => param.name !== name);
         functionParamsState.next(functionParamsCopy);
-      }, 'Remove the param'), {style: {'text-align': 'center', 'margin': '6px'}},
+      }, 'Remove the param'), { style: { 'text-align': 'center', 'margin': '6px' } },
     );
 
     if (gc.isTableCell) {
@@ -566,7 +566,7 @@ async function openFse(v: DG.View, functionCode: string) {
   });
 
   const codeArea = ui.textInput('', '');
-  const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), {mode: highlightModeByLang(inputScriptCopy.language as LANGUAGE)});
+  const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), { mode: highlightModeByLang(inputScriptCopy.language as LANGUAGE) });
   const uiArea = await inputScriptCopy.prepare().getEditor();
   const codePanel = ui.panel([codeArea.root]);
   codePanel.style.height = '100%';
@@ -587,7 +587,7 @@ async function openFse(v: DG.View, functionCode: string) {
     [
       'Add parameter',
       ui.div(ui.icons.add(() => {
-      }), {style: {'text-align': 'center', 'margin': '6px'}}),
+      }), { style: { 'text-align': 'center', 'margin': '6px' } }),
     ],
     () => {
       const newParam = {
@@ -649,8 +649,10 @@ async function openFse(v: DG.View, functionCode: string) {
     myCM.setValue(result);
     myCM.setSize('100%', '100%');
 
-    const newUiArea = await inputScriptCopy.prepare().getEditor();
-    uiArea.replaceWith(newUiArea);
+    let modifiedScript = DG.Script.create(result);
+    let newUiArea = await modifiedScript.prepare().getEditor();
+    uiArea.innerHTML = '';
+    uiArea.append(newUiArea);
   };
 
   v.close();
@@ -672,7 +674,7 @@ async function openFse(v: DG.View, functionCode: string) {
     }
 
     if (functionParamsCopy.length > paramsDF.rowCount) {
-      const newParam = functionParamsCopy[functionParamsCopy.length-1];
+      const newParam = functionParamsCopy[functionParamsCopy.length - 1];
       paramsDF.rows.addNew(
         [
           newParam.options.direction, newParam.name,
@@ -698,13 +700,13 @@ async function openFse(v: DG.View, functionCode: string) {
     refreshPreview();
   });
 
-  paramsGrid.onCellValueEdited.subscribe((editedCell)=> {
+  paramsGrid.onCellValueEdited.subscribe((editedCell) => {
     const rowIndex = functionParamsCopy.findIndex((param) => param.name === (editedCell.tableRow as any)['Name']);
     if (rowIndex) {
       (functionParamsCopy[rowIndex] as any)
-        [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value || undefined;
+      [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value || undefined;
       functionParamsCopy[rowIndex].options
-        [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value || undefined;
+      [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value || undefined;
       functionParamsState.next(functionParamsCopy);
     }
   });

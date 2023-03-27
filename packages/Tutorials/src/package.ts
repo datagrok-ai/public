@@ -9,6 +9,7 @@ import {ml} from './tracks/ml';
 import {TutorialWidget} from './widget';
 import '../css/tutorial.css';
 import {Track} from '@datagrok-libraries/tutorials/src/track';
+import {DemoView} from './demo-app/demo-app';
 
 
 export const _package = new DG.Package();
@@ -96,6 +97,22 @@ export async function tutorialsInit() {
       }
     }
   });
+}
+
+//name: Demo
+//tags: app
+//description: Interactive demo of major Datagrok capabilities
+export function demoApp() {
+  const pathSegments = window.location.pathname.split('/');
+  grok.shell.addView(new DemoView());
+  if (pathSegments.length > 4) {
+    const category = pathSegments[4];
+    if (category === 'Viewers') {
+      const viewerName = pathSegments[5];
+      const f = DemoView.findDemoFunc(`${category} | ${viewerName}`);
+      f?.apply();
+    }
+  }
 }
 
 function setProperties(properties: { [propertyName: string]: boolean }): void {

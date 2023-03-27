@@ -24,6 +24,7 @@ public class QueryManager {
     public ResultSet resultSet;
     public FuncCall query;
     Connection connection;
+    private boolean changedFetchSize = false; 
 
     static Gson gson = new GsonBuilder()
         .registerTypeAdapter(Property.class, new PropertyAdapter())
@@ -62,6 +63,12 @@ public class QueryManager {
         for (int i = 0; i < columns.size(); i++) {
             columns.get(i).empty();
         }
+        
+        if (!changedFetchSize) {
+            if (connection.getMetaData().supportsTransactions())
+                resultSet.setFetchSize(maxIterations);
+            changedFetchSize = true;
+        }
 
         DataFrame df = provider.getResultSetSubDf(query, resultSet, columns, schemeInfo.supportedType, schemeInfo.initColumn, maxIterations);
         return df;
@@ -69,7 +76,8 @@ public class QueryManager {
 
     public void closeConnection() throws SQLException {
         if (connection != null && !connection.isClosed()) {
-            connection.commit();
+            if (!connection.getAutoCommit())
+                connection.commit();
             provider.providerManager.getQueryMonitor().removeResultSet(query.id);
             connection.close();
         } else {

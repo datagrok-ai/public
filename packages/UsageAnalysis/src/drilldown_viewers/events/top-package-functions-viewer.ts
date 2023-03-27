@@ -49,7 +49,6 @@ export class TopPackageFunctionsViewer extends UaFilterableQueryViewer {
       },
       null,
       {name: packageName},
-      showName,
     );
   }
 }

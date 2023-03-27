@@ -6,10 +6,10 @@ title: "Release History"
 
 | Service                                                  | Docker Image                                                                                      |
 |----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../infrastructure.md#datagrok-components)     | [datagrok/datagrok:1.13.7](https://hub.docker.com/r/datagrok/datagrok)                            |
-| [Grok Connect](../../../access/data-connection.md)       | [datagrok/grok_connect:1.3.2](https://hub.docker.com/r/datagrok/grok_connect)                     |
+| [Datagrok](../infrastructure.md#datagrok-components)     | [datagrok/datagrok:1.13.8](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Grok Connect](../../../access/data-connection.md)       | [datagrok/grok_connect:1.3.6](https://hub.docker.com/r/datagrok/grok_connect)                     |
 | Grok Spawner                                             | [datagrok/grok_spawner:1.3.2](https://hub.docker.com/r/datagrok/grok_spawner)                     |
-| [Grok Compute](../infrastructure.md#grok-compute)        | [datagrok/grok_compute:1.4.1](https://hub.docker.com/r/datagrok/grok_compute)                     |
+| [Grok Compute](../infrastructure.md#grok-compute)        | [datagrok/grok_compute:1.5.1](https://hub.docker.com/r/datagrok/grok_compute)                     |
 | [Jupyter Kernel Gateway](../../../compute/scripting.md)  | [datagrok/jupyter_kernel_gateway:1.5.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
 | [Jupyter Notebook](../../../compute/jupyter-notebook.md) | [datagrok/jupyter_notebook:1.1.0](https://hub.docker.com/r/datagrok/jupyter_notebook)             |
 | [H2O](../infrastructure.md#h2o)                          | [datagrok/h2o:1.1.0](https://hub.docker.com/r/datagrok/h2o)                                       |
@@ -18,6 +18,47 @@ title: "Release History"
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose.md)
+
+
+## 2023-03-22 1.13.8
+
+### Addressed Issues
+
+* (Enhancement) [#1552](https://github.com/datagrok-ai/public/issues/1564713406): Scatter Plot: line labels enhancements
+* (Bug) [#1613](https://github.com/datagrok-ai/public/issues/1598588170): 'Error loading scatter plot' for apecific data on applying layout
+* (Bug) GROK-12382: Websocket reconnects after it closed (WIP)
+* Datagrok Docker: Allow grok user use sudo without password
+* (Enhancement) [#1111](https://github.com/datagrok-ai/public/issues/1406443198): Viewers: PivotGrid: transformation result preview
+* histogram imitates filter look
+* (Bug) [#1628](https://github.com/datagrok-ai/public/issues/1611012446): Wrong data is shown on line chart
+* (Bug) GROK-12479: Project deserialization leads to 50MB response size
+* (Bug) GROK-12408: Chem: 'Chem | Possibly a malformed molString at init: `undefined`' error when hovering over mol column's header
+* fix for column tooltip
+* fix scatterplot
+* (Bug) [#1651](https://github.com/datagrok-ai/public/issues/1623650870): Line chart: incorrect legend for Split by when Row Source=selected
+* (Bug) [#1650](https://github.com/datagrok-ai/public/issues/1623611567): Line chart: Unsupported operation: NaN.floor() error
+* (Bug) GROK-12498: Chem: grid scrolls to the right when you hover over a molecular column
+* updated snowflake provider
+* GROK-12104: Schema browsing support
+* (Improvement) GROK-12090: GrokConect: Postgres Harmonization
+* GROK-12188: Add regex support in string pattern for Postgres Provider
+* GROK-12100: GrokConnect: Full types support for Postgres Provider
+* GROK-12089: Grok Connect Harmonization (WIP)
+* GROK-12211: Create test class and test cases for Oracle Provider
+* GROK-12212: GrokConnect: Full types support for Oracle Provider
+* GROK-12210: GrokConnect: Test Queries for Oracle provider
+* (Improvement) GROK-12091: GrokConect: Oracle Harmonization
+* (Improvement) GROK-12103: GrokConect: Snowflake Harmonization (WIP)
+* GROK-12286: GrokConnect: Test Queries for Snowflake provider
+* (Improvement) GROK-12346: Add the ability to display sql views along with tables
+* GROK-12344: GrokConnect: Test Queries for MSSQL provider
+* GROK-12352: Create test class and test cases for MSSQL Provider
+* (Improvement) GROK-12092: GrokConect: MSSQL Harmonization
+* GROK-12372: GrokConnect: Test Queries for Athena provider
+* (Improvement) GROK-12095: GrokConect: Athena Harmonization (WIP)
+* GROK-12373: Create test class and test cases for Athena Provider
+* (Bug) [#1637](https://github.com/datagrok-ai/public/issues/1616819912): Filters re-ordering dialog is not opened if a custom filter was added to filters panel
+* (Bug) [#1724](https://github.com/datagrok-ai/public/issues/1632100036): Table is not rendered properly after switching dataframe if it was sorted
 
 
 ## 2023-03-14 1.13.7

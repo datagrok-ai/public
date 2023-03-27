@@ -207,15 +207,19 @@ export async function initAutoTests(packageId: string, module?: any) {
   }
   const moduleAutoTests = [];
   const packFunctions = await grok.dapi.functions.filter(`package.id = "${packageId}"`).list();
+  const reg = new RegExp(/.*\/\/\s*skip[:\s]*(.*)$/);
   for (const f of packFunctions) {
     const tests = f.options['test'];
     if (!(tests && Array.isArray(tests) && tests.length)) continue;
     for (let i = 0; i < tests.length; i++) {
+      const skipReasons = (tests[i] as string).match(reg);
+      let skipReason;
+      if (skipReasons && skipReasons?.length > 1) skipReason = skipReasons[1];
       moduleAutoTests.push(new Test(autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
         const res = await grok.functions.eval(addNamespace(tests[i], f));
         // eslint-disable-next-line no-throw-literal
         if (res !== true) throw `Failed: ${tests[i]}`;
-      }));
+      }, {skipReason: skipReason}));
     }
   }
   wasRegistered[packageId] = true;

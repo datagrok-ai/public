@@ -4,7 +4,9 @@ import grok_connect.connectors_info.Credentials;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataProvider;
 import grok_connect.connectors_info.DbCredentials;
+import grok_connect.connectors_info.FuncCall;
 import grok_connect.providers.utils.DataFrameComparator;
+import grok_connect.providers.utils.NamedArgumentConverter;
 import grok_connect.providers.utils.Provider;
 import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryMonitor;
@@ -21,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.testcontainers.containers.ContainerState;
@@ -36,7 +39,7 @@ import java.time.Duration;
 import java.util.Optional;
 
 /**
- * Test class for Hive2Provider. !Use Hyper-V engine for Docker on Windows system.
+ * Test class for Hive2Provider.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Testcontainers
@@ -48,14 +51,15 @@ class Hive2DataProviderTest {
     private static final String META_STORE_NAME = "hive-metastore-postgresql";
     private static final int SERVICE_PORT = 10000;
     private static final int META_STORE_PORT = 5432;
+    private static final int WAITING_TIME = 180;
 
     @Container
     private static final DockerComposeContainer<?> dockerComposeContainer =
             new DockerComposeContainer<>(new File("src/test/resources/scripts/hive2/docker-compose.yml"))
                     .withExposedService(SERVICE_NAME, SERVICE_PORT,
-                            Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(80)))
+                            Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(WAITING_TIME)))
                     .withExposedService(META_STORE_NAME, META_STORE_PORT,
-                            Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(30)));
+                            Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(WAITING_TIME)));
 
     private JdbcDataProvider provider;
     private DataConnection connection;
@@ -161,5 +165,71 @@ class Hive2DataProviderTest {
     @Test
     public void getSchema_notOk() {
         // method probably should throw something when bad input
+    }
+
+    @DisplayName("Parameters support")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource({"grok_connect.providers.arguments_provider.Hive2ObjectsMother#checkParameterSupport_ok",
+            "grok_connect.providers.arguments_provider.Hive2ObjectsMother#checkMultipleParametersSupport_ok",
+            "grok_connect.providers.arguments_provider.Hive2ObjectsMother#checkListParameterSupport_ok",
+            "grok_connect.providers.arguments_provider.Hive2ObjectsMother#checkRegexSupport_ok"})
+    public void checkParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Parameters support for datetime")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.Hive2ObjectsMother#checkDatesParameterSupport_ok")
+    public void checkDatesParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support for integer types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.Hive2ObjectsMother#checkOutputDataFrame_integerTypes_ok")
+    public void checkOutputDataFrame_integerTypes_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support for float types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.Hive2ObjectsMother#checkOutputDataFrame_floatTypes_ok")
+    public void checkOutputDataFrame_floatTypes_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support for character types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.Hive2ObjectsMother#checkOutputDataFrame_characterTypes_ok")
+    public void checkOutputDataFrame_characterTypes_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support for date types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.Hive2ObjectsMother#checkOutputDataFrame_dateTypes_ok")
+    public void checkOutputDataFrame_dateTypes_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support for complex types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.Hive2ObjectsMother#checkOutputDataFrame_complexTypes_ok")
+    public void checkOutputDataFrame_complexTypes_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 }

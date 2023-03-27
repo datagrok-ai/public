@@ -31,20 +31,24 @@ public class RedshiftDataProvider extends JdbcDataProvider {
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
 
-        // copy-pasted from PostgresDataProvider; perhaps it would make sense to subclass it
         descriptor.nameBrackets = "\"";
         descriptor.canBrowseSchema = true;
         descriptor.typesMap = new HashMap<String, String>() {{
             put("smallint", Types.INT);
-            put("int", Types.INT);
+            put("integer", Types.INT);
             put("bigint", Types.BIG_INT);
             put("real", Types.FLOAT);
             put("double precision", Types.FLOAT);
             put("numeric", Types.FLOAT);
+            put("boolean", Types.BOOL);
             put("#character.*", Types.STRING);
             put("#varchar.*", Types.STRING);
             put("text", Types.STRING);
-            put("super", Types.STRING);
+            put("date", Types.DATE_TIME);
+            put("time.*", Types.DATE_TIME);
+            put("timestamp.*", Types.DATE_TIME);
+            put("binary_varying", Types.BLOB);
+            put("super", Types.OBJECT);
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stddev(#)", Types.dataFrameNumericTypes));
     }

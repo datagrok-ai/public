@@ -29,8 +29,6 @@ public class HiveMetaDataProviderProxyProvider {
 
     private MethodHandler getHandler() {
         return (self, thisMethod, proceed, args) -> {
-            System.out.println("THIS METHOD: " + thisMethod.getName());
-            System.out.println("THIS PROCEED: " + proceed.getName());
             if (thisMethod.getName().equals("getSchemaSql")) {
                 return handleGetSchemaImpl(args);
             }
@@ -43,13 +41,13 @@ public class HiveMetaDataProviderProxyProvider {
     }
 
     private String handleGetSchemaImpl(Object[] args) {
-        String schema = args[1].toString();
-        String table = args[2].toString();
+        Object schema = args[1];
+        Object table = args[2];
         return String.format("SELECT \"DBS\".\"NAME\" as table_schema, \"TBL_NAME\" "
                 + "as table_name, \"COLUMN_NAME\" as column_name, \"TYPE_NAME\" as data_type, \n"
                 + "CASE WHEN \"TBL_TYPE\" = 'VIRTUAL_VIEW' THEN 1 ELSE 0 END AS is_view FROM \"TBLS\", "
                 + "\"COLUMNS_V2\", \"DBS\" WHERE \"TBL_ID\"=\"CD_ID\" AND \"DBS\".\"DB_ID\" = \"TBLS\".\"DB_ID\"" +
-                " AND %s%s;", schema != null ? String.format("\"DBS\".\"NAME\" = '%s'%s",schema, table != null ? " AND " : "") : "",
+                "%s%s;", schema != null ? String.format(" AND \"DBS\".\"NAME\" = '%s'%s",schema, table != null ? " AND " : "") : "",
                 table != null ? String.format("\"TBL_NAME\" = '%s'", table) : "");
     }
 }
