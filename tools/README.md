@@ -17,7 +17,7 @@ npm install datagrok-tools -g
     ```
 
    Enter developer keys and set the default server. The developer key can be retrieved from your user profile (for
-   example, see https://public.datagrok.ai/u).
+   example, see <https://public.datagrok.ai/u>).
 2. Create a new package by running this command:
 
     ```shell
@@ -61,7 +61,7 @@ Read more about package development in [Datagrok's documentation](https://datagr
   - `--ide` adds an IDE-specific configuration for debugging (vscode)
   - `--js` creates a JavaScript package template
   - `--ts` creates a TypeScript package template (default)
-  - `--jest` adds a basic configuration for `jest`
+  - `--test` adds tests support to package
 - `add` puts an object template to your package:
 
   ```shell
@@ -98,3 +98,24 @@ Read more about package development in [Datagrok's documentation](https://datagr
   - `--suffix`: a string containing package version hash
 
   Running `grok publish` is the same as running `grok publish defaultHost --build --debug`.
+- `check` checks package content (function signatures, import statements of external modules,
+  etc.). The check is also run during package publication.
+- `init` modifies a package template by adding config files for linters, IDE, and so on
+  (applies the same options as `create`).
+- `test` runs package tests. First, it builds a package and publishes it (these
+  steps can be skipped with flags `--skip-build` and `--skip-publish`
+  correspondingly).
+
+  ```shell
+  cd <package-name>
+  grok test
+  ```
+
+  The default host from the `config.yaml` file is used. You
+  can specify another server alias via the `--host` option (e.g., `grok test
+  --host=dev`). The results are printed to the terminal. To see tests execution,
+  pass the `--gui` flag that disables the headless browser mode. If you want to
+  save a test run result, add the `--csv` flag (the report will be saved in a
+  CSV file in the package folder). You can find more details in [local package testing
+  instructions](https://datagrok.ai/help/develop/how-to/test-packages#local-testing).
+- `link` / `unlink` commands are used for public plugins development to (un)link `datagrok-api` and libraries.

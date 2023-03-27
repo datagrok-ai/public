@@ -1,11 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {before, after, expect, category, test} from '@datagrok-libraries/utils/src/test';
-
 import {_package} from '../package-test';
 import {readDataframe} from './utils';
-
+import {before, after, expect, category, test} from '@datagrok-libraries/utils/src/test';
 import {chemSpace} from '../analysis/chem-space';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getSimilaritiesMarix, getSimilaritiesMarixFromDistances} from '../utils/similarity-utils';
@@ -14,8 +12,11 @@ import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-
 
 const {jStat} = require('jstat');
 
+
 category('top menu chem space', async () => {
   let smallDf: DG.DataFrame;
+  let spgi100: DG.DataFrame;
+  let approvedDrugs100: DG.DataFrame;
 
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
@@ -23,30 +24,49 @@ category('top menu chem space', async () => {
       await chemCommonRdKit.initRdKitModuleLocal();
     }
     smallDf = await readDataframe('tests/sar-small_test.csv');
+    spgi100 = await readDataframe('tests/spgi-100.csv');
+    approvedDrugs100 = await readDataframe('tests/approved-drugs-100.csv');
   });
 
-  test('chemSpaceOpens', async () => {
+  test('chemSpaceOpens.smiles', async () => {
     await _testChemSpaceReturnsResult(smallDf, 'UMAP');
   });
+
+  test('chemSpaceOpens.molV2000', async () => {
+    await _testChemSpaceReturnsResult(spgi100, 'UMAP', 'V2000');
+  });
+
+  test('chemSpaceOpens.molV3000', async () => {
+    await _testChemSpaceReturnsResult(approvedDrugs100, 'UMAP', 'V3000');
+  });
+
   test('chemSpaceWithEmptyRows', async () => {
     const sarSmallEmptyRows = await readDataframe('tests/sar-small_empty_vals.csv');
     await _testChemSpaceReturnsResult(sarSmallEmptyRows, 'UMAP');
   });
+
   test('TSNE', async () => {
     await _testDimensionalityReducer(smallDf.col('smiles')!, 't-SNE');
   }, {skipReason: '#1384'});
+
   test('UMAP', async () => {
     await _testDimensionalityReducer(smallDf.col('smiles')!, 'UMAP');
   });
+
   test('SPE', async () => {
     await _testDimensionalityReducer(smallDf.col('smiles')!, 'SPE');
   });
+
+  after(async () => {
+    grok.shell.closeAll();
+  });
 });
 
-async function _testChemSpaceReturnsResult(df: DG.DataFrame, algorithm: string) {
+async function _testChemSpaceReturnsResult(df: DG.DataFrame, algorithm: string, ver?: string) {
   await grok.data.detectSemanticTypes(df);
   const v = grok.shell.addTableView(df);
-  const sp = await chemSpaceTopMenu(df, df.col('smiles')!, algorithm, 'Tanimoto', true);
+  const sp = await chemSpaceTopMenu(df, df.getCol(ver ? (ver === 'V2000' ? 'Structure' : 'molecule') : 'smiles'),
+    algorithm, 'Tanimoto', true, {});
   expect(sp != null, true);
   v.close();
 }

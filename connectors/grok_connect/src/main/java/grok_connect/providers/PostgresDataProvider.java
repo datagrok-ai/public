@@ -1,12 +1,17 @@
 package grok_connect.providers;
 
-import java.sql.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Properties;
+import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataSource;
+import grok_connect.connectors_info.DbCredentials;
+import grok_connect.table_query.AggrFunctionInfo;
+import grok_connect.table_query.Stats;
+import grok_connect.utils.Property;
+import grok_connect.utils.ProviderManager;
 import serialization.Types;
-import grok_connect.utils.*;
-import grok_connect.table_query.*;
-import grok_connect.connectors_info.*;
-
 
 public class PostgresDataProvider extends JdbcDataProvider {
     public PostgresDataProvider(ProviderManager providerManager) {
@@ -26,6 +31,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
         descriptor.typesMap = new HashMap<String, String>() {{
             put("smallint", Types.INT);
             put("int", Types.INT);
+            put("integer", Types.INT);
             put("bigint", Types.BIG_INT);
             put("real", Types.FLOAT);
             put("double precision", Types.FLOAT);
@@ -33,10 +39,19 @@ public class PostgresDataProvider extends JdbcDataProvider {
             put("#character.*", Types.STRING);
             put("#varchar.*", Types.STRING);
             put("text", Types.STRING);
+            put("boolean", Types.BOOL);
+            put("date", Types.DATE_TIME);
+            put("cidr", Types.STRING);
+            put("ARRAY", Types.LIST);
+            put("USER_DEFINED", Types.STRING);
+            put("bit.*", Types.BIG_INT);
+            put("uuid", Types.STRING);
+            put("xml", Types.STRING);
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stddev(#)", Types.dataFrameNumericTypes));
     }
 
+    @Override
     public Properties getProperties(DataConnection conn) {
         java.util.Properties properties = defaultConnectionProperties(conn);
         if (!conn.hasCustomConnectionString() && conn.ssl()) {
@@ -46,38 +61,37 @@ public class PostgresDataProvider extends JdbcDataProvider {
         return properties;
     }
 
+    @Override
     public String getConnectionStringImpl(DataConnection conn) {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
         return "jdbc:postgresql://" + conn.getServer() + port + "/" + conn.getDb();
     }
 
+    @Override
     public String getSchemasSql(String db) {
         return "SELECT DISTINCT table_schema FROM information_schema.columns";
     }
 
+    @Override
     public String getSchemaSql(String db, String schema, String table)
     {
         List<String> filters = new ArrayList<String>() {{
-            add("table_schema = '" + ((schema != null) ? schema : descriptor.defaultSchema) + "'");
+            add("c.table_schema = '" + ((schema != null) ? schema : descriptor.defaultSchema) + "'");
         }};
 
         if (db != null && db.length() != 0)
-            filters.add("table_catalog = '" + db + "'");
+            filters.add("c.table_catalog = '" + db + "'");
 
         if (table != null)
-            filters.add("table_name = '" + table + "'");
+            filters.add("c.table_name = '" + table + "'");
 
         String whereClause = "WHERE " + String.join(" AND \n", filters);
 
-        return "SELECT table_schema, table_name, column_name, data_type " +
-                "FROM information_schema.columns " + whereClause +
-                " ORDER BY table_name";
-    }
-
-    private boolean isPostgresNumeric(String typeName) {
-        // We need next condition because be default Postgres sets precision and scale to null for numeric type.
-        // And ResultSetMetaData.getScale() returns 0 if scale is null.
-        return typeName.equalsIgnoreCase("numeric");
+        return "SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
+                + "c.data_type as data_type, "
+                + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
+                + "JOIN information_schema.tables t ON t.table_name = c.table_name " + whereClause +
+                " ORDER BY c.table_name";
     }
 
     @Override
@@ -89,5 +103,16 @@ public class PostgresDataProvider extends JdbcDataProvider {
     @Override
     protected boolean isFloat(int type, String typeName, int precision, int scale) {
         return super.isFloat(type, typeName, precision, scale) || isPostgresNumeric(typeName);
+    }
+
+    @Override
+    protected String getRegexQuery(String columnName, String regexExpression) {
+        return String.format("%s ~ '%s'", columnName, regexExpression);
+    }
+
+    private boolean isPostgresNumeric(String typeName) {
+        // We need next condition because be default Postgres sets precision and scale to null for numeric type.
+        // And ResultSetMetaData.getScale() returns 0 if scale is null.
+        return typeName.equalsIgnoreCase("numeric");
     }
 }

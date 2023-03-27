@@ -12,6 +12,7 @@ import {SemanticValue} from './grid';
 import $ from 'cash-dom';
 import { FuncCall } from '../dg';
 import '../css/styles.css';
+import { MolfileHandler } from "@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler";
 
 let api = <any>window;
 declare let grok: any;
@@ -40,6 +41,7 @@ export namespace chem {
   export let SKETCHER_LOCAL_STORAGE = 'sketcher';
   export const STORAGE_NAME = 'sketcher';
   export const KEY = 'selected';
+  const molfileHandler = MolfileHandler.createInstance(WHITE_MOLBLOCK);
 
   export enum Notation {
     Smiles = 'smiles',
@@ -58,7 +60,7 @@ export namespace chem {
 
   export function isMolBlock(s: string | null) {
     return s != null && s.includes('M  END');
-  }  
+  }
 
   /** A common interface that all sketchers should implement */
   export abstract class SketcherBase extends Widget {
@@ -127,7 +129,6 @@ export namespace chem {
     sketcher: SketcherBase | null = null;
     onChanged: Subject<any> = new Subject<any>();
     sketcherFunctions: Func[] = [];
-    selectedSketcher: Func | undefined = undefined;
     sketcherDialogOpened = false;
 
     /** Whether the currently drawn molecule becomes the current object as you sketch it */
@@ -146,8 +147,9 @@ export namespace chem {
     inplaceSketcherDiv: HTMLDivElement | null = null;
     clearSketcherButton: HTMLButtonElement;
     emptySketcherLink: HTMLDivElement;
-    sketcherInDom = false;
     resized = false;
+    _sketcherTypeChanged = false;
+    _autoResized = true;
 
     set sketcherType(type: string) {
       this._setSketcherType(type);
@@ -165,6 +167,13 @@ export namespace chem {
       return this.resized;
     }
 
+    get autoResized(): boolean {
+      return this._autoResized;
+    }
+
+    get sketcherTypeChanged(): boolean {
+      return this._sketcherTypeChanged;
+    }
 
     getSmiles(): string {
       return this.sketcher?.isInitialized ? this.sketcher.smiles : this._smiles === null ?
@@ -248,7 +257,7 @@ export namespace chem {
       const extractor = extractors
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
 
-      if (extractor != null)
+      if (extractor != null && !checkSmiles(x) && !isMolBlock(x))
         extractor
           .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
           .then((mol) => this.setMolecule(mol));
@@ -274,7 +283,7 @@ export namespace chem {
     }
 
     resize() {
-      if (this.sketcherInDom) {
+      if (this.sketcher?.isInitialized) {
         this.sketcher?.resize();
         this.resized = true;
       }
@@ -296,7 +305,8 @@ export namespace chem {
         const height = width / 2;
         if (!(this.isEmpty()) && this.extSketcherDiv.parentElement) {
           ui.empty(this.extSketcherDiv);
-          ui.tooltip.bind(this.extSketcherCanvas, 'Click to edit');
+          const currentMolfile = this.getMolFile();
+          ui.tooltip.bind(this.extSketcherCanvas, () => this.createMoleculeTooltip(currentMolfile));
           canvasMol(0, 0, width, height, this.extSketcherCanvas, this.getMolFile()!, null, { normalizeDepiction: true, straightenDepiction: true })
             .then((_) => {
               ui.empty(this.extSketcherDiv);
@@ -309,6 +319,26 @@ export namespace chem {
         }
       });
     };
+
+    createMoleculeTooltip(currentMolfile: string): HTMLElement{
+      molfileHandler.init(currentMolfile);
+      const maxDelta = 10; // in case deltaX or deltaY exceeds maxDelata we assume molecule is large one and draw it in a tooltip
+      const zoom = 20; // coefficient we use to calculate size of canvas to feet molecule
+      const xCoords = molfileHandler.x;
+      const yCoords = molfileHandler.y;
+      const bondedAtoms = molfileHandler.pairsOfBondedAtoms;
+      let tooltip: HTMLElement;
+      if (xCoords.length > 1 && yCoords.length > 1 && bondedAtoms.length) {
+        const distance = Math.sqrt(Math.pow((xCoords[bondedAtoms[0][0] - 1] - xCoords[bondedAtoms[0][1] - 1]), 2) +
+          Math.pow((yCoords[bondedAtoms[0][0] - 1] - yCoords[bondedAtoms[0][1] - 1]), 2));
+        const deltaX = (Math.max(...xCoords) - Math.min(...xCoords))/distance;
+        const deltaY = (Math.max(...yCoords) - Math.min(...yCoords))/distance;
+        tooltip = (deltaX > maxDelta || deltaY > maxDelta) ? this.drawToCanvas(deltaX*zoom, deltaY*zoom, currentMolfile) : ui.divText('Click to edit');
+      } else {
+        tooltip = ui.divText('Click to edit');
+      }
+      return tooltip;
+    }
 
     createClearSketcherButton(canvas: HTMLCanvasElement): HTMLButtonElement {
       const clearButton = ui.button('Clear', () => {
@@ -330,7 +360,8 @@ export namespace chem {
       const closeDlg = () => {
         this.sketcherDialogOpened = false;
         this.resized = false;
-      } 
+        this._autoResized = true;
+      }
 
       this.extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
 
@@ -350,11 +381,15 @@ export namespace chem {
               this.setMolFile(savedMolFile!);
               closeDlg();
             })
-            .show({resizable: true});
-            ui.onSizeChanged(dlg.root).subscribe((_) => {
-              if (this.sketcherDialogOpened)
-                this.resize();
-            });
+            .show({ resizable: true });
+          ui.onSizeChanged(dlg.root).subscribe((_) => {
+            if (this.sketcherDialogOpened)
+              if (!this.sketcher?.isInitialized)
+                return;
+              else
+                //for some sketchers onSizeChanged is called once after dialog is just opened. We call resize() only when resized manually
+                this._autoResized ? this._autoResized = false : this.resize();
+          });
         }
       };
 
@@ -422,10 +457,14 @@ export namespace chem {
           .endGroup()
           .separator()
           .items(this.sketcherFunctions.map((f) => f.friendlyName), (friendlyName: string) => {
-            grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, friendlyName, true);
-            currentSketcherType = friendlyName;
-            this.sketcherType = currentSketcherType;
-            },
+            if (currentSketcherType !== friendlyName) {
+                currentSketcherType = friendlyName;
+                grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, friendlyName, true);
+                this.sketcherType = currentSketcherType;
+                if (!this.resized)
+                  this._autoResized = true;
+            }
+          },
             {
               isChecked: (item) => item === currentSketcherType, toString: item => item,
               radioGroup: 'sketcher type'
@@ -450,19 +489,22 @@ export namespace chem {
           await this.getSmarts() : this.getMolFile() : this.getSmiles();
       };
       getMolecule().then(async (molecule) => {
-        ui.empty(this.host);
-        this.sketcherInDom = false;
+        this._sketcherTypeChanged = true; //variable to check if refresh should be called on filter
         this._setSketcherSize(); //set default size to show update indicator
         ui.setUpdateIndicator(this.host, true);
         this.changedSub?.unsubscribe();
         const sketcherFunc = this.sketcherFunctions.find(e => e.friendlyName == sketcherType|| e.name === sketcherType) ?? this.sketcherFunctions.find(e => e.friendlyName == DEFAULT_SKETCHER);
-        this.sketcher = await sketcherFunc!.apply();
-        this._setSketcherSize(); //update sketcher size according to base sketcher width and height
-        this.host.appendChild(this.sketcher!.root);
+        const sketcher = await sketcherFunc!.apply();
         await ui.tools.waitForElementInDom(this.root);
-        this.sketcherInDom = true;
+        if(currentSketcherType !== sketcherType) //in case sketcher type has been changed while previous sketcher was loading
+          return;
+        this.sketcher = sketcher; //setting this.sketcher only after ensuring that this is last selected sketcher
+        ui.empty(this.host);
+        this.host.appendChild(this.sketcher!.root);
+        this._setSketcherSize(); //update sketcher size according to base sketcher width and height
         await this.sketcher!.init(this);
-        ui.setUpdateIndicator(this.host, false);      
+        ui.setUpdateIndicator(this.host, false);
+        this._sketcherTypeChanged = false;
         this.changedSub = this.sketcher!.onChanged.subscribe((_: any) => {
           this.onChanged.next(null);
           for (let callback of this.listeners)
@@ -473,7 +515,7 @@ export namespace chem {
               grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
           }
         });
-        if (molecule)              
+        if (molecule)
         this.setMolecule(molecule!, this._smarts !== null);
       });
     }
@@ -489,7 +531,7 @@ export namespace chem {
     static getCollection(key: string): string[] {
       return JSON.parse(localStorage.getItem(key) ?? '[]');
     }
-    
+
     static addToCollection(key: string, molecule: string) {
       const molecules = Sketcher.getCollection(key);
       Sketcher.checkDuplicatesAndAddToStorage(molecules, molecule, key);
@@ -736,10 +778,17 @@ export namespace chem {
     return resultMolecule;
   }
 
+  export function checkSmiles(s: string): boolean {
+    const isSmilesFunc = Func.find({package: 'Chem', name: 'isSmiles'})[0];
+    const funcCall: FuncCall = isSmilesFunc.prepare({s});
+    funcCall.callSync();
+    const resultBool = funcCall.getOutputParamValue();
+    return resultBool;
+  }
+
   export function smilesFromSmartsWarning(): string {
     grok.shell.warning(`Smarts cannot be converted to smiles`);
     return '';
   }
-  
-}
 
+}

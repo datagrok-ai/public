@@ -1,4 +1,4 @@
-#name: Gasteiger Partial Charges
+#name: Chemistry | Gasteiger Partial Charges
 #description: The Gasteiger partial charges visualization, RDKit based
 #help-url: https://datagrok.ai/help/domains/chem/functions/gasteiger-charges
 #language: python

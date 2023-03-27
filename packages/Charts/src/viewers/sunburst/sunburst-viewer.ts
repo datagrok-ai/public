@@ -4,14 +4,18 @@ import { EChartViewer } from '../echart/echart-viewer';
 import { TreeUtils } from '../../utils/tree-utils';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
+
+/** Represents a sunburst viewer */
 export class SunburstViewer extends EChartViewer {
   hierarchyColumnNames: string[];
+  hierarchyLevel: number;
 
   constructor() {
     super();
     this.initCommonProperties();
 
     this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST);
+    this.hierarchyLevel = 3;
 
     this.option = {
       series: [
@@ -42,7 +46,7 @@ export class SunburstViewer extends EChartViewer {
       return;
 
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
-      this.hierarchyColumnNames = categoricalColumns.slice(0, 3).map((col) => col.name);
+      this.hierarchyColumnNames = categoricalColumns.slice(0, this.hierarchyLevel).map((col) => col.name);
 
     super.onTableAttached();
   }

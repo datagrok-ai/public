@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {ScatterPlotViewer} from "datagrok-api/dg";
+import {ScatterPlotViewer} from 'datagrok-api/dg';
 
 export class ScatterPlotCellRenderer extends DG.GridCellRenderer {
   get name() : string { return 'scatterplot'; }
@@ -21,8 +21,8 @@ export class ScatterPlotCellRenderer extends DG.GridCellRenderer {
       const cc = plot.root.getElementsByTagName('CANVAS');
       if (cc.length > 0) {
         const canvas = cc[0] as HTMLCanvasElement;
-        canvas.style.width = "100%";
-        canvas.style.height = "100%";
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
       }
 
       const options = {
@@ -30,8 +30,8 @@ export class ScatterPlotCellRenderer extends DG.GridCellRenderer {
         threshold: 1.0
       };
       const observer = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-          if(entry.intersectionRatio <= 0 && plot.root.parentElement != null) {
+        entries.forEach((entry) => {
+          if (entry.intersectionRatio <= 0 && plot.root.parentElement != null) {
             plot.root.parentElement.removeChild(plot.root);
             gridCell.grid.invalidate();
           }
@@ -42,7 +42,10 @@ export class ScatterPlotCellRenderer extends DG.GridCellRenderer {
     }
   }
 
-  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) : void {
+  render(g: CanvasRenderingContext2D,
+    x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
+  ) {
     if (gridCell!.tableRowIndex == null)
       return;
 
@@ -58,14 +61,14 @@ export class ScatterPlotCellRenderer extends DG.GridCellRenderer {
       document.body.appendChild(plot.root);
       canvas.width = w * window.devicePixelRatio;
       canvas.height = h * window.devicePixelRatio;
-      canvas.style.width = w  + "px";
-      canvas.style.height = h + "px";
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
     }
     g.translate(x, y);
     plot.render(g);
     g.translate(-x, -y);
 
-    if(canvas !== null)
+    if (canvas !== null)
       document.body.removeChild(plot.root);
   }
 }

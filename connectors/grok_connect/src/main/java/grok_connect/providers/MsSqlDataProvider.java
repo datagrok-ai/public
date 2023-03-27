@@ -1,15 +1,26 @@
 package grok_connect.providers;
 
-import java.io.*;
-import java.sql.*;
-import java.text.*;
-import java.util.*;
+import java.io.IOException;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataQuery;
+import grok_connect.connectors_info.DataSource;
+import grok_connect.connectors_info.DbCredentials;
+import grok_connect.connectors_info.FuncCall;
+import grok_connect.connectors_info.FuncParam;
+import grok_connect.table_query.AggrFunctionInfo;
+import grok_connect.table_query.Stats;
+import grok_connect.utils.GrokConnectException;
+import grok_connect.utils.Property;
+import grok_connect.utils.ProviderManager;
+import grok_connect.utils.QueryCancelledByUser;
 import serialization.Types;
 import serialization.DataFrame;
-import grok_connect.utils.*;
-import grok_connect.table_query.*;
-import grok_connect.connectors_info.*;
-
 
 public class MsSqlDataProvider extends JdbcDataProvider {
     public MsSqlDataProvider(ProviderManager providerManager) {
@@ -38,26 +49,37 @@ public class MsSqlDataProvider extends JdbcDataProvider {
             put("smallmoney", Types.FLOAT);
             put("float", Types.FLOAT);
             put("real", Types.FLOAT);
-            put("#.char.*", Types.STRING);
-            put("#.varchar.*", Types.STRING);
-            put("#.text.*", Types.STRING);
+            put("bit", Types.BOOL);
+            put("#.*char.*", Types.STRING);
+            put("#.*varchar.*", Types.STRING);
             put("date", Types.DATE_TIME);
             put("datetimeoffset", Types.DATE_TIME);
             put("datetime2", Types.DATE_TIME);
             put("smalldatetime", Types.DATE_TIME);
             put("datetime", Types.DATE_TIME);
             put("time", Types.DATE_TIME);
+            put("image", Types.OBJECT);
+            put("#.*binary", Types.BLOB);
+            put("#.*text.*", Types.OBJECT);
+            put("geometry", Types.OBJECT);
+            put("geography", Types.OBJECT);
+            put("xml", Types.OBJECT);
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stdev(#)", Types.dataFrameNumericTypes));
     }
 
+    @Override
     public String getConnectionString(DataConnection conn) {
         String connString = super.getConnectionString(conn);
         connString = connString.endsWith(";") ? connString : connString + ";";
+        if (conn.credentials.getLogin() == null || conn.credentials.getPassword() == null) {
+            throw new RuntimeException("Login or password can't be blank");
+        }
         connString += "user=" + conn.credentials.getLogin() + ";password=" + conn.credentials.getPassword();
         return connString;
     }
 
+    @Override
     public String getConnectionStringImpl(DataConnection conn) {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
         String db = conn.getDb();
@@ -67,6 +89,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
                 (conn.ssl() ? "integratedSecurity=true;encrypt=true;trustServerCertificate=true;" : "");
     }
 
+    @Override
     public DataFrame getSchema(DataConnection connection, String schema, String table)
             throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
         FuncCall queryRun = new FuncCall();
@@ -79,28 +102,59 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         return execute(queryRun);
     }
 
+    @Override
     public String getSchemasSql(String db) {
         return "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA";
     }
 
+    @Override
     public String getSchemaSql(String db, String schema, String table) {
         List<String> filters = new ArrayList<String>() {{
-            add("TABLE_SCHEMA = '" + ((schema != null) ? schema : descriptor.defaultSchema) + "'");
+            add("c.table_schema = '" + ((schema != null) ? schema : descriptor.defaultSchema) + "'");
         }};
 
         if (db != null && db.length() != 0)
-            filters.add("TABLE_CATALOG = '" + db + "'");
+            filters.add("c.table_catalog = '" + db + "'");
 
         if (table!= null)
-            filters.add("TABLE_NAME = '" + table + "'");
+            filters.add("c.table_name = '" + table + "'");
 
         String whereClause = "WHERE " + String.join(" AND \n", filters);
 
-        return "SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE " +
-                "FROM INFORMATION_SCHEMA.COLUMNS " + whereClause + " ORDER BY TABLE_NAME";
+        return "SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
+                + "c.data_type as data_type, "
+                + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
+                + "JOIN information_schema.tables t ON t.table_name = c.table_name " + whereClause +
+                " ORDER BY c.table_name";
     }
 
+    @Override
+    protected void appendQueryParam(DataQuery dataQuery, String paramName, StringBuilder queryBuffer) {
+        FuncParam param = dataQuery.getParam(paramName);
+        if (param.propertyType.equals("list")) {
+            queryBuffer.append("SELECT value FROM STRING_SPLIT(?, ',')");
+        } else {
+            queryBuffer.append("?");
+        }
+    }
+
+    @Override
+    protected int setArrayParamValue(PreparedStatement statement, int n, FuncParam param) throws SQLException {
+        @SuppressWarnings("unchecked")
+        List<String> list = ((ArrayList<String>) param.value);
+        String values = String.join(",", list);
+        statement.setObject(n, values);
+        return 0;
+    }
+
+    @Override
     public String limitToSql(String query, Integer limit) {
         return query + "top " + limit.toString() + " ";
+    }
+
+    @Override
+    protected boolean isInteger(int type, String typeName, int precision, int scale) {
+        return (type == java.sql.Types.INTEGER) || (type == java.sql.Types.TINYINT)
+                || (type == java.sql.Types.SMALLINT);
     }
 }

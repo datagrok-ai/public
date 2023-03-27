@@ -1,31 +1,31 @@
 {
-	"name": "@datagrok-libraries/tutorials",
-	"publishConfig": {
-		"access": "public"
-	},
-	"friendlyName": "Tutorials",
-	"version": "1.0.5",
-	"description": "Helpers for creating tutorials",
-	"dependencies": {
-		"cash-dom": "^8.1.1",
-		"datagrok-api": "^1.14.0",
-		"rxjs": "6.6.7"
-	},
-	"devDependencies": {
-		"@typescript-eslint/eslint-plugin": "^5.39.0",
-		"@typescript-eslint/parser": "^5.39.0",
-		"dts-bundle-generator": "^7.0.0",
-		"eslint": "^8.25.0",
-		"eslint-config-google": "^0.14.0",
-		"ts-loader": "^9.4.1",
-		"typescript": "^4.8.4"
-	},
-	"scripts": {
-		"link": "npm link",
-		"link-api": "npm link datagrok-api",
-		"link-all": "npm link datagrok-api",
-		"build": "tsc",
-		"lint": "eslint src --ext .ts",
-		"lint-fix": "eslint src --ext .ts --fix"
-	}
+  "name": "@datagrok-libraries/tutorials",
+  "publishConfig": {
+    "access": "public"
+  },
+  "friendlyName": "Tutorials",
+  "version": "1.0.4",
+  "description": "Helpers for creating tutorials",
+  "dependencies": {
+    "cash-dom": "^8.1.1",
+    "datagrok-api": "../../js-api",
+    "rxjs": "6.6.7"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.39.0",
+    "@typescript-eslint/parser": "^5.39.0",
+    "dts-bundle-generator": "^7.0.0",
+    "eslint": "^8.25.0",
+    "eslint-config-google": "^0.14.0",
+    "ts-loader": "^9.4.1",
+    "typescript": "^4.8.4"
+  },
+  "scripts": {
+    "link": "npm link",
+    "link-api": "npm link datagrok-api",
+    "link-all": "npm link datagrok-api",
+    "build": "tsc",
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix"
+  }
 }

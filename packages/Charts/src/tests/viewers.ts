@@ -10,9 +10,9 @@ category('Viewers', () => {
   for (const v of viewers) {
     test(v, async () => {
       await testViewer(v, await (async () => {
-        if (['SankeyViewer', 'ChordViewer'].includes(v)) return (await grok.data.getDemoTable('energy_uk.csv'));
-        else if (['TreeMapViewer', 'SunburstViewer'].includes(v)) return (await grok.data.getDemoTable('demog.csv'));
-        else if (v === 'GlobeViewer') return (await grok.data.getDemoTable('geo/earthquakes.csv'));
+        if (['Sankey', 'Chord'].includes(v)) return (await grok.data.getDemoTable('energy_uk.csv'));
+        else if (['Tree', 'Sunburst'].includes(v)) return (await grok.data.getDemoTable('demog.csv'));
+        else if (v === 'Globe') return (await grok.data.getDemoTable('geo/earthquakes.csv'));
         return df.clone();
       })(), true);
     });

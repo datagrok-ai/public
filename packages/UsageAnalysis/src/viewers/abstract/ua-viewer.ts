@@ -1,10 +1,11 @@
 import * as ui from 'datagrok-api/ui';
 
+
 export abstract class UaViewer {
   root: HTMLElement;
   name: string;
   setStyle: Function = null as any;
-  showName: boolean;
+  loader: HTMLElement;
 
   static splineStyle: Object = {
     'aggrType': 'count',
@@ -33,35 +34,25 @@ export abstract class UaViewer {
     style: 'dashboard',
   };
 
-  protected constructor(name: string, setStyle?: Function | null, showName: boolean = true) {
-    this.root = ui.div();
+  protected constructor(name: string, setStyle?: Function | null) {
+    this.root = ui.box();
     this.name = name;
-
     if (setStyle)
       this.setStyle = setStyle;
-
-    this.showName = showName;
-  }
-
-  reloadViewer() {
-    this.root.innerHTML = '';
-    const host = ui.block([]);
-    if (this.setStyle)
-      this.setStyle(host);
-
-    const nameDiv = ui.divH([], {style: {alignItems: 'center'}});
-    if (this.showName)
-      nameDiv.append(ui.h1(this.name, {style: {margin: '6px 0'}}));
-    host.appendChild(nameDiv);
-
+    const div = ui.div();
+    div.style.position = 'absolute';
+    div.style.backgroundColor = 'rgb(25 36 64 / 50%)';
+    div.style.height = '100%';
+    div.style.width = '100%';
+    div.style.zIndex = '10000';
     const loader = ui.loader();
-    host.appendChild(loader);
-
-    this.setViewer(loader, host, nameDiv);
-
-    this.root.append(host);
+    loader.style.top = '50%';
+    loader.style.left = '45%';
+    div.appendChild(loader);
+    this.loader = div;
   }
 
-  setViewer(loader: any, host: HTMLDivElement, nameDiv: HTMLElement): void {
-  }
+  reloadViewer() {}
+
+  setViewer(loader?: any, host?: HTMLDivElement): void {}
 }

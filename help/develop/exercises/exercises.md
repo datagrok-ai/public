@@ -31,7 +31,7 @@ predictive models, integration with the external utilities, data augmentation, a
 * [Querying databases](#exercise-3-querying-databases)
 * [Creating a scripting viewer](#exercise-4-creating-a-scripting-viewer)
 * [Transforming dataframes](#exercise-5-transforming-dataframes)
-* [Custom cell renderers with 3-rd party JS libraries](#exercise-6-custom-cell-renderers-with-3-rd-party-js-libraries)
+* [Custom cell renderers](#exercise-6-custom-cell-renderers)
 <!-- * [Accessing Web services with OpenAPI](#exercise-7-accessing-web-services-with-openapi) -->
 * [Creating an info panel with a REST web service](#exercise-7-creating-an-info-panel-with-a-rest-web-service)
 * [Enhancing Datagrok with dialog-based functions](#exercise-8-enhancing-datagrok-with-dialog-based-functions)
@@ -638,7 +638,7 @@ First, let's explore how scripting viewer works.
 
 <!--- TODO: add linked dataframes demo here --->
 
-## Exercise 6: Custom cell renderers with 3-rd party js libraries
+## Exercise 6: Custom cell renderers
 
 *You will learn:* render cells by semantic types.
 

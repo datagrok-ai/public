@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/power-grid",
 	"friendlyName": "PowerGrid",
-	"version": "1.1.14",
+	"version": "1.1.21",
 	"author": {
 		"name": "Andrew Skalkin",
 		"email": "askalkin@datagrok.ai"
@@ -13,17 +13,18 @@
 		"directory": "packages/PowerGrid"
 	},
 	"dependencies": {
-		"datagrok-api": "^1.8.3",
-		"@datagrok-libraries/gridext": "^1.3.29",
+		"@datagrok-libraries/gridext": "^1.3.40",
+		"@types/wu": "latest",
 		"cash-dom": "latest",
-		"dayjs": "latest",
-		"@types/wu": "latest"
+		"datagrok-api": "^1.13.5",
+		"dayjs": "latest"
 	},
 	"devDependencies": {
 		"@typescript-eslint/eslint-plugin": "^5.20.0",
 		"@typescript-eslint/parser": "^5.20.0",
 		"eslint": "latest",
 		"eslint-config-google": "latest",
+		"source-map-loader": "^4.0.1",
 		"ts-loader": "latest",
 		"typescript": "latest",
 		"webpack": "latest",
@@ -32,14 +33,14 @@
 	"scripts": {
 		"lint": "eslint src --ext .ts",
 		"lint-fix": "eslint src --ext .ts --fix",
-		"link-all": "npm link datagrok-api  @datagrok-libraries/utils @datagrok-libraries/utils @datagrok-libraries/gridext",
+		"link-all": "npm link datagrok-api  @datagrok-libraries/utils @datagrok-libraries/statistics @datagrok-libraries/gridext",
 		"link-api": "npm link datagrok-api ",
 		"debug-powergrid": "grok publish",
 		"release-powergrid": "grok publish --release",
 		"build-powergrid": "webpack",
 		"powergrid-deploy": "webpack & grok publish",
 		"build-typescript": "tsc",
-		"build": "webpack",
+		"build": "tsc && webpack",
 		"debug-powergrid-dev": "grok publish dev",
 		"release-powergrid-dev": "grok publish dev --release",
 		"debug-powergrid-public": "grok publish public",

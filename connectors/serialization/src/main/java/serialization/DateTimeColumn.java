@@ -15,6 +15,11 @@ public class DateTimeColumn extends Column<Double> {
         return TYPE;
     }
 
+    public void empty() {
+        length = 0;
+        data = new double[100];
+    }
+
     public DateTimeColumn() {
         data = new double[100];
     }
@@ -135,21 +140,7 @@ public class DateTimeColumn extends Column<Double> {
             buf.writeInt8List(array);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        DateTimeColumn that = (DateTimeColumn) o;
-        return Arrays.equals(data, that.data)
-                && Objects.equals(name, that.name)
-                && Objects.equals(getType(), that.getType());
-    }
-
-    @Override
-    public int hashCode() {
-        int dataHash = Arrays.hashCode(data);
-        dataHash += name == null ? 1 : name.hashCode();
-        dataHash += getType() == null ? 1 : getType().hashCode();
-        return dataHash;
+    public double[] getData() {
+        return data;
     }
 }

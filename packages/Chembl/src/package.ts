@@ -7,34 +7,33 @@ export let _package = new DG.Package();
 
 
 export async function chemblSubstructureSearch(molecule: string): Promise<DG.DataFrame> {
-    try {
-        const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molecule);
-        const smarts = mol.get_smarts();
-        mol?.delete();
-        let df = await grok.data.query(`${_package.name}:patternSubstructureSearch`, {'pattern': smarts, 'maxRows': 100});
-        if (df == null)
-            return DG.DataFrame.create();
-        return df;
-    } catch (e: any) {
-        console.error('In SubstructureSearch: ' + e.toString());
-        throw e;
-    }
+  try {
+    const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molecule);
+    const smarts = mol.get_smarts();
+    mol?.delete();
+    let df = await grok.data.query(`${_package.name}:patternSubstructureSearch`, {'pattern': smarts, 'maxRows': 100});
+    if (df == null)
+      return DG.DataFrame.create();
+    return df;
+  } catch (e: any) {
+    console.error('In SubstructureSearch: ' + e.toString());
+      throw e;
+  }
 }
 
 export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataFrame> {
-    try {
-        const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molecule);
-        const smiles = mol.get_smiles();
-        mol?.delete();
-        let df = await grok.data.query(`${_package.name}:patternSimilaritySearch`, {'pattern': smiles, 'maxRows': 100});
-        if (df == null)
-            return DG.DataFrame.create();
-        return df;
-    } catch (e: any) {
-        console.error('In SimilaritySearch: ' + e.toString());
-        throw e;
-    }
-
+  try {
+    const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molecule);
+    const smiles = mol.get_smiles();
+    mol?.delete();
+    let df = await grok.data.query(`${_package.name}:patternSimilaritySearch`, {'pattern': smiles, 'maxRows': 100});
+    if (df == null)
+      return DG.DataFrame.create();
+    return df;
+  } catch (e: any) {
+    console.error('In SimilaritySearch: ' + e.toString());
+      throw e;
+  }
 }
 
 //name: chemblSearchWidgetLocalDb
@@ -43,63 +42,61 @@ export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataF
 //input: string searchType
 //output: widget result
 export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = false): DG.Widget {
-    const headerHost = ui.divH([]);
-    const compsHost = ui.divH([ui.loader(), headerHost]);
-    const panel = ui.divV([compsHost]);
-    const searchFunc = substructure ?
-      async () => chemblSubstructureSearch(mol) :
-      async () => chemblSimilaritySearch(mol);
+  const headerHost = ui.divH([]);
+  const compsHost = ui.divH([ui.loader(), headerHost]);
+  const panel = ui.divV([compsHost]);
+  const searchFunc = substructure ?
+    async () => chemblSubstructureSearch(mol) :
+    async () => chemblSimilaritySearch(mol);
 
-    searchFunc().then((t: any) => {
-          compsHost.removeChild(compsHost.firstChild!);
-          if (t == null) {
+  searchFunc().then((t: any) => {
+    compsHost.removeChild(compsHost.firstChild!);
+    if (t == null) {
+      compsHost.appendChild(ui.divText('No matches'));
+      return;
+    }
+    t.col('smiles').semType = 'Molecule';
+    t.col('smiles').setTag('cell.renderer', 'Molecule');
 
-              compsHost.appendChild(ui.divText('No matches'));
-              return;
-          }
-          t.col('smiles').semType = 'Molecule';
-          t.col('smiles').setTag('cell.renderer', 'Molecule');
-
-
-          const grid = t.plot.grid();
-          compsHost.appendChild(grid.root);
-          headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
-              t.name = `"DrugBank Similarity Search"`;
-              grok.shell.addTableView(t);
-          }, 'Open compounds as table'));
-          compsHost.style.overflowY = 'auto';
-      }
-    )
-      .catch((err: any) => {
-          if (compsHost.children.length > 0) {
-              compsHost.removeChild(compsHost.firstChild!);
-          }
-          const div = ui.divText('No matches');
-          ui.tooltip.bind(div, `${err}`);
-          compsHost.appendChild(div);
-      });
-    return new DG.Widget(panel);
+    const grid = t.plot.grid();
+    compsHost.appendChild(grid.root);
+    headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
+      t.name = `"ChEMBL Similarity Search"`;
+      grok.shell.addTableView(t);
+    }, 'Open compounds as table'));
+      compsHost.style.overflowY = 'auto';
+    }
+  )
+  .catch((err: any) => {
+    if (compsHost.children.length > 0) {
+      compsHost.removeChild(compsHost.firstChild!);
+    }
+    const div = ui.divText('No matches');
+    ui.tooltip.bind(div, `${err}`);
+    compsHost.appendChild(div);
+  });
+  return new DG.Widget(panel);
 }
 
-//name: Chembl Substructure Search
+//name: Databases | ChEMBL (Internal) Substructure Search
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result
 //condition: true
 export function chemblSubstructureSearchPanel(mol: string): DG.Widget {
-    return mol ? chemblSearchWidgetLocalDb(mol, true) : new DG.Widget(ui.divText('SMILES is empty'));
+  return mol ? chemblSearchWidgetLocalDb(mol, true) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Chembl Similarity Search
+//name: Databases | ChEMBL (Internal) Similarity Search
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result
 //condition: true
 export function chemblSimilaritySearchPanel(mol: string): DG.Widget {
-    return mol ? chemblSearchWidgetLocalDb(mol) : new DG.Widget(ui.divText('SMILES is empty'));
+  return mol ? chemblSearchWidgetLocalDb(mol) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: ChemblBrowser
+//name: Chembl Browser
 //tags: app
 export async function Browser() {
   // Filter inputs

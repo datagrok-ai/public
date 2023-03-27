@@ -15,9 +15,7 @@ jobs:
     name: Check changes
     runs-on: ubuntu-20.04
     outputs:
-      matrix_test: ${{ steps.generate-matrix.outputs.matrix_test }}
       matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}
-      test: ${{ steps.generate-matrix.outputs.test }}
       publish: ${{ steps.generate-matrix.outputs.publish }}
     steps:
       - name: Checkout
@@ -59,20 +57,16 @@ jobs:
 
               name="$(jq .name "${DIR}/package.json" | sed -E 's/(^"|"$)//g')"
               current_version="$(jq .version "${DIR}/package.json" | sed -E 's/(^"|"$)//g')"
-              npm_json="$(curl --retry 3 -s "https://registry.npmjs.org/${name}/${current_version}")"
-              if [[ $npm_json == "\"version not found: ${current_version}\"" ]] || [[ $npm_json == "\"Not Found\"" ]]; then
-
+              npm_version="$(curl --retry 3 -s "https://registry.npmjs.org/${name}/${current_version}" | jq -r '.? | select( has("version") == true ).version')"
+              unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match("\\.\\./.*")))[] | "\(.key)=\(.value)"' <<<$dependencies | tr '\n' ' ')"
+              MATRIX_PUBLISH_JSON+=", \"unpublished_deps\": \"$unpublished_deps\""
+              if [[ $npm_version != ${current_version} ]]; then
                 if [ "$(awk -F. '{print $1}' <<<$current_version)" -gt "0" ]; then
-                  MATRIX_PUBLISH_JSON+=", \"publish\": \"true\""
+                  if [[ $unpublished_deps == "" ]]; then
+                    MATRIX_PUBLISH_JSON+=", \"publish\": \"true\""
+                  fi
                 else
                   echo "::notice title=${PACKAGE}::Version ${current_version} is under 1.0.0 and is not going to be published"
-                fi
-
-                if [ ! -z "$(jq  '. | select( has("datagrok-api") == true )' <<< "$dependencies")" ]; then
-                  MATRIX_PUBLISH_JSON+=", \"install_jsapi\": \"true\""
-                fi
-                if [ ! -z "$(jq  '. | select( has("datagrok-tools") == true )' <<< "$dependencies")" ]; then
-                  MATRIX_PUBLISH_JSON+=", \"install_tools\": \"true\""
                 fi
               fi
 
@@ -88,12 +82,15 @@ jobs:
           CONTINUE_PUBLISH_JOB="no"
           if [[ "${MATRIX_PUBLISH_JSON}" != "[]" ]]; then
             CONTINUE_PUBLISH_JOB="yes"
-
-            echo 'Result GitHub Actions Matrix JSON'
-            echo "${MATRIX_PUBLISH_JSON}"
           fi
           echo "publish=${CONTINUE_PUBLISH_JOB}" >> $GITHUB_OUTPUT
           echo "matrix_publish=${PUBLISH_JSON}" >> $GITHUB_OUTPUT
+
+
+      - name: Output
+        run: |
+          echo -e "matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}"
+          echo -e "publish: ${{ steps.generate-matrix.outputs.publish }}"
 
   publish:
     name: Test and publish to npm
@@ -136,22 +133,32 @@ jobs:
         run: |
           commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
-          grok_deps="$(jq  -r '. | select( has("grokDependencies") == true ).grokDependencies | to_entries[] | .key' packages/${{ matrix.package }}/package.json)"
+          echo "Find grok dependencies packages"
+          grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' packages/${{ matrix.package }}/package.json)"
           profiles='--profile datagrok --profile db --profile grok_spawner'
+          echo "Check if CVM is required for the package"
           if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "simpkpd" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "dendrogram" ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chembl" ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "apitests" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]] || \
-             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chembl"* ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"simpkpd"* ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"apitests"* ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"dendrogram"* ]]; then
-            profiles+=' --profile cvm'
+            echo "Add Scripting as dependency for package ${{ matrix.package }}"
+            profiles+=' --profile scripting'
           fi
-
+          if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
+             [[ "$(tr '[:upper:]' '[:lower:]' <<<${grok_deps})" == *"chem"* ]]; then
+            echo "Add Grok Compute as dependency for package ${{ matrix.package }}"
+            profiles+=' --profile grok_compute'
+          fi
+          echo "Run datagrok stand with profiles ${profiles}"
           docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
+          echo "Set docker_sha"
           docker_sha=$(docker images --quiet datagrok/datagrok:bleeding-edge)
           echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
+          echo "Notify abour version used for tests"
           echo "::notice title=${{ matrix.package }}::datagrok/datagrok:bleeding-edge SHA=$docker_sha docker version was used for tests"
       - name: Setup Node
         uses: actions/setup-node@v3
@@ -163,21 +170,34 @@ jobs:
         run: npm install -g npm@x
       - name: npm version
         run: npm version
-      - run: npm install
+      - name: Do npm install for packages
+        run: npm install
         id: install
         working-directory: packages/${{ matrix.package }}
-      - name: js-api dependencies
+      - name: js api dependency for unpublished dependencies
+        if: ${{ matrix.unpublished_deps != '' }}
         run: npm install
         working-directory: ./js-api
-        if: ${{ matrix.install_jsapi == 'true' }}
-      - name: tools dependencies
-        run: npm install
-        working-directory: ./tools
-        if: ${{ matrix.install_tools == 'true' }}
+      - name: unpublished dependencies
+        if: ${{ matrix.unpublished_deps != '' }}
+        run: |
+          crnt=$(pwd)
+          for dep in $(echo -e ${{ matrix.unpublished_deps }}); do
+            cd $(awk -F'=' '{print $2}' <<<$dep)
+            echo "Install dependencies for $(awk -F'=' '{print $2}' <<<$dep)"
+            npm install
+            cd $crnt
+          done
+        working-directory: packages/${{ matrix.package }}
       - name: Build package
         if: ${{ matrix.build == 'true' }}
         id: build
-        run: npm run build
+        run: |
+          if [[ $(jq -r '. | select( has("scripts") == true ).scripts | select( has("build") == true ).build' "package.json") == "webpack" ]]; then
+            npm run build -- --mode=production
+          else
+            npm run build
+          fi
         working-directory: packages/${{ matrix.package }}
       - name: Install datagrok tools
         if: ${{ matrix.test == 'true' }}
@@ -198,31 +218,28 @@ jobs:
       - name: Install Grok Dependencies before package publish to Datagrok
         if: ${{ matrix.test == 'true' }}
         run: |
-          grok_deps="$(jq  -r '. | select( has("grokDependencies") == true ).grokDependencies | to_entries[] | .key' package.json)"
-          for dep in $grok_deps; do
-            current_dir=$(pwd);
-            cd ../;
-            dep_dir=$(grep -l "\"name\": \"$dep\"" */package.json | xargs -I {} dirname {});
-            cd $dep_dir;
-            npm install;
-            npm run build;
-            count=0
-            retries=5
-            until grok publish ${HOST}; do
-              exit=$?
-              wait=$((2 ** count))
-              count=$((count + 1))
-              if [ $count -lt "$retries" ]; then
-                echo "Retry $count/$retries exited $exit, retrying 'grok publish ${HOST}' in $wait seconds..."
-                sleep $wait
-                git pull --rebase
-              else
-                echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${HOST}'."
-                exit $exit
-              fi
+          grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' package.json)"
+          if [ -n "$grok_deps" ]; then
+            for dep in $grok_deps; do
+              current_dir=$(pwd)
+              cd node_modules/$dep
+              count=0
+              retries=5
+              until grok publish ${HOST}; do
+                exit=$?
+                wait=$((2 ** count))
+                count=$((count + 1))
+                if [ $count -lt "$retries" ]; then
+                  echo "Retry $count/$retries exited $exit, retrying 'grok publish ${HOST}' in $wait seconds..."
+                  sleep $wait
+                else
+                  echo "Retry $count/$retries exited $exit, no more retries left for 'grok publish ${HOST}'."
+                  exit $exit
+                fi
+              done
+              cd $current_dir
             done
-            cd $current_dir;
-          done
+          fi
         working-directory: packages/${{ matrix.package }}
       - name: Publish package to Datagrok
         if: ${{ matrix.test == 'true' }}
@@ -231,7 +248,7 @@ jobs:
           retries=5
           until grok publish ${HOST}; do
             exit=$?
-            docker logs --tail 100 $(docker ps -q -f ancestor=datagrok/datagrok:bleeding-edge) 
+            docker logs --tail 100 $(docker ps -q -f ancestor=datagrok/datagrok:bleeding-edge)
             wait=$((2 ** count))
             count=$((count + 1))
             if [ "$count" -lt "$retries" ]; then
@@ -253,6 +270,7 @@ jobs:
       - name: Create error notification
         if: failure() && steps.test-package.outcome == 'failure'
         run: |
+          docker logs $(docker ps -q -f ancestor=datagrok/datagrok:bleeding-edge)
           echo "::error title=${{ matrix.package }}: failed tests with datagrok:bleeding-edge SHA=${{ steps.datagrok-image.outputs.docker_sha }}::Check test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html report for results"
           echo "status=error" >> $GITHUB_OUTPUT
 
@@ -348,7 +366,10 @@ jobs:
           continue=false
           if [ -n "$(git status -s packages/${{ matrix.package }}/package-lock.json)" ]; then
             git add packages/${{ matrix.package }}/package-lock.json
-            git commit -m "GitHub Actions: Update packages/${{ matrix.package }}/package-lock.json [skip ci]"
+            git commit -m 'GitHub Actions: Update packages/${{ matrix.package }}/package-lock.json [skip ci]
+
+            Workflow ${{ github.workflow }} ${{ github.run_number }}
+            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}'
             continue=true
           fi
           if [[ "${continue}" == "true" ]]; then

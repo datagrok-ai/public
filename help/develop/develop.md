@@ -1,7 +1,9 @@
 ---
-title: "JavaScript development"
+title: "Develop"
 sidebar_position: 0
 ---
+
+## JavaScript development
 
 JavaScript or TypeScript-based development is the preferred way to develop user-facing applications on top of the
 platform. Use the [JS API](js-api.md) to control pretty much anything within Datagrok,
@@ -125,7 +127,8 @@ file. If you choose to include other files, such as CSS, in your package, import
 
 During the [publishing step](#publishing), the contents of `package.js` get parsed, and functions with the properly
 formatted
-[headers](../compute/scripting.md#header) are registered as Grok [functions](../datagrok/functions/functions.md)
+[headers](../datagrok/functions/func-params-annotation.md#header-parameters) are registered as Grok
+[functions](../datagrok/functions/functions.md)
 . By annotating functions in a specific way, it is possible to register custom viewers, widgets, renderers, converters,
 validators, suggestions, info panels, and semantic type detectors. If function has more than one output, it must return
 JS object `{param1: value, param2: value}`:
@@ -221,6 +224,8 @@ consider:
   field of `package.json`
 * When defining new [views](how-to/custom-views.md) and [viewers](how-to/develop-custom-viewer.md), we recommend
   postfixing your classes with `View` and `Viewer` respectively
+* Functions that register an application don't need an `App` prefix/postfix. Split multi-word names with spaces and use
+  title case, e.g., `Test Manager` instead of `testManagerApp`.
 * The names of semantic type detectors typically start with the `detect` prefix, e.g., `detectNucleotides`
   or `detectRDSmiles`
 * Filenames can be written in lower case, with dashes between words: `tika-extractor.py`

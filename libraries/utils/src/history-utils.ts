@@ -39,7 +39,30 @@ const getSearchStringByPattern = (datePattern: DateOptions) => {
 
 export namespace historyUtils {
   const scriptsCache = {} as Record<string, DG.Script>;
+  // TO DO: add users and groups cache
 
+  export async function loadChildRuns(
+    funcCallId: string
+  ): Promise<{parentRun: DG.FuncCall, childRuns: DG.FuncCall[]}> {
+    const parentRun = await grok.dapi.functions.calls.allPackageVersions().find(funcCallId);
+    parentRun.options['isHistorical'] = true;
+
+    const childRuns = await grok.dapi.functions.calls.allPackageVersions()
+      .filter(`options.parentCallId="${funcCallId}"`).list();
+
+    await Promise.all(childRuns.map(async (childRun) => {
+      const id = childRun.func.id;
+      // FIX ME: manually get script since pulledRun contains empty Func
+      const script = scriptsCache[id] ?? await grok.dapi.functions.allPackageVersions().find(id);
+
+      if (!scriptsCache[id]) scriptsCache[id] = script;
+      childRun.func = script;
+    }));
+
+    return {parentRun, childRuns};
+  }
+
+  // EXPLAIN: WHY DF LOAD SKIPPING IS USEFUL
   export async function loadRun(funcCallId: string, skipDfLoad = false) {
     const pulledRun = await grok.dapi.functions.calls.allPackageVersions()
       .include('inputs, outputs, session.user').find(funcCallId);
@@ -67,6 +90,7 @@ export namespace historyUtils {
     return pulledRun;
   }
 
+  // EXPLAIN WHY REPLCE DF-s
   export async function saveRun(callToSave: DG.FuncCall) {
     const dfOutputs = wu(callToSave.outputParams.values() as DG.FuncCallParam[])
       .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
@@ -113,10 +137,13 @@ export namespace historyUtils {
   /**
    * Loads all the function call of this function.
    * Designed to pull hstorical runs in fast manner and the call {@link loadRun} with specified run ID.
-   * WARNING: FuncCall inputs/outputs fields are not included
+   * WARNING: FuncCall inputs/outputs fields are not included by default. Use {@link includedFields} to specify fields to load.
    * @param funcName Name of Func which calls we are looking for. Get it using {@link func.name} field
+   * @param filterOptions Struct containing filtering options. These options will be passed as valid filtering string to a request.
+   * @param listOptions Struct containing listing options.
+   * @param includedFields List of fields to include into response. See {@link DG.FuncCall} struct to see possible values. E.g., 'inputs' or 'outputs'
    * @return Promise on array of FuncCalls corresponding to the passed Func ID
-   * @stability Experimental
+   * @stability Stable
  */
   export async function pullRunsByName(
     funcName: string,

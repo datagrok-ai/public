@@ -25,7 +25,8 @@ module.exports = (env, options) => ({
     'rxjs/operators': 'rxjs.operators',
     'cash-dom': '$',
     'wu': 'wu',
-    'dayjs': 'dayjs'
+    'dayjs': 'dayjs',
+    'NGL': 'NGL',
   },
   output: {
     filename: '[name].js',
@@ -64,6 +65,11 @@ module.exports = (env, options) => ({
         test: /\.ts$/,
         loader: 'ts-loader',
         exclude: /node_modules/,
+      },
+      {
+        test: /\.js$/,
+        enforce: 'pre',
+        use: ['source-map-loader'],
       },
       {
         test: /\.css$/,

@@ -35,6 +35,7 @@ export function info() {
 
 //name: Dendrogram
 //description: Dendrogram tree visualization
+//meta.icon: files/icons/dendrogram-viewer.svg
 //tags: viewer
 //output: viewer result
 export function dendrogram(): DG.JsViewer {

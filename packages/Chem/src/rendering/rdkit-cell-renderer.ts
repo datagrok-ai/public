@@ -92,7 +92,7 @@ M  END
         molCtx = getMolSafe(molString, {"mergeQueryHs":true}, _rdKitModule);
         mol = molCtx.mol;//  this.rdKitModule.get_mol(molString, '{"mergeQueryHs":true}');
       } else {
-        const aromaMolString = aromatizeMolBlock(molString)
+        const aromaMolString = aromatizeMolBlock(molString, _rdKitModule)
         mol = this.rdKitModule.get_qmol(aromaMolString);
         molCtx = {mol: mol, kekulize: false, isQMol: true};
       }
@@ -132,7 +132,7 @@ M  END
                 if (molHasOwnCoords) {
                   mol.straighten_depiction(true);
                 }
-              } else 
+              } else
                 substruct = JSON.parse(substructJson);
             }
           }
@@ -189,6 +189,7 @@ M  END
       drawRdKitMoleculeToOffscreenCanvas(rdKitMolCtx, width, height, canvas, highlightScaffold ? substruct : null);
     else {
       // draw a crossed rectangle
+      ctx.clearRect(0, 0, width, height);
       drawErrorCross(ctx, width, height);
     }
 

@@ -30,6 +30,7 @@ to use parameters: `true`
 - [Exp](#exp)
 - [Floor](#floor)
 - [Greater](#greater)
+- [If](#if)
 - [Ln](#ln)
 - [Log](#log)
 - [Log10](#log10)
@@ -189,6 +190,17 @@ Returns true if `x` is greater than `y` and false otherwise.
 ```javascript
 Greater(5, 5)    // false
 Greater(5, 4)    // true
+```
+
+## <a name="if"></a>If(`condition`, `ifTrue`, `ifFalse`)
+
+Returns `ifTrue`, if `condition` is true, or `ifFalse` otherwise.
+
+```javascript
+If(true, "a", "b")                 // "a"
+If(false, "a", "b")                // "b"
+If(true, If(true, "a", "b"), "c")  // "a"
+If(Eq(10, 50), 1, 0)               // 0
 ```
 
 ## <a name="ln"></a>Ln(`x`)

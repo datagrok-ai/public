@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {newickToDf} from './utils';
-import {PhyloTreeViewer} from './tree-viewer';
+import {PhyloTreeViewer} from './viewers/phylotree-viewer';
 import {PhylocanvasGlViewer} from './viewers/phylocanvas-gl-viewer';
 import {PhylocanvasGlViewerApp} from './apps/phylocanvas-gl-viewer-app';
 import {TreeToGridApp} from './apps/tree-to-grid-app';
@@ -14,6 +14,7 @@ import {PhylocanvasGlService} from './utils/phylocanvas-gl-service';
 import {TreeCutAsTreeApp} from './apps/tree-cut-as-tree-app';
 import {findNewick} from './scripts-api';
 import {PhylocanvasGlServiceBase} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
+import {PhyloTreeViewerApp} from './apps/phylo-tree-viewer-app';
 
 
 export const _package = new DG.Package();
@@ -56,6 +57,7 @@ export async function nwkTreeViewer(file: DG.FileInfo) {
 //name: PhylocanvasGL
 //description: Phylogenetic tree visualization
 //tags: viewer
+//meta.icon: files/icons/phylocanvasgl-viewer.svg
 //output: viewer result
 export function phylocanvasGlViewer(): PhylocanvasGlViewer {
   return new PhylocanvasGlViewer();
@@ -64,6 +66,7 @@ export function phylocanvasGlViewer(): PhylocanvasGlViewer {
 //name: PhyloTree
 //description: Phylogenetic tree visualization
 //tags: viewer
+//meta.icon: files/icons/phylotree-viewer.svg
 //output: viewer result
 export function phyloTreeViewer(): PhyloTreeViewer {
   return new PhyloTreeViewer();
@@ -77,17 +80,34 @@ export function phyloTreeViewer(): PhyloTreeViewer {
 // }
 
 
-// -- apps for tests --
+// -- Apps for tests --
 
 //name: phylocanvasGlViewerApp
 //description: Test/demo app for PhylocanvasGlViewer
-export async function phylocanvasGlViewerApp() {
+export async function phylocanvasGlViewerApp(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('open PhylocanvasGlViewer app');
   try {
-    const app = new PhylocanvasGlViewerApp();
+    const app = new PhylocanvasGlViewerApp('phylocanvasGlViewerApp');
     await app.init();
   } catch (err: unknown) {
     const msg: string = 'PhyloTreeViewer phylocanvasGlViewerApp() error: ' +
+      `${err instanceof Error ? err.message : (err as Object).toString()}`;
+    grok.shell.error(msg);
+    console.error(msg);
+  } finally {
+    pi.close();
+  }
+}
+
+//name: phyloTreeViewerApp
+//description: Test/demo app for PhyloTreeViewer
+export async function phyloTreeViewerApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('open PhyloTreeViewer app');
+  try {
+    const app = new PhyloTreeViewerApp('phyloTreeViewerApp');
+    await app.init();
+  } catch (err: unknown) {
+    const msg: string = 'PhyloTreeViewer phyloTreeViewerApp() error: ' +
       `${err instanceof Error ? err.message : (err as Object).toString()}`;
     grok.shell.error(msg);
     console.error(msg);

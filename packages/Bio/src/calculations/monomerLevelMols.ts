@@ -4,13 +4,13 @@ import * as DG from 'datagrok-api/dg';
 
 import * as C from '../utils/constants';
 import {getHelmMonomers} from '../package';
-import {getSplitter, getStats} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {TAGS as bioTAGS, getSplitter, getStats} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 const V2000_ATOM_NAME_POS = 31;
 
-export async function getMonomericMols(mcol: DG.Column,
+export async function getMonomericMols(mcol: DG.Column<string>,
   pattern: boolean = false, monomersDict?: Map<string, string>): Promise<DG.Column> {
-  const separator: string = mcol.tags[C.TAGS.SEPARATOR];
+  const separator: string = mcol.tags[bioTAGS.separator];
   const units: string = mcol.tags[DG.TAGS.UNITS];
   const splitter = getSplitter(units, separator);
   let molV3000Array;
@@ -29,7 +29,7 @@ export async function getMonomericMols(mcol: DG.Column,
   } else {
     molV3000Array = new Array<string>(mcol.length);
     for (let i = 0; i < mcol.length; i++) {
-      const sequenceMonomers = splitter(mcol.get(i)).filter((it) => it !== '');
+      const sequenceMonomers = splitter(mcol.get(i)!).filter((it) => it !== '');
       const molV3000 = molV3000FromNonHelmSequence(sequenceMonomers, monomersDict, pattern);
       molV3000Array[i] = molV3000;
     }

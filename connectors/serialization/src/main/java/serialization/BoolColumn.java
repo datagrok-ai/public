@@ -13,6 +13,11 @@ public class BoolColumn extends Column<Boolean> {
     public String getType() {
         return TYPE;
     }
+    
+    public void empty() {
+        length = 0;
+        data = new int[100]; 
+    }
 
     public BoolColumn() {
         data = new int[100];
@@ -68,21 +73,7 @@ public class BoolColumn extends Column<Boolean> {
         }
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        BoolColumn that = (BoolColumn) o;
-        return Arrays.equals(data, that.data)
-                && Objects.equals(name, that.name)
-                && Objects.equals(getType(), that.getType());
-    }
-
-    @Override
-    public int hashCode() {
-        int dataHash = Arrays.hashCode(data);
-        dataHash += name == null ? 1 : name.hashCode();
-        dataHash += getType() == null ? 1 : getType().hashCode();
-        return dataHash;
+    public int[] getData() {
+        return data;
     }
 }

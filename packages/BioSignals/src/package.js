@@ -331,7 +331,7 @@ async function main(mainDiv, filterScripts, isLocalTable, chosenDatabase, localT
   );
 }
 
-//name: BioSignals
+//name: Bio Signals
 //tags: app
 export function BioSignals() {
 

@@ -1,0 +1,18 @@
+{
+  "#type": "DataConnection",
+  "name": "OracleApiTests",
+  "friendlyName": "Tests",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "port": 1522,
+    "db": "XEPDB1"
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "Oracle",
+  "description": "Test data"
+}

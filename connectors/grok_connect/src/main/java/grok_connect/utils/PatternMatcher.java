@@ -5,19 +5,19 @@ import org.apache.commons.lang.*;
 
 
 public class PatternMatcher {
-    public static String RANGE_NUM = "-";
+    public static final String RANGE_NUM = "-";
 
-    public static String NONE = "none";
-    public static String CONTAINS = "contains";
-    public static String STARTS_WITH = "starts with";
-    public static String ENDS_WITH = "ends with";
-    public static String EQUALS = "equals";
-    public static String REGEXP = "regex";
-    public static String IN = "in";
-
-    public static String BEFORE = "before";
-    public static String AFTER = "after";
-    public static String RANGE_DATE_TIME = "range";
+    public static final String NONE = "none";
+    public static final String CONTAINS = "contains";
+    public static final String STARTS_WITH = "starts with";
+    public static final String ENDS_WITH = "ends with";
+    public static final String EQUALS = "equals";
+    public static final String REGEXP = "regex";
+    public static final String IN = "in";
+    public static final String NOT_IN = "not in";
+    public static final String BEFORE = "before";
+    public static final String AFTER = "after";
+    public static final String RANGE_DATE_TIME = "range";
 
     /// Expression as entered by user.
     public String expression;
@@ -58,14 +58,17 @@ public class PatternMatcher {
                 return "(" + variable + " >= " + values.get(0) + " AND " + variable + " <= " + values.get(1) + ")";
             else if (op.equals(IN))
                 return "(" + variable + " IN " + "(" + StringUtils.join(values, ",") + "))";
+            else if (op.equals(NOT_IN)) {
+                return "(" + variable + " NOT IN " + "(" + StringUtils.join(values, ",") + "))";
+            }
             return "(" + variable + op + values.get(0) + ")";
         } else if (type.equals("string")) {
             String val = ((String)values.get(0)).toLowerCase();
             if (op.equals(EQUALS))
                 return "(LOWER(" + variable + ") LIKE '" + val + "')";
-            else if (op.equals(CONTAINS))    
+            else if (op.equals(CONTAINS))
                 return "(LOWER(" + variable + ") LIKE '%" + val + "%')";
-            else if (op.equals(STARTS_WITH))   
+            else if (op.equals(STARTS_WITH))
                 return "(LOWER(" + variable + ") LIKE '" + val + "%')";
             else if (op.equals(ENDS_WITH))
                 return "(LOWER(" + variable + ") LIKE '%" + val + "')";

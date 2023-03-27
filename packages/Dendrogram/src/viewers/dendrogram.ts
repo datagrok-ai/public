@@ -2,6 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+import $ from 'cash-dom';
 import wu from 'wu';
 import * as rxjs from 'rxjs';
 
@@ -11,7 +12,8 @@ import {HoverType, ITreePlacer, ITreeStyler, markupNode, MarkupNodeType, TreeSty
 import {CanvasTreeRenderer} from './tree-renderers/canvas-tree-renderer';
 import {RectangleTreeHoverType, RectangleTreePlacer} from './tree-renderers/rectangle-tree-placer';
 import {TreeHelper} from '../utils/tree-helper';
-import {toRgba, setAlpha} from '@datagrok-libraries/utils/src/color';
+import {intToHtmlA, setAlpha} from '@datagrok-libraries/utils/src/color';
+import {TreeColorNames, TreeDefaultPalette} from '@datagrok-libraries/bio/src/trees';
 import {DendrogramColorCodingTreeStyler, DendrogramTreeStyler} from './tree-renderers/dendrogram-tree-styler';
 import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
@@ -19,22 +21,6 @@ import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 export const LINE_WIDTH = 2;
 export const NODE_SIZE = 4;
 export const TRANS_ALPHA = 0.5;
-
-export enum TreeColorNames {
-  Main = 'Main',
-  Light = 'Light',
-  Current = 'Current',
-  MouseOver = 'MouseOver',
-  Selection = 'Selection',
-}
-
-export const TreeDefaultPalette: { [name: string]: number } = {
-  [TreeColorNames.Main]: DG.Color.categoricalPalette[12],
-  [TreeColorNames.Light]: DG.Color.categoricalPalette[13],
-  [TreeColorNames.Current]: DG.Color.currentRow,
-  [TreeColorNames.MouseOver]: DG.Color.mouseOverRows,
-  [TreeColorNames.Selection]: DG.Color.selectedRows,
-};
 
 // Obtained with DG.Color.toRgb(DG.Color.categoricalPalette[12])
 const categoricalPaletteList: string[] = [
@@ -88,6 +74,7 @@ export enum PROPS {
 
   // -- Behavior --
   stepZoom = 'stepZoom',
+  showTooltip = 'showTooltip',
 }
 
 
@@ -127,6 +114,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
 
   // -- Behavior --
   [PROPS.stepZoom]: number;
+  [PROPS.showTooltip]: boolean;
 
   mainStyler: DendrogramTreeStyler;
   mainStylerOnTooltipShowSub?: rxjs.Unsubscribable;
@@ -179,6 +167,9 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
 
     this.stepZoom = this.float(PROPS.stepZoom, 0,
       {category: PROPS_CATS.BEHAVIOR, editor: 'slider', min: -4, max: 4, step: 0.1});
+    this.showTooltip = this.bool(PROPS.showTooltip, false,
+      {category: PROPS_CATS.BEHAVIOR});
+
 
     this.step = this.float(PROPS.step, 28,
       {category: PROPS_CATS.STYLE, editor: 'slider', min: 0, max: 64, step: 0.1});
@@ -186,20 +177,20 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
     this.mainStyler = this.getMainStyler();
     this.lightStyler = new DendrogramTreeStyler('light',
       this.lineWidth, this.nodeSize, false,
-      toRgba(setAlpha(this.lightColor, TRANS_ALPHA)),
-      toRgba(setAlpha(this.lightColor, TRANS_ALPHA)));
+      intToHtmlA(setAlpha(this.lightColor, TRANS_ALPHA)),
+      intToHtmlA(setAlpha(this.lightColor, TRANS_ALPHA)));
     this.currentStyler = new DendrogramTreeStyler('current',
       this.lineWidth, this.nodeSize, false,
-      toRgba(setAlpha(this.currentColor, TRANS_ALPHA)),
-      toRgba(setAlpha(this.currentColor, TRANS_ALPHA)));
+      intToHtmlA(setAlpha(this.currentColor, TRANS_ALPHA)),
+      intToHtmlA(setAlpha(this.currentColor, TRANS_ALPHA)));
     this.mouseOverStyler = new DendrogramTreeStyler('mouseOver',
       this.lineWidth, this.nodeSize, false,
-      toRgba(setAlpha(this.mouseOverColor, TRANS_ALPHA)),
-      toRgba(setAlpha(this.mouseOverColor, TRANS_ALPHA)));
+      intToHtmlA(setAlpha(this.mouseOverColor, TRANS_ALPHA)),
+      intToHtmlA(setAlpha(this.mouseOverColor, TRANS_ALPHA)));
     this.selectionsStyler = new DendrogramTreeStyler('selections',
       this.lineWidth, this.nodeSize, false,
-      toRgba(setAlpha(this.selectionsColor, TRANS_ALPHA)),
-      toRgba(setAlpha(this.selectionsColor, TRANS_ALPHA)));
+      intToHtmlA(setAlpha(this.selectionsColor, TRANS_ALPHA)),
+      intToHtmlA(setAlpha(this.selectionsColor, TRANS_ALPHA)));
   }
 
   private _newick: string = '';
@@ -260,23 +251,23 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
       break;
 
     case PROPS.mainColor:
-      this.mainStyler.strokeColor = toRgba(setAlpha(this.mainColor, TRANS_ALPHA));
-      this.mainStyler.fillColor = toRgba(setAlpha(this.mainColor, TRANS_ALPHA));
+      this.mainStyler.strokeColor = intToHtmlA(setAlpha(this.mainColor, TRANS_ALPHA));
+      this.mainStyler.fillColor = intToHtmlA(setAlpha(this.mainColor, TRANS_ALPHA));
       break;
 
     case PROPS.lightColor:
-      this.lightStyler.strokeColor = toRgba(setAlpha(this.lightColor, TRANS_ALPHA));
-      this.lightStyler.fillColor = toRgba(setAlpha(this.lightColor, TRANS_ALPHA));
+      this.lightStyler.strokeColor = intToHtmlA(setAlpha(this.lightColor, TRANS_ALPHA));
+      this.lightStyler.fillColor = intToHtmlA(setAlpha(this.lightColor, TRANS_ALPHA));
       break;
 
     case PROPS.currentColor:
-      this.currentStyler.strokeColor = toRgba(setAlpha(this.currentColor, TRANS_ALPHA));
-      this.currentStyler.fillColor = toRgba(setAlpha(this.currentColor, TRANS_ALPHA));
+      this.currentStyler.strokeColor = intToHtmlA(setAlpha(this.currentColor, TRANS_ALPHA));
+      this.currentStyler.fillColor = intToHtmlA(setAlpha(this.currentColor, TRANS_ALPHA));
       break;
 
     case PROPS.selectionsColor:
-      this.selectionsStyler.strokeColor = toRgba(setAlpha(this.selectionsColor, TRANS_ALPHA));
-      this.selectionsStyler.fillColor = toRgba(setAlpha(this.selectionsColor, TRANS_ALPHA));
+      this.selectionsStyler.strokeColor = intToHtmlA(setAlpha(this.selectionsColor, TRANS_ALPHA));
+      this.selectionsStyler.fillColor = intToHtmlA(setAlpha(this.selectionsColor, TRANS_ALPHA));
       break;
 
     case PROPS.font:
@@ -344,18 +335,21 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
 
   private destroyView(): void {
     console.debug('Dendrogram: Dendrogram.destroyView()');
+    try {
+      this.mainStylerOnTooltipShowSub!.unsubscribe();
+      for (const sub of this.viewSubs) sub.unsubscribe();
+      this.viewSubs = [];
 
-    this.mainStylerOnTooltipShowSub!.unsubscribe();
-    for (const sub of this.viewSubs) sub.unsubscribe();
-    this.viewSubs = [];
+      this._renderer!.detach();
+      delete this._renderer;
 
-    this._renderer!.detach();
-    delete this._renderer;
+      delete this._placer;
 
-    delete this._placer;
-
-    this.treeDiv!.remove();
-    delete this.treeDiv;
+      $(this.treeDiv).empty();
+      delete this.treeDiv;
+    } finally {
+      $(this.root).empty();
+    }
   }
 
   private buildView(): void {
@@ -365,7 +359,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
       style: {
         width: `${this.root.clientWidth}px`,
         height: `${this.root.clientHeight}px`,
-        backgroundColor: '#A0A0FF',
+        // backgroundColor: '#A0A0FF',
       }
     });
     this.treeDiv.style.setProperty('overflow', 'hidden', 'important');
@@ -606,7 +600,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
   }
 
   private stylerOnTooltipShow({node, e}: { node: MarkupNodeType, e: MouseEvent }): void {
-    if (node) {
+    if (this.showTooltip && node) {
       const minMaxIndexStr: string = !isLeaf(node) ? ` (min: ${node.minIndex}, max: ${node.maxIndex})` : '';
       const tooltip = ui.divV([
         ui.div(`${node.name}`),
@@ -650,13 +644,13 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
       res = new DendrogramColorCodingTreeStyler('main-color-coding',
         this.lineWidth, this.nodeSize, this.showGrid,
         nodeCol, colorCol, this.colorAggrType,
-        toRgba(setAlpha(this.mainColor, TRANS_ALPHA)),
-        toRgba(setAlpha(this.mainColor, TRANS_ALPHA)));
+        intToHtmlA(setAlpha(this.mainColor, TRANS_ALPHA)),
+        intToHtmlA(setAlpha(this.mainColor, TRANS_ALPHA)));
     } else {
       res = new DendrogramTreeStyler('main',
         this.lineWidth, this.nodeSize, this.showGrid,
-        toRgba(setAlpha(this.mainColor, TRANS_ALPHA)),
-        toRgba(setAlpha(this.mainColor, TRANS_ALPHA)));
+        intToHtmlA(setAlpha(this.mainColor, TRANS_ALPHA)),
+        intToHtmlA(setAlpha(this.mainColor, TRANS_ALPHA)));
     }
     return res;
   }

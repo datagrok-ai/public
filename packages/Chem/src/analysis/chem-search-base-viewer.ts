@@ -25,7 +25,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   moleculeProperties: string[];
   applyColorTo: string;
 
-  constructor(name: string) {
+  constructor(name: string, col?: DG.Column) {
     super();
     this.fingerprint = this.string('fingerprint', this.fingerprintChoices[0], {choices: this.fingerprintChoices});
     this.limit = this.int('limit', 10);
@@ -35,6 +35,10 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.name = name;
     this.moleculeProperties = this.columnList('moleculeProperties', []);
     this.applyColorTo = this.string('applyColorTo', BACKGROUND, {choices: [BACKGROUND, TEXT]});
+    if (col) {
+      this.moleculeColumn = col;
+      this.moleculeColumnName = col.name!;
+    }
   }
 
   init(): void {
@@ -56,8 +60,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50)
         .subscribe(async (_: any) => await this.render(false)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe(async (_: any) => await this.render(false)));
-      this.moleculeColumn = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-      this.moleculeColumnName = this.moleculeColumn?.name!;
+      this.moleculeColumn ??= this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+      this.moleculeColumnName ??= this.moleculeColumn?.name!;
       this.getProperty('limit')!.fromOptions({min: 1, max: this.dataFrame.rowCount});
       if (this.limit > this.dataFrame.rowCount)
         this.limit = this.dataFrame.rowCount;
@@ -118,8 +122,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     const grid = grok.shell.tv.grid;
     if (similarity)
       propsDict['similarity'] = {val: similarity};
-    for (const col of this.moleculeProperties) {        
-        propsDict[col] = {val: this.moleculeColumn!.dataFrame.get(col, idx)};
+    for (const col of this.moleculeProperties) {  
+        propsDict[col] = {val: this.moleculeColumn!.dataFrame.col(col)!.getString(idx)};
         if (this.moleculeColumn!.dataFrame.col(col)!.tags[DG.TAGS.COLOR_CODING_TYPE]) {
             propsDict[col].color = grid.cell(col, idx).color;
         }

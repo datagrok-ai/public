@@ -76,6 +76,9 @@ category('Functions: Math', () => {
     'Eq(-1, 1)': false,
     'Eq(-0, 0)': true,
     'Eq(3.142, 3.142)': true,
+    'Eq("1", 1)': false,
+    'Eq(0, null)': false,
+    'Eq(null, null)': true,
   }));
 
   test('Exp', () => check({
@@ -97,6 +100,17 @@ category('Functions: Math', () => {
     'Greater(-5, -10)': true,
     'Greater(5, 5)': false,
     'Greater(4, 5)': false,
+  }));
+
+  test('If', () => check({
+    'If(true, "a", "b")': 'a',
+    'If(false, "a", "b")': 'b',
+    'If(true, If(true, "a", "b"), "c")': 'a',
+    'If(false, "a", If(false, "b", "c"))': 'c',
+    'If(Eq(10, 10), 1, 0)': 1,
+    'If(Eq(10, 50), 1, 0)': 0,
+    'If(Boolean(1), Boolean(1), Boolean(0))': true,
+    'If(Boolean(0), Boolean(1), Boolean(0))': false,
   }));
 
   test('Ln', () => check({

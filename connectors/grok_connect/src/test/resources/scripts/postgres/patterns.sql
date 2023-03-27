@@ -109,6 +109,16 @@ SELECT * FROM mock_data WHERE @first_name(first_name);
 SELECT * FROM mock_data WHERE @first_name(first_name);
 --end
 
+--name: PostgresqlByStringPatternString
+--input: string country = 'in (Poland, Brazil)' {pattern: string}
+SELECT * FROM mock_data WHERE @country(country);
+--end
+
+--name: PostgresqlByStringPatternString
+--input: string email = 'regex ^([A-Za-z0-9_]+@google.com.au)$' {pattern: string}
+SELECT * FROM mock_data WHERE @email(email);
+--end
+
 --DATE
 
 --name: PostgresqlByDatetime
@@ -119,57 +129,57 @@ SELECT * FROM mock_data WHERE date >= @date;
 
 --name: PostgresqlByStringPatternDatetime
 --input: string date = "today" {pattern: datetime}
-SELECT * FROM mock_data WHERE @date(date);
+SELECT * FROM dates_patterns WHERE @date(date);
 --end
 
 --name: PostgresqlByStringPatternDatetime
 --input: string date = "this week" {pattern: datetime}
-SELECT * FROM mock_data WHERE @date(date);
+SELECT * FROM dates_patterns WHERE @date(date);
 --end
 
 --name: PostgresqlByStringPatternDatetime
 --input: string date = "this month" {pattern: datetime}
-SELECT * FROM mock_data WHERE @date(date);
+SELECT * FROM dates_patterns WHERE @date(date);
 --end
 
 --name: PostgresqlByStringPatternDatetime
 --input: string date = "this year" {pattern: datetime}
-SELECT * FROM mock_data WHERE @date(date);
+SELECT * FROM dates_patterns WHERE @date(date);
 --end
 
 --name: PostgresqlByStringPatternDatetime
 --input: string date = "yesterday" {pattern: datetime}
-SELECT * FROM mock_data WHERE @date(date);
+SELECT * FROM dates_patterns WHERE @date(date);
 --end
 
 --name: PostgresqlByStringPatternDatetime
 --input: string date = "last year" {pattern: datetime}
-SELECT * FROM mock_data WHERE @date(date);
+SELECT * FROM dates_patterns WHERE @date(date);
 --end
 
 --name: PostgresqlByStringPatternDatetime
 --input: string date = "anytime" {pattern: datetime}
-SELECT * FROM mock_data WHERE @date(date);
+SELECT * FROM dates_patterns WHERE @date(date);
 --end
 
 --name: PostgresqlByStringPatternDatetime
---input: string date = "2001-2002" {pattern: datetime}
-SELECT * FROM mock_data WHERE @date(date);
+--input: string date = "2021-2023" {pattern: datetime}
+SELECT * FROM dates_patterns WHERE @date(date);
 --end
 
 --name: PostgresqlByStringPatternDatetime
---input: string date = "before 1/1/2000" {pattern: datetime}
-SELECT * FROM mock_data WHERE @date(date);
+--input: string date = "before 1/1/2022" {pattern: datetime}
+SELECT * FROM dates_patterns WHERE @date(date);
 --end
 
 --name: PostgresqlByStringPatternDatetime
 --input: string date = "after 1/1/2022" {pattern: datetime}
-SELECT * FROM mock_data WHERE @date(date);
+SELECT * FROM dates_patterns WHERE @date(date);
 --end
 
 --name: PostgresqlByStringPatternDatetime
---input: string date = "March 2011" {pattern: datetime}
-SELECT * FROM mock_data WHERE @date(date);
+--input: string date = "April 2021" {pattern: datetime}
+SELECT * FROM dates_patterns WHERE @date(date);
 --end
 
 --name: PostgresqlAll
@@ -178,7 +188,7 @@ SELECT * FROM mock_data WHERE @date(date);
 --input: bool bool = false
 --input: string email = "contains com" {pattern: string}
 --input: string some_number = ">20" {pattern: double}
---input: string country = "int (Indonesia)" {pattern: string}
+--input: string country = "in (Indonesia)" {pattern: string}
 --input: string date = "before 1/1/2022" {pattern: datetime}
 SELECT * FROM mock_data
 WHERE @first_name(first_name)
@@ -186,7 +196,7 @@ WHERE @first_name(first_name)
            AND bool = @bool
            AND @email(email)
            AND @some_number(some_number)
-           AND country = @country
+           AND @country(country)
            AND @date(date);
 
 --end

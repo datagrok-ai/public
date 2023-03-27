@@ -31,12 +31,14 @@ public class DataFrameBuilder {
         dataFrame.addColumn(column);
         return this;
     }
+
     public <T> DataFrameBuilder setColumn(Column<T> column, String columnName, T[] data) {
         column.name = columnName;
         column.addAll(data);
         dataFrame.addColumn(column);
         return this;
     }
+
     public DataFrame build() {
         DataFrame frame = dataFrame;
         restore();

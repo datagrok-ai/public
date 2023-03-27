@@ -1,60 +1,66 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {category, expect, expectFloat, test, delay, before} from '@datagrok-libraries/utils/src/test';
+import {category, expect, expectFloat, expectArray, test, delay, before, after} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {Fingerprint} from '../utils/chem-common';
-import {createTableView, readDataframe} from './utils';
+import {createTableView, readDataframe, molV2000, molV3000, loadFileAsText} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-
-import {
-  _testSearchSubstructure,
-  _testSearchSubstructureAllParameters,
-  _testSearchSubstructureSARSmall,
-  loadFileAsText,
-} from './utils';
 import {findSimilar, getSimilarities} from '../package';
 import {chemDiversitySearch} from '../analysis/chem-diversity-viewer';
-import {chemSimilaritySearch} from '../analysis/chem-similarity-viewer';
+import {chemSimilaritySearch, ChemSimilarityViewer} from '../analysis/chem-similarity-viewer';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
-const testSimilarityResults = {
-  'Tanimoto/Morgan': [
-    {smiles: 'O=C1CN=C(c2ccccc2N1)C3CCCCC3', indexes: 0, score: 1},
-    {smiles: 'CN(C)c1ccc2NC(=O)CN=C(c2c1)C3CCCCC3', indexes: 14, score: 0.644444465637207}],
-  'Dice/Morgan': [
-    {smiles: 'O=C1CN=C(c2ccccc2N1)C3CCCCC3', indexes: 0, score: 1},
-    {smiles: 'CN(C)c1ccc2NC(=O)CN=C(c2c1)C3CCCCC3', indexes: 14, score: 0.7837837934494019}],
-  'Cosine/Morgan': [
-    {smiles: 'O=C1CN=C(c2ccccc2N1)C3CCCCC3', indexes: 0, score: 1},
-    {smiles: 'CN(C)c1ccc2NC(=O)CN=C(c2c1)C3CCCCC3', indexes: 14, score: 0.7863729000091553}],
-  'Euclidean/Morgan': [
-    {smiles: 'O=C1CN=C(c2ccccc2N1)C3CCCCC3', indexes: 0, score: 1},
-    {smiles: 'CN(C)c1ccc2NC(=O)CN=C(c2c1)C3CCCCC3', indexes: 14, score: 0.20000000298023224}],
-  'Hamming/Morgan': [
-    {smiles: 'O=C1CN=C(c2ccccc2N1)C3CCCCC3', indexes: 0, score: 1},
-    {smiles: 'CN(C)c1ccc2NC(=O)CN=C(c2c1)C3CCCCC3', indexes: 14, score: 0.05882352963089943}],
-};
 
 category('top menu similarity/diversity', () => {
+  let spgi100: DG.DataFrame;
+  let approvedDrugs100: DG.DataFrame;
+  let molecules: DG.DataFrame;
+
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
       await chemCommonRdKit.initRdKitModuleLocal();
     }
+    spgi100 = await readDataframe('tests/spgi-100.csv');
+    approvedDrugs100 = await readDataframe('tests/approved-drugs-100.csv');
+    molecules = grok.data.demo.molecules();
   });
 
-  test('findSimilar.chem.sar-small', async () => {
+  test('findSimilar.chem.smiles', async () => {
     await _testFindSimilar(findSimilar);
+  });
+
+  test('findSimilar.chem.molV2000', async () => {
+    await _testFindSimilar(findSimilar, molV2000, 'V2000');
+  });
+
+  test('findSimilar.chem.molV3000', async () => {
+    await _testFindSimilar(findSimilar, molV3000, 'V3000');
   });
 
   test('getSimilarities.chem.molecules', async () => {
     await _testGetSimilarities(getSimilarities);
   });
 
-  test('testDiversitySearch', async () => {
-    const t = grok.data.demo.molecules();
-    await chemDiversitySearch(t.col('smiles')!, tanimotoSimilarity, 10, 'Morgan' as Fingerprint);
+  // test('getSimilarities.chem.emptyValues', async () => {
+  //   await _testGetSimilarities(getSimilarities, 'values');
+  // });
+
+  // test('getSimilarities.chem.emptyInput', async () => {
+  //   await _testGetSimilarities(getSimilarities, 'input');
+  // });
+
+  test('testDiversitySearch.molecules', async () => {
+    await chemDiversitySearch(molecules.getCol('smiles'), tanimotoSimilarity, 10, 'Morgan' as Fingerprint);
+  });
+
+  test('testDiversitySearch.molV2000', async () => {
+    await chemDiversitySearch(spgi100.getCol('Structure'), tanimotoSimilarity, 10, 'Morgan' as Fingerprint);
+  });
+
+  test('testDiversitySearch.molV3000', async () => {
+    await chemDiversitySearch(approvedDrugs100.getCol('molecule'), tanimotoSimilarity, 10, 'Morgan' as Fingerprint);
   });
 
   test('similaritySearchViewerOpen', async () => {
@@ -72,77 +78,104 @@ category('top menu similarity/diversity', () => {
   test('diversitySearchViewerOpen', async () => {
     await _testDiversitySearchViewerOpen();
   });
+
+  after(async () => {
+    grok.shell.closeAll();
+  });
 });
 
-function getSearchViewer(viewer: DG.Viewer, name: string) {
-  for (const v of viewer.view.viewers) {
+function getSearchViewer(tv: DG.TableView, name: string): ChemSimilarityViewer {
+  for (const v of tv.viewers) {
     if (v.type === name)
-      return v;
+      return v as ChemSimilarityViewer;
   }
+  throw 'Search viewer not found.';
 }
 
-export async function _testFindSimilar(findSimilarFunction: (...args: any) => Promise<DG.DataFrame | null>) {
-  const dfInput = DG.DataFrame.fromCsv(await loadFileAsText('sar-small.csv'));
-  const colInput = dfInput.columns.byIndex(0);
+export async function _testFindSimilar(findSimilarFunction: (...args: any) => Promise<DG.DataFrame | null>,
+  molecule: string = 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1', notation?: string) {
+  let dfInput: DG.DataFrame;
+  if (notation) dfInput = await readDataframe(notation === 'V2000' ? 'tests/spgi-100.csv' : 'tests/approved-drugs-100.csv');
+  else dfInput = await readDataframe('sar-small.csv');
+  await grok.data.detectSemanticTypes(dfInput);
+  const colInput = dfInput.columns.bySemType(DG.SEMTYPE.MOLECULE)!;
   const numRowsOriginal = dfInput.rowCount;
   const dfResult: DG.DataFrame = // shouldn't be null
-    (await findSimilarFunction(colInput, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'))!;
-
+    (await findSimilarFunction(colInput, molecule))!;
   const numRows = dfResult.rowCount;
   const columnNames = [
     dfResult.columns.byIndex(0).name,
     dfResult.columns.byIndex(1).name,
     dfResult.columns.byIndex(2).name,
   ];
-  const first5Rows: any[] = [];
+  const arr: any[] = [];
   for (let i = 0; i < 5; ++i) {
     const molecule: string = dfResult.columns.byIndex(0).get(i);
     const score: number = dfResult.columns.byIndex(1).get(i);
     const index: number = dfResult.columns.byIndex(2).get(i);
-    first5Rows[i] = {molecule, score, index};
+    arr[i] = {molecule, score, index};
   }
-  expect(numRows, numRowsOriginal);
-  expect(columnNames[0], 'molecule');
-  expect(columnNames[1], 'score');
-  expect(columnNames[2], 'index');
-  const arr = first5Rows;
-  expect(arr[0].molecule, 'O=C1CN=C(c2ccccc2N1)C3CCCCC3');
-  expect(arr[1].molecule, 'O=C1CN=C(c2cc(I)ccc2N1)C3CCCCC3');
-  expect(arr[2].molecule, 'O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3');
-  expect(arr[3].molecule, 'O=C1CN=C(c2cc(F)ccc2N1)C3CCCCC3');
-  expect(arr[4].molecule, 'O=C1CN=C(c2cc(Br)ccc2N1)C3CCCCC3');
-  expectFloat(arr[0].score, 1.0000);
-  expectFloat(arr[1].score, 0.6905);
-  expectFloat(arr[2].score, 0.6744);
-  expectFloat(arr[3].score, 0.6744);
-  expectFloat(arr[4].score, 0.6744);
-  expect(arr[0].index, 0);
-  expect(arr[1].index, 30);
-  expect(arr[2].index, 5);
-  expect(arr[3].index, 20);
-  expect(arr[4].index, 25);
+  expectArray([numRows, columnNames[0], columnNames[1], columnNames[2]],
+    [numRowsOriginal, 'molecule', 'score', 'index']);
+  switch (notation) {
+  case 'V2000':
+    expectArray([arr[0].molecule, arr[1].molecule, arr[2].molecule, arr[3].molecule, arr[4].molecule],
+      [colInput.get(82), colInput.get(58), colInput.get(51), colInput.get(59), colInput.get(93)]);
+    expectArray([arr[0].score, arr[1].score, arr[2].score, arr[3].score, arr[4].score],
+      [0.16867469251155853, 0.14814814925193787, 0.14444445073604584, 0.14102564752101898, 0.13953489065170288]);
+    expectArray([arr[0].index, arr[1].index, arr[2].index, arr[3].index, arr[4].index],
+      [82, 58, 51, 59, 93]);
+    break;
+  case 'V3000':
+    expectArray([arr[0].molecule, arr[1].molecule, arr[2].molecule, arr[3].molecule, arr[4].molecule],
+      [colInput.get(0), colInput.get(71), colInput.get(43), colInput.get(87), colInput.get(89)]);
+    expectArray([arr[0].score, arr[1].score, arr[2].score, arr[3].score, arr[4].score],
+      [1, 0.13725490868091583, 0.12903225421905518, 0.12820513546466827, 0.12820513546466827]);
+    expectArray([arr[0].index, arr[1].index, arr[2].index, arr[3].index, arr[4].index],
+      [0, 71, 43, 87, 89]);
+    break;
+  default:
+    expectArray([arr[0].molecule, arr[1].molecule, arr[2].molecule, arr[3].molecule, arr[4].molecule],
+      ['O=C1CN=C(c2ccccc2N1)C3CCCCC3', 'O=C1CN=C(c2cc(I)ccc2N1)C3CCCCC3', 'O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3',
+        'O=C1CN=C(c2cc(F)ccc2N1)C3CCCCC3', 'O=C1CN=C(c2cc(Br)ccc2N1)C3CCCCC3']);
+    expectArray([arr[0].score, arr[1].score, arr[2].score, arr[3].score, arr[4].score],
+      [1, 0.6904761791229248, 0.6744186282157898, 0.6744186282157898, 0.6744186282157898]);
+    expectArray([arr[0].index, arr[1].index, arr[2].index, arr[3].index, arr[4].index],
+      [0, 30, 5, 20, 25]);
+    break;
+  }
 }
 
-export async function _testGetSimilarities(getSimilaritiesFunction: (...args: any) => Promise<any>) {
-  const df = grok.data.demo.molecules();
+export async function _testGetSimilarities(getSimilaritiesFunction: (...args: any) => Promise<any>,
+  empty?: string) {
+  const df = empty === 'values' ? DG.DataFrame.fromCsv(await loadFileAsText('tests/sar-small_empty_vals.csv')) : grok.data.demo.molecules();
   let scores = (await getSimilaritiesFunction(df.columns.byName('smiles'),
-    'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'))! as any;
+    empty === 'input' ? '' : 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'))! as any;
   if (scores instanceof DG.DataFrame)
     scores = scores.columns.byIndex(0);
 
-  expectFloat(scores.get(0), 0.1034);
-  expectFloat(scores.get(1), 0.07407);
-  expectFloat(scores.get(2), 0.11111);
-  expectFloat(scores.get(3), 0.11111);
-  expectFloat(scores.get(4), 0.07042);
-  expectFloat(scores.get(5), 0.06349);
+  switch (empty) {
+  case 'values':
+    // grok.shell.addTableView(scores);
+    break;
+  case 'input':
+    // grok.shell.addTableView(scores);
+    break;
+  default:
+    expectFloat(scores.get(0), 0.1034);
+    expectFloat(scores.get(1), 0.07407);
+    expectFloat(scores.get(2), 0.11111);
+    expectFloat(scores.get(3), 0.11111);
+    expectFloat(scores.get(4), 0.07042);
+    expectFloat(scores.get(5), 0.06349);
+  }
 }
 
 async function _testSimilaritySearchViewerOpen() {
   const molecules = await createTableView('tests/sar-small_test.csv');
-  const viewer = molecules.addViewer('SimilaritySearchViewer');
+  molecules.addViewer('Chem Similarity Search');
   await delay(1000);
-  const similaritySearchviewer = getSearchViewer(viewer, 'SimilaritySearchViewer');
+  const similaritySearchviewer = getSearchViewer(molecules, 'Chem Similarity Search');
   expect(similaritySearchviewer.fingerprint, 'Morgan');
   expect(similaritySearchviewer.distanceMetric, 'Tanimoto');
   expect(similaritySearchviewer.scores!.get(0), 1);
@@ -171,9 +204,9 @@ async function _testSimilaritySearchFunctionality(distanceMetric: string, finger
 
 async function _testDiversitySearchViewerOpen() {
   const molecules = await createTableView('tests/sar-small_test.csv');
-  const viewer = molecules.addViewer('DiversitySearchViewer');
+  molecules.addViewer('Chem Diversity Search');
   await delay(500);
-  const diversitySearchviewer = getSearchViewer(viewer, 'DiversitySearchViewer');
+  const diversitySearchviewer = getSearchViewer(molecules, 'Chem Diversity Search')! as any;
   expect(diversitySearchviewer.fingerprint, 'Morgan');
   expect(diversitySearchviewer.distanceMetric, 'Tanimoto');
   expect(diversitySearchviewer.initialized, true);
@@ -181,3 +214,21 @@ async function _testDiversitySearchViewerOpen() {
   diversitySearchviewer.close();
   molecules.close();
 }
+
+const testSimilarityResults = {
+  'Tanimoto/Morgan': [
+    {smiles: 'O=C1CN=C(c2ccccc2N1)C3CCCCC3', indexes: 0, score: 1},
+    {smiles: 'CN(C)c1ccc2NC(=O)CN=C(c2c1)C3CCCCC3', indexes: 14, score: 0.644444465637207}],
+  'Dice/Morgan': [
+    {smiles: 'O=C1CN=C(c2ccccc2N1)C3CCCCC3', indexes: 0, score: 1},
+    {smiles: 'CN(C)c1ccc2NC(=O)CN=C(c2c1)C3CCCCC3', indexes: 14, score: 0.7837837934494019}],
+  'Cosine/Morgan': [
+    {smiles: 'O=C1CN=C(c2ccccc2N1)C3CCCCC3', indexes: 0, score: 1},
+    {smiles: 'CN(C)c1ccc2NC(=O)CN=C(c2c1)C3CCCCC3', indexes: 14, score: 0.7863729000091553}],
+  'Euclidean/Morgan': [
+    {smiles: 'O=C1CN=C(c2ccccc2N1)C3CCCCC3', indexes: 0, score: 1},
+    {smiles: 'CN(C)c1ccc2NC(=O)CN=C(c2c1)C3CCCCC3', indexes: 14, score: 0.20000000298023224}],
+  'Hamming/Morgan': [
+    {smiles: 'O=C1CN=C(c2ccccc2N1)C3CCCCC3', indexes: 0, score: 1},
+    {smiles: 'CN(C)c1ccc2NC(=O)CN=C(c2c1)C3CCCCC3', indexes: 14, score: 0.05882352963089943}],
+};

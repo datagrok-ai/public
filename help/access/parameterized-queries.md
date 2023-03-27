@@ -21,22 +21,8 @@ select * from products where productname = @productName
 
 ## Syntax
 
-The syntax for defining query parameters is based on [scripting](../compute/scripting.md) with additions specific to
-queries.
-
-### Query parameters
-
-| Parameter      | Description            |
-|----------------|------------------------|
-| `name`         | Name                   |
-| `friendlyName` | Friendly name          |
-| `description`  | Description            |
-| `help`         | Help URL               |
-| `tags`         | Tags                   |
-| `input`        | An input parameter     |
-| `output`       | An output parameter    |
-
-All parameters are optional.
+The syntax for defining query parameters is based on [functions syntax](../datagrok/functions/func-params-annotation.md)
+with additions specific to queries.
 
 ### Input parameters
 
@@ -57,9 +43,6 @@ Is one of:
 * **`bool`** – boolean scalar
 * **`string`** – string
 * **`datetime`** – DateTime
-
-<!-- TODO -->
-
 * **`list<T>`** — a list of type `T` (currently `string` is supported)
 
 ##### Using lists in queries
@@ -89,7 +72,7 @@ Learn more about using the lists feature in this video: [link](https://www.youtu
 
 #### Choices and suggestions
 
-Options for supported types are described in the [Scripting](../compute/scripting.md) section.
+Options for supported types are described in the [Function parameter annotation](../datagrok/functions/func-params-annotation.md) article.
 
 | Option        | Description                                                                       |
 |---------------|-----------------------------------------------------------------------------------|

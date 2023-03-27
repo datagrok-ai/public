@@ -3,11 +3,11 @@ import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {Subscription} from 'rxjs';
-import {getOptions} from './utils/utils';
+import {getOptions} from './utils';
 
 
 category('Radar', () => {
-  const TYPE = 'RadarViewer';
+  const TYPE = 'Radar';
   let df: DG.DataFrame;
   let tv: DG.TableView;
   const subs: Subscription[] = [];

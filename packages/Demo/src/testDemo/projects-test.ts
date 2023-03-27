@@ -5,10 +5,10 @@ import * as DG from 'datagrok-api/dg';
 import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 
 
-category('Demo: Projests', () => {
+category('Demo: Projects', () => {
      test('project.city_gps', async () => {
         await grok.dapi.projects.open('city_gps')
-     
+
       });
-    
+
 });

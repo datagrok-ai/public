@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable, Subscription} from 'rxjs';
 import Timeout = NodeJS.Timeout;
+import {DataFrame} from 'datagrok-api/dg';
 
 export const tests: {
   [key: string]: {
@@ -95,14 +96,46 @@ export function test(name: string, test: () => Promise<any>, options?: TestOptio
 
 /* Tests two objects for equality, throws an exception if they are not equal. */
 export function expect(actual: any, expected: any = true, error?: string): void {
+  if (error)
+    error = `${error}, `;
+  else error = '';
   if (actual !== expected)
-    throw error ? new Error(error) : new Error(`Expected "${expected}", got "${actual}"`);
+    throw new Error(`${error}Expected "${expected}", got "${actual}"`);
 }
 
-export function expectFloat(actual: number, expected: number, tolerance = 0.001): void {
+export function expectFloat(actual: number, expected: number, tolerance = 0.001, error?: string): void {
+  if ((actual === Number.POSITIVE_INFINITY && expected === Number.POSITIVE_INFINITY) ||
+      (actual === Number.NEGATIVE_INFINITY && expected === Number.NEGATIVE_INFINITY) ||
+      (actual === Number.NaN && expected === Number.NaN) || (isNaN(actual) && isNaN(expected)))
+    return;
   const areEqual = Math.abs(actual - expected) < tolerance;
+  expect(areEqual, true, `${error ?? ''} (tolerance = ${tolerance})`);
   if (!areEqual)
     throw new Error(`Expected ${expected}, got ${actual} (tolerance = ${tolerance})`);
+}
+
+export function expectTable(actual: DataFrame, expected: DataFrame, error?: string): void {
+  const expectedRowCount = expected.rowCount;
+  const actualRowCount = actual.rowCount;
+  expect(actualRowCount, expectedRowCount, `${error ?? ''}, row count`);
+
+  for (const column of expected.columns) {
+    const actualColumn = actual.columns.byName(column.name);
+    if (actualColumn == null)
+      throw new Error(`Column ${column.name} not found`);
+    if (actualColumn.type != column.type)
+      throw new Error(`Column ${column.name} type expected ${column.type} got ${actualColumn.type}`);
+    for (let i = 0; i < expectedRowCount; i++) {
+      const value = column.get(i);
+      const actualValue = actualColumn.get(i);
+      if (column.type == DG.TYPE.FLOAT)
+        expectFloat(actualValue, value, 0.0001, error);
+      else if (column.type == DG.TYPE.DATE_TIME)
+        expect(actualValue.isSame(value), true, error);
+      else
+        expect(actualValue, value, error);
+    }
+  }
 }
 
 export function expectObject(actual: { [key: string]: any }, expected: { [key: string]: any }) {
@@ -174,15 +207,19 @@ export async function initAutoTests(packageId: string, module?: any) {
   }
   const moduleAutoTests = [];
   const packFunctions = await grok.dapi.functions.filter(`package.id = "${packageId}"`).list();
+  const reg = new RegExp(/.*\/\/\s*skip[:\s]*(.*)$/);
   for (const f of packFunctions) {
     const tests = f.options['test'];
     if (!(tests && Array.isArray(tests) && tests.length)) continue;
     for (let i = 0; i < tests.length; i++) {
+      const skipReasons = (tests[i] as string).match(reg);
+      let skipReason;
+      if (skipReasons && skipReasons?.length > 1) skipReason = skipReasons[1];
       moduleAutoTests.push(new Test(autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
         const res = await grok.functions.eval(addNamespace(tests[i], f));
         // eslint-disable-next-line no-throw-literal
         if (res !== true) throw `Failed: ${tests[i]}`;
-      }));
+      }, {skipReason: skipReason}));
     }
   }
   wasRegistered[packageId] = true;

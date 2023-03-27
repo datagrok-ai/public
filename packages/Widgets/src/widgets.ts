@@ -31,3 +31,34 @@ export class TimeWidget extends DG.Widget {
     this.root.appendChild(ui.render([new Date().toTimeString()]));
   }
 }
+
+export class TableSummaryViewer extends DG.JsViewer {
+  caption: string;
+
+  public get type(): string { return 'TableSummary' };
+
+  constructor() {
+    super();
+
+    // properties
+    this.caption = this.addProperty('caption', DG.TYPE.STRING, 'Table summary');
+
+    this.render();
+  }
+
+  onTableAttached() {
+    this.subs.push(this.dataFrame.onSelectionChanged.subscribe((_) => this.render()));
+    this.subs.push(this.dataFrame.onFilterChanged.subscribe((_) => this.render()));
+    this.render();
+  }
+
+
+  render() {
+    $(this.root).empty();
+    if (this.dataFrame) {
+      this.root.appendChild(ui.h1(this.dataFrame.name));
+      this.root.appendChild(ui.h2(this.dataFrame.selection.trueCount + ' selected'));
+      this.root.appendChild(ui.h2(this.dataFrame.filter.trueCount + ' filtered'));
+    }
+  }
+}

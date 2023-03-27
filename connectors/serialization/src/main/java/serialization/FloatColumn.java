@@ -15,6 +15,11 @@ public class FloatColumn extends Column<Float> {
         return TYPE;
     }
 
+    public void empty() {
+        length = 0;
+        data = new float[100];
+    }
+
     public FloatColumn() {
         data = new float[100];
     }
@@ -62,21 +67,7 @@ public class FloatColumn extends Column<Float> {
         }
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        FloatColumn that = (FloatColumn) o;
-        return Arrays.equals(data, that.data)
-                && Objects.equals(name, that.name)
-                && Objects.equals(getType(), that.getType());
-    }
-
-    @Override
-    public int hashCode() {
-        int dataHash = Arrays.hashCode(data);
-        dataHash += name == null ? 1 : name.hashCode();
-        dataHash += getType() == null ? 1 : getType().hashCode();
-        return dataHash;
+    public float[] getData() {
+        return data;
     }
 }

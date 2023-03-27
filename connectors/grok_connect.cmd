@@ -28,7 +28,7 @@
 ::
 @echo off
 set GROK_CONNECT_DIR=grok_connect
-set GROK_CONNECT=grok_connect-1.3.0.jar
+set GROK_CONNECT=grok_connect-2.0.3.jar
 set TARGET_DIR=%GROK_CONNECT_DIR%\target
 
 if "%1" == "shell" (

@@ -5,9 +5,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FunctionView} from './function-view';
 import dayjs from 'dayjs';
-import {historyUtils} from './history-utils';
+import {RichFunctionView} from './rich-function-view';
 
-const url = new URL(grok.shell.startUri);
 /**
  * Base class for handling Compute models (see https://github.com/datagrok-ai/public/blob/master/help/compute/compute.md).
  * In most cases, the computation is a simple {@link Func}
@@ -23,54 +22,28 @@ const url = new URL(grok.shell.startUri);
  * - entering the real, measured (as opposed to predicted) values manually
  * - notifications for changing inputs, completion of computations, etc: {@link onInputChanged}
  * */
-export class ComputationView extends FunctionView {
+export abstract class ComputationView extends FunctionView {
   /** Find the function by fully specified name, link it to the view and constructs the view.
-    * If function name is not specified, calls {@link init} and {@link build} without FuncCall linkage.
     * @stability Stable
   */
-  constructor(funcName?: string) {
-    const runId = url.searchParams.get('id');
-    super();
+  constructor(
+    funcName: string,
+    public options: {historyEnabled: boolean, isTabbed: boolean} = {historyEnabled: true, isTabbed: false}
+  ) {
+    super(funcName, options);
 
-    this.parentCall = grok.functions.getCurrentCall();
-    this.parentView = grok.functions.getCurrentCall()?.parentCall.aux['view'];
-    this.basePath = `/${grok.functions.getCurrentCall()?.func.name}`;
+    const currentCall = grok.functions.getCurrentCall();
+    this.parentCall = currentCall;
+    this.parentView = currentCall?.parentCall.aux['view'];
+    this.basePath = `/${currentCall?.func.name}`;
 
-    ui.setUpdateIndicator(this.root, true);
-    if (runId) {
-      setTimeout(async () => {
-        await this.init();
-        const urlRun = await historyUtils.loadRun(runId);
-        this.linkFunccall(urlRun);
+    this.onFuncCallReady.subscribe({
+      complete: async () => {
         await this.getPackageUrls();
-        this.build();
-        await this.onBeforeLoadRun();
-        this.linkFunccall(urlRun);
-        await this.onAfterLoadRun(urlRun);
-        ui.setUpdateIndicator(this.root, false);
-        url.searchParams.delete('id');
-      }, 0);
-    } else {
-      if (funcName) {
-        (grok.functions.eval(funcName) as Promise<DG.Func>).then(async (func: DG.Func) => {
-          const funccall = func.prepare({});
-          this.linkFunccall(funccall);
-          await this.init();
-          await this.getPackageUrls();
-          this.build();
-        }).finally(() => {
-          ui.setUpdateIndicator(this.root, false);
-        });
-      } else {
-        setTimeout(async () => {
-          await this.init();
-          await this.getPackageUrls();
-          this.build();
-          this.buildRibbonPanels();
-          ui.setUpdateIndicator(this.root, false);
-        }, 0);
+        this.buildRibbonMenu();
+        this.changeViewName(currentCall.func.friendlyName);
       }
-    }
+    });
   }
 
   /** Override to customize getting mocks
@@ -105,8 +78,6 @@ export class ComputationView extends FunctionView {
     const pack = (await grok.dapi.packages.list()).find((pack) => pack.id === this.func?.package.id);
     return pack ? `${pack.friendlyName} v.${pack.version}.\nLast updated on ${dayjs(pack.updatedOn).format('YYYY MMM D, HH:mm')}`: `No package info was found`;
   };
-
-  public buildIO(): HTMLElement { return ui.div(); }
 
   /**
    * Looks for {@link reportBug}, {@link getHelp} and {@link exportConfig} members and creates model menus

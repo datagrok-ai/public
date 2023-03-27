@@ -1,0 +1,7 @@
+#!/bin/bash
+
+cd ../../libraries/chem-meta
+./cleanup && npm i && npm run build && npm link
+
+cd -
+npm link @datagrok-libraries/chem-meta

@@ -36,12 +36,11 @@
     "ts-loader": "latest",
     "typescript": "latest",
     "webpack": "latest",
-    "webpack-cli": "latest"
-  },
-  "grokDependencies": {
+    "webpack-cli": "latest",
     "@datagrok/bio": "latest",
     "@datagrok/helm": "latest"
   },
+  
   "scripts": {
     "link-api": "npm link datagrok-api",
     "link-utils": "npm link @datagrok-libraries/utils",

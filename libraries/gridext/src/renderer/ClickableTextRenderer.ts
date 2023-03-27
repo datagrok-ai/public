@@ -16,12 +16,25 @@ export class ClickableTextRenderer extends GridCellRendererEx {
 
     this.onTextClickCallback = onTextClicked !== undefined ? onTextClicked : null;
   }
-  render(g : CanvasRenderingContext2D, nX : number, nY : number, nW : number, nH : number, cellGrid : DG.GridCell, style : DG.GridCellStyle) : void {
+
+  get name(): string {
+    return 'UrlLink';
+  }
+
+  get cellType(): string {
+    throw 'UrlLink';
+  }
+
+  formatValue(cellGrid : DG.GridCell) : string | null {
     const cell : DG.Cell = cellGrid.cell;
-    let str = isNullText(cell) ? null : cell.value.toString();
-    if (str === null) {
+    const str = isNullText(cell) ? null : cell.value.toString();
+    return str;
+  }
+
+  render(g : CanvasRenderingContext2D, nX : number, nY : number, nW : number, nH : number, cellGrid : DG.GridCell, style : DG.GridCellStyle) : void {
+    let str = this.formatValue(cellGrid);
+    if (str === null)
       return;
-    }
 
     //str = TextUtils.trimText(str, g, nW);
     const strFont : string  = style.font;
@@ -55,9 +68,9 @@ export class ClickableTextRenderer extends GridCellRendererEx {
     const nDeltaY = Math.floor((nHRow - nHFont) / 2);
     const nXX = 0 + ((cellGrid.gridColumn.width - nWLabel) / 2);
     const bX = nXX <= 0 || (nXOnCell >= nXX && nXOnCell <= nXX + nWLabel);
-    if (!bX) {
+    if (!bX)
       return false;
-    }
+
     const bY = nDeltaY < 0 || (nYOnCell >= nDeltaY && nYOnCell <= nDeltaY + nHFont);
     return bY;
   }

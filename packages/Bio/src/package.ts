@@ -11,7 +11,9 @@ import {runKalign} from './utils/multiple-sequence-alignment';
 import {SequenceAlignment} from './seq_align';
 import {getEmbeddingColsNames, sequenceSpaceByFingerprints} from './analysis/sequence-space';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {createLinesGrid, createPropPanelElement, createTooltipElement, getChemSimilaritiesMarix,} from './analysis/sequence-activity-cliffs';
+import {
+  createLinesGrid, createPropPanelElement, createTooltipElement, getChemSimilaritiesMatrix,
+} from './analysis/sequence-activity-cliffs';
 import {HELM_CORE_LIB_FILENAME} from '@datagrok-libraries/bio/src/utils/const';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
@@ -28,7 +30,13 @@ import {substructureSearchDialog} from './substructure-search/substructure-searc
 import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {delay} from '@datagrok-libraries/utils/src/test';
-import {getStats, NOTATION, splitterAsHelm, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {
+  getStats,
+  NOTATION,
+  splitterAsHelm,
+  TAGS as bioTAGS,
+  ALPHABET
+} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {pepseaMethods, runPepsea} from './utils/pepsea';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
@@ -36,6 +44,10 @@ import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {createJsonMonomerLibFromSdf, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {LIB_PATH, LIB_STORAGE_NAME, MonomerLibHelper} from './utils/monomer-lib';
+import { getMacromoleculeColumn } from './utils/ui-utils';
+import {IUMAPOptions, ITSNEOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
+import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
 
 // /** Avoid reassinging {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
 // let monomerLib: MonomerLib | null = null;
@@ -100,10 +112,14 @@ export async function initBio() {
 //output: widget result
 export async function sequenceTooltip(col: DG.Column): Promise<DG.Widget<any>> {
   const tv = grok.shell.tv;
-  let viewer = await tv.dataFrame.plot.fromType('WebLogo', {
+  const viewer = await tv.dataFrame.plot.fromType('WebLogo', {
     sequenceColumnName: col.name,
-    backgroundColor: 0xFFfdffe5
+    backgroundColor: 0xFFfdffe5,
+    fitArea: false,
+    positionHeight: 'Entropy',
+    fixWidth: true
   });
+  viewer.root.style.height = '50px';
   return viewer;
 }
 
@@ -257,9 +273,10 @@ export function sequenceAlignment(alignType: string, alignTable: string, gap: nu
 }
 
 //name: WebLogo
-//description: WebLogo viewer
+//description: WebLogo
 //tags: viewer, panel
 //output: viewer result
+//meta.icon: files/icons/weblogo-viewer.svg
 export function webLogoViewer() {
   return new WebLogoViewer();
 }
@@ -267,27 +284,40 @@ export function webLogoViewer() {
 //name: VdRegions
 //description: V-Domain regions viewer
 //tags: viewer, panel
+//meta.icon: files/icons/vdregions-viewer.svg
 //output: viewer result
 export function vdRegionViewer() {
   return new VdRegionsViewer();
+}
+
+//name: SeqActivityCliffsEditor
+//tags: editor
+//input: funccall call
+export function SeqActivityCliffsEditor(call: DG.FuncCall) {
+  const funcEditor = new ActivityCliffsFunctionEditor(DG.SEMTYPE.MACROMOLECULE);
+  ui.dialog({title: 'Activity Cliffs'})
+    .add(funcEditor.paramsUI)
+    .onOK(async () => {
+      call.func.prepare(funcEditor.funcParams).call(true);
+    })
+    .show();
 }
 
 //top-menu: Bio | Sequence Activity Cliffs...
 //name: Sequence Activity Cliffs
 //description: detect activity cliffs
 //input: dataframe table [Input data table]
-//input: column macroMolecule {semType: Macromolecule}
+//input: column molecules {semType: Macromolecule}
 //input: column activities
 //input: double similarity = 80 [Similarity cutoff]
-//input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
+//input: string methodName { choices:["UMAP", "t-SNE"] }
+//input: object options {optional: true}
+//editor: Bio:SeqActivityCliffsEditor
 export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column, activities: DG.Column,
-  similarity: number, methodName: string): Promise<DG.Viewer | undefined> {
+  similarity: number, methodName: string, options?: IUMAPOptions | ITSNEOptions): Promise<DG.Viewer | undefined> {
   if (!checkInputColumnUi(macroMolecule, 'Activity Cliffs'))
     return;
   const axesNames = getEmbeddingColsNames(df);
-  const options = {
-    'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
-  };
   const tags = {
     'units': macroMolecule.getTag(DG.TAGS.UNITS),
     'aligned': macroMolecule.getTag(bioTAGS.aligned),
@@ -307,23 +337,38 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     DG.SEMTYPE.MACROMOLECULE,
     tags,
     sequenceSpaceByFingerprints,
-    getChemSimilaritiesMarix,
+    getChemSimilaritiesMatrix,
     createTooltipElement,
     createPropPanelElement,
     createLinesGrid,
-    (options as any)[methodName]);
+    options);
   return sp;
+}
+
+//name: SequenceSpaceEditor
+//tags: editor
+//input: funccall call
+export function SequenceSpaceEditor(call: DG.FuncCall) {
+  const funcEditor = new SequenceSpaceFunctionEditor(DG.SEMTYPE.MACROMOLECULE);
+  ui.dialog({title: 'Sequence Space'})
+    .add(funcEditor.paramsUI)
+    .onOK(async () => {
+      call.func.prepare(funcEditor.funcParams).call(true);
+    })
+    .show();
 }
 
 //top-menu: Bio | Sequence Space...
 //name: Sequence Space
 //input: dataframe table
-//input: column macroMolecule { semType: Macromolecule }
-//input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
+//input: column molecules { semType: Macromolecule }
+//input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: bool plotEmbeddings = true
+//input: object options {optional: true}
+//editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: string,
-  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean): Promise<DG.Viewer | undefined> {
+  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean, options?: IUMAPOptions | ITSNEOptions): Promise<DG.Viewer | undefined> {
   // Delay is required for initial function dialog to close before starting invalidating of molfiles.
   // Otherwise, dialog is freezing
   await delay(10);
@@ -338,7 +383,8 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
     seqCol: withoutEmptyValues.col(macroMolecule.name)!,
     methodName: methodName,
     similarityMetric: similarityMetric,
-    embedAxesNames: embedColsNames
+    embedAxesNames: embedColsNames,
+    options: options
   };
   const sequenceSpaceRes = await sequenceSpaceByFingerprints(chemSpaceParams);
   const embeddings = sequenceSpaceRes.coordinates;
@@ -410,7 +456,7 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
     return;
   }
 
-  let performAlignment: () => Promise<DG.Column<string> | null> = async () => null; 
+  let performAlignment: () => Promise<DG.Column<string> | null> = async () => null;
   const methodInput = ui.choiceInput('Method', pepseaMethods[0], pepseaMethods);
   methodInput.setTooltip('Alignment method');
   const gapOpenInput = ui.floatInput('Gap open', 1.53);
@@ -421,19 +467,20 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
 
   const colInput = ui.columnInput('Sequence', table, seqCol, () => {
     const potentialCol = colInput.value;
-    const unUsedName = table.columns.getUnusedName(`msa(${potentialCol.name})`);
-  
-    if (checkInputColumnUi(potentialCol, 'MSA', [NOTATION.FASTA], ['DNA', 'RNA', 'PT'], false)) {
+    const unusedName = table.columns.getUnusedName(`msa(${potentialCol.name})`);
+
+    if (checkInputColumnUi(
+      potentialCol, potentialCol.name, [NOTATION.FASTA], [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT], false)) {
       for (const inputRootStyle of inputRootStyles)
         inputRootStyle.display = 'none';
 
-      performAlignment = () => runKalign(potentialCol, false, unUsedName);
-    } else if (checkInputColumnUi(potentialCol, 'MSA', [NOTATION.HELM], [], false)) {
+      performAlignment = () => runKalign(potentialCol, false, unusedName, clustersColInput.value);
+    } else if (checkInputColumnUi(potentialCol, potentialCol.name, [NOTATION.HELM], [], false)) {
       for (const inputRootStyle of inputRootStyles)
         inputRootStyle.display = 'initial';
 
-      performAlignment = () => runPepsea(
-        potentialCol, unUsedName, methodInput.value!, gapOpenInput.value!, gapExtendInput.value!);
+      performAlignment = () => runPepsea(potentialCol, unusedName, methodInput.value!, gapOpenInput.value!,
+        gapExtendInput.value!, clustersColInput.value);
     } else {
       for (const inputRootStyle of inputRootStyles)
         inputRootStyle.display = 'none';
@@ -444,13 +491,18 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
   colInput.setTooltip('Sequences column to use for alignment');
   colInput.fireChanged();
 
+  const clustersColInput = ui.columnInput('Clusters', table, null);
+  clustersColInput.nullable = true;
+
   let msaCol: DG.Column<string> | null = null;
-  const dialog = ui.dialog('MSA')
+  ui.dialog('MSA')
     .add(colInput)
+    .add(clustersColInput)
     .add(methodInput)
     .add(gapOpenInput)
     .add(gapExtendInput)
     .onOK(async () => {
+      colInput.fireChanged();
       msaCol = await performAlignment();
       if (msaCol == null)
         return grok.shell.warning('Wrong column format');
@@ -463,6 +515,7 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
 
 //name: Composition Analysis
 //top-menu: Bio | Composition Analysis
+//meta.icon: files/icons/composition-analysis.svg
 //output: viewer result
 export async function compositionAnalysis(): Promise<void> {
   // Higher priority for columns with MSA data to show with WebLogo.
@@ -519,8 +572,8 @@ export async function compositionAnalysis(): Promise<void> {
   await handler(col);
 }
 
-//top-menu: Bio | Sdf to Json lib...
-//name: sdfToJsonLib
+//top-menu: Bio | SDF to JSON lib...
+//name: SDF to JSON Lib
 //input: dataframe table
 export async function sdfToJsonLib(table: DG.DataFrame) {
   const jsonMonomerLibrary = createJsonMonomerLibFromSdf(table);
@@ -548,11 +601,10 @@ export function importFasta(fileContent: string): DG.DataFrame [] {
   return ffh.importFasta();
 }
 
-//name: Bio | Convert ...
-//friendly-name: Bio | Convert
-//tags: panel, bio
-//input: column col {semType: Macromolecule}
-export function convertPanel(col: DG.Column): void {
+//top-menu: Bio | Convert...
+//name: convertDialog
+export function convertDialog() {
+  const col = getMacromoleculeColumn();
   convert(col);
 }
 
@@ -615,17 +667,17 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
   return resDf;
 }
 
-//name: Bio | Split to monomers
-//tags: panel, bio
-//input: column col {semType: Macromolecule}
-export function splitToMonomers(col: DG.Column<string>): void {
+//top-menu: Bio | Split to monomers
+//name: splitToMonomers
+export function splitToMonomers(): void {
+  const col = getMacromoleculeColumn();
   const tempDf = splitAlignedSequences(col);
   const originalDf = col.dataFrame;
   for (const tempCol of tempDf.columns) {
     const newCol = originalDf.columns.add(tempCol);
     newCol.semType = C.SEM_TYPES.MONOMER;
     newCol.setTag(DG.TAGS.CELL_RENDERER, C.SEM_TYPES.MONOMER);
-    newCol.setTag(C.TAGS.ALPHABET, col.getTag(C.TAGS.ALPHABET));
+    newCol.setTag(bioTAGS.alphabet, col.getTag(bioTAGS.alphabet));
   }
   grok.shell.tv.grid.invalidate();
 }
@@ -638,44 +690,46 @@ export function getHelmMonomers(sequence: DG.Column<string>): string[] {
 }
 
 
-//name: SequenceSimilaritySearchViewer
+//name: Sequence Similarity Search
 //tags: viewer
+//meta.icon: files/icons/sequence-similarity-viewer.svg
 //output: viewer result
 export function similaritySearchViewer(): SequenceSimilarityViewer {
   return new SequenceSimilarityViewer();
 }
 
-//top-menu: Bio | Similarity Search...
+//top-menu: Bio | Search | Similarity Search
 //name: similaritySearch
 //description: finds the most similar sequence
 //output: viewer result
 export function similaritySearchTopMenu(): void {
   const view = (grok.shell.v as DG.TableView);
-  const viewer = view.addViewer('SequenceSimilaritySearchViewer');
+  const viewer = view.addViewer('Sequence Similarity Search');
   view.dockManager.dock(viewer, 'down');
 }
 
-//name: SequenceDiversitySearchViewer
+//name: Sequence Diversity Search
 //tags: viewer
+//meta.icon: files/icons/sequence-diversity-viewer.svg
 //output: viewer result
 export function diversitySearchViewer(): SequenceDiversityViewer {
   return new SequenceDiversityViewer();
 }
 
-//top-menu: Bio | Diversity Search...
+//top-menu: Bio | Search | Diversity Search
 //name: diversitySearch
 //description: finds the most diverse molecules
 //output: viewer result
 export function diversitySearchTopMenu() {
   const view = (grok.shell.v as DG.TableView);
-  const viewer = view.addViewer('SequenceDiversitySearchViewer');
+  const viewer = view.addViewer('Sequence Diversity Search');
   view.dockManager.dock(viewer, 'down');
 }
 
-//name: Bio | Substructure search ...
-//tags: panel, bio
-//input: column col {semType: Macromolecule}
-export function bioSubstructureSearch(col: DG.Column): void {
+//top-menu: Bio | Substructure Search ...
+//name: bioSubstructureSearch
+export function bioSubstructureSearch(): void {
+  const col = getMacromoleculeColumn();
   substructureSearchDialog(col);
 }
 

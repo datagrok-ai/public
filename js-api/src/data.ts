@@ -1,7 +1,8 @@
 import {DataFrame, Column} from "./dataframe";
 import {toJs} from "./wrappers";
-import {FuncCall} from "./functions";
+import {FuncCall, Functions} from "./functions";
 import {TYPE, DemoDatasetName, JoinType, SyncType, CsvImportOptions, StringPredicate} from "./const";
+import {DataConnection} from "./entities";
 
 let api = <any>window;
 
@@ -90,18 +91,25 @@ export class DemoDatasets {
   }
 }
 
+export class Db {
+
+  /** Executes a specified {@link sql} against the specified {@link connectionId}. */
+  async query(connectionId: string, sql: string): Promise<DataFrame> {
+    let connection: DataConnection = await new Functions().eval(connectionId);
+    let q = connection.query('adhoc', sql);
+    let result = await q.apply();
+    return result;
+  }
+}
+
 /**
  * Creating, loading, querying, manipulating, joining tables.
  * */
 
 export class Data {
-  public demo: DemoDatasets;
-  public files: Files;
-
-  constructor() {
-    this.demo = new DemoDatasets();
-    this.files = new Files();
-  }
+  public demo: DemoDatasets = new DemoDatasets();
+  public files: Files = new Files();
+  public db: Db = new Db();
 
   /**
    * Creates a generic dataset with the defined number of rows and columns.
@@ -153,8 +161,18 @@ export class Data {
    * Opens the visual table comparison tool.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/compare-tables}
    * */
-  compareTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[], valueColumns2: string[]): void {
-    api.grok_CompareTables(t1.dart, t2.dart, keyColumns1, keyColumns2, valueColumns1, valueColumns2);
+  compareTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[], valueColumns2: string[]):
+    { changedColumns: number,
+      changedValues: number,
+      diffTable: DataFrame,
+      missingRows: number,
+      t1MissingRows: number,
+      t2MissingRows: number } {
+    console.log(t1.toCsv());
+    console.log(t2.toCsv());
+    let r = toJs(api.grok_CompareTables(t1.dart, t2.dart, keyColumns1, keyColumns2, valueColumns1, valueColumns2));
+    console.log(r.diffTable);
+    return r;
   };
 
   /**

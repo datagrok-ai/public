@@ -89,6 +89,10 @@ const config = {
   ],
 
   themeConfig: {
+    colorMode: {
+      defaultMode: 'light',
+      disableSwitch: true,
+    },
     navbar: {
       title: 'datagrok',
       logo: {
@@ -111,8 +115,9 @@ const config = {
         },
         {
           href: 'https://public.datagrok.ai',
-          label: 'Launch',
+          label: 'LAUNCH',
           position: 'right',
+          className: 'btn btn-primary px-4',
         },
       ],
     },
@@ -152,7 +157,7 @@ const config = {
             protocol: 'https',
           }
         ],
-        apiKey: '3LbGdYhCmSueDct7u9AQDv3Ga9Z2u4HA',
+        apiKey: 'MC5hVJHferjSjVseov0jpS8awVaIJGl0',
       },
 
       // Optional: Typesense search parameters: https://typesense.org/docs/0.21.0/api/search.md#search-parameters
