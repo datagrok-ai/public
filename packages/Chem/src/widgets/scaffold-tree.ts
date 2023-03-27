@@ -1099,6 +1099,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (div !== null)
         div.innerHTML = this.MoleculeColumn;
 
+      setTimeout(() => this.generateTree(), 1000);
     } else if (p.name === 'MoleculeColumn') {
       for (let n = 0; n < this.molColumns[this.tableIdx].length; ++n) {
         if (this.molColumns[this.tableIdx][n].name === this.MoleculeColumn) {
