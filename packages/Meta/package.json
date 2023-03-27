@@ -2314,20 +2314,6 @@
         "directory": "packages/ChemDraw"
       }
     },
-    "molecular-liability-browser": {
-      "dependencies": {
-        "1.3.8": {
-          "datagrok-api": "^1.8.2"
-        }
-      },
-      "description": "MolecularLiabilityBrowser is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform to analyse variable region sequences of antibodies.",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/MolecularLiabilityBrowser"
-      },
-      "category": "Bioinformatics"
-    },
     "fae": {
       "dependencies": {
         "1.0.0": {
