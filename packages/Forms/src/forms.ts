@@ -1,9 +1,27 @@
-class MultiFormViewer extends DG.JsViewer {
+import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
+
+import {Observable} from 'rxjs';
+import {filter} from 'rxjs/operators';
+
+
+import '../css/forms.css';
+
+
+export class FormsViewer extends DG.JsViewer {
+  fieldsColumnNames: string[];
+  colorCode: boolean;
+  showCurrentRow: boolean;
+  showMouseOverRow: boolean;
+  indexes: number[];
+  columnHeadersDiv: HTMLDivElement;
+  virtualView: DG.VirtualView;
+
   constructor() {
     super();
 
     // properties
-    this.fields = this.addProperty('fields', DG.TYPE.COLUMN_LIST);
+    this.fieldsColumnNames = this.addProperty('fieldsColumnNames', DG.TYPE.COLUMN_LIST);
     this.colorCode = this.bool('colorCode', true);
     this.showCurrentRow = this.bool('showCurrentRow', true);
     this.showMouseOverRow = this.bool('showMouseOverRow', true);
@@ -12,34 +30,33 @@ class MultiFormViewer extends DG.JsViewer {
     this.indexes = [];
 
     // init
-    let dis = this;
     this.root.classList.add('d4-multi-form');
     this.columnHeadersDiv = ui.div([], 'd4-multi-form-header');
-    this.virtualView = ui.virtualView(0, i => dis.renderForm(i), false, 1);
+    this.virtualView = ui.virtualView(0, (i: number) => this.renderForm(i), false, 1);
     this.root.appendChild(ui.divH([this.columnHeadersDiv, this.virtualView.root]));
   }
 
   onTableAttached() {
-    if (this.fields == null)
-      this.fields = this.dataFrame.columns.names();
+    if (this.fieldsColumnNames === null)
+      this.fieldsColumnNames = this.dataFrame.columns.names();
 
-    const sub = (stream, action) => {
+    const sub = (stream: Observable<unknown>, action: Function) => {
       this.subs.push(DG.debounce(stream, 50).subscribe((_) => action()));
-    }
+    };
 
     sub(this.dataFrame.selection.onChanged, () => this.render());
     sub(this.dataFrame.filter.onChanged, () => this.render());
 
-    sub(this.dataFrame.onCurrentRowChanged.pipe(rxjs.operators.filter((_) => this.showCurrentRow)),
-      () => this.virtualView.refreshItem(this.currentRowPos));
+    sub(this.dataFrame.onCurrentRowChanged.pipe(filter((_) => this.showCurrentRow)),
+      () => this.virtualView.refreshItem(this.currentRowPos!));
 
-    sub(this.dataFrame.onMouseOverRowChanged.pipe(rxjs.operators.filter((_) => this.showMouseOverRow)),
-      () => this.virtualView.refreshItem(this.mouseOverPos));
+    sub(this.dataFrame.onMouseOverRowChanged.pipe(filter((_) => this.showMouseOverRow)),
+      () => this.virtualView.refreshItem(this.mouseOverPos!));
 
     this.render();
   }
 
-  onPropertyChanged(prop) {
+  onPropertyChanged(property: DG.Property): void {
     this.render();
   }
 
@@ -49,20 +66,20 @@ class MultiFormViewer extends DG.JsViewer {
     form.classList.add('temp');
     document.body.appendChild(form);
 
-    for (let name of this.fields) {
+    for (const name of this.fieldsColumnNames) {
       const columnLabel = ui.bind(this.dataFrame.col(name), ui.divText(name, 'd4-multi-form-column-name'));
-      let formField = form.querySelector('[column="' + name + '"]');
-      columnLabel.style.top = `${formField.offsetTop + 10}px`;
+      const formField = form.querySelector('[column="' + name + '"]');
+      columnLabel.style.top = `${(formField as HTMLElement).offsetTop + 10}px`;
       this.columnHeadersDiv.appendChild(columnLabel);
     }
 
     form.remove();
   }
 
-  get currentRowPos() { return this.showCurrentRow ? 0 : null; }
-  get mouseOverPos() { return this.showMouseOverRow ? (this.showCurrentRow ? 1 : 0) : null; }
+  get currentRowPos() {return this.showCurrentRow ? 0 : null;}
+  get mouseOverPos() {return this.showMouseOverRow ? (this.showCurrentRow ? 1 : 0) : null;}
 
-  renderForm(row) {
+  renderForm(row: number) {
     if (this.showCurrentRow && row === this.currentRowPos)
       row = this.dataFrame.currentRowIdx;
     else if (this.showMouseOverRow && row === this.mouseOverPos)
@@ -71,11 +88,11 @@ class MultiFormViewer extends DG.JsViewer {
       row = this.indexes[row - (this.showCurrentRow ? 1 : 0) - (this.showMouseOverRow ? 1 : 0)];
 
     const form = ui.divV(
-      this.fields.map((name) => {
+      this.fieldsColumnNames.map((name) => {
         if (row === -1)
           return ui.div();
 
-        const input = DG.InputBase.forColumn(this.dataFrame.col(name));
+        const input = DG.InputBase.forColumn(this.dataFrame.col(name)!);
         input.input.setAttribute('column', name);
         input.value = this.dataFrame.get(name, row);
 
@@ -87,8 +104,8 @@ class MultiFormViewer extends DG.JsViewer {
         }
 
         return input.input;
-      }
-    ), 'd4-multi-form-form');
+      },
+      ), 'd4-multi-form-form');
 
     form.onclick = () => this.dataFrame.currentRowIdx = row;
     form.onmouseenter = () => this.dataFrame.mouseOverRowIdx = row;
@@ -97,10 +114,8 @@ class MultiFormViewer extends DG.JsViewer {
   }
 
   render() {
-    let dis = this;
-    this.indexes
-      = this.dataFrame.selection.trueCount > 0 ? this.dataFrame.selection.getSelectedIndexes()
-      : [];
+    this.indexes = this.dataFrame.selection.trueCount > 0 ?
+      Array.from(this.dataFrame.selection.getSelectedIndexes()) : [];
 
     ui.empty(this.columnHeadersDiv);
 
@@ -108,6 +123,6 @@ class MultiFormViewer extends DG.JsViewer {
 
     this.virtualView.setData(
       this.indexes.length + (this.showCurrentRow ? 1 : 0) + (this.showMouseOverRow ? 1 : 0),
-      i => dis.renderForm(i));
+      (i: number) => this.renderForm(i));
   }
 }
