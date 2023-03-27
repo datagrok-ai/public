@@ -174,6 +174,10 @@ jobs:
         run: npm install
         id: install
         working-directory: packages/${{ matrix.package }}
+      - name: js api dependency for unpublished dependencies
+        if: ${{ matrix.unpublished_deps != '' }}
+        run: npm install
+        working-directory: ./js-api
       - name: unpublished dependencies
         if: ${{ matrix.unpublished_deps != '' }}
         run: |
