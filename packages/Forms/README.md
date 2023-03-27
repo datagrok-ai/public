@@ -1,6 +1,6 @@
-# MultiForm
+# Forms
 
-MultiForm viewer provides a convenient way to visualize a set of selected rows.
+Forms viewer provides a convenient way to visualize a set of selected rows.
 
 See also:
 
