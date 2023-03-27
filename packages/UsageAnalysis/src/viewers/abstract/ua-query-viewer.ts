@@ -1,4 +1,4 @@
-import * as ui from 'datagrok-api/ui';
+// import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
@@ -11,38 +11,30 @@ export abstract class UaQueryViewer extends UaViewer {
   viewerFunction: Function;
   staticFilter: Object = {};
   filter: Object = {};
+  viewer: DG.Viewer;
 
   protected constructor(name: string, queryName: string, viewerFunction: Function,
-    setStyle?: Function | null, staticFilter?: Object | null, filter?: UaFilter | null) {
+    setStyle?: Function | null, staticFilter?: Object | null, filter?: UaFilter | null, viewer?: DG.Viewer) {
     super(name, setStyle);
-
     this.queryName = queryName;
     this.viewerFunction = viewerFunction;
-
-    if (staticFilter)
-      this.staticFilter = staticFilter;
-    if (filter)
-      this.filter = filter;
-
-    this.init();
+    // if (staticFilter) this.staticFilter = staticFilter;
+    if (filter) this.filter = filter;
+    this.viewer = viewer as DG.Viewer;
+    this.root.appendChild(this.viewer.root);
+    this.root.appendChild(this.loader);
   }
 
-  setViewer(loader: any, host: HTMLDivElement) {
-    const filter = {...this.filter, ...this.staticFilter};
+  reloadViewer(staticFilter?: object) {
+    this.loader.style.display = 'block';
+    const filter = {...this.filter, ...staticFilter};
     grok.data.query('UsageAnalysis:' + this.queryName, filter).then((dataFrame) => {
       if (dataFrame.columns.byName('count') != null)
         dataFrame.columns.byName('count').tags['format'] = '#';
-      let viewer: HTMLElement;
-      if (dataFrame.rowCount > 0)
-        viewer = this.viewerFunction(dataFrame);
-      else
-        viewer = ui.divText('No data', {style: {color: 'var(--red-3)', paddingBottom: '25px'}});
-      const grid = DG.Viewer.grid(dataFrame);
-      grid.props.allowColSelection = false;
-      host.appendChild(viewer);
-      host.removeChild(loader);
+      this.viewerFunction(dataFrame);
+      this.viewer.dataFrame = dataFrame;
+      this.viewer.setOptions({markerMinSize: 10, markerMaxSize: 30, color: 'user'});
+      this.loader.style.display = 'none';
     });
   }
-
-  init(): void {}
 }

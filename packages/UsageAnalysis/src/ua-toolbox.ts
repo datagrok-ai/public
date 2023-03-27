@@ -1,11 +1,13 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 // import * as grok from 'datagrok-api/grok';
+
 import {BehaviorSubject} from 'rxjs';
 import {UaFilter} from './filter';
 import {ViewHandler} from './view-handler';
 import {ChoiceInputGroups} from './elements/choice-input-groups';
 import {ChoiceInputPackages} from './elements/choice-input-packages';
+// import {UaView} from './tabs/ua';
 import $ from 'cash-dom';
 
 export class UaToolbox {
@@ -14,44 +16,82 @@ export class UaToolbox {
   groupsInput: ChoiceInputGroups;
   packagesInput: ChoiceInputPackages;
   filterStream: BehaviorSubject<UaFilter>;
+  // filterDDStream?: BehaviorSubject<UaFilter>;
+  dateFromDD: DG.InputBase = ui.stringInput('From', '');
+  dateToDD: DG.InputBase = ui.stringInput('To', '');
+  usersDD: DG.InputBase = ui.stringInput('Users', '');
+  packagesDD: DG.InputBase = ui.stringInput('Packages', '');
+  formDD: HTMLDivElement;
 
   static async construct() {
     const date = 'this week';
     const packages = ['all'];
-
     const dateInput = ui.stringInput('Date', date);
     dateInput.addPatternMenu('datetime');
     dateInput.setTooltip('Set the date period');
     const groupsInput = await ChoiceInputGroups.construct();
     const packagesInput = await ChoiceInputPackages.construct();
     const groups = groupsInput.allUsers;
-
     const filterStream = new BehaviorSubject(new UaFilter({
       date: date,
       groups: groups,
       packages: packages,
     }));
-
     return new UaToolbox(dateInput, groupsInput, packagesInput, filterStream);
   }
 
   private constructor(dateInput: DG.InputBase, groupsInput: ChoiceInputGroups,
     packagesInput: ChoiceInputPackages, filterStream: BehaviorSubject<UaFilter>) {
     this.rootAccordion = ui.accordion();
-    this.rootAccordion.addPane('Filters', () => {
+    this.formDD = ui.div();
+    const filters = this.rootAccordion.addPane('Filters', () => {
       const form = ui.narrowForm([
         dateInput,
         groupsInput.field,
         packagesInput.field,
       ]);
-      $(form).append(ui.bigButton('Apply', () => this.applyFilter()));
+      const applyB = ui.bigButton('Apply', () => this.applyFilter());
+      applyB.style.marginLeft = 'auto';
+      $(form).append(applyB);
+      this.dateFromDD.readOnly = true;
+      this.dateToDD.readOnly = true;
+      this.usersDD.readOnly = true;
+      this.packagesDD.readOnly = true;
+      // UaView.filterDDStream = new BehaviorSubject(uaToolbox.filterStream.value);
+      this.formDD = ui.narrowForm([
+        this.dateFromDD,
+        this.dateToDD,
+        this.usersDD,
+        this.packagesDD,
+      ]);
+      // this.formDD.style.display = 'none';
+      this.formDD.style.border = '1px dashed #80949b';
+      this.formDD.style.borderRadius = '5px';
+      this.formDD.style.backgroundColor = '#F1FAFD';
+      this.formDD.style.marginBottom = '24px';
+      this.formDD.querySelectorAll('.ui-input-editor')
+        .forEach((i) => (i as HTMLElement).style.backgroundColor = '#c9e6f3');
       return form;
     }, true);
-
+    filters.root.before(this.formDD);
+    // grok.events.onCurrentViewChanged.subscribe((view) => {
+    //   console.log(grok.shell.v);
+    //   if (!(view instanceof UaView)) return;
+    //   view = view as UaView;
+    //   this.filterDDStream = view.filterDDStream;
+    //   if (view.checkLabels()) this.formDD.style.display= 'block';
+    // });
     this.dateInput = dateInput;
     this.groupsInput = groupsInput;
     this.packagesInput = packagesInput;
     this.filterStream = filterStream;
+  }
+
+  clearFormDD() {
+    this.dateFromDD.value = '';
+    this.dateToDD.value = '';
+    this.usersDD.value = '';
+    this.packagesDD.value = '';
   }
 
   getFilter() {
@@ -63,6 +103,7 @@ export class UaToolbox {
   }
 
   applyFilter() {
+    this.clearFormDD();
     this.filterStream.next(this.getFilter());
     ViewHandler.getInstance().setUrlParam('date', this.dateInput.value, true);
     ViewHandler.getInstance().setUrlParam('users', this.groupsInput.getSelectedGroups().join(','), true);
@@ -73,11 +114,11 @@ export class UaToolbox {
     this.dateInput.value = value;
   }
 
-  async setGroups(value: string) {
+  setGroups(value: string) {
     this.groupsInput.addItems(value.split(','));
   }
 
-  async setPackages(value: string) {
+  setPackages(value: string) {
     this.packagesInput.addItems(value.split(','));
   }
 }

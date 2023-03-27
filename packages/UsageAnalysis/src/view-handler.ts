@@ -1,5 +1,5 @@
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
+// import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {UaView} from './tabs/ua';
@@ -20,7 +20,8 @@ export class ViewHandler {
   private static instance: ViewHandler;
   private urlParams: Map<string, string> = new Map<string, string>();
   public static UAname = 'Usage Analysis';
-  private static tabs: DG.TabControl;
+  private static UA: DG.MultiView;
+  // private static tabs: DG.TabControl;
 
   public static getInstance(): ViewHandler {
     if (!ViewHandler.instance)
@@ -29,30 +30,32 @@ export class ViewHandler {
   }
 
   async init() {
-    const pathSplits = decodeURI(window.location.pathname).split('/');
+    // const pathSplits = decodeURI(window.location.pathname).split('/');
     const params = this.getSearchParameters();
     const toolbox = await UaToolbox.construct();
-    ViewHandler.tabs = ui.tabControl();
-    ViewHandler.tabs.root.style.width = 'inherit';
-    ViewHandler.tabs.root.style.height = 'inherit';
+    // ViewHandler.tabs = ui.tabControl();
+    // ViewHandler.tabs.root.style.width = 'inherit';
+    // ViewHandler.tabs.root.style.height = 'inherit';
     // [OverviewView, EventsView, ErrorsView, FunctionsView, UsersView, DataView];
     const viewClasses: (typeof UaView)[] = [PackagesView, FunctionsView];
-
+    const viewFactories: {[name: string]: any} = {};
     for (let i = 0; i < viewClasses.length; ++i) {
-      ViewHandler.tabs.addPane(viewClasses[i].viewName, () => {
-        const currentView = new viewClasses[i](toolbox);
-        currentView.tryToinitViewers();
-        return currentView.root;
-      });
+      // ViewHandler.tabs.addPane(viewClasses[i].viewName, () => {
+      const currentView = new viewClasses[i](toolbox);
+      currentView.name = currentView.viewName;
+      viewFactories[currentView.viewName] = () => currentView;
+      currentView.tryToinitViewers();
+      //   return currentView.root;
+      // });
     }
-    if (pathSplits.length > 3 && pathSplits[3] != '') {
-      const viewName = pathSplits[3];
-      if (ViewHandler.tabs.panes.map((p) => p.name).includes(viewName))
-        ViewHandler.tabs.currentPane = ViewHandler.tabs.getPane(viewName);
-      else
-        ViewHandler.tabs.currentPane = ViewHandler.tabs.getPane(viewClasses[0].viewName);
-    } else
-      ViewHandler.tabs.currentPane = ViewHandler.tabs.getPane(viewClasses[0].viewName);
+    // if (pathSplits.length > 3 && pathSplits[3] != '') {
+    //   const viewName = pathSplits[3];
+    //   if (ViewHandler.tabs.panes.map((p) => p.name).includes(viewName))
+    //     ViewHandler.tabs.currentPane = ViewHandler.tabs.getPane(viewName);
+    //   else
+    //     ViewHandler.tabs.currentPane = ViewHandler.tabs.getPane(viewClasses[0].viewName);
+    // } else
+    //   ViewHandler.tabs.currentPane = ViewHandler.tabs.getPane(viewClasses[0].viewName);
 
     const paramsHaveDate = params.has('date');
     const paramsHaveUsers = params.has('users');
@@ -61,19 +64,26 @@ export class ViewHandler {
       if (paramsHaveDate)
         toolbox.setDate(params.get('date')!);
       if (paramsHaveUsers)
-        await toolbox.setGroups(params.get('users')!);
+        toolbox.setGroups(params.get('users')!);
       if (paramsHavePackages)
-        await toolbox.setPackages(params.get('packages')!);
+        toolbox.setPackages(params.get('packages')!);
       toolbox.applyFilter();
     }
 
-    const UA = grok.shell.newView(ViewHandler.UAname, [ViewHandler.tabs]);
-    UA.box = true;
-    UA.toolbox = toolbox.rootAccordion.root;
+    // const UA = grok.shell.newView(ViewHandler.UAname, [ViewHandler.tabs]);
+    ViewHandler.UA = new DG.MultiView({viewFactories: viewFactories});
+    ViewHandler.UA.name = ViewHandler.UAname;
+    ViewHandler.UA.box = true;
+    // ViewHandler.UA.toolbox = toolbox.rootAccordion.root;
+    grok.shell.addView(ViewHandler.UA);
   }
 
-  public static changeTab(name: string) {
-    ViewHandler.tabs.currentPane = ViewHandler.tabs.getPane(name);
+  public static getView(name: string) {
+    return ViewHandler.UA.getView(name) as UaView;
+  }
+
+  public static changeView(name: string) {
+    ViewHandler.UA.currentView = ViewHandler.UA.getView(name);
   }
 
   getSearchParameters() : Map<string, string> {
