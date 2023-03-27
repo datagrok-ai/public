@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import { filter, map } from 'rxjs/operators';
-import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
+import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
 import { interval } from 'rxjs';
 import wu from "wu";
 
@@ -25,7 +25,7 @@ export class VirtualScreeningTutorial extends Tutorial {
     return 46;
   }
 
-  prerequisites = {packages: ['Chem', 'PowerPack']};
+  prerequisites: TutorialPrerequisites = {packages: ['Chem', 'PowerPack'], jupyter: true, grokCompute: true, h2o: true};
   demoTable: string = 'chem/tutorials/training-data.csv';
   helpUrl: string = 'https://datagrok.ai/help/domains/chem/chem-curate';
 
@@ -44,9 +44,9 @@ export class VirtualScreeningTutorial extends Tutorial {
       'is engaged in viral replication.</p><p>Your mission is to determine if there are compounds of these ' +
       'chemical classes which could be synthesized and investigated at the next iteration, and thus reduce ' +
       'the costs of following synthesis and research by excluding less potent molecules from the list.</p>' +
-      '<p>You have two datasets:' + 
+      '<p>You have two datasets:' +
       `<ol>
-        <li>A dataset with experimental results: structural information on synthesized 
+        <li>A dataset with experimental results: structural information on synthesized
           compounds and related biological activity in the <b>Ki</b> column.</li>
         <li>A generated dataset with all structures of the same chemical classes which were not yet synthesized.</li>
       </ol></p>`);
@@ -325,10 +325,10 @@ export class VirtualScreeningTutorial extends Tutorial {
       interval(3000).pipe(filter(() => chemblPane!.expanded)),
       chemblPane!.root,
       chemblSearch);
-    
+
     await this.action('Click on the second scaffold and run "ChEMBL search"',
       grok.events.onAccordionConstructed.pipe(filter((acc) => acc.context.value === scaffold2)));
-    
+
 
     this.title('Conclusions');
     this.describe('We have performed a virtual screening which yielded two compounds with ' +
