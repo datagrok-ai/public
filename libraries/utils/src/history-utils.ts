@@ -39,7 +39,7 @@ const getSearchStringByPattern = (datePattern: DateOptions) => {
 
 export namespace historyUtils {
   const scriptsCache = {} as Record<string, DG.Script>;
-  // TO DO: add users and groups cache
+  // TODO: add users and groups cache
 
   export async function loadChildRuns(
     funcCallId: string
@@ -52,7 +52,7 @@ export namespace historyUtils {
 
     await Promise.all(childRuns.map(async (childRun) => {
       const id = childRun.func.id;
-      // FIX ME: manually get script since pulledRun contains empty Func
+      // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12464
       const script = scriptsCache[id] ?? await grok.dapi.functions.allPackageVersions().find(id);
 
       if (!scriptsCache[id]) scriptsCache[id] = script;
@@ -62,13 +62,21 @@ export namespace historyUtils {
     return {parentRun, childRuns};
   }
 
-  // EXPLAIN: WHY DF LOAD SKIPPING IS USEFUL
+  /**
+   * Loads a FuncCall with a specified ID. By default, also loads its' inputs/outputs and author.
+   * FuncCall is loaded with internal TableInfo structs instead of DG.Dataframe-s.
+   * Thus, we should load them separately, and it is time-consuming. If you don't need actual values of DF-s,
+   * you can skip DF loading using {@link skipDfLoad} param.
+   * @param funcCallId FuncCall ID to load
+   * @param skipDfLoad If true, skips replacing TableInfo with th actual dataframe
+   * @returns Requested FuncCall
+   */
   export async function loadRun(funcCallId: string, skipDfLoad = false) {
     const pulledRun = await grok.dapi.functions.calls.allPackageVersions()
       .include('inputs, outputs, session.user').find(funcCallId);
 
     const id = pulledRun.func.id;
-    // FIX ME: manually get script since pulledRun contains empty Func
+    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12464
     const script = scriptsCache[id] ?? await grok.dapi.functions.allPackageVersions().find(id);
 
     if (!scriptsCache[id]) scriptsCache[id] = script;
@@ -90,7 +98,12 @@ export namespace historyUtils {
     return pulledRun;
   }
 
-  // EXPLAIN WHY REPLCE DF-s
+  /**
+   * Saved given FuncCall.
+   * FuncCall is only stores references to actual dataframes. Thus, we should upload them separately
+   * @param funcCallcallToSaveId FuncCall to save
+   * @returns Saved FuncCall
+   */
   export async function saveRun(callToSave: DG.FuncCall) {
     const dfOutputs = wu(callToSave.outputParams.values() as DG.FuncCallParam[])
       .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
