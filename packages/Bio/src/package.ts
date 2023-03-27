@@ -52,6 +52,7 @@ import {demoBio01UI} from './demo/bio01-similarity-diversity';
 import {demoBio01aUI} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
 import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
 import {demoBio05UI} from './demo/bio05-helm-msa-sequence-space';
+import { DistributionParams, DistributionType, generatePeptidesDataFrame } from '@datagrok-libraries/bio/src/utils/data-generator';
 
 // /** Avoid reassinging {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
 // let monomerLib: MonomerLib | null = null;
@@ -784,4 +785,17 @@ export async function demoBio01b(): Promise<void> {
 //description:
 export async function demoBio05(): Promise<void> {
   await demoBio05UI('func/demoBio05');
+//name: Peptides Data Generator
+//description: Peptides data generator
+//input: string notation = 'helm' {choices: ['fasta', 'helm', 'separator']}
+//input: int length = 100
+//input: list<string> monomers
+//input: list<int> clusterSequenceLength
+//input: string distType = 'lognormal'
+//input: int mean = 0
+//input: int std = 1
+//output: dataframe result
+export function generatePeptidesData(notation: NOTATION, length: number, monomers: string[],
+  sequenceLengths: number[], distType: DistributionType, mean: number, std: number): DG.DataFrame {
+  return generatePeptidesDataFrame(notation, length, monomers, sequenceLengths, {type: distType, mean: mean, std: std});
 }
