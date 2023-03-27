@@ -56,12 +56,19 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
       const tableRows = [];
 
       for (const key of Object.keys(outputSequenceObj).slice(1)) {
+        const sequence = ('indexOfFirstInvalidChar' in outputSequenceObj) ?
+          ui.divH([]) :
+          ui.link(
+            //@ts-ignore // why ts-ignore?
+            outputSequenceObj[key],
+            //@ts-ignore // why ts-ignore?
+            () => navigator.clipboard.writeText(outputSequenceObj[key])
+              .then(() => grok.shell.info(SEQUENCE_COPIED_MSG)),
+            SEQ_TOOLTIP_MSG, ''
+          );
         tableRows.push({
           format: key,
-          sequence: ('indexOfFirstInvalidChar' in outputSequenceObj) ?
-            ui.divH([]) : //@ts-ignore
-            ui.link(outputSequenceObj[key], () => navigator.clipboard.writeText(outputSequenceObj[key])
-              .then(() => grok.shell.info(SEQUENCE_COPIED_MSG)), SEQ_TOOLTIP_MSG, ''),
+          sequence: sequence,
         });
       }
 
