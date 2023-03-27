@@ -12,20 +12,14 @@ module.exports = {
     },
   },
   resolve: {
-    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
+    fallback: {'url': false},
+    extensions: ['.wasm', '.mjs', '.ts', '.js', '.json', '.tsx'],
   },
   module: {
     rules: [
-      {
-        test: /\.ts(x?)$/,
-        use: 'ts-loader',
-        exclude: /node_modules/,
-      },
-      {
-        test: /\.css$/,
-        use: ['style-loader', 'css-loader'],
-        exclude: /node_modules/,
-      },
+      {test: /\.js$/, enforce: 'pre', use: ['source-map-loader']},
+      {test: /\.ts(x?)$/, use: 'ts-loader', exclude: /node_modules/},
+      {test: /\.css$/, use: ['style-loader', 'css-loader'], exclude: /node_modules/},
     ],
   },
   devtool: 'source-map',

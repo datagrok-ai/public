@@ -44,7 +44,7 @@ import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {createJsonMonomerLibFromSdf, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {LIB_PATH, LIB_STORAGE_NAME, MonomerLibHelper} from './utils/monomer-lib';
-import { getMacromoleculeColumn } from './utils/ui-utils';
+import {getMacromoleculeColumn} from './utils/ui-utils';
 import {IUMAPOptions, ITSNEOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
@@ -77,11 +77,21 @@ export class SeqPaletteCustom implements SeqPalette {
 
 //tags: init
 export async function initBio() {
-  // loadLibrariesPromise = loadLibrariesPromise.then(() => {
-  await MonomerLibHelper.instance.loadLibraries(); // from initBio()
-  // });
-  // await loadLibrariesPromise;
-  const monomerLib = MonomerLibHelper.instance.getBioLib();
+  try {
+    await MonomerLibHelper.instance.loadLibraries(); // from initBio()
+
+    const monomerLib = MonomerLibHelper.instance.getBioLib();
+    await initBioPalette(monomerLib);
+  } catch (err: any) {
+    const errMsg: string = err instanceof Error ? err.message : !!err ? err.toString() : 'Exception \'undefined\'';
+    grok.shell.error(`Package 'Bio' init initBio() error: ${errMsg}`);
+    const errRes = new Error(errMsg);
+    errRes.stack = err.stack;
+    throw errRes;
+  }
+}
+
+export async function initBioPalette(monomerLib: IMonomerLib): Promise<void> {
   const monomers: string[] = [];
   const logPs: number[] = [];
   const module = await grok.functions.call('Chem:getRdKitModule');

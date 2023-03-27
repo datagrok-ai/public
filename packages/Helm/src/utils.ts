@@ -1,5 +1,14 @@
 import * as DG from 'datagrok-api/dg';
-import { RGROUP_CAP_GROUP_NAME, RGROUP_CAP_GROUP_SMILES, jsonSdfMonomerLibDict, MONOMER_SYMBOL, RGROUP_ALTER_ID, RGROUPS, RGROUP_LABEL, SDF_MONOMER_NAME } from "./constants";
+import {
+  RGROUP_CAP_GROUP_NAME,
+  RGROUP_CAP_GROUP_SMILES,
+  jsonSdfMonomerLibDict,
+  MONOMER_SYMBOL,
+  RGROUP_ALTER_ID,
+  RGROUPS,
+  RGROUP_LABEL,
+  SDF_MONOMER_NAME
+} from './constants';
 
 export function getParts(subParts: string[], s: string): string[] {
   let j = 0;
@@ -50,6 +59,28 @@ export function parseHelm(s: string) {
   }
   return monomers;
 }
+
+// /** Find monomers missed in Helm monomer library configured and
+//  * used in org.helm.webeditor / scil.helm.Monomers / org.helm.webeditor.Monomers .
+//  */
+// export function findMonomers(helmString: string) {
+//   //@ts-ignore
+//   const types: string[] = Object.keys(org.helm.webeditor.monomerTypeList());
+//   const monomerNameList: any[] = [];
+//   const monomerNameI: number = 0;
+//   const weMonomers = org.helm.webeditor.Monomers;
+//   for (let typeI = 0; typeI < types.length; typeI++) {
+//     //@ts-ignore
+//     const ofTypeMonomers: {} = weMonomers.getMonomerSet(types[typeI]) ?? {};
+//     Object.keys(ofTypeMonomers).forEach((key) => {
+//       const monomer: any = ofTypeMonomers[key];
+//       monomerNameList[monomerNameI] = monomer.id;
+//       monomerNameI += 1;
+//     });
+//   }
+//   const helmPartList = parseHelm(helmString);
+//   return new Set(helmPartList.filter((val) => !monomerNameList.includes(val)));
+// }
 
 export function findMonomers(helmString: string) {
   //@ts-ignore
