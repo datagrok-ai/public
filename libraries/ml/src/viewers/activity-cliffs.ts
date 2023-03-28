@@ -75,7 +75,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   propertyPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement,
   linesGridFunc?: (df: DG.DataFrame, pairColNames: string[]) => DG.Grid,
   seqSpaceOptions?: any) : Promise<DG.Viewer> {
- 
+
   const similarityLimit = similarity / 100;
   const dimensionalityReduceCol = encodedCol ?? seqCol;
   let zoom = false;
@@ -93,13 +93,12 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   };
 
   const { distance, coordinates } = await seqSpaceFunc(seqSpaceParams);
-  for (const col of coordinates) {
+  for (const col of coordinates)
     df.columns.add(col);
-  }
 
   const simArr = await createSimilaritiesMatrix(dimensionalityReduceCol, distance,
     !distance || nonNormalizedDistances.includes(similarityMetric), simMatrixFunc);
-  
+
   const cliffsMetrics: IActivityCliffsMetrics = getActivityCliffsMetrics(simArr, similarityLimit, activities);
 
   const sali: DG.Column = getSaliCountCol(dimensionalityReduceCol.length, cliffsMetrics.saliVals, cliffsMetrics.n1,
@@ -141,7 +140,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   listCliffsLink.classList.add('scatter_plot_link', 'cliffs_grid');
   sp.root.append(listCliffsLink);
 
-  /* in case several activity cliffs viewers are opened cliffs filtering can 
+  /* in case several activity cliffs viewers are opened cliffs filtering can
   be applyed only to one of the viewers. When 'Show only cliffs' is switched on one of the viewers
   switch inputs on other viewers are disabled */
   const filterCliffsButton = ui.switchInput(`Show only cliffs`, false, () => {
@@ -174,7 +173,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
       view.dockManager.close(linesDfGrid.root);
       viewerClosedSub.unsubscribe();
       view.subs = view.subs.filter((sub) => sub !== viewerClosedSub);
-    }  
+    }
   })
   view.subs.push(viewerClosedSub);
 
@@ -227,7 +226,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
         linesRes.lines.forEach((l) => {l.selected = false; });
         linesDfGrid.dataFrame.selection.setAll(false, false);
         linesDfGrid.invalidate();
-      } 
+      }
     }
   });
 

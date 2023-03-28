@@ -35,9 +35,8 @@ export async function chemSpace(spaceParams: ISequenceSpaceParams): Promise<ISeq
 }
 
 function setNullForEmptyAndMalformedData(matrix: Matrix, idx: number) {
-  for (const col of matrix) {
+  for (const col of matrix)
     col[idx] = DG.FLOAT_NULL;
-  };
 }
 
 export function getEmbeddingColsNames(df: DG.DataFrame) {

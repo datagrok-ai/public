@@ -10,12 +10,13 @@ export function malformedDataWarning(fingerprintCol: (BitArray | null)[], datafr
       malformedData.push(i);
   }
   if (malformedData.length) {
-    const message = ui.divText(`${malformedData.length} molecules are possibly malformed and are not included in analysis`);
+    const message = `${malformedData.length} molecules with indexes ${malformedData.join(',')} are possibly malformed and are not included in analysis`;
     const selectRowsButton = ui.button('Select', () => {
       for (const i of malformedData)
         dataframe.selection.set(i!, true);
     })
-    grok.shell.warning(ui.div([message, selectRowsButton]));
+    grok.shell.warning(message);
+    //grok.shell.warning(ui.div([ui.divText(message), selectRowsButton]));
   }
   return malformedData as number[];
 }
