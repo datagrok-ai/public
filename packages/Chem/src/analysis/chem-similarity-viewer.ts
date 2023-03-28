@@ -8,7 +8,6 @@ import {Fingerprint} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer} from './chem-search-base-viewer';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
-import { malformedDataWarning } from '../utils/malformed-data-utils';
 
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   isEditedFromSketcher: boolean = false;
@@ -47,7 +46,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             this.sketchedMolecule = savedMolecule;
           } else {
             this.sketchedMolecule = sketcher.getMolFile();
-            this.gridSelect = false;
+            this.gridSelect = false; 
             this.render();
           }
         })
@@ -66,27 +65,20 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   async render(computeData = true): Promise<void> {
     if (!this.beforeRender())
       return;
-    if (this.moleculeColumn) {
+    if (this.moleculeColumn) {   
       const progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        if (this.isEmptyValue()) {
+        if (this.isEmptyValue() || this.checkMalformedTargetMolecule()) {
           progressBar.close();
           return;
         }
-        try {
-          const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
-            this.targetMolecule, this.distanceMetric, this.limit, this.cutoff, this.fingerprint as Fingerprint);
-          this.molCol = df.getCol('smiles');
-          this.idxs = df.getCol('indexes');
-          this.scores = df.getCol('score');
-        } catch (e: any){
-          grok.shell.error(e.message);
-          return;
-        } finally {
-          progressBar.close();
-        }
+        const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
+          this.targetMolecule, this.distanceMetric, this.limit, this.cutoff, this.fingerprint as Fingerprint);
+        this.molCol = df.getCol('smiles');
+        this.idxs = df.getCol('indexes');
+        this.scores = df.getCol('score');
       } else if (this.gridSelect)
         this.gridSelect = false;
       this.clearResults();
@@ -171,6 +163,20 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     return false;
   }
 
+  checkMalformedTargetMolecule(): boolean {
+    let mol;
+    try {
+      mol = getRdKitModule().get_mol(this.targetMolecule);
+      return false;
+    } catch (e: any) {
+      grok.shell.error(`Possibly malformed target molecule`);
+      this.clearResults();
+      return true;
+    } finally {
+      if (mol) mol.delete();
+    }
+  }
+
   clearResults() {
     if (this.root.hasChildNodes())
       this.root.removeChild(this.root.childNodes[0]);
@@ -186,15 +192,15 @@ export async function chemSimilaritySearch(
   minScore: number,
   fingerprint: Fingerprint,
 ) : Promise<DG.DataFrame> {
+  limit = Math.min(limit, smiles.length);
   const targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint);
   const fingerprintCol = await chemSearches.chemGetFingerprints(smiles, fingerprint);
-  malformedDataWarning(fingerprintCol, table);
   const distances: number[] = [];
 
   const fpSim = similarityMetric[metricName];
   for (let row = 0; row < fingerprintCol.length; row++) {
     const fp = fingerprintCol[row];
-    distances[row] = (!fp || fp!.allFalse) ? 100.0 : fpSim(targetFingerprint, fp!);
+    distances[row] = fp == null ? 100.0 : fpSim(targetFingerprint, fp);
   }
 
   function range(end: number) {
@@ -212,12 +218,12 @@ export async function chemSimilaritySearch(
   }
 
   const indexes = range(table.rowCount)
-    .filter((idx) => fingerprintCol[idx] && !fingerprintCol[idx]!.allFalse)
+    .filter((idx) => fingerprintCol[idx] != null)
     .sort(compare);
   const molsList = [];
   const scoresList = [];
   const molsIdxs = [];
-  limit = Math.min(indexes.length, limit);
+
   for (let n = 0; n < limit; n++) {
     const idx = indexes[n];
     const score = distances[idx];
