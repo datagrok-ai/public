@@ -115,12 +115,12 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     if (queryMol !== null) {
         if (bitset) {
           for (let i = 0; i < bitset.length; ++i) {
-            if (bitset[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
+            if (bitset[i] && this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
               matches.push(i);
           }
         } else {
           for (let i = 0; i < this._rdKitMols!.length; ++i) {
-            if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
+            if (this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
               matches.push(i);
           }
         }
