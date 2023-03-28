@@ -35,7 +35,7 @@ export class SARViewerBase extends DG.JsViewer {
 
   onTableAttached(): void {
     super.onTableAttached();
-    this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
+    this.sourceGrid = (this.view as DG.TableView)?.grid ?? (grok.shell.v as DG.TableView).grid;
     // this.model = PeptidesModel.getInstance(this.dataFrame);
     this.subs.push(this.model.onMutationCliffsSelectionChanged.subscribe(() => this.viewerGrid.invalidate()));
     this.helpUrl = '/help/domains/bio/peptides.md';

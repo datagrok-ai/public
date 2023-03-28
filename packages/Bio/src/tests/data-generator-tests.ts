@@ -5,17 +5,17 @@ import {category, expect, test, before, expectFloat} from '@datagrok-libraries/u
 import {colNames, DistributionParams, generatePeptidesDataFrame} from '@datagrok-libraries/bio/src/utils/data-generator';
 import {getSplitterForColumn, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
 
 category('data-generator', () => {
   const naturalMonomers: string[] = Array.from(UnitsHandler.PeptideFastaAlphabet);
-  const polymerType = 'PEPTIDE';
   const distParams: DistributionParams = {type: 'normal', mean: 0, std: 1};
   const clusterSequenceLength = [14];
   let monomerLibMonomers: string[];
 
   before(async () => {
     const bioLib = await grok.functions.call('Bio:getBioLib');
-    monomerLibMonomers = bioLib.getMonomerNamesByType(polymerType);
+    monomerLibMonomers = bioLib.getMonomerNamesByType(HELM_POLYMER_TYPE.PEPTIDE);
   });
 
   test('Generate FASTA', async () => {

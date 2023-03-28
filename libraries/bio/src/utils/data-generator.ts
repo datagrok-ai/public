@@ -20,12 +20,13 @@ export function generatePeptidesDataFrame(type: NOTATION, length: number, alphab
   const sequencesCol = df.columns.addNewString(colNames.sequences);
   const clustersCol = df.columns.addNewInt(colNames.clusters);
   const clustersColRawData = clustersCol.getRawData();
-  const activityCol = df.columns.addNewInt(colNames.activity);
+  const activityCol = df.columns.addNewFloat(colNames.activity);
   const activityColRawData = activityCol.getRawData();
 
   for (let rowIdx = 0; rowIdx < length; ++rowIdx) {
-    const sequenceLength = clusterSequenceLengths[Math.floor(Math.random() * clusterSequenceLengths.length)];
-    clustersColRawData[rowIdx] = sequenceLength;
+    const cluster = Math.floor(Math.random() * clusterSequenceLengths.length);
+    const sequenceLength = clusterSequenceLengths[cluster];
+    clustersColRawData[rowIdx] = cluster;
     activityColRawData[rowIdx] = sampleFrom[distParams.type](distParams.mean, distParams.std);
     const sequence = generateSequence(type, alphabet, sequenceLength);
     sequencesCol.set(rowIdx, sequence);

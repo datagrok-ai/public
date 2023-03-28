@@ -3,7 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {sequenceToMolFileST} from './to-atomic-level';
 
-import {IMonomerLib, Monomer} from '../types';
+import {IMonomerLib} from '../types';
+import {HELM_POLYMER_TYPE} from '../utils/const';
 
 
 /** Hypothetical interface to convert mol block notation.
@@ -27,8 +28,8 @@ export class MonomerWorks {
   }
 
   //types according to Monomer possible
-  public getCappedRotatedMonomer(monomerType: string, monomerName: string): string | null {
-    const monomer = this.monomerLib.getMonomer(monomerType, monomerName);
+  public getCappedRotatedMonomer(polymerType: HELM_POLYMER_TYPE, monomerName: string): string | null {
+    const monomer = this.monomerLib.getMonomer(polymerType, monomerName);
     if (monomer)
       return monomer.molfile; //TODO cap
 
@@ -36,7 +37,7 @@ export class MonomerWorks {
   }
 
   /** Consumes a list of monomer symbols and restores molfileV3K (SequenceTranslator/ST version) */
-  public getAtomicLevel(monomers: string[], polymerType: string): string | null {
+  public getAtomicLevel(monomers: string[], polymerType: HELM_POLYMER_TYPE): string | null {
     return sequenceToMolFileST(
       monomers, this.monomerLib.getMonomerMolsByType(polymerType)!
     );

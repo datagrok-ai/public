@@ -13,10 +13,16 @@ import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {LogoSummaryTable} from './viewers/logo-summary';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {PeptidesModel} from './model';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {DistributionParams, generatePeptidesDataFrame} from '@datagrok-libraries/bio/src/utils/data-generator';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {HELM_MONOMER_TYPE, HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
 
 let monomerWorks: MonomerWorks | null = null;
 let treeHelper: ITreeHelper | null = null;
 let dendrogramService: IDendrogramService | null = null;
+let monomerLib: IMonomerLib | null = null;
 
 export const _package = new DG.Package();
 
@@ -32,11 +38,16 @@ export function getDendrogramServiceInstance(): IDendrogramService {
   return dendrogramService!;
 }
 
+export function getMonomerLib(): IMonomerLib | null {
+  return monomerLib;
+}
+
 //tags: init
 export async function initPeptides(): Promise<void> {
-  monomerWorks ??= new MonomerWorks(await grok.functions.call('Bio:getBioLib'));
   treeHelper ??= await getTreeHelper();
   dendrogramService ??= await getDendrogramService();
+  monomerLib ??= await grok.functions.call('Bio:getBioLib');
+  monomerWorks ??= new MonomerWorks(monomerLib!);
 }
 
 async function openDemoData(chosenFile: string): Promise<void> {
@@ -49,6 +60,29 @@ async function openDemoData(chosenFile: string): Promise<void> {
   grok.shell.windows.showProperties = true;
 
   pi.close();
+}
+
+export function generateDemoData(notation: NOTATION): void {
+  const pi = DG.TaskBarProgressIndicator.create('Generating Demo Data');
+  try {
+    const alphabet = notation === NOTATION.FASTA ? Array.from(UnitsHandler.PeptideFastaAlphabet) :
+      monomerLib!.getMonomerNamesByType(HELM_POLYMER_TYPE.PEPTIDE)
+      .filter((monomer) => {
+        const monLibMonomer = monomerLib?.getMonomer(HELM_POLYMER_TYPE.PEPTIDE, monomer);
+        return (monLibMonomer?.rgroups?.length ?? 0) >= 2 && monLibMonomer?.monomerType === HELM_MONOMER_TYPE.BACKBONE;
+      });
+    const clusterLens = Array.from({length: 500}, () => 14 + Math.floor(Math.random() * 4));
+    const distParams: DistributionParams = {type: 'lognormal', mean: 0.001, std: 1};
+    const demoDf = generatePeptidesDataFrame(notation, 5000, alphabet, clusterLens, distParams);
+    const view = grok.shell.addTableView(demoDf);
+    grok.data.detectSemanticTypes(demoDf);
+    view.name = 'PeptidesView';
+    grok.shell.windows.showProperties = true;
+  } catch (e) {
+    throw e;
+  } finally {
+    pi.close();
+  }
 }
 
 //name: Peptides
@@ -87,6 +121,11 @@ export function Peptides(): void {
       ui.button('Simple demo', () => openDemoData('aligned.csv'), ''),
       ui.button('Complex demo', () => openDemoData('aligned_2.csv'), ''),
       ui.button('HELM demo', () => openDemoData('aligned_3.csv'), ''),
+    ]),
+    ui.divH([
+      ui.button('Generate FASTA demo', () => generateDemoData(NOTATION.FASTA), ''),
+      ui.button('Generate separator demo', () => generateDemoData(NOTATION.SEPARATOR), ''),
+      ui.button('Generate HELM demo', () => generateDemoData(NOTATION.HELM), ''),
     ]),
   ]);
 }

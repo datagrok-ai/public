@@ -1,6 +1,7 @@
 import {category, test} from '@datagrok-libraries/utils/src/test';
 import * as utils from './utils';
 import {DimensionalityReducer} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {AvailableMetricsTypes} from '@datagrok-libraries/ml/src/typed-metrics';
 import {cleanAlignedSequencesColumn} from '../utils/peptide-similarity-space';
 import {aligned1} from './test-data';
 
@@ -28,7 +29,7 @@ category('Peptide space', async () => {
   test('test_deminsionality_reducer', async () => {
     const columnData = cleanAlignedSequencesColumn(alignedSequencesColumn);
     for (const method of DimensionalityReducer.availableMethods) {
-      for (const measure of DimensionalityReducer.availableMetricsByType('String')) {
+      for (const measure of DimensionalityReducer.availableMetricsByType(AvailableMetricsTypes.String)) {
         test(`peptide_space.DimensinalityReducer.${method}.${measure}.is_numeric`, async () => {
           await utils._testDimensionalityReducer(columnData, method as StringMetrics, measure);
         });
@@ -38,7 +39,7 @@ category('Peptide space', async () => {
 
   test('test_peptide_similarity_space_viewer', async () => {
     for (const method of DimensionalityReducer.availableMethods) {
-      for (const measure of DimensionalityReducer.availableMetricsByType('String')) {
+      for (const measure of DimensionalityReducer.availableMetricsByType(AvailableMetricsTypes.String)) {
         test(`peptide_space.PeptideSimilaritySpaceViewer.${method}.${measure}.is_proper`, async () => {
           await utils._testPeptideSimilaritySpaceViewer(table, alignedSequencesColumn, method, measure, 100);//, view);
         });

@@ -23,6 +23,7 @@ import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {pickUpPalette, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
 
 import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
 import {StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
@@ -850,7 +851,7 @@ export class PeptidesModel {
     const monomerName = aar.toLowerCase();
 
     const mw = getMonomerWorksInstance();
-    const mol = mw?.getCappedRotatedMonomer('PEPTIDE', aar);
+    const mol = mw?.getCappedRotatedMonomer(HELM_POLYMER_TYPE.PEPTIDE, aar);
 
     if (mol) {
       tooltipElements.push(ui.div(monomerName));

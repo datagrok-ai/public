@@ -14,7 +14,7 @@ import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cli
 import {
   createLinesGrid, createPropPanelElement, createTooltipElement, getChemSimilaritiesMatrix,
 } from './analysis/sequence-activity-cliffs';
-import {HELM_CORE_LIB_FILENAME} from '@datagrok-libraries/bio/src/utils/const';
+import {HELM_CORE_LIB_FILENAME, HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
 import {getMacroMolColumnPropertyPanel, representationsWidget} from './widgets/representations';
@@ -91,7 +91,7 @@ export async function initBio() {
   const logPs: number[] = [];
   const module = await grok.functions.call('Chem:getRdKitModule');
 
-  const series = monomerLib!.getMonomerMolsByType('PEPTIDE')!;
+  const series = monomerLib!.getMonomerMolsByType(HELM_POLYMER_TYPE.PEPTIDE)!;
   Object.keys(series).forEach((symbol) => {
     monomers.push(symbol);
     const block = series[symbol].replaceAll('#R', 'O ');
