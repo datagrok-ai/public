@@ -109,7 +109,7 @@ class Neo4jDataProviderTest {
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
-    @DisplayName("Parameters support for all property types")
+    @DisplayName("Support for all property types")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.Neo4jObjectsMother#checkAllTypesSupport_ok")
     public void checkAllTypesSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
