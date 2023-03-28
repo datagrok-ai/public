@@ -15,7 +15,7 @@ export class DropDown {
   root: HTMLDivElement;
 
 
-  constructor(label: string | Element, elementCreation: () => HTMLElement) {
+  constructor(label: string | Element, createElement: () => HTMLElement) {
     this._element = ui.div();
     this._dropDownElement = ui.div();
     this._isMouseOverElement = false;
@@ -24,13 +24,13 @@ export class DropDown {
     this.isExpanded = false;
     this.root = ui.div();
 
-    this._updateElement(elementCreation);
+    this._updateElement(createElement);
     this._initEventListeners();
   }
 
 
-  private _updateElement(elementCreation: () => HTMLElement) {
-    this._element = elementCreation();
+  private _updateElement(createElement: () => HTMLElement) {
+    this._element = createElement();
 
     this._dropDownElement = ui.div(ui.div(this._element), 'ui-drop-down-content');
     this._dropDownElement.style.visibility = 'hidden';
@@ -41,8 +41,10 @@ export class DropDown {
   private _initEventListeners() {
     this.root.addEventListener('mousedown', (e) => {
       // check if the button is LMB
-      if (e.button !== 0) return;
-      if (this._isMouseOverElement) return;
+      if (e.button !== 0)
+        return;
+      if (this._isMouseOverElement)
+        return;
 
       this._setExpandedState(this.isExpanded);
     });
@@ -56,8 +58,10 @@ export class DropDown {
     }, false);
 
     document.addEventListener('click', (event) => {
-      if (this.root.contains(event.target as Node)) return;
-      if (!this.isExpanded) return;
+      if (this.root.contains(event.target as Node))
+        return;
+      if (!this.isExpanded)
+        return;
 
       this._setExpandedState(this.isExpanded);
     });
@@ -77,10 +81,7 @@ export class DropDown {
 
 
   get onExpand(): Observable<MouseEvent> {
-    return fromEvent<MouseEvent>(this.root, 'click')
-      .pipe(
-        filter(() => !this._isMouseOverElement)
-      );
+    return fromEvent<MouseEvent>(this.root, 'click').pipe(filter(() => !this._isMouseOverElement));
   }
 
   get onElementClick(): Observable<MouseEvent> {

@@ -13,9 +13,8 @@ export class Breadcrumbs {
     this.root = ui.div();
     this.path = path;
 
-    this.root = ui.divH(path.map((element) =>
-      ui.div(ui.span([element], `ui-breadcrumbs-text-element ${element}`),
-        'ui-breadcrumbs-element')), 'ui-breadcrumbs');
+    this.root = ui.divH(path.map((element) => ui.div(ui.span([element], `ui-breadcrumbs-text-element ${element}`),
+      'ui-breadcrumbs-element')), 'ui-breadcrumbs');
   }
 
   get onPathClick(): Observable<string[]> {
