@@ -912,7 +912,8 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     protected boolean isDecimal(int type, String typeName, int scale) {
         return (type == java.sql.Types.DECIMAL) || (type == java.sql.Types.NUMERIC) ||
-                typeName.equalsIgnoreCase("decimal");
+                typeName.equalsIgnoreCase("decimal")
+                || typeName.equalsIgnoreCase("decfloat");
     }
 
     private static boolean isBoolean(int type, String typeName, int precision) {
@@ -922,7 +923,8 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     private static boolean isString(int type, String typeName) {
         return ((type == java.sql.Types.VARCHAR)|| (type == java.sql.Types.CHAR) ||
-                (type == java.sql.Types.LONGVARCHAR) || (type == java.sql.Types.CLOB) ||
+                (type == java.sql.Types.LONGVARCHAR) || (type == java.sql.Types.CLOB)
+                || (type == java.sql.Types.NCLOB) ||
                 typeName.equalsIgnoreCase("varchar") ||
                 typeName.equalsIgnoreCase("nvarchar") ||
                 typeName.equalsIgnoreCase("nchar") ||
