@@ -52,7 +52,7 @@ import {demoBio01UI} from './demo/bio01-similarity-diversity';
 import {demoBio01aUI} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
 import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
 import {demoBio05UI} from './demo/bio05-helm-msa-sequence-space';
-import { DistributionParams, DistributionType, generatePeptidesDataFrame } from '@datagrok-libraries/bio/src/utils/data-generator';
+import {DistributionType, generatePeptidesDataFrame} from '@datagrok-libraries/bio/src/utils/data-generator';
 
 // /** Avoid reassinging {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
 // let monomerLib: MonomerLib | null = null;

@@ -35,10 +35,7 @@ export function generatePeptidesDataFrame(type: NOTATION, length: number, alphab
 }
 
 function generateSequence(type: NOTATION, alphabet: string[], length: number): string {
-  const sequence = [];
-  for (let i = 0; i < length; ++i)
-    sequence.push(alphabet[Math.floor(Math.random() * alphabet.length)]);
-
+  const sequence = Array.from({length}, () => alphabet[Math.floor(Math.random() * alphabet.length)]);
   return buildSequence(sequence, type);
 }
 
