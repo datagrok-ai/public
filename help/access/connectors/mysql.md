@@ -57,10 +57,13 @@ via JDBC driver.
 | TIMESTAMP, YEAR               | :white_check_mark:     |
 | CHAR, VARCHAR, TEXT           | :white_check_mark:     |
 | JSON                          | :white_check_mark: (1) |
-| GEOMETRY                      | :white_check_mark: (1) |
+| GEOMETRY                      | :white_check_mark: (2) |
+| BIT                           | :white_check_mark: (3) |
 | BINARY, VARBINARY, BLOB       | not tested             |
 
 * (1) supported as a string
+* (2) you get unreadable representation, but in query you can cast such a types to text (e.g. ST_AsText function)
+* (3) requires explicit cast (e.g. BIN function)
 
 ## Supported features
 
