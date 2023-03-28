@@ -240,9 +240,9 @@ export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Co
 
   try {
     const fingerprints = await chemSearches.chemGetFingerprints(molColumn, Fingerprint.Morgan);
-    const fingerprintsBitsets: (DG.BitSet | null)[] = [];
+    const fingerprintsBitsets: DG.BitSet[] = [];
     for (let i = 0; i < fingerprints.length; ++i) {
-      const fingerprint = fingerprints[i] ? DG.BitSet.fromBytes(fingerprints[i]!.getRawData().buffer, fingerprints[i]!.length) : null;
+      const fingerprint = DG.BitSet.fromBytes(fingerprints[i].getRawData().buffer, fingerprints[i].length);
       fingerprintsBitsets.push(fingerprint);
     }
     return DG.Column.fromList('object', 'fingerprints', fingerprintsBitsets);
@@ -412,8 +412,11 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
 
   const embedColsNames = getEmbeddingColsNames(table);
 
+  // dimensionality reducing algorithm doesn't handle empty values correctly so remove empty values at this step
+  const withoutEmptyValues = DG.DataFrame.fromColumns([molecules]).clone();
+  const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, molecules);
   const chemSpaceParams = {
-    seqCol: molecules,
+    seqCol: withoutEmptyValues.col(molecules.name)!,
     methodName: methodName,
     similarityMetric: similarityMetric,
     embedAxesNames: [embedColsNames[0], embedColsNames[1]],
@@ -422,8 +425,11 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
   const chemSpaceRes = await chemSpace(chemSpaceParams);
   const embeddings = chemSpaceRes.coordinates;
 
+  //inserting empty values back into results
   for (const col of embeddings) {
-    table.columns.add(col);
+    const listValues = col.toList();
+    emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
+    table.columns.add(DG.Column.float(col.name, table.rowCount).init((i)=> listValues[i]));
   }
   if (plotEmbeddings)
     return grok.shell
