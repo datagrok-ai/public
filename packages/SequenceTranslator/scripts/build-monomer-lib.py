@@ -20,6 +20,9 @@ END_BOND_LINE = 'M  V30 END BOND'
 BEGIN_COLLECTION_LINE = 'M  V30 BEGIN COLLECTION'
 END_COLLECTION_LINE = 'M  V30 END COLLECTION'
 COLLECTION_STEABS_LINE = 'M  V30 MDLV30/STEABS'
+IDX_OF_FIRST_VALUE = 7
+NUM_OF_BOND_POSITIONAL_ARGS = 4
+CFG = "CFG="
 
 
 def mol_add_collection(mol: Mol,
@@ -60,7 +63,7 @@ def mol_add_collection(mol: Mol,
                 tgt_bond_cfg_str: str = ' '.join(tgt_bond.cfg)
                 src_bond_cfg_str: str = ' '.join(src_bond.cfg)
                 if tgt_bond_cfg_str != src_bond_cfg_str:
-                    mb_line_list[tgt_mol_file_map.begin_bond_idx + tgt_bond.number] += f" {src_bond_cfg_str}"
+                    mb_line_list[tgt_mol_file_map.begin_bond_idx + tgt_bond.bond_idx] += f" {src_bond_cfg_str}"
 
         for (tgt_atom_idx0, tgt_atom) in enumerate(tgt_mol_file_map.mol_file.atom_list):
             src_atom = src_mol_file_map.mol_file.atom_list[tgt_atom_idx0]
@@ -72,9 +75,9 @@ def mol_add_collection(mol: Mol,
             elif atom_ch != Chem.rdchem.CHI_UNSPECIFIED:
                 mb_line_list[tgt_mol_file_map.begin_atom_idx + tgt_atom_idx0 + 1] += " CFG={0}".format(int(atom_ch))
                 steabs.append(tgt_atom_idx0 + 1)
-            elif src_atom.number in src_mol_file_map.mol_file.collection_steabs:
+            elif src_atom.atom_idx in src_mol_file_map.mol_file.collection_steabs:
                 raise KeyError(f"Source STEABS atom '{src_atom}' not accounted")
-            elif tgt_atom.number in tgt_mol_file_map.mol_file.collection_steabs:
+            elif tgt_atom.atom_idx in tgt_mol_file_map.mol_file.collection_steabs:
                 raise KeyError(f"Target STEABS atom '{tgt_atom}' not accounted")
     else:
         # from Smiles (without src_mol)
@@ -123,7 +126,6 @@ CodesType = dict[str, dict[str, list[str]]]
 
 
 class Monomer:
-
     def __init__(self, symbol: str, name: str, molfile: str, smiles: str,
                  codes: CodesType):
         self.monomerType = 'Backbone'
@@ -175,54 +177,73 @@ class Monomer:
 
 
 class MolFileAtom:
-    def __init__(self, src: str):
-        self._src = src
-        self._parts: [] = self._src[7:].split(' ')
-        self._number = int(self._parts[0].strip())
-        self._cfg = self._parts[6:]
+    """
+    Wrapper for data extracted from molfile atom line
+    """
+    def __init__(self, v3k_atom_line: str):
+        self._atom_line = v3k_atom_line
+        self._atom_line_splitted: [] = self.\
+            _atom_line[IDX_OF_FIRST_VALUE:].split(' ')
+        self._atom_idx = int(self._atom_line_splitted[0].strip())
+        # we cannot use positional argument for cfg for it is a kwarg
+        cfg_item = list(filter(
+            lambda x: x.startswith(CFG), self._atom_line_splitted
+            ))
+        self._cfg = cfg_item
 
     @property
-    def src(self) -> str:
-        return self._src
+    def atom_line_str(self) -> str:
+        return self._atom_line
 
     @property
-    def number(self):
-        return self._number
+    def atom_idx(self):
+        return self._atom_idx
 
     @property
-    def parts(self) -> list[str]:
-        return self.parts
+    def atom_line_splitted(self) -> list[str]:
+        return self.atom_line_splitted
 
     @property
     def cfg(self) -> list[str]:
         return self._cfg
 
+    @property
+    def cfg_int(self) -> int:
+        return self._cfg
+
     def __str__(self):
-        return self._src
+        return self._atom_line
 
     def __repr__(self):
         return str(self)
 
 
 class MolFileBond:
-    def __init__(self, src: str):
-        self._src = src
-        self._parts: [] = self._src[7:].split(' ')
-        self._number = int(self._parts[0].strip())
-        self._key = self._parts[0:4]
-        self._cfg = self._parts[4:]
+    """
+    Wrapper for data extracted from molfile bond line
+    """
+    def __init__(self, v3k_bond_line: str):
+        self._bond_line = v3k_bond_line
+        self._bond_line_splitted: [] = self.\
+            _bond_line[IDX_OF_FIRST_VALUE:].split(' ')
+        self._bond_idx = int(self._bond_line_splitted[0].strip())
+        self._key = self._bond_line_splitted[0:NUM_OF_BOND_POSITIONAL_ARGS]
+        cfg_item = list(filter(
+            lambda x: x.startswith(CFG), self._bond_line_splitted
+            ))
+        self._cfg = cfg_item
 
     @property
-    def src(self) -> str:
-        return self._src
+    def bond_line(self) -> str:
+        return self._bond_line
 
     @property
-    def number(self):
-        return self._number
+    def bond_idx(self):
+        return self._bond_idx
 
     @property
-    def parts(self) -> list[str]:
-        return self.parts
+    def bond_line_splitted(self) -> list[str]:
+        return self._bond_line_splitted
 
     @property
     def key(self):
@@ -233,26 +254,31 @@ class MolFileBond:
         return self._cfg
 
     def __str__(self):
-        return self._src
+        return self._bond_line
 
     def __repr__(self):
         return str(self)
 
 
-class MolFile:
-    def __init__(self, title: str, atom_list: list[MolFileAtom], bond_list: list[MolFileBond],
-                 collection_steabs: list[int] = []):
+class MolFileV3K:
+    """
+    Wrapper for data extracted from molfile
+    """
+    def __init__(
+            self, title: str, atom_list: list[MolFileAtom],
+            bond_list: list[MolFileBond],
+            collection_steabs: list[int] = None
+            ):
         self._title = title
         self._atom_list = atom_list
         self._bond_list = bond_list
-        self.collection_steabs = collection_steabs
+        self.collection_steabs = [] if collection_steabs is None \
+            else collection_steabs
 
         self._bonds: dict = {}
         for bond in self._bond_list:
-            bond_line = bond.src
-            bond_parts = bond_line[7:].split(' ')
-            # list is unhashable type, but tuple s
-            bond_key = tuple((int(v) for v in bond_parts[0:4]))
+            # list is unhashable type, but tuple is
+            bond_key = tuple((int(v) for v in bond.key))
             self._bonds[bond_key] = bond
 
     @property
@@ -269,18 +295,21 @@ class MolFile:
 
 
 class MolFileMap:
-    def __init__(self, src: str, mol_file: MolFile,
-                 begin_atom_idx: int, end_atom_idx: int, begin_bond_idx: int, end_bond_idx: int,
-                 begin_collection_idx: int = None, end_collection_idx: int = None,
+    def __init__(self, src: str, mol_file: MolFileV3K,
+                 atom_block_idx_boundaries: tuple[int, int],
+                 bond_block_idx_boundaries: tuple[int, int],
+                 collection_idx_boundaries: tuple[int, int] = None,
                  collection_steabs_idx: int = None):
         self._src = src
         self._mol_file = mol_file
-        self.begin_atom_idx = begin_atom_idx
-        self.end_atom_idx = end_atom_idx
-        self.begin_bond_idx = begin_bond_idx
-        self.end_bond_idx = end_bond_idx
-        self.begin_collection_idx = begin_collection_idx
-        self.end_collection_idx = end_collection_idx
+        self.begin_atom_idx = atom_block_idx_boundaries[0]
+        self.end_atom_idx = atom_block_idx_boundaries[1]
+        self.begin_bond_idx = bond_block_idx_boundaries[0]
+        self.end_bond_idx = bond_block_idx_boundaries[1]
+        self.begin_collection_idx = None if collection_idx_boundaries is None \
+            else collection_idx_boundaries[0]
+        self.end_collection_idx = None if collection_idx_boundaries is None \
+            else collection_idx_boundaries[1]
         self.collection_steabs_idx = collection_steabs_idx
 
     @property
@@ -292,41 +321,54 @@ class MolFileMap:
         return self._mol_file
 
     @staticmethod
-    def parse(mol_src: str):
-        mb_line_list: list[str] = [line.rstrip() for line in mol_src.split('\n')]
-        title: str = mb_line_list[1]
+    def parse(molblock_src: str):
+        molblock_line_list: list[str] = \
+            [line.rstrip() for line in molblock_src.split('\n')]
+        title: str = molblock_line_list[1]
 
-        begin_atom_idx: int = mb_line_list.index(BEGIN_ATOM_LINE)
-        end_atom_idx: int = mb_line_list.index(END_ATOM_LINE)
-        atom_count = end_atom_idx - begin_atom_idx - 1
-        atom_list: list[Optional[MolFileAtom]] = [None] * atom_count
-        for atom_idx in range(1, atom_count + 1):
-            line_idx = begin_atom_idx + atom_idx
-            atom_line = mb_line_list[line_idx]
-            atom = MolFileAtom(atom_line)
-            atom_list[atom_idx - 1] = atom
+        def get_idx_boundaries(begin_str: str, end_str: str):
+            return tuple([
+                molblock_line_list.index(begin_str),
+                molblock_line_list.index(end_str)
+                ])
 
-        begin_bond_idx: int = mb_line_list.index(BEGIN_BOND_LINE)
-        end_bond_idx: int = mb_line_list.index(END_BOND_LINE)
-        bond_count: int = end_bond_idx - begin_bond_idx - 1
-        bond_list: list[Optional[MolFileBond]] = [None] * bond_count
-        for bond_idx in range(1, bond_count + 1):
-            line_idx = begin_bond_idx + bond_idx
-            bond_line = mb_line_list[line_idx]
-            bond = MolFileBond(bond_line)
-            bond_list[bond_idx - 1] = bond
+        def get_wrapper_list(
+                begin_idx: int, end_idx: int, wrapper_constructor
+                ):
+            """
+            For the list of atom/bond wrapper objects
+            """
+            item_count = end_idx - begin_idx - 1  # for atoms or bonds
+            wrapper_list = [None] * item_count
+            for item_idx in range(1, item_count + 1):
+                line_idx = begin_idx + item_idx
+                line = molblock_line_list[line_idx]
+                item = wrapper_constructor(line)
+                wrapper_list[item_idx - 1] = item
+            return wrapper_list
 
-        begin_collection_idx = None
-        end_collection_idx = None
+        atom_block_idx_boundaries = get_idx_boundaries(
+                BEGIN_ATOM_LINE, END_ATOM_LINE)
+        bond_block_idx_boundaries = get_idx_boundaries(
+                BEGIN_BOND_LINE, END_BOND_LINE)
+        atom_list = get_wrapper_list(
+                atom_block_idx_boundaries[0],
+                atom_block_idx_boundaries[1], MolFileAtom)
+        bond_list = get_wrapper_list(
+                bond_block_idx_boundaries[0],
+                bond_block_idx_boundaries[1], MolFileBond)
+
+        collection_idx_boundaries = None
         collection_steabs_idx = None
         collection_steabs: list[int] = []
-        if BEGIN_COLLECTION_LINE in mb_line_list and END_COLLECTION_LINE in mb_line_list:
-            begin_collection_idx = mb_line_list.index(BEGIN_COLLECTION_LINE)
-            end_collection_idx = mb_line_list.index(END_COLLECTION_LINE)
-            collection_count: int = end_collection_idx - begin_collection_idx - 1
+        if BEGIN_COLLECTION_LINE in molblock_line_list and END_COLLECTION_LINE in molblock_line_list:
+            collection_idx_boundaries = get_idx_boundaries(
+                    BEGIN_COLLECTION_LINE, END_COLLECTION_LINE)
+            collection_count: int = collection_idx_boundaries[1] - \
+                collection_idx_boundaries[0] - 1
             for collection_idx in range(1, collection_count + 1):
-                line_idx = begin_collection_idx + collection_idx
-                collection_line = mb_line_list[line_idx]
+                line_idx = collection_idx_boundaries[0] + collection_idx
+                collection_line = molblock_line_list[line_idx]
                 if collection_line.startswith(COLLECTION_STEABS_LINE):
                     steabs_str = collection_line[len(COLLECTION_STEABS_LINE + " ATOMS=("):-1]
                     collection_steabs = [int(atom_num_str.strip()) for atom_num_str in steabs_str.split(' ')[1:]]
@@ -334,11 +376,11 @@ class MolFileMap:
                 else:
                     raise ValueError(f"Unexpected collection line '{collection_line}'.")
 
-        mol_file = MolFile(title, atom_list, bond_list, collection_steabs)
-        return MolFileMap(mol_src, mol_file,
-                          begin_atom_idx, end_atom_idx, begin_bond_idx, end_bond_idx,
-                          begin_collection_idx, end_collection_idx,
-                          collection_steabs_idx)
+        mol_file = MolFileV3K(title, atom_list, bond_list, collection_steabs)
+        return MolFileMap(
+                molblock_src, mol_file,
+                atom_block_idx_boundaries, bond_block_idx_boundaries,
+                collection_idx_boundaries, collection_steabs_idx)
 
 
 def codes2monomers(codes_json: {}) -> dict[str, Monomer]:
