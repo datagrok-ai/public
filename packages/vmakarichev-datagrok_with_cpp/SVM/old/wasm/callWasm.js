@@ -446,8 +446,6 @@ export function callWasm(module, funcName, inputs) {
 
     } // for key        
 
-    console.log(cppFuncInput);
-
     // CALL EXPORTED CPP-FUNCTION
     let callResult = cppFuncWrapper(module, funcName, 'num', cppFuncInput);
 

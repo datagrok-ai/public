@@ -19,171 +19,81 @@ export async function init() {
   await initSVMlib();
 }
 
-//name: evaluateFaults
-//input: dataframe df
-//input: column col1
-//input: column col2
-export function evaluateFaults(df, col1, col2) {
-  // TODO: add correctness check
-  let arr1 = col1.getRawData();
-  let arr2 = col2.getRawData();
-  let size = arr1.length;
-  let faults = 0;
-  let res = new Float32Array(size); 
-  
-  for(let i = 0; i < size; i++) {
-    res[i] = arr1[i] * arr2[i];
-
-    if(res[i] < 0)
-      faults++;
-  }
-
-  df.columns.add(DG.Column.fromFloat32Array('FAULTS', res));
-
-  alert(`Error: ${100.0 * faults / size} %.`);
-} // evaluateFaults
-
-//name: generateDataset
-//input: string name = 'Data'
-//input: int featuresCount = 2
-//input: int samplesCount = 100
-//input: double min = -250
-//input: double max = 300
-//input: double violatorsPercentage = 10
-export function generateDataset(name, featuresCount, samplesCount, min, max, violatorsPercentage) 
+//name: Generate test data (linear kernel case)
+//description: Generates dataset for testing SVN with linear kernel.
+//input: string name = 'Data' {caption: name; category: Dataset}
+//input: int samplesCount = 100 {caption: samples; category: Size}
+//input: int featuresCount = 2 {caption: features; category: Size}
+//input: double min = -39 {caption: min; category: Range}
+//input: double max = 173 {caption: max; category: Range}
+//input: double violatorsPercentage = 5 {caption: violators; units: %; category: Dataset}
+export function generateDatasetLinear(name, samplesCount, featuresCount, 
+  min, max, violatorsPercentage) 
 {
-  // TODO: add correctness check
+  // linear kernel ID
+  let kernel = 0;
 
+  // linear kernel parameters (any values can be used)
+  let kernelParams = DG.Column.fromList('double', 'kernelParams', [0, 0]);   
+    
   let output = callWasm(SVMlib, 'generateDataset', 
-    [featuresCount, samplesCount, min, max, violatorsPercentage]);
+    [kernel, kernelParams, samplesCount, featuresCount, min, max, violatorsPercentage]);
 
   let df = DG.DataFrame.fromColumns(output[0]);
   df.name = name;  
   output[1].name = 'labels';
   df.columns.add(output[1]);
   grok.shell.addTableView(df);
-}
+} // generateDatasetLinear
 
-//name: generateDatasetInWebWorker
-//input: string name = 'Data'
-//input: int featuresCount = 2
-//input: int samplesCount = 100
-//input: double min = -250
-//input: double max = 300
-//input: double violatorsPercentage = 10
-export function generateDatasetInWebWorker(name, featuresCount, samplesCount, 
+//name: Generate test data (RBF kernel case)
+//description: Generates dataset for testing SVN with RBF-kernel.
+//input: string name = 'Data' {caption: name; category: Dataset}
+//input: double sigma = 60  {caption: sigma; category: Hyperparameters}
+//input: int samplesCount = 100 {caption: samples; category: Size}
+//input: int featuresCount = 2 {caption: features; category: Size}
+//input: double min = -39 {caption: min; category: Range}
+//input: double max = 173 {caption: max; category: Range}
+//input: double violatorsPercentage = 5 {caption: violators; units: %; category: Dataset}
+export function generateDatasetRBF(name, sigma, samplesCount, featuresCount, 
   min, max, violatorsPercentage) 
 {
-  // TODO: add correctness check
+  // RBF kernel ID
+  let kernel = 2;
 
-  var worker = new Worker(new URL('../wasm/generateDatasetWorker.js', import.meta.url));
-  worker.postMessage(getCppInput(SVMlib['generateDataset'].arguments,
-    [featuresCount, samplesCount, min, max, violatorsPercentage]));
+  // RBF kernel parameters
+  let kernelParams = DG.Column.fromList('double', 'kernelParams', [sigma, 0]);   
+    
+  let output = callWasm(SVMlib, 'generateDataset', 
+    [kernel, kernelParams, samplesCount, featuresCount, min, max, violatorsPercentage]);
+
+  let df = DG.DataFrame.fromColumns(output[0]);
+  df.name = name;  
+  output[1].name = 'labels';
+  df.columns.add(output[1]);
+  grok.shell.addTableView(df);
+} // generateDatasetRBF
+
+
+
+//name: normalizeDataset
+//input: dataframe df
+//input: column_list data
+export function normalizeDataset(df, data) {
+  let output = callWasm(SVMlib, 'normalizeDataset', [data]);
+
+  console.log(output);
+}
+
+//name: normalizeDataset
+//input: column_list data
+export function normalizeDatasetInWebWorker(data) {
+  var worker = new Worker(new URL('../wasm/normalizeDatasetWorker.js', import.meta.url));
+  worker.postMessage(getCppInput(SVMlib['normalizeDataset'].arguments,[data]));
   worker.onmessage = function(e) {
-    let output = getResult(SVMlib['generateDataset'], e.data);
+    let output = getResult(SVMlib['normalizeDataset'], e.data);
 
     // Provide output usage!
-    let df = DG.DataFrame.fromColumns(output[0]);
-    df.name = name;
-    output[1].name = 'labels';
-    df.columns.add(output[1]);
-    grok.shell.addTableView(df);
   }
 }
 
-//name: demoLinearKernel
-//input: double gamma = 1 {category: Hyperparameters}
-//input: dataframe dfTrain {caption: table; category: Training data}
-//input: column_list datasetTrain {caption: features; category: Training data}
-//input: column labelsTrain {caption: class labels; category: Training data}
-//input: dataframe dfTest {caption: table; category: Test data}
-//input: column_list datasetTest {caption: features; category: Test data}
-export function demoLinearKernel(gamma, dfTrain, datasetTrain, labelsTrain, dfTest, datasetTest) { 
-
-  // TODO: add correctness check
-
-  let trainCols = datasetTrain.toList();
-  let weightsCount = trainCols.length + 1;
-  let paramsCount = trainCols[0].length + 1;
-
-  let output = callWasm(SVMlib, 'demoLinearKernel', 
-    [gamma, datasetTrain, labelsTrain, datasetTest, weightsCount, paramsCount]);
-
-  output[0].name = 'prediction';
-  output[1].name = 'prediction';
-
-  dfTrain.columns.add(output[0]);
-  dfTest.columns.add(output[1]);
-
-  output[2].name = 'mu';
-  output[3].name = 'sigma';
-
-  let dfStat = DG.DataFrame.fromColumns([output[2], output[3]]);
-  dfStat.name = 'MODEL_mu_sigma';
-  grok.shell.addTableView(dfStat);
-
-  output[4].name = 'weights';  
-
-  let dfModelWeights = DG.DataFrame.fromColumns([output[4]]);
-  dfModelWeights.name = 'MODEL_weights';
-  grok.shell.addTableView(dfModelWeights);
-
-  output[5].name = 'params';
-
-  let dfModelParams = DG.DataFrame.fromColumns([output[5]]);
-  dfModelParams.name = 'MODEL_params';
-  grok.shell.addTableView(dfModelParams);  
-} // demoLinearKernel
-
-
-//name: demoLinearKernelInWebWorker
-//input: double gamma = 1 {category: Hyperparameters}
-//input: dataframe dfTrain {caption: table; category: Training data}
-//input: column_list datasetTrain {caption: features; category: Training data}
-//input: column labelsTrain {caption: class labels; category: Training data}
-//input: dataframe dfTest {caption: table; category: Test data}
-//input: column_list datasetTest {caption: features; category: Test data}
-export function demoLinearKernelInWebWorker(gamma, 
-  dfTrain, datasetTrain, labelsTrain, dfTest, datasetTest) 
-{
-  // TODO: add correctness check
-
-  let trainCols = datasetTrain.toList();
-  let weightsCount = trainCols.length + 1;
-  let paramsCount = trainCols[0].length + 1;
-
-  var worker = new Worker(new URL('../wasm/demoLinearKernelWorker.js', import.meta.url));
-
-  worker.postMessage(getCppInput(SVMlib['demoLinearKernel'].arguments,
-    [gamma, datasetTrain, labelsTrain, datasetTest, weightsCount, paramsCount]));
-
-  worker.onmessage = function(e) {
-    let output = getResult(SVMlib['demoLinearKernel'], e.data);
-
-    // Provide output usage!
-    output[0].name = 'prediction';
-    output[1].name = 'prediction';
-
-    dfTrain.columns.add(output[0]);
-    dfTest.columns.add(output[1]);
-
-    output[2].name = 'mu';
-    output[3].name = 'sigma';
-
-    let dfStat = DG.DataFrame.fromColumns([output[2], output[3]]);
-    dfStat.name = 'MODEL_mu_sigma';
-    grok.shell.addTableView(dfStat);
-
-    output[4].name = 'weights';  
-
-    let dfModelWeights = DG.DataFrame.fromColumns([output[4]]);
-    dfModelWeights.name = 'MODEL_weights';
-    grok.shell.addTableView(dfModelWeights);
-
-    output[5].name = 'params';
-
-    let dfModelParams = DG.DataFrame.fromColumns([output[5]]);
-    dfModelParams.name = 'MODEL_params';
-    grok.shell.addTableView(dfModelParams);
-  }
-} // demoLinearKernelInWebWorker
