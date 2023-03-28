@@ -29,20 +29,26 @@ export abstract class ComputationView extends FunctionView {
    */
   constructor(
     funcName: string,
-    public options: {historyEnabled: boolean, isTabbed: boolean} = {historyEnabled: true, isTabbed: false}
+    public options: {
+      historyEnabled: boolean,
+      isTabbed: boolean,
+      parentCall?: DG.FuncCall
+    } = {historyEnabled: true, isTabbed: false}
   ) {
     super(funcName, options);
 
-    const currentCall = grok.functions.getCurrentCall();
-    this.parentCall = currentCall;
-    this.parentView = currentCall?.parentCall.aux['view'];
-    this.basePath = `/${currentCall?.func.name}`;
+    if (!options.parentCall) options.parentCall = grok.functions.getCurrentCall();
+
+    const parentCall = options.parentCall;
+    this.parentCall = parentCall;
+    this.parentView = parentCall?.parentCall.aux['view'];
+    this.basePath = `/${parentCall?.func.name}`;
 
     this.onFuncCallReady.subscribe({
       complete: async () => {
         await this.getPackageUrls();
         this.buildRibbonMenu();
-        this.changeViewName(currentCall.func.friendlyName);
+        this.changeViewName(parentCall.func.friendlyName);
       }
     });
   }
