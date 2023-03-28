@@ -4,7 +4,7 @@
     "access": "public"
   },
   "friendlyName": "Datagrok chem-meta library",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "",
   "dependencies": {
     "wu": "latest"
