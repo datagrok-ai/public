@@ -34,6 +34,7 @@ export class SequenceSpaceBaseFuncEditor {
       this.tableInput = ui.tableInput('Table', grok.shell.tv.dataFrame, undefined, () => {
         this.onTableInputChanged(semtype);
       });
+      this.tableInput.input.style.width = '50px';
   
       this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype));
       this.molColInput.root.style.width = '332px';

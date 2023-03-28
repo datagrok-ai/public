@@ -37,7 +37,7 @@ category('converters', async () => {
     const result = [];
     for (const mol of molecules[srcNotation])
       result.push(_convertMolNotation(mol, srcNotation, tgtNotation, getRdKitModule()));
-    expectArray(result, molecules[tgtNotation]);
+    expectArray(result.map((it) => it.replaceAll('\r', '')), molecules[tgtNotation].map((it) => it.replaceAll('\r', '')));
   }
 
   test('SMILES to Molfile V2000', async () => {
