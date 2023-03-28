@@ -13,8 +13,12 @@ export class Breadcrumbs {
     this.root = ui.div();
     this.path = path;
 
-    this.root = ui.divH(path.map((element) => ui.div(ui.span([element], `ui-breadcrumbs-text-element ${element}`),
-      'ui-breadcrumbs-element')), 'ui-breadcrumbs');
+    this.root = ui.divH(path.map((element) => ui.div(ui.link(element, () => {}, '',
+      `ui-breadcrumbs-text-element ${element}`), 'ui-breadcrumbs-element')), 'ui-breadcrumbs');
+
+    const rootElements = this.root.getElementsByClassName('ui-breadcrumbs-element');
+    for (let i = 0; i < rootElements.length - 1; i++)
+      rootElements[i].after(ui.iconFA('chevron-right'));
   }
 
   get onPathClick(): Observable<string[]> {
