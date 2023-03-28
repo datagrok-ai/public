@@ -263,9 +263,13 @@ export namespace chem {
 
     /** Sets SMILES, MOLBLOCK, or any other molecule representation */
     setValue(x: string) {
+      const index = extractors.map(it => it.name).indexOf('nameToSmiles');
+      const el = extractors.splice(index, 1)[0];  
+      extractors.splice(extractors.length, 0, el);
+
       const extractor = extractors
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
-
+      
       if (extractor != null && !checkSmiles(x) && !isMolBlock(x))
         extractor
           .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
