@@ -10,6 +10,21 @@ import java.util.Properties;
  * Enum that contains all necessary data related to specific provider and it's container
  */
 public enum Provider {
+    DB2("src/test/resources/properties/db2.properties") {
+        @Override
+        protected JdbcDatabaseContainer<?> newJdbcContainer() {
+
+            container = new Db2Container(properties.get("image").toString())
+                    .withDatabaseName(properties.get("database").toString())
+                    .withUsername(properties.get("user").toString())
+                    .withPassword(properties.get("password").toString())
+                    .withInitScript(properties.get("initScript").toString())
+                    .acceptLicense();
+            container.start();
+            return container;
+        }
+    },
+
     NEO4J("src/test/resources/properties/neo4j.properties"),
 
     HIVE2("src/test/resources/properties/hive2.properties"),
