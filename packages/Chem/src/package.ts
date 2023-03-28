@@ -119,8 +119,8 @@ export async function initChem(): Promise<void> {
 //tags: autostart
 export async function initChemAutostart(): Promise<void> { }
 
-//name: chemTooltip
-//tags: tooltip
+//name: Chemistry | Most Diverse Structures
+//tags: tooltip, panel
 //input: column col {semType: Molecule}
 //output: widget
 export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined> {
@@ -651,7 +651,7 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 //#region Molecule column property panel
 
 
-//name: Chem
+//name: Chemistry | Rendering
 //input: column molColumn {semType: Molecule}
 //tags: panel, exclude-actions-panel
 //output: widget result
