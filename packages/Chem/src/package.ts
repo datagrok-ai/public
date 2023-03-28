@@ -123,16 +123,35 @@ export async function initChemAutostart(): Promise<void> { }
 //tags: tooltip
 //input: column col {semType: Molecule}
 //output: widget
-export async function chemTooltip(col: DG.Column): Promise<DG.Viewer | undefined> {
+export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined> {
+  const version = col.version;
+  
   for (let i = 0; i < col.length; ++i) {
     if (!col.isNone(i) && isSmarts(col.get(i)))
       return;
   }
-  const tv = grok.shell.tv;
-  let viewer = new ChemDiversityViewer(true, col)//await tv.dataFrame.plot.fromType('diversitySearchViewer', {
-    viewer.limit = 9;
-    viewer.dataFrame = tv.dataFrame;
-  return viewer;
+  
+  const divMain = ui.div();
+  divMain.append(ui.divText('Most diverse structures'));
+  const divStructures = ui.div();
+  divStructures.classList.add('d4-flex-wrap');
+
+  if (col.temp['version'] != version || col.temp['molIds'].length == 0) {
+    const molIds = await chemDiversitySearch(
+      col, similarityMetric['Tanimoto'], 9, 'Morgan' as Fingerprint, true);
+    
+    col.temp = {
+      'version': version,
+      'molIds': molIds
+    }
+  }
+
+  for (let i = 0; i < col.temp['molIds'].length; ++i) {
+    divStructures.append(renderMolecule(col.get(col.temp['molIds'][i]), {width: 150, height: 75}));
+  }
+
+  divMain.append(divStructures);
+  return new DG.Widget(divMain);
 }
 
 //name: Scaffold Tree
