@@ -31,6 +31,7 @@ public class MySqlDataProvider extends JdbcDataProvider {
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
         descriptor.nameBrackets = "`";
+        descriptor.commentStart = "-- ";
 
         descriptor.typesMap = new HashMap<String, String>() {{
             put("bool", Types.BOOL);
