@@ -6,11 +6,14 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
 import grok_connect.connectors_info.*;
+import grok_connect.table_query.AggrFunctionInfo;
+import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Property;
 import grok_connect.utils.ProviderManager;
@@ -29,6 +32,29 @@ public class Db2DataProvider extends JdbcDataProvider {
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+        descriptor.canBrowseSchema = true;
+        descriptor.typesMap = new HashMap<String, String>() {{
+            put("smallint", serialization.Types.INT);
+            put("int", serialization.Types.INT);
+            put("integer", serialization.Types.INT);
+            put("bigint", serialization.Types.BIG_INT);
+            put("real", serialization.Types.FLOAT);
+            put("double", serialization.Types.FLOAT);
+            put("decimal", serialization.Types.FLOAT);
+            put("decfloat", serialization.Types.FLOAT);
+            put("character", serialization.Types.STRING);
+            put("varchar", serialization.Types.STRING);
+            put("graphic", serialization.Types.STRING);
+            put("vargraphic", serialization.Types.STRING);
+            put("clob", serialization.Types.STRING);
+            put("dbclob", serialization.Types.STRING);
+            put("boolean", serialization.Types.BOOL);
+            put("date", serialization.Types.DATE_TIME);
+            put("timestamp", serialization.Types.DATE_TIME);
+            put("time", serialization.Types.DATE_TIME);
+            put("xml", serialization.Types.STRING);
+        }};
+        descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stddev(#)", serialization.Types.dataFrameNumericTypes));
     }
 
     @Override
