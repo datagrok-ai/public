@@ -43,9 +43,6 @@ export abstract class FunctionView extends DG.ViewBase {
       }
     });
 
-    // Temporary solution.
-    // TODO: Move this linking into init() or remove it.
-    this.linkFunccall(grok.functions.getCurrentCall());
     this.init();
   }
 
