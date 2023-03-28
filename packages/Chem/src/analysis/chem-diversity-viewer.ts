@@ -9,7 +9,6 @@ import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
 import {defaultMorganFpLength, defaultMorganFpRadius, Fingerprint, rdKitFingerprintToBitArray} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer} from './chem-search-base-viewer';
-import { malformedDataWarning } from '../utils/malformed-data-utils';
 import { getRdKitModule } from '../package';
 import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
@@ -26,7 +25,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
   }
 
 
-  async render(computeData = true): Promise<void> {
+  async render(computeData = false): Promise<void> {
     if (!this.beforeRender())
       return;
     if (this.dataFrame && this.moleculeColumn) {
@@ -35,24 +34,27 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         progressBar = DG.TaskBarProgressIndicator.create(`Diversity search running...`);
 
       if (computeData) {
+        const rowsWithoutEmptyValues = rowsWithoutEmptyValuesCount(this.moleculeColumn);
+        if (this.limit > rowsWithoutEmptyValues)
+          this.limit = rowsWithoutEmptyValues;
         this.renderMolIds =
           await chemDiversitySearch(
             this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit, this.fingerprint as Fingerprint, this.tooltipUse);
       }
       if (this.root.hasChildNodes())
         this.root.removeChild(this.root.childNodes[0]);
-
+  
       const panel = [];
       const grids = [];
       let cnt = 0; let cnt2 = 0;
 
       panel[cnt++] = this.metricsDiv;
-      for (let i = 0; i < this.renderMolIds.length; ++i) {
+      for (let i = 0; i < this.limit; ++i) {
         const molProps = this.createMoleculePropertiesDiv(this.renderMolIds[i]);
         const grid = ui.div([
           renderMolecule(
             this.moleculeColumn!.get(this.renderMolIds[i]),
-            {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height, popupMenu: !this.tooltipUse}),
+            {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
           molProps],
         {style: {margin: '5px', padding: '3px', position: 'relative'}},
         );
@@ -86,7 +88,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         grids[cnt2++] = grid;
       }
 
-      if (this.tooltipUse)
+      if (this.tooltipUse) 
         panel[cnt++] = ui.divText('Most diverse structures');
       panel[cnt++] = ui.div(grids, {classes: 'd4-flex-wrap'});
       this.root.appendChild(ui.div(panel, {style: {margin: '5px'}}));
@@ -96,14 +98,21 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
   }
 }
 
+function rowsWithoutEmptyValuesCount(col: DG.Column): number {
+  const categories = col.categories;
+  const rawData = col.getRawData();
+  return rawData.filter((it) => categories[it]).length;
+}
+
 export async function chemDiversitySearch(
   moleculeColumn: DG.Column, similarity: (a: BitArray, b: BitArray) => number,
   limit: number, fingerprint: Fingerprint, tooltipUse: boolean = false): Promise<number[]> {
-
-  let fingerprintArray: (BitArray | null)[] = [];
+  limit = Math.min(limit, moleculeColumn.length);
+  let fingerprintArray: BitArray[] = [];
   if (tooltipUse) {
     const size = Math.min(moleculeColumn.length, 1000);
     const randomIndexes = Array.from({length: size}, () => Math.floor(Math.random() * moleculeColumn.length));
+    limit = Math.min(limit, size);
     for (let i = 0; i < randomIndexes.length; ++i) {
       let mol: RDMol | null = null;
       try {
@@ -121,13 +130,10 @@ export async function chemDiversitySearch(
   } else {
     fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint);
   }
-  const indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => !!f && !f.allFalse);
-  if (!tooltipUse)
-    malformedDataWarning(fingerprintArray, moleculeColumn.dataFrame);
-  limit = Math.min(limit, indexes.length);
+  const indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => f != null);
 
-  const diverseIndexes = getDiverseSubset(indexes.length, limit,
-    (i1, i2) => 1 - similarity(fingerprintArray[indexes[i1]]!, fingerprintArray[indexes[i2]]!));
+  const diverseIndexes = getDiverseSubset(fingerprintArray, indexes.length, limit,
+    (i1, i2) => 1 - similarity(fingerprintArray[indexes[i1]], fingerprintArray[indexes[i2]]));
 
   const molIds: number[] = [];
   for (let i = 0; i < limit; i++)
