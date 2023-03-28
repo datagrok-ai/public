@@ -67,7 +67,11 @@ export class RichFunctionView extends FunctionView {
   ) {
     super(funcName, options);
 
-    this.basePath = `scripts/${this.funcCall.func.id}/view`;
+    this.onFuncCallReady.subscribe({
+      complete: () => {
+        this.basePath = `scripts/${this.funcCall.func.id}/view`;
+      }
+    });
   }
 
   /**
