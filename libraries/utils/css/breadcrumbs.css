@@ -7,6 +7,12 @@
     font-size: 16px;
 }
 
+.ui-breadcrumbs:hover {
+    cursor: default;
+    border-radius: 0px;
+    background-color: #FFFFFF;
+}
+
 .ui-breadcrumbs-element:not(:first-child)::before {
     display: inline-block;
     margin: 0 .5rem;
