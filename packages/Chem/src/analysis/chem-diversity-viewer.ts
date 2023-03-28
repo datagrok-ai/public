@@ -86,8 +86,6 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         grids[cnt2++] = grid;
       }
 
-      if (this.tooltipUse)
-        panel[cnt++] = ui.divText('Most diverse structures');
       panel[cnt++] = ui.div(grids, {classes: 'd4-flex-wrap'});
       this.root.appendChild(ui.div(panel, {style: {margin: '5px'}}));
       if (!this.tooltipUse)
