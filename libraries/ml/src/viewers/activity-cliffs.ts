@@ -75,7 +75,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   propertyPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement,
   linesGridFunc?: (df: DG.DataFrame, pairColNames: string[]) => DG.Grid,
   seqSpaceOptions?: any) : Promise<DG.Viewer> {
- 
+
   const similarityLimit = similarity / 100;
   const dimensionalityReduceCol = encodedCol ?? seqCol;
   let zoom = false;
@@ -84,12 +84,8 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   let acc: DG.Accordion;
   let timer: NodeJS.Timeout;
 
-  const withoutEmptyValues = DG.DataFrame.fromColumns([dimensionalityReduceCol]).clone();
-
-  const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, dimensionalityReduceCol);
-
   const seqSpaceParams = {
-    seqCol: withoutEmptyValues.col(dimensionalityReduceCol.name)!,
+    seqCol: dimensionalityReduceCol,
     methodName: methodName,
     similarityMetric: similarityMetric,
     embedAxesNames: axesNames,
@@ -97,14 +93,12 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   };
 
   const { distance, coordinates } = await seqSpaceFunc(seqSpaceParams);
-  const coordsWithInsertedEmptyVals = getEmbeddingColsWithInsertedEmptyVals(coordinates, emptyValsIdxs, df.rowCount);
-  for (const col of coordsWithInsertedEmptyVals) {
+  for (const col of coordinates)
     df.columns.add(col);
-  }
 
   const simArr = await createSimilaritiesMatrix(dimensionalityReduceCol, distance,
-    !distance || emptyValsIdxs.length !== 0 || nonNormalizedDistances.includes(similarityMetric), simMatrixFunc);
-  
+    !distance || nonNormalizedDistances.includes(similarityMetric), simMatrixFunc);
+
   const cliffsMetrics: IActivityCliffsMetrics = getActivityCliffsMetrics(simArr, similarityLimit, activities);
 
   const sali: DG.Column = getSaliCountCol(dimensionalityReduceCol.length, cliffsMetrics.saliVals, cliffsMetrics.n1,
@@ -146,7 +140,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   listCliffsLink.classList.add('scatter_plot_link', 'cliffs_grid');
   sp.root.append(listCliffsLink);
 
-  /* in case several activity cliffs viewers are opened cliffs filtering can 
+  /* in case several activity cliffs viewers are opened cliffs filtering can
   be applyed only to one of the viewers. When 'Show only cliffs' is switched on one of the viewers
   switch inputs on other viewers are disabled */
   const filterCliffsButton = ui.switchInput(`Show only cliffs`, false, () => {
@@ -179,7 +173,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
       view.dockManager.close(linesDfGrid.root);
       viewerClosedSub.unsubscribe();
       view.subs = view.subs.filter((sub) => sub !== viewerClosedSub);
-    }  
+    }
   })
   view.subs.push(viewerClosedSub);
 
@@ -232,7 +226,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
         linesRes.lines.forEach((l) => {l.selected = false; });
         linesDfGrid.dataFrame.selection.setAll(false, false);
         linesDfGrid.invalidate();
-      } 
+      }
     }
   });
 
@@ -309,16 +303,6 @@ function createCliffsOnlyFilter(df: DG.DataFrame, colName: string): DG.BitSet {
     filter.set(i, !!raw[i], false);
   }
   return filter;
-}
-
-function getEmbeddingColsWithInsertedEmptyVals(coordinates: DG.ColumnList, emptyValsIdxs: number[], length: number): DG.Column[] {
-  const coordsWithInsertedEmptyVals = [];
-  for (const col of coordinates) {
-    const listValues = col.toList();
-    emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
-    coordsWithInsertedEmptyVals.push(DG.Column.float(col.name, length).init((i) => listValues[i]));
-  }
-  return coordsWithInsertedEmptyVals;
 }
 
 async function createSimilaritiesMatrix(col: DG.Column, distance: Matrix, countFromDistance: boolean,
@@ -518,7 +502,7 @@ export function getSimilaritiesFromDistances(dim: number, distances: Matrix, sim
   for (let i = 0; i < dim - 1; ++i) {
     const similarityArr = new Float32Array(dim - i - 1).fill(0);
     for (let j = i + 1; j < dim; ++j) {
-      similarityArr[j - i - 1] = getSimilarityFromDistance(distances[i][j]);
+      similarityArr[j - i - 1] = distances[i][j] === DG.FLOAT_NULL ? 0 : getSimilarityFromDistance(distances[i][j]);
     }
     simArr[i] = DG.Column.fromFloat32Array('similarity', similarityArr);
   }
