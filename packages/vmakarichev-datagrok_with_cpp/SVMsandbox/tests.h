@@ -1,27 +1,14 @@
-// test.h
+// tests.h
 
 // Headers of funtions for testing methods
 
 #ifndef TESTS_H
 #define TESTS_H
 
-void testCreateDataset();
+void testGenerateDataSet();
 
-void testCreateNormalizedDataset();
+void testNormalizeDataset();
 
-void testTrainModelSimpleLinear();
-
-void testGeneratorLinearSeparable();
-
-void testGeneratorLinearNonSeparable();
-
-void testTrainModelComplexLinear();
-
-void testTrainModelNormalizedDataLinear();
-
-void testTrainModelNormalizedDataLinearHighDim(bool);
-
-void testTrainModelNormalizedDataLinearHighDimDouble();
+void testTrainLSSVM();
 
 #endif // TESTS_H
-

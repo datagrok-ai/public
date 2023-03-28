@@ -1,9 +1,9 @@
 // svm.h
 
 /* Implementation of the method SVM (Support Vector Machine) for DATAGROK.
-   
+
    The following references are used:
-   [1] Suykens, J., Vandewalle, J. "Least Squares Support Vector Machine Classifiers", 
+   [1] Suykens, J., Vandewalle, J. "Least Squares Support Vector Machine Classifiers",
 	   Neural Processing Letters 9, 293–300 (1999). https://doi.org/10.1023/A:1018628609742
 */
 
@@ -24,108 +24,86 @@ using namespace Eigen;
 namespace svm {
 
 	// computation result code
-	enum ResultCode { NO_ERRORS = 0, 
+	enum ResultCode {
+		NO_ERRORS = 0,
 		UNKNOWN_PROBLEM,
 		INCORRECT_HYPERPARAMETER,
 		INCORRECT_PARAMETER_OF_KERNEL,
-		UNKNOWN_KERNEL_TYPE
+		UNKNOWN_KERNEL_TYPE,
+		INCORRECT_KERNEL_PARAMS_COUNT,
+		INCORRECT_PROBABILITY,
+		INCORRECT_PERCENTAGE,
+		INCORRECT_SIZE
 	};
 
 	// types of model kernels
-	enum KernelType {LINEAR = 0, POLYNOMIAL, RBF, SIGMOID};
+	enum KernelType { LINEAR = 0, POLYNOMIAL, RBF, SIGMOID };
 
 	const int MAX_NUM_OF_KERNEL_PARAM = 2;
 
-	const double TINY = 0.0001;
-
-
-	/* Create dataset from columns data.
-	      columsDataPtr - pointer to columns data
-		  rowCount - number of rows
-		  colCount - number of columns
-		  datasetPtr - pointer to dataset
-		  
-	   REMARK. In DATAGROK, column-oriented data storage is used,
-	           but row-oriented approach is preffered in SVM, and
-			   this function provides it.	*/
+	// Check correctness of LS-SVM hyperparameter gamma	
 	template<typename Float>
-	int createDataset(Float * columsDataPtr, int rowCount, int colCount, Float* datasetPtr) noexcept
-	{	
-		// pointers-to-matrices assignment
-		Map < Matrix<Float, Dynamic, Dynamic, ColMajor>> A(columsDataPtr, rowCount, colCount);
-		Map < Matrix<Float, Dynamic, Dynamic, RowMajor>> B(datasetPtr, rowCount, colCount);
-
-		// get row-oriented data representation
-		B = A;
-
-		return NO_ERRORS;
+	bool isGammaCorrect(Float gamma)
+	{
+		return (gamma > static_cast<Float>(0));
 	}
 
-
-	/* Create normalized dataset from columns data.
-	   Each column of the ouput is centered and normalized.
-		  columsDataPtr - pointer to columns data
-		  rowCount - number of rows
-		  colCount - number of columns
-		  datasetPtr - pointer to dataset
-		  means - mean values of source columns
-		  stdDevs - standard deviations of source columns
-
-	   REMARKS. 1. In DATAGROK, column-oriented data storage is used,
-			       but row-oriented approach is preffered in SVM, and
-			       this function provides it.
-				2. Further, means and stdDevs are used in predicting. */
+	/* Check correctness of kernel parameters.
+	      kernel - kernel type,
+		  kernelParameters - parameters of kernel. */
 	template<typename Float>
-	int createNormalizedDataset(Float* columsDataPtr, int rowCount, int colCount, 
-		Float* datasetPtr, Float* means, Float* stdDevs) noexcept
+	bool areKernelParametersCorrect(int kernel, Float kernelParameters[MAX_NUM_OF_KERNEL_PARAM])
 	{
-		// pointers-to-matrices assignment
-		Map < Matrix<Float, Dynamic, Dynamic, ColMajor>> A(columsDataPtr, rowCount, colCount);
-		Map < Matrix<Float, Dynamic, Dynamic, RowMajor>> B(datasetPtr, rowCount, colCount);
-		Map < Vector<Float, Dynamic> > mu(means, colCount);
-		Map < Vector<Float, Dynamic> > sigma(stdDevs, colCount);
+		Float zero = static_cast<Float>(0);
+		Float c = kernelParameters[0];
+		Float d = kernelParameters[1];
+		Float sigma = kernelParameters[0];
 
-		// compute mean values & standard deviations
-		for (int i = 0; i < colCount; i++)
+		switch (kernel)
 		{
-			mu(i) = A.col(i).mean();
-			sigma(i) = sqrt(A.col(i).squaredNorm() / rowCount - mu(i) * mu(i));
-		}	
-
-		// get A centered
-		B = A.rowwise() - mu.transpose();
-
-		// norm columns of B
-		for (int i = 0; i < colCount; i++)
-		{
-			Float current = sigma(i);
-
-			if (current > static_cast<Float>(0))
-				B.col(i) /= current;
+		case LINEAR:
+			return true;
+		case POLYNOMIAL:			
+			return ((c > zero) && (d > zero));
+		case RBF:			
+			return (c > zero);
+		case SIGMOID:
+			return true;
+		default:
+			return false;
 		}
+	} // areKernelParametersCorrect
 
-		// The following is for testing
-		/*cout << "\nB:\n" << B << endl;
-		cout << "\nVariances of B columns:\n" << B.colwise().squaredNorm() / rowCount << endl;
-		cout << "\nMeans of B columns:\n" << B.colwise().mean() << endl;*/
+	/*  Value of SVM-kernel function.
+		   kernel - type of kernel
+		   kernelParams - parameters of kernel
+		   v1, v2 - kernel arguments. */
+	template<typename Float, typename VecType1, typename VecType2>
+	Float kernelFunc(int kernel, Float kernelParams[MAX_NUM_OF_KERNEL_PARAM], VecType1& v1, VecType2& v2)
+	{
+		switch (kernel)
+		{
+		case LINEAR:
+			return v1.dot(v2);
+		case RBF:
+			return exp(-(v1 - v2).squaredNorm() / (kernelParams[0] * kernelParams[0]));
+		}
+		return 0;
+	} // K
 
-		return NO_ERRORS;
-	} // createNormalizedDataset
-
-
-	/* Compute matrix of the linear system for the LS-SVM method 
+	/* Compute matrix of the linear system for the LS-SVM method
 	   with LINEAR kernel.
-	      gammaInv - value inverse to hyperparameter gamma	      
+		  gammaInv - value inverse to hyperparameter gamma
 		  xTrain - feature vectors for training model
-		  yTrain - labels of feature vectors 
+		  yTrain - labels of feature vectors
 		  samplesCount - number of training samples
 		  featuresCount - number of features, i.e. feature space dimension
 		  A - matrix of linear system for the LS-SVM method  */
-	template<typename Float>
+	template<typename Float, typename MatrixType>
 	int computeMatrixOfLSSVMsystemWithLinearKernel(Float gammaInv,
 		Float* xTrain, Float* yTrain, int samplesCount, int featuresCount,
-		Matrix<Float, Dynamic, Dynamic, RowMajor>& A)
-	{		
+		MatrixType& A)
+	{
 		// assign train data pointer with the matrix X
 		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> X(xTrain, samplesCount, featuresCount);
 		//cout << "\nX:\n" << X << endl;
@@ -148,56 +126,61 @@ namespace svm {
 		return NO_ERRORS;
 	} // computeMatrixOfLSSVMsystemWithLinearKernel
 
-
 	/* Compute matrix of the linear system for the LS-SVM method.
 	   Linear, polynomial, RBF and sigmoid kernels are considered.
-	      gammaInv - value inverse to hyperparameter gamma
+		  gammaInv - value inverse to hyperparameter gamma
 		  kernelType - type of the kernel applied
 		  kernelParams - parameters of kernel
 		  xTrain - feature vectors for training model
-		  yTrain - labels of feature vectors 
+		  yTrain - labels of feature vectors
 		  samplesCount - number of training samples
 		  featuresCount - number of features, i.e. feature space dimension
 		  A - matrix of linear system for the LS-SVM method  */
-	template<typename Float>
+	template<typename Float, typename MatrixType>
 	int computeMatrixOfLSSVMsystem(Float gammaInv, int kernelType, Float* kernelParams,
 		Float* xTrain, Float* yTrain, int samplesCount, int featuresCount,
-		Matrix<Float, Dynamic, Dynamic, RowMajor>& A)
+		MatrixType& A)
 	{
 		switch (kernelType)
 		{
 		case LINEAR:
 			return computeMatrixOfLSSVMsystemWithLinearKernel(gammaInv, xTrain, yTrain, samplesCount, featuresCount, A);
 
-		// TODO: consider other cases!
+			// TODO: consider other cases!
 		default:
 			return UNKNOWN_KERNEL_TYPE;
-		} 
+		}
 	} // computeMatrixOfLSSVMsystem
 
-
 	/* Train Least Square Support Vector Machine (LS-SVM).
-	      gamma - hyperparameter
-	      kernelType - type of the kernel applied
+		  gamma - hyperparameter
+		  kernelType - type of the kernel applied
 		  kernelParams - parameters of kernel
-		  xTrain - feature vectors for training model
-		  yTrain - labels of feature vectors 
+		  xTrain - feature vectors for training model (normalized)
+		  yTrain - labels of feature vectors
 		  samplesCount - number of training samples
 		  featuresCount - number of features, i.e. feature space dimension
-		  modelParams - parameters of model that is trained  */
+		  modelParams - parameters of model that is trained
+		  weights - weights of the cos function, they computed in the case of linear kernel
+
+	   WARNING. Training data should be normalized, i.e. mean value of each feature is 0
+				and standard deviantion is 1.
+	*/
 	template<typename Float>
-	int trainLSSVM( Float gamma, int kernelType, Float kernelParams[MAX_NUM_OF_KERNEL_PARAM],
+	int trainLSSVM(Float gamma, int kernel, Float kernelParams[MAX_NUM_OF_KERNEL_PARAM],
 		Float* xTrain, Float* yTrain, int samplesCount, int featuresCount,
-		Float* modelParams) noexcept
+		Float* modelParams, Float* weights) noexcept
 	{
 		/* In order to find paramters of LS - SVM model, a special system of linear algebraic equations
-		   should be solved (see [1] for more details). 
+		   should be solved (see [1] for more details).
 		   So, the following pricipal steps are:
-		      1) compute the matrix of this system (A);
+			  1) compute the matrix of this system (A);
 			  2) compute the rigth hand side of this system (b);
-			  3) solve the system Ax = b. */
+			  3) solve the system Ax = b.
 
-		// check gamma value
+		   Also, model weights are computed in the case of linear kernel. */
+
+		   // check gamma value
 		if (gamma <= static_cast<Float>(0.0))
 			return INCORRECT_HYPERPARAMETER;
 
@@ -207,7 +190,7 @@ namespace svm {
 		Matrix<Float, Dynamic, Dynamic, RowMajor> A(samplesCount + 1, samplesCount + 1);
 
 		// compute the matrix A
-		int resCode = computeMatrixOfLSSVMsystem(gammaInv, kernelType, kernelParams,
+		int resCode = computeMatrixOfLSSVMsystem(gammaInv, kernel, kernelParams,
 			xTrain, yTrain, samplesCount, featuresCount, A);
 
 		// check results of the matrix A computation
@@ -221,164 +204,126 @@ namespace svm {
 		// assign modelParams with a vector
 		Map<Vector<Float, Dynamic>> x(modelParams, samplesCount + 1);
 
-		// solve the system required: 
-		x = A.partialPivLu().solve(b);
-		//x = A.fullPivLu().solve(b);
+		// solve the system required: 		
+		x = A.fullPivLu().solve(b);
 
-		// The following is for testing!
-		/*cout << "\nA:\n" << A << endl;
+		// finish computations in the case of non-linear kernel
+		if (kernel != LINEAR)
+			return NO_ERRORS;
 
-		cout << "\nrigth part:\n"
-			<< b << endl;
+		// compute bias 
+		weights[featuresCount] = modelParams[samplesCount];
 
-		Vector<Float, Dynamic> params = A.partialPivLu().solve(b);
-		
-		cout << "\nsolution:\n" << params << endl;
+		// assign weights with w-vector
+		Map<Vector<Float, Dynamic>> w(weights, featuresCount);
 
-		Vector<Float, Dynamic> w = Vector<Float, Dynamic>::Zero(featuresCount);
+		// initialization 
+		w = Vector<Float, Dynamic>::Zero(featuresCount);
 
+		// assign normalized train data with 
 		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> X(xTrain, samplesCount, featuresCount);
 
+		// compute weigths
 		for (int i = 0; i < samplesCount; i++)
-			w += params(i) * yTrain[i] * X.row(i);
+			w += x(i) * yTrain[i] * X.row(i);
 
-		cout << "\nw:\n" << w << endl;*/
+		// The following is for testing!
+		cout << "\nsolution:\n" << x << endl;
+		cout << "\nw:\n" << w << endl;
 
 		return NO_ERRORS;
 	} // trainModel
 
-	/*
-	*/
-	template<typename Float>
-	int predictByLSSVMwithLinearKernel(int kernelType, 
-		Float* xTrain, Float* yTrain, int samplesCount, int featuresCount,
-		Float* means, Float* stdDevs, Float* modelParams,
-		Float* targetData, Float * labels, int targetSamplesCount)
-	{
-		Map<Matrix<Float, Dynamic, Dynamic, ColMajor>> TD(targetData, targetSamplesCount, featuresCount);
-		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> Xi(xTrain, samplesCount, featuresCount);
-		Map<Vector<Float, Dynamic>> mu(means, featuresCount);
-		Matrix<Float, Dynamic, Dynamic, RowMajor> X(targetSamplesCount, featuresCount);
+	/*  Predict labels of the target data using linear kernel model and precomputed weigths.		  
+		  precomputedWeights - precomputed weights of the model
+		  targetDataMatrix - matrix of the target data
+		  prediction - target labels
+		  targetSamplesCount - number of target samples	*/
+	template<typename Float, typename MatrixType>
+	int predictByLSSVMwithLinearKernel(Float* precomputedWeights,
+		MatrixType & targetDataMatrix, Float* prediction)
+	{	
+		// get target data sizes		
+		auto targetSamplesCount = targetDataMatrix.rows();
+		auto featuresCount = targetDataMatrix.cols();
 
-		//cout << "\nTD:\n" << TD << endl;
+		// bias of the model
+		Float bias = precomputedWeights[featuresCount];
 
-		X = TD.rowwise() - mu.transpose();
+		// assign weights-vector with the corresponding data pointer
+		Map<Vector<Float, Dynamic>> w(precomputedWeights, featuresCount);		
 
-		for (int i = 0; i < featuresCount; i++)
-		{
-			Float sigma = stdDevs[i];
-
-			if (sigma > static_cast<Float>(0))
-				X.col(i) /= sigma;
-		}
-
-		Vector<Float, Dynamic> w = Vector<Float, Dynamic>::Zero(featuresCount);		
-
-		for (int i = 0; i < samplesCount; i++)
-			w += modelParams[i] * yTrain[i] * Xi.row(i);
-
-		//cout << "\nw:\n" << w << endl;
-
-		//cout << "\nPredicted:\n";
+		// predict labels of the target data
 		for (int i = 0; i < targetSamplesCount; i++)
 		{
-			Float cost = modelParams[samplesCount] + w.dot(X.row(i));
+			// put target data to the model
+			Float cost = bias + w.dot(targetDataMatrix.row(i));
 
+			// check sign and get label (see [1] for more details)
 			if (cost > static_cast<Float>(0))
-				labels[i] = static_cast<Float>(1);
+				prediction[i] = static_cast<Float>(1);
 			else
-				labels[i] = static_cast<Float>(-1);
-
-			//cout << cost << "  " << labels[i] << endl;
+				prediction[i] = static_cast<Float>(-1);
 		}
 
 		return NO_ERRORS;
 	} // predictByLSSVMwithLinearKernel
-	/* //OLD VERSION!
+		
+	/* Predict labels using LS-SVM model.
+		  kernelType - type of the kernel
+		  kernelParams - parameters of kernel
+		  xTrain - feature vectors for training model (normalized)
+		  yTrain - labels of training vectors
+		  trainSamplesCount - number of training vectors
+		  featuresCount - number of features
+		  means - mean values of training data features
+		  stdDevs - standard deviations of training data features
+		  modelParams - parameters of models
+		  precomputedWeights - weights of the hyperplane
+		  targetData - target data
+		  labels - target labels
+		  targetSamplesCount - number of target samples
+
+	   REMARK. Precomputed weights reduce computations in the case of the linear kernel.
+			   In other cases, model parameters (modelParams) are used.	*/
+	template<typename Float>
+	int predictByLSSVM(int kernelType, Float kernelParams[MAX_NUM_OF_KERNEL_PARAM],
+		Float* xTrain, Float* yTrain, int trainSamplesCount, int featuresCount,
+		Float* means, Float* stdDevs, Float* modelParams, Float* precomputedWeights,
+		Float* targetData, Float* prediction, int targetSamplesCount)
 	{
-		Map<Matrix<Float, Dynamic, Dynamic, ColMajor>> S(targetData, targetSamplesCount, featuresCount);
-		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> Xi(xTrain, samplesCount, featuresCount);
+		// assign target data matrix (TD) with target data pointer
+		Map<Matrix<Float, Dynamic, Dynamic, ColMajor>> TD(targetData, targetSamplesCount, featuresCount);
+
+		// assign means with a vector
 		Map<Vector<Float, Dynamic>> mu(means, featuresCount);
 
-		//cout << "\nSource:\n" << S << endl;
+		// matrix for normalized target data (NTD)
+		Matrix<Float, Dynamic, Dynamic, RowMajor> NTD(targetSamplesCount, featuresCount);
 
-		Matrix<Float, Dynamic, Dynamic, ColMajor> X(featuresCount, targetSamplesCount);
+		// center target data
+		NTD = TD.rowwise() - mu.transpose();
 
-		cout << "\nmu:\n" << mu << endl;
-
-		X = S.transpose().colwise() - mu;
-
-		//cout << "\nX:\n" << X << endl;
-
+		// normilize target data
 		for (int i = 0; i < featuresCount; i++)
 		{
 			Float sigma = stdDevs[i];
 
 			if (sigma > static_cast<Float>(0))
-				X.row(i) /= sigma;
+				NTD.col(i) /= sigma;
 		}
 
-		cout << "\nX:\n" << X << endl;
-
-		Vector<Float, Dynamic> c(samplesCount);
-
-		for (int i = 0; i < samplesCount; i++)
-			c(i) = yTrain[i] * modelParams[i];
-
-		//cout << "\nc:\n" << c.transpose() << endl;
-
-		Matrix<Float, Dynamic, Dynamic, ColMajor> K(samplesCount, targetSamplesCount);
-		K = Xi * X;
-
-		cout << "\nK:\n" << K << endl;
-
-		for (int j = 0; j < targetSamplesCount; j++)
-		{
-			Float val = modelParams[samplesCount] + c.dot(K.col(j));
-			cout << val << "\n\n";
-		}	
-
-		return NO_ERRORS;
-	} // predictByLSSVMwithLinearKernel*/
-
-
-	/*
-	*/
-	template<typename Float>
-	int predictByLSSVM(int kernelType, Float kernelParams[MAX_NUM_OF_KERNEL_PARAM], 
-		Float* xTrain, Float* yTrain, int trainSamplesCount, int featuresCount, 
-		Float* means, Float* stdDevs, Float* modelParams,
-		Float* targetData, Float * labels, int targetSamplesCount)
-	{
+		// compute prediction
 		switch (kernelType)
 		{
-		case LINEAR:
-			return predictByLSSVMwithLinearKernel(kernelType, 
-				xTrain, yTrain, trainSamplesCount, featuresCount, 
-				means, stdDevs, modelParams, 
-				targetData, labels, targetSamplesCount);
+		case LINEAR: // the case of linear kernel
+			return predictByLSSVMwithLinearKernel(precomputedWeights, NTD, prediction);
 		default:
 			return UNKNOWN_KERNEL_TYPE;
 		}
 	} // predictByLSSVM
-
-	/*
-	*/
-	template<typename Float>
-	int evalutaeErrorPercent(Float* labels, Float* predictedLabels, int samplesCount, Float& percentage)
-	{
-		int counter = 0;
-
-		for (int i = 0; i < samplesCount; i++)
-			if (fabs(labels[i] - predictedLabels[i]) > TINY)
-				counter++;
-
-		percentage = static_cast<Float>(counter) / samplesCount * 100;
-
-		return NO_ERRORS;
-	}
-
 }; // svm
 
 #endif // SVM_H
+
 

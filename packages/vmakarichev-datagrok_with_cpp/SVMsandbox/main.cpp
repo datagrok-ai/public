@@ -1,28 +1,12 @@
-#include<iostream>
-using namespace std;
-
-#include "../../../Eigen/Eigen/Dense"
-using namespace Eigen;
-
 #include "tests.h"
 
 int main()
 {
-	//testCreateDataset();
+	//testGenerateDataSet();
 
-	//testCreateNormalizedDataset();
+	//testNormalizeDataset();
 
-	//testTrainModelSimpleLinear();
-
-	//testGeneratorLinearSeparable();
-
-	//testGeneratorLinearNonSeparable();
-
-	//testTrainModelNormalizedDataLinear();
-
-	testTrainModelNormalizedDataLinearHighDim(false);
-
-	//testTrainModelNormalizedDataLinearHighDimDouble();
+	testTrainLSSVM();
 
 	return 0;
-}
+} // main
