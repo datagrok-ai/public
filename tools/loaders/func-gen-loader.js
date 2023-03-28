@@ -10,7 +10,7 @@ const generateImport = require('./constants').generateImport;
 
 
 module.exports = function loader(source) {
-  const ast = parse(source, { sourceType: 'module', plugins: ['typescript', 'decorators'] });
+  const ast = parse(source, { sourceType: 'module', plugins: ['typescript', ['decorators', {decoratorsBeforeExport: true}]] });
   const functions = [];
   const imports = [];
   const resourcePath = this.resourcePath;
@@ -68,5 +68,5 @@ module.exports = function loader(source) {
   }
 
   fs.appendFileSync(outputPath, functions.join('\n'), 'utf-8');
-  return JSON.stringify(source);
+  return source;
 }
