@@ -66,9 +66,7 @@ export class ModelHandler extends DG.ObjectHandler {
 
   renderMarkup(x: DG.Func): HTMLElement {
     let markup = ui.span([this.renderIcon(x), ui.label(x.friendlyName)]);
-    let c = grok.functions.getCurrentCall();
-    markup.ondblclick = (e) => {
-      ModelHandler.openModel(x, c); }
+    markup.ondblclick = (e) => { ModelHandler.openModel(x); }
     return markup;
   }
 
@@ -121,8 +119,7 @@ export class ModelHandler extends DG.ObjectHandler {
       ui.h2(h),
       ui.divV([ui.divText(x.description, 'ui-description')], {style: {lineHeight: '150%'}})
     ]));
-    let c = grok.functions.getCurrentCall();
-    card.ondblclick = (e) => { ModelHandler.openModel(x, c); }
+    card.ondblclick = (e) => { ModelHandler.openModel(x); }
     return card;
   }
 
@@ -130,8 +127,7 @@ export class ModelHandler extends DG.ObjectHandler {
     let h = this.renderMarkup(x);
     h.classList.add('d4-link-label');
     let card = ui.bind(x, ui.h2(h));
-    let c = grok.functions.getCurrentCall();
-    card.ondblclick = (e) => { ModelHandler.openModel(x, c); }
+    card.ondblclick = (e) => { ModelHandler.openModel(x); }
     return card;
   }
 
@@ -153,9 +149,13 @@ export class ModelHandler extends DG.ObjectHandler {
     return wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog') as ModelCatalogView;
   }
 
-  static openModel(x: DG.Func, parentCall?: DG.FuncCall) {
+  static openModel(x: DG.Func) {
     let fc = x.prepare();
     fc.edit();
+  }
+
+  static openModelFromFunccall(funcCall: DG.FuncCall) {
+    funcCall.edit();
   }
 
   static bindModel(fc: DG.FuncCall) {
