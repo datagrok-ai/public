@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# remove results of a prevoius build
+# remove results of a previous build
 
-for file in $(fd --extension=ts)
+for file in $(find . -name '*.ts')
 do
   template=$(dirname $file)/$(basename $file .ts)
   dts=$template.d.ts
