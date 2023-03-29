@@ -43,7 +43,7 @@
   ],
   "dependencies": {
     "datagrok-api": "^1.13.8",
-    "@datagrok-libraries/chem-meta": "^1.0.7",
+    "@datagrok-libraries/chem-meta": "^1.0.9",
     "@datagrok-libraries/ml": "^6.3.14",
     "@datagrok-libraries/utils": "^2.4.3",
     "cash-dom": "latest",
