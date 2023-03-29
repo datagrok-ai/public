@@ -20,6 +20,14 @@ See also:
 - [Docker-Compose](../docker-compose.md)
 
 
+## 2023-03-29 1.13.9
+
+### Addressed Issues
+
+* Public: Public repo: Update public submodule link 
+* (Bug) GROK-12646: for_entity method is very slow (WIP)
+
+
 ## 2023-03-28 1.13.9
 
 ### Addressed Issues
