@@ -6,8 +6,8 @@ import {TYPE} from "datagrok-api/src/const";
 
 
 type Likelihood = {
-  value: number, 
-  const: number, 
+  value: number,
+  const: number,
   mult: number
 };
 
@@ -18,18 +18,28 @@ export type FitResult = {
   confidenceTop: (x:number)=> number,
   confidenceBottom: (x:number)=> number,
   rSquared?: number,
-  auc?: number;
+  auc?: number,
+  interceptX: number, // parameters[2]
+  interceptY: number, // fittedCurve[parameters[2]]
+  slope: number, // parameters[1]
+  top: number, // parameters[0]
+  bottom: number, // parameters[3]
 };
 
 
 /** Properties that describe {@link FitResult}. Useful for editing, initialization, transformations, etc. */
 export const fitResultProperties: Property[] = [
-  Property.js('rSquared', TYPE.FLOAT),
-  Property.js('auc', TYPE.FLOAT)
+  Property.js('rSquared', TYPE.FLOAT, {userEditable: false}),
+  Property.js('auc', TYPE.FLOAT, {userEditable: false}),
+  Property.js('interceptY', TYPE.FLOAT, {userEditable: false}),
+  Property.js('interceptX', TYPE.FLOAT, {userEditable: false}),
+  Property.js('slope', TYPE.FLOAT, {userEditable: false}),
+  Property.js('top', TYPE.FLOAT, {userEditable: false}),
+  Property.js('bottom', TYPE.FLOAT, {userEditable: false}),
 ];
 
 
-type ObjectiveFunction = (targetFunc: (params: number[], x: number) => number, 
+type ObjectiveFunction = (targetFunc: (params: number[], x: number) => number,
   data: {x: number[], y: number[]},
   params: number[]) => Likelihood;
 
@@ -107,9 +117,9 @@ export interface IFitOptions {
 /**
  * statistics - whether or not to calculate fit statistics (potentially computationally intensive)
  * */
-export function fit(data:{x: number[], y: number[]}, 
+export function fit(data:{x: number[], y: number[]},
                     params: number[],
-                    curveFunction: (params: number[], x: number) => number, 
+                    curveFunction: (params: number[], x: number) => number,
                     errorModel: FitErrorModel,
                     confidenceLevel: number = 0.05,
                     statistics: boolean = true): FitResult {
@@ -136,7 +146,7 @@ export function fit(data:{x: number[], y: number[]},
     getGradient: (parameters: number[], gradient: number[]) => {
       const length = Object.keys(parameters).length;
       iterations++;
-      
+
       for (let i = 0; i < parameters.length; i++)
         gradient[i] = getObjectiveDerivative(of, curveFunction, data, parameters, i);
 
@@ -179,7 +189,12 @@ export function fit(data:{x: number[], y: number[]},
     confidenceTop: top,
     confidenceBottom: bottom,
     rSquared: statistics ? getDetCoeff(fittedCurve, data) : undefined,
-    auc: statistics ? getAuc(fittedCurve, data) : undefined
+    auc: statistics ? getAuc(fittedCurve, data) : undefined,
+    interceptX : params[2],
+    interceptY : fittedCurve(params[2]),
+    slope: params[1],
+    top: params[0],
+    bottom: params[3]
   };
 
   return fitRes;
@@ -194,10 +209,10 @@ export function sigmoid(params: number[], x: number): number {
   return res;
 }
 
-function getObjectiveDerivative(of: ObjectiveFunction, curveFunction: (params: number[], x: number) => number, 
+function getObjectiveDerivative(of: ObjectiveFunction, curveFunction: (params: number[], x: number) => number,
     data: {x: number[], y: number[]}, params: number[], selectedParam: number): number {
   let step = params[selectedParam]*0.0001;
-  step = step == 0 ? 0.001 : step; 
+  step = step == 0 ? 0.001 : step;
   let paramsTop: number[] = [];
   let paramsBottom: number[] = [];
   for (let i = 0; i < params.length; i++) {
@@ -215,7 +230,7 @@ function getObjectiveDerivative(of: ObjectiveFunction, curveFunction: (params: n
   return (drvTop - drvBottom)/(2*step);
 }
 
-function getAuc(fittedCurve: (x: number) => number, 
+function getAuc(fittedCurve: (x: number) => number,
                 data: {x: number[], y: number[]}): number {
   let auc = 0;
   const integrationStep = 0.001;
@@ -229,11 +244,11 @@ function getAuc(fittedCurve: (x: number) => number,
   return auc;
 }
 
-function getDetCoeff(fittedCurve: (x: number) => number, 
+function getDetCoeff(fittedCurve: (x: number) => number,
                      data: {x: number[], y: number[]}): number {
   let ssRes = 0;
   let ssTot = 0;
-  
+
   const yMean = jStat.mean(data.y);
 
   for(let i = 0; i < data.x.length; i++) {
@@ -246,7 +261,7 @@ function getDetCoeff(fittedCurve: (x: number) => number,
 
 
 function objectiveNormalConstant (
-  targetFunc: (params: number[], x: number) => number, 
+  targetFunc: (params: number[], x: number) => number,
   data: {y: number[], x: number[]},
   params: number[]
 ): Likelihood {
@@ -271,11 +286,11 @@ function objectiveNormalConstant (
   for(let i = 0; i < residuesSquares.length; i++)
     likelihood += residuesSquares[i]/sigmaSq + Math.log(2 * pi * sigmaSq);
 
-  return {value: -likelihood, const: sigma, mult: 0};                                              
+  return {value: -likelihood, const: sigma, mult: 0};
 }
 
 function objectiveNormalProportional (
-targetFunc: (params: number[], x: number) => number, 
+targetFunc: (params: number[], x: number) => number,
 data: {y: number[], x: number[]},
 params: number[]
 ): Likelihood {
@@ -300,5 +315,5 @@ params: number[]
   for(let i = 0; i < residuesSquares.length; i++)
     likelihood += residuesSquares[i]/sigmaSq + Math.log(2*pi*sigmaSq);
 
-  return {value: -likelihood, const: sigma, mult: 0};                                              
+  return {value: -likelihood, const: sigma, mult: 0};
 }
