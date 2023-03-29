@@ -14,10 +14,29 @@ export function info() {
 import { callWasm } from '../wasm/callWasm';
 import { getCppInput, getResult } from '../wasm/callWasmForWebWorker';
 
+// Support vector machine (SVM) tools imports
+import {trainModel, showModel, showModelFullInfo, LINIEAR} from './svm';
+
 //tags: init
 export async function init() {
   await initSVMlib();
 }
+
+//name: getWrongPredictions
+//input: dataframe df
+//input: column col1
+//input: column col2
+export function getWrongPredictions(df, col1, col2) {  
+  let arr1 = col1.getRawData();
+  let arr2 = col2.getRawData();
+  let size = arr1.length;
+  let res = new Float32Array(size); 
+  
+  for(let i = 0; i < size; i++)
+    res[i] = arr1[i] * arr2[i];
+
+  df.columns.add(DG.Column.fromFloat32Array('FAULTS', res));
+} // getWrongPredictions
 
 //name: Generate test data (linear kernel case)
 //description: Generates dataset for testing SVN with linear kernel.
@@ -74,26 +93,34 @@ export function generateDatasetRBF(name, sigma, samplesCount, featuresCount,
   grok.shell.addTableView(df);
 } // generateDatasetRBF
 
+//name: Demo LS-SVM (linear kernel)
+//description: Demo of training LS-SVM model with linear kernel.
+//input: double gamma = 1.0 {category: Hyperparameters}
+//input: dataframe df {caption: Table; category: Training data}
+//input: column_list dataset {caption: feature columns; category: Training data}
+//input: column labels {caption: labels; category: Training data}
+//input: bool toAddPredictions = true {caption: to show predictions; category: Results}
+//input: bool toShowWrongPredictions = true {caption: to show mistakes; category: Results}
+//input: string modelInfoReport { choices:["short", "full"] }
+export function demoLinearKernelLSSVM(gamma, df, dataset, labels, 
+  toAddPredictions, toShowWrongPredictions, modelInfo) {  
 
+  let hyperparameters = {gamma: gamma, kernel: LINIEAR};
 
-//name: normalizeDataset
-//input: dataframe df
-//input: column_list data
-export function normalizeDataset(df, data) {
-  let output = callWasm(SVMlib, 'normalizeDataset', [data]);
+  let model = trainModel(SVMlib, 'trainLSSVM', 'predictByLSSVM',
+    hyperparameters, dataset, labels);  
 
-  console.log(output);
-}
+  if(modelInfo === 'short')
+    showModel(model);
+  else
+    showModelFullInfo(model);
 
-//name: normalizeDataset
-//input: column_list data
-export function normalizeDatasetInWebWorker(data) {
-  var worker = new Worker(new URL('../wasm/normalizeDatasetWorker.js', import.meta.url));
-  worker.postMessage(getCppInput(SVMlib['normalizeDataset'].arguments,[data]));
-  worker.onmessage = function(e) {
-    let output = getResult(SVMlib['normalizeDataset'], e.data);
+  if(toAddPredictions) {
+    df.columns.add(model.predictedLabels);    
 
-    // Provide output usage!
+    if(toShowWrongPredictions)
+      getWrongPredictions(df, labels, model.predictedLabels);
   }
-}
+} // demoLinearKernelLSSVM
+
 

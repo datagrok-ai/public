@@ -106,7 +106,7 @@ namespace svm
 		}
 
 		// bias value
-		Float bias = K(kernel, kernelParams, v, v);
+		Float bias = kernelFunc(kernel, kernelParams, v, v);
 
 		// This is a heruistics
 		if (kernel == RBF)
@@ -119,7 +119,7 @@ namespace svm
 		for (int i = 0; i < samplesCount; i++)
 		{
 			w = X.row(i);
-			Float val = K(kernel, kernelParams, w, v) - bias;
+			Float val = kernelFunc(kernel, kernelParams, w, v) - bias;
 
 			labels[i] = (val > static_cast<Float>(0)) ? static_cast<Float>(1) : static_cast<Float>(-1);
 		}

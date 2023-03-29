@@ -409,6 +409,8 @@ export function callWasm(module, funcName, inputs) {
     // array of arguments that further are used by cpp-wrapper
     let cppFuncInput = [];
 
+    //console.log(inputs);
+
     // complete an input for cpp
     let i = 0;
     for(let key in args){
@@ -446,7 +448,7 @@ export function callWasm(module, funcName, inputs) {
 
     } // for key        
 
-    console.log(cppFuncInput);
+    //console.log(cppFuncInput);
 
     // CALL EXPORTED CPP-FUNCTION
     let callResult = cppFuncWrapper(module, funcName, 'num', cppFuncInput);
