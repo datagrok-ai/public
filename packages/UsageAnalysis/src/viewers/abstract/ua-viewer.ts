@@ -44,7 +44,7 @@ export abstract class UaViewer {
     div.style.backgroundColor = 'rgb(25 36 64 / 50%)';
     div.style.height = '100%';
     div.style.width = '100%';
-    div.style.zIndex = '10000';
+    div.style.zIndex = '100';
     const loader = ui.loader();
     loader.style.top = '50%';
     loader.style.left = '45%';
