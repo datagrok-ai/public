@@ -655,7 +655,7 @@ public class CommonObjectsMother {
                         + "SELECT * FROM mock_data WHERE @first_name(first_name) AND @id(id) AND bool = @bool "
                         + "AND @email(email) AND @some_number(some_number) "
                         + "AND @country(country) AND @date(date)\n"
-                        + "-- end")
+                        + "--end")
                 .addFuncParam("string", "","first_name", "starts with p", "string")
                 .addFuncParam("string", "","id", ">1", "int")
                 .addFuncParam("bool", "","bool", false, "")
