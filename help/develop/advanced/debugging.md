@@ -2,25 +2,45 @@
 title: "Debugging"
 ---
 
-Essentially, Datagrok packages are either regular webpack packages, or sets JS source files.
+This article will guide you through the process of debugging your Datagrok packages. In most cases, these packages are
+TypeScript projects that utilize the `webpack` module bundler. However, if your package is based on a non-standard
+template, you may need to configure it differently for debugging.
 
-We recommend you the practices below with debugging your package code.
+Here are the main points that we will cover:
 
-## One-click debugging with Visual Studio Code
+* [Recommendations for IDE](#recommendations-for-ides):
+  * [Visual Studio Code](#one-click-debugging-with-visual-studio-code)
+  * [JetBrains IDEs](#one-click-debugging-with-jetbrains-ides)
+* Additional tools:
+  * Logger
+  * Inspector
+
+## Recommendations for IDEs
+
+While the `Sources` tab in a browser's developer tools provides essential debugging features, more complex tasks often
+require a robust IDE. Below you can find instructions for package debugging in popular IDEs such as [Visual Studio
+Code](https://code.visualstudio.com) and [JetBrains IDEs](https://www.jetbrains.com/webstorm).
+
+### One-click debugging with Visual Studio Code
 
 To set up a `.vscode` debugging configuration for your package, use `grok create <package-name> --ide=vscode` when
 creating a package, or `grok init --ide=vscode` in the directory of an existing package (see [datagrok-tools
-docs](https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools) for details).
+docs](https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools) for details):
 
-This parameter coupled with `grok create` adds an additional `.vscode` folder with two files to your package folder.
-These files bring you development experience close to building native apps, where you modify the code, hit the "Run",
-wait for application to "compile" (in our case — go through webpack, and potentially through linters), start it and then
-explore your runtime state through breakpoints, variable watches, call stacks etc.
+```shell
+# For new packages
+grok create <package-name\> --ide=vscode
 
-With this setting, you would be able to "compile" and "run" the package in one click from the left sidebar of Visual
-Studio Code under the `Run` section (4-th button from the top) by the `Start Debugging` button at the top. The steps
-added with grok tools `--vscode` key will prepare a webpack package locally (showing occurring errors accordingly),
-deploy it to the selected Datagrok instance, and run the browser in a IDE-debugging mode.
+# For existing packages
+cd <package-name\>
+grok init --ide=vscode
+```
+
+As a result, there will be a `.vscode` folder with two files in your package folder: `launch.json` and `tasks.json`.
+Once you are ready to launch your code, open `Run and Debug` in the sidebar (`Ctrl+Shift+D`) and hit "Run" to start
+debugging (`F5` or `Ctrl+F5`). Wait for your application to "compile" (in our case — go through webpack, and potentially
+through linters, etc.), then start it in Datagrok and explore your runtime state through breakpoints, variable watches,
+call stacks etc.
 
 Below we explain how this debugging works under the hood. As of today, you'd also need to repeat these steps for VS Code
 on Linux and macOS, as we don't support automatically created configurations for them yet.
