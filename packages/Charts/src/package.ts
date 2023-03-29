@@ -133,7 +133,7 @@ export function _globeViewerDemo() {
 }
 
 //name: groupAnalysisViewerDemo
-//meta.demoPath: Viewers | GroupAnalysis
+//meta.demoPath: Viewers | Group Analysis
 export function _groupAnalysisViewerDemo() {
   viewerDemo('GroupAnalysis');
 }
@@ -157,7 +157,7 @@ export function _sunburstViewerDemo() {
 }
 
 //name: surfacePlotDemo
-//meta.demoPath: Viewers | SurfacePlot
+//meta.demoPath: Viewers | Surface Plot
 export function _surfacePlotDemo() {
   viewerDemo('SurfacePlot');
 }
@@ -175,7 +175,7 @@ export function _treeViewerDemo() {
 }
 
 //name: wordCloudViewerDemo
-//meta.demoPath: Viewers | WordCloud
+//meta.demoPath: Viewers | Word Cloud
 export function _wordCloudViewerDemo() {
   viewerDemo('WordCloud');
 }
