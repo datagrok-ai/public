@@ -19,11 +19,11 @@ interface Filter {
 
 
 export class PackagesView extends UaView {
-  static viewName = 'Packages';
+  // static viewName = 'Packages';
 
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox, 'package');
-    this.name = PackagesView.viewName;
+    this.name = 'Packages';
   }
 
   async initViewers(): Promise<void> {
@@ -34,19 +34,29 @@ export class PackagesView extends UaView {
       (t: DG.DataFrame) => {
         t.onSelectionChanged.subscribe(async () => {
           if (!t.selection.anyTrue) return;
+          let df = t.clone(t.selection);
+          const gen = t.rows[Symbol.iterator]();
+          let dateFrom: Date | string = new Date(df.getCol('time_start').stats.min / 1000);
+          let dateTo: Date | string = new Date(df.getCol('time_end').stats.max / 1000);
+          let packages: string[] = df.getCol('pid').categories;
+          t.selection.init((i) => {
+            const row = gen.next().value as DG.Row;
+            return dateFrom <= row.time_start && row.time_start < dateTo &&
+            packages.includes(row.pid);
+          }, false);
           const cp = DG.Accordion.create();
-          const df = t.clone(t.selection);
+          df = t.clone(t.selection);
           const dateMin = df.getCol('time_start').stats.min;
           const dateMax = df.getCol('time_end').stats.max;
+          dateFrom = new Date(dateMin / 1000);
+          dateTo = new Date(dateMax / 1000);
           const groups: string[] = df.getCol('ugid').categories;
           const users: string[] = df.getCol('uid').categories;
-          const packages: string[] = df.getCol('pid').categories;
+          packages = df.getCol('pid').categories;
           const filter: Filter = {time_start: dateMin / 1000000, time_end: dateMax / 1000000,
             groups: groups, users: users, packages: packages};
-          const dateFrom = new Date(dateMin / 1000).toLocaleString();
-          const dateTo = new Date(dateMax / 1000).toLocaleString();
-          // t.rows.select((row) => dateMin <= row.time_start.a && row.time_start <= dateMax &&
-          //   (users.includes(row.ugid) || packages.includes(row.package)));
+          dateFrom = dateFrom.toLocaleString('es-pa', {hour12: false}).replace(',', '');
+          dateTo = dateTo.toLocaleString('es-pa', {hour12: false}).replace(',', '');
           cp.addPane('Time interval', () => ui.tableFromMap({'From': dateFrom, 'To': dateTo}), true);
           cp.addPane('Users', () => ui.divV(users.map((u) => ui.render(`#{x.${u}}`))), true);
           cp.addPane('Packages', () => ui.divV(packages.map((p) => ui.render(`#{x.${p}}`))), true);
@@ -64,8 +74,8 @@ export class PackagesView extends UaView {
           const filter: Filter = {time_start: row.time_start / 1000, time_end: row.time_end / 1000,
             groups: [row.ugid], users: [row.uid], packages: [row.pid]};
           const cp = DG.Accordion.create();
-          const dateFrom = new Date(row.time_start).toLocaleString();
-          const dateTo = new Date(row.time_end).toLocaleString();
+          const dateFrom = new Date(row.time_start).toLocaleString('es-pa', {hour12: false}).replace(',', '');
+          const dateTo = new Date(row.time_end).toLocaleString('es-pa', {hour12: false}).replace(',', '');
           cp.addPane('Details', () => {
             return ui.tableFromMap({'User': ui.render(`#{x.${row.uid}}`),
               'Package': ui.render(`#{x.${row.pid}}`),
@@ -90,12 +100,11 @@ export class PackagesView extends UaView {
       this.uaToolbox.packagesDD.value = packageNames.length === 1 ?
         packageNames[0] : `${packageNames.length} packages`;
       ViewHandler.getView('Functions').getScatterPlot()
-        .reloadViewer({date: 'this week', groups: filter.groups, packages: packageNames}); // re do
+        .reloadViewer({date: `${date[0]}-${date[1]}`, groups: filter.groups, packages: packageNames});
       ViewHandler.changeTab('Functions');
+      this.uaToolbox.drilldown = ViewHandler.getCurrentView();
     });
-    button.style.height = '100%';
-    button.style.verticalAlign = 'middle';
-    button.style.marginLeft = '7px';
+    button.classList.add('ua-button');
     const fPane = cp.addPane('Functions', () => {
       return ui.wait(async () => {
         const packageFunctions = [];
