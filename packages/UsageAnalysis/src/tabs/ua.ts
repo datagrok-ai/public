@@ -8,7 +8,7 @@ import {UaQueryViewer} from '../viewers/abstract/ua-query-viewer';
 
 
 export class UaView extends DG.ViewBase {
-  viewName = 'Usage Analysis View';
+  static viewName = 'Usage Analysis View';
   uaToolbox: UaToolbox;
   viewers: UaQueryViewer[] = [];
   initialized: boolean = false;
@@ -45,10 +45,9 @@ export class UaView extends DG.ViewBase {
     }
   }
 
-  // public static checkLabels() {
-  //   return [UaView.dateFromDD, UaView.dateToDD,
-  //     UaView.usersDD, UaView.packagesDD].some((val) => val != null);
-  // }
+  getScatterPlot() {
+    return this.viewers[0];
+  }
 
   async initViewers(): Promise<void> {}
 }
