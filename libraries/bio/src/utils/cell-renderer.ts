@@ -28,7 +28,7 @@ export enum DrawStyle {
  * @param {string} [separator=''] Is separator for sequence.
  * @param {boolean} [last=false] Is checker if element last or not.
  * @param drawStyle Is draw style. MSA - for multicharSeq, classic - for other seq.
- * @param maxWord Is array of max words for each line.
+ * @param maxWord {{[pos: number]: number}}  Max word lengths per position.
  * @param wordIdx Is index of word we currently draw.
  * @param gridCell Is grid cell.
  * @param referenceSequence Is reference sequence for diff mode.
@@ -39,7 +39,10 @@ export const printLeftOrCentered = (
   x: number, y: number, w: number, h: number,
   g: CanvasRenderingContext2D, s: string, color: string = undefinedColor,
   pivot: number = 0, left = false, transparencyRate: number = 1.0,
-  separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic, maxWord: { [index: string]: number } = {}, wordIdx: number = 0, gridCell: DG.GridCell | null = null, referenceSequence: string[] = [], maxLengthOfMonomer: number | null = null): number => {
+  separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic,
+  maxWord: { [index: number]: number } = {}, wordIdx: number = 0, gridCell: DG.GridCell | null = null,
+  referenceSequence: string[] = [], maxLengthOfMonomer: number | null = null
+): number => {
   g.textAlign = 'start';
   let colorPart = s.substring(0);
   let grayPart = last ? '' : separator;
@@ -65,7 +68,6 @@ export const printLeftOrCentered = (
   if (maxLengthOfMonomer != null) {
     colorPart = monomerToShortFunction(colorPart, maxLengthOfMonomer);
   }
-
 
   let textSize: any = g.measureText(colorPart + grayPart);
   const indent = 5;
@@ -104,4 +106,3 @@ export const printLeftOrCentered = (
     return x + dx + maxColorTextSize;
   }
 };
-

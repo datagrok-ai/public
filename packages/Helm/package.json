@@ -15,7 +15,7 @@
     "helm/JSDraw/Pistoia.HELM-uncompressed.js"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.26.1",
+    "@datagrok-libraries/bio": "^5.26.0",
     "@datagrok-libraries/utils": "^2.5.0",
     "cash-dom": "^8.1.1",
     "datagrok-api": "^1.10.2",

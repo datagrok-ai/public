@@ -14,6 +14,9 @@ const enum tempTAGS {
 
 type TempType = { [tagName: string]: any };
 
+/** Helm cell renderer in case of no missed monomer draws with JSDraw2.Editor (webeditor),
+ * in case of missed monomers presented, draws linear sequences aligned in width per monomer.
+ */
 export class HelmCellRenderer extends DG.GridCellRenderer {
   get name() { return 'helm'; }
 

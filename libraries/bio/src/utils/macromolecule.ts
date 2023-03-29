@@ -130,6 +130,9 @@ export function splitterAsHelm(seq: any): string[] {
   return mmList.map(mmPostProcess);
 }
 
+/** Func type to shorten a {@link monomerLabel} with length {@link limit} */
+export type MonomerToShortFunc = (monomerLabel: string, limit: number) => string;
+
 /** Get splitter method to split sequences to monomers
  * @param {string} units
  * @param {string} separator

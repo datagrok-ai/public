@@ -44,9 +44,9 @@ export class UnitsHandler {
     col.setTag(TAGS.alphabet, alphabet);
   }
 
-  protected get units(): string { return this._units; }
-
   protected get column(): DG.Column { return this._column; }
+
+  protected get units(): string { return this._units; }
 
   public get notation(): NOTATION { return this._notation; }
 

@@ -19,27 +19,35 @@ export async function initHelm(): Promise<void> {
   return Promise.all([new Promise((resolve, reject) => {
     // @ts-ignore
     dojo.ready(function() { resolve(null); });
-  }), await grok.functions.call('Bio:getBioLib')]).then(([_, lib]: [void, IMonomerLib]) => {
-    monomerLib = lib;
-    rewriteLibraries(); // initHelm()
-    monomerLib.onChanged.subscribe((_) => {
-      try {
-        rewriteLibraries(); // initHelm()
+  }), grok.functions.call('Bio:getBioLib')])
+    .then(([_, lib]: [void, IMonomerLib]) => {
+      monomerLib = lib;
+      rewriteLibraries(); // initHelm()
+      monomerLib.onChanged.subscribe((_) => {
+        try {
+          rewriteLibraries(); // initHelm()
 
-        const monTypeList: string[] = monomerLib.getTypes();
-        const msgStr: string = 'Monomer lib updated:<br />' + (
-          monTypeList.length == 0 ? 'empty' : monTypeList.map((monType) => {
-            return `${monType} ${monomerLib.getMonomerNamesByType(monType).length}`;
-          }).join('<br />'));
+          const monTypeList: string[] = monomerLib.getTypes();
+          const msgStr: string = 'Monomer lib updated:<br />' + (
+            monTypeList.length == 0 ? 'empty' : monTypeList.map((monType) => {
+              return `${monType} ${monomerLib.getMonomerNamesByType(monType).length}`;
+            }).join('<br />'));
 
-        grok.shell.info(msgStr);
-      } catch (err: any) {
-        const errMsg = errorToConsole(err);
-        console.error('Helm: initHelm monomerLib.onChanged() error:\n' + errMsg);
-        // throw err; // Prevent disabling event handler
-      }
+          grok.shell.info(msgStr);
+        } catch (err: any) {
+          const errMsg = errorToConsole(err);
+          console.error('Helm: initHelm monomerLib.onChanged() error:\n' + errMsg);
+          // throw err; // Prevent disabling event handler
+        }
+      });
+    })
+    .catch((err: any) => {
+      const errMsg: string = err instanceof Error ? err.message : !!err ? err.toString() : 'Exception \'undefined\'';
+      grok.shell.error(`Package \'Helm\' init initHelm() error: ${errMsg}`);
+      const errRes = new Error(errMsg);
+      errRes.stack = err.stack;
+      throw errRes;
     });
-  });
 }
 
 function rewriteLibraries() {
@@ -96,16 +104,16 @@ export function helmCellRenderer(): HelmCellRenderer {
 function checkMonomersAndOpenWebEditor(cell?: DG.Cell, value?: string, units?: string) {
   const cellValue = typeof units === 'undefined' ? cell.value : value;
   const monomers = findMonomers(cellValue);
-  if (monomers.size == 0) 
+  if (monomers.size == 0)
     webEditor(cell, value, units);
   else
     grok.shell.warning(`Monomers ${Array.from(monomers).join(', ')} are absent! <br/>` +
-    `Please, upload the monomer library! <br/>` +
-    `<a href="https://datagrok.ai/help/domains/bio/macromolecules" target="_blank">Learn more</a>`);
+      `Please, upload the monomer library! <br/>` +
+      `<a href="https://datagrok.ai/help/domains/bio/macromolecules" target="_blank">Learn more</a>`);
 }
 
 //tags: cellEditor
-//description: Macromolecule  
+//description: Macromolecule
 //input: grid_cell cell
 //meta.columnTags: quality=Macromolecule, units=helm
 export function editMoleculeCell(cell: DG.GridCell): void {
@@ -222,7 +230,7 @@ function getRS(smiles: string) {
 
 //name: getMolfiles
 //input: column col {semType: Macromolecule}
-//output: column res 
+//output: column res
 export function getMolfiles(col: DG.Column): DG.Column {
   let grid = grok.shell.tv.grid;
   let parent = grid.root.parentElement;
