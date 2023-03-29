@@ -1,5 +1,5 @@
 import * as grok from 'datagrok-api/grok';
-// import * as ui from 'datagrok-api/ui';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {UaView} from './tabs/ua';
@@ -29,6 +29,13 @@ export class ViewHandler {
   }
 
   async init() {
+    grok.shell.windows.showToolbox = true;
+    grok.shell.windows.showContextPanel = true;
+    const info = ui.divText(`To view more detailed information about the events represented by a particular point,\
+    simply click on the point of interest. You can also select multiple points. Once you've made your selection,\
+    more information about the selected events will be displayed on context pane`);
+    info.classList.add('ua-hint');
+    document.querySelector('.grok-entity-prop-panel > .d4-accordion')?.append(info);
     // const pathSplits = decodeURI(window.location.pathname).split('/');
     ViewHandler.UA = new DG.MultiView({viewFactories: {}});
     const toolbox = await UaToolbox.construct();

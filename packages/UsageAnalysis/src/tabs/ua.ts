@@ -8,13 +8,13 @@ import {UaQueryViewer} from '../viewers/abstract/ua-query-viewer';
 
 
 export class UaView extends DG.ViewBase {
-  static viewName = 'Usage Analysis View';
+  // static viewName = 'Usage Analysis View';
   uaToolbox: UaToolbox;
   viewers: UaQueryViewer[] = [];
   initialized: boolean = false;
   viewer: DG.Viewer;
 
-  constructor(uaToolbox: UaToolbox, y?: string) {
+  constructor(uaToolbox: UaToolbox, y?: string, ColorSelector: boolean = false) {
     super();
     this.uaToolbox = uaToolbox;
     this.toolbox = uaToolbox.rootAccordion.root;
@@ -31,7 +31,7 @@ export class UaView extends DG.ViewBase {
       jitterSize: 5,
       markerMinSize: 10,
       markerMaxSize: 30,
-      showColorSelector: false,
+      showColorSelector: ColorSelector,
       showSizeSelector: false,
       showXSelector: false,
       showYSelector: false,
