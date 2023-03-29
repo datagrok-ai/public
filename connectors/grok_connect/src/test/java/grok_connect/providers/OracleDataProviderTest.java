@@ -13,8 +13,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import serialization.DataFrame;
 
 class OracleDataProviderTest extends ContainerizedProviderBaseTest {
-    protected OracleDataProviderTest() {
-        super(Provider.ORACLE);
+    protected OracleDataProviderTest(Provider provider) {
+        super(provider);
     }
 
     @DisplayName("Test of getSchemas() method with correct DataConnection")
