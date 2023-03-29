@@ -1,7 +1,8 @@
 import {DataFrame, Column} from "./dataframe";
 import {toJs} from "./wrappers";
-import {FuncCall} from "./functions";
+import {FuncCall, Functions} from "./functions";
 import {TYPE, DemoDatasetName, JoinType, SyncType, CsvImportOptions, StringPredicate} from "./const";
+import {DataConnection} from "./entities";
 
 let api = <any>window;
 
@@ -90,18 +91,25 @@ export class DemoDatasets {
   }
 }
 
+export class Db {
+
+  /** Executes a specified {@link sql} against the specified {@link connectionId}. */
+  async query(connectionId: string, sql: string): Promise<DataFrame> {
+    let connection: DataConnection = await new Functions().eval(connectionId);
+    let q = connection.query('adhoc', sql);
+    let result = await q.apply();
+    return result;
+  }
+}
+
 /**
  * Creating, loading, querying, manipulating, joining tables.
  * */
 
 export class Data {
-  public demo: DemoDatasets;
-  public files: Files;
-
-  constructor() {
-    this.demo = new DemoDatasets();
-    this.files = new Files();
-  }
+  public demo: DemoDatasets = new DemoDatasets();
+  public files: Files = new Files();
+  public db: Db = new Db();
 
   /**
    * Creates a generic dataset with the defined number of rows and columns.

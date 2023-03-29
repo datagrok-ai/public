@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import { delay, filter, map } from 'rxjs/operators';
-import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
+import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
 import { interval } from 'rxjs';
 
 
@@ -17,6 +17,7 @@ export class PredictiveModelingTutorial extends Tutorial {
   get steps() { return 26; }
 
   helpUrl: string = 'https://datagrok.ai/help/learn/predictive-modeling';
+  prerequisites: TutorialPrerequisites = {jupyter: true, h2o: true};
 
   protected async _run() {
     this.header.textContent = this.name;

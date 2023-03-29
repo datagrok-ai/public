@@ -5,7 +5,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FunctionView} from './function-view';
 import dayjs from 'dayjs';
-import {RichFunctionView} from './rich-function-view';
 
 /**
  * Base class for handling Compute models (see https://github.com/datagrok-ai/public/blob/master/help/compute/compute.md).
@@ -23,64 +22,76 @@ import {RichFunctionView} from './rich-function-view';
  * - notifications for changing inputs, completion of computations, etc: {@link onInputChanged}
  * */
 export abstract class ComputationView extends FunctionView {
-  /** Find the function by fully specified name, link it to the view and constructs the view.
-    * @stability Stable
-  */
+  /**
+   * Overrided to:
+   * 1) add getting Help and ReportBug URLs from the package.
+   * 2) change routing logic for models
+   */
   constructor(
     funcName: string,
-    public options: {historyEnabled: boolean, isTabbed: boolean} = {historyEnabled: true, isTabbed: false}
+    public options: {
+      historyEnabled: boolean,
+      isTabbed: boolean,
+      parentCall?: DG.FuncCall
+    } = {historyEnabled: true, isTabbed: false}
   ) {
     super(funcName, options);
 
-    const currentCall = grok.functions.getCurrentCall();
-    this.parentCall = currentCall;
-    this.parentView = currentCall?.parentCall.aux['view'];
-    this.basePath = `/${currentCall?.func.name}`;
+    if (!options.parentCall) options.parentCall = grok.functions.getCurrentCall();
+
+    const parentCall = options.parentCall;
+    this.parentCall = parentCall;
+    this.parentView = parentCall?.parentCall.aux['view'];
+    this.basePath = `/${parentCall?.func.name}`;
 
     this.onFuncCallReady.subscribe({
       complete: async () => {
         await this.getPackageUrls();
         this.buildRibbonMenu();
-        this.changeViewName(currentCall.func.friendlyName);
+        this.changeViewName(parentCall.func.friendlyName);
       }
     });
   }
 
   /** Override to customize getting mocks
-    * @stability Experimental
+    * @stability Stable
   */
   getMocks: ({mockName: string, action: () => Promise<void>}[]) | null = null;
 
   /** Override to customize getting templates
-    * @stability Experimental
+    * @stability Stable
   */
   getTemplates: ({name: string, action: () => Promise<void>}[]) | null = null;
 
-  /** Override to customize getting help feature
+  /** Override to customize getting help feature. Called when "Help" is clicked.
     * @stability Stable
   */
   getHelp: (() => Promise<void>) | null = null;
 
-  /** Override to customize bug reporting feature
+  /** Override to customize bug reporting feature. Called when "Report a bug" is clicked.
     * @stability Stable
   */
   reportBug: (() => Promise<void>) | null = null;
 
-  /** Override to customize feature request feature
+  /** Override to customize feature request feature. Called when "Request a feature" is clicked.
     * @stability Stable
   */
   requestFeature: (() => Promise<void>) | null = null;
 
-  /** Override to customize "about" info obtaining feature.
-    * @stability Experimental
+  /** Override to customize "about" info obtaining feature. Called when "About" is clicked.
+    * Default implementation finds {@link this.funcCall}'s package and shows it's properties.
+    * @stability Stable
   */
   getAbout: (() => Promise<string>) | null = async () => {
+    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12306
     const pack = (await grok.dapi.packages.list()).find((pack) => pack.id === this.func?.package.id);
     return pack ? `${pack.friendlyName} v.${pack.version}.\nLast updated on ${dayjs(pack.updatedOn).format('YYYY MMM D, HH:mm')}`: `No package info was found`;
   };
 
   /**
-   * Looks for {@link reportBug}, {@link getHelp} and {@link exportConfig} members and creates model menus
+   * Looks for
+   * {@link getMocks}, {@link getTemplates}, {@link getHelp}, {@link reportBug}, {@link requestFeature}, {@link getAbout}, {@link exportConfig}
+   * members and creates "Model" menu
    * @stability Stable
   */
   override buildRibbonMenu() {
@@ -143,7 +154,12 @@ export abstract class ComputationView extends FunctionView {
     }
   }
 
+  /**
+   * Finds {@link this.funcCall}'s package and retrieves it's variables.
+   * @stability Stable
+  */
   private async getPackageUrls() {
+    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12306
     const pack = (await grok.dapi.packages.list()).find((pack) => pack.id === this.parentCall?.func.package.id);
 
     const reportBugUrl = (await pack?.getProperties() as any).REPORT_BUG_URL;

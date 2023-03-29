@@ -67,6 +67,7 @@ export namespace chem {
 
     onChanged: Subject<any> = new Subject<any>();
     host?: Sketcher;
+    _name: string = '';
 
     constructor() {
       super(ui.box());
@@ -105,6 +106,14 @@ export namespace chem {
 
     get height(): number {
       return 400;
+    }
+
+    get name(): string {
+      return this._name;
+    }
+
+    set name(s: string) {
+      this._name = s;
     }
 
     /** Override to provide custom initialization. At this point, the root is already in the DOM. */
@@ -254,9 +263,13 @@ export namespace chem {
 
     /** Sets SMILES, MOLBLOCK, or any other molecule representation */
     setValue(x: string) {
+      const index = extractors.map(it => it.name).indexOf('nameToSmiles');
+      const el = extractors.splice(index, 1)[0];  
+      extractors.splice(extractors.length, 0, el);
+
       const extractor = extractors
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
-
+      
       if (extractor != null && !checkSmiles(x) && !isMolBlock(x))
         extractor
           .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
@@ -499,6 +512,7 @@ export namespace chem {
         if(currentSketcherType !== sketcherType) //in case sketcher type has been changed while previous sketcher was loading
           return;
         this.sketcher = sketcher; //setting this.sketcher only after ensuring that this is last selected sketcher
+        this.sketcher!.name = currentSketcherType;
         ui.empty(this.host);
         this.host.appendChild(this.sketcher!.root);
         this._setSketcherSize(); //update sketcher size according to base sketcher width and height

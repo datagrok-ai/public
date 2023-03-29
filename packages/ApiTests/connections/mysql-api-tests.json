@@ -4,7 +4,7 @@
   "friendlyName": "Tests",
   "parameters": {
     "server": "db.datagrok.ai",
-    "port": 3306,
+    "port": 33063,
     "db": "test"
   },
   "credentials" : {

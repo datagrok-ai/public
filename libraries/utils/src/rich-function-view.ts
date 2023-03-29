@@ -1,3 +1,4 @@
+/* eslint-disable valid-jsdoc */
 /* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -11,6 +12,7 @@ import {Subject} from 'rxjs';
 import {UiUtils} from './shared-components/ui-utils';
 import '../css/rich-function-view.css';
 
+// mapping from internal Dart labels to JS DG.VIEWER labels
 const viewerTypesMapping: {[key: string]: string} = {
   ['barchart']: DG.VIEWER.BAR_CHART,
   ['boxplot']: DG.VIEWER.BOX_PLOT,
@@ -65,9 +67,17 @@ export class RichFunctionView extends FunctionView {
   ) {
     super(funcName, options);
 
-    this.basePath = `scripts/${this.funcCall.func.id}/view`;
+    this.onFuncCallReady.subscribe({
+      complete: () => {
+        this.basePath = `scripts/${this.funcCall.func.id}/view`;
+      }
+    });
   }
 
+  /**
+   * Showing UI after completion of function call.
+   * @param runFunc
+   */
   public override onAfterRun(runFunc: DG.FuncCall): Promise<void> {
     this.tabsElem.root.style.removeProperty('display');
     this.tabsElem.panes.forEach((tab) => {
@@ -79,6 +89,11 @@ export class RichFunctionView extends FunctionView {
     return Promise.resolve();
   }
 
+  /**
+   * RichFunctionView has adavanced automatic UI builder. It takes {@link this.funcCall} as a base and constructs flexible view.
+   * This view is updated automatically when {@link this.funcCallReplaced} is emitted or any of input/output param changes.
+   * @returns HTMLElement attached to the root of the view
+   */
   public buildIO(): HTMLElement {
     const inputBlock = this.buildInputBlock();
 
@@ -114,6 +129,7 @@ export class RichFunctionView extends FunctionView {
     return formDiv;
   }
 
+  // Main element of the output block. Stores all the tabs for the output and input
   private tabsElem = ui.tabControl();
 
   public buildOutputBlock(): HTMLElement {
@@ -123,8 +139,9 @@ export class RichFunctionView extends FunctionView {
       const tabDfProps = this.categoryToParamMap[tabLabel].filter((p) => p.propertyType === DG.TYPE.DATA_FRAME);
       const tabScalarProps = this.categoryToParamMap[tabLabel].filter((p) => p.propertyType !== DG.TYPE.DATA_FRAME);
 
-      // EXPLAIN: undefined and JSON.parse
+      // dfProp.options['viewer'] could be empty, so we need to check it
       const parsedTabDfProps = tabDfProps.map((dfProp) => (dfProp.options['viewer'] !== undefined) ?
+        // true and false values are retrieved as string, so we call JSON.parse on them once more
         JSON.parse(dfProp.options['viewer'], (_, v) => v === 'true' || v === 'false' ? JSON.parse(v): v):
         []);
 
@@ -156,7 +173,7 @@ export class RichFunctionView extends FunctionView {
                 if (Object.values(viewerTypesMapping).includes(viewer.type)) {
                   viewer.dataFrame = currentParam.value;
                 } else {
-                  // EXPLAIN WHY
+                  // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
                   const newViewer = await currentParam.value.plot.fromType(viewer.type) as DG.Viewer;
                   viewer.root.replaceWith(newViewer.root);
                   viewer = newViewer;
@@ -275,34 +292,11 @@ export class RichFunctionView extends FunctionView {
     });
   }
 
+  // Stores mapping between DF and its' viewers
   private dfToViewerMapping: {[key: string]: DG.Viewer[]} = {};
-
-  protected get dfParams() {
-    return [
-      ...this.func!.inputs.filter((p) => p.propertyType == DG.TYPE.DATA_FRAME),
-      ...this.func!.outputs.filter((p) => p.propertyType == DG.TYPE.DATA_FRAME),
-    ];
-  }
-
-  protected get dfOutputParams() {
-    return this.func!.outputs.filter((p) => p.propertyType == DG.TYPE.DATA_FRAME);
-  }
 
   protected get isInputPanelRequired() {
     return this.func?.inputs.some((p) => p.propertyType == DG.TYPE.DATA_FRAME && p.options['viewer'] != null) || false;
-  }
-
-  protected get outUniqueParamCategories() {
-    return [
-      ...new Set(this.func!.outputs.map((p) => p.category)) // get all output params' categories
-    ]; // keep only unique of them
-  }
-
-  protected get outputTabsLabels() {
-    return [
-      ...this.outUniqueParamCategories,
-      ...this.outUniqueParamCategories.find((val) => val === 'Misc' || val === 'Output') ? ['Output'] : [], // if no categories are stated, the default category is added
-    ];
   }
 
   protected get tabsLabels() {
@@ -328,18 +322,6 @@ export class RichFunctionView extends FunctionView {
     });
 
     return map;
-  }
-
-  public override async run(): Promise<void> {
-    if (!this.funcCall) throw new Error('The correspoding function is not specified');
-
-    await this.onBeforeRun(this.funcCall);
-    const pi = DG.TaskBarProgressIndicator.create('Calculating...');
-    this.funcCall.newId();
-    await this.funcCall.call(); // mutates the funcCall field
-    pi.close();
-    await this.onAfterRun(this.funcCall);
-    this.lastCall = this.options.isTabbed ? this.funcCall.clone() : await this.saveRun(this.funcCall);
   }
 
   private async doRun(): Promise<void> {
@@ -468,6 +450,12 @@ export class RichFunctionView extends FunctionView {
     return ui.div([inputs]);
   }
 
+  /**
+   * RichFunctionView know everything about its UI, so it exports not only data, but also viewer screenshots.
+   * This function iterates over all of the tabs and sequentally exports all dataframes, their viewers and scalars.
+   * @param format format needed to export. See {@link this.defaultSupportedExportFormats} for available formats.
+   * @returns Promise<Blob> with data ready for download
+   */
   protected defaultExport = async (format: string) => {
     const lastCall = this.lastCall;
     if (!lastCall) throw new Error(`Function was not called`);
