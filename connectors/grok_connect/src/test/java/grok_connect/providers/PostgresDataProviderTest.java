@@ -23,8 +23,8 @@ class PostgresDataProviderTest extends ContainerizedProviderBaseTest {
     private static final String INIT_SCHEMA_NAME = "public";
     private static final String INIT_TABLE_NAME = "mock_data";
 
-    protected PostgresDataProviderTest() {
-        super(Provider.POSTGRESQL);
+    protected PostgresDataProviderTest(Provider provider) {
+        super(provider);
     }
 
     @DisplayName("Test of getSchemas() method with correct DataConnection")
