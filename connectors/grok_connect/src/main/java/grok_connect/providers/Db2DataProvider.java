@@ -1,25 +1,22 @@
 package grok_connect.providers;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
-
-import grok_connect.connectors_info.*;
+import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataQuery;
+import grok_connect.connectors_info.DataSource;
+import grok_connect.connectors_info.DbCredentials;
+import grok_connect.connectors_info.FuncParam;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
-import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Property;
 import grok_connect.utils.ProviderManager;
-import grok_connect.utils.QueryCancelledByUser;
-import serialization.DataFrame;
-
 
 public class Db2DataProvider extends JdbcDataProvider {
     public Db2DataProvider(ProviderManager providerManager) {
@@ -46,13 +43,13 @@ public class Db2DataProvider extends JdbcDataProvider {
             put("varchar", serialization.Types.STRING);
             put("graphic", serialization.Types.STRING);
             put("vargraphic", serialization.Types.STRING);
-            put("clob", serialization.Types.STRING);
-            put("dbclob", serialization.Types.STRING);
             put("boolean", serialization.Types.BOOL);
             put("date", serialization.Types.DATE_TIME);
             put("timestamp", serialization.Types.DATE_TIME);
             put("time", serialization.Types.DATE_TIME);
-            put("xml", serialization.Types.STRING);
+            put("xml", serialization.Types.OBJECT);
+            put("clob", serialization.Types.OBJECT);
+            put("dbclob", serialization.Types.OBJECT);
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stddev(#)", serialization.Types.dataFrameNumericTypes));
     }
