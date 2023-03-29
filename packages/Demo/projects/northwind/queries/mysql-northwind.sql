@@ -1,6 +1,6 @@
 --name: Orders
 --friendlyName: Orders
---connection: MariaDBNorthwind
+--connection: MySQLNorthwind
 --input: int employeeid = 5
 --input: string shipvia = "= 3" {pattern: int}
 --input: double freight = 10.0
@@ -25,7 +25,7 @@ WHERE (employeeid = @employeeid)
 
 --name: Products
 --friendlyName: Products
---connection: MariaDBNorthwind
+--connection: MySQLNorthwind
 
 SELECT *
 FROM products

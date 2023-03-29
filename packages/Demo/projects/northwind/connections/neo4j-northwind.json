@@ -1,11 +1,11 @@
 {
   "#type": "DataConnection",
-  "name": "Neo4jMovies",
-  "friendlyName": "Movies",
+  "name": "Neo4jNorthwind",
+  "friendlyName": "Northwind",
   "parameters": {
     "server": "db.datagrok.ai",
-    "db": "movies",
-    "port": 27688
+    "db": "northwind",
+    "port": 7687
   },
   "credentials": {
     "parameters": {
@@ -14,7 +14,7 @@
     }
   },
   "dataSource": "Neo4j",
-  "description": "Movies sample database",
+  "description": "Northwind sample database",
   "tags": [
     "demo"
   ]
