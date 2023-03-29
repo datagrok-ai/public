@@ -20,8 +20,7 @@ export class ViewHandler {
   private static instance: ViewHandler;
   private urlParams: Map<string, string> = new Map<string, string>();
   public static UAname = 'Usage Analysis';
-  private static UA: DG.MultiView;
-  // private static tabs: DG.TabControl;
+  static UA: DG.MultiView;
 
   public static getInstance(): ViewHandler {
     if (!ViewHandler.instance)
@@ -31,22 +30,20 @@ export class ViewHandler {
 
   async init() {
     // const pathSplits = decodeURI(window.location.pathname).split('/');
-    const params = this.getSearchParameters();
+    ViewHandler.UA = new DG.MultiView({viewFactories: {}});
     const toolbox = await UaToolbox.construct();
+    const params = this.getSearchParameters();
     // ViewHandler.tabs = ui.tabControl();
     // ViewHandler.tabs.root.style.width = 'inherit';
     // ViewHandler.tabs.root.style.height = 'inherit';
     // [OverviewView, EventsView, ErrorsView, FunctionsView, UsersView, DataView];
     const viewClasses: (typeof UaView)[] = [PackagesView, FunctionsView];
-    const viewFactories: {[name: string]: any} = {};
-    for (let i = 0; i < viewClasses.length; ++i) {
-      // ViewHandler.tabs.addPane(viewClasses[i].viewName, () => {
+    // const viewFactories: {[name: string]: any} = {};
+    for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i](toolbox);
-      currentView.name = currentView.viewName;
-      viewFactories[currentView.viewName] = () => currentView;
+      // viewFactories[currentView.name] = () => currentView;
       currentView.tryToinitViewers();
-      //   return currentView.root;
-      // });
+      ViewHandler.UA.addView(currentView.name, () => currentView, false);
     }
     // if (pathSplits.length > 3 && pathSplits[3] != '') {
     //   const viewName = pathSplits[3];
@@ -70,11 +67,8 @@ export class ViewHandler {
       toolbox.applyFilter();
     }
 
-    // const UA = grok.shell.newView(ViewHandler.UAname, [ViewHandler.tabs]);
-    ViewHandler.UA = new DG.MultiView({viewFactories: viewFactories});
     ViewHandler.UA.name = ViewHandler.UAname;
     ViewHandler.UA.box = true;
-    // ViewHandler.UA.toolbox = toolbox.rootAccordion.root;
     grok.shell.addView(ViewHandler.UA);
   }
 
@@ -82,8 +76,12 @@ export class ViewHandler {
     return ViewHandler.UA.getView(name) as UaView;
   }
 
-  public static changeView(name: string) {
-    ViewHandler.UA.currentView = ViewHandler.UA.getView(name);
+  public static getCurrentView(): UaView {
+    return ViewHandler.UA.currentView as UaView;
+  }
+
+  public static changeTab(name: string) {
+    ViewHandler.UA.tabs.currentPane = ViewHandler.UA.tabs.getPane(name);
   }
 
   getSearchParameters() : Map<string, string> {
