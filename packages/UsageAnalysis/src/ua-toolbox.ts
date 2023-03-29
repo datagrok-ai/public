@@ -7,8 +7,9 @@ import {UaFilter} from './filter';
 import {ViewHandler} from './view-handler';
 import {ChoiceInputGroups} from './elements/choice-input-groups';
 import {ChoiceInputPackages} from './elements/choice-input-packages';
-// import {UaView} from './tabs/ua';
+import {UaView} from './tabs/ua';
 import $ from 'cash-dom';
+
 
 export class UaToolbox {
   rootAccordion: DG.Accordion;
@@ -21,6 +22,8 @@ export class UaToolbox {
   usersDD: DG.InputBase = ui.stringInput('Users', '');
   packagesDD: DG.InputBase = ui.stringInput('Packages', '');
   formDD: HTMLDivElement;
+  drilldown: UaView | null = null;
+  filters: DG.AccordionPane;
 
   static async construct() {
     const date = 'this week';
@@ -48,7 +51,7 @@ export class UaToolbox {
     this.packagesInput = packagesInput;
     this.filterStream = filterStream;
 
-    const filters = this.rootAccordion.addPane('Filters', () => {
+    this.filters = this.rootAccordion.addPane('Filters', () => {
       const form = ui.narrowForm([
         dateInput,
         groupsInput.field,
@@ -68,33 +71,36 @@ export class UaToolbox {
         this.packagesDD,
       ]);
       this.formDD.style.display = 'none';
-      const closeButton = ui.button('', () => {
-        this.formDD.style.display = 'none';
-        this.clearFormDD();
-        ViewHandler.getCurrentView().getScatterPlot().reloadViewer();
-      });
-      closeButton.innerHTML = '<div class="tab-handle-close-button"><i class="fal fa-times"></i></div>';
-      closeButton.style.margin = '0';
-      closeButton.style.padding = '0';
-      closeButton.style.marginLeft = 'auto';
+      const closeButton = ui.button('', () => this.exitDrilldown(), 'Close drilldown filter');
+      closeButton.classList.add('ua-small-button', 'fal', 'fa-times');
+      const backButton = ui.button('', () => {
+        ViewHandler.changeTab('Packages');
+        this.exitDrilldown();
+      }, 'Back to Packages tab');
+      backButton.classList.add('ua-small-button', 'far', 'fa-chevron-square-left');
+      backButton.style.marginRight = '10px';
+      this.formDD.prepend(backButton);
       this.formDD.prepend(closeButton);
-      this.formDD.style.border = '1px dashed #80949b';
-      this.formDD.style.borderRadius = '5px';
-      this.formDD.style.backgroundColor = '#F1FAFD';
-      this.formDD.style.marginBottom = '24px';
-      this.formDD.querySelectorAll('.ui-input-editor')
-        .forEach((i) => (i as HTMLElement).style.backgroundColor = '#F1FAFD');
+      this.formDD.classList.add('ua-drilldown-form');
       return form;
     }, true);
-    filters.root.before(this.formDD);
+    this.filters.root.before(this.formDD);
 
     ViewHandler.UA.tabs.onTabChanged.subscribe((tab) => {
-      if (this.formDD.style.display === 'block') {
-        this.formDD.style.display = 'none';
-        this.applyFilter();
+      if (this.formDD.style.display === 'block') this.exitDrilldown();
+      if (this.checkLabels()) {
+        this.formDD.style.display = 'block';
+        this.filters.root.style.display = 'none';
       }
-      if (this.checkLabels()) this.formDD.style.display = 'block';
     });
+  }
+
+  exitDrilldown() {
+    this.formDD.style.display = 'none';
+    this.clearFormDD();
+    this.drilldown?.getScatterPlot().reloadViewer();
+    this.drilldown = null;
+    this.filters.root.style.display = 'flex';
   }
 
   checkLabels() {
@@ -118,7 +124,6 @@ export class UaToolbox {
   }
 
   applyFilter() {
-    this.clearFormDD();
     this.filterStream.next(this.getFilter());
     ViewHandler.getInstance().setUrlParam('date', this.dateInput.value, true);
     ViewHandler.getInstance().setUrlParam('users', this.groupsInput.getSelectedGroups().join(','), true);
