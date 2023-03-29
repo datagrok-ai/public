@@ -1,11 +1,9 @@
 package grok_connect.providers.arguments_provider;
 
-import com.github.cassandra.jdbc.internal.jnr.ffi.annotations.In;
 import grok_connect.providers.utils.DataFrameBuilder;
 import grok_connect.providers.utils.FuncCallBuilder;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.params.provider.Arguments;
-import serialization.BigIntColumn;
 import serialization.DataFrame;
 import serialization.IntColumn;
 import serialization.StringColumn;
