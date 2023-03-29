@@ -57,8 +57,8 @@ via JDBC driver.
 | TIMESTAMP, YEAR               | :white_check_mark:     |
 | CHAR, VARCHAR, TEXT           | :white_check_mark:     |
 | JSON                          | :white_check_mark: (1) |
-| GEOMETRY                      | :white_check_mark: (2) |
-| BIT                           | :white_check_mark: (3) |
+| GEOMETRY                      | limited support (2)    |
+| BIT                           | limited support (3)    |
 | BINARY, VARBINARY, BLOB       | not tested             |
 
 * (1) supported as a string
@@ -71,6 +71,7 @@ via JDBC driver.
 * Build query
 * Visual query
 * Connection test
+
 See also:
 
 * [Data connection](../data-connection.md)
