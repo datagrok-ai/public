@@ -46,7 +46,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
             put("USER_DEFINED", Types.STRING);
             put("bit.*", Types.BIG_INT);
             put("uuid", Types.STRING);
-            put("xml", Types.STRING);
+            put("xml", Types.OBJECT);
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stddev(#)", Types.dataFrameNumericTypes));
     }
