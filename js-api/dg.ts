@@ -8,6 +8,8 @@ export * from './src/events';
 export * from './src/dapi';
 export * from './src/dataframe';
 export * from './src/entities';
+export * from './src/api/ddt.api.g';
+export * from './src/api/grok_shared.api.g';
 export * from './src/shell';
 export * from './src/functions';
 export * from './src/grid';
