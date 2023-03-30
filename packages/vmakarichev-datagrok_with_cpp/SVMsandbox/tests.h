@@ -11,4 +11,10 @@ void testNormalizeDataset();
 
 void testTrainLSSVM();
 
+void testLSSVMwithRBF();
+
+void testLSSVMwithPoly();
+
+void testLSSVMwithSigmoid();
+
 #endif // TESTS_H

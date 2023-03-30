@@ -6,7 +6,13 @@ int main()
 
 	//testNormalizeDataset();
 
-	testTrainLSSVM();
+	//testTrainLSSVM();
+
+	//testLSSVMwithRBF();
+
+	//testLSSVMwithPoly();
+
+	testLSSVMwithSigmoid();
 
 	return 0;
 } // main

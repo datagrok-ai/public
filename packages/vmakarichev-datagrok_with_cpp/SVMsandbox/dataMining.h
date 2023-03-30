@@ -67,10 +67,10 @@ namespace dmt {
 		}
 
 		// For testing
-		cout << "\nA:\n" << A
+		/*cout << "\nA:\n" << A
 			<< "\n\nB:\n" << B
 			<< "\n\nmu:\n" << mu
-			<< "\n\nsigma:\n" << sigma << endl;
+			<< "\n\nsigma:\n" << sigma << endl;*/
 
 		return NO_ERRORS;
 	} // createNormalizedDataset

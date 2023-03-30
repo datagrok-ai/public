@@ -28,7 +28,7 @@ namespace svm
 		  samplesCount - number of labels
 		  changeProbability - probability that each label is changed */
 	template<typename Float>
-	int changeLabels(Float* labels, int samplesCount, Float changeProbability)
+	int changeLabels(Float* labels, int samplesCount, Float changeProbability) noexcept
 	{
 		using namespace svm;
 
@@ -67,7 +67,7 @@ namespace svm
 	int generateSeparable(int kernel, float kernelParams[MAX_NUM_OF_KERNEL_PARAM],
 		int featuresCount, int samplesCount,
 		Float minVal, Float maxVal,
-		Float* data, Float* labels)
+		Float* data, Float* labels) noexcept
 	{
 		using namespace svm;
 
@@ -148,7 +148,7 @@ namespace svm
 		int featuresCount, int samplesCount,
 		Float minVal, Float maxVal,
 		Float* data, Float* labels,
-		Float violatorsPercentage)
+		Float violatorsPercentage) noexcept
 	{
 		using namespace svm;
 
