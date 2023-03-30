@@ -16,7 +16,6 @@ ctx.addEventListener('message', async (e: any) => {
   if (op === 'module::init') {
     const webRoot = args[0];
     _rdKitModule = await initRDKitModule({locateFile: () => `${webRoot}/dist/${rdKitLibVersion}.wasm`});
-    _rdKitModule.use_legacy_stereo_perception(false);
     console.log('RDKit (worker) initialized');
     _rdKitServiceWorker = new ServiceWorkerClass(_rdKitModule, webRoot);
     port.postMessage({op: op, retval: null});
