@@ -18,6 +18,13 @@ export const POLYNOMIAL = 1;
 export const RBF = 2;
 export const SIGMOID = 3;
 
+// kernel parameters indeces
+const RBF_SIGMA_INDEX = 0;
+const POLYNOMIAL_C_INDEX = 0;
+const POLYNOMIAL_D_INDEX = 1;
+const SIGMOID_KAPPA_INDEX = 0;
+const SIGMOID_THETA_INDEX = 1;
+
 // names
 const GENERAL = 'General';
 const NORMALIZED = 'Normalized';
@@ -43,6 +50,8 @@ const KERNEL_TYPE_TO_NAME_MAP = ['linear', 'polynomial', 'RBF', 'sigmoid'];
 // misc
 const INIT_VALUE = 0; // any number can be used
 const LS_SVM_ADD_CONST = 1; // see [1] for more details
+
+//TODO: ADD CHECK KERNEL PARAMS!!!!
 
 // Returnes labels predicted by the model specified
 export function predict(module, predictFuncName, model, dataset)
@@ -92,9 +101,24 @@ export function trainModel(module, trainFuncName, predictFuncName,
   switch(hyperparameters.kernel)
   {
     case LINIEAR: // no kernel parameters in the case of linear kernel
-        break;
-    default:
-        throw new Error('Incorrect kernel ID.');
+      break;
+
+    case RBF: // sigma parameter in the case of RBF-kernel
+      kernelParamsArray[RBF_SIGMA_INDEX] = hyperparameters.sigma;      
+      break;
+
+    case POLYNOMIAL: // sigma parameter in the case of polynomial kernel
+      kernelParamsArray[POLYNOMIAL_C_INDEX] = hyperparameters.cParam;
+      kernelParamsArray[POLYNOMIAL_D_INDEX] = hyperparameters.dParam;
+      break;
+
+    case SIGMOID: // sigma parameter in the case of sigmoid kernel
+      kernelParamsArray[SIGMOID_KAPPA_INDEX] = hyperparameters.kappa;
+      kernelParamsArray[SIGMOID_THETA_INDEX] = hyperparameters.theta;
+      break;
+
+    default: // incorrect kernel 
+      throw new Error('Incorrect kernel ID.');
   };
 
   // create kernel params column
@@ -131,6 +155,8 @@ export function trainModel(module, trainFuncName, predictFuncName,
     predictedLabels: undefined,
     trainError: undefined 
   };
+
+  console.log(model);
 
   // compute predicted labels and add then to model specification
   let prediction = predict(module, predictFuncName, model, dataset);

@@ -4,7 +4,7 @@
 
    The following references are used:
    [1] Suykens, J., Vandewalle, J. "Least Squares Support Vector Machine Classifiers",
-	   Neural Processing Letters 9, 293ï¿½300 (1999). https://doi.org/10.1023/A:1018628609742
+	   Neural Processing Letters 9, 293–300 (1999). https://doi.org/10.1023/A:1018628609742
 */
 
 #ifndef SVM_H
@@ -243,13 +243,9 @@ namespace svm {
 
 		   Also, model weights are computed in the case of linear kernel. */
 
-		// check gamma value
+		   // check gamma value
 		if (gamma <= static_cast<Float>(0.0))
 			return INCORRECT_HYPERPARAMETER;
-
-		//check kernel parameters
-		if (!areKernelParametersCorrect(kernel, kernelParams))
-			return INCORRECT_PARAMETER_OF_KERNEL;
 
 		Float gammaInv = static_cast<Float>(1.0) / gamma;
 
@@ -340,50 +336,6 @@ namespace svm {
 		return NO_ERRORS;
 	} // predictByLSSVMwithLinearKernel
 		
-	/**/
-	template<typename Float, typename MatrixType>
-	int predictByLSSVMwithRBFkernel(Float sigma, 
-		Float* xTrain, Float* yTrain, int trainSamplesCount, int featuresCount, 
-		Float* modelParams, MatrixType& targetDataMatrix, Float* prediction)
-	{
-		cout << "\nsigma: " << sigma << endl;
-
-		Float sigmaSquared = sigma * sigma;
-
-		//cout << "\nsigma^2: " << sigmaSquared << endl;
-
-		// assign normalized traine data matrix with normalized train data pointer
-		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> X(xTrain, trainSamplesCount, featuresCount);
-
-		/*cout << "\nNTD:\n" << targetDataMatrix << endl;
-		cout << "\nX:\n" << X << endl;*/
-
-		auto targetSamplesCount = targetDataMatrix.rows();
-
-		//cout << "\ntarget samples count: " << targetSamplesCount << endl;
-
-		// bias of the model
-		Float bias = modelParams[trainSamplesCount];
-		//cout << "\nbias: " << bias << endl;
-
-		for (int j = 0; j < targetSamplesCount; j++)
-		{
-			// put target data to the model
-			Float cost = bias;
-
-			for(int i = 0; i < trainSamplesCount; i++)
-				cost += modelParams[i] * yTrain[i] * exp(-(X.row(i) - targetDataMatrix.row(j)).squaredNorm() / sigmaSquared);
-
-			// check sign and get label (see [1] for more details)
-			if (cost > static_cast<Float>(0))
-				prediction[j] = static_cast<Float>(1);
-			else
-				prediction[j] = static_cast<Float>(-1);
-		} // for j
-
-		return NO_ERRORS;
-	} // predictByLSSVMwithRBFkernel
-
 	/* Predict labels using LS-SVM model.
 		  kernelType - type of the kernel
 		  kernelParams - parameters of kernel
@@ -407,10 +359,6 @@ namespace svm {
 		Float* means, Float* stdDevs, Float* modelParams, Float* precomputedWeights,
 		Float* targetData, Float* prediction, int targetSamplesCount) noexcept
 	{
-		//check kernel parameters
-		if (!areKernelParametersCorrect(kernelType, kernelParams))
-			return INCORRECT_PARAMETER_OF_KERNEL;
-
 		// assign target data matrix (TD) with target data pointer
 		Map<Matrix<Float, Dynamic, Dynamic, ColMajor>> TD(targetData, targetSamplesCount, featuresCount);
 
@@ -430,19 +378,13 @@ namespace svm {
 
 			if (sigma > static_cast<Float>(0))
 				NTD.col(i) /= sigma;
-		}		
+		}
 
 		// compute prediction
 		switch (kernelType)
 		{
 		case LINEAR: // the case of linear kernel
 			return predictByLSSVMwithLinearKernel(precomputedWeights, NTD, prediction);
-
-		case RBF: // the case of RBF kernel
-			return predictByLSSVMwithRBFkernel(kernelParams[RBF_SIGMA_INDEX],
-				xTrain, yTrain, trainSamplesCount, featuresCount, modelParams,
-				NTD, prediction);
-
 		default:
 			return UNKNOWN_KERNEL_TYPE;
 		}

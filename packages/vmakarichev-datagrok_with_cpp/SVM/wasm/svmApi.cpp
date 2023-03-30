@@ -12,12 +12,12 @@ extern "C" {
 		float min, float max,
 		float violatorsPercentage,
 		float * dataset, int rowCount, int colCount,
-		float * labels, int labelsLength);		
+		float * labels, int labelsLength) noexcept;		
 
 	int normalizeDataset(float * dataset, int datasetRowCount, int datasetColCount,
 		float * normalizedData, int normalizedDataRowCount, int normalizedDataColCount,
 		float * means, int meansLength,
-		float * stdDevs, int stdDevsLength);
+		float * stdDevs, int stdDevsLength) noexcept;
 
 	int trainLSSVM(float gamma, int kernel,
 		float * kernelParams, int kernelParamsCount,
@@ -28,7 +28,7 @@ extern "C" {
 		float * means, int meansLength,
 		float * stdDevs, int stdDevsLength,
 		float * modelParams, int modelParamsLength,
-		float * precomputedWeights, int precomputedWeightsLength);
+		float * precomputedWeights, int precomputedWeightsLength) noexcept;
 
 	int predictByLSSVM(int kernel,
 		float* kernelParams, int kernelParamsCount,
@@ -39,7 +39,7 @@ extern "C" {
 		float* modelParams, int modelParamsLength,
 		float* precomputedWeights, int precomputedWeightsLength,
 		float* targetData, int targetDataRowCount, int targetDataColCount,
-		float* prediction, int predictionLength);
+		float* prediction, int predictionLength) noexcept;
 }
 
 //name: generateDataset
@@ -59,7 +59,7 @@ int generateDataset(int kernel,
 	float min, float max,
 	float violatorsPercentage,
 	float * dataset, int rowCount, int colCount,
-	float * labels, int labelsLength)	
+	float * labels, int labelsLength) noexcept	
 {
 	using namespace svm;
 
@@ -86,7 +86,7 @@ EMSCRIPTEN_KEEPALIVE
 int normalizeDataset(float * dataset, int datasetRowCount, int datasetColCount,
 	float * normalizedData, int normalizedDataRowCount, int normalizedDataColCount,
 	float * means, int meansLength,
-	float * stdDevs, int stdDevsLength)	
+	float * stdDevs, int stdDevsLength)	noexcept
 {
 	using namespace dmt;
 
@@ -124,7 +124,7 @@ int trainLSSVM(float gamma, int kernel,
 	float * means, int meansLength,
 	float * stdDevs, int stdDevsLength,
 	float * modelParams, int modelParamsLength,
-	float * precomputedWeights, int precomputedWeightsLength)
+	float * precomputedWeights, int precomputedWeightsLength) noexcept
 {
 	using namespace svm;
 	using dmt::getNormalizedDataset;
@@ -186,7 +186,7 @@ int predictByLSSVM(int kernel,
 	float * modelParams, int modelParamsLength,
 	float * precomputedWeights, int precomputedWeightsLength,
 	float * targetData, int targetDataRowCount, int targetDataColCount,
-	float * prediction, int predictionLength)
+	float * prediction, int predictionLength) noexcept
 {
 	using namespace svm;
 

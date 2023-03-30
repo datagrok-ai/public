@@ -15,7 +15,8 @@ import { callWasm } from '../wasm/callWasm';
 import { getCppInput, getResult } from '../wasm/callWasmForWebWorker';
 
 // Support vector machine (SVM) tools imports
-import {trainModel, showModel, showModelFullInfo, LINIEAR} from './svm';
+import {trainModel, showModel, showModelFullInfo, 
+  LINIEAR, RBF, POLYNOMIAL, SIGMOID} from './svm';
 
 //tags: init
 export async function init() {
@@ -41,11 +42,11 @@ export function getWrongPredictions(df, col1, col2) {
 //name: Generate test data (linear kernel case)
 //description: Generates dataset for testing SVN with linear kernel.
 //input: string name = 'Data' {caption: name; category: Dataset}
-//input: int samplesCount = 100 {caption: samples; category: Size}
+//input: int samplesCount = 1000 {caption: samples; category: Size}
 //input: int featuresCount = 2 {caption: features; category: Size}
 //input: double min = -39 {caption: min; category: Range}
 //input: double max = 173 {caption: max; category: Range}
-//input: double violatorsPercentage = 5 {caption: violators; units: %; category: Dataset}
+//input: double violatorsPercentage = 35 {caption: violators; units: %; category: Dataset}
 export function generateDatasetLinear(name, samplesCount, featuresCount, 
   min, max, violatorsPercentage) 
 {
@@ -68,12 +69,12 @@ export function generateDatasetLinear(name, samplesCount, featuresCount,
 //name: Generate test data (RBF kernel case)
 //description: Generates dataset for testing SVN with RBF-kernel.
 //input: string name = 'Data' {caption: name; category: Dataset}
-//input: double sigma = 60  {caption: sigma; category: Hyperparameters}
-//input: int samplesCount = 100 {caption: samples; category: Size}
+//input: double sigma = 90  {caption: sigma; category: Hyperparameters}
+//input: int samplesCount = 1000 {caption: samples; category: Size}
 //input: int featuresCount = 2 {caption: features; category: Size}
 //input: double min = -39 {caption: min; category: Range}
 //input: double max = 173 {caption: max; category: Range}
-//input: double violatorsPercentage = 5 {caption: violators; units: %; category: Dataset}
+//input: double violatorsPercentage = 35 {caption: violators; units: %; category: Dataset}
 export function generateDatasetRBF(name, sigma, samplesCount, featuresCount, 
   min, max, violatorsPercentage) 
 {
@@ -97,18 +98,18 @@ export function generateDatasetRBF(name, sigma, samplesCount, featuresCount,
 //description: Demo of training LS-SVM model with linear kernel.
 //input: double gamma = 1.0 {category: Hyperparameters}
 //input: dataframe df {caption: Table; category: Training data}
-//input: column_list dataset {caption: feature columns; category: Training data}
+//input: column_list features {caption: features; category: Training data}
 //input: column labels {caption: labels; category: Training data}
 //input: bool toAddPredictions = true {caption: to show predictions; category: Results}
 //input: bool toShowWrongPredictions = true {caption: to show mistakes; category: Results}
 //input: string modelInfoReport { choices:["short", "full"] }
-export function demoLinearKernelLSSVM(gamma, df, dataset, labels, 
+export function demoLinearKernelLSSVM(gamma, df, features, labels, 
   toAddPredictions, toShowWrongPredictions, modelInfo) {  
 
   let hyperparameters = {gamma: gamma, kernel: LINIEAR};
 
   let model = trainModel(SVMlib, 'trainLSSVM', 'predictByLSSVM',
-    hyperparameters, dataset, labels);  
+    hyperparameters, features, labels);  
 
   if(modelInfo === 'short')
     showModel(model);
@@ -122,5 +123,100 @@ export function demoLinearKernelLSSVM(gamma, df, dataset, labels,
       getWrongPredictions(df, labels, model.predictedLabels);
   }
 } // demoLinearKernelLSSVM
+
+//name: Demo LS-SVM (RBF-kernel)
+//description: Demo of training LS-SVM model with RBF-kernel.
+//input: double gamma = 1.0 {category: Hyperparameters}
+//input: double sigma = 1.5 {category: Hyperparameters}
+//input: dataframe df {caption: Table; category: Training data}
+//input: column_list features {caption: features; category: Training data}
+//input: column labels {caption: labels; category: Training data}
+//input: bool toAddPredictions = true {caption: to show predictions; category: Results}
+//input: bool toShowWrongPredictions = true {caption: to show mistakes; category: Results}
+//input: string modelInfoReport { choices:["short", "full"] }
+export function demoRBFkernelLSSVM(gamma,sigma, df, features, labels, 
+  toAddPredictions, toShowWrongPredictions, modelInfo) {  
+
+  let hyperparameters = {gamma: gamma, kernel: RBF, sigma: sigma};
+
+  let model = trainModel(SVMlib, 'trainLSSVM', 'predictByLSSVM',
+    hyperparameters, features, labels);  
+
+  if(modelInfo === 'short')
+    showModel(model);
+  else
+    showModelFullInfo(model);
+
+  if(toAddPredictions) {
+    df.columns.add(model.predictedLabels);    
+
+    if(toShowWrongPredictions)
+      getWrongPredictions(df, labels, model.predictedLabels);
+  }
+} // demoRBFkernelLSSVM
+
+//name: Demo LS-SVM (polynomial kernel)
+//description: Demo of training LS-SVM model with polynomial kernel.
+//input: double gamma = 1.0 {category: Hyperparameters}
+//input: double c = 1 {category: Hyperparameters}
+//input: double d = 2 {category: Hyperparameters}
+//input: dataframe df {caption: Table; category: Training data}
+//input: column_list features {caption: features; category: Training data}
+//input: column labels {caption: labels; category: Training data}
+//input: bool toAddPredictions = true {caption: to show predictions; category: Results}
+//input: bool toShowWrongPredictions = true {caption: to show mistakes; category: Results}
+//input: string modelInfoReport { choices:["short", "full"] }
+export function demoPolynomialKernelLSSVM(gamma, c, d, df, features, labels, 
+  toAddPredictions, toShowWrongPredictions, modelInfo) {  
+
+  let hyperparameters = {gamma: gamma, kernel: POLYNOMIAL, cParam: c, dParam: d};
+
+  let model = trainModel(SVMlib, 'trainLSSVM', 'predictByLSSVM',
+    hyperparameters, features, labels);  
+
+  if(modelInfo === 'short')
+    showModel(model);
+  else
+    showModelFullInfo(model);
+
+  if(toAddPredictions) {
+    df.columns.add(model.predictedLabels);    
+
+    if(toShowWrongPredictions)
+      getWrongPredictions(df, labels, model.predictedLabels);
+  }
+} // demoPolynomialKernelLSSVM
+
+//name: Demo LS-SVM (sigmoid kernel)
+//description: Demo of training LS-SVM model with sigmoid kernel.
+//input: double gamma = 1.0 {category: Hyperparameters}
+//input: double kappa = 1 {category: Hyperparameters}
+//input: double theta = 1 {category: Hyperparameters}
+//input: dataframe df {caption: Table; category: Training data}
+//input: column_list features {caption: features; category: Training data}
+//input: column labels {caption: labels; category: Training data}
+//input: bool toAddPredictions = true {caption: to show predictions; category: Results}
+//input: bool toShowWrongPredictions = true {caption: to show mistakes; category: Results}
+//input: string modelInfoReport { choices:["short", "full"] }
+export function demoSigmoidKernelLSSVM(gamma, kappa, theta, df, features, labels, 
+  toAddPredictions, toShowWrongPredictions, modelInfo) {  
+
+  let hyperparameters = {gamma: gamma, kernel: SIGMOID, kappa: kappa, theta: theta};
+
+  let model = trainModel(SVMlib, 'trainLSSVM', 'predictByLSSVM',
+    hyperparameters, features, labels);  
+
+  if(modelInfo === 'short')
+    showModel(model);
+  else
+    showModelFullInfo(model);
+
+  if(toAddPredictions) {
+    df.columns.add(model.predictedLabels);    
+
+    if(toShowWrongPredictions)
+      getWrongPredictions(df, labels, model.predictedLabels);
+  }
+} // demoSigmoidKernelLSSVM
 
 
