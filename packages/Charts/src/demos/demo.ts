@@ -25,8 +25,8 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
 
   const tableView = DG.TableView.create(df, false);
   tableView.basePath = `/apps/Tutorials/Demo/Viewers/${viewerName}`;
+  grok.shell.addTable(df);
   grok.shell.addView(tableView);
-  grok.data.detectSemanticTypes(df);
 
   if (['Globe', 'GroupAnalysis'].includes(viewerName)) {
     DG.debounce(df.onSemanticTypeDetected, 300).subscribe((_) => tableView.addViewer(viewerName, options));
