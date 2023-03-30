@@ -5,7 +5,6 @@ export interface RDModule {
   version(): string;
   prefer_coordgen(prefer: boolean): void;
   get_rxn(reactionString: string, options?: string): Reaction;
-  use_legacy_stereo_perception(value: boolean): boolean;
 }
 
 export interface RDMol {
