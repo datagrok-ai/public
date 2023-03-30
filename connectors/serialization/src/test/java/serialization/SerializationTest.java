@@ -1,14 +1,13 @@
 package serialization;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import java.io.*;
 import java.util.*;
-
-import org.junit.Ignore;
-import org.junit.Test;
 import java.nio.file.*;
-import static org.junit.Assert.*;
 
-@Ignore
+@Disabled
 public class SerializationTest {
     // Path to Dart part of test.
     public static final String dart_test_path =
@@ -54,6 +53,6 @@ public class SerializationTest {
         }
         input.close();
 
-        assertEquals(0, process.exitValue());
+        Assertions.assertEquals(0, process.exitValue());
     }
 }
