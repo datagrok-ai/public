@@ -36,20 +36,22 @@ export abstract class FunctionView extends DG.ViewBase {
     this.box = true;
 
     // Changing view and building IO are reasonable only after FuncCall is linked
-    this.onFuncCallReady.subscribe({
-      complete: async () => {
-        this.changeViewName(this.funcCall.func.friendlyName);
-        this.build();
+    this.subs.push(
+      this.onFuncCallReady.subscribe({
+        complete: async () => {
+          this.changeViewName(this.funcCall.func.friendlyName);
+          this.build();
 
-        if (this.getStartId()) {
-          await this.onBeforeLoadRun();
-          this.lastCall = this.funcCall;
-          await this.onAfterLoadRun(this.funcCall);
+          if (this.getStartId()) {
+            await this.onBeforeLoadRun();
+            this.lastCall = this.funcCall;
+            await this.onAfterLoadRun(this.funcCall);
 
-          this.setAsLoaded();
+            this.setAsLoaded();
+          }
         }
-      }
-    });
+      })
+    );
 
     this.init();
   }
@@ -243,7 +245,9 @@ export abstract class FunctionView extends DG.ViewBase {
   public buildHistoryBlock(): HTMLElement {
     const newHistoryBlock = UiUtils.historyPanel(this.func!);
 
-    newHistoryBlock.onRunChosen.subscribe(async (id) => this.linkFunccall(await this.loadRun(id)));
+    this.subs.push(
+      newHistoryBlock.onRunChosen.subscribe(async (id) => this.linkFunccall(await this.loadRun(id)))
+    );
 
     ui.empty(this.historyRoot);
     this.historyRoot.style.removeProperty('justify-content');
