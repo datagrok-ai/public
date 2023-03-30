@@ -44,13 +44,13 @@ export abstract class ComputationView extends FunctionView {
     this.parentView = parentCall?.parentCall.aux['view'];
     this.basePath = `/${parentCall?.func.name}`;
 
-    this.onFuncCallReady.subscribe({
+    this.subs.push(this.onFuncCallReady.subscribe({
       complete: async () => {
         await this.getPackageUrls();
         this.buildRibbonMenu();
         this.changeViewName(parentCall.func.friendlyName);
       }
-    });
+    }));
   }
 
   /** Override to customize getting mocks
