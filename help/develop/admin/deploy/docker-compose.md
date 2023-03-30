@@ -14,15 +14,15 @@ We recommend this method if you want to jump-start with Datagrok on your local m
 
 1. [Docker Compose](https://docs.docker.com/compose/). If you do not have it, follow
    these [installation instructions](https://docs.docker.com/compose/install/) for your operating system.
-2. Minimal hardware requirements: 30 GB of free disk space, 2 CPU, 4 GB RAM.
-   Recommended hardware requirements: > 30 GB of free disk space, 4 CPU, 8 GB RAM or higher.
+2. Minimal hardware requirements: 30 GB of free disk space, 2 CPUs, 4 GB RAM.
+   Recommended hardware requirements: > 30 GB of free disk space, 4 CPUs, 8 GB RAM, or higher.
 
 ## Instructions
 
 1. Download a Docker Compose YAML
    file: [link](https://github.com/datagrok-ai/public/blob/master/docker/localhost.docker-compose.yaml).
 
-2. To start up Datagrok, or get last updates run these commands:
+2. To start up Datagrok, or get the last updates run these commands:
 
    ```shell
    docker-compose -f docker/localhost.docker-compose.yaml --profile all pull
@@ -31,7 +31,7 @@ We recommend this method if you want to jump-start with Datagrok on your local m
 
    Datagrok will deploy a new database automatically.
 
-   In case you get an error on Windows running `docker compose up` related to a `WriteFile`
+   In case you get an error on Windows running `docker-compose up` related to a `WriteFile`
    function, try running `cmd`
    in Administrator mode (this is a [known issue](https://github.com/docker/compose/issues/4531) of Docker on some
    computers).
@@ -207,14 +207,14 @@ docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok -
    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all logs
    ```
 
-   You can also watch the logs of the desired service in real time
+   You can also watch the logs of the desired service in real-time
 
    ```shell
-   # Get list of running containers and choose a nessesary one
+   # Get a list of running containers and choose a necessary one
    docker ps
-   # Replace datagrok_datagrok_1 with nessesary container name
+   # Replace datagrok_datagrok_1 with the necessary container name
    # Replace 50 with desired log lines to watch or remove --tail 50 at all, if you need to
-   # watch full log
+   # watch the full log
    docker logs -f --tail 50  datagrok_datagrok_1
    ```
 
@@ -232,8 +232,8 @@ docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok -
     docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all exec <service> /bin/sh
     ```
 
-5. Docker logs might take all your free disk space. If such situation have already taken place, add to the Docker daemon
-   configuration log properties. For more about configuring Docker log options you can refer
+5. Docker logs might take up all your free disk space. If such a situation has already taken place, add to the Docker daemon
+   configuration log properties. For more about configuring Docker log options, you can refer
    to [the official documentation](https://docs.docker.com/config/containers/logging/local/#usage).
 
 ## Useful links

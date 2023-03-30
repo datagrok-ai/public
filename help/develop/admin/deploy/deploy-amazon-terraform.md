@@ -10,7 +10,7 @@ on [AWS ECS cluster](https://aws.amazon.com/ecs/) with [AWS RDS](https://aws.ama
 and [AWS S3](https://aws.amazon.com/s3/).
 
 We considered a lot of typical security nuances during the Terraform code development. As a result, you will
-create a Datagrok infrastructure in AWS which applies to all standard security policies.
+create a Datagrok infrastructure in AWS that applies to all standard security policies.
 
 More information about Datagrok design and components:
 

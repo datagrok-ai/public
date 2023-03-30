@@ -64,7 +64,7 @@ More information about Datagrok design and components:
     ```
 
 5. [Create RDS database](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_CreateDBInstance.html) for Datagrok
-   with following parameters:
+   with the following parameters:
     * Required engine: PostgreSQL 12
     * Recommended DB instance class: db.t3.large
     * No publicly accessible
@@ -97,12 +97,12 @@ More information about Datagrok design and components:
 
 ## Setup Datagrok components
 
-1. Download Docker Compose yaml
+1. Download Docker-compose.yaml
    file: [link](https://github.com/datagrok-ai/public/blob/master/docker/ecs.datagrok.docker-compose.yaml).
    > **_NOTE:_**  Datagrok provides demo databases with demo data for the full experience.
    > If you want to try datagrok with demo data choose
    > [Docker Compose Demo file](https://github.com/datagrok-ai/public/blob/master/docker/ecs.datagrok.demo.docker-compose.yaml)
-   > instead. Rename downloaded file to `ecs.datagrok.docker-compose.yaml` to use commands in the instruction below
+   > instead. Rename the downloaded file to `ecs.datagrok.docker-compose.yaml` to use the commands in the instruction below
    > without any further changes
 
 2. Replace `GROK_PARAMETERS` variables in `ecs.datagrok.docker-compose.yaml` with actual values or use environment
@@ -130,7 +130,7 @@ More information about Datagrok design and components:
 5. Run docker compose deploy to ECS: `docker compose -p datagrok -f ecs.datagrok.docker-compose.yaml up -d`. It will
    create ECS cluster with tasks in [Fargate](https://aws.amazon.com/fargate/).
 
-6. Allow newly created ECS cluster connect to RDS database for Datagrok: add Datagrok ECS Service Security Group to RDS
+6. Allow newly created ECS cluster to connect to RDS database for Datagrok: add Datagrok ECS Service Security Group to RDS
    database for Datagrok
 
     ```shell
@@ -147,7 +147,7 @@ More information about Datagrok design and components:
     ```
 
 7. Check deployment result: `docker compose -p datagrok -f ecs.datagrok.docker-compose.yaml ps`
-8. Datagrok starts to deploy the database immediately after startup. You can check the status by checking running task
+8. Datagrok starts to deploy the database immediately after startup. You can check the status by checking the running task
    log in [CloudWatch](https://aws.amazon.com/cloudwatch/)
 
 9. Switch back to default docker context: `docker context use default`
@@ -173,9 +173,9 @@ More information about Datagrok design and components:
 
 7. Create CNAME DNS record <CVM_DNS> to the newly created Application Load Balancer
 
-8. Go in the web browser to <CVM_DNS>, login to Datagrok using username "admin" and password "admin"
+8. Go into the web browser to <CVM_DNS>, login to Datagrok using username "admin" and password "admin"
 
-9. Edit settings in the deployed Datagrok platfom  (Tools -> Settings...). Do not forget to click Apply to save new settings.
+9. Edit settings in the deployed Datagrok platform (Tools -> Settings...). Do not forget to click Apply to save new settings.
 
 * Scripting:
   * CVM Url: `http://<CVM_DNS>`

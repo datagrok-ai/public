@@ -16,9 +16,9 @@ for example [AWS S3](https://aws.amazon.com/s3/) and Local File System storage.
 
 This document contains instructions to deploy Datagrok using [Docker Compose](https://docs.docker.com/compose/)
 on [AWS EC2](https://aws.amazon.com/ecs/) virtual machines with [AWS RDS](https://aws.amazon.com/rds/) as database and
-Local File System for persistent storage. This instruction does not cover load balancers creation, which is recommended
+Local File System for persistent storage. This instruction does not cover load balancer creation, which is recommended
 for production usage: one load balancer for Datagrok components and one for CVM components. However, you can use
-[nginx](https://www.nginx.com/) as loadbalancers in bare metal or on-premise case.
+[nginx](https://www.nginx.com/) as load balancers in bare metal or on-premise cases.
 
 More information about Datagrok design and components:
 
@@ -58,7 +58,7 @@ it can be any virtual machine. Also, Load Balancers for each VM can be used inst
     ```
 
 3. [Create VPC](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-getting-started.html#getting-started-create-vpc)
-   for Datagrok EC2 Instances. Do steps following links or applying code below in AWS CLI.
+   for Datagrok EC2 Instances. Do the steps following the links or apply the code below in AWS CLI.
    Skip this stage if you do not use AWS EC2.
     1. [Create VPC](https://docs.aws.amazon.com/vpc/latest/userguide/working-with-vpcs.html#Create-VPC)
 
@@ -165,7 +165,7 @@ it can be any virtual machine. Also, Load Balancers for each VM can be used inst
 
 7. Configure virtual machines
     1. Log in to machines
-        1. Use private key created on the first stage for EC2 instances
+        1. Use the private key created in the first stage for EC2 instances
     2. [Install Docker](https://docs.docker.com/get-docker/) on virtual machines
     3. Add login user to docker group on virtual machines
 
@@ -196,7 +196,7 @@ it can be any virtual machine. Also, Load Balancers for each VM can be used inst
         10. Choose created in 4th stage VPC for Virtual private cloud (VPC)
         11. Create a new DB Subnet Group for the Subnet group
         12. Public access: No
-        13. VPC security group: Choose existing: select security group created in the 1st step: datagrok-rds-sg
+        13. VPC security group: Choose existing: select the security group created in the 1st step: datagrok-rds-sg
 
         You can do it from AWS CLI:
 
@@ -289,7 +289,7 @@ it can be any virtual machine. Also, Load Balancers for each VM can be used inst
     COMPOSE_PROFILES=cvm docker-compose --project-name cvm up -d
     ```
 
-3. Edit settings in the running Datagrok platfom (Tools -> Settings...). Do not forget to click Apply to save new settings.
+3. Edit settings in the running Datagrok platform (Tools -> Settings...). Do not forget to click Apply to save new settings.
     * Scripting:
         * CVM Url: `http://<CVM_VM_IP_ADDRESS>:8090`
         * CVM URL Client: `http://<CVM_VM_IP_ADDRESS>:8090`

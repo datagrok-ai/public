@@ -12,7 +12,7 @@ For [persistent file storage](../infrastructure.md#storage), Datagrok supports a
 for example [AWS S3](https://aws.amazon.com/s3/) and Local File System storage.
 
 This document contains instructions to deploy Datagrok using [Docker Swarm](https://docs.docker.com/engine/swarm/)
-on  virtual machines or dedicated hosts with Local File System for persistent storage.
+on virtual machines or dedicated hosts with Local File System for persistent storage.
 
 More information about Datagrok design and components:
 
@@ -28,13 +28,13 @@ More information about Datagrok design and components:
 
 ## Preparations
 
-1. Activate docker swarm mode on yours manager node:
+1. Activate docker swarm mode on your manager node:
 
    ```shell
    docker swarm init
    ```
 
-   The shell will print token for adding worker nodes something like that:
+   The shell will print a token for adding worker nodes something like that:
 
    ```shell
    docker swarm join \
@@ -42,8 +42,8 @@ More information about Datagrok design and components:
     192.168.99.100:2377
    ```
 
-2. Use recived token on worker nodes to join swarm as described below. If you lost token, you can get
-   it by typing in manager node shell for workers:
+2. Use the received token on worker nodes to join the swarm as described below. If you lost a token, you can get
+   it by typing in the manager node shell for workers:
 
    ```shell
    docker swarm join-token worker
@@ -55,7 +55,7 @@ More information about Datagrok design and components:
    docker swarm join-token manager
    ```
 
-3. From manager node set labels to all nodes in swarm cluster.
+3. From the manager node set labels to all nodes in the swarm cluster.
 
    1. List all nodes:
 
@@ -72,12 +72,12 @@ More information about Datagrok design and components:
 4. Download a Docker Compose YAML
    file: [link](https://github.com/datagrok-ai/public/blob/master/docker/swarm.docker-compose.yaml)
 
-5. Adjust in downloaded file `GROK_PARAMETERS` values,
+5. Adjust in the downloaded file `GROK_PARAMETERS` values,
 `X_API_KEY`,`DOCKER_REGISTRY`,`DOCKER_REGISTRY_USER`,
 `DOCKER_REGISTRY_PASS`;`POSTGRES_USER` and `POSTGRES_PASSWORD`must be the same as
 `dbAdminLogin` and `dbAdminPassword` in `GROK_PARAMETERS`.
 
-6. Run docker stack
+6. Run the docker stack
 
    ```shell
    docker stack deploy -c ./swarm,docker-compose.yaml <STACK_NAME>
@@ -86,7 +86,7 @@ More information about Datagrok design and components:
 7. Check if Datagrok started successfully: `http://<DATAGROK_VM_IP_ADDRESS>:8080`, login to Datagrok using the
    username "`admin`" and password "`admin`".
 
-8. Edit settings in the running Datagrok platfom (Tools -> Settings...). Do not forget to click Apply to save new settings.
+8. Edit settings in the running Datagrok platform (Tools -> Settings...). Do not forget to click Apply to save new settings.
     * Scripting:
         * CVM Url: `http://<CVM_VM_IP_ADDRESS>:8090`
         * CVM URL Client: `http://<CVM_VM_IP_ADDRESS>:8090`
