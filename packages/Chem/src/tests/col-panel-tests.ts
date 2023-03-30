@@ -22,19 +22,12 @@ category('column panel', () => {
 
   test('add inchi panel', async () => {
     await testInchiPanel('addInchisTopMenu', 'inchi');
-  }, {skipReason: 'GROK-11781'});
+  });
 
   test('inchi keys', async () => {
     await testInchiPanel('addInchisKeysTopMenu', 'inchiKeys');
-  }, {skipReason: 'GROK-11781'});
+  });
   
-  test('add inchi panel', async () => {
-    await testInchiPanel('addInchisPanel', 'inchi');
-  }, {skipReason: 'GROK-11781'});
-
-  test('inchi keys', async () => {
-    await testInchiPanel('addInchisKeysPanel', 'inchiKeys');
-  }, {skipReason: 'GROK-11781'});
 });
 
 async function testInchiPanel(funcName: string, tableName: string) {
