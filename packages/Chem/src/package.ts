@@ -523,9 +523,9 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
   let view = grok.shell.getTableView(table.name);
 
   if (radarView) {
-    const packageExists = checkPackage('Charts', 'radarViewerDemo');
+    const packageExists = checkPackage('Charts', '_radarViewerDemo');
     if (packageExists) {
-      let radarViewer = DG.Viewer.fromType('RadarViewer', table, {
+      let radarViewer = DG.Viewer.fromType('Radar', table, {
         valuesColumnNames: columnNames,
       });
       view.addViewer(radarViewer);
