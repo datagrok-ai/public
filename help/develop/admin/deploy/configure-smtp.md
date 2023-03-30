@@ -18,9 +18,9 @@ To configure email delivery for Datagrok:
     2) In all other cases, set SMTP
         1) Configure SMTP server address/DNS name. If you want to use the host SMTP server with dockerized Datagrok
            set `host.docker.internal`
-        2) Set SMTP server port
+        2) Set SMTP server port. In most cases is 25
         3) Set the SMTP user and password
         4) Use SMTP anonymous mode if you want to use an anonymous SMTP server
         5) Check SMTP secured to use [SMTPS](https://en.wikipedia.org/wiki/SMTPS)
 
-![SMTP configuration](../img/smtp.png)
+![SMTP configuration](../../img/smtp.png)

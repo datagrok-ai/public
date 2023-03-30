@@ -20,9 +20,9 @@ to Datagrok is to reset your password, using link on login form.
 
 ## Authentication details
 
-When user enters logs in, login and password pair is being passed to the server, and, if password hash matches stored
-hash, session token is being generated. Now, every API call should be made with http header "Authorization: token",
-where "token" is session token. After logging out this token won't work anymore.
+When a user enters logs in, the login and password pair is passed to the server, and, if the password hash matches the stored
+hash, a session token is generated. Now, every API call should be made with http header "Authorization: token",
+where "token" is the session token. After logging out this token won't work anymore.
 
 Datagrok does not keep your password anywhere, after your log in.
 

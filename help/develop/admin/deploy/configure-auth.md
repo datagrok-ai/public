@@ -8,12 +8,12 @@ To accommodate any enterprise needs, we can develop a customer-specific integrat
 
 All methods can be enabled separately or combined.
 
-More information about authentication can be found on [our wiki](../../govern/authentication.md).
+More information about authentication can be found on [our wiki](../../../govern/authentication.md).
 
 ## Common options
 
 If you want to display something on the login window, set the 'Prompt' option
-![Login prompt](../img/login-prompt.png)
+![Login prompt](../../img/login-prompt.png)
 
 Enable the 'Send Welcome Email' option to send welcome emails to new signed-up users.
 
@@ -21,7 +21,7 @@ Enable the 'Send Welcome Email' option to send welcome emails to new signed-up u
 
 It is the most basic method to authenticate users with Datagrok.
 
-To configure [login-password authentication](../../govern/authentication.md#login-password) for Datagrok:
+To configure [login-password authentication](../../../govern/authentication.md#login-password) for Datagrok:
 
 1) Go to the Datagrok Settings section 'Users and Sessions'; this section contains all authentication settings.
 2) Enable 'Internal authentication' to use the login-password method
@@ -43,7 +43,7 @@ Datagrok supports Google, Facebook and GitHub OAUTH authentication.
 
 1) Go to the Datagrok Settings section 'Users and Sessions'; this section contains all authentication settings.
 2) Enable 'Google authentication' to use the Google Oauth method (or another provider)
-3) Set 'Client Id' and 'Secret' if applicable
+3) Set 'Client Id' and 'Secret' if applicable. You can get it from your OpenID provider
 4) Make sure the correct Web Root is set in 'Admin' section
 
 ## OpenID authentication
@@ -70,7 +70,7 @@ services. You can also use Active Directory to authenticate by this method.
 2) Enable 'Domain authentication' to use the LDAP method
 3) Enable 'Domain signup' to enable all users present on a domain controller to authenticate in the Datagrok platform.
    If the option is disabled, it is required to create the user in the Datagrok platform first to allow the user to log
-   in to the platform
+   into the platform
 4) Configure LDAP server address/DNS name
 5) Set LDAP server port
 6) Enable LDAP SSL if you use LDAPS on your server
