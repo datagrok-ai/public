@@ -397,6 +397,7 @@ export class DataFrame {
    * @param {JoinType} joinType - inner, outer, left, or right. See [DG.JOIN_TYPE]
    * @param {boolean} inPlace - merges content in-place into the source table
    * @returns {DataFrame}
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/join-link/join-tables}
    * */
   join(t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[] | null = null, valueColumns2: string[] | null = null, joinType: JoinType = JOIN_TYPE.INNER, inPlace: boolean = false): DataFrame {
     return new DataFrame(api.grok_JoinTables(this.dart, t2.dart, keyColumns1, keyColumns2, valueColumns1, valueColumns2, joinType, inPlace));
