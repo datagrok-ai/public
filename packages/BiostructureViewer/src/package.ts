@@ -250,7 +250,7 @@ export async function nglViewerGen(): Promise<void> {
 }
 
 //name: dockingDemo
-//meta.demoPath: Viewers | Docking
+//meta.demoPath: Cheminformatics | Docking
 export async function dockingDemo() {
   const piMsg: string = 'Opening docking demo app ...';
   const pi: TaskBarProgressIndicator = TaskBarProgressIndicator.create(piMsg);
@@ -262,7 +262,7 @@ export async function dockingDemo() {
 }
 
 //name: inGridDemo
-//meta.demoPath: Viewers | In Grid
+//meta.demoPath: Cheminformatics | In Grid
 export async function inGridDemo() {
   const piMsg: string = 'Opening biostructure in grid demo app ...';
   const pi: TaskBarProgressIndicator = TaskBarProgressIndicator.create(piMsg);
