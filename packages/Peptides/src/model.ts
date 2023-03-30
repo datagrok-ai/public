@@ -32,15 +32,22 @@ export type SummaryStats = {
 };
 export type PositionStats = { [monomer: string]: Stats } & { general: SummaryStats };
 export type MonomerPositionStats = { [position: string]: PositionStats } & { general: SummaryStats };
+export type ClusterStats = {[cluster: string]: Stats};
+export enum CLUSTER_TYPE {
+  ORIGINAL = 'original',
+  CUSTOM = 'custom',
+};
+export type ClusterType = `${CLUSTER_TYPE}`;
+export type ClusterTypeStats = {[clusterType in ClusterType]: ClusterStats};
 
 export class PeptidesModel {
   static modelName = 'peptidesModel';
 
   settingsSubject: rxjs.Subject<type.PeptidesSettings> = new rxjs.Subject();
   _mutatinCliffsSelectionSubject: rxjs.Subject<undefined> = new rxjs.Subject();
-  _newClusterSubject: rxjs.Subject<undefined>  = new rxjs.Subject();
-  _removeClusterSubject: rxjs.Subject<undefined>  = new rxjs.Subject();
-  _filterChangedSubject: rxjs.Subject<undefined>  = new rxjs.Subject();
+  _newClusterSubject: rxjs.Subject<undefined> = new rxjs.Subject();
+  _removeClusterSubject: rxjs.Subject<undefined> = new rxjs.Subject();
+  _filterChangedSubject: rxjs.Subject<undefined> = new rxjs.Subject();
 
   _isUpdating: boolean = false;
   isBitsetChangedInitialized = false;
@@ -50,7 +57,7 @@ export class PeptidesModel {
   splitCol!: DG.Column<boolean>;
   edf: DG.DataFrame | null = null;
   _monomerPositionStats?: MonomerPositionStats;
-  _clusterStats?: {[cluster: string]: Stats};
+  _clusterStats?: ClusterTypeStats;
   _mutationCliffsSelection!: type.PositionToAARList;
   _invariantMapSelection!: type.PositionToAARList;
   _logoSummarySelection!: string[];
@@ -156,12 +163,12 @@ export class PeptidesModel {
     this._substitutionsInfo = si;
   }
 
-  get clusterStats(): {[cluster: string]: Stats} {
+  get clusterStats(): ClusterTypeStats {
     this._clusterStats ??= this.calculateClusterStatistics();
     return this._clusterStats;
   }
 
-  set clusterStats(clusterStats: {[cluster: string]: Stats}) {
+  set clusterStats(clusterStats: ClusterTypeStats) {
     this._clusterStats = clusterStats;
   }
 
@@ -315,7 +322,6 @@ export class PeptidesModel {
       }
     }
     this.df.setTag('settings', JSON.stringify(this._settings));
-    // this.updateDefault();
     for (const variable of updateVars) {
       switch (variable) {
       case 'activity':
@@ -324,8 +330,8 @@ export class PeptidesModel {
       case 'mutationCliffs':
         const scaledActivityCol: DG.Column<number> = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
         //TODO: set categories ordering the same to share compare indexes instead of strings
-        const monomerColumns: type.RawColumn[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractMonomerInfo);
-        this.substitutionsInfo = findMutations(scaledActivityCol.getRawData(), monomerColumns, this.settings);
+        const monomerCols: type.RawColumn[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractMonomerInfo);
+        this.substitutionsInfo = findMutations(scaledActivityCol.getRawData(), monomerCols, this.settings);
         break;
       case 'stats':
         this.monomerPositionStats = this.calculateMonomerPositionStatistics();
@@ -347,9 +353,6 @@ export class PeptidesModel {
     const positions = this.splitSeqDf.columns.names();
     const matrixDf = this.matrixDf
       .groupBy([C.COLUMNS_NAMES.MONOMER])
-      // .pivot(C.COLUMNS_NAMES.POSITION)
-      // .add('values')
-      // .add('first', C.COLUMNS_NAMES.MEAN_DIFFERENCE, '')
       .aggregate();
     for (const pos of positions)
       matrixDf.columns.addNewString(pos);
@@ -423,7 +426,6 @@ export class PeptidesModel {
 
     this.createScaledCol();
 
-    // this.initSelections();
     this.initInvariantMapSelection();
     this.initMutationCliffsSelection();
 
@@ -550,93 +552,96 @@ export class PeptidesModel {
     return monomerPositionObject;
   }
 
-  getSummaryStats(generalObj: SummaryStats, stats: Stats | null = null, summaryStats: SummaryStats | null = null): void {
+  getSummaryStats(genObj: SummaryStats, stats: Stats | null = null, summaryStats: SummaryStats | null = null): void {
     if (stats == null && summaryStats == null)
       throw new Error(`MonomerPositionStatsError: either stats or summaryStats must be present`);
 
     const possibleMaxCount = stats?.count ?? summaryStats!.maxCount;
-    generalObj.maxCount ??= possibleMaxCount;
-    if (generalObj.maxCount < possibleMaxCount)
-      generalObj.maxCount = possibleMaxCount;
+    genObj.maxCount ??= possibleMaxCount;
+    if (genObj.maxCount < possibleMaxCount)
+      genObj.maxCount = possibleMaxCount;
 
     const possibleMinCount = stats?.count ?? summaryStats!.minCount;
-    generalObj.minCount ??= possibleMinCount;
-    if (generalObj.minCount > possibleMinCount)
-      generalObj.minCount = possibleMinCount;
+    genObj.minCount ??= possibleMinCount;
+    if (genObj.minCount > possibleMinCount)
+      genObj.minCount = possibleMinCount;
 
     const possibleMaxMeanDifference = stats?.meanDifference ?? summaryStats!.maxMeanDifference;
-    generalObj.maxMeanDifference ??= possibleMaxMeanDifference;
-    if (generalObj.maxMeanDifference < possibleMaxMeanDifference)
-      generalObj.maxMeanDifference = possibleMaxMeanDifference;
+    genObj.maxMeanDifference ??= possibleMaxMeanDifference;
+    if (genObj.maxMeanDifference < possibleMaxMeanDifference)
+      genObj.maxMeanDifference = possibleMaxMeanDifference;
 
     const possibleMinMeanDifference = stats?.meanDifference ?? summaryStats!.minMeanDifference;
-    generalObj.minMeanDifference ??= possibleMinMeanDifference;
-    if (generalObj.minMeanDifference > possibleMinMeanDifference)
-      generalObj.minMeanDifference = possibleMinMeanDifference;
+    genObj.minMeanDifference ??= possibleMinMeanDifference;
+    if (genObj.minMeanDifference > possibleMinMeanDifference)
+      genObj.minMeanDifference = possibleMinMeanDifference;
 
     const possibleMaxPValue = stats?.pValue ?? summaryStats!.maxPValue;
-    generalObj.maxPValue ??= possibleMaxPValue;
-    if (generalObj.maxPValue < possibleMaxPValue)
-      generalObj.maxPValue = possibleMaxPValue;
+    genObj.maxPValue ??= possibleMaxPValue;
+    if (genObj.maxPValue < possibleMaxPValue)
+      genObj.maxPValue = possibleMaxPValue;
 
     const possibleMinPValue = stats?.pValue ?? summaryStats!.minPValue;
-    generalObj.minPValue ??= possibleMinPValue;
-    if (generalObj.minPValue > possibleMinPValue)
-      generalObj.minPValue = possibleMinPValue;
+    genObj.minPValue ??= possibleMinPValue;
+    if (genObj.minPValue > possibleMinPValue)
+      genObj.minPValue = possibleMinPValue;
 
     const possibleMaxRatio = stats?.ratio ?? summaryStats!.maxRatio;
-    generalObj.maxRatio ??= possibleMaxRatio;
-    if (generalObj.maxRatio < possibleMaxRatio)
-      generalObj.maxRatio = possibleMaxRatio;
+    genObj.maxRatio ??= possibleMaxRatio;
+    if (genObj.maxRatio < possibleMaxRatio)
+      genObj.maxRatio = possibleMaxRatio;
 
     const possibleMinRatio = stats?.ratio ?? summaryStats!.minRatio;
-    generalObj.minRatio ??= possibleMinRatio;
-    if (generalObj.minRatio > possibleMinRatio)
-      generalObj.minRatio = possibleMinRatio;
+    genObj.minRatio ??= possibleMinRatio;
+    if (genObj.minRatio > possibleMinRatio)
+      genObj.minRatio = possibleMinRatio;
   }
 
-  calculateClusterStatistics(): {[cluster: string]: Stats} {
-    const originalClustersCol = this.df.getCol(this.settings.clustersColumnName!);
-    const originalClustersColData = originalClustersCol.getRawData();
-    const originalClustersColCategories = originalClustersCol.categories;
+  calculateClusterStatistics(): ClusterTypeStats {
+    const origClustCol = this.df.getCol(this.settings.clustersColumnName!);
+    const origClustColData = origClustCol.getRawData();
+    const origClustColCat = origClustCol.categories;
 
-    const customClustersColumnsList = wu(this.customClusters).toArray();
+    const customClustColList = wu(this.customClusters).toArray();
+    const customClustColDataList = customClustColList.map((v) => v.toList() as boolean[]);
+    const customClustColNamesList = customClustColList.map((v) => v.name);
 
-    const activityColData: type.RawData = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData();
-    const activityColLen = activityColData.length;
+    const rowCount = this.df.rowCount;
 
-    // const resultStats: Stats[] = new Array(originalClustersColCategories.length + customClustersColumnsList.length);
-    const resultStats: {[cluster: string]: Stats} = {};
+    const origClustMasks: boolean[][] = Array.from({length: origClustColCat.length},
+      () => new Array(rowCount) as boolean[]);
+    const customClustMasks: boolean[][] = Array.from({length: customClustColList.length},
+      () => new Array(rowCount) as boolean[]);
 
-    const clusterCount = originalClustersColCategories.length + customClustersColumnsList.length;
-    for (let clusterIdx = 0; clusterIdx < clusterCount; ++clusterIdx) {
-      const customClusterIdx = clusterIdx - originalClustersColCategories.length;
-      const customClusterColData = customClustersColumnsList[customClusterIdx]?.toList();
-      const isAcitvityIdxValid = customClusterIdx < 0 ?
-        (i: number) => clusterIdx == originalClustersColData[i] :
-        (i: number) => customClusterColData[i];
-
-      const mask: boolean[] = new Array(activityColLen);
-      let trueCount = 0;
-      for (let maskIdx = 0; maskIdx < activityColLen; ++maskIdx) {
-        mask[maskIdx] = isAcitvityIdxValid(maskIdx);
-
-        if (mask[maskIdx])
-          ++trueCount;
-      }
-
-      const maskInfo = {
-        trueCount: trueCount,
-        falseCount: activityColLen - trueCount,
-        mask: mask,
-      };
-
-      const stats = getStats(activityColData, maskInfo);
-      const clusterName = customClusterIdx < 0 ? originalClustersColCategories[clusterIdx] :
-        customClustersColumnsList[customClusterIdx].name;
-      resultStats[clusterName] = stats;
+    // get original cluster masks in one pass
+    // complexity is O(N * (M + 1)) where N is the number of rows and M is the number of custom clusters
+    for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
+      origClustMasks[origClustColData[rowIdx]][rowIdx] = true;
+      for (let customClustIdx = 0; customClustIdx < customClustColList.length; ++customClustIdx)
+        customClustMasks[customClustIdx][rowIdx] = customClustColDataList[customClustIdx][rowIdx];
     }
 
+    const activityColData: type.RawData = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData();
+
+    const origClustStats: ClusterStats = {};
+    const customClustStats: ClusterStats = {};
+
+    for (let clustType = 0; clustType < 2; ++clustType) {
+      const masks = clustType == 0 ? origClustMasks : customClustMasks;
+      const clustNames = clustType == 0 ? origClustColCat : customClustColNamesList;
+      const resultStats = clustType == 0 ? origClustStats : customClustStats;
+      for (let maskIdx = 0; maskIdx < masks.length; ++maskIdx) {
+        const mask = masks[maskIdx];
+        const trueCount = mask.filter((v) => v).length;
+        const maskInfo = {trueCount: trueCount, falseCount: rowCount - trueCount, mask: mask};
+        const stats = getStats(activityColData, maskInfo);
+        resultStats[clustNames[maskIdx]] = stats;
+      }
+    }
+
+    const resultStats = {} as ClusterTypeStats;
+    resultStats[CLUSTER_TYPE.ORIGINAL] = origClustStats;
+    resultStats[CLUSTER_TYPE.CUSTOM] = customClustStats;
     return resultStats;
   }
 
@@ -772,12 +777,13 @@ export class PeptidesModel {
             return 0;
           }).filter((v) => v != 'general');
 
-          this.webLogoBounds[col.name] =
-            CR.drawLogoInBounds(ctx, bounds, stats, sortedStatsOrder, this.df.rowCount, this.cp, this.headerSelectedMonomers[col.name]);
+          this.webLogoBounds[col.name] = CR.drawLogoInBounds(ctx, bounds, stats, sortedStatsOrder, this.df.rowCount,
+            this.cp, this.headerSelectedMonomers[col.name]);
           gcArgs.preventDefault();
         }
       } catch (e) {
-        console.warn(`PeptidesHeaderLogoError: couldn't render WebLogo for column \`${col!.name}\`. See original error below.`);
+        console.warn(`PeptidesHeaderLogoError: couldn't render WebLogo for column \`${col!.name}\`. ` +
+          `See original error below.`);
         console.warn(e);
       } finally {
         ctx.restore();
@@ -847,60 +853,6 @@ export class PeptidesModel {
     ui.tooltip.show(distroStatsElem, x, y);
 
     return distroStatsElem;
-  }
-
-  showTooltipCluster(cluster: number, x: number, y: number, clusterName: string): HTMLDivElement | null {
-    const bs = this.df.filter;
-    const filteredDf = bs.anyFalse ? this.df.clone(bs) : this.df;
-    
-    const activityCol = filteredDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-    const activityColData = activityCol.getRawData();
-    //TODO: use bitset instead of splitCol
-    const clusterCol = filteredDf.getCol(this.settings.clustersColumnName!);
-    const clusterColData = clusterCol.getRawData();
-    let splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
-    const indexes: number[] = [];
-    splitCol.init((i) => {
-      const result = clusterColData[i] == cluster;
-      if (result)
-        indexes.push(i);
-      return result;
-    });
-    if (splitCol.max == 0)
-      splitCol = filteredDf.getCol(clusterName);
-    const distDf = DG.DataFrame.fromColumns([activityCol, splitCol]);
-
-    let stats: Stats;
-    if (bs.anyFalse) {
-      const trueCount = splitCol.stats.sum;
-      const maskInfo = {
-        trueCount: trueCount,
-        falseCount: activityColData.length - trueCount,
-        mask: splitCol.toList() as boolean[],
-      };
-      stats = getStats(activityColData, maskInfo);
-    } else
-      stats = this.clusterStats[clusterName];
-
-    if (!stats.count)
-      return null;
-
-    const colResults: {[colName: string]: number} = {};
-    for (const [col, agg] of Object.entries(this.settings.columns || {})) {
-      const currentCol = filteredDf.getCol(col);
-      const currentColData = currentCol.getRawData();
-      const tempCol = DG.Column.float('', indexes.length);
-      tempCol.init((i) => currentColData[indexes[i]]);
-      colResults[`${agg}(${col})`] = tempCol.stats[agg as keyof DG.Stats] as number;
-    }
-
-    const das = getDistributionAndStats(distDf, stats, `Cluster: ${clusterName}`, 'Other', true, splitCol.name);
-    const resultMap: {[key: string]: any} = {...das.tableMap, ...colResults};
-    const tooltip = wrapDistroAndStatsDefault(das.labels, das.histRoot, resultMap, true);
-
-    ui.tooltip.show(tooltip, x, y);
-
-    return tooltip;
   }
 
   modifyMonomerPositionSelection(aar: string, position: string, isInvariantMapSelection: boolean): void {
