@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import grok_connect.connectors_info.*;
 import grok_connect.providers.proxy.HiveMetaDataProviderProxyProvider;
 import grok_connect.table_query.AggrFunctionInfo;
-import grok_connect.table_query.GroupAggregation;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Prop;
