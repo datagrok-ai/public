@@ -3,6 +3,10 @@
 	"friendlyName": "Curves",
 	"version": "0.0.1",
 	"description": "",
+	"author": {
+		"name": "Dmytro Kovalyov",
+		"email": "kovalyov.dmytro@eigenmethod.com"
+	},
 	"dependencies": {
 		"@datagrok-libraries/statistics": "^1.1.2",
 		"@datagrok-libraries/utils": "^2.3.4",
