@@ -132,8 +132,8 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     g.textBaseline = 'top';
 
     //TODO: can this be replaced/merged with splitSequence?
-    const units = gridCell.tableColumn!.getTag(DG.TAGS.UNITS);
-    const aligned: string = gridCell.tableColumn!.getTag(bioTAGS.aligned);
+    const units = gridCell.cell.column.getTag(DG.TAGS.UNITS);
+    const aligned: string = gridCell.cell.column.getTag(bioTAGS.aligned);
 
     const palette = getPaletteByType(paletteType);
 
@@ -143,7 +143,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
     // TODO: Store temp data to GridColumn
     // Now the renderer requires data frame table Column underlying GridColumn
-    const colTemp: TempType = gridCell.tableColumn!.temp;
+    const colTemp: TempType = gridCell.cell.column.temp;
 
     const tempReferenceSequence: string | null = colTemp[tempTAGS.referenceSequence];
     const tempCurrentWord: string | null = colTemp[tempTAGS.currentWord];
@@ -305,9 +305,7 @@ export function drawMoleculeDifferenceOnCanvas(
   molDifferences?: { [key: number]: HTMLCanvasElement }
 ): void {
   if (subParts1.length !== subParts2.length) {
-    const emptyMonomersArray = new Array<string>(Math.abs(subParts1.length - subParts2.length)).fill('');
-    subParts1.length > subParts2.length ?
-      subParts2 = subParts2.concat(emptyMonomersArray) : subParts1 = subParts1.concat(emptyMonomersArray);
+    fillShorterSequence(subParts1, subParts2);
   }
   const textSize1 = g.measureText(processSequence(subParts1).join(''));
   const textSize2 = g.measureText(processSequence(subParts2).join(''));
@@ -371,4 +369,38 @@ function createDifferenceCanvas(
   printLeftOrCentered(0, y - shift, width, h, context, amino1, color1, 0, true);
   printLeftOrCentered(0, y + shift, width, h, context, amino2, color2, 0, true);
   return canvas;
+}
+
+function fillShorterSequence(subParts1: string[], subParts2: string[]) {
+  let numIdenticalStart = 0;
+  let numIdenticalEnd = 0;
+  let longerSeq;
+  let shorterSeq;
+
+  if (subParts1.length > subParts2.length) {
+    longerSeq = subParts1;
+    shorterSeq = subParts2;
+  } else {
+    longerSeq = subParts2;
+    shorterSeq = subParts1;
+  }
+
+  for (let i = 0; i < shorterSeq.length; i++) {
+    if (longerSeq[i] === shorterSeq[i])
+      numIdenticalStart++;
+  }
+
+  const lengthDiff = longerSeq.length - shorterSeq.length;
+  for (let i = longerSeq.length - 1; i > lengthDiff; i--) {
+    if (longerSeq[i] === shorterSeq[i - lengthDiff])
+      numIdenticalEnd++;
+  }
+
+  const emptyMonomersArray = new Array<string>(Math.abs(subParts1.length - subParts2.length)).fill('');
+
+  function concatWithEmptyVals(subparts: string[]) {
+    numIdenticalStart > numIdenticalEnd ? subparts = subparts.concat(emptyMonomersArray) : subparts = emptyMonomersArray.concat(subparts);
+  }
+
+  subParts1.length > subParts2.length ?  concatWithEmptyVals(subParts2) : concatWithEmptyVals(subParts1);
 }
