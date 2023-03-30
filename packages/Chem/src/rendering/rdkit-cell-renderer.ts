@@ -94,7 +94,7 @@ M  END
       } else {
         const aromaMolString = aromatizeMolBlock(molString, _rdKitModule)
         mol = this.rdKitModule.get_qmol(aromaMolString);
-        molCtx = {mol: mol, kekulize: false, isQMol: true, useMolBlockWedging: false };
+        molCtx = {mol: mol, kekulize: false, isQMol: true};
       }
     }
     else {
@@ -146,21 +146,15 @@ M  END
           } else if (!molHasOwnCoords) {
             mol.normalize_depiction(0);
           }
-          molCtx.useMolBlockWedging = molHasOwnCoords;
         }
         else {
           console.error(
             'Chem | In _fetchMolGetOrCreate: RDKit mol is invalid on a molString molecule: `' + molString + '`');
           mol.delete();
-          molCtx.mol = null;
         }
       } catch (e) {
         console.error(
           'In _fetchMolGetOrCreate: RDKit crashed, possibly a malformed molString molecule: `' + molString + '`');
-        if (mol !== null) {
-          mol.delete();
-          molCtx.mol = null;
-        }
       }
     }
 
