@@ -8,7 +8,7 @@ import {historyUtils} from './history-utils';
 import {UiUtils} from './shared-components/ui-utils';
 
 // Getting inital URL user entered with
-const url = new URL(grok.shell.startUri);
+const startUrl = new URL(grok.shell.startUri);
 
 export abstract class FunctionView extends DG.ViewBase {
   protected _funcCall?: DG.FuncCall;
@@ -37,9 +37,17 @@ export abstract class FunctionView extends DG.ViewBase {
 
     // Changing view and building IO are reasonable only after FuncCall is linked
     this.onFuncCallReady.subscribe({
-      complete: () => {
+      complete: async () => {
         this.changeViewName(this.funcCall.func.friendlyName);
         this.build();
+
+        if (this.getStartId()) {
+          await this.onBeforeLoadRun();
+          this.lastCall = this.funcCall;
+          await this.onAfterLoadRun(this.funcCall);
+
+          this.setAsLoaded();
+        }
       }
     });
 
@@ -54,6 +62,19 @@ export abstract class FunctionView extends DG.ViewBase {
     // TODO: Find a reproducible sample of the bug
     this.name = newName;
     document.querySelector('div.d4-ribbon-name')?.replaceChildren(ui.span([newName]));
+  }
+
+  private getStartId(): string | undefined {
+    // To prevent loading same ID on opening different package,
+    // we should check if we have already loaded run by this ID
+
+    //@ts-ignore
+    return (!grok.shell.getVar('isLoaded')) ? startUrl.searchParams.get('id'): undefined;
+  }
+
+  private setAsLoaded(): string | undefined {
+    // @ts-ignore
+    return grok.shell.setVar('isLoaded', true);
   }
 
   /**
@@ -169,13 +190,11 @@ export abstract class FunctionView extends DG.ViewBase {
    * @stability Stable
   */
   protected async loadFuncCallById() {
-    const runId = url.searchParams.get('id');
-
     ui.setUpdateIndicator(this.root, true);
 
+    const runId = this.getStartId();
     if (runId && !this.options.isTabbed) {
-      this.linkFunccall(await this.loadRun(runId));
-      url.searchParams.delete('id');
+      this.linkFunccall(await historyUtils.loadRun(runId));
     } else {
       const func: DG.Func = await grok.functions.eval(this.funcName);
       this.linkFunccall(func.prepare({}));
