@@ -10,6 +10,7 @@ import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
 import {findMonomers} from './utils';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import { NOTATION } from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export const _package = new DG.Package();
 let monomerLib: IMonomerLib | null = null;
@@ -119,8 +120,11 @@ export function editMoleculeCell(cell: DG.GridCell): void {
 export function openEditor(mol: string): void {
   let df = grok.shell.tv.grid.dataFrame;
   let col = df.columns.bySemType('Macromolecule');
+  const colUnits = col.getTag(DG.TAGS.UNITS);
+  if (colUnits === NOTATION.HELM) 
+    checkMonomersAndOpenWebEditor(df.currentCell, undefined, undefined);
   let converter = new NotationConverter(col);
-  const resStr = converter.convertStringToHelm(mol, '/');
+  const resStr = converter.convertStringToHelm(mol, '/');   
   checkMonomersAndOpenWebEditor(df.currentCell, resStr, col.getTag(DG.TAGS.UNITS));
 }
 
