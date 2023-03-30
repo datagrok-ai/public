@@ -4,8 +4,8 @@
 	"version": "1.0.1",
 	"category": "Visualizations",
 	"author": {
-		"name": "Maksym Shvyrlo",
-		"email": "mshvyrlo@datagrok.ai"
+		"name": "Dmytro Kovalyov",
+		"email": "kovalyov.dmytro@eigenmethod.com"
 	},
 	"description": "GIS (geographic information system) functionality, such as maps and geocoding. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/GIS/README.md)",
 	"dependencies": {
