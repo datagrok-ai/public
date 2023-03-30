@@ -4,12 +4,41 @@ import org.testcontainers.containers.*;
 
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.NoSuchElementException;
 import java.util.Properties;
 
 /**
  * Enum that contains all necessary data related to specific provider and it's container
  */
 public enum Provider {
+    MARIADB("src/test/resources/properties/mariadb.properties") {
+        @Override
+        protected JdbcDatabaseContainer<?> newJdbcContainer() {
+            container = new MariaDBContainer<>()
+                    .withDatabaseName(properties.get("database").toString())
+                    .withUsername(properties.get("user").toString())
+                    .withPassword(properties.get("password").toString())
+                    .withInitScript(properties.get("initScript").toString());
+            container.start();
+            return container;
+        }
+    },
+
+    DB2("src/test/resources/properties/db2.properties") {
+        @Override
+        protected JdbcDatabaseContainer<?> newJdbcContainer() {
+
+            container = new Db2Container(properties.get("image").toString())
+                    .withDatabaseName(properties.get("database").toString())
+                    .withUsername(properties.get("user").toString())
+                    .withPassword(properties.get("password").toString())
+                    .withInitScript(properties.get("initScript").toString())
+                    .acceptLicense();
+            container.start();
+            return container;
+        }
+    },
+
     NEO4J("src/test/resources/properties/neo4j.properties"),
 
     HIVE2("src/test/resources/properties/hive2.properties"),
@@ -97,8 +126,16 @@ public enum Provider {
         this.properties = properties;
     }
 
-    protected JdbcDatabaseContainer<?> newJdbcContainer() {
-        throw new UnsupportedOperationException("Override method newJdbcContainer()");
+    public static Provider fromName(String providerName) {
+        for (Provider provider: Provider.values()) {
+            String currentProviderName = provider.getProperties()
+                    .get("providerName")
+                    .toString().replaceAll(" ", "");
+            if (currentProviderName.equalsIgnoreCase(providerName)) {
+                return provider;
+            }
+        }
+        throw new NoSuchElementException("No such provider is registered");
     }
 
     public JdbcDatabaseContainer<?> getContainer() {
@@ -110,5 +147,9 @@ public enum Provider {
 
     public Properties getProperties() {
         return properties;
+    }
+
+    protected JdbcDatabaseContainer<?> newJdbcContainer() {
+        throw new UnsupportedOperationException("Override method newJdbcContainer()");
     }
 }

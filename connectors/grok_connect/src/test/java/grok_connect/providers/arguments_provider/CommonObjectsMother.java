@@ -491,7 +491,7 @@ public class CommonObjectsMother {
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
                                 now.toString(),
                                 dayOfMonth == 1 ? null : yesterday.toString(),
-                                lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
+                                lastDayOfWeek.getYear() >  now.getYear() || lastDayOfWeek.equals(now)?
                                         null : lastDayOfWeek.toString(),
                                 dayOfLastYear.getYear() == now.getYear() ? dayOfLastYear.toString() : null)),
                         "date")
@@ -540,7 +540,7 @@ public class CommonObjectsMother {
         DataFrame expected7 = DataFrameBuilder.getBuilder()
                 .setRowCount(5)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, now.toString(),
-                                yesterday.toString(), lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
+                                yesterday.toString(), lastDayOfWeek.getYear() >  now.getYear() || lastDayOfWeek.equals(now)?
                                         null : lastDayOfWeek.toString(), dayOfLastYear.toString(),
                                 "2021-04-09")),
                         "date")
@@ -582,8 +582,7 @@ public class CommonObjectsMother {
         DataFrame expected9 = DataFrameBuilder.getBuilder()
                 .setRowCount(4)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, now.toString(),
-                                yesterday.toString(), lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
-                                        null : lastDayOfWeek.toString(), dayOfLastYear.toString())),
+                                yesterday.toString(), lastDayOfWeek.toString(), dayOfLastYear.toString())),
                         "date")
                 .build();
         FuncCall funcCall10 = FuncCallBuilder.getBuilder()
@@ -656,7 +655,7 @@ public class CommonObjectsMother {
                         + "SELECT * FROM mock_data WHERE @first_name(first_name) AND @id(id) AND bool = @bool "
                         + "AND @email(email) AND @some_number(some_number) "
                         + "AND @country(country) AND @date(date)\n"
-                        + "-- end")
+                        + "--end")
                 .addFuncParam("string", "","first_name", "starts with p", "string")
                 .addFuncParam("string", "","id", ">1", "int")
                 .addFuncParam("bool", "","bool", false, "")

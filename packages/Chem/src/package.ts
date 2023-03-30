@@ -119,20 +119,39 @@ export async function initChem(): Promise<void> {
 //tags: autostart
 export async function initChemAutostart(): Promise<void> { }
 
-//name: chemTooltip
-//tags: tooltip
+//name: Chemistry | Most Diverse Structures
+//tags: tooltip, panel
 //input: column col {semType: Molecule}
 //output: widget
-export async function chemTooltip(col: DG.Column): Promise<DG.Viewer | undefined> {
+export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined> {
+  const version = col.version;
+  
   for (let i = 0; i < col.length; ++i) {
     if (!col.isNone(i) && isSmarts(col.get(i)))
       return;
   }
-  const tv = grok.shell.tv;
-  let viewer = new ChemDiversityViewer(true, col)//await tv.dataFrame.plot.fromType('diversitySearchViewer', {
-    viewer.limit = 9;
-    viewer.dataFrame = tv.dataFrame;
-  return viewer;
+  
+  const divMain = ui.div();
+  divMain.append(ui.divText('Most diverse structures'));
+  const divStructures = ui.div();
+  divStructures.classList.add('d4-flex-wrap');
+
+  if (col.temp['version'] != version || col.temp['molIds'].length == 0) {
+    const molIds = await chemDiversitySearch(
+      col, similarityMetric['Tanimoto'], 9, 'Morgan' as Fingerprint, true);
+    
+    col.temp = {
+      'version': version,
+      'molIds': molIds
+    }
+  }
+
+  for (let i = 0; i < col.temp['molIds'].length; ++i) {
+    divStructures.append(renderMolecule(col.get(col.temp['molIds'][i]), {width: 150, height: 75}));
+  }
+
+  divMain.append(divStructures);
+  return new DG.Widget(divMain);
 }
 
 //name: Scaffold Tree
@@ -235,9 +254,9 @@ export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Co
 
   try {
     const fingerprints = await chemSearches.chemGetFingerprints(molColumn, Fingerprint.Morgan);
-    const fingerprintsBitsets: DG.BitSet[] = [];
+    const fingerprintsBitsets: (DG.BitSet | null)[] = [];
     for (let i = 0; i < fingerprints.length; ++i) {
-      const fingerprint = DG.BitSet.fromBytes(fingerprints[i].getRawData().buffer, fingerprints[i].length);
+      const fingerprint = fingerprints[i] ? DG.BitSet.fromBytes(fingerprints[i]!.getRawData().buffer, fingerprints[i]!.length) : null;
       fingerprintsBitsets.push(fingerprint);
     }
     return DG.Column.fromList('object', 'fingerprints', fingerprintsBitsets);
@@ -407,11 +426,8 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
 
   const embedColsNames = getEmbeddingColsNames(table);
 
-  // dimensionality reducing algorithm doesn't handle empty values correctly so remove empty values at this step
-  const withoutEmptyValues = DG.DataFrame.fromColumns([molecules]).clone();
-  const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, molecules);
   const chemSpaceParams = {
-    seqCol: withoutEmptyValues.col(molecules.name)!,
+    seqCol: molecules,
     methodName: methodName,
     similarityMetric: similarityMetric,
     embedAxesNames: [embedColsNames[0], embedColsNames[1]],
@@ -420,11 +436,8 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
   const chemSpaceRes = await chemSpace(chemSpaceParams);
   const embeddings = chemSpaceRes.coordinates;
 
-  //inserting empty values back into results
   for (const col of embeddings) {
-    const listValues = col.toList();
-    emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
-    table.columns.add(DG.Column.float(col.name, table.rowCount).init((i)=> listValues[i]));
+    table.columns.add(col);
   }
   if (plotEmbeddings)
     return grok.shell
@@ -550,7 +563,7 @@ export function rGroupsAnalysisMenu(): void {
 export function groupAnalysisMenu(): void {
   const packageExists = checkPackage('Charts', '_GroupAnalysisViewer');
   if (packageExists) {
-    const groupAnalysisViewer = DG.Viewer.fromType('GroupAnalysisViewer', grok.shell.tv.dataFrame, {});
+    const groupAnalysisViewer = DG.Viewer.fromType('Group Analysis', grok.shell.tv.dataFrame, {});
     grok.shell.tv.addViewer(groupAnalysisViewer);
   } else {
     grok.shell.warning('Charts package is not installed');
@@ -638,7 +651,7 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 //#region Molecule column property panel
 
 
-//name: Chem
+//name: Chemistry | Rendering
 //input: column molColumn {semType: Molecule}
 //tags: panel, exclude-actions-panel
 //output: widget result
@@ -767,7 +780,9 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
     })
     .show({resizable: true});
     ui.onSizeChanged(dlg.root).subscribe((_) => {
-      sketcher.resize();
+      if(!sketcher.sketcher?.isInitialized)
+        return;
+      sketcher._autoResized ? sketcher._autoResized = false : sketcher.resize();
     });
 }
 
@@ -906,6 +921,7 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
 
 //name: isSmiles
 //input: string s
+//output: bool res
 export function isSmiles(s: string) : boolean {
   const ctx: IMolContext = getMolSafe(s, {}, _rdKitModule, true);
   if (ctx.mol !== null) {

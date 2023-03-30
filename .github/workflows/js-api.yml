@@ -6,11 +6,16 @@ on:
       - 'js-api/**'
 jobs:
   version:
-    name: Check version was changed
+    name: Check version
     runs-on: ubuntu-20.04
     outputs:
       changed_version: ${{ steps.check-version.outputs.changed_version }}
-      matrix: ${{ steps.packages.outputs.matrix }}
+      current_version: ${{ steps.check-version.outputs.current_version }}
+      name: ${{ steps.check-version.outputs.name }}
+      packages_matrix: ${{ steps.packages.outputs.matrix }}
+      libraries_matrix: ${{ steps.libraries.outputs.matrix }}
+      latest: ${{ steps.check-version.outputs.latest }}
+      replace_dep: ${{ steps.check-version.outputs.replace_dep }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -18,38 +23,96 @@ jobs:
         id: check-version
         working-directory: ./js-api
         run: |
-          name="$(jq .name package.json | sed 's/"//g')"
-          current_version="$(jq .version package.json | sed 's/"//g')"
+          name="$(jq -r '.name' package.json)"
+          current_version="$(jq -r '.version' package.json)"
           npm_version="$(curl --retry 3 -s "https://registry.npmjs.org/${name}/${current_version}" | jq -r '.? | select( has("version") == true ).version')"
           if [[ $npm_version == ${current_version} ]]; then
             changed_version='false'
           else
             changed_version='true'
+
+            latest_pushed=$(curl --retry 3 -LsS https://registry.npmjs.org/${name} | jq -r '.time | with_entries(select(.key | test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))) | keys | sort_by( values | split(".") | map(tonumber)) | last')
+            newest_version=$(echo -e "$latest_pushed\n$current_version" | sort -V | tail -n1)
+            if [[ "${newest_version}" == "${current_version}" ]]; then
+              echo "latest=true" >> $GITHUB_OUTPUT
+              if [[ "$(awk -F. '{print $2}' <<<$latest_pushed)" -lt "$(awk -F. '{print $2}' <<<$current_version)" ]] || [[ "$(awk -F. '{print $1}' <<<$latest_pushed)" -lt "$(awk -F. '{print $1}' <<<$current_version)" ]]; then
+                echo "replace_dep=true" >> $GITHUB_OUTPUT
+              fi
+            else
+              echo "latest=false" >> $GITHUB_OUTPUT
+            fi
           fi
-          echo '::echo::on'
-          echo "::set-output name=changed_version::${changed_version}"
-          echo '::echo::off'
-      - name: Check version was changed
+          echo "changed_version=${changed_version}" >> $GITHUB_OUTPUT
+          echo "current_version=${current_version}" >> $GITHUB_OUTPUT
+          echo "name=${name}" >> $GITHUB_OUTPUT
+
+      - name: Check dependent packages
         id: packages
+        if: steps.check-version.outputs.replace_dep == 'true'
         run: |
           MATRIX_JSON="["
-          for PACKAGE in $(grep -lr datagrok-api packages/*/package.json | awk -F'/' '{print $2}' | sort -u); do
-            MATRIX_JSON+="{\"package\": \"${PACKAGE}\""
-
+          for PACKAGE in $(grep -lr "${{ steps.check-version.outputs.name }}" packages/*/package.json | awk -F'/' '{print $2}' | sort -u); do
             DIR="packages/${PACKAGE}"
             if [ -f "${DIR}/package.json" ]; then
-              scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
-              if [ ! -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
-                MATRIX_JSON+=", \"build\": \"true\""
+              dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
+              unpublished_dep="$(jq -cr '. | to_entries | map(select(.value | match("\\.\\./js-api")).key)[]' <<<$dependencies)"
+              if [[ $unpublished_dep == "datagrok-api" ]]; then
+                MATRIX_JSON+="{\"package\": \"${PACKAGE}\""
+                scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
+                if [ ! -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
+                  MATRIX_JSON+=", \"build\": \"true\""
+                fi
+                MATRIX_JSON+=", \"unpublished_dep\": \"true\""
+                MATRIX_JSON+=", \"dep\": \"$unpublished_dep\""
+                MATRIX_JSON+=", \"author\": \"$(jq -r '.author.email // "monitoring@datagrok.ai"' "${DIR}/package.json")\""
+                MATRIX_JSON+="}"
               fi
             fi
-            MATRIX_JSON+="}"
           done
 
           MATRIX_JSON="${MATRIX_JSON//\}\{/\}, \{}"
           MATRIX_JSON+="]"
           JSON="{\"include\": ${MATRIX_JSON}}"
-          echo "::set-output name=matrix::${JSON}"
+          echo "matrix=${JSON}" >> $GITHUB_OUTPUT
+
+      - name: Check dependent libraries
+        if: steps.check-version.outputs.replace_dep == 'true'
+        id: libraries
+        run: |
+          MATRIX_JSON="["
+          for LIB in $(echo -e "utils\ngridext\n$(grep -lr "${{ steps.check-version.outputs.name }}" libraries/*/package.json | awk -F'/' '{print $2}' | sort)" | awk '!x[$0]++'); do
+            DIR="libraries/${LIB}"
+            if [ -f "${DIR}/package.json" ]; then
+              dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
+              unpublished_dep="$(jq -cr '. | to_entries | map(select(.value | match("\\.\\./js-api")).key)[]' <<<$dependencies)"
+              if [[ $unpublished_dep == "datagrok-api" ]]; then
+                MATRIX_JSON+="{\"library\": \"${LIB}\""
+                scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
+                if [ ! -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
+                  MATRIX_JSON+=", \"build\": \"true\""
+                fi
+                MATRIX_JSON+=", \"unpublished_dep\": \"true\""
+                MATRIX_JSON+=", \"dep\": \"$unpublished_dep\""
+                MATRIX_JSON+=", \"author\": \"$(jq -r '.author.email // "monitoring@datagrok.ai"' "${DIR}/package.json")\""
+                MATRIX_JSON+="}"
+              fi
+            fi
+          done
+
+          MATRIX_JSON="${MATRIX_JSON//\}\{/\}, \{}"
+          MATRIX_JSON+="]"
+          JSON="{\"include\": ${MATRIX_JSON}}"
+          echo "matrix=${JSON}" >> $GITHUB_OUTPUT
+
+      - name: Output
+        run: |
+          echo -e "changed_version: ${{ steps.check-version.outputs.changed_version }}"
+          echo -e "current_version: ${{ steps.check-version.outputs.current_version }}"
+          echo -e "name: ${{ steps.check-version.outputs.name }}"
+          echo -e "packages_matrix: ${{ steps.packages.outputs.matrix }}"
+          echo -e "libraries_matrix: ${{ steps.libraries.outputs.matrix }}"
+          echo -e "latest: ${{ steps.check-version.outputs.latest }}"
+          echo -e "replace_dep: ${{ steps.check-version.outputs.replace_dep }}"
 
   build:
     name: Build and publish to npm
@@ -75,7 +138,13 @@ jobs:
         working-directory: ./js-api
       - run: npm run build-ts
         working-directory: ./js-api
-      - run: npm publish
+      - name: npm publish
+        run: |
+          tag=""
+          if [[ "${{ needs.version.outputs.latest }}" != 'true' ]]; then
+            tag="--tag patch"
+          fi
+          npm publish ${tag}
         working-directory: ./js-api
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -92,7 +161,7 @@ jobs:
             git commit -m 'GitHub Actions: Update js-api/package-lock.json [skip ci]
 
             Workflow ${{ github.workflow }} ${{ github.run_number }}
-            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}'
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
             count=0
             until git push; do
               exit=$?
@@ -109,16 +178,17 @@ jobs:
             done
           fi
 
-# TODO: Build only compatible packages and not all of them
-  check:
-    name: Check compatibility
+  libraries:
+    name: Check libraries
     runs-on: ubuntu-20.04
+    if: needs.version.outputs.replace_dep == 'true'
     needs:
       - build
       - version
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.version.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.version.outputs.libraries_matrix) }}
+      max-parallel: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -133,11 +203,131 @@ jobs:
         run: npm install -g npm@x
       - name: npm version
         run: npm version
+      - name: Replace unpublished deps
+        id: deps
+        if: ${{ matrix.unpublished_dep == 'true' }}
+        run: |
+          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${{ needs.version.outputs.current_version }}"#g' package.json
+        working-directory: libraries/${{ matrix.library }}
       - run: npm install
-        continue-on-error: true
+        working-directory: libraries/${{ matrix.library }}
+      - name: Commit package.json
+        if: needs.version.outputs.changed_version == 'true'
+        id: commit
+        run: |
+          if [ -n "$(git status -s libraries/${{ matrix.library }}/package.json)" ]; then
+            git config --global user.name 'github-actions[bot]'
+            git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+            git pull
+            git add libraries/${{ matrix.library }}/package.json
+            git add libraries/${{ matrix.library }}/package-lock.json
+            git commit -m 'GitHub Actions: Update library ${{ matrix.library }} js-api dependency
+
+            Workflow ${{ github.workflow }} ${{ github.run_number }}
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+            count=0
+            until git push; do
+              exit=$?
+              wait=$((2 ** count))
+              count=$((count + 1))
+              if [ $count -lt "10" ]; then
+              echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
+                sleep $wait
+                git pull --rebase
+              else
+                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
+                exit $exit
+              fi
+            done
+          fi
+      - name: Send mail
+        if: always() && steps.commit.outcome == 'failure'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.mailgun.org
+          server_port: 587
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "Github Actions: Failed update for library ${{ matrix.library }}"
+          to: ${{ matrix.author }}
+          from: monitoring@grok.datagrok.ai
+          body: "Failed to update JS API dependency for library ${{ matrix.library }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          reply_to: monitoring@datagrok.ai
+
+  packages:
+    name: Check packages
+    runs-on: ubuntu-20.04
+    if: needs.version.outputs.replace_dep == 'true'
+    needs:
+      - build
+      - version
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.version.outputs.packages_matrix) }}
+      max-parallel: 1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.WRITE_TOKEN }}
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Upgrade npm
+        run: npm install -g npm@x
+      - name: npm version
+        run: npm version
+      - name: Replace unpublished deps
+        id: deps
+        if: ${{ matrix.unpublished_dep == 'true' }}
+        run: |
+          sed -i -e 's#"${{ needs.version.outputs.name }}": "../../js-api"#"${{ needs.version.outputs.name }}": "^${{ needs.version.outputs.current_version }}"#g' package.json
         working-directory: packages/${{ matrix.package }}
-      - name: Build package
-        continue-on-error: true
-        if: ${{ matrix.build == 'true' }}
-        run: npm run build
+      - run: npm install
         working-directory: packages/${{ matrix.package }}
+      - name: Commit package.json
+        if: needs.version.outputs.changed_version == 'true'
+        id: commit
+        run: |
+          if [ -n "$(git status -s packages/${{ matrix.package }}/package.json)" ]; then
+            git config --global user.name 'github-actions[bot]'
+            git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+            git pull
+            git add packages/${{ matrix.package }}/package.json
+            git add packages/${{ matrix.package }}/package-lock.json
+            git commit -m 'GitHub Actions: Update package ${{ matrix.package }} js-api dependency
+
+            Workflow ${{ github.workflow }} ${{ github.run_number }}
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+            count=0
+            until git push; do
+              exit=$?
+              wait=$((2 ** count))
+              count=$((count + 1))
+              if [ $count -lt "10" ]; then
+              echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
+                sleep $wait
+                git pull --rebase
+              else
+                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
+                exit $exit
+              fi
+            done
+          fi
+      - name: Send mail
+        if: always() && steps.commit.outcome == 'failure'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.mailgun.org
+          server_port: 587
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "Github Actions: Failed update for package ${{ matrix.package }}"
+          to: ${{ matrix.author }}
+          from: monitoring@grok.datagrok.ai
+          body: "Failed to update JS API dependency for package ${{ matrix.package }}. Update the dependency manually to version '^${{ needs.version.outputs.current_version }}'\nFailed in Workflow ${{ github.workflow }} ${{ github.run_number }}: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          reply_to: monitoring@datagrok.ai

@@ -38,11 +38,11 @@ export async function runPepsea(srcCol: DG.Column<string>, unUsedName: string,
       (bodies[clusterId] ??= []).push({ID: rowIndex.toString(), HELM: helmSeq});
   }
 
-  // const pepseaDockerfile = await grok.dapi.docker.dockerContainers.filter('bio').first();
-  const pepseaDockerfile = await grok.dapi.dockerfiles.filter('bio').first();
+  //@ts-ignore: this is a temporary workaround for the issue with docker containers. This will be fixed in 1.14.0
+  const pepseaContainer = await (grok.dapi.docker !== undefined ? grok.dapi.docker.dockerContainers : grok.dapi.dockerfiles).filter('bio').first();
   const alignedSequences: string[] = new Array(peptideCount);
   for (const body of bodies) { // getting aligned sequences for each cluster
-    const alignedObject = await requestAlignedObjects(pepseaDockerfile.id, body, method, gapOpen, gapExtend);
+    const alignedObject = await requestAlignedObjects(pepseaContainer.id, body, method, gapOpen, gapExtend);
     const alignments = alignedObject.Alignment;
 
     for (const alignment of alignments) {  // filling alignedSequencesCol
@@ -71,7 +71,8 @@ async function requestAlignedObjects(dockerfileId: string, body: PepseaBodyUnit[
     body: JSON.stringify(body),
   };
   const path = `/align?method=${method}&gap_open=${gapOpen}&gap_extend=${gapExtend}`;
-  // const response = await grok.dapi.docker.dockerContainers.request(dockerfileId, path, params);
-  const response = await grok.dapi.dockerfiles.request(dockerfileId, path, params);
+  //@ts-ignore: this is a temporary workaround for the issue with docker containers
+  const response = await (grok.dapi.docker !== undefined ? grok.dapi.docker.dockerContainers : grok.dapi.dockerfiles)
+    .request(dockerfileId, path, params);
   return JSON.parse(response ?? '{}');
 }

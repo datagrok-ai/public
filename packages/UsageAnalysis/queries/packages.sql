@@ -13,7 +13,7 @@ with recursive selected_groups as (
 ),
 res AS (
 select pp.name as package, u.friendly_name as user,
-e.event_time as time_old, u.id as uid, u.group_id as ugid
+e.event_time as time_old, u.id as uid, u.group_id as ugid, pp.package_id as pid
 from events e
 inner join event_types et on e.event_type_id = et.id
 inner join entities en on et.id = en.id
@@ -23,7 +23,7 @@ inner join users u on u.id = s.user_id
 where @date(e.event_time)
 union all
 select pp.name as package, u.friendly_name as user,
-e.event_time as time_old, u.id as uid, u.group_id as ugid
+e.event_time as time_old, u.id as uid, u.group_id as ugid, pp.package_id as pid
 from events e
 inner join event_parameter_values epv inner join event_parameters ep
 on epv.parameter_id = ep.id and ep.name = 'package' on epv.event_id = e.id
@@ -49,19 +49,19 @@ to_timestamp(floor((extract('epoch' from res.time_old) / trunc )) * trunc)
 AT TIME ZONE 'UTC' as time_start,
 to_timestamp(floor((extract('epoch' from res.time_old) / trunc )) * trunc)
 AT TIME ZONE 'UTC' + trunc * interval '1 sec' as time_end,
-res.uid, res.ugid
+res.uid, res.ugid, res.pid
 from res, t2, selected_groups sg
 where res.ugid = sg.id
 and (res.package = any(@packages) or @packages = ARRAY['all'])
-GROUP BY res.package, res.user, time_start, time_end, res.uid, res.ugid
+GROUP BY res.package, res.user, time_start, time_end, res.uid, res.ugid, res.pid
 --end
 
 
 --name: PackagesContextPaneFunctions
 --input: int time_start
 --input: int time_end
---input: string user
---input: string package
+--input: string users
+--input: string packages
 --meta.cache: true
 --connection: System:Datagrok
 select pp.name as package, en.id, et.name, count(*)
@@ -73,8 +73,8 @@ inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
 where e.event_time between to_timestamp(@time_start)
 and to_timestamp(@time_end)
-and u.id = @user
-and pp.name = @package
+and u.id = any(@users)
+and pp.package_id = any(@packages)
 group by en.id, et.name, pp.name
 --end
 
@@ -82,8 +82,8 @@ group by en.id, et.name, pp.name
 --name: PackagesContextPaneLogs
 --input: int time_start
 --input: int time_end
---input: string user
---input: string package
+--input: string users
+--input: string packages
 --meta.cache: true
 --connection: System:Datagrok
 select et.source, count(*)
@@ -96,7 +96,7 @@ inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
 where e.event_time between to_timestamp(@time_start)
 and to_timestamp(@time_end)
-and u.id = @user
-and pp.name = @package
+and u.id = any(@users)
+and pp.package_id = any(@packages)
 group by et.source
 --end

@@ -5,9 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {ModelHandler} from './model-handler';
 import {_functionParametersGrid} from './function-parameters-grid';
 import {ModelCatalogView} from './model-catalog-view';
-import wu from 'wu';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
-//import {ModelsWidget} from './models-widget'
 import {delay} from "@datagrok-libraries/utils/src/test";
 import {RichFunctionView} from "@datagrok-libraries/utils/src/rich-function-view";
 import './css/model-card.css';
@@ -15,6 +13,12 @@ import { ImportScriptGeneratorApp } from './import-script-generator/view';
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
+
+//name: openModelFromFuncall
+//input: funccall funccall
+export function openModelFromFuncall(funccall: DG.FuncCall) {
+  ModelHandler.openModelFromFunccall(funccall);
+}
 
 //name: Import Script Generator
 //description: Creates and registers a new script based on the input config
@@ -217,10 +221,9 @@ export function modelCatalog() {
     grok.shell.addView(view);
     // console.log(parser.href);
     if (pathSegments.length > 3) {
-      let c = grok.functions.getCurrentCall();
       grok.dapi.functions.filter(`shortName = "${pathSegments[3]}" and #model`).list().then((lst) => {
         if (lst.length == 1)
-          ModelHandler.openModel(lst[0], c);
+          ModelHandler.openModel(lst[0]);
       });
     }
   } else grok.shell.v = modelsView;

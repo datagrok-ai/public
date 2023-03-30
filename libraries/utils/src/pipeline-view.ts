@@ -8,6 +8,7 @@ import {historyUtils} from './history-utils';
 import {FunctionView} from './function-view';
 import {ComputationView} from './computation-view';
 import {filter} from 'rxjs/operators';
+import '../css/pipeline-view.css';
 
 export class PipelineView extends ComputationView {
   public steps = {} as {[scriptNqName: string]: { editor: string, view: FunctionView }};
@@ -15,6 +16,7 @@ export class PipelineView extends ComputationView {
 
   private stepTabs: DG.TabControl | null = null;
 
+  // PipelineView unites several export files into single ZIP file
   protected pipelineViewExportExtensions: () => Record<string, string> = () => {
     return {
       'Archive': 'zip'
@@ -144,10 +146,16 @@ export class PipelineView extends ComputationView {
 
     const pipelineTabs = ui.tabControl(tabs);
 
-    for (let i = 0; i < pipelineTabs.panes.length - 1; i++) {
-      pipelineTabs.panes[i].header.classList.add('arrow-tab');
-      pipelineTabs.panes[i].header.insertAdjacentElement('afterend', ui.div(undefined, 'empty-box'));
+    const tabsLine = pipelineTabs.panes[0].header.parentElement!;
+    tabsLine.classList.add('d4-ribbon', 'pipeline-view');
+    tabsLine.classList.remove('d4-tab-header-stripe');
+    tabsLine.firstChild!.remove();
+    for (let i = 0; i < pipelineTabs.panes.length; i++) {
+      pipelineTabs.panes[i].header.classList.add('d4-ribbon-name');
+      pipelineTabs.panes[i].header.classList.remove('d4-tab-header');
     }
+    pipelineTabs.panes[0].header.style.marginLeft = '12px';
+
     pipelineTabs.root.style.height = '100%';
     pipelineTabs.root.style.width = '100%';
 
@@ -181,11 +189,12 @@ export class PipelineView extends ComputationView {
   }
 
   /**
-   * Loads the specified historical run. See also {@link saveRun}.
-   * @param funcCallId ID of FuncCall to look for. Get it using {@see funcCall.id} field
-   * @returns FuncCall augemented with inputs' and outputs' values
-   * @stability Stable
- */
+   * Overrided to use {@link loadChildRuns} during run load.
+   * This implementation takes "parentCallId" and looks for the funcCalls with options.parentCallId = parentCallId.
+   * Each child run is related to the particular pipeline step.
+   * @param funcCallId ID of the parent FuncCall
+   * @returns Parent FuncCall
+   */
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
     const {parentRun: pulledParentRun, childRuns: pulledChildRuns} = await historyUtils.loadChildRuns(funcCallId);
 

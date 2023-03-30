@@ -14,7 +14,7 @@ with recursive selected_groups as (
 res AS (
 select et.friendly_name as function, pp.name as package,
 u.friendly_name as user, e.event_time as time_old, u.id as uid,
-u.group_id as ugid
+u.group_id as ugid, pp.package_id as pid
 from events e
 inner join event_types et on e.event_type_id = et.id
 inner join entities en on et.id = en.id
@@ -40,9 +40,10 @@ to_timestamp(floor((extract('epoch' from res.time_old) / trunc )) * trunc)
 AT TIME ZONE 'UTC' as time_start,
 to_timestamp(floor((extract('epoch' from res.time_old) / trunc )) * trunc)
 AT TIME ZONE 'UTC' + trunc * interval '1 sec' as time_end,
-res.uid, res.ugid
+res.uid, res.ugid, res.pid
 from res, t2, selected_groups sg
 where res.ugid = sg.id
 and (res.package = any(@packages) or @packages = ARRAY['all'])
-GROUP BY res.function, res.package, res.user, time_start, time_end, res.uid, res.ugid
+GROUP BY res.function, res.package, res.user, time_start, time_end,
+res.uid, res.ugid, res.pid
 --end
