@@ -1,4 +1,4 @@
-import {/*before, after, */after, category, test} from '@datagrok-libraries/utils/src/test';
+import {category, test} from '@datagrok-libraries/utils/src/test';
 import * as utils from './utils';
 import {DimensionalityReducer} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {cleanAlignedSequencesColumn} from '../utils/peptide-similarity-space';
@@ -7,7 +7,6 @@ import {aligned1} from './test-data';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
-import {_package} from '../package-test';
 
 let table: DG.DataFrame;
 let view: DG.TableView;

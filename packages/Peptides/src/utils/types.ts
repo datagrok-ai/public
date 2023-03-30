@@ -19,7 +19,7 @@ export type PeptidesSettings = {
   isBidirectional?: boolean,
   maxMutations?: number,
   minActivityDelta?: number,
-  columns?: {[col: string]: string},
+  columns?: {[col: string]: DG.AggregationType},
 };
 
 export type DrawOptions = {

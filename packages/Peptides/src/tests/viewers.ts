@@ -1,6 +1,4 @@
 import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
-//import * as ui from 'datagrok-api/ui';
 
 import {category, test, testViewer} from '@datagrok-libraries/utils/src/test';
 import {aligned1} from './test-data';

@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 
 import * as C from './constants';
 import * as types from './types';
-import {PositionStats, SummaryStats, MonomerPositionStats} from '../model';
+import {PositionStats, MonomerPositionStats} from '../model';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
