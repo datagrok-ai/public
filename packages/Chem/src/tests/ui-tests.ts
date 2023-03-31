@@ -131,7 +131,7 @@ category('UI', () => {
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = document.createElement('div');
-  });
+  }, {skipReason: 'GROK-12226'});
 
   test('info panel: identifiers', async () => {
     smiles = grok.data.demo.molecules(20);
