@@ -27,13 +27,29 @@ export class DemoView extends DG.ViewBase {
       const path = pathOption.split('|').map((s) => s.trim());
       const folder = this.tree.getOrCreateGroup(path.slice(0, path.length - 1).join(' | '));
       const item = folder.item(path[path.length - 1]);
+
       item.root.onmousedown = (_) => {
         grok.shell.closeAll();
         f.apply().then((_) => { });
+      };
+
+      item.root.onmouseover = (event) => {
+        if (f.description)
+          ui.tooltip.show(f.description, event.clientX, event.clientY);
+      };
+
+      item.root.onmouseout = (_) => {
+        ui.tooltip.hide();
       };
     }
     this.dockPanel = grok.shell.dockManager.dock(ui.div(
       [ui.searchInput('', ''), this.tree]), 'left', null, 'Categories');
     this.dockPanel.container.containerElement.style.maxWidth = '250px';
+
+    // TODO: make tooltip on items with descriptions (viewers)
+    // TODO: make event on enter click, changed to open viewers
+    // TODO: make div with loading at center of viewer
+    // TODO: if loading ended in 0.1s, then no div, if not - then div - DG.debounce, merge etc.
+    // TODO: also fix routing things
   }
 }

@@ -2,14 +2,16 @@ package grok_connect.providers;
 
 import java.io.*;
 import java.sql.*;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
+import java.time.*;
 import java.util.*;
 import java.math.*;
 import java.text.*;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.*;
+
+import com.clickhouse.data.value.UnsignedByte;
+import com.clickhouse.data.value.UnsignedShort;
 import microsoft.sql.DateTimeOffset;
 import oracle.sql.TIMESTAMPTZ;
 import org.apache.commons.io.IOUtils;
@@ -497,6 +499,10 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 columns.get(c - 1).add(((Long)value).intValue());
                             } else if (value instanceof Byte) {
                                 columns.get(c - 1).add(((Byte) value).intValue());
+                            } else if (value instanceof UnsignedByte) {
+                                columns.get(c - 1).add(((UnsignedByte) value).intValue());
+                            } else if (value instanceof UnsignedShort) {
+                                columns.get(c - 1).add(((UnsignedShort) value).intValue());
                             } else
                                 columns.get(c - 1).add(value);
                         else if (isString(type, typeName)) {
@@ -569,6 +575,12 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 time = Date.from(((DateTimeOffset) value).getOffsetDateTime().toInstant());
                             } else if (value instanceof LocalDateTime) {
                                 time = java.sql.Timestamp.valueOf((LocalDateTime) value);
+                            } else if (value instanceof LocalDate) {
+                                time = java.util.Date.from(((LocalDate) value).atStartOfDay(ZoneId.systemDefault())
+                                        .toInstant());
+                            } else if (value instanceof OffsetDateTime) {
+                                time = java.util.Date.from(((OffsetDateTime) value)
+                                        .toInstant());
                             } else {
                                 time = ((java.util.Date) value);
                             }
@@ -875,7 +887,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     protected boolean isArray(int type, String typeName) {
-        return false;
+        return type == java.sql.Types.ARRAY;
     }
 
     private static boolean isBitString(int type, int precision, String typeName) {

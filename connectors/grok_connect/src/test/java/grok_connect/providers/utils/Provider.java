@@ -1,9 +1,14 @@
 package grok_connect.providers.utils;
 
 import org.testcontainers.containers.*;
+import org.testcontainers.containers.wait.strategy.DockerHealthcheckWaitStrategy;
+import org.testcontainers.utility.DockerImageName;
 
 import java.io.FileReader;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.temporal.TemporalAdjusters;
+import java.time.temporal.TemporalUnit;
 import java.util.NoSuchElementException;
 import java.util.Properties;
 
@@ -11,6 +16,17 @@ import java.util.Properties;
  * Enum that contains all necessary data related to specific provider and it's container
  */
 public enum Provider {
+    CLICKHOUSE("src/test/resources/properties/clickhouse.properties") {
+        @Override
+        protected JdbcDatabaseContainer<?> newJdbcContainer() {
+            container = new ClickHouseContainer(DockerImageName.parse(properties.get("image").toString()))
+                    .waitingFor(new DockerHealthcheckWaitStrategy())
+                    .withInitScript(properties.get("initScript").toString());
+            container.start();
+            return container;
+        }
+    },
+
     MARIADB("src/test/resources/properties/mariadb.properties") {
         @Override
         protected JdbcDatabaseContainer<?> newJdbcContainer() {
