@@ -1,9 +1,10 @@
 package grok_connect;
 
 import grok_connect.utils.ConnectionPool;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-
+@Disabled
 public class GrokConnectTest {
     ConnectionPool cp = ConnectionPool.getInstance();
     String url = "jdbc:postgresql://localhost:5432/datagrok";

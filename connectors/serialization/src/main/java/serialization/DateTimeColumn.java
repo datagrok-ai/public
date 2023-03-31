@@ -143,4 +143,13 @@ public class DateTimeColumn extends Column<Double> {
     public double[] getData() {
         return data;
     }
+
+    @Override
+    public String toString() {
+        return "DateTimeColumn{" +
+                "data=" + Arrays.toString(data) +
+                ", name='" + name + '\'' +
+                ", tags=" + tags +
+                '}';
+    }
 }
