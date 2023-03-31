@@ -19,7 +19,9 @@ import {
   FilesWidget,
   DateInput,
   fileShares,
-  SliderOptions
+  SliderOptions,
+  TypeAhead,
+  TypeAheadConfig
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -1361,6 +1363,10 @@ function _iconFA(type: string, handler: Function | null, tooltipMsg: string | nu
     e?.addEventListener('click', (e) => handler(e));
   tooltip.bind(e, tooltipMsg);
   return e;
+}
+
+export function typeAhead(config: TypeAheadConfig): TypeAhead {
+  return new TypeAhead(config);
 }
 
 export let icons = {

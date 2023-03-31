@@ -1,14 +1,18 @@
 import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, observeStream, StreamSubscription} from "./events";
-import {Observable, Subscription} from "rxjs";
+import {Observable, Subscription, fromEvent} from "rxjs";
 import {Func, Property, PropertyOptions} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
 import {ColorType, FILTER_TYPE, LegendPosition, Type} from "./const";
 import * as rxjs from "rxjs";
-import { filter } from 'rxjs/operators';
+import { filter, map } from 'rxjs/operators';
 import $ from "cash-dom";
 import {MapProxy} from "./utils";
 import dayjs from "dayjs";
+import typeahead from 'typeahead-standalone';
+import {Dictionary, typeaheadConfig} from 'typeahead-standalone/dist/types';
+
+import '../css/typeahead-input.css';
 
 declare let grok: any;
 declare let DG: any;
@@ -20,6 +24,8 @@ export type RangeSliderStyle = 'barbell' | 'lines' | 'thin_barbell';
 export type SliderOptions = {
   style?: RangeSliderStyle
 }
+
+export type TypeAheadConfig = Omit<typeaheadConfig<Dictionary>, 'input' | 'className'>;
 
 export class ObjectPropertyBag {
   source: any;
@@ -1087,7 +1093,7 @@ export class DateInput extends InputBase<dayjs.Dayjs | null> {
     super(dart, onChanged);
   }
 
-  get value(): dayjs.Dayjs | null { 
+  get value(): dayjs.Dayjs | null {
     const date = api.grok_DateInput_Get_Value(this.dart);
     return date == null ? date : dayjs(date);
   }
@@ -1747,5 +1753,20 @@ export class FilesWidget extends DartWidget {
    * [path] accepts a full-qualified name (see [Entity.nqName]). */
   static create(params: {path?: string, dataSourceFilter?: fileShares[]} = {}): FilesWidget {
     return toJs(api.grok_FilesWidget(params));
+  }
+}
+
+export class TypeAhead extends InputBase {
+  constructor(config: TypeAheadConfig) {
+    const inputElement = ui.stringInput('', '');
+    super(inputElement.dart);
+
+    const typeAheadConfig: typeaheadConfig<Dictionary> = Object.assign(
+      {input: <HTMLInputElement> this.input}, config);
+
+    typeahead(typeAheadConfig);
+
+    this.root.getElementsByClassName('tt-list')[0].className = 'ui-input-list';
+    this.root.getElementsByClassName('tt-input')[0].className = 'ui-input-editor';
   }
 }
