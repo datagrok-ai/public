@@ -8,6 +8,7 @@ import $ from 'cash-dom';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import { MOL_FORMAT } from '../constants';
+import { copyIconStyles } from '../utils/ui-utils';
 
 export function getMoleculeCharge(mol: OCL.Molecule) {
   const atomsNumber = mol.getAllAtoms();
@@ -73,6 +74,10 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
     'Molecule charge': prop('Molecule charge', DG.TYPE.INT, (m) => getMoleculeCharge(m)),
   };
 
+  const copyIcon = ui.icons.copy(() => navigator.clipboard.writeText(host.innerText));
+  Object.assign(copyIcon.style, copyIconStyles);
+  host.appendChild(copyIcon);
   host.appendChild(ui.tableFromMap(map));
+  
   return new DG.Widget(host);
 }

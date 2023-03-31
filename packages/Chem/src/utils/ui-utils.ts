@@ -2,3 +2,9 @@ export function updateDivInnerHTML(div: HTMLElement, content: string | Node): vo
   div.innerHTML = '';
   div.append(content);
 }
+
+export const copyIconStyles = {
+  position: 'absolute', 
+  left: '170px', 
+  top: '-20px'
+}
