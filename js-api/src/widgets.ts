@@ -888,8 +888,8 @@ export class Menu {
 
   /** Shows the menu.
    * @returns {Menu} */
-  show(): Menu {
-    return toJs(api.grok_Menu_Show(this.dart));
+  show(parentElement?: HTMLElement): Menu {
+    return toJs(api.grok_Menu_Show(this.dart, parentElement));
   }
 
   get onContextMenuItemClick() {
@@ -1087,7 +1087,7 @@ export class DateInput extends InputBase<dayjs.Dayjs | null> {
     super(dart, onChanged);
   }
 
-  get value(): dayjs.Dayjs | null { 
+  get value(): dayjs.Dayjs | null {
     const date = api.grok_DateInput_Get_Value(this.dart);
     return date == null ? date : dayjs(date);
   }
