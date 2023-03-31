@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import $ from 'cash-dom';
+
 import '../css/chem.css';
 import * as chemSearches from './chem-searches';
 import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
@@ -744,12 +746,13 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
         cell.cell.value = sketcher.getMolFile();
       Sketcher.addToCollection(Sketcher.RECENT_KEY, sketcher.getMolFile());
     })
-    .show({resizable: true});
-    ui.onSizeChanged(dlg.root).subscribe((_) => {
-      if(!sketcher.sketcher?.isInitialized)
-        return;
-      sketcher._autoResized ? sketcher._autoResized = false : sketcher.resize();
-    });
+  .show({resizable: true});
+  ui.onSizeChanged(dlg.root).subscribe((_) => {
+    if(!sketcher.sketcher?.isInitialized)
+      return;
+    sketcher._autoResized ? sketcher._autoResized = false : sketcher.resize();
+  });
+  $(dlg.root).children('.d4-dialog-contents.dlg-.ui-form.ui-panel').css('overflow', 'unset').css('overflow-y', 'clip');
 }
 
 //name: OpenChemLib
