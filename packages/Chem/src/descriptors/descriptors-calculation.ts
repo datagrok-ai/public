@@ -5,6 +5,7 @@ import {getDescriptorsPy} from '../scripts-api';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import { _package } from '../package';
+import { copyIconStyles } from '../utils/ui-utils';
 
 const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
@@ -66,7 +67,9 @@ export function getDescriptorsSingle(smiles: string): DG.Widget {
       });
     });
   };
-
+  const copyIcon = ui.icons.copy(() => navigator.clipboard.writeText(result.innerText));
+  Object.assign(copyIcon.style, copyIconStyles);
+  widget.root.appendChild(copyIcon);
   widget.root.appendChild(result);
   widget.root.appendChild(selectButton);
 
