@@ -734,23 +734,23 @@ export class Script extends Func {
   get script(): string { return api.grok_Script_GetScript(this.dart); }
   set script(s: string) { api.grok_Script_SetScript(this.dart, s); }
 
-  /** Script language. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
+  /** Script language. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
   get language(): ScriptLanguage { return api.grok_Script_GetLanguage(this.dart); }
   set language(s: ScriptLanguage) { api.grok_Script_SetLanguage(this.dart, s); }
 
-  /** Environment name. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
+  /** Environment name. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
   get environment(): string { return api.grok_Script_Get_Environment(this.dart); }
   set environment(s: string) { api.grok_Script_Set_Environment(this.dart, s); }
 
-  /** Reference header parameter. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
+  /** Reference header parameter. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
   get reference(): string { return api.grok_Script_Get_Reference(this.dart); }
   set reference(s: string) { api.grok_Script_Set_Reference(this.dart, s); }
 
-  /** Sample table. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
+  /** Sample table. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
   get sample(): string { return api.grok_Script_Get_Sample(this.dart); }
   set sample(s: string) { api.grok_Script_Set_Sample(this.dart, s); }
 
-  /** Script tags. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
+  /** Script tags. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
   get tags(): string[] { return api.grok_Script_Get_Tags(this.dart); }
   set tags(tags: string[]) { api.grok_Script_Set_Tags(this.dart, tags); }
 }
@@ -983,11 +983,11 @@ export class Package extends Entity {
 }
 
 
-export class DockerImage extends Entity {
-  constructor(dart: any) {
-    super(dart);
-  }
-}
+// export class DockerImage extends Entity {
+//   constructor(dart: any) {
+//     super(dart);
+//   }
+// }
 
 
 export class DockerContainer extends Entity {

@@ -43,17 +43,17 @@ export function getSettingsDialog(model: PeptidesModel): DG.Dialog {
     const isIncludedInput = ui.boolInput('', typeof (settings.columns ?? {})[colName] !== 'undefined',
       () => {
         if (isIncludedInput.value)
-          result.columns![colName] = aggregationInput.stringValue;
+          result.columns![colName] = aggregationInput.value;
         else
           delete result.columns![colName];
       }) as DG.InputBase<boolean>;
     const aggregationInput = ui.choiceInput('Aggregation', (settings.columns ?? {})[colName] ?? 'avg',
       Object.values(DG.STATS), () => {
         if (isIncludedInput.value)
-        result.columns![colName] = aggregationInput.stringValue;
+        result.columns![colName] = aggregationInput.value;
         else
           delete result.columns![col.name];
-      }) as DG.InputBase<string>;
+      }) as DG.InputBase<DG.AggregationType>;
     $(aggregationInput.root).find('label').css('width', 'auto');
     const inputsRow = ui.inputsRow(col.name, [isIncludedInput, aggregationInput]);
     $(inputsRow).find('div.ui-div').css('display', 'inline-flex');

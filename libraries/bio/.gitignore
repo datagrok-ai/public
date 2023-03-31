@@ -4,9 +4,11 @@ dist/
 .idea
 
 src/**/*.js
+src/**/*.js.map
 src/**/*.d.ts
 src/**/*.d.ts.map
 *.js
+*.js.map
 *.d.ts
 *.d.ts.map
 /index.d.ts

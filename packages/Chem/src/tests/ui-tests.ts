@@ -48,8 +48,8 @@ category('UI', () => {
     v = grok.shell.addTableView(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     grok.shell.topMenu.find('Chem').group('Search').find('Diversity Search...').click();
-    await awaitCheck(() => document.querySelector('.d4-diversitysearchviewer') !== null, 'cannot load Diversity Search viewer', 2000);
-    const dsvRoot = document.querySelector('.d4-diversitysearchviewer') as HTMLElement;
+    await awaitCheck(() => document.querySelector('.d4-chem-diversity-search') !== null, 'cannot load Diversity Search viewer', 2000);
+    const dsvRoot = document.querySelector('.d4-chem-diversity-search') as HTMLElement;
     await awaitCheck(() => dsvRoot.querySelectorAll('.chem-canvas').length === 10, 'molecules number != 10', 3000);
     const dsv = Array.from(v.viewers)[1];
     dsv.setOptions({
@@ -60,17 +60,19 @@ category('UI', () => {
     await awaitCheck(() => dsvRoot.querySelectorAll('.chem-canvas').length === 5, 'molecules number != 5', 3000);
     v.close();
     grok.shell.o = document.createElement('div');
-  }, {skipReason: 'GROK-11785'});
+  });
   
   test('descriptors', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
+  
     await awaitCheck(() => {
       return Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
         .find((el) => el.textContent === 'Toxicity') !== undefined;
     }, 'cannot find Toxicity property', 5000);
+
     const smilesCol = smiles.columns.byName('smiles');
     grok.shell.o = smilesCol;
 
@@ -105,7 +107,7 @@ category('UI', () => {
     isColumnPresent(smiles.columns, 'RingCount');
     v.close();
     grok.shell.o = document.createElement('div');
-  }, {skipReason: 'GROK-11785'});
+  });
 
   test('info panel: gasteiger', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -136,7 +138,7 @@ category('UI', () => {
     gpc.click();
     v.close();
     grok.shell.o = document.createElement('div');
-  }, {skipReason: 'GROK-11785'});
+  });
 
   test('info panel: identifiers', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -162,7 +164,7 @@ category('UI', () => {
     ih.click(); await delay(10);
     v.close();
     grok.shell.o = document.createElement('div');
-  }, {skipReason: 'GROK-11785'}); 
+  }); 
 
   test('info panel: structure2D', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -184,7 +186,7 @@ category('UI', () => {
     s2d.click(); await delay(10);
     v.close();
     grok.shell.o = document.createElement('div');
-  }, {skipReason: 'GROK-11785'});
+  });
 
   test('info panel: structure3D', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -206,7 +208,7 @@ category('UI', () => {
     s3d.click(); await delay(10);
     v.close();
     grok.shell.o = document.createElement('div');
-  }, {skipReason: 'GROK-11785'});
+  });
 
   test('info panel: properties', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -217,7 +219,7 @@ category('UI', () => {
     await awaitCheck(() => {
       return Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
         .find((el) => el.textContent === 'Properties') !== undefined;
-    }, 'cannot find Properties property', 3000);
+    }, 'cannot find Properties property', 5000);
 
     const p = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Properties') as HTMLElement;
@@ -228,7 +230,7 @@ category('UI', () => {
     p.click(); await delay(10);
     v.close();
     grok.shell.o = document.createElement('div');
-  }, {skipReason: 'GROK-11785'});
+  });
 
   test('info panel: toxicity', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -250,7 +252,7 @@ category('UI', () => {
     t.click(); await delay(10);
     v.close();
     grok.shell.o = document.createElement('div');
-  }, {skipReason: 'GROK-11785'});
+  });
 
   test('info panel: drug likeness', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -272,7 +274,7 @@ category('UI', () => {
     dl.click(); await delay(10);
     v.close();
     grok.shell.o = document.createElement('div');
-  }, {skipReason: 'GROK-11785'});
+  });
 
   test('info panel: structural alerts', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -295,7 +297,7 @@ category('UI', () => {
     sa.click(); await delay(10);
     v.close();
     grok.shell.o = document.createElement('div');
-  }, {skipReason: '#1454'});
+  });
 
   test('chem inputs', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -315,7 +317,7 @@ category('UI', () => {
     grok.shell.closeTable(grok.shell.t);
     v.close();
     grok.shell.o = document.createElement('div');
-  }, {skipReason: 'GROK-11785'});
+  });
 
   test('map identifiers', async () => {
     smiles = grok.data.demo.molecules(20);

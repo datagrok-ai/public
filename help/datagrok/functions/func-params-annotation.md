@@ -68,6 +68,7 @@ The syntax for defining input and output parameters looks like this:
     * **graphics** - graphics
     * **file** - file, variable in the function body contains path to file
     * **blob** - blob, variable in the function body contains path to binary file
+    * **list<T\>** - list of objects of type T (support depends on function type)
 3. **name** - parameter name that will be used in the function body. Optional for a graphical output.
 4. **value** - default value. For scalar inputs, it corresponds to a value; for graphics outputs, it is used as index of
    graphical element. Optional.

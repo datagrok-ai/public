@@ -316,9 +316,9 @@ export function drawMoleculeDifferenceOnCanvas(
   molDifferences?: { [key: number]: HTMLCanvasElement }
 ): void {
   if (subParts1.length !== subParts2.length) {
-    const emptyMonomersArray = new Array<string>(Math.abs(subParts1.length - subParts2.length)).fill('');
-    subParts1.length > subParts2.length ?
-      subParts2 = subParts2.concat(emptyMonomersArray) : subParts1 = subParts1.concat(emptyMonomersArray);
+    const sequences: IComparedSequences = fillShorterSequence(subParts1, subParts2);
+    subParts1 = sequences.subParts1;
+    subParts2 = sequences.subParts2;
   }
   const textSize1 = g.measureText(processSequence(subParts1).join(''));
   const textSize2 = g.measureText(processSequence(subParts2).join(''));
@@ -361,6 +361,11 @@ export function drawMoleculeDifferenceOnCanvas(
   g.restore();
 }
 
+interface IComparedSequences{
+  subParts1: string[];
+  subParts2: string[];
+}
+
 function createDifferenceCanvas(
   amino1: string,
   amino2: string,
@@ -382,4 +387,31 @@ function createDifferenceCanvas(
   printLeftOrCentered(0, y - shift, width, h, context, amino1, color1, 0, true);
   printLeftOrCentered(0, y + shift, width, h, context, amino2, color2, 0, true);
   return canvas;
+}
+
+function fillShorterSequence(subParts1: string[], subParts2: string[]): IComparedSequences {
+  let numIdenticalStart = 0;
+  let numIdenticalEnd = 0;
+  const longerSeq = subParts1.length > subParts2.length ? subParts1 : subParts2;
+  let shorterSeq = subParts1.length > subParts2.length ? subParts2 : subParts1;
+
+  for (let i = 0; i < shorterSeq.length; i++) {
+    if (longerSeq[i] === shorterSeq[i])
+      numIdenticalStart++;
+  }
+
+  const lengthDiff = longerSeq.length - shorterSeq.length;
+  for (let i = longerSeq.length - 1; i > lengthDiff; i--) {
+    if (longerSeq[i] === shorterSeq[i - lengthDiff])
+      numIdenticalEnd++;
+  }
+
+  const emptyMonomersArray = new Array<string>(Math.abs(subParts1.length - subParts2.length)).fill('');
+
+  function concatWithEmptyVals(subparts: string[]): string[] {
+    return numIdenticalStart > numIdenticalEnd ? subparts.concat(emptyMonomersArray) : emptyMonomersArray.concat(subparts);
+  }
+
+  subParts1.length > subParts2.length ?  subParts2 = concatWithEmptyVals(subParts2) : subParts1 = concatWithEmptyVals(subParts1);
+  return {subParts1: subParts1, subParts2: subParts2};
 }

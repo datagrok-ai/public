@@ -2,14 +2,16 @@ package grok_connect.providers;
 
 import java.io.*;
 import java.sql.*;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
+import java.time.*;
 import java.util.*;
 import java.math.*;
 import java.text.*;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.*;
+
+import com.clickhouse.data.value.UnsignedByte;
+import com.clickhouse.data.value.UnsignedShort;
 import microsoft.sql.DateTimeOffset;
 import oracle.sql.TIMESTAMPTZ;
 import org.apache.commons.io.IOUtils;
@@ -138,7 +140,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 System.out.println(query);
                 PreparedStatement statement = connection.prepareStatement(query);
                 if (supportsTransactions)
-                    statement.setFetchSize(10000);
+                    statement.setFetchSize(100);
                 providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 List<String> stringValues = new ArrayList<>();
                 System.out.println(names);
@@ -176,7 +178,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
                 Statement statement = connection.createStatement();
                 if (supportsTransactions)
-                    statement.setFetchSize(10000);
+                    statement.setFetchSize(100);
                 providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 statement.setQueryTimeout(timeout);
                 String logString = String.format("Query: %s \n", query);
@@ -191,7 +193,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             // Query without parameters
             Statement statement = connection.createStatement();
             if (supportsTransactions)
-                statement.setFetchSize(10000);
+                statement.setFetchSize(100);
             providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
             statement.setQueryTimeout(timeout);
             String logString = String.format("Query: %s \n", query);
@@ -495,6 +497,12 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 columns.get(c - 1).add(((BigDecimal)value).intValue());
                             else if (value instanceof Long) {
                                 columns.get(c - 1).add(((Long)value).intValue());
+                            } else if (value instanceof Byte) {
+                                columns.get(c - 1).add(((Byte) value).intValue());
+                            } else if (value instanceof UnsignedByte) {
+                                columns.get(c - 1).add(((UnsignedByte) value).intValue());
+                            } else if (value instanceof UnsignedShort) {
+                                columns.get(c - 1).add(((UnsignedShort) value).intValue());
                             } else
                                 columns.get(c - 1).add(value);
                         else if (isString(type, typeName)) {
@@ -567,6 +575,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 time = Date.from(((DateTimeOffset) value).getOffsetDateTime().toInstant());
                             } else if (value instanceof LocalDateTime) {
                                 time = java.sql.Timestamp.valueOf((LocalDateTime) value);
+                            } else if (value instanceof LocalDate) {
+                                time = java.util.Date.from(((LocalDate) value).atStartOfDay(ZoneId.systemDefault())
+                                        .toInstant());
                             } else {
                                 time = ((java.util.Date) value);
                             }
@@ -807,7 +818,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         return result;
     }
 
-    private String aggrToSql(GroupAggregation aggr) {
+    protected String aggrToSql(GroupAggregation aggr) {
         AggrFunctionInfo funcInfo = null;
         for (AggrFunctionInfo info: descriptor.aggregations) {
             if (info.functionName.equals(aggr.aggType)) {
@@ -873,7 +884,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     protected boolean isArray(int type, String typeName) {
-        return false;
+        return type == java.sql.Types.ARRAY;
     }
 
     private static boolean isBitString(int type, int precision, String typeName) {
@@ -910,7 +921,8 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     protected boolean isDecimal(int type, String typeName, int scale) {
         return (type == java.sql.Types.DECIMAL) || (type == java.sql.Types.NUMERIC) ||
-                typeName.equalsIgnoreCase("decimal");
+                typeName.equalsIgnoreCase("decimal")
+                || typeName.equalsIgnoreCase("decfloat");
     }
 
     private static boolean isBoolean(int type, String typeName, int precision) {
@@ -920,7 +932,8 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     private static boolean isString(int type, String typeName) {
         return ((type == java.sql.Types.VARCHAR)|| (type == java.sql.Types.CHAR) ||
-                (type == java.sql.Types.LONGVARCHAR) || (type == java.sql.Types.CLOB) ||
+                (type == java.sql.Types.LONGVARCHAR) || (type == java.sql.Types.CLOB)
+                || (type == java.sql.Types.NCLOB) ||
                 typeName.equalsIgnoreCase("varchar") ||
                 typeName.equalsIgnoreCase("nvarchar") ||
                 typeName.equalsIgnoreCase("nchar") ||
