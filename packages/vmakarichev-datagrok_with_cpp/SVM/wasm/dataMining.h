@@ -5,9 +5,6 @@
 #ifndef DATA_MINING_H
 #define DATA_MINING_H
 
-#include<iostream>
-using namespace std;
-
 #include "../../../Eigen/Eigen/Dense"
 using namespace Eigen;
 
@@ -64,13 +61,7 @@ namespace dmt {
 
 			if (current > static_cast<Float>(0))
 				B.col(i) /= current;
-		}
-
-		// For testing
-		/*cout << "\nA:\n" << A
-			<< "\n\nB:\n" << B
-			<< "\n\nmu:\n" << mu
-			<< "\n\nsigma:\n" << sigma << endl;*/
+		}		
 
 		return NO_ERRORS;
 	} // createNormalizedDataset

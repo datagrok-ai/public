@@ -1,16 +1,19 @@
 // svm.js
 
-// Support vector machine (SVM) tools.
-// Training & predicting is provided by wasm-computations.
-// Least square support vector machine (LS-SVM) is implemented:
-//   [1] Suykens, J., Vandewalle, J. "Least Squares Support Vector Machine Classifiers",
-//	     Neural Processing Letters 9, 293-300 (1999). https://doi.org/10.1023/A:1018628609742 
+/* Support vector machine (SVM) tools.
+
+   Training & predicting are provided by wasm-computations.
+
+   Least square support vector machine (LS-SVM) is implemented:
+     [1] Suykens, J., Vandewalle, J. "Least Squares Support Vector Machine Classifiers",
+	       Neural Processing Letters 9, 293-300 (1999). https://doi.org/10.1023/A:1018628609742 
+*/
 
 // Imports for call wasm runtime-system: in the main stream and in webworkers
 import { callWasm } from '../wasm/callWasm';
 import { getCppInput, getResult } from '../wasm/callWasmForWebWorker';
 
-// CONSTANTS
+// 1. CONSTANTS
 
 // kernel types
 export const LINIEAR = 0;
@@ -24,6 +27,19 @@ const POLYNOMIAL_C_INDEX = 0;
 const POLYNOMIAL_D_INDEX = 1;
 const SIGMOID_KAPPA_INDEX = 0;
 const SIGMOID_THETA_INDEX = 1;
+
+// hyperparameters limits
+const GAMMA_INFIMUM_LIMIT = 0;
+const RBF_SIGMA_INFIMUM_LIMIT = 0;
+const POLYNOMIAL_C_INFIMUM_LIMIT = 0;
+const POLYNOMIAL_D_INFIMUM_LIMIT = 0;
+
+// error messages
+const WRONG_GAMMA_MESSAGE = 'gamma must be strictly positive.';
+const WRONG_RBF_SIGMA_MESSAGE = 'sigma must be strictly positive.';
+const WRONG_POLYNOMIAL_C_MESSAGE = 'c must be strictly positive.';
+const WRONG_POLYNOMIAL_D_MESSAGE = 'd must be strictly positive.';
+const WRONG_KERNEL_MESSAGE = 'incorrect kernel.';
 
 // names
 const GENERAL = 'General';
@@ -51,7 +67,40 @@ const KERNEL_TYPE_TO_NAME_MAP = ['linear', 'polynomial', 'RBF', 'sigmoid'];
 const INIT_VALUE = 0; // any number can be used
 const LS_SVM_ADD_CONST = 1; // see [1] for more details
 
-//TODO: ADD CHECK KERNEL PARAMS!!!!
+// 2. TOOLS
+
+// Check LS-SVM learning hyperparameters
+function checkHyperparameters(hyperparameters) {
+  // check gamma
+  if(hyperparameters.gamma <= GAMMA_INFIMUM_LIMIT)
+    throw new Error(WRONG_GAMMA_MESSAGE);
+
+  // check kernel & its parameters
+  switch(hyperparameters.kernel) {
+    case LINIEAR: // the case of linear kernel
+      return;
+
+    case RBF: // the case of RBF kernel
+      if(hyperparameters.sigma <= RBF_SIGMA_INFIMUM_LIMIT)
+        throw new Error(WRONG_RBF_SIGMA_MESSAGE);
+      return;
+
+    case POLYNOMIAL: // the case of polynomial kernel
+      // check c
+      if(hyperparameters.cParam <= POLYNOMIAL_C_INFIMUM_LIMIT)         
+        throw new Error(WRONG_POLYNOMIAL_C_MESSAGE);
+      // check d
+      if(hyperparameters.dParam <= POLYNOMIAL_D_INFIMUM_LIMIT)         
+        throw new Error(WRONG_POLYNOMIAL_D_MESSAGE);    
+      return;
+    
+    case SIGMOID: // the case of polynomial kernel
+      return;
+
+    default: // incorrect kernel
+      throw new Error(WRONG_KERNEL_MESSAGE);
+    } // switch    
+} // checkHyperparameters
 
 // Returnes labels predicted by the model specified
 export function predict(module, predictFuncName, model, dataset)
@@ -93,7 +142,10 @@ export function getError(col1, col2)
 // Returns trained LS-SVM model.
 export function trainModel(module, trainFuncName, predictFuncName, 
     hyperparameters, dataset, labels) 
-{  
+{ 
+  // check correctness of hyperparameter gamma
+  checkHyperparameters(hyperparameters)
+
   // create default kernel params array
   let kernelParamsArray = [INIT_VALUE, INIT_VALUE];
   

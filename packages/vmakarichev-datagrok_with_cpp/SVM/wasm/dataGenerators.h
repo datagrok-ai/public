@@ -1,13 +1,11 @@
 // dataGenerators.h
 
-// Tools for generating test datasets for SVM.
+// Tools for generating datasets for testing SVM.
 
 #ifndef DATA_GENERATORS_H
 #define DATA_GENERATORS_H
 
-#include<iostream>
 #include<cstdlib>
-#include<cmath>
 using namespace std;
 
 #include "../../../Eigen/Eigen/Dense"
@@ -127,7 +125,7 @@ namespace svm
 		return NO_ERRORS;
 	} // generateSeparable
 
-	/* Generate dataset:non-separable case.
+	/* Generate dataset: non-separable case.
 	   Features are generated randomly using the uniform distribution.
 	   Each feature belongs to the corresponding segment [min, max].
 		  kernel - type of kernel

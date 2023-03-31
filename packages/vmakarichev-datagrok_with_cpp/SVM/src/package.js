@@ -46,7 +46,7 @@ export function getWrongPredictions(df, col1, col2) {
 //input: int featuresCount = 2 {caption: features; category: Size}
 //input: double min = -39 {caption: min; category: Range}
 //input: double max = 173 {caption: max; category: Range}
-//input: double violatorsPercentage = 35 {caption: violators; units: %; category: Dataset}
+//input: double violatorsPercentage = 5 {caption: violators; units: %; category: Dataset}
 export function generateDatasetLinear(name, samplesCount, featuresCount, 
   min, max, violatorsPercentage) 
 {
@@ -74,7 +74,7 @@ export function generateDatasetLinear(name, samplesCount, featuresCount,
 //input: int featuresCount = 2 {caption: features; category: Size}
 //input: double min = -39 {caption: min; category: Range}
 //input: double max = 173 {caption: max; category: Range}
-//input: double violatorsPercentage = 35 {caption: violators; units: %; category: Dataset}
+//input: double violatorsPercentage = 5 {caption: violators; units: %; category: Dataset}
 export function generateDatasetRBF(name, sigma, samplesCount, featuresCount, 
   min, max, violatorsPercentage) 
 {
@@ -218,5 +218,3 @@ export function demoSigmoidKernelLSSVM(gamma, kappa, theta, df, features, labels
       getWrongPredictions(df, labels, model.predictedLabels);
   }
 } // demoSigmoidKernelLSSVM
-
-
