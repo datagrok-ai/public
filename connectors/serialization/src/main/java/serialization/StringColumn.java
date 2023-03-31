@@ -115,4 +115,13 @@ public class StringColumn extends Column<String> {
     public String[] getData() {
         return data;
     }
+
+    @Override
+    public String toString() {
+        return "StringColumn{" +
+                "data=" + Arrays.toString(data) +
+                ", name='" + name + '\'' +
+                ", tags=" + tags +
+                '}';
+    }
 }
