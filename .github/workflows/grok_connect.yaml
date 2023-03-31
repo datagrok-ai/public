@@ -13,6 +13,10 @@ jobs:
       image_exists: ${{ steps.get_version.outputs.image_exists }}
       latest: ${{ steps.get_version.outputs.latest }}
     steps:
+      - name: Set TimeZone
+        uses: szenius/set-timezone@v1.2
+        with:
+          timezoneLinux: "Europe/Kyiv"
       - name: Checkout
         uses: actions/checkout@v3
       - name: Set up JDK 8
@@ -29,7 +33,7 @@ jobs:
         run: mvn -DtestFailureIgnore=true test
       - name: Test Report
         uses: dorny/test-reporter@v1
-        if: always()
+        if: success() || failure()
         with:
           name: Maven Tests
           path: /home/runner/work/public/public/connectors/grok_connect/target/surefire-reports/*.xml
