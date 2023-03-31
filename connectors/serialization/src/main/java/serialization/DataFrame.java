@@ -112,14 +112,4 @@ public class DataFrame {
     public int hashCode() {
         return Objects.hash(name, rowCount, columns, tags);
     }
-
-    @Override
-    public String toString() {
-        return "DataFrame{" +
-                "name='" + name + '\'' +
-                ", rowCount=" + rowCount +
-                ", columns=" + columns +
-                ", tags=" + tags +
-                '}';
-    }
 }
