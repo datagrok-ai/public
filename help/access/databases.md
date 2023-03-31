@@ -282,18 +282,14 @@ use the same query to retrieve data matching different criteria.
 
 #### Query parameters
 
-The syntax for defining query parameters is based on [scripting](../compute/scripting.md) with additions specific to
-queries. All parameters are optional.
+The syntax for defining query parameters is based on [functions syntax](../datagrok/functions/func-params-annotation.md)
+with additions specific to queries.
 
-| Parameter      | Description, supported types                                                                                                                                   | Input template                                                              |
-|----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
-| `name`         | Name                                                                                                                                                           |                                                                             |
-| `friendlyName` | Friendly name                                                                                                                                                  |                                                                             |
-| `description`  | Description                                                                                                                                                    |                                                                             |
-| `help`         | Help URL                                                                                                                                                       |                                                                             |
-| `tags`         | Tags                                                                                                                                                           |                                                                             |
-| `input`        | `int` - integer number<br />`double`  - float number <br />`bool` - boolean<br />`string` - string<br />`datetime`- DateTime<br />`list<T>` - a list of type T | `--input: <type> <name> = <value> {<option>: <value>; ...} [<description>]` |
-| `output`       | Output parameter                                                                                                                                               |                                                                             |
+Queries have a special `connection` parameter corresponding to the query connection name. It is optional, just like the
+rest of parameters.
+
+Another addition is the `list<T>` parameter type. It denotes a list of objects of type `T`. Currently only strings are
+supported. You can add an input/output of type `list<string>`.
 
 #### Add a parameter
 
@@ -304,7 +300,7 @@ queries. All parameters are optional.
    > Example:
    >
    >```sql
-   >--input: string productName                                               
+   >--input: string productName
    >select * from products where productname = @productName
    >```
 

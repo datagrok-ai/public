@@ -68,7 +68,8 @@ export class SubstructureFilter extends DG.Filter {
     } }));
     this.subs.push(grok.events.onCustomEvent(FILTER_SYNC_EVENT).subscribe((state: ISubstructureFilterState) => {
       if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
-        this.syncEvent = true;
+        if (this.sketcher.sketcher?.isInitialized) //setting syncEvent to true only if base sketcher is initialized. If base sketcher is initialized, it will fire onChange event
+          this.syncEvent = true;
         this.bitset = state.bitset;
         this.sketcher.setMolFile(state.molblock);
         this.updateExternalSketcher();
@@ -113,7 +114,8 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   refresh() {
-    this.sketcher.sketcher?.refresh();
+    if (!this.sketcher.sketcherTypeChanged)
+      this.sketcher.sketcher?.refresh();
   }
 
   detach() {
@@ -149,7 +151,7 @@ export class SubstructureFilter extends DG.Filter {
         this.sketcher.setMolFile(state.molBlock);
         this.updateExternalSketcher();
       }
-  
+
       const that = this;
       if (state.molBlock)
         setTimeout(function() {that._onSketchChanged();}, 1000);
@@ -165,7 +167,7 @@ export class SubstructureFilter extends DG.Filter {
       this.bitset = !this.active ? await this.getFilterBitset() : null;
       if (this.column?.temp['chem-scaffold-filter'])
         delete this.column.temp['chem-scaffold-filter'];
-      grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset, colName: this.columnName, 
+      grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset, colName: this.columnName,
         molblock: this.sketcher.getMolFile(), filterId: this.filterId, tableName: this.tableName});
       this.dataFrame?.rows.requestFilter();
     } else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`)) {
@@ -179,7 +181,7 @@ export class SubstructureFilter extends DG.Filter {
           return;
         this.bitset = bitset;
         this.calculating = false;
-        grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset, 
+        grok.events.fireCustomEvent(FILTER_SYNC_EVENT, {bitset: this.bitset,
           molblock: this.sketcher.getMolFile(), colName: this.columnName, filterId: this.filterId, tableName: this.tableName});
         this.dataFrame?.rows.requestFilter();
       } finally {

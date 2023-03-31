@@ -10,16 +10,21 @@ const AXES = {x: 'xAxis', y: 'yAxis'};
 const EXTREMUMS = {min: 'min', max: 'max'};
 
 
-/** Constructs {@link IFitChartOptions} from the grid xml tag.
+/** Constructs {@link IFitChartOptions} from grid and settings xml tags.
  * @param {Element} grid XML grid tag
+ * @param {Element} settings XML settings tag
  * @return {IFitChartOptions} IFitChartOptions for the fitted curve
 */
-function getChartOptions(grid: Element): IFitChartOptions {
+function getChartOptions(grid: Element, settings: Element): IFitChartOptions {
   const fitChartOptions: IFitChartOptions = {
     minX: +grid.getElementsByTagName(AXES.x)[0].getAttribute(EXTREMUMS.min)!,
     minY: +grid.getElementsByTagName(AXES.y)[0].getAttribute(EXTREMUMS.min)!,
     maxX: +grid.getElementsByTagName(AXES.x)[0].getAttribute(EXTREMUMS.max)!,
     maxY: +grid.getElementsByTagName(AXES.y)[0].getAttribute(EXTREMUMS.max)!,
+
+    xAxisName: settings.getAttribute('xLabel')!,
+    yAxisName: settings.getAttribute('yLabel')!,
+    logX: !!settings.getAttribute('logX')!,
   };
 
   return fitChartOptions;
@@ -64,7 +69,7 @@ function getPoints(series: Element): IFitPoint[] {
   const points: IFitPoint[] = [];
   for (let j = 0; j < xCoords.length; j++) {
     points[j] = {
-      x: Math.log10(+xCoords[j]), // +xCoords[j]
+      x: +xCoords[j],
       y: +yCoords[j],
       // outlier: !!mask[j],
     };
@@ -116,7 +121,8 @@ export function convertXMLToIFitChartData(xmlText: string): IFitChartData {
 
   // get IFitChartOptions from grid
   const gridElement = xmlDoc.getElementsByTagName('grid')[0];
-  const fitChartOptions: IFitChartOptions = getChartOptions(gridElement);
+  const settingsElement = xmlDoc.getElementsByTagName('settings')[0];
+  const fitChartOptions: IFitChartOptions = getChartOptions(gridElement, settingsElement);
 
   // get the whole series collection
   const seriesCollection = xmlDoc.getElementsByTagName('seriesCollection')[0];

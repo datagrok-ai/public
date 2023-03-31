@@ -75,7 +75,7 @@ export class TestManager extends DG.ViewBase {
   nodeDict: { [id: string]: any } = {};
   debugMode = false;
   benchmarkMode = false;
-  runSkippedMode = true;
+  runSkippedMode = false;
   tree: DG.TreeViewGroup;
   ribbonPanelDiv = undefined;
   dockLeft;
@@ -232,7 +232,8 @@ export class TestManager extends DG.ViewBase {
       }
       packNode.root.children[0].append(testPassed);
       packNode.onNodeExpanding.subscribe(() => {
-        this.collectPackageTests(packNode, pack);
+        packNode.root.children[0].append(ui.loader());
+        this.collectPackageTests(packNode, pack).then((_) => packNode.root.children[0].lastChild.remove());
       });
     }
 
@@ -275,7 +276,7 @@ export class TestManager extends DG.ViewBase {
     benchmarkButton.captionLabel.style.marginLeft = '5px';
     benchmarkButton.root.style.marginLeft = '5px';
 
-    const runSkippedButton = ui.boolInput('Run skipped', true, () => {this.runSkippedMode = !this.runSkippedMode;});
+    const runSkippedButton = ui.boolInput('Run skipped', false, () => {this.runSkippedMode = !this.runSkippedMode;});
     runSkippedButton.captionLabel.style.order = '1';
     runSkippedButton.captionLabel.style.marginLeft = '5px';
     runSkippedButton.root.style.marginLeft = '5px';
@@ -572,5 +573,3 @@ export class TestManager extends DG.ViewBase {
     return info;
   };
 }
-
-

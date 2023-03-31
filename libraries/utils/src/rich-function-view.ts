@@ -1,3 +1,4 @@
+/* eslint-disable valid-jsdoc */
 /* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -9,9 +10,9 @@ import wu from 'wu';
 import $ from 'cash-dom';
 import {Subject} from 'rxjs';
 import {UiUtils} from './shared-components/ui-utils';
-import {historyUtils} from './history-utils';
 import '../css/rich-function-view.css';
 
+// mapping from internal Dart labels to JS DG.VIEWER labels
 const viewerTypesMapping: {[key: string]: string} = {
   ['barchart']: DG.VIEWER.BAR_CHART,
   ['boxplot']: DG.VIEWER.BOX_PLOT,
@@ -45,78 +46,56 @@ const viewerTypesMapping: {[key: string]: string} = {
 const FILE_INPUT_TYPE = 'file';
 
 export class RichFunctionView extends FunctionView {
-  // emitted when after a new FuncCall is linked
-  private funcCallReplaced = new Subject<true>();
-
   // emitted when runButton disability should be checked
   private checkDisability = new Subject();
 
   // stores the running state
   private isRunning = false;
 
-  constructor(
+  static fromFuncCall(
     funcCall: DG.FuncCall,
-    public options: { exportEnabled: boolean, historyEnabled: boolean, isTabbed: boolean} =
-    {exportEnabled: true, historyEnabled: true, isTabbed: false}
+    options: {historyEnabled: boolean, isTabbed: boolean} =
+    {historyEnabled: true, isTabbed: false}
   ) {
-    super();
-
-    this.basePath = `scripts/${funcCall.func.id}/view`;
-
-    if (this.options.exportEnabled) {
-      this.exportConfig = {
-        supportedExtensions: this.defaultSupportedExportExtensions(),
-        supportedFormats: this.defaultSupportedExportFormats(),
-        export: this.defaultExport,
-        filename: this.defaultExportFilename,
-      };
-    }
-
-    this.linkFunccall(funcCall);
-    this.init();
-    this.build();
-
-    this.name = funcCall.func.friendlyName;
+    return new this(funcCall.func.nqName, options);
   }
 
-  public override linkFunccall(funcCall: DG.FuncCall) {
-    super.linkFunccall(funcCall);
+  constructor(
+    funcName: string,
+    public options: { historyEnabled: boolean, isTabbed: boolean} =
+    {historyEnabled: true, isTabbed: false}
+  ) {
+    super(funcName, options);
 
-    this.funcCallReplaced.next(true);
+    this.subs.push(
+      this.onFuncCallReady.subscribe({
+        complete: () => {
+          this.basePath = `scripts/${this.funcCall.func.id}/view`;
+        }
+      })
+    );
   }
 
-  // EXPLAIN WHY OVERRIDE
-  public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
-    await this.onBeforeSaveRun(callToSave);
-    const savedCall = await historyUtils.saveRun(callToSave);
-    savedCall.options['isHistorical'] = false;
-    this.linkFunccall(savedCall);
-    if (this.options.historyEnabled) this.buildHistoryBlock();
-    this.path = `?id=${savedCall.id}`;
-    await this.onAfterSaveRun(savedCall);
-    return savedCall;
-  }
-
-  // EXPLAIN WHY OVERRIDE
-  public override build(): void {
-    ui.empty(this.root);
-    this.root.appendChild(this.buildIO());
-
-    if (this.options.historyEnabled)
-      this.buildHistoryBlock();
-
-    this.buildRibbonMenu();
-  }
-
+  /**
+   * Showing UI after completion of function call.
+   * @param runFunc
+   */
   public override onAfterRun(runFunc: DG.FuncCall): Promise<void> {
     this.tabsElem.root.style.removeProperty('display');
     this.tabsElem.panes.forEach((tab) => {
       tab.header.style.removeProperty('display');
     });
+    const firstOutputTab = this.tabsElem.panes.find((tab) => tab.name !== 'Input');
+    if (firstOutputTab) this.tabsElem.currentPane = firstOutputTab;
 
     return Promise.resolve();
   }
 
+  /**
+   * RichFunctionView has adavanced automatic UI builder. It takes {@link this.funcCall} as a base and constructs flexible view.
+   * This view is updated automatically when {@link this.funcCallReplaced} is emitted or any of input/output param changes.
+   * @returns HTMLElement attached to the root of the view
+   */
   public buildIO(): HTMLElement {
     const inputBlock = this.buildInputBlock();
 
@@ -138,7 +117,7 @@ export class RichFunctionView extends FunctionView {
       });
     }
 
-    const out = ui.splitH([inputBlock, ui.panel([outputBlock])], null, true);
+    const out = ui.splitH([inputBlock, ui.panel([outputBlock], {style: {'padding-top': '0px'}})], null, true);
     out.style.padding = '0 12px';
 
     inputBlock.parentElement!.style.maxWidth = '450px';
@@ -152,6 +131,7 @@ export class RichFunctionView extends FunctionView {
     return formDiv;
   }
 
+  // Main element of the output block. Stores all the tabs for the output and input
   private tabsElem = ui.tabControl();
 
   public buildOutputBlock(): HTMLElement {
@@ -161,8 +141,9 @@ export class RichFunctionView extends FunctionView {
       const tabDfProps = this.categoryToParamMap[tabLabel].filter((p) => p.propertyType === DG.TYPE.DATA_FRAME);
       const tabScalarProps = this.categoryToParamMap[tabLabel].filter((p) => p.propertyType !== DG.TYPE.DATA_FRAME);
 
-      // EXPLAIN: undefined and JSON.parse
+      // dfProp.options['viewer'] could be empty, so we need to check it
       const parsedTabDfProps = tabDfProps.map((dfProp) => (dfProp.options['viewer'] !== undefined) ?
+        // true and false values are retrieved as string, so we call JSON.parse on them once more
         JSON.parse(dfProp.options['viewer'], (_, v) => v === 'true' || v === 'false' ? JSON.parse(v): v):
         []);
 
@@ -186,24 +167,29 @@ export class RichFunctionView extends FunctionView {
         }));
 
         viewers.then((loadedViewers) => {
-          this.funcCallReplaced.subscribe(() => {
+          const subscribeOnFcChanges = () => {
             const currentParam: DG.FuncCallParam = this.funcCall!.outputParams[dfProp.name] ?? this.funcCall!.inputParams[dfProp.name];
 
-            currentParam.onChanged.subscribe(() => {
+            const paramSub = currentParam.onChanged.subscribe(() => {
               loadedViewers.forEach(async (viewer) => {
                 if (Object.values(viewerTypesMapping).includes(viewer.type)) {
                   viewer.dataFrame = currentParam.value;
                 } else {
-                  // EXPLAIN WHY
+                  // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
                   const newViewer = await currentParam.value.plot.fromType(viewer.type) as DG.Viewer;
                   viewer.root.replaceWith(newViewer.root);
                   viewer = newViewer;
                 }
               });
             });
-          });
 
-          this.funcCallReplaced.next();
+            this.subs.push(paramSub);
+          };
+
+          subscribeOnFcChanges();
+          this.subs.push(
+            this.funcCallReplaced.subscribe(subscribeOnFcChanges)
+          );
         });
 
         const dfBlockTitle: string = dfProp.options['caption'] ?? dfProp.name;
@@ -218,44 +204,60 @@ export class RichFunctionView extends FunctionView {
         });
 
         if (tabLabel === 'Input') {
-          this.funcCallReplaced.subscribe(() => {
+          const subscribeOnFcChanges = () => {
             const currentParam: DG.FuncCallParam = this.funcCall!.outputParams[dfProp.name] ?? this.funcCall!.inputParams[dfProp.name];
 
-            currentParam.onChanged.subscribe(() => {
+            const paramSub = currentParam.onChanged.subscribe(() => {
               this.tabsElem.root.style.removeProperty('display');
             });
-          });
+
+            this.subs.push(paramSub);
+          };
+
+          subscribeOnFcChanges();
+          this.subs.push(
+            this.funcCallReplaced.subscribe(subscribeOnFcChanges)
+          );
         }
 
         return ui.divV([
-          ui.h2(dfBlockTitle),
+          // Removing title margin on top of block titles
+          ui.h2(dfBlockTitle, {...(dfIndex > 0) ? {style: {'margin-top': '0px'}} : {}}),
           dfBlock
         ], {style: {...(fullBlockWidth > 0) ? {'width': `${fullBlockWidth}%`}: {'width': `100%`}}});
       });
 
-
-      const generateScalarsTable = () => ui.tableFromMap(
-        tabScalarProps.reduce((acc, scalar) => {
-          acc[scalar.name] = this.funcCall?.outputs[scalar.name];
-          return acc;
-        }, {} as {[key: string]: string})
-      );
+      const generateScalarsTable = () => {
+        const table = DG.HtmlTable.create(
+          tabScalarProps,
+          (scalarProp: DG.Property) => [scalarProp.name, this.funcCall?.outputs[scalarProp.name], scalarProp.options['units']]
+        ).root;
+        table.style.maxWidth = '400px';
+        return table;
+      };
 
       let scalarsTable = generateScalarsTable();
 
       tabScalarProps.forEach((tabScalarProp) => {
-        this.funcCallReplaced.subscribe(() => {
-          (this.funcCall!.outputParams[tabScalarProp.name] as DG.FuncCallParam).onChanged.subscribe(() => {
+        const subscribeOnFcChanges = () => {
+          const paramSub = (this.funcCall!.outputParams[tabScalarProp.name] as DG.FuncCallParam).onChanged.subscribe(() => {
             const newScalarsTable = generateScalarsTable();
             scalarsTable.replaceWith(newScalarsTable);
             scalarsTable = newScalarsTable;
           });
-        });
+
+          this.subs.push(paramSub);
+        };
+
+        subscribeOnFcChanges();
+        this.subs.push(
+          this.funcCallReplaced.subscribe(subscribeOnFcChanges)
+        );
       });
 
       const dfSections = [] as HTMLElement[];
       let currentWidth = 0;
-      let currentSection = ui.divH([]);
+      let currentSection = ui.divH([], {style: {'margin-bottom': '25px'}}); // Adding small margin between sections
       dfBlocks.forEach((dfBlock, dfIndex) => {
         const blockWidth = parseInt(dfBlock.style.width);
 
@@ -304,34 +306,11 @@ export class RichFunctionView extends FunctionView {
     });
   }
 
+  // Stores mapping between DF and its' viewers
   private dfToViewerMapping: {[key: string]: DG.Viewer[]} = {};
-
-  protected get dfParams() {
-    return [
-      ...this.func!.inputs.filter((p) => p.propertyType == DG.TYPE.DATA_FRAME),
-      ...this.func!.outputs.filter((p) => p.propertyType == DG.TYPE.DATA_FRAME),
-    ];
-  }
-
-  protected get dfOutputParams() {
-    return this.func!.outputs.filter((p) => p.propertyType == DG.TYPE.DATA_FRAME);
-  }
 
   protected get isInputPanelRequired() {
     return this.func?.inputs.some((p) => p.propertyType == DG.TYPE.DATA_FRAME && p.options['viewer'] != null) || false;
-  }
-
-  protected get outUniqueParamCategories() {
-    return [
-      ...new Set(this.func!.outputs.map((p) => p.category)) // get all output params' categories
-    ]; // keep only unique of them
-  }
-
-  protected get outputTabsLabels() {
-    return [
-      ...this.outUniqueParamCategories,
-      ...this.outUniqueParamCategories.find((val) => val === 'Misc') ? ['Output'] : [], // if no categories are stated, the default category is added
-    ];
   }
 
   protected get tabsLabels() {
@@ -359,34 +338,39 @@ export class RichFunctionView extends FunctionView {
     return map;
   }
 
-  private renderRunSection(): HTMLElement {
-    const runButton = ui.bigButton('Run', async () => {
-      this.isRunning = true;
+  private async doRun(): Promise<void> {
+    this.isRunning = true;
+    this.checkDisability.next();
+    try {
+      await this.run();
+    } catch (e: any) {
+      grok.shell.error(e);
+    } finally {
+      this.isRunning = false;
       this.checkDisability.next();
-      try {
-        await this.run();
-      } catch (e: any) {
-        grok.shell.error(e);
-      } finally {
-        this.isRunning = false;
-        this.checkDisability.next();
-      }
-    });
+    }
+  }
+
+  private renderRunSection(): HTMLElement {
+    const runButton = ui.bigButton('Run', async () => await this.doRun());
     // REPLACE BY TYPE GUARD
     const isFuncScript = () => {
       //@ts-ignore
       return !!this.func.script;
     };
+    // TO DO: move button somewhere
     const openScriptBtn = ui.button('Open script', async () => {
       window.open(`${window.location.origin}/script/${(this.func as DG.Script).id}`, '_blank');
     });
-    const buttonWrapper = ui.div([...this.options.isTabbed && isFuncScript() ? [openScriptBtn]: [], runButton]);
+    // const buttonWrapper = ui.div([...this.options.isTabbed && isFuncScript() ? [openScriptBtn]: [], runButton]);
+    const buttonWrapper = ui.div([runButton]);
     ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
 
-    this.checkDisability.subscribe(() => {
-      const isValid = (wu(this.funcCall!.inputs.values()).every((v) => !!v)) && !this.isRunning;
+    const disabilitySub = this.checkDisability.subscribe(() => {
+      const isValid = (wu(this.funcCall!.inputs.values()).every((v) => v !== null && v !== undefined)) && !this.isRunning;
       runButton.disabled = !isValid;
     });
+    this.subs.push(disabilitySub);
 
     const inputs = ui.divV([], 'ui-form');
     let prevCategory = 'Misc';
@@ -409,13 +393,23 @@ export class RichFunctionView extends FunctionView {
             ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables):
             ui.input.forProperty(prop);
 
+          t.input.onkeydown = async (ev) => {
+            if (ev.key == 'Enter')
+              await this.doRun();
+          };
+
           t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
           if (prop.options['units']) t.addPostfix(prop.options['units']);
 
-          this.funcCallReplaced.subscribe(() => {
+          const subscribeOnFcChanges = () => {
             t.value = this.funcCall!.inputs[val.name] ?? prop.defaultValue ?? null;
             this.funcCall!.inputs[val.name] = this.funcCall!.inputs[val.name] ?? prop.defaultValue ?? null;
-          });
+          };
+
+          subscribeOnFcChanges();
+          this.subs.push(
+            this.funcCallReplaced.subscribe(subscribeOnFcChanges)
+          );
 
           t.onChanged(() => {
             // Resolving case of propertyType = DATAFRAME
@@ -431,7 +425,7 @@ export class RichFunctionView extends FunctionView {
             this.checkDisability.next();
           });
 
-          val.onChanged.subscribe(() => {
+          const valChangeSub = val.onChanged.subscribe(() => {
             const newValue = this.funcCall!.inputs[val.name];
 
             if (val.property.propertyType === DG.TYPE.DATA_FRAME) {
@@ -455,6 +449,8 @@ export class RichFunctionView extends FunctionView {
             this.checkDisability.next();
           });
 
+          this.subs.push(valChangeSub);
+
           if (prop.category !== prevCategory)
             inputs.append(ui.h2(prop.category));
 
@@ -473,6 +469,12 @@ export class RichFunctionView extends FunctionView {
     return ui.div([inputs]);
   }
 
+  /**
+   * RichFunctionView know everything about its UI, so it exports not only data, but also viewer screenshots.
+   * This function iterates over all of the tabs and sequentally exports all dataframes, their viewers and scalars.
+   * @param format format needed to export. See {@link this.defaultSupportedExportFormats} for available formats.
+   * @returns Promise<Blob> with data ready for download
+   */
   protected defaultExport = async (format: string) => {
     const lastCall = this.lastCall;
     if (!lastCall) throw new Error(`Function was not called`);
@@ -558,15 +560,17 @@ export class RichFunctionView extends FunctionView {
       } else {
         for (const outputParam of outputParams.filter(
           (outputParam) => outputParam.property.propertyType === DG.TYPE.DATA_FRAME &&
-          (tabLabel === 'Output' && outputParam.property.category === 'Misc') ||
-          (tabLabel !== 'Output' && outputParam.property.category === tabLabel))
-        ) {
-          const nonGridViewers = this.dfToViewerMapping[outputParam.name]
+          (
+            (tabLabel === 'Output' && outputParam.property.category === 'Misc' || outputParam.property.category === 'Output') ||
+            (tabLabel !== 'Output' && outputParam.property.category === tabLabel)
+          )
+        )) {
+          const nonGridViewers = this.dfToViewerMapping[outputParam.property.name]
             .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
             .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
 
-          const dfOutput = dfOutputs.find((input) => input.name === outputParam.name)!;
-          const visibleTitle = dfOutput.options.caption || outputParam.name;
+          const dfOutput = dfOutputs.find((output) => output.name === outputParam.property.name)!;
+          const visibleTitle = dfOutput.options.caption || outputParam.property.name;
           const currentDf = (lastCall.outputs[dfOutput.name] as DG.DataFrame);
 
           for (const [index, viewer] of nonGridViewers.entries()) {
@@ -603,6 +607,13 @@ export class RichFunctionView extends FunctionView {
     const buffer = await exportWorkbook.xlsx.writeBuffer();
 
     return new Blob([buffer], {type: BLOB_TYPE});
+  };
+
+  exportConfig = {
+    supportedExtensions: this.defaultSupportedExportExtensions(),
+    supportedFormats: this.defaultSupportedExportFormats(),
+    export: this.defaultExport,
+    filename: this.defaultExportFilename,
   };
 }
 

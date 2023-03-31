@@ -52,14 +52,12 @@ jobs:
             if [ -f "${DIR}/package.json" ]; then
               current_version="$(jq -r .version "${DIR}/package.json")"
               if [ "$(awk -F. '{print $1}' <<<$current_version)" -le "0" ]; then
-                echo "::notice title=${PACKAGE}::Version ${current_version} is under 1.0.0. Won't add."
+                echo "::notice title=${PACKAGE}::${PACKAGE}: Version ${current_version} is under 1.0.0. Won't add."
               else
                 full_name="$(jq -r .name "${DIR}/package.json")"
-                npm_json="$(curl --retry 3 -s "https://registry.npmjs.org/${full_name}/${current_version}")"
+                npm_version="$(curl --retry 3 -s "https://registry.npmjs.org/${full_name}/${current_version}" | jq -r '.? | select( has("version") == true ).version')"
 
-                if [[ $npm_json == "\"version not found: ${current_version}\"" ]] || [[ $npm_json == "\"Not Found\"" ]]; then
-                  echo "::warning title=${PACKAGE}::Version ${current_version} is not published yet. Won't add."
-                else
+                if [[ ${npm_version} == ${current_version} ]]; then
                   name=$(sed 's,@datagrok/,,g' <<<$full_name)
                   description="$(jq -r .description "${DIR}/package.json")"
                   version=${current_version}
@@ -83,6 +81,8 @@ jobs:
                   fi
                   echo "bump=yes" >> $GITHUB_OUTPUT
                   packages+=" ${PACKAGE}"
+                else
+                  echo "::warning title=${PACKAGE}::${PACKAGE}: Version ${current_version} is not published yet. Won't add."
                 fi
               fi
             fi
@@ -120,7 +120,10 @@ jobs:
           if [ -n "$(git status -s packages/Meta/package.json)" ]; then
             git add packages/Meta/package.json
             git add packages/Meta/package-lock.json
-            git commit -m "GitHub Actions: Bump Meta package version"
+            git commit -m 'GitHub Actions: Bump Meta package version
+
+            Workflow ${{ github.workflow }} ${{ github.run_number }}
+            https://github.com/datagrok-ai/public/actions/runs/${{ github.run_id }}'
             continue=true
           fi
           if [[ "${continue}" == "true" ]]; then

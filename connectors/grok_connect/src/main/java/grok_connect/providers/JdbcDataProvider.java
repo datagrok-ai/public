@@ -2,12 +2,16 @@ package grok_connect.providers;
 
 import java.io.*;
 import java.sql.*;
-import java.time.OffsetDateTime;
+import java.time.*;
 import java.util.*;
 import java.math.*;
 import java.text.*;
 import java.util.Date;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.*;
+
+import com.clickhouse.data.value.UnsignedByte;
+import com.clickhouse.data.value.UnsignedShort;
 import microsoft.sql.DateTimeOffset;
 import oracle.sql.TIMESTAMPTZ;
 import org.apache.commons.io.IOUtils;
@@ -24,7 +28,7 @@ import serialization.Types;
 public abstract class JdbcDataProvider extends DataProvider {
     protected String driverClassName;
 
-    protected ProviderManager providerManager;
+    public ProviderManager providerManager;
 
     public JdbcDataProvider(ProviderManager providerManager) {
         this.providerManager = providerManager;
@@ -116,6 +120,11 @@ public abstract class JdbcDataProvider extends DataProvider {
 
 //    why do we need 3 variables query, queryRun and connection if queryRun consists of all of them
     public ResultSet executeQuery(String query, FuncCall queryRun, Connection connection, int timeout)  throws ClassNotFoundException, SQLException {
+        boolean supportsTransactions = connection.getMetaData().supportsTransactions();
+
+        if (supportsTransactions)
+            connection.setAutoCommit(false);
+
         DataQuery dataQuery = queryRun.func;
         String mainCallId = (String) queryRun.aux.get("mainCallId");
 
@@ -130,6 +139,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                 query = queryBuffer.toString();
                 System.out.println(query);
                 PreparedStatement statement = connection.prepareStatement(query);
+                if (supportsTransactions)
+                    statement.setFetchSize(100);
                 providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 List<String> stringValues = new ArrayList<>();
                 System.out.println(names);
@@ -138,10 +149,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                     FuncParam param = dataQuery.getParam(names.get(n));
                     String stringValue;
                     if (param.propertyType.equals(Types.DATE_TIME)) {
-                        Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)param.value);
-                        Timestamp ts = new Timestamp(calendar.getTime().getTime());
-                        stringValue = ts.toString();
-                        statement.setTimestamp(n + i + 1, ts);
+                        stringValue = setDateTimeValue(param, statement, n + i + 1);
                     } else if (param.propertyType.equals(Types.LIST) && param.propertySubType.equals(Types.STRING)) {
                         if (param.value == null)
                             stringValue = "null";
@@ -169,6 +177,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                 query = manualQueryInterpolation(query, dataQuery);
 
                 Statement statement = connection.createStatement();
+                if (supportsTransactions)
+                    statement.setFetchSize(100);
                 providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 statement.setQueryTimeout(timeout);
                 String logString = String.format("Query: %s \n", query);
@@ -182,6 +192,8 @@ public abstract class JdbcDataProvider extends DataProvider {
         } else {
             // Query without parameters
             Statement statement = connection.createStatement();
+            if (supportsTransactions)
+                statement.setFetchSize(100);
             providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
             statement.setQueryTimeout(timeout);
             String logString = String.format("Query: %s \n", query);
@@ -192,7 +204,20 @@ public abstract class JdbcDataProvider extends DataProvider {
                 resultSet = statement.getResultSet();
             providerManager.getQueryMonitor().removeStatement(mainCallId);
         }
+
         return resultSet;
+    }
+
+    protected String setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
+        Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
+        Timestamp ts = new Timestamp(calendar.getTime().getTime());
+        try {
+            statement.setTimestamp(parameterIndex, ts);
+            return ts.toString();
+        } catch (SQLException e) {
+            throw new RuntimeException(String.format("Something went wrong when setting datetime parameter at %s index",
+                    parameterIndex), e);
+        }
     }
 
     protected String manualQueryInterpolation(String query, DataQuery dataQuery) {
@@ -287,27 +312,16 @@ public abstract class JdbcDataProvider extends DataProvider {
     protected void appendQueryParam(DataQuery dataQuery, String paramName, StringBuilder queryBuffer) {
         queryBuffer.append("?");
     }
-//    very long and unreadable
-    @SuppressWarnings("unchecked")
-    public DataFrame execute(FuncCall queryRun)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
 
-        DateTime connectionPreparationStart = DateTime.now();
-
-        int count = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_COUNT))
-                ? ((Double)queryRun.options.get(DataProvider.QUERY_COUNT)).intValue() : 0;
-        int memoryLimit = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_MEMORY_LIMIT_MB))
-                ? ((Double)queryRun.options.get(DataProvider.QUERY_MEMORY_LIMIT_MB)).intValue() : 0;
+    public ResultSet getResultSet(FuncCall queryRun, Connection connection) throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
         Integer providerTimeout = getTimeout();
         int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
 
-        Connection connection = null;
         try {
             // Remove header lines
             DataQuery dataQuery = queryRun.func;
             String query = dataQuery.query;
-            connection = getConnection(dataQuery.connection);
             String commentStart = descriptor.commentStart;
 
             ResultSet resultSet = null;
@@ -327,20 +341,33 @@ public abstract class JdbcDataProvider extends DataProvider {
                     resultSet = executeQuery(currentQuery, queryRun, connection, timeout); // IT WON'T WORK?
             }
 
-            DateTime columnAssignmentStart = DateTime.now();
+            return resultSet;
+        } catch (SQLException e) {
+            if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
+                throw new QueryCancelledByUser();
+            else throw e;
+        }
+    }
 
-            if (resultSet == null)
-                return new DataFrame();
+    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,
+            List<Boolean> supportedType,List<Boolean> initColumn) throws IOException, SQLException, QueryCancelledByUser {
+        return getResultSetSubDf(queryRun, resultSet, columns, supportedType, initColumn, 10000);
+    }
+
+    public SchemeInfo resultSetScheme(FuncCall queryRun, ResultSet resultSet) throws QueryCancelledByUser, SQLException {
+
+        try {
+            // if (resultSet == null)
+            //     return new DataFrame();
 
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 
             int columnCount = resultSetMetaData.getColumnCount();
             List<Column> columns = new ArrayList<>(columnCount);
             List<Boolean> supportedType = new ArrayList<>(columnCount);
-             List<Boolean> initColumn = new ArrayList<>(columnCount);
+            List<Boolean> initColumn = new ArrayList<>(columnCount);
             for (int c = 1; c < columnCount + 1; c++) {
                 Column column;
-
                 String label = resultSetMetaData.getColumnLabel(c);
                 int type = resultSetMetaData.getColumnType(c);
                 String typeName = resultSetMetaData.getColumnTypeName(c);
@@ -390,6 +417,32 @@ public abstract class JdbcDataProvider extends DataProvider {
                 column.name = resultSetMetaData.getColumnLabel(c); // duplicate method call
                 columns.add(c - 1, column);
             }
+            return new SchemeInfo(columns, supportedType, initColumn);
+
+        } catch (SQLException e) {
+            if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
+                throw new QueryCancelledByUser();
+            else throw e;
+        }
+    }
+
+    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,
+                                       List<Boolean> supportedType,List<Boolean> initColumn, int maxIterations)
+            throws IOException, SQLException, QueryCancelledByUser {
+        if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
+            throw new QueryCancelledByUser();
+
+        int count = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_COUNT))
+                ? ((Double)queryRun.options.get(DataProvider.QUERY_COUNT)).intValue() : 0;
+        int memoryLimit = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_MEMORY_LIMIT_MB))
+                ? ((Double)queryRun.options.get(DataProvider.QUERY_MEMORY_LIMIT_MB)).intValue() : 0;
+        try {
+            int columnCount = columns.size();
+
+            if (resultSet == null)
+                return new DataFrame();
+
+            ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 
             DateTime fillingDataframeStart = DateTime.now();
 // why can't we do it in previous for loop?
@@ -408,7 +461,8 @@ public abstract class JdbcDataProvider extends DataProvider {
             for (int i = 0; i < columnCount; i++)
                 numericColumnStats.add(new DebugUtils.NumericColumnStats());
 
-            while (resultSet.next()) {
+            int size = 0;
+            while ((maxIterations < 0 || rowCount < maxIterations) && resultSet.next() && (size < 100)  ) {
                 rowCount++;
 
                 for (int c = 1; c < columnCount + 1; c++) {
@@ -443,6 +497,12 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 columns.get(c - 1).add(((BigDecimal)value).intValue());
                             else if (value instanceof Long) {
                                 columns.get(c - 1).add(((Long)value).intValue());
+                            } else if (value instanceof Byte) {
+                                columns.get(c - 1).add(((Byte) value).intValue());
+                            } else if (value instanceof UnsignedByte) {
+                                columns.get(c - 1).add(((UnsignedByte) value).intValue());
+                            } else if (value instanceof UnsignedShort) {
+                                columns.get(c - 1).add(((UnsignedShort) value).intValue());
                             } else
                                 columns.get(c - 1).add(value);
                         else if (isString(type, typeName)) {
@@ -489,7 +549,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 Double doubleValue = (Double) value;
                                 if (doubleValue == Double.POSITIVE_INFINITY || doubleValue > Float.MAX_VALUE) {
                                     columns.get(c - 1).add(Float.POSITIVE_INFINITY);
-                                } else if (doubleValue == Double.NEGATIVE_INFINITY || doubleValue < Float.MIN_VALUE) {
+                                } else if (doubleValue == Double.NEGATIVE_INFINITY || doubleValue < - Float.MAX_VALUE) {
                                     columns.get(c - 1).add(Float.NEGATIVE_INFINITY);
                                 } else {
                                     columns.get(c - 1).add(new Float((Double)value));
@@ -511,9 +571,14 @@ public abstract class JdbcDataProvider extends DataProvider {
                             else if (value instanceof oracle.sql.TIMESTAMPTZ) {
                                 OffsetDateTime offsetDateTime = timestamptzToOffsetDateTime((TIMESTAMPTZ) value);
                                 time = java.util.Date.from(offsetDateTime.toInstant());
-                            } else if(value instanceof microsoft.sql.DateTimeOffset) {
+                            } else if (value instanceof microsoft.sql.DateTimeOffset) {
                                 time = Date.from(((DateTimeOffset) value).getOffsetDateTime().toInstant());
-                            }else {
+                            } else if (value instanceof LocalDateTime) {
+                                time = java.sql.Timestamp.valueOf((LocalDateTime) value);
+                            } else if (value instanceof LocalDate) {
+                                time = java.util.Date.from(((LocalDate) value).atStartOfDay(ZoneId.systemDefault())
+                                        .toInstant());
+                            } else {
                                 time = ((java.util.Date) value);
                             }
                             columns.get(c - 1).add((time == null) ? null : time.getTime() * 1000.0);
@@ -548,15 +613,32 @@ public abstract class JdbcDataProvider extends DataProvider {
                         column.add(value);
                     }
                 }
-//                what if rowCount % 1000 != 0? then we don't count memory consumption?
-                if (rowCount % 1000 == 0) {
-                    int size = 0;
-                    for (Column column : columns)
-                        size += column.memoryInBytes();
-                    size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000; // count? it's 200 lines up
-                    if (memoryLimit > 0 && size > memoryLimit)
-                        throw new SQLException("Too large query result: " +
+
+                if (rowCount % 10 == 0) {
+                    if (providerManager.getQueryMonitor().checkCancelledIdResultSet(queryRun.id)) {
+                        DataFrame dataFrame = new DataFrame();
+                        dataFrame.addColumns(columns);
+
+                        resultSet.close();
+                        providerManager.getQueryMonitor().removeResultSet(queryRun.id);
+                        return dataFrame;
+                    }
+                    if (rowCount % 100 == 0) {
+                        size = 0;
+                        for (Column column : columns)
+                            size += column.memoryInBytes();
+                        size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000; // count? it's 200 lines up
+
+                        if (size > 20) {
+                            DataFrame dataFrame = new DataFrame();
+                            dataFrame.addColumns(columns);
+                            return dataFrame;
+                        }
+
+                        if (rowCount % 1000 == 0 && memoryLimit > 0 && size > memoryLimit)
+                            throw new SQLException("Too large query result: " +
                                 size + " > " + memoryLimit + " MB");
+                    }
                 }
             }
             if (queryRun.debugQuery) {
@@ -570,10 +652,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             }
             DateTime finish = DateTime.now();
 
-            String logString = String.format("Execution time by steps: connection preparation: %s s, query execution: %s s, column assignment: %s s, dataframe filling: %s s \n",
-                    (queryExecutionStart.getMillis() - connectionPreparationStart.getMillis())/ 1000.0,
-                    (columnAssignmentStart.getMillis() - queryExecutionStart.getMillis())/ 1000.0,
-                    (fillingDataframeStart.getMillis() - columnAssignmentStart.getMillis())/ 1000.0,
+            String logString = String.format(" dataframe filling: %s s \n",
                     (finish.getMillis() - fillingDataframeStart.getMillis())/ 1000.0);
             if (queryRun.debugQuery)
                 queryRun.log += logString;
@@ -586,6 +665,27 @@ public abstract class JdbcDataProvider extends DataProvider {
             dataFrame.addColumns(columns);
 
             return dataFrame;
+        } catch (Exception e) {
+            if (resultSet != null && resultSet.isClosed())
+                throw new QueryCancelledByUser();
+            else
+                throw e;
+        }
+    };
+
+    @SuppressWarnings("unchecked")
+    public DataFrame execute(FuncCall queryRun)
+            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+        Connection connection = null;
+        try {
+            connection = getConnection(queryRun.func.connection);
+            ResultSet resultSet = getResultSet(queryRun, connection);
+
+            if (resultSet == null)
+                return new DataFrame();
+
+            SchemeInfo schemeInfo = resultSetScheme(queryRun, resultSet);
+            return getResultSetSubDf(queryRun, resultSet, schemeInfo.columns, schemeInfo.supportedType, schemeInfo.initColumn, -1);
         }
         catch (SQLException e) {
             if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
@@ -614,7 +714,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         throw new UnsupportedOperationException("TIMESTAMPTZ is not supported");
     }
 
-    private static String paramToNamesString(FuncParam param, PatternMatcher matcher, String type,
+    protected static String paramToNamesString(FuncParam param, PatternMatcher matcher, String type,
                                              PatternMatcherResult result) {
         StringBuilder builder = new StringBuilder();
         for (int n = 0 ; n < matcher.values.size(); n++) {
@@ -640,12 +740,16 @@ public abstract class JdbcDataProvider extends DataProvider {
             result.params.add(new FuncParam(type, name1, matcher.values.get(1)));
         } else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
             String names = paramToNamesString(param, matcher, type, result);
-            result.query = "(" + matcher.colName + " " + matcher.op + " (" + names + "))";
+            result.query = getInQuery(matcher, names);
         } else {
             result.query = "(" + matcher.colName + " " + matcher.op + " @" + param.name + ")";
             result.params.add(new FuncParam(type, param.name, matcher.values.get(0)));
         }
         return result;
+    }
+
+    protected String getInQuery(PatternMatcher matcher, String names) {
+        return String.format("(%s %s (%s))", matcher.colName, matcher.op, names);
     }
 
     public PatternMatcherResult stringPatternConverter(FuncParam param, PatternMatcher matcher) {
@@ -677,7 +781,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             result.params.add(new FuncParam(type, param.name, value));
         } else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
             String names = paramToNamesString(param, matcher, type, result);
-            result.query = "(" + matcher.colName + " " + matcher.op + " (" + names + "))";
+            result.query = getInQuery(matcher, names);
         } else {
             result.query = "(1 = 1)";
         }
@@ -714,7 +818,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         return result;
     }
 
-    private String aggrToSql(GroupAggregation aggr) {
+    protected String aggrToSql(GroupAggregation aggr) {
         AggrFunctionInfo funcInfo = null;
         for (AggrFunctionInfo info: descriptor.aggregations) {
             if (info.functionName.equals(aggr.aggType)) {
@@ -780,7 +884,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     protected boolean isArray(int type, String typeName) {
-        return false;
+        return type == java.sql.Types.ARRAY;
     }
 
     private static boolean isBitString(int type, int precision, String typeName) {
@@ -793,6 +897,8 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     private static boolean isTime(int type, String typeName) {
         return (type == java.sql.Types.DATE) || (type == java.sql.Types.TIME) || (type == java.sql.Types.TIMESTAMP)
+                || type == java.sql.Types.TIMESTAMP_WITH_TIMEZONE
+                || type == java.sql.Types.TIME_WITH_TIMEZONE
                 || typeName.equalsIgnoreCase("timetz")
                 || typeName.equalsIgnoreCase("timestamptz")
                 || (typeName.equalsIgnoreCase("TIMESTAMP WITH TIME ZONE"))
@@ -815,17 +921,19 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     protected boolean isDecimal(int type, String typeName, int scale) {
         return (type == java.sql.Types.DECIMAL) || (type == java.sql.Types.NUMERIC) ||
-                typeName.equalsIgnoreCase("decimal");
+                typeName.equalsIgnoreCase("decimal")
+                || typeName.equalsIgnoreCase("decfloat");
     }
 
     private static boolean isBoolean(int type, String typeName, int precision) {
         return (type == java.sql.Types.BOOLEAN) ||
-                typeName.equalsIgnoreCase("bool");
+                typeName.equalsIgnoreCase("bool") || (type == java.sql.Types.BIT && precision == 1);
     }
 
     private static boolean isString(int type, String typeName) {
         return ((type == java.sql.Types.VARCHAR)|| (type == java.sql.Types.CHAR) ||
-                (type == java.sql.Types.LONGVARCHAR) || (type == java.sql.Types.CLOB) ||
+                (type == java.sql.Types.LONGVARCHAR) || (type == java.sql.Types.CLOB)
+                || (type == java.sql.Types.NCLOB) ||
                 typeName.equalsIgnoreCase("varchar") ||
                 typeName.equalsIgnoreCase("nvarchar") ||
                 typeName.equalsIgnoreCase("nchar") ||

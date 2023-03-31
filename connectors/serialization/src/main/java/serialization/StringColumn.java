@@ -19,6 +19,12 @@ public class StringColumn extends Column<String> {
         return TYPE;
     }
 
+    public void empty() {
+        length = 0;
+        data = new String[100];
+        categorize();
+    }
+
     public StringColumn() {
         data = new String[100];
     }

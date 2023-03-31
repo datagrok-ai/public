@@ -33,10 +33,31 @@ category('Dapi: functions.calls', async () => {
     parentFuncCall.newId();
     funcCall.newId();
     funcCall.parentCall = parentFuncCall;
+    await GDF.calls.save(parentFuncCall);
     await GDF.calls.save(funcCall);
 
     const loadedFunCall = await GDF.calls.include('parentCall').find(funcCall.id);
-    expect(loadedFunCall.parentCall.id, parentFuncCall.id); 
+    expect(loadedFunCall.parentCall.id, parentFuncCall.id);
+  });
+
+  test('load package function call', async () => {
+    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
+    const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+
+    // expect no-throw
+    await GDF.calls.find(funcCall.id);
+  });
+
+  test('load script call', async () => {
+    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
+    const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
+    funcCall.newId();
+    await GDF.calls.save(funcCall);
+
+    // expect no-throw
+    await GDF.calls.find(funcCall.id);
   });
 
   test('list', async () => {

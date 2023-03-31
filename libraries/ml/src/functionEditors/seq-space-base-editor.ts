@@ -34,12 +34,13 @@ export class SequenceSpaceBaseFuncEditor {
       this.tableInput = ui.tableInput('Table', grok.shell.tv.dataFrame, undefined, () => {
         this.onTableInputChanged(semtype);
       });
+      this.tableInput.input.style.width = '50px';
   
       this.molColInput = ui.columnInput(SEQ_COL_NAMES[semtype], this.tableInput.value!, this.tableInput.value!.columns.bySemType(semtype));
       this.molColInput.root.style.width = '332px';
       this.moleculesColDiv.append(this.molColInput.root);
   
-      this.methodInput = ui.choiceInput('Method Name', UMAP, [UMAP, T_SNE], () => {
+      this.methodInput = ui.choiceInput('Method name', UMAP, [UMAP, T_SNE], () => {
         if(settingsOpened) {
             this.createAlgorithmSettingsDiv(this.methodSettingsDiv, this.methodsParams[this.methodInput.value!]);
         }

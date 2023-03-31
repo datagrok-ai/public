@@ -15,7 +15,7 @@ module.exports = {
       { test: /\.tsx?$/, loader: 'ts-loader' }
     ],
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
@@ -27,6 +27,7 @@ module.exports = {
     'dayjs': 'dayjs',
     'wu': 'wu',
     'exceljs': 'ExcelJS',
+    'html2canvas': 'html2canvas',
   },
   output: {
     filename: '[name].js',

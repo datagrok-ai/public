@@ -4,9 +4,11 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {TestViewerForProperties} from './viewers/test-viewer-for-properties';
+import {TestCustomFilter} from './viewers/test-custom-filter';
 import {expectTable as _expectTable} from '@datagrok-libraries/utils/src/test';
-// import {hashDataFrame} from '@datagrok-libraries/utils/src/dataframe-utils';
 
+
+// -- Viewers --
 
 //name: TestViewerForProperties
 //description: Viewer to test properties and others
@@ -14,6 +16,17 @@ import {expectTable as _expectTable} from '@datagrok-libraries/utils/src/test';
 //output: viewer result
 export function testViewerForProperties() {
   return new TestViewerForProperties();
+}
+
+// -- Filters --
+
+//name: testCustomFilter
+//description: Test custom filter
+//tags: filter
+//output: filter result
+export function testCustomFilter(): DG.Filter {
+  const flt: TestCustomFilter = new TestCustomFilter();
+  return flt;
 }
 
 //name: getTable
@@ -53,4 +66,13 @@ export function getDT(rows: number = 20, name: any = 'demog'): DG.DataFrame {
 export function expectTable(actual: DG.DataFrame, expected: DG.DataFrame): boolean {
   _expectTable(actual, expected);
   return true;
+}
+
+//name: dummyPackageFunction
+//input: int a
+//input: int b
+//output: int c
+export function dummyPackageFunction(a: number, b: number) {
+  const c = a + b;
+  return c;
 }

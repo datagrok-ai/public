@@ -34,16 +34,20 @@ We separated the Git Flow into two types: flow for experienced contributors and 
    <TabItem value="master" label="Master branch" default>
    ```
 
-   Do not create unnecessary merge loops. Always use the --rebase flag to pull changes from the `master` branch. For
-   more information on how to work with git, check the detailed instructions in [codeowners flow](#codeowners-flow).
+   Do not create unnecessary merge loops. Always use the --rebase flag to pull changes from the `master` branch.
+
+   Set the git configuration to enforce rebase pull strategy for master branch. It is a one-time procedure.
 
    ```bash
-   git stash
-   git pull --rebase
-   git stash pop
-   # Resolve the conflicts if any occurred
-   git reset
+   git config --global pull.rebase false
+   git config --global branch.master.rebase true
+   git config --global branch.main.rebase true
+   git config --global rebase.autostash true
    ```
+
+   Then you should be able to update master branch using simple `git pull` command.
+
+   For more information on how to work with git, check the detailed instructions in [codeowners flow](#codeowners-flow).
 
    ```mdx-code-block
    </TabItem>
@@ -115,7 +119,7 @@ requests to the master branch. They are the owners of the code quality of the pr
 
    ```bash
    # git commit -m '<commit message>'
-   git commit -m '<scope>: [closes] <ticket ID>: <subject>
+   git commit -m '[closes] <ticket ID>: <scope>: <subject>
    [optional description]
    '
    ```
@@ -204,7 +208,7 @@ the [trunk-based development flow](https://www.atlassian.com/continuous-delivery
 
    ```bash
    # git commit -m '<commit message>'
-   git commit -m '<scope>: [closes] <ticket ID>: <subject>
+   git commit -m '[closes] <ticket ID>: <scope>: <subject>
    [optional description]
    '
    ```

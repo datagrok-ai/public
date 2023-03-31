@@ -7,21 +7,30 @@ import { FuncMetadata, FuncParam, FuncValidator, ValidationResult } from '../val
 import { PackageFile } from '../utils/interfaces';
 
 
-export function check(args: { [x: string]: string | string[]; }) {
+export function check(args: CheckArgs): boolean {
   const nOptions = Object.keys(args).length - 1;
-  if (args['_'].length !== 1 || (nOptions > 0 && (!args.dir || typeof args.dir !== 'string')) || nOptions > 1)
+  if (args['_'].length !== 1 || nOptions > 2 || (nOptions > 0 && !args.r && !args.recursive))
     return false;
 
   const curDir = process.cwd();
 
-  if (args.dir && typeof args.dir === 'string') {
-    const packagesDir = path.isAbsolute(args.dir) ? args.dir : path.join(curDir, args.dir);
-    fs.readdirSync(packagesDir).forEach((file) => {
-      const filepath = path.join(packagesDir, file);
-      const stats = fs.statSync(filepath);
-      if (stats.isDirectory() && utils.isPackageDir(filepath))
-        runChecks(filepath);
-    });
+  if (args.recursive) {
+    function runChecksRec(dir: string) {
+      const files = fs.readdirSync(dir);
+      for (const file of files) {
+        const filepath = path.join(dir, file);
+        const stats = fs.statSync(filepath);
+        if (stats.isDirectory()) {
+          if (utils.isPackageDir(filepath))
+            runChecks(filepath);
+          else {
+            if (file !== 'node_modules' && !file.startsWith('.'))
+              runChecksRec(path.join(dir, file));
+          }
+        }
+      }
+    }
+    runChecksRec(curDir);
   } else {
     if (!utils.isPackageDir(curDir)) {
       color.error('File `package.json` not found. Run the command from the package directory');
@@ -41,15 +50,16 @@ export function check(args: { [x: string]: string | string[]; }) {
 
     const webpackConfigPath = path.join(packagePath, 'webpack.config.js');
     const isWebpack = fs.existsSync(webpackConfigPath);
+    let externals: { [key: string]: string } | null = null;
     if (isWebpack) {
       const content = fs.readFileSync(webpackConfigPath, { encoding: 'utf-8' });
-      const externals = extractExternals(content);
+      externals = extractExternals(content);
       if (externals)
         warnings.push(...checkImportStatements(packagePath, jsTsFiles, externals));
     }
 
     warnings.push(...checkFuncSignatures(packagePath, funcFiles));
-    warnings.push(...checkPackageFile(packagePath));
+    warnings.push(...checkPackageFile(packagePath, { isWebpack, externals }));
 
     if (warnings.length) {
       console.log(`Checking package ${path.basename(packagePath)}...`);
@@ -62,11 +72,14 @@ export function check(args: { [x: string]: string | string[]; }) {
 }
 
 export function extractExternals(config: string): {}|null {
-  const externalsRegex = /(?<=externals\s*:\s*)(\{[\S\s]*?\})/;
+  const externalsRegex = /(?<=externals)\s*:\s*(\{[\S\s]*?\})/;
   const match = config.match(externalsRegex);
   if (match) {
-    // Replace single quotes and a trailing comma to make a string JSON-like
-    const externalStr = match[1].replace(/'/g, '"').replace(/(?<=[\S\s]),(?=\s*\})/, '');
+    // Replace single quotes, comments, and a trailing comma to make a string JSON-like
+    const externalStr = match[1]
+      .replace(/'/g, '"')
+      .replace(/\/\/.*(\r\n|\r|\n)/, '')
+      .replace(/(?<=[\S\s]),(?=\s*\})/, '');
     try {
       const externals = JSON.parse(externalStr);
       return externals;
@@ -114,6 +127,24 @@ export function checkImportStatements(packagePath: string, files: string[], exte
 export function checkFuncSignatures(packagePath: string, files: string[]): string[] {
   const warnings: string[] = [];
   const checkFunctions: { [role: string]: FuncValidator } = {
+    app: ({name}: {name?: string}) => {
+      let value = true;
+      let message = '';
+
+      if (name && typeof name === 'string') {
+        const lowerCaseName = name.toLocaleLowerCase();
+        if (lowerCaseName.startsWith('app')) {
+          value = false;
+          message += 'Prefix "App" is not needed. Consider removing it.\n';
+        }
+        if (lowerCaseName.endsWith('app')) {
+          value = false;
+          message += 'Postfix "App" is not needed. Consider removing it.\n';
+        }
+      }
+
+      return { value, message };
+    },
     semTypeDetector: ({inputs, outputs}: {inputs: FuncParam[], outputs: FuncParam[]}) => {
       let value = true;
       let message = '';
@@ -226,7 +257,16 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
   return warnings;
 }
 
-export function checkPackageFile(packagePath: string): string[] {
+const sharedLibExternals: {[lib: string]: {}} = {
+  'common/html2canvas.min.js': { 'exceljs': 'ExcelJS' },
+  'common/exceljs.min.js': { 'html2canvas': 'html2canvas' },
+  'common/ngl_viewer/ngl.js': { 'NGL': 'NGL' },
+  'common/openchemlib-full.js': { 'openchemlib/full': 'OCL' },
+  'common/codemirror/codemirror.js': { 'codemirror': 'CodeMirror' },
+};
+
+export function checkPackageFile(packagePath: string, options?: { externals?:
+  { [key: string]: string } | null, isWebpack?: boolean }): string[] {
   const warnings: string[] = [];
   const packageFilePath = path.join(packagePath, 'package.json');
   const json: PackageFile = JSON.parse(fs.readFileSync(packageFilePath, { encoding: 'utf-8' }));
@@ -257,8 +297,28 @@ export function checkPackageFile(packagePath: string): string[] {
     for (const source of json.sources) {
       if (typeof source !== 'string')
         warnings.push(`File "package.json": Only file paths and URLs are allowed in sources. Modify the source ${source}`);
-      if (source.startsWith('common/') || utils.absUrlRegex.test(source))
+      if (utils.absUrlRegex.test(source))
         continue;
+      if (source.startsWith('common/')) {
+        if (options?.isWebpack && source.endsWith('.js')) {
+          if (options?.externals) {
+            if (source in sharedLibExternals) {
+              const [lib, name] = Object.entries(sharedLibExternals[source])[0];
+              if (!(lib in options.externals && options.externals[lib] === name)) {
+                warnings.push(`Webpack config parsing: Consider adding source "${source}" to webpack externals:\n` +
+                  `'${lib}': '${name}'\n`);
+              }
+            } else {
+              warnings.push(`File "package.json": source "${source}" not in the list of shared libraries`);
+            }
+          } else {
+            warnings.push('Webpack config parsing: External modules not found.\n' +
+              `Consider adding source "${source}" to webpack externals` + (source in sharedLibExternals ? ':\n' +
+              `'${Object.keys(sharedLibExternals[source])[0]}': '${Object.values(sharedLibExternals[source])[0]}'\n` : ''));
+          }
+        }
+        continue;
+      }
       if (source.startsWith('src/') && fs.existsSync(path.join(packagePath, 'webpack.config.js')))
         warnings.push('File "package.json": Sources cannot include files from the \`src/\` directory. ' +
           `Move file ${source} to another folder.`);
@@ -311,4 +371,10 @@ function getFuncMetadata(script: string): FuncMetadata[] {
   }
 
   return funcData;
+}
+
+interface CheckArgs {
+  _: string[],
+  r?: boolean,
+  recursive?: boolean,
 }

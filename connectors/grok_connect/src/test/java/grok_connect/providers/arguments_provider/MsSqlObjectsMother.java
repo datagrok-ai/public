@@ -190,7 +190,7 @@ public class MsSqlObjectsMother {
         DataFrame expected2 = DataFrameBuilder.getBuilder()
                 .setRowCount(2)
                 .setColumn(new FloatColumn(new Float[]{-1.79E30f, 34636.34661f }), "float_data1")
-                .setColumn(new FloatColumn(new Float[]{Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY}), "float_data2")
+                .setColumn(new FloatColumn(new Float[]{-0.0f, 0.0f}), "float_data2")
                 .setColumn(new FloatColumn(new Float[]{124124.23555f, 0.0f}), "real_data")
                 .build();
         FuncCall funcCall2 = FuncCallBuilder.fromQuery("SELECT * FROM float_types");

@@ -5,43 +5,22 @@ import * as GridUtils from '../utils/GridUtils';
 import * as TextUtils from '../utils/TextUtils';
 import {ColorUtils} from '../utils/ColorUtils';
 import * as rxjs from 'rxjs';
-import { GridCellRendererEx} from "../renderer/GridCellRendererEx";
+import {GridCellRendererEx} from "../renderer/GridCellRendererEx";
 import * as PinnedUtils from "./PinnedUtils";
 import {MouseDispatcher} from "../ui/MouseDispatcher";
-import {ColumnsArgs, Events, toDart} from "datagrok-api/dg";
+import {ColumnsArgs, toDart} from "datagrok-api/dg";
 
-/* temp
-const hSubscriber  = grok.events.onViewLayoutApplied.subscribe((layout : DG.ViewLayout) => {
-  const view : DG.TableView = layout.view as TableView;
-  const itViewers = view.viewers;
-  const arViewers = Array.from(itViewers);
-
-  let viewer = null;
-  const nViewerCount = arViewers.length;
-  for (let n = 0; n < nViewerCount; ++n) {
-    viewer = arViewers[n];
-    if (viewer.type !== "Grid")
-      continue;
-
-    PinnedUtils.installPinnedColumns(viewer as DG.Grid);
-  }
-});
-*/
-
-function getRenderer(cell : DG.GridCell) : GridCellRendererEx | DG.GridCellRenderer {
+function getRenderer(cell : DG.GridCell) : GridCellRendererEx | null {
   const colGrid = cell.gridColumn;
-  if (colGrid === null || colGrid === undefined) {
+  if (colGrid === null || colGrid === undefined)
     throw new Error('Grid cell is detached from the Grid column');
-  }
 
-  let renderer = GridUtils.getGridColumnRenderer(colGrid);
-  if(renderer instanceof GridCellRendererEx) {
+  const renderer = GridUtils.getGridColumnRenderer(colGrid);
+  if (renderer !== null)
     return renderer;
-  }
 
-  return cell.renderer;
+  return null;
 }
-
 
 function getGrid(colGrid : DG.GridColumn) : DG.Grid | null {
   let grid : DG.Grid | null = colGrid.grid;
@@ -53,7 +32,6 @@ function getGrid(colGrid : DG.GridColumn) : DG.Grid | null {
 
   return grid;
 }
-
 
 function notifyAllColsRowsResized(grid : DG.Grid, nHRows : number, bAdjusting : boolean) : void {
 
@@ -73,7 +51,6 @@ function notifyAllColsRowsResized(grid : DG.Grid, nHRows : number, bAdjusting : 
     }
   }
 }
-
 
 function notifyAllPinnedColsRowsResized(colPinnedSource : PinnedColumn, nHRows : number, bAdjusting : boolean) : void {
 
@@ -106,12 +83,9 @@ function notifyAllPinnedColsRowsResized(colPinnedSource : PinnedColumn, nHRows :
   }
 }
 
-
 const DEBUG : boolean = false;
 
-
 export class PinnedColumn {
-
   private static MIN_COL_WIDTH = 20;
   private static MAX_COL_WIDTH = 5000;
   private static MIN_ROW_HEIGHT = 20;
@@ -168,17 +142,14 @@ export class PinnedColumn {
   private m_bThisColumnIsSorting = false;
 
   constructor(colGrid : DG.GridColumn) {
-
     MouseDispatcher.create();
 
     const grid = getGrid(colGrid);
-    if(grid === null) {
+    if(grid === null)
       throw new Error("Column '" + colGrid.name + "' is not attached to the grid.");
-    }
 
-    if(!PinnedUtils.isPinnableColumn(colGrid)) {
+    if (!PinnedUtils.isPinnableColumn(colGrid))
       throw new Error("Column '" + colGrid.name + "' cannot be pinned. It either pinned or HTML.");
-    }
 
     //let nRowMin = grid.minVisibleRow;
     //let nRowMax = grid.maxVisibleRow;
@@ -232,11 +203,11 @@ export class PinnedColumn {
       colGrid.settings.idxPinned = dart.m_arPinnedCols.length - 1;
     }
 
-    grid.canvas.style.left = (grid.canvas.offsetLeft + nW).toString() + "px";
-    grid.overlay.style.left= (grid.overlay.offsetLeft + nW).toString() + "px";
+    grid.canvas.style.left = (GridUtils.getLeft(grid.canvas) + nW).toString() + "px"; // (grid.canvas.offsetLeft + nW).toString() + "px";
+    grid.overlay.style.left= (GridUtils.getLeft(grid.overlay) + nW).toString() + "px"; //(grid.overlay.offsetLeft + nW).toString() + "px";
 
-    grid.canvas.style.width = (grid.canvas.offsetWidth - nW).toString() + "px";
-    grid.overlay.style.width= (grid.overlay.offsetWidth - nW).toString() + "px";
+    grid.canvas.style.width =  (GridUtils.getWidth(grid.canvas) - nW).toString() + "px";//(grid.canvas.offsetWidth - nW).toString() + "px";
+    grid.overlay.style.width=  (GridUtils.getWidth(grid.overlay) - nW).toString() + "px"; //(grid.overlay.offsetWidth - nW).toString() + "px";
 
     const nHeight = grid.canvas.height;//canvas pixel height
     const eCanvasThis = ui.canvas(nW*window.devicePixelRatio, nHeight);
@@ -269,7 +240,6 @@ export class PinnedColumn {
       }
     }
 
-
     //OnResize Row header
     const headerThis = this;/*
     this.m_observerResize = new ResizeObserver(entries => {
@@ -279,8 +249,6 @@ export class PinnedColumn {
       }
     });
     this.m_observerResize.observe(headerThis.m_root);*/
-
-
 
     //OnResize Grid
     this.m_observerResizeGrid = new ResizeObserver(function (entries : any) {
@@ -293,7 +261,7 @@ export class PinnedColumn {
         return;
 
       if(headerThis.m_fDevicePixelRatio !== window.devicePixelRatio || grid.canvas.height !== eCanvasThis.height) {
-        const nWCanvas = eCanvasThis.offsetWidth;
+        const nWCanvas = GridUtils.getWidth(eCanvasThis); //eCanvasThis.offsetWidth;
 
         eCanvasThis.width = nWCanvas*window.devicePixelRatio;
         eCanvasThis.height = grid.canvas.height;
@@ -315,12 +283,15 @@ export class PinnedColumn {
       //headerThis.m_root.height = grid.root.offsetHeight;
       const g = eCanvasThis.getContext('2d');
       for (let entry of entries) {
-        setTimeout(()=> {headerThis.paint(g, grid);}, 100);
+        setTimeout(()=> {
+          if (GridUtils.isRowHeader(colGrid) && colGrid.visible)
+            colGrid.visible = false;
+          headerThis.paint(g, grid);
+        }, 100);
       }
     });
 
     this.m_observerResizeGrid?.observe(grid.canvas); //
-
 
     this.m_handlerKeyDown = rxjs.fromEvent<KeyboardEvent>(eCanvasThis, 'keydown').subscribe((e : KeyboardEvent) => {
       //alert('down');
@@ -446,7 +417,8 @@ export class PinnedColumn {
   }
 
   getWidth() : number {
-    return this.m_root === null ? -1 : this.m_root.offsetWidth;
+    //return this.m_root === null ? -1 : this.m_root.offsetWidth;
+    return this.m_root === null ? -1 : GridUtils.getWidth(this.m_root);
   }
 
   getRoot() : HTMLCanvasElement | null {
@@ -576,7 +548,6 @@ export class PinnedColumn {
     this.m_colGrid = null;
   }
 
-
   public onMouseEnter(e : MouseEvent) : void {
     if(DEBUG)
       console.log('Mouse Enter Pinned Column: ' + this.getGridColumn()?.name);
@@ -596,19 +567,16 @@ export class PinnedColumn {
       return;
     }
 
-
     const arXYOnCell = [-1,-1];
-
     let nRowGrid = PinnedColumn.hitTestRows(this.m_root, grid, e, false, arXYOnCell);
     if(nRowGrid >= 0) {
       const cell = grid.cell(this.m_colGrid.name, nRowGrid);
       const renderer = getRenderer(cell);
 
-      if (renderer instanceof GridCellRendererEx) {
+      if (renderer != null) {
 
-        if (this.m_cellCurrent === null) {
+        if (this.m_cellCurrent === null)
           renderer.onMouseEnterEx(cell, e, arXYOnCell[0], arXYOnCell[1]);
-        }
 
         if (this.m_cellCurrent !== null && nRowGrid !== this.m_cellCurrent.gridRow) {
           renderer.onMouseLeaveEx(this.m_cellCurrent, e, -1, -1);
@@ -622,9 +590,8 @@ export class PinnedColumn {
     }
     else if (this.m_cellCurrent !== null) {
       const renderer = getRenderer(this.m_cellCurrent);
-      if (renderer instanceof GridCellRendererEx) {
+      if (renderer !== null)
         renderer.onMouseLeaveEx(this.m_cellCurrent, e, -1, -1);
-      }
 
       this.m_cellCurrent = null;
     }
@@ -779,7 +746,7 @@ export class PinnedColumn {
 
     if(this.m_cellCurrent !== null) {
       const renderer = getRenderer(this.m_cellCurrent);
-      if (renderer instanceof GridCellRendererEx) {
+      if (renderer !== null) {
         const eMouse = e as MouseEvent;
         renderer.onMouseLeaveEx(this.m_cellCurrent, eMouse, -1, -1);
       }
@@ -875,7 +842,7 @@ export class PinnedColumn {
 
       const cell = grid.cell(this.m_colGrid.name, nRowGrid);
       const renderer = getRenderer(cell);
-      if (renderer instanceof GridCellRendererEx)
+      if (renderer !== null)
         renderer.onMouseDownEx(cell, e, this.m_arXYMouseOnCellDown[0], this.m_arXYMouseOnCellDown[1]);
     }
 
@@ -1057,14 +1024,12 @@ export class PinnedColumn {
 
       const cell = grid.cell(this.m_colGrid.name, nRowGrid);
       const renderer = getRenderer(cell);
-      if(renderer instanceof GridCellRendererEx) {
+      if(renderer !== null)
         renderer.onMouseUpEx(cell, e, this.m_arXYMouseOnCellUp[0], this.m_arXYMouseOnCellUp[1]);
-      }
 
       if(this.m_arXYMouseOnCellUp[0] === this.m_arXYMouseOnCellDown[0] && this.m_arXYMouseOnCellDown[1] === this.m_arXYMouseOnCellUp[1]) {
-        if(renderer instanceof GridCellRendererEx) {
+        if(renderer !== null)
           renderer.onClickEx(cell, e, this.m_arXYMouseOnCellUp[0], this.m_arXYMouseOnCellUp[1]);
-        }
       }
 
       this.m_nRowGridDragging = -1;

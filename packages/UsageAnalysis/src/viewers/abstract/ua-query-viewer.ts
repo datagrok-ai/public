@@ -1,99 +1,40 @@
-import * as ui from 'datagrok-api/ui';
+// import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {UaFilter} from '../../filter';
 import {UaViewer} from './ua-viewer';
-import $ from 'cash-dom';
+
 
 export abstract class UaQueryViewer extends UaViewer {
   queryName: string;
   viewerFunction: Function;
   staticFilter: Object = {};
   filter: Object = {};
+  viewer: DG.Viewer;
 
   protected constructor(name: string, queryName: string, viewerFunction: Function,
-    setStyle?: Function | null, staticFilter?: Object | null, filter?: UaFilter | null, showName: boolean = true) {
-    super(name, setStyle, showName);
-
+    setStyle?: Function | null, staticFilter?: Object | null, filter?: UaFilter | null, viewer?: DG.Viewer) {
+    super(name, setStyle);
     this.queryName = queryName;
     this.viewerFunction = viewerFunction;
-
-    if (staticFilter)
-      this.staticFilter = staticFilter;
-    if (filter)
-      this.filter = filter;
-
-    this.init();
+    // if (staticFilter) this.staticFilter = staticFilter;
+    if (filter) this.filter = filter;
+    this.viewer = viewer as DG.Viewer;
+    this.root.appendChild(this.viewer.root);
+    this.root.appendChild(this.loader);
   }
 
-  setViewer(loader: any, host: HTMLDivElement, nameDiv: HTMLElement) {
-    const filter = {...this.filter, ...this.staticFilter};
-
+  reloadViewer(staticFilter?: object) {
+    this.loader.style.display = 'block';
+    const filter = {...this.filter, ...staticFilter};
     grok.data.query('UsageAnalysis:' + this.queryName, filter).then((dataFrame) => {
       if (dataFrame.columns.byName('count') != null)
         dataFrame.columns.byName('count').tags['format'] = '#';
-
-      let viewer: HTMLElement;
-      if (dataFrame.rowCount > 0)
-        viewer = this.viewerFunction(dataFrame);
-      else
-        viewer = ui.divText('No data', {style: {color: 'var(--red-3)', paddingBottom: '25px'}});
-
-      const grid = DG.Viewer.grid(dataFrame);
-      grid.props.allowColSelection = false;
-      let raw = false;
-
-      const tableIcon = ui.button(ui.iconFA('table'), () => {
-        if (!raw)
-          $(viewer).replaceWith(grid.root);
-        else
-          $(grid.root).replaceWith(viewer);
-
-        raw = !raw;
-      });
-
-      tableIcon.style.display = 'none';
-      tableIcon.style.padding = '3px';
-      tableIcon.style.margin = '0 3px';
-      tableIcon.style.color = 'var(--grey-4)';
-
-      tableIcon.addEventListener('mouseover', function() {tableIcon.style.color = 'var(--blue-1)';});
-      tableIcon.addEventListener('mouseleave', function() {tableIcon.style.color = 'var(--grey-4)';});
-
-      nameDiv.append(ui.tooltip.bind(tableIcon, 'Show grid'));
-
-      const tableViewIcon = ui.button(ui.iconFA('external-link-square'), () => {
-        grok.shell.v = grok.shell.addTableView(dataFrame);
-      });
-
-      tableViewIcon.style.display = 'none';
-      tableViewIcon.style.padding = '3px';
-      tableViewIcon.style.margin = '0 3px';
-      tableViewIcon.style.color = 'var(--grey-4)';
-
-      tableViewIcon.addEventListener('mouseover', function() {tableViewIcon.style.color = 'var(--blue-1)';});
-      tableViewIcon.addEventListener('mouseleave', function() {tableViewIcon.style.color = 'var(--grey-4)';});
-
-      nameDiv.append(ui.tooltip.bind(tableViewIcon, 'Open grid'));
-
-      host.appendChild(viewer);
-      host.removeChild(loader);
-
-      host.addEventListener('mouseover', function() {
-        tableIcon.style.display = 'block';
-        tableViewIcon.style.display = 'block';
-      });
-      host.addEventListener('mouseleave', function() {
-        tableIcon.style.display = 'none';
-        tableViewIcon.style.display = 'none';
-      });
+      this.viewerFunction(dataFrame);
+      this.viewer.dataFrame = dataFrame;
+      this.viewer.setOptions({markerMinSize: 10, markerMaxSize: 30, color: 'user'});
+      this.loader.style.display = 'none';
     });
-  }
-
-  reload(filter: UaFilter) {
-  };
-
-  init(): void {
   }
 }

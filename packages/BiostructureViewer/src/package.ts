@@ -206,10 +206,11 @@ export async function molstarViewerApp() {
 
 // -- Viewers --
 
-//name: Ngl
+//name: NGL
 // eslint-disable-next-line max-len
 //description: 3D structure viewer for large biological molecules (proteins, DNA, and RNA)
 //meta.keywords: PDB, Biostructure
+//meta.icon: files/icons/ngl-viewer.svg
 //tags: viewer, panel
 //output: viewer result
 export function nglViewer(): DG.JsViewer {
@@ -220,6 +221,7 @@ export function nglViewer(): DG.JsViewer {
 // eslint-disable-next-line max-len
 //description: 3D structure molstar RCSB viewer for large biological molecules (proteins, DNA, and RNA)
 //meta.keywords: Molstar, PDB
+//meta.icon: files/icons/biostructure-viewer.svg
 //tags: viewer, panel
 //output: viewer result
 export function molstarViewer(): DG.JsViewer {
@@ -248,7 +250,7 @@ export async function nglViewerGen(): Promise<void> {
 }
 
 //name: dockingDemo
-//meta.demoPath: Viewers | Docking
+//meta.demoPath: Cheminformatics | Docking
 export async function dockingDemo() {
   const piMsg: string = 'Opening docking demo app ...';
   const pi: TaskBarProgressIndicator = TaskBarProgressIndicator.create(piMsg);
@@ -260,7 +262,7 @@ export async function dockingDemo() {
 }
 
 //name: inGridDemo
-//meta.demoPath: Viewers | In Grid
+//meta.demoPath: Cheminformatics | In Grid
 export async function inGridDemo() {
   const piMsg: string = 'Opening biostructure in grid demo app ...';
   const pi: TaskBarProgressIndicator = TaskBarProgressIndicator.create(piMsg);

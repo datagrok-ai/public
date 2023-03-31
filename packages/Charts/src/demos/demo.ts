@@ -5,30 +5,30 @@ import {_package} from '../package';
 
 
 const VIEWER_TABLES_PATH: {[key: string]: string} = {
-  ChordViewer: 'energy_uk.csv',
-  GlobeViewer: 'geo/earthquakes.csv',
-  GroupAnalysisViewer: 'files/r-groups.csv',
-  RadarViewer: 'demog.csv',
-  SankeyViewer: 'energy_uk.csv',
-  SunburstViewer: 'demog.csv',
+  Chord: 'energy_uk.csv',
+  Globe: 'geo/earthquakes.csv',
+  GroupAnalysis: 'files/r-groups.csv',
+  Radar: 'demog.csv',
+  Sankey: 'energy_uk.csv',
+  Sunburst: 'demog.csv',
   SurfacePlot: 'files/surface-plot.csv',
-  TimelinesViewer: 'files/ae.csv',
-  TreeViewer: 'demog.csv',
-  WordCloudViewer: 'word_cloud.csv',
+  Timelines: 'files/ae.csv',
+  Tree: 'demog.csv',
+  WordCloud: 'word_cloud.csv',
 };
 
 
 export async function viewerDemo(viewerName: string, options?: object | null) {
-  let df: DG.DataFrame;
+  const df = await (['GroupAnalysis', 'SurfacePlot', 'Timelines'].includes(viewerName) ?
+    grok.data.loadTable(`${_package.webRoot}${VIEWER_TABLES_PATH[viewerName]}`)
+    : grok.data.getDemoTable(VIEWER_TABLES_PATH[viewerName]));
 
-  if (['GroupAnalysisViewer', 'SurfacePlot', 'TimelinesViewer'].includes(viewerName))
-    df = await grok.data.loadTable(`${_package.webRoot}${VIEWER_TABLES_PATH[viewerName]}`);
-  else
-    df = await grok.data.getDemoTable(VIEWER_TABLES_PATH[viewerName]);
+  const tableView = DG.TableView.create(df, false);
+  tableView.basePath = `/apps/Tutorials/Demo/Viewers/${viewerName}`;
+  grok.shell.addTable(df);
+  grok.shell.addView(tableView);
 
-  const tableView = grok.shell.addTableView(df);
-
-  if (['GlobeViewer', 'GroupAnalysisViewer'].includes(viewerName)) {
+  if (['Globe', 'GroupAnalysis'].includes(viewerName)) {
     DG.debounce(df.onSemanticTypeDetected, 300).subscribe((_) => tableView.addViewer(viewerName, options));
     return;
   }

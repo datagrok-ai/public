@@ -3,13 +3,18 @@
 	"friendlyName": "Curves",
 	"version": "0.0.1",
 	"description": "",
+	"author": {
+		"name": "Dmytro Kovalyov",
+		"email": "kovalyov.dmytro@eigenmethod.com"
+	},
 	"dependencies": {
 		"@datagrok-libraries/statistics": "^1.1.2",
 		"@datagrok-libraries/utils": "^2.3.4",
 		"@types/wu": "^2.1.42",
 		"cash-dom": "latest",
 		"datagrok-api": "^1.13.5",
-		"dayjs": "latest"
+		"dayjs": "latest",
+		"rxjs": "latest"
 	},
 	"devDependencies": {
 		"ts-loader": "latest",

@@ -39,48 +39,44 @@ const getSearchStringByPattern = (datePattern: DateOptions) => {
 
 export namespace historyUtils {
   const scriptsCache = {} as Record<string, DG.Script>;
+  // TODO: add users and groups cache
 
-  export async function loadChildRuns(funcCallId: string, skipDfLoad = false): Promise<{parentRun: DG.FuncCall, childRuns: DG.FuncCall[]}> {
+  export async function loadChildRuns(
+    funcCallId: string
+  ): Promise<{parentRun: DG.FuncCall, childRuns: DG.FuncCall[]}> {
     const parentRun = await grok.dapi.functions.calls.allPackageVersions().find(funcCallId);
+    parentRun.options['isHistorical'] = true;
 
     const childRuns = await grok.dapi.functions.calls.allPackageVersions()
-      .include('inputs, outputs').filter(`options.parentCallId="${funcCallId}"`).list();
+      .filter(`options.parentCallId="${funcCallId}"`).list();
 
-    await Promise.all(childRuns.map(async (pulledRun) => {
-      const id = pulledRun.func.id;
-      // FIX ME: manually get script since pulledRun contains empty Func
+    await Promise.all(childRuns.map(async (childRun) => {
+      const id = childRun.func.id;
+      // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12464
       const script = scriptsCache[id] ?? await grok.dapi.functions.allPackageVersions().find(id);
 
       if (!scriptsCache[id]) scriptsCache[id] = script;
-
-      pulledRun.func = script;
-      pulledRun.options['isHistorical'] = true;
-
-      if (!skipDfLoad) {
-        const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
-          .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
-        for (const output of dfOutputs)
-          pulledRun.outputs[output.name] = await grok.dapi.tables.getTable(pulledRun.outputs[output.name]);
-
-        const dfInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
-          .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
-        for (const input of dfInputs)
-          pulledRun.inputs[input.name] = await grok.dapi.tables.getTable(pulledRun.inputs[input.name]);
-      }
-
-      return Promise.resolve();
+      childRun.func = script;
     }));
 
     return {parentRun, childRuns};
   }
 
-  // EXPLAIN: WHY DF LOAD SKIPPING IS USEFUL
+  /**
+   * Loads a FuncCall with a specified ID. By default, also loads its' inputs/outputs and author.
+   * FuncCall is loaded with internal TableInfo structs instead of DG.Dataframe-s.
+   * Thus, we should load them separately, and it is time-consuming. If you don't need actual values of DF-s,
+   * you can skip DF loading using {@link skipDfLoad} param.
+   * @param funcCallId FuncCall ID to load
+   * @param skipDfLoad If true, skips replacing TableInfo with th actual dataframe
+   * @returns Requested FuncCall
+   */
   export async function loadRun(funcCallId: string, skipDfLoad = false) {
     const pulledRun = await grok.dapi.functions.calls.allPackageVersions()
       .include('inputs, outputs, session.user').find(funcCallId);
 
     const id = pulledRun.func.id;
-    // FIX ME: manually get script since pulledRun contains empty Func
+    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12464
     const script = scriptsCache[id] ?? await grok.dapi.functions.allPackageVersions().find(id);
 
     if (!scriptsCache[id]) scriptsCache[id] = script;
@@ -102,6 +98,12 @@ export namespace historyUtils {
     return pulledRun;
   }
 
+  /**
+   * Saved given FuncCall.
+   * FuncCall is only stores references to actual dataframes. Thus, we should upload them separately
+   * @param funcCallcallToSaveId FuncCall to save
+   * @returns Saved FuncCall
+   */
   export async function saveRun(callToSave: DG.FuncCall) {
     const dfOutputs = wu(callToSave.outputParams.values() as DG.FuncCallParam[])
       .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
@@ -216,8 +218,6 @@ export namespace historyUtils {
           pulledRun.outputs[output.name] = await grok.dapi.tables.getTable(pulledRun.outputs[output.name]);
       }
     }
-
-    console.log(result);
 
     return result;
   }

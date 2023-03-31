@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable, Subscription} from 'rxjs';
 import Timeout = NodeJS.Timeout;
+import {DataFrame} from 'datagrok-api/dg';
 
 export const tests: {
   [key: string]: {
@@ -103,13 +104,17 @@ export function expect(actual: any, expected: any = true, error?: string): void 
 }
 
 export function expectFloat(actual: number, expected: number, tolerance = 0.001, error?: string): void {
+  if ((actual === Number.POSITIVE_INFINITY && expected === Number.POSITIVE_INFINITY) ||
+      (actual === Number.NEGATIVE_INFINITY && expected === Number.NEGATIVE_INFINITY) ||
+      (actual === Number.NaN && expected === Number.NaN) || (isNaN(actual) && isNaN(expected)))
+    return;
   const areEqual = Math.abs(actual - expected) < tolerance;
   expect(areEqual, true, `${error ?? ''} (tolerance = ${tolerance})`);
   if (!areEqual)
     throw new Error(`Expected ${expected}, got ${actual} (tolerance = ${tolerance})`);
 }
 
-export function expectTable(actual: DG.DataFrame, expected: DG.DataFrame, error?: string): void {
+export function expectTable(actual: DataFrame, expected: DataFrame, error?: string): void {
   const expectedRowCount = expected.rowCount;
   const actualRowCount = actual.rowCount;
   expect(actualRowCount, expectedRowCount, `${error ?? ''}, row count`);
@@ -202,15 +207,19 @@ export async function initAutoTests(packageId: string, module?: any) {
   }
   const moduleAutoTests = [];
   const packFunctions = await grok.dapi.functions.filter(`package.id = "${packageId}"`).list();
+  const reg = new RegExp(/.*\/\/\s*skip[:\s]*(.*)$/);
   for (const f of packFunctions) {
     const tests = f.options['test'];
     if (!(tests && Array.isArray(tests) && tests.length)) continue;
     for (let i = 0; i < tests.length; i++) {
+      const skipReasons = (tests[i] as string).match(reg);
+      let skipReason;
+      if (skipReasons && skipReasons?.length > 1) skipReason = skipReasons[1];
       moduleAutoTests.push(new Test(autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
         const res = await grok.functions.eval(addNamespace(tests[i], f));
         // eslint-disable-next-line no-throw-literal
         if (res !== true) throw `Failed: ${tests[i]}`;
-      }));
+      }, {skipReason: skipReason}));
     }
   }
   wasRegistered[packageId] = true;

@@ -521,8 +521,8 @@ export class DataConnection extends Entity {
     return new Promise((resolve, reject) => api.grok_DataConnection_Test(this.dart, (s: any) => resolve(toJs(s)), (e: any) => reject(e)));
   }
 
-  query(name: string, sql: string, params: {[key: string]: string} = {}): DataQuery {
-    return toJs(api.grok_DataConnection_Query(this.dart, name, sql, params));
+  query(name: string, sql: string): DataQuery {
+    return toJs(api.grok_DataConnection_Query(this.dart, name, sql));
   }
 
   /** Creates a database connection
@@ -588,9 +588,9 @@ export class TableInfo extends Entity {
 
   static fromDataFrame(t: DataFrame): TableInfo {return toJs(api.grok_DataFrame_Get_TableInfo(t.dart)); }
 
-  get dataFrame(): DataFrame { return api.grok_TableInfo_Get_DataFrame(this.dart); }
+  get dataFrame(): DataFrame { return toJs(api.grok_TableInfo_Get_DataFrame(this.dart)); }
 
-  get columns(): ColumnInfo[] { return api.grok_TableInfo_Get_Columns(this.dart); }
+  get columns(): ColumnInfo[] { return toJs(api.grok_TableInfo_Get_Columns(this.dart)); }
 }
 
 
@@ -604,6 +604,7 @@ export class ColumnInfo extends Entity {
     super(dart);
   }
 
+  get type(): string { return toJs(api.grok_ColumnInfo_Get_Type(this.dart)); }
 }
 
 /** @extends Entity
@@ -733,23 +734,23 @@ export class Script extends Func {
   get script(): string { return api.grok_Script_GetScript(this.dart); }
   set script(s: string) { api.grok_Script_SetScript(this.dart, s); }
 
-  /** Script language. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
+  /** Script language. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
   get language(): ScriptLanguage { return api.grok_Script_GetLanguage(this.dart); }
   set language(s: ScriptLanguage) { api.grok_Script_SetLanguage(this.dart, s); }
 
-  /** Environment name. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
+  /** Environment name. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
   get environment(): string { return api.grok_Script_Get_Environment(this.dart); }
   set environment(s: string) { api.grok_Script_Set_Environment(this.dart, s); }
 
-  /** Reference header parameter. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
+  /** Reference header parameter. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
   get reference(): string { return api.grok_Script_Get_Reference(this.dart); }
   set reference(s: string) { api.grok_Script_Set_Reference(this.dart, s); }
 
-  /** Sample table. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
+  /** Sample table. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
   get sample(): string { return api.grok_Script_Get_Sample(this.dart); }
   set sample(s: string) { api.grok_Script_Set_Sample(this.dart, s); }
 
-  /** Script tags. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
+  /** Script tags. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
   get tags(): string[] { return api.grok_Script_Get_Tags(this.dart); }
   set tags(tags: string[]) { api.grok_Script_Set_Tags(this.dart, tags); }
 }
@@ -982,11 +983,11 @@ export class Package extends Entity {
 }
 
 
-export class DockerImage extends Entity {
-  constructor(dart: any) {
-    super(dart);
-  }
-}
+// export class DockerImage extends Entity {
+//   constructor(dart: any) {
+//     super(dart);
+//   }
+// }
 
 
 export class DockerContainer extends Entity {

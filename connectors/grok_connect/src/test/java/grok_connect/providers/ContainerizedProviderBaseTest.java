@@ -4,6 +4,7 @@ import grok_connect.connectors_info.Credentials;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataProvider;
 import grok_connect.connectors_info.DbCredentials;
+import grok_connect.providers.utils.ConstructorParameterResolver;
 import grok_connect.providers.utils.DataFrameComparator;
 import grok_connect.providers.utils.Provider;
 import grok_connect.utils.ProviderManager;
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 
@@ -28,6 +30,7 @@ import org.testcontainers.containers.JdbcDatabaseContainer;
   */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@ExtendWith(ConstructorParameterResolver.class)
 public abstract class ContainerizedProviderBaseTest {
     private final Provider type;
     protected JdbcDatabaseContainer<?> container;
@@ -51,7 +54,7 @@ public abstract class ContainerizedProviderBaseTest {
         ProviderManager providerManager = new ProviderManager(mockLogger);
         ProviderManager spy = Mockito.spy(providerManager);
         Mockito.when(spy.getQueryMonitor()).thenReturn(mockMonitor);
-        provider = (JdbcDataProvider) spy.getByName(type.getProperties().get("providerName").toString());
+        provider = spy.getByName(type.getProperties().get("providerName").toString());
     }
 
     @BeforeEach
@@ -75,6 +78,7 @@ public abstract class ContainerizedProviderBaseTest {
     }
 
     @DisplayName("Tests of testConnection(DataConnection conn)")
+    @Order(2)
     @Test
     public void testConnection() {
         String expected = DataProvider.CONN_AVAILABLE;
@@ -85,6 +89,7 @@ public abstract class ContainerizedProviderBaseTest {
     // I think, it would be better to implement some Global exception handler
     // and not return String, when something went wrong in this method
     @DisplayName("Test of testConnection(DataConnection conn) when no credentials provided")
+    @Order(3)
     @Test
     public void testConnection_notOk() {
         connection.credentials = null;

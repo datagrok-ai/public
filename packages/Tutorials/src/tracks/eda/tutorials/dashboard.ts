@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import { filter } from 'rxjs/operators';
-import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
+import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
 import { interval } from 'rxjs';
 
 
@@ -19,6 +19,7 @@ export class DashboardTutorial extends Tutorial {
 
   demoTable: string = '';
   helpUrl: string = '';
+  prerequisites: TutorialPrerequisites = {grokConnect: true};
 
   protected async _run(): Promise<void> {
     this.header.textContent = this.name;
