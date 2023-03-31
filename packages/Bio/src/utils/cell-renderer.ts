@@ -381,16 +381,8 @@ function createDifferenceCanvas(
 function fillShorterSequence(subParts1: string[], subParts2: string[]): IComparedSequences {
   let numIdenticalStart = 0;
   let numIdenticalEnd = 0;
-  let longerSeq;
-  let shorterSeq;
-
-  if (subParts1.length > subParts2.length) {
-    longerSeq = subParts1;
-    shorterSeq = subParts2;
-  } else {
-    longerSeq = subParts2;
-    shorterSeq = subParts1;
-  }
+  const longerSeq = subParts1.length > subParts2.length ? subParts1 : subParts2;
+  let shorterSeq = subParts1.length > subParts2.length ? subParts2 : subParts1;
 
   for (let i = 0; i < shorterSeq.length; i++) {
     if (longerSeq[i] === shorterSeq[i])
