@@ -125,12 +125,12 @@ export async function initChemAutostart(): Promise<void> { }
 //output: widget
 export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined> {
   const version = col.version;
-  
+
   for (let i = 0; i < col.length; ++i) {
     if (!col.isNone(i) && isSmarts(col.get(i)))
       return;
   }
-  
+
   const divMain = ui.div();
   divMain.append(ui.divText('Most diverse structures'));
   const divStructures = ui.div();
@@ -139,7 +139,7 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
   if (col.temp['version'] != version || col.temp['molIds'].length == 0) {
     const molIds = await chemDiversitySearch(
       col, similarityMetric['Tanimoto'], 9, 'Morgan' as Fingerprint, true);
-    
+
     col.temp = {
       'version': version,
       'molIds': molIds
@@ -620,14 +620,6 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
       methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
       createTooltipElement, createPropPanelElement, undefined, options);
   }
-}
-
-//top-menu: Chem | Analyze SAR | Structural Alerts...
-//name: Structural Alerts
-//input: dataframe table [Input data table]
-//input: column molecules {type:categorical; semType: Molecule}
-export async function getStructuralAlerts(col: DG.Column<string>): Promise<void> {
-  await checkForStructuralAlerts(col);
 }
 
 //top-menu: Chem | Calculate | To InchI...
