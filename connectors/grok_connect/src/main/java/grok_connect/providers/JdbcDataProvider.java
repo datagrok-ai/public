@@ -2,14 +2,16 @@ package grok_connect.providers;
 
 import java.io.*;
 import java.sql.*;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
+import java.time.*;
 import java.util.*;
 import java.math.*;
 import java.text.*;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.*;
+
+import com.clickhouse.data.value.UnsignedByte;
+import com.clickhouse.data.value.UnsignedShort;
 import microsoft.sql.DateTimeOffset;
 import oracle.sql.TIMESTAMPTZ;
 import org.apache.commons.io.IOUtils;
@@ -119,7 +121,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 //    why do we need 3 variables query, queryRun and connection if queryRun consists of all of them
     public ResultSet executeQuery(String query, FuncCall queryRun, Connection connection, int timeout)  throws ClassNotFoundException, SQLException {
         boolean supportsTransactions = connection.getMetaData().supportsTransactions();
-        
+
         if (supportsTransactions)
             connection.setAutoCommit(false);
 
@@ -138,7 +140,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 System.out.println(query);
                 PreparedStatement statement = connection.prepareStatement(query);
                 if (supportsTransactions)
-                    statement.setFetchSize(10000);
+                    statement.setFetchSize(100);
                 providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 List<String> stringValues = new ArrayList<>();
                 System.out.println(names);
@@ -147,10 +149,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                     FuncParam param = dataQuery.getParam(names.get(n));
                     String stringValue;
                     if (param.propertyType.equals(Types.DATE_TIME)) {
-                        Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)param.value);
-                        Timestamp ts = new Timestamp(calendar.getTime().getTime());
-                        stringValue = ts.toString();
-                        statement.setTimestamp(n + i + 1, ts);
+                        stringValue = setDateTimeValue(param, statement, n + i + 1);
                     } else if (param.propertyType.equals(Types.LIST) && param.propertySubType.equals(Types.STRING)) {
                         if (param.value == null)
                             stringValue = "null";
@@ -179,7 +178,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
                 Statement statement = connection.createStatement();
                 if (supportsTransactions)
-                    statement.setFetchSize(10000);
+                    statement.setFetchSize(100);
                 providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 statement.setQueryTimeout(timeout);
                 String logString = String.format("Query: %s \n", query);
@@ -194,7 +193,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             // Query without parameters
             Statement statement = connection.createStatement();
             if (supportsTransactions)
-                statement.setFetchSize(10000);
+                statement.setFetchSize(100);
             providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
             statement.setQueryTimeout(timeout);
             String logString = String.format("Query: %s \n", query);
@@ -207,6 +206,18 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
 
         return resultSet;
+    }
+
+    protected String setDateTimeValue(FuncParam funcParam, PreparedStatement statement, int parameterIndex) {
+        Calendar calendar = javax.xml.bind.DatatypeConverter.parseDateTime((String)funcParam.value);
+        Timestamp ts = new Timestamp(calendar.getTime().getTime());
+        try {
+            statement.setTimestamp(parameterIndex, ts);
+            return ts.toString();
+        } catch (SQLException e) {
+            throw new RuntimeException(String.format("Something went wrong when setting datetime parameter at %s index",
+                    parameterIndex), e);
+        }
     }
 
     protected String manualQueryInterpolation(String query, DataQuery dataQuery) {
@@ -291,7 +302,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                 queryBuffer.append(query, idx, matcher.start());
                 appendQueryParam(dataQuery, name, queryBuffer);
                 idx = matcher.end();
-                names.add(name);
+                if (!names.contains(name)) {
+                    names.add(name);
+                }
             }
         }
         queryBuffer.append(query, idx, query.length());
@@ -354,10 +367,9 @@ public abstract class JdbcDataProvider extends DataProvider {
             int columnCount = resultSetMetaData.getColumnCount();
             List<Column> columns = new ArrayList<>(columnCount);
             List<Boolean> supportedType = new ArrayList<>(columnCount);
-             List<Boolean> initColumn = new ArrayList<>(columnCount);
+            List<Boolean> initColumn = new ArrayList<>(columnCount);
             for (int c = 1; c < columnCount + 1; c++) {
                 Column column;
-
                 String label = resultSetMetaData.getColumnLabel(c);
                 int type = resultSetMetaData.getColumnType(c);
                 String typeName = resultSetMetaData.getColumnTypeName(c);
@@ -487,6 +499,12 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 columns.get(c - 1).add(((BigDecimal)value).intValue());
                             else if (value instanceof Long) {
                                 columns.get(c - 1).add(((Long)value).intValue());
+                            } else if (value instanceof Byte) {
+                                columns.get(c - 1).add(((Byte) value).intValue());
+                            } else if (value instanceof UnsignedByte) {
+                                columns.get(c - 1).add(((UnsignedByte) value).intValue());
+                            } else if (value instanceof UnsignedShort) {
+                                columns.get(c - 1).add(((UnsignedShort) value).intValue());
                             } else
                                 columns.get(c - 1).add(value);
                         else if (isString(type, typeName)) {
@@ -533,7 +551,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 Double doubleValue = (Double) value;
                                 if (doubleValue == Double.POSITIVE_INFINITY || doubleValue > Float.MAX_VALUE) {
                                     columns.get(c - 1).add(Float.POSITIVE_INFINITY);
-                                } else if (doubleValue == Double.NEGATIVE_INFINITY || doubleValue < Float.MIN_VALUE) {
+                                } else if (doubleValue == Double.NEGATIVE_INFINITY || doubleValue < - Float.MAX_VALUE) {
                                     columns.get(c - 1).add(Float.NEGATIVE_INFINITY);
                                 } else {
                                     columns.get(c - 1).add(new Float((Double)value));
@@ -559,6 +577,12 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 time = Date.from(((DateTimeOffset) value).getOffsetDateTime().toInstant());
                             } else if (value instanceof LocalDateTime) {
                                 time = java.sql.Timestamp.valueOf((LocalDateTime) value);
+                            } else if (value instanceof LocalDate) {
+                                time = java.util.Date.from(((LocalDate) value).atStartOfDay(ZoneId.systemDefault())
+                                        .toInstant());
+                            } else if (value instanceof OffsetDateTime) {
+                                time = java.util.Date.from(((OffsetDateTime) value)
+                                        .toInstant());
                             } else {
                                 time = ((java.util.Date) value);
                             }
@@ -599,7 +623,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                     if (providerManager.getQueryMonitor().checkCancelledIdResultSet(queryRun.id)) {
                         DataFrame dataFrame = new DataFrame();
                         dataFrame.addColumns(columns);
-    
+
                         resultSet.close();
                         providerManager.getQueryMonitor().removeResultSet(queryRun.id);
                         return dataFrame;
@@ -610,7 +634,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                             size += column.memoryInBytes();
                         size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000; // count? it's 200 lines up
 
-                        if (size > 20) {                        
+                        if (size > 20) {
                             DataFrame dataFrame = new DataFrame();
                             dataFrame.addColumns(columns);
                             return dataFrame;
@@ -649,7 +673,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         } catch (Exception e) {
             if (resultSet != null && resultSet.isClosed())
                 throw new QueryCancelledByUser();
-            else 
+            else
                 throw e;
         }
     };
@@ -695,7 +719,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         throw new UnsupportedOperationException("TIMESTAMPTZ is not supported");
     }
 
-    private static String paramToNamesString(FuncParam param, PatternMatcher matcher, String type,
+    protected static String paramToNamesString(FuncParam param, PatternMatcher matcher, String type,
                                              PatternMatcherResult result) {
         StringBuilder builder = new StringBuilder();
         for (int n = 0 ; n < matcher.values.size(); n++) {
@@ -721,12 +745,16 @@ public abstract class JdbcDataProvider extends DataProvider {
             result.params.add(new FuncParam(type, name1, matcher.values.get(1)));
         } else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
             String names = paramToNamesString(param, matcher, type, result);
-            result.query = "(" + matcher.colName + " " + matcher.op + " (" + names + "))";
+            result.query = getInQuery(matcher, names);
         } else {
             result.query = "(" + matcher.colName + " " + matcher.op + " @" + param.name + ")";
             result.params.add(new FuncParam(type, param.name, matcher.values.get(0)));
         }
         return result;
+    }
+
+    protected String getInQuery(PatternMatcher matcher, String names) {
+        return String.format("(%s %s (%s))", matcher.colName, matcher.op, names);
     }
 
     public PatternMatcherResult stringPatternConverter(FuncParam param, PatternMatcher matcher) {
@@ -758,7 +786,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             result.params.add(new FuncParam(type, param.name, value));
         } else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
             String names = paramToNamesString(param, matcher, type, result);
-            result.query = "(" + matcher.colName + " " + matcher.op + " (" + names + "))";
+            result.query = getInQuery(matcher, names);
         } else {
             result.query = "(1 = 1)";
         }
@@ -795,7 +823,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         return result;
     }
 
-    private String aggrToSql(GroupAggregation aggr) {
+    protected String aggrToSql(GroupAggregation aggr) {
         AggrFunctionInfo funcInfo = null;
         for (AggrFunctionInfo info: descriptor.aggregations) {
             if (info.functionName.equals(aggr.aggType)) {
@@ -861,7 +889,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     protected boolean isArray(int type, String typeName) {
-        return false;
+        return type == java.sql.Types.ARRAY;
     }
 
     private static boolean isBitString(int type, int precision, String typeName) {
@@ -874,6 +902,8 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     private static boolean isTime(int type, String typeName) {
         return (type == java.sql.Types.DATE) || (type == java.sql.Types.TIME) || (type == java.sql.Types.TIMESTAMP)
+                || type == java.sql.Types.TIMESTAMP_WITH_TIMEZONE
+                || type == java.sql.Types.TIME_WITH_TIMEZONE
                 || typeName.equalsIgnoreCase("timetz")
                 || typeName.equalsIgnoreCase("timestamptz")
                 || (typeName.equalsIgnoreCase("TIMESTAMP WITH TIME ZONE"))
@@ -896,7 +926,8 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     protected boolean isDecimal(int type, String typeName, int scale) {
         return (type == java.sql.Types.DECIMAL) || (type == java.sql.Types.NUMERIC) ||
-                typeName.equalsIgnoreCase("decimal");
+                typeName.equalsIgnoreCase("decimal")
+                || typeName.equalsIgnoreCase("decfloat");
     }
 
     private static boolean isBoolean(int type, String typeName, int precision) {
@@ -906,7 +937,8 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     private static boolean isString(int type, String typeName) {
         return ((type == java.sql.Types.VARCHAR)|| (type == java.sql.Types.CHAR) ||
-                (type == java.sql.Types.LONGVARCHAR) || (type == java.sql.Types.CLOB) ||
+                (type == java.sql.Types.LONGVARCHAR) || (type == java.sql.Types.CLOB)
+                || (type == java.sql.Types.NCLOB) ||
                 typeName.equalsIgnoreCase("varchar") ||
                 typeName.equalsIgnoreCase("nvarchar") ||
                 typeName.equalsIgnoreCase("nchar") ||

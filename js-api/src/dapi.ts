@@ -4,7 +4,6 @@ import {
   DataConnection,
   DataJob,
   DataQuery,
-  DockerImage,
   DockerContainer,
   Entity,
   Group,
@@ -22,6 +21,7 @@ import {
   Property,
   FileInfo, HistoryEntry, ProjectOpenOptions, Func
 } from "./entities";
+import { DockerImage } from "./api/grok_shared.api.g";
 import {ViewLayout} from "./views/view";
 import {toJs} from "./wrappers";
 import {_propsToDart} from "./utils";

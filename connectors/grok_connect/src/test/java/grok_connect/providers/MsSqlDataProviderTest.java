@@ -24,8 +24,8 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
     private static final String DEFAULT_DATABASE_NAME = "master";
     private static final String DEFAULT_SCHEMA_NAME = "dbo";
 
-    protected MsSqlDataProviderTest() {
-        super(Provider.MSSQL);
+    protected MsSqlDataProviderTest(Provider provider) {
+        super(provider);
     }
 
     @Override

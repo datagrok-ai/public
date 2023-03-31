@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.36",
+  "version": "3.2.47",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -154,9 +154,12 @@
         },
         "1.3.30": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.3.31": {
+          "datagrok-api": "^1.6.0"
         }
       },
-      "description": "DevTools is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. Its purpose is to simplify and assist in the development of platform extensions.",
+      "description": "Tools for the Datagrok developers (TestManager, DevPanel). [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/DevTools/README.md)",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -442,6 +445,21 @@
         },
         "1.5.13": {
           "datagrok-api": "^1.13.2"
+        },
+        "1.5.15": {
+          "datagrok-api": "^1.13.8"
+        },
+        "1.5.16": {
+          "datagrok-api": "^1.13.8"
+        },
+        "1.5.17": {
+          "datagrok-api": "^1.13.8"
+        },
+        "1.5.18": {
+          "datagrok-api": "^1.13.8"
+        },
+        "1.5.20": {
+          "datagrok-api": "^1.13.8"
         }
       },
       "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Chem/README.md)",
@@ -887,6 +905,9 @@
         },
         "3.1.2": {
           "datagrok-api": "^1.13.0"
+        },
+        "3.1.3": {
+          "datagrok-api": "^1.13.0"
         }
       },
       "description": "marvin is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
@@ -1035,6 +1056,9 @@
           "datagrok-api": "^1.13.0"
         },
         "1.5.11": {
+          "datagrok-api": "^1.13.0"
+        },
+        "1.6.0": {
           "datagrok-api": "^1.13.0"
         }
       },
@@ -1196,6 +1220,12 @@
           "datagrok-api": "^1.4.4"
         },
         "1.0.0": {
+          "datagrok-api": "latest"
+        },
+        "1.0.1": {
+          "datagrok-api": "latest"
+        },
+        "1.1.1": {
           "datagrok-api": "latest"
         }
       },
@@ -2188,6 +2218,9 @@
         },
         "2.1.6": {
           "datagrok-api": "^1.10.2"
+        },
+        "2.1.7": {
+          "datagrok-api": "^1.10.2"
         }
       },
       "description": "Provides support for HELM notation (importing, detecting, rendering, conversion). [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Helm/README.md)",
@@ -2298,20 +2331,6 @@
         "url": "https://github.com/datagrok-ai/labs.git",
         "directory": "packages/ChemDraw"
       }
-    },
-    "molecular-liability-browser": {
-      "dependencies": {
-        "1.3.8": {
-          "datagrok-api": "^1.8.2"
-        }
-      },
-      "description": "MolecularLiabilityBrowser is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform to analyse variable region sequences of antibodies.",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/MolecularLiabilityBrowser"
-      },
-      "category": "Bioinformatics"
     },
     "fae": {
       "dependencies": {

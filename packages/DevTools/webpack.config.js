@@ -32,6 +32,7 @@ module.exports = {
     'rxjs/operators': 'rxjs.operators',
     'cash-dom': '$',
     'dayjs': 'dayjs',
+    'codemirror': 'CodeMirror',
   },
   output: {
     filename: '[name].js',

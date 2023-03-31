@@ -49,15 +49,21 @@ public class MsSqlDataProvider extends JdbcDataProvider {
             put("smallmoney", Types.FLOAT);
             put("float", Types.FLOAT);
             put("real", Types.FLOAT);
-            put("#.char.*", Types.STRING);
-            put("#.varchar.*", Types.STRING);
-            put("#.text.*", Types.STRING);
+            put("bit", Types.BOOL);
+            put("#.*char.*", Types.STRING);
+            put("#.*varchar.*", Types.STRING);
             put("date", Types.DATE_TIME);
             put("datetimeoffset", Types.DATE_TIME);
             put("datetime2", Types.DATE_TIME);
             put("smalldatetime", Types.DATE_TIME);
             put("datetime", Types.DATE_TIME);
             put("time", Types.DATE_TIME);
+            put("image", Types.OBJECT);
+            put("#.*binary", Types.BLOB);
+            put("#.*text.*", Types.OBJECT);
+            put("geometry", Types.OBJECT);
+            put("geography", Types.OBJECT);
+            put("xml", Types.OBJECT);
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stdev(#)", Types.dataFrameNumericTypes));
     }

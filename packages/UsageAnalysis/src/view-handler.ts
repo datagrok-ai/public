@@ -19,7 +19,8 @@ const APP_PREFIX: string = `/apps/UsageAnalysis/`;
 export class ViewHandler {
   private static instance: ViewHandler;
   private urlParams: Map<string, string> = new Map<string, string>();
-  tabs: DG.TabControl = ui.tabControl();
+  public static UAname = 'Usage Analysis';
+  static UA: DG.MultiView;
 
   public static getInstance(): ViewHandler {
     if (!ViewHandler.instance)
@@ -28,29 +29,37 @@ export class ViewHandler {
   }
 
   async init() {
-    const pathSplits = decodeURI(window.location.pathname).split('/');
-    const params = this.getSearchParameters();
+    grok.shell.windows.showToolbox = true;
+    grok.shell.windows.showContextPanel = true;
+    const info = ui.divText(`To view more detailed information about the events represented by a particular point,\
+    simply click on the point of interest. You can also select multiple points. Once you've made your selection,\
+    more information about the selected events will be displayed on context pane`);
+    info.classList.add('ua-hint');
+    document.querySelector('.grok-entity-prop-panel > .d4-accordion')?.append(info);
+    // const pathSplits = decodeURI(window.location.pathname).split('/');
+    ViewHandler.UA = new DG.MultiView({viewFactories: {}});
     const toolbox = await UaToolbox.construct();
-    this.tabs.root.style.width = 'inherit';
-    this.tabs.root.style.height = 'inherit';
+    const params = this.getSearchParameters();
+    // ViewHandler.tabs = ui.tabControl();
+    // ViewHandler.tabs.root.style.width = 'inherit';
+    // ViewHandler.tabs.root.style.height = 'inherit';
     // [OverviewView, EventsView, ErrorsView, FunctionsView, UsersView, DataView];
     const viewClasses: (typeof UaView)[] = [PackagesView, FunctionsView];
-
-    for (let i = 0; i < viewClasses.length; ++i) {
-      this.tabs.addPane(viewClasses[i].viewName, () => {
-        const currentView = new viewClasses[i](toolbox);
-        currentView.tryToinitViewers();
-        return currentView.root;
-      });
+    // const viewFactories: {[name: string]: any} = {};
+    for (let i = 0; i < viewClasses.length; i++) {
+      const currentView = new viewClasses[i](toolbox);
+      // viewFactories[currentView.name] = () => currentView;
+      currentView.tryToinitViewers();
+      ViewHandler.UA.addView(currentView.name, () => currentView, false);
     }
-    if (pathSplits.length > 3 && pathSplits[3] != '') {
-      const viewName = pathSplits[3];
-      if (this.tabs.panes.map((p) => p.name).includes(viewName))
-        this.tabs.currentPane = this.tabs.getPane(viewName);
-      else
-        this.tabs.currentPane = this.tabs.getPane(viewClasses[0].viewName);
-    } else
-      this.tabs.currentPane = this.tabs.getPane(viewClasses[0].viewName);
+    // if (pathSplits.length > 3 && pathSplits[3] != '') {
+    //   const viewName = pathSplits[3];
+    //   if (ViewHandler.tabs.panes.map((p) => p.name).includes(viewName))
+    //     ViewHandler.tabs.currentPane = ViewHandler.tabs.getPane(viewName);
+    //   else
+    //     ViewHandler.tabs.currentPane = ViewHandler.tabs.getPane(viewClasses[0].viewName);
+    // } else
+    //   ViewHandler.tabs.currentPane = ViewHandler.tabs.getPane(viewClasses[0].viewName);
 
     const paramsHaveDate = params.has('date');
     const paramsHaveUsers = params.has('users');
@@ -59,15 +68,27 @@ export class ViewHandler {
       if (paramsHaveDate)
         toolbox.setDate(params.get('date')!);
       if (paramsHaveUsers)
-        await toolbox.setUsers(params.get('users')!);
+        toolbox.setGroups(params.get('users')!);
       if (paramsHavePackages)
-        await toolbox.setPackages(params.get('packages')!);
-      await toolbox.applyFilter();
+        toolbox.setPackages(params.get('packages')!);
+      toolbox.applyFilter();
     }
 
-    const UA = grok.shell.newView('Usage Analysis', [this.tabs]);
-    UA.box = true;
-    UA.toolbox = toolbox.rootAccordion.root;
+    ViewHandler.UA.name = ViewHandler.UAname;
+    ViewHandler.UA.box = true;
+    grok.shell.addView(ViewHandler.UA);
+  }
+
+  public static getView(name: string) {
+    return ViewHandler.UA.getView(name) as UaView;
+  }
+
+  public static getCurrentView(): UaView {
+    return ViewHandler.UA.currentView as UaView;
+  }
+
+  public static changeTab(name: string) {
+    ViewHandler.UA.tabs.currentPane = ViewHandler.UA.tabs.getPane(name);
   }
 
   getSearchParameters() : Map<string, string> {

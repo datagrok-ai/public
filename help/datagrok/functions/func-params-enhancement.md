@@ -42,7 +42,7 @@ This is how parameters dialog looks like:
 
 ## 2. annotating the python script
 
-Every function parameter in Datagrok has [options](../../compute/scripting.md#options) where validators, choices and
+Every function parameter in Datagrok has [options](./func-params-annotation.md#options) where validators, choices and
 suggestions functions can be specified. For "country", we want to call a function that suggests country based on the
 already entered text (jsSuggestCountryName). For "
 vegetable", we will register function that returns list of vegetables (jsVeggies). For "saltiness", we need a validator
@@ -107,4 +107,5 @@ Now you can re-run Python script and see following parameters dialog:
 
 See also:
 
+* [Parameter annotation](./func-params-annotation.md)
 * [Scripting](../../compute/scripting.md)

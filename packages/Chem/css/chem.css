@@ -232,3 +232,9 @@
 .d4-viewer.d4-scaffold-tree .d4-tree-view-group {
   align-self: initial;
 }
+
+.copy-as-molfile-icon {
+  font-size: 14px!important;
+  position: absolute;
+  top: 0px;
+}

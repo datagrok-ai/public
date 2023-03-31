@@ -9,6 +9,7 @@ import {ml} from './tracks/ml';
 import {TutorialWidget} from './widget';
 import '../css/tutorial.css';
 import {Track} from '@datagrok-libraries/tutorials/src/track';
+import {DemoView} from './demo-app/demo-app';
 
 
 export const _package = new DG.Package();
@@ -19,12 +20,14 @@ const tracks: Track[] = [];
 //tags: app
 //top-menu: Help | Tutorials @Toolbox Help | Tutorials
 export function trackOverview() {
+  const tutorialRunners = tracks.map((track) => new TutorialRunner(track));
   const root = ui.div([
-    ...tracks.map((track) => new TutorialRunner(track).root),
+    ...tutorialRunners.map((runner) => runner.root),
     ui.panel([], {id: 'tutorial-child-node', style: {paddingTop: '10px'}}),
   ], 'tutorials-root');
 
   grok.shell.dockManager.dock(root, DG.DOCK_TYPE.RIGHT, null, 'Tutorials', 0.3);
+  setPath(window.location.pathname, tutorialRunners);
 }
 
 //output: widget tutorial
@@ -96,7 +99,23 @@ export async function tutorialsInit() {
   });
 }
 
-function setProperties(properties: { [propertyName: string]: boolean }) {
+//name: Demo
+//tags: app
+//description: Interactive demo of major Datagrok capabilities
+export function demoApp() {
+  const pathSegments = window.location.pathname.split('/');
+  grok.shell.addView(new DemoView());
+  if (pathSegments.length > 4) {
+    const category = pathSegments[4];
+    if (category === 'Viewers') {
+      const viewerName = pathSegments[5];
+      const f = DemoView.findDemoFunc(`${category} | ${viewerName}`);
+      f?.apply();
+    }
+  }
+}
+
+function setProperties(properties: { [propertyName: string]: boolean }): void {
   if (tracks.length > 0)
     return;
 
@@ -111,4 +130,38 @@ function setProperties(properties: { [propertyName: string]: boolean }) {
     if (property in registry && properties[property] === true)
       tracks.push(registry[property]);
   }
+}
+
+function setPath(path: string, tutorialRunners: TutorialRunner[]): void {
+  const pathParts = path.split('/');
+  const removeSpaces = (s: string) => s.split(' ').join('');
+  const trackShortNames: {[key: string]: Track} = {
+    'eda': eda,
+    'ml': ml,
+    'chem': chem,
+    'access': da,
+  };
+
+  if (pathParts.length !== 5)
+    return;
+
+  const [trackName, tutorialName] = pathParts.slice(3);
+  let track: Track | null = null;
+  let trackIdx: number | null = null;
+  if (trackName in trackShortNames) {
+    track = trackShortNames[trackName];
+    const _idx = tracks.findIndex((t) => t === track);
+    trackIdx = _idx === -1 ? null : _idx;
+  } else {
+    track = tracks.find((t, idx) => {
+      if (removeSpaces(t.name) === trackName) {
+        trackIdx = idx;
+        return true;
+      }
+      return false;
+    }) ?? null;
+  }
+  const tutorial = track?.tutorials?.find((t) => removeSpaces(t.name) === tutorialName);
+  if (tutorial && trackIdx != null)
+    tutorialRunners[trackIdx].run(tutorial);
 }

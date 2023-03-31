@@ -27,6 +27,14 @@ jobs:
       - name: Test
         working-directory: ./connectors
         run: mvn -DtestFailureIgnore=true test
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Maven Tests
+          path: /home/runner/work/public/public/connectors/grok_connect/target/surefire-reports/*.xml
+          reporter: java-junit
+          fail-on-error: false
       - name: Get version
         id: get_version
         working-directory: ./connectors

@@ -73,7 +73,7 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
     const monomers = findMonomers(gridCell.cell.value);
     let s: string = gridCell.cell.value ?? '';
     let subParts: string[] = parseHelm(s);
-    if (monomers.size == 0) {
+    if (monomers.size == 0 && grid) {
       const host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
       host.setAttribute('dataformat', 'helm');
       host.setAttribute('data', gridCell.cell.value);
@@ -81,8 +81,13 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       //@ts-ignore
       const canvas = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true});
       return;
-    }
-    if (monomers.size > 0) {
+    } else {
+      if (!grid) {
+        const r = window.devicePixelRatio;
+        h = 28;
+        g.canvas.height = h*r;
+        g.canvas.style.height = `${h}px`;
+      }
       w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
       g.save();
       g.beginPath();

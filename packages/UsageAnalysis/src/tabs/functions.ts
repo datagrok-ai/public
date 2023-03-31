@@ -1,4 +1,5 @@
-// import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import '../../css/usage_analysis.css';
@@ -8,10 +9,11 @@ import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 
 
 export class FunctionsView extends UaView {
-  static viewName = 'Functions';
+  // static viewName = 'Functions';
 
   constructor(uaToolbox: UaToolbox) {
-    super(uaToolbox);
+    super(uaToolbox, 'function', true);
+    this.name = 'Functions';
   }
 
   async initViewers(): Promise<void> {
@@ -20,19 +22,22 @@ export class FunctionsView extends UaView {
       'Functions',
       'FunctionsUsage',
       (t: DG.DataFrame) => {
-        const viewer = DG.Viewer.scatterPlot(t, {
-          x: 'time',
-          y: 'function',
-          size: 'count',
-          color: 'user',
-        }).root;
-        return viewer;
-      },
-    );
+        t.onCurrentRowChanged.subscribe(async () => {
+          const rowValues = Array.from(t.currentRow.cells).map((c) => c.value);
+          const row = Object.fromEntries(t.columns.names().map((k, i) => [k, rowValues[i]]));
+          row.time_start = row.time_start.a;
+          row.time_end = row.time_end.a;
+          const cp = DG.Accordion.create();
+          cp.addPane('Details', () => {
+            return ui.tableFromMap({'User': ui.render(`#{x.${row.uid}}`),
+              'Package': ui.render(`#{x.${row.pid}}`),
+              'From': new Date(row.time_start).toLocaleString(),
+              'To': new Date(row.time_end).toLocaleString()});
+          }, true);
+          grok.shell.o = cp.root;
+        });
+      }, null, null, this.viewer);
     this.viewers.push(functionsViewer);
-
-    this.root.append(
-      functionsViewer.root,
-    );
+    this.root.append(functionsViewer.root);
   }
 }
