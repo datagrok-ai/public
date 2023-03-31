@@ -1,6 +1,6 @@
 // svm.h
 
-/* Implementation of the method SVM (Support Vector Machine) for DATAGROK.
+/* Implementation of the method LS-SVM (Least Squares Support Vector Machine) for DATAGROK.
 
    The following references are used:
    [1] Suykens, J., Vandewalle, J. "Least Squares Support Vector Machine Classifiers",
@@ -13,10 +13,6 @@
 #include <cmath>
 using std::sqrt;
 using std::fabs;
-
-// TODO: this include should be removed
-#include<iostream>
-using namespace std;
 
 #include "../../../Eigen/Eigen/Dense"
 using namespace Eigen;
@@ -93,9 +89,10 @@ namespace svm {
 			return v1.dot(v2);
 		case RBF:
 			return exp(-(v1 - v2).squaredNorm() / (kernelParams[0] * kernelParams[0]));
+		default:
+			return 0;
 		}
-		return 0;
-	} // K
+	} // kernelFunc
 
 	/* Compute matrix of the linear system for the LS-SVM method
 	   with LINEAR kernel.
@@ -145,32 +142,16 @@ namespace svm {
 		Float* xTrain, Float* yTrain, int samplesCount, int featuresCount,
 		MatrixType& A) noexcept
 	{
-		//cout << "\nsigma: " << sigma << endl;
-
-		Float sigmaSquared = sigma * sigma;
-		//cout << "\nsigma^2: " << sigmaSquared << endl;
+		Float sigmaSquared = sigma * sigma;	
 
 		// assign train data pointer with the matrix X
-		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> X(xTrain, samplesCount, featuresCount);
-		//cout << "\nX:\n" << X << endl;
+		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> X(xTrain, samplesCount, featuresCount);		
 
 		// compute left upper block
 		for (int i = 0; i < samplesCount; i++)
 		{
-			for (int j = 0; j < i; j++) {
-				// this is for testing
-				/*cout << "(" << i << ", " << j << "):\n"
-					<< "   x_i: " << X.row(i) << endl
-					<< "   x_j: " << X.row(j) << endl
-					<< "   x_i - x_j: " << X.row(i) - X.row(j) << endl
-					<< "   |x_i - x_j|^2: " << (X.row(i) - X.row(j)).squaredNorm() << endl
-					<< "   -|x_i - x_j|^2 / sigma^2: " << -(X.row(i) - X.row(j)).squaredNorm() / sigmaSquared << endl
-					<< "   exp(-|x_i - x_j|^2 / sigma^2): " << exp(-(X.row(i) - X.row(j)).squaredNorm() / sigmaSquared) << endl
-					<< "   labels: " << yTrain[i] << ", " << yTrain[j] << endl
-					<< "\n\n\n";*/
-
-				A(i, j) = A(j, i) = yTrain[i] * yTrain[j] * exp(-(X.row(i) - X.row(j)).squaredNorm() / sigmaSquared);
-			}				
+			for (int j = 0; j < i; j++) 
+				A(i, j) = A(j, i) = yTrain[i] * yTrain[j] * exp(-(X.row(i) - X.row(j)).squaredNorm() / sigmaSquared);			
 
 			A(i, i) = gammaInv + 1; // here, 1 = exp(-|x_i - x_i|^2 / sigma^2) = exp( 0 )
 		}
@@ -180,9 +161,6 @@ namespace svm {
 
 		// right lower element
 		A(samplesCount, samplesCount) = 0;
-
-		// this is for testing
-		//cout << "\nA:\n" << A << endl;
 
 		return NO_ERRORS;
 	} // computeMatrixOfLSSVMsystemWithRBFkernel
@@ -202,43 +180,26 @@ namespace svm {
 		Float* xTrain, Float* yTrain, int samplesCount, int featuresCount,
 		MatrixType& A) noexcept
 	{
-		/*cout << "\nc: " << cParam << endl;
-		cout << "\nd: " << dParam << endl;*/		
-
 		// assign train data pointer with the matrix X
-		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> X(xTrain, samplesCount, featuresCount);
-		//cout << "\nX:\n" << X << endl;
+		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> X(xTrain, samplesCount, featuresCount);	
 
 		// compute left upper block
 		for (int i = 0; i < samplesCount; i++)
 		{
-			for (int j = 0; j < i; j++) {
-				// this is for testing
-				/*cout << "(" << i << ", " << j << "):\n"
-					<< "   x_i: " << X.row(i) << endl
-					<< "   x_j: " << X.row(j) << endl
-					<< "   <x_i,  x_j>: " << X.row(i).dot(X.row(j)) << endl
-					<< "   1 + <x_i,  x_j> / c: " << X.row(i).dot(X.row(j)) / cParam + 1 << endl
-					<< "   (1 + <x_i,  x_j> / c)^d: " << pow(X.row(i).dot(X.row(j)) / cParam + 1, dParam) << endl					
-					<< "   labels: " << yTrain[i] << ", " << yTrain[j] << endl
-					<< "\n\n\n";*/
-
+			for (int j = 0; j < i; j++)
 				//  here, 1 is used by the formula from [1]
-				A(i, j) = A(j, i) = yTrain[i] * yTrain[j] * pow(X.row(i).dot(X.row(j)) / cParam + 1, dParam);
-			}
+				A(i, j) = A(j, i) = yTrain[i] * yTrain[j] * pow(X.row(i).dot(X.row(j)) / cParam + 1, dParam);			
 
 			//  here, 1 is used by the formula from [1]
 			A(i, i) = gammaInv + pow(X.row(i).squaredNorm() / cParam + 1, dParam);
 		}
+
 		// compute left lower and rigth upper block
 		for (int j = 0; j < samplesCount; j++)
 			A(samplesCount, j) = A(j, samplesCount) = yTrain[j];
 
 		// right lower element
-		A(samplesCount, samplesCount) = 0;
-
-		// this is for testing
-		//cout << "\nA:\n" << A << endl;
+		A(samplesCount, samplesCount) = 0;		
 
 		return NO_ERRORS;
 	} // computeMatrixOfLSSVMsystemWithPolynomialKernel
@@ -246,8 +207,8 @@ namespace svm {
 	/* Compute matrix of the linear system for the LS-SVM method
 	   with SIGMOID kernel.
 		  gammaInv - value inverse to hyperparameter gamma
-		  cParam - parameter of polynomial kernel (c)
-		  dParam - parameter of polynomial kernel (d)
+		  kappa - parameter of sigmoid kernel 
+		  theta - parameter of sigmoid kernel
 		  xTrain - feature vectors for training model
 		  yTrain - labels of feature vectors
 		  samplesCount - number of training samples
@@ -257,50 +218,31 @@ namespace svm {
 	int computeMatrixOfLSSVMsystemWithSigmoidKernel(Float gammaInv, Float kappa, Float theta,
 		Float* xTrain, Float* yTrain, int samplesCount, int featuresCount,
 		MatrixType& A) noexcept
-	{
-		/*cout << "\nc: " << cParam << endl;
-		cout << "\nd: " << dParam << endl;*/
-
+	{		
 		// assign train data pointer with the matrix X
-		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> X(xTrain, samplesCount, featuresCount);
-		//cout << "\nX:\n" << X << endl;
+		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> X(xTrain, samplesCount, featuresCount);	
 
 		// compute left upper block
 		for (int i = 0; i < samplesCount; i++)
 		{
-			for (int j = 0; j < i; j++) {
-				// this is for testing
-				/*cout << "(" << i << ", " << j << "):\n"
-					<< "   x_i: " << X.row(i) << endl
-					<< "   x_j: " << X.row(j) << endl
-					<< "   <x_i,  x_j>: " << X.row(i).dot(X.row(j)) << endl
-					<< "   1 + <x_i,  x_j> / c: " << X.row(i).dot(X.row(j)) / cParam + 1 << endl
-					<< "   (1 + <x_i,  x_j> / c)^d: " << pow(X.row(i).dot(X.row(j)) / cParam + 1, dParam) << endl
-					<< "   labels: " << yTrain[i] << ", " << yTrain[j] << endl
-					<< "\n\n\n";*/
-
-					//  here, 1 is used by the formula from [1]
+			for (int j = 0; j < i; j++)				
 				A(i, j) = A(j, i) = yTrain[i] * yTrain[j] * tanh(kappa * X.row(i).dot(X.row(j)) + theta);
-			}
-
-			//  here, 1 is used by the formula from [1]
+						
 			A(i, i) = gammaInv + tanh(kappa * X.row(i).squaredNorm() + theta);
 		}
+
 		// compute left lower and rigth upper block
 		for (int j = 0; j < samplesCount; j++)
 			A(samplesCount, j) = A(j, samplesCount) = yTrain[j];
 
 		// right lower element
 		A(samplesCount, samplesCount) = 0;
-
-		// this is for testing
-		//cout << "\nA:\n" << A << endl;
-
+		
 		return NO_ERRORS;
 	} // computeMatrixOfLSSVMsystemWithSigmoidKernel
 
 	/* Compute matrix of the linear system for the LS-SVM method.
-	   Linear, polynomial, RBF and sigmoid kernels are considered.
+	   Linear, polynomial, RBF and sigmoid kernels are suuported.
 		  gammaInv - value inverse to hyperparameter gamma
 		  kernelType - type of the kernel applied
 		  kernelParams - parameters of kernel
@@ -363,7 +305,6 @@ namespace svm {
 			  1) compute the matrix of this system (A);
 			  2) compute the rigth hand side of this system (b);
 			  3) solve the system Ax = b.
-
 		   Also, model weights are computed in the case of linear kernel. */
 
 		// check gamma value
@@ -395,11 +336,7 @@ namespace svm {
 		Map<Vector<Float, Dynamic>> x(modelParams, samplesCount + 1);
 
 		// solve the system required: 		
-		x = A.fullPivLu().solve(b);
-
-		// The following is for testing!
-		/*cout << "\nsolution:\n" << x << endl;
-		cout << "\ndeviation:\n" << (A * x - b).norm() << endl;*/
+		x = A.fullPivLu().solve(b);		
 
 		// finish computations in the case of non-linear kernel
 		if (kernel != LINEAR)
@@ -421,14 +358,10 @@ namespace svm {
 		for (int i = 0; i < samplesCount; i++)
 			w += x(i) * yTrain[i] * X.row(i);
 
-		// The following is for testing!
-		/*cout << "\nsolution:\n" << x << endl;
-		cout << "\nw:\n" << w << endl;*/
-
 		return NO_ERRORS;
-	} // trainModel
+	} // trainLSSVM
 
-	/*  Predict labels of the target data using linear kernel model and precomputed weigths.		  
+	/* Predict labels of the target data using linear kernel model and precomputed weigths.		  
 		  precomputedWeights - precomputed weights of the model
 		  targetDataMatrix - matrix of the target data
 		  prediction - target labels
@@ -463,37 +396,37 @@ namespace svm {
 		return NO_ERRORS;
 	} // predictByLSSVMwithLinearKernel
 		
-	/**/
+	/* Predict labels of the target data using RBF-kernel model.
+	      sigma - parameter of RBF-kernel
+		  xTrain - feature vectors for training model (normalized)
+		  yTrain - labels of training vectors
+		  trainSamplesCount - number of training vectors
+		  featuresCount - number of features
+		  modelParams - parameters of model
+		  targetDataMatrix - matrix of the target data
+		  prediction - target labels */
 	template<typename Float, typename MatrixType>
 	int predictByLSSVMwithRBFkernel(Float sigma, 
 		Float* xTrain, Float* yTrain, int trainSamplesCount, int featuresCount, 
 		Float* modelParams, MatrixType& targetDataMatrix, Float* prediction)
 	{
-		//cout << "\nsigma: " << sigma << endl;
-
 		Float sigmaSquared = sigma * sigma;
-
-		//cout << "\nsigma^2: " << sigmaSquared << endl;
 
 		// assign normalized traine data matrix with normalized train data pointer
 		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> X(xTrain, trainSamplesCount, featuresCount);
 
-		/*cout << "\nNTD:\n" << targetDataMatrix << endl;
-		cout << "\nX:\n" << X << endl;*/
-
 		auto targetSamplesCount = targetDataMatrix.rows();
-
-		//cout << "\ntarget samples count: " << targetSamplesCount << endl;
-
+				
 		// bias of the model
-		Float bias = modelParams[trainSamplesCount];
-		//cout << "\nbias: " << bias << endl;
+		Float bias = modelParams[trainSamplesCount];		
 
+		// compute prediction for each target vector
 		for (int j = 0; j < targetSamplesCount; j++)
 		{
 			// put target data to the model
 			Float cost = bias;
 
+			// compute cost for the current target vector
 			for(int i = 0; i < trainSamplesCount; i++)
 				cost += modelParams[i] * yTrain[i] * exp(-(X.row(i) - targetDataMatrix.row(j)).squaredNorm() / sigmaSquared);
 
@@ -507,34 +440,36 @@ namespace svm {
 		return NO_ERRORS;
 	} // predictByLSSVMwithRBFkernel
 
-	/**/
+	/* Predict labels of the target data using polynomial kernel model.
+		  cParam - parameter of polynomial kernel
+		  dParam - parameter of polynomial kernel
+		  xTrain - feature vectors for training model (normalized)
+		  yTrain - labels of training vectors
+		  trainSamplesCount - number of training vectors
+		  featuresCount - number of features
+		  modelParams - parameters of model
+		  targetDataMatrix - matrix of the target data
+		  prediction - target labels */
 	template<typename Float, typename MatrixType>
 	int predictByLSSVMwithPolynomialKernel(Float cParam, Float dParam,
 		Float* xTrain, Float* yTrain, int trainSamplesCount, int featuresCount,
 		Float* modelParams, MatrixType& targetDataMatrix, Float* prediction)
-	{
-		/*cout << "\nc: " << cParam << endl;
-		cout << "\nd: " << dParam << endl;*/
-
+	{		
 		// assign normalized traine data matrix with normalized train data pointer
 		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> X(xTrain, trainSamplesCount, featuresCount);
 
-		/*cout << "\nNTD:\n" << targetDataMatrix << endl;
-		cout << "\nX:\n" << X << endl;*/
-
 		auto targetSamplesCount = targetDataMatrix.rows();
 
-		//cout << "\ntarget samples count: " << targetSamplesCount << endl;
-
 		// bias of the model
-		Float bias = modelParams[trainSamplesCount];
-		//cout << "\nbias: " << bias << endl;
+		Float bias = modelParams[trainSamplesCount];		
 
+		// compute prediction for each target vector
 		for (int j = 0; j < targetSamplesCount; j++)
 		{
 			// put target data to the model
 			Float cost = bias;
 
+			// compute cost for the current target vector
 			for (int i = 0; i < trainSamplesCount; i++)				
 				cost += modelParams[i] * yTrain[i] * pow(X.row(i).dot(targetDataMatrix.row(j)) / cParam + 1, dParam);				
 
@@ -548,7 +483,16 @@ namespace svm {
 		return NO_ERRORS;
 	} // predictByLSSVMwithPolynomialKernel
 
-	/**/
+	/* Predict labels of the target data using sigmoid kernel model.
+		  kappa - parameter of sigmoid kernel
+		  theta - parameter of sigmoid kernel
+		  xTrain - feature vectors for training model (normalized)
+		  yTrain - labels of training vectors
+		  trainSamplesCount - number of training vectors
+		  featuresCount - number of features
+		  modelParams - parameters of model
+		  targetDataMatrix - matrix of the target data
+		  prediction - target labels */
 	template<typename Float, typename MatrixType>
 	int predictByLSSVMwithSigmoidKernel(Float kappa, Float theta,
 		Float* xTrain, Float* yTrain, int trainSamplesCount, int featuresCount,
@@ -557,22 +501,18 @@ namespace svm {
 		// assign normalized traine data matrix with normalized train data pointer
 		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> X(xTrain, trainSamplesCount, featuresCount);
 
-		/*cout << "\nNTD:\n" << targetDataMatrix << endl;
-		cout << "\nX:\n" << X << endl;*/
-
 		auto targetSamplesCount = targetDataMatrix.rows();
-
-		//cout << "\ntarget samples count: " << targetSamplesCount << endl;
 
 		// bias of the model
 		Float bias = modelParams[trainSamplesCount];
-		//cout << "\nbias: " << bias << endl;
 
+		// compute prediction for each target vector
 		for (int j = 0; j < targetSamplesCount; j++)
 		{
 			// put target data to the model
 			Float cost = bias;
 
+			// compute cost for the current target vector
 			for (int i = 0; i < trainSamplesCount; i++)
 				cost += modelParams[i] * yTrain[i] * tanh(kappa * X.row(i).dot(targetDataMatrix.row(j)) + theta);				
 
@@ -651,7 +591,7 @@ namespace svm {
 				xTrain, yTrain, trainSamplesCount, featuresCount, modelParams,
 				NTD, prediction);
 
-		case SIGMOID:
+		case SIGMOID: // the case of sigmoid kernel
 			return predictByLSSVMwithSigmoidKernel(
 				kernelParams[SIGMOID_KAPPA_INDEX], kernelParams[SIGMOID_THETA_INDEX],
 				xTrain, yTrain, trainSamplesCount, featuresCount, modelParams,
