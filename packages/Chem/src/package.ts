@@ -899,7 +899,9 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
 //meta.action: Copy as SMILES
 //input: semantic_value value { semType: Molecule }
 export function copyAsSmiles(value: DG.SemanticValue): void {
-  navigator.clipboard.writeText(_convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, getRdKitModule()));
+  const smiles = !DG.chem.isMolBlock(value.value) && !isSmarts(value.value) ? value.value :
+    _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, getRdKitModule());
+  navigator.clipboard.writeText(smiles);
 }
 
 //name: Copy as MOLFILE V2000
@@ -908,7 +910,9 @@ export function copyAsSmiles(value: DG.SemanticValue): void {
 //meta.action: Copy as MOLFILE V2000
 //input: semantic_value value { semType: Molecule }
 export function copyAsMolfileV2000(value: DG.SemanticValue): void {
-  navigator.clipboard.writeText(_convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, getRdKitModule()));
+  const molfileV2000 = DG.chem.isMolBlock(value.value) ? value.value :
+    _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, getRdKitModule());
+  navigator.clipboard.writeText(molfileV2000);
 }
 
 
@@ -918,7 +922,9 @@ export function copyAsMolfileV2000(value: DG.SemanticValue): void {
 //meta.action: Copy as MOLFILE V3000
 //input: semantic_value value { semType: Molecule }
 export function copyAsMolfileV3000(value: DG.SemanticValue): void {
-  navigator.clipboard.writeText(_convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.V3KMolBlock, getRdKitModule()));
+  const molfileV3000 = DG.chem.isMolBlock(value.value) ? value.value :
+    _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.V3KMolBlock, getRdKitModule());
+  navigator.clipboard.writeText(molfileV3000);
 }
 
 //name: Copy as SMARTS
@@ -927,7 +933,9 @@ export function copyAsMolfileV3000(value: DG.SemanticValue): void {
 //meta.action: Copy as SMARTS
 //input: semantic_value value { semType: Molecule }
 export function copyAsSmarts(value: DG.SemanticValue): void {
-  navigator.clipboard.writeText(_convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, getRdKitModule()));
+  const smarts = !DG.chem.isMolBlock(value.value) && isSmarts(value.value) ? value.value :
+    _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, getRdKitModule());
+  navigator.clipboard.writeText(smarts);
 }
 
 
