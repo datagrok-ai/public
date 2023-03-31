@@ -12,6 +12,7 @@ import dayjs from "dayjs";
 import typeahead from 'typeahead-standalone';
 import {Dictionary, typeaheadConfig} from 'typeahead-standalone/dist/types';
 
+import '../css/drop-down.css';
 import '../css/typeahead-input.css';
 
 declare let grok: any;
@@ -1754,6 +1755,92 @@ export class FilesWidget extends DartWidget {
   static create(params: {path?: string, dataSourceFilter?: fileShares[]} = {}): FilesWidget {
     return toJs(api.grok_FilesWidget(params));
   }
+}
+
+export class DropDown {
+  private _element: HTMLElement;
+  private _dropDownElement: HTMLDivElement;
+  private _isMouseOverElement: boolean;
+  private _label: string | Element;
+
+  isExpanded: boolean;
+  root: HTMLDivElement;
+
+
+  constructor(label: string | Element, createElement: () => HTMLElement) {
+    this._element = ui.div();
+    this._dropDownElement = ui.div();
+    this._isMouseOverElement = false;
+    this._label = label;
+
+    this.isExpanded = false;
+    this.root = ui.div();
+
+    this._updateElement(createElement);
+    this._initEventListeners();
+  }
+
+
+  private _updateElement(createElement: () => HTMLElement) {
+    this._element = createElement();
+
+    this._dropDownElement = ui.div(ui.div(this._element), 'ui-drop-down-content');
+    this._dropDownElement.style.visibility = 'hidden';
+
+    this.root = ui.div([this._label, this._dropDownElement], 'ui-drop-down-root');
+  }
+
+  private _initEventListeners() {
+    this.root.addEventListener('mousedown', (e) => {
+      // check if the button is LMB
+      if (e.button !== 0)
+        return;
+      if (this._isMouseOverElement)
+        return;
+
+      this._setExpandedState(this.isExpanded);
+    });
+
+    this._dropDownElement.addEventListener('mouseover', () => {
+      this._isMouseOverElement = true;
+    }, false);
+
+    this._dropDownElement.addEventListener('mouseleave', () => {
+      this._isMouseOverElement = false;
+    }, false);
+
+    document.addEventListener('click', (event) => {
+      if (this.root.contains(event.target as Node))
+        return;
+      if (!this.isExpanded)
+        return;
+
+      this._setExpandedState(this.isExpanded);
+    });
+  }
+
+  private _setExpandedState(isExpanded: boolean) {
+    this.isExpanded = !isExpanded;
+    if (isExpanded) {
+      this.root.classList.remove('ui-drop-down-root-expanded');
+      this._dropDownElement.style.visibility = 'hidden';
+      return;
+    }
+
+    this.root.classList.add('ui-drop-down-root-expanded');
+    this._dropDownElement.style.visibility = 'visible';
+  }
+
+
+  get onExpand(): Observable<MouseEvent> {
+    return fromEvent<MouseEvent>(this.root, 'click').pipe(filter(() => !this._isMouseOverElement));
+  }
+
+  get onElementClick(): Observable<MouseEvent> {
+    return fromEvent<MouseEvent>(this._dropDownElement, 'click');
+  }
+
+  // TODO: add list constructor to DropDown
 }
 
 export class TypeAhead extends InputBase {

@@ -20,6 +20,7 @@ import {
   DateInput,
   fileShares,
   SliderOptions,
+  DropDown,
   TypeAhead,
   TypeAheadConfig
 } from './src/widgets';
@@ -1363,6 +1364,10 @@ function _iconFA(type: string, handler: Function | null, tooltipMsg: string | nu
     e?.addEventListener('click', (e) => handler(e));
   tooltip.bind(e, tooltipMsg);
   return e;
+}
+
+export function dropDown(label: string | Element, createElement: () => HTMLElement): DropDown {
+  return new DropDown(label, createElement);
 }
 
 export function typeAhead(config: TypeAheadConfig): TypeAhead {
