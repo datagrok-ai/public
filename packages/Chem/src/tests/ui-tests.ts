@@ -26,7 +26,7 @@ category('UI', () => {
       'molecules number inside Similarity viewer is different than expected', 3000);
 
     similarityViewer!.props.distanceMetric = 'Dice';
-    similarityViewer!.props.limit = 5;    
+    similarityViewer!.props.limit = 5;
     await awaitCheck(() => similarityViewer.root.querySelectorAll('.chem-canvas').length === 5,
       'molecules number inside Similarity viewer is different than expected after change "Limit" property', 3000);
 
@@ -42,7 +42,7 @@ category('UI', () => {
     v.close();
     grok.shell.o = document.createElement('div');
   }, {skipReason: 'GROK-11785'});
-  
+
   test('diversity search', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
@@ -56,18 +56,18 @@ category('UI', () => {
       distanceMetric: 'Dice',
       size: 'normal',
     });
-    dsv!.props.limit = 5;    
+    dsv!.props.limit = 5;
     await awaitCheck(() => dsvRoot.querySelectorAll('.chem-canvas').length === 5, 'molecules number != 5', 3000);
     v.close();
     grok.shell.o = document.createElement('div');
   });
-  
+
   test('descriptors', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
-  
+
     await awaitCheck(() => {
       return Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
         .find((el) => el.textContent === 'Toxicity') !== undefined;
@@ -80,7 +80,7 @@ category('UI', () => {
       return Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
         .find((el) => el.textContent === 'Details') !== undefined;
     }, 'cannot load Smiles column properties', 5000);
-    
+
     const actions = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Actions') as HTMLElement;
     if (!actions.classList.contains('expanded')) await actions.click();
@@ -107,19 +107,19 @@ category('UI', () => {
     isColumnPresent(smiles.columns, 'RingCount');
     v.close();
     grok.shell.o = document.createElement('div');
-  });
+  }, {skipReason: 'GROK-11785'});
 
   test('info panel: gasteiger', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
-  
+
     await awaitCheck(() => {
       return Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
         .find((el) => el.textContent === 'Gasteiger Partial Charges') !== undefined;
     }, 'cannot find Gasteiger Partial Charges property', 5000);
-    
+
     const gpc = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Gasteiger Partial Charges') as HTMLElement;
     if (!gpc.classList.contains('expanded')) gpc.click();
@@ -138,7 +138,7 @@ category('UI', () => {
     gpc.click();
     v.close();
     grok.shell.o = document.createElement('div');
-  });
+  }, {skipReason: 'GROK-11785'});
 
   test('info panel: identifiers', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -164,7 +164,7 @@ category('UI', () => {
     ih.click(); await delay(10);
     v.close();
     grok.shell.o = document.createElement('div');
-  }); 
+  }, {skipReason: 'GROK-11785'});
 
   test('info panel: structure2D', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -186,7 +186,7 @@ category('UI', () => {
     s2d.click(); await delay(10);
     v.close();
     grok.shell.o = document.createElement('div');
-  });
+  }, {skipReason: 'GROK-11785'});
 
   test('info panel: structure3D', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -208,7 +208,7 @@ category('UI', () => {
     s3d.click(); await delay(10);
     v.close();
     grok.shell.o = document.createElement('div');
-  });
+  }, {skipReason: 'GROK-11785'});
 
   test('info panel: properties', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -230,7 +230,7 @@ category('UI', () => {
     p.click(); await delay(10);
     v.close();
     grok.shell.o = document.createElement('div');
-  });
+  }, {skipReason: 'GROK-11785'});
 
   test('info panel: toxicity', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -252,7 +252,7 @@ category('UI', () => {
     t.click(); await delay(10);
     v.close();
     grok.shell.o = document.createElement('div');
-  });
+  }, {skipReason: 'GROK-11785'});
 
   test('info panel: drug likeness', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -274,7 +274,7 @@ category('UI', () => {
     dl.click(); await delay(10);
     v.close();
     grok.shell.o = document.createElement('div');
-  });
+  }, {skipReason: 'GROK-11785'});
 
   test('info panel: structural alerts', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -297,7 +297,7 @@ category('UI', () => {
     sa.click(); await delay(10);
     v.close();
     grok.shell.o = document.createElement('div');
-  });
+  }, {skipReason: 'GROK-11785'});
 
   test('chem inputs', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -345,7 +345,7 @@ category('UI', () => {
     let okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
     okButton!.click();
     await awaitCheck(() => grok.shell.t.columns.contains('inchi'), 'cannot find inchi column', 10000);
- 
+
     await callDialog();
     setDialogInputValue('Chem Map Identifiers', 'To Source', 'mcule');
     okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;

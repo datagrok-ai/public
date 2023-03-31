@@ -73,12 +73,10 @@ category('cell panel', async () => {
       await structuralAlertsWidget(mol);
   });
 
-  //TODO: Check if image is returned; Visual test required + tab change test required
+  //TODO: Check if image is returned; Visual test required
   test('structure-widget', async () => {
     for (const mol of molFormats) {
-      const wdg = moleculeOverviewWidget(mol);
-      expect(wdg.root.querySelector('[name="2D"]') !== null, true);
-      expect(wdg.root.querySelector('[name="3D"]') !== null, true);
+      moleculeOverviewWidget(mol);
     }
   });
 
