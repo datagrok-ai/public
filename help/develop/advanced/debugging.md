@@ -13,12 +13,56 @@ template, you may need to configure it differently for debugging.
 
 Here are the main points that we will cover:
 
+* [Prerequisites](#prerequisites)
 * [Recommendations for IDE](#recommendations-for-ides):
   * [Visual Studio Code](#one-click-debugging-with-visual-studio-code)
   * [JetBrains IDEs](#one-click-debugging-with-jetbrains-ides)
 * Additional tools:
   * [Logger](#logger)
   * [Inspector](#inspector)
+
+## Prerequisites
+
+First, make sure your package has the sourcemap options enabled:
+
+1. In `tsconfig.json`:
+
+  ```json
+  "compilerOptions": {
+    "sourceMap": true,
+  }
+  ```
+
+1. In `webpack.config.js`:
+
+  ```js
+  module.exports = {
+    devtool: 'source-map',
+  };
+  ```
+
+In some cases, especially when using 3rd-party libraries that have their own source maps, you may need to install an
+additional loader:
+
+```shell
+npm install source-map-loader --save-dev
+```
+
+To enable `source-map-loader`, add the following rule to your `webpack.config.js`:
+
+```js
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.js$/,
+        enforce: "pre",
+        use: ["source-map-loader"],
+      },
+    ],
+  },
+};
+```
 
 ## Recommendations for IDEs
 
@@ -250,3 +294,4 @@ See also:
 * [Getting started](../getting-started.md)
 * [JavaScript development](../develop.md)
 * [Audit](../../govern/audit.md)
+* [Query debugging](./query-debugging.md)
