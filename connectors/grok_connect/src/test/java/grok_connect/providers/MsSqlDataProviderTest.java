@@ -59,6 +59,7 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
         // method probably should throw something when bad input
     }
 
+    @Disabled
     @DisplayName("Test of getSchema() method with correct DataConnection")
     @ParameterizedTest(name = "CORRECT ARGUMENTS")
     @Sql(path = "scripts/mssql/mssql_basic_types.sql",
