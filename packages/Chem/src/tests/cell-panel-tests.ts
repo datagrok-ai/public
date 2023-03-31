@@ -49,8 +49,8 @@ category('cell panel', async () => {
     const idMap = await getIdMap(inchiKey);
     const expectedIdMap = await utils.loadFileAsText('tests/identifiers.json');
     expect(JSON.stringify(idMap), expectedIdMap);
-    
-  }); 
+
+  });
 
   test('properties', async () => {
     //commented out since the return type has changed - see if we still need it
@@ -77,8 +77,8 @@ category('cell panel', async () => {
   test('structure-widget', async () => {
     for (const mol of molFormats) {
       const wdg = moleculeOverviewWidget(mol);
-      expect(wdg.root.querySelector('[name="2D"]') != null, true);
-      expect(wdg.root.querySelector('[name="3D"]') != null, true);
+      expect(wdg.root.querySelector('[name="2D"]') !== null, true);
+      expect(wdg.root.querySelector('[name="3D"]') !== null, true);
     }
   });
 

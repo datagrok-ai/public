@@ -6,6 +6,8 @@ import {_convertMolNotation} from '../utils/convert-notation-utils';
 
 const CHEMBL = 'Chembl';
 const PUBCHEM = 'PubChem';
+const TRIPLE_BOND = '#';
+const TRIPLE_BOND_REPLACE_SYMBOL = '%23';
 
 let unichemSources: DG.DataFrame;
 
@@ -132,7 +134,7 @@ export async function getIdMap(inchiKey: string): Promise<{[k:string]: any} | nu
 }
 
 async function getIUPACName(smiles: string): Promise<string> {
-  const preparedSmiles = smiles.replaceAll(`#`, `%23`); // need to escape # sign (triple bond) in URL
+  const preparedSmiles = smiles.replaceAll(TRIPLE_BOND, TRIPLE_BOND_REPLACE_SYMBOL); // need to escape # sign (triple bond) in URL
   const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${preparedSmiles}/property/IUPACName/JSON`;
   const response = await fetch(url);
   const responseJson = await response.json();
