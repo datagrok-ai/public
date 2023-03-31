@@ -40,15 +40,13 @@ export const printLeftOrCentered = (
   g: CanvasRenderingContext2D, s: string, color: string = undefinedColor,
   pivot: number = 0, left = false, transparencyRate: number = 1.0,
   separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic,
-  maxWord: { [index: number]: number } = {}, wordIdx: number = 0, gridCell: DG.GridCell | null = null,
+  maxWord: number[] = [], wordIdx: number = 0, gridCell: DG.GridCell | null = null,
   referenceSequence: string[] = [], maxLengthOfMonomer: number | null = null
 ): number => {
   g.textAlign = 'start';
   let colorPart = s.substring(0);
   let grayPart = last ? '' : separator;
-  if (drawStyle === DrawStyle.MSA) {
-    grayPart = '';
-  }
+  if (drawStyle === DrawStyle.MSA) grayPart = '';
   let colorCode = true;
   let compareWithCurrent = true;
   let highlightDifference = 'difference';
@@ -56,24 +54,19 @@ export const printLeftOrCentered = (
     colorCode = gridCell.cell.column.temp['color-code'] ?? true;
     compareWithCurrent = gridCell.cell.column.temp['compare-with-current'] ?? true;
     highlightDifference = gridCell.cell.column.temp['highlight-difference'] ?? 'difference';
-
   }
   const currentMonomer: string = referenceSequence[wordIdx];
-  if (compareWithCurrent && (referenceSequence.length > 0) && (highlightDifference === 'difference')) {
+  if (compareWithCurrent && (referenceSequence.length > 0) && (highlightDifference === 'difference'))
     transparencyRate = (colorPart == currentMonomer) ? 0.3 : transparencyRate;
-  }
-  if (compareWithCurrent && (referenceSequence.length > 0) && (highlightDifference === 'equal')) {
+  if (compareWithCurrent && (referenceSequence.length > 0) && (highlightDifference === 'equal'))
     transparencyRate = (colorPart != currentMonomer) ? 0.3 : transparencyRate;
-  }
-  if (maxLengthOfMonomer != null) {
+  if (maxLengthOfMonomer != null)
     colorPart = monomerToShortFunction(colorPart, maxLengthOfMonomer);
-  }
 
   let textSize: any = g.measureText(colorPart + grayPart);
-  const indent = 5;
 
   let maxColorTextSize = g.measureText(colorPart).width;
-  let colorTextSize = g.measureText(colorPart).width;
+  const colorTextSize = g.measureText(colorPart).width;
   const dy = h / 2 - (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2 + 1;
   textSize = textSize.width;
   if (drawStyle === DrawStyle.MSA) {
@@ -81,6 +74,7 @@ export const printLeftOrCentered = (
     textSize = maxWord[wordIdx];
   }
 
+  /** Draw color part at {@link dx1}, and gray part at {@link dx2}. */
   function draw(dx1: number, dx2: number): void {
     const drawColor = colorCode ? color : blackColor;
     g.fillStyle = drawColor;
@@ -96,13 +90,13 @@ export const printLeftOrCentered = (
     }
   }
 
+  const placeX: number = maxWord[wordIdx];
   if (left || textSize > w) {
-    draw(indent, indent + maxColorTextSize);
-    return x + maxColorTextSize + g.measureText(grayPart).width;
-
+    draw(placeX, placeX + maxColorTextSize);
+    return placeX + maxColorTextSize + g.measureText(grayPart).width;
   } else {
     const dx = (w - textSize) / 2;
     draw(dx, dx + maxColorTextSize);
-    return x + dx + maxColorTextSize;
+    return placeX + dx + maxColorTextSize;
   }
 };

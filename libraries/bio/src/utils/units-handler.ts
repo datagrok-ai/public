@@ -241,8 +241,8 @@ export class UnitsHandler {
 
   public constructor(col: DG.Column) {
     this._column = col;
-    const units = this._column.tags[DG.TAGS.UNITS];
-    if (units !== null)
+    const units = this._column.getTag(DG.TAGS.UNITS);
+    if (!!units)
       this._units = units;
     else
       throw new Error('Units are not specified in column');
@@ -252,9 +252,10 @@ export class UnitsHandler {
         UnitsHandler._defaultGapSymbolsDict.SEPARATOR;
 
     if (!this.column.tags.has(TAGS.aligned)) {
-      if (this.isFasta() || this.isSeparator())
+      if (this.isFasta() || this.isSeparator()) {
         throw new Error(`For column '${this.column.name}' of notation '${this.notation}' ` +
           `tag '${TAGS.aligned}' is mandatory.`);
+      }
     }
 
     // if (!this.column.tags.has(TAGS.alphabetSize)) {

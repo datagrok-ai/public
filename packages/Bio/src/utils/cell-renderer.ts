@@ -5,6 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import {_package} from '../package';
 import {printLeftOrCentered, DrawStyle} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import * as C from './constants';
+import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {
   ALIGNMENT,
   getPaletteByType,
@@ -57,118 +58,9 @@ export function processSequence(subParts: string[]): [string[], boolean] {
   return [text, simplified];
 }
 
-class SeqColForTemp {
-  private readonly _uh: UnitsHandler;
-  private readonly _splitter: SplitterFunc;
-  private _monomerLengthList: number[][] | null = null;
-
-  private _updated: boolean = false;
-  public get updated(): boolean { return this._updated; }
-
-  constructor(
-    public col: DG.Column<string>,
-    private monomerToShort: MonomerToShortFunc,
-    private monomerLabelLengthLimit: number,
-    private monomerCharWidth: number = 7,
-    private monomerSeparatorWidth: number = 12
-  ) {
-    this._uh = new UnitsHandler(col);
-
-    this._splitter = getSplitterForColumn(this.col);
-
-    col.dataFrame.onDataChanged.subscribe(() => {
-      this._monomerLengthList = null;
-    });
-  }
-
-  public getCellMonomerLengths(rowIdx: number): number[] {
-    if (this._uh.isMsa())
-      return this.getCellMonomerLengthsForSeqMsa();
-    else
-      return this.getCellMonomerLengthsForSeq(rowIdx);
-  }
-
-  private getCellMonomerLengthsForSeq(rowIdx: number): number[] {
-    if (this._monomerLengthList === null) {
-      this._monomerLengthList = new Array(this.col.length).fill(null);
-      this._updated = true;
-    }
-
-    let res: number[] = this._monomerLengthList[rowIdx];
-    if (res === null) {
-      const seqMonList: string[] = this.getSeqMonList(rowIdx);
-      res = this._monomerLengthList[rowIdx] = new Array<number>(seqMonList.length);
-
-      for (const [seqMonI, seqMonLabel] of seqMonList.entries()) {
-        const seqMonWidth: number = this.monomerSeparatorWidth +
-          this.monomerToShort(seqMonLabel, this.monomerLabelLengthLimit).length * this.monomerCharWidth;
-        res[seqMonI] = seqMonWidth;
-      }
-      this._updated = true;
-    }
-
-    return res;
-  }
-
-  private getCellMonomerLengthsForSeqMsa(): number[] {
-    if (this._monomerLengthList === null) {
-      this._monomerLengthList = new Array(1).fill(null);
-      this._updated = true;
-    }
-    let res: number[] | null = this._monomerLengthList[0];
-    if (res === null) {
-      res = this._monomerLengthList[0] = new Array(0);
-      for (let seqIdx = 0; seqIdx < Math.max(this.col.length, 100); seqIdx++) {
-        const seqMonList: string[] = this.getSeqMonList(seqIdx);
-        if (seqMonList.length > res.length)
-          res.push(...new Array<number>(seqMonList.length - res.length).fill(0));
-
-        for (const [seqMonI, seqMonLabel] of seqMonList.entries()) {
-          const seqMonWidth: number = this.monomerSeparatorWidth +
-            this.monomerToShort(seqMonLabel, this.monomerLabelLengthLimit).length * this.monomerCharWidth;
-          res[seqMonI] = Math.max(res[seqMonI] ?? 0, seqMonWidth);
-        }
-      }
-      this._updated = true;
-    }
-    return res; // first (and single) row of data
-  }
-
-  /** Returns seq position for pointer x */
-  public getPosition(rowIdx: number, x: number): number | null {
-    const monomerMaxLengths: number[] = this.getCellMonomerLengths(rowIdx);
-    const seq: string = this.col.get(rowIdx)!;
-    const seqMonList: string[] = this._splitter(seq);
-
-    let left: number | null = null;
-    let right = seqMonList.length;
-    let found = false;
-    let mid = 0;
-    if (x > monomerMaxLengths[0]) {
-      while (!found) {
-        mid = Math.floor((right + (left ?? 0)) / 2);
-        if (x >= monomerMaxLengths[mid] && x <= monomerMaxLengths[mid + 1]) {
-          left = mid;
-          found = true;
-        } else if (x < monomerMaxLengths[mid]) {
-          right = mid - 1;
-        } else if (x > monomerMaxLengths[mid + 1]) {
-          left = mid + 1;
-        }
-        if (left == right)
-          found = true;
-      }
-    }
-    return left;
-  }
-
-  getSeqMonList(rowIdx: number): string[] {
-    const seq: string | null = this.col.get(rowIdx);
-    return seq ? this._splitter(seq) : [];
-  }
-}
-
 export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
+  private padding: number = 5;
+
   get name(): string { return 'sequence'; }
 
   get cellType(): string { return 'sequence'; }
@@ -189,7 +81,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
     const tableCol: DG.Column = gridCell.cell.column;
     const tableColTemp: TempType = tableCol.temp;
-    const seqColTemp: SeqColForTemp = tableCol.temp[tempTAGS.bioSeqCol];
+    const seqColTemp: MonomerPlacer = tableCol.temp[tempTAGS.bioSeqCol];
     if (!seqColTemp) return; // Can do nothing without precalculated data
 
     const gridCellBounds: DG.Rect = gridCell.bounds;
@@ -234,6 +126,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
     // TODO: Store temp data to GridColumn
     // Now the renderer requires data frame table Column underlying GridColumn
+    const view = gridCell.grid.view;
     const tableCol: DG.Column = gridCell.cell.column;
     const tableColTemp: TempType = tableCol.temp;
 
@@ -245,14 +138,21 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       maxLengthOfMonomer = 1;
     }
 
-    let seqColTemp: SeqColForTemp = tableCol.temp[tempTAGS.bioSeqCol];
-    if (!seqColTemp)
-      seqColTemp = new SeqColForTemp(tableCol, monomerToShortFunction, maxLengthOfMonomer);
+    let seqColTemp: MonomerPlacer = tableCol.temp[tempTAGS.bioSeqCol];
+    if (!seqColTemp) {
+      seqColTemp = new MonomerPlacer(view, tableCol,
+        () => {
+          const uh = new UnitsHandler(tableCol);
+          return {
+            unitsHandler: uh,
+            monomerCharWidth: 7, separatorWidth: !uh.isMsa() ? 4 : 12,
+            monomerToShort: monomerToShortFunction, monomerLengthLimit: 1,
+          };
+        });
+    }
 
-    const maxLengthWords: number[] = seqColTemp.getCellMonomerLengths(gridCell.tableRowIndex!);
-    const maxLengthWordsSum: number[] = new Array<number>(maxLengthWords.length).fill(0);
-    for (let posI: number = 1; posI < maxLengthWords.length; posI++)
-      maxLengthWordsSum[posI] = maxLengthWordsSum[posI - 1] + maxLengthWords[posI];
+    const [maxLengthWords, maxLengthWordsSum]: [number[], number[]] =
+      seqColTemp.getCellMonomerLengths(gridCell.tableRowIndex!);
     const maxIndex = maxLengthWords.length;
 
     // Store updated seqColTemp to the col temp
@@ -266,7 +166,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       const minDistanceRenderer = 50;
       w = getUpdatedWidth(grid, g, x, w);
       g.beginPath();
-      g.rect(x, y, w, h);
+      g.rect(x + this.padding, y + this.padding, w - this.padding - 1, h - this.padding * 2);
       g.clip();
       g.font = '12px monospace';
       g.textBaseline = 'top';
@@ -318,22 +218,21 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       // }
 
       const subParts: string[] = splitterFunc(value);
-      let x1 = x;
+      /* let x1 = x; */
       let color = undefinedColor;
       let drawStyle = DrawStyle.classic;
 
       if (aligned && aligned.includes('MSA') && units == NOTATION.SEPARATOR)
         drawStyle = DrawStyle.MSA;
 
-      // subParts.every((amino, index) => {
-      // });
       for (const [index, amino] of subParts.entries()) {
         color = palette.get(amino);
         g.fillStyle = undefinedColor;
         const last = index === subParts.length - 1;
-        x1 = printLeftOrCentered(x1, y, w, h,
+        /*x1 = */
+        printLeftOrCentered(x + this.padding, y, w, h,
           g, amino, color, 0, true, 1.0, separator, last, drawStyle,
-          maxLengthWords, index, gridCell, referenceSequence, maxLengthOfMonomer);
+          maxLengthWordsSum, index, gridCell, referenceSequence, maxLengthOfMonomer);
         if (minDistanceRenderer > w) break;
       }
     } catch (err: any) {

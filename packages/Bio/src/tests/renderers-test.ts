@@ -105,8 +105,11 @@ category('renderers', () => {
   async function _rendererMacromoleculeDifference() {
     const seqDiffCol: DG.Column = DG.Column.fromStrings('SequencesDiff',
       ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
-    seqDiffCol.tags[DG.TAGS.UNITS] = NOTATION.SEPARATOR;
-    seqDiffCol.tags[bioTAGS.separator] = '/';
+    seqDiffCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+    seqDiffCol.setTag(bioTAGS.separator, '/');
+    seqDiffCol.setTag(bioTAGS.aligned, 'SEQ');
+    seqDiffCol.setTag(bioTAGS.alphabet, 'UN');
+    seqDiffCol.setTag(bioTAGS.alphabetIsMultichar, 'true');
     seqDiffCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
     const df = DG.DataFrame.fromColumns([seqDiffCol]);
 
@@ -192,8 +195,11 @@ category('renderers', () => {
     /**/
     const seqDiffCol: DG.Column = DG.Column.fromStrings('SequencesDiff',
       ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
-    seqDiffCol.tags[DG.TAGS.UNITS] = NOTATION.SEPARATOR;
-    seqDiffCol.tags[bioTAGS.separator] = '/';
+    seqDiffCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+    seqDiffCol.setTag(bioTAGS.separator, '/');
+    seqDiffCol.setTag(bioTAGS.aligned, 'SEQ');
+    seqDiffCol.setTag(bioTAGS.alphabet, 'UN');
+    seqDiffCol.setTag(bioTAGS.alphabetIsMultichar, 'true');
     seqDiffCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
     const df = DG.DataFrame.fromColumns([seqDiffCol]);
     const tv = grok.shell.addTableView(df);
@@ -214,8 +220,11 @@ category('renderers', () => {
   async function _setRendererManually() {
     const seqDiffCol: DG.Column = DG.Column.fromStrings('SequencesDiff',
       ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
-    seqDiffCol.tags[DG.TAGS.UNITS] = NOTATION.SEPARATOR;
-    seqDiffCol.tags[bioTAGS.separator] = '/';
+    seqDiffCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+    seqDiffCol.setTag(bioTAGS.separator, '/');
+    seqDiffCol.setTag(bioTAGS.aligned, 'SEQ');
+    seqDiffCol.setTag(bioTAGS.alphabet, 'UN');
+    seqDiffCol.setTag(bioTAGS.alphabetIsMultichar, 'true');
     seqDiffCol.semType = DG.SEMTYPE.MACROMOLECULE;
     const tgtCellRenderer = 'MacromoleculeDifference';
     seqDiffCol.setTag(DG.TAGS.CELL_RENDERER, tgtCellRenderer);
