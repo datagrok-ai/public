@@ -8,11 +8,11 @@ import grok_connect.utils.PatternMatcher;
 import grok_connect.utils.PatternMatcherResult;
 import grok_connect.utils.Property;
 import grok_connect.utils.ProviderManager;
-
 import java.lang.reflect.Array;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 public class ClickHouseProvider extends JdbcDataProvider {
@@ -27,6 +27,26 @@ public class ClickHouseProvider extends JdbcDataProvider {
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
+        descriptor.typesMap = new HashMap<String, String>() {{
+            put("#^(int(8|16|32))$", serialization.Types.INT);
+            put("#^(uint(8|16))$", serialization.Types.INT);
+            put("#^(int(64|128|256))$", serialization.Types.BIG_INT);
+            put("#^(uint(32|64|128|256))$", serialization.Types.BIG_INT);
+            put("#float.*", serialization.Types.FLOAT);
+            put("#decimal.*", serialization.Types.FLOAT);
+            put("string", serialization.Types.STRING);
+            put("uuid", serialization.Types.STRING);
+            put("bool", serialization.Types.BOOL);
+            put("#date.*", serialization.Types.DATE_TIME);
+            put("#datetime.*", serialization.Types.DATE_TIME);
+            put("#tuple.*", serialization.Types.OBJECT);
+            put("#array.*", serialization.Types.OBJECT);
+            put("#map.*", serialization.Types.OBJECT);
+            put("point", serialization.Types.OBJECT);
+            put("ring", serialization.Types.OBJECT);
+            put("polygon", serialization.Types.OBJECT);
+            put("multipolygon", serialization.Types.OBJECT);
+        }};
     }
 
     @Override
@@ -135,7 +155,7 @@ public class ClickHouseProvider extends JdbcDataProvider {
         return getStringArrayRepresentation(value);
     }
 
-    String getStringArrayRepresentation(Object array) {
+    private String getStringArrayRepresentation(Object array) {
         int length = Array.getLength(array);
         StringBuilder builder = new StringBuilder("[");
         for (int i = 0; i < length; i++) {

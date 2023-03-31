@@ -99,3 +99,44 @@ CREATE TABLE ARRAY_TYPE(array_type Array(UInt32), array_array_type Array(Array(U
     ENGINE = MergeTree()
     ORDER BY tuple();
 INSERT INTO ARRAY_TYPE (array_type, array_array_type) VALUES ([1, 2, 3, 4], [[24], [421, 12, 4], []]);
+
+CREATE TABLE TUPLE_TYPE(tuple Tuple(UInt32, String))
+    ENGINE = MergeTree()
+    ORDER BY tuple();
+
+INSERT INTO TUPLE_TYPE (tuple) VALUES (tuple(1244, 'Datagrok'));
+
+CREATE TABLE MAP_TYPE (a Map(String, UInt64))
+    ENGINE = MergeTree()
+    ORDER BY tuple();
+INSERT INTO MAP_TYPE VALUES ({'key1':1, 'key2':10}), ({'key1':2,'key2':20}), ({'key1':3,'key2':30});
+
+CREATE TABLE DATE_TYPES(date_type Date, date32_type Date32, datetime_type DateTime,
+                        datetime64_type DateTime64(3, 'Europe/Kyiv'))
+    ENGINE = MergeTree()
+    ORDER BY tuple();
+
+INSERT INTO DATE_TYPES(date_type, date32_type, datetime_type, datetime64_type)
+VALUES (toDate('2016-06-15'), toDate('2016-06-15'), toDateTime('2016-06-15 23:00:00'),
+        toDateTime('2019-01-01 00:00:00', 'UTC'));
+
+CREATE TABLE NESTED_TYPE
+(
+    EventDate Date,
+    UserID UInt64,
+    Attrs Nested(
+        Key String,
+        Value String)
+)
+    ENGINE = MergeTree()
+    ORDER BY tuple();
+
+INSERT INTO NESTED_TYPE VALUES ('2016-01-01', 123, ['price', 'color'], ['high', 'red']);
+
+CREATE TABLE GEO_TYPES(p Point, r Ring, pg Polygon, mpg MultiPolygon)
+    ENGINE = MergeTree()
+    ORDER BY tuple();
+INSERT INTO GEO_TYPES(p, r, pg, mpg)
+VALUES ((10, 10), ([(0, 0), (10, 0), (10, 10), (0, 10)]),
+    ([[(20, 20), (50, 20), (50, 50), (20, 50)], [(30, 30), (50, 50), (50, 30)]]),
+    ([[[(0, 0), (10, 0), (10, 10), (0, 10)]], [[(20, 20), (50, 20), (50, 50), (20, 50)],[(30, 30), (50, 50), (50, 30)]]]));
