@@ -262,7 +262,7 @@ export async function dockingDemo() {
 }
 
 //name: inGridDemo
-//meta.demoPath: Cheminformatics | In Grid
+//meta.demoPath: Cheminformatics | 3D Molecules in Grid
 export async function inGridDemo() {
   const piMsg: string = 'Opening biostructure in grid demo app ...';
   const pi: TaskBarProgressIndicator = TaskBarProgressIndicator.create(piMsg);
