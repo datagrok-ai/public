@@ -115,6 +115,8 @@ class Neo4jDataProviderTest {
     public void checkAllTypesSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        System.out.println("ACTUAL: " + actual);
+        System.out.println("EXPECTED: " + expected);
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
