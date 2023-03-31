@@ -70,13 +70,4 @@ public class FloatColumn extends Column<Float> {
     public float[] getData() {
         return data;
     }
-
-    @Override
-    public String toString() {
-        return "FloatColumn{" +
-                "data=" + Arrays.toString(data) +
-                ", name='" + name + '\'' +
-                ", tags=" + tags +
-                '}';
-    }
 }
