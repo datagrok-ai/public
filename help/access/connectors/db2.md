@@ -48,17 +48,17 @@ SQL queries via JDBC driver.
 
 ## Supported output types
 
-| Type                                        | Supported           |
-|---------------------------------------------|---------------------|
-| INTEGER, SMALLINT, BIGINT                   | :white_check_mark:  |
-| BOOLEAN                                     | :white_check_mark:  |
-| DECIMAL, DECFLOAT                           | :white_check_mark:  |
-| REAL, DOUBLE                                | :white_check_mark:  |
-| DATE, TIME, TIMESTAMP                       | :white_check_mark:  |
-| CHARACTER, VARCHAR, GRAPHIC,<br/>VARGRAPHIC | :white_check_mark:  |
-| CLOB, DBCLOB                                | :white_check_mark:  |
-| XML                                         | limited support (1) |
-| BINARY, VARBINARY, BLOB                     | not tested          |
+| Type                                        | Supported              |
+|---------------------------------------------|------------------------|
+| INTEGER, SMALLINT, BIGINT                   | :white_check_mark:     |
+| BOOLEAN                                     | :white_check_mark:     |
+| DECIMAL, DECFLOAT                           | :white_check_mark:     |
+| REAL, DOUBLE                                | :white_check_mark:     |
+| DATE, TIME, TIMESTAMP                       | :white_check_mark:     |
+| CHARACTER, VARCHAR, GRAPHIC,<br/>VARGRAPHIC | :white_check_mark:     |
+| CLOB, DBCLOB                                | :white_check_mark:     |
+| XML                                         | :white_check_mark: (1) |
+| BINARY, VARBINARY, BLOB                     | not tested             |
 
 * (1) supported as a string
 
