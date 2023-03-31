@@ -32,7 +32,7 @@ jobs:
         if: always()
         with:
           name: Maven Tests
-          path: target/surefire-reports/*.xml
+          path: /home/runner/work/public/public/connectors/grok_connect/target/surefire-reports/*.xml
           reporter: java-junit
           fail-on-error: true
       - name: Get version
