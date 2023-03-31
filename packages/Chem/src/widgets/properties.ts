@@ -9,15 +9,6 @@ import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import { MOL_FORMAT } from '../constants';
 
-async function getIUPACName(smiles: string): Promise<string> {
-  const preparedSmiles = smiles.replaceAll(`#`, `%23`); // need to escape # sign (triple bond) in URL
-  const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${preparedSmiles}/property/IUPACName/JSON`;
-  const response = await fetch(url);
-  const responseJson = await response.json();
-  const result = responseJson.PropertyTable?.Properties;
-  return (result && result[0].hasOwnProperty('IUPACName')) ? result[0].IUPACName : 'Not found in PubChem';
-}
-
 export function getMoleculeCharge(mol: OCL.Molecule) {
   const atomsNumber = mol.getAllAtoms();
   let moleculeCharge = 0;
@@ -70,7 +61,6 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
   }
 
   let map = {
-    'SMILES': prop('Smiles', DG.TYPE.STRING, (m) => m.toSmiles()),
     'Formula': prop('Formula', DG.TYPE.STRING, (m) => m.getMolecularFormula().formula),
     'MW': prop('MW', DG.TYPE.FLOAT, (m) => m.getMolecularFormula().absoluteWeight),
     'HBA': prop('HBA', DG.TYPE.INT, (m) => new OCL.MoleculeProperties(m).acceptorCount),
@@ -80,7 +70,6 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
     'PSA': prop('PSA', DG.TYPE.FLOAT, (m) => new OCL.MoleculeProperties(m).polarSurfaceArea),
     'Rotatable bonds': prop('Rotatable bonds', DG.TYPE.INT, (m) => new OCL.MoleculeProperties(m).rotatableBondCount),
     'Stereo centers': prop('Stereo centers', DG.TYPE.INT, (m) => new OCL.MoleculeProperties(m).stereoCenterCount),
-    'Name': ui.wait(async () => ui.divText(await getIUPACName(mol.toSmiles()))),
     'Molecule charge': prop('Molecule charge', DG.TYPE.INT, (m) => getMoleculeCharge(m)),
   };
 
