@@ -888,8 +888,8 @@ export class Menu {
 
   /** Shows the menu.
    * @returns {Menu} */
-  show(parentElement?: HTMLElement): Menu {
-    return toJs(api.grok_Menu_Show(this.dart, parentElement));
+  show(options?: {parent?: HTMLElement}): Menu {
+    return toJs(api.grok_Menu_Show(this.dart, options?.parent));
   }
 
   get onContextMenuItemClick() {
