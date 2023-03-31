@@ -122,6 +122,7 @@ public enum Provider {
                     .withDatabaseName(properties.get("database").toString())
                     .withUsername(properties.get("user").toString())
                     .withPassword(properties.get("password").toString())
+                    .withInitScript(properties.get("initScript").toString())
                     .withClasspathResourceMapping(properties.get("volumePath").toString(),
                                 "/etc/", BindMode.READ_ONLY);
             container.start();
