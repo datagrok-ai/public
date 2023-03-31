@@ -896,8 +896,8 @@ export class Menu {
 
   /** Shows the menu.
    * @returns {Menu} */
-  show(): Menu {
-    return toJs(api.grok_Menu_Show(this.dart));
+  show(options?: {parent?: HTMLElement}): Menu {
+    return toJs(api.grok_Menu_Show(this.dart, options?.parent));
   }
 
   get onContextMenuItemClick() {
