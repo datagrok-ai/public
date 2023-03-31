@@ -7,15 +7,19 @@ import grok_connect.providers.utils.FuncCallBuilder;
 import grok_connect.providers.utils.Parser;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.params.provider.Arguments;
-import serialization.*;
-
-import java.time.Year;
+import serialization.BigIntColumn;
+import serialization.BoolColumn;
+import serialization.DataFrame;
+import serialization.DateTimeColumn;
+import serialization.FloatColumn;
+import serialization.IntColumn;
+import serialization.StringColumn;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
 public class ClickHouseObjectsMother {
-    private static Parser parser = new DateParser();
+    private static final Parser parser = new DateParser();
 
     public static Stream<Arguments> getSchemas_ok() {
         DataFrame expected = DataFrameBuilder.getBuilder()
@@ -152,5 +156,75 @@ public class ClickHouseObjectsMother {
                 .build();
         return Stream.of(Arguments.of(Named.of("ARRAY TYPE",
                 FuncCallBuilder.fromQuery("SELECT * FROM ARRAY_TYPE;")), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_tupleType_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new StringColumn(new String[] {"[1244, Datagrok]"}), "tuple")
+                .build();
+        return Stream.of(Arguments.of(Named.of("TUPLE TYPE",
+                FuncCallBuilder.fromQuery("SELECT * FROM TUPLE_TYPE;")), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_mapType_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(3)
+                .setColumn(new StringColumn(new String[] {"{key1=1, key2=10}",
+                        "{key1=2, key2=20}", "{key1=3, key2=30}"}), "a")
+                .build();
+        return Stream.of(Arguments.of(Named.of("MAP TYPE",
+                FuncCallBuilder.fromQuery("SELECT * FROM MAP_TYPE;")), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_dateTypes_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new DateTimeColumn(new Double[]{
+                        parser.parseDateToDouble("yyyy-MM-dd", "2016-06-15")}),
+                        "date_type")
+                .setColumn(new DateTimeColumn(new Double[]{
+                                parser.parseDateToDouble("yyyy-MM-dd", "2016-06-15")}),
+                        "date32_type")
+                .setColumn(new DateTimeColumn(new Double[]{
+                                parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss",
+                                        "2016-06-15 23:00:00")}),
+                        "datetime_type")
+                .setColumn(new DateTimeColumn(new Double[]{
+                                parser.parseDateToDouble("yyyy-MM-dd'T'HH:mm:ssX",
+                                        "2019-01-01T02:00:00+0200")}),
+                        "datetime64_type")
+                .build();
+        return Stream.of(Arguments.of(Named.of("DATE TYPES",
+                FuncCallBuilder.fromQuery("SELECT * FROM DATE_TYPES;")), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_nestedType_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("yyyy-MM-dd",
+                                "2016-01-01")}),
+                        "EventDate")
+                .setColumn(new BigIntColumn(new String[]{"123"}), "UserID")
+                .setColumn(new StringColumn(new String[]{"[price, color]"}), "Attrs.Key")
+                .setColumn(new StringColumn(new String[]{"[high, red]"}), "Attrs.Value")
+                .build();
+        return Stream.of(Arguments.of(Named.of("NESTED TYPE",
+                FuncCallBuilder.fromQuery("SELECT * FROM NESTED_TYPE;")), expected));
+    }
+
+    public static Stream<Arguments> checkOutputDataFrame_geoTypes_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new StringColumn(new String[]{"[10.0, 10.0]"}), "p")
+                .setColumn(new StringColumn(new String[]{"[[0.0, 0.0][10.0, 0.0][10.0, 10.0][0.0, 10.0]]"}), "r")
+                .setColumn(new StringColumn(new String[]{"[[[20.0, 20.0][50.0, 20.0][50.0, 50.0][20.0, 50.0]]"
+                        + "[[30.0, 30.0][50.0, 50.0][50.0, 30.0]]]"}), "pg")
+                .setColumn(new StringColumn(new String[]{"[[[[0.0, 0.0][10.0, 0.0][10.0, 10.0][0.0, 10.0]]]"
+                                + "[[[20.0, 20.0][50.0, 20.0][50.0, 50.0][20.0, 50.0]][[30.0, 30.0][50.0, 50.0][50.0, 30.0]]]]"}),
+                        "mpg")
+                .build();
+        return Stream.of(Arguments.of(Named.of("GEO TYPE",
+                FuncCallBuilder.fromQuery("SELECT * FROM GEO_TYPES;")), expected));
     }
 }

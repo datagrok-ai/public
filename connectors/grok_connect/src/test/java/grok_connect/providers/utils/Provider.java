@@ -19,7 +19,7 @@ public enum Provider {
     CLICKHOUSE("src/test/resources/properties/clickhouse.properties") {
         @Override
         protected JdbcDatabaseContainer<?> newJdbcContainer() {
-            container = new ClickHouseContainer(DockerImageName.parse("clickhouse/clickhouse-server:22.12.5-alpine"))
+            container = new ClickHouseContainer(DockerImageName.parse(properties.get("image").toString()))
                     .waitingFor(new DockerHealthcheckWaitStrategy())
                     .withInitScript(properties.get("initScript").toString());
             container.start();

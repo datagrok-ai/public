@@ -578,6 +578,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                             } else if (value instanceof LocalDate) {
                                 time = java.util.Date.from(((LocalDate) value).atStartOfDay(ZoneId.systemDefault())
                                         .toInstant());
+                            } else if (value instanceof OffsetDateTime) {
+                                time = java.util.Date.from(((OffsetDateTime) value)
+                                        .toInstant());
                             } else {
                                 time = ((java.util.Date) value);
                             }
