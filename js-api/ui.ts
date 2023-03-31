@@ -20,6 +20,7 @@ import {
   DateInput,
   fileShares,
   SliderOptions,
+  Breadcrumbs,
   DropDown,
   TypeAhead,
   TypeAheadConfig
@@ -1364,6 +1365,10 @@ function _iconFA(type: string, handler: Function | null, tooltipMsg: string | nu
     e?.addEventListener('click', (e) => handler(e));
   tooltip.bind(e, tooltipMsg);
   return e;
+}
+
+export function breadcrumbs(path: string[]): Breadcrumbs {
+  return new Breadcrumbs(path);
 }
 
 export function dropDown(label: string | Element, createElement: () => HTMLElement): DropDown {

@@ -12,6 +12,7 @@ import dayjs from "dayjs";
 import typeahead from 'typeahead-standalone';
 import {Dictionary, typeaheadConfig} from 'typeahead-standalone/dist/types';
 
+import '../css/breadcrumbs.css';
 import '../css/drop-down.css';
 import '../css/typeahead-input.css';
 
@@ -1754,6 +1755,37 @@ export class FilesWidget extends DartWidget {
    * [path] accepts a full-qualified name (see [Entity.nqName]). */
   static create(params: {path?: string, dataSourceFilter?: fileShares[]} = {}): FilesWidget {
     return toJs(api.grok_FilesWidget(params));
+  }
+}
+
+export class Breadcrumbs {
+  path: string[];
+  root: HTMLDivElement;
+
+  constructor(path: string[]) {
+    this.root = ui.div();
+    this.path = path;
+
+    this.root = ui.divH(path.map((element) => ui.div(ui.link(element, () => {}, '',
+      `ui-breadcrumbs-text-element ${element}`), 'ui-breadcrumbs-element')), 'ui-breadcrumbs');
+
+    const rootElements = this.root.getElementsByClassName('ui-breadcrumbs-element');
+    for (let i = 0; i < rootElements.length - 1; i++)
+      rootElements[i].after(ui.iconFA('chevron-right'));
+  }
+
+  get onPathClick(): Observable<string[]> {
+    const pathElements = this.root.getElementsByClassName('ui-breadcrumbs-text-element');
+
+    return fromEvent<MouseEvent>(pathElements, 'click')
+      .pipe(
+        map((event) => {
+          const currentElement = (event.target as Element).innerHTML;
+          const currentPath = this.path.slice(0, this.path.indexOf(currentElement) + 1);
+
+          return currentPath;
+        })
+      );
   }
 }
 
