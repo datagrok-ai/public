@@ -113,7 +113,7 @@ const DefaultViewerProps: Partial<RcsbViewerProps> = {
   // showStructureComponentControls: true,
   // showVolumeStreamingControls: true,
   // showAssemblySymmetryControls: true,
-  showValidationReportControls: true,
+  // showValidationReportControls: true,
 
   showMembraneOrientationPreset: false,
   // showNakbColorTheme: false,
@@ -307,7 +307,7 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
       if (!this.viewer) throw new Error('viewer does not exists');
 
 
-      const plugin: PluginContext = this.viewer.getPlugin();
+      const plugin: PluginContext = this.viewer.plugin;
       switch (property.name) {
       case PROPS.layoutShowLog: {
         //plugin.layout.setProps({layoutShowLog: value;});
@@ -489,7 +489,7 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
       this.viewer = new RcsbViewer(this.viewerDiv, props);
       await this.viewer.loadStructureFromData(this.pdbStr, 'pdb', false);
 
-      const plugin: PluginContext = this.viewer.getPlugin();
+      const plugin: PluginContext = this.viewer.plugin;
       plugin.commands.subscribe(PluginCommands.Layout.Update, () => {
 
       });
@@ -572,4 +572,3 @@ export async function byData(pdbData: string, name: string = 'Mol*') {
     });
   //v.handleResize();
 }
-
