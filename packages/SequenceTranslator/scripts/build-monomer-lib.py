@@ -11,7 +11,7 @@ import orjson
 
 import click
 
-from click_default_group import DefaultGroup
+CodesType = dict[str, dict[str, list[str]]]
 
 BEGIN_ATOM_LINE = 'M  V30 BEGIN ATOM'
 END_ATOM_LINE = 'M  V30 END ATOM'
@@ -108,21 +108,18 @@ def mol_add_collection(mol: Mol,
     return '\n'.join(mb_line_list)
 
 
-def molfile2molfile(src_mol: str, name: str) -> str:
+def prepare_molblock(src_molblock: str, name: str) -> str:
     """Loads mol from src_mol str. Fixed title, adds chirality to atoms and preserves chirality for bonds."""
     # Using sanitize=False leads to unwanted moving stereo (invalid?) CFGs to other bonds
-    mol: Mol = Chem.MolFromMolBlock(src_mol, removeHs=False)
-    src_mf_lines = src_mol.split('\n')
-    title = src_mf_lines[1]
-    return mol_add_collection(mol, name, title=title, src_mol=src_mol)
+    mol: Mol = Chem.MolFromMolBlock(src_molblock, removeHs=False)
+    src_molblock_lines = src_molblock.split('\n')
+    title = src_molblock_lines[1]
+    return mol_add_collection(mol, name, title=title, src_mol=src_molblock)
 
 
 def smiles2molfile(smiles: str, name: str) -> str:
     mol: Mol = Chem.MolFromSmiles(smiles)
     return mol_add_collection(mol, name)
-
-
-CodesType = dict[str, dict[str, list[str]]]
 
 
 class Monomer:
@@ -132,7 +129,7 @@ class Monomer:
         self.smiles = smiles
         self.name = name
         self.author = 'SequenceTranslator'
-        self.molfile = molfile2molfile(
+        self.molfile = prepare_molblock(
             molfile, name) if molfile else smiles2molfile(smiles, name)
         self.naturalAnalog = ''
         self.rgroups = [{
@@ -295,13 +292,13 @@ class MolFileV3K:
 
 
 class MolFileMap:
-    def __init__(self, src: str, mol_file: MolFileV3K,
+    def __init__(self, src: str, mol_file_obj: MolFileV3K,
                  atom_block_idx_boundaries: tuple[int, int],
                  bond_block_idx_boundaries: tuple[int, int],
                  collection_idx_boundaries: tuple[int, int] = None,
                  collection_steabs_idx: int = None):
         self._src = src
-        self._mol_file = mol_file
+        self._mol_file = mol_file_obj
         self.begin_atom_idx = atom_block_idx_boundaries[0]
         self.end_atom_idx = atom_block_idx_boundaries[1]
         self.begin_bond_idx = bond_block_idx_boundaries[0]
@@ -384,33 +381,27 @@ class MolFileMap:
 
 
 def codes2monomers(codes_json: {}) -> dict[str, Monomer]:
-    monomers_res: dict[str, Monomer] = {}
+    resulting_monomer_dict: dict[str, Monomer] = {}
     for (codes_src, src_dict) in codes_json.items():
         for (codes_type, monomers_dict) in src_dict.items():
             for (codes_code, monomer_json) in monomers_dict.items():
                 monomer_name = monomer_json['name']
-                if monomer_name not in monomers_res:
+                if monomer_name not in resulting_monomer_dict:
                     symbol = monomer_json['name']
                     name = monomer_json['name']
                     smiles = monomer_json['SMILES']
-                    monomers_res[monomer_name] = Monomer(
+                    resulting_monomer_dict[monomer_name] = Monomer(
                         symbol, name, None, smiles, {})
-                codes = monomers_res[monomer_name].codes
+                codes = resulting_monomer_dict[monomer_name].codes
                 if codes_src not in codes:
                     codes[codes_src] = {}
                 if codes_type not in codes[codes_src]:
                     codes[codes_src][codes_type] = []
                 codes[codes_src][codes_type].append(codes_code)
-    return monomers_res
+    return resulting_monomer_dict
 
 
-@click.group(cls=DefaultGroup, default='main')
-def cli():
-    pass
-
-
-@cli.command()
-@click.pass_context
+@click.command()
 @click.option('--initial',
               'initial_f',
               help='Initial monomers source file.',
@@ -422,9 +413,9 @@ def cli():
 @click.option('--add-list',
               'monomer_list_file_list',
               multiple=True,
-              help='Additional libraries to build.',
+              help='Monomers to be added to the library',
               type=click.File('r', 'utf-8'))
-def main(ctx, initial_f: TextIOWrapper, lib_f: TextIOWrapper,
+def main(initial_f: TextIOWrapper, lib_f: TextIOWrapper,
          monomer_list_file_list: list[TextIOWrapper]):
     monomers: dict[str, Monomer] = {}
     if initial_f:
@@ -432,16 +423,15 @@ def main(ctx, initial_f: TextIOWrapper, lib_f: TextIOWrapper,
         initial_json = orjson.loads(initial_json_str)
         monomers.update(codes2monomers(initial_json))
 
-    monomer_fn_list = []
+    monomer_filename_list = []
     for monomer_list_file in monomer_list_file_list:
         for monomer_fn in [fn for fn in monomer_list_file.read().split('\n') if fn]:
-            monomer_fn_list.append(monomer_fn);
+            monomer_filename_list.append(monomer_fn);
 
-    print(monomer_fn_list)
+    print(monomer_filename_list)
 
-    for add_json_fn in monomer_fn_list:
+    for add_json_fn in monomer_filename_list:
         # trying to load mol data if file with .mol extension exists
-
         with open(add_json_fn, 'r') as add_json_f:
             add_json_str = add_json_f.read()
             add_json = orjson.loads(add_json_str)
@@ -470,4 +460,4 @@ def main(ctx, initial_f: TextIOWrapper, lib_f: TextIOWrapper,
 
 
 if __name__ == '__main__':
-    cli()
+    main()
