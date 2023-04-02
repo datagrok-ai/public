@@ -79,14 +79,6 @@ def mol_add_collection(mol: Mol,
                 raise KeyError(f"Source STEABS atom '{src_atom}' not accounted")
             elif tgt_atom.atom_idx in tgt_mol_file_map.mol_file.collection_steabs:
                 raise KeyError(f"Target STEABS atom '{tgt_atom}' not accounted")
-    else:
-        # from Smiles (without src_mol)
-        for (tgt_atom_idx0, tgt_atom) in enumerate(tgt_mol_file_map.mol_file.atom_list):
-            line_idx = tgt_mol_file_map.begin_atom_idx + tgt_atom_idx0 + 1
-            atom_ch = chirality[tgt_atom_idx0]
-            if atom_ch != Chem.rdchem.CHI_UNSPECIFIED:
-                mb_line_list[line_idx] += " CFG={0}".format(int(atom_ch))
-                steabs.append(tgt_atom_idx0 + 1)
 
     if len(steabs) > 0:
         steabs_str: str = COLLECTION_STEABS_LINE + " ATOMS=({count} {list})".format(
@@ -117,11 +109,6 @@ def prepare_molblock(src_molblock: str, name: str) -> str:
     return mol_add_collection(mol, name, title=title, src_mol=src_molblock)
 
 
-def smiles2molfile(smiles: str, name: str) -> str:
-    mol: Mol = Chem.MolFromSmiles(smiles)
-    return mol_add_collection(mol, name)
-
-
 class Monomer:
     def __init__(self, symbol: str, name: str, molfile: str, smiles: str,
                  codes: CodesType):
@@ -129,8 +116,7 @@ class Monomer:
         self.smiles = smiles
         self.name = name
         self.author = 'SequenceTranslator'
-        self.molfile = prepare_molblock(
-            molfile, name) if molfile else smiles2molfile(smiles, name)
+        self.molfile = prepare_molblock(molfile, name)
         self.naturalAnalog = ''
         self.rgroups = [{
             "capGroupSmiles": "O[*:1]",
@@ -380,82 +366,53 @@ class MolFileMap:
                 collection_idx_boundaries, collection_steabs_idx)
 
 
-def codes2monomers(codes_json: {}) -> dict[str, Monomer]:
-    resulting_monomer_dict: dict[str, Monomer] = {}
-    for (codes_src, src_dict) in codes_json.items():
-        for (codes_type, monomers_dict) in src_dict.items():
-            for (codes_code, monomer_json) in monomers_dict.items():
-                monomer_name = monomer_json['name']
-                if monomer_name not in resulting_monomer_dict:
-                    symbol = monomer_json['name']
-                    name = monomer_json['name']
-                    smiles = monomer_json['SMILES']
-                    resulting_monomer_dict[monomer_name] = Monomer(
-                        symbol, name, None, smiles, {})
-                codes = resulting_monomer_dict[monomer_name].codes
-                if codes_src not in codes:
-                    codes[codes_src] = {}
-                if codes_type not in codes[codes_src]:
-                    codes[codes_src][codes_type] = []
-                codes[codes_src][codes_type].append(codes_code)
-    return resulting_monomer_dict
-
-
 @click.command()
-@click.option('--initial',
-              'initial_f',
-              help='Initial monomers source file.',
-              type=click.File('r', 'utf-8'))
 @click.option('--lib',
               'lib_f',
               help='Output library (HELM format) file.',
               type=click.File('wb', 'utf-8'))
 @click.option('--add-list',
-              'monomer_list_file_list',
-              multiple=True,
-              help='Monomers to be added to the library',
+              'monomer_list_file',
+              multiple=False,
+              help='File with list of monomer json files',
               type=click.File('r', 'utf-8'))
-def main(initial_f: TextIOWrapper, lib_f: TextIOWrapper,
-         monomer_list_file_list: list[TextIOWrapper]):
-    monomers: dict[str, Monomer] = {}
-    if initial_f:
-        initial_json_str = initial_f.read()
-        initial_json = orjson.loads(initial_json_str)
-        monomers.update(codes2monomers(initial_json))
-
+def main(lib_f: TextIOWrapper,
+         monomer_list_file: TextIOWrapper):
+    name_to_monomer_dict: dict[str, Monomer] = {}
     monomer_filename_list = []
-    for monomer_list_file in monomer_list_file_list:
-        for monomer_fn in [fn for fn in monomer_list_file.read().split('\n') if fn]:
-            monomer_filename_list.append(monomer_fn);
+    for monomer_filename in [filename for filename in
+            monomer_list_file.read().split('\n') if filename]:
+        monomer_filename_list.append(monomer_filename)
 
     print(monomer_filename_list)
 
-    for add_json_fn in monomer_filename_list:
+    for monomer_filename in monomer_filename_list:
         # trying to load mol data if file with .mol extension exists
-        with open(add_json_fn, 'r') as add_json_f:
-            add_json_str = add_json_f.read()
-            add_json = orjson.loads(add_json_str)
-            for add_m in add_json:
-                name = add_m['name']
+        with open(monomer_filename, 'r') as monomer_json_file:
+            monomer_json_str = monomer_json_file.read()
+            monomer_lib_json = orjson.loads(monomer_json_str)
+            for monomer_obj in monomer_lib_json:
+                name = monomer_obj['name']
                 try:
-                    if not add_m['molfile']:
-                        monomer_mol_fn = os.path.join(os.path.dirname(add_json_fn), add_m['name'] + '.mol')
-                        if not os.path.isfile(monomer_mol_fn):
-                            raise FileNotFoundError(monomer_mol_fn)
+                    if not monomer_obj['molfile']:
+                        monomer_molfile = os.path.join(os.path.dirname(monomer_filename), monomer_obj['name'] + '.mol')
+                        if not os.path.isfile(monomer_molfile):
+                            raise FileNotFoundError(monomer_molfile)
                         else:
-                            with open(monomer_mol_fn, 'r') as monomer_mol_f:
+                            with open(monomer_molfile, 'r') as monomer_mol_f:
                                 monomer_mol_lines = [line.rstrip() for line in monomer_mol_f.readlines()]
                                 monomer_mol_txt = '\n'.join(monomer_mol_lines)
-                                add_m['molfile'] = monomer_mol_txt
+                                monomer_obj['molfile'] = monomer_mol_txt
 
-                    m = Monomer.from_json(add_m)
-                    monomers[m.name] = m
+                    m = Monomer.from_json(monomer_obj)
+                    name_to_monomer_dict[m.name] = m
                 except Exception as ex:
-                    sys.stderr.write(f"Invalid monomer '{add_m['name']}' error:\n{str(ex)}")
+                    sys.stderr.write(f"Invalid monomer '{monomer_obj['name']}' error:\n{str(ex)}")
 
-    add_json = [m.to_json() for m in monomers.values()]
+    monomer_lib_json = [m.to_json() for m in name_to_monomer_dict.values()]
+    monomer_lib_json = sorted(monomer_lib_json, key=lambda x: x['name'])
 
-    lib_json_txt = orjson.dumps(add_json, option=orjson.OPT_INDENT_2)
+    lib_json_txt = orjson.dumps(monomer_lib_json, option=orjson.OPT_INDENT_2)
     lib_f.write(lib_json_txt)
 
 
