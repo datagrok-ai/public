@@ -72,7 +72,10 @@ export class HistoryInput {
       $(_historyDialog.root).addClass('arrow-box');
 
       _historyDialog.onOK(() => { });
-      _historyDialog.onCancel(() => { this.onHistoricalRunChosen.next(null); });
+      _historyDialog.onCancel(() => {
+        this.onHistoricalRunChosen.next(null);
+        this.historyGrid.dataFrame.currentRowIdx = -1;
+      });
 
       $(_historyDialog.root).find('.d4-dialog-header').hide();
       _historyDialog.root.style.boxShadow = '';
