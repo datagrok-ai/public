@@ -21,7 +21,7 @@ Enable the 'Send Welcome Email' option to send welcome emails to new signed-up u
 
 It is the most basic method to authenticate users with Datagrok.
 
-To configure [login-password authentication](../../../govern/authentication.md#login-password) for Datagrok:
+To configure [login-password authentication](../../../govern/authentication.md) for Datagrok:
 
 1) Go to the Datagrok Settings section 'Users and Sessions'; this section contains all authentication settings.
 2) Enable 'Internal authentication' to use the login-password method
