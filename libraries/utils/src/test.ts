@@ -342,8 +342,9 @@ export async function awaitCheck(checkHandler: () => boolean,
 }
 
 export function isDialogPresent(dialogTitle: string): boolean {
-  for (let i = 0; i < DG.Dialog.getOpenDialogs().length; i++) {
-    if (DG.Dialog.getOpenDialogs()[i].title == dialogTitle)
+  const dialogs = DG.Dialog.getOpenDialogs();
+  for (let i = 0; i < dialogs.length; i++) {
+    if (dialogs[i].title == dialogTitle)
       return true;
   }
   return false;
