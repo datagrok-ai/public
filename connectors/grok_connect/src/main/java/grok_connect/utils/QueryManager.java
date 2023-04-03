@@ -66,7 +66,7 @@ public class QueryManager {
 
         if (!changedFetchSize) {
             if (connection.getMetaData().supportsTransactions())
-                resultSet.setFetchSize(maxIterations);
+                resultSet.setFetchSize(20000);
             changedFetchSize = true;
         }
         DataFrame df = new DataFrame();
