@@ -22,6 +22,11 @@ function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property): void {
 
 
 export class FitGridCellHandler extends DG.ObjectHandler {
+
+  get type(): string {
+    return 'GridCell';
+  }
+
   isApplicable(x: any): boolean {
     return x instanceof DG.GridCell && x.cellType == 'fit';
   }
