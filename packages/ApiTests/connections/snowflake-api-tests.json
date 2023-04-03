@@ -3,9 +3,9 @@
   "name": "SnowflakeApiTests",
   "friendlyName": "Tests",
   "parameters": {
-    "region": "west-europe",
-    "accountLocator": "ni99608",
-    "cloud": "azure",
+    "region": "eu-north-1",
+    "accountLocator": "gu46630",
+    "cloud": "aws",
     "db": "test",
     "warehouse": "COMPUTE_WH"
   },

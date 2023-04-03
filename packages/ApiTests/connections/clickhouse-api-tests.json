@@ -1,0 +1,18 @@
+{
+  "#type": "DataConnection",
+  "name": "ClickHouseApiTests",
+  "friendlyName": "Tests",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "port": 8126,
+    "db": "test"
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "ClickHouse",
+  "description": "Test data"
+}
