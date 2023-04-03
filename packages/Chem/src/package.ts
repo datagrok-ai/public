@@ -897,6 +897,7 @@ export function copyAsSmiles(value: DG.SemanticValue): void {
   const smiles = !DG.chem.isMolBlock(value.value) && !isSmarts(value.value) ? value.value :
     _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, getRdKitModule());
   navigator.clipboard.writeText(smiles);
+  grok.shell.info('Smiles copied to clipboard');
 }
 
 //name: Copy as MOLFILE V2000
@@ -908,6 +909,7 @@ export function copyAsMolfileV2000(value: DG.SemanticValue): void {
   const molfileV2000 = DG.chem.isMolBlock(value.value) ? value.value :
     _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, getRdKitModule());
   navigator.clipboard.writeText(molfileV2000);
+  grok.shell.info('Molfile V2000 copied to clipboard');
 }
 
 
@@ -920,6 +922,7 @@ export function copyAsMolfileV3000(value: DG.SemanticValue): void {
   const molfileV3000 = DG.chem.isMolBlock(value.value) ? value.value :
     _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.V3KMolBlock, getRdKitModule());
   navigator.clipboard.writeText(molfileV3000);
+  grok.shell.info('Molfile V3000 copied to clipboard');
 }
 
 //name: Copy as SMARTS
@@ -931,6 +934,7 @@ export function copyAsSmarts(value: DG.SemanticValue): void {
   const smarts = !DG.chem.isMolBlock(value.value) && isSmarts(value.value) ? value.value :
     _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, getRdKitModule());
   navigator.clipboard.writeText(smarts);
+  grok.shell.info('Smarts copied to clipboard');
 }
 
 
