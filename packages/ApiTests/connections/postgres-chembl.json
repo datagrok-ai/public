@@ -1,7 +1,7 @@
 {
     "#type": "DataConnection",
-    "name": "PostgresChembl",
-    "friendlyName": "Chembl",
+    "name": "PostgresChemblTest",
+    "friendlyName": "ChemblTest",
     "parameters": {
       "server": "db.datagrok.ai",
       "port": 54325,
@@ -17,4 +17,3 @@
     "description": "Chembl sample database",
     "tags": ["demo"]
   }
-  
