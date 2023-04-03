@@ -17,6 +17,11 @@ export class DemoView extends DG.ViewBase {
     return DG.Func.find({meta: {'demoPath': demoPath}})[0];
   }
 
+  startDemoFunc(func: DG.Func) {
+    grok.shell.closeAll();
+    func.apply().then((_) => { });
+  }
+
   _initContent() {
     this.root.appendChild(ui.divText('Select a demo from the toolbox on the right'));
   }
@@ -29,8 +34,7 @@ export class DemoView extends DG.ViewBase {
       const item = folder.item(path[path.length - 1]);
 
       item.root.onmousedown = (_) => {
-        grok.shell.closeAll();
-        f.apply().then((_) => { });
+        this.startDemoFunc(f);
       };
 
       item.root.onmouseover = (event) => {
@@ -42,12 +46,23 @@ export class DemoView extends DG.ViewBase {
         ui.tooltip.hide();
       };
     }
+
+    this.tree.root.onkeyup = (event) => {
+      const currentElement = document.getElementsByClassName('d4-tree-view-node-selected')[0];
+      if (event.code === 'Enter' && currentElement.classList.contains('d4-tree-view-item')) {
+        const categoryName = currentElement.parentElement?.parentElement
+          ?.getElementsByClassName('d4-tree-view-group-label')[0].innerHTML;
+        const viewerName = currentElement.getElementsByClassName('d4-tree-view-item-label')[0].innerHTML;
+
+        this.startDemoFunc(DemoView.findDemoFunc(`${categoryName} | ${viewerName}`));
+        // TODO: add focus return to dock panel
+      }
+    };
+
     this.dockPanel = grok.shell.dockManager.dock(ui.div(
       [ui.searchInput('', ''), this.tree]), 'left', null, 'Categories');
     this.dockPanel.container.containerElement.style.maxWidth = '250px';
 
-    // TODO: make tooltip on items with descriptions (viewers)
-    // TODO: make event on enter click, changed to open viewers
     // TODO: make div with loading at center of viewer
     // TODO: if loading ended in 0.1s, then no div, if not - then div - DG.debounce, merge etc.
     // TODO: also fix routing things
