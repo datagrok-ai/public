@@ -19,8 +19,17 @@ export async function accessServer(csvString: string, queryParams: string) {
     body: csvString
   };
   const path = `/smiles/df_upload/?models=${queryParams}`;
-  //@ts-ignore
-  const response = await grok.dapi.docker.dockerContainers.request(admetDockerfile.id, path, params);
+  let response;
+  try {
+    //@ts-ignore
+    response = await grok.dapi.docker.dockerContainers.request(admetDockerfile.id, path, params);
+  } catch {
+    grok.shell.info('ADME container not started<br>Starting it for you<br>\
+    It will take a couple of minutes');
+  } finally {
+    //@ts-ignore
+    await grok.dapi.docker.dockerContainers.run(admetDockerfile.id);
+  }
   return response;
 }
 
