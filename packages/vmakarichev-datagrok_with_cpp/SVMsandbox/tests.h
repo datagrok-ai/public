@@ -17,4 +17,6 @@ void testLSSVMwithPoly();
 
 void testLSSVMwithSigmoid();
 
+void testTrainAndAnalyzeLSSVM();
+
 #endif // TESTS_H

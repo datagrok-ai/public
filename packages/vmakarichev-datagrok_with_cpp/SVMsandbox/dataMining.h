@@ -17,6 +17,13 @@ namespace dmt {
 		INCORRECT_SIZE
    	};
 
+	// confusion matrix constants
+	const int CONFUSION_MATR_SIZE = 4;
+	const int TRUE_POSITIVE_INDEX = 0;
+	const int FALSE_NEGATIVE_INDEX = 1;
+	const int FALSE_POSITIVE_INDEX = 2;
+	const int TRUE_NEGATIVE_INDEX = 3;
+
 	/* Create normalized dataset from columns data.
 	   Each column of the ouput is centered and normalized.
 		  columsData - pointer to columns data
@@ -65,6 +72,43 @@ namespace dmt {
 
 		return NO_ERRORS;
 	} // createNormalizedDataset
+
+	/* Compare labels and their prediciotns: BINARY CLASSIFICATION CASE.
+	      labels - training labels
+		  predictions - predicted labels
+		  correctness - array of mistakes (1 - correct prediction, 0 - incorrect prediction)
+		  samplesCount - number of training samples
+		  confusionMatrix - confusion matrix  */
+	template<typename Float>
+	int compareLabelsAndTheirPredictions(Float* labels, Float* predictions,
+		Float* correctness, int samplesCount,
+		int confusionMatrix[CONFUSION_MATR_SIZE])
+	{
+		Float zero = static_cast<Float>(0);
+
+		// initialization
+		for (int i = 0; i < CONFUSION_MATR_SIZE; i++)
+			confusionMatrix[i] = 0;
+
+		// labels vs. prediction comparison 
+		for (int i = 0; i < samplesCount; i++)
+		{
+			correctness[i] = labels[i] * predictions[i];
+
+			if (labels[i] > zero)
+				if (predictions[i] > zero)
+					confusionMatrix[TRUE_POSITIVE_INDEX]++;
+				else
+					confusionMatrix[FALSE_NEGATIVE_INDEX]++;
+			else
+				if (predictions[i] > zero)
+					confusionMatrix[FALSE_POSITIVE_INDEX]++;
+				else
+					confusionMatrix[TRUE_NEGATIVE_INDEX]++;
+		}
+
+		return NO_ERRORS;
+	} // compareLabelsAndTheirPredictions
 
 } // dmt
 

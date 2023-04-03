@@ -505,3 +505,97 @@ void testLSSVMwithSigmoid()
 	delete[] precomputedWeights;
 	delete[] predictedLabels;
 } // testLSSVMwithSigmoid
+
+void testTrainAndAnalyzeLSSVM()
+{
+	float gamma = 1.0f;
+
+	// Kernel
+	int kernel = LINEAR;
+	int kernelParamsCount = 2;
+	float* kernelParams = new float[kernelParamsCount];
+
+	// Data
+	int rowCount = 1000;
+	int colCount = 2;
+	int labelsLength = rowCount;
+	float* dataset = new float[rowCount * colCount];
+	float* normalizedDataset = new float[rowCount * colCount];
+	float* means = new float[colCount];
+	float* stdDevs = new float[colCount];
+	float* labels = new float[labelsLength];
+	float* predictedLabels = new float[labelsLength];
+	float* predictionCorrectness = new float[labelsLength];
+	float min = -39;
+	float max = 173;
+	float violatorsPercentage = 5;
+	int consfusionMatrixLength = 4;
+	int* consfusionMatrix = new int[consfusionMatrixLength];
+
+	// Model
+	int modelParamsCount = rowCount + 1;
+	float* modelParams = new float[modelParamsCount];
+	int precomputedWeightsCount = colCount + 1;
+	float* precomputedWeights = new float[precomputedWeightsCount];
+
+	cout << "Generating dataset: "
+		<< generateDataset(kernel, kernelParams, kernelParamsCount,
+			dataset, rowCount, colCount, labels, labelsLength,
+			min, max, violatorsPercentage)
+		<< endl;
+
+	cout << "\nTraining model: "
+		<< trainAndAnalyzeLSSVM(gamma, kernel, kernelParams, kernelParamsCount,
+			modelParamsCount, precomputedWeightsCount,
+			dataset, rowCount, colCount, labels, labelsLength,
+			normalizedDataset, colCount, rowCount,
+			means, colCount, stdDevs, colCount,
+			modelParams, modelParamsCount,
+			precomputedWeights, precomputedWeightsCount,
+			predictedLabels, labelsLength,
+			predictionCorrectness, labelsLength, 
+			consfusionMatrix, consfusionMatrixLength)
+		<< endl;
+
+	// Saving
+
+	cout << "\nConfusion:\n";
+	for (int i = 0; i < 4; i++)
+		cout << "  " << consfusionMatrix[i];
+
+	cout << "\nSaving data ...\n";
+
+	string fileName = "dataset.csv";
+
+	ofstream file(fileName, ios::out);
+	if (!file)
+	{
+		cout << "FAIL TO CREATE FILE FOR RESULTS!\n";
+		return;
+	}
+
+	for (int j = 1; j <= colCount; j++)
+		file << 'x' << j << ',';
+	file << "y,predicted,faults\n";
+
+	for (int i = 0; i < rowCount; i++)
+	{
+		for (int j = 0; j < colCount; j++)
+			file << dataset[i + j * rowCount] << ',';
+
+		file << labels[i] << ","
+			<< predictedLabels[i] << ","
+			<< predictionCorrectness[i] << endl;
+	}
+
+	delete[] kernelParams;
+	delete[] dataset;
+	delete[] labels;
+	delete[] normalizedDataset;
+	delete[] means;
+	delete[] stdDevs;
+	delete[] modelParams;
+	delete[] precomputedWeights;
+	delete[] predictedLabels;
+	delete[] consfusionMatrix;
+} // testTrainAndAnalyzeLSSVM

@@ -134,3 +134,72 @@ int predictByLSSVM(int kernel,
 		means, stdDevs, modelParams, precomputedWeights,
 		targetData, prediction, targetDataRowCount);
 } // predictByLSSVM
+
+int trainAndAnalyzeLSSVM(float gamma, int kernel,
+	float* kernelParams, int kernelParamsCount,
+	int modelParamsCount, int precomputedWeightsCount,
+	float* dataset, int datasetRowCount, int datasetColCount,
+	float* labels, int labelsLength,
+	float* normalizedData, int normalizedDataRowCount, int normalizedDataColCount,
+	float* means, int meansLength,
+	float* stdDevs, int stdDevsLength,
+	float* modelParams, int modelParamsLength,
+	float* precomputedWeights, int precomputedWeightsLength,
+	float* predictedLabels, int predictedLabelsLength,
+	float* correctness, int correctnessLength,
+	int* consfusionMatrix, int consfusionMatrixLength) noexcept
+{
+	using namespace svm;
+
+	// check gamma 
+	if (!isGammaCorrect(gamma))
+		return INCORRECT_HYPERPARAMETER;
+
+	// check kernel params count
+	if (kernelParamsCount != MAX_NUM_OF_KERNEL_PARAM)
+		return INCORRECT_KERNEL_PARAMS_COUNT;
+
+	// check kernel specification
+	if (!areKernelParametersCorrect(kernel, kernelParams))
+		return INCORRECT_PARAMETER_OF_KERNEL;
+
+	// check sizes
+	if ((datasetRowCount < 1)
+		|| (datasetColCount < 1)
+		|| (labelsLength != datasetRowCount)
+		|| (normalizedDataRowCount != datasetColCount)
+		|| (normalizedDataColCount != datasetRowCount)
+		|| (meansLength != datasetColCount)
+		|| (stdDevsLength != datasetColCount)
+		|| (modelParamsLength != datasetRowCount + 1)
+		|| (precomputedWeightsLength != datasetColCount + 1)
+		|| (predictedLabelsLength != labelsLength)
+		|| (correctnessLength != labelsLength)
+		|| (consfusionMatrixLength != dmt::CONFUSION_MATR_SIZE))
+		return INCORRECT_SIZE;
+
+	// normalize data
+	int resCode = dmt::getNormalizedDataset(dataset, datasetRowCount, datasetColCount,
+		normalizedData, means, stdDevs);
+	if (resCode != dmt::NO_ERRORS)
+		return resCode;
+
+	// train LS-SVM model
+	resCode = trainLSSVM(gamma, kernel, kernelParams,
+		normalizedData, labels, datasetRowCount, datasetColCount,
+		modelParams, precomputedWeights);
+	if (resCode != NO_ERRORS)
+		return resCode;
+
+	// get predictions
+	resCode = predictByLSSVM(kernel, kernelParams, normalizedData, labels,
+		normalizedDataColCount, normalizedDataRowCount,
+		means, stdDevs, modelParams, precomputedWeights,
+		dataset, predictedLabels, datasetRowCount);
+	if (resCode != NO_ERRORS)
+		return resCode;
+
+	// analyze results
+	return dmt::compareLabelsAndTheirPredictions(labels, predictedLabels, correctness,
+		datasetRowCount, consfusionMatrix);
+} // trainAndAnalyzeLSSVM

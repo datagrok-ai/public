@@ -42,6 +42,20 @@ int predictByLSSVM(int kernel,
 	float* targetData, int targetDataRowCount, int targetDataColCount,
 	float* prediction, int predictionLength);
 
+int trainAndAnalyzeLSSVM(float gamma, int kernel,
+	float* kernelParams, int kernelParamsCount,
+	int modelParamsCount, int precomputedWeightsCount,
+	float* dataset, int datasetRowCount, int datasetColCount,
+	float* labels, int labelsLength,
+	float* normalizedData, int normalizedDataRowCount, int normalizedDataColCount,
+	float* means, int meansLength,
+	float* stdDevs, int stdDevsLength,
+	float* modelParams, int modelParamsLength,
+	float* precomputedWeights, int precomputedWeightsLength,
+	float* predictedLabels, int predictedLabelsLength,
+	float* correctness, int correctnessLength,
+	int* consfusionMatrix, int consfusionMatrixLength) noexcept;
+
 
 #endif // SVM_API_H
 

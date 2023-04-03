@@ -12,7 +12,9 @@ int main()
 
 	//testLSSVMwithPoly();
 
-	testLSSVMwithSigmoid();
+	//testLSSVMwithSigmoid();
+
+	testTrainAndAnalyzeLSSVM();
 
 	return 0;
 } // main
