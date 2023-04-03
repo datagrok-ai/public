@@ -117,3 +117,4 @@ from generate_series(1, @num) s(i)
 --connection: PostgresChemblTest
 select * from compound_structures
 --end
+
