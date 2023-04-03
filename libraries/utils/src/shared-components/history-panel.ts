@@ -29,6 +29,7 @@ class HistoryPanelStore {
     text: string,
     author?: DG.User,
     startedAfter?: dayjs.Dayjs,
+    tags?: string[]
   };
 
   allRuns = new BehaviorSubject<DG.FuncCall[]>([]);
@@ -46,33 +47,42 @@ class HistoryPanelStore {
   }
 
   get filteredMyRuns() {
-    return this.myRuns.filter((val) => {
-      const startedAfter = (this.filteringOptions.startedAfter ? val.started > this.filteringOptions.startedAfter : true);
-      const titleContainsText = (!this.filteringOptions.text.length) ? true : (!!val.options['title']) ? val.options['title'].includes(this.filteringOptions.text): false;
-      const descContainsText = (!this.filteringOptions.text.length) ? true : (!!val.options['description']) ? val.options['description'].includes(this.filteringOptions.text): false;
+    return this.myRuns.filter((run) => {
+      const startedAfter = (this.filteringOptions.startedAfter ? run.started > this.filteringOptions.startedAfter : true);
+      const titleContainsText = (!this.filteringOptions.text.length) ? true : (!!run.options['title']) ? run.options['title'].includes(this.filteringOptions.text): false;
+      const descContainsText = (!this.filteringOptions.text.length) ? true : (!!run.options['description']) ? run.options['description'].includes(this.filteringOptions.text): false;
 
-      return (titleContainsText || descContainsText) && startedAfter;
+
+      const hasTags = (!this.filteringOptions.tags || this.filteringOptions.tags.length === 0) ? true :
+        (!!run.options['tags']) ? this.filteringOptions.tags.every((searchedTag) => run.options['tags'].includes(searchedTag)): false;
+
+      return (titleContainsText || descContainsText) && startedAfter && hasTags;
     });
   }
 
   get filteredFavoriteRuns() {
-    return this.favoriteRuns.filter((val) => {
-      const startedAfter = (this.filteringOptions.startedAfter ? val.started > this.filteringOptions.startedAfter : true);
-      const titleContainsText = (!this.filteringOptions.text.length) ? true : (!!val.options['title']) ? val.options['title'].includes(this.filteringOptions.text): false;
-      const descContainsText = (!this.filteringOptions.text.length) ? true : (!!val.options['description']) ? val.options['description'].includes(this.filteringOptions.text): false;
+    return this.favoriteRuns.filter((run) => {
+      const startedAfter = (this.filteringOptions.startedAfter ? run.started > this.filteringOptions.startedAfter : true);
+      const titleContainsText = (!this.filteringOptions.text.length) ? true : (!!run.options['title']) ? run.options['title'].includes(this.filteringOptions.text): false;
+      const descContainsText = (!this.filteringOptions.text.length) ? true : (!!run.options['description']) ? run.options['description'].includes(this.filteringOptions.text): false;
+      const hasTags = (!this.filteringOptions.tags || this.filteringOptions.tags.length === 0) ? true :
+        (!!run.options['tags']) ? this.filteringOptions.tags.every((searchedTag) => run.options['tags'].includes(searchedTag)): false;
 
-      return (titleContainsText || descContainsText) && startedAfter;
+      return (titleContainsText || descContainsText) && startedAfter && hasTags;
     });
   }
 
   get filteredSharedRuns() {
-    return this.sharedRuns.filter((val) => {
-      const isAuthored = this.filteringOptions.author ? val.author.id === this.filteringOptions.author.id: true;
-      const startedAfter = (this.filteringOptions.startedAfter ? val.started > this.filteringOptions.startedAfter : true);
-      const titleContainsText = (!this.filteringOptions.text.length) ? true : (!!val.options['title']) ? val.options['title'].includes(this.filteringOptions.text): false;
-      const descContainsText = (!this.filteringOptions.text.length) ? true : (!!val.options['description']) ? val.options['description'].includes(this.filteringOptions.text): false;
+    return this.sharedRuns.filter((run) => {
+      const isAuthored = this.filteringOptions.author ? run.author.id === this.filteringOptions.author.id: true;
+      const startedAfter = (this.filteringOptions.startedAfter ? run.started > this.filteringOptions.startedAfter : true);
+      const titleContainsText = (!this.filteringOptions.text.length) ? true : (!!run.options['title']) ? run.options['title'].includes(this.filteringOptions.text): false;
+      const descContainsText = (!this.filteringOptions.text.length) ? true : (!!run.options['description']) ? run.options['description'].includes(this.filteringOptions.text): false;
+      const hasTags = (!this.filteringOptions.tags || this.filteringOptions.tags.length === 0) ? true :
+        (!!run.options['tags']) ? this.filteringOptions.tags.every((searchedTag) => run.options['tags'].includes(searchedTag)): false;
 
-      return (titleContainsText || descContainsText) && startedAfter && isAuthored;
+
+      return (titleContainsText || descContainsText) && startedAfter && isAuthored && hasTags;
     });
   }
 }
@@ -170,11 +180,51 @@ export class HistoryPanel {
       });
       authorInput.root.style.display = 'none';
 
+      let tagInput = ui.choiceInput<string>('Tag', 'Choose tag to filter', ['Choose tag to filter']);
+
+      const filterTagEditor = DG.TagEditor.create();
+      const dummyInput = ui.stringInput(' ', '');
+      dummyInput.input.replaceWith(filterTagEditor.root);
+
+      filterTagEditor.onChanged(() => {
+        //@ts-ignore
+        this.store.filteringOptions.tags = filterTagEditor.tags.filter((tag) => !!tag);
+
+        this.myRunsFilter.next();
+        this.favRunsFilter.next();
+        this.sharedRunsFilter.next();
+      });
+
+      this.store.allRuns.subscribe(() => {
+        const tags = this.store.allRuns.value
+          .map((run) => run.options['tags'] as string[])
+          .reduce((acc, runTags) => {
+            if (!!runTags) runTags.forEach((runTag) => { if (!acc.includes(runTag)) acc.push(runTag); });
+            return acc;
+          }, [] as string[]);
+
+        const newTagInput = ui.choiceInput<string>('Tag', 'Choose tag to filter', ['Choose tag to filter', ...tags]);
+        tagInput.root.replaceWith(newTagInput.root);
+        tagInput = newTagInput;
+
+        tagInput.onChanged(() => {
+          if (
+            tagInput.value &&
+            tagInput.value !== 'Choose tag to filter' &&
+            //@ts-ignore
+            !filterTagEditor.tags.includes(tagInput.value)
+          )
+            filterTagEditor.addTag(tagInput.value);
+        });
+      });
+
       dateInput.addPatternMenu('datetime');
       const form = ui.divV([
         textInput,
         dateInput,
         authorInput,
+        tagInput,
+        dummyInput,
       ], 'ui-form ui-form-wide ui-form-left');
 
       if (currentTabName === MY_PANE_LABEL) {
@@ -210,31 +260,35 @@ export class HistoryPanel {
   };
 
   updateSharedPane(sharedRuns: DG.FuncCall[]) {
-    const newTab = (sharedRuns.length > 0) ? this.renderSharedCards(sharedRuns) : ui.divText('No runs are marked as shared', 'no-elements-label');
-    this.sharedTab.replaceWith(ui.divV([
+    const sharedCards = (sharedRuns.length > 0) ? this.renderSharedCards(sharedRuns) : ui.divText('No runs are marked as shared', 'no-elements-label');
+    const sharedTab = ui.divV([
       this.sharedPaneFilter,
       ui.element('div', 'splitbar-horizontal'),
-      newTab]));
-    this.sharedTab = newTab;
+      sharedCards
+    ]);
+    this.sharedTab.replaceWith(sharedTab);
+    this.sharedTab = sharedTab;
   };
 
   updateFavoritesPane(favoriteRuns: DG.FuncCall[]) {
-    const newTab = (favoriteRuns.length > 0) ? this.renderFavoriteCards(favoriteRuns) : ui.divText('No runs are marked as favorites', 'no-elements-label');
-    this.favTab.replaceWith(ui.divV([
+    const favCards = (favoriteRuns.length > 0) ? this.renderFavoriteCards(favoriteRuns) : ui.divText('No runs are marked as favorites', 'no-elements-label');
+    const favTab = ui.divV([
       this.favoritesPaneFilter,
       ui.element('div', 'splitbar-horizontal'),
-      newTab
-    ]));
-    this.favTab = newTab;
+      favCards
+    ]);
+    this.favTab.replaceWith(favTab);
+    this.favTab = favTab;
   };
 
   updateMyPane(myRuns: DG.FuncCall[]) {
-    const newTab = (myRuns.length > 0) ? this.renderHistoryCards(myRuns) : ui.divText('No runs are found in history', 'no-elements-label');
-    this.historyTab.replaceWith(ui.divV([
+    const myCards = (myRuns.length > 0) ? this.renderHistoryCards(myRuns) : ui.divText('No runs are found in history', 'no-elements-label');
+    const newTab = ui.divV([
       this.myPaneFilter,
       ui.element('div', 'splitbar-horizontal'),
-      newTab
-    ]));
+      myCards
+    ]);
+    this.historyTab.replaceWith(newTab);
     this.historyTab = newTab;
   };
 
@@ -274,6 +328,8 @@ export class HistoryPanel {
           cardLabel,
           ui.span([dateStarted]),
           ...(funcCall.options['description']) ? [ui.divText(funcCall.options['description'], 'description')]: [],
+          ...(funcCall.options['tags'] && funcCall.options['tags'].length > 0) ?
+            [ui.div(funcCall.options['tags'].map((tag: string) => ui.span([tag], 'd4-tag')))]:[],
         ], 'cv-card-content'),
       ]),
       ui.divH([
@@ -296,6 +352,8 @@ export class HistoryPanel {
       Date: dateStarted,
       ...(funcCall.options['title']) ? {'Title': funcCall.options['title']}:{},
       ...(funcCall.options['description']) ? {'Description': funcCall.options['description']}:{},
+      ...(funcCall.options['tags'] && funcCall.options['tags'].length > 0) ?
+        {'Tags': ui.div(funcCall.options['tags'].map((tag: string) => ui.span([tag], 'd4-tag')), 'd4-tag-editor')}:{},
     }));
     return card;
   }
@@ -305,40 +363,51 @@ export class HistoryPanel {
 
     let title = funcCall.options['title'] ?? '';
     let description = funcCall.options['description'] ?? '';
-    const titleInput = ui.stringInput('Title', title, (s: string) => {
-      title = s;
-      if (s.length === 0) {
-        titleInput.setTooltip('Title cannot be empty');
-        setTimeout(() => titleInput.input.classList.add('d4-invalid'), 100);
-        dlg.getButton('OK').disabled = true;
-      } else {
-        titleInput.setTooltip('');
-        setTimeout(() => titleInput.input.classList.remove('d4-invalid'), 100);
-        dlg.getButton('OK').disabled = false;
-      }
-    });
+    const titleInput = ui.stringInput('Title', title, (s: string) => title = s);
     let isShared = funcCall.options['isShared'] ?? false;
     let isFavorite = funcCall.options['isFavorite'] ?? false;
+
+    const tagsLine = DG.TagEditor.create();
+    (funcCall.options['tags'] || []).forEach((tag: string) => {
+      tagsLine.addTag(tag);
+    });
+
+    const dummyInput = ui.stringInput(' ', '');
+    dummyInput.input.replaceWith(tagsLine.root);
+
+    const tagInput = ui.stringInput('Tag', '');
+    tagInput.addOptions(ui.iconFA('plus', () => {
+      if (tagInput.value === '') return;
+
+      tagsLine.addTag(tagInput.value);
+      tagInput.value = '';
+    }));
 
     dlg.add(ui.form([
       titleInput,
       ui.stringInput('Description', description, (s: string) => { description = s; }),
       ui.boolInput('Favorites', isFavorite, (b: boolean) => isFavorite = b),
       ui.boolInput('Share', isShared, (b: boolean) => isShared = b),
+      tagInput,
+      dummyInput
     ]))
       .onOK(async () => {
         funcCall = await historyUtils.loadRun(funcCall.id);
-        funcCall.options['title'] = title;
-        funcCall.options['description'] = description;
+        funcCall.options['title'] = title !== '' ? title : null;
+        funcCall.options['description'] = description !== '' ? description : null;
+        funcCall.options['tags'] = tagsLine.tags;
 
         if (!!isShared === !!funcCall.options['isShared'] && !!isFavorite === !!funcCall.options['isFavorite']) {
+          ui.setUpdateIndicator(this.tabs.root, true);
           await historyUtils.saveRun(funcCall);
 
-          const editedRun = this.store.allRuns.value.find((call) => call.id === funcCall.id);
-          editedRun!.options['title'] = funcCall.options['title'];
-          editedRun!.options['description'] = funcCall.options['description'];
+          const editedRun = this.store.allRuns.value.find((call) => call.id === funcCall.id)!;
+          editedRun.options['title'] = title !== '' ? title : null;
+          editedRun.options['description'] = description !== '' ? description : null;
+          editedRun.options['tags'] = funcCall.options['tags'];
 
           this.store.allRuns.next(this.store.allRuns.value);
+          ui.setUpdateIndicator(this.tabs.root, false);
           return;
         }
 
@@ -370,8 +439,7 @@ export class HistoryPanel {
           ui.setUpdateIndicator(this.tabs.root, false);
         }
       })
-      .show({center: true});
-    titleInput.fireChanged();
+      .show({center: true, width: 500});
   }
 
   renderFavoriteCards(funcCalls: DG.FuncCall[]) {
@@ -412,13 +480,6 @@ export class HistoryPanel {
       ui.setUpdateIndicator(this.root, false);
     });
 
-    const clearMetadata = (funcCall: DG.FuncCall) => {
-      if (!funcCall.options['isFavorite'] && !funcCall.options['isShared']) {
-        funcCall.options['title'] = null;
-        funcCall.options['description'] = null;
-      }
-    };
-
     this.afterRunAddToFavorites.subscribe((added) => {
       const editedRun = this.store.allRuns.value.find((call) => call.id === added.id);
       editedRun!.options['title'] = added.options['title'];
@@ -437,15 +498,17 @@ export class HistoryPanel {
 
     this.afterRunRemoveFromFavorites.subscribe((removed) => {
       const editedRun = this.store.allRuns.value.find((call) => call.id === removed.id)!;
+      editedRun.options['title'] = removed.options['title'];
+      editedRun.options['description'] = removed.options['description'];
       editedRun.options['isFavorite'] = false;
-      clearMetadata(editedRun);
       this.store.allRuns.next(this.store.allRuns.value);
     });
 
     this.afterRunRemoveFromShared.subscribe((removed) => {
       const editedRun = this.store.allRuns.value.find((call) => call.id === removed.id)!;
+      editedRun.options['title'] = removed.options['title'];
+      editedRun.options['description'] = removed.options['description'];
       editedRun.options['isShared'] = false;
-      clearMetadata(editedRun);
       this.store.allRuns.next(this.store.allRuns.value);
     });
 
@@ -466,8 +529,6 @@ export class HistoryPanel {
   }
 
   private async removeRunFromFavorites(callToUnfavorite: DG.FuncCall): Promise<DG.FuncCall> {
-    callToUnfavorite.options['title'] = null;
-    callToUnfavorite.options['description'] = null;
     callToUnfavorite.options['isFavorite'] = false;
 
     this.beforeRunRemoveFromFavorites.next(callToUnfavorite);
@@ -505,8 +566,6 @@ export class HistoryPanel {
   }
 
   private async removeRunFromShared(callToUnshare: DG.FuncCall): Promise<DG.FuncCall> {
-    callToUnshare.options['title'] = null;
-    callToUnshare.options['description'] = null;
     callToUnshare.options['isShared'] = false;
 
     this.beforeRunRemoveFromShared.next(callToUnshare);
