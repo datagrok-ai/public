@@ -64,7 +64,7 @@ import './gui/project-upload';
 // import './gui/viewers/box-plot';
 // import './gui/viewers/density-plot';
 // import './gui/viewers/form';
-// import './gui/viewers/histogram';
+import './gui/viewers/histogram';
 // import './gui/viewers/leaflet';
 // import './gui/viewers/line-chart';
 // import './gui/viewers/matrix-plot';
