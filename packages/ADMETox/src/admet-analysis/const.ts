@@ -7,18 +7,23 @@ export const properties: any = {
             "name": "Caco-2",
         },*/
         {
+            "skip": false,
             "name": "Pgp-Inhibitor",
         },
         {
+            "skip": false,
             "name": "Pgp-Substrate",
         },
         {
+            "skip": false,
             "name": "HIA",
         },
         {
+            "skip": false,
             "name": "F(20%)",
         },
         {
+            "skip": false,
             "name": "F(30%)",
         }]
     },
@@ -27,12 +32,15 @@ export const properties: any = {
         "description": "Models to predict distribution",
         "models": [
         {
+            "skip": true,
             "name": "PPB",
         },
         {
+            "skip": true,
             "name": "VD",
         },
         {
+            "skip": false,
             "name": "BBB",
         }]
     },
@@ -41,33 +49,43 @@ export const properties: any = {
         "description": "Models to predict metabolism",
         "models": [
         {
+            "skip": false,
             "name": "CYP1A2-Inhibitor",
         },
         {
+            "skip": false,
             "name": "CYP1A2-Substrate",
         },
         {
+            "skip": false,
             "name": "CYP3A4-Inhibitor",
         },
         {
+            "skip": false,
             "name": "CYP3A4-Substrate",
         },
         {
+            "skip": false,
             "name": "CYP2C19-Inhibitor",
         },
         {
+            "skip": false,
             "name": "CYP2C19-Substrate",
         },
         {
+            "skip": false,
             "name": "CYP2C9-Inhibitor",
         },
         {
+            "skip": false,
             "name": "CYP2C9-Substrate",
         },
         {
+            "skip": false,
             "name": "CYP2D6-Inhibitor",
         },
         {
+            "skip": false,
             "name": "CYP2D6-Substrate",
         }]
     },
@@ -76,9 +94,11 @@ export const properties: any = {
         "description": "Models to predict excretion",
         "models": [
         {
+            "skip": true,
             "name": "Clearance",
         },
         {
+            "skip": true,
             "name": "T",
         }]
     },
@@ -87,18 +107,23 @@ export const properties: any = {
         "description": "Models to predict toxicity",
         "models": [
         {
+            "skip": true,
             "name": "hERG",
         },
         {
+            "skip": true,
             "name": "LD50",
         },
         {
+            "skip": true,
             "name": "H-HT",
         },
         {
+            "skip": false,
             "name": "Ames",
         },
         {
+            "skip": false,
             "name": "SkinSen",
         }]
     },
@@ -107,9 +132,11 @@ export const properties: any = {
         "description": "Lipophilicity",
         "models": [
         {
+            "skip": true,
             "name": "logP",
         },
         {
+            "skip": true,
             "name": "logD",
         }]
     },
@@ -118,7 +145,8 @@ export const properties: any = {
         "description": "Solubility",
         "models": [
         {
-            "mame": "logS",
+            "skip": true,
+            "name": "logS",
         }]
     }
 }

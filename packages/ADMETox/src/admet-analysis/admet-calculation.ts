@@ -8,6 +8,7 @@ const _KEY = 'selected';
 let _COLOR = 'true';
 
 export async function accessServer(csvString: string, queryParams: string) {
+  //@ts-ignore
   const admetDockerfile = await grok.dapi.docker.dockerContainers.filter('admetox').first();
   const params: RequestInit = {
     method: 'POST',
@@ -15,44 +16,34 @@ export async function accessServer(csvString: string, queryParams: string) {
       'Accept': 'text/csv',
       'Content-type': 'text/csv'
     },
-    //body: DG.DataFrame.fromColumns([smilesCol]).toCsv()
     body: csvString
   };
   const path = `/smiles/df_upload/?models=${queryParams}`;
+  //@ts-ignore
   const response = await grok.dapi.docker.dockerContainers.request(admetDockerfile.id, path, params);
   return response;
 }
 
 export function addTooltip() {
   const tableView = grok.shell.tv;
-  const between = (x: number, min: number, max: number) => {
-    return x >= min && x <= max;
-  }
-  tableView.grid.onCellTooltip(function (cell, x, y) {
+  const { grid } = tableView;
+  const { dataFrame } = tableView;
+  const between = (x: number, min: number, max: number) => x >= min && x <= max;
+
+  grid.onCellTooltip((cell, x, y) => {
     const col = cell.tableColumn!.name;
-    const rangeNumbers = [];
-    if (cell.isTableCell && Object.keys(models).includes(col)) {
-      const keys = Object.keys(models[col])
-      for (let i = 0; i < keys.length; ++i) {
-        rangeNumbers[i] = keys[i];
-      }
-      const rowValue = tableView.dataFrame.get(cell.gridColumn.name, cell.gridRow);
-      let val = '';
-      //let val: any = _.inRange(rowValue) <= 0.5 ? Object.values(models[col])[0] : Object.values(models[col])[1];
-      for (let i = 0; i <= rangeNumbers.length; ++i) {
-        if (i != rangeNumbers.length - 1 && between(rowValue, parseFloat(rangeNumbers[i]), parseFloat(rangeNumbers[i + 1]))) {
-          val = models[col][rangeNumbers[i]];
+    if (cell.isTableCell && Object.prototype.hasOwnProperty.call(models, col)) {
+      const ranges = Object.keys(models[col]).map(parseFloat);
+      const rowValue = dataFrame.get(cell.gridColumn.name, cell.gridRow);
+      let val;
+      for (const range of ranges) {
+        if (between(rowValue, range, ranges[ranges.length - 1])) {
+          val = models[col][range];
           break;
-        } else if (i === rangeNumbers.length - 1){
-          val = models[col][rangeNumbers[i]];
-          break;
-        } else {
-          val = models[col][rangeNumbers[i + 1]];
         }
+        val = models[col][ranges[0]];
       }
-      ui.tooltip.show(ui.divV([
-        ui.div(val)
-      ]), x, y);
+      ui.tooltip.show(ui.divV([ui.div(val)]), x, y);
       return true;
     }
   });
@@ -61,16 +52,22 @@ export function addTooltip() {
 export function addColorCoding(columnNames: string[]) {
   const tv = grok.shell.tv;
   for (const columnName of columnNames) {
+    //@ts-ignore
     tv.grid.col(columnName)!.isTextColorCoded = true;
     tv.grid.col(columnName)!.categoryColors = {
       '<0.5': 0xFFF1B6B4,
       '>0.5': 0xFFB4F1BC
     };
-  }   
+  }  
 }
 
 export async function addForm(smilesCol: DG.Column, viewTable: DG.DataFrame) {
-  let queryParams = 'Pgp-Inhibitor,Pgp-Substrate,HIA,F(20%),F(30%),Ames,SkinSen,BBB,CYP1A2-Inhibitor,CYP1A2-Substrate,CYP3A4-Inhibitor,CYP3A4-Substrate,CYP2C19-Inhibitor,CYP2C19-Substrate,CYP2C9-Inhibitor,CYP2C9-Substrate,CYP2D6-Inhibitor,CYP2D6-Substrate';
+  const queryParams = Object.keys(properties)
+    .flatMap(property => properties[property]['models'])
+    .filter(obj => obj['skip'] !== true)
+    .map(obj => obj['name'])
+    .join(',');
+  console.log(queryParams);
   let csvString = await accessServer(DG.DataFrame.fromColumns([smilesCol]).toCsv(), queryParams);
   const table = processCsv(csvString);
   addResultColumns(table, viewTable);
@@ -82,25 +79,29 @@ export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFra
     selected = await getSelected();
     const queryParams = selected.join(',');
     const pi = DG.TaskBarProgressIndicator.create('Evaluating predictions...');
-    let csvString: string | null = '';
     try {
-      csvString = await accessServer(DG.DataFrame.fromColumns([smilesCol]).toCsv(), queryParams);
+      const [csvString] = await Promise.all([
+      accessServer(DG.DataFrame.fromColumns([smilesCol]).toCsv(), queryParams),
+      new Promise((resolve) => setTimeout(resolve, 1000))]);
+      
+      const table = processCsv(csvString);
+      addResultColumns(table, viewTable);
+      addTooltip();
+
+      if (_COLOR === 'true') {
+        let columnNames = table.columns.names();
+        addColorCoding(columnNames);
+      }
+      
+      pi.update(100, 'Evaluation complete');
     } catch (e: any) {
       console.error(e);
       grok.shell.warning(e.toString());
-      pi.update(100, 'Evaluation failed...');
+      pi.update(100, 'Evaluation failed');
+    } finally {
       pi.close();
     }
-    const table = processCsv(csvString);
-    addResultColumns(table, viewTable);
-    addTooltip();
-    console.log(_COLOR);
-    if (_COLOR === 'true') {
-      let columnNames = table.columns.names();
-      addColorCoding(columnNames);
-    }
-    pi.close();
-  });
+  })
 }
 
 function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
@@ -118,7 +119,7 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
 
 function processCsv(csvString: string | null): DG.DataFrame {
   csvString = csvString!.replaceAll('"', '');
-  let table = DG.DataFrame.fromCsv(csvString);
+  const table = DG.DataFrame.fromCsv(csvString);
   table.rows.removeAt(table.rowCount - 1);
   const modelNames: string[] = [];
   const prevColNames = table.columns.names();
@@ -137,15 +138,11 @@ export function getModelsSingle(smiles: string): DG.Accordion {
   const acc = ui.accordion('ADME/Tox');
   const accPanes = document.getElementsByClassName('d4-accordion-pane-header');
   for (let i = 0; i < accPanes.length; ++i) {
-    if (accPanes[i].innerHTML === 'ADME/Tox') {
+    if (accPanes[i].innerHTML === 'ADME/Tox') 
       accPanes[i].append(ui.icons.help(() => {window.open('https://github.com/datagrok-ai/public/blob/1ef0f6c050754a432640301139f41fcc26e2b6c3/packages/ADMETox/README.md', '_blank')}));
-    }
   }
   const update = (result: HTMLDivElement, modelName: string) => {
-    let queryParams: string[] = [];
-    let model = properties[modelName]['models']
-    for (let i = 0; i < model.length; ++i) 
-      queryParams[i] = model[i]['name'];
+    const queryParams = properties[modelName]['models'].map((model: any) => model['name']);
     result.appendChild(ui.loader());
     accessServer(
       `smiles
@@ -172,11 +169,6 @@ export function getModelsSingle(smiles: string): DG.Accordion {
       return result;
     }, false);
   }
-
-  /*widget.root.appendChild(result);
-  widget.root.appendChild(selectButton);
-
-  update();*/
 
   return acc;
 }
