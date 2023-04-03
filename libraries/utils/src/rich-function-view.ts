@@ -131,6 +131,21 @@ export class RichFunctionView extends FunctionView {
     return formDiv;
   }
 
+  buildRibbonPanels(): HTMLElement[][] {
+    super.buildRibbonPanels();
+
+    const play = ui.iconFA('play', async () => await this.doRun());
+    play.classList.add('fas');
+
+    const newRibbonPanels = [
+      ...this.getRibbonPanels(),
+      [play],
+    ];
+
+    this.setRibbonPanels(newRibbonPanels);
+    return newRibbonPanels;
+  }
+
   // Main element of the output block. Stores all the tabs for the output and input
   private tabsElem = ui.tabControl();
 
