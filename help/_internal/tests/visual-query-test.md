@@ -1,9 +1,9 @@
-<!-- TITLE: Tests: Build Query -->
+<!-- TITLE: Tests: Join DB Tables -->
 <!-- SUBTITLE: -->
 
 # Tests: Data query
 
-Visual Query allows you to get table with aggregated values by columns from DB table.
+Aggregation Editor allows you to get table with aggregated values by columns from DB table.
 
 ## Testing scenario
 
@@ -11,7 +11,7 @@ Visual Query allows you to get table with aggregated values by columns from DB t
 
 1. Expand ```PosgteSQL -> northwind -> Tables```
 
-1. Open *Visual Query* for **products** DB table (from it's context menu)
+1. Open *New Aggregation Query* for **products** DB table (from it's context menu)
 
 * Added special "Query View" with control for selection of aggregations
 
@@ -26,9 +26,9 @@ Visual Query allows you to get table with aggregated values by columns from DB t
 
 1. Click on "Run query..." action on [Toolbox](../../datagrok/navigation.md#toolbox)
 
-* Table with result of aggregations from "Visual Query" is added to [workspace](../../datagrok/workspace.md)
+* Table with result of aggregations from "Aggregation Editor" is added to [workspace](../../datagrok/workspace.md)
 
-1. Return to view with [Source Tree](../../access/data-source.md)
+1. Return to view with [Source Tree](../../access/access.md#data-sources)
 
 1. Click on "Get All" from context menu of **products** DB table
 
@@ -40,14 +40,14 @@ Visual Query allows you to get table with aggregated values by columns from DB t
 
 1. Execute [Aggregate rows](../../transform/aggregate-rows.md) dialog
 
-* Result of [Aggregate rows](../../transform/aggregate-rows.md) same as result of Visual Query from step 7
+* Result of [Aggregate rows](../../transform/aggregate-rows.md) same as result in Aggregation Editor from step 7
 
 1. Repeat previous steps for **Postgres**, **MySql**, **MS SQL**, **MariaDB**, **ORACLE**
    providers
 
 1. Click on "Add result to workspace" from dialog menu (v)
 
-* Result table of query from [Query Builder](../../access/query-builder.md) has been added to workspace
+* Result table of query from [Query Builder](../../access/databases.mdx#join-tables) has been added to workspace
 
 1. Click on "Get All" from context menu of **employees** DB table
 
@@ -59,5 +59,5 @@ Visual Query allows you to get table with aggregated values by columns from DB t
 See also:
 
 * [Data Sourse Test](../../access/data-source-test.md)
-* [Data Query](../../access/data-query.md)
-* [Build Query Test](../tests/build-query-test.md)
+* [Data Query](../../access/access.md#data-query)
+* [Join DB Tables Test](../tests/build-query-test.md)

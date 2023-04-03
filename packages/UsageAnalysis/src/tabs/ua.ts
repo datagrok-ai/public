@@ -35,11 +35,7 @@ export class UaView extends DG.ViewBase {
   }
 
   getScatterPlot(): UaQueryViewer {
-    return this.viewers[0];
-  }
-
-  getTime(date: Date, format: string = 'en-GB'): string {
-    return date.toLocaleString(format, {hour12: false}).replace(',', '');
+    return this.viewers.find((v) => v.viewer?.type === 'Scatter plot') as UaQueryViewer;
   }
 
   async initViewers(): Promise<void> {}

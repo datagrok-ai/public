@@ -23,5 +23,5 @@ Provides access to the
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [PI](https://techsupport.osisoft.com/products/)

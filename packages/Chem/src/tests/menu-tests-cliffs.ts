@@ -18,7 +18,8 @@ category('top menu activity cliffs', async () => {
   });
 
   test('activityCliffsOpen.smiles', async () => {
-    await _testActivityCliffsOpen('tests/activity_cliffs_test.csv', 'smiles', 'Activity', 2);
+    if (DG.Test.isInBenchmark) await _testActivityCliffsOpen('smiles.csv', 'canonical_smiles', 'FractionCSP3', 550);
+    else await _testActivityCliffsOpen('tests/activity_cliffs_test.csv', 'smiles', 'Activity', 2);
   });
 
   test('activityCliffsOpen.molV2000', async () => {
@@ -37,8 +38,8 @@ category('top menu activity cliffs', async () => {
     DG.Balloon.closeAll();
     await _testActivityCliffsOpen('tests/Test_smiles_malformed.csv', 'canonical_smiles', 'FractionCSP3', 24);
     try {
-      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.innerHTML ===
-        '2 molecules with indexes 2,9 are possibly malformed and are not included in analysis', 'cannot find warning balloon', 1000);
+      await awaitCheck(() => (document.querySelector('.d4-balloon-content') as HTMLElement)?.innerText.includes(
+        '2 molecules with indexes 3,10 are possibly malformed and are not included in analysis'), 'cannot find warning balloon', 1000);
     } finally {
       grok.shell.closeAll();
       DG.Balloon.closeAll();

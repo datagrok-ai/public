@@ -6,7 +6,7 @@ import {Unsubscribable} from 'rxjs';
 
 export class NglForGridTestApp {
   private readonly appName: string;
-  df: DG.DataFrame;
+  df?: DG.DataFrame;
 
   constructor(appName: string = 'nglForGridTestApp') {
     this.appName = appName;
@@ -35,11 +35,11 @@ export class NglForGridTestApp {
 
   // -- View --
 
-  private view: DG.TableView;
+  private view?: DG.TableView;
   private viewSubs: Unsubscribable[] = [];
 
   async buildView(): Promise<void> {
-    this.view = grok.shell.addTableView(this.df);
+    this.view = grok.shell.addTableView(this.df!);
     this.view.path = this.view.basePath = `/func/${_package.name}.${this.appName}`;
   }
 }

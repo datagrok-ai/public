@@ -12,8 +12,8 @@ export class DistanceMatrix {
   get size(): number { return this._size; }
 
   /**
-   * @param {Float64Array} data  Distance data
-   * @param {number} m           Number of original observations
+   * @param {Float32Array} data Distance data
+   * @param {number} size Number of original observations
    */
   constructor(data?: Float32Array, size?: number) {
     if (size == undefined) {
@@ -62,6 +62,41 @@ export class DistanceMatrix {
         res.set(i, j, method(list[i], list[j]));
     }
     return res;
+  }
+
+  // squares each value in matrix in place
+  public square() {
+    for (let i = 0; i < this._data.length; i++)
+      this._data[i] = this._data[i] ** 2;
+  }
+
+  // adds another matrix to this one in place
+  public add(other: DistanceMatrix) {
+    if (this._size !== other._size)
+      throw new Error(`Matrices must have the same size. This size: ${this._size}, other size: ${other._size}`);
+    for (let i = 0; i < this._data.length; i++)
+      this._data[i] += other._data[i];
+  }
+
+  // square root each value in matrix in place
+  public sqrt() {
+    for (let i = 0; i < this._data.length; i++)
+      this._data[i] = Math.sqrt(this._data[i]);
+  }
+
+  //normilze distance matrix in place
+  public normalize() {
+    let min = this._data[0];
+    let max = this._data[0];
+    for (let i = 0; i < this._data.length; i++) {
+      if (this._data[i] < min)
+        min = this._data[i];
+      if (this._data[i] > max)
+        max = this._data[i];
+    }
+    const range = max - min;
+    for (let i = 0; i < this._data.length; i++)
+      this._data[i] = range === 0 ? this._data[i] - min : (this._data[i] - min) / (max - min);
   }
 }
 

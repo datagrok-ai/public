@@ -2,10 +2,10 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {newickToDf} from '../utils';
-import {Unsubscribable} from 'rxjs';
 import {_package} from '../package';
+import {Unsubscribable} from 'rxjs';
 import {IPhylocanvasGlViewer} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
+import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 
 
 export class PhylocanvasGlViewerApp {
@@ -20,6 +20,7 @@ export class PhylocanvasGlViewerApp {
   treeDn!: DG.DockNode | null;
 
   _treeDf!: DG.DataFrame;
+  treeHelper: ITreeHelper;
 
   get treeDf() { return this._treeDf; }
 
@@ -28,7 +29,8 @@ export class PhylocanvasGlViewerApp {
   }
 
   async init(df?: DG.DataFrame): Promise<void> {
-    await this.loadData(df);
+    this.treeHelper = await getTreeHelper();
+    await this.loadData(df); // calls treeHelper
   }
 
   async loadData(df?: DG.DataFrame): Promise<void> {
@@ -36,7 +38,7 @@ export class PhylocanvasGlViewerApp {
       await this.setData(df);
     } else {
       const newickStr: string = await _package.files.readAsText('data/tree95.nwk');
-      const treeDf: DG.DataFrame = newickToDf(newickStr, 'tree95');
+      const treeDf: DG.DataFrame = this.treeHelper.newickToDf(newickStr, 'tree95');
       await this.setData(treeDf);
     }
   }

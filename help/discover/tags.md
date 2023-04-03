@@ -142,7 +142,7 @@ Column cell renderer.
 
 ## Query
 
-A [query](../access/data-query.md) that was used to produce this table. Applicable to tables.
+A [query](../access/access.md#data-query) that was used to produce this table. Applicable to tables.
 
 ## Import-time
 
@@ -184,7 +184,7 @@ Entity id, as it is stored in the database. Applicable to tables, columnms, and 
 
 ## Data-connection-id
 
-ID of the [data connection](../access/data-connection.md) that was used to populate the table. Applicable to tables.
+ID of the [data connection](../access/access.md#data-connection) that was used to populate the table. Applicable to tables.
 
 ## .history
 
@@ -193,7 +193,7 @@ History of all modifications applied to that table. Applies to tables.
 ## .script
 
 [Grok script](../datagrok/grok-script.md) that was used to create a table. It could represent getting a data via
-a [database query](../access/data-query.md), from a web service, from a file share, or using any
+a [database query](../access/access.md#data-query), from a web service, from a file share, or using any
 other [function](../datagrok/functions/functions.md) that returns a [table](../datagrok/table.md).
 
 If this tag is present in a table, a "data sync" option appears next to this table in the

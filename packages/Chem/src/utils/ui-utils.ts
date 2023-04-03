@@ -7,13 +7,19 @@ export function updateDivInnerHTML(div: HTMLElement, content: string | Node): vo
   div.append(content);
 }
 
-export function addCopyIcon(text: string | HTMLElement, paneName: string) {
+export function addCopyIcon(element: Object | HTMLElement, paneName: string) {
   const copyIcon = ui.icons.copy(() => {}, 'Copy');
   copyIcon.onclick = (e) => {
-    if (typeof(text) != 'string') 
-      navigator.clipboard.writeText(text.innerText);
-    else 
-      navigator.clipboard.writeText(text);
+    let text: string;
+    if (element instanceof HTMLElement) {
+      text = element.innerText;
+    } else {
+      let tableString = '';
+      for (const [key, value] of Object.entries(element))
+        tableString += `${key}\t${(value as any).innerText}\n`;
+      text = tableString;
+    }
+    navigator.clipboard.writeText(text);
     grok.shell.info('Copied to clipboard');
     e.stopImmediatePropagation();
   } 
@@ -23,8 +29,8 @@ export function addCopyIcon(text: string | HTMLElement, paneName: string) {
     if (accPanes[i].innerHTML === paneName) {
       const pane = accPanes[i];
       pane.append(copyIcon);
-      pane.addEventListener('mouseenter', () => {copyIcon.style.visibility = 'visible'});
-      pane.addEventListener('mouseleave', () => {copyIcon.style.visibility = 'hidden'});
+      pane.parentElement?.addEventListener('mouseenter', () => {copyIcon.style.visibility = 'visible'});
+      pane.parentElement?.addEventListener('mouseleave', () => {copyIcon.style.visibility = 'hidden'});
     }
   }
 }

@@ -120,3 +120,4 @@ See also:
 
 - [Cheminformatics in Datagrok](https://datagrok.ai/cheminformatics)
 - [Cheminformatics API](cheminformatics.md)
+- [Cheminformatics 101](https://openbabel.org/docs/dev/Cheminf101/index.html)

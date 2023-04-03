@@ -55,7 +55,7 @@ export function _scriptEditor(): void {
 //tags: autostart
 export function _functionSignatureEditor(): void {
   grok.events.onViewAdded.subscribe((view) => {
-    if (view.type == 'ScriptView')
+    if (view.type == 'ScriptView' || view.type == 'DataQueryView')
       functionSignatureEditor(view);
   });
 }

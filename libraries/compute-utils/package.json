@@ -1,7 +1,11 @@
 {
 	"name": "@datagrok-libraries/compute-utils",
 	"friendlyName": "ComputeUtils",
-	"version": "1.0.1",
+	"version": "1.2.3",
+	"author": {
+		"name": "Aufar Zakiev",
+		"email": "aufar.zakiev@softwarecountry.com"
+	},
 	"description": "",
 	"dependencies": {
 		"@types/wu": "^2.1.42",
@@ -9,8 +13,8 @@
 		"datagrok-api": "latest",
 		"dayjs": "^1.11.7",
 		"exceljs": "^4.3.0",
+		"fflate": "^0.7.4",
 		"html2canvas": "^1.4.1",
-		"jszip": "^3.10.1",
 		"rxjs": "^6.6.7",
 		"wu": "^2.1.0"
 	},

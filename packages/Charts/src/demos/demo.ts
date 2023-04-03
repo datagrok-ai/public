@@ -34,6 +34,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
   }
 
   const viewer = tableView.addViewer(viewerName, options);
+  grok.shell.windows.help.showHelp(viewer.helpUrl);
   dockViewers(tableView, viewer, viewerName);
 }
 
