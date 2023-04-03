@@ -1,0 +1,22 @@
+.ui-tag-list {
+    border: none;
+    border-bottom: 1px solid var(--grey-1);
+    cursor: text;
+    background-color: #fff;
+    position: relative;
+}
+
+.ui-tag {
+    color: var(--grey-5);
+    display: inline-flex;
+    padding: 3px 6px;
+    align-items: center;
+    text-align: center;
+    line-height: 1;
+    background-color: var(--steel-1);
+    margin: 1px 2px;
+    text-decoration: none;
+    white-space: nowrap;
+    border-radius: 2px;
+    font-size: 12px;
+}
