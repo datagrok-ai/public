@@ -21,6 +21,21 @@ export const POLYNOMIAL = 1;
 export const RBF = 2;
 export const SIGMOID = 3;
 
+// output-related
+const CONFUSION_MATR_SIZE = 4;
+const NORMALIZED_DATA_INDEX = 0;
+const MEANS_INDEX = 1;
+const STD_DEVS_INDEX = 2;
+const MODEL_PARAMS_INDEX = 3;
+const MODEL_WEIGHTS_INDEX = 4;
+const PREDICTED_LABELS_INDEX = 5;
+const CORRECTNESS_INDEX = 6;
+const CONFUSION_MATRIX_INDEX = 7;
+const TRUE_POSITIVE_INDEX = 0;
+const FALSE_NEGATIVE_INDEX = 1;
+const FALSE_POSITIVE_INDEX = 2;
+const TRUE_NEGATIVE_INDEX = 3;
+
 // kernel parameters indeces
 const RBF_SIGMA_INDEX = 0;
 const POLYNOMIAL_C_INDEX = 0;
@@ -49,6 +64,8 @@ const PARAMETERS = 'Parameters';
 const WEIGHTS = 'Weights';
 const LABELS = 'Labels';
 const PREDICTED = 'predicted';
+const CORRECTNESS = 'correctness';
+const CONFUSION_MATRIX_NAME = 'Confusion matrix';
 const MEAN = 'mean';
 const STD_DEV = 'std dev';
 const MODEL_PARAMS_NAME = 'alpha';
@@ -58,10 +75,20 @@ const KERNEL = 'kernel';
 const KERNEL_PARAMS = 'kernel params'; 
 const KERNEL_PARAM_1 = 'kernel param 1';
 const KERNEL_PARAM_2 = 'kernel param 2';
-const TRAIN_ERROR = 'train error,%';
+const TRAIN_ERROR = 'Train error,%';
 const MODEL_INFO = 'Model info';
 const MODEL_INFO_FULL = 'Model full info';
 const KERNEL_TYPE_TO_NAME_MAP = ['linear', 'polynomial', 'RBF', 'sigmoid'];
+const POSITIVE_NAME = 'positive (P)';
+const NEGATIVE_NAME = 'negative (N)';
+const PREDICTED_POSITIVE_NAME = 'predicted positive (PP)';
+const PREDICTED_NEGATIVE_NAME = 'predicted negative (PN)';
+const SENSITIVITY = 'Sensitivity';
+const SPECIFICITY = 'Specificity';
+const ACCURACY = 'Accuracy';
+const BALANCED_ACCURACY = 'Balanced accuracy';
+const POSITIVE_PREDICTIVE_VALUE = 'Positive predicitve value';
+const NEGATIVE_PREDICTIVE_VALUE = 'Negative predicitve value';
 
 // misc
 const INIT_VALUE = 0; // any number can be used
@@ -139,87 +166,124 @@ export function getError(col1, col2)
   return 100.0 * faultsCount / size;
 }
 
+// Evaluate accuracy of the model
+function evaluateAccuracy(model) {
+  let data = model.confusionMatrix.getRawData();
+
+  // here, the classic notation is used (see https://en.wikipedia.org/wiki/Sensitivity_and_specificity)
+
+  let TP = data[TRUE_POSITIVE_INDEX]; // true positive
+  let TN = data[TRUE_NEGATIVE_INDEX]; // true negative
+  let FP = data[FALSE_POSITIVE_INDEX]; // false positive
+  let FN = data[FALSE_NEGATIVE_INDEX]; // false negative
+
+  let P = TP + FN; // positive
+  let N = FP + TN; // negative
+
+  let TPR = TP / P; // true positive rate
+  let TNR = TN / N; // true negative rate
+
+  let PPV = TP / (TP + FP); // positive predicitve value
+  let NPV = TN / (TN + FN); // negative predicitve value
+
+  let ACC = (TP + TN) / (P + N); // accuracy
+  let BA = (TPR + TNR) / 2; // alanced accuracy
+
+  model.sensitivity = TPR;
+  model.specificity = TNR;
+  model.accuracy = ACC;
+  model.balancedAccuracy = BA;
+  model.positivePredicitveValue = PPV;
+  model.negativePredicitveValue = NPV;
+
+  //TODO: add other indicators
+} // evaluateAccuracy
+
 // Returns trained LS-SVM model.
-export function trainModel(module, trainFuncName, predictFuncName, 
-    hyperparameters, dataset, labels) 
+export function trainAndAnalyzeModel(module, funcName,
+  hyperparameters, dataset, labels) 
 { 
-  // check correctness of hyperparameter gamma
-  checkHyperparameters(hyperparameters)
+// check correctness of hyperparameter gamma
+checkHyperparameters(hyperparameters)
 
-  // create default kernel params array
-  let kernelParamsArray = [INIT_VALUE, INIT_VALUE];
-  
-  // fill kernelParams
-  switch(hyperparameters.kernel)
-  {
-    case LINIEAR: // no kernel parameters in the case of linear kernel
-      break;
+// create default kernel params array
+let kernelParamsArray = [INIT_VALUE, INIT_VALUE];
 
-    case RBF: // sigma parameter in the case of RBF-kernel
-      kernelParamsArray[RBF_SIGMA_INDEX] = hyperparameters.sigma;      
-      break;
+// fill kernelParams
+switch(hyperparameters.kernel)
+{
+  case LINIEAR: // no kernel parameters in the case of linear kernel
+    break;
 
-    case POLYNOMIAL: // sigma parameter in the case of polynomial kernel
-      kernelParamsArray[POLYNOMIAL_C_INDEX] = hyperparameters.cParam;
-      kernelParamsArray[POLYNOMIAL_D_INDEX] = hyperparameters.dParam;
-      break;
+  case RBF: // sigma parameter in the case of RBF-kernel
+    kernelParamsArray[RBF_SIGMA_INDEX] = hyperparameters.sigma;      
+    break;
 
-    case SIGMOID: // sigma parameter in the case of sigmoid kernel
-      kernelParamsArray[SIGMOID_KAPPA_INDEX] = hyperparameters.kappa;
-      kernelParamsArray[SIGMOID_THETA_INDEX] = hyperparameters.theta;
-      break;
+  case POLYNOMIAL: // sigma parameter in the case of polynomial kernel
+    kernelParamsArray[POLYNOMIAL_C_INDEX] = hyperparameters.cParam;
+    kernelParamsArray[POLYNOMIAL_D_INDEX] = hyperparameters.dParam;
+    break;
 
-    default: // incorrect kernel 
-      throw new Error('Incorrect kernel ID.');
-  };
+  case SIGMOID: // sigma parameter in the case of sigmoid kernel
+    kernelParamsArray[SIGMOID_KAPPA_INDEX] = hyperparameters.kappa;
+    kernelParamsArray[SIGMOID_THETA_INDEX] = hyperparameters.theta;
+    break;
 
-  // create kernel params column
-  let kernelParams = DG.Column.fromList('double', KERNEL_PARAMS, kernelParamsArray);
-  
-  // compute size of model params & precomputed weigths
-  let trainCols = dataset.toList();  
-  let modelParamsCount = trainCols[0].length + LS_SVM_ADD_CONST;
-  let precomputedWeightsCount = trainCols.length + LS_SVM_ADD_CONST;
-  
-  // call webassembly training function
-  let output = callWasm(module, trainFuncName, 
-    [hyperparameters.gamma, hyperparameters.kernel, kernelParams, 
-     modelParamsCount, precomputedWeightsCount, 
-     dataset, labels]);       
-  
-  // rename output columns
-  output[1].name = MEAN;
-  output[2].name = STD_DEV;
-  output[3].name = MODEL_PARAMS_NAME;
-  output[4].name = MODEL_WEIGHTS_NAME;
+  default: // incorrect kernel 
+    throw new Error(WRONG_KERNEL_MESSAGE);
+};
 
-  // complete model
-  let model = {
-    trainGamma: hyperparameters.gamma,
-    kernelType: hyperparameters.kernel,
-    kernelParams: kernelParams,
-    trainLabels: labels,
-    normalizedTrainData: DG.DataFrame.fromColumns(output[0]),
-    means: output[1],
-    stdDevs: output[2],
-    modelParams: output[3],
-    modelWeights: output[4],
-    predictedLabels: undefined,
-    trainError: undefined 
-  };
+// create kernel params column
+let kernelParams = DG.Column.fromList('double', KERNEL_PARAMS, kernelParamsArray);
 
-  console.log(model);
+// compute size of model params & precomputed weigths
+let trainCols = dataset.toList();  
+let modelParamsCount = trainCols[0].length + LS_SVM_ADD_CONST;
+let precomputedWeightsCount = trainCols.length + LS_SVM_ADD_CONST;
+let confusionMatrixElementsCount = CONFUSION_MATR_SIZE;
 
-  // compute predicted labels and add then to model specification
-  let prediction = predict(module, predictFuncName, model, dataset);
-  prediction.name = PREDICTED;
-  model.predictedLabels = prediction;
+// call webassembly training function
+let output = callWasm(module, funcName, 
+  [hyperparameters.gamma, hyperparameters.kernel, kernelParams, 
+   modelParamsCount, precomputedWeightsCount, confusionMatrixElementsCount, 
+   dataset, labels]);       
 
-  // evaluate train error;
-  model.trainError = getError(model.trainLabels, model.predictedLabels);
+// rename output columns
+output[MEANS_INDEX].name = MEAN;
+output[STD_DEVS_INDEX].name = STD_DEV;
+output[MODEL_PARAMS_INDEX].name = MODEL_PARAMS_NAME;
+output[MODEL_WEIGHTS_INDEX].name = MODEL_WEIGHTS_NAME;
 
-  return model;
-} // trainModel
+output[PREDICTED_LABELS_INDEX].name = PREDICTED;
+output[CORRECTNESS_INDEX].name = CORRECTNESS;
+output[CONFUSION_MATRIX_INDEX].name = CONFUSION_MATRIX_NAME;
+
+// complete model
+let model = {
+  trainGamma: hyperparameters.gamma,
+  kernelType: hyperparameters.kernel,
+  kernelParams: kernelParams,
+  trainLabels: labels,
+  normalizedTrainData: DG.DataFrame.fromColumns(output[NORMALIZED_DATA_INDEX]),
+  means: output[MEANS_INDEX],
+  stdDevs: output[STD_DEVS_INDEX],
+  modelParams: output[MODEL_PARAMS_INDEX],
+  modelWeights: output[MODEL_WEIGHTS_INDEX],
+  predictedLabels: output[PREDICTED_LABELS_INDEX],
+  correctness: output[CORRECTNESS_INDEX],
+  confusionMatrix: output[CONFUSION_MATRIX_INDEX],
+  trainError: undefined 
+};
+
+evaluateAccuracy(model);
+
+console.log(model);
+
+// evaluate train error;
+model.trainError = getError(model.trainLabels, model.predictedLabels);
+
+return model;
+} // trainAndAnalyzeModel
 
 // Returns dataframe with short info about model
 export function getModelInfo(model) {
@@ -230,7 +294,13 @@ export function getModelInfo(model) {
     DG.Column.fromStrings(KERNEL, [KERNEL_TYPE_TO_NAME_MAP[model.kernelType]]),
     DG.Column.fromList('double', KERNEL_PARAM_1, [kernelParams[0]]),
     DG.Column.fromList('double', KERNEL_PARAM_2, [kernelParams[1]]),
-    DG.Column.fromList('double', TRAIN_ERROR, [model.trainError]), 
+    DG.Column.fromList('double', TRAIN_ERROR, [model.trainError]),
+    DG.Column.fromList('double', ACCURACY, [model.accuracy]),
+    DG.Column.fromList('double', BALANCED_ACCURACY, [model.balancedAccuracy]),
+    DG.Column.fromList('double', SENSITIVITY, [model.sensitivity]),
+    DG.Column.fromList('double', SPECIFICITY, [model.specificity]),    
+    DG.Column.fromList('double', POSITIVE_PREDICTIVE_VALUE, [model.positivePredicitveValue]), 
+    DG.Column.fromList('double', NEGATIVE_PREDICTIVE_VALUE, [model.negativePredicitveValue])
   ]);     
 } 
 
@@ -239,6 +309,20 @@ export function showModel(model) {
   let info = getModelInfo(model);
   info.name = MODEL_INFO;
   grok.shell.addTableView(info);
+}
+
+// Get dataframe with confusion matrix
+function getConfusionMatrixDF(model) 
+{
+  let data = model.confusionMatrix.getRawData();
+
+  return DG.DataFrame.fromColumns([
+    DG.Column.fromStrings('', [POSITIVE_NAME, NEGATIVE_NAME]),
+    DG.Column.fromList('int', PREDICTED_POSITIVE_NAME, 
+      [data[TRUE_POSITIVE_INDEX], data[FALSE_POSITIVE_INDEX]]),
+    DG.Column.fromList('int', PREDICTED_NEGATIVE_NAME, 
+      [data[FALSE_NEGATIVE_INDEX], data[TRUE_NEGATIVE_INDEX]]) 
+  ]);
 }
 
 // Show trained SVM-model: full info
@@ -274,5 +358,10 @@ export function showModelFullInfo(model) {
   let modelLabelsDF = DG.DataFrame.fromColumns([model.trainLabels, 
     model.predictedLabels]);
   modelLabelsDF.name = LABELS;
-  grok.shell.addTableView(modelLabelsDF);  
+  grok.shell.addTableView(modelLabelsDF);
+  
+  //show confusion matrix
+  let confMatrixDF = getConfusionMatrixDF(model);
+  confMatrixDF.name = CONFUSION_MATRIX_NAME;
+  grok.shell.addTableView(confMatrixDF);
 } // showModelFullInfo

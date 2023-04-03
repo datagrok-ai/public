@@ -15,29 +15,13 @@ import { callWasm } from '../wasm/callWasm';
 import { getCppInput, getResult } from '../wasm/callWasmForWebWorker';
 
 // Support vector machine (SVM) tools imports
-import {trainModel, showModel, showModelFullInfo, 
+import {trainAndAnalyzeModel, showModel, showModelFullInfo, 
   LINIEAR, RBF, POLYNOMIAL, SIGMOID} from './svm';
 
 //tags: init
 export async function init() {
   await initSVMlib();
 }
-
-//name: getWrongPredictions
-//input: dataframe df
-//input: column col1
-//input: column col2
-export function getWrongPredictions(df, col1, col2) {  
-  let arr1 = col1.getRawData();
-  let arr2 = col2.getRawData();
-  let size = arr1.length;
-  let res = new Float32Array(size); 
-  
-  for(let i = 0; i < size; i++)
-    res[i] = arr1[i] * arr2[i];
-
-  df.columns.add(DG.Column.fromFloat32Array('FAULTS', res));
-} // getWrongPredictions
 
 //name: Generate test data (linear kernel case)
 //description: Generates dataset for testing SVN with linear kernel.
@@ -108,8 +92,11 @@ export function demoLinearKernelLSSVM(gamma, df, features, labels,
 
   let hyperparameters = {gamma: gamma, kernel: LINIEAR};
 
-  let model = trainModel(SVMlib, 'trainLSSVM', 'predictByLSSVM',
-    hyperparameters, features, labels);  
+  /*let model = trainModel(SVMlib, 'trainLSSVM', 'predictByLSSVM',
+    hyperparameters, features, labels);  */
+
+  let model = trainAndAnalyzeModel(SVMlib, 'trainAndAnalyzeLSSVM',
+    hyperparameters, features, labels); 
 
   if(modelInfo === 'short')
     showModel(model);
@@ -120,7 +107,7 @@ export function demoLinearKernelLSSVM(gamma, df, features, labels,
     df.columns.add(model.predictedLabels);    
 
     if(toShowWrongPredictions)
-      getWrongPredictions(df, labels, model.predictedLabels);
+      df.columns.add(model.correctness);
   }
 } // demoLinearKernelLSSVM
 
@@ -139,8 +126,11 @@ export function demoRBFkernelLSSVM(gamma,sigma, df, features, labels,
 
   let hyperparameters = {gamma: gamma, kernel: RBF, sigma: sigma};
 
-  let model = trainModel(SVMlib, 'trainLSSVM', 'predictByLSSVM',
-    hyperparameters, features, labels);  
+  /*let model = trainModel(SVMlib, 'trainLSSVM', 'predictByLSSVM',
+    hyperparameters, features, labels);  */
+
+  let model = trainAndAnalyzeModel(SVMlib, 'trainAndAnalyzeLSSVM',
+    hyperparameters, features, labels);
 
   if(modelInfo === 'short')
     showModel(model);
@@ -151,7 +141,7 @@ export function demoRBFkernelLSSVM(gamma,sigma, df, features, labels,
     df.columns.add(model.predictedLabels);    
 
     if(toShowWrongPredictions)
-      getWrongPredictions(df, labels, model.predictedLabels);
+      df.columns.add(model.correctness);
   }
 } // demoRBFkernelLSSVM
 
@@ -171,8 +161,11 @@ export function demoPolynomialKernelLSSVM(gamma, c, d, df, features, labels,
 
   let hyperparameters = {gamma: gamma, kernel: POLYNOMIAL, cParam: c, dParam: d};
 
-  let model = trainModel(SVMlib, 'trainLSSVM', 'predictByLSSVM',
-    hyperparameters, features, labels);  
+  /*let model = trainModel(SVMlib, 'trainLSSVM', 'predictByLSSVM',
+    hyperparameters, features, labels);  */
+  
+  let model = trainAndAnalyzeModel(SVMlib, 'trainAndAnalyzeLSSVM',
+    hyperparameters, features, labels);
 
   if(modelInfo === 'short')
     showModel(model);
@@ -183,7 +176,7 @@ export function demoPolynomialKernelLSSVM(gamma, c, d, df, features, labels,
     df.columns.add(model.predictedLabels);    
 
     if(toShowWrongPredictions)
-      getWrongPredictions(df, labels, model.predictedLabels);
+      df.columns.add(model.correctness);
   }
 } // demoPolynomialKernelLSSVM
 
@@ -203,8 +196,11 @@ export function demoSigmoidKernelLSSVM(gamma, kappa, theta, df, features, labels
 
   let hyperparameters = {gamma: gamma, kernel: SIGMOID, kappa: kappa, theta: theta};
 
-  let model = trainModel(SVMlib, 'trainLSSVM', 'predictByLSSVM',
-    hyperparameters, features, labels);  
+  /*let model = trainModel(SVMlib, 'trainLSSVM', 'predictByLSSVM',
+    hyperparameters, features, labels); */
+
+  let model = trainAndAnalyzeModel(SVMlib, 'trainAndAnalyzeLSSVM',
+    hyperparameters, features, labels);
 
   if(modelInfo === 'short')
     showModel(model);
@@ -215,6 +211,7 @@ export function demoSigmoidKernelLSSVM(gamma, kappa, theta, df, features, labels
     df.columns.add(model.predictedLabels);    
 
     if(toShowWrongPredictions)
-      getWrongPredictions(df, labels, model.predictedLabels);
+      df.columns.add(model.correctness);
   }
 } // demoSigmoidKernelLSSVM
+
