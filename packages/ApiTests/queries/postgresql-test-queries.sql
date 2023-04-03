@@ -102,7 +102,7 @@ select Count(*) from orders;
 --end
 
 --friendlyName: ChemblPerfGenerated
---connection: PostgresChembl
+--connection: PostgresChemblTest
 --input: int num = 5000000
 select
     left(md5(i::text), 10),
@@ -114,6 +114,6 @@ from generate_series(1, @num) s(i)
 --end
 
 --friendlyName: ChemblPerfGenerated
---connection: Compounds
+--connection: PostgresChemblTest
 select * from compound_structures
 --end
