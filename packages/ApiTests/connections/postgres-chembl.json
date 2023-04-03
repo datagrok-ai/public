@@ -1,0 +1,20 @@
+{
+    "#type": "DataConnection",
+    "name": "PostgresChembl",
+    "friendlyName": "Chembl",
+    "parameters": {
+      "server": "db.datagrok.ai",
+      "port": 54325,
+      "db": "chembl"
+    },
+    "credentials" : {
+      "parameters" : {
+        "login": "datagrok",
+        "password": "datagrok"
+      }
+    },
+    "dataSource": "Postgres",
+    "description": "Chembl sample database",
+    "tags": ["demo"]
+  }
+  

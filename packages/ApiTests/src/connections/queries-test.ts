@@ -25,4 +25,47 @@ category('Connections', () => {
         throw 'Rows number in' + query.name + 'table is not as expected';
     }
   });
+
+  test('perfGen', async () => {
+    const query = await grok.dapi.queries.include('params,connection').filter(`friendlyName="Perf"`).first();
+    const call = query.prepare();
+    await call.call();
+    const t = call.getOutputParamValue() as DG.DataFrame;
+    console.log(t);
+    console.log(query);
+  });
+
+  test('ScalarQueryTest', async () => {
+    const query = await grok.dapi.queries.filter(`friendlyName = "Postgre Scalar Output"`).include('params').first();
+    const call = query.prepare();
+    await call.call();  
+    const t = call.getOutputParamValue() as number;
+    console.log(t);
+    if (t != 830)
+      // eslint-disable-next-line no-throw-literal
+      throw 'Rows number in' + query.name + 'table is not as expected';
+  });
+  
+  test('External Provider Chembl Perf', async () => {
+    const query = await grok.dapi.queries.filter(`friendlyName = "ChemblPerfGenerated"`).include('params').first();
+    const lim = 5000000;
+    const call = query.prepare({'num': lim});
+    await call.call();  
+    const t = call.getOutputParamValue() as DG.DataFrame;
+    if (t.rowCount != lim)
+      // eslint-disable-next-line no-throw-literal
+      throw 'Rows number in' + query.name + 'table is not as expected';
+  });
+
+  test('External Provider First part', async () => {
+    const query = await grok.dapi.queries.filter(`friendlyName = "Compounds"`).include('params').first();
+    const call = query.prepare();
+    call.call();
+    setTimeout(() => {
+      const t = call.getOutputParamValue() as DG.DataFrame;
+      if (t == null)
+      // eslint-disable-next-line no-throw-literal
+        throw 'First rows await time exceeded';
+    }, 2000);
+  });
 });
