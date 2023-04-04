@@ -2,6 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
+import '../../css/demo.css';
+
 export class DemoView extends DG.ViewBase {
   dockPanel: DG.DockNode = new DG.DockNode(undefined);
   tree: DG.TreeViewGroup = ui.tree();
@@ -19,6 +21,10 @@ export class DemoView extends DG.ViewBase {
 
   startDemoFunc(func: DG.Func) {
     grok.shell.closeAll();
+    const loadingScreen = ui.div('Loading...', 'loading');
+    const dockContainer = document.getElementsByClassName('d4-dock-container')[0];
+    dockContainer?.appendChild(loadingScreen);
+
     func.apply().then((_) => { });
   }
 
@@ -47,21 +53,20 @@ export class DemoView extends DG.ViewBase {
       };
     }
 
-    this.tree.root.onkeyup = (event) => {
-      const currentElement = document.getElementsByClassName('d4-tree-view-node-selected')[0];
-      if (event.code === 'Enter' && currentElement.classList.contains('d4-tree-view-item')) {
-        const categoryName = currentElement.parentElement?.parentElement
+    this.tree.onNodeEnter.subscribe((value) => {
+      if (value.root.classList.contains('d4-tree-view-item')) {
+        const categoryName = value.root.parentElement?.parentElement
           ?.getElementsByClassName('d4-tree-view-group-label')[0].innerHTML;
-        const viewerName = currentElement.getElementsByClassName('d4-tree-view-item-label')[0].innerHTML;
+        const viewerName = value.text;
 
         this.startDemoFunc(DemoView.findDemoFunc(`${categoryName} | ${viewerName}`));
         // TODO: add focus return to dock panel
       }
-    };
+    });
 
     this.dockPanel = grok.shell.dockManager.dock(ui.div(
       [ui.searchInput('', ''), this.tree]), 'left', null, 'Categories');
-    this.dockPanel.container.containerElement.style.maxWidth = '250px';
+    this.dockPanel.container.containerElement.classList.add('demo-container');
 
     // TODO: make div with loading at center of viewer
     // TODO: if loading ended in 0.1s, then no div, if not - then div - DG.debounce, merge etc.
