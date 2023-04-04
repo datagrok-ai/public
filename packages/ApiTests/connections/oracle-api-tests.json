@@ -1,7 +1,7 @@
 {
   "#type": "DataConnection",
   "name": "OracleApiTests",
-  "friendlyName": "Tests",
+  "friendlyName": "OracleApiTests",
   "parameters": {
     "server": "db.datagrok.ai",
     "port": 1522,

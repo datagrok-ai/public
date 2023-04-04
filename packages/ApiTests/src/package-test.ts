@@ -133,7 +133,7 @@ export async function testPackages(): Promise<DG.DataFrame> {
 //output: dataframe result
 //top-menu: Tools | Dev | Test Connections
 export async function testConnections(): Promise<DG.DataFrame> {
-  const connections: string[] = ['SnowflakeApiTests'];
+  const connections: string[] = ['PostgreSQLApiTests', 'SnowflakeApiTests', 'MSSQLApiTests', 'OracleApiTests'];
   const tables: string[] = ['Long', 'Normal', 'Wide', 'Tiny'];
   const fetchSizes: string[] = ['big', 'dynamic', 'low'];
 
@@ -171,10 +171,18 @@ export async function testConnections(): Promise<DG.DataFrame> {
         callCheck = (c: FuncCall) => c.aux.get('fetchSize') == fetchSize && 
           (c.func as DataQuery).connection.name == con;
 
-
         const preTable = con.startsWith('Snowflake') ? 'TEST.' : '';
-        let sql = 'select 1';
-        if (table != 'Tiny')
+
+        let sql;
+
+        if (table == 'Tiny') {
+          if (con.startsWith('Oracle'))
+            sql = `select * from Test_Long WHERE ROWNUM = 1`;
+          else if (con.startsWith('MS'))
+            sql = `select TOP 1 * from Test_Long`;
+          else 
+            sql = 'select 1';
+        } else 
           sql = `select * from ${preTable}Test_${table}`;
         
         const query = `--fetchSize: ${fetchSize}\n${sql}\n--end`;
