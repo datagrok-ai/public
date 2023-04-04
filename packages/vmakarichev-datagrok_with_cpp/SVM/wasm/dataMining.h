@@ -52,7 +52,7 @@ namespace dmt {
 		Map < Vector<Float, Dynamic> > sigma(stdDevs, colCount);
 
 		// compute mean values & standard deviations
-		for (int i = 0; i < colCount; i++)
+		for (int i = 0; i < colCount; ++i)
 		{
 			mu(i) = A.col(i).mean();
 			sigma(i) = sqrt(A.col(i).squaredNorm() / rowCount - mu(i) * mu(i));
@@ -62,7 +62,7 @@ namespace dmt {
 		B = A.rowwise() - mu.transpose();
 
 		// norm columns of B
-		for (int i = 0; i < colCount; i++)
+		for (int i = 0; i < colCount; ++i)
 		{
 			Float current = sigma(i);
 
@@ -87,24 +87,24 @@ namespace dmt {
 		Float zero = static_cast<Float>(0);
 
 		// initialization
-		for (int i = 0; i < CONFUSION_MATR_SIZE; i++)
+		for (int i = 0; i < CONFUSION_MATR_SIZE; ++i)
 			confusionMatrix[i] = 0;
 
 		// labels vs. prediction comparison 
-		for (int i = 0; i < samplesCount; i++)
+		for (int i = 0; i < samplesCount; ++i)
 		{
 			correctness[i] = labels[i] * predictions[i];
 
 			if (labels[i] > zero)
 				if (predictions[i] > zero)
-					confusionMatrix[TRUE_POSITIVE_INDEX]++;
+					++confusionMatrix[TRUE_POSITIVE_INDEX];
 				else
-					confusionMatrix[FALSE_NEGATIVE_INDEX]++;
+					++confusionMatrix[FALSE_NEGATIVE_INDEX];
 			else
 				if (predictions[i] > zero)
-					confusionMatrix[FALSE_POSITIVE_INDEX]++;
+					++confusionMatrix[FALSE_POSITIVE_INDEX];
 				else
-					confusionMatrix[TRUE_NEGATIVE_INDEX]++;
+					++confusionMatrix[TRUE_NEGATIVE_INDEX];
 		}
 
 		return NO_ERRORS;

@@ -4,7 +4,7 @@
 
    The following references are used:
    [1] Suykens, J., Vandewalle, J. "Least Squares Support Vector Machine Classifiers",
-	   Neural Processing Letters 9, 293–300 (1999). https://doi.org/10.1023/A:1018628609742
+	   Neural Processing Letters 9, 293ï¿½300 (1999). https://doi.org/10.1023/A:1018628609742
 */
 
 #ifndef SVM_H
@@ -111,15 +111,15 @@ namespace svm {
 		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> X(xTrain, samplesCount, featuresCount);
 
 		// compute left upper block
-		for (int i = 0; i < samplesCount; i++)
+		for (int i = 0; i < samplesCount; ++i)
 		{
-			for (int j = 0; j < i; j++)
+			for (int j = 0; j < i; ++j)
 				A(i, j) = A(j, i) = yTrain[i] * yTrain[j] * X.row(i).dot(X.row(j));
 
 			A(i, i) = X.row(i).squaredNorm() + gammaInv;
 		}
 		// compute left lower and rigth upper block
-		for (int j = 0; j < samplesCount; j++)
+		for (int j = 0; j < samplesCount; ++j)
 			A(samplesCount, j) = A(j, samplesCount) = yTrain[j];
 
 		// right lower element
@@ -148,7 +148,7 @@ namespace svm {
 		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> X(xTrain, samplesCount, featuresCount);		
 
 		// compute left upper block
-		for (int i = 0; i < samplesCount; i++)
+		for (int i = 0; i < samplesCount; ++i)
 		{
 			for (int j = 0; j < i; j++) 
 				A(i, j) = A(j, i) = yTrain[i] * yTrain[j] * exp(-(X.row(i) - X.row(j)).squaredNorm() / sigmaSquared);			
@@ -156,7 +156,7 @@ namespace svm {
 			A(i, i) = gammaInv + 1; // here, 1 = exp(-|x_i - x_i|^2 / sigma^2) = exp( 0 )
 		}
 		// compute left lower and rigth upper block
-		for (int j = 0; j < samplesCount; j++)
+		for (int j = 0; j < samplesCount; ++j)
 			A(samplesCount, j) = A(j, samplesCount) = yTrain[j];
 
 		// right lower element
@@ -186,7 +186,7 @@ namespace svm {
 		// compute left upper block
 		for (int i = 0; i < samplesCount; i++)
 		{
-			for (int j = 0; j < i; j++)
+			for (int j = 0; j < i; ++j)
 				//  here, 1 is used by the formula from [1]
 				A(i, j) = A(j, i) = yTrain[i] * yTrain[j] * pow(X.row(i).dot(X.row(j)) / cParam + 1, dParam);			
 
@@ -195,7 +195,7 @@ namespace svm {
 		}
 
 		// compute left lower and rigth upper block
-		for (int j = 0; j < samplesCount; j++)
+		for (int j = 0; j < samplesCount; ++j)
 			A(samplesCount, j) = A(j, samplesCount) = yTrain[j];
 
 		// right lower element
@@ -223,16 +223,16 @@ namespace svm {
 		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> X(xTrain, samplesCount, featuresCount);	
 
 		// compute left upper block
-		for (int i = 0; i < samplesCount; i++)
+		for (int i = 0; i < samplesCount; ++i)
 		{
-			for (int j = 0; j < i; j++)				
+			for (int j = 0; j < i; ++j)				
 				A(i, j) = A(j, i) = yTrain[i] * yTrain[j] * tanh(kappa * X.row(i).dot(X.row(j)) + theta);
 						
 			A(i, i) = gammaInv + tanh(kappa * X.row(i).squaredNorm() + theta);
 		}
 
 		// compute left lower and rigth upper block
-		for (int j = 0; j < samplesCount; j++)
+		for (int j = 0; j < samplesCount; ++j)
 			A(samplesCount, j) = A(j, samplesCount) = yTrain[j];
 
 		// right lower element
@@ -355,7 +355,7 @@ namespace svm {
 		Map<Matrix<Float, Dynamic, Dynamic, RowMajor>> X(xTrain, samplesCount, featuresCount);
 
 		// compute weigths
-		for (int i = 0; i < samplesCount; i++)
+		for (int i = 0; i < samplesCount; ++i)
 			w += x(i) * yTrain[i] * X.row(i);
 
 		return NO_ERRORS;
@@ -381,7 +381,7 @@ namespace svm {
 		Map<Vector<Float, Dynamic>> w(precomputedWeights, featuresCount);		
 
 		// predict labels of the target data
-		for (int i = 0; i < targetSamplesCount; i++)
+		for (int i = 0; i < targetSamplesCount; ++i)
 		{
 			// put target data to the model
 			Float cost = bias + w.dot(targetDataMatrix.row(i));
@@ -421,13 +421,13 @@ namespace svm {
 		Float bias = modelParams[trainSamplesCount];		
 
 		// compute prediction for each target vector
-		for (int j = 0; j < targetSamplesCount; j++)
+		for (int j = 0; j < targetSamplesCount; ++j)
 		{
 			// put target data to the model
 			Float cost = bias;
 
 			// compute cost for the current target vector
-			for(int i = 0; i < trainSamplesCount; i++)
+			for(int i = 0; i < trainSamplesCount; ++i)
 				cost += modelParams[i] * yTrain[i] * exp(-(X.row(i) - targetDataMatrix.row(j)).squaredNorm() / sigmaSquared);
 
 			// check sign and get label (see [1] for more details)
@@ -464,13 +464,13 @@ namespace svm {
 		Float bias = modelParams[trainSamplesCount];		
 
 		// compute prediction for each target vector
-		for (int j = 0; j < targetSamplesCount; j++)
+		for (int j = 0; j < targetSamplesCount; ++j)
 		{
 			// put target data to the model
 			Float cost = bias;
 
 			// compute cost for the current target vector
-			for (int i = 0; i < trainSamplesCount; i++)				
+			for (int i = 0; i < trainSamplesCount; ++i)				
 				cost += modelParams[i] * yTrain[i] * pow(X.row(i).dot(targetDataMatrix.row(j)) / cParam + 1, dParam);				
 
 			// check sign and get label (see [1] for more details)
@@ -507,13 +507,13 @@ namespace svm {
 		Float bias = modelParams[trainSamplesCount];
 
 		// compute prediction for each target vector
-		for (int j = 0; j < targetSamplesCount; j++)
+		for (int j = 0; j < targetSamplesCount; ++j)
 		{
 			// put target data to the model
 			Float cost = bias;
 
 			// compute cost for the current target vector
-			for (int i = 0; i < trainSamplesCount; i++)
+			for (int i = 0; i < trainSamplesCount; ++i)
 				cost += modelParams[i] * yTrain[i] * tanh(kappa * X.row(i).dot(targetDataMatrix.row(j)) + theta);				
 
 			// check sign and get label (see [1] for more details)
@@ -566,7 +566,7 @@ namespace svm {
 		NTD = TD.rowwise() - mu.transpose();
 
 		// normilize target data
-		for (int i = 0; i < featuresCount; i++)
+		for (int i = 0; i < featuresCount; ++i)
 		{
 			Float sigma = stdDevs[i];
 

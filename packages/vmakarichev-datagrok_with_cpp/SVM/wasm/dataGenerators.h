@@ -43,7 +43,7 @@ namespace svm
 		srand(SEED + samplesCount);
 
 		// change values in a random manner
-		for (int i = 0; i < samplesCount; i++)
+		for (int i = 0; i < samplesCount; ++i)
 			if (static_cast<Float>(rand() % RAND_SCALE) / RAND_SCALE < changeProbability)			
 				labels[i] = -labels[i];
 		
@@ -94,7 +94,7 @@ namespace svm
 		Float c2 = (maxVal + minVal) / 2;
 
 		// rescale data: each feature should belong to the correspondent [min, max] segment
-		for (int i = 0; i < featuresCount; i++)
+		for (int i = 0; i < featuresCount; ++i)
 		{
 			// linear [-1,1]-to-[min,max] transform
 			X.col(i) = X.col(i) * c1 + c2 * Vector<Float, Dynamic>::Ones(samplesCount);
@@ -114,7 +114,7 @@ namespace svm
 		RowVector<float, Dynamic> w(featuresCount);
 
 		// compute labels
-		for (int i = 0; i < samplesCount; i++)
+		for (int i = 0; i < samplesCount; ++i)
 		{
 			w = X.row(i);
 			Float val = kernelFunc(kernel, kernelParams, w, v) - bias;
