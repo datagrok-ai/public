@@ -164,9 +164,9 @@ public class ClickHouseProvider extends JdbcDataProvider {
                 builder.append(getStringArrayRepresentation(o));
             } else {
                 builder.append(o);
-                if (i != length - 1) {
-                    builder.append(", ");
-                }
+            }
+            if (i != length - 1) {
+                builder.append(", ");
             }
         }
         builder.append("]");

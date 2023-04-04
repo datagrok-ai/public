@@ -152,7 +152,7 @@ public class ClickHouseObjectsMother {
         DataFrame expected = DataFrameBuilder.getBuilder()
                 .setRowCount(1)
                 .setColumn(new StringColumn(new String[] {"[1, 2, 3, 4]"}), "array_type")
-                .setColumn(new StringColumn(new String[] {"[[24][421, 12, 4][]]"}), "array_array_type")
+                .setColumn(new StringColumn(new String[] {"[[24], [421, 12, 4], []]"}), "array_array_type")
                 .build();
         return Stream.of(Arguments.of(Named.of("ARRAY TYPE",
                 FuncCallBuilder.fromQuery("SELECT * FROM ARRAY_TYPE;")), expected));
