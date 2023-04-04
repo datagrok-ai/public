@@ -8,6 +8,7 @@ title: "Conversion functions"
 - [DateParse](#dateparses)
 - [ParseQnum](#parseqnum)
 - [Qnum](#qnum)
+- [QnumToString](#qnumtostring)
 - [TimeSpanParse](#timespanparses)
 - [ToString](#tostringx)
 
@@ -56,6 +57,14 @@ Returns a qualified number with value `x` and qualifier `q`.
 Qnum(1, "=")
 Qnum(2, "<")
 Qnum(3, ">")
+```
+
+## <a name="qnumtostring"></a>QnumToString(`x`)
+
+Converts a qualified number to a string representation.
+
+```javascript
+QnumToString(Qnum(1.5, "<"))  // <1.5
 ```
 
 ## <a name="timespanparse"></a>TimeSpanParse(`s`)
