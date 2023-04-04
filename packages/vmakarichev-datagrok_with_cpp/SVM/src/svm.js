@@ -16,7 +16,7 @@ import { getCppInput, getResult } from '../wasm/callWasmForWebWorker';
 // 1. CONSTANTS
 
 // kernel types
-export const LINIEAR = 0;
+export const LINEAR = 0;
 export const POLYNOMIAL = 1;
 export const RBF = 2;
 export const SIGMOID = 3;
@@ -104,7 +104,7 @@ function checkHyperparameters(hyperparameters) {
 
   // check kernel & its parameters
   switch(hyperparameters.kernel) {
-    case LINIEAR: // the case of linear kernel
+    case LINEAR: // the case of linear kernel
       return;
 
     case RBF: // the case of RBF kernel
@@ -144,28 +144,6 @@ export function predict(module, predictFuncName, model, dataset)
       dataset]);
 } // predict
 
-// Returns wrong labels percentage
-export function getError(col1, col2)
-{  
-  // get raw data
-  let arr1 = col1.getRawData();
-  let arr2 = col2.getRawData();
-
-  let size = arr1.length;
-
-  // check sizes
-  if(arr2.length != size)
-    throw new Error('Coulmns must be of the same length.');
-
-  let faultsCount = 0;
-
-  for(let i = 0; i < size; i++)
-    if(arr1[i] * arr2[i] < 0) // wrong predicted label has a wrong sign
-      faultsCount++;
-  
-  return 100.0 * faultsCount / size;
-}
-
 // Evaluate accuracy of the model
 function evaluateAccuracy(model) {
   let data = model.confusionMatrix.getRawData();
@@ -187,14 +165,14 @@ function evaluateAccuracy(model) {
   let NPV = TN / (TN + FN); // negative predicitve value
 
   let ACC = (TP + TN) / (P + N); // accuracy
-  let BA = (TPR + TNR) / 2; // alanced accuracy
+  let BA = (TPR + TNR) / 2; // balanced accuracy
 
   model.sensitivity = TPR;
   model.specificity = TNR;
-  model.accuracy = ACC;
   model.balancedAccuracy = BA;
   model.positivePredicitveValue = PPV;
   model.negativePredicitveValue = NPV;
+  model.trainError = (1 - ACC) * 100; // train error, %
 
   //TODO: add other indicators
 } // evaluateAccuracy
@@ -203,86 +181,81 @@ function evaluateAccuracy(model) {
 export function trainAndAnalyzeModel(module, funcName,
   hyperparameters, dataset, labels) 
 { 
-// check correctness of hyperparameter gamma
-checkHyperparameters(hyperparameters)
+  // check correctness of hyperparameter gamma
+  checkHyperparameters(hyperparameters)
 
-// create default kernel params array
-let kernelParamsArray = [INIT_VALUE, INIT_VALUE];
+  // create default kernel params array
+  const kernelParamsArray = [INIT_VALUE, INIT_VALUE];
 
-// fill kernelParams
-switch(hyperparameters.kernel)
-{
-  case LINIEAR: // no kernel parameters in the case of linear kernel
-    break;
+  // fill kernelParams
+  switch(hyperparameters.kernel)
+  {
+    case LINEAR: // no kernel parameters in the case of linear kernel
+      break;
 
-  case RBF: // sigma parameter in the case of RBF-kernel
-    kernelParamsArray[RBF_SIGMA_INDEX] = hyperparameters.sigma;      
-    break;
+    case RBF: // sigma parameter in the case of RBF-kernel
+      kernelParamsArray[RBF_SIGMA_INDEX] = hyperparameters.sigma;      
+      break;
 
-  case POLYNOMIAL: // sigma parameter in the case of polynomial kernel
-    kernelParamsArray[POLYNOMIAL_C_INDEX] = hyperparameters.cParam;
-    kernelParamsArray[POLYNOMIAL_D_INDEX] = hyperparameters.dParam;
-    break;
+    case POLYNOMIAL: // sigma parameter in the case of polynomial kernel
+      kernelParamsArray[POLYNOMIAL_C_INDEX] = hyperparameters.cParam;
+      kernelParamsArray[POLYNOMIAL_D_INDEX] = hyperparameters.dParam;
+      break;
 
-  case SIGMOID: // sigma parameter in the case of sigmoid kernel
-    kernelParamsArray[SIGMOID_KAPPA_INDEX] = hyperparameters.kappa;
-    kernelParamsArray[SIGMOID_THETA_INDEX] = hyperparameters.theta;
-    break;
+    case SIGMOID: // sigma parameter in the case of sigmoid kernel
+      kernelParamsArray[SIGMOID_KAPPA_INDEX] = hyperparameters.kappa;
+      kernelParamsArray[SIGMOID_THETA_INDEX] = hyperparameters.theta;
+      break;
 
-  default: // incorrect kernel 
-    throw new Error(WRONG_KERNEL_MESSAGE);
-};
+    default: // incorrect kernel 
+      throw new Error(WRONG_KERNEL_MESSAGE);
+  };
 
-// create kernel params column
-let kernelParams = DG.Column.fromList('double', KERNEL_PARAMS, kernelParamsArray);
+  // create kernel params column
+  let kernelParams = DG.Column.fromList('double', KERNEL_PARAMS, kernelParamsArray);
 
-// compute size of model params & precomputed weigths
-let trainCols = dataset.toList();  
-let modelParamsCount = trainCols[0].length + LS_SVM_ADD_CONST;
-let precomputedWeightsCount = trainCols.length + LS_SVM_ADD_CONST;
-let confusionMatrixElementsCount = CONFUSION_MATR_SIZE;
+  // compute size of model params & precomputed weigths
+  let trainCols = dataset.toList();  
+  let modelParamsCount = trainCols[0].length + LS_SVM_ADD_CONST;
+  let precomputedWeightsCount = trainCols.length + LS_SVM_ADD_CONST;
+  let confusionMatrixElementsCount = CONFUSION_MATR_SIZE;
 
-// call webassembly training function
-let output = callWasm(module, funcName, 
-  [hyperparameters.gamma, hyperparameters.kernel, kernelParams, 
-   modelParamsCount, precomputedWeightsCount, confusionMatrixElementsCount, 
-   dataset, labels]);       
+  // call webassembly training function
+  let output = callWasm(module, funcName, 
+    [hyperparameters.gamma, hyperparameters.kernel, kernelParams, 
+     modelParamsCount, precomputedWeightsCount, confusionMatrixElementsCount, 
+     dataset, labels]);       
 
-// rename output columns
-output[MEANS_INDEX].name = MEAN;
-output[STD_DEVS_INDEX].name = STD_DEV;
-output[MODEL_PARAMS_INDEX].name = MODEL_PARAMS_NAME;
-output[MODEL_WEIGHTS_INDEX].name = MODEL_WEIGHTS_NAME;
+  // rename output columns
+  output[MEANS_INDEX].name = MEAN;
+  output[STD_DEVS_INDEX].name = STD_DEV;
+  output[MODEL_PARAMS_INDEX].name = MODEL_PARAMS_NAME;
+  output[MODEL_WEIGHTS_INDEX].name = MODEL_WEIGHTS_NAME;
 
-output[PREDICTED_LABELS_INDEX].name = PREDICTED;
-output[CORRECTNESS_INDEX].name = CORRECTNESS;
-output[CONFUSION_MATRIX_INDEX].name = CONFUSION_MATRIX_NAME;
+  output[PREDICTED_LABELS_INDEX].name = PREDICTED;
+  output[CORRECTNESS_INDEX].name = CORRECTNESS;
+  output[CONFUSION_MATRIX_INDEX].name = CONFUSION_MATRIX_NAME;
 
-// complete model
-let model = {
-  trainGamma: hyperparameters.gamma,
-  kernelType: hyperparameters.kernel,
-  kernelParams: kernelParams,
-  trainLabels: labels,
-  normalizedTrainData: DG.DataFrame.fromColumns(output[NORMALIZED_DATA_INDEX]),
-  means: output[MEANS_INDEX],
-  stdDevs: output[STD_DEVS_INDEX],
-  modelParams: output[MODEL_PARAMS_INDEX],
-  modelWeights: output[MODEL_WEIGHTS_INDEX],
-  predictedLabels: output[PREDICTED_LABELS_INDEX],
-  correctness: output[CORRECTNESS_INDEX],
-  confusionMatrix: output[CONFUSION_MATRIX_INDEX],
-  trainError: undefined 
-};
+  // complete model
+  let model = {
+    trainGamma: hyperparameters.gamma,
+    kernelType: hyperparameters.kernel,
+    kernelParams: kernelParams,
+    trainLabels: labels,
+    normalizedTrainData: DG.DataFrame.fromColumns(output[NORMALIZED_DATA_INDEX]),
+    means: output[MEANS_INDEX],
+    stdDevs: output[STD_DEVS_INDEX],
+    modelParams: output[MODEL_PARAMS_INDEX],
+    modelWeights: output[MODEL_WEIGHTS_INDEX],
+    predictedLabels: output[PREDICTED_LABELS_INDEX],
+    correctness: output[CORRECTNESS_INDEX],
+    confusionMatrix: output[CONFUSION_MATRIX_INDEX],
+    trainError: undefined 
+  };
 
-evaluateAccuracy(model);
+  evaluateAccuracy(model);
 
-console.log(model);
-
-// evaluate train error;
-model.trainError = getError(model.trainLabels, model.predictedLabels);
-
-return model;
+  return model;
 } // trainAndAnalyzeModel
 
 // Returns dataframe with short info about model
@@ -295,7 +268,6 @@ export function getModelInfo(model) {
     DG.Column.fromList('double', KERNEL_PARAM_1, [kernelParams[0]]),
     DG.Column.fromList('double', KERNEL_PARAM_2, [kernelParams[1]]),
     DG.Column.fromList('double', TRAIN_ERROR, [model.trainError]),
-    DG.Column.fromList('double', ACCURACY, [model.accuracy]),
     DG.Column.fromList('double', BALANCED_ACCURACY, [model.balancedAccuracy]),
     DG.Column.fromList('double', SENSITIVITY, [model.sensitivity]),
     DG.Column.fromList('double', SPECIFICITY, [model.specificity]),    

@@ -1,7 +1,7 @@
 {
     "name": "SVMlib",    
     "folder": "../wasm",
-    "source": ["api.cpp"],    
+    "source": ["svmApi.cpp"],    
     "optimizationMode": "-O3",    
     "packageFile": "../src/package.js",
     "packageJsonFile": "../package.json",    

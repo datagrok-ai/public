@@ -16,7 +16,7 @@ import { getCppInput, getResult } from '../wasm/callWasmForWebWorker';
 
 // Support vector machine (SVM) tools imports
 import {trainAndAnalyzeModel, showModel, showModelFullInfo, 
-  LINIEAR, RBF, POLYNOMIAL, SIGMOID} from './svm';
+  LINEAR, RBF, POLYNOMIAL, SIGMOID} from './svm';
 
 //tags: init
 export async function init() {
@@ -90,7 +90,7 @@ export function generateDatasetRBF(name, sigma, samplesCount, featuresCount,
 export function demoLinearKernelLSSVM(gamma, df, features, labels, 
   toAddPredictions, toShowWrongPredictions, modelInfo) {  
 
-  let hyperparameters = {gamma: gamma, kernel: LINIEAR};
+  let hyperparameters = {gamma: gamma, kernel: LINEAR};
 
   /*let model = trainModel(SVMlib, 'trainLSSVM', 'predictByLSSVM',
     hyperparameters, features, labels);  */

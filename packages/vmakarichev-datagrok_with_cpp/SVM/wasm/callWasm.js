@@ -77,7 +77,7 @@ class ArgColumn extends Arg {
     }
 
     isMemoryForBufferAllocated(){
-        return (this.buf != 0);
+        return (this.buf !== 0);
     }
 
     putDataToBuffer(module) {
@@ -88,8 +88,8 @@ class ArgColumn extends Arg {
             let array = null;
             let col = this.data;
 
-            if(((col.type == 'int') && (type == 'i32')) 
-               || ((col.type == 'double') && (type == 'f32')))
+            if(((col.type === 'int') && (type === 'i32')) 
+               || ((col.type === 'double') && (type === 'f32')))
               array = col.getRawData();
             else
               array = new typeMap[type](col.getRawData());
@@ -185,7 +185,7 @@ class ArgColumns extends Arg {
     }
 
     isMemoryForBufferAllocated(){
-        return (this.buf != 0);
+        return (this.buf !== 0);
     }
 
     putDataToBuffer(module) {
@@ -200,14 +200,14 @@ class ArgColumns extends Arg {
                 let array = null;
                 let col = this.data[i];
 
-                if(((col.type == 'int') && (type == 'i32')) 
-                   || ((col.type == 'double') && (type == 'f32')))
+                if(((col.type === 'int') && (type === 'i32')) 
+                   || ((col.type === 'double') && (type === 'f32')))
                      array = col.getRawData();
                 else
                      array = new typeMap[type](col.getRawData());
 
                 // check data array
-                if(array != null) 
+                if(array !== null) 
                     heap.set(array, (this.buf + i * this.numOfRows * numOfBytes) >> shift);                                   
             }
         }
@@ -417,7 +417,7 @@ export function callWasm(module, funcName, inputs) {
         let arg = args[key]; 
         
         // skip auxiliry element
-        if(key == '_callResult')             
+        if(key === '_callResult')             
             continue;
 
         // create an argument
@@ -466,7 +466,7 @@ export function callWasm(module, funcName, inputs) {
     console.log(`Time for C/C++-function is ${finish - start} ms.`)
 
     // if a single object must be returned
-    if(output['type'] != 'objects')
+    if(output['type'] !== 'objects')
       return Return[output['type']](args[output['source']].data);
 
     let arrayToReturn = [];
