@@ -9,7 +9,17 @@
   background-color: #F1FAFD;
 }
 
-.ua-button {
+.ua-apply-button {
+  margin-left: auto !important;
+}
+
+.ua-apply-button:disabled {
+  background-color: var(--grey-3) !important;
+  cursor: default;
+  pointer-events: none;
+}
+
+.ua-details-button {
   height: 100% !important;
   margin-left: 7px !important;
 }
@@ -34,14 +44,14 @@
 
 .ua-reload-loader {
   top: 50%;
-  left: 45%;
+  left: 48%;
 }
 
 .ua-hint {
   padding: 10px;
   color: #805125;
   background-color: #FDFFE5;
-  overflow: hidden;
-  box-shadow: 0 0 0 0 #FDFFE5;
-  animation: pulse-white 1s 1;
+  height: fit-content;
+  /* box-shadow: 0 0 0 0 #FDFFE5;
+  animation: pulse-white 1s 1; */
 }

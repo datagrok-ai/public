@@ -27,6 +27,7 @@ export abstract class UaQueryViewer extends UaViewer {
 
   reloadViewer(staticFilter?: object) {
     this.loader.style.display = 'block';
+    this.viewer.root.style.display = 'none';
     const filter = {...this.filter, ...staticFilter};
     grok.data.query('UsageAnalysis:' + this.queryName, filter).then((dataFrame) => {
       if (dataFrame.columns.byName('count') != null)
@@ -34,6 +35,7 @@ export abstract class UaQueryViewer extends UaViewer {
       this.viewerFunction(dataFrame);
       this.viewer.dataFrame = dataFrame;
       this.viewer.setOptions({markerMinSize: 10, markerMaxSize: 30, color: 'user'});
+      this.viewer.root.style.display = 'flex';
       this.loader.style.display = 'none';
     });
   }
