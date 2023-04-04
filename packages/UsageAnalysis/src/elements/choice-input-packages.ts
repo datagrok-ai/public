@@ -22,7 +22,8 @@ export class ChoiceInputPackages {
       searchChoices: true,
       itemSelectText: '',
     });
-
+    field.input.addEventListener('change', (event) =>
+      (document.querySelector('.ua-apply-button') as HTMLButtonElement).disabled = false);
     const packages = (await grok.dapi.packages.list()).filter((value, index, self) =>
       index === self.findIndex((t) => (t.name === value.name)));
     field.input.addEventListener('search', async (event) => {

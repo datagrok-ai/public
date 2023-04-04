@@ -9,8 +9,6 @@ import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 
 
 export class FunctionsView extends UaView {
-  // static viewName = 'Functions';
-
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox, 'function', true);
     this.name = 'Functions';

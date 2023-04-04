@@ -23,7 +23,8 @@ export class ChoiceInputGroups {
       searchChoices: true,
       itemSelectText: '',
     });
-
+    field.input.addEventListener('change', (event) =>
+      (document.querySelector('.ua-apply-button') as HTMLButtonElement).disabled = false);
     field.input.addEventListener('search', async (event) => {
       const newGroups: DG.Group[] = await grok.dapi.groups.getGroupsLookup(choices.input.value);
       choices.clearChoices();

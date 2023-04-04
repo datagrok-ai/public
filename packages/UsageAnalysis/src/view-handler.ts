@@ -35,32 +35,18 @@ export class ViewHandler {
     simply click on the point of interest. You can also select multiple points. Once you've made your selection,\
     more information about the selected events will be displayed on context pane`);
     info.classList.add('ua-hint');
-    document.querySelector('.grok-entity-prop-panel > .d4-accordion')?.append(info);
-    // const pathSplits = decodeURI(window.location.pathname).split('/');
+    grok.shell.o = info;
     ViewHandler.UA = new DG.MultiView({viewFactories: {}});
     const toolbox = await UaToolbox.construct();
     const params = this.getSearchParameters();
-    // ViewHandler.tabs = ui.tabControl();
-    // ViewHandler.tabs.root.style.width = 'inherit';
-    // ViewHandler.tabs.root.style.height = 'inherit';
     // [OverviewView, EventsView, ErrorsView, FunctionsView, UsersView, DataView];
     const viewClasses: (typeof UaView)[] = [PackagesView, FunctionsView];
     // const viewFactories: {[name: string]: any} = {};
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i](toolbox);
-      // viewFactories[currentView.name] = () => currentView;
       currentView.tryToinitViewers();
       ViewHandler.UA.addView(currentView.name, () => currentView, false);
     }
-    // if (pathSplits.length > 3 && pathSplits[3] != '') {
-    //   const viewName = pathSplits[3];
-    //   if (ViewHandler.tabs.panes.map((p) => p.name).includes(viewName))
-    //     ViewHandler.tabs.currentPane = ViewHandler.tabs.getPane(viewName);
-    //   else
-    //     ViewHandler.tabs.currentPane = ViewHandler.tabs.getPane(viewClasses[0].viewName);
-    // } else
-    //   ViewHandler.tabs.currentPane = ViewHandler.tabs.getPane(viewClasses[0].viewName);
-
     const paramsHaveDate = params.has('date');
     const paramsHaveUsers = params.has('users');
     const paramsHavePackages = params.has('packages');

@@ -6,6 +6,7 @@ import '../../css/usage_analysis.css';
 import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
+import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {ViewHandler} from '../view-handler';
 
 
@@ -19,8 +20,6 @@ interface Filter {
 
 
 export class PackagesView extends UaView {
-  // static viewName = 'Packages';
-
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox, 'package');
     this.name = 'Packages';
@@ -104,20 +103,28 @@ export class PackagesView extends UaView {
       ViewHandler.changeTab('Functions');
       this.uaToolbox.drilldown = ViewHandler.getCurrentView();
     });
-    button.classList.add('ua-button');
+    button.classList.add('ua-details-button');
     const fPane = cp.addPane('Functions', () => {
       return ui.wait(async () => {
-        const packageFunctions = [];
+        // const packageFunctions = [];
+        console.log('started query');
         const df: DG.DataFrame = await grok.data.query('UsageAnalysis:PackagesContextPaneFunctions', filter);
-        for (const p of packageNames)
-          packageFunctions.push(...await grok.dapi.functions.filter(`package.name = "${p}"`).list());
+        console.log('ended query');
+        // for (const p of packageNames)
+        //   packageFunctions.push(...await grok.dapi.functions.filter(`package.name = "${p}"`).list());
         const data: {[key: string]: {element: Element, count: number}} = {};
+        console.log('started cycle');
         for (const r of df.rows) {
-          const f = packageFunctions.find((f) => f.id === r.id);
+          // const f = packageFunctions.find((f) => f.id === r.id);
           const d = data[r.package + r.name];
-          data[r.package + r.name] = {element: f ? ui.render(f) :
+          const el = ui.render(`#{x.${r.id}}`);
+          try {
+            await awaitCheck(() => el.innerHTML !== '<span data-markup-ready="false"></span>');
+          } catch (e: any) {}
+          data[r.package + r.name] = {element: el.innerHTML !== '<span></span>' ? el :
             (d?.element ?? ui.divText(r.name)), count: r.count + (d?.count ?? 0)};
         }
+        console.log('ended cycle');
         const info = fPane.root.querySelector('#info') as HTMLElement;
         info.textContent = df.getCol('count').stats.sum.toString();
         info.style.removeProperty('display');

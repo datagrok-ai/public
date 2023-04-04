@@ -3,12 +3,9 @@ import * as DG from 'datagrok-api/dg';
 
 import {UaToolbox} from '../ua-toolbox';
 import {UaQueryViewer} from '../viewers/abstract/ua-query-viewer';
-// import {BehaviorSubject} from 'rxjs';
-// import {UaFilter} from '../filter';
 
 
 export class UaView extends DG.ViewBase {
-  // static viewName = 'Usage Analysis View';
   uaToolbox: UaToolbox;
   viewers: UaQueryViewer[] = [];
   initialized: boolean = false;
