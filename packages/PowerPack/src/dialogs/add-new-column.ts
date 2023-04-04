@@ -16,7 +16,7 @@ export class AddNewColumnDialog {
   helpUrl: string = '/help/transform/add-new-column.md';
   visibleTags: string[] = ['math', 'text', 'date', 'timespan', 'binning', 'logic', 'stats'];
   supportedTypes: string[] = [DG.COLUMN_TYPE.FLOAT, DG.COLUMN_TYPE.INT,
-      DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.DATE_TIME, DG.COLUMN_TYPE.BOOL];
+      DG.COLUMN_TYPE.STRING, DG.COLUMN_TYPE.DATE_TIME, DG.COLUMN_TYPE.BOOL, DG.COLUMN_TYPE.QNUM];
   defaultType: string = DG.COLUMN_TYPE.STRING;
   autoType: string = 'auto';
   plainTextType: string = 'plain text';
