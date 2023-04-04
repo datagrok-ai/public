@@ -107,15 +107,19 @@ export class SdfTabUI implements TabUI {
     const moleculeImgDiv = ui.block([]);
     $(moleculeImgDiv).addClass('sdf-mol-img');
 
+    function getStrandData() {
+      return Object.fromEntries(
+        strands.map((strand) => [strand, {
+          strand: inputBase[strand].value.replace(/\s*/g, ''),
+          invert: directionInversion[strand]
+        }])
+      );
+    }
+
     DG.debounce<string>(onInput, 300).subscribe(async () => {
       let molfile = '';
       try {
-        const strandData = Object.fromEntries(
-          strands.map((strand) => [strand, {
-            strand: inputBase[strand].value.replace(/\s*/g, ''),
-            invert: directionInversion[strand]
-          }])
-        );
+        const strandData = getStrandData();
         molfile = getLinkedMolfile(strandData.ss, strandData.as, strandData.as2, useChiralInput.value!);
       } catch (err) {
         const errStr = errorToConsole(err);
@@ -130,15 +134,11 @@ export class SdfTabUI implements TabUI {
     });
 
     const saveButton = ui.buttonsInput([
-      ui.bigButton('Save SDF', () =>
-        saveSdf(
-          {strand: inputBase.ss.value, invert: directionInversion.ss},
-          {strand: inputBase.as.value, invert: directionInversion.as},
-          {strand: inputBase.as2.value, invert: directionInversion.as2},
-          useChiralInput.value!,
-          saveEntity.value!
-        )
-      )
+      ui.bigButton('Save SDF', () => {
+        const strandData = getStrandData();
+        saveSdf(strandData.ss, strandData.as, strandData.as2,
+          useChiralInput.value!, saveEntity.value!);
+      })
     ]);
 
     const boolInputsAndButtonArray = [saveEntity.root, useChiralInput.root, saveButton];
