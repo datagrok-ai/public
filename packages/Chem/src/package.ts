@@ -566,18 +566,6 @@ export function rGroupsAnalysisMenu(): void {
   rGroupAnalysis(col);
 }
 
-//top-menu: Chem | Analyze SAR | Group Analysis...
-//name: groupAnalysis
-export function groupAnalysisMenu(): void {
-  const packageExists = checkPackage('Charts', '_GroupAnalysisViewer');
-  if (packageExists) {
-    const groupAnalysisViewer = DG.Viewer.fromType('Group Analysis', grok.shell.tv.dataFrame, {});
-    grok.shell.tv.addViewer(groupAnalysisViewer);
-  } else {
-    grok.shell.warning('Charts package is not installed');
-  }
-}
-
 //name: ActivityCliffsEditor
 //tags: editor
 //input: funccall call
