@@ -1,11 +1,13 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { properties, models } from './const';
+import { _package } from '../package-test';
+import { models } from './const';
 
 const _STORAGE_NAME = 'admet_models';
 const _KEY = 'selected';
 let _COLOR = 'true';
+let properties: any;
 
 export async function accessServer(csvString: string, queryParams: string) {
   //@ts-ignore
@@ -76,7 +78,6 @@ export async function addForm(smilesCol: DG.Column, viewTable: DG.DataFrame) {
     .filter(obj => obj['skip'] !== true)
     .map(obj => obj['name'])
     .join(',');
-  console.log(queryParams);
   let csvString = await accessServer(DG.DataFrame.fromColumns([smilesCol]).toCsv(), queryParams);
   const table = processCsv(csvString);
   addResultColumns(table, viewTable);
@@ -183,6 +184,10 @@ export function getModelsSingle(smiles: string): DG.Accordion {
 }
 
 function openModelsDialog(selected: any, onOK: any): void {
+  _package.files.readAsText('properties.json').then((res) => {
+    properties = JSON.parse(res);
+  })
+
   const tree = ui.tree();
   tree.root.style.maxHeight = '400px';
   tree.root.style.width = '200px';
