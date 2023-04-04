@@ -57,8 +57,13 @@ export class UaToolbox {
         groupsInput.field,
         packagesInput.field,
       ]);
-      const applyB = ui.bigButton('Apply', () => this.applyFilter());
-      applyB.style.marginLeft = 'auto';
+      const applyB = ui.bigButton('Apply', () => {
+        applyB.disabled = true;
+        this.applyFilter();
+      });
+      applyB.classList.add('ua-apply-button');
+      applyB.disabled = true;
+      dateInput.onChanged(() => applyB.disabled = false);
       $(form).append(applyB);
       this.dateFromDD.readOnly = true;
       this.dateToDD.readOnly = true;
