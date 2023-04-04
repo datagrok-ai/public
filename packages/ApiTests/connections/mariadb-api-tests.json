@@ -1,0 +1,18 @@
+{
+  "#type": "DataConnection",
+  "name": "MariaDbApiTests",
+  "friendlyName": "Tests",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "port": 33065,
+    "db": "test"
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "MariaDB",
+  "description": "Test data"
+}

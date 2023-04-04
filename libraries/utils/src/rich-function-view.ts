@@ -67,11 +67,13 @@ export class RichFunctionView extends FunctionView {
   ) {
     super(funcName, options);
 
-    this.onFuncCallReady.subscribe({
-      complete: () => {
-        this.basePath = `scripts/${this.funcCall.func.id}/view`;
-      }
-    });
+    this.subs.push(
+      this.onFuncCallReady.subscribe({
+        complete: () => {
+          this.basePath = `scripts/${this.funcCall.func.id}/view`;
+        }
+      })
+    );
   }
 
   /**
@@ -129,6 +131,21 @@ export class RichFunctionView extends FunctionView {
     return formDiv;
   }
 
+  buildRibbonPanels(): HTMLElement[][] {
+    super.buildRibbonPanels();
+
+    const play = ui.iconFA('play', async () => await this.doRun());
+    play.classList.add('fas');
+
+    const newRibbonPanels = [
+      ...this.getRibbonPanels(),
+      [play],
+    ];
+
+    this.setRibbonPanels(newRibbonPanels);
+    return newRibbonPanels;
+  }
+
   // Main element of the output block. Stores all the tabs for the output and input
   private tabsElem = ui.tabControl();
 
@@ -168,7 +185,7 @@ export class RichFunctionView extends FunctionView {
           const subscribeOnFcChanges = () => {
             const currentParam: DG.FuncCallParam = this.funcCall!.outputParams[dfProp.name] ?? this.funcCall!.inputParams[dfProp.name];
 
-            currentParam.onChanged.subscribe(() => {
+            const paramSub = currentParam.onChanged.subscribe(() => {
               loadedViewers.forEach(async (viewer) => {
                 if (Object.values(viewerTypesMapping).includes(viewer.type)) {
                   viewer.dataFrame = currentParam.value;
@@ -180,10 +197,14 @@ export class RichFunctionView extends FunctionView {
                 }
               });
             });
+
+            this.subs.push(paramSub);
           };
 
           subscribeOnFcChanges();
-          this.funcCallReplaced.subscribe(subscribeOnFcChanges);
+          this.subs.push(
+            this.funcCallReplaced.subscribe(subscribeOnFcChanges)
+          );
         });
 
         const dfBlockTitle: string = dfProp.options['caption'] ?? dfProp.name;
@@ -201,13 +222,17 @@ export class RichFunctionView extends FunctionView {
           const subscribeOnFcChanges = () => {
             const currentParam: DG.FuncCallParam = this.funcCall!.outputParams[dfProp.name] ?? this.funcCall!.inputParams[dfProp.name];
 
-            currentParam.onChanged.subscribe(() => {
+            const paramSub = currentParam.onChanged.subscribe(() => {
               this.tabsElem.root.style.removeProperty('display');
             });
+
+            this.subs.push(paramSub);
           };
 
           subscribeOnFcChanges();
-          this.funcCallReplaced.subscribe(subscribeOnFcChanges);
+          this.subs.push(
+            this.funcCallReplaced.subscribe(subscribeOnFcChanges)
+          );
         }
 
         return ui.divV([
@@ -230,15 +255,19 @@ export class RichFunctionView extends FunctionView {
 
       tabScalarProps.forEach((tabScalarProp) => {
         const subscribeOnFcChanges = () => {
-          (this.funcCall!.outputParams[tabScalarProp.name] as DG.FuncCallParam).onChanged.subscribe(() => {
+          const paramSub = (this.funcCall!.outputParams[tabScalarProp.name] as DG.FuncCallParam).onChanged.subscribe(() => {
             const newScalarsTable = generateScalarsTable();
             scalarsTable.replaceWith(newScalarsTable);
             scalarsTable = newScalarsTable;
           });
+
+          this.subs.push(paramSub);
         };
 
         subscribeOnFcChanges();
-        this.funcCallReplaced.subscribe(subscribeOnFcChanges);
+        this.subs.push(
+          this.funcCallReplaced.subscribe(subscribeOnFcChanges)
+        );
       });
 
       const dfSections = [] as HTMLElement[];
@@ -352,10 +381,11 @@ export class RichFunctionView extends FunctionView {
     const buttonWrapper = ui.div([runButton]);
     ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
 
-    this.checkDisability.subscribe(() => {
+    const disabilitySub = this.checkDisability.subscribe(() => {
       const isValid = (wu(this.funcCall!.inputs.values()).every((v) => v !== null && v !== undefined)) && !this.isRunning;
       runButton.disabled = !isValid;
     });
+    this.subs.push(disabilitySub);
 
     const inputs = ui.divV([], 'ui-form');
     let prevCategory = 'Misc';
@@ -392,7 +422,9 @@ export class RichFunctionView extends FunctionView {
           };
 
           subscribeOnFcChanges();
-          this.funcCallReplaced.subscribe(subscribeOnFcChanges);
+          this.subs.push(
+            this.funcCallReplaced.subscribe(subscribeOnFcChanges)
+          );
 
           t.onChanged(() => {
             // Resolving case of propertyType = DATAFRAME
@@ -408,7 +440,7 @@ export class RichFunctionView extends FunctionView {
             this.checkDisability.next();
           });
 
-          val.onChanged.subscribe(() => {
+          const valChangeSub = val.onChanged.subscribe(() => {
             const newValue = this.funcCall!.inputs[val.name];
 
             if (val.property.propertyType === DG.TYPE.DATA_FRAME) {
@@ -431,6 +463,8 @@ export class RichFunctionView extends FunctionView {
 
             this.checkDisability.next();
           });
+
+          this.subs.push(valChangeSub);
 
           if (prop.category !== prevCategory)
             inputs.append(ui.h2(prop.category));

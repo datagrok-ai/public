@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import $ from 'cash-dom';
+
 import '../css/chem.css';
 import * as chemSearches from './chem-searches';
 import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
@@ -23,12 +25,9 @@ import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-meth
 //widget imports
 import {SubstructureFilter} from './widgets/chem-substructure-filter';
 import {drugLikenessWidget} from './widgets/drug-likeness';
-import {identifiersWidget} from './widgets/identifiers';
-import {molfileWidget} from './widgets/molfile';
 import {propertiesWidget} from './widgets/properties';
 import {structuralAlertsWidget} from './widgets/structural-alerts';
-import {structure2dWidget} from './widgets/structure2d';
-import {structure3dWidget} from './widgets/structure3d';
+import {moleculeOverviewWidget} from './widgets/molecule-overview';
 import {toxicityWidget} from './widgets/toxicity';
 
 //panels imports
@@ -74,6 +73,13 @@ const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
   ChemDraw: 'ChemDraw'
 }
 
+const PREVIOUS_SKETCHER_NAMES: {[key: string]: string} = {
+  'Open Chem Sketcher': 'OpenChemLib',
+  'ketcherSketcher': 'Ketcher',
+  'Marvin JS': 'Marvin',
+  'Chem Draw': 'ChemDraw'
+}
+
 /**
  * Usage:
  * let a = await grok.functions.call('Chem:getRdKitModule');
@@ -102,6 +108,8 @@ export async function initChem(): Promise<void> {
   _rdRenderer = new RDKitCellRenderer(getRdKitModule());
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
   let storedSketcherType = await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
+  if (PREVIOUS_SKETCHER_NAMES[storedSketcherType])
+    storedSketcherType = PREVIOUS_SKETCHER_NAMES[storedSketcherType];
   if (!storedSketcherType && _properties.Sketcher)
     storedSketcherType = SKETCHER_FUNCS_FRIENDLY_NAMES[_properties.Sketcher]
   const sketcherFunc = DG.Func.find({tags: ['moleculeSketcher']}).find(e => e.name === storedSketcherType || e.friendlyName === storedSketcherType);
@@ -125,12 +133,12 @@ export async function initChemAutostart(): Promise<void> { }
 //output: widget
 export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined> {
   const version = col.version;
-  
+
   for (let i = 0; i < col.length; ++i) {
     if (!col.isNone(i) && isSmarts(col.get(i)))
       return;
   }
-  
+
   const divMain = ui.div();
   divMain.append(ui.divText('Most diverse structures'));
   const divStructures = ui.div();
@@ -139,7 +147,7 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
   if (col.temp['version'] != version || col.temp['molIds'].length == 0) {
     const molIds = await chemDiversitySearch(
       col, similarityMetric['Tanimoto'], 9, 'Morgan' as Fingerprint, true);
-    
+
     col.temp = {
       'version': version,
       'molIds': molIds
@@ -523,9 +531,9 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
   let view = grok.shell.getTableView(table.name);
 
   if (radarView) {
-    const packageExists = checkPackage('Charts', 'radarViewerDemo');
+    const packageExists = checkPackage('Charts', '_radarViewerDemo');
     if (packageExists) {
-      let radarViewer = DG.Viewer.fromType('RadarViewer', table, {
+      let radarViewer = DG.Viewer.fromType('Radar', table, {
         valuesColumnNames: columnNames,
       });
       view.addViewer(radarViewer);
@@ -622,14 +630,6 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
   }
 }
 
-//top-menu: Chem | Analyze SAR | Structural Alerts...
-//name: Structural Alerts
-//input: dataframe table [Input data table]
-//input: column molecules {type:categorical; semType: Molecule}
-export async function getStructuralAlerts(col: DG.Column<string>): Promise<void> {
-  await checkForStructuralAlerts(col);
-}
-
 //top-menu: Chem | Calculate | To InchI...
 //name: To InchI
 //input: dataframe table [Input data table]
@@ -677,14 +677,6 @@ export function drugLikeness(smiles: string): DG.Widget {
   return smiles ? drugLikenessWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Molfile
-//description: Molecule as Molfile
-//tags: panel, chem, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export function molfile(smiles: string): DG.Widget {
-  return smiles ? molfileWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
-}
 
 //name: Chemistry | Properties
 //description: Basic molecule properties
@@ -705,23 +697,15 @@ export async function structuralAlerts(smiles: string): Promise<DG.Widget> {
   return smiles ? structuralAlertsWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Structure 2D
-//description: 2D molecule representation
+//name: Structure
+//description: molecule overview including 2D/3D molecule representation and identifiers
 //tags: panel, chem, widgets
 //input: string molecule { semType: Molecule }
 //output: widget result
-export function structure2d(molecule: string): DG.Widget {
-  return molecule ? structure2dWidget(molecule) : new DG.Widget(ui.divText('Molecule is empty'));
+export function moleculeOverview(molecule: string): DG.Widget {
+  return molecule ? moleculeOverviewWidget(molecule) : new DG.Widget(ui.divText('Molecule is empty'));
 }
 
-//name: Structure 3D
-//description: 3D molecule representation
-//tags: panel, chem, widgets
-//input: string molecule { semType: Molecule }
-//output: widget result
-export async function structure3d(molecule: string): Promise<DG.Widget> {
-  return molecule ? structure3dWidget(molecule) : new DG.Widget(ui.divText('Molecule is empty'));
-}
 
 //name: Biology | Toxicity
 //description: Toxicity prediction. Calculated by openchemlib
@@ -733,13 +717,6 @@ export function toxicity(smiles: string): DG.Widget {
   return smiles ? toxicityWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: Identifiers
-//tags: panel, chem, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export async function identifiers(smiles: string): Promise<DG.Widget> {
-  return smiles ? await identifiersWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
-}
 
 //name: convertMolNotation
 //description: RDKit-based conversion for SMILES, SMARTS, InChi, Molfile V2000 and Molfile V3000
@@ -778,12 +755,13 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
         cell.cell.value = sketcher.getMolFile();
       Sketcher.addToCollection(Sketcher.RECENT_KEY, sketcher.getMolFile());
     })
-    .show({resizable: true});
-    ui.onSizeChanged(dlg.root).subscribe((_) => {
-      if(!sketcher.sketcher?.isInitialized)
-        return;
-      sketcher._autoResized ? sketcher._autoResized = false : sketcher.resize();
-    });
+  .show({resizable: true});
+  ui.onSizeChanged(dlg.root).subscribe((_) => {
+    if(!sketcher.sketcher?.isInitialized)
+      return;
+    sketcher._autoResized ? sketcher._autoResized = false : sketcher.resize();
+  });
+  $(dlg.root).children('.d4-dialog-contents.dlg-.ui-form.ui-panel').css('overflow', 'unset').css('overflow-y', 'clip');
 }
 
 //name: OpenChemLib
@@ -918,6 +896,56 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
     molBlock: molblock,
   });
 }
+
+//name: Copy as SMILES
+//description: Copies structure as smiles
+//tags: exclude-actions-panel
+//meta.action: Copy as SMILES
+//input: semantic_value value { semType: Molecule }
+export function copyAsSmiles(value: DG.SemanticValue): void {
+  const smiles = !DG.chem.isMolBlock(value.value) && !isSmarts(value.value) ? value.value :
+    _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, getRdKitModule());
+  navigator.clipboard.writeText(smiles);
+  grok.shell.info('Smiles copied to clipboard');
+}
+
+//name: Copy as MOLFILE V2000
+//description: Copies structure as molfile V2000
+//tags: exclude-actions-panel
+//meta.action: Copy as MOLFILE V2000
+//input: semantic_value value { semType: Molecule }
+export function copyAsMolfileV2000(value: DG.SemanticValue): void {
+  const molfileV2000 = DG.chem.isMolBlock(value.value) ? value.value :
+    _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, getRdKitModule());
+  navigator.clipboard.writeText(molfileV2000);
+  grok.shell.info('Molfile V2000 copied to clipboard');
+}
+
+
+//name: Copy as MOLFILE V3000
+//description: Copies structure as molfile V3000
+//tags: exclude-actions-panel
+//meta.action: Copy as MOLFILE V3000
+//input: semantic_value value { semType: Molecule }
+export function copyAsMolfileV3000(value: DG.SemanticValue): void {
+  const molfileV3000 = DG.chem.isMolBlock(value.value) ? value.value :
+    _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.V3KMolBlock, getRdKitModule());
+  navigator.clipboard.writeText(molfileV3000);
+  grok.shell.info('Molfile V3000 copied to clipboard');
+}
+
+//name: Copy as SMARTS
+//description: Copies structure as smarts
+//tags: exclude-actions-panel
+//meta.action: Copy as SMARTS
+//input: semantic_value value { semType: Molecule }
+export function copyAsSmarts(value: DG.SemanticValue): void {
+  const smarts = !DG.chem.isMolBlock(value.value) && isSmarts(value.value) ? value.value :
+    _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smarts, getRdKitModule());
+  navigator.clipboard.writeText(smarts);
+  grok.shell.info('Smarts copied to clipboard');
+}
+
 
 //name: isSmiles
 //input: string s

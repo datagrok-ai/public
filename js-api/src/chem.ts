@@ -264,12 +264,12 @@ export namespace chem {
     /** Sets SMILES, MOLBLOCK, or any other molecule representation */
     setValue(x: string) {
       const index = extractors.map(it => it.name).indexOf('nameToSmiles');
-      const el = extractors.splice(index, 1)[0];  
+      const el = extractors.splice(index, 1)[0];
       extractors.splice(extractors.length, 0, el);
 
       const extractor = extractors
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
-      
+
       if (extractor != null && !checkSmiles(x) && !isMolBlock(x))
         extractor
           .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
@@ -470,19 +470,19 @@ export namespace chem {
           .endGroup()
           .separator()
           .items(this.sketcherFunctions.map((f) => f.friendlyName), (friendlyName: string) => {
-            if (currentSketcherType !== friendlyName) {
-                currentSketcherType = friendlyName;
-                grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, friendlyName, true);
-                this.sketcherType = currentSketcherType;
-                if (!this.resized)
-                  this._autoResized = true;
-            }
+            if (currentSketcherType === friendlyName)
+              return;
+            currentSketcherType = friendlyName;
+            grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, friendlyName, true);
+            this.sketcherType = currentSketcherType;
+            if (!this.resized)
+              this._autoResized = true;
           },
             {
               isChecked: (item) => item === currentSketcherType, toString: item => item,
               radioGroup: 'sketcher type'
             })
-          .show();
+          .show({parent: optionsIcon});
       });
       $(optionsIcon).addClass('d4-input-options');
       molInputDiv.append(ui.div([this.molInput, optionsIcon], 'grok-sketcher-input'));

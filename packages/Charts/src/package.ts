@@ -121,61 +121,71 @@ export function _WordCloudViewer() {
 
 
 //name: chordViewerDemo
+//description: Chord viewer visualizes weighted relationships between several entities
 //meta.demoPath: Viewers | Chord
 export function _chordViewerDemo() {
   viewerDemo('Chord');
 }
 
 //name: globeViewerDemo
+//description: Globe viewer represents data visualization layers on a 3-dimensional globe in a spherical projection
 //meta.demoPath: Viewers | Globe
 export function _globeViewerDemo() {
   viewerDemo('Globe');
 }
 
 //name: groupAnalysisViewerDemo
-//meta.demoPath: Viewers | GroupAnalysis
+//description: Group analysis viewer groups data by different options
+//meta.demoPath: Viewers | Group Analysis
 export function _groupAnalysisViewerDemo() {
   viewerDemo('GroupAnalysis');
 }
 
 //name: radarViewerDemo
+//description: Radar viewer is used on multivariate data to plot groups of values over several common variables
 //meta.demoPath: Viewers | Radar
 export function _radarViewerDemo() {
   viewerDemo('Radar');
 }
 
 //name: sankeyViewerDemo
+//description: Sankey viewer depicts a flow from one set of values to another
 //meta.demoPath: Viewers | Sankey
 export function _sankeyViewerDemo() {
   viewerDemo('Sankey');
 }
 
 //name: sunburstViewerDemo
+//description: Sunburst viewer displays hierarchical data
 //meta.demoPath: Viewers | Sunburst
 export function _sunburstViewerDemo() {
   viewerDemo('Sunburst');
 }
 
 //name: surfacePlotDemo
-//meta.demoPath: Viewers | SurfacePlot
+//description: Surface plot viewer displays a set of three-dimensional data as a mesh surface
+//meta.demoPath: Viewers | Surface Plot
 export function _surfacePlotDemo() {
   viewerDemo('SurfacePlot');
 }
 
 //name: timelinesViewerDemo
+//description: Timelines viewer displays the flow of events over time
 //meta.demoPath: Viewers | Timelines
 export function _timelinesViewerDemo() {
   viewerDemo('Timelines', {lineWidth: 4, markerPosition: 'above main line'});
 }
 
 //name: treeViewerDemo
+//description: Tree viewer visualizes hierarchical data by categories
 //meta.demoPath: Viewers | Tree
 export function _treeViewerDemo() {
   viewerDemo('Tree');
 }
 
 //name: wordCloudViewerDemo
-//meta.demoPath: Viewers | WordCloud
+//description: Word Cloud viewer visualizes unstructured text data
+//meta.demoPath: Viewers | Word Cloud
 export function _wordCloudViewerDemo() {
   viewerDemo('WordCloud');
 }

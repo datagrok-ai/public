@@ -34,6 +34,10 @@
     margin-left: 5px;
 }
 
+.cv-funccall-card .cv-card-content * {
+    margin-bottom: 3px;
+}
+
 .cv-funccall-card-def-icon {
     margin: 5px;
 }

@@ -40,14 +40,9 @@ export abstract class UaViewer {
     if (setStyle)
       this.setStyle = setStyle;
     const div = ui.div();
-    div.style.position = 'absolute';
-    div.style.backgroundColor = 'rgb(25 36 64 / 50%)';
-    div.style.height = '100%';
-    div.style.width = '100%';
-    div.style.zIndex = '10000';
+    div.classList.add('ua-reload-div');
     const loader = ui.loader();
-    loader.style.top = '50%';
-    loader.style.left = '45%';
+    loader.classList.add('ua-reload-loader');
     div.appendChild(loader);
     this.loader = div;
   }

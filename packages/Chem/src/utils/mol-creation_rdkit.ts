@@ -10,7 +10,7 @@ export interface IMolContext {
 export function isSmarts(molString: string): boolean {
   return !!molString.match(/\[.?#\d|\$|&|;|,|!|:|\*.?\]/g) && !molString.includes('\n');
 }
- 
+
 export function getMolSafe(molString: string, details: object = {}, rdKitModule: RDModule, warnOff: boolean = true): IMolContext {
   let isQMol = false;
   let kekulize: boolean = true;
@@ -18,8 +18,8 @@ export function getMolSafe(molString: string, details: object = {}, rdKitModule:
   let mol: RDMol | null = null;
 
   try {
-    const _isSmarts = isSmarts(molString);     
-    mol = _isSmarts ? rdKitModule.get_qmol(molString) : rdKitModule.get_mol(molString, JSON.stringify(details)); 
+    const _isSmarts = isSmarts(molString);
+    mol = _isSmarts ? rdKitModule.get_qmol(molString) : rdKitModule.get_mol(molString, JSON.stringify(details));
   }
   catch (e) {
     if (mol !== null) {
@@ -54,6 +54,9 @@ export function getMolSafe(molString: string, details: object = {}, rdKitModule:
   }
   if (mol.is_valid()) {
     useMolBlockWedging = mol.has_coords();
+  } else {
+    mol?.delete()
+    mol = null;
   }
   return { mol, kekulize, isQMol, useMolBlockWedging };
 }

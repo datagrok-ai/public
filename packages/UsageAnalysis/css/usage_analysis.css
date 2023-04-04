@@ -1,16 +1,47 @@
-.cardbox{
-  padding: 0px 10px;
+.ua-drilldown-form {
+  border: 1px dashed #80949b;
+  border-radius: 5px;
+  background-color: #F1FAFD;
+  margin-bottom: 24px;
 }
-.card{
-  margin:10px;
+
+.ua-drilldown-form .ui-input-editor {
+  background-color: #F1FAFD;
 }
-.toolbox-inputs>div{
-  width: 180px;
-  margin:5px 0px 5px -5px;
+
+.ua-button {
+  height: 100% !important;
+  margin-left: 7px !important;
 }
-.user-list{
-  overflow: auto;
+
+.ua-small-button {
+  float: right;
+  font-weight: 300 !important;
+  font-size: 13px !important;
+  color: var(--grey-3) !important;
+  margin-left: auto !important;
+  padding: 0 !important;
+  align-items: start !important;
 }
-.user-list i {
-  margin-right: 5px;
+
+.ua-reload-div {
+  position: absolute;
+  background-color: rgb(25 36 64 / 50%);
+  height: 100%;
+  width: 100%;
+  z-index: 100;
+}
+
+.ua-reload-loader {
+  top: 50%;
+  left: 45%;
+}
+
+.ua-hint {
+  padding: 10px;
+  color: #805125;
+  background-color: #FDFFE5;
+  overflow: hidden;
+  box-shadow: 0 0 0 0 #FDFFE5;
+  animation: pulse-white 1s 1;
 }

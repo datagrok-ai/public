@@ -1,7 +1,7 @@
 import {DataFrame, Column} from "./dataframe";
 import {toJs} from "./wrappers";
 import {FuncCall, Functions} from "./functions";
-import {TYPE, DemoDatasetName, JoinType, SyncType, CsvImportOptions, StringPredicate} from "./const";
+import {TYPE, DemoDatasetName, JoinType, SyncType, CsvImportOptions, StringPredicate, JOIN_TYPE} from "./const";
 import {DataConnection} from "./entities";
 
 let api = <any>window;
@@ -177,17 +177,19 @@ export class Data {
 
   /**
    * Merges two tables by the specified key columns.
-   * @param {DataFrame} t1
-   * @param {DataFrame} t2
-   * @param {string[]} keyColumns1
-   * @param {string[]} keyColumns2
-   * @param {string[]} valueColumns1
-   * @param {string[]} valueColumns2
-   * @param {JoinType} joinType
+   * @param {DataFrame} t1 - a table to join
+   * @param {DataFrame} t2 - a table to join
+   * @param {string[]} keyColumns1 - key column names from the first table
+   * @param {string[]} keyColumns2 - key column names from the second table
+   * @param {string[]} valueColumns1 - column names to copy from the first table.
+   * Pass null to add all columns, an empty array [] to not add any columns, or an array with column names to add them specifically.
+   * @param {string[]} valueColumns2 - column names to copy from the second table
+   * @param {JoinType} joinType - inner, outer, left, or right. See [DG.JOIN_TYPE]
    * @param {boolean} inPlace - merges content in-place into the source table
    * @returns {DataFrame}
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/join-link/join-tables}
    * */
-  joinTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[], valueColumns2: string[], joinType: JoinType, inPlace: boolean): DataFrame {
+  joinTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[] | null = null, valueColumns2: string[] | null = null, joinType: JoinType = JOIN_TYPE.INNER, inPlace: boolean = false): DataFrame {
     return new DataFrame(api.grok_JoinTables(t1.dart, t2.dart, keyColumns1, keyColumns2, valueColumns1, valueColumns2, joinType, inPlace));
   }
 
@@ -202,7 +204,7 @@ export class Data {
   }
 
   /** Executes a parameterized query.
-   * Sample: {@link https://public.datagrok.ai/js/samples/data-access/parameterized-query} 
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-access/parameterized-query}
    */
   query(queryName: string, queryParameters: object | null = null, adHoc: boolean = false, pollingInterval: number = 1000): Promise<DataFrame | any> {
     return new Promise((resolve, reject) => api.grok_Query(queryName, queryParameters, adHoc, pollingInterval, (t: any) => resolve(toJs(t)), (e: any) => reject(e)));
@@ -237,10 +239,10 @@ export class Detector {
     let categories = column.categories;
     if (categories.length < min)
       return false;
-    
-    if (!categories.some(cat => cat.length >= minStringLength)) 
+
+    if (!categories.some(cat => cat.length >= minStringLength))
       return false;
-      
+
     let checksCount = Math.min(max, categories.length);
     let maxFailed = checksCount * (1 - ratio);
     let failed = 0;

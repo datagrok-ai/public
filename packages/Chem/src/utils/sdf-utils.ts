@@ -50,7 +50,6 @@ export async function getSdfStringAsync(structureColumn: DG.Column): Promise<str
   }
   let result = '';
   for (let i = 0; i < table.rowCount; i++) {
-    result += i == 0 ? '' : '\n';
     result += `${convertedStruct[i]}\n`;
     let molColIdx = 0;
     for (const col of table.columns) {
@@ -64,7 +63,7 @@ export async function getSdfStringAsync(structureColumn: DG.Column): Promise<str
       }
       result += `>  <${col.name}>\n${col.get(i)}\n\n`;
     }
-    result += '$$$$';
+    result += '$$$$\n';
   }
   return result;
 }
@@ -78,7 +77,6 @@ export function getSdfString(
     const molecule: string = structureColumn.get(i);
     const mol = DG.chem.isMolBlock(molecule) ? molecule :
       _convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, chemCommonRdKit.getRdKitModule());
-    result += i == 0 ? '' : '\n';
     result += `${mol}\n`;
 
     // properties
@@ -93,7 +91,7 @@ export function getSdfString(
         result += `>  <${col.name}>\n${cellValue}\n\n`;
       }
     }
-    result += '$$$$';
+    result += '$$$$\n';
   }
   return result;
 }

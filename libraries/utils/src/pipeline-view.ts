@@ -73,13 +73,15 @@ export class PipelineView extends ComputationView {
       this.steps[stepConfig.funcName] = {};
     });
 
-    grok.functions.onAfterRunAction.pipe(
-      filter((run) => Object.keys(this.steps).includes(run.func.nqName))
-    ).subscribe((run) => {
-      this.onStepCompleted.next(run);
+    this.subs.push(
+      grok.functions.onAfterRunAction.pipe(
+        filter((run) => Object.keys(this.steps).includes(run.func.nqName))
+      ).subscribe((run) => {
+        this.onStepCompleted.next(run);
 
-      if (run.func.nqName === this.stepsConfig[this.stepsConfig.length-1].funcName) this.run();
-    });
+        if (run.func.nqName === this.stepsConfig[this.stepsConfig.length-1].funcName) this.run();
+      })
+    );
 
     const stepScripts = Object.keys(this.steps).map((stepNqName) => {
       const stepScript = (grok.functions.eval(stepNqName) as Promise<DG.Func>);
@@ -198,17 +200,19 @@ export class PipelineView extends ComputationView {
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
     const {parentRun: pulledParentRun, childRuns: pulledChildRuns} = await historyUtils.loadChildRuns(funcCallId);
 
-    this.onFuncCallReady.subscribe({
-      complete: async () => {
-        await this.onBeforeLoadRun();
+    this.subs.push(
+      this.onFuncCallReady.subscribe({
+        complete: async () => {
+          await this.onBeforeLoadRun();
 
-        pulledChildRuns.forEach(async (pulledChildRun) => {
-          this.steps[pulledChildRun.func.nqName].view.loadRun(pulledChildRun.id);
-        });
+          pulledChildRuns.forEach(async (pulledChildRun) => {
+            this.steps[pulledChildRun.func.nqName].view.loadRun(pulledChildRun.id);
+          });
 
-        await this.onAfterLoadRun(pulledParentRun);
-      }
-    });
+          await this.onAfterLoadRun(pulledParentRun);
+        }
+      })
+    );
     return pulledParentRun;
   }
 }

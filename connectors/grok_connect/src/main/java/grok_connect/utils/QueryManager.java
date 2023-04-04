@@ -24,7 +24,7 @@ public class QueryManager {
     public ResultSet resultSet;
     public FuncCall query;
     Connection connection;
-    private boolean changedFetchSize = false; 
+    private boolean changedFetchSize = false;
 
     static Gson gson = new GsonBuilder()
         .registerTypeAdapter(Property.class, new PropertyAdapter())
@@ -63,14 +63,17 @@ public class QueryManager {
         for (int i = 0; i < columns.size(); i++) {
             columns.get(i).empty();
         }
-        
+
         if (!changedFetchSize) {
             if (connection.getMetaData().supportsTransactions())
-                resultSet.setFetchSize(maxIterations);
+                resultSet.setFetchSize(20000);
             changedFetchSize = true;
         }
-
-        DataFrame df = provider.getResultSetSubDf(query, resultSet, columns, schemeInfo.supportedType, schemeInfo.initColumn, maxIterations);
+        DataFrame df = new DataFrame();
+        if (!connection.isClosed() && !resultSet.isClosed()) {
+            df = provider.getResultSetSubDf(query, resultSet, columns,
+                    schemeInfo.supportedType, schemeInfo.initColumn, maxIterations);
+        }
         return df;
     }
 

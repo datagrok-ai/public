@@ -4,7 +4,7 @@
     "access": "public"
   },
   "fullName": "Utils",
-  "version": "3.1.2",
+  "version": "3.3.1",
   "description": "Common utilities",
   "dependencies": {
     "cash-dom": "^8.1.1",
@@ -14,7 +14,6 @@
     "html2canvas": "^1.4.1",
     "jszip": "^3.10.1",
     "rxjs": "^6.5.5",
-    "typeahead-standalone": "^4.14.1",
     "wu": "latest"
   },
   "devDependencies": {

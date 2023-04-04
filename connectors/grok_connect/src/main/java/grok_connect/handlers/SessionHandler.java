@@ -129,11 +129,8 @@ public class SessionHandler {
 
         }
         else {
-            // result.errorMessage = NoSettingsException.class.getName();
-            System.out.println(NoSettingsException.class.getName());
-            session.getRemote().sendString(NoSettingsException.class.getName());
+            session.getRemote().sendString(socketErrorMessage(new NoSettingsException()));
             session.close();
-            // buffer = new BufferAccessor();
         }
 
     }
