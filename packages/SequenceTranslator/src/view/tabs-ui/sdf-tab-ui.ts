@@ -50,7 +50,6 @@ export class SdfTabUI implements TabUI {
       )
     );
 
-    // bool inputs
     const saveEntity = ui.boolInput('Save as one entity', true);
     ui.tooltip.bind(saveEntity.root, 'Save SDF with all strands in one molfile');
     const useChiralInput = ui.boolInput('Use chiral', true);
@@ -71,7 +70,6 @@ export class SdfTabUI implements TabUI {
       });
     });
 
-    // labels
     const labelNames = ['Sense Strand', 'Anti Sense', 'Anti Sense 2'];
     const labelNameMap = new Map(strands.map(
       (key, index) => [key, labelNames[index]]
@@ -82,34 +80,27 @@ export class SdfTabUI implements TabUI {
       )
     );
 
-    type TableRow = {label: HTMLLabelElement, textInput: HTMLElement, choiceInput: HTMLElement};
-
-    const tableRows = new Array<TableRow>(3);
-    strands.forEach((strand, index) => {
-      tableRows[index] = {
+    const tableRows = strands.map((strand) => {
+      return {
         label: label[strand],
         textInput: coloredInput[strand].root,
         choiceInput: directionChoiceInput[strand].root,
       };
     });
-
     const tableLayout = ui.table(
-      tableRows, (item) => [item.label, item.textInput, item.choiceInput], ['', '', '']
-    );
+      tableRows, (item) => [item.label, item.textInput, item.choiceInput]);
+    $(tableLayout).css('margin-top', '10px');
 
-    // text input label style
-    for (const item of [label.ss, label.as, label.as2]) {
-      item.parentElement!.classList.add('sdf-input-form', 'sdf-text-input-label');
-      $(item.parentElement!).css('padding-top', '3px'); // otherwise overridden
-    }
+    for (const strand of strands) {
+      let element = label[strand].parentElement!;
+      element.classList.add('sdf-input-form', 'sdf-text-input-label');
+      $(element).css('padding-top', '3px'); // otherwise overridden
 
-    // choice input label style
-    for (const item of [directionChoiceInput.ss.root, directionChoiceInput.as.root, directionChoiceInput.as2.root])
-      item.parentElement!.classList.add('sdf-input-form', 'sdf-choice-input-label');
+      element = directionChoiceInput[strand].root.parentElement!;
+      element.classList.add('sdf-input-form', 'sdf-choice-input-label');
 
-    for (const item of [inputBase.ss, inputBase.as, inputBase.as2]) {
-      // text area's parent td
-      item.root.parentElement!.classList.add('sdf-text-input-td');
+      element = inputBase[strand].root.parentElement!;
+      element.classList.add('sdf-text-input-td');
     }
 
     // molecule image container
@@ -119,11 +110,13 @@ export class SdfTabUI implements TabUI {
     DG.debounce<string>(onInput, 300).subscribe(async () => {
       let molfile = '';
       try {
-        molfile = getLinkedMolfile(
-          {strand: inputBase.ss.value.replace(/\s*/g, ''), invert: directionInversion.ss},
-          {strand: inputBase.as.value.replace(/\s*/g, ''), invert: directionInversion.as},
-          {strand: inputBase.as2.value.replace(/\s*/g, ''), invert: directionInversion.as2}, useChiralInput.value!
+        const strandData = Object.fromEntries(
+          strands.map((strand) => [strand, {
+            strand: inputBase[strand].value.replace(/\s*/g, ''),
+            invert: directionInversion[strand]
+          }])
         );
+        molfile = getLinkedMolfile(strandData.ss, strandData.as, strandData.as2, useChiralInput.value!);
       } catch (err) {
         const errStr = errorToConsole(err);
         console.error(errStr);
