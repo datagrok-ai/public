@@ -56,7 +56,6 @@ export class SdfTabUI implements TabUI {
     const useChiralInput = ui.boolInput('Use chiral', true);
     // todo: compose tooltip message:
 
-    // choice inputs
     const directionChoiceInput = Object.fromEntries(
       strands.map(
         (key) => [key, ui.choiceInput(
@@ -73,25 +72,33 @@ export class SdfTabUI implements TabUI {
     });
 
     // labels
-    const ssLabel = ui.label('Sense Strand');
-    const asLabel = ui.label('Anti Sense');
-    const as2Label = ui.label('Anti Sense 2');
+    const labelNames = ['Sense Strand', 'Anti Sense', 'Anti Sense 2'];
+    const labelNameMap = new Map(strands.map(
+      (key, index) => [key, labelNames[index]]
+    ));
+    const label = Object.fromEntries(
+      strands.map(
+        (key) => [key, ui.label(labelNameMap.get(key)!)]
+      )
+    );
+
+    type TableRow = {label: HTMLLabelElement, textInput: HTMLElement, choiceInput: HTMLElement};
+
+    const tableRows = new Array<TableRow>(3);
+    strands.forEach((strand, index) => {
+      tableRows[index] = {
+        label: label[strand],
+        textInput: coloredInput[strand].root,
+        choiceInput: directionChoiceInput[strand].root,
+      };
+    });
 
     const tableLayout = ui.table(
-      ['ss', 'as1', 'as2'], (row) => {
-        switch (row) {
-        case 'ss':
-          return [ssLabel, coloredInput.ss.root, directionChoiceInput.ss.root];
-        case 'as1':
-          return [asLabel, coloredInput.as.root, directionChoiceInput.as.root];
-        case 'as2':
-          return [as2Label, coloredInput.as2.root, directionChoiceInput.as2.root];
-        }
-      }, ['', '', '']
+      tableRows, (item) => [item.label, item.textInput, item.choiceInput], ['', '', '']
     );
 
     // text input label style
-    for (const item of [ssLabel, asLabel, as2Label]) {
+    for (const item of [label.ss, label.as, label.as2]) {
       item.parentElement!.classList.add('sdf-input-form', 'sdf-text-input-label');
       $(item.parentElement!).css('padding-top', '3px'); // otherwise overridden
     }
