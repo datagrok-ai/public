@@ -133,8 +133,8 @@ SELECT * FROM mock_data WHERE @country(country);
 
 -- name: ClickHouseStringTypePatternStringOpRegex
 -- connection: ClickHouseApiTests
--- input: string email = "regex ^([A-Za-z0-9_]+@google.com.au)$" {pattern: string}
--- test: ApiTests:expectTable(ClickHouseStringTypePatternStringOpRegex(email = 'regex ^([A-Za-z0-9_]+@google.com.au)$'), OpenFile('System:AppData/ApiTests/datasets/tests/postgresql/data9.d42'))
+-- input: string email = "regex ^\w+@google.com.au$" {pattern: string}
+-- test: ApiTests:expectTable(ClickHouseStringTypePatternStringOpRegex(email = 'regex ^\w+@google.com.au$'), OpenFile('System:AppData/ApiTests/datasets/tests/postgresql/data9.d42'))
 SELECT * FROM mock_data WHERE @email(email);
 -- end
 
