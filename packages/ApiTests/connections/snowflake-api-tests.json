@@ -1,7 +1,7 @@
 {
   "#type": "DataConnection",
   "name": "SnowflakeApiTests",
-  "friendlyName": "Tests",
+  "friendlyName": "SnowflakeApiTests",
   "parameters": {
     "region": "eu-north-1",
     "accountLocator": "gu46630",

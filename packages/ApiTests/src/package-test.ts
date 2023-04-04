@@ -53,6 +53,7 @@ import './viewers/filters';
 import './grid/grid';
 import './grid/color-coding';
 // import './connections/queries-test';
+// import './connections/perf-tests';
 import './connections/get-all-top100';
 import './scripts/scripts-params';
 import './gui/dialogs';
@@ -76,6 +77,8 @@ import './gui/project-upload';
 // import './gui/viewers/word-cloud';
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
+import {Column, DataFrame, DataQuery, FuncCall} from 'datagrok-api/dg';
+import {filter} from 'rxjs/operators';
 
 export const _package = new DG.Package();
 export {tests};
@@ -123,4 +126,76 @@ export async function testPackages(): Promise<DG.DataFrame> {
   }
 
   return result!;
+}
+
+
+//name: testConnections
+//output: dataframe result
+//top-menu: Tools | Dev | Test Connections
+export async function testConnections(): Promise<DG.DataFrame> {
+  const connections: string[] = ['SnowflakeApiTests'];
+  const tables: string[] = ['Long', 'Normal', 'Wide', 'Tiny'];
+  const fetchSizes: string[] = ['big', 'dynamic', 'low'];
+
+  // const queriesFriendlyNames: string[] = ['PostgresNormal', 'PostgresLong', 'PostgresWide'];
+  const l = connections.length * tables.length * fetchSizes.length;
+
+  const df = DataFrame.fromColumns([Column.string('type', l), Column.string('fetch', l), 
+    Column.string('db', l), Column.int('TTFR', l), Column.int('TTC', l)]);
+
+  let startTime: number;
+  let ttfr: number;
+
+  let callCheck: (value: FuncCall) => boolean;
+  let ttfrSet = false;
+  grok.functions.onParamsUpdated.pipe(filter((c) => callCheck(c) && !ttfrSet)).subscribe(() => {
+    ttfr = Date.now() - startTime;
+    df.columns.byName('TTFR').set(row, ttfr);
+    ttfrSet = true; 
+  });
+
+  let row = 0;
+  for (const con of connections) {
+    for (const table of tables) {
+      for (const fetchSize of fetchSizes) {
+        if (table == 'Long' && fetchSize == 'low')
+          continue;  
+
+        const connection = await grok.dapi.connections.filter(`name = "${con}"`).first();
+        ttfrSet = false;
+
+        df.columns.byName('type').set(row, table); 
+        df.columns.byName('fetch').set(row, fetchSize); 
+        df.columns.byName('db').set(row, con); 
+
+        callCheck = (c: FuncCall) => c.aux.get('fetchSize') == fetchSize && 
+          (c.func as DataQuery).connection.name == con;
+
+
+        const preTable = con.startsWith('Snowflake') ? 'TEST.' : '';
+        let sql = 'select 1';
+        if (table != 'Tiny')
+          sql = `select * from ${preTable}Test_${table}`;
+        
+        const query = `--fetchSize: ${fetchSize}\n${sql}\n--end`;
+
+        startTime = Date.now();
+
+        console.log('executing' + query);
+        const q = connection.query('adhoc', sql);
+        const call = q.prepare();
+        call.setAuxValue('fetchSize', fetchSize);
+        await call.call();
+        // await grok.data.db.query(connection.id, query);
+        console.log('executed');
+
+        df.columns.byName('TTC').set(row, Date.now() - startTime);
+
+        row++;
+      };
+    };
+  };
+  df;
+  grok.shell.addTableView(df);
+  return df;
 }
