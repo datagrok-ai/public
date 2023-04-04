@@ -376,12 +376,25 @@ export class HistoryPanel {
     dummyInput.input.replaceWith(tagsLine.root);
 
     const tagInput = ui.stringInput('Tag', '');
-    tagInput.addOptions(ui.iconFA('plus', () => {
-      if (tagInput.value === '') return;
+    const addNewTag = () => {
+      if (tagInput.value === '' ||
+        // @ts-ignore
+        tagsLine.tags.includes(tagInput.value)
+      )
+        return;
 
       tagsLine.addTag(tagInput.value);
       tagInput.value = '';
-    }));
+    };
+
+    tagInput.addOptions(ui.iconFA('plus', addNewTag));
+
+    tagInput.input.onkeydown = async (ev) => {
+      if (ev.key == 'Enter') {
+        ev.stopPropagation();
+        addNewTag();
+      }
+    };
 
     dlg.add(ui.form([
       titleInput,
