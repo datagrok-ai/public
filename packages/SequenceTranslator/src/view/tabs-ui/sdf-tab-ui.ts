@@ -32,19 +32,25 @@ export class SdfTabUI implements TabUI {
     const enum DIRECTION {
       STRAIGHT = '5′ → 3′',
       INVERSE = '3′ → 5′',
-    }
-    let invertSS = false;
-    let invertAS = false;
-    let invertAS2 = false;
+    };
 
-    // text inputs
-    const ssInputBase = ui.textInput('', '', () => { onInput.next(); });
-    const asInputBase = ui.textInput('', '', () => { onInput.next(); });
-    const as2InputBase = ui.textInput('', '', () => { onInput.next(); });
+    const strands = ['ss', 'as', 'as2'];
+    const directionInversion = Object.fromEntries(
+      strands.map((key) => [key, false])
+    );
+    console.log('directionInversion:', directionInversion);
 
-    const ssColoredInput = new ColoredTextInput(ssInputBase, highlightInvalidSubsequence);
-    const asColoredInput = new ColoredTextInput(asInputBase, highlightInvalidSubsequence);
-    const as2ColoredInput = new ColoredTextInput(as2InputBase, highlightInvalidSubsequence);
+    const inputBase = Object.fromEntries(
+      strands.map(
+        (key) => [key, ui.textInput('', '', () => { onInput.next(); })]
+      )
+    );
+
+    const coloredInput = Object.fromEntries(
+      strands.map(
+        (key) => [key, new ColoredTextInput(inputBase[key], highlightInvalidSubsequence)]
+      )
+    );
 
     // bool inputs
     const saveEntity = ui.boolInput('Save as one entity', true);
@@ -55,19 +61,19 @@ export class SdfTabUI implements TabUI {
     // choice inputs
     const ssDirection = ui.choiceInput('SS direction', DIRECTION.STRAIGHT, [DIRECTION.STRAIGHT, DIRECTION.INVERSE]);
     ssDirection.onChanged(() => {
-      invertSS = ssDirection.value === DIRECTION.INVERSE;
+      directionInversion.ss = ssDirection.value === DIRECTION.INVERSE;
       onInput.next();
     });
 
     const asDirection = ui.choiceInput('AS direction', DIRECTION.STRAIGHT, [DIRECTION.STRAIGHT, DIRECTION.INVERSE]);
     asDirection.onChanged(() => {
-      invertAS = asDirection.value === DIRECTION.INVERSE;
+      directionInversion.as = asDirection.value === DIRECTION.INVERSE;
       onInput.next();
     });
 
     const as2Direction = ui.choiceInput('AS2 direction', DIRECTION.STRAIGHT, [DIRECTION.STRAIGHT, DIRECTION.INVERSE]);
     as2Direction.onChanged(() => {
-      invertAS2 = as2Direction.value === DIRECTION.INVERSE;
+      directionInversion.as2 = as2Direction.value === DIRECTION.INVERSE;
       onInput.next();
     });
 
@@ -80,11 +86,11 @@ export class SdfTabUI implements TabUI {
       ['ss', 'as1', 'as2'], (row) => {
         switch (row) {
         case 'ss':
-          return [ssLabel, ssColoredInput.root, ssDirection.root];
+          return [ssLabel, coloredInput.ss.root, ssDirection.root];
         case 'as1':
-          return [asLabel, asColoredInput.root, asDirection.root];
+          return [asLabel, coloredInput.as.root, asDirection.root];
         case 'as2':
-          return [as2Label, as2ColoredInput.root, as2Direction.root];
+          return [as2Label, coloredInput.as2.root, as2Direction.root];
         }
       }, ['', '', '']
     );
@@ -99,7 +105,7 @@ export class SdfTabUI implements TabUI {
     for (const item of [ssDirection.root, asDirection.root, as2Direction.root])
       item.parentElement!.classList.add('sdf-input-form', 'sdf-choice-input-label');
 
-    for (const item of [ssInputBase, asInputBase, as2InputBase]) {
+    for (const item of [inputBase.ss, inputBase.as, inputBase.as2]) {
       // text area's parent td
       item.root.parentElement!.classList.add('sdf-text-input-td');
     }
@@ -112,9 +118,9 @@ export class SdfTabUI implements TabUI {
       let molfile = '';
       try {
         molfile = getLinkedMolfile(
-          {strand: ssInputBase.value.replace(/\s*/g, ''), invert: invertSS},
-          {strand: asInputBase.value.replace(/\s*/g, ''), invert: invertAS},
-          {strand: as2InputBase.value.replace(/\s*/g, ''), invert: invertAS2}, useChiralInput.value!
+          {strand: inputBase.ss.value.replace(/\s*/g, ''), invert: directionInversion.ss},
+          {strand: inputBase.as.value.replace(/\s*/g, ''), invert: directionInversion.as},
+          {strand: inputBase.as2.value.replace(/\s*/g, ''), invert: directionInversion.as2}, useChiralInput.value!
         );
       } catch (err) {
         const errStr = errorToConsole(err);
@@ -131,9 +137,9 @@ export class SdfTabUI implements TabUI {
     const saveButton = ui.buttonsInput([
       ui.bigButton('Save SDF', () =>
         saveSdf(
-          {strand: ssInputBase.value, invert: invertSS},
-          {strand: asInputBase.value, invert: invertAS},
-          {strand: as2InputBase.value, invert: invertAS2},
+          {strand: inputBase.ss.value, invert: directionInversion.ss},
+          {strand: inputBase.as.value, invert: directionInversion.as},
+          {strand: inputBase.as2.value, invert: directionInversion.as2},
           useChiralInput.value!,
           saveEntity.value!
         )
