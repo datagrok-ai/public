@@ -67,7 +67,12 @@ export function getDescriptorsSingle(smiles: string): DG.Widget {
       });
     });
   };
-  const copyIcon = ui.icons.copy(() => navigator.clipboard.writeText(result.innerText));
+
+  const copyIcon = ui.icons.copy(() => {
+    navigator.clipboard.writeText(result.innerText);
+    grok.shell.info('Copied to clipboard');
+  }, 'Copy');
+  
   Object.assign(copyIcon.style, copyIconStyles);
   widget.root.appendChild(copyIcon);
   widget.root.appendChild(result);

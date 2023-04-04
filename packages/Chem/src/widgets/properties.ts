@@ -74,10 +74,14 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
     'Molecule charge': prop('Molecule charge', DG.TYPE.INT, (m) => getMoleculeCharge(m)),
   };
 
-  const copyIcon = ui.icons.copy(() => navigator.clipboard.writeText(host.innerText));
+  host.appendChild(ui.tableFromMap(map));
+
+  const copyIcon = ui.icons.copy(() => {
+    navigator.clipboard.writeText(host.innerText);
+    grok.shell.info('Copied to clipboard');
+  }, 'Copy');
   Object.assign(copyIcon.style, copyIconStyles);
   host.appendChild(copyIcon);
-  host.appendChild(ui.tableFromMap(map));
   
   return new DG.Widget(host);
 }
