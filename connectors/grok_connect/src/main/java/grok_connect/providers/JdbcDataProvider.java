@@ -127,6 +127,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
         DataQuery dataQuery = queryRun.func;
         String mainCallId = (String) queryRun.aux.get("mainCallId");
+        int fetchSize = (queryRun.aux.containsKey("fetchSize") && (queryRun.aux.get("fetchSize").equals("big"))) ? 10000 : 100; 
 
         ResultSet resultSet = null;
         if (dataQuery.inputParamsCount() > 0) {
@@ -140,7 +141,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 System.out.println(query);
                 PreparedStatement statement = connection.prepareStatement(query);
                 if (supportsTransactions)
-                    statement.setFetchSize(100);
+                    statement.setFetchSize(fetchSize);
                 providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 List<String> stringValues = new ArrayList<>();
                 System.out.println(names);
@@ -178,7 +179,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
                 Statement statement = connection.createStatement();
                 if (supportsTransactions)
-                    statement.setFetchSize(100);
+                    statement.setFetchSize(fetchSize);
                 providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 statement.setQueryTimeout(timeout);
                 String logString = String.format("Query: %s \n", query);
@@ -193,7 +194,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             // Query without parameters
             Statement statement = connection.createStatement();
             if (supportsTransactions)
-                statement.setFetchSize(100);
+                statement.setFetchSize(fetchSize);
             providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
             statement.setQueryTimeout(timeout);
             String logString = String.format("Query: %s \n", query);

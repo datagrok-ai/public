@@ -134,6 +134,7 @@ export class Functions {
 
   get onBeforeRunAction(): Observable<FuncCall> { return __obs('d4-before-run-action'); }
   get onAfterRunAction(): Observable<FuncCall> { return __obs('d4-after-run-action'); }
+  get onParamsUpdated(): Observable<FuncCall> { return __obs('d4-func-call-output-params-updated'); }
 }
 
 
@@ -253,6 +254,10 @@ export class FuncCall extends Entity {
     return toJs(api.grok_FuncCall_Get_Output_Param_Value(this.dart));
   }
 
+  setAuxValue(name: string, value: any): void {
+    api.grok_FuncCall_Set_Aux_Value(this.dart, name, toDart(value));
+  }
+
   setParamValue(name: string, value: any): void {
     api.grok_FuncCall_Set_Param_Value(this.dart, name, toDart(value));
   }
@@ -260,6 +265,10 @@ export class FuncCall extends Entity {
   /** Executes the function call */
   call(showProgress: boolean = false, progress?: ProgressIndicator, options?: {processed?: boolean, report?: boolean}): Promise<FuncCall> {
     return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.dart, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress), options?.processed, options?.report));
+  }
+
+  cancel(): Promise<void> {
+    return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.dart, (out: any) => resolve(toJs(out)), (err: any) => reject(err)));
   }
 
   /** Executes the function call synchronously*/

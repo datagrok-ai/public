@@ -64,15 +64,15 @@ public class QueryManager {
             columns.get(i).empty();
         }
 
-        if (!changedFetchSize) {
+        if (!changedFetchSize && (!query.aux.containsKey("fetchSize") || query.aux.get("fetchSize").equals("dynamic"))) {
             if (connection.getMetaData().supportsTransactions())
-                resultSet.setFetchSize(20000);
+                resultSet.setFetchSize(10000);
             changedFetchSize = true;
         }
         DataFrame df = new DataFrame();
         if (!connection.isClosed() && !resultSet.isClosed()) {
             df = provider.getResultSetSubDf(query, resultSet, columns,
-                    schemeInfo.supportedType, schemeInfo.initColumn, maxIterations);
+                schemeInfo.supportedType, schemeInfo.initColumn, maxIterations);
         }
         return df;
     }
