@@ -152,7 +152,7 @@ const DF_TAG_NAMES = [
 const COLUMN_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.TYPE, OPTIONAL_TAG_NAME.FORMAT,
   OPTIONAL_TAG_NAME.ALLOW_NULLS, OPTIONAL_TAG_NAME.ACTION];
 const STRING_TAG_NAMES = [...Object.values(COMMON_TAG_NAME),
-  /*OPTIONAL_TAG_NAME.CHOICES ,*/ OPTIONAL_TAG_NAME.SUGGESTIONS];
+  OPTIONAL_TAG_NAME.CHOICES , OPTIONAL_TAG_NAME.SUGGESTIONS];
 const INT_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.MIN, OPTIONAL_TAG_NAME.MAX];
 
 const optionTags = ((param: DG.Property) => {
@@ -424,12 +424,12 @@ async function openFse(v: DG.View, functionCode: string) {
     (() => {
       const temp = DG.Property.create(FUNC_PARAM_FIELDS.DIRECTION, DG.TYPE.STRING,
         (x: any) => x.options?.[FUNC_PARAM_FIELDS.DIRECTION],
-        (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.DIRECTION, v), '');
+        (x: any, v) => updateFuncPropValue(FUNC_PARAM_FIELDS.DIRECTION, v), '');
       temp.fromOptions({ choices: [DIRECTION.INPUT, DIRECTION.OUTPUT] });
       return temp;
     })(),
     DG.Property.create(FUNC_PARAM_FIELDS.NAME, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.NAME],
-      (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.NAME, v), ''),
+      (x: any, v) => updateFuncPropValue(FUNC_PARAM_FIELDS.NAME, v), ''),
     (() => {
       const temp = DG.Property.create(FUNC_PARAM_FIELDS.TYPE, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.TYPE],
         (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.TYPE, v), '');
@@ -438,14 +438,14 @@ async function openFse(v: DG.View, functionCode: string) {
     })(),
     DG.Property.create(FUNC_PARAM_FIELDS.DEFAULT_VALUE, DG.TYPE.STRING,
       (x: any) => String(DG.toJs(x)[FUNC_PARAM_FIELDS.DEFAULT_VALUE] || ''),
-      (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.DEFAULT_VALUE, v), ''),
+      (x: any, v) => updateFuncPropValue(FUNC_PARAM_FIELDS.DEFAULT_VALUE, v), ''),
     (() => {
       const temp = DG.Property.create(FUNC_PARAM_FIELDS.DESCRIPTION, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.DESCRIPTION], (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.DESCRIPTION, v), '');
       temp.fromOptions({ editor: 'textarea' });
       return temp;
     })(),
     DG.Property.create(FUNC_PARAM_FIELDS.CATEGORY, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.CATEGORY],
-      (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.CATEGORY, v), ''),
+      (x: any, v) => updateFuncPropValue(FUNC_PARAM_FIELDS.CATEGORY, v), ''),
   ];
 
   const obligatoryFuncParamsTags: DG.Property[] = [
@@ -526,7 +526,10 @@ async function openFse(v: DG.View, functionCode: string) {
       });
   }
   (paramsDF.columns as DG.ColumnList).addNew('+', DG.TYPE.STRING);
-  paramsDF.onCurrentRowChanged.subscribe(() => onFunctionParamClick((paramsDF.currentRow as any)['Name']));
+
+  paramsDF.onCurrentRowChanged.subscribe(() => {
+    onFunctionParamClick((paramsDF.currentRow as any)['Name']);
+  });
 
   const paramsGrid = DG.Grid.create(paramsDF);
   paramsGrid.root.style.width = '100%';
@@ -709,5 +712,6 @@ async function openFse(v: DG.View, functionCode: string) {
       [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value || undefined;
       functionParamsState.next(functionParamsCopy);
     }
+    onFunctionParamClick((editedCell.tableRow as any)['Name']);
   });
 }
