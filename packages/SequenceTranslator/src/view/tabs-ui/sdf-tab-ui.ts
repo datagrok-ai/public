@@ -28,7 +28,6 @@ export class SdfTabUI implements TabUI {
   get htmlDivElement(): HTMLDivElement {
     const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
 
-    // default input values
     const enum DIRECTION {
       STRAIGHT = '5′ → 3′',
       INVERSE = '3′ → 5′',
@@ -38,7 +37,6 @@ export class SdfTabUI implements TabUI {
     const directionInversion = Object.fromEntries(
       strands.map((key) => [key, false])
     );
-    console.log('directionInversion:', directionInversion);
 
     const inputBase = Object.fromEntries(
       strands.map(
@@ -59,22 +57,19 @@ export class SdfTabUI implements TabUI {
     // todo: compose tooltip message:
 
     // choice inputs
-    const ssDirection = ui.choiceInput('SS direction', DIRECTION.STRAIGHT, [DIRECTION.STRAIGHT, DIRECTION.INVERSE]);
-    ssDirection.onChanged(() => {
-      directionInversion.ss = ssDirection.value === DIRECTION.INVERSE;
-      onInput.next();
-    });
+    const directionChoiceInput = Object.fromEntries(
+      strands.map(
+        (key) => [key, ui.choiceInput(
+          `${key.toUpperCase()} direction`, DIRECTION.STRAIGHT, [DIRECTION.STRAIGHT, DIRECTION.INVERSE]
+        )]
+      )
+    );
 
-    const asDirection = ui.choiceInput('AS direction', DIRECTION.STRAIGHT, [DIRECTION.STRAIGHT, DIRECTION.INVERSE]);
-    asDirection.onChanged(() => {
-      directionInversion.as = asDirection.value === DIRECTION.INVERSE;
-      onInput.next();
-    });
-
-    const as2Direction = ui.choiceInput('AS2 direction', DIRECTION.STRAIGHT, [DIRECTION.STRAIGHT, DIRECTION.INVERSE]);
-    as2Direction.onChanged(() => {
-      directionInversion.as2 = as2Direction.value === DIRECTION.INVERSE;
-      onInput.next();
+    strands.forEach((strand) => {
+      directionChoiceInput[strand].onChanged(() => {
+        directionInversion[strand] = directionChoiceInput[strand].value === DIRECTION.INVERSE;
+        onInput.next();
+      });
     });
 
     // labels
@@ -86,11 +81,11 @@ export class SdfTabUI implements TabUI {
       ['ss', 'as1', 'as2'], (row) => {
         switch (row) {
         case 'ss':
-          return [ssLabel, coloredInput.ss.root, ssDirection.root];
+          return [ssLabel, coloredInput.ss.root, directionChoiceInput.ss.root];
         case 'as1':
-          return [asLabel, coloredInput.as.root, asDirection.root];
+          return [asLabel, coloredInput.as.root, directionChoiceInput.as.root];
         case 'as2':
-          return [as2Label, coloredInput.as2.root, as2Direction.root];
+          return [as2Label, coloredInput.as2.root, directionChoiceInput.as2.root];
         }
       }, ['', '', '']
     );
@@ -102,7 +97,7 @@ export class SdfTabUI implements TabUI {
     }
 
     // choice input label style
-    for (const item of [ssDirection.root, asDirection.root, as2Direction.root])
+    for (const item of [directionChoiceInput.ss.root, directionChoiceInput.as.root, directionChoiceInput.as2.root])
       item.parentElement!.classList.add('sdf-input-form', 'sdf-choice-input-label');
 
     for (const item of [inputBase.ss, inputBase.as, inputBase.as2]) {
