@@ -1,7 +1,7 @@
 {
   "#type": "DataConnection",
   "name": "PostgreSQLApiTests",
-  "friendlyName": "Tests",
+  "friendlyName": "PostgreSQLApiTests",
   "parameters": {
     "server": "db.datagrok.ai",
     "port": 54327,
