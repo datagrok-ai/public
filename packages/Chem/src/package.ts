@@ -73,6 +73,13 @@ const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
   ChemDraw: 'ChemDraw'
 }
 
+const PREVIOUS_SKETCHER_NAMES: {[key: string]: string} = {
+  'Open Chem Sketcher': 'OpenChemLib',
+  'ketcherSketcher': 'Ketcher',
+  'Marvin JS': 'Marvin',
+  'Chem Draw': 'ChemDraw'
+}
+
 /**
  * Usage:
  * let a = await grok.functions.call('Chem:getRdKitModule');
@@ -101,6 +108,8 @@ export async function initChem(): Promise<void> {
   _rdRenderer = new RDKitCellRenderer(getRdKitModule());
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
   let storedSketcherType = await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
+  if (PREVIOUS_SKETCHER_NAMES[storedSketcherType])
+    storedSketcherType = PREVIOUS_SKETCHER_NAMES[storedSketcherType];
   if (!storedSketcherType && _properties.Sketcher)
     storedSketcherType = SKETCHER_FUNCS_FRIENDLY_NAMES[_properties.Sketcher]
   const sketcherFunc = DG.Func.find({tags: ['moleculeSketcher']}).find(e => e.name === storedSketcherType || e.friendlyName === storedSketcherType);
