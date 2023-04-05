@@ -54,6 +54,10 @@ public class QueryManager {
 
     public void initScheme() throws QueryCancelledByUser, SQLException {
         System.out.println("scheme not init");
+        if (resultSet == null) {
+            schemeInfo = new SchemeInfo(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+            return;
+        }
         schemeInfo = provider.resultSetScheme(query, resultSet);
         System.out.println("scheme init");
     }
