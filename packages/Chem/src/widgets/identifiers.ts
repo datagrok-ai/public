@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getRdKitModule, getRdKitWebRoot} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
+import { getMolSafe } from '../utils/mol-creation_rdkit';
 
 const CHEMBL = 'Chembl';
 const PUBCHEM = 'PubChem';
@@ -142,22 +143,25 @@ async function getIUPACName(smiles: string): Promise<string> {
   return (result && result[0].hasOwnProperty('IUPACName')) ? result[0].IUPACName : 'Not found in PubChem';
 }
 
-export async function identifiers(molfile: string): Promise<HTMLElement> {
+export async function identifiersWidget(molfile: string): Promise<DG.Widget> {
   const rdKitModule = getRdKitModule();
-  const mol = rdKitModule.get_mol(molfile);
-  const inchi = mol.get_inchi();
-  const inchiKey = rdKitModule.get_inchikey_for_inchi(inchi);
-  mol.delete();
+  const mol = getMolSafe(molfile, {}, rdKitModule);
+  if (mol.mol) {
+    const inchi = mol.mol.get_inchi();
+    const inchiKey = rdKitModule.get_inchikey_for_inchi(inchi);
+    mol.mol.delete();
 
-  let idMap: {[k: string]: any} | null = null;
-  try {
-    idMap = await getIdMap(inchiKey);
-  } catch (e) {
-    console.warn(e);
-  }
+    let idMap: {[k: string]: any} | null = null;
+    try {
+      idMap = await getIdMap(inchiKey);
+    } catch (e) {
+      console.warn(e);
+    }
 
-  const mainIdentifiers = createIdentifiersMap(molfile, inchi, inchiKey, idMap);
-  return ui.tableFromMap(mainIdentifiers);
+    const mainIdentifiers = createIdentifiersMap(molfile, inchi, inchiKey, idMap);
+    return new DG.Widget(ui.tableFromMap(mainIdentifiers));
+  } else
+    return new DG.Widget(ui.divText('Malformed molecule'));
 }
 
 
