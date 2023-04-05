@@ -4,6 +4,8 @@ import dayjs from 'dayjs';
 import {after, awaitCheck, before, category, expect, expectArray, expectFloat,
   expectObject, isDialogPresent, test} from '@datagrok-libraries/utils/src/test';
 import {AddNewColumnDialog} from './add-new-column';
+import {FormulaLinesDialog} from './formula-lines';
+import {FUNC_TESTS} from './func-tests';
 
 
 category('Dialogs', () => {
@@ -35,7 +37,10 @@ category('Dialogs', () => {
     }
   });
 
-  test('FormulaLines', async () => {});
+  test('FormulaLines', async () => {
+    const dlg = new FormulaLinesDialog(df);
+    await awaitCheck(() => isDialogPresent(dlg.dialog.title));
+  });
 
   after(async () => {
     dialogs.forEach((d) => d.close());
@@ -43,52 +48,6 @@ category('Dialogs', () => {
     grok.shell.closeTable(df);
   });
 });
-
-// See ApiTests/src/functions/
-const FUNC_TESTS: {[f: string]: {[test: string]: any}} = {
-  Boolean: {
-    'Boolean(true)': true,
-    'Boolean("true")': true,
-    'Boolean("y")': true,
-    'Boolean(1)': true,
-    'Boolean(10)': true,
-    'Boolean(DateParse("20200131T132700"))': true,
-    'Boolean(false)': false,
-    'Boolean("false")': false,
-    'Boolean("n")': false,
-    'Boolean("abc")': false,
-    'Boolean("")': false,
-    'Boolean(null)': false,
-    'Boolean(0)': false,
-  },
-  ParseFloat: {
-    'ParseFloat("2025")': 2025,
-    'ParseFloat("12.78")': 12.78,
-    'ParseFloat("-012.150")': -12.15,
-  },
-  ParseInt: {
-    'ParseInt("2025")': 2025,
-    'ParseInt("-012")': -12,
-    'ParseInt(" 0101 ")': 101,
-  },
-  ParseQnum: {
-    'ParseQnum("100")': 100,
-    'ParseQnum("<100")': 100,
-    'ParseQnum(">100")': 100,
-    'ParseQnum("   100 ")': 100,
-    'ParseQnum(" < 100 ")': 100,
-    'ParseQnum(" > 100 ")': 100,
-    'Qualifier(ParseQnum("100"))': '=',
-    'Qualifier(ParseQnum("<100"))': '<',
-    'Qualifier(ParseQnum(">100"))': '>',
-    'QnumToString(ParseQnum(" < 100 "))': '<100',
-  },
-  ToString: {
-    'ToString(1)': '1',
-    'ToString(3.14)': '3.14',
-    'ToString(true)': 'true',
-  },
-};
 
 function expectTyped(actual: any, expected: any) {
   if (Array.isArray(expected))
