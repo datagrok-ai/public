@@ -182,6 +182,13 @@ category('Functions: Math', () => {
     'Pow(2, -2)': 0.25,
   }));
 
+  test('Qualifier', () => check({
+    'Qualifier(Qnum(1.5, "="))': '=',
+    'Qualifier(Qnum(1.5, "<"))': '<',
+    'Qualifier(Qnum(1.5, ">"))': '>',
+    'Qualifier(1)': '=',
+  }));
+
   test('RandBetween', () => checkRandomInt({
     'RandBetween(5, 7)': [5, 7],
     'RandBetween(-2, 2)': [-2, 2],
