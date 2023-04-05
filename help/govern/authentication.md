@@ -33,4 +33,4 @@ See also:
 
 * [Authorization](authorization.md)
 * [Security](security.md)
-* [Configure authentication](../develop/how-to/configure-auth.md)
+* [Configure authentication](../develop/admin/deploy/configure-auth.md)
