@@ -64,7 +64,7 @@ Qnum(3, ">")
 Converts a qualified number to a string representation.
 
 ```javascript
-QnumToString(Qnum(1.5, "<"))  // <1.5
+QnumToString(Qnum(1.5, "<"))  // <1.50
 ```
 
 ## <a name="timespanparse"></a>TimeSpanParse(`s`)
