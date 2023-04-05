@@ -5,6 +5,16 @@ import {UaToolbox} from '../ua-toolbox';
 import {UaQueryViewer} from '../viewers/abstract/ua-query-viewer';
 
 
+export interface Filter {
+  time_start: number;
+  time_end: number;
+  groups?: string[];
+  users: string[];
+  packages: string[];
+  functions?: string[];
+}
+
+
 export class UaView extends DG.ViewBase {
   uaToolbox: UaToolbox;
   viewers: UaQueryViewer[] = [];

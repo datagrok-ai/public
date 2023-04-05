@@ -90,7 +90,8 @@ select et.source, count(*)
 from events e
 inner join event_types et on e.event_type_id = et.id
 inner join event_parameter_values epv inner join event_parameters ep
-on epv.parameter_id = ep.id and ep.name = 'package' on epv.event_id = e.id
+on epv.parameter_id = ep.id and ep.name = 'package' and ep.type != 'entity_id'
+on epv.event_id = e.id
 inner join published_packages pp on pp.id::text = epv.value
 inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id

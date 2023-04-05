@@ -24,7 +24,7 @@
   margin-left: 7px !important;
 }
 
-.ua-small-button {
+.ua-close-button {
   float: right;
   font-weight: 300 !important;
   font-size: 13px !important;
@@ -32,6 +32,12 @@
   margin-left: auto !important;
   padding: 0 !important;
   align-items: start !important;
+}
+
+.ua-back-button {
+  float: right;
+  color: var(--grey-3) !important;
+  padding: 0 !important;
 }
 
 .ua-reload-div {
