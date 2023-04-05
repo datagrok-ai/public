@@ -5,6 +5,7 @@ import './dataframe/detector';
 import './dataframe/calculated-columns';
 import './dataframe/events';
 import './dataframe/datetime-columns-join';
+import './dataframe/dataframe-join';
 import './functions/functions';
 import './shell/shell';
 import './shell/windows';
