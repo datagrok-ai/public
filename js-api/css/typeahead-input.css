@@ -7,7 +7,6 @@
 .ui-input-root:hover {
     cursor: default;
     border-radius: 0px;
-    background-color: #FFFFFF;
 }
 
 .ui-form .ui-input-root > .typeahead-standalone {
