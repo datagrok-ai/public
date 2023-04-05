@@ -22,10 +22,9 @@ export class DemoView extends DG.ViewBase {
   startDemoFunc(func: DG.Func) {
     grok.shell.closeAll();
     const loadingScreen = ui.div('Loading...', 'loading');
-    const dockContainer = document.getElementsByClassName('d4-dock-container')[0];
-    dockContainer?.appendChild(loadingScreen);
+    grok.shell.tv.root.appendChild(loadingScreen);
 
-    func.apply().then((_) => { });
+    func.apply().then((_) => {loadingScreen.remove();});
   }
 
   _initContent() {
