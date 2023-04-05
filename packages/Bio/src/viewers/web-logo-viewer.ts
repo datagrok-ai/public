@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import * as rxjs from 'rxjs';
 
-import {Subscription} from 'rxjs';
 import {SliderOptions} from 'datagrok-api/dg';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
@@ -13,8 +12,13 @@ import {
   getSplitter, monomerToShort, pickUpPalette, pickUpSeqCol, SplitterFunc,
   TAGS as bioTAGS
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {
+  WebLogoPropsDefault, WebLogoProps, IWebLogoViewer,
+  PositionHeight,
+  positionSeparator,
+} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import {TAGS as wlTAGS} from '@datagrok-libraries/bio/src/viewers/web-logo';
 
 declare global {
   interface HTMLCanvasElement {
@@ -254,7 +258,7 @@ export class WebLogoViewer extends DG.JsViewer {
     return (this.visibleSlider) ? Math.floor(this.slider.min) : 0;
   }
 
-  private viewSubs: Subscription[] = [];
+  private viewSubs: rxjs.Unsubscribable[] = [];
 
   constructor() {
     super();
@@ -421,9 +425,9 @@ export class WebLogoViewer extends DG.JsViewer {
       (s) => s !== null ? this.splitter!(s).length : 0)) : 0;
 
     // Get position names from data column tag 'positionNames'
-    const positionNamesTxt = this.seqCol.getTag('positionNames');
+    const positionNamesTxt = this.seqCol.getTag(wlTAGS.positionNames);
     // Fallback if 'positionNames' tag is not provided
-    this.positionNames = positionNamesTxt ? positionNamesTxt.split(', ').map((n) => n.trim()) :
+    this.positionNames = positionNamesTxt ? positionNamesTxt.split(positionSeparator).map((n) => n.trim()) :
       [...Array(maxLength).keys()].map((jPos) => `${jPos + 1}`);
 
     this.startPosition = (this.startPositionName && this.positionNames &&
