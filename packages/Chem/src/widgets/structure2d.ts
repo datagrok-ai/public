@@ -3,16 +3,12 @@ import * as DG from 'datagrok-api/dg';
 import {renderMolecule} from '../rendering/render-molecule';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
-import { structure3d } from './structure3d';
-import { identifiers } from './identifiers';
 
 const WIDTH = 200;
 const HEIGHT = 100;
-const WIDTH3D = 300;
-const HEIGHT3D = 300;
 const MORE_ICON_FONT_WEIGHT = '500';
 
-export function moleculeOverviewWidget(molecule: string): DG.Widget {
+export function structure2dWidget(molecule: string): DG.Widget {
   const rdKitModule = getRdKitModule();
   let molblock: string;
   try {
@@ -21,14 +17,7 @@ export function moleculeOverviewWidget(molecule: string): DG.Widget {
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
 
-  const acc = ui.accordion('chem-molecule-overview');
-  acc.addPane(`Identifiers`, () => ui.wait(async () => await identifiers(molblock)));
-  acc.addPane(`3D Structure`, () => ui.wait(async () => await structure3d(molecule, WIDTH3D, HEIGHT3D)));
-
-  return new DG.Widget(ui.divV([
-    get2dMolecule(molecule),
-    acc.root
-  ]));
+  return new DG.Widget(get2dMolecule(molecule));
 }
 
 function get2dMolecule(molecule: string): HTMLElement{
