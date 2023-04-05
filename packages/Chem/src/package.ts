@@ -772,7 +772,6 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
       return;
     sketcher._autoResized ? sketcher._autoResized = false : sketcher.resize();
   });
-  $(dlg.root).children('.d4-dialog-contents.dlg-.ui-form.ui-panel').css('overflow', 'unset').css('overflow-y', 'clip');
 }
 
 //name: OpenChemLib

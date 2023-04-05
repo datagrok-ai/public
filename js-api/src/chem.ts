@@ -482,7 +482,7 @@ export namespace chem {
               isChecked: (item) => item === currentSketcherType, toString: item => item,
               radioGroup: 'sketcher type'
             })
-          .show({parent: optionsIcon});
+          .show();
       });
       $(optionsIcon).addClass('d4-input-options');
       molInputDiv.append(ui.div([this.molInput, optionsIcon], 'grok-sketcher-input'));
