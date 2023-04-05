@@ -174,7 +174,8 @@ category('UI', () => {
     }, 'cannot find Structure property', 3000);
     (document.querySelector('.fa-chevron-square-down') as HTMLElement)?.click();
     const s2d = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
-      .find((el) => el.textContent === 'Structure') as HTMLElement;
+      .find((el) => el.textContent === '2D Structure') as HTMLElement;
+    if (!s2d.classList.contains('expanded')) s2d.click();
     await awaitCheck(() => (s2d.nextSibling as HTMLElement).querySelector('.chem-canvas') !== null,
       'canvas with structure was not rendered in the panel', 3000);
     s2d.click(); await delay(10);
