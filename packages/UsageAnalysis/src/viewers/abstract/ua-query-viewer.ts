@@ -4,7 +4,9 @@ import * as DG from 'datagrok-api/dg';
 
 import {UaFilter} from '../../filter';
 import {UaViewer} from './ua-viewer';
+import ColorHash from 'color-hash';
 
+const colorHash = new ColorHash();
 
 export abstract class UaQueryViewer extends UaViewer {
   queryName: string;
@@ -32,6 +34,12 @@ export abstract class UaQueryViewer extends UaViewer {
     grok.data.query('UsageAnalysis:' + this.queryName, filter).then((dataFrame) => {
       if (dataFrame.columns.byName('count') != null)
         dataFrame.columns.byName('count').tags['format'] = '#';
+      const userColumn = dataFrame.columns.byName('user');
+      if (userColumn != null) {
+        const users: {[key: string]: string} = {};
+        userColumn.categories.forEach((u: string) => {users[u] = colorHash.hex(u);});
+        userColumn.meta.colors.setCategorical(users);
+      }
       this.viewerFunction(dataFrame);
       this.viewer.dataFrame = dataFrame;
       this.viewer.setOptions({markerMinSize: 10, markerMaxSize: 30, color: 'user'});
