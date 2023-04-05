@@ -4,23 +4,23 @@
 		"access": "public"
 	},
 	"fullName": "HistoryUtils",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "Utils for historical runs",
 	"dependencies": {
-		"datagrok-api": "latest",
 		"cash-dom": "latest",
+		"datagrok-api": "latest",
 		"dayjs": "latest",
-		"@datagrok-libraries/utils": "latest"
+		"wu": "^2.1.0"
 	},
 	"devDependencies": {
-		"webpack": "latest",
-		"webpack-cli": "latest",
-		"ts-loader": "latest",
-		"typescript": "latest",
+		"@typescript-eslint/eslint-plugin": "latest",
+		"@typescript-eslint/parser": "latest",
 		"eslint": "latest",
 		"eslint-config-google": "latest",
-		"@typescript-eslint/eslint-plugin": "latest",
-		"@typescript-eslint/parser": "latest"
+		"ts-loader": "latest",
+		"typescript": "latest",
+		"webpack": "latest",
+		"webpack-cli": "latest"
 	},
 	"scripts": {
 		"link": "npm link",
