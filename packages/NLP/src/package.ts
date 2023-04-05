@@ -179,7 +179,7 @@ export async function translationPanel(textfile: DG.FileInfo) {
 // }
 
 //name: exportFunc
-//tags: autostart
+//tags: init
 export async function initAWS() {
   AWS.config.update({
     apiVersion: 'latest',
