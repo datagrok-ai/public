@@ -20,8 +20,8 @@ category('Dialogs', () => {
 
   test('AddNewColumn', async () => {
     const dlg = new AddNewColumnDialog();
-    await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
     dialogs.push(dlg.uiDialog!);
+    await awaitCheck(() => isDialogPresent(dlg.addColumnTitle));
     const funcs = DG.Func.find();
 
     for (const f of funcs) {
@@ -39,6 +39,7 @@ category('Dialogs', () => {
 
   test('FormulaLines', async () => {
     const dlg = new FormulaLinesDialog(df);
+    dialogs.push(dlg.dialog);
     await awaitCheck(() => isDialogPresent(dlg.dialog.title));
   });
 
