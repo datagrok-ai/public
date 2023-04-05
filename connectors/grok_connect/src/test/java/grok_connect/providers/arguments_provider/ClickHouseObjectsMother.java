@@ -217,11 +217,11 @@ public class ClickHouseObjectsMother {
         DataFrame expected = DataFrameBuilder.getBuilder()
                 .setRowCount(1)
                 .setColumn(new StringColumn(new String[]{"[10.0, 10.0]"}), "p")
-                .setColumn(new StringColumn(new String[]{"[[0.0, 0.0][10.0, 0.0][10.0, 10.0][0.0, 10.0]]"}), "r")
-                .setColumn(new StringColumn(new String[]{"[[[20.0, 20.0][50.0, 20.0][50.0, 50.0][20.0, 50.0]]"
-                        + "[[30.0, 30.0][50.0, 50.0][50.0, 30.0]]]"}), "pg")
-                .setColumn(new StringColumn(new String[]{"[[[[0.0, 0.0][10.0, 0.0][10.0, 10.0][0.0, 10.0]]]"
-                                + "[[[20.0, 20.0][50.0, 20.0][50.0, 50.0][20.0, 50.0]][[30.0, 30.0][50.0, 50.0][50.0, 30.0]]]]"}),
+                .setColumn(new StringColumn(new String[]{"[[0.0, 0.0], [10.0, 0.0], [10.0, 10.0], [0.0, 10.0]]"}), "r")
+                .setColumn(new StringColumn(new String[]{"[[[20.0, 20.0], [50.0, 20.0], [50.0, 50.0], [20.0, 50.0]], "
+                        + "[[30.0, 30.0], [50.0, 50.0], [50.0, 30.0]]]"}), "pg")
+                .setColumn(new StringColumn(new String[]{"[[[[0.0, 0.0], [10.0, 0.0], [10.0, 10.0], [0.0, 10.0]]], "
+                                + "[[[20.0, 20.0], [50.0, 20.0], [50.0, 50.0], [20.0, 50.0]], [[30.0, 30.0], [50.0, 50.0], [50.0, 30.0]]]]"}),
                         "mpg")
                 .build();
         return Stream.of(Arguments.of(Named.of("GEO TYPE",
