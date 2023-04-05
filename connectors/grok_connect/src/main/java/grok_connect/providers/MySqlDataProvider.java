@@ -82,7 +82,7 @@ public class MySqlDataProvider extends JdbcDataProvider {
 
     @Override
     public String getSchemasSql(String db) {
-        return "SELECT DISTINCT table_schema FROM information_schema.columns";
+        return "SELECT DISTINCT table_schema FROM information_schema.columns ORDER BY table_schema";
     }
 
     @Override
@@ -101,7 +101,7 @@ public class MySqlDataProvider extends JdbcDataProvider {
                 + "c.data_type as data_type, "
                 + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
                 + "JOIN information_schema.tables t ON t.table_name = c.table_name " + whereClause +
-                " ORDER BY c.table_name";
+                " ORDER BY c.ORDINAL_POSITION;";
     }
 
     @Override

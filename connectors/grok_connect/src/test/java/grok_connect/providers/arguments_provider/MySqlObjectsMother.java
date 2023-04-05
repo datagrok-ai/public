@@ -7,8 +7,13 @@ import grok_connect.providers.utils.FuncCallBuilder;
 import grok_connect.providers.utils.Parser;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.params.provider.Arguments;
-import serialization.*;
-
+import serialization.BigIntColumn;
+import serialization.BoolColumn;
+import serialization.DataFrame;
+import serialization.DateTimeColumn;
+import serialization.FloatColumn;
+import serialization.IntColumn;
+import serialization.StringColumn;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -19,7 +24,7 @@ public class MySqlObjectsMother {
     public static Stream<Arguments> getSchemas_ok() {
         DataFrame expected = DataFrameBuilder.getBuilder()
                 .setRowCount(3)
-                .setColumn(new StringColumn(new String[] {"information_schema", "datagrok"}),
+                .setColumn(new StringColumn(new String[] {"datagrok", "information_schema",}),
                         "TABLE_SCHEMA")
                 .build();
         return Stream.of(Arguments.of(expected));
@@ -46,8 +51,8 @@ public class MySqlObjectsMother {
                 .setColumn(new StringColumn(), fourthColumnName, new String[] {"bigint", "varchar",
                         "varchar", "varchar", "varchar", "varchar",
                         "tinyint", "varchar", "date", "decimal"})
-                .setColumn(new BigIntColumn(), fifthColumnName, new String[] {"0", "0", "0", "0", "0",
-                        "0", "0", "0", "0", "0"})
+                .setColumn(new IntColumn(), fifthColumnName, new Integer[] {0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0})
                 .build();
         return Stream.of(Arguments.of(expected));
     }
