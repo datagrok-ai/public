@@ -3,7 +3,10 @@ import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
 import {FilterSources, WebLogoViewer, PROPS as wlPROPS} from '../viewers/web-logo-viewer';
-import {IVdRegionsViewer, VdRegion, VdRegionType} from '@datagrok-libraries/bio/src/vd-regions';
+import {
+  VdRegionsPropsDefault, VdRegionsProps, IVdRegionsViewer,
+  VdRegion, VdRegionType
+} from '@datagrok-libraries/bio/src/viewers/vd-regions';
 import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {Unsubscribable} from 'rxjs';
 
@@ -50,28 +53,28 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   private panelNode: DG.DockNode | null = null;
 
   public regions: VdRegion[] = [];
-  public regionTypes: string[];
+  public regionTypes: VdRegionType[];
   public chains: string[];
-  public sequenceColumnNamePostfix: string;
+  // public sequenceColumnNamePostfix: string;
 
   public skipEmptyPositions: boolean;
   public positionWidth: number;
-  public positionHeight: string;
+  public positionHeight: PositionHeight;
 
   constructor() {
     super();
 
     // To prevent ambiguous numbering scheme in MLB
     this.regionTypes = this.stringList('regionTypes', [vrt.CDR],
-      {choices: Object.values(vrt).filter((t) => t != vrt.Unknown)});
+      {choices: Object.values(vrt).filter((t) => t != vrt.Unknown)}) as VdRegionType[];
     this.chains = this.stringList('chains', ['Heavy', 'Light'],
       {choices: ['Heavy', 'Light']});
-    this.sequenceColumnNamePostfix = this.string('sequenceColumnNamePostfix', 'chain sequence');
+    // this.sequenceColumnNamePostfix = this.string('sequenceColumnNamePostfix', 'chain sequence');
 
     this.skipEmptyPositions = this.bool('skipEmptyPositions', false);
     this.positionWidth = this.float('positionWidth', 16);
     this.positionHeight = this.string('positionHeight', PositionHeight.Entropy,
-      {choices: Object.keys(PositionHeight)});
+      {choices: Object.keys(PositionHeight)}) as PositionHeight;
   }
 
   public async init() {
@@ -218,22 +221,17 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   private async buildView(purpose: string): Promise<void> {
     console.debug(`Bio: VdRegionsViewer.buildView() begin, ` + `purpose = '${purpose}'`);
 
-    const colNames: { [chain: string]: string } = Object.assign({},
-      ...this.chains.map((chain) => ({[chain]: `${chain} ${this.sequenceColumnNamePostfix}`})));
-
     const regionsFiltered: VdRegion[] = this.regions.filter((r: VdRegion) => this.regionTypes.includes(r.type));
-
     const orderList: number[] = Array.from(new Set(regionsFiltered.map((r) => r.order))).sort();
 
     this.logos = [];
-
     for (let orderI = 0; orderI < orderList.length; orderI++) {
       const regionChains: { [chain: string]: WebLogoViewer } = {};
       for (const chain of this.chains) {
         const region: VdRegion | undefined = regionsFiltered
           .find((r) => r.order == orderList[orderI] && r.chain == chain);
         regionChains[chain] = (await this.dataFrame.plot.fromType('WebLogo', {
-          sequenceColumnName: colNames[chain],
+          sequenceColumnName: region!.sequenceColumnName,
           startPositionName: region!.positionStartName,
           endPositionName: region!.positionEndName,
           fixWidth: true,
