@@ -83,9 +83,8 @@ export abstract class ComputationView extends FunctionView {
     * @stability Stable
   */
   getAbout: (() => Promise<string>) | null = async () => {
-    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12306
-    const pack = (await grok.dapi.packages.list()).find((pack) => pack.id === this.func?.package.id);
-    return pack ? `${pack.friendlyName} v.${pack.version}.\nLast updated on ${dayjs(pack.updatedOn).format('YYYY MMM D, HH:mm')}`: `No package info was found`;
+    const pack = await grok.dapi.packages.find(this.parentCall!.func.package.id);
+    return pack ? `${pack.friendlyName}.\nLast updated on ${dayjs(pack.updatedOn).format('YYYY MMM D, HH:mm')}`: `No package info was found`;
   };
 
   /**
@@ -159,8 +158,7 @@ export abstract class ComputationView extends FunctionView {
    * @stability Stable
   */
   private async getPackageUrls() {
-    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12306
-    const pack = (await grok.dapi.packages.list()).find((pack) => pack.id === this.parentCall?.func.package.id);
+    const pack = await grok.dapi.packages.find(this.parentCall!.func.package.id);
 
     const reportBugUrl = (await pack?.getProperties() as any).REPORT_BUG_URL;
     if (reportBugUrl && !this.reportBug)
