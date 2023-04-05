@@ -143,6 +143,8 @@ export function fit(data:{x: number[], y: number[]},
   }
 
   let iterations = 0;
+  let fixed: number[] = [];
+  let overLimits = true;
 
   let optimizable = {
     getValue: (parameters: number[]) => {
@@ -153,14 +155,32 @@ export function fit(data:{x: number[], y: number[]},
       iterations++;
 
       for (let i = 0; i < parameters.length; i++)
-        gradient[i] = getObjectiveDerivative(of, curveFunction, data, parameters, i);
+        gradient[i] = fixed.includes(i) ? 0 : getObjectiveDerivative(of, curveFunction, data, parameters, i);
 
       return gradient;
     }
   };
 
-  limitedMemoryBFGS(optimizable, paramValues);
-  limitedMemoryBFGS(optimizable, paramValues);
+  while (overLimits) {
+    limitedMemoryBFGS(optimizable, paramValues);
+    limitedMemoryBFGS(optimizable, paramValues);
+
+    overLimits = false;
+    for (let i = 0; i < paramValues.length; i++) {
+      if(params[i].max !== undefined && paramValues[i] > params[i].max!) {
+        overLimits = true;
+        fixed.push(i);
+        paramValues[i] = params[i].max!;
+        break;
+      }
+      if(params[i].min !== undefined && paramValues[i] < params[i].min!) {
+        overLimits = true;
+        fixed.push(i);
+        paramValues[i] = params[i].min!;
+        break;
+      }
+    }
+  }
 
   let fittedCurve = (x: number) => {
     return curveFunction(paramValues, x);
