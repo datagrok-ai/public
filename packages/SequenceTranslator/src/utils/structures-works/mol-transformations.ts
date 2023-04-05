@@ -446,9 +446,7 @@ function rotateNucleotidesV3000(molBlock: string): string {
   return molBlock;
 }
 
-function reflect(molecule: string): string {
-  // @ts-ignore
-  let molBlock = molecule.includes('M  END') ? molecule : OCL.Molecule.fromSmiles(molecule).toMolfileV3();
+function reflect(molBlock: string): string {
   const coordinates = extractAtomDataV3000(molBlock);
   const natom = coordinates.atomIndex.length;
 

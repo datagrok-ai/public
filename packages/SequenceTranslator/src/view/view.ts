@@ -36,7 +36,7 @@ export class SequenceTranslatorUI {
     this._tabs = new TabLayout(
       new MainTabUI((seq: string) => {}),
       new AxolabsTabUI(),
-      new SdfTabUI()
+      SdfTabUI.init()
     );
   }
 

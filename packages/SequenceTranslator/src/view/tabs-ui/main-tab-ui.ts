@@ -19,7 +19,6 @@ import {drawMolecule} from '../../utils/structures-works/draw-molecule';
 import {download} from '../../utils/helpers';
 import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, DEFAULT_INPUT} from '../../view/const/main-tab-const';
 
-
 export class MainTabUI {
   constructor(onInputChanged: (input: string) => void) {
     this._inputSequence = DEFAULT_INPUT;
@@ -76,10 +75,6 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
         ui.div([
           ui.table(tableRows, (item) => [item.format, item.sequence], ['OUTPUT FORMAT', 'OUTPUT SEQUENCE'])
         ])
-        // ui.div([
-        //   DG.HtmlTable.create(tableRows, (item: { key: string; value: string; }) =>
-        //     [item.key, item.value], ['Format', 'Sequence']).root,
-        // ])
       );
 
       if (outputSequenceObj.type !== undefinedInputSequence && outputSequenceObj.Error !== undefinedInputSequence) {
@@ -126,6 +121,7 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
       download(clearSequence + '.mol', encodeURIComponent(result));
     },
     'Save .mol file');
+  // $(downloadMolfileButton).addClass(OUTLINE_BUTTON_CLASS);
 
   const copySmilesButton = ui.button(
     'Copy SMILES',
@@ -135,6 +131,7 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
       ).then(() => grok.shell.info(SEQUENCE_COPIED_MSG));
     },
     'Copy SMILES string corresponding to the sequence');
+  // $(copySmilesButton).addClass(OUTLINE_BUTTON_CLASS);
 
   const formatChoiceInput = ui.div([inputFormatChoiceInput], {style: {padding: '5px 0'}});
 
@@ -145,20 +142,16 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
   //   formatChoiceInput,
   // ]);
 
-  // table layout
+  const tableRow = {
+    format: formatChoiceInput,
+    textInput: sequenceColoredInput.root,
+  };
   const upperBlock = ui.table(
-    ['ss'], (row) => {
-      switch (row) {
-      case 'ss':
-        // return [sequenceInputLabel, sequenceColoredInput.root, formatChoiceInput];
-        return [formatChoiceInput, sequenceColoredInput.root];
-      }
-    }, ['INPUT FORMAT', 'INPUT SEQUENCE']
+    [tableRow], (item) => [item.format, item.textInput]
   );
 
   const outputTableDiv = ui.div([]);
   const outputTable = ui.block([
-    // ui.h1('Output'),
     outputTableDiv,
     downloadMolfileButton,
     copySmilesButton,
@@ -167,19 +160,7 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
   const moleculeImgDiv = ui.block([]);
 
   const mainTabBody = ui.box(
-    // ui.splitH([
-    //   ui.splitV([
-    //     ui.panel([
-    //       // appMainDescription,
-    //       upperBlock,
-    //       formatChoiceInput,
-    //       outputTable,
-    //       moleculeImgDiv,
-    //     ], 'st-main-sequence'),
-    //   ]),
-    // ], {style: {height: '100%', width: '100%'}})
     ui.div([
-      // appMainDescription,
       upperBlock,
       outputTable,
       moleculeImgDiv,
