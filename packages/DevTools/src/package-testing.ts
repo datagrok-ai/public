@@ -92,7 +92,8 @@ export class TestManager extends DG.ViewBase {
     this.testFunctions = await this.collectPackages();
     this.testManagerView = DG.View.create();
     const testFromUrl = pathSegments.length > 4 ?
-      {packName: pathSegments[4], catName: pathSegments[5], testName: pathSegments[6]} : null;
+      {packName: pathSegments[4], catName: pathSegments.slice(5, -1).join(': '),
+        testName: pathSegments[pathSegments.length - 1]} : null;
     const testUIElements: ITestManagerUI = await this.createTestManagerUI(testFromUrl);
     this.testManagerView.name = this.name;
     addView(this.testManagerView);
@@ -101,7 +102,7 @@ export class TestManager extends DG.ViewBase {
     this.testManagerView.append(testUIElements.ribbonPanelDiv);
     this.testManagerView.append(testUIElements.testsTree.root);
     if (this.dockLeft)
-      grok.shell.dockManager.dock(this.testManagerView.root, 'left', null, this.name);
+      grok.shell.dockManager.dock(this.testManagerView.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.2);
     this.runTestsForSelectedNode();
   }
 
