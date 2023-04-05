@@ -75,9 +75,13 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
   };
 
   host.appendChild(ui.tableFromMap(map));
-
+  
+  let tableString = '';
+  for (const [key, value] of Object.entries(map)) 
+    tableString += `${key}\t${value.innerText}\n`;
+  
   const copyIcon = ui.icons.copy(() => {
-    navigator.clipboard.writeText(host.innerText);
+    navigator.clipboard.writeText(tableString);
     grok.shell.info('Copied to clipboard');
   }, 'Copy');
   Object.assign(copyIcon.style, copyIconStyles);
