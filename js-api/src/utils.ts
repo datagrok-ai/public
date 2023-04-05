@@ -675,3 +675,22 @@ export function _propsToDart(s: string, cls: string): string {
 export function format(x: number, format?: string): string {
   return api.grok_Utils_FormatNumber(x, format);
 }
+
+
+/** Autotest-related helpers */
+export namespace Test {
+
+  /** Specifies whether the TestManager works in benchmark on unit test mode.
+   * This is controlled by the TestManager's "Benchmark" check box.
+   *
+   * Use this variable in the individual tests to control whether it
+   * runs as a quick unit test (for instance, set small number of iterations)
+   * or a benchmark (set big number of iterations).
+   *
+   * Results of the benchmarks, including time, are captured during the overnight
+   * automated testing and are reported to the metrics database. This allows to
+   * identify performance regressions, compare how fast tests perform under
+   * different conditions, etc.
+   * */
+  export let isInBenchmark = false;
+}
