@@ -63,7 +63,7 @@ SELECT * FROM orders WHERE @orderDate(orderDate);
 --connection: PostgreSQLTest
 --tags: unit-test
 --input: int employeeId = 5
---input: string shipVia = 3 {pattern: int}
+--input: string shipVia = "3" {pattern: int}
 --input: double freight = 10.0
 --input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
 --input: string shipCity = "contains r" {pattern: string}
@@ -117,4 +117,3 @@ from generate_series(1, @num) s(i)
 --connection: PostgresChemblTest
 select * from compound_structures
 --end
-
