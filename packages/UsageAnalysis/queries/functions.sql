@@ -47,3 +47,27 @@ and (res.package = any(@packages) or @packages = ARRAY['all'])
 GROUP BY res.function, res.package, res.user, time_start, time_end,
 res.uid, res.ugid, res.pid
 --end
+
+
+--name: FunctionsContextPane
+--input: int time_start
+--input: int time_end
+--input: string users
+--input: string packages
+--input: string functions
+--meta.cache: true
+--connection: System:Datagrok
+select e.friendly_name as run, et.friendly_name as function,
+pp.name as package, e.event_time as time, e.id as rid
+from events e
+inner join event_types et on e.event_type_id = et.id
+inner join entities en on et.id = en.id
+inner join published_packages pp on en.package_id = pp.id
+inner join users_sessions s on e.session_id = s.id
+inner join users u on u.id = s.user_id
+where e.event_time between to_timestamp(@time_start)
+and to_timestamp(@time_end)
+and u.id = any(@users)
+and pp.package_id = any(@packages)
+and et.friendly_name = any(@functions)
+--end
