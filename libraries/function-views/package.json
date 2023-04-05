@@ -1,0 +1,42 @@
+{
+	"name": "@datagrok-libraries/function-views",
+	"publishConfig": {
+		"access": "public"
+	},
+	"fullName": "FunctionViews",
+	"version": "1.0.0",
+	"description": "Views for functions",
+	"dependencies": {
+		"@datagrok-libraries/shared-components": "^1.0.0",
+		"cash-dom": "latest",
+		"datagrok-api": "latest",
+		"dayjs": "latest",
+		"exceljs": "^4.3.0",
+		"html2canvas": "^1.4.1",
+		"jszip": "^3.10.1",
+		"rxjs": "^6.5.5"
+	},
+	"devDependencies": {
+		"@typescript-eslint/eslint-plugin": "latest",
+		"@typescript-eslint/parser": "latest",
+		"eslint": "latest",
+		"eslint-config-google": "latest",
+		"ts-loader": "latest",
+		"typescript": "latest",
+		"webpack": "latest",
+		"webpack-cli": "latest"
+	},
+	"scripts": {
+		"link": "npm link",
+		"link-api": "npm link datagrok-api",
+		"link-all": "npm link datagrok-api",
+		"build": "tsc",
+		"lint": "eslint \"./src/**/*.ts\"",
+		"lint-fix": "eslint \"./src/**/*.ts\" --fix"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git@github.com:datagrok-ai/public.git",
+		"directory": "libraries/function-views"
+	}
+}
