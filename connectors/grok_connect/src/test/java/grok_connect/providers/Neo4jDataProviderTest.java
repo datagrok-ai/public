@@ -56,9 +56,8 @@ class Neo4jDataProviderTest {
         dataFrameComparator = new DataFrameComparator();
         SettingsManager settingsManager = SettingsManager.getInstance();
         settingsManager.initSettingsWithDefaults();
-        Logger mockLogger = Mockito.mock(Logger.class);
         QueryMonitor mockMonitor = Mockito.mock(QueryMonitor.class);
-        ProviderManager providerManager = new ProviderManager(mockLogger);
+        ProviderManager providerManager = new ProviderManager();
         ProviderManager spy = Mockito.spy(providerManager);
         Mockito.when(spy.getQueryMonitor()).thenReturn(mockMonitor);
         provider = spy.getByName(type.getProperties().get("providerName").toString());
