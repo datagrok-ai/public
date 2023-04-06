@@ -68,6 +68,11 @@ title: "Grid"
 
 ![Date and number formatting](grid-formatting.gif "Date and number formatting")
 
+See also:
+
+* [Formatting notation](../../discover/tags.md#format) for dates and numbers
+* [Formatting via JS API](../../develop/how-to/customize-grid.md#formatting)
+
 ## Color coding
 
 ### Grid color coding
