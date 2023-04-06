@@ -4,7 +4,7 @@
 		"access": "public"
 	},
 	"fullName": "FunctionViews",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Views for functions",
 	"dependencies": {
 		"@datagrok-libraries/shared-components": "^1.0.0",
