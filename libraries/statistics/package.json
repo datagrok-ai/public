@@ -4,14 +4,14 @@
     "access": "public"
   },
   "friendlyName": "statistics",
- "version": "1.1.6",
+ "version": "1.1.7",
   "description": "",
   "dependencies": {
-    "datagrok-api": "1.12.1",
+    "datagrok-api": "^1.13.11",
     "@datagrok-libraries/utils": "2.3.2",
     "cash-dom": "latest",
-    "dayjs": "latest",
-    "jstat": "latest"
+    "jstat": "latest",
+    "dayjs": "latest"
   },
   "devDependencies": {
     "ts-loader": "^9.2.6",
