@@ -146,7 +146,7 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
   const divStructures = ui.div();
   divStructures.classList.add('d4-flex-wrap');
 
-  if (col.temp['version'] != version || col.temp['molIds'].length == 0) {
+  if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
     const molIds = await chemDiversitySearch(
       col, similarityMetric['Tanimoto'], 9, 'Morgan' as Fingerprint, true);
 
@@ -156,8 +156,9 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
     }
   }
 
-  for (let i = 0; i < col.temp['molIds'].length; ++i) {
-    divStructures.append(renderMolecule(col.get(col.temp['molIds'][i]), {width: 150, height: 75}));
+  const molIdsCached = col.temp['molIds'];
+  for (let i = 0; i < molIdsCached.length; ++i) {
+    divStructures.append(renderMolecule(col.get(molIdsCached[i]), {width: 150, height: 75}));
   }
 
   divMain.append(divStructures);
