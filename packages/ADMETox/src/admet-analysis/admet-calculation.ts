@@ -37,8 +37,7 @@ export async function accessServer(csvString: string, queryParams: string) {
 
 export function addTooltip() {
   const tableView = grok.shell.tv;
-  const { grid } = tableView;
-  const { dataFrame } = tableView;
+  const { grid, dataFrame } = tableView;
   const between = (x: number, min: number, max: number) => x >= min && x <= max;
 
   grid.onCellTooltip((cell, x, y) => {
