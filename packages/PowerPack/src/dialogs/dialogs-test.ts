@@ -30,8 +30,8 @@ category('Dialogs', () => {
         return `Column ${counter}`;
       }
       return increment;
-   }
-   const getColumnName = getUniqueColumnName();
+    }
+    const getColumnName = getUniqueColumnName();
 
     for (const f of funcs) {
       if (!(f.name in FUNC_TESTS) || EXCLUDED.includes(f.name))
