@@ -4,11 +4,6 @@
     flex-grow: 0;
 }
 
-.ui-input-root:hover {
-    cursor: default;
-    border-radius: 0px;
-}
-
 .ui-form .ui-input-root > .typeahead-standalone {
     flex-grow: 1;
 }
