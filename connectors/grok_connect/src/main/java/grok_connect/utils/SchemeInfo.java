@@ -1,7 +1,6 @@
 package grok_connect.utils;
 
 import java.util.List;
-
 import serialization.Column;
 
 public class SchemeInfo {
