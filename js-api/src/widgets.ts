@@ -1876,16 +1876,21 @@ export class DropDown {
 }
 
 export class TypeAhead extends InputBase {
-  constructor(config: TypeAheadConfig) {
-    const inputElement = ui.stringInput('', '');
+  constructor(name: string, config: TypeAheadConfig) {
+    const inputElement = ui.stringInput(name, '');
     super(inputElement.dart);
 
     const typeAheadConfig: typeaheadConfig<Dictionary> = Object.assign(
       {input: <HTMLInputElement> this.input}, config);
 
     typeahead(typeAheadConfig);
+    this._changeStyles();
+  }
 
+  _changeStyles() {
     this.root.getElementsByClassName('tt-list')[0].className = 'ui-input-list';
+    this.root.getElementsByClassName('ui-input-list')[0].removeAttribute('style');
     this.root.getElementsByClassName('tt-input')[0].className = 'ui-input-editor';
+    this.root.getElementsByClassName('typeahead-standalone')[0].classList.add('ui-input-root');
   }
 }

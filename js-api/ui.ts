@@ -1375,8 +1375,8 @@ export function dropDown(label: string | Element, createElement: () => HTMLEleme
   return new DropDown(label, createElement);
 }
 
-export function typeAhead(config: TypeAheadConfig): TypeAhead {
-  return new TypeAhead(config);
+export function typeAhead(name: string, config: TypeAheadConfig): TypeAhead {
+  return new TypeAhead(name, config);
 }
 
 export let icons = {
