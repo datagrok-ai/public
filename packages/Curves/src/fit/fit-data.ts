@@ -251,7 +251,7 @@ export function fitSeries(series: IFitSeries, statistics: boolean = false): FitR
   }
   xAtMedY = series.points[nearestXIndex].x;
   // params are: [max, tan, IC50, min]
-  const initialParams = [dataBounds.bottom, -1.2, xAtMedY, dataBounds.top];
+  const initialParams = [{value: dataBounds.bottom}, {value: -1.2}, {value: xAtMedY}, {value: dataBounds.top}];
 
   return fit(
     {x: series.points.map((p) => p.x), y: series.points.map((p) => p.y)},
