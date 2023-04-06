@@ -8,13 +8,13 @@ import $ from 'cash-dom';
 
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
-import {drawMolecule} from '../../utils/structures-works/draw-molecule';
+// import {drawMolecule} from '../../utils/structures-works/draw-molecule';
 import {highlightInvalidSubsequence} from '../input-painters';
 import {getLinkedMolfile, saveSdf} from '../../sdf-tab/sdf-tab';
 import {ColoredTextInput} from '../../utils/colored-text-input';
-import {TabUI} from './tab-ui';
+import {MoleculeImage} from '../../model/molecule-img';
 
-export class SdfTabUI implements TabUI {
+export class SdfTabUI {
   private constructor() { }
 
   public static init() {
@@ -128,7 +128,9 @@ export class SdfTabUI implements TabUI {
       // todo: calculate relative numbers
       const canvasWidth = 650;
       const canvasHeight = 150;
-      await drawMolecule(moleculeImgDiv, canvasWidth, canvasHeight, molfile);
+      const molImgObj = new MoleculeImage(molfile);
+      await molImgObj.drawMolecule(moleculeImgDiv, canvasWidth, canvasHeight);
+      // await drawMolecule(moleculeImgDiv, canvasWidth, canvasHeight, molfile);
       // should the canvas be returned from the above function?
       $(moleculeImgDiv).find('canvas').css('float', 'inherit');
     });
