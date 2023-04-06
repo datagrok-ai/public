@@ -33,6 +33,7 @@
       }
     ]
   },
+
   {
     "_id": "642d3cf9c355b25fe3f3268a",
     "index": 1,
@@ -67,6 +68,7 @@
       }
     ]
   },
+
   {
     "_id": "642d3cf936ac9251742be958",
     "index": 2,
@@ -101,6 +103,7 @@
       }
     ]
   },
+
   {
     "_id": "642d3cf975fe1b1ac7e7933a",
     "index": 3,
@@ -135,6 +138,7 @@
       }
     ]
   },
+
   {
     "_id": "642d3cf9abd475f558e55197",
     "index": 4,
@@ -168,39 +172,6 @@
         "name": "House Pope"
       }
     ]
-  },
-  {
-    "_id": "642d3cf906dcdfea7bb8bf34",
-    "index": 5,
-    "guid": "72516057-8b78-47c9-83ab-c7079c6184e1",
-    "isActive": false,
-    "balance": "$1,061.53",
-    "picture": "http://placehold.it/32x32",
-    "age": 21,
-    "latitude": 74.189989,
-    "longitude": 51.045718,
-    "tags": [
-      "duis",
-      "ex",
-      "aliqua",
-      "cillum",
-      "duis",
-      "aliqua",
-      "amet"
-    ],
-    "friends": [
-      {
-        "id": 0,
-        "name": "Nieves Hobbs"
-      },
-      {
-        "id": 1,
-        "name": "Fisher Vasquez"
-      },
-      {
-        "id": 2,
-        "name": "Davidson Norman"
-      }
-    ]
   }
+
 ]
