@@ -4,13 +4,17 @@ import * as jStat from 'jstat';
 import {Property} from "datagrok-api/src/entities";
 import {TYPE} from "datagrok-api/src/const";
 
-
 type Likelihood = {
   value: number,
   const: number,
   mult: number
 };
 
+export type FitParam = {
+  value: number;
+  minBound?: number;
+  maxBound?: number;
+};
 
 export type FitResult = {
   parameters: number[],
@@ -30,7 +34,6 @@ export type FitResult = {
   bottom: number, // parameters[3]
 };
 
-
 /** Properties that describe {@link FitResult}. Useful for editing, initialization, transformations, etc. */
 export const fitResultProperties: Property[] = [
   Property.js('rSquared', TYPE.FLOAT, {userEditable: false}),
@@ -42,7 +45,6 @@ export const fitResultProperties: Property[] = [
   Property.js('bottom', TYPE.FLOAT, {userEditable: false}),
 ];
 
-
 type ObjectiveFunction = (targetFunc: (params: number[], x: number) => number,
   data: {x: number[], y: number[]},
   params: number[]) => Likelihood;
@@ -52,7 +54,6 @@ export enum FitErrorModel {
   Constant,
   Proportional
 }
-
 
 export const FIT_FUNCTION_SIGMOID = 'Sigmoid';
 export const FIT_FUNCTION_LINEAR = 'Linear';
@@ -122,13 +123,13 @@ export interface IFitOptions {
  * statistics - whether or not to calculate fit statistics (potentially computationally intensive)
  * */
 export function fit(data:{x: number[], y: number[]},
-                    params: {paramvalue: number, min?:number, max?: number}[],
+                    params: FitParam[],
                     curveFunction: (paramValues: number[], x: number) => number,
                     errorModel: FitErrorModel,
                     confidenceLevel: number = 0.05,
                     statistics: boolean = true): FitResult {
 
-  let paramValues = params.map(p => p.paramvalue);
+  let paramValues = params.map(p => p.value);
   let of: ObjectiveFunction;
   switch(errorModel) {
     case FitErrorModel.Constant:
@@ -167,16 +168,16 @@ export function fit(data:{x: number[], y: number[]},
 
     overLimits = false;
     for (let i = 0; i < paramValues.length; i++) {
-      if(params[i].max !== undefined && paramValues[i] > params[i].max!) {
+      if(params[i].maxBound !== undefined && paramValues[i] > params[i].maxBound!) {
         overLimits = true;
         fixed.push(i);
-        paramValues[i] = params[i].max!;
+        paramValues[i] = params[i].maxBound!;
         break;
       }
-      if(params[i].min !== undefined && paramValues[i] < params[i].min!) {
+      if(params[i].minBound !== undefined && paramValues[i] < params[i].minBound!) {
         overLimits = true;
         fixed.push(i);
-        paramValues[i] = params[i].min!;
+        paramValues[i] = params[i].minBound!;
         break;
       }
     }
