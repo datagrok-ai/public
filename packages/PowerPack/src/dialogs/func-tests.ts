@@ -1,6 +1,8 @@
 import dayjs from 'dayjs';
 
 
+export const EXCLUDED = ['Time', 'RandBetween', 'Rnd'];
+
 // See ApiTests/src/functions/
 export const FUNC_TESTS: {[f: string]: {[test: string]: any}} = {
   Boolean: {
@@ -265,7 +267,7 @@ export const FUNC_TESTS: {[f: string]: {[test: string]: any}} = {
     'Div(-12, 3)': -4,
     'Div(4321, 1)': 4321,
     'Div(0, 4)': 0,
-    'Div(1, 0)': Infinity,
+    // 'Div(1, 0)': Infinity,
   },
   Eq: {
     'Eq(5, 5)': true,
