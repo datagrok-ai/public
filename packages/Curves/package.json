@@ -8,30 +8,34 @@
 		"email": "kovalyov.dmytro@eigenmethod.com"
 	},
 	"dependencies": {
-		"@datagrok-libraries/statistics": "^1.1.2",
+		"@datagrok-libraries/statistics": "^1.1.7",
 		"@datagrok-libraries/utils": "^2.3.4",
 		"@types/wu": "^2.1.42",
 		"cash-dom": "latest",
-		"datagrok-api": "^1.13.5",
-		"dayjs": "latest",
-		"rxjs": "latest"
+		"datagrok-api": "^1.13.11",
+		"rxjs": "6.5.5",
+		"dayjs": "latest"
 	},
 	"devDependencies": {
 		"ts-loader": "latest",
+		"css-loader": "^5.0.0",
+		"style-loader": "^2.0.0",
 		"typescript": "latest",
 		"webpack": "latest",
-		"webpack-cli": "latest"
+		"webpack-cli": "latest",
+		"source-map-loader": "^4.0.1"
 	},
 	"scripts": {
 		"link-all": "npm link datagrok-api  @datagrok-libraries/utils @datagrok-libraries/statistics",
 		"debug-curves": "webpack && grok publish",
 		"release-curves": "webpack && grok publish --release",
 		"build-curves": "webpack",
-		"build": "webpack",
+		"build": "tsc && webpack",
 		"debug-curves-dev": "webpack && grok publish dev",
 		"release-curves-dev": "webpack && grok publish dev --release",
 		"debug-curves-public": "webpack && grok publish public",
 		"release-curves-public": "webpack && grok publish public --release",
+		"debug-curves-local": "tsc && webpack && grok publish local",
 		"test": "grok test"
 	},
 	"canEdit": [

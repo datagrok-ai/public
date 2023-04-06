@@ -12,8 +12,25 @@ module.exports = {
   },
   module: {
     rules: [
-      { test: /\.tsx?$/, loader: 'ts-loader' }
+      { test: /\.tsx?$/, loader: 'ts-loader' },
+      {
+        test: /\.js$/,
+        enforce: 'pre',
+        use: ['source-map-loader'],
+      },
+      {
+        test: /\.css$/i,
+        use: [{
+          loader: 'style-loader',
+        }, {
+          loader: 'css-loader',
+          options: {
+            url: false
+          }
+        },]
+      }
     ],
+
   },
   devtool: 'source-map',
   externals: {
