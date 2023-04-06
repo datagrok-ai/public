@@ -245,7 +245,8 @@ export class RichFunctionView extends FunctionView {
       const generateScalarsTable = () => {
         const table = DG.HtmlTable.create(
           tabScalarProps,
-          (scalarProp: DG.Property) => [scalarProp.name, this.funcCall?.outputs[scalarProp.name], scalarProp.options['units']],
+          (scalarProp: DG.Property) =>
+            [scalarProp.caption ?? scalarProp.name, this.funcCall.outputs[scalarProp.name], scalarProp.options['units']],
         ).root;
         table.style.maxWidth = '400px';
         return table;
