@@ -89,6 +89,10 @@ const ACCURACY = 'Accuracy';
 const BALANCED_ACCURACY = 'Balanced accuracy';
 const POSITIVE_PREDICTIVE_VALUE = 'Positive predicitve value';
 const NEGATIVE_PREDICTIVE_VALUE = 'Negative predicitve value';
+const ML_REPORT = 'Model report';
+const ML_REPORT_PREDICTED_LABELS = 'Predicted labels';
+const ML_REPORT_TRAIN_LABELS = 'Train labels';
+const ML_REPORT_CORRECTNESS = 'Prediction correctness';
 
 // misc
 const INIT_VALUE = 0; // any number can be used
@@ -258,6 +262,16 @@ export function trainAndAnalyzeModel(module, funcName,
   return model;
 } // trainAndAnalyzeModel
 
+// Wrapper for combining the function "trainAndAnalyzeModel" with Datagrok predicitve tools
+export function getTrainedModel(hyperparameters, df, predict_column) {
+  let columns = df.columns;
+  let labels = columns.byName(predict_column);
+  columns.remove(predict_column);
+
+  return trainAndAnalyzeModel(SVMlib, 'trainAndAnalyzeLSSVM',
+    hyperparameters, columns, labels); 
+}
+
 // Returns dataframe with short info about model
 export function getModelInfo(model) {
   let kernelParams = model.kernelParams.getRawData();
@@ -284,7 +298,7 @@ export function showModel(model) {
 }
 
 // Get dataframe with confusion matrix
-function getConfusionMatrixDF(model) 
+export function getConfusionMatrixDF(model) 
 {
   let data = model.confusionMatrix.getRawData();
 
@@ -337,3 +351,26 @@ export function showModelFullInfo(model) {
   confMatrixDF.name = CONFUSION_MATRIX_NAME;
   grok.shell.addTableView(confMatrixDF);
 } // showModelFullInfo
+
+// Show training report
+export function showTrainReport(df, model) {
+  df.name = ML_REPORT;
+  df.columns.add(model.trainLabels);        
+  df.columns.add(model.predictedLabels);        
+  df.columns.add(model.correctness);    
+  let dfView = grok.shell.addTableView(df);    
+  dfView.addViewer(DG.Viewer.form(getModelInfo(model)));
+  dfView.addViewer(DG.Viewer.scatterPlot(df, 
+    { title: ML_REPORT_PREDICTED_LABELS,
+      color: model.predictedLabels.name
+    }));       
+  dfView.addViewer(DG.Viewer.scatterPlot(df, 
+    { title: ML_REPORT_TRAIN_LABELS,
+      color: model.trainLabels.name
+    }));
+  dfView.addViewer(DG.Viewer.grid(getConfusionMatrixDF(model))); 
+  dfView.addViewer(DG.Viewer.scatterPlot(df, 
+    { title: ML_REPORT_CORRECTNESS,
+      color: model.correctness.name
+    }));
+} // showTrainReport

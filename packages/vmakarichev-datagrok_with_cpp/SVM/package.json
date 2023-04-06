@@ -1,8 +1,12 @@
 {
     "name": "svm",
     "friendlyName": "SVM",
-    "version": "0.0.5",
+    "version": "0.0.8",
     "description": "",
+    "author": {
+        "name": "Viktor Makarichev",
+        "email": "vmakarichev@datagrok.ai"
+    },
     "dependencies": {
         "datagrok-api": "latest",
         "cash-dom": "latest",

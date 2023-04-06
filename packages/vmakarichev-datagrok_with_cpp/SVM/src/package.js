@@ -15,8 +15,7 @@ import { callWasm } from '../wasm/callWasm';
 import { getCppInput, getResult } from '../wasm/callWasmForWebWorker';
 
 // Support vector machine (SVM) tools imports
-import {trainAndAnalyzeModel, showModel, showModelFullInfo, 
-  LINEAR, RBF, POLYNOMIAL, SIGMOID} from './svm';
+import {showTrainReport, LINEAR, RBF, POLYNOMIAL, SIGMOID, getTrainedModel} from './svm';
 
 //tags: init
 export async function init() {
@@ -78,140 +77,153 @@ export function generateDatasetRBF(name, sigma, samplesCount, featuresCount,
   grok.shell.addTableView(df);
 } // generateDatasetRBF
 
-//name: Demo LS-SVM (linear kernel)
-//description: Demo of training LS-SVM model with linear kernel.
+//name: trainLinearKernelSVM
+//meta.mlname: linear kernel LS-SVM
+//meta.mlrole: train
+//input: dataframe df
+//input: string predict_column
 //input: double gamma = 1.0 {category: Hyperparameters}
-//input: dataframe df {caption: Table; category: Training data}
-//input: column_list features {caption: features; category: Training data}
-//input: column labels {caption: labels; category: Training data}
-//input: bool toAddPredictions = true {caption: to show predictions; category: Results}
-//input: bool toShowWrongPredictions = true {caption: to show mistakes; category: Results}
-//input: string modelInfoReport { choices:["short", "full"] }
-export function demoLinearKernelLSSVM(gamma, df, features, labels, 
-  toAddPredictions, toShowWrongPredictions, modelInfo) {  
+//input: bool toShowReport = false {caption: to show report; category: Report}
+//output: dynamic model
+export function trainLinearKernelSVM(df, predict_column, gamma, toShowReport) {  
 
-  let hyperparameters = {gamma: gamma, kernel: LINEAR};
+  let model = getTrainedModel({gamma: gamma, kernel: LINEAR}, df, predict_column);   
 
-  /*let model = trainModel(SVMlib, 'trainLSSVM', 'predictByLSSVM',
-    hyperparameters, features, labels);  */
+  if(toShowReport)
+    showTrainReport(df, model);
 
-  let model = trainAndAnalyzeModel(SVMlib, 'trainAndAnalyzeLSSVM',
-    hyperparameters, features, labels); 
+  // TODO: add model packing
+  let result = new Uint8Array(1000);
 
-  if(modelInfo === 'short')
-    showModel(model);
-  else
-    showModelFullInfo(model);
+  return result;
+} // trainLinearKernelSVM
 
-  if(toAddPredictions) {
-    df.columns.add(model.predictedLabels);    
+//name: applyLinearKernelSVM
+//meta.mlname: linear kernel LS-SVM
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export function applyLinearKernelSVM(df, model) {   
+  // TODO: to be implemented
 
-    if(toShowWrongPredictions)
-      df.columns.add(model.correctness);
-  }
-} // demoLinearKernelLSSVM
+  return DG.DataFrame.fromColumns(
+    [DG.Column.fromFloat32Array('prediction', new Float32Array(df.rowCount))]
+    );
+} // applyLinearKernelSVM`
 
-//name: Demo LS-SVM (RBF-kernel)
-//description: Demo of training LS-SVM model with RBF-kernel.
+//name: trainRBFkernelSVM
+//meta.mlname: RBF-kernel LS-SVM
+//meta.mlrole: train
+//input: dataframe df
+//input: string predict_column
 //input: double gamma = 1.0 {category: Hyperparameters}
 //input: double sigma = 1.5 {category: Hyperparameters}
-//input: dataframe df {caption: Table; category: Training data}
-//input: column_list features {caption: features; category: Training data}
-//input: column labels {caption: labels; category: Training data}
-//input: bool toAddPredictions = true {caption: to show predictions; category: Results}
-//input: bool toShowWrongPredictions = true {caption: to show mistakes; category: Results}
-//input: string modelInfoReport { choices:["short", "full"] }
-export function demoRBFkernelLSSVM(gamma,sigma, df, features, labels, 
-  toAddPredictions, toShowWrongPredictions, modelInfo) {  
+//input: bool toShowReport = false {caption: to show report; category: Report}
+//output: dynamic model
+export function trainRBFkernelSVM(df, predict_column, gamma, sigma, toShowReport) {  
 
-  let hyperparameters = {gamma: gamma, kernel: RBF, sigma: sigma};
+  let model = getTrainedModel(
+    {gamma: gamma, kernel: RBF, sigma: sigma}, 
+    df, predict_column);   
 
-  /*let model = trainModel(SVMlib, 'trainLSSVM', 'predictByLSSVM',
-    hyperparameters, features, labels);  */
+  if(toShowReport)
+    showTrainReport(df, model);
 
-  let model = trainAndAnalyzeModel(SVMlib, 'trainAndAnalyzeLSSVM',
-    hyperparameters, features, labels);
+  // TODO: add model packing
+  let result = new Uint8Array(1000);
 
-  if(modelInfo === 'short')
-    showModel(model);
-  else
-    showModelFullInfo(model);
+  return result;
+} // trainRBFkernelSVM
 
-  if(toAddPredictions) {
-    df.columns.add(model.predictedLabels);    
+//name: applyRBFkernelSVM
+//meta.mlname: RBF-kernel LS-SVM
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export function applyRBFkernelSVM(df, model) {   
+  // TODO: to be implemented
 
-    if(toShowWrongPredictions)
-      df.columns.add(model.correctness);
-  }
-} // demoRBFkernelLSSVM
+  return DG.DataFrame.fromColumns(
+    [DG.Column.fromFloat32Array('prediction', new Float32Array(df.rowCount))]
+    );
+} // applyRBFkernelSVM
 
-//name: Demo LS-SVM (polynomial kernel)
-//description: Demo of training LS-SVM model with polynomial kernel.
+//name: trainPolynomialKernelSVM
+//meta.mlname: polynomial kernel LS-SVM
+//meta.mlrole: train
+//input: dataframe df
+//input: string predict_column
 //input: double gamma = 1.0 {category: Hyperparameters}
 //input: double c = 1 {category: Hyperparameters}
 //input: double d = 2 {category: Hyperparameters}
-//input: dataframe df {caption: Table; category: Training data}
-//input: column_list features {caption: features; category: Training data}
-//input: column labels {caption: labels; category: Training data}
-//input: bool toAddPredictions = true {caption: to show predictions; category: Results}
-//input: bool toShowWrongPredictions = true {caption: to show mistakes; category: Results}
-//input: string modelInfoReport { choices:["short", "full"] }
-export function demoPolynomialKernelLSSVM(gamma, c, d, df, features, labels, 
-  toAddPredictions, toShowWrongPredictions, modelInfo) {  
+//input: bool toShowReport = false {caption: to show report; category: Report}
+//output: dynamic model
+export function trainPolynomialKernelSVM(df, predict_column, gamma, c, d, toShowReport) {  
 
-  let hyperparameters = {gamma: gamma, kernel: POLYNOMIAL, cParam: c, dParam: d};
+  let model = getTrainedModel(
+    {gamma: gamma, kernel: POLYNOMIAL, cParam: c, dParam: d}, 
+    df, predict_column);   
 
-  /*let model = trainModel(SVMlib, 'trainLSSVM', 'predictByLSSVM',
-    hyperparameters, features, labels);  */
-  
-  let model = trainAndAnalyzeModel(SVMlib, 'trainAndAnalyzeLSSVM',
-    hyperparameters, features, labels);
+  if(toShowReport)
+    showTrainReport(df, model);
 
-  if(modelInfo === 'short')
-    showModel(model);
-  else
-    showModelFullInfo(model);
+  // TODO: add model packing
+  let result = new Uint8Array(1000);
 
-  if(toAddPredictions) {
-    df.columns.add(model.predictedLabels);    
+  return result;
+} // trainPolynomialKernelSVM
 
-    if(toShowWrongPredictions)
-      df.columns.add(model.correctness);
-  }
-} // demoPolynomialKernelLSSVM
+//name: applyPolynomialKernelSVM
+//meta.mlname: polynomial kernel LS-SVM
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export function applyPolynomialKernelSVM(df, model) {   
+  // TODO: to be implemented
 
-//name: Demo LS-SVM (sigmoid kernel)
-//description: Demo of training LS-SVM model with sigmoid kernel.
+  return DG.DataFrame.fromColumns(
+    [DG.Column.fromFloat32Array('prediction', new Float32Array(df.rowCount))]
+    );
+} // applyPolynomialKernelSVM
+
+//name: trainSigmoidKernelSVM
+//meta.mlname: sigmoid kernel LS-SVM
+//meta.mlrole: train
+//input: dataframe df
+//input: string predict_column
 //input: double gamma = 1.0 {category: Hyperparameters}
 //input: double kappa = 1 {category: Hyperparameters}
 //input: double theta = 1 {category: Hyperparameters}
-//input: dataframe df {caption: Table; category: Training data}
-//input: column_list features {caption: features; category: Training data}
-//input: column labels {caption: labels; category: Training data}
-//input: bool toAddPredictions = true {caption: to show predictions; category: Results}
-//input: bool toShowWrongPredictions = true {caption: to show mistakes; category: Results}
-//input: string modelInfoReport { choices:["short", "full"] }
-export function demoSigmoidKernelLSSVM(gamma, kappa, theta, df, features, labels, 
-  toAddPredictions, toShowWrongPredictions, modelInfo) {  
+//input: bool toShowReport = false {caption: to show report; category: Report}
+//output: dynamic model
+export function trainSigmoidKernelSVM(df, predict_column, gamma, kappa, theta, toShowReport) {  
 
-  let hyperparameters = {gamma: gamma, kernel: SIGMOID, kappa: kappa, theta: theta};
+  let model = getTrainedModel(
+    {gamma: gamma, kernel: SIGMOID, kappa: kappa, theta: theta}, 
+    df, predict_column);   
 
-  /*let model = trainModel(SVMlib, 'trainLSSVM', 'predictByLSSVM',
-    hyperparameters, features, labels); */
+  if(toShowReport)
+    showTrainReport(df, model);
 
-  let model = trainAndAnalyzeModel(SVMlib, 'trainAndAnalyzeLSSVM',
-    hyperparameters, features, labels);
+  // TODO: add model packing
+  let result = new Uint8Array(1000);
 
-  if(modelInfo === 'short')
-    showModel(model);
-  else
-    showModelFullInfo(model);
+  return result;
+} // trainSigmoidKernelSVM
 
-  if(toAddPredictions) {
-    df.columns.add(model.predictedLabels);    
+//name: applySigmoidKernelSVM
+//meta.mlname: sigmoid kernel LS-SVM
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export function applySigmoidKernelSVM(df, model) {   
+  // TODO: to be implemented
 
-    if(toShowWrongPredictions)
-      df.columns.add(model.correctness);
-  }
-} // demoSigmoidKernelLSSVM
-
+  return DG.DataFrame.fromColumns(
+    [DG.Column.fromFloat32Array('prediction', new Float32Array(df.rowCount))]
+    );
+} // applySigmoidKernelSVM
