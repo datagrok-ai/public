@@ -13,7 +13,8 @@ export async function _testActivityCliffsOpen(df: DG.DataFrame, numberCliffs: nu
   //   table: df, molecules: df.getCol(colName), activities: df.getCol('Activity'),
   //   similarity: 50, methodName: method
   // })) as DG.Viewer | undefined;
-  const libHelper: IMonomerLibHelper = (await grok.functions.call('Bio:getMonomerLibHelper'));
+  const scatterPlot = (await df.plot.fromType(DG.VIEWER.SCATTER_PLOT, {})) as DG.Viewer;
+  // const libHelper: IMonomerLibHelper = (await grok.functions.call('Bio:getMonomerLibHelper'));
   const k = 11;
 
   // expect(scatterPlot != null, true);
