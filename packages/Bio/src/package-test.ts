@@ -4,25 +4,25 @@ import {runTests, TestContext, tests} from '@datagrok-libraries/utils/src/test';
 
 import './tests/Palettes-test';
 
-import './tests/detectors-tests';
-import './tests/detectors-benchmark-tests';
-import './tests/msa-tests';
-import './tests/sequence-space-test';
-import './tests/activity-cliffs-tests';
-import './tests/splitters-test';
-import './tests/monomer-libraries-tests';
-import './tests/renderers-test';
-import './tests/converters-test';
+// import './tests/detectors-tests';
+// import './tests/detectors-benchmark-tests';
+// import './tests/msa-tests';
+// import './tests/sequence-space-test';
+// import './tests/activity-cliffs-tests';
+// import './tests/splitters-test';
+// import './tests/monomer-libraries-tests';
+// import './tests/renderers-test';
+// import './tests/converters-test';
 
-// import './tests/fasta-handler-test';
-// import './tests/fasta-export-tests';
-// import './tests/bio-tests';
-// import './tests/WebLogo-positions-test';
-// import './tests/checkInputColumn-tests';
-// import './tests/similarity-diversity-tests';
-// import './tests/substructure-filters-tests';
-// import './tests/pepsea-tests';
-// import './tests/viewers';
+import './tests/fasta-handler-test';
+import './tests/fasta-export-tests';
+import './tests/bio-tests';
+import './tests/WebLogo-positions-test';
+import './tests/checkInputColumn-tests';
+import './tests/similarity-diversity-tests';
+import './tests/substructure-filters-tests';
+import './tests/pepsea-tests';
+import './tests/viewers';
 
 export const _package = new DG.Package();
 export {tests};
