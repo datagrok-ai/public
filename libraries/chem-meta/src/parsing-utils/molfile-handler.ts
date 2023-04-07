@@ -10,12 +10,12 @@ const enum MOLFILE_VERSION {
 export class MolfileHandler extends ChemicalTableParserBase implements ChemicalTableParser {
   constructor(molfile: string) {
     super(molfile);
-    this.reset(molfile);
+    this.init(molfile);
   }
 
   /** Init/reset the state of the handler for a new molfile */
-  public reset(molfile: string) {
-    super.reset(molfile);
+  public init(molfile: string) {
+    super.init(molfile);
 
     const molfileVersion = MolfileHandler.determineMolfileVersion(this.fileContent);
     const isV2K = (molfileVersion === MOLFILE_VERSION.V2000);

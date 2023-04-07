@@ -1,5 +1,5 @@
 export interface ChemicalTableParser {
-  reset(molBlock: string): void;
+  init(molBlock: string): void;
   atomCount: number;
   bondCount: number;
   x: Float32Array;
@@ -22,7 +22,7 @@ type CoordinateArrays = {
 /** Base singleton for Molfile or Mol2 parser/handler */
 export abstract class ChemicalTableParserBase implements ChemicalTableParser {
   protected constructor(fileContent: string) {
-    this.reset(fileContent);
+    this.init(fileContent);
   };
 
   protected static instance: ChemicalTableParserBase;
@@ -35,7 +35,7 @@ export abstract class ChemicalTableParserBase implements ChemicalTableParser {
   protected _pairsOfBondedAtoms?: Uint16Array[];
   protected _bondTypes?: Uint16Array;
 
-  public reset(fileContent: string): void {
+  public init(fileContent: string): void {
     this.fileContent = fileContent.replace(/\r/g, '');
     this._atomCount = undefined;
     this._atomTypes = undefined;
@@ -61,40 +61,34 @@ export abstract class ChemicalTableParserBase implements ChemicalTableParser {
 
   /** X coordinates of all atoms in a molecule  */
   get x(): Float32Array {
-    if (this.xyzAtomCoordinates === undefined)
-      this.xyzAtomCoordinates = this.parseAtomCoordinates();
+    this.xyzAtomCoordinates ??= this.parseAtomCoordinates();
     return this.xyzAtomCoordinates.x;
   };
 
   /** Y coordinates of all atoms in a molecule  */
   get y(): Float32Array {
-    if (this.xyzAtomCoordinates === undefined)
-      this.xyzAtomCoordinates = this.parseAtomCoordinates();
+    this.xyzAtomCoordinates ??= this.parseAtomCoordinates();
     return this.xyzAtomCoordinates!.y;
   };
 
   /** Z coordinates of all atoms in a molecule  */
   get z(): Float32Array {
-    if (this.xyzAtomCoordinates === undefined)
-      this.xyzAtomCoordinates = this.parseAtomCoordinates();
+    this.xyzAtomCoordinates ??= this.parseAtomCoordinates();
     return this.xyzAtomCoordinates!.z;
   };
 
   get atomTypes(): string[] {
-    if (this._atomTypes === undefined)
-      this._atomTypes = this.parseAtomTypes();
+    this._atomTypes ??= this.parseAtomTypes();
     return this._atomTypes;
   }
 
   get pairsOfBondedAtoms(): Uint16Array[] {
-    if (this._pairsOfBondedAtoms === undefined)
-      this._pairsOfBondedAtoms = this.parseBondedAtomPairs();
+    this._pairsOfBondedAtoms ??= this.parseBondedAtomPairs();
     return this._pairsOfBondedAtoms!;
   }
 
   get bondTypes(): Uint16Array {
-    if (this._pairsOfBondedAtoms === undefined)
-      this._bondTypes = this.parseBondTypes();
+    this._bondTypes ??= this.parseBondTypes();
     return this._bondTypes!;
   }
 

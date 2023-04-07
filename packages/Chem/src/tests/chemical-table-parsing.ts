@@ -58,7 +58,7 @@ category('chemical table parsing', async () => {
   }
 
   function _testCoordinates(molfile: string, expectedData: TestedData): void {
-    molfileHandler.reset(molfile);
+    molfileHandler.init(molfile);
     const expected = [expectedData.X, expectedData.Y, expectedData.Z];
     const obtained = [
       getRoundedNumberArray(molfileHandler.x),
@@ -69,12 +69,13 @@ category('chemical table parsing', async () => {
   }
 
   function _testAtomTypes(molfile: string, expectedData: TestedData): void {
-    molfileHandler.reset(molfile);
+    molfileHandler.init(molfile);
+    console.log('comment:', molfileHandler.atomTypes);
     expectArray(expectedData.ATOM_TYPES, molfileHandler.atomTypes);
   }
 
   function _testBondedAtoms(molfile: string, expectedData: TestedData): void {
-    molfileHandler.reset(molfile);
+    molfileHandler.init(molfile);
     const obtained = molfileHandler.pairsOfBondedAtoms.map(
       (item: Uint16Array) => Array.from(item),
     );
@@ -82,7 +83,7 @@ category('chemical table parsing', async () => {
   }
 
   function _testBondTypes(molfile: string, expectedData: TestedData): void {
-    molfileHandler.reset(molfile);
+    molfileHandler.init(molfile);
     const obtained = Array.from(molfileHandler.bondTypes);
     expectArray(expectedData.BOND_TYPES, obtained);
   }
