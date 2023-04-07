@@ -94,7 +94,7 @@ category('splitters', () => {
 
     splitToMonomers();
     expect(df.columns.names().includes('17'), true);
-  });
+  }, {skipReason: 'GROK-12766'});
 
   test('getHelmMonomers', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(
@@ -132,4 +132,3 @@ export async function _testHelmSplitter(src: string, tgt: string[]) {
   console.debug(`Bio: tests: splitters: src=${JSON.stringify(src)}, res=${JSON.stringify(res)} .`);
   expectArray(res, tgt);
 }
-

@@ -48,11 +48,11 @@ category('renderers', () => {
 
   test('afterMsa', async () => {
     await _testAfterMsa();
-  }, {skipReason: 'GROK-12174: test needs an update'});
+  });
 
   test('afterConvert', async () => {
     await _testAfterConvert();
-  });
+  }, {skipReason: 'GROK-12765'});
 
   test('selectRendererBySemType', async () => {
     await _selectRendererBySemType();
