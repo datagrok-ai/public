@@ -35,7 +35,7 @@ To add a new connection, follow these steps:
 
 :::note
 
-The connection originates from the Datagrok server, so make sure your database is accessible from there.
+Ensure your database is accessible from the Datagrok server, as the connection originates from there.
 
 :::
 
@@ -97,7 +97,7 @@ To cache package-defined connections, you can specify the `cacheResults` paramet
 
 <details>
 
-<summary> Setting cache options programmatically </summary>
+<summary> Setting cache options for queries </summary>
 
 To cache the query results programmatically, edit the corresponding SQL file in the package queries and specify the `meta.cache` and `meta.invalidate` fields. These fields determine whether and how to cache the query results:
 
@@ -257,7 +257,7 @@ To aggregate data, use the **Query** tab. Here, you can choose which columns to 
 
   :::
 
-* **Filter**: Use this field to specify which items are returned when you run a query. To do so, click the **Add** (**+**) icon, select the column to which you want to apply the filter, then set the condition (see [parameter patterns](parameterized-queries.md/#patterns) for syntax).
+* **Filter**: Use this field to specify which items are returned when you run a query. To do so, click the **Add** (**+**) icon, select the column to which you want to apply the filter, then set the condition (see [parameter patterns](#patterns) for syntax).
 
 ![Aggregation query](aggr-query.gif)
 
@@ -277,18 +277,6 @@ Use this tool to merge tables:
 ### Parameterized queries
 
 Similar to functions in JavaScript, queries in Datagrok are functions that can be annotated to support parameters. To define query parameters, use SQL/Sparql comments in the query header : `--` for SQL, and `#` for Sparql. The syntax for defining query parameters is based on [scripting](https://datagrok.ai/help/datagrok/functions/func-params-annotation), with additions specific to queries.
-
-#### Supported parameters
-
-| Parameter      | Description            |
-|----------------|------------------------|
-| `name`         | Name                   |
-| `friendlyName` | Friendly name          |
-| `description`  | Description            |
-| `help`         | Help URL               |
-| `tags`         | Tags                   |
-| `input`        | An input parameter     |
-| `output`       | An output parameter    |
 
 #### Input parameters
 
@@ -454,7 +442,7 @@ To view the queries you've created or those shared with you, you can use the **Q
 
 ## Creating views for query results
 
-You can persist the view of the query output and expose it to end users as a dashboard. For [parameterized queries](#parameterized-queries), these dashboards can be dynamic, allowing dashboard users to change the query parameters right inside the dashboard to view different datasets and interact with data in real-time.
+You can persist the view of the query output and expose it to end users as a dashboard. For [parameterized queries](#input-parameters), these dashboards can be dynamic, allowing dashboard users to change the query parameters right inside the dashboard to view different datasets and interact with data in real-time.
 
 To save the query output as a dynamic dashboard, do the following:
 

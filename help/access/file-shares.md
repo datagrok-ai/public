@@ -56,6 +56,41 @@ Like other objects in Datagrok, newly created connections are only visible to th
 
 To modify a connection, right-click it and select **Edit...** from the list of options. To quickly create a connection similar to an existing one, right-click it and select **Clone...**
 
+### File indexing
+
+For file shares, Datagrok supports indexing of folders and [supported file formats](supported-formats.md), including archives such as .tar or .zip.
+
+Connections and folders are indexed by default when you create a connection. File indexing is optional. To index files, select the **Index Files** option when creating a file share.
+
+:::tip
+
+You can enable file indexing at any time. Right-click the file share and select **Edit...** Then, check the **Index file** checkbox in the dialog that appears. Click **OK** to save.
+
+:::
+
+File indexing is a recurring [data job](data-job.md) that runs every hour. Datagrok extracts the following information from the indexed file:
+
+* Filename
+* File size, in bytes
+* Number of rows and columns
+* Column-level information such as name, data type, and [semantic type](../discover/semantic-types.md).
+
+For instance, with indexing, you can browse columns within a CSV file inside a ZIP file:
+
+![File Explorer](./connectors/files-browser.gif "File Explorer")
+
+Indexing helps you find datasets quicker as indexed files appear in the search results based on metadata extracted. For example, you can search for dataframes matching the following criteria across specified or all data providers at once:
+
+* Created in the last month
+* Has a column that contains molecules, and
+* Has a column named "activity."
+
+:::note
+
+To learn how searching works in Datagrok, see [Smart search](../datagrok/smart-search.md).
+
+:::
+
 ## File Manager
 
 The **File Manager** is an interface that allows you to manage connections, browse and preview file content, and perform standard file and folder actions such as opening, downloading, deleting, and renaming. To access an object's context actions, you can right-click it or left-click and expand the **Actions** pane in the **Context Panel** on the left. By clicking a file or folder in the **File Manager**, you can open its preview. Double-clicking a file opens it in Datagrok, and double-clicking a folder expands its content.
@@ -184,11 +219,6 @@ To share, follow these steps:
 
    ![Share a folder](share-the-folder.gif)
 
-:::note
-
-When you share a file or a folder, Datagrok automatically indexes folders and extracts basic metadata (like the date created or its size). File indexing is optional (to index files, toggle **Index Files** in the **Share...** dialog).
-
-:::
 
 You can use the **Sharing** info panel in the **Context Pane** to inspect and quickly adjust access permissions to your _file shares_, send comments to those you're sharing with, and more. The same actions are available from the context menu.
 
