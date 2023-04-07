@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {after, before, category, test} from '@datagrok-libraries/utils/src/test';
 
 import {readDataframe} from './utils';
-// import {_testActivityCliffsOpen} from './activity-cliffs-utils';
+import {_testActivityCliffsOpen} from './activity-cliffs-utils';
 
 
 category('activityCliffs', async () => {
