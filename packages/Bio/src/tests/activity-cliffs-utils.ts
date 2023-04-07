@@ -2,7 +2,6 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {delay, expect} from '@datagrok-libraries/utils/src/test';
-import {activityCliffs} from '../package';
 
 export async function _testActivityCliffsOpen(df: DG.DataFrame, numberCliffs: number, method: string, colName: string) {
   await grok.data.detectSemanticTypes(df);
