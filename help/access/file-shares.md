@@ -91,6 +91,14 @@ To learn how searching works in Datagrok, see [Smart search](../datagrok/smart-s
 
 :::
 
+## Importing text
+
+Datagrok supports text-to-tabular-data conversion for delimiter-separated files with an option to manually edit or customize data during import. To use this feature, open the [**Text Manager**](https://public.datagrok.ai/text) (**Data** > **Text**) and load a file or paste text into the **Text Editor** area. Here you can change the data as needed. Adjust default import parameters like delimiters, decimal separators, and header settings in the **Toolbox** on the left. By default, changes are automatically applied and displayed in the **Preview**, which updates as you modify the data. To manually sync edits, disable the **Auto Sync** checkbox and use the **Sync** button.
+
+When satisfied with the data, click **Done** to open the dataframe in Datagrok. From there, you can export it, make further edits, save it as a project, or share with others via URL.
+
+![Text Manager](text-manager.gif)
+
 ## File Manager
 
 The **File Manager** is an interface that allows you to manage connections, browse and preview file content, and perform standard file and folder actions such as opening, downloading, deleting, and renaming. To access an object's context actions, you can right-click it or left-click and expand the **Actions** pane in the **Context Panel** on the left. By clicking a file or folder in the **File Manager**, you can open its preview. Double-clicking a file opens it in Datagrok, and double-clicking a folder expands its content.
@@ -223,22 +231,6 @@ To share, follow these steps:
 You can use the **Sharing** info panel in the **Context Pane** to inspect and quickly adjust access permissions to your _file shares_, send comments to those you're sharing with, and more. The same actions are available from the context menu.
 
 <!--TBD: GIF pending changes in the UI-->
-
-## Text to tabular data conversion
-
-Datagrok supports text-to-tabular-data conversion to transform unstructured or semi-structured text data into a structured table format. Supported formats include:
-
-* Plain text files
-* CSV or other delimiter-separated files
-* JSON and XML files
-* Web pages (HTML) with tables or lists
-* Text from documents (e.g., PDF, Word, Excel).
-
-For simple text data, Datagrok automatically detects the structure and parameters and performs the conversion without user input. For complex text data or customizations, Datagrok offers user-assisted conversion. To use this feature, open the [**Text Manager**](https://public.datagrok.ai/text) (**Data** > **Text**) and load a file or paste text into the **Text Editor** area. Here you can change the data as needed. Adjust default import parameters like delimiters, decimal separators, and header settings in the **Toolbox** on the left. By default, changes are automatically applied and displayed in the **Preview**, which updates as you modify the data. To manually sync edits, disable the **Auto Sync** checkbox and use the **Sync** button.
-
-When satisfied with the data, click **Done** to open the dataframe in Datagrok. From there, you can export it, make further edits, save it as a project, or share with others via URL.
-
-![Text Manager](text-manager.gif)
 
 ## Data reproducibility
 
