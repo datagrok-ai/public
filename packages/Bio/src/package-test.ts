@@ -13,7 +13,7 @@ import './tests/msa-tests';
 // second quarter
 // import './tests/activity-cliffs-tests';
 import './tests/splitters-test';
-// import './tests/monomer-libraries-tests';
+import './tests/monomer-libraries-tests';
 // import './tests/renderers-test';
 // import './tests/converters-test';
 
