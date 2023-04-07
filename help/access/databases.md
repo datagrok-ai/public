@@ -48,7 +48,7 @@ While many connection parameters are straightforward, some have unique character
 
   * Use the [Secrets Manager](data-connection-credentials.md/#secrets-managers), such as the AWS Secrets Manager.
 
-Upon successful connection, the database appears in the **Database Manager** under the respective data source. By expanding the database, you can view its saved queries. [If connectors support it](supported-connectors.md), you can also inspect the schemas, tables, and columns of relational databases.
+Upon successful connection, the database appears in the [**Database Manager**](https://public.datagrok.ai/connect) under the respective data source. By expanding the database, you can view its saved queries. [If connectors support it](supported-connectors.md), you can also inspect the schemas, tables, and columns of relational databases.
 
 :::note
 
