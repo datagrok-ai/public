@@ -472,7 +472,7 @@ To save the query output as a dynamic dashboard, do the following:
 
 You have two options to share query results in Datagrok:
 
-* Share an URL
+* Share a URL
 * Share a project.
 
 Each query output has a unique URL, which has all the information needed to recreate the query, including its parameters. This can be especially useful for parameterized queries, where you can embed the query output with specific parameters applied. After you have executed a query, copy the URL from the address bar and share it with others. When this URL is accessed, a query gets re-executed, so the query output always displays the latest data. When the users open the report, they can still change the query parameters in the **Toolbox** on the left.
