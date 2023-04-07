@@ -1,4 +1,4 @@
-# File shares
+# Files
 
 ```mdx-code-block
 import Tabs from '@theme/Tabs';
@@ -223,6 +223,22 @@ To share, follow these steps:
 You can use the **Sharing** info panel in the **Context Pane** to inspect and quickly adjust access permissions to your _file shares_, send comments to those you're sharing with, and more. The same actions are available from the context menu.
 
 <!--TBD: GIF pending changes in the UI-->
+
+## Text to tabular data conversion
+
+Datagrok supports text-to-tabular-data conversion to transform unstructured or semi-structured text data into a structured table format. Supported formats include:
+
+* Plain text files
+* CSV or other delimiter-separated files
+* JSON and XML files
+* Web pages (HTML) with tables or lists
+* Text from documents (e.g., PDF, Word, Excel).
+
+For simple text data, Datagrok automatically detects the structure and parameters and performs the conversion without user input. For complex text data or customizations, Datagrok offers user-assisted conversion. To use this feature, open the [**Text Manager**](https://public.datagrok.ai/text) (**Data** > **Text**) and load a file or paste text into the **Text Editor** area. Here you can change the data as needed. Adjust default import parameters like delimiters, decimal separators, and header settings in the **Toolbox** on the left. By default, changes are automatically applied and displayed in the **Preview**, which updates as you modify the data. To manually sync edits, disable the **Auto Sync** checkbox and use the **Sync** button.
+
+When satisfied with the data, click **Done** to open the dataframe in Datagrok. From there, you can export it, make further edits, save it as a project, or share with others via URL.
+
+![Text Manager](text-manager.gif)
 
 ## Data reproducibility
 

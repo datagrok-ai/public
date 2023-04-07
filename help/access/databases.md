@@ -304,7 +304,7 @@ SELECT * FROM Orders WHERE shipCountry = ANY(@shipCountry)
 
 This query returns all records from the `Orders` table where the `shipCountry` column matches any of the values in the `shipCountry` list.
 
-To help users build queries more quickly and accurately, or for more complex queries, you can also use _choices_, _suggestions_, and _validators_. _Choices_ allow users to select from a predefined list of values for a given parameter, _suggestions_ provide users with auto-complete suggestions based on what they type in the input field, and query _validators_.
+To help users build queries more quickly and accurately, or for more complex queries, you can also use _choices_, _suggestions_, and _validators_. _Choices_ allow users to select from a predefined list of values for a given parameter, _suggestions_ provide users with auto-complete suggestions based on what they type in the input field, and query _validators_ validate the query without executing it.
 
 You can define _choices_ using a comma-separated list of values, a name of another query, or by writing an actual SQL query. Here's an example of how to define _choices_ for a _ship country_ input parameter using all three methods:
 
@@ -332,7 +332,7 @@ Here, the `state` and `city` parameters are defined as strings with default valu
 
 In some cases, users may need to enter filtering criteria as free text. To support this, Datagrok uses a search patterns feature that transforms free-text queries into proper SQL clauses on the server side.
 
-To use search patterns, set the input parameter's data type should be `string` (since the user will be entering free text). Then, specify the actual data type in the `pattern` _option_. To reference the search pattern that will be used against the specified column, use `@<patternName>(columnName)`.
+To use search patterns, set the input parameter's data type to `string` (since the user will be entering free text). Then, specify the actual data type in the `pattern` _option_. To reference the search pattern that will be used against the specified column, use `@<patternName>(columnName)`.
 
 For example, to allow users to enter a free text query for the "freight" column in a table, you can use the following code snippet:
 
@@ -341,7 +341,7 @@ For example, to allow users to enter a free text query for the "freight" column 
 select * from Orders where @freightValue(freight)
 ```
 
-In this example, the `freightValue` input parameter is defined as a string with a default value of `>= 10.0`. The `pattern` _option_ specifies that the actual data type is a `double`. In the query, a reference to "@freightValue(freight)" specifies the _pattern_ that will be evaluated against the "freight" column.
+In this example, the `freightValue` input parameter is defined as a string with a default value of `>= 10.0`. The `pattern` _option_ specifies that the actual data type is a `double`. In the query, a reference to `@freightValue(freight)` specifies the _pattern_ that will be evaluated against the "freight" column.
 
 When using search patterns, you can specify a wide variety of patterns to match different data types and search criteria. Here's a list of the most common patterns for supported parameter types:
 
@@ -424,19 +424,13 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
 
 :::note developers
 
-To run queries programmatically, see this [code snippet](https://public.datagrok.ai/js/samples/data-access/parameterized-query). Learn how to [expose the parameter dialog to end-users as an application](../develop/how-to/create-package.md).<!--Mention?: when the cartdridge is not deployed on that particular database, the query returns an error-->
+You can [_call_ a query](../datagrok/functions/function-call.md) across multiple Datagrok plugins instead of copy-pasting the same query every time. To run a query programmatically, see this [code snippet](https://public.datagrok.ai/js/samples/data-access/parameterized-query). Learn how to [expose the parameter dialog to end-users as an application](../develop/how-to/create-package.md).<!--Mention?: when the cartdridge is not deployed on that particular database, the query returns an error-->
 
 :::
 
 After running a query, you typically get back a dataframe. You can perform various operations on this dataframe, such as data cleansing, transformation, [and more](../visualize/viewers/grid.md). All of these actions get recorded as macros, and will be replayed when the query is re-executed. Once you have the data set up to your satisfaction, you can add viewers and create a visualization.  
 
-:::note developers
-
-You can [_call_ a query](../datagrok/functions/function-call.md) across multiple Datagrok plugins instead of copy-pasting the same query every time. To run a query programmatically, see this [code snippet](https://public.datagrok.ai/js/samples/data-access/parameterized-query).
-
-:::
-
-To view the queries you've created or those shared with you, you can use the **Queries Gallery** (**Data** > **Queries**). This gallery provides a convenient interface to quickly access and manage queries. You can search queries by their name or tag and use the **Context Panel** on the right to view information and actions for the selected query.
+To view the queries you've created or those shared with you, you can use the **Queries Gallery** (**Data** > **Queries**). This gallery provides a convenient interface to quickly access and manage queries. You can search queries by their name or tag and use the **Context Panel** to view information and actions for the selected query.
 
 ## Creating views for query results
 
@@ -481,7 +475,7 @@ To share:
 
 1. Right-click the connection or a query you want to share and select **Share...**.
 2. In the **Share** dialog, enter a user or a group that needs access and set corresponding permissions. These privileges can be given to individuals or to [groups](../govern/group.md) (which can be defined via dynamic filters). For more information on the access privilege model, see [Privileges](../govern/security.md#privileges).
-3. (Optional) Add a description in the provided text field. If you don't want to notify the recipients, clear the **Send notification** checkbox.
+3. Optional. Add a description in the provided text field. If you don't want to notify the recipients, clear the **Send notification** checkbox.
    :::note
 
    To notify via email, enter the user's email in the identity/email field. The email contains a link to the shared item and entered description. When you enter a user or a group name, they are  notified via the Datagrok interface.
