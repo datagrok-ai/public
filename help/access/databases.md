@@ -257,7 +257,7 @@ To aggregate data, use the **Query** tab. Here, you can choose which columns to 
 
   :::
 
-* **Filter**: Use this field to specify which items are returned when you run a query. To do so, click the **Add** (**+**) icon, select the column to which you want to apply the filter, then set the condition (see [parameter patterns](parameterized-queries.md/#patterns) for syntaxis).
+* **Filter**: Use this field to specify which items are returned when you run a query. To do so, click the **Add** (**+**) icon, select the column to which you want to apply the filter, then set the condition (see [parameter patterns](parameterized-queries.md/#patterns) for syntax).
 
 ![Aggregation query](aggr-query.gif)
 
