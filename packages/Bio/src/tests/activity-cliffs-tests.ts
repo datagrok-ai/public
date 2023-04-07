@@ -33,7 +33,7 @@ category('activityCliffs', async () => {
     actCliffsTableView = grok.shell.addTableView(actCliffsDf);
     viewList.push(actCliffsTableView);
 
-    // await _testActivityCliffsOpen(actCliffsDf, 57, 'UMAP', 'MSA');
+    await _testActivityCliffsOpen(actCliffsDf, 57, 'UMAP', 'MSA');
   });
 
   test('activityCliffsWithEmptyRows', async () => {
@@ -42,6 +42,6 @@ category('activityCliffs', async () => {
     actCliffsTableViewWithEmptyRows = grok.shell.addTableView(actCliffsDfWithEmptyRows);
     viewList.push(actCliffsTableViewWithEmptyRows);
 
-    // await _testActivityCliffsOpen(actCliffsDfWithEmptyRows, 57, 'UMAP', 'MSA');
+    await _testActivityCliffsOpen(actCliffsDfWithEmptyRows, 57, 'UMAP', 'MSA');
   });
 });
