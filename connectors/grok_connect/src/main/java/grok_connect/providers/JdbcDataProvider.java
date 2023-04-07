@@ -640,7 +640,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                             size += column.memoryInBytes();
                         size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000; // count? it's 200 lines up
 
-                        if (size > 20) {
+                        if (size > 5) {
                             DataFrame dataFrame = new DataFrame();
                             dataFrame.addColumns(columns);
                             return dataFrame;

@@ -67,22 +67,26 @@ public class QueryManager {
         for (Column column : columns) {
             column.empty();
         }
-        if (!changedFetchSize && (!query.aux.containsKey(AUX_FETCH_SIZE_KEY)
-                || query.aux.get(AUX_FETCH_SIZE_KEY).equals("dynamic"))) {
-            if (connection.getMetaData().supportsTransactions())
-                resultSet.setFetchSize(DEFAULT_FETCH_SIZE);
-            LOGGER.trace("Changing fetchSize");
-            changedFetchSize = true;
-        }
         DataFrame df = new DataFrame();
         if (!connection.isClosed() && !resultSet.isClosed()) {
             LOGGER.trace("Calling getResultSetSubDf");
             df = provider.getResultSetSubDf(query, resultSet, columns,
-                schemeInfo.supportedType, schemeInfo.initColumn, maxIterations);
+            schemeInfo.supportedType, schemeInfo.initColumn, maxIterations);
+        }
+
+        if (connection.getMetaData().supportsTransactions() && df.rowCount != 0) {
+            Double memInBytes = df.memoryInBytes() / 1024.0;
+            double fetchSize = df.rowCount / memInBytes * 30000;
+    
+            if (fetchSize > 40000)
+                fetchSize = 40000;
+    
+            resultSet.setFetchSize((int)fetchSize);
+            LOGGER.trace("Set new fetch size");
         }
         return df;
     }
-
+    
     public void closeConnection() throws SQLException {
         LOGGER.trace("Closing connection");
         if (connection != null && !connection.isClosed()) {
