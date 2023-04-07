@@ -276,7 +276,7 @@ Use this tool to merge tables:
 
 ### Parameterized queries
 
-Similar to functions in JavaScript, queries in Datagrok are functions that can be annotated to support parameters. To define query parameters, use SQL/Sparql comments in the query header : `--` for SQL, and `#` for Sparql. The syntax for defining query parameters is based on [scriptig](https://datagrok.ai/help/datagrok/functions/func-params-annotation), with additions specific to queries.
+Similar to functions in JavaScript, queries in Datagrok are functions that can be annotated to support parameters. To define query parameters, use SQL/Sparql comments in the query header : `--` for SQL, and `#` for Sparql. The syntax for defining query parameters is based on [scripting](https://datagrok.ai/help/datagrok/functions/func-params-annotation), with additions specific to queries.
 
 #### Supported parameters
 
@@ -346,7 +346,7 @@ Here, the `firstLetter` and `shipCountry` parameters are defined as strings with
 
 In some cases, users may need to enter filtering criteria as free text. To support this, Datagrok uses a search patterns feature that transforms free-text queries into proper SQL clauses on the server side.
 
-To use search patterns, set the input parameter's data type should be `string` (since the user will be enterig free text). Then, specify the actual data type in the `pattern` _option_. To reference the search pattern that will be used against the specified column, use `@<patternName>(columnName)`. 
+To use search patterns, set the input parameter's data type should be `string` (since the user will be entering free text). Then, specify the actual data type in the `pattern` _option_. To reference the search pattern that will be used against the specified column, use `@<patternName>(columnName)`. 
 
 For example, to allow users to enter a free text query for the "freight" column in a table, you can use the following code snippet:
 
