@@ -5,7 +5,9 @@ import {Observable, Subject} from 'rxjs';
 
 import '../../css/tags-input.css';
 
-
+// TODO: add property if we want to see the plus btn in constructor
+// TODO: make setter and getter for tags (just the getTags and setTags methods and make root private)
+// TODO: add label to input
 export class TagsInput extends DG.InputBase {
   tags: string[] = [];
   _tagsDiv: HTMLDivElement = ui.div();
@@ -14,8 +16,8 @@ export class TagsInput extends DG.InputBase {
   _onTagRemoved: Subject<string> = new Subject<string>();
 
 
-  constructor(tags: string[]) {
-    const inputElement = ui.stringInput('', '');
+  constructor(name: string, tags: string[]) {
+    const inputElement = ui.stringInput(name, '');
     super(inputElement.dart);
 
     this._init(tags);
