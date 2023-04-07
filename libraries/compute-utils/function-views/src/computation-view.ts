@@ -28,14 +28,14 @@ export abstract class ComputationView extends FunctionView {
    * 2) change routing logic for models
    */
   constructor(
-    funcName: string,
+    protected initValue: string | DG.FuncCall,
     public options: {
       historyEnabled: boolean,
       isTabbed: boolean,
       parentCall?: DG.FuncCall
     } = {historyEnabled: true, isTabbed: false}
   ) {
-    super(funcName, options);
+    super(initValue, options);
 
     if (!options.parentCall) options.parentCall = grok.functions.getCurrentCall();
 
@@ -43,14 +43,13 @@ export abstract class ComputationView extends FunctionView {
     this.parentCall = parentCall;
     this.parentView = parentCall?.parentCall.aux['view'];
     this.basePath = `/${parentCall?.func.name}`;
+  }
 
-    this.subs.push(this.onFuncCallReady.subscribe({
-      complete: async () => {
-        await this.getPackageUrls();
-        this.buildRibbonMenu();
-        this.changeViewName(parentCall.func.friendlyName);
-      }
-    }));
+  protected override async onFuncCallReady() {
+    super.onFuncCallReady();
+    await this.getPackageUrls();
+    this.buildRibbonMenu();
+    this.changeViewName(this.parentCall!.func.friendlyName);
   }
 
   /** Override to customize getting mocks

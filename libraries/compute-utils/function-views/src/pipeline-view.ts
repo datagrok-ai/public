@@ -75,7 +75,14 @@ export class PipelineView extends ComputationView {
 
     this.subs.push(
       grok.functions.onAfterRunAction.pipe(
-        filter((run) => Object.keys(this.steps).includes(run.func.nqName)),
+        filter((run) => {
+          for (const {view} of Object.values(this.steps)) {
+            if ((view?.funcCall?.id === run?.id) && run) {
+              return true;
+            }
+          }
+          return false;
+        }),
       ).subscribe((run) => {
         this.onStepCompleted.next(run);
 
@@ -87,10 +94,8 @@ export class PipelineView extends ComputationView {
       const stepScript = (grok.functions.eval(stepNqName) as Promise<DG.Func>);
       return stepScript;
     });
-    const allStepsLoading = Promise.all(stepScripts) as Promise<DG.Script[]>;
+    const loadedScripts = await Promise.all(stepScripts) as DG.Script[];
     this.root.classList.remove('ui-panel');
-
-    const loadedScripts = await allStepsLoading;
 
     const editorFuncs = {} as {[editor: string]: DG.Func};
 
@@ -124,19 +129,29 @@ export class PipelineView extends ComputationView {
 
     const viewsLoading = loadedScripts.map(async (loadedScript) => {
       const scriptCall: DG.FuncCall = loadedScript.prepare();
+      const editorFunc = editorFuncs[this.steps[loadedScript.nqName].editor];
 
-      this.steps[loadedScript.nqName].view =
-        await editorFuncs[this.steps[loadedScript.nqName].editor].apply({'call': scriptCall}) as FunctionView;
+      await this.onBeforeStepFuncCallApply(loadedScript.nqName, scriptCall, editorFunc);
+      const view = await editorFunc.apply({'call': scriptCall}) as FunctionView;
 
-      if (!this.steps[loadedScript.nqName].view.onFuncCallReady.value) {
-        const prom = this.steps[loadedScript.nqName].view.onFuncCallReady.toPromise();
-        return prom;
-      } else return Promise.resolve();
+      this.steps[loadedScript.nqName].view = view;
+
+      await this.onAfterStepFuncCallApply(loadedScript.nqName, scriptCall, view);
     });
 
     await Promise.all(viewsLoading);
 
-    this.onFuncCallReady.complete();
+    await this.onFuncCallReady();
+  }
+
+  protected async onBeforeStepFuncCallApply(nqName: string, scriptCall: DG.FuncCall, editorFunc: DG.Func) {
+  }
+
+  protected async onAfterStepFuncCallApply(nqName: string, scriptCall: DG.FuncCall, view: FunctionView) {
+  }
+
+  protected override async onFuncCallReady() {
+    super.onFuncCallReady();
   }
 
   public override buildIO() {
@@ -200,19 +215,15 @@ export class PipelineView extends ComputationView {
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
     const {parentRun: pulledParentRun, childRuns: pulledChildRuns} = await historyUtils.loadChildRuns(funcCallId);
 
-    this.subs.push(
-      this.onFuncCallReady.subscribe({
-        complete: async () => {
-          await this.onBeforeLoadRun();
+    await this.onBeforeLoadRun();
 
-          pulledChildRuns.forEach(async (pulledChildRun) => {
-            this.steps[pulledChildRun.func.nqName].view.loadRun(pulledChildRun.id);
-          });
+    pulledChildRuns.forEach(async (pulledChildRun) => {
+      this.steps[pulledChildRun.func.nqName].view.loadRun(pulledChildRun.id);
+    });
+    this.lastCall = pulledParentRun;
 
-          await this.onAfterLoadRun(pulledParentRun);
-        },
-      }),
-    );
+    await this.onAfterLoadRun(pulledParentRun);
+
     return pulledParentRun;
   }
 }

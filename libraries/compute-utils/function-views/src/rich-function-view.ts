@@ -57,23 +57,20 @@ export class RichFunctionView extends FunctionView {
     options: {historyEnabled: boolean, isTabbed: boolean} =
     {historyEnabled: true, isTabbed: false},
   ) {
-    return new this(funcCall.func.nqName, options);
+    return new this(funcCall, options);
   }
 
   constructor(
-    funcName: string,
+    initValue: string | DG.FuncCall,
     public options: { historyEnabled: boolean, isTabbed: boolean} =
     {historyEnabled: true, isTabbed: false},
   ) {
-    super(funcName, options);
+    super(initValue, options);
+  }
 
-    this.subs.push(
-      this.onFuncCallReady.subscribe({
-        complete: () => {
-          this.basePath = `scripts/${this.funcCall.func.id}/view`;
-        },
-      }),
-    );
+  protected async onFuncCallReady() {
+    await super.onFuncCallReady();
+    this.basePath = `scripts/${this.funcCall.func.id}/view`;
   }
 
   /**
