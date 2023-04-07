@@ -28,7 +28,7 @@ export class DemoView extends DG.ViewBase {
   }
 
   _initContent() {
-    this.root.appendChild(ui.divText('Select a demo from the toolbox on the right'));
+    this.root.appendChild(ui.divText('Select a demo from the toolbox on the left', 'demo-text'));
   }
 
   _initDockPanel() {
@@ -65,10 +65,15 @@ export class DemoView extends DG.ViewBase {
 
     this.dockPanel = grok.shell.dockManager.dock(ui.div(
       [ui.searchInput('', ''), this.tree]), 'left', null, 'Categories');
-    this.dockPanel.container.containerElement.classList.add('demo-container');
+    this.dockPanel.container.containerElement.classList.add('tutorials-demo-container');
 
     // TODO: make div with loading at center of viewer
     // TODO: if loading ended in 0.1s, then no div, if not - then div - DG.debounce, merge etc.
     // TODO: also fix routing things
+    // TODO: add starting demo app viewer on just up/down arrows
+    // TODO: add switch start on arrow up/down
+    // TODO: turn off the toolbox and the menu at top of Datagrok
+    // TODO: on click on viewer demo set viewer help url in property panel (func helpUrl)
+    // TODO: fix search in demo - search on meta.keywords, name, description
   }
 }
