@@ -2,20 +2,19 @@ import * as DG from 'datagrok-api/dg';
 
 import {runTests, TestContext, tests} from '@datagrok-libraries/utils/src/test';
 
-import './tests/Palettes-test';
-
 // first quarter
+import './tests/Palettes-test';
 import './tests/detectors-tests';
 import './tests/detectors-benchmark-tests';
 import './tests/msa-tests';
-// import './tests/sequence-space-test'; // Tests hangs on github CI
+//import './tests/sequence-space-test'; // Tests hangs on github CI
 
 // second quarter
-// import './tests/activity-cliffs-tests';
+//import './tests/activity-cliffs-tests';
 import './tests/splitters-test';
 import './tests/monomer-libraries-tests';
-// import './tests/renderers-test';
-// import './tests/converters-test';
+//import './tests/renderers-test';
+import './tests/converters-test';
 
 // second half
 import './tests/fasta-handler-test';
