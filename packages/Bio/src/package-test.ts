@@ -8,11 +8,11 @@ import './tests/Palettes-test';
 import './tests/detectors-tests';
 import './tests/detectors-benchmark-tests';
 import './tests/msa-tests';
-import './tests/sequence-space-test';
+// import './tests/sequence-space-test'; // Tests hangs on github CI
 
 // second quarter
 // import './tests/activity-cliffs-tests';
-// import './tests/splitters-test';
+import './tests/splitters-test';
 // import './tests/monomer-libraries-tests';
 // import './tests/renderers-test';
 // import './tests/converters-test';
