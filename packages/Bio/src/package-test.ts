@@ -8,12 +8,15 @@ import './tests/Palettes-test';
 // import './tests/detectors-benchmark-tests';
 // import './tests/msa-tests';
 // import './tests/sequence-space-test';
-// import './tests/activity-cliffs-tests';
-// import './tests/splitters-test';
-// import './tests/monomer-libraries-tests';
-// import './tests/renderers-test';
-// import './tests/converters-test';
 
+// second quarter
+import './tests/activity-cliffs-tests';
+import './tests/splitters-test';
+import './tests/monomer-libraries-tests';
+import './tests/renderers-test';
+import './tests/converters-test';
+
+// second half
 import './tests/fasta-handler-test';
 import './tests/fasta-export-tests';
 import './tests/bio-tests';
