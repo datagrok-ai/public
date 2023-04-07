@@ -2,7 +2,7 @@
 title: "OpenAPI"
 ---
 
-[OpenAPI](https://swagger.io/docs/specification/about/), also known as Swagger, is a popular format that describes the structure of the server APIs allowing machines to read the document and use the service. Datagrok seamlessly integrates with OpenAPI, making it easy to connect to webservices and execute queries using the platform's features.
+[OpenAPI](https://swagger.io/docs/specification/about/), also known as Swagger, is a popular format that describes the structure of the server APIs allowing machines to read the document and use the service. Datagrok seamlessly integrates with OpenAPI and supports both major versions (OpenAPI 2.x and OpenAPI 3.x), making it easy to connect to webservices and execute queries using the platform's features.
 
 ## Connecting to a webservice
 
@@ -16,7 +16,7 @@ To upload an OpenAPI document, drag and drop a YAML or JSON file into Datagrok. 
 | summary         | Data query name                                      |
 | parameters      | Data query parameters                                |
 
-When the file import is complete, the data connection, along with all associated queries, appears in the **Webservices Manager** (**Data** > **Webservices**).
+When the file import is complete, the data connection, along with all associated queries, appears in the [**Webservices Manager**](https://public.datagrok.ai/webservices) (**Data** > **Webservices**).
 
 :::tip
 
@@ -152,7 +152,42 @@ Datagrok can work with both parameterized queries and queries without parameters
 * query parameters, such as `/users?role=admin`
 * header parameters, such as `X-MyHeader: Value`.
 
-### Editing Swagger files before import
+### Credentials
+
+The Swagger file doesn't define access parameters for an OpenAPI service directly. Instead, it describes the types and access parameters in the `securityDefinitions:` section (for OpenAPI 2.x) and `securitySchemes` block under the `components` section (for OpenAPI 3.x). In the AirNow example, the `api_key` type is used with the `"API_KEY"` parameter, following the provider's naming requirement:
+
+```yaml
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: API_KEY
+    in: query
+```
+
+To specify access credentials for a newly created connection, you need to edit its setting within Datagrok. To do this, in the **Webservices Manager**, right-click a connection and select **Edit...** from its context menu. In the **Edit Connection** dialog, select the appropriate **Security** type from the dropdown and enter the **ApiKey**.
+
+![AirNow connection](../uploads/features/swagger-security-definitions.png "AirNow")
+
+:::note
+
+Datagrok supports all types of secret access for Swagger, such as:
+
+* basic authentication
+* API key (as a header or a query string parameter), and
+* OAuth 2 common flows (authorization code, implicit, resource owner password credentials, client credentials).
+
+:::
+
+When webservices don't require secret access, omit the `securityDefinitions:` block inside the Swagger file. See this [sample Swagger file without the security definitions](https://github.com/datagrok-ai/public/blob/master/packages/Swaggers/swaggers/countries.yaml)
+.
+
+### Packages
+
+In addition to uploading Swagger files via drag-and-drop, Datagrok supports import of these files from [external packages](../develop/develop.md). Here's one such [package](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers), which contains our Swagger demo files. The package includes many Swagger examples for different services in various formats (YAML, JSON).
+
+When Swagger files are stored in this manner, they are imported to Datagrok (and new data connections appear) simultaneously as the corresponding package is published.
+
+### Editing files before import
 
 To edit the original Swagger file provided by the service or enhance the file with simpler queries not present in the original Swagger file, we recommend using [Postman](https://www.postman.com/). You can import a Swagger JSON/YAML file into Postman for introspection, manipulation, and pruning using the "Import" button. If you need to remove some Swagger items, do it directly in Datagrok after uploading or importing it.
 
@@ -184,47 +219,6 @@ Solution 2. If `"version"` isn't present in the original file, add a `"version"`
 ```
 
 </details>
-
-### Credentials
-
-The Swagger file doesn't define access parameters for an OpenAPI service directly. Instead, it describes the types and access parameters in the `securityDefinitions:` section. In the AirNow example, the `api_key` type is used with the `"API_KEY"` parameter, following the provider's naming requirement:
-
-```yaml
-securityDefinitions:
-  api_key:
-    type: apiKey
-    name: API_KEY
-    in: query
-```
-
-:::note
-
-In OpenAPI 3.x, `securityDefinitions` were renamed to `securitySchemes` and moved inside `components`. Datagrok supports both major versions (OpenAPI 2.x and OpenAPI 3.x).
-
-:::
-
-To specify access credentials for a newly created connection, you need to edit its setting within Datagrok. To do this, in the **Webservices Manager**, right-click a connection and select **Edit...** from its context menu. In the **Edit Connection** dialog, select the appropriate **Security** type from the dropdown and enter the **ApiKey**.
-
-![AirNow connection](../uploads/features/swagger-security-definitions.png "AirNow")
-
-:::note
-
-Datagrok supports all types of secret access for Swagger, such as:
-
-* basic authentication
-* API key (as a header or a query string parameter), and
-* OAuth 2 common flows (authorization code, implicit, resource owner password credentials, client credentials).
-
-:::
-
-When webservices don't require secret access, omit the `securityDefinitions:` block inside the Swagger file. See this [sample Swagger file without the security definitions](https://github.com/datagrok-ai/public/blob/master/packages/Swaggers/swaggers/countries.yaml)
-.
-
-### Packages
-
-In addition to uploading Swagger files via drag-and-drop, Datagrok supports import of these files from [external packages](../develop/develop.md). Here's one such [package](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers), which contains our Swagger demo files. The package includes many Swagger examples for different services in various formats (YAML, JSON).
-
-When Swagger files are stored in this manner, they are imported to Datagrok (and new data connections appear) simultaneously as the corresponding package is published.
 
 ## Webservices Manager
 
