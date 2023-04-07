@@ -48,6 +48,11 @@ export class MoleculeImage {
   }
 
   private async zoomIn(): Promise<void> {
+    const dialogDivStyle = {
+      overflowX: 'scroll',
+    };
+    const dialogDiv = ui.div([], {style: dialogDivStyle});
+
     const clientHeight: number = $(window).height() * 0.70; // dialogDiv.clientHeight
     const molDimensions = this.getMoleculeDimensions();
     const ratio: number = clientHeight / molDimensions.height;
@@ -61,10 +66,6 @@ export class MoleculeImage {
     dialogCanvas.style.height = `${dialogCanvasHeight}px`;
     await this.drawMolBlockOnCanvas(dialogCanvas);
 
-    const dialogDivStyle = {
-      overflowX: 'scroll',
-    };
-    const dialogDiv = ui.div([], {style: dialogDivStyle});
     dialogDiv.appendChild(dialogCanvas);
     ui.dialog('Molecule')
       .add(dialogDiv)
