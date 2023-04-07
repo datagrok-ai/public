@@ -23,8 +23,8 @@ category('activityCliffs', async () => {
   });
 
   after(async () => {
-    for (const view of viewList) view.close();
-    for (const df of dfList) grok.shell.closeTable(df);
+    // for (const df of dfList) grok.shell.closeTable(df);
+    // for (const view of viewList) view.close();
   });
 
   test('activityCliffsOpens', async () => {
