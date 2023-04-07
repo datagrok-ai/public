@@ -6,7 +6,6 @@ import {Observable, Subject} from 'rxjs';
 import '../../css/tags-input.css';
 
 
-// TODO: make setter and getter for tags (just the getTags and setTags methods and make root private)
 export class TagsInput extends DG.InputBase {
   private _tags: string[] = [];
   private _tagsDiv: HTMLDivElement = ui.div();
