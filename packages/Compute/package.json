@@ -18,6 +18,7 @@
 		"datagrok-api": "latest",
 		"dayjs": "latest",
 		"rxjs": "^6.5.5",
+		"source-map-loader": "^4.0.1",
 		"ts-loader": "latest",
 		"typescript": "latest",
 		"wu": "latest"
