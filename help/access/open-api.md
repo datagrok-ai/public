@@ -16,7 +16,7 @@ To upload an OpenAPI document, drag and drop a YAML or JSON file into Datagrok. 
 | summary         | Data query name                                      |
 | parameters      | Data query parameters                                |
 
-When the file import is complete, the data connection, along with all associated queries and functions, appear in the **Webservices Manager** (**Data** > **Webservices**).
+When the file import is complete, the data connection, along with all associated queries, appears in the **Webservices Manager** (**Data** > **Webservices**).
 
 :::tip
 
