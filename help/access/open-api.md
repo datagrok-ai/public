@@ -2,24 +2,34 @@
 title: "OpenAPI"
 ---
 
-[OpenAPI](https://swagger.io/docs/specification/about/), also known as swagger, is a popular format that describes the
-structure of the server APIs so that machines can read the document and use the service.
+[OpenAPI](https://swagger.io/docs/specification/about/), also known as Swagger, is a popular format that describes the structure of the server APIs allowing machines to read the document and use the service. Datagrok seamlessly integrates with OpenAPI, making it easy to connect to webservices and execute queries using the platform's features.
 
-Datagrok integrates with OpenAPI really well. Once a swagger file is imported
-(you can simply drag-and-drop a `yaml` or `json` file into the app), its content gets translated to
-[data connections](data-connection.md),
-[queries](data-query.md), and
-[functions](../datagrok/functions/functions.md). All of them may be combined and used in [data jobs](data-job.md),
-[calculations](../compute/compute.md),
-[info panels](../discover/info-panels.md), executed from [console](../datagrok/navigation.md#console), etc.
+## Connecting to a webservice
 
-You can find this connection in [Connections Tree](https://public.datagrok.ai/connect)
-under the source "Web". There is a special view
-[Web Services](https://public.datagrok.ai/webservices) in the Datagrok's UI, which displays only OpenAPI connections.
-These connections may also be found in the "Data" section on the left sidebar next to "Databases".
+To upload an OpenAPI file, drag and drop a YAML or JSON file into Datagrok. DataGrok detects different attributes of a Swagger file and automatically creates a data connection and associated queries and [functions](../datagrok/functions/functions.md):
 
-Let's take a deeper look on the following example of the OpenAPI `yaml` file
-(`json` is also supported):
+| Swagger file    | Datagrok                                             |
+|-----------------|------------------------------------------------------|
+| title           | Data connection name                                 |
+| description     | Data connection description                          |
+| paths           | Data query is created for each path                  |
+| summary         | Data query name                                      |
+| function(???)   | Function (???)                                       |
+| type(???)       | Data type(???)                                       |
+
+When the file import is complete, the data connection, along with all associated queries and functions, appear in the **Webservices Manager** (**Data** > **Webservices**).
+
+:::tip
+
+If you can't find a Swagger JSON/YAML file link, inspect the API service's [Swagger-UI browser](https://swagger.io/tools/swagger-ui/) browser page. Use Chrome Developer Tools' "Network" tab. Usually, the file link contains `/v1` or `/v2`. Alternatively, add `/api/v2/api-docs` to the original service `<URI>`. This is the default location for Swagger JSON data in Swagger-UI browsers.
+
+:::
+
+### Parameters
+
+Swagger format allows defining parameters both within individual paths and at the file level, with an option to use them in other paths. Datagrok effectively works with both approaches (or their combination) for both the standard Swagger attributes and any custom parameters that you add.
+
+For example, consider the following AirNow YAML file, where the `date` parameter is defined within the path, and the remaining parameters are placed to `parameters:` section at the file level:
 
 ```yaml
 swagger: '2.0'
@@ -91,29 +101,9 @@ securityDefinitions:
     in: query
 ```
 
-You can also find all connections created for OpenAPI in
-the [Data Connections Browser](https://public.datagrok.ai/connections) ("Manage" section on side bar and then "
-Connections" view).
+To add a custom `grok-datetime-format parameter`, you can either apply it to the entire Swagger file or define it within specific paths:
 
-Let's consider how Datagrok interprets individual attributes of a Swagger file:
-
-| In Swagger File | In Datagrok                                          |
-|-----------------|------------------------------------------------------|
-| title           | [Data connection](data-connection.md) name           |
-| description     | [Data connection](data-connection.md) description    |
-| paths           | [Data query](data-query.md) is created for each path |
-| summary         | [Data query](data-query.md) name                     |
-
-In some cases, the standard attributes of Swagger format are not enough to import file to Datagrok.
-
-For example, for the correct interpretation of datetime format in the corresponding parameters, an
-additional `grok-datetime-format` field inside the Swagger file is used, which is not part of the standard Swagger
-format, but is used only for correct import into Datagrok in some cases.
-
-As we can see from the Swagger file example above, this field can be used at the level of entire Swagger file and be
-redefined at the level of individual parameters within individual paths.
-
-In the below example, it is defined at the level of the entire Swagger file:
+Custom parameter applied to the entire Swagger file:
 
 ```yaml
 swagger: '2.0'
@@ -128,7 +118,7 @@ parameters:
 ...
 ```
 
-Whereas below it is overridden at the level of an individual path (for "data" parameter):
+Custom parameter applied to an individual path:
 
 ```yaml
 swagger: '2.0'
@@ -157,29 +147,48 @@ paths:
   ...
 ```
 
-## Parameters
-
-Swagger format supports direct definition of parameters within each path and definition of parameters at the entire file
-level and their further use in any other pathes.
-
-Datagrok perfectly understands both options or their combination. In our AirNow example, the `date` parameter is
-defined inside the path and the rest of parameters are placed to `parameters:` section at the level of entire file.
-
-It is important to mention that Datagrok can work with both parameterized queries with and queries without parameters.
-
-In addition, there are no restrictions in Datagrok on the use of parameters in different places, such as:
+Datagrok can work with both parameterized queries and queries without parameters. Furthermore, there are no restrictions in Datagrok on using parameters in different locations, including:
 
 * path parameters, such as `/users/{id}`
 * query parameters, such as `/users?role=admin`
-* header parameters, such as `X-MyHeader: Value`
+* header parameters, such as `X-MyHeader: Value`.
 
-## Credentials
+### Editing Swagger files before import
 
-Your access parameters to an OpenAPI service are not defined inside the Swagger file. Swagger file only describes the
-type and access parameters. The `"securityDefinitions:` section is used to determine the type and access parameters.
+To edit the original Swagger file provided by the service or enhance the file with simpler queries not present in the original Swagger file, we recommend using [Postman](https://www.postman.com/). You can import a Swagger JSON/YAML file into Postman for introspection, manipulation, and pruning using the "Import" button. If you need to remove some Swagger items, do it directly in Datagrok after uploading or importing it.
 
-In the AirNow example, the `api_key` type is used with a parameter named `"API_KEY"` (external service itself provides
-the parameter naming requirement):
+Usually, a Swagger file from the API service's Swagger UI works well with both Datagrok and Postman. Import issues, if any, usually arise due to Swagger version differences or parser inconsistencies. First, ensure the Swagger name is included under the `"info"` > `"title"` section. If import errors persist, consider these steps:
+
+<details>
+<summary> Issue: Datagrok loads the Swagger file successfully but `basePath` or `host` are missing along with the Swagger icon </summary>
+
+Add this section to the file:
+
+```
+ "schemes": [
+   "https",
+   "http"
+ ]
+```
+
+</details>
+
+<details>
+<summary> Issue: Postman or Datagrok can't open the file </summary>
+
+Solution 1. Change `"swagger": "2.0"` to `"openapi": "2.0"`
+
+Solution 2. If `"version"` isn't present in the original file, add a `"version"` section with an arbitrary version to the `"info"` section:
+
+```
+ "version": "1.0.0"
+```
+
+</details>
+
+### Credentials
+
+The Swagger file doesn't define access parameters for an OpenAPI service directly. Instead, it describes the types and access parameters in the `securityDefinitions:` section. In the AirNow example, the `api_key` type is used with the `"API_KEY"` parameter, following the provider's naming requirement:
 
 ```yaml
 securityDefinitions:
@@ -189,111 +198,57 @@ securityDefinitions:
     in: query
 ```
 
-Datagrok works great with all types of secret access that the Swagger format supports:
-
-* Basic authentication
-* API key (as a header or a query string parameter)
-* OAuth 2 common flows (authorization code, implicit, resource owner password credentials, client credentials)
-
-After you have imported the Swagger file into Datagrok, you need to specify your access in the settings of a
-corresponding [data connection](data-connection.md). To do this, find your connection in the connections tree (or in
-connection browser, special "Web Services" view, etc.) and open settings dialog for it:
+To specify access credentials for a newly created connection, you need to edit its setting within Datagrok. To do this, in the **Webservices Manager**, right-click a connection and select **Edit...** from its context menu. In the **Edit Connection** dialog, select the appropriate **Security** type from the dropdown and enter the **ApiKey**.
 
 ![AirNow connection](../uploads/features/swagger-security-definitions.png "AirNow")
 
-Sometimes services don't require secret access. In situations like this, just don't specify the appropriate
-block `securityDefinitions:` inside the Swagger file. An example of a Swagger file without security definitions can
-be found in
-our [public repository](https://github.com/datagrok-ai/public/blob/master/packages/Swaggers/swaggers/countries.yaml)
+:::note
+
+Datagrok supports all types of secret access for Swagger, such as:
+
+* basic authentication
+* API key (as a header or a query string parameter), and
+* OAuth 2 common flows (authorization code, implicit, resource owner password credentials, client credentials).
+
+:::
+
+When webservices don't require secret access, omit[??????] the `securityDefinitions:` block inside the Swagger file. See this [sample Swagger file without the security definitions](https://github.com/datagrok-ai/public/blob/master/packages/Swaggers/swaggers/countries.yaml)
 .
 
-## Example
+### Packages
 
-Let's see what happens after we drag-and-drop the Swagger for AirNow, a site that tells you how clean or polluted your
-outdoor air is.
+In addition to uploading Swagger files via drag-and-drop, Datagrok supports import of Swagger files from [external packages](../develop/develop.md). Here's one such [package](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers), which contains our Swagger demo files. The package includes many Swagger examples for different services in various formats (YAML, JSON).
 
-Once its Swagger file is imported (which takes a second), the following connection and queries appear in Grok:
+When Swagger files are stored in this manner, they are imported to Datagrok (and new data connections appear) simultaneously as the corresponding package is published.
+
+## Webservices Manager
+
+The **Webservices Manager** provides a convenient interface for hierarchical browsing and managing connections and associated queries. To access the context actions for a connection or a query, right-click it. If you don't see a certain action, it may be due to insufficient permissions. In such cases, contact your Datagrok administrator for assistance.
+
+Here's an example.
+
+When you import the Swagger file for AirNow, a site that provides information about outdoor air quality, the following connection and queries appear in Datagrok:
 
 ![AirNow connection](../uploads/features/open-api-airnow-connection.png "AirNow")
 
-Click on the query to bring up its details in the context panel on the right:
+The queries are now standard [Datagrok queries](access.md/#data-query), with all platform features available. For example, you can run queries using a convenient [UI for entering parameters](databases.md/#running-queries) or edit queries with [built-in editors](databases.md/#querying-data). Data governance and automation capabilities also apply.
+
+Whenever you click a connection or query in the **Webservices Manager**, the [**Context Panel**](../datagrok/navigation.md#context-panel) to the right displays the object's properties and context actions. For example, when you click a query, the **Context Panel** lets you view the query's details, run, edit, or share it, and access other relevant information and options:
 
 ![AirNow query](../uploads/features/open-api-airnow-query.png "AirNow")
 
-Note that it became a regular [Grok query](data-query.md), which means all the features of the platform are now
-applicable to it. In fact, end users won't even have to know where the data is coming from, or what technology is used
-there. All data governance capabilities, such as data lineage, history, and security, can be used. Query results can be
-automatically transformed, and there is even a chat associated with it.
-
-But of course, the most important thing is that it can be executed right from there. Let's fill in the required zip
-code, hit RUN, and voila - the query is executed and results are shown in the table.
+Running a query opens it in Datagrok as an [interactive grid](visualize/viewers/grid.md):
 
 ![AirNow results](../uploads/features/open-api-airnow-results.png "AirNow")
 
-Is it important to understand that by using the OpenAPI Grok connector, it is possible to not only retrieve data from
-external services, but do pretty much everything the service lets you to do. For instance, you can automatically
-provision virtual machines via the Amazon AWS swagger, create Jira tickets, or purchase items on eBay.
+You can now explore the query results further, create [query views and dynamic dashboards](databases.md/#creating-views-for-query-results) and [share them with others](databases.md/#sharing-query-results).
 
-## Packages
+:::tip
 
-Swagger files can be imported into Datagrok not just from local storage by drag-and-drop. These files can be also stored
-in external [packages](../develop/develop.md).
+When using the OpenAPI connector in Datagrok, you're not limited to only retrieving data from external services; you can also perform any action that the service allows. For instance, you can automatically provision virtual machines using the Amazon AWS Swagger, create Jira tickets, or even make purchases on eBay.
 
-You can check out one of these packages [here](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers).
-This package contains our Swagger demo files. It contains enough Swagger examples for different services in different
-formats (yaml, json).
+:::
 
-In this variant of storing Swagger files, they will be imported to the platform (
-new [data connections](data-connection.md) will appear) at the same time as the corresponding package is published.
-
-## Troubleshooting
-
-In case you can't discover a link to a Swagger JSON/yaml file, try to introspect the page of
-a [Swagger-UI browser](https://swagger.io/tools/swagger-ui/) corresponding to the API service in question using a "
-Network" tab of the Chrome Developer Tools. The desired file is usually hidden under a link including `/v1` or `/v2`. An
-alternative is to try adding a suffix to the original service URI: to a `<URI>` append `/api/v2/api-docs`, which is a
-default location for Swagger JSON data in Swagger-UI browsers.
-
-Sometimes you may want to only keep a few pieces of the Swagger file originally provided by the service, or enhance the
-file with some simpler queries not present in the original Swagger. In this case, we
-advise [Postman](https://www.postman.com/) to manipulate the Swagger/OpenAPI spec files. Import a Swagger JSON/yaml into
-Postman for introspection, manipulation and pruning with its "
-Import" button. If you need to remove a few of the Swagger items, do it directly in Datagrok after loading the file
-inside the platform.
-
-Usually a Swagger file downloaded from the Swagger UI of the API service works well with Datagrok or Postman out of the
-box. If problems with import occur, this often has to do with Swagger versions and their parsers deviations or mismatch.
-Both Datagrok and Postman Swagger parsers are strict in this sense. If you encounter import errors, the following two
-steps can help.
-
-1. If Datagrok loads the Swagger file successfully, but the `basePath`or `host` aren't present along with the Swagger
-   icon, add the following section to the file:
-
-   ```
-   "schemes": [
-     "https",
-     "http"
-   ]
-   ```
-
-2. If Postman doesn't open the file, try changing `"swagger": "2.0"` to `"openapi": "2.0"`
-
-3. If Postman or Datagrok cannot open the file, add a `"version"` section with an arbitrary version to the `"info"`
-   section, if the `"version"` isn't present:
-
-   ```
-   "version": "1.0.0"
-   ```
-
-4. It's a good practice to include Swagger's name, if not present. It is under `"info" -> "title"`
-   section.
-
-## Videos
+## Resources
 
 [![Open Api](../uploads/youtube/data_access.png "Open on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8\&t=3121s)
-
-See also:
-
-* [Public datasets](public-datasets.md)
-* [OpenAPI collection](https://apis.guru/browse-apis/)
-* [Data query](data-query.md)
