@@ -6,9 +6,13 @@ import {Observable, Subject} from 'rxjs';
 import '../../css/tags-input.css';
 
 
+// TODO: add tags to the beginning instead of end
+// TODO: on backspace in input - remove the first tag
+// TODO: on double click on tag - edit it in ui and in control
 export class TagsInput extends DG.InputBase {
   private _tags: string[] = [];
   private _tagsDiv: HTMLDivElement = ui.div();
+  private _addTagIcon: HTMLElement = ui.iconFA('');
 
   private _onTagAdded: Subject<string> = new Subject<string>();
   private _onTagRemoved: Subject<string> = new Subject<string>();
@@ -22,16 +26,23 @@ export class TagsInput extends DG.InputBase {
   }
 
   private _init(tags: string[], showBtn: boolean) {
-    if (showBtn) {
-      const addTagIcon = ui.iconFA('plus', () => this.addTag((this.input as HTMLInputElement).value));
-      this.addOptions(addTagIcon);
-    }
+    if (showBtn)
+      this._addTagIcon = ui.iconFA('plus', () => this.addTag((this.input as HTMLInputElement).value));
 
     this._tags = tags;
     this._tagsDiv = ui.div(tags.map((tag) => { return this._createTag(tag); }), 'ui-tag-list');
-    this.root.append(this._tagsDiv);
 
+    this._createRoot();
     this._initEventListeners();
+  }
+
+  private _createRoot() {
+    const inputContainer = ui.div([this.captionLabel, this.input, ui.div(this._addTagIcon, 'ui-input-options')],
+      'ui-input-root');
+    const tagContainer = ui.div([ui.label('', 'ui-input-label'), this._tagsDiv], 'ui-input-root');
+
+    this.root.append(inputContainer, tagContainer);
+    this.root.classList.add('ui-input-tags');
   }
 
   private _initEventListeners() {
