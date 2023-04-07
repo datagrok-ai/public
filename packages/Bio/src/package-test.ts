@@ -8,7 +8,7 @@ import './tests/Palettes-test';
 import './tests/detectors-tests';
 import './tests/detectors-benchmark-tests';
 import './tests/msa-tests';
-// import './tests/sequence-space-test';
+import './tests/sequence-space-test';
 
 // second quarter
 // import './tests/activity-cliffs-tests';
