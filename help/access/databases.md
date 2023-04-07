@@ -304,7 +304,7 @@ SELECT * FROM Orders WHERE shipCountry = ANY(@shipCountry)
 
 This query returns all records from the `Orders` table where the `shipCountry` column matches any of the values in the `shipCountry` list.
 
-To help users build queries more quickly and accurately, or for more complex queries, you can also use _choices_, _suggestions_, and _validators_. _Choices_ allow users to select from a predefined list of values for a given parameter, _suggestions_ provide users with auto-complete suggestions based on what they type in the input field, and _validators_ [PLACEHOLDER].
+To help users build queries more quickly and accurately, or for more complex queries, you can also use _choices_, _suggestions_, and _validators_. _Choices_ allow users to select from a predefined list of values for a given parameter, _suggestions_ provide users with auto-complete suggestions based on what they type in the input field, and query _validators_.
 
 You can define _choices_ using a comma-separated list of values, a name of another query, or by writing an actual SQL query. Here's an example of how to define _choices_ for a _ship country_ input parameter using all three methods:
 
@@ -314,27 +314,25 @@ You can define _choices_ using a comma-separated list of values, a name of anoth
 --input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
 ```
 
-To define _suggestions_ or _validators_, provide the name of the query that will be invoked to generate suggestions as the user types a value.
-
-[PLACEHOLDER]
+To define _suggestions_ or _validators_, provide the name of the function that will be executed to generate suggestions or validators as the user types a value.
 
 :::tip
 
 You can reuse existing input parameters as values within parameter _choice_ queries. This is useful when creating queries with hierarchical choices, where each subsequent parameter depends on the previous one. To do this, specify the input parameter you want to reuse and its default value, if applicable. Then, define the choices query using the `Query()` function and reference the input parameter using the `@` symbol. Here's an example:
 
 ```sql
---input: string firstLetter = "F"
---input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM Orders WHERE shipCountry LIKE @firstLetter || '%')}
-SELECT * FROM Orders WHERE (shipCountry = @shipCountry)
+--input: string state = "NY" {choices: Query("SELECT DISTINCT state FROM public.starbucks_us")}
+--input: string city = "Albany" {choices: Query("SELECT DISTINCT city FROM public.starbucks_us WHERE state = @state")}
+SELECT * FROM public.starbucks_us WHERE (city = @city)
 ```
 
-Here, the `firstLetter` and `shipCountry` parameters are defined as strings with default values. The `shipCountry` parameter's choices query references the `firstLetter` parameter using `@firstLetter`. This ensures that the choices are filtered based on the value of `firstLetter`.
+Here, the `state` and `city` parameters are defined as strings with default values. The `city` parameter's choices query references the `state` parameter using `@state`. This ensures that the choices are filtered based on the value of `state`.
 
 :::
 
 In some cases, users may need to enter filtering criteria as free text. To support this, Datagrok uses a search patterns feature that transforms free-text queries into proper SQL clauses on the server side.
 
-To use search patterns, set the input parameter's data type should be `string` (since the user will be entering free text). Then, specify the actual data type in the `pattern` _option_. To reference the search pattern that will be used against the specified column, use `@<patternName>(columnName)`. 
+To use search patterns, set the input parameter's data type should be `string` (since the user will be entering free text). Then, specify the actual data type in the `pattern` _option_. To reference the search pattern that will be used against the specified column, use `@<patternName>(columnName)`.
 
 For example, to allow users to enter a free text query for the "freight" column in a table, you can use the following code snippet:
 
