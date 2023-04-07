@@ -197,6 +197,12 @@ securityDefinitions:
     in: query
 ```
 
+:::note
+
+In OpenAPI 3.x, `securityDefinitions` were renamed to `securitySchemes` and moved inside `components`. Datagrok supports both major versions (OpenAPI 2.x and OpenAPI 3.x).
+
+:::
+
 To specify access credentials for a newly created connection, you need to edit its setting within Datagrok. To do this, in the **Webservices Manager**, right-click a connection and select **Edit...** from its context menu. In the **Edit Connection** dialog, select the appropriate **Security** type from the dropdown and enter the **ApiKey**.
 
 ![AirNow connection](../uploads/features/swagger-security-definitions.png "AirNow")
@@ -211,12 +217,12 @@ Datagrok supports all types of secret access for Swagger, such as:
 
 :::
 
-When webservices don't require secret access, omit[??????] the `securityDefinitions:` block inside the Swagger file. See this [sample Swagger file without the security definitions](https://github.com/datagrok-ai/public/blob/master/packages/Swaggers/swaggers/countries.yaml)
+When webservices don't require secret access, omit the `securityDefinitions:` block inside the Swagger file. See this [sample Swagger file without the security definitions](https://github.com/datagrok-ai/public/blob/master/packages/Swaggers/swaggers/countries.yaml)
 .
 
 ### Packages
 
-In addition to uploading Swagger files via drag-and-drop, Datagrok supports import of Swagger files from [external packages](../develop/develop.md). Here's one such [package](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers), which contains our Swagger demo files. The package includes many Swagger examples for different services in various formats (YAML, JSON).
+In addition to uploading Swagger files via drag-and-drop, Datagrok supports import of these files from [external packages](../develop/develop.md). Here's one such [package](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers), which contains our Swagger demo files. The package includes many Swagger examples for different services in various formats (YAML, JSON).
 
 When Swagger files are stored in this manner, they are imported to Datagrok (and new data connections appear) simultaneously as the corresponding package is published.
 
