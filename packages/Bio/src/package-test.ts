@@ -4,17 +4,18 @@ import {runTests, TestContext, tests} from '@datagrok-libraries/utils/src/test';
 
 import './tests/Palettes-test';
 
-// import './tests/detectors-tests';
-// import './tests/detectors-benchmark-tests';
-// import './tests/msa-tests';
-// import './tests/sequence-space-test';
+// first quarter
+import './tests/detectors-tests';
+import './tests/detectors-benchmark-tests';
+import './tests/msa-tests';
+import './tests/sequence-space-test';
 
 // second quarter
-import './tests/activity-cliffs-tests';
-import './tests/splitters-test';
-import './tests/monomer-libraries-tests';
-import './tests/renderers-test';
-import './tests/converters-test';
+// import './tests/activity-cliffs-tests';
+// import './tests/splitters-test';
+// import './tests/monomer-libraries-tests';
+// import './tests/renderers-test';
+// import './tests/converters-test';
 
 // second half
 import './tests/fasta-handler-test';
