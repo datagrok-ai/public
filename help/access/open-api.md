@@ -6,7 +6,7 @@ title: "OpenAPI"
 
 ## Connecting to a webservice
 
-To upload an OpenAPI file, drag and drop a YAML or JSON file into Datagrok. DataGrok detects different attributes of a Swagger file and automatically creates a data connection and associated queries and [functions](../datagrok/functions/functions.md):
+To upload an OpenAPI document, drag and drop a YAML or JSON file into Datagrok. Datagrok detects different attributes of a Swagger file and automatically creates a data connection and associated queries:
 
 | Swagger file    | Datagrok                                             |
 |-----------------|------------------------------------------------------|
@@ -14,8 +14,7 @@ To upload an OpenAPI file, drag and drop a YAML or JSON file into Datagrok. Data
 | description     | Data connection description                          |
 | paths           | Data query is created for each path                  |
 | summary         | Data query name                                      |
-| function(???)   | Function (???)                                       |
-| type(???)       | Data type(???)                                       |
+| parameters      | Data query parameters                                |
 
 When the file import is complete, the data connection, along with all associated queries and functions, appear in the **Webservices Manager** (**Data** > **Webservices**).
 
