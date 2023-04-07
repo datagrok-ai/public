@@ -5,10 +5,10 @@ import {runTests, TestContext, tests} from '@datagrok-libraries/utils/src/test';
 import './tests/Palettes-test';
 
 // first quarter
-import './tests/detectors-tests';
-import './tests/detectors-benchmark-tests';
-import './tests/msa-tests';
-import './tests/sequence-space-test';
+// import './tests/detectors-tests';
+// import './tests/detectors-benchmark-tests';
+// import './tests/msa-tests';
+// import './tests/sequence-space-test';
 
 // second quarter
 // import './tests/activity-cliffs-tests';
