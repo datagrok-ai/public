@@ -30,6 +30,9 @@ Swagger format allows defining parameters both within individual paths and at th
 
 For example, consider the following AirNow YAML file, where the `date` parameter is defined within the path, and the remaining parameters are placed to `parameters:` section at the file level:
 
+<details>
+<summary> Example: AirNow YAML file </summary>
+
 ```yaml
 swagger: '2.0'
 info:
@@ -100,9 +103,12 @@ securityDefinitions:
     in: query
 ```
 
+</details>
+
 To add a custom `grok-datetime-format parameter`, you can either apply it to the entire Swagger file or define it within specific paths:
 
-Custom parameter applied to the entire Swagger file:
+<details>
+<summary> Custom parameter applied to the entire file </summary>
 
 ```yaml
 swagger: '2.0'
@@ -117,7 +123,10 @@ parameters:
 ...
 ```
 
-Custom parameter applied to an individual path:
+</details>
+
+<details>
+<summary> Custom parameter applied to an individual path </summary>
 
 ```yaml
 swagger: '2.0'
@@ -145,6 +154,8 @@ paths:
           grok-datetime-format: yyyy-MM-ddT00-0000
   ...
 ```
+
+</details>
 
 Datagrok can work with both parameterized queries and queries without parameters. Furthermore, there are no restrictions in Datagrok on using parameters in different locations, including:
 
@@ -244,7 +255,7 @@ You can now explore the query results further, create [query views and dynamic d
 
 :::tip
 
-When using the OpenAPI connector in Datagrok, you're not limited to only retrieving data from external services; you can also perform any action that the service allows. For instance, you can automatically provision virtual machines using the Amazon AWS Swagger, create Jira tickets, or even make purchases on eBay.
+When using the OpenAPI connector in Datagrok, you're not limited to only retrieving data from external services; you can also perform any action that the service allows. For instance, you can automatically provision virtual machines using the Amazon AWS Swagger, create Jira tickets, or even make purchases on eBay right from the Datagrok UI.
 
 :::
 
