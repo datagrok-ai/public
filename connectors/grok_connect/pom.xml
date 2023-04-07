@@ -150,6 +150,7 @@
     </build>
 
     <repositories>
+
         <repository>
             <id>maven-restlet</id>
             <name>Public online Restlet repository</name>
@@ -165,9 +166,55 @@
             <id>redshift</id>
             <url>https://s3.amazonaws.com/redshift-maven-repository/release</url>
         </repository>
+
+        <repository>
+            <id>data-local</id>
+            <name>data</name>
+            <url>file://${project.basedir}/lib</url>
+        </repository>
     </repositories>
 
     <dependencies>
+
+        <!--        <dependency>-->
+<!--            <groupId>com.dbschema</groupId>-->
+<!--            <artifactId>mongo</artifactId>-->
+<!--            <version>1.2</version>-->
+<!--            <scope>system</scope>-->
+<!--            <systemPath>${project.basedir}/lib/mongojdbc1.2.jar</systemPath>-->
+<!--        </dependency>-->
+        <dependency>
+            <groupId>com.dbschema</groupId>
+            <artifactId>mongo</artifactId>
+            <version>1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.simba</groupId>
+            <artifactId>athena</artifactId>
+            <version>2.0.35.1000</version>
+        </dependency>
+        <dependency>
+            <groupId>software.aws</groupId>
+            <artifactId>neptune</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.osisoft</groupId>
+            <artifactId>pi-jdbc</artifactId>
+            <version>1.7.21114</version>
+        </dependency>
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>3.41.2.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.vertica.jdbc</groupId>
+            <artifactId>vertica-jdbc</artifactId>
+            <version>12.0.3-0</version>
+        </dependency>
+
         <dependency>
             <groupId>commons-beanutils</groupId>
             <artifactId>commons-beanutils</artifactId>
