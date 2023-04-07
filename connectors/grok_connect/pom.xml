@@ -167,41 +167,42 @@
             <url>https://s3.amazonaws.com/redshift-maven-repository/release</url>
         </repository>
 
-        <repository>
-            <id>data-local</id>
-            <name>data</name>
-            <url>file://${project.basedir}/lib</url>
-        </repository>
+<!--        <repository>-->
+<!--            <id>data-local</id>-->
+<!--            <name>data</name>-->
+<!--            <url>file://${project.basedir}/lib</url>-->
+<!--        </repository>-->
     </repositories>
 
     <dependencies>
 
-        <!--        <dependency>-->
-<!--            <groupId>com.dbschema</groupId>-->
-<!--            <artifactId>mongo</artifactId>-->
-<!--            <version>1.2</version>-->
-<!--            <scope>system</scope>-->
-<!--            <systemPath>${project.basedir}/lib/mongojdbc1.2.jar</systemPath>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>com.dbschema</groupId>
             <artifactId>mongo</artifactId>
             <version>1.2</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/mongojdbc1.2.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>com.simba</groupId>
             <artifactId>athena</artifactId>
             <version>2.0.35.1000</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/AthenaJDBC42-2.0.35.1000.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>software.aws</groupId>
             <artifactId>neptune</artifactId>
             <version>2.0.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/neptune-jdbc-2.0.0-all.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>com.osisoft</groupId>
             <artifactId>pi-jdbc</artifactId>
             <version>1.7.21114</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/PIJDBCDriver.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>org.xerial</groupId>
