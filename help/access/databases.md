@@ -522,7 +522,7 @@ Datagrok query belongs to the database connection for which it's created. It mea
 
 ## Data reproducibility
 
-Any action performed on datagrok entities is reproducible and can be used in automation workflows. For example, you can use data preparation pipeline to define jobs for data ingestion, postprocessing, and transformations. To learn more about automating workflows using data preparation pipelines, see [Data preparation pipeline](data-pipeline.md).
+Any action performed on Datagrok entities is reproducible and can be used in automation workflows. For example, you can use data preparation pipeline to define jobs for data ingestion, postprocessing, and transformations. To learn more about automating workflows using data preparation pipelines, see [Data preparation pipeline](data-pipeline.md).
 
 ## Resources
 
