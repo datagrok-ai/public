@@ -6,6 +6,8 @@ export enum V2K_CONST {
   NUM_OF_COUNTS_DIGITS = 3,
   ATOM_TYPE_COL = 4,
   FIRST_BONDED_ATOM_COL = 1,
+  BOND_TYPE_COL = 3,
+
 
   RGP_SHIFT = 8,
   RGP_LINE = 'M  RGP',

@@ -10,14 +10,14 @@ const enum MOLFILE_VERSION {
 export class MolfileHandler extends ChemicalTableParserBase implements ChemicalTableParser {
   constructor(molfile: string) {
     super(molfile);
-    this.init(molfile);
+    this.reset(molfile);
   }
 
   /** Init/reset the state of the handler for a new molfile */
-  public init(molfile: string) {
-    super.init(molfile);
+  public reset(molfile: string) {
+    super.reset(molfile);
 
-    const molfileVersion = MolfileHandler.determineMolfileVersion(this.file);
+    const molfileVersion = MolfileHandler.determineMolfileVersion(this.fileContent);
     const isV2K = (molfileVersion === MOLFILE_VERSION.V2000);
 
     this.parseAtomAndBondCounts = isV2K ? this.parseAtomAndBondCountsV2K : this.parseAtomAndBondCountsV3K;
@@ -34,6 +34,8 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
     this.getBondBlockIdx = isV2K ? this.getBondBlockIdxV2K : this.getBondBlockIdxV3K;
 
     this.shiftIdxToBondedAtomsPair = isV2K ? this.shiftIdxToBondedAtomsPairV2K : this.shiftIdxToBondedAtomsPairV3K;
+
+    this.shiftIdxToBondType = isV2K ? this.shiftIdxToBondTypeV2K : this.shiftIdxToBondTypeV3K;
   }
 
   public static createInstance(file: string): MolfileHandler {
@@ -46,14 +48,21 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
   protected getCountsLineIdx!: () => number;
   protected getAtomBlockIdx!: () => number;
   protected shiftIdxToXColumn!: (lineStartIdx: number) => number;
-  protected shiftIdxToAtomType!: (idx: number) => number;
+  protected shiftIdxToAtomType!: (lineStartIdx: number) => number;
   protected getBondBlockIdx!: () => number;
   protected shiftIdxToBondedAtomsPair!: (lineStartIdx: number) => number;
+  protected shiftIdxToBondType!: (lineStartIdx: number) => number;
 
   protected parseAtomType(idx: number): string {
-    const begin = idx;
-    const end = this.file.indexOf(' ', begin);
-    return this.file.substring(begin, end);
+    let begin = idx;
+    let end = begin;
+    if (this.isQuote(begin)) {
+      end = this.getNextIdenticalChar(begin);
+      begin++;
+    } else {
+      end = this.fileContent.indexOf(' ', end);
+    }
+    return this.fileContent.substring(begin, end);
   }
 
   /** Determine whether the file is V2000/V3000, or throw */
@@ -82,7 +91,7 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
   }
 
   private getCountsLineV3KIdx(): number {
-    return this.file.indexOf(V3K_CONST.BEGIN_COUNTS_LINE);
+    return this.fileContent.indexOf(V3K_CONST.BEGIN_COUNTS_LINE);
   }
 
   private getAtomBlockIdxV2K(): number {
@@ -92,7 +101,7 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
   }
 
   private getAtomBlockIdxV3K(): number {
-    let idx = this.file.indexOf(V3K_CONST.BEGIN_ATOM_BLOCK);
+    let idx = this.fileContent.indexOf(V3K_CONST.BEGIN_ATOM_BLOCK);
     idx = this.getNextLineIdx(idx);
     return idx;
   }
@@ -101,7 +110,25 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
     return this.getNextColumnIdx(lineStartIdx);
   }
 
+  private isQuote(idx: number): boolean {
+    return this.fileContent.at(idx) === '\"' || this.fileContent.at(idx) === '\'';
+  }
+
+  private getNextIdenticalChar(idx: number): number {
+    const sym = this.fileContent.at(idx);
+    if (sym)
+      return this.fileContent.indexOf(sym, idx + 1);
+    else
+      return -1;
+  }
+
   private shiftIdxToXColumnV3K(lineStartIdx: number): number {
+    let idx = this.shiftIdxToAtomType(lineStartIdx);
+    if (this.isQuote(idx)) {
+      idx = this.getNextIdenticalChar(idx);
+      idx = this.getNextColumnIdx(idx);
+      return idx;
+    }
     return this.shiftIdxToSpecifiedColumn(lineStartIdx, V3K_CONST.X_COL);
   }
 
@@ -112,6 +139,15 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
   private shiftIdxToBondedAtomsPairV3K(lineStartIdx: number): number {
     return this.shiftIdxToSpecifiedColumn(lineStartIdx, V3K_CONST.FIRST_BONDED_ATOM_COL);
   }
+
+  private shiftIdxToBondTypeV2K(lineStartIdx: number): number {
+    return this.shiftIdxToSpecifiedColumn(lineStartIdx, V2K_CONST.BOND_TYPE_COL);
+  }
+
+  private shiftIdxToBondTypeV3K(lineStartIdx: number): number {
+    return this.shiftIdxToSpecifiedColumn(lineStartIdx, V3K_CONST.BOND_TYPE_COL);
+  }
+
   private getBondBlockIdxV2K(): number {
     let idx = this.getAtomBlockIdx();
     for (let i = 0; i < this.atomCount; i++)
@@ -120,7 +156,7 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
   }
 
   private getBondBlockIdxV3K(): number {
-    return this.getNextLineIdx(this.file.indexOf(V3K_CONST.BEGIN_BOND_BLOCK));
+    return this.getNextLineIdx(this.fileContent.indexOf(V3K_CONST.BEGIN_BOND_BLOCK));
   }
 
   private static validateV3K(molfile: string): boolean {
@@ -136,23 +172,23 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
   private parseAtomAndBondCountsV2K(): AtomAndBondCounts {
     let begin = this.getCountsLineIdx();
     let end = begin + V2K_CONST.NUM_OF_COUNTS_DIGITS;
-    const atomCount = parseInt(this.file.substring(begin, end));
+    const atomCount = parseInt(this.fileContent.substring(begin, end));
     begin = end;
     end += V2K_CONST.NUM_OF_COUNTS_DIGITS;
-    const bondCount = parseInt(this.file.substring(begin, end));
+    const bondCount = parseInt(this.fileContent.substring(begin, end));
     return {atomCount: atomCount, bondCount: bondCount};
   };
 
   private parseAtomAndBondCountsV3K(): AtomAndBondCounts {
     // parse atom count
-    let begin = this.file.indexOf(V3K_CONST.BEGIN_COUNTS_LINE) + V3K_CONST.COUNTS_SHIFT;
-    let end = this.file.indexOf(' ', begin + 1);
-    const numOfAtoms = parseInt(this.file.substring(begin, end));
+    let begin = this.fileContent.indexOf(V3K_CONST.BEGIN_COUNTS_LINE) + V3K_CONST.COUNTS_SHIFT;
+    let end = this.fileContent.indexOf(' ', begin + 1);
+    const numOfAtoms = parseInt(this.fileContent.substring(begin, end));
 
     // parse bond count
     begin = end + 1;
-    end = this.file.indexOf(' ', begin + 1);
-    const numOfBonds = parseInt(this.file.substring(begin, end));
+    end = this.fileContent.indexOf(' ', begin + 1);
+    const numOfBonds = parseInt(this.fileContent.substring(begin, end));
 
     return {atomCount: numOfAtoms, bondCount: numOfBonds};
   }
