@@ -8,6 +8,10 @@ import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 import $ from 'cash-dom';
 
+const InvalidMolfileError = class extends Error {
+  constructor(message: string) { super(message); }
+};
+
 export class MoleculeImage {
   constructor(molblok: string) {
     this.molblock = molblok;
@@ -17,14 +21,21 @@ export class MoleculeImage {
   get molblock(): string { return this._validMolBlock; }
 
   set molblock(value: string) {
-    this.validateMolBlock(value);
+    try {
+      this.validateMolBlock(value);
+    } catch (error) {
+      if (error instanceof InvalidMolfileError)
+        value = '';
+      const errorMessage = errorToConsole(error);
+      console.error(errorMessage);
+    }
     this._validMolBlock = value;
   }
 
   private validateMolBlock(molblock: string): void {
-    // todo: add more sound criterion
+    // todo: add a sound criterion
     if (molblock === '')
-      throw new Error('MoleculeImage: invalid molblock');
+      throw new InvalidMolfileError('MoleculeImage: invalid molblock');
   }
 
   private async drawMolBlockOnCanvas(canvas: HTMLCanvasElement): Promise<void> {

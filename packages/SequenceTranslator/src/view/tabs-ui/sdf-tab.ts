@@ -15,16 +15,6 @@ import {ColoredTextInput} from '../../utils/colored-text-input';
 import {MoleculeImage} from '../molecule-img';
 
 export class SdfTabUI {
-  private constructor() { }
-
-  public static init() {
-    if (!SdfTabUI.instance)
-      SdfTabUI.instance = new SdfTabUI();
-    return SdfTabUI.instance;
-  }
-
-  private static instance: SdfTabUI;
-
   get htmlDivElement(): HTMLDivElement {
     const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
 

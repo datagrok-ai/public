@@ -4,9 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {MAIN_TAB, AXOLABS_TAB, SDF_TAB} from './const/view-const';
-import {MainTabUI} from './tabs-ui/main';
-import {SdfTabUI} from './tabs-ui/sdf';
-import {AxolabsTabUI} from './tabs-ui/axolabs';
+import {MainTabUI} from './tabs-ui/main-tab';
+import {SdfTabUI} from './tabs-ui/sdf-tab';
+import {AxolabsTabUI} from './tabs-ui/axolabs-tab';
 import {viewMonomerLib} from '../utils/monomer-lib-viewer';
 
 export class SequenceTranslatorUI {
@@ -33,9 +33,9 @@ export class SequenceTranslatorUI {
     this._view.setRibbonPanels([this._topPanel]);
 
     this._tabs = new TabLayout(
-      new MainTabUI((seq: string) => {}),
+      new MainTabUI(),
       new AxolabsTabUI(),
-      SdfTabUI.init()
+      new SdfTabUI()
     );
   }
 
