@@ -25,12 +25,13 @@ function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
 
 /** Performs a curve confidence interval drawing */
 function drawConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries, confidenceType: string, transform: ITransform) {
+  const fitResult = fitSeries(series);
   g.beginPath();
   for (let i = 0; i < series.points.length!; i++) {
     const x = transform.xToScreen(series.points[i].x);
     const y = confidenceType === CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP
-    ? transform.yToScreen(fitSeries(series).confidenceTop(series.points[i].x))
-    : transform.yToScreen(fitSeries(series).confidenceBottom(series.points[i].x));
+    ? transform.yToScreen(fitResult.confidenceTop(series.points[i].x))
+    : transform.yToScreen(fitResult.confidenceBottom(series.points[i].x));
     if (i === 0)
       g.moveTo(x, y);
     else
@@ -41,10 +42,11 @@ function drawConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries,
 
 /** Performs a curve confidence interval filling */
 function fillConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries, transform: ITransform) {
+  const fitResult = fitSeries(series);
   g.beginPath();
   for (let i = 0; i < series.points.length!; i++) {
     const x = transform.xToScreen(series.points[i].x);
-    const y = transform.yToScreen(fitSeries(series).confidenceTop(series.points[i].x));
+    const y = transform.yToScreen(fitResult.confidenceTop(series.points[i].x));
     if (i === 0)
       g.moveTo(x, y);
     else
@@ -54,7 +56,7 @@ function fillConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries,
   // reverse traverse to make a shape of confidence interval to fill it
   for (let i = series.points.length! - 1; i >= 0; i--) {
     const x = transform.xToScreen(series.points[i].x);
-    const y = transform.yToScreen(fitSeries(series).confidenceBottom(series.points[i].x));
+    const y = transform.yToScreen(fitResult.confidenceBottom(series.points[i].x));
     g.lineTo(x, y);
   }
   g.closePath();
