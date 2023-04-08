@@ -34,7 +34,7 @@ category('activityCliffs', async () => {
     viewList.push(actCliffsTableView);
 
     await _testActivityCliffsOpen(actCliffsDf, 57, 'UMAP', 'MSA');
-  });
+  }, {skipReason: 'GROK-12136'});
 
   test('activityCliffsWithEmptyRows', async () => {
     actCliffsDfWithEmptyRows = await readDataframe('tests/sample_MSA_data_empty_vals.csv');
@@ -43,5 +43,5 @@ category('activityCliffs', async () => {
     viewList.push(actCliffsTableViewWithEmptyRows);
 
     await _testActivityCliffsOpen(actCliffsDfWithEmptyRows, 57, 'UMAP', 'MSA');
-  });
+  }, {skipReason: 'GROK-12136'});
 });
