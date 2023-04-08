@@ -20,37 +20,39 @@ import {download} from '../../utils/helpers';
 import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, DEFAULT_INPUT} from '../../view/const/main-tab-const';
 
 export class MainTabUI {
-  constructor(onInputChanged: (input: string) => void) {
-    this._inputSequence = DEFAULT_INPUT;
-    this._onInputChanged = onInputChanged;
+  constructor() {
+    this.moleculeImgDiv = ui.block([]);
+    this.outputTableDiv = ui.div([]);
+    this.inputFormatChoiceInput = ui.choiceInput('', INPUT_FORMATS.GCRS, Object.values(INPUT_FORMATS));
+    this.inputFormatChoiceInput.onInput(async () => {
+      await this.updateTableAndMolecule(this.inputSequenceBase.value.replace(/\s/g, ''));
+    });
+    this.inputSequenceBase = ui.textInput('', DEFAULT_INPUT,
+      (sequence: string) => {
+        // Send event to DG.debounce()
+        this.onInput.next(sequence);
+      });
   }
 
-  private _inputSequence: string;
-  private _onInputChanged: (input: string) => void;
-
-  get inputSequence() { return this._inputSequence; }
+  private moleculeImgDiv: HTMLDivElement;
+  private outputTableDiv: HTMLDivElement;
+  private inputFormatChoiceInput: DG.InputBase;
+  private inputSequenceBase: DG.InputBase;
+  private onInput = new rxjs.Subject<string>();
 
   async getHtmlElement(): Promise<HTMLDivElement> {
-    return await getMainTab(this._onInputChanged);
+    return await this.getMainTab((seq: string) => {});
   }
 
-  set inputSequence(newSequence: string) {
-    // todo: validation of the inserted sequence
-    this._inputSequence = newSequence;
-  }
-}
-
-/** Produce HTML div for the 'main' tab */
-export async function getMainTab(onSequenceChanged: (seq: string) => void): Promise<HTMLDivElement> {
-  async function updateTableAndMolecule(sequence: string): Promise<void> {
-    moleculeImgDiv.innerHTML = '';
-    outputTableDiv.innerHTML = '';
+  private async updateTableAndMolecule(sequence: string): Promise<void> {
+    this.moleculeImgDiv.innerHTML = '';
+    this.outputTableDiv.innerHTML = '';
     const pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
 
     try {
       sequence = sequence.replace(/\s/g, '');
       const output = isValidSequence(sequence, null);
-      inputFormatChoiceInput.value = output.synthesizer![0];
+      this.inputFormatChoiceInput.value = output.synthesizer![0];
       const outputSequenceObj = convertSequence(sequence, output);
       const tableRows = [];
 
@@ -71,7 +73,7 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
         });
       }
 
-      outputTableDiv.append(
+      this.outputTableDiv.append(
         ui.div([
           ui.table(tableRows, (item) => [item.format, item.sequence], ['OUTPUT FORMAT', 'OUTPUT SEQUENCE'])
         ])
@@ -81,92 +83,80 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
         const formCanvasWidth = 500;
         const formCanvasHeight = 170;
         const molfile = sequenceToMolV3000(
-          inputSequenceBase.value.replace(/\s/g, ''), false, true,
+          this.inputSequenceBase.value.replace(/\s/g, ''), false, true,
           output.synthesizer![0]
         );
-        await drawMolecule(moleculeImgDiv, formCanvasWidth, formCanvasHeight, molfile);
+        await drawMolecule(this.moleculeImgDiv, formCanvasWidth, formCanvasHeight, molfile);
       } else {
-        moleculeImgDiv.innerHTML = '';
+        this.moleculeImgDiv.innerHTML = '';
       }
     } finally {
       pi.close();
     }
   }
 
-  const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
 
-  const inputFormatChoiceInput = ui.choiceInput('', INPUT_FORMATS.GCRS, Object.values(INPUT_FORMATS));
-  inputFormatChoiceInput.onInput(async () => {
-    await updateTableAndMolecule(inputSequenceBase.value.replace(/\s/g, ''));
-  });
-  const inputSequenceBase = ui.textInput('', DEFAULT_INPUT,
-    (sequence: string) => {
-      // Send event to DG.debounce()
-      onInput.next(sequence);
+  private async getMainTab(onSequenceChanged: (seq: string) => void): Promise<HTMLDivElement> {
+    const sequenceColoredInput = new ColoredTextInput(this.inputSequenceBase, highlightInvalidSubsequence);
+
+    DG.debounce<string>(this.onInput, 300).subscribe(async (sequence) => {
+      await this.updateTableAndMolecule(sequence);
+      onSequenceChanged(sequence);
     });
 
-  const sequenceColoredInput = new ColoredTextInput(inputSequenceBase, highlightInvalidSubsequence);
+    const downloadMolfileButton = ui.button(
+      'Get Molfile',
+      async () => {
+        const clearSequence = this.inputSequenceBase.value.replace(/\s/g, '');
+        const result = sequenceToMolV3000(this.inputSequenceBase.value.replace(/\s/g, ''), false, false,
+          this.inputFormatChoiceInput.value!);
+        download(clearSequence + '.mol', encodeURIComponent(result));
+      },
+      'Save .mol file');
+    // $(downloadMolfileButton).addClass(OUTLINE_BUTTON_CLASS);
 
-  DG.debounce<string>(onInput, 300).subscribe(async (sequence) => {
-    await updateTableAndMolecule(sequence);
-    onSequenceChanged(sequence);
-  });
+    const copySmilesButton = ui.button(
+      'Copy SMILES',
+      () => {
+        navigator.clipboard.writeText(
+          sequenceToSmiles(this.inputSequenceBase.value.replace(/\s/g, ''), false, this.inputFormatChoiceInput.value!)
+        ).then(() => grok.shell.info(SEQUENCE_COPIED_MSG));
+      },
+      'Copy SMILES string corresponding to the sequence');
+    // $(copySmilesButton).addClass(OUTLINE_BUTTON_CLASS);
 
-  const downloadMolfileButton = ui.button(
-    'Get Molfile',
-    async () => {
-      const clearSequence = inputSequenceBase.value.replace(/\s/g, '');
-      const result = sequenceToMolV3000(inputSequenceBase.value.replace(/\s/g, ''), false, false,
-        inputFormatChoiceInput.value!);
-      download(clearSequence + '.mol', encodeURIComponent(result));
-    },
-    'Save .mol file');
-  // $(downloadMolfileButton).addClass(OUTLINE_BUTTON_CLASS);
+    const formatChoiceInput = ui.div([this.inputFormatChoiceInput], {style: {padding: '5px 0'}});
 
-  const copySmilesButton = ui.button(
-    'Copy SMILES',
-    () => {
-      navigator.clipboard.writeText(
-        sequenceToSmiles(inputSequenceBase.value.replace(/\s/g, ''), false, inputFormatChoiceInput.value!)
-      ).then(() => grok.shell.info(SEQUENCE_COPIED_MSG));
-    },
-    'Copy SMILES string corresponding to the sequence');
-  // $(copySmilesButton).addClass(OUTLINE_BUTTON_CLASS);
+    // const sequenceInputLabel = ui.label('Sequence:');
 
-  const formatChoiceInput = ui.div([inputFormatChoiceInput], {style: {padding: '5px 0'}});
+    // const upperBlock = ui.divH([
+    //   ui.label('Sequence'), sequenceColoredInput.root,
+    //   formatChoiceInput,
+    // ]);
 
-  // const sequenceInputLabel = ui.label('Sequence:');
+    const tableRow = {
+      format: formatChoiceInput,
+      textInput: sequenceColoredInput.root,
+    };
+    const upperBlock = ui.table(
+      [tableRow], (item) => [item.format, item.textInput]
+    );
 
-  // const upperBlock = ui.divH([
-  //   ui.label('Sequence'), sequenceColoredInput.root,
-  //   formatChoiceInput,
-  // ]);
+    const outputTable = ui.block([
+      this.outputTableDiv,
+      downloadMolfileButton,
+      copySmilesButton,
+    ]);
 
-  const tableRow = {
-    format: formatChoiceInput,
-    textInput: sequenceColoredInput.root,
-  };
-  const upperBlock = ui.table(
-    [tableRow], (item) => [item.format, item.textInput]
-  );
+    const mainTabBody = ui.box(
+      ui.div([
+        upperBlock,
+        outputTable,
+        this.moleculeImgDiv,
+      ], {style: {paddingTop: '20px', paddingLeft: '20px'}})
+    );
 
-  const outputTableDiv = ui.div([]);
-  const outputTable = ui.block([
-    outputTableDiv,
-    downloadMolfileButton,
-    copySmilesButton,
-  ]);
-
-  const moleculeImgDiv = ui.block([]);
-
-  const mainTabBody = ui.box(
-    ui.div([
-      upperBlock,
-      outputTable,
-      moleculeImgDiv,
-    ], {style: {paddingTop: '20px', paddingLeft: '20px'}})
-  );
-
-  await updateTableAndMolecule(DEFAULT_INPUT);
-  return mainTabBody;
+    await this.updateTableAndMolecule(DEFAULT_INPUT);
+    return mainTabBody;
+  }
 }
