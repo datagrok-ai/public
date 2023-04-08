@@ -22,8 +22,8 @@ import './tests/pepsea-tests';
 import './tests/viewers';
 
 // Tests hang on github CI
-//import './tests/sequence-space-test';
 import './tests/activity-cliffs-tests';
+import './tests/sequence-space-test';
 
 
 export const _package = new DG.Package();
