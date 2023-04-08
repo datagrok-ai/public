@@ -12,7 +12,7 @@ import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {highlightInvalidSubsequence} from '../input-painters';
 import {getLinkedMolfile, saveSdf} from '../../sdf-tab/sdf-tab';
 import {ColoredTextInput} from '../../utils/colored-text-input';
-import {MoleculeImage} from '../../model/molecule-img';
+import {MoleculeImage} from '../molecule-img';
 
 export class SdfTabUI {
   private constructor() { }
@@ -93,19 +93,21 @@ export class SdfTabUI {
 
     for (const strand of strands) {
       let element = label[strand].parentElement!;
-      element.classList.add('sdf-input-form', 'sdf-text-input-label');
-      $(element).css('padding-top', '3px'); // otherwise overridden
+      element.classList.add('st-sdf-input-form');
+      // the following line is necessary because otherwise overridden by
+      // d4-item-table class
+      $(element).css('padding-top', '3px');
 
       element = directionChoiceInput[strand].root.parentElement!;
-      element.classList.add('sdf-input-form', 'sdf-choice-input-label');
+      element.classList.add('st-sdf-input-form', 'st-sdf-direction-choice');
 
       element = inputBase[strand].root.parentElement!;
-      element.classList.add('sdf-text-input-td');
+      element.classList.add('st-sdf-text-input-td');
     }
 
     // molecule image container
     const moleculeImgDiv = ui.block([]);
-    $(moleculeImgDiv).addClass('sdf-mol-img');
+    $(moleculeImgDiv).addClass('st-sdf-mol-img');
 
     function getStrandData() {
       return Object.fromEntries(
@@ -146,13 +148,13 @@ export class SdfTabUI {
     const boolInputsAndButtonArray = [saveEntity.root, useChiralInput.root, saveButton];
     const boolInputsAndButton = ui.divV(boolInputsAndButtonArray);
     for (const item of boolInputsAndButtonArray)
-      $(item).addClass('sdf-bool-button-block');
+      $(item).addClass('st-sdf-bool-button-block');
 
     const bottomDiv = ui.divH([boolInputsAndButton, moleculeImgDiv]);
-    $(bottomDiv).addClass('sdf-bottom');
+    $(bottomDiv).addClass('st-sdf-bottom');
 
     const sdfTabBody = ui.divV([tableLayout, bottomDiv]);
-    $(sdfTabBody).addClass('sdf-body');
+    $(sdfTabBody).addClass('st-sdf-body');
 
     return sdfTabBody;
   }

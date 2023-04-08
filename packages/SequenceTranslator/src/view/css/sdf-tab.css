@@ -1,39 +1,39 @@
 /* Naming convention: class names should begin with st and tab name (main, axo, sdf) to avoid naming collitions */
 
-.sdf-body {
+.st-sdf-body {
   padding-right: 20px;
 }
 
-.sdf-input-form {
+.st-sdf-input-form {
   text-align: right;
   vertical-align: top;
-}
-
-.sdf-text-input-label {
   min-width: 95px;
-  padding-top: 3px;
 }
 
-.sdf-choice-input-label {
+.st-sdf-direction-choice label {
   min-width: 100px;
   float: right;
 }
 
-.sdf-text-input-td { /* Style for td containing textarea */ 
+.st-sdf-direction-choice div {
+  justify-content: right;
+}
+
+.st-sdf-text-input-td { /* Style for td containing textarea */
   width: 100%;
 }
 
-.sdf-mol-img {
+.st-sdf-mol-img {
   margin-right: 30px;
   float: right;
 }
 
-.sdf-bool-button-block {
+.st-sdf-bool-button-block {
   justify-content: right;
   margin-bottom: 10px;
 }
 
-.sdf-bottom {
+.st-sdf-bottom {
   flex-direction: row-reverse;
   padding-top: 20px;
 }
