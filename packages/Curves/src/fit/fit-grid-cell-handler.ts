@@ -63,12 +63,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
       return host;
     });
 
-    acc.addPane('Chart', () => {
-      let viewer = new MultiCurveViewer();
-      viewer.data = chartData;
-      viewer.render();
-      return viewer.root;
-    });
+    acc.addPane('Chart', () => MultiCurveViewer.fromChartData(chartData).root);
 
     return acc.root;
   }
