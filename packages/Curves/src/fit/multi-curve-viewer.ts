@@ -34,6 +34,13 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
       this.addProperty(p.name, p.propertyType, p.defaultValue, p.options);
   }
 
+  static fromChartData(chartData: IFitChartData): MultiCurveViewer {
+    let viewer = new MultiCurveViewer();
+    viewer.data = chartData;
+    viewer.render();
+    return viewer;
+  }
+
   applyViewerProperties() {
     mergeProperties(fitChartDataProperties, this, this.data.chartOptions);
   }
