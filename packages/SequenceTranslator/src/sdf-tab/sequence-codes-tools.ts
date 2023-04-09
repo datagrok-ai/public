@@ -99,7 +99,7 @@ export function isValidSequence(sequence: string, format: string | null): {
     getListOfPossibleSynthesizersByFirstMatchedCode(sequence) :
     [format];
   if (possibleSynthesizers.length === 0)
-    return {indexOfFirstInvalidChar: 0, synthesizer: null};//, technology: null};
+    return {indexOfFirstInvalidChar: 0, synthesizer: null};
 
   const outputIndices = Array(possibleSynthesizers.length).fill(0);
 

@@ -25,7 +25,7 @@ export class MainTabUI {
     this.outputTableDiv = ui.div([]);
     this.inputFormatChoiceInput = ui.choiceInput('', INPUT_FORMATS.GCRS, Object.values(INPUT_FORMATS));
     this.inputFormatChoiceInput.onInput(async () => {
-      await this.updateTableAndMolecule();
+      await this.updateLayout();
     });
     this.inputSequenceBase = ui.textInput('', DEFAULT_INPUT,
       (sequence: string) => {
@@ -37,16 +37,17 @@ export class MainTabUI {
 
     DG.debounce<string>(this.onInput, 300).subscribe(async () => {
       this.init();
-      await this.updateTableAndMolecule();
+      await this.updateLayout();
       // onSequenceChanged(sequence);
     });
   }
 
+  // todo: reduce # of state vars by further refactoring legacy code
+  private onInput = new rxjs.Subject<string>();
   private moleculeImgDiv: HTMLDivElement;
   private outputTableDiv: HTMLDivElement;
   private inputFormatChoiceInput: DG.InputBase;
   private inputSequenceBase: DG.InputBase;
-  private onInput = new rxjs.Subject<string>();
   private molfile: string;
   private sequence: string;
   private format: string;
@@ -57,12 +58,12 @@ export class MainTabUI {
     const downloadMolfileButton = ui.button(
       'Get Molfile',
       () => { this.saveMolfile(); },
-      'Save .mol file');
+      'Save sequence as Molfile V3000');
 
     const copySmilesButton = ui.button(
       'Copy SMILES',
       () => { this.copySmiles(); },
-      'Copy SMILES string corresponding to the sequence');
+      'Copy SMILES for the sequence');
 
     const formatChoiceInput = ui.div([this.inputFormatChoiceInput]);
 
@@ -88,7 +89,7 @@ export class MainTabUI {
       ], {style: {paddingTop: '20px', paddingLeft: '20px'}})
     );
 
-    await this.updateTableAndMolecule();
+    await this.updateLayout();
     return mainTabBody;
   }
 
@@ -101,16 +102,14 @@ export class MainTabUI {
   private copySmiles(): void {
     navigator.clipboard.writeText(
       sequenceToSmiles(this.sequence, false, this.inputFormatChoiceInput.value!)
-    ).then(() => grok.shell.info(SEQUENCE_COPIED_MSG));
+    ).then(
+      () => grok.shell.info(SEQUENCE_COPIED_MSG)
+    );
   }
 
-  private async updateTableAndMolecule(): Promise<void> {
-    this.moleculeImgDiv.innerHTML = '';
+  private updateTable(): void {
     this.outputTableDiv.innerHTML = '';
-    // const pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
-
     const output = isValidSequence(this.sequence, null);
-    this.inputFormatChoiceInput.value = output.synthesizer![0];
     const outputSequenceObj = convertSequence(this.sequence, output);
     const tableRows = [];
 
@@ -118,9 +117,9 @@ export class MainTabUI {
       const sequence = ('indexOfFirstInvalidChar' in outputSequenceObj) ?
         ui.divH([]) :
         ui.link(
-          //@ts-ignore // why ts-ignore?
+          //@ts-ignore // why ts-ignore? refactor to remove
           outputSequenceObj[key],
-          //@ts-ignore // why ts-ignore?
+          //@ts-ignore // why ts-ignore? refactor to remove
           () => navigator.clipboard.writeText(outputSequenceObj[key])
             .then(() => grok.shell.info(SEQUENCE_COPIED_MSG)),
           SEQ_TOOLTIP_MSG, ''
@@ -136,17 +135,17 @@ export class MainTabUI {
         ui.table(tableRows, (item) => [item.format, item.sequence], ['OUTPUT FORMAT', 'OUTPUT SEQUENCE'])
       ])
     );
+  }
 
+  private async updateMolImg(): Promise<void> {
+    this.moleculeImgDiv.innerHTML = ''; // ??
+    // todo: eliminate after refactoring legacy
+    const output = isValidSequence(this.sequence, null);
+    const outputSequenceObj = convertSequence(this.sequence, output);
     if (outputSequenceObj.type !== undefinedInputSequence && outputSequenceObj.Error !== undefinedInputSequence) {
       const formCanvasWidth = 500;
       const formCanvasHeight = 170;
-      const molfile = sequenceToMolV3000(
-        this.inputSequenceBase.value.replace(/\s/g, ''), false, true,
-        output.synthesizer![0]
-      );
-      await drawMolecule(this.moleculeImgDiv, formCanvasWidth, formCanvasHeight, molfile);
-    } else {
-      this.moleculeImgDiv.innerHTML = '';
+      await drawMolecule(this.moleculeImgDiv, formCanvasWidth, formCanvasHeight, this.molfile);
     }
   }
 
@@ -154,7 +153,8 @@ export class MainTabUI {
   private init(): void {
     this.sequence = this.getFormattedSequence();
     this.format = this.getInputFormat();
-    // getMolfile uses this.format, so order is important here
+
+    // warning: getMolfile relies on this.format, so the order is important
     this.molfile = this.getMolfile();
   }
 
@@ -163,18 +163,18 @@ export class MainTabUI {
   }
 
   private getMolfile(): string {
-    const output = isValidSequence(this.sequence, null);
-    this.inputFormatChoiceInput.value = output.synthesizer![0];
-    return sequenceToMolV3000(
-      this.sequence, false, true,
-      this.format
-    );
+    return sequenceToMolV3000(this.sequence, false, true, this.format);
   }
 
   // todo: put synthesizers into an object/enum
+  // todo: take into account possible exceptions
   private getInputFormat(): string {
     const vadimsOutput = isValidSequence(this.sequence, null);
-    // this.inputFormatChoiceInput.value = output.synthesizer![0];
     return vadimsOutput.synthesizer![0];
+  }
+
+  private async updateLayout(): Promise<void> {
+    this.updateTable();
+    await this.updateMolImg();
   }
 }
