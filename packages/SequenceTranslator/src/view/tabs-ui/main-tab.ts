@@ -25,13 +25,21 @@ export class MainTabUI {
     this.outputTableDiv = ui.div([]);
     this.inputFormatChoiceInput = ui.choiceInput('', INPUT_FORMATS.GCRS, Object.values(INPUT_FORMATS));
     this.inputFormatChoiceInput.onInput(async () => {
-      await this.updateTableAndMolecule(this.inputSequenceBase.value.replace(/\s/g, ''));
+      await this.updateTableAndMolecule();
     });
     this.inputSequenceBase = ui.textInput('', DEFAULT_INPUT,
       (sequence: string) => {
         // Send event to DG.debounce()
         this.onInput.next(sequence);
       });
+
+    this.init();
+
+    DG.debounce<string>(this.onInput, 300).subscribe(async () => {
+      this.init();
+      await this.updateTableAndMolecule();
+      // onSequenceChanged(sequence);
+    });
   }
 
   private moleculeImgDiv: HTMLDivElement;
@@ -39,100 +47,24 @@ export class MainTabUI {
   private inputFormatChoiceInput: DG.InputBase;
   private inputSequenceBase: DG.InputBase;
   private onInput = new rxjs.Subject<string>();
+  private molfile: string;
+  private sequence: string;
+  private format: string;
 
   async getHtmlElement(): Promise<HTMLDivElement> {
-    return await this.getMainTab((seq: string) => {});
-  }
-
-  private async updateTableAndMolecule(sequence: string): Promise<void> {
-    this.moleculeImgDiv.innerHTML = '';
-    this.outputTableDiv.innerHTML = '';
-    const pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
-
-    try {
-      sequence = sequence.replace(/\s/g, '');
-      const output = isValidSequence(sequence, null);
-      this.inputFormatChoiceInput.value = output.synthesizer![0];
-      const outputSequenceObj = convertSequence(sequence, output);
-      const tableRows = [];
-
-      for (const key of Object.keys(outputSequenceObj).slice(1)) {
-        const sequence = ('indexOfFirstInvalidChar' in outputSequenceObj) ?
-          ui.divH([]) :
-          ui.link(
-            //@ts-ignore // why ts-ignore?
-            outputSequenceObj[key],
-            //@ts-ignore // why ts-ignore?
-            () => navigator.clipboard.writeText(outputSequenceObj[key])
-              .then(() => grok.shell.info(SEQUENCE_COPIED_MSG)),
-            SEQ_TOOLTIP_MSG, ''
-          );
-        tableRows.push({
-          format: key,
-          sequence: sequence,
-        });
-      }
-
-      this.outputTableDiv.append(
-        ui.div([
-          ui.table(tableRows, (item) => [item.format, item.sequence], ['OUTPUT FORMAT', 'OUTPUT SEQUENCE'])
-        ])
-      );
-
-      if (outputSequenceObj.type !== undefinedInputSequence && outputSequenceObj.Error !== undefinedInputSequence) {
-        const formCanvasWidth = 500;
-        const formCanvasHeight = 170;
-        const molfile = sequenceToMolV3000(
-          this.inputSequenceBase.value.replace(/\s/g, ''), false, true,
-          output.synthesizer![0]
-        );
-        await drawMolecule(this.moleculeImgDiv, formCanvasWidth, formCanvasHeight, molfile);
-      } else {
-        this.moleculeImgDiv.innerHTML = '';
-      }
-    } finally {
-      pi.close();
-    }
-  }
-
-
-  private async getMainTab(onSequenceChanged: (seq: string) => void): Promise<HTMLDivElement> {
     const sequenceColoredInput = new ColoredTextInput(this.inputSequenceBase, highlightInvalidSubsequence);
-
-    DG.debounce<string>(this.onInput, 300).subscribe(async (sequence) => {
-      await this.updateTableAndMolecule(sequence);
-      onSequenceChanged(sequence);
-    });
 
     const downloadMolfileButton = ui.button(
       'Get Molfile',
-      async () => {
-        const clearSequence = this.inputSequenceBase.value.replace(/\s/g, '');
-        const result = sequenceToMolV3000(this.inputSequenceBase.value.replace(/\s/g, ''), false, false,
-          this.inputFormatChoiceInput.value!);
-        download(clearSequence + '.mol', encodeURIComponent(result));
-      },
+      () => { this.saveMolfile(); },
       'Save .mol file');
-    // $(downloadMolfileButton).addClass(OUTLINE_BUTTON_CLASS);
 
     const copySmilesButton = ui.button(
       'Copy SMILES',
-      () => {
-        navigator.clipboard.writeText(
-          sequenceToSmiles(this.inputSequenceBase.value.replace(/\s/g, ''), false, this.inputFormatChoiceInput.value!)
-        ).then(() => grok.shell.info(SEQUENCE_COPIED_MSG));
-      },
+      () => { this.copySmiles(); },
       'Copy SMILES string corresponding to the sequence');
-    // $(copySmilesButton).addClass(OUTLINE_BUTTON_CLASS);
 
-    const formatChoiceInput = ui.div([this.inputFormatChoiceInput], {style: {padding: '5px 0'}});
-
-    // const sequenceInputLabel = ui.label('Sequence:');
-
-    // const upperBlock = ui.divH([
-    //   ui.label('Sequence'), sequenceColoredInput.root,
-    //   formatChoiceInput,
-    // ]);
+    const formatChoiceInput = ui.div([this.inputFormatChoiceInput]);
 
     const tableRow = {
       format: formatChoiceInput,
@@ -156,7 +88,93 @@ export class MainTabUI {
       ], {style: {paddingTop: '20px', paddingLeft: '20px'}})
     );
 
-    await this.updateTableAndMolecule(DEFAULT_INPUT);
+    await this.updateTableAndMolecule();
     return mainTabBody;
+  }
+
+  private saveMolfile(): void {
+    const result = sequenceToMolV3000(this.sequence, false, false,
+      this.inputFormatChoiceInput.value!);
+    download(this.sequence + '.mol', encodeURIComponent(result));
+  }
+
+  private copySmiles(): void {
+    navigator.clipboard.writeText(
+      sequenceToSmiles(this.sequence, false, this.inputFormatChoiceInput.value!)
+    ).then(() => grok.shell.info(SEQUENCE_COPIED_MSG));
+  }
+
+  private async updateTableAndMolecule(): Promise<void> {
+    this.moleculeImgDiv.innerHTML = '';
+    this.outputTableDiv.innerHTML = '';
+    // const pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
+
+    const output = isValidSequence(this.sequence, null);
+    this.inputFormatChoiceInput.value = output.synthesizer![0];
+    const outputSequenceObj = convertSequence(this.sequence, output);
+    const tableRows = [];
+
+    for (const key of Object.keys(outputSequenceObj).slice(1)) {
+      const sequence = ('indexOfFirstInvalidChar' in outputSequenceObj) ?
+        ui.divH([]) :
+        ui.link(
+          //@ts-ignore // why ts-ignore?
+          outputSequenceObj[key],
+          //@ts-ignore // why ts-ignore?
+          () => navigator.clipboard.writeText(outputSequenceObj[key])
+            .then(() => grok.shell.info(SEQUENCE_COPIED_MSG)),
+          SEQ_TOOLTIP_MSG, ''
+        );
+      tableRows.push({
+        format: key,
+        sequence: sequence,
+      });
+    }
+
+    this.outputTableDiv.append(
+      ui.div([
+        ui.table(tableRows, (item) => [item.format, item.sequence], ['OUTPUT FORMAT', 'OUTPUT SEQUENCE'])
+      ])
+    );
+
+    if (outputSequenceObj.type !== undefinedInputSequence && outputSequenceObj.Error !== undefinedInputSequence) {
+      const formCanvasWidth = 500;
+      const formCanvasHeight = 170;
+      const molfile = sequenceToMolV3000(
+        this.inputSequenceBase.value.replace(/\s/g, ''), false, true,
+        output.synthesizer![0]
+      );
+      await drawMolecule(this.moleculeImgDiv, formCanvasWidth, formCanvasHeight, molfile);
+    } else {
+      this.moleculeImgDiv.innerHTML = '';
+    }
+  }
+
+  // todo: sort mehtods
+  private init(): void {
+    this.sequence = this.getFormattedSequence();
+    this.format = this.getInputFormat();
+    // getMolfile uses this.format, so order is important here
+    this.molfile = this.getMolfile();
+  }
+
+  private getFormattedSequence(): string {
+    return this.inputSequenceBase.value.replace(/\s/g, '');
+  }
+
+  private getMolfile(): string {
+    const output = isValidSequence(this.sequence, null);
+    this.inputFormatChoiceInput.value = output.synthesizer![0];
+    return sequenceToMolV3000(
+      this.sequence, false, true,
+      this.format
+    );
+  }
+
+  // todo: put synthesizers into an object/enum
+  private getInputFormat(): string {
+    const vadimsOutput = isValidSequence(this.sequence, null);
+    // this.inputFormatChoiceInput.value = output.synthesizer![0];
+    return vadimsOutput.synthesizer![0];
   }
 }
