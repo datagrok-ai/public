@@ -6,6 +6,7 @@ import {divV} from 'datagrok-api/ui';
 import * as fit from './fit-data';
 import {fitSeries} from './fit-data';
 import {fitResultProperties} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
+import {MultiCurveViewer} from "./multi-curve-viewer";
 
 
 function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property): void {
@@ -41,6 +42,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
         ui.input.form(columnChartOptions.seriesOptions, fit.fitSeriesProperties, refresh),
         ui.input.form(chartData.chartOptions, fit.fitChartDataProperties, refresh),
       ]));
+
     acc.addPane('Results', () => {
       const host = divV([]);
 
@@ -60,6 +62,14 @@ export class FitGridCellHandler extends DG.ObjectHandler {
 
       return host;
     });
+
+    acc.addPane('Chart', () => {
+      let viewer = new MultiCurveViewer();
+      viewer.data = chartData;
+      viewer.render();
+      return viewer.root;
+    });
+
     return acc.root;
   }
 }

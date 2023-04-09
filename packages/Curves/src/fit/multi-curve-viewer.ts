@@ -19,7 +19,7 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
   showCurrentRowCurve: boolean = true;
   showMouseOverRowCurve: boolean = true;
   rows: number[] = [];
-  data: FitChartData = new FitChartData();
+  data: IFitChartData = new FitChartData();
 
   constructor() {
     super(new FitChartCellRenderer());
