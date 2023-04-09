@@ -11,6 +11,7 @@ import {fitSeries, getChartData, getChartBounds, getFittedCurve,IFitChartData, I
   TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX} from './fit-data';
 import {convertXMLToIFitChartData} from './fit-parser';
 import {ITransform, Transform} from "./transform";
+import {MultiCurveViewer} from "./multi-curve-viewer";
 
 /** Performs a chart layout, returning [viewport, xAxis, yAxis] */
 function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
@@ -74,6 +75,12 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
     grok.shell.o = gridCell;
+  }
+
+  onDoubleClick(gridCell: DG.GridCell, e: MouseEvent) {
+    ui.dialog({title: 'Edit chart'})
+      .add(MultiCurveViewer.fromChartData(getChartData(gridCell)).root)
+      .show();
   }
 
   renderCurves(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, data: IFitChartData) {
