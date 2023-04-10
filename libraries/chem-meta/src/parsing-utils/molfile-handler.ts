@@ -192,4 +192,24 @@ export class MolfileHandler extends ChemicalTableParserBase implements ChemicalT
 
     return {atomCount: numOfAtoms, bondCount: numOfBonds};
   }
+
+  public isQuery(): boolean {
+    const atomCount = this.atomCount;
+    let idx = this.getAtomBlockIdx();
+    for (let i = 0; i < atomCount; i++) {
+      idx = this.shiftIdxToAtomType(idx);
+      if ( this.fileContent[idx] === 'R' || this.isQuote(idx) ||
+        (this.fileContent[idx] === 'L' && !this.isAlpha(this.fileContent[idx + 1]))
+      )
+        return true;
+      idx = this.getNextLineIdx(idx);
+    }
+    return false;
+  };
+
+  private isAlpha(sym: string): boolean {
+    const charCode = sym.charCodeAt(0);
+    return (charCode >= 65 && charCode <= 90) ||
+      (charCode >= 97 && charCode <= 122);
+  }
 }
