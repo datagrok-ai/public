@@ -25,7 +25,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   const positionsLen = positions.length;
   let aarStr = allConst;
   let otherStr = '';
-  const useSelectedStr = model.isPeptideSpaceChangingBitset;
+  // const useSelectedStr = model.isPeptideSpaceChangingBitset;
 
   const updateDistributionHost = (): void => {
     model.splitByPos = splitByPosition.value!;
@@ -168,7 +168,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         res.push(ui.divText('No distribution'));
       else {
         otherStr = '';
-        if (useSelectedStr) {
+        if (false /*useSelectedStr*/) {
           aarStr = 'Selected';
           otherStr = otherConst;
         } else if (positionsLen) {
