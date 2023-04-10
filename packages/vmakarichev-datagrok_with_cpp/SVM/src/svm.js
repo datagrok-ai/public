@@ -75,6 +75,8 @@ const KERNEL = 'kernel';
 const KERNEL_PARAMS = 'kernel params'; 
 const KERNEL_PARAM_1 = 'kernel param 1';
 const KERNEL_PARAM_2 = 'kernel param 2';
+const FEATURES_COUNT_NAME = 'features count';
+const TRAIN_SAMPLES_COUNT_NAME = 'train samples count';
 const TRAIN_ERROR = 'Train error,%';
 const MODEL_INFO = 'Model info';
 const MODEL_INFO_FULL = 'Model full info';
@@ -93,6 +95,15 @@ const ML_REPORT = 'Model report';
 const ML_REPORT_PREDICTED_LABELS = 'Predicted labels';
 const ML_REPORT_TRAIN_LABELS = 'Train labels';
 const ML_REPORT_CORRECTNESS = 'Prediction correctness';
+const PREDICTION = 'prediction';
+
+// Pack/unpack constants
+const BYTES = 4;
+const INTS_COUNT = 3;
+const KER_PARAMS_COUNT = 2;
+const MODEL_KERNEL_INDEX = 0;
+const SAMPLES_COUNT_INDEX = 1;
+const FEATURES_COUNT_INDEX = 2;
 
 // misc
 const INIT_VALUE = 0; // any number can be used
@@ -254,7 +265,9 @@ export function trainAndAnalyzeModel(module, funcName,
     predictedLabels: output[PREDICTED_LABELS_INDEX],
     correctness: output[CORRECTNESS_INDEX],
     confusionMatrix: output[CONFUSION_MATRIX_INDEX],
-    trainError: undefined 
+    trainError: undefined,
+    featuresCount: trainCols.length,
+    trainSamplesCount: trainCols[0].length 
   };
 
   evaluateAccuracy(model);
@@ -281,6 +294,8 @@ export function getModelInfo(model) {
     DG.Column.fromStrings(KERNEL, [KERNEL_TYPE_TO_NAME_MAP[model.kernelType]]),
     DG.Column.fromList('double', KERNEL_PARAM_1, [kernelParams[0]]),
     DG.Column.fromList('double', KERNEL_PARAM_2, [kernelParams[1]]),
+    DG.Column.fromList('double', FEATURES_COUNT_NAME, [model.featuresCount]),
+    DG.Column.fromList('double', TRAIN_SAMPLES_COUNT_NAME, [model.trainSamplesCount]),
     DG.Column.fromList('double', TRAIN_ERROR, [model.trainError]),
     DG.Column.fromList('double', BALANCED_ACCURACY, [model.balancedAccuracy]),
     DG.Column.fromList('double', SENSITIVITY, [model.sensitivity]),
@@ -374,3 +389,139 @@ export function showTrainReport(df, model) {
       color: model.correctness.name
     }));
 } // showTrainReport
+
+// Returns trained model packed into UInt8Array
+export function getPackedModel(model) {
+
+  // get principal data
+  let dataCols = model.normalizedTrainData.columns;  
+  let samplesCount = model.trainSamplesCount;
+  let featuresCount = model.featuresCount;
+
+  /*let bufferSize = BYTES * (7 + featuresCount * samplesCount 
+    + 3 * featuresCount + 2 * samplesCount);*/
+
+  // compute size of packed model
+  let bufferSize = BYTES * (INTS_COUNT + KER_PARAMS_COUNT + 
+    samplesCount + featuresCount + featuresCount + samplesCount + LS_SVM_ADD_CONST
+    + featuresCount + LS_SVM_ADD_CONST + featuresCount * samplesCount);
+
+  // packed model
+  let result = new Uint8Array(bufferSize);  
+  let buffer = result.buffer;
+  let offset = 0;
+
+  // pack kernel type and sizes
+  let arr = new Int32Array(buffer, offset, INTS_COUNT);
+  arr[MODEL_KERNEL_INDEX] = model.kernelType;
+  arr[SAMPLES_COUNT_INDEX] = samplesCount;
+  arr[FEATURES_COUNT_INDEX] = featuresCount;
+  offset += INTS_COUNT * BYTES;
+
+  // pack kerenel parameters
+  arr = new Float32Array(buffer, offset, KER_PARAMS_COUNT);
+  arr.set(model.kernelParams.getRawData());
+  offset += KER_PARAMS_COUNT * BYTES;
+
+  // pack pack labels of training data
+  arr = new Float32Array(buffer, offset, samplesCount);
+  arr.set(model.trainLabels.getRawData());
+  offset += samplesCount * BYTES;
+
+  // pack mean values of training data
+  arr = new Float32Array(buffer, offset, featuresCount);
+  arr.set(model.means.getRawData());  
+  offset += featuresCount * BYTES;
+
+  // pack standard deviations of training data
+  arr = new Float32Array(buffer, offset, featuresCount);
+  arr.set(model.stdDevs.getRawData());
+  offset += featuresCount * BYTES;
+
+  // pack model paramters
+  arr = new Float32Array(buffer, offset, samplesCount + LS_SVM_ADD_CONST);
+  arr.set(model.modelParams.getRawData());  
+  offset += (samplesCount + LS_SVM_ADD_CONST) * BYTES;
+
+  // pack model's precomputed weights
+  arr = new Float32Array(buffer, offset, featuresCount + LS_SVM_ADD_CONST);
+  arr.set(model.modelWeights.getRawData());
+  offset += (featuresCount + LS_SVM_ADD_CONST) * BYTES;
+
+  // pack training dataset
+  for(const col of dataCols) {
+    arr = new Float32Array(buffer, offset, featuresCount);
+    arr.set(col.getRawData());
+    offset += featuresCount * BYTES;
+  }
+  
+  return result;  
+} // getPackedModel
+
+// Returns unpacked model
+export function getUnpackedModel(packedModel) {
+
+  let modelBytes = packedModel.buffer;
+  let offset = 0;
+
+  // extract kernel type and sizes
+  let header = new Int32Array(modelBytes, offset, INTS_COUNT);  
+  offset += INTS_COUNT * BYTES;
+  let samplesCount = header[SAMPLES_COUNT_INDEX];
+  let featuresCount = header[FEATURES_COUNT_INDEX];
+  let model = { kernelType: header[MODEL_KERNEL_INDEX] };   
+  
+  // extract parameters of kernel
+  model.kernelParams = DG.Column.fromFloat32Array(KERNEL_PARAMS, 
+    new Float32Array(modelBytes, offset, KER_PARAMS_COUNT));
+  offset += KER_PARAMS_COUNT * BYTES;
+
+  // extract training labels
+  model.trainLabels = DG.Column.fromFloat32Array(LABELS,
+      new Float32Array(modelBytes, offset, samplesCount));  
+  offset += samplesCount * BYTES;  
+
+  // extract mean values of training data
+  model.means = DG.Column.fromFloat32Array( MEAN, 
+   new Float32Array(modelBytes, offset, featuresCount));  
+  offset += featuresCount * BYTES;
+
+  // extract standard deviations of training data
+  model.stdDevs = DG.Column.fromFloat32Array( STD_DEV,
+     new Float32Array(modelBytes, offset, featuresCount));  
+  offset += featuresCount * BYTES;
+
+  // extract parameters of model
+  model.modelParams = DG.Column.fromFloat32Array( MODEL_PARAMS_NAME,
+     new Float32Array(modelBytes, offset, samplesCount + LS_SVM_ADD_CONST));
+  offset += (samplesCount + LS_SVM_ADD_CONST) * BYTES;
+
+  // extract model's precomputed weights
+  model.modelWeights = DG.Column.fromFloat32Array( MODEL_WEIGHTS_NAME,
+     new Float32Array(modelBytes, offset, featuresCount + LS_SVM_ADD_CONST));  
+  offset += (featuresCount + LS_SVM_ADD_CONST) * BYTES;
+
+  // extract training data columns
+  let dataCols = [];
+
+  for(let i = 0; i < samplesCount; i++) {
+    dataCols.push( DG.Column.fromFloat32Array( i.toString(),
+      new Float32Array(modelBytes, offset, featuresCount)) );
+    offset += featuresCount * BYTES;
+  }
+
+  model.normalizedTrainData = DG.DataFrame.fromColumns(dataCols);  
+
+  return model;  
+} // getUnpackedModel
+
+// Wrapper for combining the function "predict" with Datagrok predicitve tools
+export function getPrediction(df, packedModel) { 
+
+  let model = getUnpackedModel(new Uint8Array(packedModel));
+
+  let res = predict(SVMlib, 'predictByLSSVM', model, df.columns);
+  res.name = PREDICTION;  
+
+  return DG.DataFrame.fromColumns([res]);
+} // getPrediction

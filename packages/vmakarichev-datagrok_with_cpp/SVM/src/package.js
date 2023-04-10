@@ -15,7 +15,8 @@ import { callWasm } from '../wasm/callWasm';
 import { getCppInput, getResult } from '../wasm/callWasmForWebWorker';
 
 // Support vector machine (SVM) tools imports
-import {showTrainReport, LINEAR, RBF, POLYNOMIAL, SIGMOID, getTrainedModel} from './svm';
+import {showTrainReport, getPackedModel, getTrainedModel, getPrediction,
+  LINEAR, RBF, POLYNOMIAL, SIGMOID} from './svm';
 
 //tags: init
 export async function init() {
@@ -87,15 +88,12 @@ export function generateDatasetRBF(name, sigma, samplesCount, featuresCount,
 //output: dynamic model
 export function trainLinearKernelSVM(df, predict_column, gamma, toShowReport) {  
 
-  let model = getTrainedModel({gamma: gamma, kernel: LINEAR}, df, predict_column);   
+  let trainedModel = getTrainedModel({gamma: gamma, kernel: LINEAR}, df, predict_column);   
 
   if(toShowReport)
-    showTrainReport(df, model);
+    showTrainReport(df, trainedModel);
 
-  // TODO: add model packing
-  let result = new Uint8Array(1000);
-
-  return result;
+  return getPackedModel(trainedModel);
 } // trainLinearKernelSVM
 
 //name: applyLinearKernelSVM
@@ -104,13 +102,7 @@ export function trainLinearKernelSVM(df, predict_column, gamma, toShowReport) {
 //input: dataframe df
 //input: dynamic model
 //output: dataframe table
-export function applyLinearKernelSVM(df, model) {   
-  // TODO: to be implemented
-
-  return DG.DataFrame.fromColumns(
-    [DG.Column.fromFloat32Array('prediction', new Float32Array(df.rowCount))]
-    );
-} // applyLinearKernelSVM`
+export function applyLinearKernelSVM(df, model) { return getPrediction(df, model); }
 
 //name: trainRBFkernelSVM
 //meta.mlname: RBF-kernel LS-SVM
@@ -123,17 +115,14 @@ export function applyLinearKernelSVM(df, model) {
 //output: dynamic model
 export function trainRBFkernelSVM(df, predict_column, gamma, sigma, toShowReport) {  
 
-  let model = getTrainedModel(
+  let trainedModel = getTrainedModel(
     {gamma: gamma, kernel: RBF, sigma: sigma}, 
     df, predict_column);   
 
   if(toShowReport)
-    showTrainReport(df, model);
+    showTrainReport(df, trainedModel);
 
-  // TODO: add model packing
-  let result = new Uint8Array(1000);
-
-  return result;
+  return getPackedModel(trainedModel);
 } // trainRBFkernelSVM
 
 //name: applyRBFkernelSVM
@@ -142,13 +131,7 @@ export function trainRBFkernelSVM(df, predict_column, gamma, sigma, toShowReport
 //input: dataframe df
 //input: dynamic model
 //output: dataframe table
-export function applyRBFkernelSVM(df, model) {   
-  // TODO: to be implemented
-
-  return DG.DataFrame.fromColumns(
-    [DG.Column.fromFloat32Array('prediction', new Float32Array(df.rowCount))]
-    );
-} // applyRBFkernelSVM
+export function applyRBFkernelSVM(df, model) { return getPrediction(df, model); } 
 
 //name: trainPolynomialKernelSVM
 //meta.mlname: polynomial kernel LS-SVM
@@ -162,17 +145,14 @@ export function applyRBFkernelSVM(df, model) {
 //output: dynamic model
 export function trainPolynomialKernelSVM(df, predict_column, gamma, c, d, toShowReport) {  
 
-  let model = getTrainedModel(
+  let trainedModel = getTrainedModel(
     {gamma: gamma, kernel: POLYNOMIAL, cParam: c, dParam: d}, 
     df, predict_column);   
 
   if(toShowReport)
-    showTrainReport(df, model);
+    showTrainReport(df, trainedModel);
 
-  // TODO: add model packing
-  let result = new Uint8Array(1000);
-
-  return result;
+  return getPackedModel(trainedModel);
 } // trainPolynomialKernelSVM
 
 //name: applyPolynomialKernelSVM
@@ -181,13 +161,7 @@ export function trainPolynomialKernelSVM(df, predict_column, gamma, c, d, toShow
 //input: dataframe df
 //input: dynamic model
 //output: dataframe table
-export function applyPolynomialKernelSVM(df, model) {   
-  // TODO: to be implemented
-
-  return DG.DataFrame.fromColumns(
-    [DG.Column.fromFloat32Array('prediction', new Float32Array(df.rowCount))]
-    );
-} // applyPolynomialKernelSVM
+export function applyPolynomialKernelSVM(df, model) { return getPrediction(df, model); }
 
 //name: trainSigmoidKernelSVM
 //meta.mlname: sigmoid kernel LS-SVM
@@ -201,17 +175,14 @@ export function applyPolynomialKernelSVM(df, model) {
 //output: dynamic model
 export function trainSigmoidKernelSVM(df, predict_column, gamma, kappa, theta, toShowReport) {  
 
-  let model = getTrainedModel(
+  let trainedModel = getTrainedModel(
     {gamma: gamma, kernel: SIGMOID, kappa: kappa, theta: theta}, 
     df, predict_column);   
 
   if(toShowReport)
-    showTrainReport(df, model);
+    showTrainReport(df, trainedModel);
 
-  // TODO: add model packing
-  let result = new Uint8Array(1000);
-
-  return result;
+  return getPackedModel(trainedModel);
 } // trainSigmoidKernelSVM
 
 //name: applySigmoidKernelSVM
@@ -220,10 +191,4 @@ export function trainSigmoidKernelSVM(df, predict_column, gamma, kappa, theta, t
 //input: dataframe df
 //input: dynamic model
 //output: dataframe table
-export function applySigmoidKernelSVM(df, model) {   
-  // TODO: to be implemented
-
-  return DG.DataFrame.fromColumns(
-    [DG.Column.fromFloat32Array('prediction', new Float32Array(df.rowCount))]
-    );
-} // applySigmoidKernelSVM
+export function applySigmoidKernelSVM(df, model) { return getPrediction(df, model); }
