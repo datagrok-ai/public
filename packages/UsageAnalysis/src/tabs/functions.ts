@@ -44,7 +44,7 @@ export class FunctionsView extends UaView {
           const dateToLS = dateTo.toLocaleString('es-pa', {hour12: false}).replace(',', '');
           cp.addPane('Time interval', () => ui.tableFromMap({'From': dateFromLS, 'To': dateToLS}), true);
           cp.addPane('Users', () => ui.divV(users.map((u) => ui.render(`#{x.${u}}`))), true);
-          cp.addPane('Packages', () => ui.divV(packages.map((p) => ui.render(`#{x.${p}}`))), true);
+          // cp.addPane('Packages', () => ui.divV(packages.map((p) => ui.render(`#{x.${p}}`))), true);
           this.getFunctionPane(cp, filter);
           // this.getLogsPane(cp, filter);
           grok.shell.o = cp.root;
@@ -77,22 +77,32 @@ export class FunctionsView extends UaView {
 
   async getFunctionPane(cp: DG.Accordion, filter: Filter) {
     const df = await grok.data.query('UsageAnalysis:FunctionsContextPane', filter);
-    const data: {[key: string]: [HTMLElement, string, string][]} = {};
+    const data: {[key: string]: [string, any, string][]} = {};
     for (const r of df.rows) {
-      const key = r.package + ':' + r.function;
+      const key = r.pid + ':' + r.function;
       if (!data[key]) data[key] = [];
-      data[key].push([ui.render(`#{x.${r.rid}}`), r.time, r.run]);
+      data[key].push([r.rid, r.time, r.run]);
     }
     const keysSorted = Object.keys(data).sort((a, b) => a[a.indexOf(':') + 1].localeCompare(b[b.indexOf(':') + 1]));
     const expand = keysSorted.length === 1;
+    const packages: {[key: string]: DG.Accordion} = {};
     for (const k of keysSorted) {
-      cp.addPane(k.split(':')[1], () => {
+      const [p, n] = k.split(':');
+      if (!packages[p]) packages[p] = DG.Accordion.create();
+      packages[p].addPane(n, () => {
         return ui.wait(async () => {
-          data[k].sort((a, b) => a[2].localeCompare(b[2]));
-          return ui.divV(data[k].map((i) => i[0]));
-          // return ui.table(data[k].sort((a, b) => a[2].localeCompare(b[2])), (i) => i.slice(0, 2));
+          // data[k].sort((a, b) => a[2].localeCompare(b[2]));
+          // return ui.divV(data[k].map((i) => i[0]));
+          const t = ui.table(data[k].sort((a, b) => a[2].localeCompare(b[2])),
+            (i) => [ui.render(`#{x.${i[0]}."${i[2]}"}`), i[1].format('HH:mm:ss MM/DD/YYYY')]);
+          t.classList.add('ua-table');
+          return t;
         });
       }, expand);
     }
+    Object.keys(packages).forEach((k) => {
+      const pane = cp.addPane('', () => packages[k].root);
+      pane.root.querySelector('.d4-accordion-pane-header')?.prepend(ui.render(`#{x.${k}}`));
+    });
   }
 }
