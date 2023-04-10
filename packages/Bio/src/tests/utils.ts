@@ -1,8 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+
+import {_package} from '../package-test';
 import {expect} from '@datagrok-libraries/utils/src/test';
 import {runKalign} from '../utils/multiple-sequence-alignment';
-import {_package} from '../package-test';
 
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
