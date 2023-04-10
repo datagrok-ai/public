@@ -25,10 +25,18 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
 
   const tableView = grok.shell.addTableView(df);
 
+  let viewer = DG.Viewer.fromType(viewerName, tableView.dataFrame);
+
   if (['Globe', 'GroupAnalysis'].includes(viewerName)) {
     DG.debounce(df.onSemanticTypeDetected, 800).subscribe((_) => tableView.addViewer(viewerName, options));
     return;
   }
-
-  tableView.addViewer(viewerName, options);
+  console.log(viewerName);
+  if (viewerName != 'GroupAnalysis,') {
+    tableView.dockManager.dock(viewer, 'up', null, viewerName,0.7);
+    grok.shell.windows.showProperties = false;
+  } else {
+    tableView.addViewer(viewerName, options);
+    grok.shell.windows.showProperties = true;
+  }
 }
