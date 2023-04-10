@@ -18,7 +18,7 @@ category('sequenceSpace', async () => {
     await _testSequenceSpaceReturnsResult(testFastaDf, 'UMAP', 'MSA');
     grok.shell.closeTable(testFastaDf);
     testFastaTableView.close();
-  }, {skipReason: 'GROK-12136'});
+  }, {skipReason: 'GROK-12775'});
 
   test('sequenceSpaceWithEmptyRows', async () => {
     testHelmWithEmptyRows = await readDataframe('tests/sample_MSA_data_empty_vals.csv');
@@ -26,5 +26,5 @@ category('sequenceSpace', async () => {
     await _testSequenceSpaceReturnsResult(testHelmWithEmptyRows, 'UMAP', 'MSA');
     grok.shell.closeTable(testHelmWithEmptyRows);
     testHelmWithEmptyRowsTableView.close();
-  }, {skipReason: 'GROK-12136'});
+  }, {skipReason: 'GROK-12775'});
 });

@@ -21,7 +21,7 @@ import './tests/substructure-filters-tests';
 import './tests/pepsea-tests';
 import './tests/viewers';
 
-// Tests hang on github CI
+// Tests hanging github CI
 import './tests/activity-cliffs-tests';
 import './tests/sequence-space-test';
 
