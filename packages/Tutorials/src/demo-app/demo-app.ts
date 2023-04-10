@@ -4,6 +4,7 @@ import * as grok from 'datagrok-api/grok';
 
 import '../../css/demo.css';
 
+
 export class DemoView extends DG.ViewBase {
   dockPanel: DG.DockNode = new DG.DockNode(undefined);
   tree: DG.TreeViewGroup = ui.tree();
@@ -27,11 +28,12 @@ export class DemoView extends DG.ViewBase {
     func.apply().then((_) => {loadingScreen.remove();});
   }
 
-  _initContent() {
-    this.root.appendChild(ui.divText('Select a demo from the toolbox on the right'));
+  private _initContent() {
+    this.name = 'Demo app';
+    this.root.appendChild(ui.divText('Select a demo from the toolbox on the left', 'demo-text'));
   }
 
-  _initDockPanel() {
+  private _initDockPanel() {
     for (const f of DG.Func.find({meta: {'demoPath': null}})) {
       const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
       const path = pathOption.split('|').map((s) => s.trim());
@@ -65,10 +67,21 @@ export class DemoView extends DG.ViewBase {
 
     this.dockPanel = grok.shell.dockManager.dock(ui.div(
       [ui.searchInput('', ''), this.tree]), 'left', null, 'Categories');
-    this.dockPanel.container.containerElement.classList.add('demo-container');
+    this.dockPanel.container.containerElement.classList.add('tutorials-demo-container');
 
-    // TODO: make div with loading at center of viewer
+    this._initWindowOptions();
+
     // TODO: if loading ended in 0.1s, then no div, if not - then div - DG.debounce, merge etc.
     // TODO: also fix routing things
+    // TODO: add starting demo app viewer on just up/down arrows
+    // TODO: add switch start on arrow up/down
+    // TODO: on click on viewer demo set viewer help url in property panel (func helpUrl)
+    // TODO: fix search in demo - search on meta.keywords, name, description
+  }
+
+  private _initWindowOptions() {
+    grok.shell.windows.showToolbox = false;
+    grok.shell.windows.showRibbon = true;
+    grok.shell.windows.showHelp = true;
   }
 }

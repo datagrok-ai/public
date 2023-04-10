@@ -19,7 +19,7 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
   showCurrentRowCurve: boolean = true;
   showMouseOverRowCurve: boolean = true;
   rows: number[] = [];
-  data: FitChartData = new FitChartData();
+  data: IFitChartData = new FitChartData();
 
   constructor() {
     super(new FitChartCellRenderer());
@@ -32,6 +32,13 @@ export class MultiCurveViewer extends CellRenderViewer<FitChartCellRenderer> {
 
     for (const p of fitChartDataProperties)
       this.addProperty(p.name, p.propertyType, p.defaultValue, p.options);
+  }
+
+  static fromChartData(chartData: IFitChartData): MultiCurveViewer {
+    let viewer = new MultiCurveViewer();
+    viewer.data = chartData;
+    viewer.render();
+    return viewer;
   }
 
   applyViewerProperties() {

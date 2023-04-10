@@ -10,6 +10,10 @@
     background: white;
 }
 
-.demo-container {
+.tutorials-demo-container {
     max-width: 250px;
+}
+
+.demo-text {
+    text-align: center;
 }
