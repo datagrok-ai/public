@@ -66,7 +66,7 @@ export function link(args: LinkArgs) {
           console.log(isLinked ?
             `Package "${lib.name}" is linked. Updating dependencies and running the build script...`
             : `Linking "${lib.name}"...`);
-          exec(isLinked ? 'npm update && npm run build' : 'npm install && npm run build && npm link',
+          exec(isLinked ? 'npm update && npm run build' : 'npm install && npm run link-all && npm run build && npm link',
             { cwd: libPath }, (err, stdout, stderr) => {
               if (err) throw err;
               else console.log(stderr, stdout);
@@ -81,7 +81,7 @@ export function link(args: LinkArgs) {
       console.log(isLinked ?
         `Package "${utilsModule.name}" is linked. Updating dependencies and running the build script...`
         : `Linking "${utilsModule.name}"...`);
-      exec(isLinked ? 'npm update && npm run build' : 'npm install && npm run build && npm link',
+      exec(isLinked ? 'npm update && npm run build' : 'npm install && npm run link-all && npm run build && npm link',
         { cwd: libPath }, (err, stdout, stderr) => {
           if (err) throw err;
           else {
