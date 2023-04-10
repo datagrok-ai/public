@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-
+import $ from 'cash-dom';
 import '../../css/demo.css';
 
 
@@ -14,6 +14,7 @@ export class DemoView extends DG.ViewBase {
 
     this._initDockPanel();
     this._initContent();
+    this.tree.root.classList.add('demo-app-tree-group');
   }
 
   static findDemoFunc(demoPath: string) {
@@ -71,7 +72,17 @@ export class DemoView extends DG.ViewBase {
     });
 
     this.dockPanel = grok.shell.dockManager.dock(ui.div(
-      [ui.searchInput('', ''), this.tree]), 'left', null, 'Categories');
+      [ui.searchInput('', '', (value:string)=>{
+        let dom  = $('.demo-app-tree-group .d4-tree-view-item.d4-tree-view-node');
+        for (let i = 0; i < dom.length; i++){
+          let item = dom[i] as HTMLElement;
+          if (item.innerText.toLowerCase().includes(value.toLowerCase()))
+            item.style.display = 'block';
+          else
+            item.style.display = 'none';
+        }
+        
+      }), this.tree]), 'left', null, 'Categories');
     this.dockPanel.container.containerElement.classList.add('tutorials-demo-container');
 
     this._initWindowOptions();
