@@ -238,3 +238,7 @@
   position: absolute;
   top: 0px;
 }
+
+.d4-accordion-pane-header .grok-icon.copy-icon {
+  margin-left: 30px!important;
+}
