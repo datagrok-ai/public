@@ -1,5 +1,8 @@
 import $ from 'cash-dom';
 import * as dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+dayjs.extend(utc);
+
 import * as wu from 'wu';
 
 export * from './src/interfaces/d4';
