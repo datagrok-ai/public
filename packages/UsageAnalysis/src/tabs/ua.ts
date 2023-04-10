@@ -42,6 +42,7 @@ export class UaView extends DG.ViewBase {
       showSizeSelector: false,
       showXSelector: false,
       showYSelector: false,
+      invertYAxis: true,
     });
   }
 
