@@ -1,4 +1,7 @@
 import {RDModule, RDMol} from "@datagrok-libraries/chem-meta/src/rdkit-api";
+import { isMolBlock } from "./chem-common";
+import { MolfileHandler } from "@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler";
+import { elementsTable } from "../constants";
 
 export interface IMolContext {
   mol: RDMol | null; // null when molString is invalid
@@ -7,8 +10,24 @@ export interface IMolContext {
   useMolBlockWedging: boolean;
 }
 
+const molfileHandler = MolfileHandler.createInstance(`
+Datagrok empty molecule
+
+0  0  0  0  0  0  0  0  0  0999 V2000
+M  END
+`);
+
 export function isSmarts(molString: string): boolean {
-  return !!molString.match(/\[.?#\d|\$|&|;|,|!|:|\*.?\]/g) && !molString.includes('\n');
+  if (isMolBlock(molString)) {
+    molfileHandler.init(molString);
+    for (const atom of molfileHandler.atomTypes) {
+      if (elementsTable.indexOf(atom) === -1) {
+        return true;
+      }
+    }
+    return false;
+  } else
+    return !!molString.match(/\[.?#\d|\$|&|;|,|!|:|\*.?\]/g);
 }
 
 export function getMolSafe(molString: string, details: object = {}, rdKitModule: RDModule, warnOff: boolean = true): IMolContext {
@@ -20,6 +39,7 @@ export function getMolSafe(molString: string, details: object = {}, rdKitModule:
   try {
     const _isSmarts = isSmarts(molString);
     mol = _isSmarts ? rdKitModule.get_qmol(molString) : rdKitModule.get_mol(molString, JSON.stringify(details));
+    isQMol = _isSmarts;
   }
   catch (e) {
     if (mol !== null) {

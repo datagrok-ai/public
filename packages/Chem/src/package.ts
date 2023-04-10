@@ -19,7 +19,7 @@ import {IUMAPOptions, ITSNEOptions} from '@datagrok-libraries/ml/src/reduce-dime
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
-import {EMPTY_MOLECULE_MESSAGE, elementsTable} from './constants';
+import {EMPTY_MOLECULE_MESSAGE, SMARTS_MOLECULE_MESSAGE, elementsTable} from './constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
 //widget imports
@@ -491,7 +491,7 @@ export async function getChemSpaceEmbeddings(col: DG.Column, methodName: string,
 //input: object simArr
 //output: object res
 export async function getChemSimilaritiesMatrix(dim: number, col: DG.Column,
-  df: DG.DataFrame, colName: string, simArr: DG.Column[]): Promise<DG.Column[]> {
+  df: DG.DataFrame, colName: string, simArr: DG.Column[]): Promise<(DG.Column | null)[]> {
   //need to create dataframe to add fingerprints column
   if (!col.dataFrame) {
     const dfForFp = DG.DataFrame.create(col.length);
@@ -521,7 +521,9 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
     grok.shell.warning('Dataset contains malformed data!');
   }
 
-  for (let elName of elementsTable) {
+  const extendedElementsTable = ['R'].concat(elementsTable).concat(['Molecule Charge']);
+
+  for (let elName of extendedElementsTable) {
     const value = elements.get(elName);
     if (value) {
       let column = DG.Column.fromInt32Array(elName, value);
@@ -603,7 +605,7 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
     return;
   }
   const axesNames = getEmbeddingColsNames(df);
-  if (df.rowCount > 500) {
+  if (df.rowCount > 10000) {
     ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
     Do you want to continue?`))
       .onOK(async () => {
@@ -655,7 +657,9 @@ export function molColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export function descriptorsWidget(smiles: string): DG.Widget {
-  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ? getDescriptorsSingle(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ?
+     isSmarts(smiles) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
+     getDescriptorsSingle(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
 }
 
 //name: Biology | Drug Likeness
@@ -665,7 +669,9 @@ export function descriptorsWidget(smiles: string): DG.Widget {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export function drugLikeness(smiles: string): DG.Widget {
-  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ? drugLikenessWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ?
+    isSmarts(smiles) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
+    drugLikenessWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
 }
 
 
@@ -675,7 +681,9 @@ export function drugLikeness(smiles: string): DG.Widget {
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
 export async function properties(smiles: DG.SemanticValue): Promise<DG.Widget> {
-  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles.value) ? propertiesWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles.value) ?
+    isSmarts(smiles.value) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
+    propertiesWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
 }
 
 //name: Biology | Structural Alerts
@@ -685,7 +693,9 @@ export async function properties(smiles: DG.SemanticValue): Promise<DG.Widget> {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export async function structuralAlerts(smiles: string): Promise<DG.Widget> {
-  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ? structuralAlertsWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ?
+    isSmarts(smiles) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
+    structuralAlertsWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
 }
 
 
@@ -694,7 +704,9 @@ export async function structuralAlerts(smiles: string): Promise<DG.Widget> {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export async function identifiers(smiles: string): Promise<DG.Widget> {
-  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ? await identifiersWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ?
+    isSmarts(smiles) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
+    await identifiersWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
 }
 
 
@@ -705,7 +717,9 @@ export async function identifiers(smiles: string): Promise<DG.Widget> {
 //tags: panel
 //output: widget
 export async function structure3D(molecule: string): Promise<DG.Widget> {
-  return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ? structure3dWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ?
+    isSmarts(molecule) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
+    structure3dWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
 }
 
 
@@ -715,7 +729,8 @@ export async function structure3D(molecule: string): Promise<DG.Widget> {
 //input: string molecule { semType: Molecule }
 //output: widget result
 export function structure2d(molecule: string): DG.Widget {
-  return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ? structure2dWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ?
+    structure2dWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
 }
 
 
@@ -726,7 +741,9 @@ export function structure2d(molecule: string): DG.Widget {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export function toxicity(smiles: string): DG.Widget {
-  return smiles  && !DG.chem.Sketcher.isEmptyMolfile(smiles) ? toxicityWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  return smiles  && !DG.chem.Sketcher.isEmptyMolfile(smiles) ?
+    isSmarts(smiles) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
+    toxicityWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
 }
 
 

@@ -48,13 +48,15 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       if (!item || item === '')
         mol = this._rdKitModule.get_mol('');
       else {
-        mol = getMolSafe(item, {}, this._rdKitModule).mol;
+        const molSafe = getMolSafe(item, {}, this._rdKitModule);
+        mol = molSafe.mol;
         if (mol === null) {
           if (!logged) {
             const errorMessage = 'Chem | Possibly a malformed molString at init: `' + item + '`';
             logged = true;
           }
-        }
+        } else
+          mol.is_qmol = molSafe.isQMol;
       }
       this._rdKitMols.push(mol);
     }
