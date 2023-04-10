@@ -1,11 +1,28 @@
-.ui-tag-list {
-    border: none;
-    border-bottom: 1px solid var(--grey-1);
-    cursor: text;
-    background-color: #fff;
-    position: relative;
+.ui-input-root.ui-input-tags {
+    flex-direction: column;
 }
 
+.ui-tag-list {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 4px 0;
+    gap: 1px;
+}
+
+.ui-form.ui-form-condensed .ui-input-root.ui-input-tags > .ui-input-root {
+    max-width: initial;
+    width: 100%;
+    flex-grow: 1;
+}
+.ui-form.ui-form-condensed .ui-input-root.ui-input-tags > .ui-input-root:last-child {
+    padding: 0;
+}
+
+.ui-form.ui-form-condensed .ui-input-root.ui-input-tags > .ui-input-root:last-child > label.ui-input-label {
+    display: none;
+} 
 .ui-tag {
     color: var(--grey-5);
     display: inline-flex;
@@ -19,4 +36,11 @@
     white-space: nowrap;
     border-radius: 2px;
     font-size: 12px;
+}
+
+.ui-tag span {
+    white-space: nowrap;
+    overflow: hidden;
+    max-width: 200px;
+    text-overflow: ellipsis;
 }
