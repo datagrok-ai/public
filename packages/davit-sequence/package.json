@@ -1,0 +1,46 @@
+{
+	"name": "davit-sequence",
+	"friendlyName": "davit-sequence",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"cash-dom": "latest",
+		"dayjs": "latest",
+		"@datagrok-libraries/utils": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest",
+		"ts-loader": "latest",
+		"typescript": "latest",
+		"eslint": "latest",
+		"eslint-config-google": "latest",
+		"@typescript-eslint/eslint-plugin": "latest",
+		"@typescript-eslint/parser": "latest"
+	},
+	"scripts": {
+		"link-all": "",
+		"debug-davit-sequence": "webpack && grok publish",
+		"release-davit-sequence": "webpack && grok publish --release",
+		"build-davit-sequence": "webpack",
+		"build": "webpack",
+		"debug-davit-sequence-dev": "webpack && grok publish dev",
+		"release-davit-sequence-dev": "webpack && grok publish dev --release",
+		"debug-davit-sequence-local": "webpack && grok publish local",
+		"release-davit-sequence-local": "webpack && grok publish local --release",
+		"lint": "eslint src --ext .ts",
+		"lint-fix": "eslint src --ext .ts --fix"
+	},
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/datagrok-ai/public.git",
+		"directory": "packages/davit-sequence"
+	}
+}

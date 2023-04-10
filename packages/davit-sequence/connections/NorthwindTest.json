@@ -1,0 +1,17 @@
+{
+    "name": "NorthwindTest",
+    "#type": "DataConnection",
+    "parameters": {
+      "server": "#{GROK_DB_SERVER}",
+      "db": "#{DB_NAME}"
+    },
+    "credentials" : {
+      "parameters": {
+        "login": "#{LOGIN}",
+        "password": "#{PASSWORD}"
+      }
+    },
+    "dataSource": "PostgresDart",
+    "description": "#{DB_NAME} db",
+    "tags": ["demo"]
+}
