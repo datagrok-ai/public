@@ -4,12 +4,52 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 export class UsageWidget extends DG.Widget {
-  caption: string;
-  order: string;
+  // caption: string;
+  // order: string;
 
   constructor() {
     super(ui.box());
+    grok.data.query('UsageAnalysis:WidgetData').then((df) => {
+      const viewer1 = DG.Viewer.lineChart(df, {
+        split: 'name',
+        x: 'time',
+        y: 'count',
+        showColorSelector: false,
+        showSizeSelector: false,
+        showXSelector: false,
+        showYSelectors: false,
+        // showYAxis: false,
+        showSplitSelector: false,
+        showAggrSelectors: false,
+        // title: 'Weekly Usage',
+        // showTitle: true,
+        legendVisibility: 'Never',
+        showMarkers: 'Never',
+        chartTypes: ['Stacked Bar Chart'],
+      });
+      const usersDf = df.groupBy(['time']).count('users').aggregate();
+      const viewer2 = DG.Viewer.lineChart(usersDf, {
+        // split: 'name',
+        x: 'time',
+        y: 'users',
+        showColorSelector: false,
+        showSizeSelector: false,
+        showXSelector: false,
+        showYSelectors: false,
+        // showYAxis: false,
+        showSplitSelector: false,
+        showAggrSelectors: false,
+        // title: 'Weekly Usage',
+        // showTitle: true,
+        legendVisibility: 'Never',
+        showMarkers: 'Never',
+        lineWidth: 2,
+        // chartTypes: ['Stacked Bar Chart'],
+      });
+      this.root.append(ui.splitV([viewer1.root, viewer2.root]));
+    });
 
+    /*
     const Summary: any = {
       users: {
         today: '',
@@ -126,9 +166,11 @@ export class UsageWidget extends DG.Widget {
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Usage');
     this.order = super.addProperty('order', DG.TYPE.STRING, '2');
+    */
   }
 }
 
+/*
 const usersChartStyle = {
   'aggrType': 'count',
   'innerChartMarginTop': 0,
@@ -213,4 +255,4 @@ function getNewErrors(days:string) {
     });
   return root;
 }
-
+*/
