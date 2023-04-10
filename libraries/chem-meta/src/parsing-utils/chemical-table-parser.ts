@@ -1,5 +1,5 @@
 export interface ChemicalTableParser {
-  init(file: string): void;
+  init(molBlock: string): void;
   atomCount: number;
   bondCount: number;
   x: Float32Array;
@@ -21,24 +21,26 @@ type CoordinateArrays = {
 
 /** Base singleton for Molfile or Mol2 parser/handler */
 export abstract class ChemicalTableParserBase implements ChemicalTableParser {
-  protected constructor(file: string) {
-    this.init(file);
+  protected constructor(fileContent: string) {
+    this.init(fileContent);
   };
 
   protected static instance: ChemicalTableParserBase;
 
-  protected file!: string;
+  protected fileContent!: string;
   protected _atomCount?: number;
   protected _bondCount?: number;
   protected xyzAtomCoordinates?: CoordinateArrays;
   protected _atomTypes?: string[];
   protected _pairsOfBondedAtoms?: Uint16Array[];
+  protected _bondTypes?: Uint16Array;
 
-  public init(file: string): void {
-    this.file = file.replace(/\r/g, '');
+  public init(fileContent: string): void {
+    this.fileContent = fileContent.replace(/\r/g, '');
     this._atomCount = undefined;
     this._atomTypes = undefined;
     this._bondCount = undefined;
+    this._bondTypes = undefined;
     this.xyzAtomCoordinates = undefined;
     this._pairsOfBondedAtoms = undefined;
   }
@@ -59,35 +61,35 @@ export abstract class ChemicalTableParserBase implements ChemicalTableParser {
 
   /** X coordinates of all atoms in a molecule  */
   get x(): Float32Array {
-    if (this.xyzAtomCoordinates === undefined)
-      this.xyzAtomCoordinates = this.parseAtomCoordinates();
+    this.xyzAtomCoordinates ??= this.parseAtomCoordinates();
     return this.xyzAtomCoordinates.x;
   };
 
   /** Y coordinates of all atoms in a molecule  */
   get y(): Float32Array {
-    if (this.xyzAtomCoordinates === undefined)
-      this.xyzAtomCoordinates = this.parseAtomCoordinates();
+    this.xyzAtomCoordinates ??= this.parseAtomCoordinates();
     return this.xyzAtomCoordinates!.y;
   };
 
   /** Z coordinates of all atoms in a molecule  */
   get z(): Float32Array {
-    if (this.xyzAtomCoordinates === undefined)
-      this.xyzAtomCoordinates = this.parseAtomCoordinates();
+    this.xyzAtomCoordinates ??= this.parseAtomCoordinates();
     return this.xyzAtomCoordinates!.z;
   };
 
   get atomTypes(): string[] {
-    if (this._atomTypes === undefined)
-      this._atomTypes = this.parseAtomTypes();
+    this._atomTypes ??= this.parseAtomTypes();
     return this._atomTypes;
   }
 
   get pairsOfBondedAtoms(): Uint16Array[] {
-    if (this._pairsOfBondedAtoms === undefined)
-      this._pairsOfBondedAtoms = this.parseBondedAtomPairs();
+    this._pairsOfBondedAtoms ??= this.parseBondedAtomPairs();
     return this._pairsOfBondedAtoms!;
+  }
+
+  get bondTypes(): Uint16Array {
+    this._bondTypes ??= this.parseBondTypes();
+    return this._bondTypes!;
   }
 
   protected abstract parseAtomAndBondCounts(): AtomAndBondCounts;
@@ -97,6 +99,7 @@ export abstract class ChemicalTableParserBase implements ChemicalTableParser {
   protected abstract shiftIdxToXColumn(lineStartIdx: number): number;
   protected abstract shiftIdxToAtomType(lineStartIdx: number): number;
   protected abstract shiftIdxToBondedAtomsPair(lineStartIdx: number): number;
+  protected abstract shiftIdxToBondType(lineStartIdx: number): number;
   protected abstract parseAtomType(idx: number): string;
 
   protected setAtomAndBondCounts(): void {
@@ -166,13 +169,25 @@ export abstract class ChemicalTableParserBase implements ChemicalTableParser {
     return bondedAtomPairs;
   }
 
+  protected parseBondTypes(): Uint16Array {
+    const bondCount = this.bondCount;
+    const bondTypes = new Uint16Array(bondCount);
+    let idx = this.getBondBlockIdx();
+    for (let i = 0; i < bondCount; i++) {
+      idx = this.shiftIdxToBondType(idx);
+      bondTypes[i] = this.parseIntValue(idx);
+      idx = this.getNextLineIdx(idx);
+    }
+    return bondTypes;
+  };
+
   protected isWhitespace(idx: number): boolean {
-    return /\s/.test(this.file.at(idx)!);
+    return /\s/.test(this.fileContent.at(idx)!);
   }
 
   protected getNextLineIdx(idx: number): number {
-    if (this.file.at(idx) !== '\n')
-      return this.file.indexOf('\n', idx) + 1;
+    if (this.fileContent.at(idx) !== '\n')
+      return this.fileContent.indexOf('\n', idx) + 1;
     else
       return idx + 1;
   }
@@ -192,7 +207,7 @@ export abstract class ChemicalTableParserBase implements ChemicalTableParser {
     let end = idxOfNumber + 1;
     while (!this.isWhitespace(end))
       ++end;
-    const value = parserFunction(this.file.substring(idxOfNumber, end));
+    const value = parserFunction(this.fileContent.substring(idxOfNumber, end));
     return value;
   }
 }
