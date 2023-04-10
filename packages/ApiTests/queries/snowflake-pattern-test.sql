@@ -4,8 +4,6 @@
 SELECT * FROM test.mock_data;
 --end
 
--- INT PATTERN
-
 --name: SnowflakeIntTypePatternNone
 --connection: SnowflakeApiTests
 --input: int id = 20
@@ -69,9 +67,6 @@ SELECT * FROM test.mock_data WHERE @id(id)
 SELECT * FROM test.mock_data WHERE @id(id)
 --end
 
-
---DOUBLE PATTERN
-
 --name: SnowflakeDoubleTypePatternNone
 --connection: SnowflakeApiTests
 --input: double some_number = 510.32
@@ -106,8 +101,6 @@ SELECT * FROM test.mock_data WHERE @some_number(some_number);
 --test: ApiTests:expectTable(SnowflakeStringTypePatternDoubleOpLessEq(), OpenFile('System:AppData/ApiTests/datasets/tests/snowflake/data5.d42')) //skip: GROK-12289
 SELECT * FROM test.mock_data WHERE @some_number(some_number);
 --end
-
---STRING PATTERN
 
 --name: SnowflakeStringTypePatternStringOpContains
 --connection: SnowflakeApiTests
