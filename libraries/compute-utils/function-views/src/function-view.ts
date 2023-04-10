@@ -32,11 +32,7 @@ export abstract class FunctionView extends DG.ViewBase {
   ) {
     super();
     this.box = true;
-    if (initValue instanceof DG.FuncCall) {
-      this.funcName = initValue.func.name;
-    } else {
-      this.funcName = initValue;
-    }
+    this.funcName = initValue instanceof DG.FuncCall ? initValue.func.name : initValue;
     this.init();
   }
 
