@@ -20,12 +20,15 @@ export class DemoView extends DG.ViewBase {
     return DG.Func.find({meta: {'demoPath': demoPath}})[0];
   }
 
-  startDemoFunc(func: DG.Func) {
+  startDemoFunc(func: DG.Func, viewPath: string) {
     grok.shell.closeAll();
     const loadingScreen = ui.div('Loading...', 'loading');
     grok.shell.tv.root.appendChild(loadingScreen);
 
-    func.apply().then((_) => {loadingScreen.remove();});
+    func.apply().then((_) => {
+      loadingScreen.remove();
+      grok.shell.tv.path = grok.shell.tv.basePath = `/apps/Tutorials/Demo/${viewPath}`;
+    });
   }
 
   private _initContent() {
@@ -41,7 +44,7 @@ export class DemoView extends DG.ViewBase {
       const item = folder.item(path[path.length - 1]);
 
       item.root.onmousedown = (_) => {
-        this.startDemoFunc(f);
+        this.startDemoFunc(f, `${path[0]}/${path[1]}`);
       };
 
       item.root.onmouseover = (event) => {
@@ -60,7 +63,9 @@ export class DemoView extends DG.ViewBase {
           ?.getElementsByClassName('d4-tree-view-group-label')[0].innerHTML;
         const viewerName = value.text;
 
-        this.startDemoFunc(DemoView.findDemoFunc(`${categoryName} | ${viewerName}`));
+        const demoFunc = DemoView.findDemoFunc(`${categoryName} | ${viewerName}`);
+        const demoPath = `${categoryName}/${viewerName}`;
+        this.startDemoFunc(demoFunc, demoPath);
         // TODO: add focus return to dock panel
       }
     });
@@ -72,11 +77,11 @@ export class DemoView extends DG.ViewBase {
     this._initWindowOptions();
 
     // TODO: if loading ended in 0.1s, then no div, if not - then div - DG.debounce, merge etc.
-    // TODO: also fix routing things
     // TODO: add starting demo app viewer on just up/down arrows
-    // TODO: add switch start on arrow up/down
     // TODO: on click on viewer demo set viewer help url in property panel (func helpUrl)
-    // TODO: fix search in demo - search on meta.keywords, name, description
+    // TODO: implement search in demo - search on meta.keywords, name, description
+    // TODO: add all the platform viewers to demo (make demo functions in Tutorials)
+    // TODO: add curves to demo
   }
 
   private _initWindowOptions() {

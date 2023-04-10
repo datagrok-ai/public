@@ -107,10 +107,17 @@ export function demoApp() {
   grok.shell.addView(new DemoView());
   if (pathSegments.length > 4) {
     const category = pathSegments[4];
-    if (category === 'Viewers') {
-      const viewerName = pathSegments[5];
-      const f = DemoView.findDemoFunc(`${category} | ${viewerName}`);
-      f?.apply();
+    const viewerName = pathSegments[5].split('%20').join(' ');
+    const f = DemoView.findDemoFunc(`${category} | ${viewerName}`);
+    if (f) {
+      const loadingScreen = ui.div('Loading...', 'loading');
+      grok.shell.tv.root.appendChild(loadingScreen);
+
+      const viewPath = `${category}/${viewerName}`;
+      f?.apply().then((_) => {
+        loadingScreen.remove();
+        grok.shell.tv.path = grok.shell.tv.basePath = `/apps/Tutorials/Demo/${viewPath}`;
+      });
     }
   }
 }
