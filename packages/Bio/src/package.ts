@@ -44,7 +44,7 @@ import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {createJsonMonomerLibFromSdf, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {LIB_PATH, LIB_STORAGE_NAME, MonomerLibHelper} from './utils/monomer-lib';
-import { getMacromoleculeColumn } from './utils/ui-utils';
+import {getMacromoleculeColumn} from './utils/ui-utils';
 import {IUMAPOptions, ITSNEOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
@@ -312,9 +312,11 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: object options {optional: true}
+//output: viewer result
 //editor: Bio:SeqActivityCliffsEditor
 export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column, activities: DG.Column,
-  similarity: number, methodName: string, options?: IUMAPOptions | ITSNEOptions): Promise<DG.Viewer | undefined> {
+  similarity: number, methodName: string, options?: IUMAPOptions | ITSNEOptions
+): Promise<DG.Viewer | undefined> {
   if (!checkInputColumnUi(macroMolecule, 'Activity Cliffs'))
     return;
   const axesNames = getEmbeddingColsNames(df);
