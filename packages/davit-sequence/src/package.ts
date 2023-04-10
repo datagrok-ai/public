@@ -106,10 +106,10 @@ export class NucleotideBoxCellRenderer extends DG.GridCellRenderer {
 
     //const rowsToRender = Math.ceil((seq.length??0) * cellProps.fontSize / cellProps.cellWidth);
     //const rowHeight = cellProps.fontSize * 1.5 * rowsToRender;
-    const maxWidth = Math.max(gridCell.gridColumn.width, cellProps.cellWidth) + 20;
+    //const maxWidth = Math.max(gridCell.gridColumn.width, cellProps.cellWidth) + 20;
     //const maxHeight = rowHeight;
 
-    gridCell.gridColumn.width = maxWidth;
+    gridCell.gridColumn.width = cellProps.cellWidth;
     //ctx.canvas.height = maxHeight;
     for (let i = 0; i < gridCell.cell.value.length; i++) {
       const nuc = seq[i].toUpperCase();
