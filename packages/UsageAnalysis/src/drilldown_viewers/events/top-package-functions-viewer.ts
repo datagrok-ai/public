@@ -45,7 +45,7 @@ export class TopPackageFunctionsViewer extends UaFilterableQueryViewer {
 
           grok.shell.o = pp.getRoot();
         });
-        return viewer.root;
+        return viewer;
       },
       null,
       {name: packageName},

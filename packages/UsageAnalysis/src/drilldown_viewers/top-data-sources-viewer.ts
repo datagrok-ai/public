@@ -19,7 +19,7 @@ export class TopDataSourcesViewer extends UaFilterableQueryViewer {
           const viewer = new TopQueriesUsingDataSource(args.args.categories[0], filterStream);
           grok.shell.o = ui.block([viewer.root]);
         });
-        return viewer.root;
+        return viewer;
       },
     );
   }
