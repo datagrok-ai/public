@@ -16,10 +16,11 @@ export function usageAnalysisApp(): void {
   if (!grok.shell.view(ViewHandler.UAname)) ViewHandler.getInstance().init();
 }
 
+//input: dynamic header
 //output: widget result
 //tags: dashboard
-export function usageWidget(): DG.Widget {
-  return new UsageWidget();
+export function usageWidget(header: HTMLDivElement): DG.Widget {
+  return new UsageWidget(header);
 }
 
 //name: Create JIRA ticket

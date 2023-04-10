@@ -8,8 +8,8 @@ export class UaFilterableQueryViewer extends UaQueryViewer {
   protected filterSubscription: BehaviorSubject<UaFilter>;
 
   public constructor(filterSubscription: BehaviorSubject<UaFilter>, name: string, queryName: string,
-    viewerFunction: Function, setStyle?: Function | null, staticFilter?: Object | null, viewer?: DG.Viewer) {
-    super(name, queryName, viewerFunction, setStyle, staticFilter, null, viewer);
+    viewerFunction: (t: DG.DataFrame) => DG.Viewer, setStyle?: Function | null, staticFilter?: Object | null) {
+    super(name, queryName, viewerFunction, setStyle, staticFilter, null);
     this.filterSubscription = filterSubscription;
     this.filterSubscription.subscribe((filter) => this.reload(filter));
   }

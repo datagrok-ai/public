@@ -70,3 +70,17 @@
   overflow-x: hidden;
   text-overflow: ellipsis;
 }
+
+.ua-widget .d4-viewer-title textarea {
+  padding: 0 12px;
+  font-size: 12px;
+  text-align: right;
+}
+
+.ua-widget .d4-viewer-title {
+  z-index: 99;
+  width: initial;
+  right: 0;
+  display: flex;
+  justify-content: flex-end;
+}

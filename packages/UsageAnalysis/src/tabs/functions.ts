@@ -10,7 +10,7 @@ import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 
 export class FunctionsView extends UaView {
   constructor(uaToolbox: UaToolbox) {
-    super(uaToolbox, 'function', true);
+    super(uaToolbox);
     this.name = 'Functions';
   }
 
@@ -69,7 +69,21 @@ export class FunctionsView extends UaView {
           this.getFunctionPane(cp, filter);
           grok.shell.o = cp.root;
         });
-      }, null, null, this.viewer);
+        const viewer = DG.Viewer.scatterPlot(t, {
+          x: 'time_start',
+          y: 'function',
+          size: 'count',
+          color: 'user',
+          jitterSize: 5,
+          markerMinSize: 10,
+          markerMaxSize: 30,
+          showColorSelector: true,
+          showSizeSelector: false,
+          showXSelector: false,
+          showYSelector: false,
+        });
+        return viewer;
+      }, null, null);
 
     this.viewers.push(functionsViewer);
     this.root.append(functionsViewer.root);
