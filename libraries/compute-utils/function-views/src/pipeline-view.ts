@@ -75,17 +75,9 @@ export class PipelineView extends ComputationView {
 
     this.subs.push(
       grok.functions.onAfterRunAction.pipe(
-        filter((run) => {
-          for (const {view} of Object.values(this.steps)) {
-            if ((view?.funcCall?.id === run?.id) && run) {
-              return true;
-            }
-          }
-          return false;
-        }),
+        filter(run => Object.values(this.steps).some(({view}) => (view?.funcCall?.id === run?.id) && !!run)),
       ).subscribe((run) => {
         this.onStepCompleted.next(run);
-
         if (run.func.nqName === this.stepsConfig[this.stepsConfig.length-1].funcName) this.run();
       }),
     );
