@@ -1,8 +1,8 @@
 package grok_connect.providers;
 
-import java.sql.*;
 import java.util.*;
 
+import grok_connect.resultset.ResultSetManager;
 import serialization.Types;
 import grok_connect.utils.*;
 import grok_connect.table_query.*;
@@ -10,8 +10,8 @@ import grok_connect.connectors_info.*;
 
 
 public class AccessDataProvider extends JdbcDataProvider {
-    public AccessDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public AccessDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
+        super(resultSetManager, providerManager);
 
         driverClassName = "net.ucanaccess.jdbc.UcanaccessDriver";
 

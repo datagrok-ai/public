@@ -1,14 +1,15 @@
 package grok_connect.providers;
 
-import java.sql.*;
 import java.util.*;
+
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.*;
 import grok_connect.connectors_info.*;
 
 
 public class VerticaDataProvider extends JdbcDataProvider {
-    public VerticaDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public VerticaDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
+        super(resultSetManager, providerManager);
         driverClassName = "com.vertica.jdbc.Driver";
 
         descriptor = new DataSource();

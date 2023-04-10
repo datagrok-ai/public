@@ -7,6 +7,7 @@ import java.util.Properties;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.Property;
@@ -14,8 +15,8 @@ import grok_connect.utils.ProviderManager;
 import serialization.Types;
 
 public class PostgresDataProvider extends JdbcDataProvider {
-    public PostgresDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public PostgresDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
+        super(resultSetManager, providerManager);
         driverClassName = "org.postgresql.Driver";
 
         descriptor = new DataSource();

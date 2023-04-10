@@ -18,6 +18,7 @@ import grok_connect.connectors_info.DataQuery;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.Property;
@@ -36,8 +37,8 @@ public class OracleDataProvider extends JdbcDataProvider {
             "AND COL.OWNER != 'ORDDATA'";
     private static final byte REGIONIDBIT = (byte) 0b1000_0000;
 
-    public OracleDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public OracleDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
+        super(resultSetManager, providerManager);
         driverClassName = "oracle.jdbc.OracleDriver";
 
         descriptor = new DataSource();

@@ -12,6 +12,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 import grok_connect.connectors_info.*;
 import grok_connect.providers.proxy.HiveMetaDataProviderProxyProvider;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
@@ -27,8 +28,8 @@ public class HiveDataProvider extends JdbcDataProvider {
             Collections.unmodifiableList(Arrays.asList("MySQL", "Postgres", "Oracle", "MS SQL"));
     private static final String DEFAULT_META_STORE_DB = "metastore";
 
-    public HiveDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public HiveDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
+        super(resultSetManager, providerManager);
         driverClassName = "org.apache.hadoop.hive.jdbc.HiveDriver";
 
         descriptor = new DataSource();

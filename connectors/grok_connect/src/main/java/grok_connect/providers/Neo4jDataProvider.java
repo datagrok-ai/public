@@ -6,14 +6,15 @@ import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.PatternMatcher;
 import grok_connect.utils.PatternMatcherResult;
 import grok_connect.utils.Property;
 import grok_connect.utils.ProviderManager;
 
 public class Neo4jDataProvider extends JdbcDataProvider {
-    public Neo4jDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public Neo4jDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
+        super(resultSetManager, providerManager);
         driverClassName = "org.neo4j.jdbc.Driver";
 
         descriptor = new DataSource();

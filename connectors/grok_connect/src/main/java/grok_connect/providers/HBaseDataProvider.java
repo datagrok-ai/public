@@ -1,14 +1,15 @@
 package grok_connect.providers;
 
-import java.sql.*;
 import java.util.*;
+
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.*;
 import grok_connect.connectors_info.*;
 
 
 public class HBaseDataProvider extends JdbcDataProvider {
-    public HBaseDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public HBaseDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
+        super(resultSetManager, providerManager);
         driverClassName = "org.apache.phoenix.queryserver.client.Driver";
 
         descriptor = new DataSource();

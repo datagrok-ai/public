@@ -1,16 +1,16 @@
 package grok_connect.providers;
 
-import java.sql.*;
 import java.util.*;
+
+import grok_connect.resultset.ResultSetManager;
 import serialization.Types;
 import grok_connect.utils.*;
-import grok_connect.table_query.*;
 import grok_connect.connectors_info.*;
 
 
 public class PIDataProvider extends JdbcDataProvider {
-    public PIDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public PIDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
+        super(resultSetManager, providerManager);
         driverClassName = "com.osisoft.jdbc.Driver";
 
         descriptor = new DataSource();

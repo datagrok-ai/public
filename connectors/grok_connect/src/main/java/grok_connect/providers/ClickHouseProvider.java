@@ -4,6 +4,7 @@ import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.PatternMatcher;
 import grok_connect.utils.PatternMatcherResult;
 import grok_connect.utils.Property;
@@ -16,8 +17,8 @@ import java.util.HashMap;
 import java.util.List;
 
 public class ClickHouseProvider extends JdbcDataProvider {
-    public ClickHouseProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public ClickHouseProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
+        super(resultSetManager, providerManager);
         driverClassName = "com.clickhouse.jdbc.ClickHouseDriver";
 
         descriptor = new DataSource();

@@ -1,14 +1,15 @@
 package grok_connect.providers;
 
-import java.sql.*;
 import java.util.*;
+
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.*;
 import grok_connect.connectors_info.*;
 
 
 public class DenodoDataProvider extends JdbcDataProvider {
-    public DenodoDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public DenodoDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
+        super(resultSetManager, providerManager);
         driverClassName = "com.denodo.vdb.jdbcdriver.VDBJDBCDriver";
 
         descriptor = new DataSource();

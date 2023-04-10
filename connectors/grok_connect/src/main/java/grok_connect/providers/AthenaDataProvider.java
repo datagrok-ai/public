@@ -7,14 +7,15 @@ import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import grok_connect.utils.ProviderManager;
 import serialization.Types;
 
 public class AthenaDataProvider extends JdbcDataProvider {
-    public AthenaDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public AthenaDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
+        super(resultSetManager, providerManager);
         driverClassName = "com.simba.athena.jdbc.Driver";
 
         Property encode = new Property(Property.STRING_TYPE, DbCredentials.S3OutputEncOption,

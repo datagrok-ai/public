@@ -1,18 +1,20 @@
 package serialization;
 
-import java.util.*;
-import java.util.regex.*;
-import java.util.function.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-
-// Data frame.
 public class DataFrame {
+    private static final String delimiter = ",";
     public String name;
     public Integer rowCount = 0;
     public List<Column> columns = new ArrayList<>();
     public Map<String, String> tags;
-
-    private static final String delimiter = ",";
 
     public DataFrame() {
     }
@@ -25,8 +27,24 @@ public class DataFrame {
 
     public void addColumns(List<Column> cols) {
         if (cols.size() > 0) {
-            rowCount = cols.get(0).length;
-            for (Column col : cols) {
+            Column column = cols.get(0);
+            if (column.getType().equals(Types.COLUMN_LIST)) {
+                Column column1 = (Column) column.get(0);
+                rowCount = column1 == null ? 0 : (column1).length;
+            } else {
+                rowCount = column.length;
+            }
+            addColumnsRecursive(cols);
+        }
+    }
+
+    private void addColumnsRecursive(List<Column> cols) {
+        for (Column col : cols) {
+            if (col == null) break;
+            if (col.getType().equals(Types.COLUMN_LIST)) {
+                ComplexTypeColumn complexTypeColumn = (ComplexTypeColumn) col;
+                addColumnsRecursive(new ArrayList<>(Arrays.asList(complexTypeColumn.getAll())));
+            } else {
                 col.name = getUniqueName(col.name);
                 columns.add(col);
             }

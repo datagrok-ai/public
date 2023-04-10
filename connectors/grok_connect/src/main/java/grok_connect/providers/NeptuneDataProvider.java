@@ -4,6 +4,7 @@ import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.*;
 
 import java.sql.Connection;
@@ -12,8 +13,8 @@ import java.util.ArrayList;
 import java.util.Properties;
 
 public class NeptuneDataProvider extends JdbcDataProvider {
-    public NeptuneDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public NeptuneDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
+        super(resultSetManager, providerManager);
         driverClassName = "software.aws.neptune.NeptuneDriver";
         descriptor = new DataSource();
         descriptor.type = "Neptune";

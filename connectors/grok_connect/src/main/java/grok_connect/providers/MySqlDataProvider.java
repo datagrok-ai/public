@@ -11,6 +11,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import grok_connect.connectors_info.*;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
@@ -22,8 +23,8 @@ import serialization.StringColumn;
 import serialization.Types;
 
 public class MySqlDataProvider extends JdbcDataProvider {
-    public MySqlDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public MySqlDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
+        super(resultSetManager, providerManager);
         driverClassName = "com.mysql.cj.jdbc.Driver";
 
         descriptor = new DataSource();

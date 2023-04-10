@@ -1,6 +1,7 @@
 package grok_connect.providers;
 
 import grok_connect.connectors_info.*;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.Prop;
@@ -28,8 +29,8 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
     private static final List<String> AVAILABLE_CLOUDS =
             Collections.unmodifiableList(Arrays.asList("aws", "azure", "gcp"));
 
-    public SnowflakeDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public SnowflakeDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
+        super(resultSetManager, providerManager);
         init();
     }
 

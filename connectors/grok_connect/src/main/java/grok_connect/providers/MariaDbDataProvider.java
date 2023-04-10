@@ -2,11 +2,12 @@ package grok_connect.providers;
 
 import java.util.Properties;
 import grok_connect.connectors_info.DataConnection;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.ProviderManager;
 
 public class MariaDbDataProvider extends MySqlDataProvider {
-    public MariaDbDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public MariaDbDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
+        super(resultSetManager, providerManager);
         driverClassName = "org.mariadb.jdbc.Driver";
 
         descriptor.type = "MariaDB";

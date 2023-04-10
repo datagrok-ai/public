@@ -1,15 +1,14 @@
 package grok_connect.providers;
 
-import java.util.Properties;
-
 import grok_connect.connectors_info.*;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.ProviderManager;
 
 
 // TODO Note that this is just template. This class can be used as connector layer for other databases.
 public class OdbcDataProvider extends JdbcDataProvider {
-    public OdbcDataProvider(ProviderManager providerManager) {
-        super(providerManager);
+    public OdbcDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
+        super(resultSetManager, providerManager);
         driverClassName = "sun.jdbc.odbc.JdbcOdbcDriver";
 
         descriptor = new DataSource();
