@@ -118,4 +118,4 @@ Read more about package development in [Datagrok's documentation](https://datagr
   save a test run result, add the `--csv` flag (the report will be saved in a
   CSV file in the package folder). You can find more details in [local package testing
   instructions](https://datagrok.ai/help/develop/how-to/test-packages#local-testing).
-- `link` / `unlink` commands are used for public plugins development to (un)link `datagrok-api` and libraries.
+- `link` command is used for public plugins development to link `datagrok-api` and libraries.
