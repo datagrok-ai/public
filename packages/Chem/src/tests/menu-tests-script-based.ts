@@ -45,6 +45,17 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
     await curate(approvedDrugs100, 'molecule');
   });
 
+  test('curate.emptyValues', async () => {
+    const df = await readDataframe('tests/sar-small_empty_vals.csv');
+    await grok.data.detectSemanticTypes(df);
+    const t: DG.DataFrame = await grok.functions.call('Chem:Curate', {'data': df, 'molecules': 'smiles',
+      'kekulization': true, 'normalization': true, 'reionization': true,
+      'neutralization': true, 'tautomerization': true, 'mainFragment': true});
+    const col = t.getCol('curated_molecule');
+    expect(col.stats.valueCount, 16);
+    col.categories.slice(0, -1).forEach((c) => expect(c.includes('C'), true));
+  });
+
   test('mutate.smiles', async () => {
     await mutate('CN1C(CC(O)C1=O)C1=CN=CC=C1');
   });
@@ -56,6 +67,10 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
   test('mutate.molV3000', async () => {
     await mutate(molV3000);
   });
+
+  test('mutate.emptyInput', async () => {
+    await mutate('');
+  });
 });
 
 
@@ -63,11 +78,11 @@ async function curate(df: DG.DataFrame, col: string) {
   const t: DG.DataFrame = await grok.functions.call('Chem:Curate', {'data': df, 'molecules': col,
     'kekulization': true, 'normalization': true, 'reionization': true,
     'neutralization': true, 'tautomerization': true, 'mainFragment': true});
+  const cm = t.getCol('curated_molecule');
   if (col !== 'smiles') {
-    t.getCol('curated_molecule');
+    for (let i = 0; i < t.rowCount; i++) expect(cm.get(i).includes('C'), true);
     return;
   }
-  const cm = t.getCol('curated_molecule');
   expect(cm.get(0), 'CCC(=O)[O-]');
   expect(cm.get(1), 'CCC(=O)O');
   expect(cm.get(2), 'O=C([O-])C1=CC=CC=C1');
@@ -93,6 +108,7 @@ async function mutate(molecule: string) {
     'maxRandomResults': mutations,
   });
   expect(t.rowCount, mutations);
+  const col = t.getCol('mutations');
   for (let i = 0; i < t.rowCount; i++)
-    expect(t.col('mutations')?.get(i).includes('C'), true);
+    expect(col.get(i).includes('C'), true);
 }
