@@ -5,14 +5,21 @@ import {category, expect, test, before, after} from '@datagrok-libraries/utils/s
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {readDataframe} from './utils';
+import {findMCS, findRGroups} from '../scripts-api';
 
 
 category('top menu r-groups', () => {
+  let empty: DG.DataFrame;
+  let core: string;
+
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
       await chemCommonRdKit.initRdKitModuleLocal();
     }
+    empty = await readDataframe('tests/sar-small_empty_vals.csv');
+    await grok.data.detectSemanticTypes(empty);
+    core = await findMCS('smiles', empty);
   });
 
   test('mcs', async () => {
@@ -78,6 +85,16 @@ M  END
       `,
       prefix: 'R',
     });
+  });
+
+  test('rgroups.emptyValues', async () => {
+    const res = await findRGroups('smiles', empty, core, 'R');
+    expect(res.getCol('R1').stats.valueCount, 13);
+    expect(res.getCol('R2').stats.valueCount, 13);
+  });
+
+  test('rgroups.emptyInput', async () => {
+    await findRGroups('smiles', empty, '', 'R');
   });
 
   after(async () => {

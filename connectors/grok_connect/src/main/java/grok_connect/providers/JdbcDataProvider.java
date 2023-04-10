@@ -7,9 +7,7 @@ import java.util.*;
 import java.math.*;
 import java.text.*;
 import java.util.Date;
-import java.util.concurrent.ExecutionException;
 import java.util.regex.*;
-
 import com.clickhouse.data.value.UnsignedByte;
 import com.clickhouse.data.value.UnsignedShort;
 import microsoft.sql.DateTimeOffset;
@@ -18,6 +16,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.text.StringEscapeUtils;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import serialization.*;
 import grok_connect.utils.*;
 import grok_connect.table_query.*;
@@ -26,6 +26,8 @@ import serialization.Types;
 
 
 public abstract class JdbcDataProvider extends DataProvider {
+    protected Logger logger = LoggerFactory.getLogger(this.getClass().getName());
+
     protected String driverClassName;
 
     public ProviderManager providerManager;
@@ -118,23 +120,22 @@ public abstract class JdbcDataProvider extends DataProvider {
         throw new UnsupportedOperationException();
     }
 
-//    why do we need 3 variables query, queryRun and connection if queryRun consists of all of them
     public ResultSet executeQuery(String query, FuncCall queryRun, Connection connection, int timeout)  throws ClassNotFoundException, SQLException {
         boolean supportsTransactions = connection.getMetaData().supportsTransactions();
-
+        logger.debug("supports Transactions: {}", supportsTransactions);
         if (supportsTransactions)
             connection.setAutoCommit(false);
 
         DataQuery dataQuery = queryRun.func;
         String mainCallId = (String) queryRun.aux.get("mainCallId");
-        int fetchSize = (queryRun.aux.containsKey("fetchSize") && (queryRun.aux.get("fetchSize").equals("big"))) ? 10000 : 100; 
+        int fetchSize = (queryRun.aux.containsKey("fetchSize") && (queryRun.aux.get("fetchSize").equals("big"))) ? 10000 : 100;
 
         ResultSet resultSet = null;
         if (dataQuery.inputParamsCount() > 0) {
             query = convertPatternParamsToQueryParams(queryRun, query);
 
             if (autoInterpolation()) {
-                // Parametrized func
+                logger.debug("Autointerpolating query");
                 StringBuilder queryBuffer = new StringBuilder();
                 List<String> names = getParameterNames(query, dataQuery, queryBuffer);
                 query = queryBuffer.toString();
@@ -168,7 +169,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 }
                 statement.setQueryTimeout(timeout);
                 String logString = String.format("Query: %s; \nParams array: %s \n", statement, stringValues);
-                providerManager.getLogger().info(logString);
+                logger.debug(logString);
                 if (queryRun.debugQuery)
                     queryRun.log += logString;
                 if(statement.execute())
@@ -183,7 +184,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 statement.setQueryTimeout(timeout);
                 String logString = String.format("Query: %s \n", query);
-                providerManager.getLogger().info(logString);
+                logger.debug(logString);
                 if (queryRun.debugQuery)
                     queryRun.log += logString;
                 if(statement.execute(query))
@@ -198,7 +199,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
             statement.setQueryTimeout(timeout);
             String logString = String.format("Query: %s \n", query);
-            providerManager.getLogger().info(logString);
+            logger.debug(logString);
             if (queryRun.debugQuery)
                 queryRun.log += logString;
             if(statement.execute(query))
@@ -317,6 +318,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public ResultSet getResultSet(FuncCall queryRun, Connection connection) throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
+        logger.debug("resultSetScheme was called");
         Integer providerTimeout = getTimeout();
         int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
@@ -358,7 +360,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public SchemeInfo resultSetScheme(FuncCall queryRun, ResultSet resultSet) throws QueryCancelledByUser, SQLException {
-
+        logger.debug("resultSetScheme was called");
         try {
             // if (resultSet == null)
             //     return new DataFrame();
@@ -369,6 +371,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             List<Column> columns = new ArrayList<>(columnCount);
             List<Boolean> supportedType = new ArrayList<>(columnCount);
             List<Boolean> initColumn = new ArrayList<>(columnCount);
+            StringBuilder logBuilder = new StringBuilder();
             for (int c = 1; c < columnCount + 1; c++) {
                 Column column;
                 String label = resultSetMetaData.getColumnLabel(c);
@@ -382,9 +385,8 @@ public abstract class JdbcDataProvider extends DataProvider {
 
                 String logString1 = String.format("Column: %s, type: %d, type name: %s, precision: %d, scale: %d \n",
                         label, type, typeName, precision, scale);
-                if (queryRun.debugQuery)
-                    queryRun.log += logString1;
-                providerManager.getLogger().info(logString1);
+                logBuilder.append(logString1);
+                logger.debug(logString1);
 // Maybe the better way to use here strategy pattern ? e.g. ColumnManager -> ColumnProvider
                 if (isInteger(type, typeName, precision, scale))
                     column = new IntColumn();
@@ -411,18 +413,19 @@ public abstract class JdbcDataProvider extends DataProvider {
                     supportedType.set(c - 1, false);
                     initColumn.set(c - 1, false);
                 }
-
                 String logString2 = String.format("Java type: %s \n", column.getClass().getName());
-                if (queryRun.debugQuery)
-                    queryRun.log += logString2;
-                providerManager.getLogger().info(logString2);
-
-                column.name = resultSetMetaData.getColumnLabel(c); // duplicate method call
+                logBuilder.append(logString2);
+                logger.debug(logString2);
+                column.name = label;
                 columns.add(c - 1, column);
+            }
+            if (queryRun.debugQuery) {
+                queryRun.log += logBuilder.toString();
             }
             return new SchemeInfo(columns, supportedType, initColumn);
 
         } catch (SQLException e) {
+            logger.warn("An exception was thrown", e);
             if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
                 throw new QueryCancelledByUser();
             else throw e;
@@ -432,8 +435,11 @@ public abstract class JdbcDataProvider extends DataProvider {
     public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,
                                        List<Boolean> supportedType,List<Boolean> initColumn, int maxIterations)
             throws IOException, SQLException, QueryCancelledByUser {
-        if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
+        logger.debug("getResultSetSubDf was called");
+        if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId"))) {
+            logger.debug("Query was cancelled: \"{}\"", queryRun.func.query);
             throw new QueryCancelledByUser();
+        }
 
         int count = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_COUNT))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_COUNT)).intValue() : 0;
@@ -446,9 +452,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                 return new DataFrame();
 
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-
+            logger.debug("Received resultSet meta data");
             DateTime fillingDataframeStart = DateTime.now();
-// why can't we do it in previous for loop?
             BufferedWriter csvWriter = null;
             if (outputCsv != null) {
                 csvWriter = new BufferedWriter(new FileWriter(outputCsv));
@@ -635,7 +640,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                             size += column.memoryInBytes();
                         size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000; // count? it's 200 lines up
 
-                        if (size > 20) {
+                        if (size > 5) {
                             DataFrame dataFrame = new DataFrame();
                             dataFrame.addColumns(columns);
                             return dataFrame;
@@ -648,13 +653,15 @@ public abstract class JdbcDataProvider extends DataProvider {
                 }
             }
             if (queryRun.debugQuery) {
+                StringBuilder logBuilder = new StringBuilder();
                 for (int i = 0; i < columnCount; i++) {
                     if (!numericColumnStats.get(i).valuesCounter.equals(new BigDecimal(0))) {
                         String logString = String.format("Column: %s, min: %s, max: %s, mean: %s\n", columns.get(i).name, numericColumnStats.get(i).min, numericColumnStats.get(i).max, numericColumnStats.get(i).mean);
-                        queryRun.log += logString;
-                        providerManager.getLogger().info(logString);
+                        logBuilder.append(logString);
+                        logger.debug(logString);
                     }
                 }
+                queryRun.log += logBuilder.toString();
             }
             DateTime finish = DateTime.now();
 
@@ -662,20 +669,21 @@ public abstract class JdbcDataProvider extends DataProvider {
                     (finish.getMillis() - fillingDataframeStart.getMillis())/ 1000.0);
             if (queryRun.debugQuery)
                 queryRun.log += logString;
-            providerManager.getLogger().info(logString);
-
-            if (outputCsv != null)
+            logger.debug(logString);
+            if (outputCsv != null) {
                 csvWriter.close();
-
+            }
             DataFrame dataFrame = new DataFrame();
             dataFrame.addColumns(columns);
-
             return dataFrame;
         } catch (Exception e) {
-            if (resultSet != null && resultSet.isClosed())
+            logger.warn("An exception was thrown", e);
+            if (resultSet != null && resultSet.isClosed()) {
                 throw new QueryCancelledByUser();
-            else
+            }
+            else {
                 throw e;
+            }
         }
     };
 

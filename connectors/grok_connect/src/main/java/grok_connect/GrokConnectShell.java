@@ -1,26 +1,42 @@
 package grok_connect;
 
-import java.io.*;
-import java.nio.file.*;
-import java.nio.charset.*;
-
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.joda.time.*;
-import com.google.gson.*;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import grok_connect.connectors_info.DataProvider;
+import grok_connect.connectors_info.FuncCall;
+import grok_connect.utils.GrokConnectException;
+import grok_connect.utils.Property;
+import grok_connect.utils.PropertyAdapter;
+import grok_connect.utils.ProviderManager;
+import grok_connect.utils.QueryCancelledByUser;
+import grok_connect.utils.SettingsManager;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.SQLException;
-import org.apache.commons.cli.*;
-
-import serialization.*;
-import grok_connect.utils.*;
-import grok_connect.connectors_info.*;
-
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import serialization.DataFrame;
 
 public class GrokConnectShell {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrokConnectShell.class);
+
     public static void main(String[] args) throws ParseException, IOException, SQLException,
             java.text.ParseException, ClassNotFoundException, QueryCancelledByUser, GrokConnectException {
-
+        LOGGER.debug("Received args: {}", Arrays.toString(args));
         Options options = new Options();
 
         Option input = new Option("q", "query", true, "Query JSON file path");
@@ -59,17 +75,16 @@ public class GrokConnectShell {
         FuncCall call = gson.fromJson(new String(Files.readAllBytes(Paths.get(cmd.getOptionValue("query"))), StandardCharsets.UTF_8), FuncCall.class);
         call.setParamValues();
         SettingsManager.getInstance().initSettingsWithDefaults();
-        DateTime startTime = DateTime.now();
-        BasicConfigurator.configure();
-        Logger logger = Logger.getLogger(GrokConnect.class.getName());
-        logger.setLevel(Level.INFO);
-        DataProvider provider = new ProviderManager(logger).getByName(call.func.connection.dataSource);
+        long startTime = System.currentTimeMillis();
+        DataProvider provider = new ProviderManager().getByName(call.func.connection.dataSource);
         provider.outputCsv = cmd.getOptionValue("original_csv");
         DataFrame table = provider.execute(call);
-        double execTime = (DateTime.now().getMillis() - startTime.getMillis()) / 1000.0;
+        double execTime = (System.currentTimeMillis() - startTime) / 1000.0;
 
-        System.out.printf("\n%s: Execution time: %f s, Columns/Rows: %d/%d\n\n",
-                startTime.toString("yyyy-MM-dd hh:mm:ss"),
+        LOGGER.debug("{}: Execution time: {} s, Columns/Rows: {}/{}\n",
+                Instant.ofEpochMilli(startTime)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss")),
                 execTime,
                 table.columns.size(),
                 table.rowCount);
@@ -80,12 +95,12 @@ public class GrokConnectShell {
         if (csvPath != null)
             Files.write(Paths.get(csvPath), csv.getBytes(StandardCharsets.UTF_8));
         else
-            System.out.println(csv);
+            LOGGER.debug(csv);
 
         String binaryPath = cmd.getOptionValue("binary_output");
 
         if (binaryPath != null) {
-            try (FileOutputStream outputStream = new FileOutputStream(new File(binaryPath))) {
+            try (FileOutputStream outputStream = new FileOutputStream(binaryPath)) {
                 outputStream.write(table.toByteArray());
             }
         }

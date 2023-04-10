@@ -5,13 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>grok_connect</artifactId>
-    <version>2.0.7</version>
+    <version>2.0.8</version>
     <packaging>jar</packaging>
 
     <parent>
         <groupId>connectors</groupId>
         <artifactId>build</artifactId>
-        <version>2.0.7</version>
+        <version>2.0.8</version>
     </parent>
 
     <properties>
@@ -38,7 +38,6 @@
                     </archive>
                 </configuration>
             </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -151,6 +150,7 @@
     </build>
 
     <repositories>
+
         <repository>
             <id>maven-restlet</id>
             <name>Public online Restlet repository</name>
@@ -166,9 +166,56 @@
             <id>redshift</id>
             <url>https://s3.amazonaws.com/redshift-maven-repository/release</url>
         </repository>
+
+<!--        <repository>-->
+<!--            <id>data-local</id>-->
+<!--            <name>data</name>-->
+<!--            <url>file://${project.basedir}/lib</url>-->
+<!--        </repository>-->
     </repositories>
 
     <dependencies>
+
+        <dependency>
+            <groupId>com.dbschema</groupId>
+            <artifactId>mongo</artifactId>
+            <version>1.2</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/mongojdbc1.2.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.simba</groupId>
+            <artifactId>athena</artifactId>
+            <version>2.0.35.1000</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/AthenaJDBC42-2.0.35.1000.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>software.aws</groupId>
+            <artifactId>neptune</artifactId>
+            <version>2.0.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/neptune-jdbc-2.0.0-all.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.osisoft</groupId>
+            <artifactId>pi-jdbc</artifactId>
+            <version>1.7.21114</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/PIJDBCDriver.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>3.41.2.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.vertica.jdbc</groupId>
+            <artifactId>vertica-jdbc</artifactId>
+            <version>12.0.3-0</version>
+        </dependency>
+
         <dependency>
             <groupId>commons-beanutils</groupId>
             <artifactId>commons-beanutils</artifactId>
@@ -203,32 +250,6 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-codec</artifactId>
             <version>4.1.68.Final</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api</artifactId>
-            <version>2.17.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>2.17.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-1.2-api</artifactId>
-            <version>2.17.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j-impl</artifactId>
-            <version>2.17.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-web</artifactId>
-            <version>2.17.1</version>
         </dependency>
         <dependency>
             <groupId>com.sparkjava</groupId>
@@ -308,10 +329,11 @@
             <version>2.4</version>
         </dependency>
         <dependency>
-            <groupId>commons-logging</groupId>
-            <artifactId>commons-logging</artifactId>
-            <version>1.0.4</version>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.2.3</version>
         </dependency>
+
         <dependency>
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
@@ -324,7 +346,7 @@
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
-                    <artifactId>log4j-over-slf4j</artifactId>
+                    <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

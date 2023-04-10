@@ -374,11 +374,12 @@ To test a package in CI, you need the following:
 
 To install dependent grok packages in [our
 workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yml), you can
-use `grokDependencies` in [package.json](#packagejson)
+use `devDependencies` in [package.json](#packagejson) We used an individual `grokDependencies`
+section earlier, but now this content is moved to devDependencies for a better CI process
 
 ```json
 {
-  "grokDependencies": {
+  "devDependencies": {
     "@datagrok/chem": "latest"
   }
 }

@@ -9,11 +9,14 @@ import * as color from '../utils/color-utils';
  * Unlink: npm install in the package and its dependencies, npm unlink
  */
 
+const curDir = process.cwd();
+const packageDir = path.join(curDir, 'package.json');
+
 const apiPackageName = 'datagrok-api';
 const libScope = '@datagrok-libraries';
 const paths = {
-  [apiPackageName]: path.join(path.dirname(path.dirname(path.dirname(__dirname))), 'js-api'),
-  [libScope]: path.join(path.dirname(path.dirname(path.dirname(__dirname))), 'libraries'),
+  [apiPackageName]: path.join(path.dirname(path.dirname(curDir)), 'js-api'),
+  [libScope]: path.join(path.dirname(path.dirname(curDir)), 'libraries'),
 };
 
 /** Links local packages. */
@@ -21,12 +24,17 @@ export function link(args: LinkArgs) {
   const nOptions = Object.keys(args).length - 1;
   if (nOptions > 0 || args['_'].length > 1)
     return false;
-  const curDir = process.cwd();
-  const packageDir = path.join(curDir, 'package.json');
 
   if (!utils.isPackageDir(curDir)) {
     color.error('File `package.json` not found. Run the command from the package directory');
     return false;
+  }
+
+  for (const p of Object.values(paths)) {
+    if (!fs.existsSync(p)) {
+      color.error(`Directory ${p} not found. Run the command from the public package repository`);
+      return false;
+    }
   }
 
   const dependencies = readDependencies(JSON.parse(fs.readFileSync(packageDir, 'utf-8')));
@@ -66,7 +74,7 @@ export function link(args: LinkArgs) {
           console.log(isLinked ?
             `Package "${lib.name}" is linked. Updating dependencies and running the build script...`
             : `Linking "${lib.name}"...`);
-          exec(isLinked ? 'npm update && npm run build' : 'npm install && npm run build && npm link',
+          exec(isLinked ? 'npm update && npm run build' : 'npm install && npm run link-all && npm run build && npm link',
             { cwd: libPath }, (err, stdout, stderr) => {
               if (err) throw err;
               else console.log(stderr, stdout);
@@ -81,7 +89,7 @@ export function link(args: LinkArgs) {
       console.log(isLinked ?
         `Package "${utilsModule.name}" is linked. Updating dependencies and running the build script...`
         : `Linking "${utilsModule.name}"...`);
-      exec(isLinked ? 'npm update && npm run build' : 'npm install && npm run build && npm link',
+      exec(isLinked ? 'npm update && npm run build' : 'npm install && npm run link-all && npm run build && npm link',
         { cwd: libPath }, (err, stdout, stderr) => {
           if (err) throw err;
           else {
@@ -119,9 +127,6 @@ export function unlink(args: LinkArgs) {
   const nOptions = Object.keys(args).length - 1;
   if (nOptions > 0 || args['_'].length > 1)
     return false;
-
-  const curDir = process.cwd();
-  const packageDir = path.join(curDir, 'package.json');
 
   if (!utils.isPackageDir(curDir)) {
     color.error('File `package.json` not found. Run the command from the package directory');

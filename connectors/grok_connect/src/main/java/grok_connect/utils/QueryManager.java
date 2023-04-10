@@ -4,31 +4,30 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.List;
 import grok_connect.GrokConnect;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.providers.JdbcDataProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import serialization.*;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.apache.log4j.Logger;
-import org.joda.time.DateTime;
 
 public class QueryManager {
-    JdbcDataProvider provider;
-
-    SchemeInfo schemeInfo;
-
-    public ResultSet resultSet;
-    public FuncCall query;
-    Connection connection;
-    private boolean changedFetchSize = false;
-
-    static Gson gson = new GsonBuilder()
-        .registerTypeAdapter(Property.class, new PropertyAdapter())
-        .create();
+    private static final Logger LOGGER = LoggerFactory.getLogger(QueryManager.class);
+    private static final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(Property.class, new PropertyAdapter())
+            .create();
+    private static final String AUX_FETCH_SIZE_KEY = "fetchSize";
+    private static final int DEFAULT_FETCH_SIZE = 10000;
+    private final JdbcDataProvider provider;
+    private final FuncCall query;
+    private SchemeInfo schemeInfo;
+    private ResultSet resultSet;
+    private Connection connection;
+    private boolean changedFetchSize;
 
     public QueryManager(FuncCall query, JdbcDataProvider provider) {
         this.query = query;
@@ -40,48 +39,56 @@ public class QueryManager {
         query.log = "";
         query.setParamValues();
         query.afterDeserialization();
-        System.out.println(query.func.query);
-
+        LOGGER.debug("Initializing with query: {}", query.func.query);
         // DateTime startTime = DateTime.now();
-        provider = GrokConnect.getProviderManager().getByName(query.func.connection.dataSource);
+        provider = GrokConnect.providerManager.getByName(query.func.connection.dataSource);
     }
 
-    public void getResultSet() throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
+    public void initResultSet() throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
+        LOGGER.trace("initResultSet was called");
         connection = provider.getConnection(query.func.connection);
         resultSet = provider.getResultSet(query, connection);
-        System.out.println("resultset got");
+        LOGGER.trace("ResultSet received");
     }
 
     public void initScheme() throws QueryCancelledByUser, SQLException {
-        System.out.println("scheme not init");
+        LOGGER.trace("Starting schemeInfo initialization");
         if (resultSet == null) {
             schemeInfo = new SchemeInfo(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
             return;
         }
         schemeInfo = provider.resultSetScheme(query, resultSet);
-        System.out.println("scheme init");
+        LOGGER.trace("SchemeInfo initialization finished");
     }
 
     public DataFrame getSubDF(int maxIterations) throws IOException, SQLException, QueryCancelledByUser {
+        LOGGER.trace("getSubDF was called with argument: {}", maxIterations);
         List<Column> columns = schemeInfo.columns;
-        for (int i = 0; i < columns.size(); i++) {
-            columns.get(i).empty();
-        }
-
-        if (!changedFetchSize && (!query.aux.containsKey("fetchSize") || query.aux.get("fetchSize").equals("dynamic"))) {
-            if (connection.getMetaData().supportsTransactions())
-                resultSet.setFetchSize(10000);
-            changedFetchSize = true;
+        for (Column column : columns) {
+            column.empty();
         }
         DataFrame df = new DataFrame();
         if (!connection.isClosed() && !resultSet.isClosed()) {
+            LOGGER.trace("Calling getResultSetSubDf");
             df = provider.getResultSetSubDf(query, resultSet, columns,
-                schemeInfo.supportedType, schemeInfo.initColumn, maxIterations);
+            schemeInfo.supportedType, schemeInfo.initColumn, maxIterations);
+        }
+
+        if (connection.getMetaData().supportsTransactions() && df.rowCount != 0) {
+            Double memInBytes = df.memoryInBytes() / 1024.0;
+            double fetchSize = df.rowCount / memInBytes * 30000;
+    
+            if (fetchSize > 40000)
+                fetchSize = 40000;
+    
+            resultSet.setFetchSize((int)fetchSize);
+            LOGGER.trace("Set new fetch size");
         }
         return df;
     }
-
+    
     public void closeConnection() throws SQLException {
+        LOGGER.trace("Closing connection");
         if (connection != null && !connection.isClosed()) {
             if (!connection.getAutoCommit())
                 connection.commit();
@@ -90,5 +97,13 @@ public class QueryManager {
         } else {
             provider.providerManager.getQueryMonitor().removeResultSet(query.id);
         }
+    }
+
+    public boolean isResultSetInitialized() {
+        return resultSet != null;
+    }
+
+    public FuncCall getQuery() {
+        return query;
     }
 }

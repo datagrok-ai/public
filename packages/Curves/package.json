@@ -1,18 +1,18 @@
 {
 	"name": "@datagrok/curves",
 	"friendlyName": "Curves",
-	"version": "0.0.1",
+	"version": "1.0.0",
 	"description": "",
 	"author": {
 		"name": "Dmytro Kovalyov",
-		"email": "kovalyov.dmytro@eigenmethod.com"
+		"email": "dkovalyov@datagrok.ai"
 	},
 	"dependencies": {
 		"@datagrok-libraries/statistics": "^1.1.7",
-		"@datagrok-libraries/utils": "^2.3.4",
+		"@datagrok-libraries/utils": "^4.0.0",
 		"@types/wu": "^2.1.42",
 		"cash-dom": "latest",
-		"datagrok-api": "^1.13.11",
+		"datagrok-api": "latest",
 		"rxjs": "6.5.5",
 		"dayjs": "latest"
 	},
@@ -26,7 +26,7 @@
 		"source-map-loader": "^4.0.1"
 	},
 	"scripts": {
-		"link-all": "npm link datagrok-api  @datagrok-libraries/utils @datagrok-libraries/statistics",
+		"link-all": "npm link datagrok-api  @datagrok-libraries/utils @datagrok-libraries/statistics @datagrok-libraries/chem-meta",
 		"debug-curves": "webpack && grok publish",
 		"release-curves": "webpack && grok publish --release",
 		"build-curves": "webpack",

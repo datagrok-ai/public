@@ -1,21 +1,24 @@
 package grok_connect.providers;
 
+import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
-import grok_connect.connectors_info.DataConnection;
-import grok_connect.connectors_info.DataQuery;
-import grok_connect.connectors_info.DataSource;
-import grok_connect.connectors_info.DbCredentials;
-import grok_connect.connectors_info.FuncParam;
+
+import grok_connect.connectors_info.*;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
+import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Property;
 import grok_connect.utils.ProviderManager;
+import grok_connect.utils.QueryCancelledByUser;
+import serialization.DataFrame;
+import serialization.StringColumn;
 import serialization.Types;
 
 public class MySqlDataProvider extends JdbcDataProvider {
@@ -81,8 +84,13 @@ public class MySqlDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String getSchemasSql(String db) {
-        return "SELECT DISTINCT table_schema FROM information_schema.columns ORDER BY table_schema";
+    public DataFrame getSchemas(DataConnection connection) throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
+        String db = connection.getDb();
+        StringColumn column = new StringColumn(new String[]{db});
+        column.name = "TABLE_SCHEMA";
+        DataFrame dataFrame = new DataFrame();
+        dataFrame.addColumn(column);
+        return dataFrame;
     }
 
     @Override

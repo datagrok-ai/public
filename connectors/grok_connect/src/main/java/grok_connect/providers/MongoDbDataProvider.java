@@ -16,16 +16,20 @@ import serialization.FloatColumn;
 import serialization.IntColumn;
 import serialization.StringColumn;
 import serialization.Types;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 public class MongoDbDataProvider extends JdbcDataProvider {
+    private static final int OBJECT_INDEX = 1;
+
     public MongoDbDataProvider(ProviderManager providerManager) {
         super(providerManager);
         driverClassName = "com.dbschema.MongoJdbcDriver";
-
         descriptor = new DataSource();
         descriptor.type = "MongoDB";
         descriptor.description = "Query MongoDB database";
@@ -74,7 +78,7 @@ public class MongoDbDataProvider extends JdbcDataProvider {
     public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,
                                     List<Boolean> supportedType,List<Boolean> initColumn, int maxIterations) throws SQLException {
         do {
-            Object object = resultSet.getObject(1);
+            Object object = resultSet.getObject(OBJECT_INDEX);
             if (object instanceof String) {
                 columns.get(0).add(object.toString());
                 continue;
@@ -118,8 +122,8 @@ public class MongoDbDataProvider extends JdbcDataProvider {
         }
         try {
             resultSet.next();
-            object = resultSet.getObject(1);
-            label = resultSet.getMetaData().getColumnLabel(1);
+            object = resultSet.getObject(OBJECT_INDEX);
+            label = resultSet.getMetaData().getColumnLabel(OBJECT_INDEX);
         } catch (SQLException e) {
             throw new RuntimeException("Something went wrong when retrieving meta data of resultSet", e);
         }
