@@ -14,7 +14,6 @@ export abstract class FunctionView extends DG.ViewBase {
   protected _funcCall?: DG.FuncCall;
   protected _lastCall?: DG.FuncCall;
   protected _type: string = 'function';
-  protected funcName: string;
 
   // emitted when after a new FuncCall is linked
   public funcCallReplaced = new Subject<true>();
@@ -32,7 +31,6 @@ export abstract class FunctionView extends DG.ViewBase {
   ) {
     super();
     this.box = true;
-    this.funcName = initValue instanceof DG.FuncCall ? initValue.func.name : initValue;
     this.init();
   }
 
