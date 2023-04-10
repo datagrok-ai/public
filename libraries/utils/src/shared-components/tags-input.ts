@@ -39,8 +39,8 @@ export class TagsInput extends DG.InputBase {
   private _createRoot() {
     const inputContainer = ui.div([this.captionLabel, this.input, ui.div(this._addTagIcon, 'ui-input-options')],
       'ui-input-root');
-    const tagContainer = ui.div([ui.label('', 'ui-input-label'), this._tagsDiv], 'ui-input-root');
-
+    const tagContainer = ui.div([ui.label(' ', 'ui-input-label'), this._tagsDiv], 'ui-input-root');
+    
     this.root.append(inputContainer, tagContainer);
     this.root.classList.add('ui-input-tags');
   }
