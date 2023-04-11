@@ -12,6 +12,9 @@ import {UaToolbox} from './ua-toolbox';
 // import {DataView} from './views/data-view';
 import {PackagesView} from './tabs/packages';
 import {FunctionsView} from './tabs/functions';
+import {OverviewView} from "./tabs/overview";
+import {Func, View} from "datagrok-api/dg";
+import {Subscription} from "rxjs";
 
 const APP_PREFIX: string = `/apps/UsageAnalysis/`;
 
@@ -29,18 +32,11 @@ export class ViewHandler {
   }
 
   async init() {
-    grok.shell.windows.showToolbox = true;
-    grok.shell.windows.showContextPanel = true;
-    const info = ui.divText(`To view more detailed information about the events represented by a particular point,\
-    simply click on the point of interest. You can also select multiple points. Once you've made your selection,\
-    more information about the selected events will be displayed on context pane`);
-    info.classList.add('ua-hint');
-    grok.shell.o = info;
     ViewHandler.UA = new DG.MultiView({viewFactories: {}});
     const toolbox = await UaToolbox.construct();
     const params = this.getSearchParameters();
     // [OverviewView, EventsView, ErrorsView, FunctionsView, UsersView, DataView];
-    const viewClasses: (typeof UaView)[] = [PackagesView, FunctionsView];
+    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView];
     // const viewFactories: {[name: string]: any} = {};
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i](toolbox);
@@ -59,7 +55,19 @@ export class ViewHandler {
         toolbox.setPackages(params.get('packages')!);
       toolbox.applyFilter();
     }
-
+    let sub: Subscription;
+    sub = ViewHandler.UA.tabs.onTabChanged.subscribe((tab) => {
+      if (ViewHandler.UA.currentView instanceof PackagesView || ViewHandler.UA.currentView instanceof FunctionsView) {
+        grok.shell.windows.showToolbox = true;
+        grok.shell.windows.showContextPanel = true;
+        const info = ui.divText(`To view more detailed information about the events represented by a particular point,\
+    simply click on the point of interest. You can also select multiple points. Once you've made your selection,\
+    more information about the selected events will be displayed on context pane`);
+        info.classList.add('ua-hint');
+        grok.shell.o = info;
+      }
+      sub.unsubscribe();
+    });
     ViewHandler.UA.name = ViewHandler.UAname;
     ViewHandler.UA.box = true;
     grok.shell.addView(ViewHandler.UA);

@@ -30,7 +30,7 @@
     "link": "npm link",
     "link-api": "npm link datagrok-api",
     "link-utils": "npm link @datagrok-libraries/utils",
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/gridext",
     "build-bio": "tsc",
     "build": "tsc",
     "lint": "eslint \"./src/**/*.ts\"",

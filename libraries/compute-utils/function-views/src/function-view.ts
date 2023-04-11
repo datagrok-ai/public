@@ -3,7 +3,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Subject, BehaviorSubject} from 'rxjs';
+import {Subject} from 'rxjs';
 import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
 
@@ -16,44 +16,38 @@ export abstract class FunctionView extends DG.ViewBase {
   protected _type: string = 'function';
 
   // emitted when after a new FuncCall is linked
-  protected funcCallReplaced = new Subject<true>();
-
-  // emitted when after an initial FuncCall is linked
-  public onFuncCallReady = new BehaviorSubject<false>(false);
+  public funcCallReplaced = new Subject<true>();
 
   /**
-   * Constructs a new view using function with the given {@link funcName}. An fully-specified name is expected.
+   * Constructs a new view using function with the given {@link func}. An fully-specified name is expected.
    * Search of the function is async, so async {@link init} function is used.
-   * All other functions are called only when initialization is over and {@link this.onFuncCallReady} is emitted.
-   * @param funcName Name of DG.Func (either script or package function) to use as view foundation
+   * All other functions are called only when initialization is over and {@link this.onFuncCallReady} is run.
+   * @param initValue Name of DG.Func (either script or package function) or DG.FuncCall to use as view foundation
    * @param options Configuration object for the view.
    */
   constructor(
-    protected funcName: string,
+    protected initValue: string | DG.FuncCall,
     public options: {historyEnabled: boolean, isTabbed: boolean} = {historyEnabled: true, isTabbed: false},
   ) {
     super();
     this.box = true;
-
-    // Changing view and building IO are reasonable only after FuncCall is linked
-    this.subs.push(
-      this.onFuncCallReady.subscribe({
-        complete: async () => {
-          this.changeViewName(this.funcCall.func.friendlyName);
-          this.build();
-
-          if (this.getStartId()) {
-            await this.onBeforeLoadRun();
-            this.lastCall = this.funcCall;
-            await this.onAfterLoadRun(this.funcCall);
-
-            this.setAsLoaded();
-          }
-        },
-      }),
-    );
-
     this.init();
+  }
+
+  /**
+   * Runs after an initial FuncCall loading done.
+   */
+  protected async onFuncCallReady() {
+    this.changeViewName(this.funcCall.func.friendlyName);
+    this.build();
+
+    if (this.getStartId()) {
+      await this.onBeforeLoadRun();
+      this.lastCall = this.funcCall;
+      await this.onAfterLoadRun(this.funcCall);
+
+      this.setAsLoaded();
+    }
   }
 
   /**
@@ -192,13 +186,20 @@ export abstract class FunctionView extends DG.ViewBase {
    * @stability Stable
   */
   protected async loadFuncCallById() {
+    if (this.initValue instanceof DG.FuncCall) {
+      // next tick is needed to run funcCallReplaced before building UI
+      await new Promise(resolve => setTimeout(resolve, 0));
+      this.linkFunccall(this.initValue);
+      return;
+    }
+
     ui.setUpdateIndicator(this.root, true);
 
     const runId = this.getStartId();
     if (runId && !this.options.isTabbed)
       this.linkFunccall(await historyUtils.loadRun(runId));
     else {
-      const func: DG.Func = await grok.functions.eval(this.funcName);
+      const func: DG.Func = await grok.functions.eval(this.initValue);
       this.linkFunccall(func.prepare({}));
     }
 
@@ -208,13 +209,12 @@ export abstract class FunctionView extends DG.ViewBase {
   /**
    * Method for any async logic that could not be placed in the constructor directly.
    * It is only called in the constructor, but not awaited.
-   * A soon as {@link this.funcCall} is set, {@link this.onFuncCallReady} is emitted.
+   * A soon as {@link this.funcCall} is set, {@link this.onFuncCallReady} is run.
    * @stability Stable
  */
   public async init() {
     await this.loadFuncCallById();
-
-    this.onFuncCallReady.complete();
+    await this.onFuncCallReady();
   }
 
   /**

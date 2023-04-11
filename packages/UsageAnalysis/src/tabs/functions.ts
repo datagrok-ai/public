@@ -10,7 +10,7 @@ import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 
 export class FunctionsView extends UaView {
   constructor(uaToolbox: UaToolbox) {
-    super(uaToolbox, 'function', true);
+    super(uaToolbox);
     this.name = 'Functions';
   }
 
@@ -40,11 +40,10 @@ export class FunctionsView extends UaView {
           const users: string[] = df.getCol('uid').categories;
           const filter: Filter = {time_start: dateMin / 1000000, time_end: dateMax / 1000000,
             users: users, packages: packages, functions: functions};
-          const dateFromLS = dateFrom.toLocaleString('es-pa', {hour12: false}).replace(',', '');
-          const dateToLS = dateTo.toLocaleString('es-pa', {hour12: false}).replace(',', '');
-          cp.addPane('Time interval', () => ui.tableFromMap({'From': dateFromLS, 'To': dateToLS}), true);
+          cp.addPane('Time interval', () => ui.tableFromMap({'From': this.getTime(dateFrom),
+            'To': this.getTime(dateTo)}), true);
           cp.addPane('Users', () => ui.divV(users.map((u) => ui.render(`#{x.${u}}`))), true);
-          cp.addPane('Packages', () => ui.divV(packages.map((p) => ui.render(`#{x.${p}}`))), true);
+          // cp.addPane('Packages', () => ui.divV(packages.map((p) => ui.render(`#{x.${p}}`))), true);
           this.getFunctionPane(cp, filter);
           // this.getLogsPane(cp, filter);
           grok.shell.o = cp.root;
@@ -59,40 +58,83 @@ export class FunctionsView extends UaView {
           const filter: Filter = {time_start: row.time_start / 1000, time_end: row.time_end / 1000,
             users: [row.uid], packages: [row.pid], functions: [row.function]};
           const cp = DG.Accordion.create();
-          const dateFrom = new Date(row.time_start).toLocaleString('es-pa', {hour12: false}).replace(',', '');
-          const dateTo = new Date(row.time_end).toLocaleString('es-pa', {hour12: false}).replace(',', '');
           cp.addPane('Details', () => {
             return ui.tableFromMap({'User': ui.render(`#{x.${row.uid}}`),
               'Package': ui.render(`#{x.${row.pid}}`),
-              'From': dateFrom, 'To': dateTo});
+              'From': this.getTime(new Date(row.time_start)),
+              'To': this.getTime(new Date(row.time_end))});
           }, true);
-          this.getFunctionPane(cp, filter);
+          this.getFunctionPane(cp, filter, true);
           grok.shell.o = cp.root;
         });
-      }, null, null, this.viewer);
+        const viewer = DG.Viewer.scatterPlot(t, {
+          x: 'time_start',
+          y: 'function',
+          size: 'count',
+          color: 'user',
+          jitterSize: 5,
+          markerMinSize: 10,
+          markerMaxSize: 30,
+          showColorSelector: true,
+          showSizeSelector: false,
+          showXSelector: false,
+          showYSelector: false,
+        });
+        return viewer;
+      }, null, null);
 
     this.viewers.push(functionsViewer);
     this.root.append(functionsViewer.root);
   }
 
-  async getFunctionPane(cp: DG.Accordion, filter: Filter) {
+  async getFunctionPane(cp: DG.Accordion, filter: Filter, single: boolean = false) {
     const df = await grok.data.query('UsageAnalysis:FunctionsContextPane', filter);
-    const data: {[key: string]: [HTMLElement, string, string][]} = {};
+    const data: {[key: string]: [string, any, string, string][]} = {};
     for (const r of df.rows) {
-      const key = r.package + ':' + r.function;
+      const key = r.pid + ':' + r.function;
       if (!data[key]) data[key] = [];
-      data[key].push([ui.render(`#{x.${r.rid}}`), r.time, r.run]);
+      data[key].push([r.rid, r.time, r.run, r.package]);
+    }
+    if (single && Object.keys(data).length === 1) {
+      const k = Object.keys(data)[0];
+      const n = k.split(':', 2)[1];
+      const table = cp.getPane('Details').root.querySelector('.d4-table') as HTMLTableElement;
+      const fRow = table.insertRow();
+      const func1 = fRow.insertCell(0);
+      const func2 = fRow.insertCell(1);
+      func1.innerText = 'Function';
+      func2.append(ui.render(`#{x.${data[k][0][3]}:${n}."${n}"}`));
+      cp.addPane('Runs', () => {
+        return ui.wait(async () => {
+          const t = ui.table(data[k].sort((a, b) => a[2].localeCompare(b[2])),
+            (i) => [i[1].format('YYYY/MM/DD HH:mm:ss'), ui.render(`#{x.${i[0]}."${i[2]}"}`)]);
+          t.classList.add('ua-table');
+          return t;
+        });
+      }, false);
+      return;
     }
     const keysSorted = Object.keys(data).sort((a, b) => a[a.indexOf(':') + 1].localeCompare(b[b.indexOf(':') + 1]));
-    const expand = keysSorted.length === 1;
+    const packages: {[key: string]: DG.Accordion} = {};
     for (const k of keysSorted) {
-      cp.addPane(k.split(':')[1], () => {
+      const [p, n] = k.split(':', 2);
+      if (!packages[p]) packages[p] = DG.Accordion.create();
+      const pane = packages[p].addPane('', () => {
         return ui.wait(async () => {
-          data[k].sort((a, b) => a[2].localeCompare(b[2]));
-          return ui.divV(data[k].map((i) => i[0]));
-          // return ui.table(data[k].sort((a, b) => a[2].localeCompare(b[2])), (i) => i.slice(0, 2));
+          const t = ui.table(data[k].sort((a, b) => a[2].localeCompare(b[2])),
+            (i) => [i[1].format('YYYY/MM/DD HH:mm:ss'), ui.render(`#{x.${i[0]}."${i[2]}"}`)]);
+          t.classList.add('ua-table');
+          return t;
         });
-      }, expand);
+      }, false);
+      pane.root.querySelector('.d4-accordion-pane-header')
+        ?.prepend(ui.render(`#{x.${data[k][0][3]}:${n}."${n}"}`));
     }
+    Object.keys(packages).forEach((k) => {
+      const pane = cp.addPane('', () => packages[k].root);
+      const name = ui.render(`#{x.${k}}`);
+      name.classList.add('ua-markup');
+      pane.root.querySelector('.d4-accordion-pane-header')?.prepend(name);
+    });
   }
 }

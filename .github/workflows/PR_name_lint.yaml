@@ -1,0 +1,22 @@
+name: Pull request name check
+on:
+  workflow_dispatch: { }
+  pull_request:
+
+jobs:
+  pullrequest:
+    name: Lint PR name
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          # Full git history is needed to get a proper list of changed files within `commitlint`
+          fetch-depth: 0
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: npm install @commitlint/config-conventional @commitlint/cli
+      - uses: JulienKode/pull-request-name-linter-action@v0.5.0
+        with:
+          configuration-path: ./commitlint.config.js

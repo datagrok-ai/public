@@ -12,7 +12,7 @@ with recursive selected_groups as (
   join groups_relations gr on sg.id = gr.parent_id
 ),
 res AS (
-select et.friendly_name as function, pp.name as package,
+select et.name as function, pp.name as package,
 u.friendly_name as user, e.event_time as time_old, u.id as uid,
 u.group_id as ugid, pp.package_id as pid
 from events e
@@ -57,8 +57,9 @@ res.uid, res.ugid, res.pid
 --input: string functions
 --meta.cache: true
 --connection: System:Datagrok
-select e.friendly_name as run, et.friendly_name as function,
-pp.name as package, e.event_time as time, e.id as rid
+select e.friendly_name as run, et.name as function,
+pp.package_id as pid, e.event_time as time, e.id as rid,
+pp.name as package
 from events e
 inner join event_types et on e.event_type_id = et.id
 inner join entities en on et.id = en.id
@@ -69,5 +70,5 @@ where e.event_time between to_timestamp(@time_start)
 and to_timestamp(@time_end)
 and u.id = any(@users)
 and pp.package_id = any(@packages)
-and et.friendly_name = any(@functions)
+and et.name = any(@functions)
 --end

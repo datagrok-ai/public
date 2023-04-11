@@ -75,8 +75,8 @@ export class NglAspect {
     await this.render(true, ligandSelection);
     await new Promise((r) => setTimeout(r, 4000));
     await this.nglResize(nglHost);
-    let va = this.stage;
-    console.log(va.viewer.renderer.domElement.toDataURL('image/png'));
+    // let va = this.stage;
+    // console.log(va.viewer.renderer.domElement.toDataURL('image/png'));
   }
 
   public async render(reload: boolean, ligandSelection: { [key: string]: boolean }) {
@@ -209,17 +209,17 @@ export class NglAspect {
     await this.stage.compList[0].addRepresentation(repChoice.value, schemeObj);
     await this.stage.compList[0].autoView();
 
-    let va = this.stage;
-    console.log(va.viewer.renderer.domElement.toDataURL('image/png'));
+    // let va = this.stage;
+    // console.log(va.viewer.renderer.domElement.toDataURL('image/png'));
   }
 
   // viewer resize
   private async _resize(host: HTMLElement) {
-    let canvas = host.querySelector('canvas');
+    const canvas = host.querySelector('canvas');
     canvas!.width = Math.floor(host.clientWidth * window.devicePixelRatio);
     canvas!.height = Math.floor(host.clientWidth * window.devicePixelRatio);
     await this.stage.handleResize();
-    console.log(this.stage.viewer.renderer.domElement.toDataURL('image/png'));
+    // console.log(this.stage.viewer.renderer.domElement.toDataURL('image/png'));
   }
 
   private async nglResize(host: HTMLElement) {

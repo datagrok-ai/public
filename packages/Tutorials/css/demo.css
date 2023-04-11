@@ -10,6 +10,45 @@
     background: white;
 }
 
-.demo-container {
-    max-width: 250px;
+.tutorials-demo-container {
+    max-width: 280px;
+}
+
+.demo-text {
+    text-align: center;
+}
+
+.demo-app-tree-group {
+    margin-top: 12px;
+}
+
+.demo-app-tree-group .d4-tree-view-group {
+    width: 100%;
+}
+
+.demo-app-tree-group .d4-tree-view-tri .d4-tree-view-tri-expanded {
+    width: 22px;
+}
+
+.demo-app-tree-group .d4-tree-view-group-host .d4-tree-view-group-host {
+    margin: 0px;
+}
+
+.demo-app-tree-group .d4-tree-view-item {
+    margin: 0;
+    padding:1px;
+    padding-left: 32px;
+    display: block;
+}
+
+.demo-app-tree-group .d4-tree-view-item.hidden {
+    display: none;
+}
+
+.demo-app-tree-group .d4-tree-view-item:hover {
+    cursor: pointer;
+}
+
+.demo-app-tree-group .d4-tree-view-item:focus {
+    background-color: var(--grey-1);
 }
