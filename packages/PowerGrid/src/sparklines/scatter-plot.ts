@@ -65,7 +65,7 @@ export class ScatterPlotCellRenderer extends DG.GridCellRenderer {
       canvas.style.height = h + 'px';
     }
     g.translate(x, y);
-    plot.render(g);
+    //version conflict  plot.render(g);
     g.translate(-x, -y);
 
     if (canvas !== null)
