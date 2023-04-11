@@ -12,7 +12,16 @@ export function info() {
 
 // Imports for call wasm runtime-system: in the main stream and in webworkers
 import { callWasm } from '../wasm/callWasm';
-import { getCppInput, getResult } from '../wasm/callWasmForWebWorker';
+
+// Principal component analysis (PCA) imports
+import { performPCA } from './pca'
+
+// Partial least-squares regression (PLS) imports
+import { performPLS} from './pls'
+
+// Support vector machine (SVM) tools imports
+import {showTrainReport, getPackedModel, getTrainedModel, getPrediction,
+  LINEAR, RBF, POLYNOMIAL, SIGMOID} from './svm';
 
 //tags: init
 export async function init() {
@@ -21,301 +30,190 @@ export async function init() {
 
 //top-menu: Tools | Data Science | PCA
 //name: PCA
-//input: dataframe Table
+//input: dataframe table
 //input: column_list features
 //input: int components = 2
-//output: dataframe PCA {action:join(Table)}
-export function PCA(Table, features, components) {
-  // check components count
-  if(components <= 0) {
-    let bal = new DG.Balloon();
-    bal.error('components must be positive');
-    return;
-  }
-
-  // call wasm computation of PCA
-  let pca = callWasm(EDALib, 'principalComponentAnalysis', [features, components]);  
-
-  // rename PCA-columns
-  for(const col of pca.columns.toList())
-    col.name = 'PCA' + col.name;
-
-  return pca;
-}
-
-//name: PCA
-//input: dataframe Table
-//input: column_list features
-//input: int components = 2
-export function PCAInWebWorker(Table, features, components) {
-  // check components count
-  if(components <= 0) {
-    let bal = new DG.Balloon();
-    bal.error('components must be positive');
-    return;
-  }
-
-  var worker = new Worker(new URL('../wasm/principalComponentAnalysisWorker.js', import.meta.url));
-  worker.postMessage(getCppInput(EDALib['principalComponentAnalysis'].arguments,
-    [features, components]));
-
-  worker.onmessage = function(e) {
-    let pca = getResult(EDALib['principalComponentAnalysis'], e.data);
-
-    // rename PCA-columns and add them to Table
-    for(const col of pca.columns.toList()) {
-      col.name = 'PCA' + col.name;
-      Table.columns.add(col);
-    }
-
-    /*output.name = 'Principal components';
-    grok.shell.addTableView(output);*/
-  }
-}
-
-//name: error
-//input: dataframe df
-//input: column col1
-//input: column col2
-//output: double mad 
-export function error(df, col1, col2) {
-  return callWasm(EDALib, 'error', [col1, col2]);
-}
-
-//name: error
-//input: dataframe df
-//input: column col1
-//input: column col2
-export function errorInWebWorker(df, col1, col2) {
-  var worker = new Worker(new URL('../wasm/errorWorker.js', import.meta.url));
-  worker.postMessage(getCppInput(EDALib['error'].arguments,[col1, col2]));
-  worker.onmessage = function(e) {
-    let output = getResult(EDALib['error'], e.data);
-
-    // Provide output usage!
-    alert(`Deviation of ${col1.name} and ${col2.name} is ${output}`);
-  }
+export function PCA(table, features, components) {  
+  performPCA(table, features, components);   
 }
 
 //top-menu: Tools | Data Science | PLS
-//name: pls
+//name: PLS
 //input: dataframe table
 //input: column_list features
 //input: column predict
 //input: int components = 3
-export function pls(table, features, predict, components) {
-  // check components count
-  if(components <= 0) {
-    let bal = new DG.Balloon();
-    bal.error('components must be positive');
-    return;
-  }
-
-   // ALL the following is added manually
-   let callOutput = callWasm(EDALib, 'partialLeastSquareRegression', 
-     [features, predict, components]);
-
-   let dfView = grok.shell.getTableView(table.name);
- 
-   // 1. Predicted vs Reference scatter plot
- 
-   let prediction = callOutput[0];
-   prediction.name = predict.name + '(predicted)';
- 
-   let dfReferencePrediction = DG.DataFrame.fromColumns([predict, prediction]);
-   dfReferencePrediction.name = 'Reference vs. Predicted';
-   
-   dfView.addViewer(DG.Viewer.scatterPlot(dfReferencePrediction, 
-     { title: dfReferencePrediction.name,
-       x: predict.name,
-       y: prediction.name,
-       showRegressionLine: true,
-       markerType: 'circle'
-      }));
- 
-   // 2. Regression Coefficients Bar Chart
-   let regressionCoefficients = callOutput[1];
-   regressionCoefficients.name = 'regression coefficient';
- 
-   let namesOfPredictors = [];
-   for(let col of features)
-     namesOfPredictors.push(col.name); 
-   
-   let  predictorNamesColumn = DG.Column.fromStrings('feature', namesOfPredictors);  
- 
-   let dfRegrCoefs = DG.DataFrame.fromColumns([predictorNamesColumn, regressionCoefficients]);
-   dfRegrCoefs.name = 'Regression Coefficients';
-     
-   dfView.addViewer(DG.Viewer.barChart(dfRegrCoefs, 
-     {title: dfRegrCoefs.name, split: 'feature', 
-      value: 'regression coefficient', valueAggrType: 'avg'}));  
- 
-   // 3. Scores Scatter Plot
- 
-   let scoresColumns = [];
-   
-   let xScores = callOutput[2];
-   for(let i = 0; i < xScores.length; i++) {
-     xScores[i].name = `x.score.t${i+1}`;
-     scoresColumns.push(xScores[i]);
-   }
- 
-   let yScores = callOutput[3];
-   for(let i = 0; i < yScores.length; i++) {
-     yScores[i].name = `y.score.u${i+1}`;
-     scoresColumns.push(yScores[i]);
-   }  
- 
-   let scores = DG.DataFrame.fromColumns(scoresColumns);
-   scores.name = 'Scores';
-   //grok.shell.addTableView(scores);
- 
-   dfView.addViewer(DG.Viewer.scatterPlot(scores, 
-     { title: scores.name,
-       x: xScores[0].name,
-       y: yScores[0].name,      
-       markerType: 'circle'
-      }));
- 
-   // 4. Loading Scatter Plot
-   let loadingCols = [];
- 
-   let loadingLabels = [];
-   for(let col of features)
-     loadingLabels.push(col.name);
- 
-   loadingCols.push(DG.Column.fromStrings('labels', loadingLabels));
- 
-   let xLoadings = callOutput[4];
-   for(let i = 0; i < xLoadings.length; i++) {
-     xLoadings[i].name = `x.loading.p${i+1}`;
-     loadingCols.push(xLoadings[i]);
-   }
- 
-   let dfLoadings = DG.DataFrame.fromColumns(loadingCols);
-   dfLoadings.name = 'Loadings';
-   
-   dfView.addViewer(DG.Viewer.scatterPlot(dfLoadings, 
-     { title: dfLoadings.name,
-       x: xLoadings[0].name,
-       y: xLoadings[0].name,      
-       markerType: 'circle',
-       labels: 'labels'
-      }));
+export function PLS(table, features, predict, components) {
+  performPLS(table, features, predict, components);  
 }
 
-//name: pls
-//input: dataframe table
-//input: column_list features
-//input: column predict
-//input: int components = 3
-export function plsInWebWorker(table, features, predict, components) {
-  // check components count
-  if(components <= 0) {
-    let bal = new DG.Balloon();
-    bal.error('components must be positive');
-    return;
-  }
+//name: Generate test data (linear kernel case)
+//description: Generates dataset for testing SVN with linear kernel.
+//input: string name = 'Data' {caption: name; category: Dataset}
+//input: int samplesCount = 1000 {caption: samples; category: Size}
+//input: int featuresCount = 2 {caption: features; category: Size}
+//input: double min = -39 {caption: min; category: Range}
+//input: double max = 173 {caption: max; category: Range}
+//input: double violatorsPercentage = 5 {caption: violators; units: %; category: Dataset}
+export function generateDatasetLinear(name, samplesCount, featuresCount, 
+  min, max, violatorsPercentage) 
+{
+  // linear kernel ID
+  let kernel = 0;
 
-  var worker = new Worker(new URL('../wasm/partialLeastSquareRegressionWorker.js', import.meta.url));
-  worker.postMessage(getCppInput(EDALib['partialLeastSquareRegression'].arguments,
-    [features, predict, components]));
-
-  worker.onmessage = function(e) {
-    let output = getResult(EDALib['partialLeastSquareRegression'], e.data);
-
-    // Provide output usage!
-
-    // ALL the following is added manually
-    let dfView = grok.shell.getTableView(table.name);
-
-    // 1. Predicted vs Reference scatter plot
-  
-    let prediction = output[0];
-    prediction.name = predict.name + '(predicted)';
-  
-    let dfReferencePrediction = DG.DataFrame.fromColumns([predict, prediction]);
-    dfReferencePrediction.name = 'Reference vs. Predicted';
-
-    //grok.shell.addTableView(dfReferencePrediction);
+  // linear kernel parameters (any values can be used)
+  let kernelParams = DG.Column.fromList('double', 'kernelParams', [0, 0]);   
     
-    dfView.addViewer(DG.Viewer.scatterPlot(dfReferencePrediction, 
-      { title: dfReferencePrediction.name,
-        x: predict.name,
-        y: prediction.name,
-        showRegressionLine: true,
-        markerType: 'circle'
-       }));
+  let output = callWasm(EDALib, 'generateDataset', 
+    [kernel, kernelParams, samplesCount, featuresCount, min, max, violatorsPercentage]);
 
-    // 2. Regression Coefficients Bar Chart
-    let regressionCoefficients = output[1];
-    regressionCoefficients.name = 'regression coefficient';
+  let df = DG.DataFrame.fromColumns(output[0]);
+  df.name = name;  
+  output[1].name = 'labels';
+  df.columns.add(output[1]);
+  grok.shell.addTableView(df);
+} // generateDatasetLinear
 
-    let namesOfPredictors = [];
-    for(let col of features)
-    namesOfPredictors.push(col.name); 
-  
-    let  predictorNamesColumn = DG.Column.fromStrings('feature', namesOfPredictors);  
+//name: Generate test data (RBF kernel case)
+//description: Generates dataset for testing SVN with RBF-kernel.
+//input: string name = 'Data' {caption: name; category: Dataset}
+//input: double sigma = 90  {caption: sigma; category: Hyperparameters}
+//input: int samplesCount = 1000 {caption: samples; category: Size}
+//input: int featuresCount = 2 {caption: features; category: Size}
+//input: double min = -39 {caption: min; category: Range}
+//input: double max = 173 {caption: max; category: Range}
+//input: double violatorsPercentage = 5 {caption: violators; units: %; category: Dataset}
+export function generateDatasetRBF(name, sigma, samplesCount, featuresCount, 
+  min, max, violatorsPercentage) 
+{
+  // RBF kernel ID
+  let kernel = 2;
 
-    let dfRegrCoefs = DG.DataFrame.fromColumns([predictorNamesColumn, regressionCoefficients]);
-    dfRegrCoefs.name = 'Regression Coefficients';
+  // RBF kernel parameters
+  let kernelParams = DG.Column.fromList('double', 'kernelParams', [sigma, 0]);   
     
-    dfView.addViewer(DG.Viewer.barChart(dfRegrCoefs, 
-      {title: dfRegrCoefs.name, split: 'feature', 
-       value: 'regression coefficient', valueAggrType: 'avg'}));
-  
+  let output = callWasm(EDALib, 'generateDataset', 
+    [kernel, kernelParams, samplesCount, featuresCount, min, max, violatorsPercentage]);
 
-    // 3. Scores Scatter Plot
+  let df = DG.DataFrame.fromColumns(output[0]);
+  df.name = name;  
+  output[1].name = 'labels';
+  df.columns.add(output[1]);
+  grok.shell.addTableView(df);
+} // generateDatasetRBF
 
-    let scoresColumns = [];
-  
-    let xScores = output[2];
-    for(let i = 0; i < xScores.length; i++) {
-      xScores[i].name = `x.score.t${i+1}`;
-      scoresColumns.push(xScores[i]);
-    }
+//name: trainLinearKernelSVM
+//meta.mlname: linear kernel LS-SVM
+//meta.mlrole: train
+//input: dataframe df
+//input: string predict_column
+//input: double gamma = 1.0 {category: Hyperparameters}
+//input: bool toShowReport = false {caption: to show report; category: Report}
+//output: dynamic model
+export function trainLinearKernelSVM(df, predict_column, gamma, toShowReport) {  
 
-    let yScores = output[3];
-    for(let i = 0; i < yScores.length; i++) {
-      yScores[i].name = `y.score.u${i+1}`;
-      scoresColumns.push(yScores[i]);
-    }  
+  let trainedModel = getTrainedModel({gamma: gamma, kernel: LINEAR}, df, predict_column);   
 
-    let scores = DG.DataFrame.fromColumns(scoresColumns);
-    scores.name = 'Scores';    
+  if(toShowReport)
+    showTrainReport(df, trainedModel);
 
-    dfView.addViewer(DG.Viewer.scatterPlot(scores, 
-      { title: scores.name,
-        x: xScores[0].name,
-        y: yScores[0].name,      
-        markerType: 'circle'
-      }));
-  
-    // 4. Loading Scatter Plot
-    let loadingCols = [];
+  return getPackedModel(trainedModel);
+} // trainLinearKernelSVM
 
-    let loadingLabels = [];
-    for(let col of features)
-      loadingLabels.push(col.name);
+//name: applyLinearKernelSVM
+//meta.mlname: linear kernel LS-SVM
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export function applyLinearKernelSVM(df, model) { return getPrediction(df, model); }
 
-    loadingCols.push(DG.Column.fromStrings('labels', loadingLabels));
+//name: trainRBFkernelSVM
+//meta.mlname: RBF-kernel LS-SVM
+//meta.mlrole: train
+//input: dataframe df
+//input: string predict_column
+//input: double gamma = 1.0 {category: Hyperparameters}
+//input: double sigma = 1.5 {category: Hyperparameters}
+//input: bool toShowReport = false {caption: to show report; category: Report}
+//output: dynamic model
+export function trainRBFkernelSVM(df, predict_column, gamma, sigma, toShowReport) {  
 
-    let xLoadings = output[4];
-    for(let i = 0; i < xLoadings.length; i++) {
-      xLoadings[i].name = `x.loading.p${i+1}`;
-      loadingCols.push(xLoadings[i]);
-    }
+  let trainedModel = getTrainedModel(
+    {gamma: gamma, kernel: RBF, sigma: sigma}, 
+    df, predict_column);   
 
-    let dfLoadings = DG.DataFrame.fromColumns(loadingCols);
-    dfLoadings.name = 'Loadings';
-  
-    dfView.addViewer(DG.Viewer.scatterPlot(dfLoadings, 
-      { title: dfLoadings.name,
-        x: xLoadings[0].name,
-        y: xLoadings[0].name,      
-        markerType: 'circle',
-        labels: 'labels'
-      }));
-  }
-}
+  if(toShowReport)
+    showTrainReport(df, trainedModel);
+
+  return getPackedModel(trainedModel);
+} // trainRBFkernelSVM
+
+//name: applyRBFkernelSVM
+//meta.mlname: RBF-kernel LS-SVM
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export function applyRBFkernelSVM(df, model) { return getPrediction(df, model); } 
+
+//name: trainPolynomialKernelSVM
+//meta.mlname: polynomial kernel LS-SVM
+//meta.mlrole: train
+//input: dataframe df
+//input: string predict_column
+//input: double gamma = 1.0 {category: Hyperparameters}
+//input: double c = 1 {category: Hyperparameters}
+//input: double d = 2 {category: Hyperparameters}
+//input: bool toShowReport = false {caption: to show report; category: Report}
+//output: dynamic model
+export function trainPolynomialKernelSVM(df, predict_column, gamma, c, d, toShowReport) {  
+
+  let trainedModel = getTrainedModel(
+    {gamma: gamma, kernel: POLYNOMIAL, cParam: c, dParam: d}, 
+    df, predict_column);   
+
+  if(toShowReport)
+    showTrainReport(df, trainedModel);
+
+  return getPackedModel(trainedModel);
+} // trainPolynomialKernelSVM
+
+//name: applyPolynomialKernelSVM
+//meta.mlname: polynomial kernel LS-SVM
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export function applyPolynomialKernelSVM(df, model) { return getPrediction(df, model); }
+
+//name: trainSigmoidKernelSVM
+//meta.mlname: sigmoid kernel LS-SVM
+//meta.mlrole: train
+//input: dataframe df
+//input: string predict_column
+//input: double gamma = 1.0 {category: Hyperparameters}
+//input: double kappa = 1 {category: Hyperparameters}
+//input: double theta = 1 {category: Hyperparameters}
+//input: bool toShowReport = false {caption: to show report; category: Report}
+//output: dynamic model
+export function trainSigmoidKernelSVM(df, predict_column, gamma, kappa, theta, toShowReport) {  
+
+  let trainedModel = getTrainedModel(
+    {gamma: gamma, kernel: SIGMOID, kappa: kappa, theta: theta}, 
+    df, predict_column);   
+
+  if(toShowReport)
+    showTrainReport(df, trainedModel);
+
+  return getPackedModel(trainedModel);
+} // trainSigmoidKernelSVM
+
+//name: applySigmoidKernelSVM
+//meta.mlname: sigmoid kernel LS-SVM
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export function applySigmoidKernelSVM(df, model) { return getPrediction(df, model); }
 
