@@ -10,6 +10,7 @@
 		"ecmaVersion": 12,
 		"sourceType": "module"
 	},
+	"ignorePatterns": ["*.d.ts", "*.js"],
 	"rules": {
 		"indent": [
 			"error",
