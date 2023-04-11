@@ -15,7 +15,7 @@ import {PROPS as nglPROPS, NglViewer} from './viewers/ngl-viewer';
 import {NglViewerApp} from './apps/ngl-viewer-app';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
 import {PdbHelper} from './utils/pdb-helper';
-import {PdbApp} from './apps/pdb-app';
+import {BiostructureApp} from './apps/biostructure-app';
 import {nglViewUI, nglWidgetUI} from './viewers/ngl-ui';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
@@ -23,6 +23,7 @@ import {MolstarViewerApp} from './apps/molstar-viewer-app';
 import {TaskBarProgressIndicator} from 'datagrok-api/dg';
 import {dockingDemoApp} from './demo/docking';
 import {biostructureInGridApp} from './demo/biostructure-in-grid';
+import {previewBiostructure, viewBiostructure} from './viewers/view-preview';
 
 class Package extends DG.Package {
   private _pLogger: DG.PackageLogger;
@@ -108,19 +109,21 @@ export function getNglGlService(): NglGlServiceBase {
 
 // -- File handlers --
 
+/* The Chem package is opening formats 'mol2', 'sdf', 'mol' for small molecules */
 //name: importPdb
 //description: Opens PDB file
 //tags: file-handler
-//meta.ext: pdb
+//meta.ext: mmcif, cifCore, pdb, pdbqt, gro, xyz
 //input: string fileContent
 //output: list tables
 export async function importPdb(fileContent: string): Promise<DG.DataFrame[]> {
-  const ph: IPdbHelper = await getPdbHelper();
-  const df: DG.DataFrame = await ph.pdbToDf(fileContent, '');
+  // Do not build up data frame from PDB file, allows to open various formats
+  // const ph: IPdbHelper = await getPdbHelper();
+  // const df: DG.DataFrame = await ph.pdbToDf(fileContent, '');
+  // const app = new BiostructureApp();
+  // await app.init(df);
 
-  const app = new PdbApp();
-  await app.init(df);
-
+  await viewBiostructure(fileContent);
   return [];
 }
 
@@ -131,21 +134,21 @@ export async function importPdb(fileContent: string): Promise<DG.DataFrame[]> {
 //input: file file
 //output: view v
 export function molecule3dNglView1(file: any): DG.View {
-  return nglViewUI(file);
+  return previewBiostructure(file);
 }
 
 //tags: fileViewer, fileViewer-ply, fileViewer-obj
 //input: file file
 //output: view v
 export function molecule3dNglView2(file: any): DG.View {
-  return nglViewUI(file);
+  return previewBiostructure(file);
 }
 
 //tags: fileViewer, fileViewer-prmtop, fileViewer-parm7, fileViewer-psf, fileViewer-top
 //input: file file
 //output: view v
 export function molecule3dNglView3(file: any): DG.View {
-  return nglViewUI(file);
+  return previewBiostructure(file);
 }
 
 // eslint-disable-next-line max-len
@@ -153,7 +156,7 @@ export function molecule3dNglView3(file: any): DG.View {
 //input: file file
 //output: view v
 export function molecule3dNglView4(file: any): DG.View {
-  return nglViewUI(file);
+  return previewBiostructure(file);
 }
 
 // -- Panel widgets --
