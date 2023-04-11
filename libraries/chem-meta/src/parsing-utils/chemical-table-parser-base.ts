@@ -9,7 +9,7 @@ type CoordinateArrays = {
   z: Float32Array,
 }
 
-/** Base singleton for Molfile or Mol2 parser/handler */
+/** Base for Molfile or Mol2 parser/handler */
 export abstract class ChemicalTableParserBase {
   constructor(fileContent: string) {
     this.init(fileContent);
