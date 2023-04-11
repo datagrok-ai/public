@@ -28,7 +28,7 @@ export class DemoView extends DG.ViewBase {
 
     func.apply().then((_) => {
       loadingScreen.remove();
-      grok.shell.tv.path = grok.shell.tv.basePath = `/apps/Tutorials/Demo/${viewPath}`;
+      grok.shell.v.path = grok.shell.v.basePath = `/apps/Tutorials/Demo/${viewPath}`;
     });
   }
 
@@ -71,10 +71,10 @@ export class DemoView extends DG.ViewBase {
       }
     });
 
-    let search = ui.searchInput('', '', (value:string)=>{
-      let dom  = $('.demo-app-tree-group .d4-tree-view-item.d4-tree-view-node');
-      for (let i = 0; i < dom.length; i++){
-        let item = dom[i] as HTMLElement;
+    const search = ui.searchInput('', '', (value:string)=>{
+      const dom = $('.demo-app-tree-group .d4-tree-view-item.d4-tree-view-node');
+      for (let i = 0; i < dom.length; i++) {
+        const item = dom[i] as HTMLElement;
         if (item.innerText.toLowerCase().includes(value.toLowerCase()))
           item.style.display = 'block';
         else
@@ -87,19 +87,20 @@ export class DemoView extends DG.ViewBase {
       search.fireChanged();
     });
     this.dockPanel = grok.shell.dockManager.dock(ui.panel([
-        search.root,
-        this.tree.root,
-      ]), 'left', null, 'Categories');
+      search.root,
+      this.tree.root,
+    ]), 'left', null, 'Categories');
     this.dockPanel.container.containerElement.classList.add('tutorials-demo-container');
-    
+
     this._initWindowOptions();
+
+    // grok.events.onCurrentViewChanged.subscribe((view) => this.tree.root.focus());
 
     // TODO: if loading ended in 0.1s, then no div, if not - then div - DG.debounce, merge etc.
     // TODO: add starting demo app viewer on just up/down arrows
     // TODO: on click on viewer demo set viewer help url in property panel (func helpUrl)
     // TODO: implement search in demo - search on meta.keywords, name, description
     // TODO: add all the platform viewers to demo (make demo functions in Tutorials)
-    // TODO: add curves to demo
   }
 
   private _initWindowOptions() {
