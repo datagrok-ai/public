@@ -3,16 +3,16 @@
   "name": "SnowflakeApiTests",
   "friendlyName": "SnowflakeApiTests",
   "parameters": {
-    "region": "eu-north-1",
-    "accountLocator": "gu46630",
-    "cloud": "aws",
+    "region": "us-east4",
+    "accountLocator": "mf34438",
+    "cloud": "gcp",
     "db": "test",
     "warehouse": "COMPUTE_WH"
   },
   "credentials" : {
     "parameters" : {
-      "login": "pasha32662",
-      "password": "pBx7dyjp_"
+      "login": "datagrok",
+      "password": "Datagrok1"
     }
   },
   "dataSource": "Snowflake",
