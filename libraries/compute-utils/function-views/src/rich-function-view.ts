@@ -45,6 +45,11 @@ const viewerTypesMapping: {[key: string]: string} = {
 
 const FILE_INPUT_TYPE = 'file';
 
+enum DIRECTION {
+  INPUT = 'Input',
+  OUTPUT = 'Output'
+}
+
 export class RichFunctionView extends FunctionView {
   // emitted when runButton disability should be checked
   private checkDisability = new Subject();
@@ -367,14 +372,14 @@ export class RichFunctionView extends FunctionView {
   private renderRunSection(): HTMLElement {
     const runButton = ui.bigButton('Run', async () => await this.doRun());
     // REPLACE BY TYPE GUARD
-    const isFuncScript = () => {
-      //@ts-ignore
-      return !!this.func.script;
-    };
+    // const isFuncScript = () => {
+    //   //@ts-ignore
+    //   return !!this.func.script;
+    // };
     // TO DO: move button somewhere
-    const openScriptBtn = ui.button('Open script', async () => {
-      window.open(`${window.location.origin}/script/${(this.func as DG.Script).id}`, '_blank');
-    });
+    // const openScriptBtn = ui.button('Open script', async () => {
+    //   window.open(`${window.location.origin}/script/${(this.func as DG.Script).id}`, '_blank');
+    // });
     // const buttonWrapper = ui.div([...this.options.isTabbed && isFuncScript() ? [openScriptBtn]: [], runButton]);
     const buttonWrapper = ui.div([runButton]);
     ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
@@ -634,11 +639,6 @@ const getSheetName = (name: string, direction: DIRECTION) => {
   const idealName = `${direction} - ${name}`;
   return (idealName.length > 31) ? name.substring(0, 32) : idealName;
 };
-
-enum DIRECTION {
-  INPUT = 'Input',
-  OUTPUT = 'Output'
-}
 
 const scalarsToSheet = (sheet: ExcelJS.Worksheet, scalars: { caption: string, value: string, units: string }[]) => {
   sheet.addRow(['Parameter', 'Value', 'Units']).font = {bold: true};
