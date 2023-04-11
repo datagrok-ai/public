@@ -65,10 +65,11 @@
   animation: pulse-white 1s 1; */
 }
 
-.ua-table .d4-link-label {
+.ua-table .d4-link-label, .ua-table td {
   max-width: 150px;
   overflow-x: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ua-widget .d4-viewer-title textarea {
@@ -83,4 +84,8 @@
   right: 0;
   display: flex;
   justify-content: flex-end;
+}
+
+.ua-markup label {
+  margin-left: 22px !important;
 }
