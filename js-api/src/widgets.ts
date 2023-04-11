@@ -1801,27 +1801,20 @@ export class DropDown {
 
 
   constructor(label: string | Element, createElement: () => HTMLElement) {
-    this._element = ui.div();
-    this._dropDownElement = ui.div();
     this._isMouseOverElement = false;
-    this._label = label;
-
     this.isExpanded = false;
-    this.root = ui.div();
 
-    this._updateElement(createElement);
-    this._initEventListeners();
-  }
-
-
-  private _updateElement(createElement: () => HTMLElement) {
+    this._label = label;
     this._element = createElement();
 
     this._dropDownElement = ui.div(ui.div(this._element), 'ui-drop-down-content');
     this._dropDownElement.style.visibility = 'hidden';
 
     this.root = ui.div([this._label, this._dropDownElement], 'ui-drop-down-root');
+
+    this._initEventListeners();
   }
+
 
   private _initEventListeners() {
     this.root.addEventListener('mousedown', (e) => {
