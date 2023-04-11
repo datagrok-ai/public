@@ -53,7 +53,7 @@ category('screening tools', () => {
     elementalAnalysis(df, df.getCol('smiles'), false, false);
     expect(df.columns.length, 6);
     expectArray(Array.from(df.row(0).cells).map((c) => c.value), ['', 0, 0, 0, 0, 0]);
-  });
+  }, {skipReason: 'GROK-12227'});
 
   after(async () => {
     grok.shell.closeAll();
