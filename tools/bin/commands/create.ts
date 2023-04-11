@@ -79,7 +79,7 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
         // Save module names for installation prompt
         for (let [module, tag] of Object.entries(Object.assign({}, _package.dependencies, _package.devDependencies)))
           dependencies.push(`${module}@${tag}`);
-        contents = JSON.stringify(_package, null, '\t');
+        contents = JSON.stringify(_package, null, 2);
       }
       if (file === 'package.js' && ts) copyFilePath = path.join(packageDir, 'package.ts');
       if (file === 'package-test.js' && ts) return false;
@@ -92,7 +92,7 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
           let eslintConf = JSON.parse(contents);
           eslintConf.parser = '@typescript-eslint/parser';
           eslintConf.plugins = ['@typescript-eslint'];
-          contents = JSON.stringify(eslintConf, null, '\t');
+          contents = JSON.stringify(eslintConf, null, 2);
         }
       }
       if (file === 'gitignore') {
@@ -176,7 +176,7 @@ export function create(args: CreateArgs) {
         const packagePath = path.join(packageDir, 'package.json');
         const p = JSON.parse(fs.readFileSync(packagePath, 'utf-8'));
         p.repository = repositoryInfo;
-        fs.writeFileSync(packagePath, JSON.stringify(p, null, '\t'), 'utf-8');
+        fs.writeFileSync(packagePath, JSON.stringify(p, null, 2), 'utf-8');
       }
       process.exit();
     });
