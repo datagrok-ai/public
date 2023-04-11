@@ -66,7 +66,7 @@ export class TopFunctionErrorsViewer extends UaFilterableQueryViewer {
             acc,
           ]);
         });
-        return viewer.root;
+        return viewer;
       },
       null,
       staticFilter,

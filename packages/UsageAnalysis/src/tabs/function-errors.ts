@@ -22,8 +22,8 @@ export class FunctionsView extends UaView {
       'Function Errors',
       'FunctionErrors',
       (t: DG.DataFrame) => {
-        const viewer = DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root;
-        viewer.style.maxHeight = '150px';
+        const viewer = DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions);
+        viewer.root.style.maxHeight = '150px';
         return viewer;
       },
     );

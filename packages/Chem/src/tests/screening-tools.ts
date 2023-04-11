@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 
-import {category, test, before, after, expect} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, after, expect, expectArray} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {runStructuralAlertsDetection} from '../panels/structural-alerts';
@@ -46,6 +46,14 @@ category('screening tools', () => {
     elementalAnalysis(df, df.getCol('molecule'), false, false);
     expect(df.columns.length, 41);
   });
+
+  test('elementalAnalysis.emptyValues', async () => {
+    const df = await readDataframe('tests/sar-small_empty_vals.csv');
+    await grok.data.detectSemanticTypes(df);
+    elementalAnalysis(df, df.getCol('smiles'), false, false);
+    expect(df.columns.length, 6);
+    expectArray(Array.from(df.row(0).cells).map((c) => c.value), ['', 0, 0, 0, 0, 0]);
+  }, {skipReason: 'GROK-12227'});
 
   after(async () => {
     grok.shell.closeAll();

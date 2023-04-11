@@ -141,7 +141,7 @@ export async function testConnections(): Promise<DG.DataFrame> {
   // const queriesFriendlyNames: string[] = ['PostgresNormal', 'PostgresLong', 'PostgresWide'];
   const l = connections.length * tables.length * fetchSizes.length;
 
-  const df = DataFrame.fromColumns([Column.string('type', l), Column.string('fetch', l), 
+  const df = DataFrame.fromColumns([Column.string('type', l), Column.string('fetch', l),
     Column.string('db', l), Column.int('TTFR', l), Column.int('TTC', l)]);
 
   let startTime: number;
@@ -149,10 +149,11 @@ export async function testConnections(): Promise<DG.DataFrame> {
 
   let callCheck: (value: FuncCall) => boolean;
   let ttfrSet = false;
+  // @ts-ignore
   grok.functions.onParamsUpdated.pipe(filter((c) => callCheck(c) && !ttfrSet)).subscribe(() => {
     ttfr = Date.now() - startTime;
     df.columns.byName('TTFR').set(row, ttfr);
-    ttfrSet = true; 
+    ttfrSet = true;
   });
 
   let row = 0;
@@ -160,16 +161,17 @@ export async function testConnections(): Promise<DG.DataFrame> {
     for (const table of tables) {
       for (const fetchSize of fetchSizes) {
         if (table == 'Long' && fetchSize == 'low')
-          continue;  
+          continue;
 
         const connection = await grok.dapi.connections.filter(`name = "${con}"`).first();
         ttfrSet = false;
 
-        df.columns.byName('type').set(row, table); 
-        df.columns.byName('fetch').set(row, fetchSize); 
-        df.columns.byName('db').set(row, con); 
+        df.columns.byName('type').set(row, table);
+        df.columns.byName('fetch').set(row, fetchSize);
+        df.columns.byName('db').set(row, con);
 
-        callCheck = (c: FuncCall) => c.aux.get('fetchSize') == fetchSize && 
+        callCheck = (c: FuncCall) => c.aux.get('fetchSize') == fetchSize &&
+          // @ts-ignore
           (c.func as DataQuery).connection.name == con;
 
         const preTable = con.startsWith('Snowflake') ? 'TEST.' : '';
@@ -181,11 +183,11 @@ export async function testConnections(): Promise<DG.DataFrame> {
             sql = `select * from Test_Long WHERE ROWNUM = 1`;
           else if (con.startsWith('MS'))
             sql = `select TOP 1 * from Test_Long`;
-          else 
+          else
             sql = 'select 1';
-        } else 
+        } else
           sql = `select * from ${preTable}Test_${table}`;
-        
+
         const query = `--fetchSize: ${fetchSize}\n${sql}\n--end`;
 
         startTime = Date.now();
@@ -193,6 +195,7 @@ export async function testConnections(): Promise<DG.DataFrame> {
         console.log('executing' + query);
         const q = connection.query('adhoc', sql);
         const call = q.prepare();
+        // @ts-ignore
         call.setAuxValue('fetchSize', fetchSize);
         await call.call();
         // await grok.data.db.query(connection.id, query);

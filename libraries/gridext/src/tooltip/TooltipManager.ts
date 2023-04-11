@@ -72,7 +72,7 @@ export class TooltipManager {
             const grid : DG.Grid = viewer as DG.Grid;
             const rcGrid = grid.root.getBoundingClientRect();
             const cellGrid = grid.hitTest(x - rcGrid.x, y - rcGrid.y);
-            if (cellGrid === null)
+            if (cellGrid === null || cellGrid === undefined)
               return;
 
             const renderer = GridUtils.getGridColumnRenderer(cellGrid.gridColumn);

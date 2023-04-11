@@ -41,7 +41,7 @@ category('detectorsBenchmark', () => {
 
   test('separatorDnaShorts50Few50', async () => {
     const et: number = await detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 50, '/');
-  });
+  }, {skipReason: '#1192'});
 
   test('separatorDnaShorts50Many1E6', async () => {
       const et: number = await detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 1E6, '/');

@@ -57,7 +57,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
   }
 
   async render(computeData=false): Promise<void> {
-    if (computeData && !this.isEmbeddingCreating && !this.model.isChangingEdfBitset) {
+    if (computeData && !this.isEmbeddingCreating /*&& !this.model.isChangingEdfBitset*/) {
       this.isEmbeddingCreating = true;
       $(this.root).empty();
       const viewerHost = ui.waitBox(async () => {
@@ -65,17 +65,17 @@ export class PeptideSpaceViewer extends DG.JsViewer {
         const alignedSeqCol = this.dataFrame.getCol(this.model.settings.sequenceColumnName!);
         const edf = await computeWeights(this.dataFrame, this.method, this.measure, this.cyclesCount, alignedSeqCol);
         this.dataFrame.temp[C.EMBEDDING_STATUS] = true;
-        this.model.edf = edf;
+        // this.model.edf = edf;
 
         if (edf === null)
           return ui.label('Could not compute embeddings');
 
         const edfSelection = edf.selection;
         edfSelection.copyFrom(this.dataFrame.selection);
-        edfSelection.onChanged.subscribe(() => {
-          if (!this.model.isChangingEdfBitset)
-            this.model.fireBitsetChanged(true);
-        });
+        // edfSelection.onChanged.subscribe(() => {
+        //   if (!this.model.isChangingEdfBitset)
+        //     this.model.fireBitsetChanged(true);
+        // });
 
         const colorCol = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
         edf.columns.add(colorCol);

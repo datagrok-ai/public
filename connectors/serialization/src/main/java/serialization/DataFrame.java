@@ -112,4 +112,11 @@ public class DataFrame {
     public int hashCode() {
         return Objects.hash(name, rowCount, columns, tags);
     }
+
+    public int memoryInBytes() {
+        int sum = 0;
+        for (Column col : columns)
+            sum += col.memoryInBytes();
+        return sum;
+    }
 }
