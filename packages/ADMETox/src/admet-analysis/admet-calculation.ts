@@ -2,12 +2,11 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { _package } from '../package-test';
-import { models } from './const';
+import { models, properties } from './const';
 
 const _STORAGE_NAME = 'admet_models';
 const _KEY = 'selected';
 let _COLOR = 'true';
-let properties: any;
 
 export async function accessServer(csvString: string, queryParams: string) {
   //@ts-ignore
@@ -25,9 +24,10 @@ export async function accessServer(csvString: string, queryParams: string) {
   try {
     //@ts-ignore
     response = await grok.dapi.docker.dockerContainers.request(admetDockerfile.id, path, params);
-  } catch {
-    grok.shell.info('ADME container not started<br>Starting it for you<br>\
-    It will take a couple of minutes');
+  } catch(e) {
+    console.log(e);
+    grok.shell.warning('Starting the ADME Docker Container that is required for this computation.<br>\
+     Please try again in a few minutes');
   } finally {
     //@ts-ignore
     await grok.dapi.docker.dockerContainers.run(admetDockerfile.id);
@@ -119,7 +119,6 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
     for (let i = 0; i < modelNames.length; ++i) {
       let column: DG.Column = table.columns.byName(modelNames[i]);
       column.name = viewTable.columns.getUnusedName(modelNames[i]);
-      column.setTag(column.name, models[column.name]);
       column = column.convertTo("double");
       viewTable.columns.add(column);
     }
@@ -165,7 +164,7 @@ export function getModelsSingle(smiles: string): DG.Accordion {
       const table = processCsv(csvString);
       const map: { [_: string]: any } = {};
       for (const model of queryParams)
-        map[model] = table.col(model)?.get(0);
+        map[model] = Number(table.col(model)?.get(0)).toFixed(2);
 
         result.appendChild(ui.tableFromMap(map));
     });
@@ -183,9 +182,9 @@ export function getModelsSingle(smiles: string): DG.Accordion {
 }
 
 function openModelsDialog(selected: any, onOK: any): void {
-  _package.files.readAsText('properties.json').then((res) => {
+  /*_package.files.readAsText('properties.json').then((res) => {
     properties = JSON.parse(res);
-  })
+  })*/
 
   const tree = ui.tree();
   tree.root.style.maxHeight = '400px';

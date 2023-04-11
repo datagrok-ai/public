@@ -1,3 +1,153 @@
+export const properties: any = {
+    "Absorption": {
+        "name": "Absorption",
+        "description": "Models to predict absorbtion",
+        "models": [
+        {
+            "skip": false,
+            "name": "Pgp-Inhibitor"
+        },
+        {
+            "skip": false,
+            "name": "Pgp-Substrate"
+        },
+        {
+            "skip": false,
+            "name": "HIA"
+        },
+        {
+            "skip": false,
+            "name": "F(20%)"
+        },
+        {
+            "skip": false,
+            "name": "F(30%)"
+        }]
+    },
+    "Distribution": {
+        "name": "Distribution",
+        "description": "Models to predict distribution",
+        "models": [
+        {
+            "skip": true,
+            "name": "PPB"
+        },
+        {
+            "skip": true,
+            "name": "VD"
+        },
+        {
+            "skip": false,
+            "name": "BBB"
+        }]
+    },
+    "Metabolism": {
+        "name": "Metabolism",
+        "description": "Models to predict metabolism",
+        "models": [
+        {
+            "skip": false,
+            "name": "CYP1A2-Inhibitor"
+        },
+        {
+            "skip": false,
+            "name": "CYP1A2-Substrate"
+        },
+        {
+            "skip": false,
+            "name": "CYP3A4-Inhibitor"
+        },
+        {
+            "skip": false,
+            "name": "CYP3A4-Substrate"
+        },
+        {
+            "skip": false,
+            "name": "CYP2C19-Inhibitor"
+        },
+        {
+            "skip": false,
+            "name": "CYP2C19-Substrate"
+        },
+        {
+            "skip": false,
+            "name": "CYP2C9-Inhibitor"
+        },
+        {
+            "skip": false,
+            "name": "CYP2C9-Substrate"
+        },
+        {
+            "skip": false,
+            "name": "CYP2D6-Inhibitor"
+        },
+        {
+            "skip": false,
+            "name": "CYP2D6-Substrate"
+        }]
+    },
+    "Excretion": {
+        "name": "Excretion",
+        "description": "Models to predict excretion",
+        "models": [
+        {
+            "skip": true,
+            "name": "Clearance"
+        },
+        {
+            "skip": true,
+            "name": "T"
+        }]
+    },
+    "Toxicity": {
+        "name": "Toxicity",
+        "description": "Models to predict toxicity",
+        "models": [
+        {
+            "skip": true,
+            "name": "hERG"
+        },
+        {
+            "skip": true,
+            "name": "LD50"
+        },
+        {
+            "skip": true,
+            "name": "H-HT"
+        },
+        {
+            "skip": false,
+            "name": "Ames"
+        },
+        {
+            "skip": false,
+            "name": "SkinSen"
+        }]
+    },
+    "Lipophilicity": {
+        "name": "Lipophilicity",
+        "description": "Lipophilicity",
+        "models": [
+        {
+            "skip": true,
+            "name": "logP"
+        },
+        {
+            "skip": true,
+            "name": "logD"
+        }]
+    },
+    "Solubility": {
+        "name": "Solubility",
+        "description": "Solubility",
+        "models": [
+        {
+            "skip": true,
+            "name": "logS"
+        }]
+    }
+}
+
 export const models: any = {
     "Pgp-Inhibitor": {
         "0": "Non-inhibitor",
