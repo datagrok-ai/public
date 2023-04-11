@@ -794,6 +794,43 @@ export class PinnedColumn {
     {
       this.m_bThisColumnIsSorting = true;
       grid?.sort(this.m_bSortedAscending === null ? [] : [this.m_colGrid?.name], this.m_bSortedAscending === null ? [] : [this.m_bSortedAscending]);
+      return;
+    }
+
+
+    const column = this.m_colGrid.column;
+    if (column !== null && column.semType === DG.SEMTYPE.MOLECULE) {
+      function isColMolBlock(col: DG.Column) : boolean {
+        let str = null;
+        for (let n = 0; n < col.length; ++n) {
+          str = col.get(n);
+          if (str === null)
+            continue;
+
+          if (DG.chem.isMolBlock(str))
+            return true;
+        }
+
+        return false;
+      }
+
+
+      const nRow = PinnedColumn.hitTestRows(this.m_root, this.m_colGrid.grid, e, false, undefined);
+      const b = isColMolBlock(column);
+      const dialog = ui.dialog({title: 'Edit Structure'});
+      const sketcher = new DG.chem.Sketcher();
+      dialog.add(sketcher);
+
+      const strMol = column.get(nRow);
+      if (strMol !== null && strMol !== undefined)
+        sketcher.setMolecule(strMol);
+
+      dialog.onOK(() => {
+        column.set(nRow, b ? sketcher.getMolFile() : sketcher.getSmiles(), true);
+        grid.invalidate();
+      });
+
+      dialog.show();
     }
   }
 
@@ -1324,7 +1361,7 @@ export class PinnedColumn {
     }//for
   }
 
-  private static hitTestRows(eCanvasPinned : HTMLCanvasElement, grid : DG.Grid, e : MouseEvent, bBorder : boolean, arXYOnCell : Array<number> | undefined)
+  private static hitTestRows(eCanvasPinned : HTMLCanvasElement, grid : DG.Grid, e : MouseEvent, bBorder : boolean, arXYOnCell : Array<number> | undefined) : number
   {
     const rect = eCanvasPinned.getBoundingClientRect();
     const scrollLeft= window.pageXOffset || document.documentElement.scrollLeft;
