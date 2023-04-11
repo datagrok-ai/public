@@ -11,6 +11,8 @@ import {ViewHandler} from '../view-handler';
 
 
 export class PackagesView extends UaView {
+  expanded: {[key: string]: boolean} = {f: true, l: true};
+
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
     this.name = 'Packages';
@@ -24,6 +26,10 @@ export class PackagesView extends UaView {
       (t: DG.DataFrame) => {
         t.onSelectionChanged.subscribe(async () => {
           if (!t.selection.anyTrue) return;
+          // if (t.selection.trueCount === 1) {
+          //   t.currentRowIdx = t.selection.getSelectedIndexes()[0];
+          //   return;
+          // }
           let df = t.clone(t.selection);
           const gen = t.rows[Symbol.iterator]();
           const dateMin = df.getCol('time_start').stats.min;
@@ -42,13 +48,13 @@ export class PackagesView extends UaView {
           const users: string[] = df.getCol('uid').categories;
           const filter: Filter = {time_start: dateMin / 1000000, time_end: dateMax / 1000000,
             groups: groups, users: users, packages: packages};
-          const dateFromLS = dateFrom.toLocaleString('es-pa', {hour12: false}).replace(',', '');
-          const dateToLS = dateTo.toLocaleString('es-pa', {hour12: false}).replace(',', '');
-          cp.addPane('Time interval', () => ui.tableFromMap({'From': dateFromLS, 'To': dateToLS}), true);
+          cp.addPane('Time interval', () => ui.tableFromMap({'From': this.getTime(dateFrom),
+            'To': this.getTime(dateTo)}), true);
           cp.addPane('Users', () => ui.divV(users.map((u) => ui.render(`#{x.${u}}`))), true);
           cp.addPane('Packages', () => ui.divV(packages.map((p) => ui.render(`#{x.${p}}`))), true);
-          this.getFunctionsPane(cp, filter, [dateFromLS, dateToLS], df.getCol('package').categories);
+          this.getFunctionsPane(cp, filter, [dateFrom, dateTo], df.getCol('package').categories);
           this.getLogsPane(cp, filter);
+          this.getAuditPane(cp, filter);
           grok.shell.o = cp.root;
         });
 
@@ -61,15 +67,17 @@ export class PackagesView extends UaView {
           const filter: Filter = {time_start: row.time_start / 1000, time_end: row.time_end / 1000,
             groups: [row.ugid], users: [row.uid], packages: [row.pid]};
           const cp = DG.Accordion.create();
-          const dateFrom = new Date(row.time_start).toLocaleString('es-pa', {hour12: false}).replace(',', '');
-          const dateTo = new Date(row.time_end).toLocaleString('es-pa', {hour12: false}).replace(',', '');
+          const dateFrom = new Date(row.time_start);
+          const dateTo = new Date(row.time_end);
           cp.addPane('Details', () => {
             return ui.tableFromMap({'User': ui.render(`#{x.${row.uid}}`),
               'Package': ui.render(`#{x.${row.pid}}`),
-              'From': dateFrom, 'To': dateTo});
+              'From': this.getTime(dateFrom),
+              'To': this.getTime(dateTo)});
           }, true);
           this.getFunctionsPane(cp, filter, [dateFrom, dateTo], [row.package]);
           this.getLogsPane(cp, filter);
+          this.getAuditPane(cp, filter);
           grok.shell.o = cp.root;
         });
         const viewer = DG.Viewer.scatterPlot(t, {
@@ -92,27 +100,28 @@ export class PackagesView extends UaView {
     this.root.append(packagesViewer.root);
   }
 
-  async getFunctionsPane(cp: DG.Accordion, filter: Filter, date: string[], packageNames: string[]) {
+  async getFunctionsPane(cp: DG.Accordion, filter: Filter, date: Date[], packageNames: string[]) {
     const button = ui.button('Details', async () => {
-      this.uaToolbox.dateFromDD.value = date[0];
-      this.uaToolbox.dateToDD.value = date[1];
+      this.uaToolbox.dateFromDD.value = this.getTime(date[0]);
+      this.uaToolbox.dateToDD.value = this.getTime(date[1]);
       this.uaToolbox.usersDD.value = filter.users.length === 1 ?
         (await grok.dapi.users.find(filter.users[0])).friendlyName : `${filter.users.length} users`;
       this.uaToolbox.packagesDD.value = packageNames.length === 1 ?
         packageNames[0] : `${packageNames.length} packages`;
       ViewHandler.getView('Functions').getScatterPlot()
-        .reloadViewer({date: `${date[0]}-${date[1]}`, groups: filter.groups, packages: packageNames});
+        .reloadViewer({date: `${this.getTime(date[0], 'es-pa')}-${this.getTime(date[1], 'es-pa')}`,
+          groups: filter.groups, packages: packageNames});
       ViewHandler.changeTab('Functions');
       this.uaToolbox.drilldown = ViewHandler.getCurrentView();
     });
     button.classList.add('ua-details-button');
     const fPane = cp.addPane('Functions', () => {
       return ui.wait(async () => {
-        console.log('started query');
+        // console.log('started query');
         const df: DG.DataFrame = await grok.data.query('UsageAnalysis:PackagesContextPaneFunctions', filter);
-        console.log('ended query');
+        // console.log('ended query');
         const data: {[key: string]: number} = {};
-        console.log('started cycle');
+        // console.log('started cycle');
         for (const r of df.rows) {
           const d = data[r.package + ':' + r.name];
           data[r.package + ':' + r.name] = r.count + (d ?? 0);
@@ -130,11 +139,11 @@ export class PackagesView extends UaView {
           } catch (e: any) {}
           data1[k] = el.innerHTML !== '<span></span>' && el.innerText !== 'error' ? el : k.split(':')[1];
         }
-        console.log('ended cycle');
+        // console.log('ended cycle');
         return ui.table(Object.keys(data).sort((a, b) =>
           data[b] - data[a]), (k) => [data1[k], data[k]]);
       });
-    }, true);
+    }, this.expanded.f);
   }
 
   async getLogsPane(cp: DG.Accordion, filter: Filter) {
@@ -144,6 +153,20 @@ export class PackagesView extends UaView {
         const data: {[key: string]: number} = {};
         for (const r of df.rows) data[r.source] = r.count + (data[r.source] ?? 0);
         const info = lPane.root.querySelector('#info') as HTMLElement;
+        info.textContent = df.getCol('count').stats.sum.toString();
+        info.style.removeProperty('display');
+        return Object.keys(data).length ? ui.tableFromMap(data) : ui.divText('No data');
+      });
+    }, true);
+  }
+
+  async getAuditPane(cp: DG.Accordion, filter: Filter) {
+    const pane = cp.addPane('Audit summary', () => {
+      return ui.wait(async () => {
+        const df = await grok.data.query('UsageAnalysis:PackagesContextPaneAudit', filter);
+        const data: {[key: string]: number} = {};
+        for (const r of df.rows) data[r.name] = r.count + (data[r.name] ?? 0);
+        const info = pane.root.querySelector('#info') as HTMLElement;
         info.textContent = df.getCol('count').stats.sum.toString();
         info.style.removeProperty('display');
         return Object.keys(data).length ? ui.tableFromMap(data) : ui.divText('No data');

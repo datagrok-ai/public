@@ -58,7 +58,8 @@ res.uid, res.ugid, res.pid
 --meta.cache: true
 --connection: System:Datagrok
 select e.friendly_name as run, et.name as function,
-pp.package_id as pid, e.event_time as time, e.id as rid
+pp.package_id as pid, e.event_time as time, e.id as rid,
+pp.name as package
 from events e
 inner join event_types et on e.event_type_id = et.id
 inner join entities en on et.id = en.id

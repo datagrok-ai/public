@@ -67,4 +67,6 @@ const userEventsChartStyle = {
   'legendVisibility': 'Never',
   'showMarkers': 'Never',
   'title': 'Total events',
+  'lineColoringType': 'Custom',
+  'lineColor': 16753920,
 };
