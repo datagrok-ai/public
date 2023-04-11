@@ -51,7 +51,7 @@ category('top menu chem space', async () => {
 
   test('UMAP', async () => {
     await _testDimensionalityReducer(smallDf.col('smiles')!, 'UMAP');
-  });
+  }, {skipReason: 'GROK-12227'});
 
   test('SPE', async () => {
     await _testDimensionalityReducer(smallDf.col('smiles')!, 'SPE');

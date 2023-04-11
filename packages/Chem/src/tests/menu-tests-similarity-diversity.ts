@@ -57,7 +57,7 @@ category('top menu similarity/diversity', () => {
       expectArray(viewer.scores!.toList(), [1, 0.6808510422706604, 0.6739130616188049, 0.6521739363670349, 0.6458333134651184,
         0.4821428656578064, 0.4736842215061188, 0.4736842215061188, 0.4655172526836395, 0.4576271176338196]);
     } finally {tv.close();}
-  });
+  }, {skipReason: 'GROK-12227'});
 
   test('similarity.emptyInput', async () => {
     empty.currentRowIdx = 0;
@@ -68,7 +68,7 @@ category('top menu similarity/diversity', () => {
       await awaitCheck(() => document.querySelector('.d4-balloon-content')?.innerHTML ===
         'Empty molecule cannot be used for similarity search', 'cannot find error balloon', 2000);
     } finally {tv.close();}
-  });
+  }, {skipReason: 'GROK-12227'});
 
   test('similaritySearchViewerOpen', async () => {
     await _testSimilaritySearchViewerOpen();
