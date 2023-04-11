@@ -44,12 +44,10 @@ OUTPUT_V3K.ATOM_TYPES = ATOM_TYPES_V3K;
 category('chemical table parsing', async () => {
   let molfileV2K: string;
   let molfileV3K: string;
-  let molfileHandler: MolfileHandler;
 
   before(async () => {
     molfileV2K = await loadFileAsText('tests/molfileV2000.mol');
     molfileV3K = await loadFileAsText('tests/molfileV3000.mol');
-    molfileHandler = new MolfileHandler(molfileV2K);
   });
 
   function getRoundedNumberArray(floatArray: Float32Array): number[] {
@@ -58,33 +56,33 @@ category('chemical table parsing', async () => {
   }
 
   function _testCoordinates(molfile: string, expectedData: TestedData): void {
-    molfileHandler.init(molfile);
+    const mol = MolfileHandler.getInstance(molfile);
     const expected = [expectedData.X, expectedData.Y, expectedData.Z];
     const obtained = [
-      getRoundedNumberArray(molfileHandler.x),
-      getRoundedNumberArray(molfileHandler.y),
-      getRoundedNumberArray(molfileHandler.z),
+      getRoundedNumberArray(mol.x),
+      getRoundedNumberArray(mol.y),
+      getRoundedNumberArray(mol.z),
     ];
     expectArray(expected, obtained);
   }
 
   function _testAtomTypes(molfile: string, expectedData: TestedData): void {
-    molfileHandler.init(molfile);
-    console.log('comment:', molfileHandler.atomTypes);
-    expectArray(expectedData.ATOM_TYPES, molfileHandler.atomTypes);
+    const mol = MolfileHandler.getInstance(molfile);
+    console.log('comment:', mol.atomTypes);
+    expectArray(expectedData.ATOM_TYPES, mol.atomTypes);
   }
 
   function _testBondedAtoms(molfile: string, expectedData: TestedData): void {
-    molfileHandler.init(molfile);
-    const obtained = molfileHandler.pairsOfBondedAtoms.map(
+    const mol = MolfileHandler.getInstance(molfile);
+    const obtained = mol.pairsOfBondedAtoms.map(
       (item: Uint16Array) => Array.from(item),
     );
     expectArray(expectedData.BONDED_ATOMS, obtained);
   }
 
   function _testBondTypes(molfile: string, expectedData: TestedData): void {
-    molfileHandler.init(molfile);
-    const obtained = Array.from(molfileHandler.bondTypes);
+    const mol = MolfileHandler.getInstance(molfile);
+    const obtained = Array.from(mol.bondTypes);
     expectArray(expectedData.BOND_TYPES, obtained);
   }
 

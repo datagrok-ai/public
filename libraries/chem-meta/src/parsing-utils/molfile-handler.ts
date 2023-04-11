@@ -4,6 +4,8 @@ import {MolfileV3KHandler} from './molfile-v3k-handler';
 
 /** Defines the proper parser handler based on the molfile type  */
 export class MolfileHandler {
+  private constructor() {}
+
   static getInstance(molfile: string): MolfileHandlerBase {
     if (MolfileV2KHandler.validate(molfile))
       return new MolfileV2KHandler(molfile);
