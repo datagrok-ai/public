@@ -38,10 +38,7 @@ export abstract class MolfileHandlerBase extends ChemicalTableParserBase {
 
   protected getNextIdenticalChar(idx: number): number {
     const sym = this.fileContent.at(idx);
-    if (sym)
-      return this.fileContent.indexOf(sym, idx + 1);
-    else
-      return -1;
+    return sym ? this.fileContent.indexOf(sym, idx + 1) : -1;
   }
 
   public isQuery(): boolean {
