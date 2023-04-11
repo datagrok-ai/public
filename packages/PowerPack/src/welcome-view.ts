@@ -41,13 +41,15 @@ export function welcomeView() {
 
   getSettings().then((settings: UserWidgetsSettings) => {
     for (let f of widgetFunctions) {
-      if (!settings[f.name] || settings[f.name].ignored)
-        f.apply().then(function (w: DG.Widget) {
+      if (!settings[f.name] || settings[f.name].ignored) {
+        const widgetHeader = ui.div();
+        f.apply({'header': widgetHeader}).then(function (w: DG.Widget) {
           w.factory = f;
-          widgetsHost.appendChild(widgetHost(w));
+          widgetsHost.appendChild(widgetHost(w, widgetHeader));
         }).catch((e) => {
           console.error(`Unable to execute function ${f.name}`, e);
         });
+      }
     }
   });
 

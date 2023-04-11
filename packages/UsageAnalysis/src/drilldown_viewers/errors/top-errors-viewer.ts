@@ -43,7 +43,7 @@ export class TopErrorsViewer extends UaFilterableQueryViewer {
             accordion,
           ]);
         });
-        return viewer.root;
+        return viewer;
       },
     );
   }

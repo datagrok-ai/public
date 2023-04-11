@@ -52,10 +52,11 @@ export class PeptidesModel {
   _isUpdating: boolean = false;
   isBitsetChangedInitialized = false;
   isCellChanging = false;
+  isUserChangedSelection = true;
 
   df: DG.DataFrame;
   splitCol!: DG.Column<boolean>;
-  edf: DG.DataFrame | null = null;
+  // edf: DG.DataFrame | null = null;
   _monomerPositionStats?: MonomerPositionStats;
   _clusterStats?: ClusterTypeStats;
   _mutationCliffsSelection!: type.PositionToAARList;
@@ -65,8 +66,8 @@ export class PeptidesModel {
   isInitialized = false;
   _analysisView?: DG.TableView;
 
-  isPeptideSpaceChangingBitset = false;
-  isChangingEdfBitset = false;
+  // isPeptideSpaceChangingBitset = false;
+  // isChangingEdfBitset = false;
 
   monomerMap: { [key: string]: { molfile: string, fullName: string } } = {};
   monomerLib: IMonomerLib | null = null; // To get monomers from lib(s)
@@ -889,44 +890,48 @@ export class PeptidesModel {
     const filter = this.df.filter;
     const clusterCol = this.df.col(this.settings.clustersColumnName!);
 
-    const changeSelectionBitset = (currentBitset: DG.BitSet): void => {
-      const clusterColCategories = clusterCol?.categories;
-      const clusterColData = clusterCol?.getRawData();
-
-      const edfSelection = this.edf?.selection;
-      if (this.isPeptideSpaceChangingBitset) {
-        if (edfSelection == null)
-          return;
-
-        currentBitset.init((i) => edfSelection.get(i) || false, false);
-        return;
-      }
-
-      const updateEdfSelection = (): void => {
-        this.isChangingEdfBitset = true;
-        edfSelection?.copyFrom(currentBitset);
-        this.isChangingEdfBitset = false;
-      };
-
-      const positionList = Object.keys(this.mutationCliffsSelection);
-
-      //TODO: move out
+    const changeSelectionBitset = (currentBitset: DG.BitSet, posList: type.RawColumn[], clustColCat: string[],
+      clustColData: type.RawData, customClust: {[key: string]: boolean[]}): void => {
       const getBitAt = (i: number): boolean => {
-        for (const position of positionList) {
-          const positionCol: DG.Column<string> = this.df.getCol(position);
-          if (this.mutationCliffsSelection[position].includes(positionCol.get(i)!))
+        for (const posRawCol of posList) {
+          if (this.mutationCliffsSelection[posRawCol.name].includes(posRawCol.cat![posRawCol.rawData[i]]))
             return true;
         }
-        return (typeof clusterColData != 'undefined' && typeof clusterColCategories != 'undefined' &&
-          this.logoSummarySelection.includes(clusterColCategories![clusterColData![i]])) ||
-          this.logoSummarySelection.some((cluster) => this.df.columns.contains(cluster) && this.df.get(cluster, i));
+
+        const currentOrigClust = clustColCat[clustColData[i]];
+        if (typeof currentOrigClust === undefined)
+          return false;
+
+        for (const clust of this.logoSummarySelection) {
+          if (clust === currentOrigClust)
+            return true;
+
+          if (Object.hasOwn(customClust, clust) && customClust[clust][i] === true)
+            return true;
+        }
+
+        return false;
       };
       currentBitset.init((i) => getBitAt(i), false);
-
-      updateEdfSelection();
     };
 
-    selection.onChanged.subscribe(() => changeSelectionBitset(selection));
+    selection.onChanged.subscribe(() => {
+      if (this.isUserChangedSelection)
+        return;
+
+      const positionList: type.RawColumn[] = Object.keys(this.mutationCliffsSelection).map((pos) => {
+        const posCol = this.df.getCol(pos);
+        return {name: pos, cat: posCol.categories, rawData: posCol.getRawData()};
+      });
+
+      const clustColCat = clusterCol?.categories ?? [];
+      const clustColData = clusterCol?.getRawData() ?? new Int32Array(0);
+      const customClust: {[key: string]: boolean[]} = {};
+      for (const clust of this.customClusters)
+        customClust[clust.name] = clust.toList();
+
+      changeSelectionBitset(selection, positionList, clustColCat, clustColData, customClust);
+    });
 
     filter.onChanged.subscribe(() => {
       const positionList = Object.keys(this.invariantMapSelection);
@@ -953,7 +958,8 @@ export class PeptidesModel {
   }
 
   fireBitsetChanged(isPeptideSpaceSource: boolean = false, fireFilterChanged: boolean = false): void {
-    this.isPeptideSpaceChangingBitset = isPeptideSpaceSource;
+    this.isUserChangedSelection = false;
+    // this.isPeptideSpaceChangingBitset = isPeptideSpaceSource;
     this.df.selection.fireChanged();
     if (fireFilterChanged)
       this.df.filter.fireChanged();
@@ -966,8 +972,8 @@ export class PeptidesModel {
       for (const pane of acc.panes)
         pane.expanded = true;
     }
-
-    this.isPeptideSpaceChangingBitset = false;
+    this.isUserChangedSelection = true;
+    // this.isPeptideSpaceChangingBitset = false;
   }
 
   postProcessGrids(): void {

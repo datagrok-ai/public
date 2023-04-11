@@ -12,7 +12,7 @@ import {ViewHandler} from '../view-handler';
 
 export class PackagesView extends UaView {
   constructor(uaToolbox: UaToolbox) {
-    super(uaToolbox, 'package');
+    super(uaToolbox);
     this.name = 'Packages';
   }
 
@@ -72,7 +72,21 @@ export class PackagesView extends UaView {
           this.getLogsPane(cp, filter);
           grok.shell.o = cp.root;
         });
-      }, null, null, this.viewer);
+        const viewer = DG.Viewer.scatterPlot(t, {
+          x: 'time_start',
+          y: 'package',
+          size: 'count',
+          color: 'user',
+          jitterSize: 5,
+          markerMinSize: 10,
+          markerMaxSize: 30,
+          showColorSelector: false,
+          showSizeSelector: false,
+          showXSelector: false,
+          showYSelector: false,
+        });
+        return viewer;
+      }, null, null);
 
     this.viewers.push(packagesViewer);
     this.root.append(packagesViewer.root);

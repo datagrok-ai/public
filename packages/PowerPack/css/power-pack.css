@@ -78,7 +78,7 @@
 }
 
 .power-pack-welcome-view .d4-search-bar .ui-input-root {
-    width: 100%;
+    flex-grow: 1;
 }
 
 .power-pack-welcome-view .d4-search-bar .ui-input-editor {
