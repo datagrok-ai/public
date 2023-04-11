@@ -8,7 +8,7 @@ import $ from 'cash-dom';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import { MOL_FORMAT } from '../constants';
-import { copyIconStyles } from '../utils/ui-utils';
+import { addCopyIcon } from '../utils/ui-utils';
 
 export function getMoleculeCharge(mol: OCL.Molecule) {
   const atomsNumber = mol.getAllAtoms();
@@ -80,12 +80,7 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
   for (const [key, value] of Object.entries(map)) 
     tableString += `${key}\t${value.innerText}\n`;
   
-  const copyIcon = ui.icons.copy(() => {
-    navigator.clipboard.writeText(tableString);
-    grok.shell.info('Copied to clipboard');
-  }, 'Copy');
-  Object.assign(copyIcon.style, copyIconStyles);
-  host.appendChild(copyIcon);
+  addCopyIcon(tableString, 'Properties');
   
   return new DG.Widget(host);
 }

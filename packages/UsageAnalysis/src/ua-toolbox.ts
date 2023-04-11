@@ -78,7 +78,7 @@ export class UaToolbox {
       this.formDD.style.display = 'none';
       const closeButton = ui.button('', () => this.exitDrilldown(), 'Close drilldown filter');
       closeButton.classList.add('ua-close-button', 'fal', 'fa-times');
-      const backButton = ui.button('⇦ back to Packages', () => {
+      const backButton = ui.button('🠔 back to packages', () => {
         ViewHandler.changeTab('Packages');
         this.exitDrilldown();
       }, 'Back to Packages tab');

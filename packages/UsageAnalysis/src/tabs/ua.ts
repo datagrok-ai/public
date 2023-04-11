@@ -19,30 +19,12 @@ export class UaView extends DG.ViewBase {
   uaToolbox: UaToolbox;
   viewers: UaQueryViewer[] = [];
   initialized: boolean = false;
-  viewer: DG.Viewer;
 
-  constructor(uaToolbox: UaToolbox, y?: string, ColorSelector: boolean = false) {
+  constructor(uaToolbox: UaToolbox) {
     super();
     this.uaToolbox = uaToolbox;
     this.toolbox = uaToolbox.rootAccordion.root;
     this.box = true;
-    const df = DG.DataFrame.fromColumns([DG.Column.fromList('string', 'time_start', []),
-      DG.Column.fromList('string', y ?? '', []),
-      DG.Column.fromList('string', 'count', []),
-      DG.Column.fromList('string', 'user', [])]);
-    this.viewer = DG.Viewer.scatterPlot(df, {
-      x: 'time_start',
-      y: y,
-      size: 'count',
-      // color: 'user',
-      jitterSize: 5,
-      markerMinSize: 10,
-      markerMaxSize: 30,
-      showColorSelector: ColorSelector,
-      showSizeSelector: false,
-      showXSelector: false,
-      showYSelector: false,
-    });
   }
 
   tryToinitViewers() {

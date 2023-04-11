@@ -11,6 +11,7 @@
 
 .ua-apply-button {
   margin-left: auto !important;
+  margin-top: 7px !important;
 }
 
 .ua-apply-button:disabled {
@@ -36,8 +37,10 @@
 
 .ua-back-button {
   float: right;
-  color: var(--grey-3) !important;
+  /* color: var(--grey-3) !important; */
   padding: 0 !important;
+  font-size: 11px !important;
+  text-transform: none !important;
 }
 
 .ua-reload-div {
@@ -60,4 +63,24 @@
   height: fit-content;
   /* box-shadow: 0 0 0 0 #FDFFE5;
   animation: pulse-white 1s 1; */
+}
+
+.ua-table .d4-link-label {
+  max-width: 150px;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+}
+
+.ua-widget .d4-viewer-title textarea {
+  padding: 0 12px;
+  font-size: 12px;
+  text-align: right;
+}
+
+.ua-widget .d4-viewer-title {
+  z-index: 99;
+  width: initial;
+  right: 0;
+  display: flex;
+  justify-content: flex-end;
 }

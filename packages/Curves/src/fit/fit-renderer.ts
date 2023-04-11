@@ -11,6 +11,7 @@ import {fitSeries, getChartData, getChartBounds, getFittedCurve,IFitChartData, I
   TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX} from './fit-data';
 import {convertXMLToIFitChartData} from './fit-parser';
 import {ITransform, Transform} from "./transform";
+import {MultiCurveViewer} from "./multi-curve-viewer";
 
 /** Performs a chart layout, returning [viewport, xAxis, yAxis] */
 function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
@@ -25,12 +26,13 @@ function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
 
 /** Performs a curve confidence interval drawing */
 function drawConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries, confidenceType: string, transform: ITransform) {
+  const fitResult = fitSeries(series);
   g.beginPath();
   for (let i = 0; i < series.points.length!; i++) {
     const x = transform.xToScreen(series.points[i].x);
     const y = confidenceType === CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP
-    ? transform.yToScreen(fitSeries(series).confidenceTop(series.points[i].x))
-    : transform.yToScreen(fitSeries(series).confidenceBottom(series.points[i].x));
+    ? transform.yToScreen(fitResult.confidenceTop(series.points[i].x))
+    : transform.yToScreen(fitResult.confidenceBottom(series.points[i].x));
     if (i === 0)
       g.moveTo(x, y);
     else
@@ -41,10 +43,11 @@ function drawConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries,
 
 /** Performs a curve confidence interval filling */
 function fillConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries, transform: ITransform) {
+  const fitResult = fitSeries(series);
   g.beginPath();
   for (let i = 0; i < series.points.length!; i++) {
     const x = transform.xToScreen(series.points[i].x);
-    const y = transform.yToScreen(fitSeries(series).confidenceTop(series.points[i].x));
+    const y = transform.yToScreen(fitResult.confidenceTop(series.points[i].x));
     if (i === 0)
       g.moveTo(x, y);
     else
@@ -54,7 +57,7 @@ function fillConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries,
   // reverse traverse to make a shape of confidence interval to fill it
   for (let i = series.points.length! - 1; i >= 0; i--) {
     const x = transform.xToScreen(series.points[i].x);
-    const y = transform.yToScreen(fitSeries(series).confidenceBottom(series.points[i].x));
+    const y = transform.yToScreen(fitResult.confidenceBottom(series.points[i].x));
     g.lineTo(x, y);
   }
   g.closePath();
@@ -72,6 +75,12 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
     grok.shell.o = gridCell;
+  }
+
+  onDoubleClick(gridCell: DG.GridCell, e: MouseEvent) {
+    ui.dialog({title: 'Edit chart'})
+      .add(MultiCurveViewer.fromChartData(getChartData(gridCell)).root)
+      .show();
   }
 
   renderCurves(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, data: IFitChartData) {
