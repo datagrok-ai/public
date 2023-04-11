@@ -37,31 +37,23 @@ export function link(args: LinkArgs) {
   }
 
   const dependencies = readDependencies(curDir);
-  const packageHierarchy: string[] = getHierarchy(curDir);
 
   if (local) {
-    // Install dependencies
-    for (const packageName of packageHierarchy) {
-      const packagePath = getPackagePath(packageName);
+    const packageHierarchy: string[] = getHierarchy(curDir);
+    function link(packagePath: string): void {
       const packageJsonPath = path.join(packagePath, 'package.json');
       const json = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
       json.scripts['link-all'] = generateLinkScript(packagePath, packageHierarchy);
       json.scripts['build-all'] = generateBuildScript(packagePath, packageHierarchy);
-      console.log(json.scripts['link-all']);
-      console.log(json.scripts['build-all']);
-      // fs.writeFileSync(packageJsonPath, JSON.stringify(json, null, 2), 'utf-8');
-      // TODO: Run link-all, optionally run build-all
-      // exec('npm install && npm link', { cwd: packagePath }, (err, stdout, stderr) => {
-      //   if (err) throw err;
-      //   else console.log(stderr, stdout);
-      // });
+      fs.writeFileSync(packageJsonPath, JSON.stringify(json, null, 2), 'utf-8');
+      exec('npm install && npm link && npm run link-all', { cwd: packagePath }, (err, stdout, stderr) => {
+        if (err) throw err;
+        else console.log(stderr, stdout);
+      });
     }
-    // TODO: Add/update package scripts (link-all, build-all) for the main package
-    // Run link-all, optionally run build-all
-    // runScript(curDir, 'npm update && npm link', dependencies, {
-    //   dirMessage: 'Installing dependencies for ',
-    //   successMessage: 'Dependencies have been successfully installed.',
-    // });
+
+    packageHierarchy.forEach(packageName => link(getPackagePath(packageName)));
+    link(curDir);
   } else {
     runScript(curDir, 'npm install', dependencies, {
       dirMessage: 'Unlinking local packages in ',
@@ -154,16 +146,13 @@ function runScript(packageDir: string, script: string, dependencies: utils.Index
 function generateBuildScript(packagePath: string, hierarchy: string[]): string {
   const dependencies = Object.keys(readDependencies(packagePath));
   const packageNames = hierarchy.filter((p) => dependencies.includes(p));
-  const prefix = './../../'; // TODO: adjust programmatically (for js-api, libraries/, packages/)
+  const prefix = `./${path.relative(packagePath, repositoryDir).split(path.sep).join('/')}/`;
   let script = '';
-  for (const dep of dependencies) {
-    if (!packageNames.includes(dep))
-      color.error(`Hierarchy does not include package ${dep}`);
-    else
-      script += `npm --prefix ${prefix}${dep === apiPackageName ?
-        'js-api' : `libraries/${dep.split('/')[1]}`} run build`;
+  for (const packageName of packageNames) {
+    script += `npm --prefix ${prefix}${packageName === apiPackageName ?
+      'js-api' : `libraries/${packageName.split('/')[1]}`} run build && `;
   }
-  return `${script ? (script + ' && ') : ''}npm run build`;
+  return `${script ? script : ''}npm run build`;
 }
 
 /** Generates a package script to link all dependencies using the provided hierarchy. */
