@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import * as NGL from 'NGL';
 
-/** @returns {DG.View} */
+/** Creates view with NGL viewer to preview Biostructure (PDB) */
 export function nglViewUI(file: any): DG.View {
   const view = DG.View.create();
   const host = ui.div([], 'd4-ngl-viewer');
