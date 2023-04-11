@@ -825,9 +825,11 @@ export class PinnedColumn {
       if (strMol !== null && strMol !== undefined)
         sketcher.setMolecule(strMol);
 
+      const headerThis = this;
       dialog.onOK(() => {
         column.set(nRow, b ? sketcher.getMolFile() : sketcher.getSmiles(), true);
-        grid.invalidate();
+        const g = headerThis.m_root!.getContext('2d');
+        headerThis.paint(g, grid);
       });
 
       dialog.show();
