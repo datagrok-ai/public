@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '18'
-      - run: npm install --location=global @commitlint/config-conventional @commitlint/cli
+      - run: npm install @commitlint/config-conventional @commitlint/cli
       - uses: JulienKode/pull-request-name-linter-action@v0.5.0
         with:
           configuration-path: ./commitlint.config.js
