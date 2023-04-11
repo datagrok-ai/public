@@ -18,6 +18,7 @@ public abstract class Column<T> {
     public abstract void add(T value);
     public abstract void addAll(T[] value);
     public abstract Object get(int idx);
+    public abstract void set(int index, T value);
     public abstract long memoryInBytes();
     public abstract boolean isNone(int idx);
     public abstract void empty();

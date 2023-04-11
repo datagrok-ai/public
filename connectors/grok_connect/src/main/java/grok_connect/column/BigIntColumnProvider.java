@@ -4,6 +4,7 @@ import grok_connect.type.TypeChecker;
 import serialization.BigIntColumn;
 import serialization.Column;
 
+import java.math.BigInteger;
 import java.util.Collection;
 
 public class BigIntColumnProvider extends AbstractColumnProvider {
@@ -19,5 +20,10 @@ public class BigIntColumnProvider extends AbstractColumnProvider {
     @Override
     public Column getWithInitSize(int size) {
         return new BigIntColumn(new String[size]);
+    }
+
+    @Override
+    public boolean isSupported(Object o) {
+        return o instanceof Long || o instanceof BigInteger;
     }
 }

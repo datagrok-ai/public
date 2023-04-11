@@ -2,28 +2,14 @@ package grok_connect.providers;
 
 import java.io.*;
 import java.sql.*;
-import java.time.*;
-import java.time.temporal.Temporal;
 import java.util.*;
 import java.math.*;
 import java.text.*;
-import java.util.Date;
 import java.util.regex.*;
-import com.google.gson.Gson;
-import grok_connect.converter.float_type.FloatTypeConverterManager;
-import grok_connect.converter.integer.IntegerTypeConverterManager;
-import grok_connect.converter.time.TimeTypeConverterManager;
 import grok_connect.resultset.ResultSetManager;
-import microsoft.sql.DateTimeOffset;
-import oracle.sql.DATE;
-import oracle.sql.TIMESTAMP;
-import oracle.sql.TIMESTAMPTZ;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.text.StringEscapeUtils;
 import org.joda.time.DateTime;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import serialization.*;
@@ -32,13 +18,11 @@ import grok_connect.table_query.*;
 import grok_connect.connectors_info.*;
 import serialization.Types;
 
-
 public abstract class JdbcDataProvider extends DataProvider {
+    public ProviderManager providerManager;
     protected final ResultSetManager resultSetManager;
     protected Logger logger = LoggerFactory.getLogger(this.getClass().getName());
-    protected Gson gson = new Gson();
     protected String driverClassName;
-    public ProviderManager providerManager;
 
     public JdbcDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
         this.resultSetManager = resultSetManager;
@@ -397,34 +381,6 @@ public abstract class JdbcDataProvider extends DataProvider {
                 logBuilder.append(logString1);
                 logger.debug(logString1);
                 column = resultSetManager.getColumn(type, typeName, precision, scale);
-// Maybe the better way to use here strategy pattern ? e.g. ColumnManager -> ColumnProvider
-//                if (isInteger(type, typeName, precision, scale))
-//                    column = new IntColumn();
-//                else if (isFloat(type, typeName, precision, scale) || isDecimal(type, typeName, scale))
-//                    column = new FloatColumn();
-//                else if (isBoolean(type, typeName, precision))
-//                    column = new BoolColumn();
-//                else if (isString(type, typeName) ||
-//                        typeName.equalsIgnoreCase("uuid") ||
-//                        typeName.equalsIgnoreCase("set"))
-//                    column = new StringColumn();
-//                else if (isBigInt(type, typeName, precision, scale))
-//                    column = new BigIntColumn();
-//                else if (isTime(type, typeName))
-//                    column = new DateTimeColumn();
-//                else if (isXml(type, typeName)) {
-//                    column = new StringColumn();
-//                } else if (isBitString(type, precision, typeName)) {
-//                    column = new BigIntColumn();
-//                } else if(isArray(type, typeName)) {
-//                    column = new StringColumn();
-//                } else if (isComplex(type, typeName, precision, scale)) {
-//                    column = new ComplexTypeColumn();
-//                } else {
-//                    column = new StringColumn();
-//                    supportedType.set(c - 1, false);
-//                    initColumn.set(c - 1, false);
-//                }
                 String logString2 = String.format("Java type: %s \n", column.getClass().getName());
                 logBuilder.append(logString2);
                 logger.debug(logString2);
@@ -497,48 +453,13 @@ public abstract class JdbcDataProvider extends DataProvider {
 
                         csvWriter.append(c == columnCount ? '\n' : ',');
                     }
-
                     int type = resultSetMetaData.getColumnType(c);
                     String typeName = resultSetMetaData.getColumnTypeName(c);
                     int precision = resultSetMetaData.getPrecision(c);
                     int scale = resultSetMetaData.getScale(c);
                     String columnLabel = resultSetMetaData.getColumnLabel(c);
-
-//                            addValueToColumn(value, type, typeName, precision, scale, columns.get(c - 1));
                     columns.get(c - 1).add(resultSetManager
                             .convert(value, type, typeName, precision, scale, columnLabel));
-
-
-//                    if (supportedType.get(c - 1)) {
-
-//                    } else {
-//                        Column column = columns.get(c - 1);
-//                        if (!initColumn.get(c - 1) && value != null) {
-//                            if ((value instanceof Byte) || (value instanceof Short) || (value instanceof Integer)) {
-//                                column = new IntColumn();
-//                                column.addAll(new Integer[rowCount - 1]);
-//                            } else if ((value instanceof Float) || (value instanceof Double)) {
-//                                column = new FloatColumn();
-//                                column.addAll(new Float[rowCount - 1]);
-//                            } else if ((value instanceof Boolean)) {
-//                                column = new BoolColumn();
-//                                column.addAll(new Boolean[rowCount - 1]);
-//                            }
-//                            column.name = resultSetMetaData.getColumnLabel(c);
-//                            columns.set(c - 1, column);
-//                            initColumn.set(c - 1, true);
-//
-//                            System.out.printf("Data type '%s' is not supported yet. Write as '%s'.\n",
-//                                    resultSetMetaData.getColumnTypeName(c), column.getType());
-//                        }
-//
-//                        if (value instanceof Double)
-//                            value = new Float((Double)value);
-//                        else if (!(value instanceof Byte) && !(value instanceof Short) &&
-//                                !(value instanceof Integer) && !(value instanceof Boolean))
-//                            value = (value != null) ? value.toString() : null;
-//
-//                        column.add(value);
                     }
                 }
 
@@ -603,150 +524,6 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
     }
 
-//    protected void addValueToColumn(Object value, int type, String typeName,
-//                                    int precision, int scale, Column column) {
-//        String colType = column.getType();
-//        if (isInteger(type, typeName, precision, scale) || colType.equals(Types.INT)) {
-//            column.add(integerTypeConverterManager.convert(value));
-//        } else if (isBoolean(type, typeName, precision) || colType.equals(Types.BOOL)) {
-//            column.add(value);
-//        } else if (isString(type, typeName)) {
-//            if ((type == java.sql.Types.CLOB || value instanceof Clob) && value != null) {
-//                try {
-//                    Reader reader = ((Clob)value).getCharacterStream();
-//                    StringWriter writer = new StringWriter();
-//                    IOUtils.copy(reader, writer);
-//                    column.add(writer.toString());
-//                } catch (SQLException | IOException e) {
-//                    throw new RuntimeException(e);
-//                }
-//            } else
-//                column.add(value);
-//        } else if (isArray(type, typeName)) {
-//            column.add(convertArrayType(value));
-//        } else if (isXml(type, typeName)) {
-//            String valueToAdd = "";
-//            if (value != null) {
-//                if (value instanceof  SQLXML) {
-//                    SQLXML sqlxml = (SQLXML)value;
-//                    try {
-//                        valueToAdd = sqlxml.getString();
-//                    } catch (SQLException e) {
-//                        throw new RuntimeException(e);
-//                    }
-//                } else if(value instanceof java.lang.String) {
-//                    valueToAdd = value.toString();
-//                }
-//            }
-//            column.add(valueToAdd);
-//        } else if (isBitString(type, precision, typeName)) {
-//            String valueToAdd = "";
-//            if (value != null) {
-//                valueToAdd = value.toString();
-//            }
-//            column.add(valueToAdd);
-//        } else if (isDecimal(type, typeName, scale) || isFloat(type, typeName, precision, scale) || (colType.equals(Types.FLOAT))) {
-//            column.add(floatTypeConverterManager.convert(value));
-//        } else if (isBigInt(type, typeName, precision, scale) ||
-//                typeName.equalsIgnoreCase("uuid") ||
-//                typeName.equalsIgnoreCase("set") ||
-//                colType.equals(Types.STRING)) {
-//            column.add((value != null) ? value.toString() : "");
-//        }
-//        else if (isTime(type, typeName)) {
-//            column.add(timeTypeConverterManager.convert(value));
-//        }
-//    }
-
-//    protected boolean isComplex(int type, String typeName, int precision, int scale) {
-//        return typeName.equalsIgnoreCase("NODE");
-//    }
-
-//    protected boolean isComplexType(Object value) {
-//        if (value instanceof Map) {
-//            return true;
-//        }
-////        } else if (value instanceof PGobject) {
-////            return true;
-////        } else if (value instanceof String) {
-////            try {
-////                new JSONObject(value.toString());
-////                return true;
-////            } catch (JSONException ex) {
-////                try {
-////                    new JSONArray(value.toString());
-////                } catch (JSONException ex1) {
-////                    return false;
-////                }
-////            }
-////        }
-//        return false;
-//    }
-//
-//    @SuppressWarnings("unchecked")
-//    protected Map<String, Object> convertComplexTypeToMap(Object object) {
-//        if (object instanceof Map) {
-//            return (Map<String, Object>) object;
-//        }
-//        return gson.fromJson(object.toString(), Map.class);
-//    }
-//
-//    @SuppressWarnings("unchecked")
-//    protected List<Column> getColumnsFromMap(Map<String, Object> map, String prefix) {
-//        List<Column> result = new ArrayList<>();
-//        String prefixFormat = "%s.%s";
-//        for (String key: map.keySet()) {
-//            Object o = map.get(key);
-//            if (isComplexType(o)) {
-//                result.addAll(getColumnsFromMap(convertComplexTypeToMap(o), String.format(prefixFormat, prefix, key)));
-//            } else if (o instanceof List && ((List<?>) o).get(0) instanceof Map) {
-//                List<?> list = (List<?>) o;
-//                for (Object value : list) {
-//                    List<Column> columnsFromMap = getColumnsFromMap(convertComplexTypeToMap(value),
-//                            String.format(prefixFormat, prefix, key));
-//                    for (Column column: columnsFromMap) {
-//                        Optional<Column> foundColumn= result.stream().filter(column1 -> column1.name.equals(column.name)).findFirst();
-//                        if (foundColumn.isPresent()) {
-//                            foundColumn.get().add(column.get(0));
-//                        } else {
-//                            result.add(column);
-//                        }
-//                    }
-//                }
-//            } else {
-//                Column columnForObject = getColumnForObject(o);
-//                columnForObject.name = String.format(prefixFormat, prefix, key);
-//                result.add(columnForObject);
-//            }
-//        }
-//        return result;
-//    }
-//
-//    protected Column getColumnForObject(Object object) {
-//        Column column = new StringColumn();
-//        if (object instanceof Byte || object instanceof Short || object instanceof Integer) {
-//            column = new IntColumn();
-//            column.add(resultSetManager.convert(object, 0, "int", 0, 0));
-//        } else if (object instanceof Long || object instanceof BigInteger) {
-//            column = new BigIntColumn();
-//            column.add(resultSetManager.convert(object, -5, "bigint", 0, 0));
-//        } else if (object instanceof Float || object instanceof Double || object instanceof BigDecimal) {
-//            column = new FloatColumn();
-//            column.add(resultSetManager.convert(object, 0, "float8", 0, 0));
-//        } else if (object instanceof Boolean) {
-//            column = new BoolColumn();
-//            column.add(object);
-//        } else if (object instanceof Temporal || object instanceof Date
-//                || object instanceof DateTimeOffset || object instanceof DATE
-//                || object instanceof TIMESTAMP || object instanceof TIMESTAMPTZ) {
-//            column = new DateTimeColumn();
-//            column.add(resultSetManager.convert(object, 91, "", 0, 0));
-//        } else {
-//            column.add(object.toString());
-//        }
-//        return column;
-//    }
-
     public DataFrame execute(FuncCall queryRun)
             throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
         Connection connection = null;
@@ -777,14 +554,6 @@ public abstract class JdbcDataProvider extends DataProvider {
         }catch (SQLException e) {
             throw new RuntimeException("Something went wrong when getting object from result set", e);
         }
-    }
-
-    protected Object convertArrayType(Object value) {
-        return value.toString();
-    }
-
-    protected OffsetDateTime timestamptzToOffsetDateTime(TIMESTAMPTZ dbData) {
-        throw new UnsupportedOperationException("TIMESTAMPTZ is not supported");
     }
 
     protected static String paramToNamesString(FuncParam param, PatternMatcher matcher, String type,
@@ -941,78 +710,6 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public String castParamValueToSqlDateTime(FuncParam param) {
         return "datetime('" + param.value.toString() + "')";
-    }
-
-    // TODO Convert following code into "List.contains() style
-    protected boolean isInteger(int type, String typeName, int precision, int scale) {
-        return (type == java.sql.Types.INTEGER) || (type == java.sql.Types.TINYINT) || (type == java.sql.Types.SMALLINT) ||
-                typeName.equalsIgnoreCase("int4") ||
-                typeName.equalsIgnoreCase("int2") ||
-                typeName.equalsIgnoreCase("int") ||
-                typeName.equalsIgnoreCase("serial2") ||
-                typeName.equalsIgnoreCase("serial4") ||
-                ((precision < 8) && (scale == 0) && (isFloat(type, typeName, precision, scale)
-                        || isDecimal(type, typeName, scale)));
-        // TODO Investigate precision value for current case
-    }
-
-    protected boolean isArray(int type, String typeName) {
-        return type == java.sql.Types.ARRAY;
-    }
-
-    private static boolean isBitString(int type, int precision, String typeName) {
-        return (type == java.sql.Types.BIT && precision > 1) || typeName.equalsIgnoreCase("varbit");
-    }
-
-    private static boolean isXml(int type, String typeName) {
-        return (type == java.sql.Types.SQLXML || typeName.equalsIgnoreCase("xml"));
-    }
-
-    private static boolean isTime(int type, String typeName) {
-        return (type == java.sql.Types.DATE) || (type == java.sql.Types.TIME) || (type == java.sql.Types.TIMESTAMP)
-                || type == java.sql.Types.TIMESTAMP_WITH_TIMEZONE
-                || type == java.sql.Types.TIME_WITH_TIMEZONE
-                || typeName.equalsIgnoreCase("timetz")
-                || typeName.equalsIgnoreCase("timestamptz")
-                || (typeName.equalsIgnoreCase("TIMESTAMP WITH TIME ZONE"))
-                || (typeName.equalsIgnoreCase("datetimeoffset"));
-    }
-
-    protected boolean isBigInt(int type, String typeName, int precision, int scale) {
-        return (type == java.sql.Types.BIGINT) || typeName.equalsIgnoreCase("int8") ||
-                typeName.equalsIgnoreCase("serial8");
-    }
-
-    protected boolean isFloat(int type, String typeName, int precision, int scale) {
-        return (type == java.sql.Types.FLOAT) || (type == java.sql.Types.DOUBLE) || (type == java.sql.Types.REAL) ||
-                typeName.equalsIgnoreCase("float8") ||
-                typeName.equalsIgnoreCase("float4") ||
-                typeName.equalsIgnoreCase("money") ||
-                typeName.equalsIgnoreCase("binary_float") ||
-                typeName.equalsIgnoreCase("binary_double");
-    }
-
-    protected boolean isDecimal(int type, String typeName, int scale) {
-        return (type == java.sql.Types.DECIMAL) || (type == java.sql.Types.NUMERIC) ||
-                typeName.equalsIgnoreCase("decimal")
-                || typeName.equalsIgnoreCase("decfloat");
-    }
-
-    private static boolean isBoolean(int type, String typeName, int precision) {
-        return (type == java.sql.Types.BOOLEAN) ||
-                typeName.equalsIgnoreCase("bool") || (type == java.sql.Types.BIT && precision == 1);
-    }
-
-    private static boolean isString(int type, String typeName) {
-        return ((type == java.sql.Types.VARCHAR)|| (type == java.sql.Types.CHAR) ||
-                (type == java.sql.Types.LONGVARCHAR) || (type == java.sql.Types.CLOB)
-                || (type == java.sql.Types.NCLOB) ||
-                typeName.equalsIgnoreCase("varchar") ||
-                typeName.equalsIgnoreCase("nvarchar") ||
-                typeName.equalsIgnoreCase("nchar") ||
-                typeName.equalsIgnoreCase("ntext")) &&
-                !typeName.equalsIgnoreCase("uuid") &&
-                !typeName.equalsIgnoreCase("set");
     }
 
     public static java.util.Properties defaultConnectionProperties(DataConnection conn) {

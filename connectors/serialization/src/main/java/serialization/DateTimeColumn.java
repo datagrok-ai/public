@@ -88,6 +88,11 @@ public class DateTimeColumn extends Column<Double> {
     }
 
     @Override
+    public void set(int index, Double value) {
+        data[index] = value;
+    }
+
+    @Override
     public long memoryInBytes() {
         return data.length * 8;
     }

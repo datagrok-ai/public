@@ -20,4 +20,9 @@ public class StringColumnProvider extends AbstractColumnProvider {
     public Column getWithInitSize(int size) {
         return new StringColumn(new String[size]);
     }
+
+    @Override
+    public boolean isSupported(Object o) {
+        return o instanceof String;
+    }
 }

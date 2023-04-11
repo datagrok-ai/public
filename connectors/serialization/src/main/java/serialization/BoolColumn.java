@@ -13,10 +13,10 @@ public class BoolColumn extends Column<Boolean> {
     public String getType() {
         return TYPE;
     }
-    
+
     public void empty() {
         length = 0;
-        data = new int[100]; 
+        data = new int[100];
     }
 
     public BoolColumn() {
@@ -53,6 +53,11 @@ public class BoolColumn extends Column<Boolean> {
 
     public Object get(int idx) {
         return data[idx];
+    }
+
+    @Override
+    public void set(int index, Boolean value) {
+        data[index] = value ? 1 : 0;
     }
 
     public boolean isNone(int idx) {

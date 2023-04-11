@@ -764,4 +764,30 @@ public class Neo4jObjectsMother {
                                 + "t.localdatetime as localdatetime, t.localtime as localtime, t.time as time, t.float as float, "
                                 + "t.integer as integer, t.point as point")), expected1));
     }
+
+    public static Stream<Arguments> checkSupportOfMapReturnType_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new BigIntColumn(new String[]{"0"}),
+                        "p._id")
+                .setColumn(new StringColumn(new String[]{"[Person]"}),
+                        "p._labels")
+                .setColumn(new BigIntColumn(new String[]{"1"}),
+                        "p.id")
+                .setColumn(new StringColumn(new String[]{"Burk"}), "p.first_name")
+                .setColumn(new StringColumn(new String[]{"Kemery"}),
+                        "p.last_name")
+                .setColumn(new StringColumn(new String[]{"bkemery0@businesswire.com"}), "p.email")
+                .setColumn(new StringColumn(new String[]{"Male"}), "p.gender")
+                .setColumn(new StringColumn(new String[]{"249.64.22.121/32"}),
+                        "p.ip_address")
+                .setColumn(new BoolColumn(new Boolean[]{true}), "p.bool")
+                .setColumn(new StringColumn(new String[]{"China"}), "p.country")
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles("yyyy-MM-dd", "2017-09-20")),
+                        "p.date")
+                .setColumn(new FloatColumn(new Float[]{510.32f}), "p.some_number")
+                .build();
+        return Stream.of(Arguments.of(Named.of("Map return type support",
+                FuncCallBuilder.fromQuery("MATCH(p:Person) RETURN p LIMIT 1")), expected));
+    }
 }

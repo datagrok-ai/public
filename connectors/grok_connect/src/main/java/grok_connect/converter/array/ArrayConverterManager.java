@@ -9,6 +9,7 @@ import oracle.sql.ARRAY;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.Array;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,7 +32,7 @@ public class ArrayConverterManager extends AbstractConverterManager<String> {
         LOGGER.trace("convert method was called");
         if (value == null) {
             LOGGER.trace("value is null");
-            return null;
+            return Arrays.toString(new Object[]{});
         }
         Class<?> aClass = value.getClass();
         Converter<String> converter;

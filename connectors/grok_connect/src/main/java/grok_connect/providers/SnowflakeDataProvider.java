@@ -71,21 +71,6 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
     }
 
     @Override
-    protected boolean isInteger(int type, String typeName, int precision, int scale) {
-        return typeName.equals("NUMBER") && precision < 10 && scale == 0;
-    }
-
-    @Override
-    protected boolean isBigInt(int type, String typeName, int precision, int scale) {
-        return typeName.equals("NUMBER") && precision >= 10 && scale == 0;
-    }
-
-    @Override
-    protected boolean isFloat(int type, String typeName, int precision, int scale) {
-        return typeName.equals("DOUBLE") || type == java.sql.Types.DOUBLE;
-    }
-
-    @Override
     protected String getRegexQuery(String columnName, String regexExpression) {
         return String.format("%s REGEXP '%s'", columnName, regexExpression);
     }

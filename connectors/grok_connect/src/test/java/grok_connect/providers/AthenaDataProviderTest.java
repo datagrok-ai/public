@@ -41,7 +41,7 @@ class AthenaDataProviderTest {
         ProviderManager providerManager = new ProviderManager();
         ProviderManager spy = Mockito.spy(providerManager);
         Mockito.when(spy.getQueryMonitor()).thenReturn(mockMonitor);
-        provider = (JdbcDataProvider) spy.getByName(type.getProperties().get("providerName").toString());
+        provider = spy.getByName(type.getProperties().get("providerName").toString());
     }
 
     @BeforeEach

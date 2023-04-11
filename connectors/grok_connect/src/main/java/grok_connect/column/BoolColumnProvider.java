@@ -19,4 +19,9 @@ public class BoolColumnProvider extends AbstractColumnProvider {
     public Column getWithInitSize(int size) {
         return new BoolColumn(new Boolean[size]);
     }
+
+    @Override
+    public boolean isSupported(Object o) {
+        return o instanceof Boolean;
+    }
 }

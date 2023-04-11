@@ -58,6 +58,11 @@ public class StringColumn extends Column<String> {
         return data[idx];
     }
 
+    @Override
+    public void set(int index, String value) {
+        data[index]  = value;
+    }
+
     private void ensureSpace(int extraLength) {
         if (length + extraLength > data.length) {
             String[] newData = new String[data.length * 2 + Math.max(0, length + extraLength - data.length * 2)];

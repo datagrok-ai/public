@@ -8,4 +8,8 @@ public interface ColumnProvider {
     Column getWithInitSize(int size);
 
     boolean isSupported(int type, String typeName, int precision, int scale);
+
+    default boolean isSupported(Object o) {
+        return false;
+    };
 }

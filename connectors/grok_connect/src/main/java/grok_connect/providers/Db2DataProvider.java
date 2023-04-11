@@ -112,9 +112,4 @@ public class Db2DataProvider extends JdbcDataProvider {
         }
         return lst.size() - 1;
     }
-
-    @Override
-    protected boolean isInteger(int type, String typeName, int precision, int scale) {
-        return type == Types.SMALLINT || type == Types.INTEGER || type == Types.TINYINT;
-    }
 }

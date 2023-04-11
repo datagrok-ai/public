@@ -1,6 +1,5 @@
 package grok_connect.providers;
 
-import java.sql.Types;
 import java.util.ArrayList;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
@@ -55,17 +54,6 @@ public class Neo4jDataProvider extends JdbcDataProvider {
             return String.format("(%s %s [%s])", matcher.colName, matcher.op, names);
         }
         return String.format("(NOT %s IN [%s])", matcher.colName, names);
-    }
-
-    @Override
-    protected boolean isInteger(int type, String typeName, int precision, int scale) {
-        // Neo4j only has one integer type, it's 64bit, so map to BigIntColumn
-        return false;
-    }
-
-    @Override
-    protected boolean isBigInt(int type, String typeName, int precision, int scale) {
-        return typeName.equals("INTEGER") || type == Types.INTEGER;
     }
 
     @Override

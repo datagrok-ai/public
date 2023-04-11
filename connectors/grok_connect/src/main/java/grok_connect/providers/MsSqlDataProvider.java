@@ -152,10 +152,4 @@ public class MsSqlDataProvider extends JdbcDataProvider {
     public String limitToSql(String query, Integer limit) {
         return query + "top " + limit.toString() + " ";
     }
-
-    @Override
-    protected boolean isInteger(int type, String typeName, int precision, int scale) {
-        return (type == java.sql.Types.INTEGER) || (type == java.sql.Types.TINYINT)
-                || (type == java.sql.Types.SMALLINT);
-    }
 }

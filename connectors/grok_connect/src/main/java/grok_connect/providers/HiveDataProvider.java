@@ -90,7 +90,7 @@ public class HiveDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException, GrokConnectException {
+    public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
         prepareProvider();
         return DriverManager.getConnection(getConnectionString(conn), getProperties(conn));
     }
@@ -142,7 +142,7 @@ public class HiveDataProvider extends JdbcDataProvider {
 
     private JdbcDataProvider getProxyMetaStoreProvider(DataConnection connection) {
         return new HiveMetaDataProviderProxyProvider()
-                .getProxy(providerManager, getMetaDataProvider(connection).getClass());
+                .getProxy(providerManager, resultSetManager, getMetaDataProvider(connection).getClass());
     }
 
     private JdbcDataProvider getMetaDataProvider(DataConnection connection) {

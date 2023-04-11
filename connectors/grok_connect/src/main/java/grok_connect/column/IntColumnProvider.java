@@ -19,4 +19,9 @@ public class IntColumnProvider extends AbstractColumnProvider {
     public Column getWithInitSize(int size) {
         return new IntColumn(new Integer[size]);
     }
+
+    @Override
+    public boolean isSupported(Object o) {
+        return o instanceof Byte || o instanceof Short || o instanceof Integer;
+    }
 }

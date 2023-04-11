@@ -43,7 +43,7 @@ import grok_connect.providers.SnowflakeDataProvider;
 import grok_connect.providers.TeradataDataProvider;
 import grok_connect.providers.VerticaDataProvider;
 import grok_connect.providers.VirtuosoDataProvider;
-import grok_connect.resultset.DeafultResultSetManager;
+import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
 import grok_connect.type.TypeChecker;
 import grok_connect.type.array.DefaultArrayTypeChecker;
@@ -53,6 +53,7 @@ import grok_connect.type.bigint.Neo4jBigIntTypeChecker;
 import grok_connect.type.bigint.OracleSnowflakeBigIntTypeChecker;
 import grok_connect.type.bitstring.DefaultBitStringTypeChecker;
 import grok_connect.type.bool.DefaultBoolTypeChecker;
+import grok_connect.type.bool.MySQLMsSqlBoolTypeChecker;
 import grok_connect.type.complex.DefaultComplexTypeChecker;
 import grok_connect.type.complex.Neo4jComplexTypeChecker;
 import grok_connect.type.float_type.DefaultFloatTypeChecker;
@@ -75,14 +76,16 @@ public class ProviderManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProviderManager.class);
     private final QueryMonitor queryMonitor;
     private final Map<String, JdbcDataProvider> providersMap;
+    private final ResultSetManager defaultManager;
 
     public ProviderManager() {
         this.queryMonitor = new QueryMonitor();
         LOGGER.debug("Initializing providers HashMap");
-        ResultSetManager defaultManager = getDefaultManager();
+        defaultManager = getDefaultManager();
         ResultSetManager neo4jManager = getNeo4jManager();
         ResultSetManager oracleSnowflakeManager = getOracleSnowflakeManager();
         ResultSetManager clickHouseManager = getClickHouseManager();
+        ResultSetManager mySQLManager = getMySQLManager();
         List<JdbcDataProvider> providersList = new ArrayList<JdbcDataProvider>() {{
             add(new AccessDataProvider(defaultManager, ProviderManager.this));
             add(new AthenaDataProvider(defaultManager, ProviderManager.this));
@@ -94,9 +97,9 @@ public class ProviderManager {
             add(new HiveDataProvider(defaultManager, ProviderManager.this));
             add(new Hive2DataProvider(defaultManager, ProviderManager.this));
             add(new MariaDbDataProvider(defaultManager, ProviderManager.this));
-            add(new MongoDbDataProvider(defaultManager, ProviderManager.this));
-            add(new MsSqlDataProvider(defaultManager,ProviderManager.this));
-            add(new MySqlDataProvider(defaultManager,ProviderManager.this));
+            add(new MongoDbDataProvider(neo4jManager, ProviderManager.this));
+            add(new MsSqlDataProvider(mySQLManager,ProviderManager.this));
+            add(new MySqlDataProvider(mySQLManager,ProviderManager.this));
             add(new Neo4jDataProvider(neo4jManager, ProviderManager.this));
             add(new OracleDataProvider(oracleSnowflakeManager, ProviderManager.this));
             add(new PostgresDataProvider(defaultManager, ProviderManager.this));
@@ -141,13 +144,14 @@ public class ProviderManager {
                 .collect(Collectors.toList());
     }
 
-    private ResultSetManager getDefaultManager() {
+    public ResultSetManager getDefaultManager() {
+        if (defaultManager != null) return defaultManager;
         List<ConverterManager<?>> converterManagers = new ArrayList<>();
         converterManagers.add(new BigIntConverterManager(new DefaultBigIntTypeChecker()));
         converterManagers.add(new IntegerTypeConverterManager(new DefaultIntegerTypeChecker()));
         converterManagers.add(new ComplexTypeConverterManager(new DefaultComplexTypeChecker()));
         initDefaults(converterManagers);
-        return new DeafultResultSetManager(converterManagers, getDefaultColumnProviders());
+        return new DefaultResultSetManager(converterManagers, getDefaultColumnProviders());
     }
 
     private ResultSetManager getClickHouseManager() {
@@ -156,7 +160,7 @@ public class ProviderManager {
         converterManagers.add(new IntegerTypeConverterManager(new DefaultIntegerTypeChecker()));
         converterManagers.add(new ComplexTypeConverterManager(new DefaultComplexTypeChecker()));
         initDefaults(converterManagers);
-        return new DeafultResultSetManager(converterManagers, getClickHouseColumnProviders());
+        return new DefaultResultSetManager(converterManagers, getClickHouseColumnProviders());
     }
 
     private ResultSetManager getOracleSnowflakeManager() {
@@ -165,7 +169,7 @@ public class ProviderManager {
         converterManagers.add(new IntegerTypeConverterManager(new OracleSnowflakeIntegerTypeChecker()));
         converterManagers.add(new ComplexTypeConverterManager(new DefaultComplexTypeChecker()));
         initDefaults(converterManagers);
-        return new DeafultResultSetManager(converterManagers, getSnowflakeOracleColumnProviders());
+        return new DefaultResultSetManager(converterManagers, getSnowflakeOracleColumnProviders());
     }
 
     private ResultSetManager getNeo4jManager() {
@@ -174,7 +178,18 @@ public class ProviderManager {
         converterManagers.add(new IntegerTypeConverterManager(new Neo4jIntegerTypeChecker()));
         converterManagers.add(new ComplexTypeConverterManager(new Neo4jComplexTypeChecker()));
         initDefaults(converterManagers);
-        return new DeafultResultSetManager(converterManagers, getNeo4jColumnProviders());
+        return new DefaultResultSetManager(converterManagers, getNeo4jColumnProviders());
+    }
+
+    private ResultSetManager getMySQLManager() {
+        List<ConverterManager<?>> converterManagers = new ArrayList<>();
+        converterManagers.add(new BigIntConverterManager(new DefaultBigIntTypeChecker()));
+        converterManagers.add(new IntegerTypeConverterManager(new DefaultIntegerTypeChecker()));
+        converterManagers.add(new ComplexTypeConverterManager(new DefaultComplexTypeChecker()));
+        initDefaults(converterManagers);
+        converterManagers.remove(5);
+        converterManagers.add(new BoolTypeConverterManager(new MySQLMsSqlBoolTypeChecker()));
+        return new DefaultResultSetManager(converterManagers, getMySQLColumnProviders());
     }
 
     private void initDefaults(List<ConverterManager<?>> converterManagers) {
@@ -327,5 +342,25 @@ public class ProviderManager {
         List<TypeChecker> typeCheckers = new ArrayList<>();
         typeCheckers.add(new Neo4jComplexTypeChecker());
         return typeCheckers;
+    }
+
+    private Collection<TypeChecker> getMyQLBoolColumnTypeCheckers() {
+        List<TypeChecker> typeCheckers = new ArrayList<>();
+        typeCheckers.add(new MySQLMsSqlBoolTypeChecker());
+        return typeCheckers;
+    }
+
+    private List<ColumnProvider> getMySQLColumnProviders() {
+        List<ColumnProvider> columnProviders = new ArrayList<>();
+        ColumnProvider intColumnProvider = new IntColumnProvider(getIntColumnTypeCheckers());
+        columnProviders.add(intColumnProvider);
+        ColumnProvider complexColumnProvider = new ComplexTypeColumnProvider(getComplexColumnTypeCheckers());
+        columnProviders.add(complexColumnProvider);
+        ColumnProvider bigIntColumnProvider = new BigIntColumnProvider(getBigIntColumnTypeCheckers());
+        columnProviders.add(bigIntColumnProvider);
+        List<ColumnProvider> commonColumnProviders = getCommonColumnProviders();
+        commonColumnProviders.set(3, new BoolColumnProvider(getMyQLBoolColumnTypeCheckers()));
+        columnProviders.addAll(commonColumnProviders);
+        return columnProviders;
     }
 }

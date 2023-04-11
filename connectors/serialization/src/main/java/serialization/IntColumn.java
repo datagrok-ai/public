@@ -17,9 +17,9 @@ public class IntColumn extends Column<Integer> {
 
     public void empty() {
         length = 0;
-        data = new int[100]; 
+        data = new int[100];
     }
-    
+
     public IntColumn() {
         data = new int[100];
     }
@@ -48,6 +48,11 @@ public class IntColumn extends Column<Integer> {
 
     public Object get(int idx) {
         return data[idx];
+    }
+
+    @Override
+    public void set(int index, Integer value) {
+        data[index] = value;
     }
 
     @Override

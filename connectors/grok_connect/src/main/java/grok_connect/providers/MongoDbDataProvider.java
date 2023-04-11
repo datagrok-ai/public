@@ -84,29 +84,8 @@ public class MongoDbDataProvider extends JdbcDataProvider {
                 columns.get(0).add(object.toString());
                 continue;
             }
-            Document collection = (Document) object;
-            if (collection == null) {
-                continue;
-            }
-            for (Column column : columns) {
-                Object value = collection.get(column.name);
-                String colType = column.getType();
-                switch (colType) {
-                    case Types.FLOAT: {
-                        if (value instanceof Double)
-                            column.add(new Float((Double) value));
-                        else
-                            column.add(value);
-                        break;
-                    }
-                    case Types.INT:
-                    case Types.BOOL:
-                        column.add(value);
-                        break;
-                    default:
-                        column.add((value != null) ? value.toString() : "");
-                }
-            }
+            Column column = columns.get(0);
+            column.add(resultSetManager.convert(object, 2000, "NODE", 0, 0, column.name));
         } while (resultSet.next());
         resultSet.close();
         DataFrame dataFrame = new DataFrame();
@@ -128,33 +107,9 @@ public class MongoDbDataProvider extends JdbcDataProvider {
         } catch (SQLException e) {
             throw new RuntimeException("Something went wrong when retrieving meta data of resultSet", e);
         }
-        if (object == null) {
-            return columns;
-        } else if (object instanceof String) {
-            StringColumn column = new StringColumn();
-            column.name = label;
-            columns.add(column);
-        } else {
-            Document collection = (Document) object;
-            Set<String> columnNames = collection.keySet();
-            for (String columnName : columnNames) {
-                Column column;
-                Object value = collection.get(columnName);
-                if ((value instanceof Byte) || (value instanceof Short) || (value instanceof Integer)) {
-                    column = new IntColumn();
-                } else if (value instanceof Float)
-                    column = new FloatColumn();
-                else if (value instanceof Double) {
-                    column = new FloatColumn();
-                } else if ((value instanceof Boolean))
-                    column = new BoolColumn();
-                else {
-                    column = new StringColumn();
-                }
-                column.name = columnName;
-                columns.add(column);
-            }
-        }
+        Column column = resultSetManager.getColumn(object);
+        column.name = label;
+        columns.add(column);
         return columns;
     }
 }

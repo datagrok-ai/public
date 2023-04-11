@@ -2,9 +2,10 @@ package serialization;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 
 public class ComplexTypeColumn extends Column<List<Column>> {
     private static final String DATA_FIELD_NAME = "data";
@@ -41,24 +42,24 @@ public class ComplexTypeColumn extends Column<List<Column>> {
             System.arraycopy(columns.toArray(new Column[0]), 0, data, 0, columns.size());
             length += columns.size();
         } else {
+            // append nulls for each column in case there are no such column
+            appendNull(data, 1);
             for (Column column: columns) {
                 String name = column.name;
-                Optional<Column> first = Arrays.stream(data)
-                        .filter(column1 -> column1.name.equals(name))
-                        .findFirst();
-                if (first.isPresent()) {
-                    Column column1 = first.get();
-                    if (column1.getType().equals(Types.BOOL)) {
-                        int value = (int) column.get(0);
-                        column1.add(value == 1);
-                    } else {
-                        column1.add(column.get(0));
+                List<Column> first = new ArrayList<>();
+                for (Column col: data) {
+                    if (col != null && col.name.equals(name)) {
+                        first.add(col);
+                        break;
                     }
+                }
+                if (first.size() == 1) {
+                    Column column1 = first.get(0);
+                    setExisted(column1, column);
                 } else {
                     int lengthDiff = Math.abs(data[0].length - column.length);
                     if (lengthDiff > 0) {
                         insertNull(column, lengthDiff);
-                        appendNull(data, lengthDiff);
                     }
                     data[length++] = column;
                 }
@@ -81,6 +82,11 @@ public class ComplexTypeColumn extends Column<List<Column>> {
     }
 
     @Override
+    public void set(int index, List<Column> value) {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    @Override
     public long memoryInBytes() {
         if (data[0] == null) {
             return 0L;
@@ -100,8 +106,41 @@ public class ComplexTypeColumn extends Column<List<Column>> {
         data = new Column[DEFAULT_ARRAY_SIZE];
     }
 
+    /**
+     * complexTypeConverter return always StringColumn for null values because it's not possible to detect type.
+     * If not null value appears and its corresponding column is not StringColumn
+     * and all previous values in old column are nulls - replace with new column type and insert nulls before value
+     */
+    private void setExisted(Column existed, Column newColumn) {
+        boolean allNulls = true;
+        for (int i = 0; i < existed.length; i++) {
+            if (existed.get(i) != null) {
+                allNulls = false;
+                break;
+            }
+        }
+        if (allNulls && !existed.getType().equals(newColumn.getType())) {
+            insertNull(newColumn, existed.length - 1);
+            for (int i = 0; i < data.length; i++) {
+                if (data[i] == existed) {
+                    data[i] = newColumn;
+                    return;
+                }
+            }
+        }
+        if (existed.getType().equals(Types.BOOL)) {
+            int value = (int) newColumn.get(0);
+            existed.set(existed.length - 1, value == 1);
+        } else {
+            existed.set(existed.length - 1, newColumn.get(0));
+        }
+    }
+
     public Column[] getAll() {
         Column[] returnArray = new Column[length];
+        if (Arrays.stream(data).allMatch(Objects::isNull)) {
+            return returnArray;
+        }
         System.arraycopy(data, 0, returnArray, 0, length);
         return returnArray;
     }
@@ -115,21 +154,62 @@ public class ComplexTypeColumn extends Column<List<Column>> {
     }
 
     private void insertNull(Column column, int nullCount) {
+        if (column == null) return;
         try {
-            Field data = column.getClass().getDeclaredField(DATA_FIELD_NAME);
+            Field data ;
+            if (column.getType().equals(Types.BIG_INT)) {
+                data = column.getClass().getSuperclass().getDeclaredField(DATA_FIELD_NAME);
+            } else {
+                data = column.getClass().getDeclaredField(DATA_FIELD_NAME);
+            }
             data.setAccessible(true);
-            Class<?> componentType = data.getClass().getComponentType();
-            Object array = Array.newInstance(componentType, column.length + nullCount);
+            Class<?> componentType = data.get(column).getClass().getComponentType();
+            Object array = Array.newInstance(componentType.isPrimitive()
+                    ? getWrapperClassForPrimitive(componentType) : componentType, column.length + nullCount);
             for (int i = 0; i < nullCount; i++) {
                 Array.set(array, i, null);
             }
             for (int j = nullCount, i = 0; i < column.length; j++, i++) {
-                Array.set(array, j, column.get(i));
+                if (column.getType().equals(Types.BOOL)) {
+                    boolean value = ((Integer) column.get(i)) == 1;
+                    Array.set(array, j, value);
+                } else {
+                    Array.set(array, j, column.get(i));
+                }
             }
-            data.set(column, array);
             data.setAccessible(false);
+            column.empty();
+            column.addAll((convertToObjectArray(array)));
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException("Something went wrong when inserting null", e);
+        }
+    }
+
+    private Object[] convertToObjectArray(Object array) {
+        Class ofArray = array.getClass().getComponentType();
+        if (ofArray.isPrimitive()) {
+            List ar = new ArrayList();
+            int length = Array.getLength(array);
+            for (int i = 0; i < length; i++) {
+                ar.add(Array.get(array, i));
+            }
+            return ar.toArray();
+        }
+        else {
+            return (Object[]) array;
+        }
+    }
+
+    private Class<?> getWrapperClassForPrimitive(Class<?> primitiveClass) {
+        switch (primitiveClass.getName()) {
+            case "double":
+                return Double.class;
+            case "float":
+                return Float.class;
+            case "int":
+                return Integer.class;
+            default:
+                throw new RuntimeException("Couldn't find wrapper");
         }
     }
 
@@ -140,6 +220,7 @@ public class ComplexTypeColumn extends Column<List<Column>> {
     }
 
     private void appendNull(Column column, int nullCount) {
+        if (column == null) return;
         for (int i = 0; i < nullCount; i++) {
             column.add(null);
         }

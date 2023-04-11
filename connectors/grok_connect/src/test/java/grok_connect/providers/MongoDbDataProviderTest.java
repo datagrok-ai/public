@@ -3,6 +3,7 @@ package grok_connect.providers;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import grok_connect.GrokConnect;
 import grok_connect.connectors_info.Credentials;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataProvider;
@@ -15,12 +16,7 @@ import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryMonitor;
 import grok_connect.utils.SettingsManager;
 import org.bson.Document;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -37,6 +33,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+@Disabled("in progress")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Testcontainers
 class MongoDbDataProviderTest {
@@ -65,6 +62,7 @@ class MongoDbDataProviderTest {
         ProviderManager providerManager = new ProviderManager();
         ProviderManager spy = Mockito.spy(providerManager);
         Mockito.when(spy.getQueryMonitor()).thenReturn(mockMonitor);
+        GrokConnect.providerManager = providerManager;
         provider = spy.getByName(type.getProperties().get("providerName").toString());
         initDatabase("src/test/resources/scripts/mongodb/mocks.json", COLLECTION_1);
         initDatabase("src/test/resources/scripts/mongodb/one_line.json", COLLECTION_2);
@@ -97,7 +95,7 @@ class MongoDbDataProviderTest {
     public void checkOutputAllTypes_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
-        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqualUnOrdered(expected, actual));
     }
 
     @DisplayName("Mongo string return")

@@ -4,6 +4,7 @@ import grok_connect.type.TypeChecker;
 import serialization.Column;
 import serialization.ComplexTypeColumn;
 import java.util.Collection;
+import java.util.Map;
 
 public class ComplexTypeColumnProvider extends AbstractColumnProvider {
     public ComplexTypeColumnProvider(Collection<TypeChecker> typeCheckers) {
@@ -18,5 +19,10 @@ public class ComplexTypeColumnProvider extends AbstractColumnProvider {
     @Override
     public Column getWithInitSize(int size) {
         return new ComplexTypeColumn(new Column[size]);
+    }
+
+    @Override
+    public boolean isSupported(Object o) {
+        return o instanceof Map;
     }
 }
