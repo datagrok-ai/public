@@ -1,13 +1,13 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-import $ from 'cash-dom';
 import '../../css/demo.css';
 
 
 export class DemoView extends DG.ViewBase {
   dockPanel: DG.DockNode = new DG.DockNode(undefined);
   tree: DG.TreeViewGroup = ui.tree();
+  search: DG.InputBase = ui.searchInput('', '');
 
   constructor() {
     super();
@@ -58,6 +58,28 @@ export class DemoView extends DG.ViewBase {
       };
     }
 
+    this.search.onChanged(() => {
+      const dom = this.tree.root.getElementsByClassName('d4-tree-view-item d4-tree-view-node');
+      for (let i = 0; i < dom.length; i++) {
+        const item = dom[i] as HTMLElement;
+        if (item.innerText.toLowerCase().includes(this.search.value.toLowerCase()))
+          item.classList.remove('hidden');
+        else
+          item.classList.add('hidden');
+      }
+    });
+
+    this.search.input.onkeyup = (event) => {
+      if (event.key === 'Escape')
+        this.search.fireChanged();
+    };
+
+    const closeIcon = this.search.root.getElementsByClassName('ui-input-icon-right')[0] as HTMLElement;
+    closeIcon.onclick = () => {
+      this.search.value = '';
+      this.search.fireChanged();
+    };
+
     this.tree.onNodeEnter.subscribe((value) => {
       if (value.root.classList.contains('d4-tree-view-item')) {
         const categoryName = value.root.parentElement?.parentElement
@@ -71,23 +93,8 @@ export class DemoView extends DG.ViewBase {
       }
     });
 
-    const search = ui.searchInput('', '', (value:string)=>{
-      const dom = $('.demo-app-tree-group .d4-tree-view-item.d4-tree-view-node');
-      for (let i = 0; i < dom.length; i++) {
-        const item = dom[i] as HTMLElement;
-        if (item.innerText.toLowerCase().includes(value.toLowerCase()))
-          item.style.display = 'block';
-        else
-          item.style.display = 'none';
-      }
-    });
-
-    $(search.root).find('.ui-input-icon-right').on('click', ()=>{
-      search.value = '';
-      search.fireChanged();
-    });
     this.dockPanel = grok.shell.dockManager.dock(ui.panel([
-      search.root,
+      this.search.root,
       this.tree.root,
     ]), 'left', null, 'Categories');
     this.dockPanel.container.containerElement.classList.add('tutorials-demo-container');
