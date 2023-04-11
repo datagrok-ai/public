@@ -16,13 +16,15 @@
     width: 100%;
     flex-grow: 1;
 }
+
 .ui-form.ui-form-condensed .ui-input-root.ui-input-tags > .ui-input-root:last-child {
     padding: 0;
 }
 
 .ui-form.ui-form-condensed .ui-input-root.ui-input-tags > .ui-input-root:last-child > label.ui-input-label {
     display: none;
-} 
+}
+
 .ui-tag {
     color: var(--grey-5);
     display: inline-flex;

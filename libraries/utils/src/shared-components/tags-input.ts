@@ -40,7 +40,7 @@ export class TagsInput extends DG.InputBase {
     const inputContainer = ui.div([this.captionLabel, this.input, ui.div(this._addTagIcon, 'ui-input-options')],
       'ui-input-root');
     const tagContainer = ui.div([ui.label(' ', 'ui-input-label'), this._tagsDiv], 'ui-input-root');
-    
+
     this.root.append(inputContainer, tagContainer);
     this.root.classList.add('ui-input-tags');
   }
@@ -49,6 +49,11 @@ export class TagsInput extends DG.InputBase {
     this.input.addEventListener('keyup', (event: KeyboardEvent) => {
       if (event.code === 'Enter')
         this.addTag((this.input as HTMLInputElement).value);
+    });
+
+    this.input.addEventListener('keydown', (event: KeyboardEvent) => {
+      if ((this.input as HTMLInputElement).value.length === 0 && event.code === 'Backspace')
+        this.removeTag(this._tags[0]);
     });
   }
 
@@ -69,14 +74,16 @@ export class TagsInput extends DG.InputBase {
     if (!this._isProper(tag))
       return;
 
-    this._tags[this._tags.length] = tag;
+    this._tags.unshift(tag);
     const currentTag = this._createTag(tag);
-    this._tagsDiv.append(currentTag);
+    this._tagsDiv.insertBefore(currentTag, this._tagsDiv.firstChild);
     (this.input as HTMLInputElement).value = '';
     this._onTagAdded.next(tag);
   }
 
   removeTag(tag: string) {
+    if (this._tags.indexOf(tag) === -1)
+      return;
     this._tags.splice(this._tags.indexOf(tag), 1);
     const currentTag = this._tagsDiv.querySelector(`[data-tag="${tag}"]`);
     this._tagsDiv.removeChild(currentTag!);
