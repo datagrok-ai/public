@@ -13,6 +13,9 @@
 import { callWasm } from '../wasm/callWasm';
 import { getCppInput, getResult } from '../wasm/callWasmForWebWorker';
 
+// Inputs checkers
+import { isDataBigForSVM} from './utils';
+
 // 1. CONSTANTS
 
 // kernel types
@@ -20,6 +23,10 @@ export const LINEAR = 0;
 export const POLYNOMIAL = 1;
 export const RBF = 2;
 export const SIGMOID = 3;
+
+// limitations CURRENTLY, IT'S NOT IMPLEMENTED!
+//const SAMPLES_MAX = 10000;
+//const FEATURES_MAX = 1000000;
 
 // output-related
 const CONFUSION_MATR_SIZE = 4;
@@ -55,9 +62,9 @@ const WRONG_RBF_SIGMA_MESSAGE = 'sigma must be strictly positive.';
 const WRONG_POLYNOMIAL_C_MESSAGE = 'c must be strictly positive.';
 const WRONG_POLYNOMIAL_D_MESSAGE = 'd must be strictly positive.';
 const WRONG_KERNEL_MESSAGE = 'incorrect kernel.';
+const TOO_BIG_DATA_MESSAGE = 'Training data is too big.'
 
 // names
-const GENERAL = 'General';
 const NORMALIZED = 'Normalized';
 const CHARACTERISTICS = 'mean, deviation';
 const PARAMETERS = 'Parameters';
@@ -87,7 +94,6 @@ const PREDICTED_POSITIVE_NAME = 'predicted positive (PP)';
 const PREDICTED_NEGATIVE_NAME = 'predicted negative (PN)';
 const SENSITIVITY = 'Sensitivity';
 const SPECIFICITY = 'Specificity';
-const ACCURACY = 'Accuracy';
 const BALANCED_ACCURACY = 'Balanced accuracy';
 const POSITIVE_PREDICTIVE_VALUE = 'Positive predicitve value';
 const NEGATIVE_PREDICTIVE_VALUE = 'Negative predicitve value';
@@ -281,8 +287,13 @@ export function getTrainedModel(hyperparameters, df, predict_column) {
   let labels = columns.byName(predict_column);
   columns.remove(predict_column);
 
-  return trainAndAnalyzeModel(EDALib, 'trainAndAnalyzeLSSVM',
-    hyperparameters, columns, labels); 
+  /*if (isDataBigForSVM(columns, FEATURES_MAX, labels, SAMPLES_MAX)) {
+    let bal = new DG.Balloon();
+    bal.error(TOO_BIG_DATA_MESSAGE);
+    throw new Error(TOO_BIG_DATA_MESSAGE);
+  } */    
+
+  return trainAndAnalyzeModel(EDALib, 'trainAndAnalyzeLSSVM', hyperparameters, columns, labels); 
 }
 
 // Returns dataframe with short info about model

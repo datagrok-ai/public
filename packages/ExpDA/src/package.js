@@ -5,14 +5,6 @@ import * as DG from 'datagrok-api/dg';
 
 export const _package = new DG.Package();
 
-//name: info
-export function info() {
-  grok.shell.info(_package.webRoot);
-}
-
-// Imports for call wasm runtime-system: in the main stream and in webworkers
-import { callWasm } from '../wasm/callWasm';
-
 // Principal component analysis (PCA) imports
 import { performPCA } from './pca'
 
@@ -20,8 +12,16 @@ import { performPCA } from './pca'
 import { performPLS} from './pls'
 
 // Support vector machine (SVM) tools imports
-import {showTrainReport, getPackedModel, getTrainedModel, getPrediction,
-  LINEAR, RBF, POLYNOMIAL, SIGMOID} from './svm';
+import { showTrainReport, getPackedModel, getTrainedModel, getPrediction,
+  LINEAR, RBF, POLYNOMIAL, SIGMOID } from './svm';
+
+// Data generation tools
+import { generateDatasetForTestingSVM } from './generators';
+
+//name: info
+export function info() {
+  grok.shell.info(_package.webRoot);
+}
 
 //tags: init
 export async function init() {
@@ -55,24 +55,13 @@ export function PLS(table, features, predict, components) {
 //input: double min = -39 {caption: min; category: Range}
 //input: double max = 173 {caption: max; category: Range}
 //input: double violatorsPercentage = 5 {caption: violators; units: %; category: Dataset}
+//output: dataframe df
 export function generateDatasetLinear(name, samplesCount, featuresCount, 
   min, max, violatorsPercentage) 
 {
-  // linear kernel ID
-  let kernel = 0;
-
-  // linear kernel parameters (any values can be used)
-  let kernelParams = DG.Column.fromList('double', 'kernelParams', [0, 0]);   
-    
-  let output = callWasm(EDALib, 'generateDataset', 
-    [kernel, kernelParams, samplesCount, featuresCount, min, max, violatorsPercentage]);
-
-  let df = DG.DataFrame.fromColumns(output[0]);
-  df.name = name;  
-  output[1].name = 'labels';
-  df.columns.add(output[1]);
-  grok.shell.addTableView(df);
-} // generateDatasetLinear
+  return generateDatasetForTestingSVM(LINEAR, [0, 0], name, samplesCount, featuresCount,
+    min, max, violatorsPercentage);
+}
 
 //name: Generate test data (RBF kernel case)
 //description: Generates dataset for testing SVN with RBF-kernel.
@@ -83,24 +72,13 @@ export function generateDatasetLinear(name, samplesCount, featuresCount,
 //input: double min = -39 {caption: min; category: Range}
 //input: double max = 173 {caption: max; category: Range}
 //input: double violatorsPercentage = 5 {caption: violators; units: %; category: Dataset}
+//output: dataframe df
 export function generateDatasetRBF(name, sigma, samplesCount, featuresCount, 
   min, max, violatorsPercentage) 
 {
-  // RBF kernel ID
-  let kernel = 2;
-
-  // RBF kernel parameters
-  let kernelParams = DG.Column.fromList('double', 'kernelParams', [sigma, 0]);   
-    
-  let output = callWasm(EDALib, 'generateDataset', 
-    [kernel, kernelParams, samplesCount, featuresCount, min, max, violatorsPercentage]);
-
-  let df = DG.DataFrame.fromColumns(output[0]);
-  df.name = name;  
-  output[1].name = 'labels';
-  df.columns.add(output[1]);
-  grok.shell.addTableView(df);
-} // generateDatasetRBF
+  return generateDatasetForTestingSVM(RBF, [sigma, 0], name, samplesCount, featuresCount,
+    min, max, violatorsPercentage);
+} 
 
 //name: trainLinearKernelSVM
 //meta.mlname: linear kernel LS-SVM
@@ -110,7 +88,7 @@ export function generateDatasetRBF(name, sigma, samplesCount, featuresCount,
 //input: double gamma = 1.0 {category: Hyperparameters}
 //input: bool toShowReport = false {caption: to show report; category: Report}
 //output: dynamic model
-export function trainLinearKernelSVM(df, predict_column, gamma, toShowReport) {  
+export function trainLinearKernelSVM(df, predict_column, gamma, toShowReport) {    
 
   let trainedModel = getTrainedModel({gamma: gamma, kernel: LINEAR}, df, predict_column);   
 
