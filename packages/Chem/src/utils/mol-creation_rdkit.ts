@@ -10,22 +10,10 @@ export interface IMolContext {
   useMolBlockWedging: boolean;
 }
 
-const molfileHandler = MolfileHandler.createInstance(`
-Datagrok empty molecule
-
-0  0  0  0  0  0  0  0  0  0999 V2000
-M  END
-`);
-
 export function isSmarts(molString: string): boolean {
   if (isMolBlock(molString)) {
-    molfileHandler.init(molString);
-    for (const atom of molfileHandler.atomTypes) {
-      if (elementsTable.indexOf(atom) === -1) {
-        return true;
-      }
-    }
-    return false;
+    const molfileHandler = MolfileHandler.getInstance(molString);
+    return molfileHandler.isQuery();
   } else
     return !!molString.match(/\[.?#\d|\$|&|;|,|!|:|\*.?\]/g);
 }

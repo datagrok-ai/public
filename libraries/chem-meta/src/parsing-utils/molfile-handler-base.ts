@@ -33,11 +33,11 @@ export abstract class MolfileHandlerBase extends ChemicalTableParserBase {
   }
 
   protected isQuote(idx: number): boolean {
-    return this.fileContent.at(idx) === '\"' || this.fileContent.at(idx) === '\'';
+    return this.fileContent[idx] === '\"' || this.fileContent[idx] === '\'';
   }
 
   protected getNextIdenticalChar(idx: number): number {
-    const sym = this.fileContent.at(idx);
+    const sym = this.fileContent[idx];
     return sym ? this.fileContent.indexOf(sym, idx + 1) : -1;
   }
 

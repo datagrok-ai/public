@@ -170,11 +170,12 @@ export abstract class ChemicalTableParserBase {
   };
 
   protected isWhitespace(idx: number): boolean {
-    return /\s/.test(this.fileContent.at(idx)!);
+    const symbol = this.fileContent[idx];
+    return symbol === ' ' || symbol === '\t';
   }
 
   protected getNextLineIdx(idx: number): number {
-    if (this.fileContent.at(idx) !== '\n')
+    if (this.fileContent[idx] !== '\n')
       return this.fileContent.indexOf('\n', idx) + 1;
     else
       return idx + 1;

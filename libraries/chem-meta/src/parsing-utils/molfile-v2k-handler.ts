@@ -59,7 +59,7 @@ export class MolfileV2KHandler extends MolfileHandlerBase {
   };
 
   protected queryCriterion(idx: number): boolean {
-    return this.fileContent[idx] === 'R' ||
+    return this.fileContent[idx] === 'R' || !this.isAlpha(this.fileContent[idx]) ||
       (this.fileContent[idx] === 'L' && !this.isAlpha(this.fileContent[idx + 1]));
   }
 }
