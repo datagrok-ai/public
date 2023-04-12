@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
-import {ClusterType, CLUSTER_TYPE, PeptidesModel} from '../model';
+import {ClusterType, CLUSTER_TYPE, PeptidesModel, VIEWER_TYPE} from '../model';
 import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -17,8 +17,8 @@ import {wrapDistroAndStatsDefault} from '../utils/misc';
 const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
 
 
-export class LogoSummary extends DG.JsViewer {
-  _titleHost = ui.divText('Logo Summary Table', {id: 'pep-viewer-title'});
+export class LogoSummaryTable extends DG.JsViewer {
+  _titleHost = ui.divText(VIEWER_TYPE.LOGO_SUMMARY_TABLE, {id: 'pep-viewer-title'});
   model!: PeptidesModel;
   viewerGrid!: DG.Grid;
   initialized: boolean = false;

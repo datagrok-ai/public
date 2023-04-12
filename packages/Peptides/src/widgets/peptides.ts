@@ -188,7 +188,10 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     newDf.setTag(C.TAGS.UUID, dfUuid);
     newDf.setTag('monomerType', monomerType);
     model = PeptidesModel.getInstance(newDf);
-    await model.addViewers();
+    // await model.addViewers();
+    if (clustersColumn) await model.addLogoSummaryTable();
+    await model.addMonomerPosition();
+    await model.addMostPotentResidues();
   } else
     grok.shell.error('The activity column must be of numeric type!');
   progress.close();
