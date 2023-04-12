@@ -82,7 +82,7 @@ public class ProviderManager {
         this.queryMonitor = new QueryMonitor();
         LOGGER.debug("Initializing providers HashMap");
         defaultManager = getDefaultManager();
-        ResultSetManager neo4jManager = getNeo4jManager();
+        ResultSetManager neo4jNeptuneManager = getNeo4jNeptuneManager();
         ResultSetManager oracleSnowflakeManager = getOracleSnowflakeManager();
         ResultSetManager clickHouseManager = getClickHouseManager();
         ResultSetManager mySQLManager = getMySQLManager();
@@ -97,10 +97,10 @@ public class ProviderManager {
             add(new HiveDataProvider(defaultManager, ProviderManager.this));
             add(new Hive2DataProvider(defaultManager, ProviderManager.this));
             add(new MariaDbDataProvider(defaultManager, ProviderManager.this));
-            add(new MongoDbDataProvider(neo4jManager, ProviderManager.this));
+            add(new MongoDbDataProvider(neo4jNeptuneManager, ProviderManager.this));
             add(new MsSqlDataProvider(mySQLManager,ProviderManager.this));
             add(new MySqlDataProvider(mySQLManager,ProviderManager.this));
-            add(new Neo4jDataProvider(neo4jManager, ProviderManager.this));
+            add(new Neo4jDataProvider(neo4jNeptuneManager, ProviderManager.this));
             add(new OracleDataProvider(oracleSnowflakeManager, ProviderManager.this));
             add(new PostgresDataProvider(defaultManager, ProviderManager.this));
             add(new PIDataProvider(defaultManager, ProviderManager.this));
@@ -113,7 +113,7 @@ public class ProviderManager {
             add(new DenodoDataProvider(defaultManager, ProviderManager.this));
             add(new SnowflakeDataProvider(oracleSnowflakeManager, ProviderManager.this));
             add(new ClickHouseProvider(clickHouseManager, ProviderManager.this));
-            add(new NeptuneDataProvider(defaultManager, ProviderManager.this));
+            add(new NeptuneDataProvider(neo4jNeptuneManager, ProviderManager.this));
             add(new DynamoDBDataProvider(defaultManager, ProviderManager.this));
             add(new SapHanaDataProvider(defaultManager, ProviderManager.this));
         }};
@@ -172,7 +172,7 @@ public class ProviderManager {
         return new DefaultResultSetManager(converterManagers, getSnowflakeOracleColumnProviders());
     }
 
-    private ResultSetManager getNeo4jManager() {
+    private ResultSetManager getNeo4jNeptuneManager() {
         List<ConverterManager<?>> converterManagers = new ArrayList<>();
         converterManagers.add(new BigIntConverterManager(new Neo4jBigIntTypeChecker()));
         converterManagers.add(new IntegerTypeConverterManager(new Neo4jIntegerTypeChecker()));
