@@ -11,40 +11,12 @@ import {SEQUENCE_TYPES, COL_NAMES, GENERATED_COL_NAMES} from './constants';
 import {saltMass, saltMolWeigth, batchMolWeight} from './calculations';
 import {stringify} from '../utils/helpers';
 
-import {sdfAddColumns} from '../utils/sdf-add-columns';
+import {RegistrationColumnsHandler} from '../utils/sdf-add-columns';
 import {sdfSaveTable} from '../utils/sdf-save-table';
+import {PREFIXES, SEQ_TYPE, SEQ_TYPE_CATEGORY, seqTypeToCategoryDict} from '../model/registration/const';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {DataLoaderBase} from '../utils/data-loader';
 import {Unsubscribable} from 'rxjs';
-
-const enum PREFIXES {
-  AS = 'AS',
-  SS = 'SS',
-  AS1 = 'AS1',
-  AS2 = 'AS2'
-}
-
-const enum SEQ_TYPE {
-  AS = 'AS',
-  SS = 'SS',
-  DUPLEX = 'Duplex',
-  DIMER = 'Dimer',
-}
-
-/** Computable categories of sequence types */
-const enum SEQ_TYPE_CATEGORY {
-  AS_OR_SS,
-  DUPLEX,
-  DIMER,
-}
-
-/** Map between types and their categories inferrable from 'Sequence' column */
-const typeCategoryMap = {
-  [SEQ_TYPE.AS]: SEQ_TYPE_CATEGORY.AS_OR_SS,
-  [SEQ_TYPE.SS]: SEQ_TYPE_CATEGORY.AS_OR_SS,
-  [SEQ_TYPE.DIMER]: SEQ_TYPE_CATEGORY.DIMER,
-  [SEQ_TYPE.DUPLEX]: SEQ_TYPE_CATEGORY.DUPLEX,
-};
 
 /** Style used for cells in 'Type' column  */
 const typeColCellStyle = {
@@ -71,9 +43,9 @@ export function sdfHandleErrorUI(msgPrefix: string, df: DG.DataFrame, rowI: numb
 }
 
 /** Determine the category of the value specified in 'Types' column  */
-function getActualTypeClass(actualType: string): SEQ_TYPE_CATEGORY {
-  if (Object.keys(typeCategoryMap).includes(actualType))
-    return typeCategoryMap[actualType as SEQ_TYPE];
+function getSequenceTypeCategory(actualType: string): SEQ_TYPE_CATEGORY {
+  if (Object.keys(seqTypeToCategoryDict).includes(actualType))
+    return seqTypeToCategoryDict[actualType as SEQ_TYPE];
   else
     throw new Error('Some types in \'Types\' column are invalid ');
 }
@@ -124,7 +96,7 @@ function validateType(actualType: string, seq: string): boolean {
   if (actualType === '' && seq === '')
     return true;
   else
-    return getActualTypeClass(actualType) === inferTypeClassFromSequence(seq);
+    return getSequenceTypeCategory(actualType) === inferTypeClassFromSequence(seq);
 }
 
 function oligoSdFileGrid(view: DG.TableView): void {
@@ -238,8 +210,13 @@ export async function oligoSdFile(dl: DataLoaderBase, table: DG.DataFrame) {
         ui.divH([
           ui.button('Add columns',
             () => {
-              newDf = sdfAddColumns(table, saltNamesList, saltsMolWeightList,
-                (rowI, err) => { sdfHandleErrorUI('Error on ', table, rowI, err); });
+              const rch = new RegistrationColumnsHandler(
+                table,
+                (rowI, err) => { sdfHandleErrorUI('Error on ', table, rowI, err); }
+              );
+              newDf = rch.addColumns(saltNamesList, saltsMolWeightList);
+              // newDf = sdfAddColumns(table, saltNamesList, saltsMolWeightList,
+              //   (rowI, err) => { sdfHandleErrorUI('Error on ', table, rowI, err); });
               grok.shell.getTableView(newDf.name).grid.columns.setOrder(Object.values(COL_NAMES));
             },
             `Add columns: '${GENERATED_COL_NAMES.join(`', '`)}'`),

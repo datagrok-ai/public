@@ -16,14 +16,6 @@ export function download(name: string, href: string): void {
   element.click();
 }
 
-export function removeEmptyRows(t: DG.DataFrame, colToCheck: DG.Column): DG.DataFrame {
-  for (let i = t.rowCount - 1; i > -1; i--) {
-    if (colToCheck.getString(i) === '')
-      t.rows.removeAt(i, 1, false);
-  }
-  return t;
-}
-
 export function differenceOfTwoArrays(a: string[], b: string[]): string[] {
   return a.filter((x) => !b.includes(x));
 }
