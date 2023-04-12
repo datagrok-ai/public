@@ -11,7 +11,8 @@ const DIMER_PREFIX = {
 
 export class RegistrationSequenceParser {
   getDuplexStrands(strands: string): {ss: string, as: string} {
-    const result = this.prepareInput(strands).slice(DUPLEX_PREFIX.SS.length).split(DUPLEX_PREFIX.AS);
+    let result = this.prepareInput(strands).slice(DUPLEX_PREFIX.SS.length).split(DUPLEX_PREFIX.AS);
+    result = result.map((strand) => this.prepareStrand(strand));
     return {ss: result[0], as: result[1]};
   }
 
@@ -27,5 +28,9 @@ export class RegistrationSequenceParser {
   // todo: port validation to dedicated class
   private prepareInput(strands: string) {
     return strands.replace(/\r/g, '');
+  }
+
+  private prepareStrand(strand: string) {
+    return strand.replaceAll(/\s/g, '');
   }
 }

@@ -12,112 +12,6 @@ export class SdfColumnsExistsError extends Error {
   }
 }
 
-// export function sdfAddColumns(
-//   df: DG.DataFrame, saltNamesList: string[], saltsMolWeightList: number[], onError: (rowI: number, err: any) => void
-// ): DG.DataFrame {
-//   const sequenceCol = df.getCol(COL_NAMES.SEQUENCE);
-//   const saltCol = df.getCol(COL_NAMES.SALT);
-//   const equivalentsCol = df.getCol(COL_NAMES.EQUIVALENTS);
-//   const typeCol = df.getCol(COL_NAMES.TYPE);
-//   const chemistryNameCol = df.getCol(COL_NAMES.CHEMISTRY_NAME);
-
-//   if (GENERATED_COL_NAMES.some((colName) => df.columns.contains(colName)))
-//     throw new SdfColumnsExistsError('Columns already exist');
-
-//   df = removeEmptyRows(df, sequenceCol);
-
-//   df.columns.addNewString(COL_NAMES.COMPOUND_NAME).init((i: number) => {
-//     let res: string = '';
-//     try {
-//       res = ([SEQUENCE_TYPES.DUPLEX, SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(typeCol.get(i))) ?
-//         chemistryNameCol.get(i) :
-//         sequenceCol.get(i);
-//     } catch (err) {
-//       onError(i, err);
-//     }
-//     return res;
-//   });
-
-//   df.columns.addNewString(COL_NAMES.COMPOUND_COMMENTS).init((i: number) => {
-//     let res: string = '';
-//     const parser = new RegistrationSequenceParser();
-//     try {
-//       if ([SEQUENCE_TYPES.SENSE_STRAND, SEQUENCE_TYPES.ANTISENSE_STRAND].includes(typeCol.get(i))) {
-//         res = sequenceCol.get(i);
-//       } else if (typeCol.get(i) == SEQUENCE_TYPES.DUPLEX) {
-//         const obj = parser.getDuplexStrands(sequenceCol.get(i));
-//         res = `${chemistryNameCol.get(i)}; duplex of SS: ${obj.ss} and AS: ${obj.as}`;
-//       } else if ([SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(typeCol.get(i))) {
-//         const obj = parser.getDimerStrands(sequenceCol.get(i));
-//         res = `${chemistryNameCol.get(i)}; duplex of SS: ${obj.ss} and AS1: ${obj.as1} and AS2: ${obj.as2}`;
-//       }
-//     } catch (err) {
-//       onError(i, err);
-//     }
-//     return res;
-//   });
-
-//   df.columns.addNewFloat(COL_NAMES.COMPOUND_MOL_WEIGHT).init((i: number) => {
-//     let res: number = Number.NaN;
-//     const parser = new RegistrationSequenceParser();
-//     try {
-//       if ([SEQUENCE_TYPES.SENSE_STRAND, SEQUENCE_TYPES.ANTISENSE_STRAND].includes(typeCol.get(i))) {
-//         res = (isValidSequence(sequenceCol.get(i), null).indexOfFirstInvalidChar == -1) ?
-//           molecularWeight(sequenceCol.get(i), weightsObj) :
-//           DG.FLOAT_NULL;
-//       } else if (typeCol.get(i) == SEQUENCE_TYPES.DUPLEX) {
-//         const obj = parser.getDuplexStrands(sequenceCol.get(i));
-//         res = (Object.values(obj).every((seq) => isValidSequence(seq, null).indexOfFirstInvalidChar == -1)) ?
-//           molecularWeight(obj.ss, weightsObj) + molecularWeight(obj.as, weightsObj) :
-//           DG.FLOAT_NULL;
-//       } else if ([SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(typeCol.get(i))) {
-//         const obj = parser.getDimerStrands(sequenceCol.get(i));
-//         res = (Object.values(obj).every((seq) => isValidSequence(seq, null).indexOfFirstInvalidChar == -1)) ?
-//           molecularWeight(obj.ss, weightsObj) + molecularWeight(obj.as1, weightsObj) +
-//           molecularWeight(obj.as2, weightsObj) :
-//           DG.FLOAT_NULL;
-//       }
-//     } catch (err) {
-//       onError(i, err);
-//     }
-//     return res;
-//   });
-
-//   df.columns.addNewFloat(COL_NAMES.SALT_MASS).init((i: number) => {
-//     let res: number = Number.NaN;
-//     try {
-//       res = saltMass(saltNamesList, saltsMolWeightList, equivalentsCol, i, saltCol);
-//     } catch (err) {
-//       onError(i, err);
-//     }
-//     return res;
-//   });
-
-//   df.columns.addNewFloat(COL_NAMES.SALT_MOL_WEIGHT).init((i: number) => {
-//     let res: number = Number.NaN;
-//     try {
-//       res = saltMolWeigth(saltNamesList, saltCol, saltsMolWeightList, i);
-//     } catch (err) {
-//       onError(i, err);
-//     }
-//     return res;
-//   });
-
-//   const compoundMolWeightCol = df.getCol(COL_NAMES.COMPOUND_MOL_WEIGHT);
-//   const saltMassCol = df.getCol(COL_NAMES.SALT_MASS);
-//   df.columns.addNewFloat(COL_NAMES.BATCH_MOL_WEIGHT).init((i: number) => {
-//     let res: number = Number.NaN;
-//     try {
-//       res = batchMolWeight(compoundMolWeightCol, saltMassCol, i);
-//     } catch (err) {
-//       onError(i, err);
-//     }
-//     return res;
-//   });
-
-//   return df;
-// }
-
 // todo: rename, refactor
 export class RegistrationColumnsHandler {
   constructor(
@@ -178,7 +72,15 @@ export class RegistrationColumnsHandler {
             DG.FLOAT_NULL;
         } else if (typeCol.get(i) == SEQUENCE_TYPES.DUPLEX) {
           const obj = parser.getDuplexStrands(sequenceCol.get(i));
-          res = (Object.values(obj).every((seq) => isValidSequence(seq, null).indexOfFirstInvalidChar == -1)) ?
+          const strands = Object.values(obj);
+          res = strands.every((seq) => {
+            // console.log('sequence:', seq);
+            const invalidChar = isValidSequence(seq, null).indexOfFirstInvalidChar;
+            const validity = invalidChar === -1;
+            // console.log('validity:', validity);
+            // console.log(`invalid char ${invalidChar}:`, seq.substr(invalidChar-5, 10));
+            return validity;
+          }) ?
             molecularWeight(obj.ss, weightsObj) + molecularWeight(obj.as, weightsObj) :
             DG.FLOAT_NULL;
         } else if ([SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(typeCol.get(i))) {
