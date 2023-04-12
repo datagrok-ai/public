@@ -14,12 +14,24 @@ export function attachDivToGrid(grid: DG.Grid, neighborWidth: number = 100): Gri
   //   colDate.set(nR, dayjs());
   // }
 
-  let neighbor: GridNeighbor;
+
   const eDiv = ui.div();
-  // let button = ui.button('Close', () => {
-  //   neighbor.close();
-  // });
-  // eDiv.appendChild(button);
-  neighbor = new GridNeighbor(eDiv, grid, neighborWidth);
+  const button = ui.icons.close(() => {
+    neighbor.close();
+    //trigger grid rerender
+    grid.invalidate();
+  }, 'Remove Dendrogram');
+  button.style.position = 'absolute';
+  button.style.top = '0px';
+  button.style.color = '#9497a0';
+  button.style.right = '0px';
+  button.style.fontSize = '18px';
+  button.style.zIndex = '1000';
+  button.style.backgroundColor = 'white';
+  button.style.paddingTop = '3px';
+  eDiv.appendChild(button);
+
+
+  const neighbor: GridNeighbor = new GridNeighbor(eDiv, grid, neighborWidth);
   return neighbor;
 }

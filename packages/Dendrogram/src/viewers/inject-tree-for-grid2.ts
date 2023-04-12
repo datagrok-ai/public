@@ -115,10 +115,10 @@ export function injectTreeForGridUI2(
   try {
     const lineWidthProperty = DG.Property.int(D_PROPS.lineWidth,
       (obj) => {
-        let k = 11;
+        const k = 11;
       },
       (obj, value) => {
-        let k = 11;
+        const k = 11;
       },
       1);
     lineWidthProperty.category = `Dendrogram ${D_PROPS_CATS.STYLE}`;
@@ -309,16 +309,47 @@ export function injectTreeForGridUI2(
     window.setTimeout(() => { alignGridWithTree(); }, 0);
   }
 
+  function dfOnSortingChanged(value?: any) {
+    const treeOverlay = ui.div();
+    treeOverlay.style.width = treeNb.root!.style.width;
+    treeOverlay.style.height = treeNb.root!.style.height;
+    treeOverlay.style.backgroundColor = 'white';
+    treeOverlay.style.position = 'absolute';
+    treeOverlay.style.overflowY = 'hidden';
+    treeOverlay.style.display = 'flex';
+    treeOverlay.style.justifyContent = 'center';
+    treeOverlay.style.alignItems = 'center';
+
+    const sortInfoDiv = ui.div('Revert columns sort order to see Dendrogram Tree');
+    const realignButton = ui.button('Revert sort', () => {
+      alignGridWithTree();
+
+      treeNb?.root?.removeChild(treeOverlay);
+      sortingSub = grid.onRowsSorted.subscribe(dfOnSortingChanged);
+    });
+
+    const infoContainer = ui.divV(
+      [sortInfoDiv, realignButton]
+    );
+
+    treeOverlay.appendChild(infoContainer);
+    treeNb.root?.appendChild(treeOverlay);
+    sortingSub.unsubscribe();
+  }
+
   const subs: Unsubscribable[] = [];
   subs.push(renderer.onCurrentChanged.subscribe(rendererOnCurrentChanged));
   subs.push(renderer.onMouseOverChanged.subscribe(rendererOnMouseOverChanged));
   subs.push(renderer.onSelectionChanged.subscribe(rendererOnSelectionChanged));
+
+  let sortingSub = grid.onRowsSorted.subscribe(dfOnSortingChanged);
 
   subs.push(grid.dataFrame.onCurrentRowChanged.subscribe(dataFrameOnCurrentRowChanged));
   subs.push(grid.dataFrame.onMouseOverRowChanged.subscribe(dataFrameOnMouseOverRowChanged));
   subs.push(grid.dataFrame.onSelectionChanged.subscribe(dataFrameOnSelectionChanged));
 
   subs.push(grid.dataFrame.onFilterChanged.subscribe(dataFrameOnFilterChanged));
+
 
   return treeNb;
 }
