@@ -6,9 +6,6 @@ import {Observable, Subject} from 'rxjs';
 import '../../css/tags-input.css';
 
 
-// TODO: add tags to the beginning instead of end
-// TODO: on backspace in input - remove the first tag
-// TODO: on double click on tag - edit it in ui and in control
 export class TagsInput extends DG.InputBase {
   private _tags: string[] = [];
   private _tagsDiv: HTMLDivElement = ui.div();
@@ -58,11 +55,50 @@ export class TagsInput extends DG.InputBase {
   }
 
   private _createTag(tag: string): HTMLElement {
-    const icon = ui.iconFA('times', () => this.removeTag(tag));
+    const icon = ui.iconFA('times', () => this.removeTag(currentTag.innerText));
     const currentTag = ui.span([ui.span([tag]), icon], `ui-tag`);
     currentTag.dataset.tag = tag;
 
+    currentTag.ondblclick = () => {
+      const tagValue = currentTag.innerText;
+      const input = document.createElement('input');
+      input.value = tagValue;
+      let blurFlag = true;
+
+      input.onblur = () => {
+        if (!blurFlag)
+          return;
+        const newTag = input.value;
+        input.remove();
+        this._renameTag(tagValue, newTag, currentTag);
+      };
+      input.onkeyup = (event) => {
+        if (event.key === 'Escape' || event.key === 'Enter') {
+          blurFlag = false;
+          const newTag = input.value;
+          input.remove();
+          this._renameTag(tagValue, newTag, currentTag);
+        }
+      };
+
+      (currentTag.firstElementChild as HTMLElement).innerText = '';
+      currentTag.insertBefore(input, currentTag.firstElementChild);
+      input.focus();
+    };
+
     return currentTag;
+  }
+
+  private _renameTag(oldTag: string, newTag: string, currentTag: HTMLElement) {
+    const currentTagSpan = currentTag.firstElementChild as HTMLElement;
+    if (!this._isProper(newTag)) {
+      currentTagSpan.innerText = oldTag;
+      return;
+    }
+
+    currentTagSpan.innerText = newTag;
+    currentTag.dataset.tag = newTag;
+    this._tags[this._tags.indexOf(oldTag)] = newTag;
   }
 
   private _isProper(tag: string): boolean {
