@@ -6,7 +6,7 @@ title: "Release History"
 
 | Service                                                  | Docker Image                                                                                      |
 |----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../infrastructure.md#datagrok-components)     | [datagrok/datagrok:1.13.11](https://hub.docker.com/r/datagrok/datagrok)                           |
+| [Datagrok](../infrastructure.md#datagrok-components)     | [datagrok/datagrok:1.13.12](https://hub.docker.com/r/datagrok/datagrok)                           |
 | [Grok Connect](../../../access/data-connection.md)       | [datagrok/grok_connect:1.3.6](https://hub.docker.com/r/datagrok/grok_connect)                     |
 | Grok Spawner                                             | [datagrok/grok_spawner:1.3.2](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../infrastructure.md#grok-compute)        | [datagrok/grok_compute:1.5.1](https://hub.docker.com/r/datagrok/grok_compute)                     |
@@ -20,18 +20,32 @@ See also:
 - [Docker-Compose](../docker-compose.md)
 
 
+## 2023-04-12 1.13.12
+
+### Addressed Issues
+
+* (Enhancement) [#1583](https://github.com/datagrok-ai/public/issues/1575692020): Scatter Plot: "pack and zoom" option should response to changes when a numerical column is used
+* (Bug) [#1761](https://github.com/datagrok-ai/public/issues/1653528027): Out of memory on adding viewer with specific data
+* (Bug) [#1764](https://github.com/datagrok-ai/public/issues/1655940422): Error loading scatter plot for specific data and log scale axes on applying layout
+* closes 1744 Table is unexpectedly filtered if scatter plot has 'filter by zoom' setting and empty column on log scale axis
+* (Bug) [#1744](https://github.com/datagrok-ai/public/issues/1644087257): Table is unexpectedly filtered if scatter plot has 'filter by zoom' setting and empty column on log scale axis (WIP)
+* (Bug) [#1745](https://github.com/datagrok-ai/public/issues/1644091651): Floating viewer appears unexpectedly on applying layout in some cases
+* (Bug) [#1758](https://github.com/datagrok-ai/public/issues/1651500892): Filtering is slow if there are multiple bar charts on several views
+* Filters: return select filters dialog
+
+
 ## 2023-03-30 1.13.11
 
 ### Addressed Issues
 
-* (Bug) GROK-12646: for_entity method is very slow (WIP)
+* (Bug) GROK-12646: for_entity method is very slow
 
 
 ## 2023-03-29 1.13.10
 
 ### Addressed Issues
 
-* (Bug) GROK-12646: for_entity method is very slow
+* (Bug) GROK-12646: for_entity method is very slow (WIP)
 
 
 ## 2023-03-28 1.13.9
