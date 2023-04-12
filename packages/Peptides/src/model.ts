@@ -14,7 +14,7 @@ import * as CR from './utils/cell-renderer';
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
 import {getDistributionAndStats, getDistributionWidget} from './widgets/distribution';
 import {getStats, Stats} from './utils/statistics';
-import {LogoSummary} from './viewers/logo-summary';
+import {LogoSummaryTable} from './viewers/logo-summary';
 import {getSettingsDialog} from './widgets/settings';
 import {_package, getMonomerWorksInstance, getTreeHelperInstance} from './package';
 import {findMutations} from './utils/algorithms';
@@ -45,6 +45,12 @@ export enum CLUSTER_TYPE {
 };
 export type ClusterType = `${CLUSTER_TYPE}`;
 export type ClusterTypeStats = {[clusterType in ClusterType]: ClusterStats};
+export enum VIEWER_TYPE {
+  MONOMER_POSITION = 'Monomer-Position',
+  MOST_POTENT_RESIDUES = 'Most Potent Residues',
+  LOGO_SUMMARY_TABLE = 'Logo Summary Table',
+  DENDROGRAM = 'Dendrogram',
+};
 
 export class PeptidesModel {
   static modelName = 'peptidesModel';
@@ -62,7 +68,6 @@ export class PeptidesModel {
 
   df: DG.DataFrame;
   splitCol!: DG.Column<boolean>;
-  // edf: DG.DataFrame | null = null;
   _monomerPositionStats?: MonomerPositionStats;
   _clusterStats?: ClusterTypeStats;
   _mutationCliffsSelection!: type.PositionToAARList;
@@ -71,9 +76,6 @@ export class PeptidesModel {
   _substitutionsInfo?: type.SubstitutionsInfo;
   isInitialized = false;
   _analysisView?: DG.TableView;
-
-  // isPeptideSpaceChangingBitset = false;
-  // isChangingEdfBitset = false;
 
   monomerMap: { [key: string]: { molfile: string, fullName: string } } = {};
   monomerLib: IMonomerLib | null = null; // To get monomers from lib(s)
@@ -107,11 +109,6 @@ export class PeptidesModel {
     (dataFrame.temp[PeptidesModel.modelName] as PeptidesModel).init();
     return dataFrame.temp[PeptidesModel.modelName] as PeptidesModel;
   }
-
-  // get distanceMatrix(): DistanceMatrix {
-  //   this._distanceMatrix ??= this.calculateDistanceMatrix();
-  //   return this._distanceMatrix;
-  // }
 
   get treeHelper(): ITreeHelper {
     this._treeHelper ??= getTreeHelperInstance();
@@ -253,7 +250,7 @@ export class PeptidesModel {
     this._invariantMapSelection = selection;
     this.df.tags[C.TAGS.FILTER] = JSON.stringify(selection);
     this.isInvariantMapTrigger = true;
-    this.fireBitsetChanged(false, true);
+    this.fireBitsetChanged(true);
     this.isInvariantMapTrigger = false;
     this.analysisView.grid.invalidate();
   }
@@ -342,6 +339,15 @@ export class PeptidesModel {
       case 'showDendrogram':
         updateVars.add('dendrogram');
         break;
+      case 'showLogoSummaryTable':
+        updateVars.add('logoSummaryTable');
+        break;
+      case 'showMonomerPosition':
+        updateVars.add('monomerPosition');
+        break;
+      case 'showMostPotentResidues':
+        updateVars.add('mostPotentResidues');
+        break;
       }
     }
     this.df.setTag('settings', JSON.stringify(this._settings));
@@ -366,7 +372,19 @@ export class PeptidesModel {
         this.updateGrid();
         break;
       case 'dendrogram':
-        this.settings.showDendrogram ? this.addDendrogram() : this.closeDendrogram();
+        this.settings.showDendrogram ? this.addDendrogram() : this.closeViewer(VIEWER_TYPE.DENDROGRAM);
+        break;
+      case 'logoSummaryTable':
+        this.settings.showLogoSummaryTable ? this.addLogoSummaryTable() :
+          this.closeViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE);
+        break;
+      case 'monomerPosition':
+        this.settings.showMonomerPosition ? this.addMonomerPosition() :
+          this.closeViewer(VIEWER_TYPE.MONOMER_POSITION);
+        break;
+      case 'mostPotentResidues':
+        this.settings.showMostPotentResidues ? this.addMostPotentResidues() :
+          this.closeViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES);
         break;
       }
     }
@@ -429,7 +447,7 @@ export class PeptidesModel {
     acc.addTitle(ui.h1(`${filterAndSelectionBs.trueCount} selected rows${filteredTitlePart}`));
     if (filterAndSelectionBs.anyTrue) {
       acc.addPane('Actions', () => {
-        const newViewButton = ui.button('New view', async () => await trueModel.createNewView(),
+        const newViewButton = ui.button('New view', () => trueModel.createNewView(),
           'Creates a new view from current selection');
         const newCluster = ui.button('New cluster', () => trueModel._newClusterSubject.next(),
           'Creates a new cluster from selection');
@@ -982,9 +1000,8 @@ export class PeptidesModel {
     this.isBitsetChangedInitialized = true;
   }
 
-  fireBitsetChanged(isPeptideSpaceSource: boolean = false, fireFilterChanged: boolean = false): void {
+  fireBitsetChanged(fireFilterChanged: boolean = false): void {
     this.isUserChangedSelection = false;
-    // this.isPeptideSpaceChangingBitset = isPeptideSpaceSource;
     this.df.selection.fireChanged();
     if (fireFilterChanged)
       this.df.filter.fireChanged();
@@ -998,7 +1015,6 @@ export class PeptidesModel {
         pane.expanded = true;
     }
     this.isUserChangedSelection = true;
-    // this.isPeptideSpaceChangingBitset = false;
   }
 
   postProcessGrids(): void {
@@ -1022,16 +1038,18 @@ export class PeptidesModel {
     }
   }
 
-  closeDendrogram(): void {
-    for (const node of this.analysisView.dockManager.rootNode.children) {
-      if (node.container.containerElement.innerHTML.includes('Dendrogram')) {
-        this.analysisView.dockManager.close(node);
-        break;
-      }
-    }
-    const viewer = wu(this.analysisView.viewers).find((v) => v.type === 'Dendrogram');
+  closeViewer(viewerType: VIEWER_TYPE): void {
+    const viewer = this.findViewer(viewerType);
     viewer?.detach();
     viewer?.close();
+  }
+
+  findViewerNode(viewerType: VIEWER_TYPE): DG.DockNode | null {
+    for (const node of this.analysisView.dockManager.rootNode.children) {
+      if (node.container.containerElement.innerHTML.includes(viewerType))
+        return node;
+    }
+    return null;
   }
 
   async addDendrogram(): Promise<void> {
@@ -1087,27 +1105,42 @@ export class PeptidesModel {
     }
 
     this.updateGrid();
-    this.fireBitsetChanged(false, true);
+    this.fireBitsetChanged(true);
     this.analysisView.grid.invalidate();
   }
 
-  async addViewers(): Promise<void> {
-    const dockManager = this.analysisView.dockManager;
-    const dfPlt = this.df.plot;
-
-    const mutationCliffsViewer = await dfPlt.fromType('peptide-sar-viewer') as MonomerPosition;
-    const mostPotentResiduesViewer = await dfPlt.fromType('peptide-sar-viewer-vertical') as MostPotentResiduesViewer;
-    if (this.settings.clustersColumnName)
-      await this.addLogoSummaryTableViewer();
-
-    const mcNode = dockManager.dock(mutationCliffsViewer, DG.DOCK_TYPE.DOWN, null, mutationCliffsViewer.name);
-
-    dockManager.dock(mostPotentResiduesViewer, DG.DOCK_TYPE.RIGHT, mcNode, mostPotentResiduesViewer.name, 0.3);
+  findViewer(viewerType: VIEWER_TYPE): DG.Viewer | null {
+    return wu(this.analysisView.viewers).find((v) => v.type === viewerType) || null;
   }
 
-  async addLogoSummaryTableViewer(): Promise<void> {
-    const logoSummary = await this.df.plot.fromType('logo-summary-viewer') as LogoSummary;
-    this.analysisView.dockManager.dock(logoSummary, DG.DOCK_TYPE.RIGHT, null, 'Logo Summary Table');
+  async addLogoSummaryTable(): Promise<void> {
+    this.closeViewer(VIEWER_TYPE.MONOMER_POSITION);
+    this.closeViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES);
+    const logoSummaryTable = await this.df.plot.fromType(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
+    this.analysisView.dockManager.dock(logoSummaryTable, DG.DOCK_TYPE.RIGHT, null, VIEWER_TYPE.LOGO_SUMMARY_TABLE);
+    if (this.settings.showMonomerPosition)
+      await this.addMonomerPosition();
+    if (this.settings.showMostPotentResidues)
+      await this.addMostPotentResidues();
+  }
+
+  async addMonomerPosition(): Promise<void> {
+    const monomerPosition = await this.df.plot.fromType(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition;
+    const mostPotentResidues = this.findViewer(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResiduesViewer | null;
+    const dm = this.analysisView.dockManager;
+    const [dockType, refNode, ratio] = mostPotentResidues === null ? [DG.DOCK_TYPE.DOWN, null, undefined] :
+      [DG.DOCK_TYPE.LEFT, this.findViewerNode(VIEWER_TYPE.MOST_POTENT_RESIDUES), 0.7];
+    dm.dock(monomerPosition, dockType, refNode, VIEWER_TYPE.MONOMER_POSITION, ratio);
+  }
+
+  async addMostPotentResidues(): Promise<void> {
+    const mostPotentResidues =
+      await this.df.plot.fromType(VIEWER_TYPE.MOST_POTENT_RESIDUES) as MostPotentResiduesViewer;
+    const monomerPosition = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+    const dm = this.analysisView.dockManager;
+    const [dockType, refNode, ratio] = monomerPosition === null ? [DG.DOCK_TYPE.DOWN, null, undefined] :
+      [DG.DOCK_TYPE.RIGHT, this.findViewerNode(VIEWER_TYPE.MONOMER_POSITION), 0.3];
+    dm.dock(mostPotentResidues, dockType, refNode, VIEWER_TYPE.MOST_POTENT_RESIDUES, ratio);
   }
 
   addNewCluster(clusterName: string): void {
@@ -1117,7 +1150,7 @@ export class PeptidesModel {
     this.analysisView.grid.col(newClusterCol.name)!.visible = false;
   }
 
-  async createNewView(): Promise<void> {
+  createNewView(): void {
     const rowMask = this.getCompoundBitest();
     if (!rowMask.anyTrue)
       return grok.shell.warning('Cannot create a new view, there are no visible selected rows in your dataset');

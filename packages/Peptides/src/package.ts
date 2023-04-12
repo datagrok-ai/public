@@ -10,7 +10,7 @@ import {MonomerPosition, MostPotentResiduesViewer} from './viewers/sar-viewer';
 import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {IDendrogramService, getDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
-import {LogoSummary} from './viewers/logo-summary';
+import {LogoSummaryTable} from './viewers/logo-summary';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {PeptidesModel} from './model';
 
@@ -57,24 +57,22 @@ export function Peptides(): void {
   const wikiLink = ui.link('wiki', 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md');
   const textLink = ui.inlineText(['For more details, see our ', wikiLink, '.']);
 
-  const appDescription = ui.info(
-    [
-      ui.list([
-        '- automatic recognition of peptide sequences',
-        '- native integration with tons of Datagrok out-of-the box features (visualization, filtering, clustering, ' +
+  const appDescription = ui.info([
+    ui.list([
+      '- automatic recognition of peptide sequences',
+      '- native integration with tons of Datagrok out-of-the box features (visualization, filtering, clustering, ' +
         'multivariate analysis, etc)',
-        '- custom rendering in the spreadsheet',
-        '- interactive logo plots',
-        '- rendering residues',
-        '- structure-activity relationship:',
-        ' ',
-        'a) highlighting statistically significant changes in activity in the [position, monomer] spreadsheet',
-        'b) for the specific [position, monomer], visualizing changes of activity distribution (specific monomer in ' +
+      '- custom rendering in the spreadsheet',
+      '- interactive logo plots',
+      '- rendering residues',
+      '- structure-activity relationship:',
+      ' ',
+      'a) highlighting statistically significant changes in activity in the [position, monomer] spreadsheet',
+      'b) for the specific [position, monomer], visualizing changes of activity distribution (specific monomer in ' +
         'this position vs rest of the monomers in this position)',
-        'c) interactivity',
-      ]),
-    ],
-    'Use and analyse peptide sequence data to support your research:',
+      'c) interactivity',
+    ]),
+  ], 'Use and analyse peptide sequence data to support your research:',
   );
 
   const windows = grok.shell.windows;
@@ -114,30 +112,30 @@ export function peptidesPanel(col: DG.Column): DG.Widget {
   return new DG.Widget(analyzeObject.host);
 }
 
-//name: peptide-sar-viewer
-//description: Peptides SAR Viewer
+//name: Monomer-Position
+//description: Peptides Monomer-Position Viewer
 //tags: viewer
 //meta.icon: files/icons/peptide-sar-viewer.svg
 //output: viewer result
-export function sar(): MonomerPosition {
+export function monomerPosition(): MonomerPosition {
   return new MonomerPosition();
 }
 
-//name: peptide-sar-viewer-vertical
-//description: Peptides Vertical SAR Viewer
+//name: Most Potent Residues
+//description: Peptides Most Potent Residues Viewer
 //tags: viewer
 //meta.icon: files/icons/peptide-sar-vertical-viewer.svg
 //output: viewer result
-export function sarVertical(): MostPotentResiduesViewer {
+export function mostPotentResidues(): MostPotentResiduesViewer {
   return new MostPotentResiduesViewer();
 }
 
-//name: logo-summary-viewer
+//name: Logo Summary Table
 //tags: viewer
 //meta.icon: files/icons/logo-summary-viewer.svg
 //output: viewer result
-export function logoSummary(): LogoSummary {
-  return new LogoSummary();
+export function logoSummaryTable(): LogoSummaryTable {
+  return new LogoSummaryTable();
 }
 
 //name: peptide-space-viewer
