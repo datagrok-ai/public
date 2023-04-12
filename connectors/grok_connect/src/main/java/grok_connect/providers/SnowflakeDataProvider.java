@@ -94,6 +94,11 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
     }
 
     @Override
+    public String addBrackets(String name) {
+        return String.format("\"%s\"", name);
+    }
+
+    @Override
     protected void appendQueryParam(DataQuery dataQuery, String paramName, StringBuilder queryBuffer) {
         FuncParam param = dataQuery.getParam(paramName);
         if (param.propertyType.equals("list")) {
