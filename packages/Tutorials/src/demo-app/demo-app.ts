@@ -21,15 +21,14 @@ export class DemoView extends DG.ViewBase {
     return DG.Func.find({meta: {'demoPath': demoPath}})[0];
   }
 
-  startDemoFunc(func: DG.Func, viewPath: string) {
+  async startDemoFunc(func: DG.Func, viewPath: string) {
     grok.shell.closeAll();
     const loadingScreen = ui.div('Loading...', 'loading');
     grok.shell.tv.root.appendChild(loadingScreen);
 
-    func.apply().then((_) => {
-      loadingScreen.remove();
-      grok.shell.v.path = grok.shell.v.basePath = `/apps/Tutorials/Demo/${viewPath}`;
-    });
+    await func.apply();
+    loadingScreen.remove();
+    grok.shell.v.path = grok.shell.v.basePath = `/apps/Tutorials/Demo/${viewPath}`;
   }
 
   private _initContent() {
@@ -43,10 +42,6 @@ export class DemoView extends DG.ViewBase {
       const path = pathOption.split('|').map((s) => s.trim());
       const folder = this.tree.getOrCreateGroup(path.slice(0, path.length - 1).join(' | '));
       const item = folder.item(path[path.length - 1]);
-
-      item.root.onmousedown = (_) => {
-        this.startDemoFunc(f, `${path[0]}/${path[1]}`);
-      };
 
       item.root.onmouseover = (event) => {
         if (f.description)
@@ -80,7 +75,7 @@ export class DemoView extends DG.ViewBase {
       this.search.fireChanged();
     };
 
-    this.tree.onNodeEnter.subscribe((value) => {
+    this.tree.onSelectedNodeChanged.subscribe(async (value) => {
       if (value.root.classList.contains('d4-tree-view-item')) {
         const categoryName = value.root.parentElement?.parentElement
           ?.getElementsByClassName('d4-tree-view-group-label')[0].innerHTML;
@@ -88,8 +83,8 @@ export class DemoView extends DG.ViewBase {
 
         const demoFunc = DemoView.findDemoFunc(`${categoryName} | ${viewerName}`);
         const demoPath = `${categoryName}/${viewerName}`;
-        this.startDemoFunc(demoFunc, demoPath);
-        // TODO: add focus return to dock panel
+        await this.startDemoFunc(demoFunc, demoPath);
+        this.tree.root.focus();
       }
     });
 
