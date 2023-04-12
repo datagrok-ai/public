@@ -702,8 +702,7 @@ export async function identifiers(smiles: string): Promise<DG.Widget> {
 //description: 3D molecule representation
 //tags: panel, chem, widgets
 //input: string molecule { semType: Molecule }
-//tags: panel
-//output: widget
+//output: widget result
 export async function structure3D(molecule: string): Promise<DG.Widget> {
   return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ? structure3dWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
 }
