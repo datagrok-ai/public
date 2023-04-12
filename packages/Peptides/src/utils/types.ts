@@ -17,6 +17,7 @@ export type PeptidesSettings = {
   clustersColumnName?: string,
   scaling?: ScalingMethods,
   isBidirectional?: boolean,
+  showDendrogram?: boolean,
   maxMutations?: number,
   minActivityDelta?: number,
   columns?: {[col: string]: DG.AggregationType},
