@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.53",
+  "version": "3.2.55",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1851,6 +1851,9 @@
         },
         "2.1.11": {
           "datagrok-api": "^1.8.2"
+        },
+        "2.4.2": {
+          "datagrok-api": "^1.13.3"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -2099,6 +2102,9 @@
         },
         "1.1.21": {
           "datagrok-api": "^1.13.5"
+        },
+        "1.1.22": {
+          "datagrok-api": "1.13.11"
         }
       },
       "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",

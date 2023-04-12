@@ -20,18 +20,21 @@ const VIEWER_TABLES_PATH: {[key: string]: string} = {
 
 export async function viewerDemo(viewerName: string, options?: object | null) {
   const df = await (['GroupAnalysis', 'SurfacePlot', 'Timelines'].includes(viewerName) ?
-    grok.data.loadTable(`${_package.webRoot}${VIEWER_TABLES_PATH[viewerName]}`)
-    : grok.data.getDemoTable(VIEWER_TABLES_PATH[viewerName]));
+    grok.data.loadTable(`${_package.webRoot}${VIEWER_TABLES_PATH[viewerName]}`) :
+    grok.data.getDemoTable(VIEWER_TABLES_PATH[viewerName]));
 
-  const tableView = DG.TableView.create(df, false);
-  tableView.basePath = `/apps/Tutorials/Demo/Viewers/${viewerName}`;
-  grok.shell.addTable(df);
-  grok.shell.addView(tableView);
+  const tableView = grok.shell.addTableView(df);
 
   if (['Globe', 'GroupAnalysis'].includes(viewerName)) {
-    DG.debounce(df.onSemanticTypeDetected, 300).subscribe((_) => tableView.addViewer(viewerName, options));
+    DG.debounce(df.onSemanticTypeDetected, 800).subscribe((_) => {
+      const viewer = tableView.addViewer(viewerName, options);
+      if (viewerName === 'Globe')
+        tableView.dockManager.dock(viewer, 'up', null, viewerName);
+    });
     return;
   }
 
-  tableView.addViewer(viewerName, options);
+  const viewer = tableView.addViewer(viewerName, options);
+  tableView.dockManager.dock(viewer, 'up', null, viewerName);
+  //TODO: set grid instead of null, 'up' -> 'right' (for histogram and scatterplot)
 }

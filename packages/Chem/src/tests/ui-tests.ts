@@ -161,7 +161,7 @@ category('UI', () => {
     v.close();
     (document.querySelector('.fa-chevron-square-up') as HTMLElement)?.click();
     grok.shell.o = document.createElement('div');
-  }, {skipReason: 'GROK-12226'});
+  });
 
   test('info panel: structure2D', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -338,8 +338,8 @@ category('UI', () => {
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     await awaitCheck(() => {
       return Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
-        .find((el) => el.textContent === 'Toxicity') !== undefined;
-    }, 'cannot find Toxicity property', 5000);
+        .find((el) => el.textContent === 'Chemistry') !== undefined;
+    }, 'cannot find Chemistry property', 5000);
     const smilesCol = smiles.columns.byName('smiles');
     grok.shell.o = smilesCol;
     await awaitCheck(() => {

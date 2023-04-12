@@ -21,8 +21,8 @@ export class UsersView extends UaView {
       'Unique Users',
       'UniqueUsers',
       (t: DG.DataFrame) => {
-        const viewer = DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root;
-        viewer.style.maxHeight = '150px';
+        const viewer = DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions);
+        viewer.root.style.maxHeight = '150px';
         return viewer;
       },
     );
@@ -35,7 +35,7 @@ export class UsersView extends UaView {
       this.uaToolbox.filterStream,
       'Usage',
       'Usage',
-      (t: DG.DataFrame) => DG.Viewer.scatterPlot(t, UaQueryViewer.defaultChartOptions).root,
+      (t: DG.DataFrame) => DG.Viewer.scatterPlot(t, UaQueryViewer.defaultChartOptions),
     );
     this.viewers.push(usageViewer);
 
@@ -43,7 +43,7 @@ export class UsersView extends UaView {
       this.uaToolbox.filterStream,
       'Packages By Users',
       'TopPackagesByUsers',
-      (t: DG.DataFrame) => DG.Viewer.scatterPlot(t, UaQueryViewer.defaultChartOptions).root,
+      (t: DG.DataFrame) => DG.Viewer.scatterPlot(t, UaQueryViewer.defaultChartOptions),
     );
     this.viewers.push(topPackagesByUsers);
 

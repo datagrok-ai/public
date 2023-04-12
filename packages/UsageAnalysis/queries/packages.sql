@@ -101,3 +101,29 @@ and u.id = any(@users)
 and pp.package_id = any(@packages)
 group by et.source
 --end
+
+
+--name: PackagesContextPaneAudit
+--input: int time_start
+--input: int time_end
+--input: string users
+--input: string packages
+--meta.cache: true
+--connection: System:Datagrok
+select et.friendly_name as name, count(*)
+from event_parameter_values e
+inner join events ev on e.event_id = ev.id
+inner join event_types et on ev.event_type_id = et.id
+inner join event_parameters ep on ep.id = e.parameter_id and ep.type = 'entity_id'
+inner join entities en on e.value != 'null' and en.id = e.value::uuid
+left join published_packages pp inner join packages p1 on p1.id = pp.package_id on en.package_id = pp.id
+left join packages p on p.id = en.id
+inner join users_sessions s on ev.session_id = s.id
+inner join users u on u.id = s.user_id
+where (not p.id is null or not p1.id is null)
+and ev.event_time between to_timestamp(@time_start)
+and to_timestamp(@time_end)
+and u.id = any(@users)
+and COALESCE(p.id, p1.id) = any(@packages)
+group by et.friendly_name
+--end

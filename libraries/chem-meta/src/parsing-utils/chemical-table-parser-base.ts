@@ -1,13 +1,3 @@
-export interface ChemicalTableParser {
-  init(molBlock: string): void;
-  atomCount: number;
-  bondCount: number;
-  x: Float32Array;
-  y: Float32Array;
-  z: Float32Array;
-  pairsOfBondedAtoms: Uint16Array[];
-}
-
 export type AtomAndBondCounts = {
   atomCount: number,
   bondCount: number
@@ -19,13 +9,11 @@ type CoordinateArrays = {
   z: Float32Array,
 }
 
-/** Base singleton for Molfile or Mol2 parser/handler */
-export abstract class ChemicalTableParserBase implements ChemicalTableParser {
-  protected constructor(fileContent: string) {
+/** Base for Molfile or Mol2 parser/handler */
+export abstract class ChemicalTableParserBase {
+  constructor(fileContent: string) {
     this.init(fileContent);
   };
-
-  protected static instance: ChemicalTableParserBase;
 
   protected fileContent!: string;
   protected _atomCount?: number;
@@ -35,7 +23,7 @@ export abstract class ChemicalTableParserBase implements ChemicalTableParser {
   protected _pairsOfBondedAtoms?: Uint16Array[];
   protected _bondTypes?: Uint16Array;
 
-  public init(fileContent: string): void {
+  protected init(fileContent: string): void {
     this.fileContent = fileContent.replace(/\r/g, '');
     this._atomCount = undefined;
     this._atomTypes = undefined;

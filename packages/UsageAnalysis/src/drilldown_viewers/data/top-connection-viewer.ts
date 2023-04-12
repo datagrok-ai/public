@@ -37,7 +37,7 @@ export class TopConnectionsViewer extends UaFilterableQueryViewer {
 
           grok.shell.o = pp.getRoot();
         });
-        return viewer.root;
+        return viewer;
       },
     );
   }

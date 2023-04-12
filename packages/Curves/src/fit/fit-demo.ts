@@ -90,8 +90,8 @@ export function createDemoDataFrame(rowCount: number, chartsCount: number, chart
   return df;
 }
 
-export function curveFitDemo() {
+export async function curveDemo() {
   const df = createDemoDataFrame(30, 5, 2);
-  const grid = grok.shell.addTableView(df).grid;
-  //grid.props.rowHeight = 150;
+  const tableView = grok.shell.addTableView(df);
+  tableView.addViewer('MultiCurveViewer');
 }
