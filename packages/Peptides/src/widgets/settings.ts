@@ -6,6 +6,7 @@ import * as C from '../utils/constants';
 import {PeptidesModel} from '../model';
 
 import $ from 'cash-dom';
+import wu from 'wu';
 
 //TODO: show sliderInput values
 export function getSettingsDialog(model: PeptidesModel): DG.Dialog {
@@ -16,7 +17,10 @@ export function getSettingsDialog(model: PeptidesModel): DG.Dialog {
     () => result.scaling = activityScaling.value! as type.ScalingMethods);
   const bidirectionalAnalysis = ui.boolInput('Bidirectional analysis', settings.isBidirectional ?? false,
     () => result.isBidirectional = bidirectionalAnalysis.value!);
-  accordion.addPane('General', () => ui.inputs([activityScaling, bidirectionalAnalysis]), true);
+  const showDendrogram = wu(model.analysisView.viewers).some((v) => v.type === 'Dendrogram');
+  const dendrogram = ui.boolInput('Show dendrogram', showDendrogram ?? false,
+    () => result.showDendrogram = dendrogram.value!);
+  accordion.addPane('General', () => ui.inputs([activityScaling, bidirectionalAnalysis, dendrogram]), true);
 
   const maxMutations = ui.sliderInput('Max mutations', settings.maxMutations ?? 1, 0, 50, () => {
     const val = Math.round(maxMutations.value!);
