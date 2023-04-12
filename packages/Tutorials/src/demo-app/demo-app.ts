@@ -75,7 +75,7 @@ export class DemoView extends DG.ViewBase {
       this.search.fireChanged();
     };
 
-    this.tree.onSelectedNodeChanged.subscribe(async (value) => {
+    DG.debounce(this.tree.onSelectedNodeChanged, 300).subscribe(async (value) => {
       if (value.root.classList.contains('d4-tree-view-item')) {
         const categoryName = value.root.parentElement?.parentElement
           ?.getElementsByClassName('d4-tree-view-group-label')[0].innerHTML;
@@ -103,6 +103,13 @@ export class DemoView extends DG.ViewBase {
     // TODO: on click on viewer demo set viewer help url in property panel (func helpUrl)
     // TODO: implement search in demo - search on meta.keywords, name, description
     // TODO: add all the platform viewers to demo (make demo functions in Tutorials)
+
+    // TODO: main viewer: 3/4
+    // TODO: additional: grid - histogram - barchart (all by 33%)
+    // TODO: for standard the same
+    // TODO: if there empty space - add viewer/filter/etc.
+    // TODO: write API for step control and example, steps are written in context panel - first priority
+    // TODO: add DG.debounce
   }
 
   private _initWindowOptions() {
