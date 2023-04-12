@@ -55,9 +55,16 @@ public class BoolColumn extends Column<Boolean> {
         return data[idx];
     }
 
+    /**
+     * don't use this method, should be used from complexTypeColumn
+     */
     @Override
     public void set(int index, Boolean value) {
-        data[index] = value ? 1 : 0;
+        if (index != length - 1) {
+            throw new IllegalArgumentException("Can set only penultimate element");
+        }
+        length--;
+        add(value);
     }
 
     public boolean isNone(int idx) {

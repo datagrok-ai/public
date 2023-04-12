@@ -9,7 +9,7 @@ import java.util.Objects;
 
 public class ComplexTypeColumn extends Column<List<Column>> {
     private static final String DATA_FIELD_NAME = "data";
-    private static final int DEFAULT_ARRAY_SIZE = 15;
+    private static final int DEFAULT_ARRAY_SIZE = 100;
     private Column[] data;
 
     public ComplexTypeColumn() {
@@ -38,6 +38,7 @@ public class ComplexTypeColumn extends Column<List<Column>> {
     @Override
     public void add(List<Column> columns) {
         ensureSpace(columns.size());
+        processListMap(columns);
         if (length == 0) {
             System.arraycopy(columns.toArray(new Column[0]), 0, data, 0, columns.size());
             length += columns.size();
@@ -46,16 +47,15 @@ public class ComplexTypeColumn extends Column<List<Column>> {
             appendNull(data, 1);
             for (Column column: columns) {
                 String name = column.name;
-                List<Column> first = new ArrayList<>();
+                Column first = null;
                 for (Column col: data) {
                     if (col != null && col.name.equals(name)) {
-                        first.add(col);
+                        first = col;
                         break;
                     }
                 }
-                if (first.size() == 1) {
-                    Column column1 = first.get(0);
-                    setExisted(column1, column);
+                if (first != null) {
+                    setExisted(first, column);
                 } else {
                     int lengthDiff = Math.abs(data[0].length - column.length);
                     if (lengthDiff > 0) {
@@ -64,6 +64,26 @@ public class ComplexTypeColumn extends Column<List<Column>> {
                     data[length++] = column;
                 }
             }
+        }
+    }
+
+    /*
+     * Needed in a case we have nested list with maps - if so,
+     * we get list of columns of different length
+     */
+    private void processListMap(List<Column> columns) {
+        boolean nullsOnly = columns.stream().noneMatch(Objects::nonNull);
+        if (nullsOnly) return;
+        int minLength = columns.get(0).length;
+        int maxLength = minLength;
+        for (int i = 1; i < columns.size(); i++) {
+            int length = columns.get(i).length;
+            minLength = Math.min(minLength, length);
+            maxLength = Math.max(maxLength, length);
+        }
+        if (maxLength - minLength == 0) return;
+        for (Column column: columns) {
+            appendNull(column, maxLength - column.length);
         }
     }
 
@@ -106,6 +126,15 @@ public class ComplexTypeColumn extends Column<List<Column>> {
         data = new Column[DEFAULT_ARRAY_SIZE];
     }
 
+    public Column[] getAll() {
+        Column[] returnArray = new Column[length];
+        if (Arrays.stream(data).allMatch(Objects::isNull)) {
+            return returnArray;
+        }
+        System.arraycopy(data, 0, returnArray, 0, length);
+        return returnArray;
+    }
+
     /**
      * complexTypeConverter return always StringColumn for null values because it's not possible to detect type.
      * If not null value appears and its corresponding column is not StringColumn
@@ -128,21 +157,17 @@ public class ComplexTypeColumn extends Column<List<Column>> {
                 }
             }
         }
-        if (existed.getType().equals(Types.BOOL)) {
-            int value = (int) newColumn.get(0);
-            existed.set(existed.length - 1, value == 1);
-        } else {
-            existed.set(existed.length - 1, newColumn.get(0));
+        for (int i = 0; i < newColumn.length; i++) {
+            Object value = newColumn.get(i);
+            if (existed.getType().equals(Types.BOOL)) {
+                value = ((int) value) == 1;
+            }
+            if (i == 0) {
+                existed.set(existed.length - 1, value); // replace added null
+            } else {
+                existed.add(value);
+            }
         }
-    }
-
-    public Column[] getAll() {
-        Column[] returnArray = new Column[length];
-        if (Arrays.stream(data).allMatch(Objects::isNull)) {
-            return returnArray;
-        }
-        System.arraycopy(data, 0, returnArray, 0, length);
-        return returnArray;
     }
 
     private void ensureSpace(int extraLength) {
@@ -166,9 +191,6 @@ public class ComplexTypeColumn extends Column<List<Column>> {
             Class<?> componentType = data.get(column).getClass().getComponentType();
             Object array = Array.newInstance(componentType.isPrimitive()
                     ? getWrapperClassForPrimitive(componentType) : componentType, column.length + nullCount);
-            for (int i = 0; i < nullCount; i++) {
-                Array.set(array, i, null);
-            }
             for (int j = nullCount, i = 0; i < column.length; j++, i++) {
                 if (column.getType().equals(Types.BOOL)) {
                     boolean value = ((Integer) column.get(i)) == 1;

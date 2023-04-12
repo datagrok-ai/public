@@ -17,10 +17,8 @@ import serialization.FloatColumn;
 import serialization.IntColumn;
 import serialization.StringColumn;
 import serialization.Types;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -78,15 +76,16 @@ public class MongoDbDataProvider extends JdbcDataProvider {
     @SuppressWarnings("unchecked")
     public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,
                                     List<Boolean> supportedType,List<Boolean> initColumn, int maxIterations) throws SQLException {
-        do {
+        while (resultSet.next()) {
             Object object = resultSet.getObject(OBJECT_INDEX);
             if (object instanceof String) {
                 columns.get(0).add(object.toString());
                 continue;
             }
             Column column = columns.get(0);
-            column.add(resultSetManager.convert(object, 2000, "NODE", 0, 0, column.name));
-        } while (resultSet.next());
+            column.add(resultSetManager.convert(object, 2000,
+                    resultSet.getMetaData().getColumnTypeName(OBJECT_INDEX), 0, 0, column.name));
+        };
         resultSet.close();
         DataFrame dataFrame = new DataFrame();
         dataFrame.addColumns(columns);
@@ -95,21 +94,23 @@ public class MongoDbDataProvider extends JdbcDataProvider {
 
     private List<Column> getTypedColumns(ResultSet resultSet) {
         List<Column> columns = new ArrayList<>();
-        Object object;
         String label;
+        String typeName;
+        int type;
         if (resultSet == null) {
             return columns;
         }
         try {
-            resultSet.next();
-            object = resultSet.getObject(OBJECT_INDEX);
-            label = resultSet.getMetaData().getColumnLabel(OBJECT_INDEX);
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            label = metaData.getColumnLabel(OBJECT_INDEX);
+            type = metaData.getColumnType(OBJECT_INDEX);
+            typeName = metaData.getColumnTypeName(OBJECT_INDEX);
+            Column column = resultSetManager.getColumn(type, typeName, 0, 0);
+            column.name = label;
+            columns.add(column);
+            return columns;
         } catch (SQLException e) {
             throw new RuntimeException("Something went wrong when retrieving meta data of resultSet", e);
         }
-        Column column = resultSetManager.getColumn(object);
-        column.name = label;
-        columns.add(column);
-        return columns;
     }
 }

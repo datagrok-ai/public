@@ -10,6 +10,6 @@ public class Neo4jComplexTypeChecker implements TypeChecker {
     @Override
     public boolean isSupported(int type, String typeName, int precision, int scale) {
         LOGGER.trace(DEFAULT_LOG_MESSAGE, type, typeName, precision, scale);
-        return typeName.equalsIgnoreCase("NODE");
+        return typeName.equalsIgnoreCase("NODE") || typeName.equalsIgnoreCase("map");
     }
 }

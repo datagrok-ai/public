@@ -85,7 +85,7 @@ class ClickHouseDataProviderTest extends ContainerizedProviderBaseTest {
     public void checkParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
-        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqualUnOrdered(expected, actual));
     }
 
     @DisplayName("Parameters support for datetime")

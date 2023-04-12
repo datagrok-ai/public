@@ -33,7 +33,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-@Disabled("in progress")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Testcontainers
 class MongoDbDataProviderTest {
@@ -95,7 +94,7 @@ class MongoDbDataProviderTest {
     public void checkOutputAllTypes_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
-        Assertions.assertTrue(dataFrameComparator.isDataFramesEqualUnOrdered(expected, actual));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
     @DisplayName("Mongo string return")

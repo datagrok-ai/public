@@ -38,8 +38,8 @@ public class ComplexTypeConverterManager extends AbstractConverterManager<List<C
     public List<Column> convert(Object value, Object...args) {
         LOGGER.trace("convert method was called with args {}", Arrays.toString(args));
         if (value == null) {
-            LOGGER.trace("value is null");
-            return null;
+            LOGGER.trace("value is null, return empty list");
+            return new ArrayList<>();
         }
         LOGGER.debug("using default converter for class {}",
                 value.getClass());
