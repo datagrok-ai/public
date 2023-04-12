@@ -31,3 +31,17 @@ SELECT *
 FROM products
 
 --end
+
+--name: OrdersByEmployeeID
+--friendlyName: OrdersByEmployeeID
+--connection: MySQLNorthwind
+--input: string shipcountry = "Argentina" {choices: Query("SELECT DISTINCT shipcountry FROM orders")}
+--input: string shipcity {choices: Query("SELECT DISTINCT shipcity FROM orders WHERE shipcountry = @shipcountry")}
+--input: string customerid {choices: Query("SELECT DISTINCT customerid FROM orders WHERE shipcity = @shipcity")}
+--input: string employeeid {choices: Query("SELECT DiSTINCT employeeid FROM orders WHERE customerid = @customerid")}
+
+SELECT DISTINCT orderid
+FROM orders
+WHERE (employeeid = CAST(@employeeid AS INTEGER))
+
+--end
