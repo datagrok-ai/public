@@ -12,6 +12,9 @@
 
 .tutorials-demo-container {
     max-width: 280px;
+    min-width: 280px;
+    width: 280px;
+    overflow: auto;
 }
 
 .demo-text {
