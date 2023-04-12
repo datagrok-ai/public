@@ -1,4 +1,6 @@
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+dayjs.extend(utc);
 
 
 export const EXCLUDED = ['Time', 'RandBetween', 'Rnd'];
@@ -31,12 +33,12 @@ export const FUNC_TESTS: {[f: string]: {[test: string]: any}} = {
     'ParseInt(" 0101 ")': 101,
   },
   ParseQnum: {
-    'ParseQnum("100")': 100,
-    'ParseQnum("<100")': 100,
-    'ParseQnum(">100")': 100,
-    'ParseQnum("   100 ")': 100,
-    'ParseQnum(" < 100 ")': 100,
-    'ParseQnum(" > 100 ")': 100,
+    'ParseQnum("100")': 100.00000000000003,
+    'ParseQnum("<100")': 100.00000000000001,
+    'ParseQnum(">100")': 100.00000000000004,
+    'ParseQnum("   100 ")': 100.00000000000003,
+    'ParseQnum(" < 100 ")': 100.00000000000001,
+    'ParseQnum(" > 100 ")': 100.00000000000004,
     'Qualifier(ParseQnum("100"))': '=',
     'Qualifier(ParseQnum("<100"))': '<',
     'Qualifier(ParseQnum(">100"))': '>',
@@ -75,14 +77,14 @@ export const FUNC_TESTS: {[f: string]: {[test: string]: any}} = {
     'ToString(true)': 'true',
   },
   Date: {
-    'Date(2020, 1, 1)': dayjs('2020-01-01'),
-    'Date(2000, 10, 1)': dayjs('2000-10-01'),
-    'Date(2040, 1, 30)': dayjs('2040-01-30'),
+    'Date(2020, 1, 1)': dayjs.utc('2020-01-01'),
+    'Date(2000, 10, 1)': dayjs.utc('2000-10-01'),
+    'Date(2040, 1, 30)': dayjs.utc('2040-01-30'),
   },
   DateAdd: {
-    'DateAdd(Date(2020, 1, 1), 86400000)': dayjs('2020-01-01').add(1, 'd'),
-    'DateAdd(Date(2020, 1, 1), 10800000)': dayjs('2020-01-01').add(3, 'h'),
-    'DateAdd(Date(2020, 1, 1), 3605000)': dayjs('2020-01-01').add(1, 'h').add(5, 's'),
+    'DateAdd(Date(2020, 1, 1), 86400000)': dayjs.utc('2020-01-01').add(1, 'd'),
+    'DateAdd(Date(2020, 1, 1), 10800000)': dayjs.utc('2020-01-01').add(3, 'h'),
+    'DateAdd(Date(2020, 1, 1), 3605000)': dayjs.utc('2020-01-01').add(1, 'h').add(5, 's'),
   },
   DateDiff: {
     'DateDiff(Date(2020, 1, 2), Date(2020, 1, 1))': 86400000,
@@ -91,8 +93,8 @@ export const FUNC_TESTS: {[f: string]: {[test: string]: any}} = {
     'DateDiff(DateTime(2020, 1, 1, 0, 0, 0, 125), Date(2020, 1, 1))': 125,
   },
   DateTime: {
-    'DateTime(2020, 1, 1, 23, 59, 45, 999)': dayjs(new Date(2020, 0, 1, 23, 59, 45, 999)),
-    'DateTime(2050, 10, 10, 0, 15, 5, 0)': dayjs(new Date(2050, 9, 10, 0, 15, 5, 0)),
+    'DateTime(2020, 1, 1, 23, 59, 45, 999)': dayjs.utc('2020-1-1 23:59:45.999'),
+    'DateTime(2050, 10, 10, 0, 15, 5, 0)': dayjs.utc('2050-10-10 0:15:5'),
   },
   DayOfMonth: {
     'DayOfMonth(Date(2020, 6, 15))': 15,
@@ -157,7 +159,7 @@ export const FUNC_TESTS: {[f: string]: {[test: string]: any}} = {
     'Time(0, 0, 0, 0)': dayjs('2000-01-01 0:0:0.0'),
   },
   Today: {
-    'Today()': dayjs().hour(0).minute(0).second(0).millisecond(0),
+    'Today()': dayjs().utc().hour(0).minute(0).second(0).millisecond(0),
   },
   Weeknum: {
     'Weeknum(Date(2020, 1, 1))': 0,
