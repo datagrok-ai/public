@@ -18,8 +18,8 @@ export class RegistrationSequenceParser {
 
   getDimerStrands(strands: string): {ss: string, as1: string, as2: string} {
     let result = this.prepareInput(strands).slice(DIMER_PREFIX.SS.length).split(DIMER_PREFIX.AS1);
-    const as = result[0];
-    result = result[1].split(DIMER_PREFIX.AS2);
+    const as = this.prepareStrand(result[0]);
+    result = result[1].split(DIMER_PREFIX.AS2).map((strand) => this.prepareStrand(strand));
     const as1 = result[0];
     const as2 = result[1];
     return {ss: as, as1: as1, as2: as2};
