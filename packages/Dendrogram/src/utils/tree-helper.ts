@@ -96,14 +96,14 @@ export class TreeHelper implements ITreeHelper {
       if (isLeaf) {
         return ([] as string[]).concat(
           node.name,
-          node.branch_length ? `:${node.branch_length}` : []
+          node.hasOwnProperty('branch_length') ? `:${node.branch_length}` : []
         ).join('');
       } else {
         const childrenText = node.children!.map((childNode) => toNewickInt(childNode)).join(',');
         return ([] as string[]).concat(
           `(${childrenText})`,
           node.name,
-          node.branch_length ? `:${node.branch_length}` : []
+          node.hasOwnProperty('branch_length') ? `:${node.branch_length}` : []
         ).join('');
       }
     }
@@ -458,5 +458,3 @@ export class TreeHelper implements ITreeHelper {
     return treeRoot;
   }
 }
-
-
