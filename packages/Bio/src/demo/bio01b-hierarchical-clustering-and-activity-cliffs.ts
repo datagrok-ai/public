@@ -73,20 +73,21 @@ export async function demoBio01bUI(funcPath: string) {
     })();
 
     await step('Browse the cliff.', async () => {
-      const currentCliffIdx = 1;
+      //cliffsDfGrid.dataFrame.currentRowIdx = -1; // reset
       const cliffsDfGrid: DG.Grid = activityCliffsViewer.dataFrame.temp[acTEMPS.cliffsDfGrid];
-      cliffsDfGrid.dataFrame.selection.init((i) => i == currentCliffIdx);
-      cliffsDfGrid.dataFrame.currentRowIdx = currentCliffIdx;
+      //cliffsDfGrid.dataFrame.selection.init((i) => i == currentCliffIdx);
+      cliffsDfGrid.dataFrame.currentRowIdx = 0;
+      //cliffsDfGrid.dataFrame.selection.set(currentCliffIdx, true, true);
 
-      /* workaround to select rows of the cliff */
-      const entryCol: DG.Column = df.getCol('Entry');
-      df.selection.init((rowIdx) => ['UPI00000BFE1D', 'UPI00000BFE17'].includes(entryCol.get(rowIdx)));
-
-      const selectionIdxList: Int32Array = df.selection.getSelectedIndexes();
-      if (selectionIdxList.length > 0) {
-        df.currentRowIdx = selectionIdxList[0];
-        view.grid.scrollToCell('UniProtKB', view.grid.tableRowToGrid(selectionIdxList[0]));
-      }
+      // /* workaround to select rows of the cliff */
+      // const entryCol: DG.Column = df.getCol('Entry');
+      // df.selection.init((rowIdx) => ['UPI00000BFE1D', 'UPI00000BFE17'].includes(entryCol.get(rowIdx)));
+      //
+      // const selectionIdxList: Int32Array = df.selection.getSelectedIndexes();
+      // if (selectionIdxList.length > 0) {
+      //   df.currentRowIdx = selectionIdxList[0];
+      //   view.grid.scrollToCell('UniProtKB', view.grid.tableRowToGrid(selectionIdxList[0]));
+      // }
     })();
   } catch (err: any) {
     if (err instanceof Error)
