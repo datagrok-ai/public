@@ -7,23 +7,36 @@ import {analyzePeptidesUI} from './widgets/peptides';
 import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {MonomerPosition, MostPotentResiduesViewer} from './viewers/sar-viewer';
-
+import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {IDendrogramService, getDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {LogoSummary} from './viewers/logo-summary';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {PeptidesModel} from './model';
 
 let monomerWorks: MonomerWorks | null = null;
+let treeHelper: ITreeHelper | null = null;
+let dendrogramService: IDendrogramService | null = null;
 
 export const _package = new DG.Package();
 
-export function getMonomerWorks(): MonomerWorks | null {
-  return monomerWorks;
+export function getMonomerWorksInstance(): MonomerWorks {
+  return monomerWorks!;
+}
+
+export function getTreeHelperInstance(): ITreeHelper {
+  return treeHelper!;
+}
+
+export function getDendrogramServiceInstance(): IDendrogramService {
+  return dendrogramService!;
 }
 
 //tags: init
 export async function initPeptides(): Promise<void> {
   monomerWorks ??= new MonomerWorks(await grok.functions.call('Bio:getBioLib'));
+  treeHelper ??= await getTreeHelper();
+  dendrogramService ??= await getDendrogramService();
 }
 
 async function openDemoData(chosenFile: string): Promise<void> {

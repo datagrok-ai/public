@@ -16,13 +16,19 @@ import {getDistributionAndStats, getDistributionWidget} from './widgets/distribu
 import {getStats, Stats} from './utils/statistics';
 import {LogoSummary} from './viewers/logo-summary';
 import {getSettingsDialog} from './widgets/settings';
-import {getMonomerWorks} from './package';
+import {_package, getMonomerWorksInstance, getTreeHelperInstance} from './package';
 import {findMutations} from './utils/algorithms';
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {pickUpPalette, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+
+import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
+import {StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
+import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {TAGS as treeTAGS} from '@datagrok-libraries/bio/src/trees';
+import {createDistanceMatrixWorker} from './utils/worker-creator';
 
 export type SummaryStats = {
   minCount: number, maxCount: number,
@@ -87,6 +93,9 @@ export class PeptidesModel {
   _mostPotentResiduesDf?: DG.DataFrame;
   _matrixDf?: DG.DataFrame;
   _splitSeqDf?: DG.DataFrame;
+  _distanceMatrix!: DistanceMatrix;
+  _treeHelper!: ITreeHelper;
+  _dm!: DistanceMatrix;
 
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
@@ -97,6 +106,16 @@ export class PeptidesModel {
     dataFrame.temp[PeptidesModel.modelName] ??= new PeptidesModel(dataFrame);
     (dataFrame.temp[PeptidesModel.modelName] as PeptidesModel).init();
     return dataFrame.temp[PeptidesModel.modelName] as PeptidesModel;
+  }
+
+  // get distanceMatrix(): DistanceMatrix {
+  //   this._distanceMatrix ??= this.calculateDistanceMatrix();
+  //   return this._distanceMatrix;
+  // }
+
+  get treeHelper(): ITreeHelper {
+    this._treeHelper ??= getTreeHelperInstance();
+    return this._treeHelper;
   }
 
   get monomerPositionDf(): DG.DataFrame {
@@ -313,12 +332,15 @@ export class PeptidesModel {
         updateVars.add('mutationCliffs');
         updateVars.add('stats');
         break;
-        // case 'columns':
-        //   updateVars.add('grid');
-        //   break;
+      // case 'columns':
+      //   updateVars.add('grid');
+      //   break;
       case 'maxMutations':
       case 'minActivityDelta':
         updateVars.add('mutationCliffs');
+        break;
+      case 'showDendrogram':
+        updateVars.add('dendrogram');
         break;
       }
     }
@@ -342,6 +364,9 @@ export class PeptidesModel {
         break;
       case 'grid':
         this.updateGrid();
+        break;
+      case 'dendrogram':
+        this.settings.showDendrogram ? this.addDendrogram() : this.closeDendrogram();
         break;
       }
     }
@@ -806,7 +831,7 @@ export class PeptidesModel {
     const tooltipElements: HTMLDivElement[] = [];
     const monomerName = aar.toLowerCase();
 
-    const mw = getMonomerWorks();
+    const mw = getMonomerWorksInstance();
     const mol = mw?.getCappedRotatedMonomer('PEPTIDE', aar);
 
     if (mol) {
@@ -994,6 +1019,39 @@ export class PeptidesModel {
       gridCol.visible = posCols.includes(tableColName) || (tableColName === C.COLUMNS_NAMES.ACTIVITY_SCALED) ||
         visibleColumns.includes(tableColName);
       gridCol.width = 60;
+    }
+  }
+
+  closeDendrogram(): void {
+    for (const node of this.analysisView.dockManager.rootNode.children) {
+      if (node.container.containerElement.innerHTML.includes('Dendrogram')) {
+        this.analysisView.dockManager.close(node);
+        break;
+      }
+    }
+    const viewer = wu(this.analysisView.viewers).find((v) => v.type === 'Dendrogram');
+    viewer?.detach();
+    viewer?.close();
+  }
+
+  async addDendrogram(): Promise<void> {
+    const pi = DG.TaskBarProgressIndicator.create('Calculating distance matrix...');
+    try {
+      const pepColValues: string[] = this.df.getCol(this.settings.sequenceColumnName!).toList();
+      this._dm ??= new DistanceMatrix(await createDistanceMatrixWorker(pepColValues, StringMetricsNames.Levenshtein));
+      const leafCol = this.df.col('~leaf-id') ?? this.df.columns.addNewString('~leaf-id').init((i) => i.toString());
+      const treeNode = await this.treeHelper.hierarchicalClusteringByDistance(this._dm, 'ward');
+
+      this.df.setTag(treeTAGS.NEWICK, this.treeHelper.toNewick(treeNode));
+      const leafOrdering = this.treeHelper.getLeafList(treeNode).map((leaf) => parseInt(leaf.name));
+      this.analysisView.grid.setRowOrder(leafOrdering);
+      const dendrogramViewer = await this.df.plot.fromType('Dendrogram', {nodeColumnName: leafCol.name}) as DG.JsViewer;
+
+      this.analysisView.dockManager.dock(dendrogramViewer, DG.DOCK_TYPE.LEFT, null, 'Dendrogram', 0.25);
+    } catch (e) {
+      _package.logger.error(e as string);
+    } finally {
+      pi.close();
     }
   }
 
