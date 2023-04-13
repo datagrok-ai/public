@@ -8,13 +8,13 @@ export function updateDivInnerHTML(div: HTMLElement, content: string | Node): vo
 }
 
 export function addCopyIcon(text: string, paneName: string) {
-  const copyIcon = ui.icons.copy(() => {
+  const copyIcon = ui.icons.copy(() => {}, 'Copy');
+  copyIcon.onclick = (e) => {
     navigator.clipboard.writeText(text);
     grok.shell.info('Copied to clipboard');
-  }, 'Copy');
-  
+    e.stopImmediatePropagation();
+  } 
   copyIcon.classList.add('copy-icon');
-
   const accPanes = document.getElementsByClassName('d4-accordion-pane-header');
   for (let i = 0; i < accPanes.length; ++i) {
     if (accPanes[i].innerHTML === paneName) {

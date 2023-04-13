@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.55",
+  "version": "3.2.59",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -469,6 +469,9 @@
         },
         "1.5.23": {
           "datagrok-api": "^1.13.8"
+        },
+        "1.5.25": {
+          "datagrok-api": "^1.13.8"
         }
       },
       "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Chem/README.md)",
@@ -866,6 +869,9 @@
           "datagrok-api": "^1.6.0"
         },
         "1.7.2": {
+          "datagrok-api": "^1.6.0"
+        },
+        "1.8.0": {
           "datagrok-api": "^1.6.0"
         }
       },
@@ -2245,6 +2251,9 @@
         },
         "2.1.7": {
           "datagrok-api": "^1.10.2"
+        },
+        "2.1.8": {
+          "datagrok-api": "^1.10.2"
         }
       },
       "description": "Provides support for HELM notation (importing, detecting, rendering, conversion). [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Helm/README.md)",
@@ -2368,6 +2377,20 @@
         "url": "https://github.com/datagrok-ai/public",
         "directory": "packages/FAE"
       }
+    },
+    "dendrogram": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "^1.11.1"
+        }
+      },
+      "description": "Computation and visualization of hierarchical data clustering. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Dendrogram/README.md)",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/Dendrogram"
+      },
+      "category": "Visualizations"
     }
   }
 }
