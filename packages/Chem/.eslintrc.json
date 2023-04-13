@@ -1,7 +1,7 @@
 {
   "env": {
     "browser": true,
-    "es2021": true
+    "es2022": true
   },
   "extends": [
     "google"
@@ -24,7 +24,7 @@
       140
     ],
     "space-infix-ops": [
-      "error", 
+      "error",
       {"int32Hint": true}
     ],
     "skipBlankLines": 0,
