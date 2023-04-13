@@ -1,27 +1,29 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
+
+import {_package} from '../package';
+
 import '../../css/demo.css';
-//import { _package } from '../package-test';
-import { _package } from '../package';
+
 
 export class DemoView extends DG.ViewBase {
   dockPanel: DG.DockNode = new DG.DockNode(undefined);
   tree: DG.TreeViewGroup = ui.tree();
   search: DG.InputBase = ui.searchInput('', '');
-  
+
   constructor() {
     super();
+
     this._initDockPanel();
     this._initContent();
-    this.tree.root.classList.add('demo-app-tree-group');
   }
 
   static findDemoFunc(demoPath: string) {
     return DG.Func.find({meta: {'demoPath': demoPath}})[0];
   }
 
-  async startDemoFunc(func: DG.Func, viewPath: string) {
+  private async _startDemoFunc(func: DG.Func, viewPath: string) {
     grok.shell.closeAll();
     const loadingScreen = ui.div('Loading...', 'loading');
     grok.shell.tv.root.appendChild(loadingScreen);
@@ -37,33 +39,30 @@ export class DemoView extends DG.ViewBase {
   }
 
   private nodeView(viewName: string, viewPath: string) {
-  
     if (viewName === 'Viewers') {
       grok.shell.closeAll();
       grok.shell.newView(viewName);
       grok.shell.v.path = grok.shell.v.basePath = `/apps/Tutorials/Demo/${viewPath}`;
 
       for (const f of DG.Func.find({meta: {'demoPath': null}})) {
-        if (f.options[DG.FUNC_OPTIONS.DEMO_PATH].includes('Viewers')){
+        if (f.options[DG.FUNC_OPTIONS.DEMO_PATH].includes('Viewers')) {
           const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
           const path = pathOption.split('|').map((s) => s.trim());
           const viewer = path[path.length - 1];
-          const demoPath = `Viewers/${viewer}`; 
-          let root = ui.divV([
+          const demoPath = `Viewers/${viewer}`;
+          const root = ui.divV([
             ui.image(`${_package.webRoot}images/viewers/${f.friendlyName}Img.jpg`, 90, 70),
             viewer,
           ]);
           root.addEventListener('click', async () => {
             const demoPath = `Viewers/${viewer}`;
-            await this.startDemoFunc(f, demoPath);
+            await this._startDemoFunc(f, demoPath);
           });
           root.style.margin = '10px';
-          grok.shell.v.root.append(ui.divH([root], {style:{flexWrap:'wrap'}}));
+          grok.shell.v.root.append(ui.divH([root], {style: {flexWrap: 'wrap'}}));
         }
       }
-      
     }
-
   }
 
   private _initDockPanel() {
@@ -81,7 +80,6 @@ export class DemoView extends DG.ViewBase {
       item.root.onmouseout = (_) => {
         ui.tooltip.hide();
       };
-      
     }
 
     this.search.onChanged(() => {
@@ -113,7 +111,7 @@ export class DemoView extends DG.ViewBase {
         const viewerName = value.text;
         const demoFunc = DemoView.findDemoFunc(`${categoryName} | ${viewerName}`);
         const demoPath = `${categoryName}/${viewerName}`;
-        await this.startDemoFunc(demoFunc, demoPath);
+        await this._startDemoFunc(demoFunc, demoPath);
         this.tree.root.focus();
       } else {
         this.tree.root.focus();
@@ -121,6 +119,7 @@ export class DemoView extends DG.ViewBase {
       }
     });
 
+    this.tree.root.classList.add('demo-app-tree-group');
     this.dockPanel = grok.shell.dockManager.dock(ui.panel([
       this.search.root,
       this.tree.root,
@@ -132,7 +131,6 @@ export class DemoView extends DG.ViewBase {
     // grok.events.onCurrentViewChanged.subscribe((view) => this.tree.root.focus());
 
     // TODO: if loading ended in 0.1s, then no div, if not - then div - DG.debounce, merge etc.
-    // TODO: add starting demo app viewer on just up/down arrows
     // TODO: on click on viewer demo set viewer help url in property panel (func helpUrl)
     // TODO: implement search in demo - search on meta.keywords, name, description
     // TODO: add all the platform viewers to demo (make demo functions in Tutorials)
@@ -142,7 +140,6 @@ export class DemoView extends DG.ViewBase {
     // TODO: for standard the same
     // TODO: if there empty space - add viewer/filter/etc.
     // TODO: write API for step control and example, steps are written in context panel - first priority
-    // TODO: add DG.debounce
   }
 
   private _initWindowOptions() {

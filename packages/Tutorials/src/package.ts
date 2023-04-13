@@ -10,6 +10,7 @@ import {TutorialWidget} from './widget';
 import '../css/tutorial.css';
 import {Track} from '@datagrok-libraries/tutorials/src/track';
 import {DemoView} from './demo-app/demo-app';
+import {DemoScript} from './demo-app/demo-track';
 
 
 export const _package = new DG.Package();
@@ -120,6 +121,19 @@ export function demoApp() {
       });
     }
   }
+}
+
+//name: Demo script example
+//tags: app
+export function demoScriptExample() {
+  const demoScript = new DemoScript();
+  demoScript.addStep({func: () => grok.shell.addTableView(grok.data.demo.demog()), delay: 2000});
+  demoScript.addStep({func: () => grok.shell.addTableView(grok.data.testData('biosensor')), delay: 3000});
+  demoScript.addStep({func: () => {
+    grok.shell.addTableView(grok.data.testData('geo'));
+    console.log('End');
+  }, delay: 5000});
+  grok.shell.newView('Demo script example', [ui.button('Start script', () => demoScript.startScript())]);
 }
 
 function setProperties(properties: { [propertyName: string]: boolean }): void {
