@@ -16,7 +16,7 @@ To upload an OpenAPI document, drag and drop a YAML or JSON file into Datagrok. 
 | summary         | Data query name                                      |
 | parameters      | Data query parameters                                |
 
-When the file import is complete, the data connection, along with all associated queries, appears in the [**Webservices Manager**](https://public.datagrok.ai/webservices) (**Data** > **Webservices**).
+When the file import is complete, the data connection, along with all associated queries, appears in the [Webservices Manager](https://public.datagrok.ai/webservices) (**Data** > **Webservices**).
 
 :::tip
 
@@ -235,9 +235,7 @@ Solution 2. If `"version"` isn't present in the original file, add a `"version"`
 
 The **Webservices Manager** provides a convenient interface for hierarchical browsing and managing connections and associated queries. To access the context actions for a connection or a query, right-click it. If you don't see a certain action, it may be due to insufficient permissions. In such cases, contact your Datagrok administrator for assistance.
 
-Here's an example.
-
-When you import the Swagger file for AirNow, a site that provides information about outdoor air quality, the following connection and queries appear in Datagrok:
+When you import the Swagger file, the following connection and queries appear in Datagrok (below, we use the Swagger file from AirNow, a site that provides information about outdoor air quality):
 
 ![AirNow connection](../uploads/features/open-api-airnow-connection.png "AirNow")
 

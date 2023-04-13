@@ -1,5 +1,5 @@
 ---
-title: "Open datasets"
+title: "Public datasets"
 ---
 
 ## Public datasets

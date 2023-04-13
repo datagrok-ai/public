@@ -15,7 +15,7 @@ Connecting to an SMB file storage is only available for on-premise deployment an
 
 :::note developers
 
-You can [create custom connectors](../develop/how-to/access-data.md/#connections).
+You can [create custom connectors](create-custom-connectors.md) and [read files programmatically](../develop/how-to/access-data.md/#reading-files).
 
 :::
 
@@ -56,8 +56,8 @@ Like other objects in Datagrok, newly created connections are only visible to th
 
 To modify a connection, right-click it and select **Edit...** from the list of options. To quickly create a connection similar to an existing one, right-click it and select **Clone...**
 
+<!--
 ### File indexing
-
 For file shares, Datagrok supports indexing of folders and [supported file formats](supported-formats.md), including archives such as .tar or .zip.
 
 Connections and folders are indexed by default when you create a connection. File indexing is optional. To index files, select the **Index Files** option when creating a file share.
@@ -68,7 +68,7 @@ You can enable file indexing at any time. Right-click the file share and select 
 
 :::
 
-File indexing is a recurring [data job](data-job.md) that runs every hour. Datagrok extracts the following information from the indexed file:
+File indexing is a recurring data job that runs every hour. Datagrok extracts the following information from the indexed file:
 
 * Filename
 * File size, in bytes
@@ -90,6 +90,7 @@ Indexing helps you find datasets quicker as indexed files appear in the search r
 To learn how searching works in Datagrok, see [Smart search](../datagrok/smart-search.md).
 
 :::
+-->
 
 ## Importing text
 
@@ -101,7 +102,7 @@ When satisfied with the data, click **Done** to open the dataframe in Datagrok. 
 
 ## File Manager
 
-The **File Manager** is an interface that allows you to manage connections, browse and preview file content, and perform standard file and folder actions such as opening, downloading, deleting, and renaming. To access an object's context actions, you can right-click it or left-click and expand the **Actions** pane in the **Context Panel** on the left. By clicking a file or folder in the **File Manager**, you can open its preview. Double-clicking a file opens it in Datagrok, and double-clicking a folder expands its content.
+The **File Manager** is an interface that allows you to manage connections, browse and preview file content, and perform standard file and folder actions such as opening, downloading, deleting, and renaming. To access an object's context actions, right-click it or left-click and expand the **Actions** pane in the **Context Panel** on the left. By clicking a file or folder in the **File Manager**, you can open its preview. Double-clicking a file opens it in Datagrok, and double-clicking a folder expands its content.
 
 :::note
 
@@ -195,27 +196,25 @@ Another option is to share directly in Datagrok by creating a _file share_ and s
 
 * Share a _connection_ (root folder) to give access to the entire directory.
 * Share a _folder_ to give access to the content of individual folders in your directory.
-* Share a _file_ to limit access to individual files within a folder.<!--future-looking-->
+<!--* Share a _file_ to limit access to individual files within a folder.-->
 
 To share, follow these steps:
 
 1. Right-click the item you want to share and select **Share...** from its context menu. This action opens the **Share...** dialog.
 2. In the identity/email field, start typing a person's name, username, email, or group name, and pick from the list of matching identities.
 3. From the respective dropdowns, select access privileges for either or both: (1) the connection and (2) individual
-   files/folders. You can select any or all of the following options<!--TBU-->:
+   files/folders. You can select any or all of the following options:
 
     * _Can view_: Users can view, open, and download
-    * _Can edit_: Users can rename and edit
-    * _Can delete_: Users can delete
-    * _Can share_: Users can reshare with any other user or group.<!--how does it work with URL links? -->
+    * _Can edit_: Users can rename, edit, delete, and reshare with any other user or group.
 
     :::caution
 
-    A file's _name_ and _namespace_ are encoded within the URL. When you rename a file (or its location), the link changes accordingly, which may lead to may cause broken URL links, script errors, and similar issues.
+    A file's _name_ and _namespace_ are encoded within the URL. When you rename a file (or its location), the link changes accordingly, which may cause broken URL links, script errors, and similar issues.
 
     :::
 
-4. Optional. Enter a description in the text field provided. You may also notify the users you share with. If you don’t want to send a notification, uncheck the **Send notification** checkbox.
+4. Optional. Enter a description in the text field provided. You may also notify the users you share with. If you don’t want to send a notification, clear the **Send notification** checkbox.
 
   :::note
   
@@ -227,22 +226,11 @@ To share, follow these steps:
 
    ![Share a folder](share-the-folder.gif)
 
+:::tip
 
-You can use the **Sharing** info panel in the **Context Pane** to inspect and quickly adjust access permissions to your _file shares_, send comments to those you're sharing with, and more. The same actions are available from the context menu.
+To inspect or quickly adjust access permissions to your file shares, send comments to those you're sharing with, and more, use the **Sharing** info pane in the **Context Panel**.
 
-<!--TBD: GIF pending changes in the UI-->
-
-## Data reproducibility
-
-Datagrok provides a visual interface to automate manual, repetitive data ingestion, and data transformation tasks. For more information on workflow automation, see [Data preparation pipeline](data-pipeline.md).
-
-## See also
-
-* [Data access](access.md)
-<!--* [Databases](link)
-*[Web services](link)
-*[Context Pane](link)
-*[Indexing](link)-->
+:::
 
 ## Resources
 
