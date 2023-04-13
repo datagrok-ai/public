@@ -2,7 +2,7 @@
   "compilerOptions": {
     "outDir": "./built",
     "target": "es6",
-    "module": "ES2022",
+    "module": "es2020",
     "lib": ["ES2022", "DOM"],
     "moduleResolution": "node",
     "skipLibCheck": true,

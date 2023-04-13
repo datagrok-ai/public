@@ -2,7 +2,7 @@
   "compilerOptions": {
     "outDir": "./dist",
     "target": "es2017",
-    "module": "ES2022",
+    "module": "es2020",
     "allowJs": true,
     "strict": true,
     "strictPropertyInitialization": false,
