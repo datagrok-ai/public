@@ -5,7 +5,6 @@ import {V3K_CONST} from '../formats/molfile-v3k-const';
 export class MolfileV3KHandler extends MolfileHandlerBase {
   constructor(molfile: string) {
     super(molfile);
-    this.init(molfile);
   }
 
   protected shiftIdxToAtomType(lineStartIdx: number): number {

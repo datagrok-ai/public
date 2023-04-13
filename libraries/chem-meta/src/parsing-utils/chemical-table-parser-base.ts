@@ -12,26 +12,16 @@ type CoordinateArrays = {
 /** Base for Molfile or Mol2 parser/handler */
 export abstract class ChemicalTableParserBase {
   constructor(fileContent: string) {
-    this.init(fileContent);
+    this.fileContent = fileContent.replace(/\r/g, '');
   };
 
-  protected fileContent!: string;
+  protected fileContent: string;
   protected _atomCount?: number;
   protected _bondCount?: number;
   protected xyzAtomCoordinates?: CoordinateArrays;
   protected _atomTypes?: string[];
   protected _pairsOfBondedAtoms?: Uint16Array[];
   protected _bondTypes?: Uint16Array;
-
-  protected init(fileContent: string): void {
-    this.fileContent = fileContent.replace(/\r/g, '');
-    this._atomCount = undefined;
-    this._atomTypes = undefined;
-    this._bondCount = undefined;
-    this._bondTypes = undefined;
-    this.xyzAtomCoordinates = undefined;
-    this._pairsOfBondedAtoms = undefined;
-  }
 
   /** Total number of atoms in a molecule */
   get atomCount(): number {

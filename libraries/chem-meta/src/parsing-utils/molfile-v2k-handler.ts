@@ -9,7 +9,7 @@ export class MolfileV2KHandler extends MolfileHandlerBase {
 
   public static validate(molfile: string): boolean {
     return (molfile.indexOf(V2K_CONST.HEADER) !== -1 &&
-    molfile.indexOf(V2K_CONST.END) !== -1);
+      molfile.indexOf(V2K_CONST.END) !== -1);
   }
 
   protected shiftIdxToAtomType(lineStartIdx: number): number {

@@ -3,11 +3,6 @@ import {ChemicalTableParserBase, AtomAndBondCounts} from './chemical-table-parse
 export abstract class MolfileHandlerBase extends ChemicalTableParserBase {
   constructor(molfile: string) {
     super(molfile);
-    this.init(molfile);
-  }
-
-  protected init(molfile: string) {
-    super.init(molfile);
   }
 
   protected abstract parseAtomAndBondCounts(): AtomAndBondCounts;
