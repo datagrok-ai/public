@@ -354,16 +354,15 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
 
           this.selections = selections;
         }
-      } else 
-        this.current = this.mouseOver;
+      } else this.current = this.mouseOver; 
 
       if (!this.current) {
-        this.clickCounter +=1;
+        this.clickCounter += 1;
         if (this.clickCounter === 2) {
           this.clickCounter = 0;
           this.onResetZoom();
         }
-        setTimeout(() =>{
+        setTimeout(() => {
           this.clickCounter = 0;
         }, 300);
       }
