@@ -8,6 +8,7 @@ import 'codemirror/mode/python/python';
 import 'codemirror/mode/octave/octave';
 import 'codemirror/mode/r/r';
 import 'codemirror/mode/julia/julia';
+import '../css/styles.css';
 
 export function functionSignatureEditor(view: DG.View) {
   addFseRibbon(view);
@@ -24,6 +25,13 @@ function addFseRibbon(v: DG.View) {
 
       v.setRibbonPanels([...panels, [iconFse]]);
   }, 500);
+}
+
+function getInputBaseArray(props: DG.Property[], param: any): DG.InputBase[] {
+  const inputBaseArray: DG.InputBase[] = [];
+  for (let i = 0; i < props.length; ++i)
+    inputBaseArray[i] = DG.InputBase.forProperty(props[i], param);
+  return inputBaseArray;
 }
 
 const DEFAULT_CATEGORY = 'Misc';
@@ -402,13 +410,34 @@ async function openFse(v: DG.View, functionCode: string) {
 
     if (!param) return ui.div('');
 
-    const result = ui.input.form(param,
-      [
-        ...obligatoryFuncParamsTags,
-        ...optionalFuncParamsTags.filter((prop) => optionTags(param).includes(prop.name as OPTIONAL_TAG_NAME)),
-      ]);
+    const obligatoryTagsInputBase = getInputBaseArray(obligatoryFuncParamsTags, param);
 
-    grok.shell.o = ui.divV([ui.h1(`Param: ${paramName}`), ui.block75([result])]);
+    const optionalTagsInputBase = getInputBaseArray(
+      optionalFuncParamsTags.filter((prop) => optionTags(param).includes(prop.name as OPTIONAL_TAG_NAME)),
+      param
+    );
+
+    const result = ui.form([
+      ...obligatoryTagsInputBase,
+      ...optionalTagsInputBase,
+    ]);
+
+    const helpIcon = ui.iconFA('question', () => {
+      window.open(
+        'https://datagrok.ai/help/datagrok/functions/func-params-annotation', 
+        '_blank'
+      );
+    });
+    helpIcon.classList.add('help-icon');
+
+    grok.shell.o = ui.divV([
+      ui.divH(
+        [
+          ui.h1(`Param: ${paramName}`), 
+          helpIcon
+        ],
+      ), ui.block75([result])
+    ]);
   };
 
   const updateValue = (param: DG.Property, propName: string, v: any) => {
@@ -447,7 +476,7 @@ async function openFse(v: DG.View, functionCode: string) {
     DG.Property.create(FUNC_PARAM_FIELDS.CATEGORY, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.CATEGORY],
       (x: any, v) => updateFuncPropValue(FUNC_PARAM_FIELDS.CATEGORY, v), ''),
   ];
-
+  
   const obligatoryFuncParamsTags: DG.Property[] = [
     DG.Property.create(COMMON_TAG_NAME.CAPTION, DG.TYPE.STRING,
       (x: any) => x.options[COMMON_TAG_NAME.CAPTION],
@@ -515,6 +544,7 @@ async function openFse(v: DG.View, functionCode: string) {
       return temp;
     })(),
   ];
+
   const paramsDF = DG.DataFrame.create(functionParamsCopy.length);
   for (const p of obligatoryFuncParamsProps) {
     (paramsDF.columns as DG.ColumnList)

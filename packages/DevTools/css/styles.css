@@ -58,3 +58,8 @@
 .test-manager .d4-tree-view-group {
   width: 100%;
 }
+
+.help-icon {
+  position: relative;
+  left: 120px;
+}
