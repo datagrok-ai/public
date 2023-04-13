@@ -8,8 +8,7 @@
     "strictPropertyInitialization": false,
     //"noImplicitAny": true,
     "lib": [
-      "ES2021",
-      "ES2021.String",
+      "ES2022",
       "DOM"
     ],
     "moduleResolution": "node",
