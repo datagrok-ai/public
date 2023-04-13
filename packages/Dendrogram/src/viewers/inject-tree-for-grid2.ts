@@ -20,6 +20,8 @@ import {GridTreePlacer} from './tree-renderers/grid-tree-placer';
 import {Unsubscribable} from 'rxjs';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 
+import '../css/injected-dendrogram.css';
+
 export function injectTreeForGridUI2(
   grid: DG.Grid, treeRoot: NodeType | null, leafColName?: string, neighborWidth: number = 100, cut?: TreeCutOptions
 ): GridNeighbor {
@@ -114,10 +116,10 @@ export function injectTreeForGridUI2(
   try {
     const lineWidthProperty = DG.Property.int(D_PROPS.lineWidth,
       (obj) => {
-        const k = 11;
+        let k = 11;
       },
       (obj, value) => {
-        const k = 11;
+        let k = 11;
       },
       1);
     lineWidthProperty.category = `Dendrogram ${D_PROPS_CATS.STYLE}`;
@@ -312,12 +314,7 @@ export function injectTreeForGridUI2(
     const treeOverlay = ui.div();
     treeOverlay.style.width = treeNb.root!.style.width;
     treeOverlay.style.height = treeNb.root!.style.height;
-    treeOverlay.style.backgroundColor = 'white';
-    treeOverlay.style.position = 'absolute';
-    treeOverlay.style.overflowY = 'hidden';
-    treeOverlay.style.display = 'flex';
-    treeOverlay.style.justifyContent = 'center';
-    treeOverlay.style.alignItems = 'center';
+    treeOverlay.classList.add('dendrogram-overlay');
 
     const sortInfoDiv = ui.div('Revert columns sort order to see Dendrogram Tree');
     const realignButton = ui.button('Revert sort', () => {
