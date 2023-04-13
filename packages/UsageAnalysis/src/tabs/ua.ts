@@ -27,18 +27,18 @@ export class UaView extends DG.ViewBase {
     this.box = true;
   }
 
-  tryToinitViewers() {
+  tryToinitViewers(): void {
     if (!this.initialized) {
       this.initialized = true;
       this.initViewers();
     }
   }
 
-  getScatterPlot() {
+  getScatterPlot(): UaQueryViewer {
     return this.viewers[0];
   }
 
-  getTime(date: Date, format: string = 'en-GB') {
+  getTime(date: Date, format: string = 'en-GB'): string {
     return date.toLocaleString(format, {hour12: false}).replace(',', '');
   }
 
