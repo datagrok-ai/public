@@ -82,7 +82,6 @@ The goal for today is to gain experience with the platform by learning about its
          places.
       1. Follow the [instructions](../how-to/add-package-tests.md#testing-functions) to add tests to the script (use
          function `Round10` and constant `PI` in your tests)
-      <!-- TODO: Convert to an exercise -->
 
 ## Day 3
 
@@ -219,10 +218,9 @@ After Day 7, you will learn how to:
 1. Modify the application:
    1. It should open a summary view based on the demographics dataset (show age and sex distributions, add filters)
    1. It should allow browsing adverse events in a separate view (add timelines)
-1. See a real-life example:
+1. Check out a real-life example:
    1. Watch [Clinical Case: Interactive clinical data exploration](https://www.youtube.com/watch?v=lTg_E5xO-iw)
    1. Examine the [Clinical Case](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase) plugin in the
       public repository
-<!-- TODO: Convert to an exercise -->
 
 At the end of the day push your changes to GitHub and deploy your package to the platform.
