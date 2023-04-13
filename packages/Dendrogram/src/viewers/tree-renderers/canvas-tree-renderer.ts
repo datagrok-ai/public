@@ -38,7 +38,7 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
   protected readonly currentStyler: ITreeStyler<TNode>;
   protected readonly mouseOverStyler: ITreeStyler<TNode>;
   protected readonly selectionStyler: ITreeStyler<TNode>;
-
+  protected readonly initialPos: { top: number, bottom: number };
   protected _mainStyler: ITreeStyler<TNode>;
   protected _mainStylerOnChangedSub!: rxjs.Unsubscribable;
 
@@ -65,6 +65,9 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
 
     this.placer = placer;
     this.placer.onPlacingChanged.subscribe(this.placerOnChanged.bind(this));
+
+    // initial position of tree root, used for resetting zoom
+    this.initialPos = {top: placer.top, bottom: placer.bottom};
 
     this._mainStyler = mainStyler;
     this.lightStyler = lightStyler;
@@ -256,6 +259,11 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
     this.render('stylerOnChanged()');
   }
 
+  public onResetZoom() {
+    this.placer.update(this.initialPos);
+    this.render('onResetZoom()');
+  }
+
   protected canvasOnWheel(e: WheelEvent): void {
     if (!this.canvas || this.mouseDragging) return;
     e.preventDefault();
@@ -309,6 +317,9 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
     }
   }
 
+  //used for double click detection
+  protected clickCounter:number = 0;
+
   protected canvasOnClick(e: MouseEvent): void {
     if (e.button == 0) {
       if (e.ctrlKey) {
@@ -339,6 +350,16 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
         }
       } else {
         this.current = this.mouseOver;
+      }
+      if (!this.current) {
+        this.clickCounter +=1;
+        if (this.clickCounter == 2) {
+          this.clickCounter = 0;
+          this.onResetZoom();
+        }
+        setTimeout(() =>{
+          this.clickCounter = 0;
+        }, 300);
       }
     }
   }
