@@ -24,7 +24,6 @@ export function injectTreeForGridUI2(
   grid: DG.Grid, treeRoot: NodeType | null, leafColName?: string, neighborWidth: number = 100, cut?: TreeCutOptions
 ): GridNeighbor {
   const th: ITreeHelper = new TreeHelper();
-
   const treeNb: GridNeighbor = attachDivToGrid(grid, neighborWidth);
 
   // const treeDiv = ui.div();
