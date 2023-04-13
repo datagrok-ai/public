@@ -381,7 +381,7 @@ category('UI', () => {
       mi.click();
       await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot find Chem Map Identifiers dialog', 1000);
     }
-  });
+  }, {skipReason: 'GROK-12226'});
 
   after(async () => {
     grok.shell.closeAll();
