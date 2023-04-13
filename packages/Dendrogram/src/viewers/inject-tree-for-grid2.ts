@@ -347,7 +347,6 @@ export function injectTreeForGridUI2(
   subs.push(grid.dataFrame.onCurrentRowChanged.subscribe(dataFrameOnCurrentRowChanged));
   subs.push(grid.dataFrame.onMouseOverRowChanged.subscribe(dataFrameOnMouseOverRowChanged));
   subs.push(grid.dataFrame.onSelectionChanged.subscribe(dataFrameOnSelectionChanged));
-
   subs.push(grid.dataFrame.onFilterChanged.subscribe(dataFrameOnFilterChanged));
 
 

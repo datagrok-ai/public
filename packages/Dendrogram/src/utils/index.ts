@@ -14,7 +14,6 @@ export function attachDivToGrid(grid: DG.Grid, neighborWidth: number = 100): Gri
   //   colDate.set(nR, dayjs());
   // }
 
-
   const eDiv = ui.div();
   const button = ui.icons.close(() => {
     neighbor.close();
@@ -30,7 +29,6 @@ export function attachDivToGrid(grid: DG.Grid, neighborWidth: number = 100): Gri
   button.style.backgroundColor = 'white';
   button.style.paddingTop = '3px';
   eDiv.appendChild(button);
-
 
   const neighbor: GridNeighbor = new GridNeighbor(eDiv, grid, neighborWidth);
   return neighbor;
