@@ -127,12 +127,13 @@ export function demoApp() {
 //tags: app
 export function demoScriptExample() {
   const demoScript = new DemoScript();
-  demoScript.addStep({func: () => grok.shell.addTableView(grok.data.demo.demog()), delay: 2000});
-  demoScript.addStep({func: () => grok.shell.addTableView(grok.data.testData('biosensor')), delay: 3000});
+  demoScript.addStep({func: () => grok.shell.addTableView(grok.data.demo.demog()), delay: 2000, description: 'Aaa'});
+  demoScript.addStep({func: () => grok.shell.addTableView(grok.data.testData('biosensor')),
+    delay: 3000, description: 'Bbb'});
   demoScript.addStep({func: () => {
     grok.shell.addTableView(grok.data.testData('geo'));
     console.log('End');
-  }, delay: 5000});
+  }, delay: 5000, description: 'Ccc'});
   grok.shell.newView('Demo script example', [ui.button('Start script', () => demoScript.startScript())]);
 }
 

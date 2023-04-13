@@ -140,6 +140,9 @@ export class DemoView extends DG.ViewBase {
     // TODO: for standard the same
     // TODO: if there empty space - add viewer/filter/etc.
     // TODO: write API for step control and example, steps are written in context panel - first priority
+
+    // TODO: add margins to tree
+    // about code - add viewer, add there codemirror and the demo code and make it as a tab
   }
 
   private _initWindowOptions() {
