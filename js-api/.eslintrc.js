@@ -2,7 +2,7 @@
 module.exports = {
   'env': {
     'browser': true,
-    'es2021': true
+    'es2022': true
   },
   'parserOptions': {
     'ecmaVersion': 12,
