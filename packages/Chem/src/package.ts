@@ -150,10 +150,10 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
     const molIds = await chemDiversitySearch(
       col, similarityMetric['Tanimoto'], 9, 'Morgan' as Fingerprint, true);
 
-    col.temp = {
+    Object.assign(col.temp, {
       'version': version,
       'molIds': molIds
-    }
+    });
   }
 
   const molIdsCached = col.temp['molIds'];
