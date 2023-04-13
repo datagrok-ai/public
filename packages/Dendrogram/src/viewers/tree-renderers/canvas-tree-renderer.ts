@@ -42,7 +42,9 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
   protected _mainStyler: ITreeStyler<TNode>;
   protected _mainStylerOnChangedSub!: rxjs.Unsubscribable;
 
-  get mainStyler(): ITreeStyler<TNode> { return this._mainStyler; }
+  get mainStyler(): ITreeStyler<TNode> {
+    return this._mainStyler;
+  }
 
   set mainStyler(value: ITreeStyler<TNode>) {
     if (this.view)
@@ -130,7 +132,9 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
       if (this.treeRoot) {
         const styler: ITreeStyler<TNode> = !this.mouseOver ? this._mainStyler : this.lightStyler;
         const selectionTraceList: TraceTargetType<TNode>[] = this.selections.map(
-          (sel) => { return {target: sel.node, styler: this.selectionStyler}; });
+          (sel) => {
+            return {target: sel.node, styler: this.selectionStyler};
+          });
         renderNode(
           {
             ctx: ctx, firstRowIndex: this.placer.top, lastRowIndex: this.placer.bottom,
@@ -311,14 +315,16 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
       // console.debug('CanvasTreeRender.onMouseMove() --- getNode() ---');
       this.mouseOver = !this.treeRoot ? null : this.placer.getNode(
         this.treeRoot, canvasPoint, this._mainStyler.lineWidth, this._mainStyler.nodeSize,
-        (canvasP: DG.Point): DG.Point => { return treeToCanvasPoint(canvasP, this.canvas!, this.placer); });
+        (canvasP: DG.Point): DG.Point => {
+          return treeToCanvasPoint(canvasP, this.canvas!, this.placer);
+        });
 
       this._mainStyler.fireTooltipShow(this.mouseOver ? this.mouseOver.node : null, e);
     }
   }
 
   //used for double click detection
-  protected clickCounter:number = 0;
+  protected clickCounter: number = 0;
 
   protected canvasOnClick(e: MouseEvent): void {
     if (e.button == 0) {
@@ -348,12 +354,12 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
 
           this.selections = selections;
         }
-      } else {
+      } else 
         this.current = this.mouseOver;
-      }
+
       if (!this.current) {
         this.clickCounter +=1;
-        if (this.clickCounter == 2) {
+        if (this.clickCounter === 2) {
           this.clickCounter = 0;
           this.onResetZoom();
         }
