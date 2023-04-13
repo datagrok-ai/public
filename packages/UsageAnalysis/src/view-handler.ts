@@ -4,17 +4,17 @@ import * as DG from 'datagrok-api/dg';
 
 import {UaView} from './tabs/ua';
 import {UaToolbox} from './ua-toolbox';
-// import {OverviewView} from './views/overview-view';
-// import {EventsView} from './views/events-view';
+// import {OverviewView} from './tabs/overview';
+import {EventsView} from './tabs/events';
 // import {ErrorsView} from './tabs/errors';
-// import {FunctionsView} from './views/function-errors-view';
-// import {UsersView} from './views/users-view';
-// import {DataView} from './views/data-view';
+// import {FunctionsView} from './tabs/function-errors';
+// import {UsersView} from './tabs/users';
+// import {DataView} from './tabs/data';
 import {PackagesView} from './tabs/packages';
 import {FunctionsView} from './tabs/functions';
-import {OverviewView} from "./tabs/overview";
-import {Func, View} from "datagrok-api/dg";
-import {Subscription} from "rxjs";
+import {OverviewView} from './tabs/overview';
+// import {Func, View} from 'datagrok-api/dg';
+// import {Subscription} from 'rxjs';
 
 const APP_PREFIX: string = `/apps/UsageAnalysis/`;
 
@@ -35,8 +35,8 @@ export class ViewHandler {
     ViewHandler.UA = new DG.MultiView({viewFactories: {}});
     const toolbox = await UaToolbox.construct();
     const params = this.getSearchParameters();
-    // [OverviewView, EventsView, ErrorsView, FunctionsView, UsersView, DataView];
-    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView];
+    // [ErrorsView, FunctionsView, UsersView, DataView];
+    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView];
     // const viewFactories: {[name: string]: any} = {};
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i](toolbox);
@@ -55,8 +55,7 @@ export class ViewHandler {
         toolbox.setPackages(params.get('packages')!);
       toolbox.applyFilter();
     }
-    let sub: Subscription;
-    sub = ViewHandler.UA.tabs.onTabChanged.subscribe((tab) => {
+    const sub = ViewHandler.UA.tabs.onTabChanged.subscribe((tab) => {
       if (ViewHandler.UA.currentView instanceof PackagesView || ViewHandler.UA.currentView instanceof FunctionsView) {
         grok.shell.windows.showToolbox = true;
         grok.shell.windows.showContextPanel = true;

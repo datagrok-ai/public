@@ -100,7 +100,7 @@ export class PackagesView extends UaView {
     this.root.append(packagesViewer.root);
   }
 
-  async getFunctionsPane(cp: DG.Accordion, filter: Filter, date: Date[], packageNames: string[]) {
+  async getFunctionsPane(cp: DG.Accordion, filter: Filter, date: Date[], packageNames: string[]): Promise<void> {
     const button = ui.button('Details', async () => {
       this.uaToolbox.dateFromDD.value = this.getTime(date[0]);
       this.uaToolbox.dateToDD.value = this.getTime(date[1]);
@@ -146,7 +146,7 @@ export class PackagesView extends UaView {
     }, this.expanded.f);
   }
 
-  async getLogsPane(cp: DG.Accordion, filter: Filter) {
+  async getLogsPane(cp: DG.Accordion, filter: Filter): Promise<void> {
     const lPane = cp.addPane('Log events summary', () => {
       return ui.wait(async () => {
         const df = await grok.data.query('UsageAnalysis:PackagesContextPaneLogs', filter);
@@ -160,7 +160,7 @@ export class PackagesView extends UaView {
     }, true);
   }
 
-  async getAuditPane(cp: DG.Accordion, filter: Filter) {
+  async getAuditPane(cp: DG.Accordion, filter: Filter): Promise<void> {
     const pane = cp.addPane('Audit summary', () => {
       return ui.wait(async () => {
         const df = await grok.data.query('UsageAnalysis:PackagesContextPaneAudit', filter);
