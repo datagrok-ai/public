@@ -93,7 +93,10 @@ export class DemoDatasets {
 
 export class Db {
 
-  /** Executes a specified {@link sql} against the specified {@link connectionId}. */
+  /** Executes a specified {@link sql} against the specified {@link connectionId}.
+   * @param {string} connectionId - fully-qualified connection name (see [nqName])
+   * @param {string} sql - SQL statement
+   */
   async query(connectionId: string, sql: string): Promise<DataFrame> {
     let connection: DataConnection = await new Functions().eval(connectionId);
     let q = connection.query('adhoc', sql);
