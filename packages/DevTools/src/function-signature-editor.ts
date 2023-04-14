@@ -28,9 +28,11 @@ function addFseRibbon(v: DG.View) {
 }
 
 function getInputBaseArray(props: DG.Property[], param: any): DG.InputBase[] {
-  const inputBaseArray: DG.InputBase[] = [];
-  for (let i = 0; i < props.length; ++i)
-    inputBaseArray[i] = DG.InputBase.forProperty(props[i], param);
+  const inputBaseArray = props.map((prop) => {
+    const input = DG.InputBase.forProperty(prop, param);
+    input.setTooltip(tooltipMessage[prop.name as OPTIONAL_TAG_NAME]);
+    return input;
+  });
   return inputBaseArray;
 }
 
@@ -46,6 +48,23 @@ const enum FUNC_PROPS_FIELDS {
   SAMPLE = 'sample',
   ENVIRONMENT = 'environment',
   TAGS = 'tags'
+}
+
+const tooltipMessage = {
+  'caption': 'Custom field caption',
+  'postfix': 'Field postfix',
+  'units': 'Value unit name',
+  'editor': 'Editor',
+  'semType': 'Semantic type',
+  'columns': 'Numerical or categorical columns will be loaded',
+  'type': 'Column type',
+  'format': 'Datetime format',
+  'allowNulls': 'Validation of the missing values presence',
+  'action': 'For output parameters only',
+  'choices': 'List of choices for string parameter',
+  'suggestions': 'List of suggestions for string parameter',
+  'min': 'Minimum value',
+  'max': 'Maximum value',
 }
 
 const obligatoryFuncProps = ['name', 'description', 'helpUrl', 'language'];
@@ -73,6 +92,7 @@ const highlightModeByLang = (key: LANGUAGE) => {
     case LANGUAGE.OCTAVE: return 'octave';
     case LANGUAGE.JULIA: return 'julia';
     case LANGUAGE.R: return 'r';
+    case LANGUAGE.SQL: return 'sql';
   }
 };
 
@@ -186,9 +206,12 @@ enum LANGUAGE {
   JULIA = 'julia',
   OCTAVE = 'octave',
   NODEJS = 'nodejs',
-  GROK = 'grok'
+  GROK = 'grok',
+  SQL = 'sql'
 }
-const languages = ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok'];
+const languages = ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok', 'sql'];
+const scriptingLanguages = ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok'];
+
 const headerSign = (lang: LANGUAGE) => {
   switch (lang) {
     case LANGUAGE.JS:
@@ -200,8 +223,23 @@ const headerSign = (lang: LANGUAGE) => {
     case LANGUAGE.PYTHON:
     case LANGUAGE.OCTAVE:
       return '#';
+    case LANGUAGE.SQL:
+      return '--';
   }
 };
+
+async function getEditorSql(sql: string) {
+  const regex = /--connection:\s*(\S+)/;
+  const match = sql.match(regex);
+  let connectionName;
+  if (match) 
+    connectionName = match[1];
+  const connection = await grok.functions.eval(connectionName);
+  const query = connection.query('sql', sql);
+  const editor = await query.prepare().getEditor();
+  return editor;
+}
+
 
 async function openFse(v: DG.View, functionCode: string) {
   const inputScriptCopy = DG.Script.create(functionCode);
@@ -428,7 +466,7 @@ async function openFse(v: DG.View, functionCode: string) {
         '_blank'
       );
     });
-    helpIcon.classList.add('help-icon');
+    helpIcon.classList.add('dt-help-icon');
 
     grok.shell.o = ui.divV([
       ui.divH(
@@ -600,7 +638,11 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const codeArea = ui.textInput('', '');
   const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), { mode: highlightModeByLang(inputScriptCopy.language as LANGUAGE) });
-  const uiArea = await inputScriptCopy.prepare().getEditor();
+  let uiArea;
+  if (scriptingLanguages.includes(inputScriptCopy.language)) 
+    uiArea = await inputScriptCopy.prepare().getEditor();
+  else 
+    uiArea = await getEditorSql(functionCode);
   const codePanel = ui.panel([codeArea.root]);
   codePanel.style.height = '100%';
   codeArea.root.style.height = '100%';
@@ -683,8 +725,11 @@ async function openFse(v: DG.View, functionCode: string) {
     myCM.setSize('100%', '100%');
 
     let modifiedScript = DG.Script.create(result);
-    let newUiArea = await modifiedScript.prepare().getEditor();
-    uiArea.innerHTML = '';
+    let newUiArea;
+    if (scriptingLanguages.includes(inputScriptCopy.language)) 
+      newUiArea = await modifiedScript.prepare().getEditor();
+    else
+      newUiArea = await getEditorSql(result);
     uiArea.append(newUiArea);
   };
 
