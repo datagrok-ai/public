@@ -29,17 +29,20 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
     DG.debounce(df.onSemanticTypeDetected, 800).subscribe((_) => {
       const viewer = tableView.addViewer(viewerName, options);
       if (viewerName === 'Globe')
-        tableView.dockManager.dock(viewer, 'up', null, viewerName, 0.75);
-      tableView.filters();
+        dockViewers(tableView, viewer, viewerName);
     });
     return;
   }
 
-  let rootNode = tableView.dockManager.rootNode;
-  let node1 = tableView.dockManager.dock(tableView.addViewer('scatterplot', options), 'right', rootNode, 'Scatter plot', 0.5);
-  let node2 = tableView.dockManager.dock(tableView.addViewer('histogram', options), 'right', node1, 'Histogram', 0.3);
-  let node3 = tableView.dockManager.dock(tableView.addViewer(viewerName, options), 'up', null, viewerName, 0.7);
-  tableView.dockManager.dock(tableView.filters(), 'left', node3, 'Filters', 0.3);
+  const viewer = tableView.addViewer(viewerName, options);
+  dockViewers(tableView, viewer, viewerName);
+}
 
-  //TODO: set grid instead of null, 'up' -> 'right' (for histogram and scatterplot)
+function dockViewers(tableView: DG.TableView, viewer: DG.Viewer, viewerName: string) {
+  const rootNode = tableView.dockManager.rootNode;
+  const node1 = tableView.dockManager.dock(tableView.addViewer('scatterplot'), 'right', rootNode,
+    'Scatter plot', 0.5);
+  tableView.dockManager.dock(tableView.addViewer('histogram'), 'right', node1, 'Histogram', 0.3);
+  const node3 = tableView.dockManager.dock(viewer, 'up', null, viewerName, 0.7);
+  tableView.dockManager.dock(tableView.filters(), 'left', node3, 'Filters', 0.3);
 }
