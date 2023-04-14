@@ -26,7 +26,7 @@ enum EMBED_COL_NAMES {
 }
 
 export async function demoSequenceSpace(
-  view: DG.TableView, df: DG.DataFrame, method: string
+  view: DG.TableView, df: DG.DataFrame, colName: string, method: string
 ): Promise<DG.ScatterPlotViewer> {
   let resSpaceViewer: DG.ScatterPlotViewer;
   if (true) {
@@ -45,7 +45,7 @@ export async function demoSequenceSpace(
     }
 
     if (df.rowCount >= 1) {
-      const seqCol: DG.Column<string> = df.getCol('sequence');
+      const seqCol: DG.Column<string> = df.getCol(colName);
       const seqList = seqCol.toList();
 
       const t1: number = Date.now();
@@ -87,7 +87,7 @@ export async function demoSequenceSpace(
       'lassoTool': true,
     })) as DG.ScatterPlotViewer;
   } else {
-    resSpaceViewer = (await sequenceSpaceTopMenu(df, df.getCol('sequence'),
+    resSpaceViewer = (await sequenceSpaceTopMenu(df, df.getCol(colName),
       'UMAP', StringMetricsNames.Levenshtein, true)) as DG.ScatterPlotViewer;
   }
   view.dockManager.dock(resSpaceViewer!, DG.DOCK_TYPE.RIGHT, null, 'Sequence Space', 0.35);

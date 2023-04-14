@@ -2,14 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_package, activityCliffs, sequenceSpaceTopMenu} from '../package';
-import wu from 'wu';
+import {_package, activityCliffs,} from '../package';
 import $ from 'cash-dom';
 
-import {TAGS as acTAGS, TEMPS as acTEMPS} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {delay} from '@datagrok-libraries/utils/src/test';
-import {reduceDimensinalityWithNormalization} from '@datagrok-libraries/ml/src/sequence-space';
-import {StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
+import {TEMPS as acTEMPS} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import * as lev from 'fastest-levenshtein';
 import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
 import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';

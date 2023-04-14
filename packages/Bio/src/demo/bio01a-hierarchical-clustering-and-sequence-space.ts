@@ -2,10 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_package, sequenceSpaceTopMenu} from '../package';
-import {delay} from '@datagrok-libraries/utils/src/test';
-import {reduceDimensinalityWithNormalization} from '@datagrok-libraries/ml/src/sequence-space';
-import {StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
+import {_package} from '../package';
+
 import * as lev from 'fastest-levenshtein';
 import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
 import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
@@ -13,7 +11,7 @@ import {getDendrogramService, IDendrogramService} from '@datagrok-libraries/bio/
 import {demoSequenceSpace, step} from './utils';
 
 const dataFn = 'data/sample_FASTA_DNA.csv';
-
+const seqColName = 'sequence';
 
 export async function demoBio01aUI(funcPath: string) {
   let treeHelper: ITreeHelper;
@@ -39,11 +37,11 @@ export async function demoBio01aUI(funcPath: string) {
     })();
 
     await step('Building sequence space.', async () => {
-      spViewer = await demoSequenceSpace(view, df, method);
+      spViewer = await demoSequenceSpace(view, df, seqColName, method);
     })();
 
     await step('Hierarchical clustering.', async () => {
-      const seqCol: DG.Column<string> = df.getCol('sequence');
+      const seqCol: DG.Column<string> = df.getCol(seqColName);
       const seqList = seqCol.toList();
       const distance: DistanceMatrix = DistanceMatrix.calc(seqList, (aSeq: string, bSeq: string) => {
         const levDistance = lev.distance(aSeq, bSeq);
