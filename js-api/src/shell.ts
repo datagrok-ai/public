@@ -5,7 +5,7 @@ import { toDart, toJs } from "./wrappers";
 import { Menu, TabControl } from "./widgets";
 import { DockManager } from "./docking";
 import { DockType, DOCK_TYPE } from "./const";
-import { JsViewer } from "./viewer";
+import { JsViewer, Viewer } from "./viewer";
 import {_toIterable} from "./utils";
 import {FuncCall} from "./functions";
 
@@ -84,6 +84,15 @@ export class Shell {
 
   set o(x: any) {
     api.grok_Set_CurrentObject(toDart(x));
+  }
+
+  /** Current viewer */
+  get viewer(): Viewer {
+    return toJs(api.grok_Get_CurrentViewer(), false);
+  }
+
+  set viewer(x: Viewer) {
+    api.grok_Set_CurrentViewer(toDart(x));
   }
 
   /** @type {TabControl} */
