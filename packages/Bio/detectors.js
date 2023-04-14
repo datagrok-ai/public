@@ -165,7 +165,7 @@ class BioPackageDetectors extends DG.Package {
       if (statsAsChars.sameLength) {
         const stats = this.getStats(categoriesSample, seqMinLength, splitter);
         const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, '-', colNameLikely);
-        if (alphabet === ALPHABET.UN && !colNameLikely) return null;
+        if (alphabet === ALPHABET.UN) return null;
 
         col.setTag(DG.TAGS.UNITS, units);
         if (separator) col.setTag(UnitsHandler.TAGS.separator, separator);
@@ -193,8 +193,7 @@ class BioPackageDetectors extends DG.Package {
 
         // TODO: If separator detected, then extra efforts to detect alphabet are allowed.
         const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, gapSymbol, colNameLikely);
-        /* Likely column name allows detecting 'fasta' notation with 'UN' alphabet, 2023-04-13, atanas, askalkin */
-        if (units === NOTATION.FASTA && alphabet === ALPHABET.UN && !alphabetIsMultichar && !colNameLikely) return null;
+        if (units === NOTATION.FASTA && alphabet === ALPHABET.UN && !alphabetIsMultichar) return null;
 
         // const forbidden = this.checkForbiddenWoSeparator(stats.freq);
         col.setTag(DG.TAGS.UNITS, units);

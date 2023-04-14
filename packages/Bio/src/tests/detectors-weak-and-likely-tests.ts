@@ -19,8 +19,10 @@ category('detectors:weak-and-likely', () => {
     fastaPtWeak1 = 'fastaPtWeak1',
     fastaPtWeak1LikelyName = 'fastaPtWeak1LikelyName',
 
+    /* Notation 'fasta' alphabet 'UN' is forbidden for likely columns too. */
     fastaUn1 = 'fastaUn1',
     fastaUn1LikelyName = 'fastaUn1LikelyName',
+    fastaUn2LikelyName = 'fastaUn2LikelyName',
     fastaUnMsa1LikelyName = 'fastaUnMsa1LikelyName',
   }
 
@@ -73,6 +75,11 @@ category('detectors:weak-and-likely', () => {
 3,some
 4,another
 `,
+    [csvTests.fastaUn2LikelyName]: `protein
+Boombastic
+Megafantastic
+"just-a-random-thought,oy!"
+`,
     [csvTests.fastaUnMsa1LikelyName]: `id,seq
 1,word
 2,male
@@ -119,11 +126,12 @@ category('detectors:weak-and-likely', () => {
     await _testNeg(readCsv(csvTests.fastaUn1), 'colName');
   });
   test(csvTests.fastaUn1LikelyName, async () => {
-    await _testPos(readCsv(csvTests.fastaUn1LikelyName), 'seq',
-      NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.UN, 11, false);
+    await _testNeg(readCsv(csvTests.fastaUn1LikelyName), 'seq');
+  });
+  test(csvTests.fastaUn2LikelyName, async () => {
+    await _testNeg(readCsv(csvTests.fastaUn2LikelyName), 'protein');
   });
   test(csvTests.fastaUnMsa1LikelyName, async () => {
-    await _testPos(readCsv(csvTests.fastaUnMsa1LikelyName), 'seq',
-      NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 10, false);
+    await _testNeg(readCsv(csvTests.fastaUnMsa1LikelyName), 'seq');
   });
 });
