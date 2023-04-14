@@ -30,11 +30,13 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
       const viewer = tableView.addViewer(viewerName, options);
       if (viewerName === 'Globe')
         tableView.dockManager.dock(viewer, 'up', null, viewerName, 0.75);
+      tableView.filters();
     });
     return;
   }
 
   const viewer = tableView.addViewer(viewerName, options);
   tableView.dockManager.dock(viewer, 'up', null, viewerName, 0.75);
+  tableView.filters();
   //TODO: set grid instead of null, 'up' -> 'right' (for histogram and scatterplot)
 }
