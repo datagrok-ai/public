@@ -25,7 +25,7 @@ export async function drawMolecule(
     canvas.style.width = `${canvasWidth}px`;
     canvas.style.height = `${canvasHeight}px`;
     canvas.style.borderStyle = 'solid';
-    canvas.style.borderColor = 'var(--blue-1)';
+    canvas.style.borderColor = 'var(--grey-3)';
     canvas.style.borderWidth = 'thin';
     drawMolfileOnCanvas(canvas, molfile);
 

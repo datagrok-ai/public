@@ -12,7 +12,6 @@ import {linkStrandsV3000} from '../utils/structures-works/mol-transformations';
 import {isValidSequence} from '../sdf-tab/sequence-codes-tools';
 import '../view/css/sdf-tab.css';
 
-/** Data associated with strands */
 type StrandData = {
   strand: string,
   invert: boolean
@@ -97,4 +96,3 @@ export function saveSdf(
     download(`SequenceTranslator-${dateString}.sdf`, encodeURIComponent(result));
   }
 }
-

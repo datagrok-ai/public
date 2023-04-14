@@ -6,11 +6,5 @@ import * as DG from 'datagrok-api/dg';
 import {getAxolabsTab} from '../../axolabs-tab/axolabs-tab';
 
 export class AxolabsTabUI {
-  constructor() {
-    this._htmlDivElement = getAxolabsTab();
-  }
-
-  private _htmlDivElement;
-
-  get htmlDivElement() { return this._htmlDivElement; }
+  get htmlDivElement() { return getAxolabsTab(); }
 }
