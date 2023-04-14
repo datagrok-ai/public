@@ -4,19 +4,19 @@ title: "Access data"
 
 This article walks you through extracting data using various methods, such as:
 
-* [creating connections](#connections) to data sources and [running queries](#queries)
-* [using REST APIs](#rest-endpoints)
-* [reading files](#reading-files) into dataframe objects in your application.
+* Creating connections to data sources and running queries
+* Using REST APIs
+* Reading files into dataframe objects in your application.
 
 ## Connections
 
 With the Datagrok platform, you can programmatically retrieve data from different sources like files, databases, cloud, or webservices. Here's a general workflow for getting data:
 
-1. [Add a data connection](#adding-connections) to your package.
-1. Specify the connection's [parameters](#parameters).
-1. [Transfer credentials](#managing-credentials).
-1. [Create](#creating-queries) and [execute](#executing-queries) a parameterized query in JavaScript code to return a dataframe.
-1. Optional. [Share a connection](#sharing-connections).
+1. Add a data connection to your package.
+1. Specify the connection's parameters.
+1. Transfer credentials.
+1. Create a parameterized query and execute it in JavaScript code to return a dataframe.
+1. Optional. Share a connection.
 
 :::note
 
@@ -26,7 +26,7 @@ To learn how to create data connections from the UI, see documentation for the r
 
 ### Creating a connection
 
-To add a connection, start with a [package](../develop.md#packages). Packages can have multiple data connections in the `connections` folder. Create a separate JSON file with the required parameters for each connection.
+To add a connection programmatically, first create a [package](../develop.md#packages). Packages can have multiple data connections in the `connections` folder. Create a separate JSON file with the required parameters for each connection.
 
 <details>
 <summary> Example </summary>
@@ -60,24 +60,27 @@ Our package utilities provide a similar template when running the `grok add conn
 or [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
 packages.
 
-Connection parameters are specific to a data source. Most data providers require [common parameters](../../access/supported-connectors.md) such as:
-* Data Source
+Connection parameters are specific to a data source. Most data providers require common parameters, such as:
+
+* Data source
 * Server
 * Port
 * DB
-* Cache Schema
-* Cache Results
+* Cache schema
+* Cache results
 * SSL
 * Connection string
 * Login
 * Password
 * Other parameters.
 
+See [Supported connectors](../../access/supported-connectors.md) for details.
+
 When providing a connection string, you don't need to pass other parameters.
 
 Parameters carrying sensitive data (such as **Login**/**Password** or **Access Key**/**Secret Key**) are handled in a special way.
 
-Datagrok has a [built-in credentials management system](../../govern/security.md#credentials-storage) that protects sensitive data. Parameters regulating access to the data source are processed independently, so don't include them in a custom connection string:
+Datagrok has a [built-in credentials management system](../../govern/security.md#credentials-storage) that protects sensitive data. Parameters regulating access to the data source are processed independently, so don't include them in a custom connection string.
 
 <details>
 <summary> Example: Specifying credentials for a data connection </summary>
@@ -148,7 +151,7 @@ query template into your package, type `grok add query <name>` in the terminal.
 
 :::
 
-For a list of header parameters and further details related to query annotation, see [Parameterized queries](../../access/databases.md/#parameterized-queries). For examples of data queries, see the [Chembl package](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/queries).
+For a list of header parameters and further details related to query annotation, see [Parameterized queries](../../access/databases.md/#parameterized-queries) and [Parameter annotation](../../datagrok/functions/func-params-annotation.md). For examples of data queries, see the [Chembl package](https://github.com/datagrok-ai/public/tree/master/packages/Chembl/queries).
 
 #### Running queries
 
