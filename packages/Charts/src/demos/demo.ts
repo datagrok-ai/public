@@ -28,8 +28,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
   if (['Globe', 'GroupAnalysis'].includes(viewerName)) {
     DG.debounce(df.onSemanticTypeDetected, 800).subscribe((_) => {
       const viewer = tableView.addViewer(viewerName, options);
-      if (viewerName === 'Globe')
-        dockViewers(tableView, viewer, viewerName);
+      dockViewers(tableView, viewer, viewerName);
     });
     return;
   }
@@ -39,10 +38,20 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
 }
 
 function dockViewers(tableView: DG.TableView, viewer: DG.Viewer, viewerName: string) {
+  if (viewerName === 'GroupAnalysis')
+    return;
+
   const rootNode = tableView.dockManager.rootNode;
-  const node1 = tableView.dockManager.dock(tableView.addViewer('scatterplot'), 'right', rootNode,
+
+  if (viewerName === 'WordCloud') {
+    tableView.dockManager.dock(tableView.filters(), 'right', rootNode, 'Filters', 0.6);
+    tableView.dockManager.dock(viewer, 'up', null, viewerName, 0.7);
+    return;
+  }
+
+  const scatterplotNode = tableView.dockManager.dock(tableView.addViewer('scatterplot'), 'right', rootNode,
     'Scatter plot', 0.5);
-  tableView.dockManager.dock(tableView.addViewer('histogram'), 'right', node1, 'Histogram', 0.3);
-  const node3 = tableView.dockManager.dock(viewer, 'up', null, viewerName, 0.7);
-  tableView.dockManager.dock(tableView.filters(), 'left', node3, 'Filters', 0.3);
+  tableView.dockManager.dock(tableView.addViewer('histogram'), 'right', scatterplotNode, 'Histogram', 0.3);
+  const viewerNode = tableView.dockManager.dock(viewer, 'up', null, viewerName, 0.7);
+  tableView.dockManager.dock(tableView.filters(), 'left', viewerNode, 'Filters', 0.3);
 }
