@@ -81,8 +81,10 @@ export class DemoView extends DG.ViewBase {
       const folder = this.tree.getOrCreateGroup(path.slice(0, path.length - 1).join(' | '));
       const item = folder.item(path[path.length - 1]);
       item.root.onmouseover = (event) => {
-        if (f.description)
-          ui.tooltip.show(f.description, event.clientX, event.clientY);
+        if (f.description) {
+          const tooltip = f.description.split('\\n');
+          ui.tooltip.show(ui.divV(tooltip.map(elem => elem)), event.clientX, event.clientY);
+        }
       };
 
       item.root.onmouseout = (_) => {

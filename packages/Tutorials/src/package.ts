@@ -145,7 +145,7 @@ function setProperties(properties: { [propertyName: string]: boolean }): void {
 
 function setPath(path: string, tutorialRunners: TutorialRunner[]): void {
   const pathParts = path.split('/');
-  const removeSpaces = (s: string) => s.split(' ').join('');
+  const removeSpaces = (s: string) => s.replaceAll(' ', '');
   const trackShortNames: {[key: string]: Track} = {
     'eda': eda,
     'ml': ml,
