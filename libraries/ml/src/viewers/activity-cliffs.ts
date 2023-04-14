@@ -4,8 +4,16 @@ import * as ui from 'datagrok-api/ui';
 import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 import {getSimilarityFromDistance} from '../distance-metrics-methods';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
-import { Subject } from 'rxjs';
+import {Subject} from 'rxjs';
 import '../../css/styles.css';
+
+export const enum TAGS {
+  activityCliffs = '.activityCliffs',
+}
+
+export const enum TEMPS{
+  cliffsDfGrid = '.cliffsDfGrid',
+}
 
 export interface ILine {
   id: number;
@@ -131,8 +139,9 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   const linesRes = createLines(cliffsMetrics, seqCol, activities, semType, tags);
 
   const linesDfGrid = linesGridFunc ?
-  linesGridFunc(linesRes.linesDf, LINES_DF_MOL_COLS_NAMES).sort([LINES_DF_SALI_COL_NAME], [false]) :
-  linesRes.linesDf.plot.grid().sort([LINES_DF_SALI_COL_NAME], [false]);
+    linesGridFunc(linesRes.linesDf, LINES_DF_MOL_COLS_NAMES).sort([LINES_DF_SALI_COL_NAME], [false]) :
+    linesRes.linesDf.plot.grid().sort([LINES_DF_SALI_COL_NAME], [false]);
+  df.temp[TEMPS.cliffsDfGrid] = linesDfGrid;
 
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
     view.dockManager.dock(linesDfGrid.root, 'down', null, 'Activity cliffs', 0.2);

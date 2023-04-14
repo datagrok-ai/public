@@ -48,6 +48,9 @@ import {getMacromoleculeColumn} from './utils/ui-utils';
 import {IUMAPOptions, ITSNEOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
+import {demoBio01UI} from './demo/bio01-similarity-diversity';
+import {demoBio01aUI} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
+import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
 
 // /** Avoid reassinging {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
 // let monomerLib: MonomerLib | null = null;
@@ -312,11 +315,9 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: object options {optional: true}
-//output: viewer result
 //editor: Bio:SeqActivityCliffsEditor
 export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column, activities: DG.Column,
-  similarity: number, methodName: string, options?: IUMAPOptions | ITSNEOptions
-): Promise<DG.Viewer | undefined> {
+  similarity: number, methodName: string, options?: IUMAPOptions | ITSNEOptions): Promise<DG.Viewer | undefined> {
   if (!checkInputColumnUi(macroMolecule, 'Activity Cliffs'))
     return;
   const axesNames = getEmbeddingColsNames(df);
@@ -749,4 +750,24 @@ export function saveAsFasta() {
 //meta.semType: Macromolecule
 export function bioSubstructureFilter(): BioSubstructureFilter {
   return new BioSubstructureFilter();
+}
+
+// -- Demo --
+
+//name: demoBio01
+//meta.demoPath: Bioinformatics | Similarity & Diversity
+export async function demoBio01(): Promise<void> {
+  await demoBio01UI('func/Bio.demoBio01');
+}
+
+//name:demoBio01a
+//meta.demoPath: Bioinformatics | Hierarchical Clustering & Sequence Space
+export async function demoBio01a(): Promise<void> {
+  await demoBio01aUI('func/Bio.demoBio01a');
+}
+
+//name: demoBio01c
+//meta.demoPath: Bioinformatics | Hierarchical Clustering & Activity Cliffs
+export async function demoBio01b(): Promise<void> {
+  await demoBio01bUI('func/Bio.demoBio01b');
 }
