@@ -247,8 +247,9 @@ class BioPackageDetectors extends DG.Package {
   }
 
   checkForbiddenSeparator(separator) {
-    // dot, comma, ampersand, space, underscore, CR, LF
-    const forbiddenSepRe = / |\.|,|&|_|\r\n|\n/i;
+    // comma, ampersand, space, underscore, CRLF, CR, LF
+    // 2023-04-15: dot is allowed to allow Helm like separator in Helm MSA results (no Helm monomers contains dot)
+    const forbiddenSepRe = /,|&| |_|\r\n|\r|\n/i;
     return forbiddenSepRe.test(separator);
   }
 
