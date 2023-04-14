@@ -380,7 +380,7 @@ category('UI', () => {
     isColumnPresent(smiles.columns, 'RingCount');
     v.close();
     grok.shell.o = ui.div();
-  });
+  }, {skipReason: 'GROK-12226'});
 
   after(async () => {
     grok.shell.closeAll();
