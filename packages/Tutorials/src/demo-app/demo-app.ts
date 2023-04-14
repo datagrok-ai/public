@@ -9,7 +9,7 @@ export class DemoView extends DG.ViewBase {
   dockPanel: DG.DockNode = new DG.DockNode(undefined);
   tree: DG.TreeViewGroup = ui.tree();
   search: DG.InputBase = ui.searchInput('', '');
-  
+
   constructor() {
     super();
     this._initDockPanel();
@@ -36,20 +36,19 @@ export class DemoView extends DG.ViewBase {
     this.root.appendChild(ui.divText('Select a demo from the toolbox on the left', 'demo-text'));
   }
 
-  private nodeView(viewName: string, viewPath: string) {
-    
+  nodeView(viewName: string) {
     if (viewName === 'Viewers') {
       let root = ui.div([], 'grok-gallery-grid');
       grok.shell.closeAll();
-      grok.shell.newView(viewName);
-      grok.shell.v.path = grok.shell.v.basePath = `/apps/Tutorials/Demo/${viewPath}`;
+      const view = grok.shell.newView(viewName);
+      view.basePath = '/apps/Tutorials/Demo';
+      view.path = `/${viewName}`;
 
       for (const f of DG.Func.find({meta: {'demoPath': null}})) {
         if (f.options[DG.FUNC_OPTIONS.DEMO_PATH].includes('Viewers')){
           const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
           const path = pathOption.split('|').map((s) => s.trim());
           const viewer = path[path.length - 1];
-          const demoPath = `Viewers/${viewer}`; 
 
           let image = ui.image(`${_package.webRoot}images/viewers/${f.friendlyName}Img.jpg`, 0, 0);
           if (viewer === 'Globe')
@@ -89,12 +88,12 @@ export class DemoView extends DG.ViewBase {
       item.root.onmouseout = (_) => {
         ui.tooltip.hide();
       };
-      
+
     }
 
     this.search.onChanged(() => {
       const dom = this.tree.root.getElementsByClassName('d4-tree-view-node');
-      
+
       for (let i = 0; i < dom.length; i++) {
         const item = dom[i] as HTMLElement;
         if (item.innerText.toLowerCase().includes(this.search.value.toLowerCase())){
@@ -127,7 +126,7 @@ export class DemoView extends DG.ViewBase {
         this.tree.root.focus();
       } else {
         this.tree.root.focus();
-        this.nodeView(value.text, value.text);
+        this.nodeView(value.text);
       }
     });
 
@@ -152,7 +151,9 @@ export class DemoView extends DG.ViewBase {
     // TODO: for standard the same
     // TODO: if there empty space - add viewer/filter/etc.
     // TODO: write API for step control and example, steps are written in context panel - first priority
-    // TODO: add DG.debounce
+
+    // TODO: add margins to tree
+    // about code - add viewer, add there codemirror and the demo code and make it as a tab
   }
 
   private _initWindowOptions() {
