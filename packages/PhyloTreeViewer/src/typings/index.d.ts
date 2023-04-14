@@ -22,7 +22,6 @@ declare module 'phylotree/src/formats/newick' {
 
 declare module 'phylotree' {
   class phylotree {
-
     get display(): TreeRender {}
 
     constructor(nwk: string, options: {});
@@ -64,6 +63,8 @@ declare module '@phylocanvas/phylocanvas.gl' {
 
     render(): void;
 
+    fitInCanvas() : void;
+
     resume(): void;
 
     setProps(props: { [propName: string]: any }): void;
@@ -90,6 +91,8 @@ declare module '@phylocanvas/phylocanvas.gl' {
 
     resume(): void;
 
+    fitInCanvas() : void;
+
     setProps(props: { [propName: string]: any }): void;
 
     selectNode: (nodeOrId: any, append: boolean = false) => void;
@@ -109,6 +112,8 @@ declare module '@phylocanvas/phylocanvas.gl' {
     get props(): { [propName: string]: any };
 
     constructor(element: HTMLElement, props: { [propName: string]: any });
+
+    fitInCanvas() : void;
 
     render(): void;
 

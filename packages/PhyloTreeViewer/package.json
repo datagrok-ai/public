@@ -2,7 +2,7 @@
   "name": "@datagrok/phylo-tree-viewer",
   "fullName": "PhyloTreeViewer",
   "friendlyName": "PhyloTreeViewer",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "author": {
     "name": "Aleksandr Tanas",
     "email": "atanas@datagrok.ai"
