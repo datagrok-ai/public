@@ -23,7 +23,7 @@ Promise<DG.DataFrame> {
     results.push([]);
 
   for (const fileInfo of csvList) {
-    const csv = await grok.dapi.files.readAsText(path + fileInfo.fileName);
+    const csv = await grok.dapi.files.readAsText(fileInfo.fullPath);
     const df = DG.DataFrame.fromCsv(csv);
     // standard df-s have data in the 'data' column
     const col = df.getCol('data');
@@ -91,7 +91,7 @@ export async function _testDetectorsComprehensive(path: string, detector: DG.Fun
 
   for (const fileInfo of csvList) {
     try {
-      const csv = await grok.dapi.files.readAsText(path + fileInfo.fullPath);
+      const csv = await grok.dapi.files.readAsText(fileInfo.fullPath);
       const df = DG.DataFrame.fromCsv(csv);
       for (const col of df.columns) {
         const semType: string | null = await detector.apply({col: col});
@@ -114,7 +114,8 @@ export async function _testDetectorsComprehensive(path: string, detector: DG.Fun
   }
   grok.shell.info(`Test ${path} for ${detector.name} finished.`);
   pi.close();
-  const resDf = DG.DataFrame.fromObjects(res)!;
+  const resDf = DG.DataFrame.fromObjects(res.length === 0 ? [{
+    file: '', result: '', column: '', message: ''}] : res);
   resDf.name = `datasets_${detector.name}_${path}`;
   return resDf;
 }
