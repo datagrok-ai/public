@@ -1,15 +1,11 @@
 import * as DG from 'datagrok-api/dg';
 
 import {
-  ALPHABET,
-  detectAlphabet,
-  getSplitterForColumn,
-  getStats,
-  NOTATION,
-  SeqColStats,
-  splitterAsFasta,
-  SplitterFunc,
-  TAGS
+  ALIGNMENT, ALPHABET, NOTATION, TAGS,
+  candidateAlphabets, detectAlphabet,
+  splitterAsFasta, getSplitterWithSeparator, splitterAsHelm,
+  SplitterFunc, getSplitterForColumn,
+  SeqColStats, getStats,
 } from './macromolecule';
 
 /** Class for handling notation units in Macromolecule columns */
@@ -32,16 +28,54 @@ export class UnitsHandler {
   public static readonly RnaFastaAlphabet = new Set<string>(['A', 'C', 'G', 'U']);
 
   public static setUnitsToFastaColumn(col: DG.Column) {
-    if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
-      throw new Error('Fasta column must be MACROMOLECULE');
-
-    const stats: SeqColStats = getStats(col, 5, splitterAsFasta);
-    const aligned = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
-    const alphabet = detectAlphabet(stats);
+    if (col.semType !== DG.SEMTYPE.MACROMOLECULE || col.getTag(DG.TAGS.UNITS) != NOTATION.FASTA)
+      throw new Error(`The column of notation '${NOTATION.FASTA}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
 
     col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
-    col.setTag(TAGS.aligned, aligned);
-    col.setTag(TAGS.alphabet, alphabet);
+    UnitsHandler.setTags(col, 5, splitterAsFasta);
+  }
+
+  public static setUnitsToSeparatorColumn(col: DG.Column, separator?: string) {
+    if (col.semType !== DG.SEMTYPE.MACROMOLECULE || col.getTag(DG.TAGS.UNITS) != NOTATION.SEPARATOR || !separator)
+      throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
+    if (!separator)
+      throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must have the separator tag.`);
+
+    col.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+    col.setTag(TAGS.separator, separator);
+    UnitsHandler.setTags(col, 5, getSplitterWithSeparator(separator));
+  }
+
+  public static setUnitsToHelmColumn(col: DG.Column) {
+    if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
+      throw new Error(`The column of notation '${NOTATION.HELM}' must be '${DG.SEMTYPE.MACROMOLECULE}'`);
+
+    col.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+    UnitsHandler.setTags(col, 5, splitterAsHelm);
+  }
+
+  /** From detectMacromolecule */
+  public static setTags(col: DG.Column, seqMinLength: number, splitter: SplitterFunc): void {
+    const units = col.getTag(DG.TAGS.UNITS) as NOTATION;
+    const stats: SeqColStats = getStats(col, 5, splitter);
+    const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
+
+    if ([NOTATION.FASTA, NOTATION.SEPARATOR].includes(units)) {
+      // Empty monomer alphabet is not allowed
+      if (Object.keys(stats.freq).length === 0) throw new Error('Alphabet is empty');
+
+      const aligned = stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
+      col.setTag(TAGS.aligned, aligned);
+
+      const alphabet = detectAlphabet(stats.freq, candidateAlphabets);
+      col.setTag(TAGS.alphabet, alphabet);
+      if (alphabet === ALPHABET.UN) {
+        const alphabetSize = Object.keys(stats.freq).length;
+        const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
+        col.setTag(TAGS.alphabetSize, alphabetSize.toString());
+        col.setTag(TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
+      }
+    }
   }
 
   protected get units(): string { return this._units; }
@@ -152,7 +186,7 @@ export class UnitsHandler {
    * @param {NOTATION} targetNotation
    * @return {DG.Column}
    */
-  protected getNewColumn(targetNotation: NOTATION): DG.Column {
+  protected getNewColumn(targetNotation: NOTATION, separator?: string): DG.Column {
     const col = this.column;
     const len = col.length;
     const name = targetNotation.toLowerCase() + '(' + col.name + ')';
@@ -160,6 +194,10 @@ export class UnitsHandler {
     const newColumn = DG.Column.fromList('string', newColName, new Array(len).fill(''));
     newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
     newColumn.setTag(DG.TAGS.UNITS, targetNotation);
+    if (targetNotation === NOTATION.SEPARATOR) {
+      if (!separator) throw new Error(`Notation \'${NOTATION.SEPARATOR}\' requires separator value.`);
+      newColumn.setTag(TAGS.separator, separator);
+    }
     newColumn.setTag(DG.TAGS.CELL_RENDERER, 'Macromolecule');
 
     const srcAligned = col.getTag(TAGS.aligned);
@@ -251,10 +289,17 @@ export class UnitsHandler {
       (this.isHelm()) ? UnitsHandler._defaultGapSymbolsDict.HELM :
         UnitsHandler._defaultGapSymbolsDict.SEPARATOR;
 
-    if (!this.column.tags.has(TAGS.aligned)) {
-      if (this.isFasta() || this.isSeparator())
-        throw new Error(`For column '${this.column.name}' of notation '${this.notation}' ` +
-          `tag '${TAGS.aligned}' is mandatory.`);
+    if (!this.column.tags.has(TAGS.aligned) || !this.column.tags.has(TAGS.alphabet)) {
+      if (this.isFasta()) {
+        UnitsHandler.setUnitsToFastaColumn(this.column);
+      } else if (this.isSeparator()) {
+        const separator = col.getTag(TAGS.separator);
+        UnitsHandler.setUnitsToSeparatorColumn(this.column, separator);
+      } else if (this.isHelm()) {
+        UnitsHandler.setUnitsToHelmColumn(this.column);
+      } else {
+        throw new Error(`Unexpected units '${this.column.getTag(DG.TAGS.UNITS)}'.`);
+      }
     }
 
     // if (!this.column.tags.has(TAGS.alphabetSize)) {
@@ -267,12 +312,13 @@ export class UnitsHandler {
     // }
 
     if (!this.column.tags.has(TAGS.alphabetIsMultichar)) {
-      if (this.isHelm())
+      if (this.isHelm()) {
         throw new Error(`For column '${this.column.name}' of notation '${this.notation}' ` +
           `tag '${TAGS.alphabetIsMultichar}' is mandatory.`);
-      else if (['UN'].includes(this.alphabet))
+      } else if (['UN'].includes(this.alphabet)) {
         throw new Error(`For column '${this.column.name}' of alphabet '${this.alphabet}' ` +
           `tag '${TAGS.alphabetIsMultichar}' is mandatory.`);
+      }
     }
   }
 }

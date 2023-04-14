@@ -149,7 +149,7 @@ RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$
 
   function converter(tgtNotation: NOTATION, tgtSeparator: string | null = null): ConverterFunc {
     if (tgtNotation === NOTATION.SEPARATOR && !tgtSeparator)
-      throw new Error(`Argument 'separator' is missed for notation '${tgtNotation.toString()}'.`);
+      throw new Error(`Argument 'separator' is mandatory for target notation '${tgtNotation.toString()}'.`);
 
     return function(srcCol: DG.Column): DG.Column {
       const converter = new NotationConverter(srcCol);

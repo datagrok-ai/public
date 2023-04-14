@@ -82,13 +82,8 @@ export const monomerRe: RegExp = /\[(\w+)\]|(\w)|(-)/g;
 export function splitterAsFasta(seq: any): string[] {
   return wu<RegExpMatchArray>(seq.toString().matchAll(monomerRe))
     .map((ma: RegExpMatchArray) => {
-      let mRes: string;
       const m: string = ma[0];
-      if (m.length > 1) {
-        mRes = ma[1];
-      } else {
-        mRes = m;
-      }
+      const mRes = m.length > 1 ? ma[1] : m;
       return mRes;
     }).toArray();
 }
@@ -208,19 +203,33 @@ export function getAlphabetSimilarity(freq: MonomerFreqs, alphabet: Set<string>,
   return vectorDotProduct(freqV, alphabetV) / (vectorLength(freqV) * vectorLength(alphabetV));
 }
 
-export function detectAlphabet(stats: SeqColStats): string {
-  const alphabetCandidates: [string, Set<string>][] = [
-    [ALPHABET.PT, UnitsHandler.PeptideFastaAlphabet],
-    [ALPHABET.DNA, UnitsHandler.DnaFastaAlphabet],
-    [ALPHABET.RNA, UnitsHandler.RnaFastaAlphabet],
-  ];
+export const candidateAlphabets: [string, Set<string>, number][] = [
+  [ALPHABET.PT, UnitsHandler.PeptideFastaAlphabet, 0.50],
+  [ALPHABET.DNA, UnitsHandler.DnaFastaAlphabet, 0.55],
+  [ALPHABET.RNA, UnitsHandler.RnaFastaAlphabet, 0.55],
+];
 
-  // Calculate likelihoods for alphabet_candidates
-  const alphabetCandidatesSim: number[] = alphabetCandidates.map(
-    (c) => getAlphabetSimilarity(stats.freq, c[1]));
-  const maxCos = Math.max(...alphabetCandidatesSim);
-  const alphabet = maxCos > 0.65 ? alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][0] : 'UN';
-  return alphabet;
+/** Alphabet candidate type */
+type CandidateType = [string, Set<string>, number];
+/** Alphabet candidate similarity type */
+type CandidateSimType = [string, Set<string>, number, MonomerFreqs, number];
+
+/** From detectMacromolecule */
+export function detectAlphabet(freq: MonomerFreqs, candidates: CandidateType[], gapSymbol: string = '-') {
+  const candidatesSims: CandidateSimType[] = candidates.map((c) => {
+    const sim = getAlphabetSimilarity(freq, c[1], gapSymbol);
+    return [c[0], c[1], c[2], freq, sim];
+  });
+
+  let alphabetName: string;
+  const maxSim = Math.max(...candidatesSims.map((cs) => cs[4] > cs[2] ? cs[4] : -1));
+  if (maxSim > 0) {
+    const sim = candidatesSims.find((cs) => cs[4] === maxSim)!;
+    alphabetName = sim[0];
+  } else {
+    alphabetName = ALPHABET.UN;
+  }
+  return alphabetName;
 }
 
 /** Selects a suitable palette based on column data
@@ -235,7 +244,7 @@ export function pickUpPalette(seqCol: DG.Column, minLength: number = 5): SeqPale
     alphabet = uh.alphabet;
   } else {
     const stats: SeqColStats = getStats(seqCol, minLength, splitterAsFasta);
-    alphabet = detectAlphabet(stats);
+    alphabet = detectAlphabet(stats.freq, candidateAlphabets);
   }
 
   const res = getPaletteByType(alphabet);

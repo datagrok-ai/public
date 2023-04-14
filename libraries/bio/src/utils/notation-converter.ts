@@ -33,7 +33,7 @@ export class NotationConverter extends UnitsHandler {
     if (fastaGapSymbol === null)
       fastaGapSymbol = this.defaultGapSymbol;
 
-    const newColumn = this.getNewColumn(NOTATION.SEPARATOR);
+    const newColumn = this.getNewColumn(NOTATION.SEPARATOR, separator);
     // assign the values to the newly created empty column
     newColumn.init((idx: number) => {
       const fastaPolymer = this.column.get(idx);
@@ -45,7 +45,6 @@ export class NotationConverter extends UnitsHandler {
       return fastaMonomersArray.join(separator);
     });
     newColumn.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
-    newColumn.setTag(TAGS.separator, separator);
     return newColumn;
   }
 
@@ -176,10 +175,7 @@ export class NotationConverter extends UnitsHandler {
    * @return {string} Converted string
    */
   public convertHelmToFastaSeparator(
-    helmPolymer: string, 
-    tgtNotation: string, 
-    tgtSeparator?: string, 
-    tgtGapSymbol?: string
+    helmPolymer: string, tgtNotation: string, tgtSeparator?: string, tgtGapSymbol?: string
   ): string {
     if (!tgtGapSymbol) {
       tgtGapSymbol = (this.toFasta(tgtNotation as NOTATION)) ?
@@ -224,7 +220,7 @@ export class NotationConverter extends UnitsHandler {
   private convertHelm(tgtNotation: string, tgtSeparator?: string, tgtGapSymbol?: string): DG.Column {
     // This function must not contain calls of isDna() and isRna(), for
     // source helm columns may contain RNA, DNA and PT across different rows
-    const newColumn = this.getNewColumn(tgtNotation as NOTATION);
+    const newColumn = this.getNewColumn(tgtNotation as NOTATION, tgtSeparator);
     // assign the values to the empty column
     newColumn.init((idx: number) => {
       const helmPolymer = this.column.get(idx);
