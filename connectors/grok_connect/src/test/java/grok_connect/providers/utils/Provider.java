@@ -12,6 +12,8 @@ import java.util.Properties;
  * Enum that contains all necessary data related to specific provider and it's container
  */
 public enum Provider {
+    PI("src/test/resources/properties/pi.properties"),
+
     MONGO_DB("src/test/resources/properties/mongodb.properties"),
 
     CLICKHOUSE("src/test/resources/properties/clickhouse.properties") {

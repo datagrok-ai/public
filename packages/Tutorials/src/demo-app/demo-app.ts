@@ -37,8 +37,9 @@ export class DemoView extends DG.ViewBase {
   }
 
   private nodeView(viewName: string, viewPath: string) {
-  
+    
     if (viewName === 'Viewers') {
+      let root = ui.div([], 'grok-gallery-grid');
       grok.shell.closeAll();
       grok.shell.newView(viewName);
       grok.shell.v.path = grok.shell.v.basePath = `/apps/Tutorials/Demo/${viewPath}`;
@@ -49,19 +50,27 @@ export class DemoView extends DG.ViewBase {
           const path = pathOption.split('|').map((s) => s.trim());
           const viewer = path[path.length - 1];
           const demoPath = `Viewers/${viewer}`; 
-          let root = ui.divV([
-            ui.image(`${_package.webRoot}images/viewers/${f.friendlyName}Img.jpg`, 90, 70),
-            viewer,
-          ]);
-          root.addEventListener('click', async () => {
-            const demoPath = `Viewers/${viewer}`;
-            await this.startDemoFunc(f, demoPath);
+
+          let image = ui.image(`${_package.webRoot}images/viewers/${f.friendlyName}Img.jpg`, 0, 0);
+          if (viewer === 'Globe')
+            image.style.backgroundColor = 'black';
+
+          let item = ui.card(ui.divV([
+            image,
+            ui.div([viewer],'tutorials-card-title'),
+            ui.div([f.description], 'tutorials-card-description')
+          ], 'demo-app-card'));
+          item.addEventListener('click', async () => {
+            let node = this.tree.items.find(node => node.text == viewer)?.root;
+            node?.click();
+            //const demoPath = `Viewers/${viewer}`;
+            //await this.startDemoFunc(f, demoPath);
           });
-          root.style.margin = '10px';
-          grok.shell.v.root.append(ui.divH([root], {style:{flexWrap:'wrap'}}));
+          root.append(item);
         }
       }
-      
+
+      grok.shell.v.root.append(root);
     }
 
   }
@@ -72,7 +81,6 @@ export class DemoView extends DG.ViewBase {
       const path = pathOption.split('|').map((s) => s.trim());
       const folder = this.tree.getOrCreateGroup(path.slice(0, path.length - 1).join(' | '));
       const item = folder.item(path[path.length - 1]);
-
       item.root.onmouseover = (event) => {
         if (f.description)
           ui.tooltip.show(f.description, event.clientX, event.clientY);
@@ -85,11 +93,13 @@ export class DemoView extends DG.ViewBase {
     }
 
     this.search.onChanged(() => {
-      const dom = this.tree.root.getElementsByClassName('d4-tree-view-item d4-tree-view-node');
+      const dom = this.tree.root.getElementsByClassName('d4-tree-view-node');
+      
       for (let i = 0; i < dom.length; i++) {
         const item = dom[i] as HTMLElement;
-        if (item.innerText.toLowerCase().includes(this.search.value.toLowerCase()))
+        if (item.innerText.toLowerCase().includes(this.search.value.toLowerCase())){
           item.classList.remove('hidden');
+        }
         else
           item.classList.add('hidden');
       }

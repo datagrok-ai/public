@@ -8,6 +8,7 @@ import 'codemirror/mode/python/python';
 import 'codemirror/mode/octave/octave';
 import 'codemirror/mode/r/r';
 import 'codemirror/mode/julia/julia';
+import '../css/styles.css';
 
 export function functionSignatureEditor(view: DG.View) {
   addFseRibbon(view);
@@ -26,6 +27,15 @@ function addFseRibbon(v: DG.View) {
   }, 500);
 }
 
+function getInputBaseArray(props: DG.Property[], param: any): DG.InputBase[] {
+  const inputBaseArray = props.map((prop) => {
+    const input = DG.InputBase.forProperty(prop, param);
+    input.setTooltip(tooltipMessage[prop.name as OPTIONAL_TAG_NAME]);
+    return input;
+  });
+  return inputBaseArray;
+}
+
 const DEFAULT_CATEGORY = 'Misc';
 
 const enum FUNC_PROPS_FIELDS {
@@ -38,6 +48,23 @@ const enum FUNC_PROPS_FIELDS {
   SAMPLE = 'sample',
   ENVIRONMENT = 'environment',
   TAGS = 'tags'
+}
+
+const tooltipMessage = {
+  'caption': 'Custom field caption',
+  'postfix': 'Field postfix',
+  'units': 'Value unit name',
+  'editor': 'Editor',
+  'semType': 'Semantic type',
+  'columns': 'Numerical or categorical columns will be loaded',
+  'type': 'Column type',
+  'format': 'Datetime format',
+  'allowNulls': 'Validation of the missing values presence',
+  'action': 'For output parameters only',
+  'choices': 'List of choices for string parameter',
+  'suggestions': 'List of suggestions for string parameter',
+  'min': 'Minimum value',
+  'max': 'Maximum value',
 }
 
 const obligatoryFuncProps = ['name', 'description', 'helpUrl', 'language'];
@@ -65,6 +92,7 @@ const highlightModeByLang = (key: LANGUAGE) => {
     case LANGUAGE.OCTAVE: return 'octave';
     case LANGUAGE.JULIA: return 'julia';
     case LANGUAGE.R: return 'r';
+    case LANGUAGE.SQL: return 'sql';
   }
 };
 
@@ -178,9 +206,12 @@ enum LANGUAGE {
   JULIA = 'julia',
   OCTAVE = 'octave',
   NODEJS = 'nodejs',
-  GROK = 'grok'
+  GROK = 'grok',
+  SQL = 'sql'
 }
-const languages = ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok'];
+const languages = ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok', 'sql'];
+const scriptingLanguages = ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok'];
+
 const headerSign = (lang: LANGUAGE) => {
   switch (lang) {
     case LANGUAGE.JS:
@@ -192,8 +223,23 @@ const headerSign = (lang: LANGUAGE) => {
     case LANGUAGE.PYTHON:
     case LANGUAGE.OCTAVE:
       return '#';
+    case LANGUAGE.SQL:
+      return '--';
   }
 };
+
+async function getEditorSql(sql: string) {
+  const regex = /--connection:\s*(\S+)/;
+  const match = sql.match(regex);
+  let connectionName;
+  if (match) 
+    connectionName = match[1];
+  const connection = await grok.functions.eval(connectionName);
+  const query = connection.query('sql', sql);
+  const editor = await query.prepare().getEditor();
+  return editor;
+}
+
 
 async function openFse(v: DG.View, functionCode: string) {
   const inputScriptCopy = DG.Script.create(functionCode);
@@ -402,13 +448,34 @@ async function openFse(v: DG.View, functionCode: string) {
 
     if (!param) return ui.div('');
 
-    const result = ui.input.form(param,
-      [
-        ...obligatoryFuncParamsTags,
-        ...optionalFuncParamsTags.filter((prop) => optionTags(param).includes(prop.name as OPTIONAL_TAG_NAME)),
-      ]);
+    const obligatoryTagsInputBase = getInputBaseArray(obligatoryFuncParamsTags, param);
 
-    grok.shell.o = ui.divV([ui.h1(`Param: ${paramName}`), ui.block75([result])]);
+    const optionalTagsInputBase = getInputBaseArray(
+      optionalFuncParamsTags.filter((prop) => optionTags(param).includes(prop.name as OPTIONAL_TAG_NAME)),
+      param
+    );
+
+    const result = ui.form([
+      ...obligatoryTagsInputBase,
+      ...optionalTagsInputBase,
+    ]);
+
+    const helpIcon = ui.iconFA('question', () => {
+      window.open(
+        'https://datagrok.ai/help/datagrok/functions/func-params-annotation', 
+        '_blank'
+      );
+    });
+    helpIcon.classList.add('dt-help-icon');
+
+    grok.shell.o = ui.divV([
+      ui.divH(
+        [
+          ui.h1(`Param: ${paramName}`), 
+          helpIcon
+        ],
+      ), ui.block75([result])
+    ]);
   };
 
   const updateValue = (param: DG.Property, propName: string, v: any) => {
@@ -447,7 +514,7 @@ async function openFse(v: DG.View, functionCode: string) {
     DG.Property.create(FUNC_PARAM_FIELDS.CATEGORY, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.CATEGORY],
       (x: any, v) => updateFuncPropValue(FUNC_PARAM_FIELDS.CATEGORY, v), ''),
   ];
-
+  
   const obligatoryFuncParamsTags: DG.Property[] = [
     DG.Property.create(COMMON_TAG_NAME.CAPTION, DG.TYPE.STRING,
       (x: any) => x.options[COMMON_TAG_NAME.CAPTION],
@@ -515,6 +582,7 @@ async function openFse(v: DG.View, functionCode: string) {
       return temp;
     })(),
   ];
+
   const paramsDF = DG.DataFrame.create(functionParamsCopy.length);
   for (const p of obligatoryFuncParamsProps) {
     (paramsDF.columns as DG.ColumnList)
@@ -570,7 +638,11 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const codeArea = ui.textInput('', '');
   const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), { mode: highlightModeByLang(inputScriptCopy.language as LANGUAGE) });
-  const uiArea = await inputScriptCopy.prepare().getEditor();
+  let uiArea;
+  if (scriptingLanguages.includes(inputScriptCopy.language)) 
+    uiArea = await inputScriptCopy.prepare().getEditor();
+  else 
+    uiArea = await getEditorSql(functionCode);
   const codePanel = ui.panel([codeArea.root]);
   codePanel.style.height = '100%';
   codeArea.root.style.height = '100%';
@@ -653,8 +725,11 @@ async function openFse(v: DG.View, functionCode: string) {
     myCM.setSize('100%', '100%');
 
     let modifiedScript = DG.Script.create(result);
-    let newUiArea = await modifiedScript.prepare().getEditor();
-    uiArea.innerHTML = '';
+    let newUiArea;
+    if (scriptingLanguages.includes(inputScriptCopy.language)) 
+      newUiArea = await modifiedScript.prepare().getEditor();
+    else
+      newUiArea = await getEditorSql(result);
     uiArea.append(newUiArea);
   };
 

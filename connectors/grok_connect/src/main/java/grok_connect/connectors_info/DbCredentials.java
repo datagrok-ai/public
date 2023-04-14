@@ -10,6 +10,7 @@ public class DbCredentials
     public static final String DOMAIN = "domain";
     public static final String META_STORE_SERVER = "metaStoreServer";
     public static final String DB = "db";
+    public static final String INITIAL_CATALOG = "initialCatalog";
     public static final String META_STORE_DB = "metaStoreDb";
     public static final String SCHEMA = "schema";
     public static final String LOGIN = "login";

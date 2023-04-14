@@ -17,6 +17,20 @@
     overflow: auto;
 }
 
+.demo-app-card {
+    min-height: 200px;
+}
+.demo-app-card:hover {
+    cursor: pointer;
+}
+
+.demo-app-card .ui-image{
+    min-width: 100%;
+    min-height: 120px;
+    background-color: white;
+    margin-bottom: 12px;
+}
+
 .demo-text {
     text-align: center;
 }
