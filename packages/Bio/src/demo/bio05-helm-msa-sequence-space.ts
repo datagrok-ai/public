@@ -35,6 +35,7 @@ export async function demoBio05UI(funcPath: string): Promise<void> {
       const gapExtend: number = 0;
       msaHelmCol = await runPepsea(helmCol, msaHelmColName, method, gapOpen, gapExtend, undefined);
       df.columns.add(msaHelmCol);
+      await grok.data.detectSemanticTypes(df);
     })();
 
     await step('Composition analysis on MSA results', async () => {
