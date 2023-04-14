@@ -44,7 +44,6 @@ const UnitsHandler = {
 const isUrlRe = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/i;
 
 class BioPackageDetectors extends DG.Package {
-
   /** Parts of the column name required in the column's name under the detector. It must be in lowercase. */
   likelyColNamePartList = ['seq', 'msa', 'dna', 'rna', 'fasta', 'helm', 'sense', 'protein'];
 
@@ -219,7 +218,7 @@ class BioPackageDetectors extends DG.Package {
    * Does not use any splitting strategies, estimates just by single characters.
    * */
   detectSeparator(freq) {
-    // To detect a separator we analyse col's sequences character frequencies.
+    // To detect a separator we analyze col's sequences character frequencies.
     // If there is an exceptionally frequent symbol, then we will call it the separator.
     // The most frequent symbol should occur with a rate of at least 0.15
     // of all other symbols in sum to be called the separator.

@@ -306,7 +306,7 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
     .show();
 }
 
-//top-menu: Bio | Sequence Activity Cliffs...
+//top-menu: Bio | SAR | Activity Cliffs...
 //name: Sequence Activity Cliffs
 //description: detect activity cliffs
 //input: dataframe table [Input data table]
@@ -315,9 +315,11 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: object options {optional: true}
+//output: viewer result
 //editor: Bio:SeqActivityCliffsEditor
 export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column, activities: DG.Column,
-  similarity: number, methodName: string, options?: IUMAPOptions | ITSNEOptions): Promise<DG.Viewer | undefined> {
+  similarity: number, methodName: string, options?: IUMAPOptions | ITSNEOptions
+): Promise<DG.Viewer | undefined> {
   if (!checkInputColumnUi(macroMolecule, 'Activity Cliffs'))
     return;
   const axesNames = getEmbeddingColsNames(df);
@@ -361,7 +363,7 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
     .show();
 }
 
-//top-menu: Bio | Sequence Space...
+//top-menu: Bio | Structure | Sequence Space...
 //name: Sequence Space
 //input: dataframe table
 //input: column molecules { semType: Macromolecule }
@@ -371,7 +373,8 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
 //input: object options {optional: true}
 //editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: string,
-  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean, options?: IUMAPOptions | ITSNEOptions): Promise<DG.Viewer | undefined> {
+  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean, options?: IUMAPOptions | ITSNEOptions
+): Promise<DG.Viewer | undefined> {
   // Delay is required for initial function dialog to close before starting invalidating of molfiles.
   // Otherwise, dialog is freezing
   await delay(10);
@@ -431,7 +434,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
   } */
 };
 
-//top-menu: Bio | To Atomic Level...
+//top-menu: Bio | Atomic Level | To Atomic Level...
 //name: To Atomic Level
 //description: returns molfiles for each monomer from HELM library
 //input: dataframe df [Input data table]
@@ -448,7 +451,7 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
   await _toAtomicLevel(df, macroMolecule, monomersLibObject);
 }
 
-//top-menu: Bio | MSA...
+//top-menu: Bio | Alignment | MSA...
 //name: MSA...
 //tags: bio, panel
 export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = null): void {
@@ -516,8 +519,8 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
     .show();
 }
 
+//top-menu: Bio | Structure | Composition Analysis
 //name: Composition Analysis
-//top-menu: Bio | Composition Analysis
 //meta.icon: files/icons/composition-analysis.svg
 //output: viewer result
 export async function compositionAnalysis(): Promise<void> {
@@ -575,8 +578,8 @@ export async function compositionAnalysis(): Promise<void> {
   await handler(col);
 }
 
-//top-menu: Bio | SDF to JSON lib...
-//name: SDF to JSON Lib
+//top-menu: Bio | Atomic Level | SDF to JSON Library...
+//name: SDF to JSON Library
 //input: dataframe table
 export async function sdfToJsonLib(table: DG.DataFrame) {
   const jsonMonomerLibrary = createJsonMonomerLibFromSdf(table);
@@ -729,7 +732,7 @@ export function diversitySearchTopMenu() {
   view.dockManager.dock(viewer, 'down');
 }
 
-//top-menu: Bio | Substructure Search ...
+//top-menu: Bio | Structure | Substructure Search ...
 //name: bioSubstructureSearch
 export function bioSubstructureSearch(): void {
   const col = getMacromoleculeColumn();
