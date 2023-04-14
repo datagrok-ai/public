@@ -10,7 +10,9 @@ import {findMCS, findRGroups} from '../scripts-api';
 
 category('top menu r-groups', () => {
   let empty: DG.DataFrame;
-  let core: string;
+  let malformed: DG.DataFrame;
+  let coreEmpty: string;
+  let coreMalformed: string;
 
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
@@ -19,7 +21,10 @@ category('top menu r-groups', () => {
     }
     empty = await readDataframe('tests/sar-small_empty_vals.csv');
     await grok.data.detectSemanticTypes(empty);
-    core = await findMCS('smiles', empty);
+    malformed = await readDataframe('tests/Test_smiles_malformed.csv');
+    await grok.data.detectSemanticTypes(malformed);
+    coreEmpty = await findMCS('smiles', empty);
+    coreMalformed = await findMCS('canonical_smiles', malformed);
   });
 
   test('mcs', async () => {
@@ -88,7 +93,7 @@ M  END
   });
 
   test('rgroups.emptyValues', async () => {
-    const res = await findRGroups('smiles', empty, core, 'R');
+    const res = await findRGroups('smiles', empty, coreEmpty, 'R');
     expect(res.getCol('R1').stats.valueCount, 13);
     expect(res.getCol('R2').stats.valueCount, 13);
   });
@@ -96,6 +101,19 @@ M  END
   test('rgroups.emptyInput', async () => {
     await findRGroups('smiles', empty, '', 'R');
   });
+
+  test('rgroups.malformedData', async () => {
+    const res = await findRGroups('canonical_smiles', malformed, coreMalformed, 'R');
+    expect(res.getCol('R1').stats.valueCount, 32);
+    expect(res.getCol('R2').stats.valueCount, 9);
+    expect(res.getCol('R3').stats.valueCount, 11);
+    expect(res.getCol('R4').stats.valueCount, 13);
+    expect(res.getCol('R5').stats.valueCount, 3);
+  });
+
+  test('rgroups.malformedInput', async () => {
+    await findRGroups('canonical_smiles', malformed, malformed.getCol('canonical_smiles').get(2), 'R');
+  }, {skipReason: '#1491'});
 
   after(async () => {
     grok.shell.closeAll();

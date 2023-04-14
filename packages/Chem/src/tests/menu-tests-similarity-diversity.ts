@@ -17,6 +17,7 @@ category('top menu similarity/diversity', () => {
   let approvedDrugs100: DG.DataFrame;
   let molecules: DG.DataFrame;
   let empty: DG.DataFrame;
+  let malformed: DG.DataFrame;
 
   before(async () => {
     grok.shell.closeAll();
@@ -29,6 +30,8 @@ category('top menu similarity/diversity', () => {
     molecules = grok.data.demo.molecules(100);
     empty = await readDataframe('tests/sar-small_empty_vals.csv');
     await grok.data.detectSemanticTypes(empty);
+    malformed = await readDataframe('tests/Test_smiles_malformed.csv');
+    await grok.data.detectSemanticTypes(malformed);
   });
 
   test('findSimilar.chem.smiles', async () => {
@@ -67,8 +70,43 @@ category('top menu similarity/diversity', () => {
     try {
       await awaitCheck(() => document.querySelector('.d4-balloon-content')?.innerHTML ===
         'Empty molecule cannot be used for similarity search', 'cannot find error balloon', 2000);
-    } finally {tv.close();}
+    } finally {
+      tv.close();
+      DG.Balloon.closeAll();
+    }
   }, {skipReason: 'GROK-12227'});
+
+  test('similarity.malformedData', async () => {
+    empty.currentRowIdx = 0;
+    const tv = grok.shell.addTableView(malformed);
+    DG.Balloon.closeAll();
+    tv.addViewer('Chem Similarity Search');
+    await delay(500);
+    const viewer = getSearchViewer(tv, 'Chem Similarity Search') as ChemSimilarityViewer;
+    try {
+      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.innerHTML ===
+        '2 molecules with indexes 2,9 are possibly malformed and are not included in analysis', 'cannot find warning balloon', 1000);
+      expectArray(viewer.scores!.toList(), [1, 0.4333333373069763, 0.32894736528396606, 0.2957746386528015, 0.234375,
+        0.23076923191547394, 0.2222222238779068, 0.2222222238779068, 0.20253165066242218, 0.2023809552192688]);
+    } finally {
+      tv.close();
+      DG.Balloon.closeAll();
+    }
+  });
+
+  test('similarity.malformedInput', async () => {
+    empty.currentRowIdx = 2;
+    const tv = grok.shell.addTableView(malformed);
+    DG.Balloon.closeAll();
+    tv.addViewer('Chem Similarity Search');
+    try {
+      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.innerHTML ===
+        '2 molecules with indexes 2,9 are possibly malformed and are not included in analysis', 'cannot find warning balloon', 1000);
+    } finally {
+      tv.close();
+      DG.Balloon.closeAll();
+    }
+  });
 
   test('similaritySearchViewerOpen', async () => {
     await _testSimilaritySearchViewerOpen();
@@ -104,12 +142,29 @@ category('top menu similarity/diversity', () => {
     } finally {tv.close();}
   });
 
+  test('diversity.malformedData', async () => {
+    const tv = grok.shell.addTableView(malformed);
+    DG.Balloon.closeAll();
+    tv.addViewer('Chem Diversity Search');
+    await delay(500);
+    const viewer = getSearchViewer(tv, 'Chem Diversity Search') as ChemDiversityViewer;
+    try {
+      expect(viewer.renderMolIds.length, 10);
+      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.innerHTML ===
+        '2 molecules with indexes 2,9 are possibly malformed and are not included in analysis', 'cannot find warning balloon', 1000);
+    } finally {
+      tv.close();
+      DG.Balloon.closeAll();
+    }
+  });
+
   test('diversitySearchViewerOpen', async () => {
     await _testDiversitySearchViewerOpen();
   });
 
   after(async () => {
     grok.shell.closeAll();
+    DG.Balloon.closeAll();
   });
 });
 

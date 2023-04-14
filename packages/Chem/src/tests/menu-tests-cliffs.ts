@@ -5,7 +5,7 @@ import {_package} from '../package-test';
 import {createTableView} from './utils';
 import {activityCliffs} from '../package';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {before, after, expect, category, test} from '@datagrok-libraries/utils/src/test';
+import {before, after, expect, category, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
 // const {jStat} = require('jstat');
 
 
@@ -18,33 +18,46 @@ category('top menu activity cliffs', async () => {
   });
 
   test('activityCliffsOpen.smiles', async () => {
-    await _testActivityCliffsOpen('tests/activity_cliffs_test.csv', 2);
+    await _testActivityCliffsOpen('tests/activity_cliffs_test.csv', 'smiles', 'Activity', 2);
   });
 
   test('activityCliffsOpen.molV2000', async () => {
-    await _testActivityCliffsOpen('tests/spgi-100.csv', 1, 'V2000');
+    await _testActivityCliffsOpen('tests/spgi-100.csv', 'Structure', 'Chemical Space X', 1);
   });
 
   test('activityCliffsOpen.molV3000', async () => {
-    await _testActivityCliffsOpen('v3000_sample.csv', 185, 'V3000');
+    await _testActivityCliffsOpen('v3000_sample.csv', 'molecule', 'Activity', 185);
   });
 
-  test('activityCliffsWithEmptyRows', async () => {
-    await _testActivityCliffsOpen('tests/activity_cliffs_empty_rows.csv', 1);
+  test('activityCliffs.emptyValues', async () => {
+    await _testActivityCliffsOpen('tests/activity_cliffs_empty_rows.csv', 'smiles', 'Activity', 1);
+  });
+
+  test('activityCliffs.malformedData', async () => {
+    DG.Balloon.closeAll();
+    await _testActivityCliffsOpen('tests/Test_smiles_malformed.csv', 'canonical_smiles', 'FractionCSP3', 24);
+    try {
+      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.innerHTML ===
+        '2 molecules with indexes 2,9 are possibly malformed and are not included in analysis', 'cannot find warning balloon', 1000);
+    } finally {
+      grok.shell.closeAll();
+      DG.Balloon.closeAll();
+    }
   });
 
   after(async () => {
     grok.shell.closeAll();
+    DG.Balloon.closeAll();
   });
 });
 
-async function _testActivityCliffsOpen(dfName: string, numberCliffs: number, ver?: string) {
+async function _testActivityCliffsOpen(dfName: string, molCol: string, activityCol: string, numberCliffs: number) {
   const actCliffsTableView = await createTableView(dfName);
-  if (ver === 'V3000') actCliffsTableView.dataFrame.rows.removeAt(51, 489);
+  if (molCol === 'molecule') actCliffsTableView.dataFrame.rows.removeAt(51, 489);
   await activityCliffs(
     actCliffsTableView.dataFrame,
-    actCliffsTableView.dataFrame.getCol(ver ? (ver === 'V2000' ? 'Structure' : 'molecule') : 'smiles'),
-    actCliffsTableView.dataFrame.getCol(ver === 'V2000' ? 'Chemical Space X' : 'Activity'),
+    actCliffsTableView.dataFrame.getCol(molCol),
+    actCliffsTableView.dataFrame.getCol(activityCol),
     80,
     't-SNE');
   let scatterPlot: DG.Viewer | null = null;
