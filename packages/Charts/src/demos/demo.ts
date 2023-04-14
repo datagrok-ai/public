@@ -29,12 +29,12 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
     DG.debounce(df.onSemanticTypeDetected, 800).subscribe((_) => {
       const viewer = tableView.addViewer(viewerName, options);
       if (viewerName === 'Globe')
-        tableView.dockManager.dock(viewer, 'up', null, viewerName);
+        tableView.dockManager.dock(viewer, 'up', null, viewerName, 0.75);
     });
     return;
   }
 
   const viewer = tableView.addViewer(viewerName, options);
-  tableView.dockManager.dock(viewer, 'up', null, viewerName);
+  tableView.dockManager.dock(viewer, 'up', null, viewerName, 0.75);
   //TODO: set grid instead of null, 'up' -> 'right' (for histogram and scatterplot)
 }
