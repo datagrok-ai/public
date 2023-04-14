@@ -51,6 +51,7 @@ import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionE
 import {demoBio01UI} from './demo/bio01-similarity-diversity';
 import {demoBio01aUI} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
 import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
+import {demoBio05UI} from './demo/bio05-helm-msa-sequence-space';
 
 // /** Avoid reassinging {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
 // let monomerLib: MonomerLib | null = null;
@@ -759,18 +760,28 @@ export function bioSubstructureFilter(): BioSubstructureFilter {
 
 //name: demoBio01
 //meta.demoPath: Bioinformatics | Similarity & Diversity
+//description:
 export async function demoBio01(): Promise<void> {
   await demoBio01UI('func/Bio.demoBio01');
 }
 
 //name:demoBio01a
 //meta.demoPath: Bioinformatics | Hierarchical Clustering & Sequence Space
+//description:
 export async function demoBio01a(): Promise<void> {
   await demoBio01aUI('func/Bio.demoBio01a');
 }
 
 //name: demoBio01c
 //meta.demoPath: Bioinformatics | Hierarchical Clustering & Activity Cliffs
+//description:
 export async function demoBio01b(): Promise<void> {
   await demoBio01bUI('func/Bio.demoBio01b');
+}
+
+//name: demoBio05
+//meta.demoPath: Bioinformatics | Helm, MSA, Sequence Space
+//description:
+export async function demoBio05(): Promise<void> {
+  await demoBio05UI('func/demoBio05');
 }
