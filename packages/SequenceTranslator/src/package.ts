@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import {DataLoaderBase, DataLoaderDB} from './model/data-loader/data-loader';
 
 import {engageViewForOligoSdFileUI} from './model/registration/registration';
-import {OligoSdFileApp} from './apps/oligo-sd-file-app';
 import {SequenceTranslatorUI} from './view/view';
 import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loader/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
@@ -79,21 +78,6 @@ export async function sequenceTranslatorApp(): Promise<void> {
     const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
     grok.shell.error(`Loading Sequence Translator application error: ` + errMsg);
     throw err;
-  } finally {
-    pi.close();
-  }
-}
-
-//name: oligoSdFileApp
-//description: Test/demo app for oligoSdFile
-export async function oligoSdFileApp() {
-  const pi = DG.TaskBarProgressIndicator.create('open oligoSdFile app');
-  try {
-    grok.shell.windows.showProperties = false;
-    grok.shell.windows.showHelp = false;
-
-    const app = new OligoSdFileApp();
-    await app.init();
   } finally {
     pi.close();
   }
