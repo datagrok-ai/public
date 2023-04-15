@@ -2,7 +2,7 @@ import {
   map, MODIFICATIONS, gcrsCodesWithoutSmiles,
 } from '../../hardcode-to-be-eliminated/map';
 import {SYNTHESIZERS, TECHNOLOGIES, DELIMITER, NUCLEOTIDES} from '../const';
-import {sortByStringLengthInDescendingOrder} from '../../utils/helpers';
+import {sortByStringLengthInDescendingOrder} from '../helpers';
 import {
   asoGapmersNucleotidesToBioSpring, asoGapmersNucleotidesToGcrs,
   asoGapmersBioSpringToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12, siRnaNucleotideToBioSpringSenseStrand,

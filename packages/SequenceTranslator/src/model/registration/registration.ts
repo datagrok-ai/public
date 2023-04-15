@@ -9,7 +9,7 @@ import {
 } from '../../hardcode-to-be-eliminated/converters';
 import {SEQUENCE_TYPES, COL_NAMES, GENERATED_COL_NAMES} from './constants';
 import {saltMass, saltMolWeigth, batchMolWeight} from './calculations';
-import {stringify} from '../../utils/helpers';
+import {stringify} from '../helpers';
 
 import {RegistrationColumnsHandler} from './add-columns';
 import {sdfSaveTable} from './save-table';

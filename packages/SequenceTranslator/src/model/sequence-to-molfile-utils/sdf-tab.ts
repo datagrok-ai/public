@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 // inner dependencies
-import {download} from '../../utils/helpers';
+import {download} from '../helpers';
 import {sequenceToMolV3000} from './from-monomers';
 import {linkStrandsV3000} from './mol-transformations';
 import {isValidSequence} from '../code-converter/conversion-validation-tools';

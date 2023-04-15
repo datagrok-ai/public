@@ -16,7 +16,7 @@ import {INPUT_FORMATS} from '../../model/const';
 import {sequenceToSmiles, sequenceToMolV3000} from '../../model/sequence-to-molfile-utils/from-monomers';
 import {convertSequence, undefinedInputSequence, isValidSequence} from '../../model/code-converter/conversion-validation-tools';
 import {drawMolecule} from '../utils/draw-molecule';
-import {download} from '../../utils/helpers';
+import {download} from '../../model/helpers';
 import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, DEFAULT_INPUT} from '../../view/const/main-tab-const';
 
 export class MainTabUI {

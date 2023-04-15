@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {COL_NAMES, GENERATED_COL_NAMES, SEQUENCE_TYPES} from './constants';
-import {differenceOfTwoArrays, download} from '../../utils/helpers';
+import {differenceOfTwoArrays, download} from '../helpers';
 import * as grok from 'datagrok-api/grok';
 import {SYNTHESIZERS} from '../const';
 import {sequenceToMolV3000} from '../sequence-to-molfile-utils/from-monomers';

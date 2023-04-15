@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {sortByStringLengthInDescendingOrder} from '../../utils/helpers';
+import {sortByStringLengthInDescendingOrder} from '../helpers';
 import {MODIFICATIONS} from '../../hardcode-to-be-eliminated/map';
 
 export function saltMass(

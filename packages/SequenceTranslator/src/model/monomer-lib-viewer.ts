@@ -5,8 +5,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {drawZoomedInMolecule} from '../view/utils/draw-molecule';
 
-import {LIB_PATH, DEFAULT_LIB_FILENAME} from '../model/data-loader/const';
-import {SYNTHESIZERS, TECHNOLOGIES} from '../model/const';
+import {LIB_PATH, DEFAULT_LIB_FILENAME} from './data-loader/const';
+import {SYNTHESIZERS, TECHNOLOGIES} from './const';
 
 import {Monomer} from '@datagrok-libraries/bio/src/types';
 

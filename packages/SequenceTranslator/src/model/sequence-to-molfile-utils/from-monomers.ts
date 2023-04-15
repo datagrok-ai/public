@@ -2,7 +2,7 @@
 import {map} from '../../hardcode-to-be-eliminated/map';
 import {SYNTHESIZERS, DELIMITER, TECHNOLOGIES} from '../const';
 import {isValidSequence} from '../code-converter/conversion-validation-tools';
-import {sortByStringLengthInDescendingOrder} from '../../utils/helpers';
+import {sortByStringLengthInDescendingOrder} from '../helpers';
 import {getMonomerWorks} from '../../package';
 import {getNucleotidesMol} from './mol-transformations';
 
