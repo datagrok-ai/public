@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {MAIN_TAB, AXOLABS_TAB, SDF_TAB} from './const/view-const';
+import {MAIN_TAB, AXOLABS_TAB, SDF_TAB} from './const/view';
 import {MainTabUI} from './tabs/main';
 import {SdfTabUI} from './tabs/sdf';
 import {AxolabsTabUI} from './tabs/axolabs';
@@ -11,11 +11,11 @@ import {viewMonomerLib} from '../model/monomer-lib-viewer';
 
 export class SequenceTranslatorUI {
   constructor() {
-    this._router = new URLRouter();
+    this.router = new URLRouter();
 
-    this._view = DG.View.create();
-    this._view.box = true;
-    this._view.name = 'Sequence Translator';
+    this.view = DG.View.create();
+    this.view.box = true;
+    this.view.name = 'Sequence Translator';
 
     // todo: should this code be here?
     const windows = grok.shell.windows;
@@ -26,13 +26,13 @@ export class SequenceTranslatorUI {
     // top panel icons
     const viewMonomerLibIcon = ui.iconFA('book', viewMonomerLib, 'View monomer library');
     const viewHint = ui.iconFA('lightbulb', () => {}, 'About the app');
-    this._topPanel = [
+    this.topPanel = [
       viewMonomerLibIcon,
       // viewHint
     ];
-    this._view.setRibbonPanels([this._topPanel]);
+    this.view.setRibbonPanels([this.topPanel]);
 
-    this._tabs = new TabLayout(
+    this.tabs = new TabLayout(
       new MainTabUI(),
       new AxolabsTabUI(),
       new SdfTabUI()
@@ -40,19 +40,19 @@ export class SequenceTranslatorUI {
   }
 
   /** Master view containing app's main interface elements */
-  private readonly _view: DG.View;
+  private readonly view: DG.View;
   /** Control for 3 master tabs: Main, Axolabs, SDF */
-  private readonly _tabs: TabLayout;
-  private readonly _topPanel: HTMLElement[];
-  private readonly _router: URLRouter;
+  private readonly tabs: TabLayout;
+  private readonly topPanel: HTMLElement[];
+  private readonly router: URLRouter;
 
   /** Create master layout of the app  */
   public async createLayout(): Promise<void> {
-    const tabControl = await this._tabs.getControl();
+    const tabControl = await this.tabs.getControl();
     // at this point we should perform the manipulations with the tab control
 
-    this._view.append(tabControl);
-    grok.shell.addView(this._view);
+    this.view.append(tabControl);
+    grok.shell.addView(this.view);
   }
 };
 
@@ -89,15 +89,15 @@ class TabLayout {
 
 class URLRouter {
   constructor() {
-    this._pathParts = window.location.pathname.split('/');
-    this._searchParams = new URLSearchParams(window.location.search);
+    this.pathParts = window.location.pathname.split('/');
+    this.searchParams = new URLSearchParams(window.location.search);
   }
 
-  private _searchParams: URLSearchParams;
-  private _pathParts: string[];
+  private searchParams: URLSearchParams;
+  private pathParts: string[];
 
   get urlParamsString(): string {
-    return Object.entries(this._searchParams)
+    return Object.entries(this.searchParams)
       .map(
         ([key, value]) => `${key}=${encodeURIComponent(value)}`
       ).join('&');
