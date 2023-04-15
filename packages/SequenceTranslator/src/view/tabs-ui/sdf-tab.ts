@@ -13,106 +13,48 @@ import {highlightInvalidSubsequence} from '../input-painters';
 import {getLinkedMolfile, saveSdf} from '../../sdf-tab/sdf-tab';
 import {ColoredTextInput} from '../../utils/colored-text-input';
 import {MoleculeImage} from '../molecule-img';
+import {StrandData} from '../../sdf-tab/sdf-tab';
+
+const enum DIRECTION {
+  STRAIGHT = '5′ → 3′',
+  INVERSE = '3′ → 5′',
+};
+const STRANDS = ['ss', 'as', 'as2'];
 
 export class SdfTabUI {
+  constructor() {
+    this.onInput = new rxjs.Subject<string>();
+    this.inputBase = Object.fromEntries(
+      STRANDS.map(
+        (key) => [key, ui.textInput('', '', () => { this.onInput.next(); })]
+      )
+    );
+    this.useChiralInput = ui.boolInput('Use chiral', true);
+    this.saveAllStrandsInput = ui.boolInput('Save as one entity', true);
+    ui.tooltip.bind(this.saveAllStrandsInput.root, 'Save SDF with all strands in one molfile');
+    this.directionInversion = Object.fromEntries(
+      STRANDS.map((key) => [key, false])
+    );
+  }
+
+  private onInput: rxjs.Subject<string>;
+  private useChiralInput: DG.InputBase<boolean | null>;
+  private saveAllStrandsInput: DG.InputBase<boolean | null>;
+  private inputBase: {[key: string]: DG.InputBase<string>};
+  private directionInversion: {[key: string]: boolean};
+
   get htmlDivElement(): HTMLDivElement {
-    const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
-
-    const enum DIRECTION {
-      STRAIGHT = '5′ → 3′',
-      INVERSE = '3′ → 5′',
-    };
-
-    const strands = ['ss', 'as', 'as2'];
-    const directionInversion = Object.fromEntries(
-      strands.map((key) => [key, false])
-    );
-
-    const inputBase = Object.fromEntries(
-      strands.map(
-        (key) => [key, ui.textInput('', '', () => { onInput.next(); })]
-      )
-    );
-
-    const coloredInput = Object.fromEntries(
-      strands.map(
-        (key) => [key, new ColoredTextInput(inputBase[key], highlightInvalidSubsequence)]
-      )
-    );
-
-    const saveEntity = ui.boolInput('Save as one entity', true);
-    ui.tooltip.bind(saveEntity.root, 'Save SDF with all strands in one molfile');
-    const useChiralInput = ui.boolInput('Use chiral', true);
-    // todo: compose tooltip message:
-
-    const directionChoiceInput = Object.fromEntries(
-      strands.map(
-        (key) => [key, ui.choiceInput(
-          `${key.toUpperCase()} direction`, DIRECTION.STRAIGHT, [DIRECTION.STRAIGHT, DIRECTION.INVERSE]
-        )]
-      )
-    );
-
-    strands.forEach((strand) => {
-      directionChoiceInput[strand].onChanged(() => {
-        directionInversion[strand] = directionChoiceInput[strand].value === DIRECTION.INVERSE;
-        onInput.next();
-      });
-    });
-
-    const labelNames = ['Sense Strand', 'Anti Sense', 'Anti Sense 2'];
-    const labelNameMap = new Map(strands.map(
-      (key, index) => [key, labelNames[index]]
-    ));
-    const label = Object.fromEntries(
-      strands.map(
-        (key) => [key, ui.label(labelNameMap.get(key)!)]
-      )
-    );
-
-    const tableRows = strands.map((strand) => {
-      return {
-        label: label[strand],
-        textInput: coloredInput[strand].root,
-        choiceInput: directionChoiceInput[strand].root,
-      };
-    });
-    const tableLayout = ui.table(
-      tableRows, (item) => [item.label, item.textInput, item.choiceInput]);
-    $(tableLayout).css('margin-top', '10px');
-
-    for (const strand of strands) {
-      let element = label[strand].parentElement!;
-      element.classList.add('st-sdf-input-form');
-      // the following line is necessary because otherwise overridden by
-      // d4-item-table class
-      $(element).css('padding-top', '3px');
-
-      element = directionChoiceInput[strand].root.parentElement!;
-      element.classList.add('st-sdf-input-form', 'st-sdf-direction-choice');
-
-      element = inputBase[strand].root.parentElement!;
-      element.classList.add('st-sdf-text-input-td');
-    }
+    const tableLayout = this.getTableInput();
 
     // molecule image container
     const moleculeImgDiv = ui.block([]);
     $(moleculeImgDiv).addClass('st-sdf-mol-img');
 
-    function getStrandData() {
-      return Object.fromEntries(
-        strands.map((strand) => [strand, {
-          strand: inputBase[strand].value.replace(/\s*/g, ''),
-          invert: directionInversion[strand]
-        }])
-      );
-    }
-
-    DG.debounce<string>(onInput, 300).subscribe(async () => {
+    DG.debounce<string>(this.onInput, 300).subscribe(async () => {
       let molfile = '';
       try {
-        const strandData = getStrandData();
-        molfile = getLinkedMolfile(strandData.ss, strandData.as, strandData.as2, useChiralInput.value!);
+        const strandData = this.getStrandData();
+        molfile = this.getMolfile(strandData.ss, strandData.as, strandData.as2);
       } catch (err) {
         const errStr = errorToConsole(err);
         console.error(errStr);
@@ -129,13 +71,13 @@ export class SdfTabUI {
 
     const saveButton = ui.buttonsInput([
       ui.bigButton('Save SDF', () => {
-        const strandData = getStrandData();
+        const strandData = this.getStrandData();
         saveSdf(strandData.ss, strandData.as, strandData.as2,
-          useChiralInput.value!, saveEntity.value!);
+          this.useChiralInput.value!, this.saveAllStrandsInput.value!);
       })
     ]);
 
-    const boolInputsAndButtonArray = [saveEntity.root, useChiralInput.root, saveButton];
+    const boolInputsAndButtonArray = [this.saveAllStrandsInput.root, this.useChiralInput.root, saveButton];
     const boolInputsAndButton = ui.divV(boolInputsAndButtonArray);
     for (const item of boolInputsAndButtonArray)
       $(item).addClass('st-sdf-bool-button-block');
@@ -147,5 +89,79 @@ export class SdfTabUI {
     $(sdfTabBody).addClass('st-sdf-body');
 
     return sdfTabBody;
+  }
+
+  private getTableInput(): HTMLTableElement {
+    const coloredInput = Object.fromEntries(
+      STRANDS.map(
+        (key) => [key, new ColoredTextInput(this.inputBase[key], highlightInvalidSubsequence)]
+      )
+    );
+
+    // todo: compose tooltip message:
+
+    const directionChoiceInput = Object.fromEntries(
+      STRANDS.map(
+        (key) => [key, ui.choiceInput(
+          `${key.toUpperCase()} direction`, DIRECTION.STRAIGHT, [DIRECTION.STRAIGHT, DIRECTION.INVERSE]
+        )]
+      )
+    );
+
+    STRANDS.forEach((strand) => {
+      directionChoiceInput[strand].onChanged(() => {
+        this.directionInversion[strand] = directionChoiceInput[strand].value === DIRECTION.INVERSE;
+        this.onInput.next();
+      });
+    });
+
+    const labelNames = ['Sense Strand', 'Anti Sense', 'Anti Sense 2'];
+    const labelNameMap = new Map(STRANDS.map(
+      (key, index) => [key, labelNames[index]]
+    ));
+    const label = Object.fromEntries(
+      STRANDS.map(
+        (key) => [key, ui.label(labelNameMap.get(key)!)]
+      )
+    );
+
+    const tableRows = STRANDS.map((strand) => {
+      return {
+        label: label[strand],
+        textInput: coloredInput[strand].root,
+        choiceInput: directionChoiceInput[strand].root,
+      };
+    });
+    const tableLayout = ui.table(
+      tableRows, (item) => [item.label, item.textInput, item.choiceInput]);
+    $(tableLayout).css('margin-top', '10px');
+
+    for (const strand of STRANDS) {
+      let element = label[strand].parentElement!;
+      element.classList.add('st-sdf-input-form');
+      // the following line is necessary because otherwise overridden by
+      // d4-item-table class
+      $(element).css('padding-top', '3px');
+
+      element = directionChoiceInput[strand].root.parentElement!;
+      element.classList.add('st-sdf-input-form', 'st-sdf-direction-choice');
+
+      element = this.inputBase[strand].root.parentElement!;
+      element.classList.add('st-sdf-text-input-td');
+    }
+    return tableLayout;
+  }
+
+  private getStrandData() {
+    return Object.fromEntries(
+      STRANDS.map((strand) => [strand, {
+        strand: this.inputBase[strand].value.replace(/\s*/g, ''),
+        invert: this.directionInversion[strand]
+      }])
+    );
+  }
+
+  private getMolfile(ss: StrandData, as: StrandData, as2: StrandData): string {
+    return getLinkedMolfile(ss, as, as2, this.useChiralInput.value!);
   }
 }
