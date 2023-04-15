@@ -17,8 +17,7 @@ const MOL = 'molfile';
 const LINKS = ['s', 'ps', '*', 'Rpn', 'Spn', 'Rps', 'Sps'];
 
 export function sequenceToMolV3000(
-  sequence: string, inverted: boolean = false, oclRender: boolean = false,
-  format: string
+  sequence: string, inverted: boolean = false, format: string
 ): string {
   const monomerNameFromCode = getCodeToNameMap(sequence, format);
   let codes = sortByStringLengthInDescendingOrder(Object.keys(monomerNameFromCode));

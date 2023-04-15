@@ -94,7 +94,7 @@ export class MainTabUI {
   }
 
   private saveMolfile(): void {
-    const result = sequenceToMolV3000(this.sequence, false, false,
+    const result = sequenceToMolV3000(this.sequence, false,
       this.inputFormatChoiceInput.value!);
     download(this.sequence + '.mol', encodeURIComponent(result));
   }
@@ -163,7 +163,7 @@ export class MainTabUI {
   }
 
   private getMolfile(): string {
-    return sequenceToMolV3000(this.sequence, false, true, this.format);
+    return sequenceToMolV3000(this.sequence, false, this.format);
   }
 
   // todo: put synthesizers into an object/enum

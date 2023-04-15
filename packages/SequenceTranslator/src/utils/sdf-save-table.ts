@@ -24,19 +24,19 @@ export async function sdfSaveTable(table: DG.DataFrame, onError: (rowI: number, 
       const parser = new RegistrationSequenceParser();
       const format = SYNTHESIZERS.GCRS; //getFormat(sequenceCol.get(i))!;
       if (typeCol.get(i) == SEQUENCE_TYPES.SENSE_STRAND) {
-        rowStr += `${sequenceToMolV3000(sequenceCol.get(i), false, true, format)}\n> <Sequence>\nSense Strand\n\n`;
+        rowStr += `${sequenceToMolV3000(sequenceCol.get(i), false, format)}\n> <Sequence>\nSense Strand\n\n`;
       } else if (typeCol.get(i) == SEQUENCE_TYPES.ANTISENSE_STRAND) {
-        rowStr += `${sequenceToMolV3000(sequenceCol.get(i), true, true, format)}\n> <Sequence>\nAnti Sense\n\n`;
+        rowStr += `${sequenceToMolV3000(sequenceCol.get(i), true, format)}\n> <Sequence>\nAnti Sense\n\n`;
       } else if (typeCol.get(i) == SEQUENCE_TYPES.DUPLEX) {
         const obj = parser.getDuplexStrands(sequenceCol.get(i));
-        const as = `${sequenceToMolV3000(obj.as, true, true, format)}\n> <Sequence>\nAnti Sense\n\n`;
-        const ss = `${sequenceToMolV3000(obj.ss, false, true, format)}\n> <Sequence>\nSense Strand\n\n`;
+        const as = `${sequenceToMolV3000(obj.as, true, format)}\n> <Sequence>\nAnti Sense\n\n`;
+        const ss = `${sequenceToMolV3000(obj.ss, false, format)}\n> <Sequence>\nSense Strand\n\n`;
         rowStr += `${linkStrandsV3000({senseStrands: [ss], antiStrands: [as]}, true)}\n\n`;
       } else if ([SEQUENCE_TYPES.TRIPLEX, SEQUENCE_TYPES.DIMER].includes(typeCol.get(i))) {
         const obj = parser.getDimerStrands(sequenceCol.get(i));
-        const as1 = `${sequenceToMolV3000(obj.as1, true, true, format)}\n> <Sequence>\nAnti Sense\n\n`;
-        const as2 = `${sequenceToMolV3000(obj.as2, true, true, format)}\n> <Sequence>\nAnti Sense\n\n`;
-        const ss = `${sequenceToMolV3000(obj.ss, false, true, format)}\n> <Sequence>\nSense Strand\n\n`;
+        const as1 = `${sequenceToMolV3000(obj.as1, true, format)}\n> <Sequence>\nAnti Sense\n\n`;
+        const as2 = `${sequenceToMolV3000(obj.as2, true, format)}\n> <Sequence>\nAnti Sense\n\n`;
+        const ss = `${sequenceToMolV3000(obj.ss, false, format)}\n> <Sequence>\nSense Strand\n\n`;
         rowStr += `${linkStrandsV3000({senseStrands: [ss], antiStrands: [as1, as2]}, true)}\n\n`;
       }
 

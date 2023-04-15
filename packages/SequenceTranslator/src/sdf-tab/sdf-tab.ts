@@ -25,7 +25,7 @@ export function getMolfileForStrand(strand: string, invert: boolean): string {
   const format = validationOutput.synthesizer![0];
   let molfile = '';
   try {
-    molfile = sequenceToMolV3000(strand, invert, false, format!);
+    molfile = sequenceToMolV3000(strand, invert, format!);
   } catch (err) {
     const errStr = errorToConsole(err);
     console.error(errStr);
