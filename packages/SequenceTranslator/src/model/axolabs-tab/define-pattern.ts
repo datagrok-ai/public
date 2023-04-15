@@ -6,7 +6,7 @@ import * as svg from 'save-svg-as-png';
 import $ from 'cash-dom';
 
 import {drawAxolabsPattern} from './draw-svg';
-import {AXOLABS_MAP} from '../hardcode-to-be-eliminated/constants';
+import {AXOLABS_MAP} from '../../hardcode-to-be-eliminated/constants';
 import {isOverhang} from './helpers';
 
 const baseChoices: string[] = Object.keys(AXOLABS_MAP);
@@ -36,7 +36,7 @@ async function isCurrentUserCreatedThisPattern(patternName: string): Promise<boo
 function getShortName(patternName: string): string {
   let first = patternName.length + 1;
   for (let i = 0; i < patternName.length; i++) {
-    if (patternName[i] == '(') {
+    if (patternName[i] === '(') {
       first = i;
       break;
     }
@@ -47,12 +47,12 @@ function getShortName(patternName: string): string {
 function getUserName(patternName: string): string[] {
   let first = -1;
   for (let i = 0; i < patternName.length; i++) {
-    if (patternName[i] == '(') {
+    if (patternName[i] === '(') {
       first = i;
       break;
     }
   }
-  return (first == -1) ? ['', ''] : patternName.slice(first + 9, patternName.length - 1).split(' ').slice(1);
+  return (first === -1) ? ['', ''] : patternName.slice(first + 9, patternName.length - 1).split(' ').slice(1);
 }
 
 function translateSequence(
@@ -61,7 +61,8 @@ function translateSequence(
   ptoLinkages: DG.InputBase[],
   startModification: DG.InputBase,
   endModification: DG.InputBase,
-  firstPtoExist: boolean): string {
+  firstPtoExist: boolean
+): string {
   let i: number = -1;
   let mainSequence = sequence.replace(/[AUGC]/g, function(x: string) {
     i++;
@@ -75,21 +76,21 @@ function translateSequence(
     }
     return (ptoLinkages[i].value) ? symbol + 's' : symbol;
   });
-  if (mainSequence.slice(0, 5).split('mU').length == 3)
+  if (mainSequence.slice(0, 5).split('mU').length === 3)
     mainSequence = '(uu)' + mainSequence.slice(4);
-  if (mainSequence.slice(mainSequence.length - 7).split('mU').length == 3)
+  if (mainSequence.slice(mainSequence.length - 7).split('mU').length === 3)
     mainSequence = mainSequence.slice(0, mainSequence.length - 4) + '(uu)';
   return startModification.value + (firstPtoExist ? 's' : '') + mainSequence + endModification.value;
 }
 
-function addColumnWithIds(tableName: string, columnName: string, patternName: string) {
+function addColumnWithIds(tableName: string, columnName: string, patternName: string): DG.Column<string> {
   const nameOfNewColumn = 'ID ' + patternName;
   const columns = grok.shell.table(tableName).columns;
   if (columns.contains(nameOfNewColumn))
     columns.remove(nameOfNewColumn);
   const columnWithIds = columns.byName(columnName);
   return columns.addNewString(nameOfNewColumn).init((i: number) => {
-    return (columnWithIds.getString(i) == '') ? '' : columnWithIds.get(i) + '_' + patternName;
+    return (columnWithIds.getString(i) === '') ? '' : columnWithIds.get(i) + '_' + patternName;
   });
 }
 
@@ -100,21 +101,21 @@ function addColumnWithTranslatedSequences(
   ptoLinkages: DG.InputBase[],
   startModification: DG.InputBase,
   endModification: DG.InputBase,
-  firstPtoExist: boolean) {
+  firstPtoExist: boolean
+): DG.Column<string> {
   const nameOfNewColumn = 'Axolabs ' + columnName;
   const columns = grok.shell.table(tableName).columns;
   if (columns.contains(nameOfNewColumn))
     columns.remove(nameOfNewColumn);
   const columnWithInputSequences = columns.byName(columnName);
   return columns.addNewString(nameOfNewColumn).init((i: number) => {
-    return columnWithInputSequences.getString(i) == '' ?
-      '' :
+    return (columnWithInputSequences.getString(i) === '') ? '' :
       translateSequence(columnWithInputSequences.getString(i), bases, ptoLinkages, startModification, endModification,
         firstPtoExist);
   });
 }
 
-export function getAxolabsTab() {
+export function getAxolabsTab(): HTMLDivElement {
   const enumerateModifications = [defaultBase];
   let maximalSsLength = defaultSequenceLength;
   let maximalAsLength = defaultSequenceLength;
@@ -252,9 +253,9 @@ export function getAxolabsTab() {
   }
 
   function updateInputExamples() {
-    if (inputSsColumn.value == '')
+    if (inputSsColumn.value === '')
       ssInputExample.value = generateExample(ssLength.value!, sequenceBase.value!);
-    if (createAsStrand.value && inputAsColumn.value == '')
+    if (createAsStrand.value && inputAsColumn.value === '')
       asInputExample.value = generateExample(asLength.value!, sequenceBase.value!);
   }
 
@@ -295,7 +296,7 @@ export function getAxolabsTab() {
     let maxCount = 1;
     for (let i = 0; i < array.length; i++) {
       const el = array[i];
-      if (modeMap[el] == null)
+      if (modeMap[el] === null)
         modeMap[el] = 1;
       else
         modeMap[el]++;
@@ -421,7 +422,7 @@ export function getAxolabsTab() {
       let loadPattern = ui.choiceInput('Load Pattern', '', lstMy, (v: string) => parsePatternAndUpdateUi(v));
 
       const myOrOthersPatternList = ui.choiceInput('', 'Mine', ['Mine', 'Others'], (v: string) => {
-        const currentList = v == 'Mine' ? lstMy : lstOthers;
+        const currentList = v === 'Mine' ? lstMy : lstOthers;
         loadPattern = ui.choiceInput('Load Pattern', '', currentList, (v: string) => parsePatternAndUpdateUi(v));
 
         loadPattern.root.append(myOrOthersPatternList.input);
@@ -435,7 +436,7 @@ export function getAxolabsTab() {
         loadPattern.root.append(
           ui.div([
             ui.button(ui.iconFA('trash-alt', () => {}), async () => {
-              if (loadPattern.value == null)
+              if (loadPattern.value === null)
                 grok.shell.warning('Choose pattern to delete');
               else if (await isCurrentUserCreatedThisPattern(saveAs.value))
                 grok.shell.warning('Cannot delete pattern, created by other user');
@@ -459,7 +460,7 @@ export function getAxolabsTab() {
       loadPattern.root.append(
         ui.div([
           ui.button(ui.iconFA('trash-alt', () => {}), async () => {
-            if (loadPattern.value == null)
+            if (loadPattern.value === null)
               grok.shell.warning('Choose pattern to delete');
             else if (await isCurrentUserCreatedThisPattern(saveAs.value))
               grok.shell.warning('Cannot delete pattern, created by other user');
@@ -685,7 +686,7 @@ export function getAxolabsTab() {
   });
 
   const convertSequenceButton = ui.button('Convert Sequences', () => {
-    if (ssVar == '' || (createAsStrand.value && asVar == ''))
+    if (ssVar === '' || (createAsStrand.value && asVar === ''))
       grok.shell.info('Please select table and columns on which to apply pattern');
     else if (ssLength.value != ssInputExample.value.length || asLength.value != asInputExample.value.length) {
       const dialog = ui.dialog('Length Mismatch');

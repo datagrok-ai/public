@@ -1,8 +1,8 @@
 import {
   map, MODIFICATIONS, gcrsCodesWithoutSmiles,
-} from '../hardcode-to-be-eliminated/map';
-import {SYNTHESIZERS, TECHNOLOGIES, DELIMITER, NUCLEOTIDES} from '../model/const';
-import {sortByStringLengthInDescendingOrder} from '../utils/helpers';
+} from '../../hardcode-to-be-eliminated/map';
+import {SYNTHESIZERS, TECHNOLOGIES, DELIMITER, NUCLEOTIDES} from '../const';
+import {sortByStringLengthInDescendingOrder} from '../../utils/helpers';
 import {
   asoGapmersNucleotidesToBioSpring, asoGapmersNucleotidesToGcrs,
   asoGapmersBioSpringToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12, siRnaNucleotideToBioSpringSenseStrand,
@@ -10,7 +10,7 @@ import {
   siRnaBioSpringToAxolabs, siRnaBioSpringToGcrs, siRnaAxolabsToNucleotides,
   siRnaAxolabsToBioSpring, siRnaAxolabsToGcrs, siRnaGcrsToNucleotides,
   siRnaGcrsToBioSpring, siRnaGcrsToAxolabs, gcrsToNucleotides, gcrsToLcms
-} from '../hardcode-to-be-eliminated/converters';
+} from '../../hardcode-to-be-eliminated/converters';
 
 const noTranslationTableAvailable = 'No translation table available';
 export const undefinedInputSequence = 'Type of input sequence is undefined';

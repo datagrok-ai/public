@@ -16,4 +16,3 @@ const appMainDescription = ui.info([
   ui.divText('2. Right-click on the column header, then see the \'Convert\' menu'),
   ui.divText('This will add the result column to the right of the table'),
 ], 'Convert oligonucleotide sequences between Nucleotides, BioSpring, Axolabs, Mermade 12 and GCRS representations.');
-

@@ -1,4 +1,4 @@
-import {NUCLEOTIDES} from '../model/const';
+import {NUCLEOTIDES} from '../const';
 import {isOverhang, svg, textWidth, countOverhangsOnTheRightEdge, baseColor, textInsideCircle,
   fontColorVisibleOnBackground, isOneDigitNumber} from './helpers';
 

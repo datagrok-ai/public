@@ -9,11 +9,11 @@ import $ from 'cash-dom';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 // import {drawMolecule} from '../../utils/structures-works/draw-molecule';
-import {highlightInvalidSubsequence} from '../input-painters';
-import {getLinkedMolfile, saveSdf} from '../../sdf-tab/sdf-tab';
-import {ColoredTextInput} from '../../utils/colored-text-input';
-import {MoleculeImage} from '../molecule-img';
-import {StrandData} from '../../sdf-tab/sdf-tab';
+import {highlightInvalidSubsequence} from '../utils/colored-input/input-painters';
+import {getLinkedMolfile, saveSdf} from '../../model/sequence-to-molfile-utils/sdf-tab';
+import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
+import {MoleculeImage} from '../utils/molecule-img';
+import {StrandData} from '../../model/sequence-to-molfile-utils/sdf-tab';
 
 const enum DIRECTION {
   STRAIGHT = '5′ → 3′',

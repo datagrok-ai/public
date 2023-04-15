@@ -6,11 +6,11 @@ import * as DG from 'datagrok-api/dg';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 // inner dependencies
-import {download} from '../utils/helpers';
-import {sequenceToMolV3000} from '../utils/structures-works/from-monomers';
-import {linkStrandsV3000} from '../utils/structures-works/mol-transformations';
-import {isValidSequence} from '../sdf-tab/sequence-codes-tools';
-import '../view/css/sdf-tab.css';
+import {download} from '../../utils/helpers';
+import {sequenceToMolV3000} from './from-monomers';
+import {linkStrandsV3000} from './mol-transformations';
+import {isValidSequence} from '../code-converter/conversion-validation-tools';
+import '../../view/css/sdf-tab.css';
 
 export type StrandData = {
   strand: string,

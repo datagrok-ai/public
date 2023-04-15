@@ -2,20 +2,20 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../package';
+import {_package} from '../../package';
 import {
   siRnaBioSpringToGcrs, siRnaAxolabsToGcrs, gcrsToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12,
   siRnaNucleotidesToGcrs
-} from '../hardcode-to-be-eliminated/converters';
+} from '../../hardcode-to-be-eliminated/converters';
 import {SEQUENCE_TYPES, COL_NAMES, GENERATED_COL_NAMES} from './constants';
 import {saltMass, saltMolWeigth, batchMolWeight} from './calculations';
-import {stringify} from '../utils/helpers';
+import {stringify} from '../../utils/helpers';
 
-import {RegistrationColumnsHandler} from '../utils/sdf-add-columns';
-import {sdfSaveTable} from '../utils/sdf-save-table';
-import {PREFIXES, SEQ_TYPE, SEQ_TYPE_CATEGORY, seqTypeToCategoryDict} from '../model/registration/const';
+import {RegistrationColumnsHandler} from '../../utils/sdf-add-columns';
+import {sdfSaveTable} from '../../utils/sdf-save-table';
+import {PREFIXES, SEQ_TYPE, SEQ_TYPE_CATEGORY, seqTypeToCategoryDict} from './const';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
-import {DataLoaderBase} from '../utils/data-loader';
+import {DataLoaderBase} from '../../utils/data-loader';
 import {Unsubscribable} from 'rxjs';
 
 /** Style used for cells in 'Type' column  */

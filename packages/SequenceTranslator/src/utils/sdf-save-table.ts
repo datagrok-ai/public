@@ -1,11 +1,11 @@
 import * as DG from 'datagrok-api/dg';
-import {COL_NAMES, GENERATED_COL_NAMES, SEQUENCE_TYPES} from '../autostart/constants';
+import {COL_NAMES, GENERATED_COL_NAMES, SEQUENCE_TYPES} from '../model/registration/constants';
 import {differenceOfTwoArrays, download} from '../utils/helpers';
 import * as grok from 'datagrok-api/grok';
 import {SYNTHESIZERS} from '../model/const';
-import {sequenceToMolV3000} from '../utils/structures-works/from-monomers';
-import {RegistrationSequenceParser} from '../model/registration-sequence-parser';
-import {linkStrandsV3000} from '../utils/structures-works/mol-transformations';
+import {sequenceToMolV3000} from '../model/sequence-to-molfile-utils/from-monomers';
+import {RegistrationSequenceParser} from '../model/registration/registration-sequence-parser';
+import {linkStrandsV3000} from '../model/sequence-to-molfile-utils/mol-transformations';
 
 export async function sdfSaveTable(table: DG.DataFrame, onError: (rowI: number, err: any) => void) {
   if (GENERATED_COL_NAMES.some((colName) => !table.columns.contains(colName))) {

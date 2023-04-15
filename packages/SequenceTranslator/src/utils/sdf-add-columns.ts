@@ -1,9 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import {COL_NAMES, GENERATED_COL_NAMES, SEQUENCE_TYPES} from '../model/registration/const';
 import * as grok from 'datagrok-api/grok';
-import {RegistrationSequenceParser} from '../model/registration-sequence-parser';
-import {isValidSequence} from '../sdf-tab/sequence-codes-tools';
-import {batchMolWeight, molecularWeight, saltMass, saltMolWeigth} from '../autostart/calculations';
+import {RegistrationSequenceParser} from '../model/registration/registration-sequence-parser';
+import {isValidSequence} from '../model/code-converter/conversion-validation-tools';
+import {batchMolWeight, molecularWeight, saltMass, saltMolWeigth} from '../model/registration/calculations';
 import {weightsObj} from '../hardcode-to-be-eliminated/map';
 
 export class SdfColumnsExistsError extends Error {

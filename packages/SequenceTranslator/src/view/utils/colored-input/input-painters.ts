@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 
 // inner dependencies
-import {isValidSequence} from '../sdf-tab/sequence-codes-tools';
+import {isValidSequence} from '../../../model/code-converter/conversion-validation-tools';
 
 /** Set different colors for letters, can be upgraded to color various monomers */
 export function demoPainter(input: string): HTMLSpanElement[] {

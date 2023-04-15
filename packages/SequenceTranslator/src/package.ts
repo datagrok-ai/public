@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {DataLoaderBase, DataLoaderDB} from './utils/data-loader';
 
-import {engageViewForOligoSdFileUI} from './autostart/registration';
+import {engageViewForOligoSdFileUI} from './model/registration/registration';
 import {OligoSdFileApp} from './apps/oligo-sd-file-app';
 import {SequenceTranslatorUI} from './view/view';
 import {LIB_PATH, DEFAULT_LIB_FILENAME} from './utils/const';

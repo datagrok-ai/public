@@ -10,12 +10,12 @@ import $ from 'cash-dom';
 /* datagrok dependencies */
 
 /* internal dependencies */
-import {highlightInvalidSubsequence} from '../input-painters';
-import {ColoredTextInput} from '../../utils/colored-text-input';
+import {highlightInvalidSubsequence} from '../utils/colored-input/input-painters';
+import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
 import {INPUT_FORMATS} from '../../model/const';
-import {sequenceToSmiles, sequenceToMolV3000} from '../../utils/structures-works/from-monomers';
-import {convertSequence, undefinedInputSequence, isValidSequence} from '../../sdf-tab/sequence-codes-tools';
-import {drawMolecule} from '../../utils/structures-works/draw-molecule';
+import {sequenceToSmiles, sequenceToMolV3000} from '../../model/sequence-to-molfile-utils/from-monomers';
+import {convertSequence, undefinedInputSequence, isValidSequence} from '../../model/code-converter/conversion-validation-tools';
+import {drawMolecule} from '../utils/draw-molecule';
 import {download} from '../../utils/helpers';
 import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, DEFAULT_INPUT} from '../../view/const/main-tab-const';
 

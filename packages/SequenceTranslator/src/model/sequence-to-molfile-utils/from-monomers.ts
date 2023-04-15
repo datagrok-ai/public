@@ -1,8 +1,8 @@
 // import {map, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS, DELIMITER} from './map';
 import {map} from '../../hardcode-to-be-eliminated/map';
-import {SYNTHESIZERS, DELIMITER, TECHNOLOGIES} from '../../model/const';
-import {isValidSequence} from '../../sdf-tab/sequence-codes-tools';
-import {sortByStringLengthInDescendingOrder} from '../helpers';
+import {SYNTHESIZERS, DELIMITER, TECHNOLOGIES} from '../const';
+import {isValidSequence} from '../code-converter/conversion-validation-tools';
+import {sortByStringLengthInDescendingOrder} from '../../utils/helpers';
 import {getMonomerWorks} from '../../package';
 import {getNucleotidesMol} from './mol-transformations';
 
