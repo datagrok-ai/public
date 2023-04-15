@@ -35,6 +35,12 @@ export class SdfTabUI {
     this.directionInversion = Object.fromEntries(
       STRANDS.map((key) => [key, false])
     );
+    this.moleculeImgDiv = ui.block([]);
+    $(this.moleculeImgDiv).addClass('st-sdf-mol-img');
+
+    DG.debounce<string>(this.onInput, 300).subscribe(async () => {
+      await this.updateMoleculeImg();
+    });
   }
 
   private onInput: rxjs.Subject<string>;
@@ -42,33 +48,22 @@ export class SdfTabUI {
   private saveAllStrandsInput: DG.InputBase<boolean | null>;
   private inputBase: {[key: string]: DG.InputBase<string>};
   private directionInversion: {[key: string]: boolean};
+  private moleculeImgDiv: HTMLDivElement;
 
   get htmlDivElement(): HTMLDivElement {
     const tableLayout = this.getTableInput();
+    const boolInputsAndButton = this.getBoolInputsAndButton();
 
-    // molecule image container
-    const moleculeImgDiv = ui.block([]);
-    $(moleculeImgDiv).addClass('st-sdf-mol-img');
+    const bottomDiv = ui.divH([boolInputsAndButton, this.moleculeImgDiv]);
+    $(bottomDiv).addClass('st-sdf-bottom');
 
-    DG.debounce<string>(this.onInput, 300).subscribe(async () => {
-      let molfile = '';
-      try {
-        const strandData = this.getStrandData();
-        molfile = this.getMolfile(strandData.ss, strandData.as, strandData.as2);
-      } catch (err) {
-        const errStr = errorToConsole(err);
-        console.error(errStr);
-      }
-      // todo: calculate relative numbers
-      const canvasWidth = 650;
-      const canvasHeight = 150;
-      const molImgObj = new MoleculeImage(molfile);
-      await molImgObj.drawMolecule(moleculeImgDiv, canvasWidth, canvasHeight);
-      // await drawMolecule(moleculeImgDiv, canvasWidth, canvasHeight, molfile);
-      // should the canvas be returned from the above function?
-      $(moleculeImgDiv).find('canvas').css('float', 'inherit');
-    });
+    const sdfTabBody = ui.divV([tableLayout, bottomDiv]);
+    $(sdfTabBody).addClass('st-sdf-body');
 
+    return sdfTabBody;
+  }
+
+  private getBoolInputsAndButton(): HTMLDivElement {
     const saveButton = ui.buttonsInput([
       ui.bigButton('Save SDF', () => {
         const strandData = this.getStrandData();
@@ -81,14 +76,7 @@ export class SdfTabUI {
     const boolInputsAndButton = ui.divV(boolInputsAndButtonArray);
     for (const item of boolInputsAndButtonArray)
       $(item).addClass('st-sdf-bool-button-block');
-
-    const bottomDiv = ui.divH([boolInputsAndButton, moleculeImgDiv]);
-    $(bottomDiv).addClass('st-sdf-bottom');
-
-    const sdfTabBody = ui.divV([tableLayout, bottomDiv]);
-    $(sdfTabBody).addClass('st-sdf-body');
-
-    return sdfTabBody;
+    return boolInputsAndButton;
   }
 
   private getTableInput(): HTMLTableElement {
@@ -97,8 +85,6 @@ export class SdfTabUI {
         (key) => [key, new ColoredTextInput(this.inputBase[key], highlightInvalidSubsequence)]
       )
     );
-
-    // todo: compose tooltip message:
 
     const directionChoiceInput = Object.fromEntries(
       STRANDS.map(
@@ -163,5 +149,24 @@ export class SdfTabUI {
 
   private getMolfile(ss: StrandData, as: StrandData, as2: StrandData): string {
     return getLinkedMolfile(ss, as, as2, this.useChiralInput.value!);
+  }
+
+  private async updateMoleculeImg(): Promise<void> {
+    let molfile = '';
+    try {
+      const strandData = this.getStrandData();
+      molfile = this.getMolfile(strandData.ss, strandData.as, strandData.as2);
+    } catch (err) {
+      const errStr = errorToConsole(err);
+      console.error(errStr);
+    }
+    // todo: calculate relative numbers
+    const canvasWidth = 650;
+    const canvasHeight = 150;
+    const molImgObj = new MoleculeImage(molfile);
+    await molImgObj.drawMolecule(this.moleculeImgDiv, canvasWidth, canvasHeight);
+    // await drawMolecule(moleculeImgDiv, canvasWidth, canvasHeight, molfile);
+    // should the canvas be returned from the above function?
+    $(this.moleculeImgDiv).find('canvas').css('float', 'inherit');
   }
 }
