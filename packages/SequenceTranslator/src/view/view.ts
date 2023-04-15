@@ -4,9 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {MAIN_TAB, AXOLABS_TAB, SDF_TAB} from './const/view-const';
-import {MainTabUI} from './tabs-ui/main-tab';
-import {SdfTabUI} from './tabs-ui/sdf-tab';
-import {AxolabsTabUI} from './tabs-ui/axolabs-tab';
+import {MainTabUI} from './tabs/main';
+import {SdfTabUI} from './tabs/sdf';
+import {AxolabsTabUI} from './tabs/axolabs';
 import {viewMonomerLib} from '../model/monomer-lib-viewer';
 
 export class SequenceTranslatorUI {
