@@ -1,10 +1,10 @@
 import * as DG from 'datagrok-api/dg';
-import {COL_NAMES, GENERATED_COL_NAMES, SEQUENCE_TYPES} from '../model/registration/const';
+import {COL_NAMES, GENERATED_COL_NAMES, SEQUENCE_TYPES} from './const';
 import * as grok from 'datagrok-api/grok';
-import {RegistrationSequenceParser} from '../model/registration/registration-sequence-parser';
-import {isValidSequence} from '../model/code-converter/conversion-validation-tools';
-import {batchMolWeight, molecularWeight, saltMass, saltMolWeigth} from '../model/registration/calculations';
-import {weightsObj} from '../hardcode-to-be-eliminated/map';
+import {RegistrationSequenceParser} from './sequence-parser';
+import {isValidSequence} from '../code-converter/conversion-validation-tools';
+import {batchMolWeight, molecularWeight, saltMass, saltMolWeigth} from './calculations';
+import {weightsObj} from '../../hardcode-to-be-eliminated/map';
 
 export class SdfColumnsExistsError extends Error {
   constructor(message: string) {

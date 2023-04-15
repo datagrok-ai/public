@@ -2,12 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {DataLoaderBase, DataLoaderDB} from './utils/data-loader';
+import {DataLoaderBase, DataLoaderDB} from './model/data-loader/data-loader';
 
 import {engageViewForOligoSdFileUI} from './model/registration/registration';
 import {OligoSdFileApp} from './apps/oligo-sd-file-app';
 import {SequenceTranslatorUI} from './view/view';
-import {LIB_PATH, DEFAULT_LIB_FILENAME} from './utils/const';
+import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loader/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';

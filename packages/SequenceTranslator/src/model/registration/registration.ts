@@ -11,11 +11,11 @@ import {SEQUENCE_TYPES, COL_NAMES, GENERATED_COL_NAMES} from './constants';
 import {saltMass, saltMolWeigth, batchMolWeight} from './calculations';
 import {stringify} from '../../utils/helpers';
 
-import {RegistrationColumnsHandler} from '../../utils/sdf-add-columns';
-import {sdfSaveTable} from '../../utils/sdf-save-table';
+import {RegistrationColumnsHandler} from './add-columns';
+import {sdfSaveTable} from './save-table';
 import {PREFIXES, SEQ_TYPE, SEQ_TYPE_CATEGORY, seqTypeToCategoryDict} from './const';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
-import {DataLoaderBase} from '../../utils/data-loader';
+import {DataLoaderBase} from '../data-loader/data-loader';
 import {Unsubscribable} from 'rxjs';
 
 /** Style used for cells in 'Type' column  */
