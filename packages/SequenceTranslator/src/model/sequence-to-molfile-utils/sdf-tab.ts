@@ -2,10 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-// datagrok libraries dependencies
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
-// inner dependencies
 import {download} from '../helpers';
 import {sequenceToMolV3000} from './from-monomers';
 import {linkStrandsV3000} from './mol-transformations';

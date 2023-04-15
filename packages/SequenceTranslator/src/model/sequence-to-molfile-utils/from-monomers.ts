@@ -3,8 +3,8 @@ import {map} from '../../hardcode-to-be-eliminated/map';
 import {SYNTHESIZERS, DELIMITER, TECHNOLOGIES} from '../const';
 import {isValidSequence} from '../code-converter/conversion-validation-tools';
 import {sortByStringLengthInDescendingOrder} from '../helpers';
-import {getMonomerWorks} from '../../package';
 import {getNucleotidesMol} from './mol-transformations';
+import {StrandData} from './sdf-tab';
 
 import {standardPhosphateLinkSmiles, MODIFICATIONS} from '../../hardcode-to-be-eliminated/const';
 import {getMonomerLib} from '../../package';
@@ -65,42 +65,6 @@ export function sequenceToMolV3000(
 
   return getNucleotidesMol(mols);
   //return getMonomerWorks()?.getAtomicLevel(monomers, 'RNA')!;
-}
-
-// eslint-disable-next-line camelcase
-export function sequenceToMolV3000_new(
-  sequence: string, inverted: boolean = false, oclRender: boolean = false,
-  format: string
-): string {
-  const monomerNameFromCode = getCodeToNameMap(sequence, format);
-  let codes = sortByStringLengthInDescendingOrder(Object.keys(monomerNameFromCode));
-  let i = 0;
-  const codesList = [];
-  const links = LINKS;
-  const includesStandardLinkAlready = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
-  const dropdowns = Object.keys(MODIFICATIONS);
-  codes = codes.concat(dropdowns).concat(DELIMITER);
-  while (i < sequence.length) {
-    const code = codes.find((s: string) => s === sequence.slice(i, i + s.length))!;
-    i += code.length;
-    inverted ? codesList.unshift(code) : codesList.push(code);
-  }
-
-  const monomers: string[] = [];
-
-  for (let i = 0; i < codesList.length; i++) {
-    if (links.includes(codesList[i]) ||
-      includesStandardLinkAlready.includes(codesList[i]) ||
-      (i < codesList.length - 1 && links.includes(codesList[i + 1]))
-    ) {
-      monomers.push(monomerNameFromCode[codesList[i]]);
-    } else {
-      monomers.push(monomerNameFromCode[codesList[i]]);
-      monomers.push('p linkage');
-    }
-  }
-
-  return getMonomerWorks()?.getAtomicLevel(monomers, 'RNA')!;
 }
 
 export function sequenceToSmiles(sequence: string, inverted: boolean = false, format: string): string {
