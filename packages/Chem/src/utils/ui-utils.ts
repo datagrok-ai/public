@@ -7,10 +7,13 @@ export function updateDivInnerHTML(div: HTMLElement, content: string | Node): vo
   div.append(content);
 }
 
-export function addCopyIcon(text: string, paneName: string) {
+export function addCopyIcon(text: string | HTMLElement, paneName: string) {
   const copyIcon = ui.icons.copy(() => {}, 'Copy');
   copyIcon.onclick = (e) => {
-    navigator.clipboard.writeText(text);
+    if (typeof(text) != 'string') 
+      navigator.clipboard.writeText(text.innerText);
+    else 
+      navigator.clipboard.writeText(text);
     grok.shell.info('Copied to clipboard');
     e.stopImmediatePropagation();
   } 

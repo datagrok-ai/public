@@ -61,15 +61,13 @@ export function getDescriptorsSingle(smiles: string): DG.Widget {
         removeChildren(result);
         const map: { [_: string]: any } = {};
         for (const descriptor of selected)
-          map[descriptor] = table.col(descriptor).get(0);
-
+          map[descriptor] = table.col(descriptor).get(0); 
         result.appendChild(ui.tableFromMap(map));
       });
     });
   };
 
-  addCopyIcon(result.innerText, 'Descriptors');
-  
+  addCopyIcon(result, 'Descriptors');
   widget.root.appendChild(result);
   widget.root.appendChild(selectButton);
 
