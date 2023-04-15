@@ -36,18 +36,16 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
   function prop(name: string, type: DG.ColumnType, extract: (mol: OCL.Molecule) => any) {
     var addColumnIcon = ui.iconFA('plus', () => {
       let molCol: DG.Column<string> = semValue.cell.column;
-      semValue.cell.dataFrame.columns
-        .addNew(semValue.cell.dataFrame.columns.getUnusedName(name), type)
-        .init((i) => {
-          try {
-            if (molCol.isNone(i)) return null;
-            const mol = oclMol(molCol.get(i)!);
-            return extract(mol);
-          }
-          catch (_) {
-            return null;
-          }
-        });
+      semValue.cell.dataFrame.columns.addNewVirtual(semValue.cell.dataFrame.columns.getUnusedName(name), (idx: number) => {
+        try {
+          if (molCol.isNone(idx)) return null;
+          const mol = oclMol(molCol.get(idx)!);
+          return extract(mol);
+        }
+        catch (_) {
+          return null;
+        }
+      });
     }, `Calculate ${name} for the whole table`);
 
     ui.tools.setHoverVisibility(host, [addColumnIcon]);
@@ -75,12 +73,12 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
   };
 
   host.appendChild(ui.tableFromMap(map));
-  
+
   let tableString = '';
-  for (const [key, value] of Object.entries(map)) 
+  for (const [key, value] of Object.entries(map))
     tableString += `${key}\t${value.innerText}\n`;
-  
+
   addCopyIcon(tableString, 'Properties');
-  
+
   return new DG.Widget(host);
 }
