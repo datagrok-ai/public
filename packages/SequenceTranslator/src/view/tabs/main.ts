@@ -13,7 +13,8 @@ import $ from 'cash-dom';
 import {highlightInvalidSubsequence} from '../utils/colored-input/input-painters';
 import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
 import {INPUT_FORMATS} from '../../model/const';
-import {sequenceToSmiles, sequenceToMolV3000} from '../../model/sequence-to-molfile-utils/from-monomers';
+import {sequenceToSmiles} from '../../model/sequence-to-molfile-utils/from-monomers';
+import {SequenceToMolfileConverter} from '../../model/sequence-to-molfile-utils/sequence-to-molfile';
 import {convertSequence, undefinedInputSequence, isValidSequence} from '../../model/code-converter/conversion-validation-tools';
 import {drawMolecule} from '../utils/draw-molecule';
 import {download} from '../../model/helpers';
@@ -94,8 +95,8 @@ export class MainTabUI {
   }
 
   private saveMolfile(): void {
-    const result = sequenceToMolV3000(this.sequence, false,
-      this.inputFormatChoiceInput.value!);
+    const result = (new SequenceToMolfileConverter(this.sequence, false,
+      this.inputFormatChoiceInput.value!)).convert();
     download(this.sequence + '.mol', encodeURIComponent(result));
   }
 
@@ -163,7 +164,8 @@ export class MainTabUI {
   }
 
   private getMolfile(): string {
-    return sequenceToMolV3000(this.sequence, false, this.format);
+    const molfile = (new SequenceToMolfileConverter(this.sequence, false, this.format)).convert();
+    return molfile;
   }
 
   // todo: put synthesizers into an object/enum

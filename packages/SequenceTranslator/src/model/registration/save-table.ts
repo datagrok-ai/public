@@ -3,7 +3,7 @@ import {COL_NAMES, GENERATED_COL_NAMES, SEQUENCE_TYPES} from './constants';
 import {differenceOfTwoArrays, download} from '../helpers';
 import * as grok from 'datagrok-api/grok';
 import {SYNTHESIZERS} from '../const';
-import {sequenceToMolV3000} from '../sequence-to-molfile-utils/from-monomers';
+import {SequenceToMolfileConverter} from '../sequence-to-molfile-utils/sequence-to-molfile';
 import {RegistrationSequenceParser} from './sequence-parser';
 import {linkStrandsV3000} from '../sequence-to-molfile-utils/mol-transformations';
 
@@ -24,19 +24,29 @@ export async function sdfSaveTable(table: DG.DataFrame, onError: (rowI: number, 
       const parser = new RegistrationSequenceParser();
       const format = SYNTHESIZERS.GCRS; //getFormat(sequenceCol.get(i))!;
       if (typeCol.get(i) == SEQUENCE_TYPES.SENSE_STRAND) {
-        rowStr += `${sequenceToMolV3000(sequenceCol.get(i), false, format)}\n> <Sequence>\nSense Strand\n\n`;
+        const molfile = (new SequenceToMolfileConverter(sequenceCol.get(i), false, format)).convert();
+        rowStr += `${molfile}\n> <Sequence>\nSense Strand\n\n`;
       } else if (typeCol.get(i) == SEQUENCE_TYPES.ANTISENSE_STRAND) {
-        rowStr += `${sequenceToMolV3000(sequenceCol.get(i), true, format)}\n> <Sequence>\nAnti Sense\n\n`;
+        const molfile = (new SequenceToMolfileConverter(sequenceCol.get(i), true, format).convert());
+        rowStr += `${molfile}\n> <Sequence>\nAnti Sense\n\n`;
       } else if (typeCol.get(i) == SEQUENCE_TYPES.DUPLEX) {
         const obj = parser.getDuplexStrands(sequenceCol.get(i));
-        const as = `${sequenceToMolV3000(obj.as, true, format)}\n> <Sequence>\nAnti Sense\n\n`;
-        const ss = `${sequenceToMolV3000(obj.ss, false, format)}\n> <Sequence>\nSense Strand\n\n`;
+        const asMolfile = (new SequenceToMolfileConverter(obj.as, true, format)).convert();
+        const as = `${asMolfile}\n> <Sequence>\nAnti Sense\n\n`;
+        const ssMolfile = (new SequenceToMolfileConverter(obj.ss, false, format)).convert();
+        const ss = `${ssMolfile}\n> <Sequence>\nSense Strand\n\n`;
         rowStr += `${linkStrandsV3000({senseStrands: [ss], antiStrands: [as]}, true)}\n\n`;
       } else if ([SEQUENCE_TYPES.TRIPLEX, SEQUENCE_TYPES.DIMER].includes(typeCol.get(i))) {
         const obj = parser.getDimerStrands(sequenceCol.get(i));
-        const as1 = `${sequenceToMolV3000(obj.as1, true, format)}\n> <Sequence>\nAnti Sense\n\n`;
-        const as2 = `${sequenceToMolV3000(obj.as2, true, format)}\n> <Sequence>\nAnti Sense\n\n`;
-        const ss = `${sequenceToMolV3000(obj.ss, false, format)}\n> <Sequence>\nSense Strand\n\n`;
+        const as1Molfile = (new SequenceToMolfileConverter(obj.as1, true, format)).convert();
+        const as1 = `${as1Molfile}\n> <Sequence>\nAnti Sense\n\n`;
+
+        const as2Molfile = (new SequenceToMolfileConverter(obj.as2, true, format)).convert();
+        const as2 = `${as2Molfile}\n> <Sequence>\nAnti Sense\n\n`;
+
+        const ssMolfile = (new SequenceToMolfileConverter(obj.ss, false, format)).convert();
+        const ss = `${ssMolfile}\n> <Sequence>\nSense Strand\n\n`;
+
         rowStr += `${linkStrandsV3000({senseStrands: [ss], antiStrands: [as1, as2]}, true)}\n\n`;
       }
 

@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 import {download} from '../helpers';
-import {sequenceToMolV3000} from './from-monomers';
+import {SequenceToMolfileConverter} from './sequence-to-molfile';
 import {linkStrandsV3000} from './mol-transformations';
 import {isValidSequence} from '../code-converter/conversion-validation-tools';
 import '../../view/css/sdf-tab.css';
@@ -23,7 +23,7 @@ export function getMolfileForStrand(strand: string, invert: boolean): string {
   const format = validationOutput.synthesizer![0];
   let molfile = '';
   try {
-    molfile = sequenceToMolV3000(strand, invert, format!);
+    molfile = (new SequenceToMolfileConverter(strand, invert, format!)).convert();
   } catch (err) {
     const errStr = errorToConsole(err);
     console.error(errStr);
