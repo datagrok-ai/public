@@ -53,7 +53,7 @@ export class SequenceToMolfileConverter {
     }
 
 
-    return this.getNucleotidesMol(mols);
+    return this.getPolymerMolfile(mols);
     //return getMonomerWorks()?.getAtomicLevel(monomers, 'RNA')!;
   }
 
@@ -106,20 +106,26 @@ export class SequenceToMolfileConverter {
     return obj;
   }
 
-  private getNucleotidesMol(codes: string[]) {
+  private getMolblocksForCodes(codes: string[]) {
     const molBlocks: string[] = [];
 
-    for (let i = 0; i < codes.length - 1; i++) {
-      if (codes[i].includes('MODIFICATION')) {
-        if (i === 0)
-          molBlocks.push(this.reflect(codes[i]));
-        else
-          molBlocks.push(codes[i]);
-      } else {
-        molBlocks.push(this.rotateNucleotidesV3000(codes[i]));
-      }
-    }
+    for (let i = 0; i < codes.length - 1; i++)
+      molBlocks.push(codes[i]);
+    return molBlocks;
+  }
 
+  private adjustMolBlocks(molBlocks: string[]) {
+    return molBlocks.map((molBlock, idx) => {
+      if (molBlock.includes('MODIFICATION'))
+        return (idx === 0) ? this.reflect(molBlock) : molBlock;
+      else
+        return this.rotateNucleotidesV3000(molBlock);
+    });
+  }
+
+  private getPolymerMolfile(codes: string[]) {
+    let molBlocks = this.getMolblocksForCodes(codes);
+    molBlocks = this.adjustMolBlocks(molBlocks);
     return this.linkV3000(molBlocks);
   }
 
