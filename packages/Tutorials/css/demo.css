@@ -16,10 +16,10 @@
     width: 280px;
     overflow: auto;
 }
-
+/*
 .demo-app-card {
     min-height: 200px;
-}
+}*/
 .demo-app-card:hover {
     cursor: pointer;
 }
@@ -27,7 +27,7 @@
 .demo-app-card .ui-image{
     min-width: 100%;
     min-height: 120px;
-    background-color: white;
+    background-size: cover;
     margin-bottom: 12px;
 }
 
@@ -68,4 +68,42 @@
 
 .demo-app-tree-group .d4-tree-view-item:focus {
     background-color: var(--grey-1);
+}
+
+.demo-app-view-title {
+    font-size: 20px;
+    color: var(--grey-6);
+    text-align: center;
+    margin: 6px auto;
+}
+.demo-app-view-subtitle {
+    color: var(--grey-5);
+    max-width: 500px;
+    text-align: center;
+    margin: 6px auto;
+    line-height: 1.5;
+}
+.demo-app-view.grok-gallery-grid {
+    margin-top: 12px;
+    justify-content: center;
+    align-items: stretch;
+}
+
+.demo-app-view.grok-gallery-grid > .d4-item-card {
+    max-width: 150px;
+}
+.demo-app-view.grok-gallery-grid > .d4-item-card:hover {
+    cursor: pointer;
+}
+
+.demo-app-view.grok-gallery-grid > .d4-item-card > div {
+    text-align: center;
+}
+.demo-app-view.grok-gallery-grid > .d4-item-card div.ui-image {
+    margin: 0 auto 16px auto;
+}
+.demo-app-view.grok-gallery-grid > .d4-item-card div.tutorials-card-title {
+    margin: 8px 0;
+    font-size: 15px;
+    font-weight: normal;
 }
