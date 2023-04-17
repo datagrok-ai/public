@@ -12,8 +12,8 @@ export class DistanceMatrix {
   get size(): number { return this._size; }
 
   /**
-   * @param {Float64Array} data  Distance data
-   * @param {number} m           Number of original observations
+   * @param {Float32Array} data Distance data
+   * @param {number} size Number of original observations
    */
   constructor(data?: Float32Array, size?: number) {
     if (size == undefined) {
@@ -66,8 +66,10 @@ export class DistanceMatrix {
 
   // Combines different matrices into one using simple vector math.
   // Used to combine distance matrices for different features like ones of numbers and ones of sequences.
-  static combine(matrices: DistanceMatrix[], method: 'euclidean' | 'manhattan' = 'euclidean') {
-    matrices.forEach((mat) => mat.normileze());
+  static combineDistanceMatrices(
+    matrices: DistanceMatrix[], method: 'euclidean' | 'manhattan' = 'euclidean'
+  ): DistanceMatrix {
+    matrices.forEach((mat) => mat.normalize());
     const size = matrices[0].size;
     const res = new DistanceMatrix(undefined, size);
     for (let i = 0; i < size; i++) {
@@ -77,13 +79,11 @@ export class DistanceMatrix {
         case 'manhattan':
           for (let k = 0; k < matrices.length; k++)
             sum += matrices[k].get(i, j);
-
           res.set(i, j, sum);
           break;
         default:
           for (let k = 0; k < matrices.length; k++)
             sum += matrices[k].get(i, j) ** 2;
-
           res.set(i, j, Math.sqrt(sum));
           break;
         }
@@ -93,12 +93,12 @@ export class DistanceMatrix {
   }
 
   //normilze distance matrix in place
-  normileze() {
-    const max = Math.max(...this.data);
-    const min = Math.min(...this.data);
+  public normalize() {
+    const max = Math.max(...this._data);
+    const min = Math.min(...this._data);
     const range = max - min;
-    for (let i = 0; i < this.data.length; i++)
-      this.data[i] = range === 0 ? this.data[i] - min : (this.data[i] - min) / (max - min);
+    for (let i = 0; i < this._data.length; i++)
+      this._data[i] = range === 0 ? this._data[i] - min : (this._data[i] - min) / (max - min);
   }
 }
 

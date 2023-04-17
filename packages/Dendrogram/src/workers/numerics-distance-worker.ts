@@ -3,14 +3,10 @@ import { DistanceMatrix } from "@datagrok-libraries/bio/src/trees/distance-matri
 onmessage = (event) => {
   const { values } = event.data;
 
-  const distanceFunc = (a: number, b: number) => {
-    return Math.abs(a - b);
-  };
-
-  const data: { error?: any; distanceMatrix?: DistanceMatrix } = {};
+  const data: { error?: any; distanceMatrixData?: Float32Array } = {};
   try {
-    const distanceMatrix = DistanceMatrix.calc(values, distanceFunc);
-    data.distanceMatrix = distanceMatrix;
+    const distanceMatrix = DistanceMatrix.calc(values, (a: number, b: number) => Math.abs(a - b));
+    data.distanceMatrixData = distanceMatrix.data;
   } catch (e) {
     data.error = e;
   }

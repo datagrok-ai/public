@@ -37,7 +37,9 @@ export async function hierarchicalClusteringUI2(df: DG.DataFrame): Promise<void>
 
 /** Creates table view with injected tree of newick result */
 export async function hierarchicalClusteringUI(
-  df: DG.DataFrame, colNameList: string[], distance: string, linkage: string
+  df: DG.DataFrame,
+  colNameList: string[], distance: 'euclidean' | 'manhattan' = 'euclidean',
+  linkage: string
 ): Promise<void> {
   const colNameSet: Set<string> = new Set(colNameList);
   const [filteredDf, filteredIndexList]: [DG.DataFrame, Int32Array] =
@@ -68,10 +70,8 @@ export async function hierarchicalClusteringUI(
         return res;
       }));
 
-  const hcPromise: Promise<string> = hierarchicalClusteringExec(preparedDf, distance, linkage);
-  
-  getCombinedDistanceMatrix([df.col(colNameList[0])!]).then(res => null)
-
+  const distanceMatrix = (await getCombinedDistanceMatrix(preparedDf.columns.toList(), distance)) as DistanceMatrix;
+  const hcPromise = hierarchicalClusteringByDistanceExec(distanceMatrix, linkage);
 
   // Replace rows indexes with filtered
   // newickStr returned with row indexes after filtering, so we need reversed dict { [fltIdx: number]: number}
@@ -142,4 +142,15 @@ export async function hierarchicalClusteringExec(
   //   const res: string = df.getTag(thTAGS.DF_NEWICK)!;
   //   resolve(res);
   // });
+}
+
+async function hierarchicalClusteringByDistanceExec(distance: DistanceMatrix, linkage: string): Promise<string> {
+  const distanceCol: DG.Column = DG.Column.fromFloat32Array('distance', distance.data);  
+  const dataDf: DG.DataFrame = DG.DataFrame.fromColumns([distanceCol]);
+ 
+  const newickStr: string = await grok.functions.call(
+      'Dendrogram:hierarchicalClusteringByDistanceScript',
+      {data: dataDf, size: distance.size, linkage_name: linkage});
+    
+  return newickStr;
 }

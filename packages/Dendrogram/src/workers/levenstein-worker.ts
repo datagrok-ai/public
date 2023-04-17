@@ -4,11 +4,10 @@ import { distance } from 'fastest-levenshtein';
 
 onmessage = (event) => {
   const { sequences } = event.data;
-
-  const data: { error?: any; distanceMatrix?: DistanceMatrix } = {};
+  const data: { error?: any; distanceMatrixData?: Float32Array } = {};
   try {
-    const distanceMatrix = DistanceMatrix.calc(sequences, distance);
-    data.distanceMatrix = distanceMatrix;
+    const distanceMatrix = DistanceMatrix.calc(sequences, (a: string,b: string) => distance(a,b));
+    data.distanceMatrixData = distanceMatrix.data;
   } catch (e) {
     data.error = e;
   }
