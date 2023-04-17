@@ -14,7 +14,7 @@ jobs:
       - name: Check for failures
         if: ${{ github.event.workflow_run.conclusion == 'failure' }}
         run: |
-          echo "::set-env name=SLACK_MESSAGE::Workflow failed: ${{ github.event.workflow_run.html_url }}"
+          SLACK_MESSAGE=$(echo "Workflow failed: ${{ github.event.workflow_run.html_url }}")
 
       - name: Send Slack notification
         if: ${{ env.SLACK_MESSAGE }}
