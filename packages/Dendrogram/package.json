@@ -14,6 +14,7 @@
     "cash-dom": "latest",
     "datagrok-api": "^1.11.1",
     "dayjs": "latest",
+    "fastest-levenshtein": "^1.0.16",
     "rxjs": "^6.5.5",
     "wu": "latest"
   },
@@ -34,7 +35,7 @@
   },
   "scripts": {
     "link-utils": "npm link @datagrok-libraries/utils",
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio @datagrok-libraries/gridext @datagrok-libraries/ml",
     "build": "webpack",
     "debug": "webpack && grok publish",
     "release": "webpack && grok publish --release",

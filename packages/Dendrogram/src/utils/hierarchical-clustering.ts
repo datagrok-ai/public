@@ -6,6 +6,8 @@ import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
 import {isLeaf, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
+import { getCombinedDistanceMatrix } from '../workers/distance-worker-creator';
+import { DistanceMatrix } from '@datagrok-libraries/bio/src/trees/distance-matrix';
 
 /** Custom UI form for hierarchical clustering */
 export async function hierarchicalClusteringUI2(df: DG.DataFrame): Promise<void> {
@@ -67,6 +69,9 @@ export async function hierarchicalClusteringUI(
       }));
 
   const hcPromise: Promise<string> = hierarchicalClusteringExec(preparedDf, distance, linkage);
+  
+  getCombinedDistanceMatrix([df.col(colNameList[0])!]).then(res => null)
+
 
   // Replace rows indexes with filtered
   // newickStr returned with row indexes after filtering, so we need reversed dict { [fltIdx: number]: number}

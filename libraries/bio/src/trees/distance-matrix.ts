@@ -63,6 +63,43 @@ export class DistanceMatrix {
     }
     return res;
   }
+
+  // Combines different matrices into one using simple vector math.
+  // Used to combine distance matrices for different features like ones of numbers and ones of sequences.
+  static combine(matrices: DistanceMatrix[], method: 'euclidean' | 'manhattan' = 'euclidean') {
+    matrices.forEach((mat) => mat.normileze());
+    const size = matrices[0].size;
+    const res = new DistanceMatrix(undefined, size);
+    for (let i = 0; i < size; i++) {
+      for (let j = i + 1; j < size; j++) {
+        let sum = 0;
+        switch (method) {
+        case 'manhattan':
+          for (let k = 0; k < matrices.length; k++)
+            sum += matrices[k].get(i, j);
+
+          res.set(i, j, sum);
+          break;
+        default:
+          for (let k = 0; k < matrices.length; k++)
+            sum += matrices[k].get(i, j) ** 2;
+
+          res.set(i, j, Math.sqrt(sum));
+          break;
+        }
+      }
+    }
+    return res;
+  }
+
+  //normilze distance matrix in place
+  normileze() {
+    const max = Math.max(...this.data);
+    const min = Math.min(...this.data);
+    const range = max - min;
+    for (let i = 0; i < this.data.length; i++)
+      this.data[i] = range === 0 ? this.data[i] - min : (this.data[i] - min) / (max - min);
+  }
 }
 
 export interface Indexable<TObj> {

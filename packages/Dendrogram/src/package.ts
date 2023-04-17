@@ -216,7 +216,7 @@ export async function importNewick(fileContent: string): Promise<DG.DataFrame[]>
 //name: hierarchicalClustering
 //description: Calculates hierarchical clustering on features and injects tree to grid
 //input: dataframe table
-//input: column_list features {type: numerical}
+//input: column_list features {semType: Macromolecule}
 //input: string distance = 'euclidean' {choices: ['euclidean', 'manhattan']}
 //input: string linkage = 'ward' {choices: ['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward']}
 export async function hierarchicalClustering(
