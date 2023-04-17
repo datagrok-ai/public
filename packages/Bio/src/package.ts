@@ -2,20 +2,22 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-
-export const _package = new DG.Package();
-
-import {MacromoleculeDifferenceCellRenderer, MonomerCellRenderer} from './utils/cell-renderer';
+import {
+  MacromoleculeDifferenceCellRenderer,
+  MacromoleculeSequenceCellRenderer,
+  MonomerCellRenderer
+} from './utils/cell-renderer';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
-import {runKalign} from './utils/multiple-sequence-alignment';
 import {SequenceAlignment} from './seq_align';
 import {getEmbeddingColsNames, sequenceSpaceByFingerprints} from './analysis/sequence-space';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {
-  createLinesGrid, createPropPanelElement, createTooltipElement, getChemSimilaritiesMatrix,
+  createLinesGrid,
+  createPropPanelElement,
+  createTooltipElement,
+  getChemSimilaritiesMatrix,
 } from './analysis/sequence-activity-cliffs';
 import {HELM_CORE_LIB_FILENAME} from '@datagrok-libraries/bio/src/utils/const';
-import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
 import {getMacroMolColumnPropertyPanel, representationsWidget} from './widgets/representations';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
@@ -30,14 +32,7 @@ import {substructureSearchDialog} from './substructure-search/substructure-searc
 import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {delay} from '@datagrok-libraries/utils/src/test';
-import {
-  getStats,
-  NOTATION,
-  splitterAsHelm,
-  TAGS as bioTAGS,
-  ALPHABET
-} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {pepseaMethods, runPepsea} from './utils/pepsea';
+import {getStats, splitterAsHelm, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
@@ -45,13 +40,17 @@ import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {createJsonMonomerLibFromSdf, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {LIB_PATH, LIB_STORAGE_NAME, MonomerLibHelper} from './utils/monomer-lib';
 import {getMacromoleculeColumn} from './utils/ui-utils';
-import {IUMAPOptions, ITSNEOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
 import {demoBio01UI} from './demo/bio01-similarity-diversity';
 import {demoBio01aUI} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
 import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
 import {demoBio05UI} from './demo/bio05-helm-msa-sequence-space';
+import {checkInputColumnUI} from './utils/check-input-column';
+import {multipleSequenceAlignmentUI} from './utils/multiple-sequence-alignment-ui';
+
+export const _package = new DG.Package();
 
 // /** Avoid reassinging {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
 // let monomerLib: MonomerLib | null = null;
@@ -217,51 +216,6 @@ export function macromoleculeDifferenceCellRenderer(): MacromoleculeDifferenceCe
 }
 
 
-function checkInputColumnUi(col: DG.Column, name: string, allowedNotations: string[] = [],
-  allowedAlphabets: string[] = [], notify: boolean = true): boolean {
-  const [res, msg]: [boolean, string] = checkInputColumn(col, name, allowedNotations, allowedAlphabets);
-  if (notify && !res)
-    grok.shell.warning(msg);
-  return res;
-}
-
-export function checkInputColumn(
-  col: DG.Column, name: string, allowedNotations: string[] = [], allowedAlphabets: string[] = []
-): [boolean, string] {
-  let res: boolean = true;
-  let msg: string = '';
-
-  const uh = new UnitsHandler(col);
-  if (col.semType !== DG.SEMTYPE.MACROMOLECULE) {
-    grok.shell.warning(name + ' analysis is allowed for Macromolecules semantic type');
-    res = false;
-  } else {
-    const notation: string = uh.notation;
-    if (allowedNotations.length > 0 &&
-      !allowedNotations.some((n) => notation.toUpperCase() == (n.toUpperCase()))
-    ) {
-      const notationAdd = allowedNotations.length == 0 ? 'any notation' :
-        (`notation${allowedNotations.length > 1 ? 's' : ''} ${allowedNotations.map((n) => `"${n}"`).join(', ')} `);
-      msg = `${name} + ' analysis is allowed for Macromolecules with notation ${notationAdd}.`;
-      res = false;
-    } else if (!uh.isHelm()) {
-      // alphabet is not specified for 'helm' notation
-      const alphabet: string = uh.alphabet;
-      if (
-        allowedAlphabets.length > 0 &&
-        !allowedAlphabets.some((a) => alphabet.toUpperCase() == (a.toUpperCase()))
-      ) {
-        const alphabetAdd = allowedAlphabets.length == 0 ? 'any alphabet' :
-          (`alphabet${allowedAlphabets.length > 1 ? 's' : ''} ${allowedAlphabets.map((a) => `"${a}"`).join(', ')}.`);
-        msg = `${name} + ' analysis is allowed for Macromolecules with alphabet ${alphabetAdd}.`;
-        res = false;
-      }
-    }
-  }
-
-  return [res, msg];
-}
-
 //name: sequenceAlignment
 //input: string alignType {choices: ['Local alignment', 'Global alignment']}
 // eslint-disable-next-line max-len
@@ -321,7 +275,7 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
 export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column, activities: DG.Column,
   similarity: number, methodName: string, options?: IUMAPOptions | ITSNEOptions
 ): Promise<DG.Viewer | undefined> {
-  if (!checkInputColumnUi(macroMolecule, 'Activity Cliffs'))
+  if (!checkInputColumnUI(macroMolecule, 'Activity Cliffs'))
     return;
   const axesNames = getEmbeddingColsNames(df);
   const tags = {
@@ -379,7 +333,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
   // Delay is required for initial function dialog to close before starting invalidating of molfiles.
   // Otherwise, dialog is freezing
   await delay(10);
-  if (!checkInputColumnUi(macroMolecule, 'Sequence space'))
+  if (!checkInputColumnUI(macroMolecule, 'Sequence space'))
     return;
 
   const embedColsNames = getEmbeddingColsNames(table);
@@ -445,7 +399,7 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
     grok.shell.warning('Transformation to atomic level requires package "Chem" installed.');
     return;
   }
-  if (!checkInputColumnUi(macroMolecule, 'To Atomic Level'))
+  if (!checkInputColumnUI(macroMolecule, 'To Atomic Level'))
     return;
   const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
   const monomersLibObject: any[] = JSON.parse(monomersLibFile);
@@ -456,68 +410,7 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
 //name: MSA...
 //tags: bio, panel
 export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = null): void {
-  const table = col?.dataFrame ?? grok.shell.t;
-  const seqCol = col ?? table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
-  if (seqCol == null) {
-    grok.shell.warning(`MSAError: dataset doesn't conain any Macromolecule column`);
-    return;
-  }
-
-  let performAlignment: () => Promise<DG.Column<string> | null> = async () => null;
-  const methodInput = ui.choiceInput('Method', pepseaMethods[0], pepseaMethods);
-  methodInput.setTooltip('Alignment method');
-  const gapOpenInput = ui.floatInput('Gap open', 1.53);
-  gapOpenInput.setTooltip('Gap opening penalty at group-to-group alignment');
-  const gapExtendInput = ui.floatInput('Gap extend', 0);
-  gapExtendInput.setTooltip('Gap extension penalty to skip the alignment');
-  const inputRootStyles = [methodInput.root.style, gapOpenInput.root.style, gapExtendInput.root.style];
-
-  const colInput = ui.columnInput('Sequence', table, seqCol, () => {
-    const potentialCol = colInput.value;
-    const unusedName = table.columns.getUnusedName(`msa(${potentialCol.name})`);
-
-    if (checkInputColumnUi(
-      potentialCol, potentialCol.name, [NOTATION.FASTA], [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT], false)) {
-      for (const inputRootStyle of inputRootStyles)
-        inputRootStyle.display = 'none';
-
-      performAlignment = () => runKalign(potentialCol, false, unusedName, clustersColInput.value);
-    } else if (checkInputColumnUi(potentialCol, potentialCol.name, [NOTATION.HELM], [], false)) {
-      for (const inputRootStyle of inputRootStyles)
-        inputRootStyle.display = 'initial';
-
-      performAlignment = () => runPepsea(potentialCol, unusedName, methodInput.value!, gapOpenInput.value!,
-        gapExtendInput.value!, clustersColInput.value);
-    } else {
-      for (const inputRootStyle of inputRootStyles)
-        inputRootStyle.display = 'none';
-
-      performAlignment = async () => null;
-    }
-  }) as DG.InputBase<DG.Column<string>>;
-  colInput.setTooltip('Sequences column to use for alignment');
-  colInput.fireChanged();
-
-  const clustersColInput = ui.columnInput('Clusters', table, null);
-  clustersColInput.nullable = true;
-
-  let msaCol: DG.Column<string> | null = null;
-  ui.dialog('MSA')
-    .add(colInput)
-    .add(clustersColInput)
-    .add(methodInput)
-    .add(gapOpenInput)
-    .add(gapExtendInput)
-    .onOK(async () => {
-      colInput.fireChanged();
-      msaCol = await performAlignment();
-      if (msaCol == null)
-        return grok.shell.warning('Wrong column format');
-
-      table.columns.add(msaCol);
-      await grok.data.detectSemanticTypes(table);
-    })
-    .show();
+  multipleSequenceAlignmentUI(col);
 }
 
 //top-menu: Bio | Structure | Composition Analysis
@@ -539,7 +432,7 @@ export async function compositionAnalysis(): Promise<void> {
   });
 
   const handler = async (col: DG.Column) => {
-    if (!checkInputColumnUi(col, 'Composition'))
+    if (!checkInputColumnUI(col, 'Composition'))
       return;
 
     const wlViewer = tv.addViewer('WebLogo', {sequenceColumnName: col.name});
