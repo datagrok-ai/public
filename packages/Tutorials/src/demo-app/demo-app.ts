@@ -23,55 +23,110 @@ export class DemoView extends DG.ViewBase {
 
   async startDemoFunc(func: DG.Func, viewPath: string) {
     grok.shell.closeAll();
-    const loadingScreen = ui.div('Loading...', 'loading');
-    grok.shell.tv.root.appendChild(loadingScreen);
+    ui.setUpdateIndicator(grok.shell.tv.root, true);
 
     await func.apply();
-    loadingScreen.remove();
+    ui.setUpdateIndicator(grok.shell.tv.root, false);
     grok.shell.v.path = grok.shell.v.basePath = `/apps/Tutorials/Demo/${viewPath}`;
   }
 
   private _initContent() {
     this.name = 'Demo app';
-    this.root.appendChild(ui.divText('Select a demo from the toolbox on the left', 'demo-text'));
+    //this.root.appendChild(ui.divText('Select a demo from the toolbox on the left', 'demo-text'));
+
+    const title = ui.divText('Datagrok Platform Showcase', 'demo-app-view-title');
+    const description = ui.divText("Explore Datagrok functionality features across multiple domains. Select a the category or choose the demo from the list.", 'demo-app-view-subtitle');
+    const root = ui.div([], 'demo-app-view grok-gallery-grid');
+
+    let temp: string[] = [];
+    const groups: { name: string; icon: string;  }[] = [];
+
+    for (const f of DG.Func.find({meta: {'demoPath': null}})) {
+      const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
+      const path = pathOption.split('|').map((s) => s.trim());
+      const categoryName = path[0];
+
+      const item = {
+        name: categoryName,
+        icon: f.package.getIconUrl()
+      }
+
+      if (temp.indexOf(categoryName) === -1){
+        temp.push(categoryName);
+        groups.push(item);
+      }
+      
+      
+    }
+    
+    for (let i=0; i<groups.length; i++) {
+      let item = ui.card(ui.divV([
+        ui.image(groups[i].icon, 80,80),
+        ui.div([groups[i].name],'tutorials-card-title')
+      ]));
+
+      item.addEventListener('click', async () => {
+        let node = this.tree.items.find(node => node.text == groups[i].name)?.root;
+        node?.click();
+      });
+      root.append(item);
+    }
+
+    this.root.append(ui.divV([
+      title,
+      description,
+      root
+    ]));
   }
 
   nodeView(viewName: string) {
-    if (viewName === 'Viewers') {
-      let root = ui.div([], 'grok-gallery-grid');
-      grok.shell.closeAll();
-      const view = grok.shell.newView(viewName);
-      view.basePath = '/apps/Tutorials/Demo';
-      view.path = `/${viewName}`;
+    grok.shell.closeAll();
+    
+    const view = grok.shell.newView(viewName);
+    view.basePath = '/apps/Tutorials/Demo';
+    view.path = `/${viewName}`;
+    
+    const root = ui.div([], 'grok-gallery-grid');
+    root.style.alignItems = 'stretch';
 
-      for (const f of DG.Func.find({meta: {'demoPath': null}})) {
-        if (f.options[DG.FUNC_OPTIONS.DEMO_PATH].includes('Viewers')){
-          const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
-          const path = pathOption.split('|').map((s) => s.trim());
-          const viewer = path[path.length - 1];
+    for (const f of DG.Func.find({meta: {'demoPath': null}})) {
+      if (f.options[DG.FUNC_OPTIONS.DEMO_PATH].includes(viewName)){
+        const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
+        const path = pathOption.split('|').map((s) => s.trim());
+        const demo = path[path.length - 1];
+        const imgPath = `${_package.webRoot}images/demoapp/${f.name}.jpg`;
+        const img = ui.div('','ui-image');
 
-          let image = ui.image(`${_package.webRoot}images/viewers/${f.friendlyName}Img.jpg`, 0, 0);
-          if (viewer === 'Globe')
-            image.style.backgroundColor = 'black';
+        console.log(f.name);
 
-          let item = ui.card(ui.divV([
-            image,
-            ui.div([viewer],'tutorials-card-title'),
-            ui.div([f.description], 'tutorials-card-description')
-          ], 'demo-app-card'));
-          item.addEventListener('click', async () => {
-            let node = this.tree.items.find(node => node.text == viewer)?.root;
-            node?.click();
-            //const demoPath = `Viewers/${viewer}`;
-            //await this.startDemoFunc(f, demoPath);
-          });
-          root.append(item);
-        }
+        fetch(imgPath)
+        .then(res => {
+          if (res.ok)
+            img.style.backgroundImage = `url(${imgPath})`
+          else
+            img.style.backgroundImage = `url(${_package.webRoot}images/demoapp/emptyImg.jpg)`
+        })
+        .catch()
+
+        let item = ui.card(ui.divV([
+          img,
+          ui.div([demo],'tutorials-card-title'),
+          ui.div([f.description], 'tutorials-card-description')
+        ], 'demo-app-card'));
+
+        item.addEventListener('click', async () => {
+          let node = this.tree.items.find(node => node.text == demo)?.root;
+          node?.click();
+        });
+
+        if (f.description!='')
+          ui.tooltip.bind(item, f.description)
+        //ui.tooltip.bind(item, () => ui.tableFromMap({name: f.name, description: f.description}))
+        root.append(item);
       }
 
       grok.shell.v.root.append(root);
     }
-
   }
 
   private _initDockPanel() {
