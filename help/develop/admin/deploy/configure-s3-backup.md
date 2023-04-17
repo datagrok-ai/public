@@ -13,7 +13,7 @@ To configure AWS S3 bucket backup use [instructions](./deploy-amazon-terraform.m
 To configure manual AWS S3 bucket backup do the next steps:
 
 1. Login to your AWS Console and navigate to the S3 service
-2. Choose an S3 bucket that you wish to backup
+2. Choose the S3 bucket that you use for datagrok
 3. Go to `Properties --> Bucket Versioning` and press `Edit`
 4. Set Bucket Versioning `Enable` and press `Save changes`
 5. Go to IAM, press `Roles` and press `Create new role`.
