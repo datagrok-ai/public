@@ -3,11 +3,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {HardcodeTerminator} from '../hardcode-terminator';
+
 import {sortByStringLengthInDescendingOrder} from '../helpers';
 import {DELIMITER} from '../const';
 import {LINKS, P_LINKAGE} from './const';
 import {getMonomerLib} from '../../package';
-import {HardcodeTerminator} from '../hardcode-terminator';
 
 const terminator = new HardcodeTerminator();
 
@@ -19,7 +20,7 @@ export class SequenceToMolfileConverter {
   }
 
   //todo: replace by map
-  private codeToNameMap: {[code: string]: string};
+  private codeToNameMap: Map<string, string>;
 
   convert(): string {
     const monomerNames = this.getMonomerNameSequence();
@@ -45,15 +46,15 @@ export class SequenceToMolfileConverter {
         this.isMonomerAttachedToLink(parsedCodes[i]) ||
         (i < parsedCodes.length - 1 && LINKS.includes(parsedCodes[i + 1]))
       ) {
-        const aa = this.codeToNameMap[parsedCodes[i]];
-        if (aa !== undefined)
-          monomerNames.push(aa);
+        const name = this.codeToNameMap.get(parsedCodes[i]);
+        if (name !== undefined)
+          monomerNames.push(name);
         else
           monomerNames.push(parsedCodes[i]);
       } else {
-        const aa = this.codeToNameMap[parsedCodes[i]];
-        if (aa !== undefined)
-          monomerNames.push(aa);
+        const name = this.codeToNameMap.get(parsedCodes[i]);
+        if (name !== undefined)
+          monomerNames.push(name);
         else
           monomerNames.push(parsedCodes[i]);
         monomerNames.push(P_LINKAGE);
@@ -63,7 +64,7 @@ export class SequenceToMolfileConverter {
   }
 
   private getAllCodesOfFormat(): string[] {
-    let allCodesInTheFormat = Object.keys(this.codeToNameMap);
+    let allCodesInTheFormat = Array.from(this.codeToNameMap.keys());
     const modifications = terminator.getModifications();
     allCodesInTheFormat = allCodesInTheFormat.concat(modifications).concat(DELIMITER);
     return sortByStringLengthInDescendingOrder(allCodesInTheFormat);
@@ -84,7 +85,7 @@ export class SequenceToMolfileConverter {
   }
 
   private isMonomerAttachedToLink(code: string) {
-    // todo: eliminate check by this legacy list, leads to bugs
+    // todo: eliminate this legacy list, leads to bugs
     const legacyList = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
     return legacyList.includes(code);
   }
