@@ -1,5 +1,9 @@
 {
   "name": "@datagrok-libraries/bio",
+  "author": {
+    "name": "Aleksandr Tanas",
+    "email": "atanas@datagrok.ai"
+  },
   "publishConfig": {
     "access": "public"
   },
