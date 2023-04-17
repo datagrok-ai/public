@@ -46,3 +46,17 @@
     max-width: 200px;
     text-overflow: ellipsis;
 }
+.ui-tag > input {
+    max-width: 65px;
+    font-size: 12px;
+    height: 11px;
+    max-height: 11px;
+    padding: 0;
+    margin: 0;
+}
+.ui-tag > input:focus {
+    background:none;
+    outline: none;
+    border: none;
+    border-bottom: 1px solid var(--blue-1);
+}

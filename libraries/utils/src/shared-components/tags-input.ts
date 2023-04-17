@@ -63,6 +63,7 @@ export class TagsInput extends DG.InputBase {
       const tagValue = currentTag.innerText;
       const input = document.createElement('input');
       input.value = tagValue;
+
       let blurFlag = true;
 
       input.onblur = () => {
@@ -73,7 +74,12 @@ export class TagsInput extends DG.InputBase {
         this._renameTag(tagValue, newTag, currentTag);
       };
       input.onkeyup = (event) => {
-        if (event.key === 'Escape' || event.key === 'Enter') {
+        if (event.key === 'Escape'){
+          blurFlag = false;
+          input.remove();
+          this._renameTag(tagValue, tagValue, currentTag);
+        }
+        if (event.key === 'Enter') {
           blurFlag = false;
           const newTag = input.value;
           input.remove();
