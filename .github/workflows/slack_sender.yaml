@@ -20,7 +20,7 @@ jobs:
         if: ${{ env.SLACK_MESSAGE }}
         run: |
           key="${{ github.actor }}"
-          value=$(echo "${{ secrets.SLACKBOT_WEBHOOK }}" | jq -r ".${key}")
-          curl -X POST -H 'Content-type: application/json' \
-          --data '{"text":"'"${SLACK_MESSAGE}"'"}' \
-          $value
+          value=$(echo "${{ secrets.SLACK_ID }}" | jq -r ".${key}")
+          curl -X POST -H 'Content-type: application/json' -H "Authorization: Bearer ${{ secrets.SLACKBOT_TOKEN }}" \
+          --data '{"text":"'"${SLACK_MESSAGE}"'", "channel":"'$value'"}' \
+          https://slack.com/api/chat.postMessage
