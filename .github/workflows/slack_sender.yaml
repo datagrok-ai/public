@@ -1,6 +1,8 @@
 name: Send slack message about action fail
 on:
   workflow_run:
+    workflows:
+      - '*'
     types:
       - completed
 
