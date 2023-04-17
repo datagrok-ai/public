@@ -4,18 +4,18 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {sortByStringLengthInDescendingOrder} from '../helpers';
-import {SYNTHESIZERS, DELIMITER, TECHNOLOGIES} from '../const';
+import {DELIMITER} from '../const';
 import {LINKS, P_LINKAGE} from './const';
-import {MODIFICATIONS} from '../../hardcode-to-be-eliminated/const';
 import {getMonomerLib} from '../../package';
-import {map} from '../../hardcode-to-be-eliminated/map';
-import {isValidSequence} from '../code-converter/conversion-validation-tools';
+import {HardcodeTerminator} from '../hardcode-terminator';
+
+const terminator = new HardcodeTerminator();
 
 export class SequenceToMolfileConverter {
   constructor(
     private sequence: string, private invert: boolean = false, private format: string
   ) {
-    this.codeToNameMap = this.getCodeToNameMap(this.sequence, this.format);
+    this.codeToNameMap = terminator.getCodeToNameMap(this.sequence, this.format);
   }
 
   //todo: replace by map
@@ -64,7 +64,7 @@ export class SequenceToMolfileConverter {
 
   private getAllCodesOfFormat(): string[] {
     let allCodesInTheFormat = Object.keys(this.codeToNameMap);
-    const modifications = Object.keys(MODIFICATIONS);
+    const modifications = terminator.getModifications();
     allCodesInTheFormat = allCodesInTheFormat.concat(modifications).concat(DELIMITER);
     return sortByStringLengthInDescendingOrder(allCodesInTheFormat);
   }
@@ -87,31 +87,6 @@ export class SequenceToMolfileConverter {
     // todo: eliminate check by this legacy list, leads to bugs
     const legacyList = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
     return legacyList.includes(code);
-  }
-
-  private getCodeToNameMap(sequence: string, format: string) {
-    const obj: { [code: string]: string } = {};
-    const NAME = 'name';
-    if (format == null) {
-      for (const synthesizer of Object.keys(map)) {
-        for (const technology of Object.keys(map[synthesizer])) {
-          for (const code of Object.keys(map[synthesizer][technology]))
-            obj[code] = map[synthesizer][technology][code][NAME]!;
-        }
-      }
-    } else {
-      for (const technology of Object.keys(map[format])) {
-        for (const code of Object.keys(map[format][technology]))
-          obj[code] = map[format][technology][code][NAME]!;
-      }
-    }
-    obj[DELIMITER] = '';
-    const output = isValidSequence(sequence, format);
-    if (output.synthesizer!.includes(SYNTHESIZERS.MERMADE_12))
-      obj['g'] = map[SYNTHESIZERS.MERMADE_12][TECHNOLOGIES.SI_RNA]['g'][NAME]!;
-    else if (output.synthesizer!.includes(SYNTHESIZERS.AXOLABS))
-      obj['g'] = map[SYNTHESIZERS.AXOLABS][TECHNOLOGIES.SI_RNA]['g'][NAME]!;
-    return obj;
   }
 
   private getMolblocksForCodes(codes: string[]) {
