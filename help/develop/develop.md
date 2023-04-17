@@ -380,7 +380,7 @@ section earlier, but now this content is moved to `devDependencies` for a better
 ```json
 {
   "devDependencies": {
-    "@datagrok/chem": "latest"
+    "@datagrok/chem": "latesttrtststst"
   }
 }
 ```
