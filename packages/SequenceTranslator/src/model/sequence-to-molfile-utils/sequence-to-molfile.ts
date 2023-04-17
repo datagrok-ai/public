@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {sortByStringLengthInDescendingOrder} from '../helpers';
 import {SYNTHESIZERS, DELIMITER, TECHNOLOGIES} from '../const';
-import {LINKS} from './const';
+import {LINKS, P_LINKAGE} from './const';
 import {MODIFICATIONS} from '../../hardcode-to-be-eliminated/const';
 import {getMonomerLib} from '../../package';
 import {map} from '../../hardcode-to-be-eliminated/map';
@@ -22,33 +22,11 @@ export class SequenceToMolfileConverter {
   private codeToNameMap: {[code: string]: string};
 
   convert(): string {
-    const codes = this.getCodes();
-    const monomers: string[] = [];
-
-    for (let i = 0; i < codes.length; i++) {
-      if (LINKS.includes(codes[i]) ||
-        this.isMonomerAttachedToLink(codes[i]) ||
-        (i < codes.length - 1 && LINKS.includes(codes[i + 1]))
-      ) {
-        const aa = this.codeToNameMap[codes[i]];
-        if (aa !== undefined)
-          monomers.push(aa);
-        else
-          monomers.push(codes[i]);
-      } else {
-        const aa = this.codeToNameMap[codes[i]];
-        if (aa !== undefined)
-          monomers.push(aa);
-        else
-          monomers.push(codes[i]);
-        monomers.push('p linkage');
-      }
-    }
-
+    const monomerNames = this.getMonomerNameSequence();
     const lib = getMonomerLib();
     const mols: string [] = [];
-    for (let i = 0; i < monomers.length; i++) {
-      const mnmr = lib?.getMonomer('RNA', monomers[i]);
+    for (let i = 0; i < monomerNames.length; i++) {
+      const mnmr = lib?.getMonomer('RNA', monomerNames[i]);
       mols.push(mnmr?.molfile!);
     }
 
@@ -57,21 +35,52 @@ export class SequenceToMolfileConverter {
     //return getMonomerWorks()?.getAtomicLevel(monomers, 'RNA')!;
   }
 
-  private getCodes(): string[] {
-    let codesSortedByLength = sortByStringLengthInDescendingOrder(Object.keys(this.codeToNameMap));
-    const codes = [];
-    // todo: rename dropdowns
+  private getMonomerNameSequence() {
+    const parsedCodes = this.parseSequence();
+    const monomerNames: string[] = [];
+
+    for (let i = 0; i < parsedCodes.length; i++) {
+      if (
+        LINKS.includes(parsedCodes[i]) ||
+        this.isMonomerAttachedToLink(parsedCodes[i]) ||
+        (i < parsedCodes.length - 1 && LINKS.includes(parsedCodes[i + 1]))
+      ) {
+        const aa = this.codeToNameMap[parsedCodes[i]];
+        if (aa !== undefined)
+          monomerNames.push(aa);
+        else
+          monomerNames.push(parsedCodes[i]);
+      } else {
+        const aa = this.codeToNameMap[parsedCodes[i]];
+        if (aa !== undefined)
+          monomerNames.push(aa);
+        else
+          monomerNames.push(parsedCodes[i]);
+        monomerNames.push(P_LINKAGE);
+      }
+    }
+    return monomerNames;
+  }
+
+  private getAllCodesOfFormat(): string[] {
+    let allCodesInTheFormat = Object.keys(this.codeToNameMap);
     const modifications = Object.keys(MODIFICATIONS);
-    codesSortedByLength = codesSortedByLength.concat(modifications).concat(DELIMITER);
+    allCodesInTheFormat = allCodesInTheFormat.concat(modifications).concat(DELIMITER);
+    return sortByStringLengthInDescendingOrder(allCodesInTheFormat);
+  }
+
+  private parseSequence(): string[] {
+    const allCodesInTheFormat = this.getAllCodesOfFormat();
+    const parsedCodes = [];
     let i = 0;
     while (i < this.sequence.length) {
-      const code = codesSortedByLength.find(
+      const code = allCodesInTheFormat.find(
         (s: string) => s === this.sequence.slice(i, i + s.length)
       )!;
-      this.invert ? codes.unshift(code) : codes.push(code);
+      this.invert ? parsedCodes.unshift(code) : parsedCodes.push(code);
       i += code.length;
     }
-    return codes;
+    return parsedCodes;
   }
 
   private isMonomerAttachedToLink(code: string) {
@@ -97,7 +106,6 @@ export class SequenceToMolfileConverter {
       }
     }
     obj[DELIMITER] = '';
-    // TODO: create object based from synthesizer type to avoid key(codes) duplicates
     const output = isValidSequence(sequence, format);
     if (output.synthesizer!.includes(SYNTHESIZERS.MERMADE_12))
       obj['g'] = map[SYNTHESIZERS.MERMADE_12][TECHNOLOGIES.SI_RNA]['g'][NAME]!;
