@@ -6,7 +6,7 @@
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
   },
-  "description": "Provides support for HELM notation (importing, detecting, rendering, conversion). [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Helm/README.md)",
+  "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
   "dependencies": {
     "@datagrok-libraries/bio": "^5.22.1",
     "@datagrok-libraries/utils": "^1.19.1",
