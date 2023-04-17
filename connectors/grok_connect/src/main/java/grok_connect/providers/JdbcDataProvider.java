@@ -978,7 +978,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 typeName.equalsIgnoreCase("bool") || (type == java.sql.Types.BIT && precision == 1);
     }
 
-    private static boolean isString(int type, String typeName) {
+    protected boolean isString(int type, String typeName) {
         return ((type == java.sql.Types.VARCHAR)|| (type == java.sql.Types.CHAR) ||
                 (type == java.sql.Types.LONGVARCHAR) || (type == java.sql.Types.CLOB)
                 || (type == java.sql.Types.NCLOB) ||
