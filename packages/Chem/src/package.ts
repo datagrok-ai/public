@@ -1066,3 +1066,47 @@ export function removeDuplicates(molecules: string[], molecule: string): string[
   mol1.delete();
   return filteredMolecules;
 }
+
+
+
+//top-menu: Chem | Search | testMCS
+//name: MCS
+//description: finds the most similar molecule
+export async function mcs(): Promise<void> {
+  let rdkit = getRdKitModule();
+  //let test = rdkit.get_test_string();
+  //console.log(test);
+
+  const table = DG.DataFrame.fromCsv(await _package.files.readAsText('sar-small.csv'));
+  let molCol = table.columns.byName('smiles');
+  let n = molCol.length;
+
+  let mols: RDMol[] = [];
+  let arr = new Uint32Array(n);
+  for(let i = 0; i < molCol.length; i++) {
+    mols.push(rdkit.get_mol(molCol.get(i)));
+    //@ts-ignore
+    arr[i] = mols[i].$$.ptr;
+  }
+  // let mol1 = rdkit.get_mol("CCCCCC");
+  // let mol2 = rdkit.get_mol("CCCC");
+
+  //@ts-ignore
+  let buff = rdkit.asm.Zb(n*4);
+
+  // >> 2 is the reduction of element number of 32 bit vs 8 bit for offset
+  //@ts-ignore
+  rdkit.HEAPU32.set(arr, buff >> 2);
+
+  let smarts = rdkit.get_mcs(buff, n);
+  console.log(smarts);
+  //@ts-ignore
+  //rdkit.asm.gb("get_mcs", "void", ["number", "number"], [2, buff]);
+
+  //@ts-ignore
+  rdkit.asm.$b(buff);
+
+  for(let i = 0; i < molCol.length; i++){
+    mols[i].delete();
+  }
+}
