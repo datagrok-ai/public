@@ -17,6 +17,7 @@ public class QueryHandler {
     @OnWebSocketConnect
     public void connected(Session session) throws IOException {
         LOGGER.trace("connected method was called with session: {}", session);
+        session.setIdleTimeout(0);
         SessionManager.add(session);
     }
 
