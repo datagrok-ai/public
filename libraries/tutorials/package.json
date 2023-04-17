@@ -1,5 +1,9 @@
 {
   "name": "@datagrok-libraries/tutorials",
+  "author": {
+    "name": "Diana Onufriienko",
+    "email": "donufriienko@datagrok.ai"
+  },
   "publishConfig": {
     "access": "public"
   },
