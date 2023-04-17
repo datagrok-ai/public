@@ -333,8 +333,8 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements IPhylocanvasGlVi
     // this._viewSubs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe((_) => this.render(false)));
   }
 
-  private onContextMenuHandler(menu:DG.Menu) {
-    menu.item('Reset view', () =>{
+  private onContextMenuHandler(menu: DG.Menu) {
+    menu.item('Reset view', () => {
       this.viewer?.fitInCanvas();
     });
   }

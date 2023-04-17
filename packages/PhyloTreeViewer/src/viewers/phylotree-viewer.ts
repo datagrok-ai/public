@@ -204,8 +204,8 @@ export class PhyloTreeViewer extends DG.JsViewer {
     this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this));
   }
 
-  private onContextMenuHandler(menu:DG.Menu) {
-    menu.item('Reset view', () =>{
+  private onContextMenuHandler(menu: DG.Menu) {
+    menu.item('Reset view', () => {
       this.render(false);
     });
   }
