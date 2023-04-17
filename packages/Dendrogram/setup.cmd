@@ -4,6 +4,7 @@ set package_dir=%cd%
 
 set dirs=^
 \..\..\js-api\ ^
+\..\..\libraries\gridext\ ^
 \..\..\libraries\utils\ ^
 \..\..\libraries\ml\ ^
 \..\..\libraries\bio\ ^
