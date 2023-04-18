@@ -37,9 +37,15 @@ More information about Datagrok design and components:
    The shell will print a token for adding worker nodes something like that:
 
    ```shell
-   docker swarm join \
-    --token SWMTKN-1-49nj1cmql0jkz5s954yi3oex3nedyz0fb0xx14ie39trti4wxv-8vxv8rssmk743ojnwacrr2e7c \
-    192.168.99.100:2377
+   Swarm initialized: current node (bvz81updecsj6wjz393c09vti) is now a manager.
+
+   To add a worker to this swarm, run the following command:
+
+    docker swarm join \
+    --token SWMTKN-1-3pu6hszjas19xyp7ghgosyx9k8atbfcr8p2is99znpy26u2lkl-1awxwuwd3z9j1z3puu7rcgdbx \
+    172.17.0.2:2377
+
+   To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
    ```
 
 2. Use the received token on worker nodes to join the swarm as described below. If you lost a token, you can get
