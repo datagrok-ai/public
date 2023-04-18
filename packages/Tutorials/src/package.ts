@@ -109,17 +109,16 @@ export function demoApp() {
 
   if (pathSegments.length > 4) {
     const category = pathSegments[4];
-    if (pathSegments[pathSegments.length - 1] === category && category === 'Viewers') {
+    if (pathSegments[pathSegments.length - 1] === category) {
       demoView.nodeView(category);
       return;
     }
 
-    const viewerName = pathSegments[5].split('%20').join(' ');
+    const viewerName = pathSegments[5].replaceAll('%20', ' ');
     const f = DemoView.findDemoFunc(`${category} | ${viewerName}`);
     if (f) {
-      const loadingScreen = ui.div('Loading...', 'loading');
-      grok.shell.tv.root.appendChild(loadingScreen);
-
+      // const loadingScreen = ui.div('Loading...', 'loading');
+      // grok.shell.tv.root.appendChild(loadingScreen);
       const viewPath = `${category}/${viewerName}`;
       demoView.startDemoFunc(f, viewPath);
     }
