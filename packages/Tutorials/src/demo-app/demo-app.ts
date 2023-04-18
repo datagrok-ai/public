@@ -25,6 +25,7 @@ export class DemoView extends DG.ViewBase {
   async startDemoFunc(func: DG.Func, viewPath: string) {
     grok.shell.closeAll();
     ui.setUpdateIndicator(grok.shell.tv.root, true);
+    grok.shell.windows.showHelp = true;
 
     await func.apply();
     ui.setUpdateIndicator(grok.shell.tv.root, false);
@@ -32,6 +33,10 @@ export class DemoView extends DG.ViewBase {
   }
 
   private _initContent() {
+    grok.shell.windows.showToolbox = false;
+    grok.shell.windows.showHelp = false;
+    grok.shell.windows.showProperties = false;
+
     this.name = 'Demo app';
 
     const title = ui.divText('Datagrok Platform Demo', 'demo-app-view-title');
@@ -78,6 +83,9 @@ export class DemoView extends DG.ViewBase {
   }
 
   nodeView(viewName: string) {
+    grok.shell.windows.showToolbox = false;
+    grok.shell.windows.showHelp = false;
+    grok.shell.windows.showProperties = false;
     grok.shell.closeAll();
 
     const view = grok.shell.newView(viewName);
@@ -94,8 +102,6 @@ export class DemoView extends DG.ViewBase {
         const demo = path[path.length - 1];
         const imgPath = `${_package.webRoot}images/demoapp/${f.name}.jpg`;
         const img = ui.div('', 'ui-image');
-
-        console.log(f.name);
 
         fetch(imgPath)
           .then(res => {
