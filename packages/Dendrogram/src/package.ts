@@ -210,6 +210,31 @@ export async function importNewick(fileContent: string): Promise<DG.DataFrame[]>
   return [];
 }
 
+// -- File preview --
+//tags: fileViewer, fileViewer-nwk, fileViewer-newick
+//input: file file
+//output: view preview
+export async function previewNewick(file: DG.FileInfo) {
+  const newickString = await file.readAsString();
+  const treeHelper = await getTreeHelper();
+  const df = treeHelper.newickToDf(newickString, file.fileName.slice(0, -4));
+
+  const preview = DG.View.create();
+  const host = ui.divH([
+    ui.button('Load dataframe', () => {
+      const view = grok.shell.addTableView(df);
+      const viewer = DG.Viewer.fromType('PhyloTree', df);
+      view.addViewer(viewer);
+      view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT);
+      return view;
+    }, 'View in a dataframe'),
+    DG.Viewer.fromType('Dendrogram', df).root,
+  ], 'd4-ngl-viewer');
+
+  preview.append(host);
+  return preview;
+}
+
 // -- Top menu --
 
 //top-menu: ML | Hierarchical Clustering ...
@@ -225,4 +250,3 @@ export async function hierarchicalClustering(
   const colNameList: string[] = features.names();
   await hierarchicalClusteringUI(table, colNameList, distance, linkage);
 }
-

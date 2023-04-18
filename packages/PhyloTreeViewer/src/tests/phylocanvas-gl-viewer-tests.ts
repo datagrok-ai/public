@@ -2,21 +2,22 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, expect, expectArray, expectObject} from '@datagrok-libraries/utils/src/test';
-import {newickToDf} from '../utils';
-import {IPhylocanvasGlViewer} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
-
 import {_package} from '../package-test';
+import {after, before, category, test, expect, expectArray, expectObject} from '@datagrok-libraries/utils/src/test';
+import {IPhylocanvasGlViewer} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
+import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 
 category('phylocanvasGlViewer', () => {
   let viewList: DG.ViewBase[];
   let dfList: DG.DataFrame[];
   let currentView: DG.ViewBase;
+  let treeHelper: ITreeHelper;
 
   before(async () => {
     viewList = [];
     dfList = [];
     currentView = grok.shell.v;
+    treeHelper = await getTreeHelper();
   });
 
   after(async () => {
@@ -31,7 +32,7 @@ category('phylocanvasGlViewer', () => {
 
   async function _testOpen() {
     const newickStr = await _package.files.readAsText(`data/tree95.nwk`);
-    const treeDf: DG.DataFrame = newickToDf(newickStr, 'tree95');
+    const treeDf: DG.DataFrame = treeHelper.newickToDf(newickStr, 'tree95');
 
     const tv = grok.shell.addTableView(treeDf, DG.DOCK_TYPE.FILL);
 

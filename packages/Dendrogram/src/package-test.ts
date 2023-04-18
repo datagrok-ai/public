@@ -8,6 +8,7 @@ import './tests/hierarchical-clustering-tests';
 import './tests/tree-cut-tests';
 import './tests/tree-for-grid-tests';
 import './tests/tree-helper-tests';
+import './tests/package-funcs-tests';
 
 export const _package = new DG.Package();
 export {tests};

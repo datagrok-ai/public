@@ -2,9 +2,9 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {newickToDf} from '../utils';
 import {Unsubscribable} from 'rxjs';
 import {IPhylocanvasGlViewer} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
+import {getTreeHelper, ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 
 export class GridWithTreeViewer extends DG.JsViewer {
   nodeNameColumnName: string | null;
@@ -61,8 +61,8 @@ export class GridWithTreeViewer extends DG.JsViewer {
 
       super.onTableAttached();
       this._newick = this.dataFrame.getTag('.newick');
-
-      this._nwkDf = newickToDf(this.newick, 'nwkDf');
+      const treeHelper: ITreeHelper = await getTreeHelper();
+      this._nwkDf = treeHelper.newickToDf(this.newick, 'nwkDf');
       const leafCol = this._nwkDf.getCol('leaf');
       this._nwkDf.filter.init((rowI: number) => { return leafCol.get(rowI); });
 

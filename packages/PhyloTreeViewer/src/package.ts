@@ -3,8 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {newickToDf} from './utils';
-import {PhyloTreeViewer} from './viewers/phylotree-viewer';
 import {PhylocanvasGlViewer} from './viewers/phylocanvas-gl-viewer';
 import {PhylocanvasGlViewerApp} from './apps/phylocanvas-gl-viewer-app';
 import {TreeToGridApp} from './apps/tree-to-grid-app';
@@ -14,43 +12,12 @@ import {PhylocanvasGlService} from './utils/phylocanvas-gl-service';
 import {TreeCutAsTreeApp} from './apps/tree-cut-as-tree-app';
 import {findNewick} from './scripts-api';
 import {PhylocanvasGlServiceBase} from '@datagrok-libraries/bio/src/viewers/phylocanvas-gl-viewer';
-import {PhyloTreeViewerApp} from './apps/phylo-tree-viewer-app';
+import {getTreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 
 
 export const _package = new DG.Package();
 
-
-//name: newickToDf
-//input: string newick
-//input: string name
-//output: dataframe df
-export function _newickToDf(newick: string, name: string): DG.DataFrame {
-  return newickToDf(newick, name);
-}
-
-
-//tags: fileViewer, fileViewer-nwk, fileViewer-newick
-//input: file file
-//output: view preview
-export async function nwkTreeViewer(file: DG.FileInfo) {
-  const newickString = await file.readAsString();
-  const df = newickToDf(newickString, file.fileName.slice(0, -4));
-
-  const preview = DG.View.create();
-  const host = ui.divH([
-    ui.button('Load dataframe', () => {
-      const view = grok.shell.addTableView(df);
-      const viewer = DG.Viewer.fromType('PhyloTree', df);
-      view.addViewer(viewer);
-      view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT);
-      return view;
-    }, 'View in a dataframe'),
-    DG.Viewer.fromType('Tree', df).root,
-  ], 'd4-ngl-viewer');
-
-  preview.append(host);
-  return preview;
-}
 
 // -- Viewers --
 
@@ -62,23 +29,6 @@ export async function nwkTreeViewer(file: DG.FileInfo) {
 export function phylocanvasGlViewer(): PhylocanvasGlViewer {
   return new PhylocanvasGlViewer();
 }
-
-//name: PhyloTree
-//description: Phylogenetic tree visualization
-//tags: viewer
-//meta.icon: files/icons/phylotree-viewer.svg
-//output: viewer result
-export function phyloTreeViewer(): PhyloTreeViewer {
-  return new PhyloTreeViewer();
-}
-
-// //name: GridWithTree
-// //tags: viewer
-// //output: viewer result
-// export function gridWithTreeViewer(): GridWithTreeViewer {
-//   return new GridWithTreeViewer();
-// }
-
 
 // -- Apps for tests --
 
@@ -99,30 +49,15 @@ export async function phylocanvasGlViewerApp(): Promise<void> {
   }
 }
 
-//name: phyloTreeViewerApp
-//description: Test/demo app for PhyloTreeViewer
-export async function phyloTreeViewerApp(): Promise<void> {
-  const pi = DG.TaskBarProgressIndicator.create('open PhyloTreeViewer app');
-  try {
-    const app = new PhyloTreeViewerApp('phyloTreeViewerApp');
-    await app.init();
-  } catch (err: unknown) {
-    const msg: string = 'PhyloTreeViewer phyloTreeViewerApp() error: ' +
-      `${err instanceof Error ? err.message : (err as Object).toString()}`;
-    grok.shell.error(msg);
-    console.error(msg);
-  } finally {
-    pi.close();
-  }
-}
-
 //name: TreeToGrid
 //description: Test/demo app for TreeToGrid (PhylocanvasGL based)
-export async function treeToGridApp(): Promise<void> {
+//output: object result
+export async function treeToGridApp(): Promise<TreeToGridApp | undefined> {
   const pi = DG.TaskBarProgressIndicator.create('open treeInGrid app');
   try {
     const app = new TreeToGridApp();
     await app.init();
+    return app;
   } catch (err: unknown) {
     const msg: string = 'PhyloTreeViewer gridWithTreeViewerApp() error: ' +
       `${err instanceof Error ? err.message : (err as Object).toString()}`;
@@ -175,7 +110,8 @@ export async function treeInGridCellApp(): Promise<void> {
 //description: Opens Newick file
 //input: viewer grid
 //input: string newickText
-export async function injectTreeToGrid(grid: DG.Grid, newickText: string, leafColName?: string) {
+//output: object result
+export async function injectTreeToGrid(grid: DG.Grid, newickText: string, leafColName?: string): Promise<GridNeighbor> {
   const colNameList: string[] = grid.dataFrame.columns.names();
   leafColName = leafColName ??
     grid.dataFrame.getTag('.newickLeafColumn') ??
@@ -185,7 +121,8 @@ export async function injectTreeToGrid(grid: DG.Grid, newickText: string, leafCo
   if (!leafColName)
     throw new Error('The leaf column name can not be inferred. Specify it as an argument.');
 
-  injectTreeToGridUI(grid, newickText, leafColName!);
+  const neighbor: GridNeighbor = await injectTreeToGridUI(grid, newickText, leafColName!);
+  return neighbor;
 }
 
 type PtvWindowType = Window & { $phylocanvasGlService?: PhylocanvasGlService };
@@ -201,17 +138,3 @@ export function getPhylocanvasGlService(): PhylocanvasGlServiceBase {
 
   return window.$phylocanvasGlService;
 }
-
-//name: newickRepresentation
-//input: dataframe data
-//input: column col
-//output: string newick
-export async function newickRepresentation(data: DG.DataFrame) {
-  const columns = Array.from(data.columns.numerical);
-  for (let i = 0; i < columns.length; ++i) {
-    if (columns[i].type === DG.TYPE.DATE_TIME)
-      columns.splice(i, 1);
-  }
-  return await findNewick(DG.DataFrame.fromColumns(columns));
-}
-
