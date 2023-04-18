@@ -105,20 +105,21 @@ export async function tutorialsInit() {
 //description: Interactive demo of major Datagrok capabilities
 export function demoApp() {
   const pathSegments = window.location.pathname.split('/');
-  grok.shell.addView(new DemoView());
+  const demoView = new DemoView();
+  grok.shell.addView(demoView);
+
   if (pathSegments.length > 4) {
     const category = pathSegments[4];
-    const viewerName = pathSegments[5].split('%20').join(' ');
+    if (pathSegments[pathSegments.length - 1] === category) {
+      demoView.nodeView(category);
+      return;
+    }
+
+    const viewerName = pathSegments[5].replaceAll('%20', ' ');
     const f = DemoView.findDemoFunc(`${category} | ${viewerName}`);
     if (f) {
-      const loadingScreen = ui.div('Loading...', 'loading');
-      grok.shell.tv.root.appendChild(loadingScreen);
-
       const viewPath = `${category}/${viewerName}`;
-      f?.apply().then((_) => {
-        loadingScreen.remove();
-        grok.shell.tv.path = grok.shell.tv.basePath = `/apps/Tutorials/Demo/${viewPath}`;
-      });
+      demoView.startDemoFunc(f, viewPath);
     }
   }
 }
@@ -156,7 +157,7 @@ function setProperties(properties: { [propertyName: string]: boolean }): void {
 
 function setPath(path: string, tutorialRunners: TutorialRunner[]): void {
   const pathParts = path.split('/');
-  const removeSpaces = (s: string) => s.split(' ').join('');
+  const removeSpaces = (s: string) => s.replaceAll(' ', '');
   const trackShortNames: {[key: string]: Track} = {
     'eda': eda,
     'ml': ml,

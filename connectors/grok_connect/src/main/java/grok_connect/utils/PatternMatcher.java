@@ -6,7 +6,6 @@ import org.apache.commons.lang.*;
 
 public class PatternMatcher {
     public static final String RANGE_NUM = "-";
-
     public static final String NONE = "none";
     public static final String CONTAINS = "contains";
     public static final String STARTS_WITH = "starts with";
@@ -18,6 +17,8 @@ public class PatternMatcher {
     public static final String BEFORE = "before";
     public static final String AFTER = "after";
     public static final String RANGE_DATE_TIME = "range";
+    public static final String IS_NULL = "is null";
+    public static final String IS_NOT_NULL = "is not null";
 
     /// Expression as entered by user.
     public String expression;

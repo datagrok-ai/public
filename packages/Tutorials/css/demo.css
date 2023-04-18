@@ -1,57 +1,114 @@
 .loading {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: white;
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: white;
 }
 
 .tutorials-demo-container {
-    max-width: 280px;
-    min-width: 280px;
-    width: 280px;
-    overflow: auto;
+	max-width: 280px;
+	min-width: 280px;
+	width: 280px;
+	overflow: auto;
+}
+
+.demo-app-card:hover {
+  cursor: pointer;
+}
+
+.demo-app-card .ui-image{
+	min-width: 100%;
+	min-height: 120px;
+	background-size: cover;
+	margin-bottom: 12px;
 }
 
 .demo-text {
-    text-align: center;
+	text-align: center;
 }
 
 .demo-app-tree-group {
-    margin-top: 12px;
+	margin-top: 12px;
 }
 
 .demo-app-tree-group .d4-tree-view-group {
-    width: 100%;
+	width: 100%;
 }
 
 .demo-app-tree-group .d4-tree-view-tri .d4-tree-view-tri-expanded {
-    width: 22px;
+	width: 22px;
 }
 
 .demo-app-tree-group .d4-tree-view-group-host .d4-tree-view-group-host {
-    margin: 0px;
+	margin: 0px;
 }
 
 .demo-app-tree-group .d4-tree-view-item {
-    margin: 0;
-    padding:1px;
-    padding-left: 32px;
-    display: block;
+	margin: 0;
+	padding:1px;
+	padding-left: 32px;
+	display: block;
 }
 
 .demo-app-tree-group .d4-tree-view-item.hidden {
-    display: none;
+	display: none;
 }
 
 .demo-app-tree-group .d4-tree-view-item:hover {
-    cursor: pointer;
+	cursor: pointer;
 }
 
 .demo-app-tree-group .d4-tree-view-item:focus {
-    background-color: var(--grey-1);
+	background-color: var(--grey-1);
+}
+
+.demo-app-view-title {
+	font-size: 20px;
+	color: var(--grey-6);
+	text-align: center;
+	margin: 6px auto;
+}
+
+.demo-app-view-subtitle {
+	color: var(--grey-5);
+	text-align: center;
+	margin: 6px auto;
+	line-height: 1.5;
+}
+
+.demo-app-view.grok-gallery-grid {
+	margin-top: 12px;
+	justify-content: center;
+	align-items: stretch;
+}
+
+.demo-app-view.grok-gallery-grid > .d4-item-card {
+	max-width: 150px;
+}
+
+.demo-app-view.grok-gallery-grid > .d4-item-card:hover {
+	cursor: pointer;
+}
+
+.demo-app-view.grok-gallery-grid > .d4-item-card > div {
+	text-align: center;
+}
+
+.demo-app-view.grok-gallery-grid > .d4-item-card div.ui-image {
+	margin: 0 auto 16px auto;
+}
+
+.demo-app-view.grok-gallery-grid > .d4-item-card div.tutorials-card-title {
+	margin: 8px 0;
+	font-size: 15px;
+	font-weight: normal;
+}
+
+.demo-app-group-view.grok-gallery-grid {
+    align-items: stretch;
 }

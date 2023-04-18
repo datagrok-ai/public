@@ -1,3 +1,3 @@
-const rdkitLibVersion = 'RDKit_minimal.1.2.2';
+const rdkitLibVersion = 'RDKit_minimal.1.2.3';
 
 module.exports = rdkitLibVersion;

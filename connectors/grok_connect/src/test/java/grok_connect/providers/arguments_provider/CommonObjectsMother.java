@@ -71,7 +71,7 @@ public class CommonObjectsMother {
 
         FuncCall funcCall2 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string id = \">28\" {pattern: int}\n"
-                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "SELECT * FROM mock_data WHERE @id(id) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "id", ">28", "int")
                 .addFuncCallOptionsPattern("id", ">28", ">",
@@ -80,7 +80,7 @@ public class CommonObjectsMother {
         // input: string id = ">=29" {pattern: int}
         FuncCall funcCall3 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string id = \">=29\" {pattern: int}\n"
-                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "SELECT * FROM mock_data WHERE @id(id) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "id", ">=29", "int")
                 .addFuncCallOptionsPattern("id", ">=29", ">=",
@@ -123,7 +123,7 @@ public class CommonObjectsMother {
         // --input: string id = "in(29, 30)" {pattern: int}
         FuncCall funcCall6 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string id = \"in(29, 30)\" {pattern: int}\n"
-                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "SELECT * FROM mock_data WHERE @id(id) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "","id", "in(29, 30)", "int")
                 .addFuncCallOptionsPattern("id", "in(29, 30)", "in",
@@ -166,7 +166,7 @@ public class CommonObjectsMother {
         FuncCall funcCall7 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string id = \"not in(11, 12, 13, 14, 15, 16, 17, 18, 19, 20, "
                         + "21, 22, 23, 24, 25, 26, 27, 28, 29, 30)\" {pattern: int}\n"
-                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "SELECT * FROM mock_data WHERE @id(id) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "id", "not in(11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, " +
                                 "22, 23, 24, 25, 26, 27, 28, 29, 30)",
@@ -179,7 +179,7 @@ public class CommonObjectsMother {
         // --input: string id = "min-max 29-30" {pattern: int}
         FuncCall funcCall8 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string id = \"min-max 29-30\" {pattern: int}\n"
-                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "SELECT * FROM mock_data WHERE @id(id) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "id", "min-max 29-30",
                         "int")
@@ -214,7 +214,7 @@ public class CommonObjectsMother {
                 .build();
         FuncCall funcCall10 =  FuncCallBuilder.getBuilder()
                 .addQuery("--input: string some_number = \">975\" {pattern: double}\n"
-                        + "SELECT * FROM mock_data WHERE @some_number(some_number)\n"
+                        + "SELECT * FROM mock_data WHERE @some_number(some_number) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string",  "", "some_number", ">975", "double")
                 .addFuncCallOptionsPattern("some_number", ">975", ">",
@@ -223,7 +223,7 @@ public class CommonObjectsMother {
         // --input: string some_number = ">=975" {pattern: double}
         FuncCall funcCall11 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string some_number = \">=975\" {pattern: double}\n"
-                        + "SELECT * FROM mock_data WHERE @some_number(some_number)\n"
+                        + "SELECT * FROM mock_data WHERE @some_number(some_number) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "some_number", ">=975", "double")
                 .addFuncCallOptionsPattern("some_number", ">=975", ">=",
@@ -248,7 +248,7 @@ public class CommonObjectsMother {
                 .build();
         FuncCall funcCall12 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string some_number = \"<20\" {pattern: double}\n"
-                        + "SELECT * FROM mock_data WHERE @some_number(some_number)\n"
+                        + "SELECT * FROM mock_data WHERE @some_number(some_number) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "some_number", "<20", "double")
                 .addFuncCallOptionsPattern("some_number", "<20", "<",
@@ -257,7 +257,7 @@ public class CommonObjectsMother {
         // --input: string some_number = "<=20" {pattern: double}
         FuncCall funcCall13 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string some_number = \"<=20\" {pattern: double}\n"
-                        + "SELECT * FROM mock_data WHERE @some_number(some_number)\n"
+                        + "SELECT * FROM mock_data WHERE @some_number(some_number) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "some_number", "<=20", "double")
                 .addFuncCallOptionsPattern("some_number", "<=20", "<=",
@@ -282,7 +282,7 @@ public class CommonObjectsMother {
                 .build();
         FuncCall funcCall14 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string first_name = 'contains Z' {pattern: string}\n"
-                        + "SELECT * FROM mock_data WHERE @first_name(first_name)\n"
+                        + "SELECT * FROM mock_data WHERE @first_name(first_name) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "","first_name", "contains Z", "string")
                 .addFuncCallOptionsPattern("first_name", "contains Z", "contains",
@@ -308,7 +308,7 @@ public class CommonObjectsMother {
                 .build();
         FuncCall funcCall15 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string first_name = 'starts with W' {pattern: string}\n"
-                        + "SELECT * FROM mock_data WHERE @first_name(first_name)\n"
+                        + "SELECT * FROM mock_data WHERE @first_name(first_name) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "","first_name", "starts with W", "string")
                 .addFuncCallOptionsPattern("first_name", "starts with W", "starts with",
@@ -334,7 +334,7 @@ public class CommonObjectsMother {
                 .build();
         FuncCall funcCall16 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string first_name = 'ends with s' {pattern: string}\n"
-                        + "SELECT * FROM mock_data WHERE @first_name(first_name)\n"
+                        + "SELECT * FROM mock_data WHERE @first_name(first_name) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "","first_name", "ends with s", "string")
                 .addFuncCallOptionsPattern("first_name", "ends with s", "ends with",
@@ -362,7 +362,7 @@ public class CommonObjectsMother {
                 .build();
         FuncCall funcCall17 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string country = 'in (Poland, Brazil)' {pattern: string}\n" +
-                        "SELECT * FROM mock_data WHERE @country(country)\n" +
+                        "SELECT * FROM mock_data WHERE @country(country) ORDER BY id\n" +
                         "--end")
                 .addFuncParam("string", "", "country", "in (Poland, Brazil)", "string")
                 .addFuncCallOptionsPattern("country", "in (Poland, Brazil)", "in",
@@ -490,7 +490,7 @@ public class CommonObjectsMother {
                 .setRowCount(dayOfYear > 1 && dayOfYear < Year.of(now.getYear()).length() - 6 ? 3 : 2)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
                                 now.toString(),
-                                dayOfMonth == 1 ? null : yesterday.toString(),
+                                dayOfYear == 1 ? null : yesterday.toString(),
                                 lastDayOfWeek.getYear() >  now.getYear() || lastDayOfWeek.equals(now)?
                                         null : lastDayOfWeek.toString(),
                                 dayOfLastYear.getYear() == now.getYear() ? dayOfLastYear.toString() : null)),
@@ -706,14 +706,14 @@ public class CommonObjectsMother {
                 .build();
         FuncCall funcCall1 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: list<string> values\n" +
-                        "SELECT * FROM mock_data WHERE country = ANY(@values)")
+                        "SELECT * FROM mock_data WHERE country = ANY(@values) ORDER BY id")
                 .addFuncParam("list", "string", "values", values, "")
                 .addFuncCallOptionsPattern("country", "", "",
                         null, null, "Poland", "Brazil")
                 .build();
         FuncCall funcCall2 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: list<string> values = ['Poland','Brazil']\n" +
-                        "SELECT * FROM mock_data WHERE country = ANY(@values)")
+                        "SELECT * FROM mock_data WHERE country = ANY(@values) ORDER BY id")
                 .addFuncParam("list", "string", "values", values, "")
                 .addFuncCallOptionsPattern("country", "", "",
                         null, null, "Poland", "Brazil")

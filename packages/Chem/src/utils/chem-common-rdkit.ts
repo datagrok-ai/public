@@ -43,6 +43,7 @@ const RDKIT_COMMON_RENDER_OPTS: {[key: string]: any} = {
     53: [0.247, 0.0, 0.498],
   },
   backgroundColour: [1, 1, 1, 1],
+  queryColour: [0, 0, 0, 1],
 };
 
 export function setRdKitWebRoot(webRootValue: string): void {

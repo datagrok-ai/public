@@ -5,6 +5,7 @@ import {runTests, TestContext, tests} from '@datagrok-libraries/utils/src/test';
 import './tests/_first-tests';
 import './tests/Palettes-test';
 import './tests/detectors-tests';
+import './tests/detectors-weak-and-likely-tests';
 import './tests/detectors-benchmark-tests';
 import './tests/msa-tests';
 import './tests/splitters-test';
