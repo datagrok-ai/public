@@ -20,7 +20,6 @@ export class DemoView extends DG.ViewBase {
 
   constructor() {
     super();
-
     this._initDockPanel();
     this._initContent();
   }
@@ -30,7 +29,7 @@ export class DemoView extends DG.ViewBase {
     return DG.Func.find({meta: {'demoPath': demoPath}})[0];
   }
 
-  private async _startDemoFunc(func: DG.Func, viewPath: string) {
+  async startDemoFunc(func: DG.Func, viewPath: string) {
     grok.shell.closeAll();
     ui.setUpdateIndicator(grok.shell.tv.root, true);
     grok.shell.windows.showHelp = true;
@@ -92,7 +91,6 @@ export class DemoView extends DG.ViewBase {
     ]));
   }
 
-
   nodeView(viewName: string) {
     grok.shell.windows.showToolbox = false;
     grok.shell.windows.showHelp = false;
@@ -135,7 +133,7 @@ export class DemoView extends DG.ViewBase {
           node?.click();
         };
 
-        if (f.description != '')
+        if (f.description !== '')
           ui.tooltip.bind(item, f.description)
 
         root.append(item);
@@ -193,7 +191,7 @@ export class DemoView extends DG.ViewBase {
         const viewerName = value.text;
         const demoFunc = DemoView.findDemoFunc(`${categoryName} | ${viewerName}`);
         const demoPath = `${categoryName}/${viewerName}`;
-        await this._startDemoFunc(demoFunc, demoPath);
+        await this.startDemoFunc(demoFunc, demoPath);
         this.tree.root.focus();
       } else {
         this.tree.root.focus();
@@ -201,7 +199,6 @@ export class DemoView extends DG.ViewBase {
       }
     });
 
-    this.tree.root.classList.add('demo-app-tree-group');
     this.dockPanel = grok.shell.dockManager.dock(ui.panel([
       this.searchInput.root,
       this.tree.root,
@@ -219,7 +216,7 @@ export class DemoView extends DG.ViewBase {
 
     // TODO: if there empty space - add viewer/filter/etc.
     // TODO: write API for step control and example, steps are written in context panel - first priority
-    
+
     // TODO: add to script demo class grok.shell.windows.showPropertyPanel = true and showHelp = false
     // TODO: add GIS
   }
