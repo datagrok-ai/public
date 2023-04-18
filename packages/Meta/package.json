@@ -2401,19 +2401,6 @@
         "directory": "packages/ChemDraw"
       }
     },
-    "fae": {
-      "dependencies": {
-        "1.0.0": {
-          "datagrok-api": "latest"
-        }
-      },
-      "description": "Bispecifics FAE simulation V2.0",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public",
-        "directory": "packages/FAE"
-      }
-    },
     "dendrogram": {
       "dependencies": {
         "1.0.0": {
