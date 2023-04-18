@@ -64,32 +64,24 @@ export class DistanceMatrix {
     return res;
   }
 
-  // Combines different matrices into one using simple vector math.
-  // Used to combine distance matrices for different features like ones of numbers and ones of sequences.
-  static combineDistanceMatrices(
-    matrices: DistanceMatrix[], method: 'euclidean' | 'manhattan' = 'euclidean'
-  ): DistanceMatrix {
-    matrices.forEach((mat) => mat.normalize());
-    const size = matrices[0].size;
-    const res = new DistanceMatrix(undefined, size);
-    for (let i = 0; i < size; i++) {
-      for (let j = i + 1; j < size; j++) {
-        let sum = 0;
-        switch (method) {
-        case 'manhattan':
-          for (let k = 0; k < matrices.length; k++)
-            sum += matrices[k].get(i, j);
-          res.set(i, j, sum);
-          break;
-        default:
-          for (let k = 0; k < matrices.length; k++)
-            sum += matrices[k].get(i, j) ** 2;
-          res.set(i, j, Math.sqrt(sum));
-          break;
-        }
-      }
-    }
-    return res;
+  // squares each value in matrix in place
+  public square() {
+    for (let i = 0; i < this._data.length; i++)
+      this._data[i] = this._data[i] ** 2;
+  }
+
+  // adds another matrix to this one in place
+  public add(other: DistanceMatrix) {
+    if (this._size != other._size)
+      throw new Error(`Matrices must have the same size. This size: ${this._size}, other size: ${other._size}`);
+    for (let i = 0; i < this._data.length; i++)
+      this._data[i] += other._data[i];
+  }
+
+  // square root each value in matrix in place
+  public sqrt() {
+    for (let i = 0; i < this._data.length; i++)
+      this._data[i] = Math.sqrt(this._data[i]);
   }
 
   //normilze distance matrix in place

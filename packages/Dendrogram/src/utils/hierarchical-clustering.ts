@@ -145,12 +145,12 @@ export async function hierarchicalClusteringExec(
 }
 
 async function hierarchicalClusteringByDistanceExec(distance: DistanceMatrix, linkage: string): Promise<string> {
-  const distanceCol: DG.Column = DG.Column.fromFloat32Array('distance', distance.data);  
+  const distanceCol: DG.Column = DG.Column.fromFloat32Array('distance', distance.data);
   const dataDf: DG.DataFrame = DG.DataFrame.fromColumns([distanceCol]);
- 
+
   const newickStr: string = await grok.functions.call(
       'Dendrogram:hierarchicalClusteringByDistanceScript',
       {data: dataDf, size: distance.size, linkage_name: linkage});
-    
+
   return newickStr;
 }

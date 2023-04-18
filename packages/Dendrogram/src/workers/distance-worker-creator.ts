@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import { DistanceMatrix } from '@datagrok-libraries/bio/src/trees/distance-matrix';
 
 export async function getDistanceMatrixForNumerics(values: Float32Array): Promise<Float32Array> {
-    
+
     return new Promise(function(resolve, reject) {
     const worker = new Worker(new URL('./numerics-distance-worker.ts', import.meta.url));
     worker.postMessage({ values });
@@ -17,7 +17,7 @@ export async function getDistanceMatrixForNumerics(values: Float32Array): Promis
 }
 
 export async function getDistanceMatrixForSequences(sequences: string[]): Promise<Float32Array> {
-    
+
     return new Promise(function(resolve, reject) {
     const worker = new Worker(new URL('./levenstein-worker.ts', import.meta.url));
     worker.postMessage({ sequences });
@@ -30,23 +30,40 @@ export async function getDistanceMatrixForSequences(sequences: string[]): Promis
 
 export async function getCombinedDistanceMatrix(columns: DG.Column[], method: 'euclidean' | 'manhattan' = 'euclidean') {
     const promises: Promise<Float32Array>[] = [];
-    
-    columns.forEach(col => {
-        if(col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) {
-            promises.push(getDistanceMatrixForNumerics(col.toList() as unknown as Float32Array));
-        }
-        else if(col.semType ==='Macromolecule') {
-            promises.push(getDistanceMatrixForSequences(col.toList() as unknown as string[]));
-        }
-    });
+    let out: DistanceMatrix | null = null;
+    for(const col of columns) {
+      let values: Float32Array;
+      if(col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) {
+          values = await getDistanceMatrixForNumerics(col.toList() as unknown as Float32Array);
+      }
+      else if(col.semType ==='Macromolecule') {
+          values = await getDistanceMatrixForSequences(col.toList() as unknown as string[]);
+      }
+      else throw new TypeError('Unsupported column type');
 
-    // return the array of resolved promises values after all are resolved
-    return Promise.all(promises).then((values) => {
-        if (values.length === 1)
-            return new DistanceMatrix(values[0]);
-        else
-            return DistanceMatrix.combineDistanceMatrices(values.map(v => new DistanceMatrix(v)), method);
-    }).catch((error) => {
-        grok.shell.error(error);
-    });
+      if(!out){
+        out = new DistanceMatrix(values);
+        if(columns.length > 1){
+          out.normalize();
+          out.square();
+        }
+      }
+      else {
+        let newMat: DistanceMatrix | null = new DistanceMatrix(values);
+        newMat.normalize();
+        switch(method) {
+          case 'manhattan':
+            out.add(newMat);
+          default:
+            newMat.square();
+            out.add(newMat);
+        }
+        // remove reference
+        newMat = null;
+      }
+    }
+    if (method === 'euclidean'){
+      out?.sqrt();
+    }
+    return out;
 }
