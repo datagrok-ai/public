@@ -17,10 +17,6 @@
 	overflow: auto;
 }
 
-/* .demo-app-card {
-	min-height: 200px;
-} */
-
 .demo-app-card:hover {
   cursor: pointer;
 }
@@ -77,12 +73,14 @@
 	text-align: center;
 	margin: 6px auto;
 }
+
 .demo-app-view-subtitle {
 	color: var(--grey-5);
 	text-align: center;
 	margin: 6px auto;
 	line-height: 1.5;
 }
+
 .demo-app-view.grok-gallery-grid {
 	margin-top: 12px;
 	justify-content: center;
