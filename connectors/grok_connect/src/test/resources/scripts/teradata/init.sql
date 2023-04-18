@@ -1,3 +1,5 @@
+Set session calendar = iso;
+
 CREATE TABLE TEST.MOCK_DATA (
                            id NUMBER(18),
                            first_name VARCHAR2(50),
@@ -66,7 +68,6 @@ CREATE TABLE TEST.dates_type (
 INSERT INTO TEST.dates_type (dat, time_data, stamp, time_zoned, zoned_stamp)
 VALUES ('2023-01-01', '12:55:33.333', '2023-01-01 12:55:33.333', '12:55:33.333+02:00', '2000-01-01 11:37:58.222');
 
-Set session calendar = iso;
 
 CREATE TABLE TEST.dates_patterns (
     dat DATE
@@ -114,4 +115,4 @@ decimal_type DECIMAL(38, 30), number_type NUMBER(5, 2));
 INSERT INTO TEST.FLOAT_TYPE(float_type, real_type, double_type, decimal_type, number_type)
 VALUES (3.4020234234, -3.4028423, -0.0043512, 235234.4646, 999.99);
 INSERT INTO TEST.FLOAT_TYPE(float_type, real_type, double_type, decimal_type, number_type)
-VALUES (0.9999, 1.9999, 213515.435545, 235234.4646, 0.99);
+VALUES (0.9999, 1.9999, 213515.435545, 99999999.9999, 0.99);
