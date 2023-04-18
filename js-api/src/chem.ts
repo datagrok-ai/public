@@ -457,8 +457,8 @@ export namespace chem {
       });
 
       let optionsIcon = ui.iconFA('bars', () => {
-        const menuHost = ui.div([], {style: {position: 'fixed'}});
-        this.root.prepend(menuHost);
+        const menuHost = ui.div([], {style: {position: 'fixed', 'z-index': 100}});
+        this.host.parentElement?.prepend(menuHost);
         Menu.popup()
           .item('Copy as SMILES', () => navigator.clipboard.writeText(this.getSmiles()))
           .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.getMolFile()))
@@ -484,7 +484,7 @@ export namespace chem {
               isChecked: (item) => item === currentSketcherType, toString: item => item,
               radioGroup: 'sketcher type'
             })
-          .show({element: menuHost, x: this.root.offsetWidth + 10, y: 10});
+          .show({element: menuHost, x: (this.host.parentElement?.offsetWidth ?? 0) + 10, y: 10});
       });
       $(optionsIcon).addClass('d4-input-options');
       molInputDiv.append(ui.div([this.molInput, optionsIcon], 'grok-sketcher-input'));
