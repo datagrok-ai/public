@@ -1,6 +1,8 @@
 import {AtomAndBondCounts} from './chemical-table-parser-base';
 import {MolfileHandlerBase} from './molfile-handler-base';
 import {V2K_CONST} from '../formats/molfile-v2k-const';
+import { L, R } from './const';
+import { isAlpha } from './utils';
 
 export class MolfileV2KHandler extends MolfileHandlerBase {
   constructor(molfile: string) {
@@ -57,9 +59,4 @@ export class MolfileV2KHandler extends MolfileHandlerBase {
     const bondCount = parseInt(this.fileContent.substring(begin, end));
     return {atomCount: atomCount, bondCount: bondCount};
   };
-
-  protected queryCriterion(idx: number): boolean {
-    return this.fileContent[idx] === 'R' || !this.isAlpha(this.fileContent[idx]) ||
-      (this.fileContent[idx] === 'L' && !this.isAlpha(this.fileContent[idx + 1]));
-  }
 }

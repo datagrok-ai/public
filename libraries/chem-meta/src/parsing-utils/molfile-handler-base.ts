@@ -1,4 +1,6 @@
 import {ChemicalTableParserBase, AtomAndBondCounts} from './chemical-table-parser-base';
+import { D_QUOTE, L, R, S_QUOTE } from './const';
+import { isAlpha } from './utils';
 
 export abstract class MolfileHandlerBase extends ChemicalTableParserBase {
   constructor(molfile: string) {
@@ -18,7 +20,6 @@ export abstract class MolfileHandlerBase extends ChemicalTableParserBase {
   protected abstract getBondBlockIdx(): number;
   protected abstract shiftIdxToBondedAtomsPair(lineStartIdx: number): number;
   protected abstract shiftIdxToBondType(lineStartIdx: number): number;
-  protected abstract queryCriterion(idx: number): boolean;
 
   protected parseAtomType(idx: number): string {
     let begin = idx;
@@ -33,7 +34,8 @@ export abstract class MolfileHandlerBase extends ChemicalTableParserBase {
   }
 
   protected isQuote(idx: number): boolean {
-    return this.fileContent[idx] === '\"' || this.fileContent[idx] === '\'';
+    const letter = this.fileContent[idx].charCodeAt(0);
+    return letter === S_QUOTE || letter === D_QUOTE;
   }
 
   protected getNextIdenticalChar(idx: number): number {
@@ -53,9 +55,11 @@ export abstract class MolfileHandlerBase extends ChemicalTableParserBase {
     return false;
   };
 
-  protected isAlpha(sym: string): boolean {
-    const charCode = sym.charCodeAt(0);
-    return (charCode >= 65 && charCode <= 90) ||
-      (charCode >= 97 && charCode <= 122);
+
+  protected queryCriterion(idx: number): boolean {
+    const letter = this.fileContent[idx];
+    const char = letter.charCodeAt(idx);
+    return char === R || !isAlpha(letter) ||
+      (char === L && !isAlpha(this.fileContent[idx + 1]));
   }
 }
