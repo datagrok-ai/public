@@ -28,7 +28,7 @@ More information about Datagrok design and components:
 
 ## Preparations
 
-1. Activate docker swarm mode on your manager node:
+1. Activate docker swarm mode on your manager node (it should be a datagrok host):
 
    ```shell
    docker swarm init
