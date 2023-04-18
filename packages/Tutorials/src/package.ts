@@ -117,8 +117,6 @@ export function demoApp() {
     const viewerName = pathSegments[5].replaceAll('%20', ' ');
     const f = DemoView.findDemoFunc(`${category} | ${viewerName}`);
     if (f) {
-      // const loadingScreen = ui.div('Loading...', 'loading');
-      // grok.shell.tv.root.appendChild(loadingScreen);
       const viewPath = `${category}/${viewerName}`;
       demoView.startDemoFunc(f, viewPath);
     }
