@@ -79,7 +79,6 @@
 }
 .demo-app-view-subtitle {
 	color: var(--grey-5);
-	max-width: 500px;
 	text-align: center;
 	margin: 6px auto;
 	line-height: 1.5;

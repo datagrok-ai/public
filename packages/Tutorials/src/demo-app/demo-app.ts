@@ -34,8 +34,8 @@ export class DemoView extends DG.ViewBase {
   private _initContent() {
     this.name = 'Demo app';
 
-    const title = ui.divText('Datagrok Platform Showcase', 'demo-app-view-title');
-    const description = ui.divText("Explore Datagrok functionality features across multiple domains. Select a the category or choose the demo from the list.", 'demo-app-view-subtitle');
+    const title = ui.divText('Datagrok Platform Demo', 'demo-app-view-title');
+    const description = ui.divText("Explore Datagrok functionality features. Select a the category or choose the demo from the list.", 'demo-app-view-subtitle');
     const root = ui.div([], 'demo-app-view grok-gallery-grid');
 
     let temp: string[] = [];
