@@ -1,9 +1,11 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
+
+import {_package} from '../package';
+
 import '../../css/demo.css';
-//import { _package } from '../package-test';
-import { _package } from '../package';
+
 
 export class DemoView extends DG.ViewBase {
   dockPanel: DG.DockNode = new DG.DockNode(undefined);
@@ -14,7 +16,6 @@ export class DemoView extends DG.ViewBase {
     super();
     this._initDockPanel();
     this._initContent();
-    this.tree.root.classList.add('demo-app-tree-group');
   }
 
   static findDemoFunc(demoPath: string) {
@@ -32,7 +33,6 @@ export class DemoView extends DG.ViewBase {
 
   private _initContent() {
     this.name = 'Demo app';
-    //this.root.appendChild(ui.divText('Select a demo from the toolbox on the left', 'demo-text'));
 
     const title = ui.divText('Datagrok Platform Showcase', 'demo-app-view-title');
     const description = ui.divText("Explore Datagrok functionality features across multiple domains. Select a the category or choose the demo from the list.", 'demo-app-view-subtitle');
@@ -55,14 +55,12 @@ export class DemoView extends DG.ViewBase {
         temp.push(categoryName);
         groups.push(item);
       }
-      
-      
     }
-    
+
     for (let i=0; i<groups.length; i++) {
       let item = ui.card(ui.divV([
-        ui.image(groups[i].icon, 80,80),
-        ui.div([groups[i].name],'tutorials-card-title')
+        ui.image(groups[i].icon, 80, 80),
+        ui.div([groups[i].name], 'tutorials-card-title')
       ]));
 
       item.addEventListener('click', async () => {
@@ -81,32 +79,32 @@ export class DemoView extends DG.ViewBase {
 
   nodeView(viewName: string) {
     grok.shell.closeAll();
-    
+
     const view = grok.shell.newView(viewName);
     view.basePath = '/apps/Tutorials/Demo';
     view.path = `/${viewName}`;
-    
+
     const root = ui.div([], 'grok-gallery-grid');
     root.style.alignItems = 'stretch';
 
     for (const f of DG.Func.find({meta: {'demoPath': null}})) {
-      if (f.options[DG.FUNC_OPTIONS.DEMO_PATH].includes(viewName)){
+      if (f.options[DG.FUNC_OPTIONS.DEMO_PATH].includes(viewName)) {
         const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
         const path = pathOption.split('|').map((s) => s.trim());
         const demo = path[path.length - 1];
         const imgPath = `${_package.webRoot}images/demoapp/${f.name}.jpg`;
-        const img = ui.div('','ui-image');
+        const img = ui.div('', 'ui-image');
 
         console.log(f.name);
 
         fetch(imgPath)
-        .then(res => {
-          if (res.ok)
-            img.style.backgroundImage = `url(${imgPath})`
-          else
-            img.style.backgroundImage = `url(${_package.webRoot}images/demoapp/emptyImg.jpg)`
-        })
-        .catch()
+          .then(res => {
+            if (res.ok)
+              img.style.backgroundImage = `url(${imgPath})`
+            else
+              img.style.backgroundImage = `url(${_package.webRoot}images/demoapp/emptyImg.jpg)`
+          })
+          .catch()
 
         let item = ui.card(ui.divV([
           img,
@@ -119,7 +117,7 @@ export class DemoView extends DG.ViewBase {
           node?.click();
         });
 
-        if (f.description!='')
+        if (f.description != '')
           ui.tooltip.bind(item, f.description)
         //ui.tooltip.bind(item, () => ui.tableFromMap({name: f.name, description: f.description}))
         root.append(item);
@@ -135,17 +133,16 @@ export class DemoView extends DG.ViewBase {
       const path = pathOption.split('|').map((s) => s.trim());
       const folder = this.tree.getOrCreateGroup(path.slice(0, path.length - 1).join(' | '));
       const item = folder.item(path[path.length - 1]);
+
       item.root.onmouseover = (event) => {
-        if (f.description) {
-          const tooltip = f.description.split('\\n');
-          ui.tooltip.show(ui.divV(tooltip.map(elem => elem)), event.clientX, event.clientY);
-        }
+        const packageMessage = `Part of the ${f.package.name} package`;
+        ui.tooltip.show(f.description ? ui.divV([f.description, packageMessage]) : ui.div(packageMessage),
+          event.clientX, event.clientY);
       };
 
       item.root.onmouseout = (_) => {
         ui.tooltip.hide();
       };
-
     }
 
     this.search.onChanged(() => {
@@ -193,24 +190,18 @@ export class DemoView extends DG.ViewBase {
     ]), 'left', null, 'Categories');
     this.dockPanel.container.containerElement.classList.add('tutorials-demo-container');
 
+    this.tree.root.classList.add('demo-app-tree-group');
+
     this._initWindowOptions();
 
-    // grok.events.onCurrentViewChanged.subscribe((view) => this.tree.root.focus());
 
     // TODO: if loading ended in 0.1s, then no div, if not - then div - DG.debounce, merge etc.
-    // TODO: add starting demo app viewer on just up/down arrows
     // TODO: on click on viewer demo set viewer help url in property panel (func helpUrl)
     // TODO: implement search in demo - search on meta.keywords, name, description
     // TODO: add all the platform viewers to demo (make demo functions in Tutorials)
 
-    // TODO: main viewer: 3/4
-    // TODO: additional: grid - histogram - barchart (all by 33%)
-    // TODO: for standard the same
     // TODO: if there empty space - add viewer/filter/etc.
     // TODO: write API for step control and example, steps are written in context panel - first priority
-
-    // TODO: add margins to tree
-    // about code - add viewer, add there codemirror and the demo code and make it as a tab
   }
 
   private _initWindowOptions() {
