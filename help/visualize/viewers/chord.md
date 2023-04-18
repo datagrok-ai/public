@@ -14,7 +14,7 @@ between the entities.
 
 ## Create a Chord viewer
 
-To create a **Chord** viewer, open the main menu and select 
+To create a **Chord** viewer, open the main menu and select
 the option "Add -> JavaScript Viewers -> Chord"
 
 When you add a chord viewer in Datagrok, the platform selects three columns:
@@ -29,7 +29,7 @@ and target categories
 You can set the source, target and "Chord length" columns
 and customize a visualization options.
 To do that, click the **Gear** icon on top of the viewer and use the **Data**
-and **Misc** info panels 
+and **Misc** info panels
 on the **Context Pane** to manage the viewer’s settings.
 
 For example, you can:
