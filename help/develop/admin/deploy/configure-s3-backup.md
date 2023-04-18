@@ -65,6 +65,6 @@ To configure manual AWS S3 bucket backup do the next steps:
 14. Set `Resource assignment name`, choose your IAM role that was created earlier
 15. Next you can include all resource types in `Define resource selection`,
     but we recommend to use include specific resource types, choose `S3`,
-    choose your S3 bucket and press `Assign resources`
+    choose your S3 bucket that you use for Datagrok and press `Assign resources`
 
 Now your S3 bucket backup is enabled.
