@@ -65,7 +65,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
         String whereClause = String.format(" WHERE%s%s%s",
                 db == null ? "" : String.format(" LOWER(c.table_catalog) = LOWER('%s')", db),
                 schema == null ? "" : String.format("%s c.table_schema = '%s'", db == null ? "" : " AND",schema),
-                table == null ? "" : String.format("%s c.table_schema = '%s'", db == null && schema == null ? "" : " AND",schema));
+                table == null ? "" : String.format("%s c.table_name = '%s'", db == null && schema == null ? "" : " AND", table));
         return String.format("SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
                         + "c.data_type as data_type, "
                         + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
