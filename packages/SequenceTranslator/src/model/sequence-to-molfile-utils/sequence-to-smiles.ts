@@ -1,79 +1,85 @@
-// import {map, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS, DELIMITER} from './map';
-import {map} from '../../hardcode-to-be-eliminated/map';
-import {SYNTHESIZERS, DELIMITER, TECHNOLOGIES} from '../const';
-import {isValidSequence} from '../code-converter/conversion-validation-tools';
+/* Do not change these import lines to match external modules in webpack configuration */
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+
+import {HardcodeTerminator} from '../hardcode-terminator';
+
+import {DELIMITER} from '../const';
 import {sortByStringLengthInDescendingOrder} from '../helpers';
+import {LINKS} from './const';
 
-import {standardPhosphateLinkSmiles, MODIFICATIONS} from '../../hardcode-to-be-eliminated/const';
+const terminator = new HardcodeTerminator();
 
-const LINKS = ['s', 'ps', '*', 'Rpn', 'Spn', 'Rps', 'Sps'];
+// todo: remove intersections with sequence-to-molfile
+export class SequenceToSmilesConverter {
+  constructor(
+    private sequence: string, private invert: boolean = false, private format: string
+  ) {
+    this.codeToSmilesMap = terminator.getCodeToSmilesMap(this.sequence, this.format);
+  };
 
-export function sequenceToSmiles(sequence: string, inverted: boolean = false, format: string): string {
-  const obj = getObjectWithCodesAndSmiles(sequence, format);
-  let codes = sortByStringLengthInDescendingOrder(Object.keys(obj));
-  let i = 0;
-  let smiles = '';
-  const codesList = [];
-  const links = LINKS;
-  const includesStandardLinkAlready = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
-  const dropdowns = Object.keys(MODIFICATIONS);
-  codes = codes.concat(dropdowns).concat(DELIMITER);
-  while (i < sequence.length) {
-    const code = codes.find((s: string) => s == sequence.slice(i, i + s.length))!;
-    i += code.length;
-    inverted ? codesList.unshift(code) : codesList.push(code);
-  }
-  for (let i = 0; i < codesList.length; i++) {
-    if (dropdowns.includes(codesList[i])) {
-      smiles += (i >= codesList.length / 2) ?
-        MODIFICATIONS[codesList[i]].right + standardPhosphateLinkSmiles :
-        MODIFICATIONS[codesList[i]].left + standardPhosphateLinkSmiles;
-    } else {
-      if (links.includes(codesList[i]) ||
-        includesStandardLinkAlready.includes(codesList[i]) ||
-        (i < codesList.length - 1 && links.includes(codesList[i + 1]))
-      )
-        smiles += obj[codesList[i]];
-      else
-        smiles += obj[codesList[i]] + standardPhosphateLinkSmiles;
-    }
-  }
-  smiles = smiles.replace(/OO/g, 'O');
-  return (
-    (
-      links.includes(codesList[codesList.length - 1]) &&
-      codesList.length > 1 &&
-      !includesStandardLinkAlready.includes(codesList[codesList.length - 2])
-    ) ||
-    dropdowns.includes(codesList[codesList.length - 1]) ||
-    includesStandardLinkAlready.includes(codesList[codesList.length - 1])
-  ) ?
-    smiles :
-    smiles.slice(0, smiles.length - standardPhosphateLinkSmiles.length + 1);
-}
+  private codeToSmilesMap: Map<string, string>;
 
-
-function getObjectWithCodesAndSmiles(sequence: string, format: string) {
-  const obj: { [code: string]: string } = {};
-  if (format == null) {
-    for (const synthesizer of Object.keys(map)) {
-      for (const technology of Object.keys(map[synthesizer])) {
-        for (const code of Object.keys(map[synthesizer][technology]))
-          obj[code] = map[synthesizer][technology][code].SMILES;
+  convert(): string {
+    const parsedCodes = this.parseSequence();
+    const modifications = terminator.getModificationCodes();
+    let resultingSmiles = '';
+    for (let i = 0; i < parsedCodes.length; i++) {
+      const code = parsedCodes[i];
+      const phosphate = terminator.getPhosphateSmiles();
+      if (modifications.includes(code)) {
+        const modificationSmiles = (i > parsedCodes.length / 2) ?
+          terminator.getModificationSmiles(code).right :
+          terminator.getModificationSmiles(code).left;
+        resultingSmiles += modificationSmiles + phosphate;
+      } else {
+        if (
+          LINKS.includes(code) ||
+          this.isMonomerAttachedToLink(code) ||
+          (i < parsedCodes.length - 1 && LINKS.includes(parsedCodes[i + 1]))
+        )
+          resultingSmiles += this.codeToSmilesMap.get(code);
+        else
+          resultingSmiles += this.codeToSmilesMap.get(code) + terminator.getPhosphateSmiles();
       }
     }
-  } else {
-    for (const technology of Object.keys(map[format])) {
-      for (const code of Object.keys(map[format][technology]))
-        obj[code] = map[format][technology][code].SMILES;
-    }
+    resultingSmiles = resultingSmiles.replace(/OO/g, 'O');
+
+    const len = parsedCodes.length;
+    const vagueLegacyPredicate = (LINKS.includes(parsedCodes[len - 1]) &&
+      len > 1 && !this.isMonomerAttachedToLink(parsedCodes[len - 2])) ||
+      modifications.includes(parsedCodes[len - 1]) ||
+      this.isMonomerAttachedToLink(parsedCodes[len - 1]);
+
+    return vagueLegacyPredicate ? resultingSmiles :
+      resultingSmiles.slice(0, resultingSmiles.length - terminator.getPhosphateSmiles().length + 1);
   }
-  obj[DELIMITER] = '';
-  // TODO: create object based from synthesizer type to avoid key(codes) duplicates
-  const output = isValidSequence(sequence, format);
-  if (output.synthesizer!.includes(SYNTHESIZERS.MERMADE_12))
-    obj['g'] = map[SYNTHESIZERS.MERMADE_12][TECHNOLOGIES.SI_RNA]['g'].SMILES;
-  else if (output.synthesizer!.includes(SYNTHESIZERS.AXOLABS))
-    obj['g'] = map[SYNTHESIZERS.AXOLABS][TECHNOLOGIES.SI_RNA]['g'].SMILES;
-  return obj;
+
+  private isMonomerAttachedToLink(code: string) {
+    // todo: eliminate this legacy list, leads to bugs
+    const legacyList = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
+    return legacyList.includes(code);
+  }
+
+  private parseSequence(): string[] {
+    const allCodesOfFormat = this.getAllCodesOfFormat();
+    const parsedCodes = [];
+    let i = 0;
+    while (i < this.sequence.length) {
+      const code = allCodesOfFormat.find(
+        (s: string) => s === this.sequence.slice(i, i + s.length)
+      )!;
+      this.invert ? parsedCodes.unshift(code) : parsedCodes.push(code);
+      i += code.length;
+    }
+    return parsedCodes;
+  }
+
+  private getAllCodesOfFormat(): string[] {
+    let allCodesInTheFormat = Array.from(this.codeToSmilesMap.keys());
+    const modifications = terminator.getModificationCodes();
+    allCodesInTheFormat = allCodesInTheFormat.concat(modifications).concat(DELIMITER);
+    return sortByStringLengthInDescendingOrder(allCodesInTheFormat);
+  }
 }

@@ -3,19 +3,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-/* external dependencies */
 import * as rxjs from 'rxjs';
-import $ from 'cash-dom';
 
-/* datagrok dependencies */
-
-/* internal dependencies */
 import {highlightInvalidSubsequence} from '../utils/colored-input/input-painters';
 import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
 import {INPUT_FORMATS} from '../../model/const';
-import {sequenceToSmiles} from '../../model/sequence-to-molfile-utils/sequence-to-smiles';
+import {SequenceToSmilesConverter} from '../../model/sequence-to-molfile-utils/sequence-to-smiles';
 import {SequenceToMolfileConverter} from '../../model/sequence-to-molfile-utils/sequence-to-molfile';
-import {convertSequence, undefinedInputSequence, isValidSequence} from '../../model/code-converter/conversion-validation-tools';
+import {convertSequence, undefinedInputSequence,
+  isValidSequence} from '../../model/code-converter/conversion-validation-tools';
 import {drawMolecule} from '../utils/draw-molecule';
 import {download} from '../../model/helpers';
 import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, DEFAULT_INPUT} from '../const/main-tab';
@@ -101,9 +97,8 @@ export class MainTabUI {
   }
 
   private copySmiles(): void {
-    navigator.clipboard.writeText(
-      sequenceToSmiles(this.sequence, false, this.inputFormatChoiceInput.value!)
-    ).then(
+    const smiles = (new SequenceToSmilesConverter(this.sequence, false, this.inputFormatChoiceInput.value!)).convert();
+    navigator.clipboard.writeText(smiles).then(
       () => grok.shell.info(SEQUENCE_COPIED_MSG)
     );
   }

@@ -23,22 +23,20 @@ export class SequenceToMolfileConverter {
   private codeToNameMap: Map<string, string>;
 
   convert(): string {
-    const monomerNames = this.getMonomerNameSequence();
+    const monomerNames = this.getMonomerNamesWithLinks();
     const lib = getMonomerLib();
     const mols: string [] = [];
     for (let i = 0; i < monomerNames.length; i++) {
-      const mnmr = lib?.getMonomer('RNA', monomerNames[i]);
-      mols.push(mnmr?.molfile!);
+      const monomer = lib?.getMonomer('RNA', monomerNames[i]);
+      mols.push(monomer?.molfile!);
     }
 
-
     return this.getPolymerMolfile(mols);
-    //return getMonomerWorks()?.getAtomicLevel(monomers, 'RNA')!;
   }
 
-  private getMonomerNameSequence() {
+  private getMonomerNamesWithLinks() {
     const parsedCodes = this.parseSequence();
-    const monomerNames: string[] = [];
+    const monomerNamesWithLinks: string[] = [];
 
     for (let i = 0; i < parsedCodes.length; i++) {
       if (
@@ -48,34 +46,34 @@ export class SequenceToMolfileConverter {
       ) {
         const name = this.codeToNameMap.get(parsedCodes[i]);
         if (name !== undefined)
-          monomerNames.push(name);
+          monomerNamesWithLinks.push(name);
         else
-          monomerNames.push(parsedCodes[i]);
+          monomerNamesWithLinks.push(parsedCodes[i]);
       } else {
         const name = this.codeToNameMap.get(parsedCodes[i]);
         if (name !== undefined)
-          monomerNames.push(name);
+          monomerNamesWithLinks.push(name);
         else
-          monomerNames.push(parsedCodes[i]);
-        monomerNames.push(P_LINKAGE);
+          monomerNamesWithLinks.push(parsedCodes[i]);
+        monomerNamesWithLinks.push(P_LINKAGE);
       }
     }
-    return monomerNames;
+    return monomerNamesWithLinks;
   }
 
   private getAllCodesOfFormat(): string[] {
     let allCodesInTheFormat = Array.from(this.codeToNameMap.keys());
-    const modifications = terminator.getModifications();
+    const modifications = terminator.getModificationCodes();
     allCodesInTheFormat = allCodesInTheFormat.concat(modifications).concat(DELIMITER);
     return sortByStringLengthInDescendingOrder(allCodesInTheFormat);
   }
 
   private parseSequence(): string[] {
-    const allCodesInTheFormat = this.getAllCodesOfFormat();
+    const allCodesOfFormat = this.getAllCodesOfFormat();
     const parsedCodes = [];
     let i = 0;
     while (i < this.sequence.length) {
-      const code = allCodesInTheFormat.find(
+      const code = allCodesOfFormat.find(
         (s: string) => s === this.sequence.slice(i, i + s.length)
       )!;
       this.invert ? parsedCodes.unshift(code) : parsedCodes.push(code);
