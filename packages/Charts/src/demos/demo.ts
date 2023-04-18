@@ -44,14 +44,14 @@ function dockViewers(tableView: DG.TableView, viewer: DG.Viewer, viewerName: str
   const rootNode = tableView.dockManager.rootNode;
 
   if (viewerName === 'WordCloud') {
-    tableView.dockManager.dock(tableView.filters(), 'right', rootNode, 'Filters', 0.6);
-    tableView.dockManager.dock(viewer, 'up', null, viewerName, 0.7);
+    tableView.dockManager.dock(tableView.filters(), DG.DOCK_TYPE.RIGHT, rootNode, 'Filters', 0.6);
+    tableView.dockManager.dock(viewer, DG.DOCK_TYPE.TOP, null, viewerName, 0.7);
     return;
   }
 
-  const scatterplotNode = tableView.dockManager.dock(tableView.addViewer('scatterplot'), 'right', rootNode,
-    'Scatter plot', 0.5);
-  tableView.dockManager.dock(tableView.addViewer('histogram'), 'right', scatterplotNode, 'Histogram', 0.3);
-  const viewerNode = tableView.dockManager.dock(viewer, 'up', null, viewerName, 0.7);
-  tableView.dockManager.dock(tableView.filters(), 'left', viewerNode, 'Filters', 0.3);
+  const scatterplotNode = tableView.dockManager.dock(tableView.addViewer('scatterplot'), DG.DOCK_TYPE.RIGHT,
+    rootNode, 'Scatter plot', 0.5);
+  tableView.dockManager.dock(tableView.addViewer('histogram'), DG.DOCK_TYPE.RIGHT, scatterplotNode, 'Histogram', 0.3);
+  const viewerNode = tableView.dockManager.dock(viewer, DG.DOCK_TYPE.TOP, null, viewerName, 0.7);
+  tableView.dockManager.dock(tableView.filters(), DG.DOCK_TYPE.LEFT, viewerNode, 'Filters', 0.3);
 }
