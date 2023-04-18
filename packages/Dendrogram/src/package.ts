@@ -245,7 +245,7 @@ export async function hierarchicalClustering2(): Promise<void> {
 
   const distanceInput = ui.choiceInput('Distance', 'euclidean', ['euclidean', 'manhattan']);
   const linkageInput = ui.choiceInput('Linkage', 'ward', ['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward']);
-  
+
   const verticalDiv = ui.divV([
       tableInput.root,
       columnsInputDiv,
@@ -255,9 +255,11 @@ export async function hierarchicalClustering2(): Promise<void> {
   const dialog = ui.dialog("Hierarchical Clustering")
   .add(verticalDiv)
   .show()
-  .onOK(() => {
-    hierarchicalClusteringUI(currentTableView!, currentSelectedColNames,
+  .onOK(async () => {
+    const pi = DG.TaskBarProgressIndicator.create('Creating dendrogram ...');
+    await hierarchicalClusteringUI(currentTableView!, currentSelectedColNames,
       distanceInput.value! as 'euclidean' | 'manhattan', linkageInput.value!);
+    pi.close();
   });
 
 }
