@@ -7,14 +7,20 @@ import grok_connect.providers.utils.FuncCallBuilder;
 import grok_connect.providers.utils.Parser;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.params.provider.Arguments;
-import serialization.*;
-
+import serialization.BigIntColumn;
+import serialization.DataFrame;
+import serialization.DateTimeColumn;
+import serialization.FloatColumn;
+import serialization.IntColumn;
+import serialization.StringColumn;
 import java.time.LocalDate;
 import java.time.Year;
 import java.time.temporal.TemporalAdjusters;
 import java.util.stream.Stream;
 
 public class TeradataObjectsMother {
+    private static final Parser parser = new DateParser();
+
     public static Stream<Arguments> getSchemas_ok() {
         DataFrame expected = DataFrameBuilder.getBuilder()
                 .setRowCount(27)
@@ -55,7 +61,6 @@ public class TeradataObjectsMother {
     }
 
     public static Stream<Arguments> checkDatesParameterSupport_ok() {
-        Parser parser = new DateParser();
         String datePattern = "yyyy-MM-dd";
         LocalDate now = LocalDate.now();
         int dayOfWeek = now.getDayOfWeek().getValue();
@@ -291,5 +296,75 @@ public class TeradataObjectsMother {
                 .build();
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM JSON_DATA ORDER BY id");
         return Stream.of(Arguments.of(Named.of("JSON TYPE SUPPORT", funcCall), expected));
+    }
+
+    public static Stream<Arguments> checkDateTypesSupport_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("yyyy-MM-dd",
+                        "2023-01-01")}), "dat")
+                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("HH:mm:ss.SSS",
+                        "12:55:33.333")}), "time_data")
+                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss.SSS",
+                        "2023-01-01 12:55:33.333")}), "stamp")
+                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("HH:mm:ss.SSSX",
+                        "12:55:33.333+02:00")}), "time_zoned")
+                .setColumn(new DateTimeColumn(new Double[]{parser.parseDateToDouble("yyyy-MM-dd HH:mm:ss.SSS",
+                        "2000-01-01 11:37:58.222")}), "zoned_stamp")
+                .build();
+        FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM dates_type");
+        return Stream.of(Arguments.of(Named.of("DATE TYPES SUPPORT", funcCall), expected));
+    }
+
+    public static Stream<Arguments> checkSpatialTypesSupport_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new BigIntColumn(new String[]{"1"}), "id")
+                .setColumn(new StringColumn(new String[]{"POINT (10 20)"}), "point")
+                .setColumn(new StringColumn(new String[]{"POLYGON ((1 1,1 3,6 3,6 0,1 1))"}), "polygon")
+                .setColumn(new StringColumn(new String[]{"LINESTRING (1 1,2 2,3 3,4 4)"}), "linestring")
+                .setColumn(new StringColumn(new String[]{"MULTIPOLYGON (((1 1,1 3,6 3,6 0,1 1)),((10 5,10 10,20 10,20 5,10 5)))"}),
+                        "multipolygon")
+                .build();
+        FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM SPATIAL_TYPES");
+        return Stream.of(Arguments.of(Named.of("SPATIAL TYPES SUPPORT", funcCall), expected));
+    }
+
+    public static Stream<Arguments> checkXmlTypeSupport_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new BigIntColumn(new String[]{"1", "2"}), "id")
+                .setColumn(new StringColumn(new String[]{"<foo>Hello World!</foo>",
+                        "<book><title>Manual</title><chapter>...</chapter></book>"}), "data")
+                .build();
+        FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM XML_DATA");
+        return Stream.of(Arguments.of(Named.of("XML TYPE SUPPORT", funcCall), expected));
+    }
+
+    public static Stream<Arguments> checkIntegerTypesSupport_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new BigIntColumn(new String[]{"9223372036854775807", "0"}),
+                        "bigint_type")
+                .setColumn(new IntColumn(new Integer[] {-128, 127}), "byte_int")
+                .setColumn(new IntColumn(new Integer[] {32760, -23444}), "small_int")
+                .setColumn(new IntColumn(new Integer[] {2147483647, -2147483647}), "int_type")
+                .build();
+        FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM INTEGER_TYPES");
+        return Stream.of(Arguments.of(Named.of("INTEGER TYPES SUPPORT", funcCall), expected));
+    }
+
+    public static Stream<Arguments> checkFloatTypesSupport_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new FloatColumn(new Float[]{3.4020234234f, 0.9999f}), "float_type")
+                .setColumn(new FloatColumn(new Float[]{-3.4028423f, 1.9999f}), "real_type")
+                .setColumn(new FloatColumn(new Float[]{-0.0043512f, 213515.435545f}),
+                        "double_type")
+                .setColumn(new FloatColumn(new Float[]{235234.4646f, 99999999.9999f}), "decimal_type")
+                .setColumn(new FloatColumn(new Float[]{999.99f, 0.99f}), "number_type")
+                .build();
+        FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM FLOAT_TYPE");
+        return Stream.of(Arguments.of(Named.of("FLOAT TYPES SUPPORT", funcCall), expected));
     }
 }

@@ -533,6 +533,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                                     valueToAdd = value.toString();
                                 }
                             }
+                            valueToAdd = valueToAdd
+                                    .replaceAll("&lt;", "<")
+                                    .replaceAll("&gt;", ">");
                             columns.get(c - 1).add(valueToAdd);
                         } else if (isBitString(type, precision, typeName)) {
                             String valueToAdd = "";
@@ -786,7 +789,11 @@ public abstract class JdbcDataProvider extends DataProvider {
 
         String type = "string";
         String _query = "(LOWER(" + matcher.colName + ") LIKE @" + param.name + ")";
-        String value = ((String)matcher.values.get(0)).toLowerCase();
+        List<Object> values = matcher.values;
+        String value = null;
+        if (values.size() > 0) {
+            value = ((String) values.get(0)).toLowerCase();
+        }
 
         switch (matcher.op) {
             case PatternMatcher.EQUALS:
