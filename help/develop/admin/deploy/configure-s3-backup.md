@@ -23,6 +23,7 @@ To configure manual AWS S3 bucket backup do the next steps:
    - Press `Create policy`, choose `JSON`, insert the following code, and press `next`
 
      ```
+        {
               "Statement": [
              {
                  "Action": [
@@ -50,6 +51,7 @@ To configure manual AWS S3 bucket backup do the next steps:
              }
          ],
          "Version": "2012-10-17"
+        }
      ```
 
    - Set tag and policy name and save it
