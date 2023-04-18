@@ -62,7 +62,7 @@ To configure manual AWS S3 bucket backup do the next steps:
 12. Press `Add backup rule`, set backup rule name, choose your backup vault,
     set backup frequency and retention period, press `Add backup rule`
 13. Press `Create backup plan`
-14. Set `Resource assignment name`, choose your IAM role
+14. Set `Resource assignment name`, choose your IAM role that was created earlier
 15. Next you can include all resource types in `Define resource selection`,
     but we recommend to use include specific resource types, choose `S3`,
     choose your S3 bucket and press `Assign resources`
