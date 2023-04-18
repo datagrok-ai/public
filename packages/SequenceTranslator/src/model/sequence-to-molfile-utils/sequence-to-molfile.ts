@@ -3,89 +3,25 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {HardcodeTerminator} from '../hardcode-terminator';
-
-import {sortByStringLengthInDescendingOrder} from '../helpers';
-import {DELIMITER} from '../const';
-import {LINKS, P_LINKAGE} from './const';
+import {MonomerCodeParser} from './monomer-code-parser';
 import {getMonomerLib} from '../../package';
-
-const terminator = new HardcodeTerminator();
 
 export class SequenceToMolfileConverter {
   constructor(
     private sequence: string, private invert: boolean = false, private format: string
-  ) {
-    this.codeToNameMap = terminator.getCodeToNameMap(this.sequence, this.format);
-  }
-
-  //todo: replace by map
-  private codeToNameMap: Map<string, string>;
+  ) { }
 
   convert(): string {
-    const monomerNames = this.getMonomerNamesWithLinks();
+    const parser = new MonomerCodeParser(this.sequence, this.invert, this.format);
+    const parsedSequence = parser.parseSequence();
     const lib = getMonomerLib();
     const mols: string [] = [];
-    for (let i = 0; i < monomerNames.length; i++) {
-      const monomer = lib?.getMonomer('RNA', monomerNames[i]);
+    for (let i = 0; i < parsedSequence.length; i++) {
+      const monomer = lib?.getMonomer('RNA', parsedSequence[i]);
       mols.push(monomer?.molfile!);
     }
 
     return this.getPolymerMolfile(mols);
-  }
-
-  private getMonomerNamesWithLinks() {
-    const parsedCodes = this.parseSequence();
-    const monomerNamesWithLinks: string[] = [];
-
-    for (let i = 0; i < parsedCodes.length; i++) {
-      if (
-        LINKS.includes(parsedCodes[i]) ||
-        this.isMonomerAttachedToLink(parsedCodes[i]) ||
-        (i < parsedCodes.length - 1 && LINKS.includes(parsedCodes[i + 1]))
-      ) {
-        const name = this.codeToNameMap.get(parsedCodes[i]);
-        if (name !== undefined)
-          monomerNamesWithLinks.push(name);
-        else
-          monomerNamesWithLinks.push(parsedCodes[i]);
-      } else {
-        const name = this.codeToNameMap.get(parsedCodes[i]);
-        if (name !== undefined)
-          monomerNamesWithLinks.push(name);
-        else
-          monomerNamesWithLinks.push(parsedCodes[i]);
-        monomerNamesWithLinks.push(P_LINKAGE);
-      }
-    }
-    return monomerNamesWithLinks;
-  }
-
-  private getAllCodesOfFormat(): string[] {
-    let allCodesInTheFormat = Array.from(this.codeToNameMap.keys());
-    const modifications = terminator.getModificationCodes();
-    allCodesInTheFormat = allCodesInTheFormat.concat(modifications).concat(DELIMITER);
-    return sortByStringLengthInDescendingOrder(allCodesInTheFormat);
-  }
-
-  private parseSequence(): string[] {
-    const allCodesOfFormat = this.getAllCodesOfFormat();
-    const parsedCodes = [];
-    let i = 0;
-    while (i < this.sequence.length) {
-      const code = allCodesOfFormat.find(
-        (s: string) => s === this.sequence.slice(i, i + s.length)
-      )!;
-      this.invert ? parsedCodes.unshift(code) : parsedCodes.push(code);
-      i += code.length;
-    }
-    return parsedCodes;
-  }
-
-  private isMonomerAttachedToLink(code: string) {
-    // todo: eliminate this legacy list, leads to bugs
-    const legacyList = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
-    return legacyList.includes(code);
   }
 
   private getMolblocksForCodes(codes: string[]) {
