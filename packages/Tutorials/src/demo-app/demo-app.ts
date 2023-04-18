@@ -92,8 +92,7 @@ export class DemoView extends DG.ViewBase {
     view.basePath = '/apps/Tutorials/Demo';
     view.path = `/${viewName}`;
 
-    const root = ui.div([], 'grok-gallery-grid');
-    root.style.alignItems = 'stretch';
+    const root = ui.div([], 'demo-app-group-view grok-gallery-grid');
 
     for (const f of DG.Func.find({meta: {'demoPath': null}})) {
       if (f.options[DG.FUNC_OPTIONS.DEMO_PATH].includes(viewName)) {
