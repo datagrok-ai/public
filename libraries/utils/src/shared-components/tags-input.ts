@@ -63,7 +63,8 @@ export class TagsInput extends DG.InputBase {
       const tagValue = currentTag.innerText;
       const input = document.createElement('input');
       input.value = tagValue;
-
+      input.select();
+      
       let blurFlag = true;
 
       input.onblur = () => {
