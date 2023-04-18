@@ -7,7 +7,7 @@ import {HardcodeTerminator} from '../hardcode-terminator';
 
 import {DELIMITER} from '../const';
 import {sortByStringLengthInDescendingOrder} from '../helpers';
-import {LINKS} from './const';
+import {LINKER_CODES} from './const';
 
 const terminator = new HardcodeTerminator();
 
@@ -22,22 +22,22 @@ export class SequenceToSmilesConverter {
   private codeToSmilesMap: Map<string, string>;
 
   convert(): string {
-    const parsedCodes = this.parseSequence();
+    const parsedRawCodes = this.parseRawSequence();
     const modifications = terminator.getModificationCodes();
     let resultingSmiles = '';
-    for (let i = 0; i < parsedCodes.length; i++) {
-      const code = parsedCodes[i];
+    for (let i = 0; i < parsedRawCodes.length; i++) {
+      const code = parsedRawCodes[i];
       const phosphate = terminator.getPhosphateSmiles();
       if (modifications.includes(code)) {
-        const modificationSmiles = (i > parsedCodes.length / 2) ?
+        const modificationSmiles = (i > parsedRawCodes.length / 2) ?
           terminator.getModificationSmiles(code).right :
           terminator.getModificationSmiles(code).left;
         resultingSmiles += modificationSmiles + phosphate;
       } else {
         if (
-          LINKS.includes(code) ||
+          LINKER_CODES.includes(code) ||
           this.isMonomerAttachedToLink(code) ||
-          (i < parsedCodes.length - 1 && LINKS.includes(parsedCodes[i + 1]))
+          (i < parsedRawCodes.length - 1 && LINKER_CODES.includes(parsedRawCodes[i + 1]))
         )
           resultingSmiles += this.codeToSmilesMap.get(code);
         else
@@ -46,11 +46,11 @@ export class SequenceToSmilesConverter {
     }
     resultingSmiles = resultingSmiles.replace(/OO/g, 'O');
 
-    const len = parsedCodes.length;
-    const vagueLegacyPredicate = (LINKS.includes(parsedCodes[len - 1]) &&
-      len > 1 && !this.isMonomerAttachedToLink(parsedCodes[len - 2])) ||
-      modifications.includes(parsedCodes[len - 1]) ||
-      this.isMonomerAttachedToLink(parsedCodes[len - 1]);
+    const len = parsedRawCodes.length;
+    const vagueLegacyPredicate = (LINKER_CODES.includes(parsedRawCodes[len - 1]) &&
+      len > 1 && !this.isMonomerAttachedToLink(parsedRawCodes[len - 2])) ||
+      modifications.includes(parsedRawCodes[len - 1]) ||
+      this.isMonomerAttachedToLink(parsedRawCodes[len - 1]);
 
     return vagueLegacyPredicate ? resultingSmiles :
       resultingSmiles.slice(0, resultingSmiles.length - terminator.getPhosphateSmiles().length + 1);
@@ -62,7 +62,7 @@ export class SequenceToSmilesConverter {
     return legacyList.includes(code);
   }
 
-  private parseSequence(): string[] {
+  private parseRawSequence(): string[] {
     const allCodesOfFormat = this.getAllCodesOfFormat();
     const parsedCodes = [];
     let i = 0;

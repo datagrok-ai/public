@@ -6,47 +6,44 @@ import * as DG from 'datagrok-api/dg';
 import {HardcodeTerminator} from '../hardcode-terminator';
 
 import {DELIMITER} from '../const';
-import {LINKS, P_LINKAGE} from './const';
+import {LINKER_CODES, P_LINKAGE} from './const';
 
 const terminator = new HardcodeTerminator();
 
+/** Wrapper for parsing a strand and getting a sequence of monomer IDs (with
+ * omitted linkers, if needed)  */
 export class MonomerCodeParser {
   constructor(
-    private sequence: string, private invert: boolean = false, private format: string
-  ) {
-    this.codeToNameMap = terminator.getCodeToNameMap(this.sequence, this.format);
-  }
-
-  private codeToNameMap: Map<string, string>;
+    private sequence: string, private invert: boolean = false,
+    private codeMap: Map<string, string>
+  ) { }
 
   parseSequence(): string[] {
     const parsedCodes = this.parseRawSequence();
     return this.addLinkers(parsedCodes);
   }
 
-  private addLinkers(parsedCodes: string[]) {
-    const monomerNamesWithLinks: string[] = [];
-    for (let i = 0; i < parsedCodes.length; i++) {
-      if (
-        LINKS.includes(parsedCodes[i]) ||
-        this.isMonomerAttachedToLink(parsedCodes[i]) ||
-        (i < parsedCodes.length - 1 && LINKS.includes(parsedCodes[i + 1]))
-      ) {
-        const name = this.codeToNameMap.get(parsedCodes[i]);
-        if (name !== undefined)
-          monomerNamesWithLinks.push(name);
-        else
-          monomerNamesWithLinks.push(parsedCodes[i]);
-      } else {
-        const name = this.codeToNameMap.get(parsedCodes[i]);
-        if (name !== undefined)
-          monomerNamesWithLinks.push(name);
-        else
-          monomerNamesWithLinks.push(parsedCodes[i]);
-        monomerNamesWithLinks.push(P_LINKAGE);
+  private addLinkers(parsedRawCodes: string[]) {
+    const monomerIdSequence: string[] = [];
+    for (let i = 0; i < parsedRawCodes.length; i++) {
+      const code = parsedRawCodes[i];
+      const monomerId = this.codeMap.get(code);
+      // todo: port this validation to more appropriate place
+      if (monomerId === undefined)
+        throw new Error('SequenceTranslator: monomer is absent in the code map');
+      monomerIdSequence.push(monomerId);
+
+      const isLinker = LINKER_CODES.includes(code);
+      const attachedToLink = this.isMonomerAttachedToLink(code);
+      const nextMonomerIsLinker = (i < parsedRawCodes.length - 1 && LINKER_CODES.includes(parsedRawCodes[i + 1]));
+
+      // todo: refactor as molfile-specific
+      if (!isLinker && !attachedToLink && !nextMonomerIsLinker) {
+        // todo: replace by phosphate linkage ID
+        monomerIdSequence.push(P_LINKAGE);
       }
     }
-    return monomerNamesWithLinks;
+    return monomerIdSequence;
   }
 
   private parseRawSequence(): string[] {
@@ -64,19 +61,19 @@ export class MonomerCodeParser {
   }
 
   private getAllCodesOfFormat(): string[] {
-    let allCodesInTheFormat = Array.from(this.codeToNameMap.keys());
+    let allCodesInTheFormat = Array.from(this.codeMap.keys());
     const modifications = terminator.getModificationCodes();
     allCodesInTheFormat = allCodesInTheFormat.concat(modifications).concat(DELIMITER);
-    return this.reverseLengthSort(allCodesInTheFormat);
+    return reverseLengthSort(allCodesInTheFormat);
   }
 
-  private reverseLengthSort(array: string[]): string[] {
-    return array.sort((a, b) => b.length - a.length);
-  }
-
+  // todo: eliminate this strange legacy condition, leads to bugs
   private isMonomerAttachedToLink(code: string) {
-    // todo: eliminate this legacy list, leads to bugs
     const legacyList = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
     return legacyList.includes(code);
   }
+}
+
+function reverseLengthSort(array: string[]): string[] {
+  return array.sort((a, b) => b.length - a.length);
 }

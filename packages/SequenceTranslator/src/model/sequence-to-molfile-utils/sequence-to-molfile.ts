@@ -3,17 +3,25 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {HardcodeTerminator} from '../hardcode-terminator';
+
 import {MonomerCodeParser} from './monomer-code-parser';
 import {getMonomerLib} from '../../package';
+
+const terminator = new HardcodeTerminator();
 
 export class SequenceToMolfileConverter {
   constructor(
     private sequence: string, private invert: boolean = false, private format: string
-  ) { }
+  ) {
+    const codeToNameMap = terminator.getCodeToNameMap(this.sequence, this.format);
+    this.parser = new MonomerCodeParser(this.sequence, this.invert, codeToNameMap);
+  }
+
+  private parser: MonomerCodeParser;
 
   convert(): string {
-    const parser = new MonomerCodeParser(this.sequence, this.invert, this.format);
-    const parsedSequence = parser.parseSequence();
+    const parsedSequence = this.parser.parseSequence();
     const lib = getMonomerLib();
     const mols: string [] = [];
     for (let i = 0; i < parsedSequence.length; i++) {
