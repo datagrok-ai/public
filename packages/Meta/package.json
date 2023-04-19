@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.75",
+  "version": "3.2.76",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1099,6 +1099,9 @@
         },
         "1.6.0": {
           "datagrok-api": "^1.13.0"
+        },
+        "1.7.0": {
+          "datagrok-api": "^1.14.0"
         }
       },
       "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
