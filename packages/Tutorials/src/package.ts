@@ -127,15 +127,17 @@ export function demoApp() {
 //name: Demo script example
 //tags: app
 export function demoScriptExample() {
-  const demoScript = new DemoScript();
-  demoScript.addStep({func: () => grok.shell.addTableView(grok.data.demo.demog()), delay: 2000, description: 'Aaa'});
-  demoScript.addStep({func: () => grok.shell.addTableView(grok.data.testData('biosensor')),
-    delay: 3000, description: 'Bbb'});
-  demoScript.addStep({func: () => {
-    grok.shell.addTableView(grok.data.testData('geo'));
-    console.log('End');
-  }, delay: 5000, description: 'Ccc'});
-  grok.shell.newView('Demo script example', [ui.button('Start script', () => demoScript.startScript())]);
+  const demoScript = new DemoScript('Demo', 'Description about demo');
+  demoScript
+    .step('Load', () => grok.shell.addTableView(grok.data.demo.demog()), {description: 'Aaaa', delay: 3000})
+    .step('Visualize', () => grok.shell.addTableView(grok.data.testData('biosensor')), {description: 'Bbb', delay: 3000})
+    .step('Finish', () => {
+      grok.shell.addTableView(grok.data.testData('geo'));
+      console.log('End');
+    }, {description: 'Ccc', delay: 4000})
+    .step('Final', () => console.log('Finished'));
+
+  grok.shell.newView('Demo script example', [ui.button('Start script', () => demoScript.start())]);
 }
 
 function setProperties(properties: { [propertyName: string]: boolean }): void {
