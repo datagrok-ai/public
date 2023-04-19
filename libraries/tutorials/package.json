@@ -12,11 +12,7 @@
   "description": "Helpers for creating tutorials",
   "dependencies": {
     "cash-dom": "^8.1.1",
-<<<<<<< HEAD
-    "datagrok-api": "../../js-api",
-=======
     "datagrok-api": "^1.14.0",
->>>>>>> origin/master
     "rxjs": "6.6.7"
   },
   "devDependencies": {
