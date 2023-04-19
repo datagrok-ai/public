@@ -241,6 +241,7 @@
 
 .d4-accordion-pane-header .grok-icon.copy-icon {
   margin-left: 30px!important;
+  visibility: hidden;
 }
 
 .chem-demo-sketcher-link {

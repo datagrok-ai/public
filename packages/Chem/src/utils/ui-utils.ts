@@ -23,8 +23,8 @@ export function addCopyIcon(text: string | HTMLElement, paneName: string) {
     if (accPanes[i].innerHTML === paneName) {
       const pane = accPanes[i];
       pane.append(copyIcon);
-      pane.addEventListener('mouseenter', () => {copyIcon.style.visibility = 'visible'});
-      pane.addEventListener('mouseleave', () => {copyIcon.style.visibility = 'hidden'});
+      pane.parentElement?.addEventListener('mouseenter', () => {copyIcon.style.visibility = 'visible'});
+      pane.parentElement?.addEventListener('mouseleave', () => {copyIcon.style.visibility = 'hidden'});
     }
   }
 }
