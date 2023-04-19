@@ -72,7 +72,7 @@ export class DistanceMatrix {
 
   // adds another matrix to this one in place
   public add(other: DistanceMatrix) {
-    if (this._size != other._size)
+    if (this._size !== other._size)
       throw new Error(`Matrices must have the same size. This size: ${this._size}, other size: ${other._size}`);
     for (let i = 0; i < this._data.length; i++)
       this._data[i] += other._data[i];

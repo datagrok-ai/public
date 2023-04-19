@@ -219,13 +219,13 @@ export async function hierarchicalClustering(): Promise<void> {
   let currentTableView = grok.shell.tv.table;
   let currentSelectedColNames: string[] = [];
 
-  const availableColNames = (table:DG.DataFrame): string[] =>{
+  const availableColNames = (table:DG.DataFrame): string[] => {
     return table.columns.toList()
     .filter(col => col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT || col.semType === 'Macromolecule')
     .map(col => col.name);
   }
 
-  const onColNamesChange = (columns: DG.Column<any>[]) =>{
+  const onColNamesChange = (columns: DG.Column<any>[]) => {
      currentSelectedColNames = columns.map(c => c.name)
   }
 
