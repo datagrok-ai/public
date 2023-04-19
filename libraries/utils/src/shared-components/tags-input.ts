@@ -7,9 +7,9 @@ import '../../css/tags-input.css';
 
 
 export class TagsInput extends DG.InputBase {
-  private _tags: string[] = [];
-  private _tagsDiv: HTMLDivElement = ui.div();
-  private _addTagIcon: HTMLElement = ui.iconFA('');
+  private _tags: string[];
+  private _tagsDiv: HTMLDivElement;
+  private _addTagIcon: HTMLElement;
 
   private _onTagAdded: Subject<string> = new Subject<string>();
   private _onTagRemoved: Subject<string> = new Subject<string>();
@@ -19,12 +19,9 @@ export class TagsInput extends DG.InputBase {
     const inputElement = ui.stringInput(name, '');
     super(inputElement.dart);
 
-    this._init(tags, showBtn);
-  }
-
-  private _init(tags: string[], showBtn: boolean) {
-    if (showBtn)
-      this._addTagIcon = ui.iconFA('plus', () => this.addTag((this.input as HTMLInputElement).value));
+    this._addTagIcon = showBtn ?
+      ui.iconFA('plus', () => this.addTag((this.input as HTMLInputElement).value)) :
+      ui.iconFA('');
 
     this._tags = tags;
     this._tagsDiv = ui.div(tags.map((tag) => { return this._createTag(tag); }), 'ui-tag-list');
@@ -33,7 +30,56 @@ export class TagsInput extends DG.InputBase {
     this._initEventListeners();
   }
 
-  private _createRoot() {
+
+  private _createTag(tag: string): HTMLElement {
+    const icon = ui.iconFA('times', () => this.removeTag(currentTag.innerText));
+    const currentTag = ui.span([ui.span([tag]), icon], `ui-tag`);
+    currentTag.dataset.tag = tag;
+
+    currentTag.ondblclick = () => {
+      const input = this._createTagEditInput(currentTag);
+      (currentTag.firstElementChild as HTMLElement).innerText = '';
+      currentTag.insertBefore(input, currentTag.firstElementChild);
+
+      input.select();
+      input.focus();
+    };
+
+    return currentTag;
+  }
+
+  private _createTagEditInput(currentTag: HTMLElement): HTMLInputElement {
+    const tagValue = currentTag.innerText;
+    const input = document.createElement('input');
+    input.value = tagValue;
+
+    let blurFlag = true;
+
+    input.onblur = () => {
+      if (!blurFlag)
+        return;
+      const newTag = input.value;
+      input.remove();
+      this._renameTag(tagValue, newTag, currentTag);
+    };
+
+    input.onkeyup = (event) => {
+      if (event.key === 'Escape') {
+        blurFlag = false;
+        input.remove();
+        (currentTag.firstElementChild as HTMLElement).innerText = tagValue;
+      } else if (event.key === 'Enter') {
+        blurFlag = false;
+        const newTag = input.value;
+        input.remove();
+        this._renameTag(tagValue, newTag, currentTag);
+      }
+    };
+
+    return input;
+  }
+
+  private _createRoot(): void {
     const inputContainer = ui.div([this.captionLabel, this.input, ui.div(this._addTagIcon, 'ui-input-options')],
       'ui-input-root');
     const tagContainer = ui.div([ui.label(' ', 'ui-input-label'), this._tagsDiv], 'ui-input-root');
@@ -42,7 +88,7 @@ export class TagsInput extends DG.InputBase {
     this.root.classList.add('ui-input-tags');
   }
 
-  private _initEventListeners() {
+  private _initEventListeners(): void {
     this.input.addEventListener('keyup', (event: KeyboardEvent) => {
       if (event.code === 'Enter')
         this.addTag((this.input as HTMLInputElement).value);
@@ -54,49 +100,7 @@ export class TagsInput extends DG.InputBase {
     });
   }
 
-  private _createTag(tag: string): HTMLElement {
-    const icon = ui.iconFA('times', () => this.removeTag(currentTag.innerText));
-    const currentTag = ui.span([ui.span([tag]), icon], `ui-tag`);
-    currentTag.dataset.tag = tag;
-
-    currentTag.ondblclick = () => {
-      const tagValue = currentTag.innerText;
-      const input = document.createElement('input');
-      input.value = tagValue;
-      input.select();
-      
-      let blurFlag = true;
-
-      input.onblur = () => {
-        if (!blurFlag)
-          return;
-        const newTag = input.value;
-        input.remove();
-        this._renameTag(tagValue, newTag, currentTag);
-      };
-      input.onkeyup = (event) => {
-        if (event.key === 'Escape'){
-          blurFlag = false;
-          input.remove();
-          this._renameTag(tagValue, tagValue, currentTag);
-        }
-        if (event.key === 'Enter') {
-          blurFlag = false;
-          const newTag = input.value;
-          input.remove();
-          this._renameTag(tagValue, newTag, currentTag);
-        }
-      };
-
-      (currentTag.firstElementChild as HTMLElement).innerText = '';
-      currentTag.insertBefore(input, currentTag.firstElementChild);
-      input.focus();
-    };
-
-    return currentTag;
-  }
-
-  private _renameTag(oldTag: string, newTag: string, currentTag: HTMLElement) {
+  private _renameTag(oldTag: string, newTag: string, currentTag: HTMLElement): void {
     const currentTagSpan = currentTag.firstElementChild as HTMLElement;
     if (!this._isProper(newTag)) {
       currentTagSpan.innerText = oldTag;
@@ -113,7 +117,7 @@ export class TagsInput extends DG.InputBase {
   }
 
 
-  addTag(tag: string) {
+  addTag(tag: string): void {
     if (!this._isProper(tag))
       return;
 
@@ -124,10 +128,11 @@ export class TagsInput extends DG.InputBase {
     this._onTagAdded.next(tag);
   }
 
-  removeTag(tag: string) {
-    if (this._tags.indexOf(tag) === -1)
+  removeTag(tag: string): void {
+    const tagIndex = this._tags.indexOf(tag);
+    if (tagIndex === -1)
       return;
-    this._tags.splice(this._tags.indexOf(tag), 1);
+    this._tags.splice(tagIndex, 1);
     const currentTag = this._tagsDiv.querySelector(`[data-tag="${tag}"]`);
     this._tagsDiv.removeChild(currentTag!);
     this._onTagRemoved.next(tag);
@@ -137,7 +142,7 @@ export class TagsInput extends DG.InputBase {
     return this._tags;
   }
 
-  setTags(tags: string[]) {
+  setTags(tags: string[]): void {
     this._tags = tags;
     this._tagsDiv = ui.div(tags.map((tag) => { return this._createTag(tag); }), 'ui-tag-list');
     const currentTagsDiv = this.root.getElementsByClassName('ui-tag-list')[0];

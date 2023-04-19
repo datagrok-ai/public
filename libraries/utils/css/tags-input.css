@@ -46,6 +46,7 @@
     max-width: 200px;
     text-overflow: ellipsis;
 }
+
 .ui-tag > input {
     max-width: 65px;
     font-size: 12px;
@@ -54,6 +55,7 @@
     padding: 0;
     margin: 0;
 }
+
 .ui-tag > input:focus {
     background:none;
     outline: none;
