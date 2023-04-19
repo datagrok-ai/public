@@ -68,7 +68,7 @@ category('top menu similarity/diversity', () => {
     DG.Balloon.closeAll();
     tv.addViewer('Chem Similarity Search');
     try {
-      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.innerHTML ===
+      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
         'Empty molecule cannot be used for similarity search', 'cannot find error balloon', 2000);
     } finally {
       tv.close();
@@ -84,7 +84,7 @@ category('top menu similarity/diversity', () => {
     await delay(500);
     const viewer = getSearchViewer(tv, 'Chem Similarity Search') as ChemSimilarityViewer;
     try {
-      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.innerHTML ===
+      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
         '2 molecules with indexes 2,9 are possibly malformed and are not included in analysis', 'cannot find warning balloon', 1000);
       expectArray(viewer.scores!.toList(), [1, 0.4333333373069763, 0.32894736528396606, 0.2957746386528015, 0.234375,
         0.23076923191547394, 0.2222222238779068, 0.2222222238779068, 0.20253165066242218, 0.2023809552192688]);
@@ -100,7 +100,7 @@ category('top menu similarity/diversity', () => {
     DG.Balloon.closeAll();
     tv.addViewer('Chem Similarity Search');
     try {
-      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.innerHTML ===
+      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
         '2 molecules with indexes 2,9 are possibly malformed and are not included in analysis', 'cannot find warning balloon', 1000);
     } finally {
       tv.close();
@@ -150,7 +150,7 @@ category('top menu similarity/diversity', () => {
     const viewer = getSearchViewer(tv, 'Chem Diversity Search') as ChemDiversityViewer;
     try {
       expect(viewer.renderMolIds.length, 10);
-      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.innerHTML ===
+      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
         '2 molecules with indexes 2,9 are possibly malformed and are not included in analysis', 'cannot find warning balloon', 1000);
     } finally {
       tv.close();
