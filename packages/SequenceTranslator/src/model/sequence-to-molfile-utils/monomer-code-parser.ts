@@ -3,12 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {HardcodeTerminator} from '../hardcode-terminator';
-
 import {DELIMITER} from '../const';
 import {LINKER_CODES, P_LINKAGE} from './const';
-
-const terminator = new HardcodeTerminator();
+import {MonomerLibWrapper} from './monomer-handler';
 
 /** Wrapper for parsing a strand and getting a sequence of monomer IDs (with
  * omitted linkers, if needed)  */
@@ -16,7 +13,11 @@ export class MonomerCodeParser {
   constructor(
     private sequence: string, private invert: boolean = false,
     private codeMap: Map<string, string>
-  ) { }
+  ) {
+    this.lib = new MonomerLibWrapper();
+  }
+
+  private lib: MonomerLibWrapper;
 
   parseSequence(): string[] {
     const parsedCodes = this.parseRawSequence();
@@ -34,7 +35,7 @@ export class MonomerCodeParser {
       monomerIdSequence.push(monomerId);
 
       const isLinker = LINKER_CODES.includes(code);
-      const attachedToLink = this.isMonomerAttachedToLink(code);
+      const attachedToLink = isMonomerAttachedToLink(code);
       const nextMonomerIsLinker = (i < parsedRawCodes.length - 1 && LINKER_CODES.includes(parsedRawCodes[i + 1]));
 
       // todo: refactor as molfile-specific
@@ -52,7 +53,7 @@ export class MonomerCodeParser {
     let i = 0;
     while (i < this.sequence.length) {
       const code = allCodesOfFormat.find(
-        (s: string) => s === this.sequence.slice(i, i + s.length)
+        (s: string) => s === this.sequence.substring(i, i + s.length)
       )!;
       this.invert ? parsedCodes.unshift(code) : parsedCodes.push(code);
       i += code.length;
@@ -62,16 +63,15 @@ export class MonomerCodeParser {
 
   private getAllCodesOfFormat(): string[] {
     let allCodesInTheFormat = Array.from(this.codeMap.keys());
-    const modifications = terminator.getModificationCodes();
+    const modifications = this.lib.getModificationCodes();
     allCodesInTheFormat = allCodesInTheFormat.concat(modifications).concat(DELIMITER);
     return reverseLengthSort(allCodesInTheFormat);
   }
-
-  // todo: eliminate this strange legacy condition, leads to bugs
-  private isMonomerAttachedToLink(code: string) {
-    const legacyList = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
-    return legacyList.includes(code);
-  }
+}
+// todo: eliminate this strange legacy condition, leads to bugs
+function isMonomerAttachedToLink(code: string) {
+  const legacyList = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
+  return legacyList.includes(code);
 }
 
 function reverseLengthSort(array: string[]): string[] {

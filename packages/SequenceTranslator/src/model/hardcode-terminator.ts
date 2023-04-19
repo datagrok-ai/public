@@ -12,7 +12,7 @@ import {isValidSequence} from './code-converter/conversion-validation-tools';
 
 /** Auxiliary class wrapping legacy dependencies on hardcode, to be deleted after full hardcode elimination  */
 export class HardcodeTerminator {
-  getModificationCodes() {
+  getModificationCodes(): string[] {
     return Object.keys(MODIFICATIONS);
   }
 
@@ -61,13 +61,13 @@ export class HardcodeTerminator {
       for (const synthesizer of Object.keys(map)) {
         for (const technology of Object.keys(map[synthesizer])) {
           for (const code of Object.keys(map[synthesizer][technology]))
-            codeToSmilesMap.set(code, map[synthesizer][technology][code].SMILES);
+            codeToSmilesMap.set(code, map[synthesizer][technology][code][SMILES]);
         }
       }
     } else {
       for (const technology of Object.keys(map[format])) {
         for (const code of Object.keys(map[format][technology]))
-          codeToSmilesMap.set(code, map[format][technology][code].SMILES);
+          codeToSmilesMap.set(code, map[format][technology][code][SMILES]);
       }
     }
     codeToSmilesMap.set(DELIMITER, '');

@@ -3,41 +3,28 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {HardcodeTerminator} from '../hardcode-terminator';
-
 import {MonomerCodeParser} from './monomer-code-parser';
-import {getMonomerLib} from '../../package';
-
-const terminator = new HardcodeTerminator();
+import {MonomerLibWrapper} from './monomer-handler';
 
 export class SequenceToMolfileConverter {
   constructor(
-    private sequence: string, private invert: boolean = false, private format: string
+    sequence: string, invert: boolean = false, format: string
   ) {
-    const codeToNameMap = terminator.getCodeToNameMap(this.sequence, this.format);
-    this.parser = new MonomerCodeParser(this.sequence, this.invert, codeToNameMap);
+    this.lib = new MonomerLibWrapper();
+    const codeToNameMap = this.lib.getCodeToNameMap(sequence, format);
+    this.parser = new MonomerCodeParser(sequence, invert, codeToNameMap);
   }
 
   private parser: MonomerCodeParser;
+  private lib: MonomerLibWrapper;
 
   convert(): string {
     const parsedSequence = this.parser.parseSequence();
-    const lib = getMonomerLib();
-    const mols: string [] = [];
-    for (let i = 0; i < parsedSequence.length; i++) {
-      const monomer = lib?.getMonomer('RNA', parsedSequence[i]);
-      mols.push(monomer?.molfile!);
-    }
+    const monomerMolfiles: string [] = [];
+    for (const monomerName of parsedSequence)
+      monomerMolfiles.push(this.lib.getMolfileByName(monomerName));
 
-    return this.getPolymerMolfile(mols);
-  }
-
-  private getMolblocksForCodes(codes: string[]) {
-    const molBlocks: string[] = [];
-
-    for (let i = 0; i < codes.length - 1; i++)
-      molBlocks.push(codes[i]);
-    return molBlocks;
+    return this.getPolymerMolfile(monomerMolfiles);
   }
 
   private adjustMolBlocks(molBlocks: string[]) {
@@ -49,10 +36,9 @@ export class SequenceToMolfileConverter {
     });
   }
 
-  private getPolymerMolfile(codes: string[]) {
-    let molBlocks = this.getMolblocksForCodes(codes);
-    molBlocks = this.adjustMolBlocks(molBlocks);
-    return this.linkV3000(molBlocks);
+  private getPolymerMolfile(monomerMolfiles: string[]) {
+    monomerMolfiles = this.adjustMolBlocks(monomerMolfiles);
+    return this.linkV3000(monomerMolfiles);
   }
 
   private reflect(molBlock: string): string {
