@@ -6,7 +6,7 @@ title: "Release History"
 
 | Service                                                  | Docker Image                                                                                      |
 |----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../infrastructure.md#datagrok-components)     | [datagrok/datagrok:1.13.10](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Datagrok](../infrastructure.md#datagrok-components)     | [datagrok/datagrok:1.14.0](https://hub.docker.com/r/datagrok/datagrok)                            |
 | [Grok Connect](../../../access/data-connection.md)       | [datagrok/grok_connect:1.3.6](https://hub.docker.com/r/datagrok/grok_connect)                     |
 | Grok Spawner                                             | [datagrok/grok_spawner:1.3.2](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../infrastructure.md#grok-compute)        | [datagrok/grok_compute:1.5.1](https://hub.docker.com/r/datagrok/grok_compute)                     |
@@ -20,11 +20,749 @@ See also:
 - [Docker-Compose](../docker-compose.md)
 
 
-## 2023-03-29 1.13.10
+## 2023-04-18 1.14.0
+
+### Addressed Issues
+
+* [#1223](https://github.com/datagrok-ai/public/issues/1462499327): GrokConnect: Streaming dfs through websockets (WIP)
+* Renamed some consts
+* Const error, clean code
+* DockerFils split to Images and Containers
+* closes #1546 PC Plot: density is not recalculated on normalisation
+* (Improvement) GROK-11159: Separate Images and Docker Containers in platform
+* null
+* (Improvement) GROK-12022: Context menus: show the "..." hint in the corner of the element that opens context menu when clicked
+* closes #1547 Trellis plot with bar charts: not all data is shown until bar chart is clicked
+* PackageView: improved package tooltips.
+* Code cleanup
+* scalar queries
+* reset grid row height to api
+* core installation
+* closes GROK 11688-Viewers | PC plot | Transformation: unable to add Measures
+* Providers migration typo fix
+* closes #1546 pc plt density render
+* Grid: Enable getCellEditor for meta.columnTags
+* closes #1376 Bar Chart: context menu harmonization
+* closes #1375 Scatter Plot: context menu harmonization
+* closes #1378 PC Plot: context menu harmonization
+* Chem: updated the description
+* (Bug) GROK-12072: Databases: error in Sharing tab after deleting the shared query
+* Error handling improvement
+* grid should not throw errors
+* (Improvement) GROK-12078: JS API: Form and FormViewer
+* (Improvement) GROK-12079: Grid: Add | Forms | Default Form: ability to specify columns
+* (Improvement) GROK-12080: Grid: in-cell user-designable forms (WIP)
+* Grid: Fix for getGridCell
+* closes #1377 Box Plot: context menu harmonization
+* closes #1582 Line Chart: render structures on the X axis
+* Closes GROK-12087: JS renderers: getDefaultSize(gridColumn)
+* Standard color schemes : update "Traffic Lights" palette
+* redraw after chem filter reset
+* closes #1581 render structures in the legend component
+* (Enhancement) [#1375](https://github.com/datagrok-ai/public/issues/1505407688): Scatter plot: context menu harmonization
+* GROK-12112: Grid: User-designable, column-specific tooltips
+* (Enhancement) [#1381](https://github.com/datagrok-ai/public/issues/1505544168): Line Chart: context menu harmonization (WIP)
+* (Enhancement) [#1376](https://github.com/datagrok-ai/public/issues/1505410814): Bar Chart: context menu harmonization
+* Add logging during plugin loading
+* dpetrov/GROK-12117: Added support for external graphics context in ScatterPlotViewer
+* (Bug) GROK-12126: In-app help: title is not rendered properly after switching to the Docusarus style
+* closes #1583 Scatter Plot: "pack and zoom" option should response to changes when a numerical column is used
+* dpetrov/GROK-12117: Fixed signatures of _render function for all plots with CanvasViewerMixin
+* Removed 3 dots from PinRow menu item in GridCore
+* (Improvement) GROK-12132: DataFrame and Column Context Panel: Details pane: "show private" button to show private tags
+* Histogram missing legend param
+* Formula lines for line chart error
+* context menus fixes
+* add RemoveWhere to interop
+* fixes #1546 Pc Plot density, case col.min == col.max
+* Added func role tooltip
+* Add getTooltip func
+* Issue #967: Column tooltip. Ability to provide dynamic summary for semantic types
+* fixes #1377 BoxPlot switched axes
+* fixes #1583 turn off following filter in pack and zoom mode
+* (Enhancement) [#1552](https://github.com/datagrok-ai/public/issues/1564713406): Scatter Plot: line labels enhancements
+* Query View: Ctrl+Enter to submit the query, plus some UI clarifications
+* Minor documentation improvements
+* Column Tooltip: check whether func is not null
+* Adding outputType to bySemType func
+* Actions panel: add only functions which return type is void
+* GridColumn.temp
+* Build fixes.
+* Properly rendering Docusaurus title
+* Merged in onuf/1124-ui-hints (pull request #308)
+* JKG: log format
+* (Enhancement) [#1124](https://github.com/datagrok-ai/public/issues/1411708264): JS API: add hints to UI methods
+* (Bug) GROK-12156: Chem: error when hovering the mol, macromol column's header
+* Closes #1600 JS API: add DataQuery.connection
+* (Improvement) GROK-12147: DapiSocket reconnect on error -\- avoid posting to server, adaptive reconnect interval
+* (Improvement) GROK-12146: Logger: Throttling on server
+* (Enhancement) [#1581](https://github.com/datagrok-ai/public/issues/1575676812): Viewers: render structures in the legend component
+* dpetrov/GROK-12172 Exposed the row tooltip of ScatterPlot viewer to JS API
+* JS API: fix typo
+* JKG: Octave packages load
+* JKG: Logs format
+* JKG: Octave downgrade to 6.3.0
+* JKG: liboctave7
+* JKG: remove octave default-integer
+* (Bug) [#1591](https://github.com/datagrok-ai/public/issues/1584208083): Excessive memory usage on applying several layouts with scatter plots having log scale axes (possibly a memory leak) (WIP)
+* closes #1595 Scatter Plot: selected dot is still visible on zooming when it is outside currently shown range
+* GROK-5324: Table Linker UI
+* JS API: Accordion: autoHideTabHeader property
+* (Bug) GROK-12191: Core: RegExpExtract function throws an exception when no match is found
+* update ribbon styles
+* ClickHouse Demo DB: Download data separately
+* closes #1599 Colouring and format changes are reset unexpectedly on interacting with filters if group tooltip was set
+* ClickHouse Demo DB: remove zstd
+* Wiki: Rich Function View: minor improvements
+* line chart broken
+* Update docusaurus instructions
+* ClickHouse Demo DB: new basic image
+* ClickHouse Demo DB: healthcheck auth
+* Enable H2O engine test in the system health check
+* ClickHouse Demo DB: insert to target database
+* (Improvement) GROK-12197: Actions panel: add only void functions
+* closes GROK-11558 Databases: can't add Visual Query
+* (Bug) GROK-12214: Connecting to local file storage results in error (WIP)
+* closes #1589 Consolidate filters across different tabs
+* Disable Elastic Search health check
+* (Enhancement) [#1594](https://github.com/datagrok-ai/public/issues/1584777693): Filters: custom filters API enhancements
+* restore esc behavior
+* Added unescaped parameters replacer
+* ClickHouse Demo DB: Do not redeploy the data
+* MSSQL Deom DB: Restore from CSV
+* fixes #1609 FilterGroup.add issue
+* Adding ADME/Tox to chemCommands
+* MSSQL Demo DB: wait for DB to start
+* function view fix styles
+* Upgraded instructions to deploy service
+* Add dnahovski
+* Form Designer: support for widgets: WIP
+* closes #1607 Show the zoom slider on the X axis of the line chart
+* histogram filter resetting filter in missingValues mode
+* Added a way to specify custom property serializers
+* Grid: GridColumn: added the 'tags' field for storing serializable JS objects
+* (Improvement) GROK-12239: Curve fit rendering and options (WIP)
+* dpetrov/GROK-12117: Minor fixes
+* Updated deply README
+* histogram filter in layout
+* (Improvement) GROK-12253: Speed up formula calculations
+* (Enhancement) [#1378](https://github.com/datagrok-ai/public/issues/1505502360): PC Plot: context menu harmonization (WIP)
+* Updated public token
+* Removed explicit db.run
+* Bump GC version
+* Fixed analyzer warnings
+* Skipped external failing tests
+* (Bug) GROK-12223: TableInput: stopped reacting to programmatic value setting
+* Merged in illarionow/hints (pull request #311)
+* dpetrov/GROK-12276 Fixed color calculation when the data range is 0
+* Chem: Removed "Sketch" command from the core
+* (Bug) GROK-8435: Viewers: cannot scroll to select a column from the context menu
+* JS API: Grid: exposed gridRowToTable and tableRowToGrid methods
+* closes #1613 'Error loading scatter plot' for apecific data on applying layout
+* closes #1616 Scatter plot: zoom slider behaviour is inconsistent for inverted axes
+* closes GROK-12323 JS-API | whereRowMask() on the selection mask doesn't work properly
+* line chart fixes
+* (Improvement) GROK-12328: Add support of CoreWeave Object Storage
+* closes GROK-11706 3d scatter plot: failed to load if Axes > Show Axes property is false
+* Updated JS-API
+* inverse axis fix
+* return datagrok/grok_connect:1.2.1
+* (Bug) GROK-12332: Wrong docker status when making a request
+* dpetrov/GROK-12327 Fixed the issue with formula line opacity
+* Logging parameters harmonization
+* GridColumn: isTextColorCoded property to js api
+* (Improvement) GROK-12346: Add the ability to display sql views along with tables
+* Updated deploy README.md
+* (Improvement) GROK-12348: JS API: DG.Paint.horzAxis, vertAxis (WIP)
+* Issue #1417: Chem | Column Actions | Descriptors: error when empty values are present
+* CI: commitlint
+* Dockers: renamed migration to avoid skipping
+* Merged in onuf/GROK-12223-tableinput (pull request #312)
+* closes #1611 Display legend labels in a scatter plot for conditional coloring
+* JKG: Fix python dependencies
+* ribbon css fix
+* (Bug) GROK-12334: Chem | Fingerprints: use empty values
+* Merged in onuf/1593-tile-viewer-tooltip (pull request #313)
+* CommitLint: Fix Help Url
+* Core: Server connections information
+* Datagrok Docker: Allow grok user use sudo without password
+* (Enhancement) [#1593](https://github.com/datagrok-ai/public/issues/1584765776): Tile Viewer: show long values that are not fully visible in a tooltip
+* CommitLint: Move ticket to the first place
+* Issue #1417: Chem | Column Actions | Descriptors: XMLHttpRequest error
+* (Bug) GROK-12374: Chem: 'Result of truncating division is NaN' error when hovering over mol column's header
+* (Bug) GROK-12381: Curves: fix J&J fit curve charts drawing
+* (Bug) [#1625](https://github.com/datagrok-ai/public/issues/1606610264): Pinned columns are displayed incorrectly after applying layout with viewer stacked over the table
+* Charts: Bump version
+* (Enhancement) [#1611](https://github.com/datagrok-ai/public/issues/1596799822): Display legend labels in a scatter plot for conditional coloring
+* (Bug) GROK-12390: Chem : filter synchronization happens for different tables if they have the same name of mol column
+* reset filter fix
+* line chart change cols bug
+* (Improvement) GROK-12111: Usage Analysis: Packages tab (WIP)
+* (Bug) GROK-12379: Chem: Marvin filtering via List/NOT List doesn't work
+* Tools: Update README
+* (Bug) GROK-12408: Chem: 'Chem | Possibly a malformed molString at init: `undefined`' error when hovering over mol column's header
+* atanas/GROK-12164 Fix macromolecule detector for alphabet UN (#1622)
+* (Bug) GROK-12217: Chem | Chem Draw sketcher: infinite "Updating", when switching to it
+* (Bug) GROK-12414: Chem: when using Marvin as filter 'Cancel' button doesn't reset filter
+* (Improvement) GROK-12376: Curves: improve XML parse function (add parameters recognition)
+* Curves: Removed unnecessary comments
+* Issue #1417: Chem | Column Actions | Descriptors: doesn't work when empty line is added to the end
+* MSSQL Demo DB: 10 retries while waiting for server
+* Oracle Demo DB: Load from CSV
+* Curves: Added newline character in the end of README.md
+* GROK-12213: Create ApiTests for Postgres Provider
+* (Enhancement) [#1627](https://github.com/datagrok-ai/public/issues/1608975777): Scaffold Tree: filtering enhancements (WIP)
+* histogram imitates filter look
+* Help: Rebase for master branch by default
+* Meta: Remove old demo packages
+* Oracle Demo DB: Latest version
+* Grok Compute: Local development documantation
+* Issue #1417: Chem | Column Actions | Descriptors: error when empty values are present (minor changes)
+* Fae (#1641)
+* Oracle Demo DB: Oracle user directive in Dockerfile
+* Issue #967: Column tooltip, check whether widget is not null
+* GROK-12373: Create test class and test cases for Athena Provider
+* GROK-12423: Create ApiTests for Athena Provider (WIP)
+* GROK-12362: Create ApiTests for MSSQL Provider
+* GROK-12089: Grok Connect Harmonization (WIP)
+* Oracle Demo DB: Run scripts on DB setup
+* Help: Lint rules
+* Help: Fix git instructions
+* Oracle Demo DB: Owner for download_db
+* (Bug) [#1628](https://github.com/datagrok-ai/public/issues/1611012446): Wrong data is shown on line chart
+* (Bug) GROK-12419: Sketcher tooltip is not shown correctly after opening molecule in Marvin
+* Oracle Demo DB: Add ORACLE_USER
+* Oracle Demo DB: Empty oradata directory in image
+* Oracle Demo DB: Set oradata directory owner
+* function view labes css fix
+* Dkryvchuk/grok connect2 (#1644)
+* Oracle Demo DB: Use system and xepdb1 for sqlldr
+* Deploy: New Grok Connect version
+* Oracle Demo DB: Remove header in CSV
+* Oracle Demo DB: Allow long strings
+* (Enhancement) [#1645](https://github.com/datagrok-ai/public/issues/1620401809): Curves: MultiCurveViewer (WIP)
+* Postgres Demo DB: Load from CSV
+* Postgres Demo DB: Change data endpoint
+* Postgres Demo DB: Change directory to copy data
+* Postgres Demo DB: Support for sh scripts
+* closes GROK-12025: Help: Update the Quality Assurance doc (#1626)
+* (Bug) GROK-12297: Chem | Filter synchronization: Filtering smarts in Marvin sketcher is not synchronized with the Filter Panel
+* (Bug) GROK-12454: Filters are not synchronized when clicking on 'Clear button'
+* GROK-12136: Bio: Stability and polishings (WIP)
+* Charts: Add viewer icons
+* Charts: Add globe icon
+* GROK-12473: Create test class and test cases for MySQL Provider
+* GROK-12476: Create ApiTests for MySQL Provider
+* GROK-12474: GrokConnect: Test Queries for MySQL provider
+* Charts: add icon
+* GROK-12353: ApiTests: script output parameters tests (WIP)
+* GROK-12354: Demo: script functionality tests (WIP)
+* Utils: Added historical runs to PipelineView
+* Compute: Fixed RichFunctionViewEditor options
+* Compute: Removed sourceMap option
+* (Bug) GROK-11690: Viewers | Bar chart: tooltip issues
+* GROK-11780: Cheminformatics | Stability and Polishings (WIP)
+* Help: Set version number to 1.13.7
+* ClinicalCase: Add CDM connections
+* ClinicalCase: CDM queries
+* ClinicalCase: Limit results for ClickHouse CDM DB query
+* GROK-12459: Warning with failed molecules indexes in chem analyses (WIP)
+* (Enhancement) [#1635](https://github.com/datagrok-ai/public/issues/1613838883): Box Plot: Add a zoom slider to adjust axes range
+* Curves: update icon
+* Chem: rename top-menu, and dialog titles
+* Chem: add viewers icons
+* Bio: top-menu rename, add viewer icon
+* Change from uterable to func
+* Bio: rename dialog, and top-menu titles
+* BiostructureViewer: add icon
+* BiostructureViewer: add viewer icon
+* Leaflet: add viewer icon
+* PhyloTreeViewer: add viewers icons
+* Charts: add surfaceplot icon
+* Charts: update icons
+* BiostructureViewer: update icon
+* (Enhancement) [#1654](https://github.com/datagrok-ai/public/issues/1624021886): Multi-value canvas grid cell renderer
+* Core: Reorganize repo
+* (Bug) GROK-12498: Chem: grid scrolls to the right when you hover over a molecular column
+* ChemMeta: Fixed compatibility
+* (Improvement) GROK-12483: Usage Analysis: Functions tab (WIP)
+* Utils: Refactored PipelineView public API
+* ApiTests: Added tests for script & package func calls loading
+* META: Remove packages, which not in npm
+* META: Bump package version
+* (Bug) GROK-12503: DataQuery: Query created from Connection doens't return a result
+* Help: Removed WIP note on Scripting for non-developers
+* (Bug) GROK-9645: Pie Chart: Does not work with datetime column (WIP)
+* Misc: Skipped sparql test, unreachable host
+* GROK-12500: GrokConnect: Test Queries for Redhisft provider
+* GROK-12501: Create test class and test cases for Redshift Provider
+* GROK-12507: Create ApiTests for Redshift Provider (WIP)
+* (Bug) GROK-12335: Duplicating sketcher in filter panel
+* Add svg icons
+* ApiTests: Fixed some tests
+* (Improvement) GROK-12477: JS API: cancelable onViewRemoving
+* Merged in onuf/GROK-12477/cancelable-on-view-removing (pull request #314)
+* Core: Update public token
+* Datagrok Docker: Fix libs path
+* GROK-12456: Apps: rename according to naming requirements
+* Input postfix overlap fix
+* (Improvement) GROK-12462: Cheminformatics | Mol2 | Unify with ChamicalTableParser from chem meta (WIP)
+* GROK-12310: Auto-generated JS API from Dart code (WIP)
+* (Enhancement) [#1652](https://github.com/datagrok-ai/public/issues/1623959080): Scaffold Tree: use the default sketcher
+* Chem: Bump version
+* (Bug) GROK-12502: Filter Panel | Reorder Filters dialog: the list of filters becomes empty
+* Core: Added diagnostics output
+* JS API: Balloon: ability to pass element as content
+* Core: updated the libraries
+* Charts: Renamed viewer names in demos and tests
+* Bio: added viewers icons
+* Dendrogram: Added viewer icon
+* Peptides: Added viewers icons
+* Core: ability to change property type
+* Core: ability to change property type: using the built-in type converters
+* (Enhancement) [#1680](https://github.com/datagrok-ai/public/issues/1628501364): Expose adding pinned columns in PowerGrid package
+* GROK-12524: Grid: column-based edit privileges
+* (Improvement) GROK-12525: Grid: when user tries to start editing a read-only cell, show the reason why it can't be edited
+* (Bug) [#1642](https://github.com/datagrok-ai/public/issues/1618916248): Structure is very small and not centered in the structure filter
+* JS API: Updated chem-meta dependency
+* FAE:  GROK-11775: Remove package
+* Curves: Renamed 'Curve Fit Demo' app to 'Curves Demo'
+* closes #1651 Line chart: incorrect legend for Split by when Row Source=selected
+* closes #1650 Line chart: Unsupported operation: NaN.floor() error
+* [#710](https://github.com/datagrok-ai/public/issues/1276859088): Chem: Preparation of datasets (WIP)
+* Chem: Minor refactoring, chem-meta version 1.0.8
+* GROK-12545: Create test class and test cases for Hive2 Provider
+* GithubActions: JS-API: Fix synraxis
+* Widgets: Bump webpack from 5.72.1 to 5.76.2 (#1690)
+* SQLite: Bump webpack from 5.73.0 to 5.76.2 (#1689)
+* Peptides: Bump webpack from 5.75.0 to 5.76.2 (#1688)
+* PowerGrid: Bump webpack from 5.75.0 to 5.76.2 (#1687)
+* PubChemApi: Bump webpack from 5.73.0 to 5.76.2 (#1686)
+* SimPKPD: Bump webpack from 5.63.0 to 5.76.2 (#1685)
+* Ketcher: Bump ua-parser-js from 0.7.32 to 0.7.34(#1639)
+* Docusaurus: Bump http-cache-semantics from 4.1.0 to 4.1.1(#1640)
+* MultiPlot: Bump webpack from 5.63.0 to 5.76.0 (#1656)
+* OligoBatchCalculator: Bump webpack from 5.64.0 to 5.76.0 (#1659)
+* UsageAnalysis: Bump webpack from 5.63.0 to 5.76.0 (#1660)
+* Tutorials: Bump webpack from 5.75.0 to 5.76.0 (#1662)
+* NLP: Bump webpack from 5.75.0 to 5.76.0 (#1664)
+* PhyloTreeViewer: Bump webpack from 5.74.0 to 5.76.0 (#1666)
+* PowerPack: Bump webpack from 5.73.0 to 5.76.0 (#1667)
+* SequenceTranslator: Bump webpack from 5.75.0 to 5.76.0 (#1669)
+* Orbit: Bump webpack from 5.74.0 to 5.76.2 (#1682)
+* TensorFlow.js: Bump webpack from 5.63.0 to 5.76.2  (#1684)
+* CustomML: Bump webpack from 5.63.0 to 5.76.2 (#1683)
+* Ketcher: Bump webpack from 5.75.0 to 5.76.2 (#1691)
+* HitTriage: Bump webpack from 5.73.0 to 5.76.2 (#1692)
+* Helm: Bump webpack from 5.73.0 to 5.76.0 (#1693)
+* GIS: Bump webpack from 5.75.0 to 5.76.2 (#1694)
+* FittingTools: Bump webpack from 5.75.0 to 5.76.2 (#1695)
+* DrugBank: Bump webpack from 5.73.0 to 5.76.2 (#1696)
+* DevTools: Bump webpack from 5.75.0 to 5.76.2 (#1697)
+* Dendrogram: Bump webpack from 5.75.0 to 5.76.0 (#1698)
+* Demo: Bump webpack from 5.75.0 to 5.76.2 (#1699)
+* Curves: Bump webpack from 5.75.0 to 5.76.2 (#1700)
+* Compute: Bump webpack from 5.72.0 to 5.76.2 (#1701)
+* ClinicalCase: Bump webpack from 5.67.0 to 5.76.2 (#1702)
+* ChemblAPI: Bump webpack from 5.74.0 to 5.76.2 (#1703)
+* Chembl: Bump webpack from 5.74.0 to 5.76.2 (#1704)
+* Chem: Bump webpack from 5.74.0 to 5.76.2 (#1705)
+* CDMExplorer: Bump webpack from 5.72.1 to 5.76.2  (#1707)
+* Charts: Bump webpack from 5.73.0 to 5.76.0 (#1706)
+* Bio: Bump webpack from 5.75.0 to 5.76.0 (#1708)
+* ApiSamples: Bump webpack from 5.74.0 to 5.76.0 (#1709)
+* Library chem-meta: Bump webpack from 5.75.0 to 5.76.2 (#1718)
+* BiostructureViewer: Bump webpack from 5.65.0 to 5.76.0 (#1710)
+* Library utils: Bump webpack from 5.75.0 to 5.76.2 (#1711)
+* Arrow: Bump webpack from 5.73.0 to 5.76.0 (#1712)
+* Alation: Bump webpack from 5.74.0 to 5.76.2 (#1713)
+* Library statistics: Bump webpack from 5.75.0 to 5.76.2 (#1714)
+* Library ml: Bump webpack from 5.73.0 to 5.76.2 (#1715)
+* Library gridext: Bump webpack from 5.75.0 to 5.76.2 (#1716)
+* Library bio: Bump webpack from 5.75.0 to 5.76.2 (#1717)
+* Core: Property: weakened the typing a bit to address Dart2JS issue
+* GROK-12549: Viewers: Tiles: Swimlanes mode
+* GROK-12550: Viewers: Tiles: ability to drag-and-drop cards between the lanes
+* (Bug) GROK-12551: Core: While dragging windows, sometimes text in them might get selected
+* JS API: Bump webpack from 5.73.0 to 5.76.0 (#1720)
+* Docusaurus: Bump webpack from 5.75.0 to 5.76.2 (#1721)
+* Curves: Structured the confidence interval drawing
+* Onuf/grok-12509/grok-init (#1681)
+* Tools: Version bump
+* Demo: Delete CDM queries
+* Illarionow/viewer gallery (#1677)
+* atanas/GROK-12547: Bio: fix detect macromolecule and tests (#1722)
+* (Bug) GROK-12527: GIS: Reduce the aggressiveness of detectors and add column name check
+*     #1651 console error on closing viewers
+* Styles: Added tabControl condensed style
+* Compute: changed lib to 2022
+* Compute: RichFunctionView: pressing Enter in an input runs the script
+* JS API: WIP
+* GROK-12546: GrokConnect: Test Queries for Hive2 provider
+* (Improvement) GROK-12428: Bio | Tools | Dendrogram | Tree colors
+* Grid: fixed an issue with NRE when double-clicking on a column header
+* Fixed #1724: Table is not rendered properly after switching dataframe if it was sorted
+* GrokConnect: Fixed comment start
+* (Bug) [#1726](https://github.com/datagrok-ai/public/issues/1632575527): Pinned Columns: Id link is not clickable
+* (Bug) [#1637](https://github.com/datagrok-ai/public/issues/1616819912): Filters re-ordering dialog is not opened if a custom filter was added to filters panel
+* Grok Connect: Updated version
+* (Improvement) GROK-12544: GrokConect: Hive2 Harmonization (WIP)
+* Update grok_connect.yaml
+* Charts: Added routing to viewers demo
+* Grok Connect: Updated build script
+* (Improvement) GROK-12450: Viewers | Filters | Custom filter test
+* Charts: Fixed .vscode files for package debugging
+* (Bug) GROK-12340: Chem | Group Analysis: can't open viewer properties by clicking the Gear icon
+* Demo: Viewers: Routing (WIP)
+* (Bug) GROK-12539: Chem : wrong rendering of malformed data
+* GiHub Actions: Push Grok Connect from release branches
+* Utils: Added text input into form of HistoryInput
+* Utils: Refactored Views hierarchy
+* Utils: UI fixes
+* Utils: Fixed Run button behaviour in RichFunctionView
+* Utils: Major version bump
+* Scaffold Tree: Fix tooltip typo
+* Compute: Major version bump
+* GROK-12576: Create test class and test cases for Neo4j Provider
+* GROK-12577: Create test queries for Neo4j Provider
+* Core: Ability to load src maps immediately
+* Utils: Added units render to RichFunctionView
+* Utils: Fixed export for outputs with explicit category
+* Utils: Patch version bump
+* Compute: Deps update
+* Curves: Added vscode debugging
+* (Bug) GROK-12579: Grok Connect: Snowflake handling of doubles, infinity, -infinity, NaN, and large scale floating point numbers
+* closes #1628 legend error
+* Utils: Historical panel filters moved to tabs
+* (Bug) GROK-12517: Databases | MS SQL | NorthwindTest | Schemas | dbo: 'com.microsoft.sqlserver.jdbc.SQLServerException:'error in the Inspect tab for the column
+* Grok Connect: Updated vesrion because of fixed issue
+* Utils: Added PipelineView tabs styling
+* JKG: Remove \r in files for build on windows
+* JKG: Copy libs from lib directory
+* Descriptors: malformed data
+* (Bug) GROK-12571: Chem: molfile paste doesn't work
+* JKG: Latest miniconda
+* Tutorials | Demo: Moved demo app to Tutorials package
+* (Improvement) GROK-12548: Tutorials | Demo: Improve the demo app to describe platform capabilities (WIP)
+* Help: Update latest versions
+* Core: shortened the initial date/branch/commit printout
+* Issue #1495: Chem | Map Identifiers WIP
+* GROK-12227: Chem: fix and add new tests (WIP)
+* (Improvement) GROK-12587: Ability to skip auto tests (WIP)
+* Issue #1645: Chem: Scaffold tree fails
+* Meta: Bump version
+* Help: Grok Compute release
+* (Bug) [#1675](https://github.com/datagrok-ai/public/issues/1626046877): Scaffold Tree fails on large dataset
+* (Improvement) GROK-12103: GrokConect: Snowflake Harmonization (WIP)
+* (Improvement) GROK-12090: GrokConect: Postgres Harmonization
+* (Bug) GROK-12592: Datetime pattern with operator "this week" incorrect bounds
+* Core: Temporary disabled context actions button
+* Viewers: defaulting rowSet to RowSet.All when there is no "rowSource" property
+* GROK-12596: Core: Viewers: support for NaN and +/\- Infinity (WIP)
+* (Enhancement) [#1728](https://github.com/datagrok-ai/public/issues/1634187321): Scaffold Tree: Add a "table" property
+* Docs: Git Secret decrypt files
+* Docs: GitSecret update
+* reset filter: revert ESC behavior
+* closes GROK-12535 Databases | Build Query: doesn't show connected tables and query preview
+* closes GROK-12536 Databases | Visual Query: error when adding a column
+* JKG: Octave 6.4.0
+* (Improvement) GROK-12603: Histogram: an option to show markers and straight lines for the "split" mode
+* (Improvement) GROK-12606: Histogram: an option to normalize distribution in the "split" mode
+* Commitlint: Allow numbers in scope
+* (Bug) GROK-12377: JS API: tableInput does not fire onInput when user uses "Open file" button
+* (Improvement) GROK-12613: Signature Editor (WIP)
+* JS API: New examples
+* Curves: CanvasChart: WIP
+* JS API: grok.data.db.query
+* (Improvement) GROK-12616: Tools: Add shared libs test to `grok check`
+* (Improvement) GROK-12615: Tools: Do not skip the build step for previously linked libraries in `grok link`
+* Docs: Common libraries
+* (Improvement) GROK-12617: Core: "Open files" dialog: ability to open multiple files at once
+* (Improvement) GROK-12618: Core: Entities: "Copy" popup submenu (WIP)
+* Wiki: Fix docusaurus build
+* Demo DB MySQL: Load data from CSV
+* Demo DB MySQL: Healthcheck using hostaname
+* Demo DB MariaDB: Healthcheck using mysqladmin
+* Demo DB MariaDB: Healthcheck using script
+* Demo DB MSSQL: Check mssqldb before restoring data
+* (Improvement) GROK-12619: Remove MLB from public
+* GitHub Actions | Packages: Install js-api for unpublished dependencies
+* Grok Connect: Updated workflow to test smth
+* Grok Connect: Changed back
+* (Bug) GROK-12622: JS API: tableInput fire onChange when user uses "Open file" button twice (WIP)
+* (Bug) GROK-12560: Accessing containers in the new way is impossible (WIP)
+* Datlas: Fixed tests
+* [#1353](https://github.com/datagrok-ai/public/issues/1498347286): Tutorials: increase test coverage (WIP)
+* Tutorials: Remove duplicated dependency
+* (Enhancement) [#1604](https://github.com/datagrok-ai/public/issues/1589122620): Tutorials: open a tutorial via link
+* Tutorials: Fix build error
+* (Improvement) GROK-12582: Create Provider for DynamoDB
+* Demo DB Neo4j: Restore data from CSV
+* Demo DB Neo4j: Fix
+* (Improvement) GROK-12597: Multiform: Migrate to TypeScript and rename it to Forms
+* (Bug) GROK-12581: Chem | Sketcher: Switching the Sketcher on the Filter Panel doesn't change Sketcher in the hamburger menu and on the Context Pane
+* Demo DB Neo4j: New entrypoint
+* Demo DB Neo4j: Ignore service env vers
+* Demo DB Neo4j: Start temporary server in background
+* Tutorials: Added vscode debugging
+* Wiki: Update local testing instructions
+* Library Bio: Ignore **.js.map files
+* JnJ: Monitoring: Update JnJ documentation
+* Demo DB Neo4j: Auth user
+* Demo DB Neo4j: Rename DB
+* closes #1635 Box Plot: Add a zoom slider to adjust axes range
+* closes #1465 Improve usability of range filters
+* closes #1729 Add the ability to drag-and-drop custom filters to the filter panel
+* TableQuery: params are not specified
+* GROK-12638: Core: Ability to add info panels as columns
+* Packages: Updated package-lock.json
+* (Bug) [#1739](https://github.com/datagrok-ai/public/issues/1642016465): Browser tab freezes on hovering a molecule column header after data was removed
+* Mdolotova/grok 12459/handling malformed data (#1679)
+* Revert "Mdolotova/grok 12459/handling malformed data" (#1742)
+* Utils: Docs refactored
+* ApiTests: Fixed build
+* ApiTests: Bump version
+* Revert "#1739: Chem: Browser tab freezes fix"
+* Core: Fixed analyzer warning
+* (Bug) GROK-12588: Chembl | nameToSmiles script is called when Inchi key is passed to sketcher
+* Mdolotova/grok 12459/handling malformed data (#1743)
+* Utils: Bump version
+* Compute: Added model calling from FuncCall
+* Utils: Added parentCall option to ComputationView
+* Utils: Fixed RichFunctionView path init
+* Utils: Removed extra linking from FunctionView
+* GROK-12640: Chem: Harmonize the tooltip for the molecular column
+* Grok Compute: Clone chemprop to docker image
+* JKG: Use tensorflow 2.11
+* Grok Compute: Chemprop 1.5.2
+* Use molblock native wedging where available (#1731)
+* Chem Meta: Bump version
+* (Bug) GROK-12397: Chem: tooltip tag adds a column panel
+* (Bug) GROK-12651: Core: Nested context panel's "expanded" state is not remembered
+* Chem: provided a friendly name for "Most Diverse Structures"
+* (Improvement) GROK-12093: GrokConect: MySQLHarmonization
+* GROK-12642: Create ApiTests for Neo4j Provider
+* GROK-12652: GrokConnect: Test Queries for DB2 provider
+* GROK-12653: Create test class and test cases for DB2 Provider
+* (Improvement) GROK-12645: Grok Connect: DB2 Harmonization (WIP)
+* AddNewColumn: Errors column
+* Core: Closes #1748: DateTime functions don't work
+* (Improvement) GROK-12656: Functions: Qnum support
+* (Improvement) GROK-12660: Details (remove widget)
+* GROK-12668: Create test class and test cases for MariaDB Provider
+* (Improvement) GROK-12659: Grok Connect: MariaDB Harmonization
+* Query Annotation: Allow extra spaces
+* Demo: Northwind connections
+* Demo DB Neo4j: Change default DB
+* Demo DB Neo4j: Finalize CSV import
+* (Improvement) GROK-12673: Viewers: Filters: Improved tooltip for dates
+* Update JS API version to 1.13.10
+* Help: Release notes
+* (Enhancement) [#1751](https://github.com/datagrok-ai/public/issues/1646270729): Expanding curve-fitting output
+* (Bug) GROK-12224: Fix sdf tests considering new functionality (WIP)
+* Usage Analysis: Fixes & improvements
+* (Enhancement) [#1729](https://github.com/datagrok-ai/public/issues/1634253469): Viewers: Filters: Add the ability to drag-and-drop custom filters to the filter panel
+* closes 1209 Viewer legend is not synchronised with in-viewer filter in a specific case
+* Revert "Use molblock native wedging where available" (#1753)
+* Query Annotation: Updated regex
+* Utils: Fixed loading by URL between pacakges
+* (Improvement) GROK-12678: JS API: table join: ability to specify "all columns" for merging without having to list each one
+* (Bug) GROK-12570: Charts | Demo: Group Analysis viewer opens twice
+* Peptides: Clusters rework
+* (Bug) GROK-12662: Bio | Helm Web Editor: Error: Neither peptide, nor nucleotide
+* Utils: Fixed subscriptions unsubscribing
+* (Bug) GROK-12670: Bio | Sequence Actitvity Cliffs: 'NullError: method not found: 'ce' on null' error on HELM dataset (WIP)
+* (Bug) GROK-12666: Bio | Sequence Actitvity Cliffs: 'NullError: method not found: 'Q' on null' error  (WIP)
+* Chem: Tests
+* (Bug) GROK-12534: Databases: error on the  Activity tab for some connections
+* Curves: Added the package owner
+* GIS: Transferred package ownership
+* PubChemApi: Fixed a failing autotest
+* (Bug) GROK-12687: Chem | Elemental Analysis: false message 'Charts package is not installed'
+* PubChemApi: Version 1.1.7
+* GROK-12689: Grok Connect: Create test queries
+* Grok Connect: Upgraded junit
+* GROK-12688: Grok Connect: Create test class and test cases
+* (Bug) GROK-12569: Charts | Tree: Fix test failing on "Cannot load viewer from layout" (WIP)
+* (Bug) GROK-12685: Chem | Renderer: 'copy as smiles' action gives 'undefined'
+* (Bug) GROK-12567: Chem | Structural Alerts: 'method not found: 'columns' on null' error  (WIP)
+* (Improvement) GROK-12680: Grok Connect: ClickHouse Harmonization
+* Grok Connect: Small changes
+* Code: Fixed some tests
+* QueryAnnotation: Fixed regex
+* Core: Fixed Demo deploy
+* (Improvement) GROK-12695: Chem: Ability to copy data from Descriptors and Properties
+* Documentation: JnJ docs; Update jnj docs
+* (Improvement) GROK-12696: Core: Fix column choice when semType is set
+* (Bug) GROK-12697: Grok Connect: Exception  in parametrized queries when two identical parameter names.
+* Datlas: Remove ChemMapIdentifiers test
+* (Improvement) GROK-12305: molecule property panel refinement: header as 2d,3d and mol saving
+* Datlas: Fixed datasource init
+* (Bug) GROK-12115: Chem: Hamburger menu closes while switching a sketcher (WIP)
+* (Improvement) GROK-12405: Docs: Develop > Debugging
+* GROK-12226: Chem: fix UI tests (WIP)
+* Chem: Skipped gasteiger ui test
+* Chem: Fixed Sketcher popup clipping in the dialog
+* Grok Connect: Added Test Report
+* dkovalyov/controls (#1638)
+* Grok Connect: Updated path to report files
+* Grok Connect: Updated workflow script
+* GrokConnect: Fixed rest of the test
+* Grok Connect: Debug workflow test failure
+* Grok Connect: Set timezone for runner
+* Grok Connect: Restored previous changes
+* Grok Connect: Disabled test suite
+* Wiki: CVM queue architecture
+* Wiki: Docker containers help fix
+* ApiSamples: added new script: hide-empty-columns
+* Demo DB Chembl: Healthcheck
+* (Bug) GROK-11189: Databases: error in Impact tab on Property panel
+* Demo DB MariaDB: Healthcheck
+* Datlas: Better error handling for JSON errors
+* (Bug) GROK-12700: Package Functions: Serialization error
+* (Improvement) GROK-12701: Harmonize rename dialog (WIP)
+* Utils: Added tags support to historical runs
+* Utils: Minor version bump
+* Utils: Added "Run" button on ribbon panels
+* Test utils: Update isDialogPresent
+* Curves: Fixed exception
+* Use mol block wedging and fix a memory leak (#1757)
+* Docusaurus: Added new pages
+* Docusaurus: updated careers page
+* Grok Connect: Updated test queries
+* Grok Connect: Updated connections
+* closes 1744 Table is unexpectedly filtered if scatter plot has 'filter by zoom' setting and empty column on log scale axis
+* closes #1746 Scatter Plot: Date picker for X and Y axes min/max
+* (Bug) GROK-12715: Chem | 'sketcher not found' warning on package init
+* Utils: HistoryInput chosen run reset fix
+* Utils: Added tag addition by hitting "Enter"
+* GROK-12690: Grok Connect: Create ApiTests
+* (Bug) GROK-12724: Viewers: Grid: improve default scientific format to show two digits after comma
+* Functions: Update generated ddt files
+* PowerPack: Add Qnum to supported column types
+* (Improvement) GROK-12717: ApiSamples: Add new controls demos
+* Demo DB: Run script inside docker image
+* (Improvement) GROK-12728: Grok Connect: MongDB Harmonization
+* Grok connect testing: add aux value to interop
+* Grok connect testing: test connections function
+* (Improvement) GROK-12140: implement standard IC50 estimation tools (WIP)
+* Demo DB: Set latest version if set_latest true
+* Demo DB Neo4j: Run script password
+* Grok Connect perf tests: all 4 providers
+* UsageAnalysis: Fixes
+* Closes #1747 Filters: Use column format in tooltip for dates
+* (Bug) GROK-12686: Chem | Similarity Search | Color coding: incorrect behavior
+* PowerPack: Version bump
+* NLP: Version bump
+* (Bug) GROK-12730: Chem: OCL sketcher removes molecule in case of mouseup event occurres over sketcher editor (WIP)
+* (Bug) GROK-12692: MLB | JDOB: WebLogo VdRegions viewer for TPPs (WIP)
+* Utils: Replaced workaround for bug GROK-12306
+* (Improvement) GROK-12721: Tooltip modifications for dialog and drag-n-drop
+* Chem: Skip failing test
+* GROK-12709: Test Manager: fix run test from url
+* ApiTests: Switch to local API path
+* HistoryUtils: Library created
+* (Bug) GROK-12734: Databases | PostgresDart | ChemblSQL: error on the Content tab when clicking the 'domains' table
+* HistoryUtils: Added index.ts
+* HistoryUtils: Removed webpack.js and fixed .gitignore
+* SharedComponents: Library created
+* (Bug) GROK-12737: Chem | Structure 3D cannot be added as column from new version of property panel (WIP)
+* (Bug) GROK-12720: Sketcher popup menu is cropped in filters (WIP)
+* FunctionViews: Library added
+* HistoryUtils: Fixed deps
+* SharedComponents: Deps fixed
+* Docusaurus: Careers page update
+* Styles: update input background
+* (Improvement) GROK-12745: Usage Analysis: Functions tab (WIP)
+* (Bug) GROK-12741: Databases | PostgresDart | NorthwindTest: error for the orders query
+* JS API: DG.Test.isInBenchmark
+* UsageAnalysis: Added permanent color-coding
+* GROK-12699: Core: Ability to specify JS scripts to execute when the project is opened or closed (WIP)
+* Closes #1761 Out of memory on adding viewer with specific data
+* Utils: Libraries split
+* SharedComponents: Added validation export
+* GROK-12289: Create ApiTests for SnowflakeProvider (WIP)
+* Styles: Fix input background
+* JS API: Exposed Menu.show options
+* FunctionViews: Scalars' table uses captions
+* Styles: Fixed form buttons alignment
+* Styles: Updated form icon sizes
+* GROK-12432: Library utils: Implement TypeAhead control
+* GROK-12434: Library utils: Implement Breadcrumbs control
+* ComputeUtils: Library created
+* Test utils: Add interval parameter
+* Docusaurus: Updated menu links
+* Libraries: Removed history-utils, function-views, shared-components
+* Wiki: Add formatting links
+* Tooltip: Change margin
+* Grok Connect: Code refactor, added logger
+* (Bug) GROK-12755: MySQL doesn't have schemas, so schemaBrowsing after first expand should return name of current db
+* GROK-12767: Grok Connect: Create test class and test cases
+* Grok Connect: Removed import
+* Log Transform: screenToWorld does not account min min value set in worldToScreen
+* closes #1764 Error loading scatter plot for specific data and log scale axes on applying layout
+* Filters: return select filters dialog
+* closes #1758 Filtering is slow if there are multiple bar charts on several views
+* Ml: Bump version
+* Core: Fixed analyzer warnings
+* Compute: Replaced utils by compute-utils
+* Releae: Minor:  Run  1.14.0
+* Compute: Added debugging options
+* Grok Connect: Fixed issues with import external jars
+* Grok Connect: Fix
+* (Bug) GROK-12306: `dapi.packages.find` does not work
+* Sockets: fix reconnect issue, throw exception if no socket found
+* Styles: fixed typeAhead class
+* (Bug) [#1761](https://github.com/datagrok-ai/public/issues/1653528027): Out of memory on adding viewer with specific data
+* (Bug) [#1764](https://github.com/datagrok-ai/public/issues/1655940422): Error loading scatter plot for specific data and log scale axes on applying layout
+* (Bug) [#1744](https://github.com/datagrok-ai/public/issues/1644087257): Table is unexpectedly filtered if scatter plot has 'filter by zoom' setting and empty column on log scale axis
+* Histogram: get rowSet error
+* FuncCall: does not reconnect properly
+* (Bug) GROK-12780: Databases | Snowflake: error on the Content tab
+* (Bug) GROK-12778: Databases | Snowflake: Browse Schema doesn't work
+* (Bug) [#1745](https://github.com/datagrok-ai/public/issues/1644091651): Floating viewer appears unexpectedly on applying layout in some cases
+* FuncCall: Does not reconnect properly
+* GrokConnect: Disabled timeout
+* Grok connect: New version: Up version to 2.0.9
+* closes #1808 Line chart with logarithmic Y axis is rendering data points incorrectly
+* (Bug) GROK-12876: Databases | ClickHouse: Browse Schema doesn't work (WIP)
+* Grok Connect: Fixed issue
+* (Bug) GROK-12472: Link table dialog doesn't work
+
+
+## 2023-04-18 1.13.13
+
+### Addressed Issues
+
+* closes #1808 Line chart with logarithmic Y axis is rendering data points incorrectly
+
+
+## 2023-04-12 1.13.12
+
+### Addressed Issues
+
+* (Enhancement) [#1583](https://github.com/datagrok-ai/public/issues/1575692020): Scatter Plot: "pack and zoom" option should response to changes when a numerical column is used
+* (Bug) [#1761](https://github.com/datagrok-ai/public/issues/1653528027): Out of memory on adding viewer with specific data
+* (Bug) [#1764](https://github.com/datagrok-ai/public/issues/1655940422): Error loading scatter plot for specific data and log scale axes on applying layout
+* closes 1744 Table is unexpectedly filtered if scatter plot has 'filter by zoom' setting and empty column on log scale axis
+* (Bug) [#1744](https://github.com/datagrok-ai/public/issues/1644087257): Table is unexpectedly filtered if scatter plot has 'filter by zoom' setting and empty column on log scale axis (WIP)
+* (Bug) [#1745](https://github.com/datagrok-ai/public/issues/1644091651): Floating viewer appears unexpectedly on applying layout in some cases
+* (Bug) [#1758](https://github.com/datagrok-ai/public/issues/1651500892): Filtering is slow if there are multiple bar charts on several views
+* Filters: return select filters dialog
+
+
+## 2023-03-30 1.13.11
 
 ### Addressed Issues
 
 * (Bug) GROK-12646: for_entity method is very slow
+
+
+## 2023-03-29 1.13.10
+
+### Addressed Issues
+
+* (Bug) GROK-12646: for_entity method is very slow (WIP)
 
 
 ## 2023-03-28 1.13.9
