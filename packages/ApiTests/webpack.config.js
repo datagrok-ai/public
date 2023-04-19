@@ -30,6 +30,8 @@ module.exports = {
     'datagrok-api/ui': 'ui',
     'openchemlib/full.js': 'OCL',
     'rxjs': 'rxjs',
+    'dayjs': 'dayjs',
+    'dayjs/plugin/utc': 'utc',
     'rxjs/operators': 'rxjs.operators',
   },
   output: {

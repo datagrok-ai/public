@@ -897,8 +897,8 @@ export class Menu {
 
   /** Shows the menu.
    * @returns {Menu} */
-  show(options?: {parent?: HTMLElement}): Menu {
-    return toJs(api.grok_Menu_Show(this.dart, options?.parent));
+  show(options?: {element?: Element, causedBy?: MouseEvent, x?: number, y?: number, nextToElement?: boolean}): Menu {
+    return toJs(api.grok_Menu_Show(this.dart, options?.element, options?.causedBy, options?.x, options?.y, options?.nextToElement));
   }
 
   get onContextMenuItemClick() {
@@ -1767,13 +1767,14 @@ export class Breadcrumbs {
     this.root = ui.div();
     this.path = path;
 
-    this.root = ui.divH(path.map((element) => ui.div(ui.link(element, () => {}, '',
-      `ui-breadcrumbs-text-element ${element}`), 'ui-breadcrumbs-element')), 'ui-breadcrumbs');
+    this.root = ui.divH(path.map((element) => ui.div(
+      ui.link(element, () => {}, '', 'ui-breadcrumbs-text-element'), 'ui-breadcrumbs-element')), 'ui-breadcrumbs');
 
     const rootElements = this.root.getElementsByClassName('ui-breadcrumbs-element');
     for (let i = 0; i < rootElements.length - 1; i++)
       rootElements[i].after(ui.iconFA('chevron-right'));
   }
+
 
   get onPathClick(): Observable<string[]> {
     const pathElements = this.root.getElementsByClassName('ui-breadcrumbs-text-element');
@@ -1781,7 +1782,7 @@ export class Breadcrumbs {
     return fromEvent<MouseEvent>(pathElements, 'click')
       .pipe(
         map((event) => {
-          const currentElement = (event.target as Element).innerHTML;
+          const currentElement = (event.target as HTMLElement).innerText;
           const currentPath = this.path.slice(0, this.path.indexOf(currentElement) + 1);
 
           return currentPath;
@@ -1801,27 +1802,20 @@ export class DropDown {
 
 
   constructor(label: string | Element, createElement: () => HTMLElement) {
-    this._element = ui.div();
-    this._dropDownElement = ui.div();
     this._isMouseOverElement = false;
-    this._label = label;
-
     this.isExpanded = false;
-    this.root = ui.div();
 
-    this._updateElement(createElement);
-    this._initEventListeners();
-  }
-
-
-  private _updateElement(createElement: () => HTMLElement) {
+    this._label = label;
     this._element = createElement();
 
     this._dropDownElement = ui.div(ui.div(this._element), 'ui-drop-down-content');
     this._dropDownElement.style.visibility = 'hidden';
 
     this.root = ui.div([this._label, this._dropDownElement], 'ui-drop-down-root');
+
+    this._initEventListeners();
   }
+
 
   private _initEventListeners() {
     this.root.addEventListener('mousedown', (e) => {
@@ -1877,17 +1871,22 @@ export class DropDown {
 }
 
 export class TypeAhead extends InputBase {
-  constructor(config: TypeAheadConfig) {
-    const inputElement = ui.stringInput('', '');
+  constructor(name: string, config: TypeAheadConfig) {
+    const inputElement = ui.stringInput(name, '');
     super(inputElement.dart);
 
     const typeAheadConfig: typeaheadConfig<Dictionary> = Object.assign(
       {input: <HTMLInputElement> this.input}, config);
 
     typeahead(typeAheadConfig);
+    this._changeStyles();
+  }
 
+  _changeStyles() {
     this.root.getElementsByClassName('tt-list')[0].className = 'ui-input-list';
+    this.root.getElementsByClassName('ui-input-list')[0].removeAttribute('style');
     this.root.getElementsByClassName('tt-input')[0].className = 'ui-input-editor';
+    this.root.getElementsByClassName('typeahead-standalone')[0].classList.add('ui-input-root');
   }
 }
 

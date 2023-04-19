@@ -5,7 +5,7 @@ import {getDescriptorsPy} from '../scripts-api';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import { _package } from '../package';
-import { copyIconStyles } from '../utils/ui-utils';
+import { addCopyIcon } from '../utils/ui-utils';
 
 const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
@@ -61,15 +61,13 @@ export function getDescriptorsSingle(smiles: string): DG.Widget {
         removeChildren(result);
         const map: { [_: string]: any } = {};
         for (const descriptor of selected)
-          map[descriptor] = table.col(descriptor).get(0);
-
+          map[descriptor] = table.col(descriptor).get(0); 
         result.appendChild(ui.tableFromMap(map));
       });
     });
   };
-  const copyIcon = ui.icons.copy(() => navigator.clipboard.writeText(result.innerText));
-  Object.assign(copyIcon.style, copyIconStyles);
-  widget.root.appendChild(copyIcon);
+
+  addCopyIcon(result, 'Descriptors');
   widget.root.appendChild(result);
   widget.root.appendChild(selectButton);
 

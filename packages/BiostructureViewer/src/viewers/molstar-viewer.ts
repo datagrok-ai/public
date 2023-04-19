@@ -2,13 +2,12 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-// import {Viewer as rcsbViewer, ViewerProps as rcsbViewerProps} from '@rcsb/rcsb-molstar/src/viewer';
+import $ from 'cash-dom';
+import wu from 'wu';
+
 import {Viewer as RcsbViewer, ViewerProps as RcsbViewerProps} from '@rcsb/rcsb-molstar/build/src/viewer';
 import {PROPS as pdbPROPS} from './../viewers/ngl-viewer';
 
-
-import $ from 'cash-dom';
-import wu from 'wu';
 
 //@ts-ignore
 import {Unsubscribable} from 'rxjs';
@@ -19,6 +18,7 @@ import {ModelUrlProvider} from '@rcsb/rcsb-molstar/build/src/viewer/types';
 import {_package} from '../package';
 import {PluginContext} from 'molstar/lib/mol-plugin/context';
 import {PluginLayoutControlsDisplay} from 'molstar/lib/mol-plugin/layout';
+import {BuiltInTrajectoryFormat, BuiltInTrajectoryFormats} from 'molstar/lib/mol-plugin-state/formats/trajectory';
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -34,25 +34,6 @@ import {PluginLayoutControlsDisplay} from 'molstar/lib/mol-plugin/layout';
     'geo-export': PluginSpec.Behavior(GeometryExport),
     'ma-quality-assessment': PluginSpec.Behavior(MAQualityAssessment),
 };*/
-
-const DefaultViewerOptions = {
-  // extensions: [],
-  layoutIsExpanded: false,
-  layoutShowControls: false,
-  // layoutControlsDisplay: 'outside',
-  // layoutShowRemoteState: false,
-  layoutShowSequence: false,
-  layoutShowLog: false,
-  // layoutShowLeftPanel: false,
-  // collapseLeftPanel: true,
-  // collapseRightPanel: true,
-  //
-  // viewportShowExpand: false,
-  // viewportShowControls: false,
-  //
-  // pdbProvider: 'rcsb',
-  // emdbProvider: 'rcsb',
-};
 
 const enum PROPS_CATS {
   DATA = 'Data',
@@ -100,6 +81,26 @@ export enum PluginLayoutControlsDisplayType {
   PORTRAIT = 'portrait',
   LANDSCAPE = 'landscape',
   REACTIVE = 'reactive'
+};
+
+const MolstarViewerDefaultOptions: Partial<RcsbViewerProps> = {
+  // extensions: [],
+  layoutIsExpanded: false,
+  layoutShowControls: false,
+  // layoutControlsDisplay: 'outside',
+  // layoutShowRemoteState: false,
+  layoutShowSequence: false,
+  layoutShowLog: false,
+  // layoutShowLeftPanel: false,
+  // collapseLeftPanel: true,
+  // collapseRightPanel: true,
+  //
+  // viewportShowExpand: false,
+  // viewportShowControls: false,
+  //
+  // pdbProvider: 'rcsb',
+  // emdbProvider: 'rcsb',
+  showWelcomeToast: false
 };
 
 const DefaultViewerProps: Partial<RcsbViewerProps> = {
@@ -543,7 +544,7 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
 export async function initViewer(viewName: string = 'Mol*'): Promise<RcsbViewer> {
   const view = grok.shell.newView(viewName);
   const viewerContainer = view.root;
-  const viewer = new RcsbViewer(viewerContainer, DefaultViewerOptions);
+  const viewer = new RcsbViewer(viewerContainer, MolstarViewerDefaultOptions);
   return viewer;
 }
 
@@ -563,13 +564,58 @@ export async function byId(pdbId: string) {
 /**
  * Creates an instance of Mol* viewer.
  *
- * @param {string} pdbData Data in PDB
+ * @param {string} data Data in PDB
  */
-export async function byData(pdbData: string, name: string = 'Mol*') {
+export async function byData(data: string, name: string = 'Mol*') {
   initViewer(name)
     .then(async (viewer: RcsbViewer) => {
-      await viewer.loadStructureFromData(pdbData, 'pdb', false);
+      // detecting format by data content
+      let format: BuiltInTrajectoryFormat = 'pdb';
+      let binary: boolean = false;
+      if (data.includes('mmcif_pdbx.dic')) {
+        format = 'mmcif';
+        binary = false;
+      }
+
+      await viewer.loadStructureFromData(data, format, binary);
     });
   //v.handleResize();
 }
 
+export async function viewMolstarUI(content: string, name?: string): Promise<void> {
+  await byData(content, name);
+}
+
+/** Creates view with Molstar viewer to preview Biostructure (PDB) */
+export function previewMolstarUI(file: DG.FileInfo): DG.View {
+  const view = DG.View.create();
+  const viewer = new RcsbViewer(view.root, MolstarViewerDefaultOptions);
+  const subs: Unsubscribable[] = [];
+  subs.push(ui.onSizeChanged(view.root).subscribe((value: any) => {
+    viewer.handleResize();
+  }));
+  subs.push(grok.events.onViewRemoved.subscribe((evtView) => {
+    if (evtView.id === view.id)
+      for (const sub of subs) sub.unsubscribe();
+  }));
+
+  function loadString(data: string) {
+    const binary: boolean = false;
+    viewer.loadStructureFromData(data, file.extension as BuiltInTrajectoryFormat, binary)
+      .then(() => {}); // Ignoring Promise returned
+  }
+
+  function loadBytes(bytes: any) {
+    const binary: boolean = false;
+    viewer.loadStructureFromData(bytes, file.extension as BuiltInTrajectoryFormat, binary)
+      .then(() => {}); // Ignoring Promise returned
+  }
+
+  // Handling binary data formats separately
+  if (['pdb', 'sdf', 'mmcif'].includes(file.extension))
+    file.readAsString().then(loadString);
+  else
+    file.readAsBytes().then(loadBytes);
+
+  return view;
+}

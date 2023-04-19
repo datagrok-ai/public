@@ -1,10 +1,14 @@
 {
   "name": "@datagrok-libraries/bio",
+  "author": {
+    "name": "Aleksandr Tanas",
+    "email": "atanas@datagrok.ai"
+  },
   "publishConfig": {
     "access": "public"
   },
   "friendlyName": "Datagrok bio library",
-  "version": "5.26.0",
+  "version": "5.27.0",
   "description": "",
   "dependencies": {
     "@datagrok-libraries/gridext": "^1.3.22",
@@ -30,7 +34,7 @@
     "link": "npm link",
     "link-api": "npm link datagrok-api",
     "link-utils": "npm link @datagrok-libraries/utils",
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/gridext",
     "build-bio": "tsc",
     "build": "tsc",
     "lint": "eslint \"./src/**/*.ts\"",

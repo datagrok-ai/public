@@ -10,22 +10,26 @@ import JuniorSoftwareEnginner from './junior-software-engineer.mdx';
 import SeniorSoftwareEnginner from './senior-software-engineer.mdx';
 import SeniorScientificBusinessAnalyst from './senior-scientific-business-analyst.mdx';
 import FrontEndFullStackDeveloper from './front-end-full-stack-developer.mdx';
+import MiddleDevOps from './middle-devops.mdx';
+import EngineeringManager from './engineering-manager.mdx';
 
 export const meta = {
     title: 'Open roles',
-    description: 'Your next big career move. Join us and unlock your potential.'
+    description: 'Your next big career move. Join us and unlock your potential.',
+    video: {
+        link: 'https://www.youtube.com/embed/AxiY2xhudwE',
+        description: 'Check out the video from our CEO, Andrew Skalkin, to learn about the company, product, and what it’s like to work here'
+    }
 }
 
 <LayoutHeader meta={meta}/>
 
-<div className="row">
+<div className="row py-5">
     <LeadSoftwareEngineer/>
-    <TechnicalProjectManager/>
-    <ProductOnboardingManager/>
     <ScientificApplicationDeveloper/>
     <MiddleFullStackEngineer/>
-    <JuniorSoftwareEnginner/>
     <SeniorSoftwareEnginner/>
     <SeniorScientificBusinessAnalyst/>
-    <FrontEndFullStackDeveloper/>
+    <MiddleDevOps/>
+    <EngineeringManager/>
 </div>

@@ -66,13 +66,10 @@ export function viewersDialog(currentView: DG.TableView, currentTable: DataFrame
     search.input.setAttribute('tabindex', '-1');
     search.input.setAttribute('placeholder', 'Search by name, keywords, description, tag, or package');
 
-    search.input.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            e.preventDefault();
-            search.value = '';
-            search.fireChanged();
-        }
-    });
+    search.input.onkeyup = (event) => {
+        if (event.key === 'Escape')
+          search.fireChanged();
+    };
 
     const searchIcon = ui.iconFA('search');
     searchIcon.classList.add('vg-search-icon');

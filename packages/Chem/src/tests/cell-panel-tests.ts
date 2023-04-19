@@ -15,9 +15,10 @@ import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getDescriptorsSingle} from '../descriptors/descriptors-calculation';
 import {substructureFilter} from '../package';
-import {moleculeOverviewWidget} from '../widgets/molecule-overview';
 import * as CONST from './const';
 import { getRdKitModule } from '../utils/chem-common-rdkit';
+import { structure2dWidget } from '../widgets/structure2d';
+import { structure3dWidget } from '../widgets/structure3d';
 
 category('cell panel', async () => {
   const molStr = 'CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OCCO';
@@ -74,9 +75,16 @@ category('cell panel', async () => {
   });
 
   //TODO: Check if image is returned; Visual test required
-  test('structure-widget', async () => {
+  test('structure2d-widget', async () => {
     for (const mol of molFormats) {
-      moleculeOverviewWidget(mol);
+      structure2dWidget(mol);
+    }
+  });
+
+  //TODO: Check if image is returned; Visual test required
+  test('structure3d-widget', async () => {
+    for (const mol of molFormats) {
+      structure3dWidget(mol);
     }
   });
 

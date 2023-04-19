@@ -4,101 +4,94 @@ import * as DG from 'datagrok-api/dg';
 
 import '../../css/usage_analysis.css';
 import {UaToolbox} from '../ua-toolbox';
-import {UaView} from './ua';
+import {Filter, UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {UaDataFrameQueryViewer} from '../viewers/ua-data-frame-query-viewer';
 import {TopPackagesViewer} from '../drilldown_viewers/events/top-packages-viewer';
+import {UaQueryViewer} from "../viewers/abstract/ua-query-viewer";
 
 export class OverviewView extends UaView {
-  static viewName = 'Overview';
-  topPackagesViewer: TopPackagesViewer | null = null;
 
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
+    this.name = 'Overview';
   }
 
   async initViewers() : Promise<void> {
-    const uniqueUsersViewer = new UaFilterableQueryViewer(
-      this.uaToolbox.filterStream,
-      'Unique Users',
-      'UniqueUsers',
-      (t: DG.DataFrame) => {
-        const viewer = DG.Viewer.lineChart(t, UaFilterableQueryViewer.splineStyle).root;
-        viewer.style.maxHeight = '150px';
-        return viewer;
-      },
-    );
-    this.viewers.push(uniqueUsersViewer);
-
-    // let eventsViewer = new UaFilterableQueryViewer(
-    //     this.uaToolbox.filterStream,
-    //     'Events',
-    //     'Events1',
-    //     (t: DG.DataFrame) => {
-    //       let viewer = DG.Viewer.lineChart(t, UaFilterableQueryViewer.splineStyle).root;
-    //       viewer.style.maxHeight = '150px';
-    //       return viewer;
-    //     }
-    // );
-    // this.viewers.push(eventsViewer);
-
-    // let errorsViewer = new UaFilterableQueryViewer(
-    //     this.uaToolbox.filterStream,
-    //     'Errors',
-    //     'Errors1',
-    //     (t: DG.DataFrame) => {
-    //       let viewer = DG.Viewer.lineChart(t, UaFilterableQueryViewer.splineStyle).root;
-    //       viewer.style.maxHeight = '150px';
-    //       return viewer;
-    //     }
-    // );
-    // this.viewers.push(errorsViewer);
-
-    const uniqueUsersListViewer = new UaFilterableQueryViewer(
-      this.uaToolbox.filterStream,
-      'Users',
-      'UniqueUsersList',
-      (t: DG.DataFrame) => {
-        const ids = Array.from(t.getCol('id').values());
-        return ui.wait(async () => ui.list(await grok.dapi.getEntities(ids)));
-      },
-      (host: HTMLElement) => {
-        host.style.overflow='auto';
-        host.style.height='94.5%';
-      },
-    );
-    this.viewers.push(uniqueUsersListViewer);
-
-    const totalUsersViewer = new UaDataFrameQueryViewer(
-      'Total Users',
-      'TotalUsersAndGroups',
-      (t: DG.DataFrame) => {
-        const list = [
-          ['Total users', t.get('user_count', 0)],
-          ['Total groups', t.get('group_count', 0)],
-        ];
-
-        return ui.div([ui.table(list, (item, idx) =>
-          [`${item[0]}:`, item[1]],
-        )]);
-      },
-    );
-    this.viewers.push(totalUsersViewer);
-
-    this.topPackagesViewer = new TopPackagesViewer('Packages', 'TopPackages', this.uaToolbox.filterStream);
-    this.viewers.push(this.topPackagesViewer);
 
     this.root.className = 'grok-view ui-box';
+    const uniqueUsersViewer = new UaFilterableQueryViewer(
+      this.uaToolbox.filterStream,
+      'UniqueUsers',
+      'UniqueUsersOverview',
+      (t: DG.DataFrame) => {
+        return DG.Viewer.lineChart(t, {
+          'overviewColumnName': 'date',
+          'xColumnName': 'date',
+          'showXSelector': false,
+          'yColumnNames': ['count'],
+          'showYSelectors': false,
+          'showAggrSelectors': false,
+          'showSplitSelector': false,
+          'showMarkers': 'Never',
+          'chartTypes': ['Line Chart'],
+          'title': 'Unique users',
+        });
+      }, null, null);
 
+    const packageStatsViewer = new UaFilterableQueryViewer(
+      this.uaToolbox.filterStream,
+      'PackageStats',
+      'PackagesUsage',
+      (t: DG.DataFrame) => {
+        return DG.Viewer.barChart(t, {
+          'valueColumnName': 'user',
+          'valueAggrType': 'unique',
+          'barSortType': 'by value',
+          'barSortOrder': 'desc',
+          'showValueAxis': false,
+          'showValueSelector': false,
+          'splitColumnName': 'package',
+          'showCategoryValues': false,
+          'showCategorySelector': false,
+          'stackColumnName': '',
+          'showStackSelector': false,
+          'title': 'Packages activity',
+        });
+      }, null, null);
+
+    const userStatsViewer = new UaFilterableQueryViewer(
+      this.uaToolbox.filterStream,
+      'UserStats',
+      'UniqueUsersStats',
+      (t: DG.DataFrame) => {
+        return DG.Viewer.barChart(t, {
+          'valueColumnName': 'count',
+          'valueAggrType': 'sum',
+          'barSortType': 'by value',
+          'barSortOrder': 'desc',
+          'showValueAxis': false,
+          'showValueSelector': false,
+          'splitColumnName': 'name',
+          'showCategoryValues': false,
+          'showCategorySelector': false,
+          'showStackSelector': false,
+          'title': 'Users activity',
+          'legendVisibility': 'Never',
+        });
+      }, null, null);
+
+
+    this.viewers.push(uniqueUsersViewer);
+    this.viewers.push(packageStatsViewer);
+    this.viewers.push(userStatsViewer);
+    //this.root.append(uniqueUsersViewer.root);
     this.root.append(ui.splitH([
       ui.splitV([
-        ui.panel([ui.h1('Groups')]),
-        ui.panel([uniqueUsersListViewer.root]),
-      ], {style: {maxWidth: '300px'}}),
-      ui.panel([
-        ui.block([uniqueUsersViewer.root]),
-        ui.block([this.topPackagesViewer.root]),
+        ui.box(uniqueUsersViewer.root, {style: {maxHeight: '250px'}}),
+        ui.splitH([packageStatsViewer.root, userStatsViewer.root]),
       ]),
+
     ]));
 
     /*
@@ -114,8 +107,5 @@ export class OverviewView extends UaView {
     */
   }
 
-  handleUrlParams(params: Map<string, string>) : void {
-    if (params.has('package'))
-      this.topPackagesViewer?.categorySelected(params.get('package')!);
-  }
+
 }

@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {FitGridCellHandler} from './fit/fit-grid-cell-handler';
 import {FitChartCellRenderer} from './fit/fit-renderer';
 import {MultiCurveViewer} from './fit/multi-curve-viewer';
-import {createDemoDataFrame, curveFitDemo} from './fit/fit-demo';
+import {createDemoDataFrame, curveDemo} from './fit/fit-demo';
 
 
 export const _package = new DG.Package();
@@ -33,6 +33,13 @@ export function _FitViewer() {
 //name: Curves Demo
 export function curveFitDemoApp() {
   grok.shell.addTableView(createDemoDataFrame(30, 5, 2));
+}
+
+//name: Curve fitting
+//description: Curve fitting is the process of constructing a curve, or mathematical function, that has the best fit to a series of data points
+//meta.demoPath: Curves | Curve fitting
+export async function curveFitDemo() {
+  await curveDemo();
 }
 
 //tags: autostart

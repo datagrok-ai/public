@@ -18,15 +18,17 @@ import { _convertMolNotation } from '../utils/convert-notation-utils';
 import { getRdKitModule } from '../package';
 
 const FILTER_SYNC_EVENT = 'chem-substructure-filter';
+const SKETCHER_TYPE_CHANGED = 'chem-sketcher-type-changed';
 let id = 0;
 
 interface ISubstructureFilterState {
-  bitset: DG.BitSet;
-  molblock: string;
+  bitset?: DG.BitSet;
+  molblock?: string;
   colName: string;
   filterId: number;
   tableName: string
 }
+
 export class SubstructureFilter extends DG.Filter {
   // @ts-ignore
   sketcher: DG.chem.Sketcher = new DG.chem.Sketcher();
@@ -70,9 +72,18 @@ export class SubstructureFilter extends DG.Filter {
       if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
         if (this.sketcher.sketcher?.isInitialized) //setting syncEvent to true only if base sketcher is initialized. If base sketcher is initialized, it will fire onChange event
           this.syncEvent = true;
-        this.bitset = state.bitset;
-        this.sketcher.setMolFile(state.molblock);
+        this.bitset = state.bitset!;
+        this.sketcher.setMolFile(state.molblock!);
         this.updateExternalSketcher();
+      }
+    }));
+    this.subs.push(grok.events.onCustomEvent(SKETCHER_TYPE_CHANGED).subscribe((state: ISubstructureFilterState) => {
+      if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
+        if (this.sketcher.sketcher?.isInitialized) {
+          if (DG.chem.currentSketcherType !== this.sketcher.sketcher!.name) {
+            this.sketcher.sketcherType = DG.chem.currentSketcherType;
+          }
+        }
       }
     }))
   }
@@ -163,6 +174,8 @@ export class SubstructureFilter extends DG.Filter {
    * that would simply apply the bitset synchronously.
    */
   async _onSketchChanged(): Promise<void> {
+    grok.events.fireCustomEvent(SKETCHER_TYPE_CHANGED, {colName: this.columnName,
+      filterId: this.filterId, tableName: this.tableName});
     if (!this.isFiltering) {
       this.bitset = !this.active ? await this.getFilterBitset() : null;
       if (this.column?.temp['chem-scaffold-filter'])

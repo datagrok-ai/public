@@ -18,3 +18,5 @@ export const elementsTable: Array<string> = [
 export enum MOL_FORMAT {
   SMILES = 'smiles',
 };
+
+export const EMPTY_MOLECULE_MESSAGE = 'Molecule is empty';

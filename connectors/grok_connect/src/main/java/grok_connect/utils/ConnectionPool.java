@@ -1,27 +1,33 @@
 package grok_connect.utils;
 
-import com.zaxxer.hikari.HikariConfig;
-
+import com.zaxxer.hikari.HikariDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class ConnectionPool {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionPool.class);
     private static volatile ConnectionPool instance;
+    private final Map<String, HikariDataSourceInformation> connectionPool;
     private Timer timer;
-    TimerTask timerTask;
+    private TimerTask timerTask;
 
-    public static ConnectionPool getInstance() {
-        ConnectionPool result = instance;
-        if (result != null) {
-            return result;
+    private ConnectionPool() {
+        connectionPool = Collections.synchronizedMap(new HashMap<>());
+    }
+
+    public static synchronized ConnectionPool getInstance() {
+        LOGGER.debug("getInstance was called");
+        if (instance == null) {
+            instance = new ConnectionPool();
         }
-        synchronized(ConnectionPool.class) {
-            if (instance == null) {
-                instance = new ConnectionPool();
-            }
-            return instance;
-        }
+        return instance;
     }
 
     public void setTimer() {
@@ -35,7 +41,7 @@ public class ConnectionPool {
         timerTask = new TimerTask() {
             @Override
             public void run() {
-                if (SettingsManager.getInstance().settings.debug) {
+                if (SettingsManager.getInstance().getSettings().debug) {
                     if (connectionPool.size() > 0)
                         System.out.println("Connection pool log:");
                     connectionPool.forEach((k, v) -> {
@@ -48,27 +54,37 @@ public class ConnectionPool {
         };
 
         timer.scheduleAtFixedRate(timerTask,
-                SettingsManager.getInstance().settings.connectionPoolTimerRate,
-                SettingsManager.getInstance().settings.connectionPoolTimerRate);
+                SettingsManager.getInstance().getSettings().connectionPoolTimerRate,
+                SettingsManager.getInstance().getSettings().connectionPoolTimerRate);
     }
 
-    public Map<String, HikariDataSourceInformation> connectionPool = Collections.synchronizedMap(new HashMap<>());
-
     public Connection getConnection(String url, java.util.Properties properties, String driverClassName) throws GrokConnectException, SQLException {
+        LOGGER.debug("getConnection was called for driver {} with url {}", driverClassName, url);
         if (url == null || properties == null || driverClassName == null)
             throw new GrokConnectException("Connection parameters are null");
-
         String key = url + properties + driverClassName;
         synchronized(this) {
-            if (!connectionPool.containsKey(key))
+            if (!connectionPool.containsKey(key)) {
+                LOGGER.debug("Creating new pool");
                 connectionPool.put(key, new HikariDataSourceInformation(url, properties, driverClassName));
-            return connectionPool.get(key).hikariDataSource.getConnection();
+            }
+            HikariDataSource hikariDataSource = connectionPool.get(key).hikariDataSource;
+            LOGGER.debug("Pool {} active connections count: {}", hikariDataSource.getPoolName(),
+                    hikariDataSource.getHikariPoolMXBean().getActiveConnections());
+            LOGGER.debug("Pool {} idle connections count: {}", hikariDataSource.getPoolName(),
+                    hikariDataSource.getHikariPoolMXBean().getIdleConnections());
+            LOGGER.debug("Pool {} total connections count: {}", hikariDataSource.getPoolName(),
+                    hikariDataSource.getHikariPoolMXBean().getTotalConnections());
+            LOGGER.debug("Pool {} threads awaiting connection count: {}", hikariDataSource.getPoolName(),
+                    hikariDataSource.getHikariPoolMXBean().getThreadsAwaitingConnection());
+            return hikariDataSource.getConnection();
         }
     }
 
     public Map<String, Connection> nativeConnectionsConnectionPool = Collections.synchronizedMap(new HashMap<>());
 
     Connection getNativeConnection(String url, java.util.Properties info, String driverClassName) {
+        LOGGER.debug("getNativeConnection was called for driver {} with url {}", driverClassName, url);
         String key = url + info + driverClassName;
         if (url != null && info != null && driverClassName != null && nativeConnectionsConnectionPool.containsKey(key)) {
             Connection conn = nativeConnectionsConnectionPool.get(key);
@@ -76,8 +92,7 @@ public class ConnectionPool {
                 if (!conn.isClosed())
                     return nativeConnectionsConnectionPool.get(key);
             } catch (SQLException throwables) {
-                //TODO: log in query
-                throwables.printStackTrace(System.out);
+                LOGGER.warn("An exception was thrown", throwables);
             }
         }
         return null;

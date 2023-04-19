@@ -57,8 +57,13 @@ export class UaToolbox {
         groupsInput.field,
         packagesInput.field,
       ]);
-      const applyB = ui.bigButton('Apply', () => this.applyFilter());
-      applyB.style.marginLeft = 'auto';
+      const applyB = ui.bigButton('Apply', () => {
+        applyB.disabled = true;
+        this.applyFilter();
+      });
+      applyB.classList.add('ua-apply-button');
+      applyB.disabled = true;
+      dateInput.onChanged(() => applyB.disabled = false);
       $(form).append(applyB);
       this.dateFromDD.readOnly = true;
       this.dateToDD.readOnly = true;
@@ -72,14 +77,13 @@ export class UaToolbox {
       ]);
       this.formDD.style.display = 'none';
       const closeButton = ui.button('', () => this.exitDrilldown(), 'Close drilldown filter');
-      closeButton.classList.add('ua-small-button', 'fal', 'fa-times');
-      const backButton = ui.button('', () => {
+      closeButton.classList.add('ua-close-button', 'fal', 'fa-times');
+      const backButton = ui.button('🠔 back to packages', () => {
         ViewHandler.changeTab('Packages');
         this.exitDrilldown();
       }, 'Back to Packages tab');
-      backButton.classList.add('ua-small-button', 'far', 'fa-chevron-square-left');
-      backButton.style.marginRight = '10px';
-      this.formDD.prepend(backButton);
+      backButton.classList.add('ua-back-button');
+      this.formDD.append(backButton);
       this.formDD.prepend(closeButton);
       this.formDD.classList.add('ua-drilldown-form');
       return form;

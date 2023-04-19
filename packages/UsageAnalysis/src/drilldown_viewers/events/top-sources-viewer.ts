@@ -23,7 +23,7 @@ export class TopSourcesViewer extends UaFilterableQueryViewer {
             [new UaDataFrameQueryViewer(
               'Functions',
               'TopFunctionsOfSource',
-              (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
+              (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions),
                   null as any,
                   {name: args.args.categories[0]},
                   filterStream.getValue(),
@@ -32,7 +32,7 @@ export class TopSourcesViewer extends UaFilterableQueryViewer {
             new UaDataFrameQueryViewer(
               'Users',
               'TopUsersOfSource',
-              (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
+              (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions),
                   null as any,
                   {name: args.args.categories[0]},
                   filterStream.getValue(),
@@ -44,7 +44,7 @@ export class TopSourcesViewer extends UaFilterableQueryViewer {
 
           grok.shell.o = pp.getRoot();
         });
-        return viewer.root;
+        return viewer;
       },
     );
   }

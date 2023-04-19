@@ -6,7 +6,7 @@
     "email": "mshvyrlo@datagrok.ai"
   },
   "fullName": "Enamine Store",
-  "description": "Integration with Enamine. Allows to search for molecules available in Enamine, and provides contextual information for the current molecule. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/EnamineStore/README.md)",
+  "description": "Integration with Enamine. Allows to search for molecules available in Enamine, and provides contextual information for the current molecule.",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

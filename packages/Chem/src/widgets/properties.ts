@@ -8,7 +8,7 @@ import $ from 'cash-dom';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import { MOL_FORMAT } from '../constants';
-import { copyIconStyles } from '../utils/ui-utils';
+import { addCopyIcon } from '../utils/ui-utils';
 
 export function getMoleculeCharge(mol: OCL.Molecule) {
   const atomsNumber = mol.getAllAtoms();
@@ -36,18 +36,16 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
   function prop(name: string, type: DG.ColumnType, extract: (mol: OCL.Molecule) => any) {
     var addColumnIcon = ui.iconFA('plus', () => {
       let molCol: DG.Column<string> = semValue.cell.column;
-      semValue.cell.dataFrame.columns
-        .addNew(semValue.cell.dataFrame.columns.getUnusedName(name), type)
-        .init((i) => {
-          try {
-            if (molCol.isNone(i)) return null;
-            const mol = oclMol(molCol.get(i)!);
-            return extract(mol);
-          }
-          catch (_) {
-            return null;
-          }
-        });
+      semValue.cell.dataFrame.columns.addNewVirtual(semValue.cell.dataFrame.columns.getUnusedName(name), (idx: number) => {
+        try {
+          if (molCol.isNone(idx)) return null;
+          const mol = oclMol(molCol.get(idx)!);
+          return extract(mol);
+        }
+        catch (_) {
+          return null;
+        }
+      });
     }, `Calculate ${name} for the whole table`);
 
     ui.tools.setHoverVisibility(host, [addColumnIcon]);
@@ -74,10 +72,13 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
     'Molecule charge': prop('Molecule charge', DG.TYPE.INT, (m) => getMoleculeCharge(m)),
   };
 
-  const copyIcon = ui.icons.copy(() => navigator.clipboard.writeText(host.innerText));
-  Object.assign(copyIcon.style, copyIconStyles);
-  host.appendChild(copyIcon);
   host.appendChild(ui.tableFromMap(map));
-  
+
+  let tableString = '';
+  for (const [key, value] of Object.entries(map))
+    tableString += `${key}\t${value.innerText}\n`;
+
+  addCopyIcon(tableString, 'Properties');
+
   return new DG.Widget(host);
 }
