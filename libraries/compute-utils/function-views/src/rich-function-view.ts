@@ -445,7 +445,6 @@ export class RichFunctionView extends FunctionView {
           if (prop.options['units']) t.addPostfix(prop.options['units']);
 
           this.syncFuncCallReplaced(t, val);
-          this.syncInputOnChanged(t, val)
           this.syncOnInput(t, val);
           this.syncValOnChanged(t, val);
 
@@ -498,21 +497,16 @@ export class RichFunctionView extends FunctionView {
     this.subs.push(sub);
   }
 
-  private syncInputOnChanged(t: DG.InputBase<any>, val: DG.FuncCallParam) {
-    t.onChanged(() => {
-      // Resolving case of propertyType = DATAFRAME
-      if (!!t.property) return;
-
-      this.funcCall!.inputs[val.name] = t.value;
-    });
-  }
-
   private syncValOnChanged(t: DG.InputBase<any>, val: DG.FuncCallParam) {
     const sub = val.onChanged.subscribe(() => {
       const newValue = this.funcCall!.inputs[val.name];
       if (val.property.propertyType === DG.TYPE.DATA_FRAME) {
         this.dfInputRecreate(t, val, newValue)
-      } else {
+        // there is no notify for DG.FuncCallParam, so we need to
+        // check if the value is not the same for floats, otherwise we
+        // will overwrite a user input with a lower precicsion decimal
+        // representation
+      } else if (((typeof newValue  === 'number') && Math.abs(t.value - newValue) > 0.0001) || typeof newValue  !== 'number') {
         t.notify = false;
         t.value = newValue;
         t.notify = true;
