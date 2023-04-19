@@ -12,42 +12,47 @@ between the entities.
 
 ![Chord viewer](chord-viewer.png)
 
-## Create a Chord viewer
+## Creating a Chord viewer
 
-To create a **Chord** viewer, open the main menu and select
-the option "Add -> JavaScript Viewers -> Chord"
+To create a **Chord** viewer, navigate to the **Main Menu**
+and select **Add > Javascript Viewers > Chord**.
 
 When you add a chord viewer in Datagrok, the platform selects three columns:
 
 * A categorical "From" column
 * A categorical "To" column
 * A numeric "Chord length" column representing the flow strength between source
-and target categories
+and target categories.
+
+Datagrok uses several heuristic rules to select the most appropriate columns.
+Both "From" and "To" columns should contain same categorical values.
+Additionally, Datagrok can utilize column names
+such as "source," "target," and "value" as hints to identify appropriate columns.
 
 ## Configuring a Chord viewer
 
-You can set the source, target and "Chord length" columns
-and customize a visualization options.
+You can set the "Source," "Target," and "Chord length" columns,
+and customize visualization options.
 To do that, click the **Gear** icon on top of the viewer and use the **Data**
-and **Misc** info panels
-on the **Context Pane** to manage the viewer’s settings.
+and **Misc** info pane
+on the **Context Panel** to manage the viewer’s settings.
 
 For example, you can:
 
-* Change the aggregation type of connections via **Agg type**: just count of
-connections or sum of the "Chord length" values.
+* Select the aggregation type for connections via **Agg type** control.
+The possible modes are to count the connections or to sum the "Chord length" values.
 * Set the connection color mode by source or by target via **Color by** control.
 * Change the sorting order of the categories via **Sort by** control.
 * Set the direction of categories via **Direction** option.
-* Show or hide categories without connections by switching **Include nulls** checkbox.
+* Show or hide categories without connections by selecting **Include nulls** checkbox.
 
 ## Interaction with other viewers
 
-A **Chord** viewer responds to data filters but has limited interaction in rows
-selection.
-Clicking by connection or category on the viewer selects the corresponding row(s)
-in the table. However, selecting the rows in table or on the other viewers
-has no effect on the **Chord** viewer representation
+The **chord** viewer responds to data filters but row selection is limited.
+Clicking a connection or category in the viewer selects
+the corresponding rows in the grid.
+However, selecting rows in the grid or other viewers
+doesn't impact the representation of the chord viewer.
 
 ## Viewer controls
 
