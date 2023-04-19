@@ -23,7 +23,8 @@ import {
   Breadcrumbs,
   DropDown,
   TypeAhead,
-  TypeAheadConfig
+  TypeAheadConfig,
+  TagsInput
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -1377,6 +1378,10 @@ export function dropDown(label: string | Element, createElement: () => HTMLEleme
 
 export function typeAhead(name: string, config: TypeAheadConfig): TypeAhead {
   return new TypeAhead(name, config);
+}
+
+export function tagsInput(name: string, tags: string[], showBtn: boolean) {
+  return new TagsInput(name, tags, showBtn);
 }
 
 export let icons = {
