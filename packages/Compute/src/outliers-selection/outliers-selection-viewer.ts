@@ -8,7 +8,6 @@ export class OutliersSelectionViewer extends DG.JsViewer {
   }
 
   onFrameAttached(dataFrame: DG.DataFrame): void {
-    this.dataFrame = dataFrame;
     this.render();
   }
 
