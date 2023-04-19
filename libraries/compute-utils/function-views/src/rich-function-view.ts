@@ -445,7 +445,6 @@ export class RichFunctionView extends FunctionView {
           if (prop.options['units']) t.addPostfix(prop.options['units']);
 
           this.syncFuncCallReplaced(t, val);
-          this.syncInputOnChanged(t, val)
           this.syncOnInput(t, val);
           this.syncValOnChanged(t, val);
 
@@ -498,24 +497,11 @@ export class RichFunctionView extends FunctionView {
     this.subs.push(sub);
   }
 
-  private syncInputOnChanged(t: DG.InputBase<any>, val: DG.FuncCallParam) {
-    t.onChanged(() => {
-      // Resolving case of propertyType = DATAFRAME
-      if (!!t.property) return;
-
-      this.funcCall!.inputs[val.name] = t.value;
-    });
-  }
-
   private syncValOnChanged(t: DG.InputBase<any>, val: DG.FuncCallParam) {
     const sub = val.onChanged.subscribe(() => {
-      const newValue = this.funcCall!.inputs[val.name];
       if (val.property.propertyType === DG.TYPE.DATA_FRAME) {
+        const newValue = this.funcCall!.inputs[val.name];
         this.dfInputRecreate(t, val, newValue)
-      } else {
-        t.notify = false;
-        t.value = newValue;
-        t.notify = true;
       }
       this.checkDisability.next();
     });
