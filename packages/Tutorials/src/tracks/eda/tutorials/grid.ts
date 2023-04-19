@@ -110,10 +110,26 @@ export class GridTutorial extends Tutorial {
       this.t!.rowCount === (rowCount - noneSeverityRowCount) && !severityColumn.categories.includes('None'))),
       null, 'In the context panel on the right, you can find the list of actions for selected rows. One of ' +
       'them is "Delete Rows". Pick this option to refine your dataset.');
-    // Selection of columns
-    // Add and remove columns
-    this.title('Sorting');
-    // Sort
+
+    const heightGridCol = grid.col('height')!;
+    const weightGridCol = grid.col('weight')!;
+    await this.action('Select "HEIGHT" and "WEIGHT" columns', this.t!.onColumnSelectionChanged.pipe(filter(() =>
+      heightGridCol.selected && weightGridCol.selected)), null, 'You can do this by holding <b>Shift</b> and clicking ' +
+      'the column headers. <b>Ctrl</b> will also work in this case. The difference is that holding <b>Shift</b> ' +
+      'always adds to selection, whereas <b>Ctrl</b> toggles the state (so you can both select and deselect with it).');
+
+    await this.action('Clear the selection', this.t!.onColumnSelectionChanged.pipe(filter(() => !heightGridCol.selected &&
+      !weightGridCol.selected)), null, 'Either hit <b>Esc</b> or hold <b>Ctrl+Shift</b> while clicking the column headers.');
+
+    this.title('Sorting and reordering');
+
+    await this.action('Sort subjects by AGE in the descending order', grid.onRowsSorted.pipe(filter(() =>
+      grid.sortByColumns.length === 1 && grid.sortByColumns[0].name === 'AGE' && grid.sortTypes[0] === false)), null,
+      'Double-click the column header once. To change the order to ascending, double-click again. Repeating it one ' +
+      'more time will remove the column sorting. You can also sort rows from the column context menu.');
+
+    await this.action('Reset sorting in the grid', grid.onRowsSorted.pipe(filter(() => grid.sortByColumns.length === 0)));
+
     // Resize/reorder
     this.title('Formatting');
     // Formatting of dates and numbers
