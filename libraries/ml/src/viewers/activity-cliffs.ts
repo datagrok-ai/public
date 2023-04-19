@@ -4,8 +4,20 @@ import * as ui from 'datagrok-api/ui';
 import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 import {getSimilarityFromDistance} from '../distance-metrics-methods';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
-import { Subject } from 'rxjs';
+import {Subject} from 'rxjs';
 import '../../css/styles.css';
+
+export let activityCliffsIdx = 0;
+
+export const CLIFFS_DF_NAME = 'cliffsDf';
+
+export const enum TAGS {
+  activityCliffs = '.activityCliffs',
+}
+
+export const enum TEMPS{
+  cliffsDfGrid = '.cliffsDfGrid',
+}
 
 export interface ILine {
   id: number;
@@ -74,8 +86,9 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   tooltipFunc: (params: ITooltipAndPanelParams) => HTMLElement,
   propertyPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement,
   linesGridFunc?: (df: DG.DataFrame, pairColNames: string[]) => DG.Grid,
-  seqSpaceOptions?: any) : Promise<DG.Viewer> {
+  seqSpaceOptions?: any, cliffsDockRatio?: number) : Promise<DG.Viewer> {
 
+  activityCliffsIdx++;
   const similarityLimit = similarity / 100;
   const dimensionalityReduceCol = encodedCol ?? seqCol;
   let zoom = false;
@@ -131,11 +144,12 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   const linesRes = createLines(cliffsMetrics, seqCol, activities, semType, tags);
 
   const linesDfGrid = linesGridFunc ?
-  linesGridFunc(linesRes.linesDf, LINES_DF_MOL_COLS_NAMES).sort([LINES_DF_SALI_COL_NAME], [false]) :
-  linesRes.linesDf.plot.grid().sort([LINES_DF_SALI_COL_NAME], [false]);
+    linesGridFunc(linesRes.linesDf, LINES_DF_MOL_COLS_NAMES).sort([LINES_DF_SALI_COL_NAME], [false]) :
+    linesRes.linesDf.plot.grid().sort([LINES_DF_SALI_COL_NAME], [false]);
+  df.temp[TEMPS.cliffsDfGrid] = linesDfGrid;
 
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
-    view.dockManager.dock(linesDfGrid.root, 'down', null, 'Activity cliffs', 0.2);
+    view.dockManager.dock(linesDfGrid, 'down', null, 'Activity cliffs', cliffsDockRatio ?? 0.2);
   });
   listCliffsLink.classList.add('scatter_plot_link', 'cliffs_grid');
   sp.root.append(listCliffsLink);
@@ -478,6 +492,7 @@ function createLines(params: IActivityCliffsMetrics, seq: DG.Column, activities:
   linesDf.columns.addNewInt(LINES_DF_LINE_IND_COL_NAME).init((i: number) => i);
   linesDf.columns.addNewFloat(LINES_DF_SALI_COL_NAME).init((i: number) => params.saliVals[i]);
   linesDf.columns.addNewFloat(LINES_DF_SIM_COL_NAME).init((i: number) => params.simVals[i]);
+  linesDf.name = `${CLIFFS_DF_NAME}${activityCliffsIdx}`;
   return {lines, linesDf};
 }
 

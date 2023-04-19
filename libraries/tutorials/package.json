@@ -1,5 +1,9 @@
 {
   "name": "@datagrok-libraries/tutorials",
+  "author": {
+    "name": "Diana Onufriienko",
+    "email": "donufriienko@datagrok.ai"
+  },
   "publishConfig": {
     "access": "public"
   },
@@ -8,7 +12,7 @@
   "description": "Helpers for creating tutorials",
   "dependencies": {
     "cash-dom": "^8.1.1",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.14.0",
     "rxjs": "6.6.7"
   },
   "devDependencies": {

@@ -14,7 +14,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import serialization.DataFrame;
 
-@Disabled("Until test instance of Neptune will be available")
+@Disabled("Until test instance of PI will be available")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PIDataProviderTest {
     private static final Provider type = Provider.PI;
@@ -42,9 +42,9 @@ class PIDataProviderTest {
         connection = new DataConnection();
         connection.credentials = credentials;
         connection.dataSource = provider.descriptor.type;
-        connection.parameters.put(DbCredentials.SERVER, type.getProperties().get("server"));
-        connection.parameters.put(DbCredentials.ACCESS_SERVER, type.getProperties().get("accessServer"));
-        connection.parameters.put("initialCatalog", "piarchive");
+        connection.parameters.put(DbCredentials.SERVER, type.getProperties().get(DbCredentials.SERVER));
+        connection.parameters.put(DbCredentials.ACCESS_SERVER, type.getProperties().get(DbCredentials.ACCESS_SERVER));
+        connection.parameters.put(DbCredentials.INITIAL_CATALOG, type.getProperties().get(DbCredentials.INITIAL_CATALOG));
     }
 
     @DisplayName("Tests of testConnection(DataConnection conn)")

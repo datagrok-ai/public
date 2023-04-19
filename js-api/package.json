@@ -1,6 +1,6 @@
 {
   "name": "datagrok-api",
-  "version": "1.13.10",
+  "version": "1.14.0",
   "description": "",
   "dependencies": {
     "@datagrok-libraries/chem-meta": "^1.0.7",
@@ -28,9 +28,7 @@
     "tui-jsdoc-template": "^1.2.2",
     "typedoc": "0.21.x",
     "webpack": "^5.64.1",
-    "webpack-cli": "^4.6.0",
-    "babel-loader": "^9.1.2",
-    "@babel/preset-env": "^7.21.4"
+    "webpack-cli": "^4.6.0"
   },
   "scripts": {
     "link": "npm link",

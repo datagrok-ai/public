@@ -44,7 +44,6 @@ const UnitsHandler = {
 const isUrlRe = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/i;
 
 class BioPackageDetectors extends DG.Package {
-
   /** Parts of the column name required in the column's name under the detector. It must be in lowercase. */
   likelyColNamePartList = ['seq', 'msa', 'dna', 'rna', 'fasta', 'helm', 'sense', 'protein'];
 
@@ -166,7 +165,7 @@ class BioPackageDetectors extends DG.Package {
       if (statsAsChars.sameLength) {
         const stats = this.getStats(categoriesSample, seqMinLength, splitter);
         const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, '-', colNameLikely);
-        if (alphabet === ALPHABET.UN && !colNameLikely) return null;
+        if (alphabet === ALPHABET.UN) return null;
 
         col.setTag(DG.TAGS.UNITS, units);
         if (separator) col.setTag(UnitsHandler.TAGS.separator, separator);
@@ -194,8 +193,7 @@ class BioPackageDetectors extends DG.Package {
 
         // TODO: If separator detected, then extra efforts to detect alphabet are allowed.
         const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, gapSymbol, colNameLikely);
-        /* Likely column name allows detecting 'fasta' notation with 'UN' alphabet, 2023-04-13, atanas, askalkin */
-        if (units === NOTATION.FASTA && alphabet === ALPHABET.UN && !alphabetIsMultichar && !colNameLikely) return null;
+        if (units === NOTATION.FASTA && alphabet === ALPHABET.UN && !alphabetIsMultichar) return null;
 
         // const forbidden = this.checkForbiddenWoSeparator(stats.freq);
         col.setTag(DG.TAGS.UNITS, units);
@@ -219,7 +217,7 @@ class BioPackageDetectors extends DG.Package {
    * Does not use any splitting strategies, estimates just by single characters.
    * */
   detectSeparator(freq) {
-    // To detect a separator we analyse col's sequences character frequencies.
+    // To detect a separator we analyze col's sequences character frequencies.
     // If there is an exceptionally frequent symbol, then we will call it the separator.
     // The most frequent symbol should occur with a rate of at least 0.15
     // of all other symbols in sum to be called the separator.
@@ -249,8 +247,9 @@ class BioPackageDetectors extends DG.Package {
   }
 
   checkForbiddenSeparator(separator) {
-    // dot, comma, ampersand, space, underscore, CR, LF
-    const forbiddenSepRe = / |\.|,|&|_|\r\n|\n/i;
+    // comma, ampersand, space, underscore, CRLF, CR, LF
+    // 2023-04-15: dot is allowed to allow Helm like separator in Helm MSA results (no Helm monomers contains dot)
+    const forbiddenSepRe = /,|&| |_|\r\n|\r|\n/i;
     return forbiddenSepRe.test(separator);
   }
 

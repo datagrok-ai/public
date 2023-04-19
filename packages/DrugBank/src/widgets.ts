@@ -5,6 +5,9 @@ import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full';
 import {findSimilar, searchSubstructure} from './searches';
 
+const WIDTH = 200;
+const HEIGHT = 100;
+
 export async function searchWidget(molString: string, searchType: 'similarity' | 'substructure', dbdf: DG.DataFrame,
 ): Promise<DG.Widget> {
   const headerHost = ui.div();
@@ -42,11 +45,23 @@ export async function searchWidget(molString: string, searchType: 'similarity' |
 
   for (let n = 0; n < iterations; n++) {
     const piv = bitsetIndexes[n];
-    const molHost = ui.canvas();
     const molfile = moleculeCol.get(piv)!;
-    const molecule = OCL.Molecule.fromMolfile(molfile);
-    OCL.StructureView.drawMolecule(molHost, molecule, {'suppressChiralText': true});
 
+    const molHost = ui.canvas(WIDTH, HEIGHT);
+    molHost.classList.add('chem-canvas');
+    const r = window.devicePixelRatio;
+    molHost.width = WIDTH * r;
+    molHost.height = HEIGHT * r;
+    molHost.style.width = (WIDTH).toString() + 'px';
+    molHost.style.height = (HEIGHT).toString() + 'px';
+    const renderFunctions = DG.Func.find({meta: {chemRendererName: 'RDKit'}});
+    if (renderFunctions.length > 0) {
+    renderFunctions[0].apply().then((rendndererObj) => {
+      rendndererObj.render(molHost.getContext('2d')!, 0, 0, WIDTH, HEIGHT,
+        DG.GridCell.fromValue(molfile));
+      });
+    }
+  
     ui.tooltip.bind(molHost, () => ui.divText(`Common name: ${nameCol.get(piv)!}\nClick to open in DrugBank Online`));
     molHost.addEventListener('click', () => window.open(`https://go.drugbank.com/drugs/${idCol.get(piv)}`, '_blank'));
     compsHost.appendChild(molHost);

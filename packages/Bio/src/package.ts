@@ -48,6 +48,10 @@ import {getMacromoleculeColumn} from './utils/ui-utils';
 import {IUMAPOptions, ITSNEOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
+import {demoBio01UI} from './demo/bio01-similarity-diversity';
+import {demoBio01aUI} from './demo/bio01a-hierarchical-clustering-and-sequence-space';
+import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-cliffs';
+import {demoBio05UI} from './demo/bio05-helm-msa-sequence-space';
 
 // /** Avoid reassinging {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
 // let monomerLib: MonomerLib | null = null;
@@ -303,7 +307,7 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
     .show();
 }
 
-//top-menu: Bio | Sequence Activity Cliffs...
+//top-menu: Bio | SAR | Activity Cliffs...
 //name: Sequence Activity Cliffs
 //description: detect activity cliffs
 //input: dataframe table [Input data table]
@@ -360,7 +364,7 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
     .show();
 }
 
-//top-menu: Bio | Sequence Space...
+//top-menu: Bio | Structure | Sequence Space...
 //name: Sequence Space
 //input: dataframe table
 //input: column molecules { semType: Macromolecule }
@@ -370,7 +374,8 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
 //input: object options {optional: true}
 //editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: string,
-  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean, options?: IUMAPOptions | ITSNEOptions): Promise<DG.Viewer | undefined> {
+  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean, options?: IUMAPOptions | ITSNEOptions
+): Promise<DG.Viewer | undefined> {
   // Delay is required for initial function dialog to close before starting invalidating of molfiles.
   // Otherwise, dialog is freezing
   await delay(10);
@@ -430,7 +435,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
   } */
 };
 
-//top-menu: Bio | To Atomic Level...
+//top-menu: Bio | Atomic Level | To Atomic Level...
 //name: To Atomic Level
 //description: returns molfiles for each monomer from HELM library
 //input: dataframe df [Input data table]
@@ -447,7 +452,7 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
   await _toAtomicLevel(df, macroMolecule, monomersLibObject);
 }
 
-//top-menu: Bio | MSA...
+//top-menu: Bio | Alignment | MSA...
 //name: MSA...
 //tags: bio, panel
 export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = null): void {
@@ -515,8 +520,8 @@ export function multipleSequenceAlignmentAny(col: DG.Column<string> | null = nul
     .show();
 }
 
+//top-menu: Bio | Structure | Composition Analysis
 //name: Composition Analysis
-//top-menu: Bio | Composition Analysis
 //meta.icon: files/icons/composition-analysis.svg
 //output: viewer result
 export async function compositionAnalysis(): Promise<void> {
@@ -574,8 +579,8 @@ export async function compositionAnalysis(): Promise<void> {
   await handler(col);
 }
 
-//top-menu: Bio | SDF to JSON lib...
-//name: SDF to JSON Lib
+//top-menu: Bio | Atomic Level | SDF to JSON Library...
+//name: SDF to JSON Library
 //input: dataframe table
 export async function sdfToJsonLib(table: DG.DataFrame) {
   const jsonMonomerLibrary = createJsonMonomerLibFromSdf(table);
@@ -728,7 +733,7 @@ export function diversitySearchTopMenu() {
   view.dockManager.dock(viewer, 'down');
 }
 
-//top-menu: Bio | Substructure Search ...
+//top-menu: Bio | Structure | Substructure Search ...
 //name: bioSubstructureSearch
 export function bioSubstructureSearch(): void {
   const col = getMacromoleculeColumn();
@@ -749,4 +754,34 @@ export function saveAsFasta() {
 //meta.semType: Macromolecule
 export function bioSubstructureFilter(): BioSubstructureFilter {
   return new BioSubstructureFilter();
+}
+
+// -- Demo --
+
+//name: demoBio01
+//meta.demoPath: Bioinformatics | Similarity & Diversity
+//description:
+export async function demoBio01(): Promise<void> {
+  await demoBio01UI('func/Bio.demoBio01');
+}
+
+//name:demoBio01a
+//meta.demoPath: Bioinformatics | Hierarchical Clustering & Sequence Space
+//description:
+export async function demoBio01a(): Promise<void> {
+  await demoBio01aUI('func/Bio.demoBio01a');
+}
+
+//name: demoBio01c
+//meta.demoPath: Bioinformatics | Hierarchical Clustering & Activity Cliffs
+//description:
+export async function demoBio01b(): Promise<void> {
+  await demoBio01bUI('func/Bio.demoBio01b');
+}
+
+//name: demoBio05
+//meta.demoPath: Bioinformatics | Helm, MSA, Sequence Space
+//description:
+export async function demoBio05(): Promise<void> {
+  await demoBio05UI('func/demoBio05');
 }

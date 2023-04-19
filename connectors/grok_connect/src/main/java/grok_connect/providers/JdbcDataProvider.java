@@ -533,6 +533,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                                     valueToAdd = value.toString();
                                 }
                             }
+                            valueToAdd = valueToAdd
+                                    .replaceAll("&lt;", "<")
+                                    .replaceAll("&gt;", ">");
                             columns.get(c - 1).add(valueToAdd);
                         } else if (isBitString(type, precision, typeName)) {
                             String valueToAdd = "";
@@ -744,20 +747,30 @@ public abstract class JdbcDataProvider extends DataProvider {
     public PatternMatcherResult numericPatternConverter(FuncParam param, PatternMatcher matcher) {
         PatternMatcherResult result = new PatternMatcherResult();
         String type = param.options.get("pattern");
-        if (matcher.op.equals(PatternMatcher.NONE))
-            result.query = "(1 = 1)";
-        else if (matcher.op.equals(PatternMatcher.RANGE_NUM)) {
-            String name0 = param.name + "R0";
-            String name1 = param.name + "R1";
-            result.query = "(" + matcher.colName + " >= @" + name0 + " AND " + matcher.colName + " <= @" + name1 + ")";
-            result.params.add(new FuncParam(type, name0, matcher.values.get(0)));
-            result.params.add(new FuncParam(type, name1, matcher.values.get(1)));
-        } else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
-            String names = paramToNamesString(param, matcher, type, result);
-            result.query = getInQuery(matcher, names);
-        } else {
-            result.query = "(" + matcher.colName + " " + matcher.op + " @" + param.name + ")";
-            result.params.add(new FuncParam(type, param.name, matcher.values.get(0)));
+        switch (matcher.op) {
+            case PatternMatcher.NONE:
+                result.query = "(1 = 1)";
+                break;
+            case PatternMatcher.RANGE_NUM:
+                String name0 = param.name + "R0";
+                String name1 = param.name + "R1";
+                result.query = "(" + matcher.colName + " >= @" + name0 + " AND " + matcher.colName + " <= @" + name1 + ")";
+                result.params.add(new FuncParam(type, name0, matcher.values.get(0)));
+                result.params.add(new FuncParam(type, name1, matcher.values.get(1)));
+                break;
+            case PatternMatcher.IN:
+            case PatternMatcher.NOT_IN:
+                String names = paramToNamesString(param, matcher, type, result);
+                result.query = getInQuery(matcher, names);
+                break;
+            case PatternMatcher.IS_NULL:
+            case PatternMatcher.IS_NOT_NULL:
+                result.query = String.format("(%s %s)", matcher.colName, matcher.op);
+                break;
+            default:
+                result.query = "(" + matcher.colName + " " + matcher.op + " @" + param.name + ")";
+                result.params.add(new FuncParam(type, param.name, matcher.values.get(0)));
+                break;
         }
         return result;
     }
@@ -776,28 +789,45 @@ public abstract class JdbcDataProvider extends DataProvider {
 
         String type = "string";
         String _query = "(LOWER(" + matcher.colName + ") LIKE @" + param.name + ")";
-        String value = ((String)matcher.values.get(0)).toLowerCase();
+        List<Object> values = matcher.values;
+        String value = null;
+        if (values.size() > 0) {
+            value = ((String) values.get(0)).toLowerCase();
+        }
 
-        if (matcher.op.equals(PatternMatcher.EQUALS)) {
-            result.query = _query;
-            result.params.add(new FuncParam(type, param.name, value));
-        } else if (matcher.op.equals(PatternMatcher.CONTAINS)) {
-            result.query = _query;
-            result.params.add(new FuncParam(type, param.name, "%" + value + "%"));
-        } else if (matcher.op.equals(PatternMatcher.STARTS_WITH)) {
-            result.query = _query;
-            result.params.add(new FuncParam(type, param.name, value + "%"));
-        } else if (matcher.op.equals(PatternMatcher.ENDS_WITH)) {
-            result.query = _query;
-            result.params.add(new FuncParam(type, param.name, "%" + value));
-        } else if (matcher.op.equals(PatternMatcher.REGEXP)) {
-            result.query = getRegexQuery(matcher.colName, value);
-            result.params.add(new FuncParam(type, param.name, value));
-        } else if (matcher.op.equals(PatternMatcher.IN) || matcher.op.equals(PatternMatcher.NOT_IN)) {
-            String names = paramToNamesString(param, matcher, type, result);
-            result.query = getInQuery(matcher, names);
-        } else {
-            result.query = "(1 = 1)";
+        switch (matcher.op) {
+            case PatternMatcher.EQUALS:
+                result.query = _query;
+                result.params.add(new FuncParam(type, param.name, value));
+                break;
+            case PatternMatcher.CONTAINS:
+                result.query = _query;
+                result.params.add(new FuncParam(type, param.name, "%" + value + "%"));
+                break;
+            case PatternMatcher.STARTS_WITH:
+                result.query = _query;
+                result.params.add(new FuncParam(type, param.name, value + "%"));
+                break;
+            case PatternMatcher.ENDS_WITH:
+                result.query = _query;
+                result.params.add(new FuncParam(type, param.name, "%" + value));
+                break;
+            case PatternMatcher.REGEXP:
+                result.query = getRegexQuery(matcher.colName, value);
+                result.params.add(new FuncParam(type, param.name, value));
+                break;
+            case PatternMatcher.IN:
+            case PatternMatcher.NOT_IN:
+                String names = paramToNamesString(param, matcher, type, result);
+                result.query = getInQuery(matcher, names);
+                break;
+            case PatternMatcher.IS_NULL:
+            case PatternMatcher.IS_NOT_NULL:
+                result.query = String.format("(%s %s)", matcher.colName, matcher.op);
+                break;
+            default:
+                result.query = "(1 = 1)";
+                break;
         }
 
         return result;
@@ -810,23 +840,34 @@ public abstract class JdbcDataProvider extends DataProvider {
     public PatternMatcherResult dateTimePatternConverter(FuncParam param, PatternMatcher matcher) {
         PatternMatcherResult result = new PatternMatcherResult();
 
-        if (matcher.op.equals(PatternMatcher.NONE)) {
-            result.query = "(1 = 1)";
-        } else if (matcher.op.equals(PatternMatcher.EQUALS)) {
-            result.query = "(" + matcher.colName + " = @" + param.name + ")";
-            result.params.add(new FuncParam("datetime", param.name, matcher.values.get(0)));
-        } else if (matcher.op.equals(PatternMatcher.BEFORE) || matcher.op.equals(PatternMatcher.AFTER)) {
-            result.query = "(" + matcher.colName + PatternMatcher.cmp(matcher.op, matcher.include1) + "@" + param.name + ")";
-            result.params.add(new FuncParam("datetime", param.name, matcher.values.get(0)));
-        } else if (matcher.op.equals(PatternMatcher.RANGE_DATE_TIME)) {
-            String name0 = param.name + "R0";
-            String name1 = param.name + "R1";
-            result.query = "(" + matcher.colName + PatternMatcher.cmp(PatternMatcher.AFTER, matcher.include1) + "@" + name0 + " AND " +
-                    matcher.colName + PatternMatcher.cmp(PatternMatcher.BEFORE, matcher.include2) + "@" + name1 + ")";
-            result.params.add(new FuncParam("datetime", name0, matcher.values.get(0)));
-            result.params.add(new FuncParam("datetime", name1, matcher.values.get(1)));
-        } else {
-            result.query = "(1 = 1)";
+        switch (matcher.op) {
+            case PatternMatcher.NONE:
+                result.query = "(1 = 1)";
+                break;
+            case PatternMatcher.EQUALS:
+                result.query = "(" + matcher.colName + " = @" + param.name + ")";
+                result.params.add(new FuncParam("datetime", param.name, matcher.values.get(0)));
+                break;
+            case PatternMatcher.BEFORE:
+            case PatternMatcher.AFTER:
+                result.query = "(" + matcher.colName + PatternMatcher.cmp(matcher.op, matcher.include1) + "@" + param.name + ")";
+                result.params.add(new FuncParam("datetime", param.name, matcher.values.get(0)));
+                break;
+            case PatternMatcher.RANGE_DATE_TIME:
+                String name0 = param.name + "R0";
+                String name1 = param.name + "R1";
+                result.query = "(" + matcher.colName + PatternMatcher.cmp(PatternMatcher.AFTER, matcher.include1) + "@" + name0 + " AND " +
+                        matcher.colName + PatternMatcher.cmp(PatternMatcher.BEFORE, matcher.include2) + "@" + name1 + ")";
+                result.params.add(new FuncParam("datetime", name0, matcher.values.get(0)));
+                result.params.add(new FuncParam("datetime", name1, matcher.values.get(1)));
+                break;
+            case PatternMatcher.IS_NULL:
+            case PatternMatcher.IS_NOT_NULL:
+                result.query = String.format("(%s %s)", matcher.colName, matcher.op);
+                break;
+            default:
+                result.query = "(1 = 1)";
+                break;
         }
 
         return result;
@@ -944,7 +985,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 typeName.equalsIgnoreCase("bool") || (type == java.sql.Types.BIT && precision == 1);
     }
 
-    private static boolean isString(int type, String typeName) {
+    protected boolean isString(int type, String typeName) {
         return ((type == java.sql.Types.VARCHAR)|| (type == java.sql.Types.CHAR) ||
                 (type == java.sql.Types.LONGVARCHAR) || (type == java.sql.Types.CLOB)
                 || (type == java.sql.Types.NCLOB) ||

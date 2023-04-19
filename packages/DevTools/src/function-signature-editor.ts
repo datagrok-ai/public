@@ -546,7 +546,7 @@ async function openFse(v: DG.View, functionCode: string) {
       (x: any) => x.options[OPTIONAL_TAG_NAME.ALLOW_NULLS],
       (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.ALLOW_NULLS, v), ''),
 
-    DG.Property.create(OPTIONAL_TAG_NAME.CHOICES, DG.TYPE.LIST,
+    DG.Property.create(OPTIONAL_TAG_NAME.CHOICES, DG.TYPE.DYNAMIC,
       (x: any) => x.options[OPTIONAL_TAG_NAME.CHOICES],
       (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.CHOICES, v), ''),
 
@@ -570,7 +570,7 @@ async function openFse(v: DG.View, functionCode: string) {
       (x: any) => x.options[OPTIONAL_TAG_NAME.MIN],
       (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.MIN, v), ''),
 
-    DG.Property.create(OPTIONAL_TAG_NAME.SUGGESTIONS, DG.TYPE.STRING,
+    DG.Property.create(OPTIONAL_TAG_NAME.SUGGESTIONS, DG.TYPE.DYNAMIC,
       (x: any) => x.options[OPTIONAL_TAG_NAME.SUGGESTIONS],
       (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.SUGGESTIONS, v), ''),
 
@@ -730,6 +730,7 @@ async function openFse(v: DG.View, functionCode: string) {
       newUiArea = await modifiedScript.prepare().getEditor();
     else
       newUiArea = await getEditorSql(result);
+    uiArea.innerHTML = '';
     uiArea.append(newUiArea);
   };
 
