@@ -29,7 +29,8 @@
     "typedoc": "0.21.x",
     "webpack": "^5.64.1",
     "webpack-cli": "^4.6.0",
-    "babel-loader": "^9.1.2"
+    "babel-loader": "^9.1.2",
+    "@babel/preset-env": "^7.21.4"
   },
   "scripts": {
     "link": "npm link",
