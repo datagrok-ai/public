@@ -225,4 +225,3 @@ export async function hierarchicalClustering(
   const colNameList: string[] = features.names();
   await hierarchicalClusteringUI(table, colNameList, distance, linkage);
 }
-

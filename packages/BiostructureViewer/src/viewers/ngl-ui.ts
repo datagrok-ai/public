@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import * as NGL from 'NGL';
 
-/** Creates view with NGL viewer to preview Biostructure (PDB) */
+/** @returns {DG.View} */
 export function nglViewUI(file: any): DG.View {
   const view = DG.View.create();
   const host = ui.div([], 'd4-ngl-viewer');
@@ -27,18 +27,19 @@ export function nglViewUI(file: any): DG.View {
 export function nglWidgetUI(pdbId: string): DG.Widget {
   const host = ui.div([], {classes: 'd4-ngl-viewer', style: {width: '100%'}});
   const stage = new NGL.Stage(host);
-  stage.loadFile(`rcsb://${pdbId}`, {defaultRepresentation: true})
+
+  //const pdbIdPath: strint = `rcsb://${pdbId}`;
+  // Link `rcsb://${pdbId}` causes CORS error
+  const pdbIdPath: string = `https://files.rcsb.org/download/${pdbId}.cif`;
+
+  stage.loadFile(pdbIdPath, {defaultRepresentation: true})
     .then(() => {
       stage.compList[0].autoView();
       handleResize(host, stage);
+    })
+    .catch((reason) => {
+      grok.shell.warning(`Can\'t load structure for PDB ID '${pdbId}' error: ${reason}`);
     });
-
-  // // Link `rcsb://${pdbId}` causes CORS error
-  // stage.loadFile(`http://files.rcsb.org/download/${pdbId}.cif`, {defaultRepresentation: true})
-  //   .then(() => {
-  //     stage.compList[0].autoView();
-  //     handleResize(host, stage);
-  //   });
   return DG.Widget.fromRoot(host);
 }
 

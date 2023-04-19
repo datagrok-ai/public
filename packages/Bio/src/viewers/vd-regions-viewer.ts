@@ -2,12 +2,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
-import {FilterSources, WebLogoViewer, PROPS as wlPROPS} from '../viewers/web-logo-viewer';
+import {WebLogoViewer, PROPS as wlPROPS} from '../viewers/web-logo-viewer';
 import {
   VdRegionsPropsDefault, VdRegionsProps, IVdRegionsViewer,
   VdRegion, VdRegionType
 } from '@datagrok-libraries/bio/src/viewers/vd-regions';
-import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {FilterSources, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {Unsubscribable} from 'rxjs';
 
 const vrt = VdRegionType;

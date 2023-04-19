@@ -7,19 +7,33 @@ import {Viewer as RcsbViewer, ViewerProps as RcsbViewerProps} from '@rcsb/rcsb-m
 import {PROPS as pdbPROPS} from './../viewers/ngl-viewer';
 
 
+import {_package} from '../package';
 import $ from 'cash-dom';
 import wu from 'wu';
 
-//@ts-ignore
 import {Unsubscribable} from 'rxjs';
+
+import {
+  BiostructureProps,
+  BiostructurePropsDefault,
+  IBiostructureViewer,
+  PluginLayoutControlsDisplayType,
+  RegionStateOptionsType,
+  RepresentationType,
+  SimpleRegionStateOptionsType
+} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
 import {ColorNames} from 'molstar/lib/mol-util/color/names';
 import {PluginCommands} from 'molstar/lib/mol-plugin/commands';
 import {ModelUrlProvider} from '@rcsb/rcsb-molstar/build/src/viewer/types';
-import {_package} from '../package';
 import {PluginContext} from 'molstar/lib/mol-plugin/context';
 import {PluginLayoutControlsDisplay} from 'molstar/lib/mol-plugin/layout';
+import {PdbResDataFrame} from '../utils/pdb-helper';
 import {BuiltInTrajectoryFormat} from 'molstar/lib/mol-plugin-state/formats/trajectory';
+import {intToHtmlA} from '@datagrok-libraries/utils/src/color';
+import {Color as msColor} from 'molstar/lib/mol-util/color';
+import {getPdbHelper, IPdbHelper, PdbResDataFrameType} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
+
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -77,109 +91,30 @@ export enum PROPS {
   showImportControls = 'showImportControls',
 }
 
-export enum PluginLayoutControlsDisplayType {
-  OUTSIDE = 'outside',
-  PORTRAIT = 'portrait',
-  LANDSCAPE = 'landscape',
-  REACTIVE = 'reactive'
-};
-
-const MolstarViewerDefaultOptions: Partial<RcsbViewerProps> = {
-  // extensions: [],
-  layoutIsExpanded: false,
-  layoutShowControls: false,
-  // layoutControlsDisplay: 'outside',
-  // layoutShowRemoteState: false,
-  layoutShowSequence: false,
-  layoutShowLog: false,
-  // layoutShowLeftPanel: false,
-  // collapseLeftPanel: true,
-  // collapseRightPanel: true,
-  //
-  // viewportShowExpand: false,
-  // viewportShowControls: false,
-  //
-  // pdbProvider: 'rcsb',
-  // emdbProvider: 'rcsb',
-  showWelcomeToast: false
-};
-
-const DefaultViewerProps: Partial<RcsbViewerProps> = {
-  showImportControls: false,
-  showSessionControls: false,
-  showStructureSourceControls: true,
-  // showMeasurementsControls: true,
-  // showStrucmotifSubmitControls: true,
-  showSuperpositionControls: true,
-  // showQuickStylesControls: false,
-  // showStructureComponentControls: true,
-  // showVolumeStreamingControls: true,
-  // showAssemblySymmetryControls: true,
-  showValidationReportControls: true,
-
-  showMembraneOrientationPreset: false,
-  // showNakbColorTheme: false,
-  /**
-   * Needed when running outside of sierra. If set to true, the strucmotif UI will use an absolute URL to sierra-prod.
-   * Otherwise, the link will be relative on the current host.
-   */
-  detachedFromSierra: false,
-  modelUrlProviders: [
-    (pdbId: string) => ({
-      url: `https://models.rcsb.org/${pdbId.toLowerCase()}.bcif`,
-      format: 'mmcif',
-      isBinary: true
-    }),
-    (pdbId: string) => ({
-      url: `https://files.rcsb.org/download/${pdbId.toLowerCase()}.cif`,
-      format: 'mmcif',
-      isBinary: false
-    })
-  ] as ModelUrlProvider[],
-
-  layoutIsExpanded: false,
-  layoutShowControls: true,
-  layoutControlsDisplay: PluginLayoutControlsDisplayType.OUTSIDE,
-  layoutShowSequence: true,
-  layoutShowLog: false,
-
-  viewportShowExpand: true,
-  viewportShowSelectionMode: true,
-  volumeStreamingServer: 'https://maps.rcsb.org/',
-
-  backgroundColor: ColorNames.white,
-  showWelcomeToast: false
-};
-
-export interface IMolstarViewer {
-  get pdb(): string;
-
-  set pdb(value: string);
-}
+// const MolstarViewerDefaultOptions: Partial<RcsbViewerProps> = {
+//   // extensions: [],
+//   layoutIsExpanded: false,
+//   layoutShowControls: false,
+//   // layoutControlsDisplay: 'outside',
+//   // layoutShowRemoteState: false,
+//   layoutShowSequence: false,
+//   layoutShowLog: false,
+//   // layoutShowLeftPanel: false,
+//   // collapseLeftPanel: true,
+//   // collapseRightPanel: true,
+//   //
+//   // viewportShowExpand: false,
+//   // viewportShowControls: false,
+//   //
+//   // pdbProvider: 'rcsb',
+//   // emdbProvider: 'rcsb',
+//   showWelcomeToast: false
+// };
 
 const pdbDefault: string = '';
+const defaults: BiostructureProps = BiostructurePropsDefault;
 
-enum RepresentationType {
-  Cartoon = 'cartoon',
-  Backbone = 'backbone',
-  BallAndStick = 'ball+stick',
-  Licorice = 'licorice',
-  Hyperball = 'hyperball',
-  Surface = 'surface'
-}
-
-enum RegionStateOptionsType {
-  FULL = 'full',
-  COLLAPSED = 'collapsed',
-  HIDDEN = 'hidden'
-}
-
-enum SimpleRegionStateOptionsType {
-  FULL = 'full',
-  HIDDEN = 'hidden'
-}
-
-export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
+export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
   private viewed: boolean = false;
 
   // -- Data --
@@ -224,61 +159,59 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
     // -- Data --
     this.pdb = this.string(PROPS.pdb, pdbDefault,
       {category: PROPS_CATS.DATA, userEditable: false});
-    this.pdbTag = this.string(PROPS.pdbTag, null,
+    this.pdbTag = this.string(PROPS.pdbTag, defaults.pdbTag,
       {category: PROPS_CATS.DATA, choices: []});
-    this.ligandColumnName = this.string(PROPS.ligandColumnName, null,
+    this.ligandColumnName = this.string(PROPS.ligandColumnName, defaults.ligandColumnName,
       {category: PROPS_CATS.DATA, semType: DG.SEMTYPE.MOLECULE});
-    this.pdbProvider = this.string(PROPS.pdbProvider, 'rcsb',
+    this.pdbProvider = this.string(PROPS.pdbProvider, defaults.pdbProvider,
       {category: PROPS_CATS.DATA});
-    this.emdbProvider = this.string(PROPS.emdbProvider, 'rcsb',
+    this.emdbProvider = this.string(PROPS.emdbProvider, defaults.emdbProvider,
       {category: PROPS_CATS.DATA});
 
     // -- Style --
-    this.representation = this.string(PROPS.representation, RepresentationType.Cartoon,
+    this.representation = this.string(PROPS.representation, defaults.representation,
       {category: PROPS_CATS.STYLE, choices: Object.values(RepresentationType)});
 
     // -- Layout --
-    this.layoutIsExpanded = this.bool(PROPS.layoutIsExpanded, false,
+    this.layoutIsExpanded = this.bool(PROPS.layoutIsExpanded, defaults.layoutIsExpanded,
       {category: PROPS_CATS.LAYOUT});
-    this.layoutShowControls = this.bool(PROPS.layoutShowControls, false,
+    this.layoutShowControls = this.bool(PROPS.layoutShowControls, defaults.layoutShowControls,
       {category: PROPS_CATS.LAYOUT});
-    this.layoutRegionStateLeft = this.string(PROPS.layoutRegionStateLeft, RegionStateOptionsType.FULL,
+    this.layoutRegionStateLeft = this.string(PROPS.layoutRegionStateLeft, defaults.layoutRegionStateLeft,
       {category: PROPS_CATS.LAYOUT, choices: Object.values(RegionStateOptionsType)}) as RegionStateOptionsType;
-    this.layoutRegionStateTop = this.string(PROPS.layoutRegionStateTop, SimpleRegionStateOptionsType.FULL,
+    this.layoutRegionStateTop = this.string(PROPS.layoutRegionStateTop, defaults.layoutRegionStateTop,
       {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)}
     ) as SimpleRegionStateOptionsType;
-    this.layoutRegionStateRight = this.string(PROPS.layoutRegionStateRight, SimpleRegionStateOptionsType.FULL,
+    this.layoutRegionStateRight = this.string(PROPS.layoutRegionStateRight, defaults.layoutRegionStateRight,
       {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)}
     ) as SimpleRegionStateOptionsType;
-    this.layoutRegionStateBottom = this.string(PROPS.layoutRegionStateBottom, SimpleRegionStateOptionsType.FULL,
+    this.layoutRegionStateBottom = this.string(PROPS.layoutRegionStateBottom, defaults.layoutRegionStateBottom,
       {category: PROPS_CATS.LAYOUT, choices: Object.values(SimpleRegionStateOptionsType)}
     ) as SimpleRegionStateOptionsType;
-    this.layoutControlsDisplay = this.string(
-      PROPS.layoutControlsDisplay, PluginLayoutControlsDisplayType.OUTSIDE,
+    this.layoutControlsDisplay = this.string(PROPS.layoutControlsDisplay, defaults.layoutControlsDisplay,
       {category: PROPS_CATS.LAYOUT, choices: Object.values(PluginLayoutControlsDisplayType)});
 
-    this.layoutShowRemoteState = this.bool(PROPS.layoutShowRemoteState, false,
+    this.layoutShowRemoteState = this.bool(PROPS.layoutShowRemoteState, defaults.layoutShowRemoteState,
       {category: PROPS_CATS.LAYOUT});
-    this.layoutShowSequence = this.bool(PROPS.layoutShowSequence, false,
+    this.layoutShowSequence = this.bool(PROPS.layoutShowSequence, defaults.layoutShowSequence,
       {category: PROPS_CATS.LAYOUT});
-    this.layoutShowLog = this.bool(PROPS.layoutShowLog, false,
+    this.layoutShowLog = this.bool(PROPS.layoutShowLog, defaults.layoutShowLog,
       {category: PROPS_CATS.LAYOUT});
-    this.layoutShowLeftPanel = this.bool(PROPS.layoutShowLeftPanel, false,
+    this.layoutShowLeftPanel = this.bool(PROPS.layoutShowLeftPanel, defaults.layoutShowLeftPanel,
       {category: PROPS_CATS.LAYOUT});
-    this.collapseLeftPanel = this.bool(PROPS.collapseLeftPanel, true,
+    this.collapseLeftPanel = this.bool(PROPS.collapseLeftPanel, defaults.collapseLeftPanel,
       {category: PROPS_CATS.LAYOUT});
-    this.collapseRightPanel = this.bool(PROPS.collapseRightPanel, true,
+    this.collapseRightPanel = this.bool(PROPS.collapseRightPanel, defaults.collapseRightPanel,
       {category: PROPS_CATS.LAYOUT});
-    this.viewportShowExpand = this.bool(PROPS.viewportShowExpand, false,
+    this.viewportShowExpand = this.bool(PROPS.viewportShowExpand, defaults.viewportShowExpand,
       {category: PROPS_CATS.LAYOUT});
-    this.viewportShowControls = this.bool(PROPS.viewportShowControls, false,
+    this.viewportShowControls = this.bool(PROPS.viewportShowControls, defaults.viewportShowControls,
       {category: PROPS_CATS.LAYOUT});
-
 
     // -- Controls --
-    this.showWelcomeToast = this.bool(PROPS.showWelcomeToast, DefaultViewerProps.showWelcomeToast,
+    this.showWelcomeToast = this.bool(PROPS.showWelcomeToast, defaults.showWelcomeToast,
       {category: PROPS_CATS.CONTROLS});
-    this.showImportControls = this.bool(PROPS.showImportControls, DefaultViewerProps.showImportControls,
+    this.showImportControls = this.bool(PROPS.showImportControls, defaults.showImportControls,
       {category: PROPS_CATS.CONTROLS});
 
     this.subs.push(
@@ -308,8 +241,7 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
     const applyProperty = async (propName: string, value: any) => {
       if (!this.viewer) throw new Error('viewer does not exists');
 
-
-      const plugin: PluginContext = this.viewer.getPlugin();
+      const plugin: PluginContext = this.viewer.plugin;
       switch (property.name) {
       case PROPS.layoutShowLog: {
         //plugin.layout.setProps({layoutShowLog: value;});
@@ -352,6 +284,11 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
           {state: {controlsDisplay: this.layoutControlsDisplay as PluginLayoutControlsDisplay}});
       }
         break;
+        // case PROPS.viewportShowExpand: {
+        //   await PluginCommands.State.ToggleExpanded(plugin,
+        //     {state: {isExpanded: this.viewportShowExpand}})
+        // }
+        //   break;
       }
     };
 
@@ -367,12 +304,16 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
 
     const propName: string = property.name;
     const propValue: any = this.props.get(propName);
-    if (this.viewer) applyProperty(propName, propValue);
+    if (this.viewer) {
+      this.viewPromise = this.viewPromise.then(async () => {
+        await applyProperty(propName, propValue);
+      });
+    }
 
     switch (property.name) {
     case PROPS.pdb:
     case PROPS.pdbTag:
-      this.setData('onPropertyChanged'); // onPropertyChanged
+      this.setData();
       break;
     }
   }
@@ -381,6 +322,7 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
   private pdbStr: string | null = null;
 
   override onTableAttached(): void {
+    _package.logger.debug('MolstarViewer.onTableAttached(), ');
     const superOnTableAttached = super.onTableAttached.bind(this);
 
     // -- Props editors --
@@ -388,90 +330,108 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
       .filter((tagName: string) => tagName.startsWith('.')).toArray();
     this.props.getProperty(PROPS.pdbTag).choices = ['', ...dfTagNameList];
 
-    this.viewPromise = this.viewPromise.then(async () => { // onTableAttached
-      superOnTableAttached();
-      await this.setData('onTableAttached');
-    });
+    superOnTableAttached();
+    this.setData();
   }
 
   override detach(): void {
+    if (this.setDataInProgress) return;
+    _package.logger.debug('MolstarViewer.detach(), ');
+
     const superDetach = super.detach.bind(this);
-    this.viewPromise = this.viewPromise.then(async () => { // detach
+    this.detachPromise = this.detachPromise.then(async () => { // detach
       if (this.viewed) {
-        await this.destroyView('detach'); //detach
+        await this.destroyView('detach');
         this.viewed = false;
       }
       superDetach();
+    }).catch((reason: any) => {
+      grok.shell.error(reason.toString());
     });
   }
 
   // -- Data --
 
-  setData(purpose: string): void {
-    _package.logger.debug(`MolstarViewer.setData(purpose = '${purpose}') `);
+  setData(): void {
+    if (!this.setDataInProgress) this.setDataInProgress = true; else return;
+    _package.logger.debug(`MolstarViewer.setData() `);
 
     this.viewPromise = this.viewPromise.then(async () => { // setData
       if (this.viewed) {
         await this.destroyView('setData');
         this.viewed = false;
       }
-    });
+    }).then(async () => {
+      await this.detachPromise;
+      // Wait whether this.dataFrame assigning has called detach() before continue set data and build view
 
-    // -- PDB data --
-    let pdbTag: string = pdbTAGS.PDB;
-    if (this.pdbTag) pdbTag = this.pdbTag;
-    this.pdbStr = this.dataFrame.getTag(pdbTag);
-    if (this.pdb && this.pdb != pdbDefault) this.pdbStr = this.pdb;
+      // -- PDB data --
+      let pdbTag: string = pdbTAGS.PDB;
+      if (this.pdbTag) pdbTag = this.pdbTag;
+      this.pdbStr = this.dataFrame.getTag(pdbTag);
+      if (this.pdb && this.pdb != pdbDefault) this.pdbStr = this.pdb;
 
-    // -- Ligand --
-    // TODO: Ligand
-
-    this.viewPromise = this.viewPromise.then(async () => {
+      // -- Ligand --
+      // TODO: Ligand
+    }).then(async () => {
       if (!this.viewed) {
         await this.buildView('setData');
         this.viewed = true;
       }
+    }).catch((reason: any) => {
+      grok.shell.error(reason.toString());
+    }).finally(() => {
+      this.setDataInProgress = false;
     });
   }
 
   // -- View --
 
   private viewPromise: Promise<void> = Promise.resolve();
+  private detachPromise: Promise<void> = Promise.resolve();
+  private setDataInProgress: boolean = false;
+
   private viewerDiv?: HTMLDivElement;
   private viewer?: RcsbViewer;
 
-  /** Container to store prop values while {@link viewer} is not created yet */
+  /** Container to store prop values while {@link this.viewer} is not created yet */
   private viewerProps: Partial<RcsbViewerProps> = {
     [PROPS.layoutShowControls]: false,
     [PROPS.showWelcomeToast]: false,
   };
 
   private splashDiv?: HTMLDivElement;
-
   private viewSubs: Unsubscribable[] = [];
 
 
   private async destroyView(purpose: string): Promise<void> {
-    _package.logger.debug(`MolstarViewer.destroyView(purpise='${purpose}') `);
-    if (this.pdbStr) {
-      // Clear viewer
-    }
-
+    _package.logger.debug(`MolstarViewer.destroyView( purpose='${purpose}' ) `);
     for (const sub of this.viewSubs) sub.unsubscribe();
+    this.viewSubs = [];
 
     if (this.splashDiv) {
       $(this.splashDiv).empty();
       this.splashDiv.remove();
       delete this.splashDiv;
     }
+
+    if (this.viewer) {
+      // Clear viewer
+      await this.viewer.clear();
+    }
   }
 
   private async buildView(purpose: string): Promise<void> {
-    _package.logger.debug(`MolstarViewer.buildView(purpose='${purpose}') `);
+    _package.logger.debug(`MolstarViewer.buildView( purpose='${purpose}' ) `);
     if (this.pdbStr)
       await this.buildViewWithPdb();
     else
       await this.buildViewWithoutPdb();
+
+    this.viewSubs.push(ui.onSizeChanged(this.root).subscribe(
+      this.rootOnSizeChanged.bind(this)));
+    this.viewSubs.push(this.dataFrame.onSelectionChanged.subscribe(
+      this.dataFrameOnSelectionChanged.bind(this)));
   }
 
   private async buildViewWithPdb() {
@@ -483,30 +443,52 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
         classes: 'd4-molstar-viewer',
         style: {width: '100%', height: '100%'},
       });
+      this.root.style.overflow = 'hidden'; /* Prevent blinking viewer size changed */
       this.root.appendChild(this.viewerDiv);
 
       const props: Partial<RcsbViewerProps> = {};
 
       Object.assign(props, this.viewerProps);
       this.viewer = new RcsbViewer(this.viewerDiv, props);
-      await this.viewer.loadStructureFromData(this.pdbStr, 'pdb', false);
-
-      const plugin: PluginContext = this.viewer.getPlugin();
-      plugin.commands.subscribe(PluginCommands.Layout.Update, () => {
-
-      });
     }
+    if (!this.viewer) throw new Error(`The 'viewer' is not created.`);
+
+    await this.viewer.loadStructureFromData(this.pdbStr, 'pdb', false);
+    const plugin: PluginContext = this.viewer.plugin;
+    this.viewSubs.push(plugin.commands.subscribe(PluginCommands.Layout.Update, () => {
+
+    }));
   }
 
   private async buildViewWithoutPdb() {
     if (this.viewerDiv) {
       await this.viewer!.clear();
       delete this.viewer;
+
       $(this.viewerDiv).empty();
+      this.viewerDiv.remove();
       delete this.viewerDiv;
     }
 
-    this.splashDiv = ui.div('No PDB data',
+    const fileEl: HTMLInputElement = ui.element('input');
+    fileEl.type = 'file';
+    fileEl.style.display = 'none';
+    fileEl.addEventListener('change', async (event) => {
+      const k = 11;
+      if (fileEl.files != null && fileEl.files.length == 1) {
+        const [pdbStr, pdbHelper]: [string, IPdbHelper] = await Promise.all([
+          await fileEl.files[0]!.text(), getPdbHelper()]);
+        this.setOptions({pdb: pdbStr});
+      }
+    });
+    const fileLink = ui.link('Open...', '', '', {
+      // @ts-ignore // ui.link argument options.onClick: (node: HTMLElement) => void
+      onClick: (event: PointerEvent) => {
+        event.preventDefault();
+        $(fileEl).trigger('click');
+      }
+    });
+    this.splashDiv = ui.div([fileLink, fileEl],
       {style: {width: '100%', height: '100%', verticalAlign: 'middle', fontSize: 'larger'}});
     this.root.appendChild(this.splashDiv);
   }
@@ -516,18 +498,16 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
   }
 
   private calcSize(): void {
-    if (!this.viewer) return;
+    if (!this.viewer || !this.viewerDiv) return;
 
     const cw: number = this.root.clientWidth;
     const ch: number = this.root.clientHeight;
-    _package.logger.debug('MolstarViewer.calcSize( ${cw.toString()} x ${ch.toString()} )');
+    _package.logger.debug(`MolstarViewer.calcSize( ${cw.toString()} x ${ch.toString()} )`);
 
-    if (this.viewerDiv) {
-      this.viewerDiv.style.width = `${cw}px`;
-      this.viewerDiv.style.height = `${ch}px`;
+    this.viewerDiv.style.width = `${cw}px`;
+    this.viewerDiv.style.height = `${ch}px`;
 
-      this.viewer.handleResize();
-    }
+    this.viewer.handleResize();
   }
 
   // -- Handle events --
@@ -540,12 +520,18 @@ export class MolstarViewer extends DG.JsViewer implements IMolstarViewer {
   private dataFrameOnCurrentRowChanged(value: any): void {
     _package.logger.debug('MolstarViewer.dataFrameOnCurrentRowChanged() ');
   }
+
+  private dataFrameOnSelectionChanged(value: any): void {
+    this.viewPromise = this.viewPromise.then(() => {
+      const k = 11;
+    });
+  }
 }
 
 export async function initViewer(viewName: string = 'Mol*'): Promise<RcsbViewer> {
   const view = grok.shell.newView(viewName);
   const viewerContainer = view.root;
-  const viewer = new RcsbViewer(viewerContainer, MolstarViewerDefaultOptions);
+  const viewer = new RcsbViewer(viewerContainer, castProps(defaults));
   return viewer;
 }
 
@@ -582,7 +568,7 @@ export async function viewMolstarUI(content: string, name?: string): Promise<voi
 /** Creates view with Molstar viewer to preview Biostructure (PDB) */
 export function previewMolstarUI(file: DG.FileInfo): DG.View {
   const view = DG.View.create();
-  const viewer = new RcsbViewer(view.root, MolstarViewerDefaultOptions);
+  const viewer = new RcsbViewer(view.root, castProps(defaults));
   const subs: Unsubscribable[] = [];
   subs.push(ui.onSizeChanged(view.root).subscribe((value: any) => {
     viewer.handleResize();
@@ -610,4 +596,29 @@ export function previewMolstarUI(file: DG.FileInfo): DG.View {
     file.readAsBytes().then(loadBytes);
 
   return view;
+}
+
+function castProps(src: BiostructureProps): Partial<RcsbViewerProps> {
+  const res: Partial<RcsbViewerProps> = {
+    showImportControls: src.showImportControls,
+    showWelcomeToast: src.showWelcomeToast,
+    layoutIsExpanded: src.layoutIsExpanded,
+    layoutShowLog: src.layoutShowLog,
+    layoutControlsDisplay: src.layoutControlsDisplay,
+    layoutShowControls: src.layoutShowControls,
+    layoutShowSequence: src.layoutShowSequence,
+    backgroundColor: src.backgroundColor as msColor,
+    detachedFromSierra: src.detachedFromSierra,
+    showExportControls: src.showExportControls,
+    showMembraneOrientationPreset: src.showMembraneOrientationPreset,
+    showSessionControls: src.showSessionControls,
+    showStructureSourceControls: src.showStructureSourceControls,
+    viewportShowExpand: src.viewportShowExpand,
+    showSuperpositionControls: src.showSuperpositionControls,
+    viewportShowSelectionMode: src.viewportShowSelectionMode,
+    volumeStreamingServer: src.volumeStreamingServer,
+    modelUrlProviders: [],
+    extensions: []
+  };
+  return res;
 }

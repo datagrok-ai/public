@@ -4,12 +4,16 @@ import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../package';
 import {INglViewer, PROPS as pdbPROPS} from '../viewers/ngl-viewer';
-import {Unsubscribable} from 'rxjs';
+import {Observable, Subject, Unsubscribable} from 'rxjs';
 
 export class NglViewerApp {
   private readonly appFuncName: string;
-  private pdb: string;
-  private df: DG.DataFrame;
+  private pdb?: string;
+  private df?: DG.DataFrame;
+
+  private _onAfterBuildView: Subject<void> = new Subject<void>();
+
+  public get onAfterBuildView(): Observable<void> { return this._onAfterBuildView; }
 
   constructor(appFuncName: string) {
     this.appFuncName = appFuncName;
@@ -42,10 +46,12 @@ export class NglViewerApp {
 
   // -- View --
 
-  private view: DG.TableView;
+  private view?: DG.TableView;
   private viewSubs: Unsubscribable[] = [];
 
   async buildView(): Promise<void> {
+    if (!this.df) throw new Error('df is not set');
+
     this.view = grok.shell.addTableView(this.df);
     this.view.path = this.view.basePath = `func/${_package.name}.${this.appFuncName}`;
 
@@ -58,8 +64,7 @@ export class NglViewerApp {
     this.view.dockManager.dock(viewer as DG.JsViewer, DG.DOCK_TYPE.RIGHT, null, 'NGL', 0.4);
 
     this.viewSubs.push((viewer as INglViewer).onAfterBuildView.subscribe(() => {
-      if (this.df.rowCount > 0)
-        this.df.currentRowIdx = 0;
+      this._onAfterBuildView.next();
     }));
   }
 }

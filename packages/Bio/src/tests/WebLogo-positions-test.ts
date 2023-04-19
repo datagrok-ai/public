@@ -5,7 +5,6 @@ import {after, before, category, expect, expectArray, test} from '@datagrok-libr
 import {ALPHABET, NOTATION, SplitterFunc, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {
   countForMonomerAtPosition,
-  FilterSources,
   PositionInfo as PI,
   PositionMonomerInfo as PMI,
   WebLogoViewer
@@ -81,7 +80,7 @@ ATC-G-TTGC--
   });
 
   test('positions with shrinkEmptyTail option true (filtered)', async () => {
-    const csvDf2 = `seq 
+    const csvDf2 = `seq
 -TC-G-TTGC--
 -TC-GCTTGC--
 -T--C-GT-
