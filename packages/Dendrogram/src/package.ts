@@ -14,7 +14,7 @@ import {TreeForGridCutApp} from './apps/tree-for-grid-cut-app';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import {injectTreeForGridUI2} from './viewers/inject-tree-for-grid2';
 import {DendrogramService} from './utils/dendrogram-service';
-import {NodeType} from '@datagrok-libraries/bio/src/trees';
+import {DistanceMetric, LinkageMethod, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {IDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 
@@ -215,7 +215,7 @@ export async function importNewick(fileContent: string): Promise<DG.DataFrame[]>
 //top-menu: ML | Hierarchical Clustering ...
 //name: Hierarchical Clustering
 //description: Calculates hierarchical clustering on features and injects tree to grid
-export async function hierarchicalClustering2(): Promise<void> {
+export async function hierarchicalClustering(): Promise<void> {
   let currentTableView = grok.shell.tv.table;
   let currentSelectedColNames: string[] = [];
 
@@ -243,8 +243,8 @@ export async function hierarchicalClustering2(): Promise<void> {
     { available: availableColNames(currentTableView!) });
   const columnsInputDiv = ui.div([columnsInput]);
 
-  const distanceInput = ui.choiceInput('Distance', 'euclidean', ['euclidean', 'manhattan']);
-  const linkageInput = ui.choiceInput('Linkage', 'ward', ['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward']);
+  const distanceInput = ui.choiceInput('Distance', DistanceMetric.Euclidean, Object.values(DistanceMetric));
+  const linkageInput = ui.choiceInput('Linkage', LinkageMethod.Ward, Object.values(LinkageMethod));
 
   const verticalDiv = ui.divV([
       tableInput.root,
@@ -258,7 +258,7 @@ export async function hierarchicalClustering2(): Promise<void> {
   .onOK(async () => {
     const pi = DG.TaskBarProgressIndicator.create('Creating dendrogram ...');
     await hierarchicalClusteringUI(currentTableView!, currentSelectedColNames,
-      distanceInput.value! as 'euclidean' | 'manhattan', linkageInput.value!);
+      distanceInput.value!, linkageInput.value!);
     pi.close();
   });
 

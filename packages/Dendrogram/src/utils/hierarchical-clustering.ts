@@ -4,10 +4,11 @@ import * as DG from 'datagrok-api/dg';
 
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
-import {isLeaf, NodeType} from '@datagrok-libraries/bio/src/trees';
+import {DistanceMetric, isLeaf, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
-import { getCombinedDistanceMatrix } from '../workers/distance-worker-creator';
 import { DistanceMatrix } from '@datagrok-libraries/bio/src/trees/distance-matrix';
+import { TreeHelper } from './tree-helper';
+import { ITreeHelper } from '@datagrok-libraries/bio/src/trees/tree-helper';
 
 /** Custom UI form for hierarchical clustering */
 export async function hierarchicalClusteringUI2(df: DG.DataFrame): Promise<void> {
@@ -38,12 +39,14 @@ export async function hierarchicalClusteringUI2(df: DG.DataFrame): Promise<void>
 /** Creates table view with injected tree of newick result */
 export async function hierarchicalClusteringUI(
   df: DG.DataFrame,
-  colNameList: string[], distance: 'euclidean' | 'manhattan' = 'euclidean',
+  colNameList: string[],
+  distance: DistanceMetric = DistanceMetric.Euclidean,
   linkage: string
 ): Promise<void> {
   const colNameSet: Set<string> = new Set(colNameList);
   const [filteredDf, filteredIndexList]: [DG.DataFrame, Int32Array] =
     hierarchicalClusteringFilterDfForNulls(df, colNameSet);
+  const th: ITreeHelper = new TreeHelper();
 
   let tv: DG.TableView = grok.shell.getTableView(df.name);
   if (filteredDf.rowCount != df.rowCount) {
@@ -70,8 +73,10 @@ export async function hierarchicalClusteringUI(
         return res;
       }));
 
-  const distanceMatrix = (await getCombinedDistanceMatrix(preparedDf.columns.toList(), distance)) as DistanceMatrix;
-  const hcPromise = hierarchicalClusteringByDistanceExec(distanceMatrix, linkage);
+  const distanceMatrix = await th.calcDistanceMatrix(preparedDf,
+    preparedDf.columns.toList().map(col => col.name),
+    distance);
+  const hcPromise = hierarchicalClusteringByDistanceExec(distanceMatrix!, linkage);
 
   // Replace rows indexes with filtered
   // newickStr returned with row indexes after filtering, so we need reversed dict { [fltIdx: number]: number}

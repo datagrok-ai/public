@@ -37,6 +37,22 @@ export enum TreeColorNames {
   Selection = 'Selection',
 }
 
+export enum DistanceMetric{
+  Euclidean = 'euclidean',
+  Manhattan = 'manhattan',
+}
+
+export enum LinkageMethod{
+  Single = 'single',
+  Complete = 'complete',
+  Average = 'average',
+  Weighted = 'weighted',
+  Centroid = 'centroid',
+  Median = 'median',
+  Ward = 'ward',
+}
+
+
 export const TreeDefaultPalette: { [name: string]: number } = {
   [TreeColorNames.Main]: DG.Color.categoricalPalette[12],
   [TreeColorNames.Light]: DG.Color.categoricalPalette[13],
