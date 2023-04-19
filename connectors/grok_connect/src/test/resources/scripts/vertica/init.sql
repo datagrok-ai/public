@@ -1,6 +1,6 @@
-create table MOCK_DATA (id bigint, first_name VARCHAR(50), last_name VARCHAR(50), email VARCHAR(50),
-gender VARCHAR(50), ip_address VARCHAR(50), bool boolean, country VARCHAR(50), date DATE, some_number numeric(5,2));
-
+CREATE TABLE UUID_TYPE(uuid_data UUID);
+INSERT INTO UUID_TYPE VALUES ('9fb01de0-1d63-4d09-9415-90e0b4e93b9a');
+create table MOCK_DATA (id bigint, first_name VARCHAR(50), last_name VARCHAR(50), email VARCHAR(50), gender VARCHAR(50), ip_address VARCHAR(50), bool boolean, country VARCHAR(50), date DATE, some_number numeric(5,2));
 insert into mock_data (id, first_name, last_name, email, gender, ip_address, bool, country, date, some_number) values (1, 'Burk', 'Kemery', 'bkemery0@businesswire.com', 'Male', '249.64.22.121/32', true, 'China', '2017-09-20', 510.32);
 insert into mock_data (id, first_name, last_name, email, gender, ip_address, bool, country, date, some_number) values (2, 'Nicholle', 'Karoly', 'nkaroly1@alexa.com', 'Female', '255.233.247.118/32', false, 'Poland', '2014-02-27', 864.09);
 insert into mock_data (id, first_name, last_name, email, gender, ip_address, bool, country, date, some_number) values (3, 'Orlando', 'Westgate', 'owestgate2@dedecms.com', 'Polygender', '75.0.252.254/32', false, 'Netherlands', '2020-09-03', 822.7);
@@ -31,37 +31,20 @@ insert into mock_data (id, first_name, last_name, email, gender, ip_address, boo
 insert into mock_data (id, first_name, last_name, email, gender, ip_address, bool, country, date, some_number) values (28, 'Ilsa', 'Huguenet', 'ihuguenetr@harvard.edu', 'Female', '147.1.198.181/32', false, 'China', '2014-05-11', 318.96);
 insert into mock_data (id, first_name, last_name, email, gender, ip_address, bool, country, date, some_number) values (29, 'Grantham', 'Fayter', 'gfayters@desdev.cn', 'Male', '26.120.76.78/32', false, 'Sweden', '2009-10-02', 595.22);
 insert into mock_data (id, first_name, last_name, email, gender, ip_address, bool, country, date, some_number) values (30, 'Bran', 'Longlands', 'blonglandst@tripod.com', 'Genderqueer', '14.92.3.30/32', false, 'France', '2016-07-10', 879.94);
-
 CREATE TABLE CHARACTER_TYPES (char_type CHAR(8), varchar_type VARCHAR(255), longvarchar_type LONG VARCHAR);
 INSERT INTO CHARACTER_TYPES(char_type, varchar_type, longvarchar_type) VALUES ('datagrok', 'Hello World', 'Datagrok');
-
-CREATE TABLE DATES(date DATE, time TIME, stamp TIMESTAMP, zoned_time TIME WITH TIME ZONE,
-zoned_stamp TIMESTAMP WITH TIME ZONE, interval1  INTERVAL YEAR TO MONTH);
-INSERT INTO DATES(date, time, stamp, zoned_time, zoned_stamp, interval1)
-VALUES ('1999-01-08', '04:05:06.789', '1999-01-08 04:05:06', '04:05:06 -8:00',
-        '1999-01-08 04:05:06 -8:00', INTERVAL '1' YEAR TO MONTH);
-
-create table DATES_PATTERNS (
-    date DATE
-);
+CREATE TABLE DATES(date DATE, time TIME, stamp TIMESTAMP, zoned_time TIME WITH TIME ZONE, zoned_stamp TIMESTAMP WITH TIME ZONE, interval1  INTERVAL YEAR TO MONTH);
+INSERT INTO DATES(date, time, stamp, zoned_time, zoned_stamp, interval1) VALUES ('1999-01-08', '04:05:06.789', '1999-01-08 04:05:06', '04:05:06 -8:00', '1999-01-08 04:05:06 -8:00', INTERVAL '1' YEAR TO MONTH);
+create table DATES_PATTERNS (date DATE);
 insert into DATES_PATTERNS (date) values (current_date);
-insert into DATES_PATTERNS (date) values (current_date - 1); -- yesterday
+insert into DATES_PATTERNS (date) values (current_date - 1);
 insert into DATES_PATTERNS (date) select (date_trunc('week', current_date::timestamp) + '6 days'::interval)::date;
 insert into DATES_PATTERNS (date) values (current_date - 150);
 insert into DATES_PATTERNS (date) values ('2021-04-09');
-
-CREATE TABLE NUMERIC_TYPE(int_type INTEGER, big_int BIGINT, double_precision DOUBLE PRECISION, float_type FLOAT,
-decimal_type DECIMAL);
-INSERT INTO NUMERIC_TYPE(int_type, big_int, double_precision, float_type, decimal_type)
-VALUES (922337, 922337203685477588, 'Infinity', 'NaN', 123456.78);
-INSERT INTO NUMERIC_TYPE(int_type, big_int, double_precision, float_type, decimal_type)
-VALUES (-92230937, -922337203685477580, '-Infinity', 0.00124412, 122223456.783213);
-INSERT INTO NUMERIC_TYPE(int_type, big_int, double_precision, float_type, decimal_type)
-VALUES (0, 0, 124412412412.124124124, 0.00001, 99999999999999.9999999999);
-
-CREATE TABLE SPATIAL(geography_type GEOGRAPHY, geometry_type GEOMETRY);
-INSERT INTO SPATIAL(geography_type, geometry_type)
-VALUES (ST_GeographyFromText('POLYGON((1 2,3 4,2 3,1 2))'), ST_GeomFromText('POINT(3.14 -1.34)'));
-
-CREATE TABLE UUID_TYPE(uuid_data UUID);
-INSERT INTO UUID_TYPE(uuid_data) VALUES ('9fb01de0-1d63-4d09-9415-90e0b4e93b9a');
+CREATE TABLE NUMERIC_TYPE(int_type INTEGER, big_int BIGINT, double_precision DOUBLE PRECISION, float_type FLOAT, decimal_type DECIMAL);
+INSERT INTO NUMERIC_TYPE(int_type, big_int, double_precision, float_type, decimal_type) VALUES (922337, 922337203685477588, 'Infinity', 'NaN', 123456.78);
+INSERT INTO NUMERIC_TYPE(int_type, big_int, double_precision, float_type, decimal_type) VALUES (-92230937, -922337203685477580, '-Infinity', 0.00124412, 122223456.783213);
+INSERT INTO NUMERIC_TYPE(int_type, big_int, double_precision, float_type, decimal_type) VALUES (0, 0, 124412412412.124124124, 0.00001, 99999999999999.9999999999);
+CREATE TABLE SPATIAL (geography_type GEOGRAPHY, geometry_type GEOMETRY);
+INSERT INTO SPATIAL (geography_type, geometry_type) VALUES (ST_GeographyFromText('POLYGON((1 2,3 4,2 3,1 2))'), ST_GeomFromText('POINT(3.14 -1.34)'));
+CREATE TABLE FOO_BAR(id BIGINT);
