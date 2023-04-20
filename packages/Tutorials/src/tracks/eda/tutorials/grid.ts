@@ -13,7 +13,7 @@ export class GridTutorial extends Tutorial {
   }
 
   get description(): string {
-    return '';
+    return 'The main viewer for interactive exploration of tables';
   }
 
   get steps(): number {
@@ -103,7 +103,7 @@ export class GridTutorial extends Tutorial {
     grok.shell.windows.showContextPanel = true;
     const noneSeverityRowCount = 3302;
     const severityColumn = this.t!.getCol('SEVERITY');
-    await this.action('Find the "SEVERITY" column and select all rows with the "None" value', this.t!.onSelectionChanged.pipe(
+    await this.action('Find the SEVERITY column and select all rows with the "None" value', this.t!.onSelectionChanged.pipe(
       filter(() => this.t!.selection.trueCount === noneSeverityRowCount)), null, 'First, find any cell with "None" severity ' +
       'and click to make it current. Then press <b>Ctrl+Enter</b>, it will select all rows containing the same value.');
 
@@ -123,7 +123,7 @@ export class GridTutorial extends Tutorial {
     await this.action('Clear the selection', this.t!.onColumnSelectionChanged.pipe(filter(() => !heightGridCol.selected &&
       !weightGridCol.selected)), null, 'Either hit <b>Esc</b> or hold <b>Ctrl+Shift</b> while clicking the column headers.');
 
-    this.title('Sorting and reordering');
+    this.title('Sorting, reordering, and resizing');
 
     await this.action('Sort subjects by AGE in the descending order', grid.onRowsSorted.pipe(filter(() =>
       grid.sortByColumns.length === 1 && grid.sortByColumns[0].name === 'AGE' && grid.sortTypes[0] === false)), null,
