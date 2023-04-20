@@ -621,7 +621,7 @@ export function previewMolstarUI(file: DG.FileInfo): DG.View {
   }
 
   // Handling binary data formats separately
-  if (builtinFormats.includes(file.extension))
+  if (isSupportedFormat())
     file.readAsString().then(loadString);
   else
     file.readAsBytes().then(loadBytes);
