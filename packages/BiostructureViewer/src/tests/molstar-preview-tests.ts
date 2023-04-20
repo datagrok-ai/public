@@ -7,9 +7,8 @@ import {
   test,
   expect
 } from "@datagrok-libraries/utils/src/test";
-import { _package } from "../package";
+import { _package, molecule3dNglView1 } from "../package";
 import { _packageName } from "./utils";
-import { previewBiostructure } from "../viewers/view-preview";
 
 const validFileNames = ['1bdq.pdb', '1bdq.sdf', 'dc.mol2',
   '4tkx.mmcif', 'caffeine.xyz', 'grofile.gro', 'pdbqt.pdbqt'];
@@ -24,7 +23,8 @@ category("MolstarPreview", () => {
         await grok.dapi.files.list(folderName, false, fn))[0];
 
       try {
-        const view = previewBiostructure(file);
+
+        const view = molecule3dNglView1(file);
         grok.shell.newView("Molstar Preview", [view]);
       } catch (e) {
         noException = false;
@@ -40,7 +40,7 @@ category("MolstarPreview", () => {
     await grok.dapi.files.list(folderName, false, 'dock.csv'))[0];
 
     try {
-      const view = previewBiostructure(file);
+      const view = molecule3dNglView1(file);
       grok.shell.newView("Molstar Preview", [view]);
     } catch (e) {
       noException = false;

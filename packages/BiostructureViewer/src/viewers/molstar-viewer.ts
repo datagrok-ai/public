@@ -588,6 +588,7 @@ export async function viewMolstarUI(content: string, name?: string): Promise<voi
 
 /** Creates view with Molstar viewer to preview Biostructure (PDB) */
 export function previewMolstarUI(file: DG.FileInfo): DG.View {
+  const builtinFormats = BuiltInTrajectoryFormats.map(obj => obj[0]) as string[];
   if(!isSupportedFormat()) {
     grok.shell.error(`Unsupported format: ${file.extension}`);
     throw new Error(`Unsupported format: ${file.extension}`);
@@ -609,12 +610,21 @@ export function previewMolstarUI(file: DG.FileInfo): DG.View {
       .then(() => {}); // Ignoring Promise returned
   }
 
-  function isSupportedFormat(){
-    const supportedFormats = BuiltInTrajectoryFormats.map(obj => obj[0]) as string[];
-    return supportedFormats.includes(file.extension);
+  function loadBytes(bytes: any) {
+    const binary: boolean = false;
+    viewer.loadStructureFromData(bytes, file.extension as BuiltInTrajectoryFormat, binary)
+      .then(() => {}); // Ignoring Promise returned
   }
-  //all supported file formats are in ascii string format
-  file.readAsString().then(loadString);
+
+  function isSupportedFormat(){
+    return builtinFormats.includes(file.extension);
+  }
+
+  // Handling binary data formats separately
+  if (builtinFormats.includes(file.extension))
+    file.readAsString().then(loadString);
+  else
+    file.readAsBytes().then(loadBytes);
 
   return view;
 }
