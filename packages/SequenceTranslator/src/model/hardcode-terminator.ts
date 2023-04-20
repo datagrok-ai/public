@@ -20,11 +20,6 @@ export class HardcodeTerminator {
     return MODIFICATIONS[code];
   }
 
-  // todo: port to helmLib
-  getPhosphateSmiles(): string {
-    return 'OP(=O)(O)O';
-  }
-
   getCodeToNameMap(sequence: string, format: string) {
     const codeToNameMap = new Map<string, string>;
     const NAME = 'name';
@@ -41,6 +36,7 @@ export class HardcodeTerminator {
           codeToNameMap.set(code, map[format][technology][code][NAME]!);
       }
     }
+    // what is the reason of the following condition?
     codeToNameMap.set(DELIMITER, '');
     const output = isValidSequence(sequence, format);
     const G = 'g';
@@ -54,32 +50,37 @@ export class HardcodeTerminator {
     return codeToNameMap;
   }
 
-  getCodeToSmilesMap(sequence: string, format: string) {
-    const codeToSmilesMap = new Map<string, string>();
+  getSmilesByName(monomerName: string): string {
+    if (Object.keys(MODIFICATIONS).includes(monomerName)) {
+      return MODIFICATIONS[monomerName].left;
+    } else {
+      const nameToSmilesMap = this.getNameToSmilesMap();
+      const smiles = nameToSmilesMap.get(monomerName);
+      if (smiles === undefined)
+        throw new Error(`ST: cannot find smiles for monomerName ${monomerName}`);
+      return nameToSmilesMap.get(monomerName)!;
+    }
+  }
+
+  get3PrimeTerminalSmiles(modificationName: string): string {
+    if (!Object.keys(MODIFICATIONS).includes(modificationName))
+      throw new Error(`ST: ${modificationName} is not in the list of modifications`);
+    return MODIFICATIONS[modificationName].right;
+  }
+
+  private getNameToSmilesMap(): Map<string, string> {
+    const nameToSmilesMap = new Map<string, string>();
+    const NAME = 'name';
     const SMILES = 'SMILES';
-    if (format == null) {
-      for (const synthesizer of Object.keys(map)) {
-        for (const technology of Object.keys(map[synthesizer])) {
-          for (const code of Object.keys(map[synthesizer][technology]))
-            codeToSmilesMap.set(code, map[synthesizer][technology][code][SMILES]);
+    for (const synthesizer of Object.keys(map)) {
+      for (const technology of Object.keys(map[synthesizer])) {
+        for (const code of Object.keys(map[synthesizer][technology])) {
+          const name = map[synthesizer][technology][code][NAME]!;
+          const smiles = map[synthesizer][technology][code][SMILES]!;
+          nameToSmilesMap.set(name, smiles);
         }
       }
-    } else {
-      for (const technology of Object.keys(map[format])) {
-        for (const code of Object.keys(map[format][technology]))
-          codeToSmilesMap.set(code, map[format][technology][code][SMILES]);
-      }
     }
-    codeToSmilesMap.set(DELIMITER, '');
-    const output = isValidSequence(sequence, format);
-    const G = 'g';
-    if (output.synthesizer!.includes(SYNTHESIZERS.MERMADE_12)) {
-      const value = map[SYNTHESIZERS.MERMADE_12][TECHNOLOGIES.SI_RNA][G][SMILES]!;
-      codeToSmilesMap.set(G, value);
-    } else if (output.synthesizer!.includes(SYNTHESIZERS.AXOLABS)) {
-      const value = map[SYNTHESIZERS.AXOLABS][TECHNOLOGIES.SI_RNA][G][SMILES]!;
-      codeToSmilesMap.set(G, value);
-    }
-    return codeToSmilesMap;
+    return nameToSmilesMap;
   }
 }

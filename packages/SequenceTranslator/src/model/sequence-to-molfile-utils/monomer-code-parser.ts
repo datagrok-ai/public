@@ -9,9 +9,10 @@ import {MonomerLibWrapper} from './monomer-handler';
 
 /** Wrapper for parsing a strand and getting a sequence of monomer IDs (with
  * omitted linkers, if needed)  */
-export class MonomerCodeParser {
+export class MonomerSequenceParser {
   constructor(
     private sequence: string, private invert: boolean = false,
+    // todo: remove from the list of parameters
     private codeMap: Map<string, string>
   ) {
     this.lib = new MonomerLibWrapper();
@@ -19,20 +20,24 @@ export class MonomerCodeParser {
 
   private lib: MonomerLibWrapper;
 
+  /** Get sequence of parsed monomer symbols, which are unique short names for
+   * the monomers within the Monomer Library */
   parseSequence(): string[] {
-    const parsedCodes = this.parseRawSequence();
-    return this.addLinkers(parsedCodes);
+    const parsedRawCodes = this.parseRawSequence();
+    return this.addLinkers(parsedRawCodes);
   }
 
   private addLinkers(parsedRawCodes: string[]) {
-    const monomerIdSequence: string[] = [];
+    const monomerSymbolSequence: string[] = [];
     for (let i = 0; i < parsedRawCodes.length; i++) {
       const code = parsedRawCodes[i];
-      const monomerId = this.codeMap.get(code);
+      const monomerSymbol = this.codeMap.get(code);
       // todo: port this validation to more appropriate place
-      if (monomerId === undefined)
-        throw new Error('SequenceTranslator: monomer is absent in the code map');
-      monomerIdSequence.push(monomerId);
+      if (monomerSymbol === undefined) {
+        console.log(this.codeMap);
+        throw new Error(`SequenceTranslator: monomer with code ${code} is absent in the code map`);
+      }
+      monomerSymbolSequence.push(monomerSymbol);
 
       const isLinker = LINKER_CODES.includes(code);
       const attachedToLink = isMonomerAttachedToLink(code);
@@ -41,10 +46,10 @@ export class MonomerCodeParser {
       // todo: refactor as molfile-specific
       if (!isLinker && !attachedToLink && !nextMonomerIsLinker) {
         // todo: replace by phosphate linkage ID
-        monomerIdSequence.push(P_LINKAGE);
+        monomerSymbolSequence.push(P_LINKAGE);
       }
     }
-    return monomerIdSequence;
+    return monomerSymbolSequence;
   }
 
   private parseRawSequence(): string[] {
@@ -61,6 +66,7 @@ export class MonomerCodeParser {
     return parsedCodes;
   }
 
+  // todo: port to monomer handler
   private getAllCodesOfFormat(): string[] {
     let allCodesInTheFormat = Array.from(this.codeMap.keys());
     const modifications = this.lib.getModificationCodes();

@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {MonomerCodeParser} from './monomer-code-parser';
+import {MonomerSequenceParser} from './monomer-code-parser';
 import {MonomerLibWrapper} from './monomer-handler';
 
 export class SequenceToMolfileConverter {
@@ -12,32 +12,32 @@ export class SequenceToMolfileConverter {
   ) {
     this.lib = new MonomerLibWrapper();
     const codeToNameMap = this.lib.getCodeToNameMap(sequence, format);
-    this.parser = new MonomerCodeParser(sequence, invert, codeToNameMap);
+    this.parser = new MonomerSequenceParser(sequence, invert, codeToNameMap);
   }
 
-  private parser: MonomerCodeParser;
+  private parser: MonomerSequenceParser;
   private lib: MonomerLibWrapper;
 
   convert(): string {
     const parsedSequence = this.parser.parseSequence();
-    const monomerMolfiles: string [] = [];
-    for (const monomerName of parsedSequence)
-      monomerMolfiles.push(this.lib.getMolfileByName(monomerName));
-
+    const monomerMolfiles: string[] = [];
+    for (let idx = 0; idx < parsedSequence.length; idx++) {
+      const monomerName = parsedSequence[idx];
+      const monomerMolfile = this.getMonomerMolfile(monomerName, idx);
+      monomerMolfiles.push(monomerMolfile);
+    }
     return this.getPolymerMolfile(monomerMolfiles);
   }
 
-  private adjustMolBlocks(molBlocks: string[]) {
-    return molBlocks.map((molBlock, idx) => {
-      if (molBlock.includes('MODIFICATION'))
-        return (idx === 0) ? this.reflect(molBlock) : molBlock;
-      else
-        return this.rotateNucleotidesV3000(molBlock);
-    });
+  private getMonomerMolfile(monomerName: string, idx: number): string {
+    const molBlock = this.lib.getMolfileByName(monomerName);
+    if (this.lib.isModification(monomerName))
+      return (idx === 0) ? this.reflect(molBlock) : molBlock;
+    else
+      return this.rotateNucleotidesV3000(molBlock);
   }
 
   private getPolymerMolfile(monomerMolfiles: string[]) {
-    monomerMolfiles = this.adjustMolBlocks(monomerMolfiles);
     return this.linkV3000(monomerMolfiles);
   }
 
