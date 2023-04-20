@@ -26,20 +26,13 @@ See also:
 
 * (Improvement) GROK-12721: Tooltip modifications for dialog and drag-n-drop
 * (Improvement) GROK-12788: Cat filter: select one on first select, select all on deselecting last
-* Line Chart: minmax selection fix
 * (Enhancement) [#1583](https://github.com/datagrok-ai/public/issues/1575692020): Scatter Plot: "pack and zoom" option should response to changes when a numerical column is used
 * (Bug) [#1758](https://github.com/datagrok-ai/public/issues/1651500892): Filtering is slow if there are multiple bar charts on several views
 * (Enhancement) [#1778](https://github.com/datagrok-ai/public/issues/1662788717): Viewers: Organize properties consistently in the context panel
 * (Enhancement) [#1635](https://github.com/datagrok-ai/public/issues/1613838883): Box Plot: Add a zoom slider to adjust axes range
 * (Enhancement) [#1746](https://github.com/datagrok-ai/public/issues/1644383938): Scatter Plot: Date picker for X and Y axes min/max
 * (Bug) [#1671](https://github.com/datagrok-ai/public/issues/1624096862): Line chart: connects the first and last values when  resizing the window
-* Release: Release 1.14.1: Add public link
-* JS API: Missing deps
-* Package: JS-API: Added missing dependency
-* Grok Connect: Fixed issue
-* (Bug) GROK-12891: Dev.jnj | File Manager: scrollbar is missing in the File Tree
-* Release: Patch:  Run  Fix scatterplot conflict
-* Release: Patch:  Run Up GC version
+* (Bug) GROK-12891: File Manager: scrollbar is missing in the File Tree
 
 
 ## 2023-04-18 1.14.0
