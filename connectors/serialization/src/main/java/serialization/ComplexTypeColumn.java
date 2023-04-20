@@ -108,10 +108,13 @@ public class ComplexTypeColumn extends Column<List<Column>> {
 
     @Override
     public long memoryInBytes() {
-        if (data[0] == null) {
+        if (length == 0) {
             return 0L;
         }
         return Arrays.stream(data)
+                .unordered()
+                .parallel()
+                .filter(Objects::nonNull)
                 .map(Column::memoryInBytes)
                 .reduce(0L, Long::sum);
     }
@@ -123,6 +126,7 @@ public class ComplexTypeColumn extends Column<List<Column>> {
 
     @Override
     public void empty() {
+        length = 0;
         data = new Column[DEFAULT_ARRAY_SIZE];
     }
 
@@ -179,7 +183,9 @@ public class ComplexTypeColumn extends Column<List<Column>> {
     }
 
     private void insertNull(Column column, int nullCount) {
-        if (column == null) return;
+        if (column == null) {
+            return;
+        }
         try {
             Field data ;
             if (column.getType().equals(Types.BIG_INT)) {

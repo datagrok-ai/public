@@ -60,7 +60,7 @@ public class StringColumn extends Column<String> {
 
     @Override
     public void set(int index, String value) {
-        data[index]  = value;
+        data[index] = value;
     }
 
     private void ensureSpace(int extraLength) {
