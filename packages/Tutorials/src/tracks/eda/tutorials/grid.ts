@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
+import { interval } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 
@@ -16,7 +17,7 @@ export class GridTutorial extends Tutorial {
   }
 
   get steps(): number {
-    return 10;
+    return 30;
   }
 
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers/grid';
@@ -113,7 +114,8 @@ export class GridTutorial extends Tutorial {
 
     const heightGridCol = grid.col('height')!;
     const weightGridCol = grid.col('weight')!;
-    await this.action('Select "HEIGHT" and "WEIGHT" columns', this.t!.onColumnSelectionChanged.pipe(filter(() =>
+    const startedGridCol = grid.col('started')!;
+    await this.action('Select HEIGHT and WEIGHT columns', this.t!.onColumnSelectionChanged.pipe(filter(() =>
       heightGridCol.selected && weightGridCol.selected)), null, 'You can do this by holding <b>Shift</b> and clicking ' +
       'the column headers. <b>Ctrl</b> will also work in this case. The difference is that holding <b>Shift</b> ' +
       'always adds to selection, whereas <b>Ctrl</b> toggles the state (so you can both select and deselect with it).');
@@ -130,7 +132,24 @@ export class GridTutorial extends Tutorial {
 
     await this.action('Reset sorting in the grid', grid.onRowsSorted.pipe(filter(() => grid.sortByColumns.length === 0)));
 
-    // Resize/reorder
+    await this.action('Move columns HEIGHT, WEIGHT and STARTED to the beginning of the grid', interval(1000).pipe(
+      filter(() => heightGridCol.idx === 1 && weightGridCol.idx === 2 && startedGridCol.idx === 3)), null, 'To reorder ' +
+      'columns, either drag each column header to a new position or select the group of columns and move them in one ' +
+      'step. When dragging column headers, you can notice two arrows appearing on the grid left and right. Release the ' +
+      'mouse over one of them to move the columns to the very beginning of the grid or to the beginning of its visible ' +
+      'part. The same is true for the arrows on the right that help you move columns to the grid end.<br>Make sure ' +
+      'that the new order is HEIGHT, WEIGHT, STARTED, followed by all other columns.');
+
+    const initialRowHeight = grid.props.rowHeight;
+    await this.action('Increase row height', interval(1000).pipe(filter(() => grid.props.rowHeight > initialRowHeight)),
+      null, 'Dragging a row header border will resize the row height (move up to decrease it, or down to increase it).');
+
+    const initialColWidth = startedGridCol.width;
+    await this.action('Extend the STARTED column width', interval(1000).pipe(filter(() => startedGridCol.width >
+      initialColWidth)), null, 'To resize a column width, drag the column header. This also works for multiple selected ' +
+      'columns. You can also adjust column sizing for the whole grid: right-click on any cell in the grid and select ' +
+      '<b>Column Sizing</b> (options are Minimal, Compact, Optimal, or Maximal).');
+
     this.title('Formatting');
     // Formatting of dates and numbers
     this.title('Color coding');
