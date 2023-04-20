@@ -62,7 +62,7 @@
     "release-biostructureviewer": "grok publish --release",
     "build-biostructureviewer": "webpack",
     "build": "webpack",
-    "debug-biostructureviewer-dev": "grok publish dev",
+    "debug-biostructureviewer-dev": "webpack && grok publish dev",
     "release-biostructureviewer-dev": "grok publish dev --release",
     "debug-biostructureviewer-public": "grok publish public",
     "release-biostructureviewer-public": "grok publish public --release",
