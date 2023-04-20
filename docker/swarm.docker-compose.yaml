@@ -87,10 +87,6 @@ services:
       GROK_PARAMETERS: |
         {
           "name": "prod",
-          "deployDemo": false,
-          "deployTestDemo": false,
-          "testTracking": false,
-          "createBetaUsers": true,
           "debug": false,
           "dbServer": "database",
           "db": "datagrok",
@@ -149,9 +145,6 @@ services:
       test: ["CMD", "wget", "-SqO", "-", "http://localhost:8000/info"]
     environment:
       X_API_KEY: "x-api-key"
-      DOCKER_REGISTRY: "docker-registry"
-      DOCKER_REGISTRY_USER: "docker-registry-user"
-      DOCKER_REGISTRY_PASS: "docker-registry-password"
       GROK_SPAWNER_ENVIRONMENT: ${COMPOSE_PROJECT_NAME:-localhost}
     networks:
       datagrok:
@@ -325,7 +318,6 @@ services:
   jupyter_kernel_gateway:
     image: datagrok/jupyter_kernel_gateway:latest
     stop_grace_period: 2m
-    entrypoint: ./entrypoint.sh --main "jupyter kernelgateway --config=.jupyter/jupyter_kernel_gateway_config.py" --helper "gunicorn grok_helper:app --timeout 900 --chdir /home/grok/grok_helper -b 0.0.0.0:5005  --access-logfile - --error-logfile - --workers 4"
     deploy:
       replicas: 1
       mode: replicated
@@ -350,11 +342,6 @@ services:
       datagrok:
         aliases:
           - jupyter_kernel_gateway
-    volumes:
-      - jkg_helper_cache:/home/grok/grok_helper/cache
-      - jkg_helper_envs:/home/grok/grok_helper/environments
-      - jkg_conda_envs:/home/grok/miniconda/envs
-      - jkg_kernels:/home/grok/.local/share/jupyter/kernels/
     logging: *default-logging
 
   h2o:

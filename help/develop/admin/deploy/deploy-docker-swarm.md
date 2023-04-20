@@ -45,12 +45,18 @@ More information about Datagrok design and components:
    To add a worker to this swarm, run the following command:
 
     docker swarm join \
-    ---token SWMTKN-1-testetsttestetst-qwewsdwqdwdqwddwqdwq XX.XX.XX.XX:2377
+    --token SWMTKN-1-testetsttestetst-qwewsdwqdwdqwddwqdwq XX.XX.XX.XX:2377
 
    To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
    ```
 
-2. From the manager node (datagrok) set labels to all nodes in the swarm cluster.
+2. Login on worker node (it should be a CVM host) and add it to the docker-swarm cluster:
+
+   ```shell
+       docker swarm join --token SWMTKN-1-testetsttestetst-qwewsdwqdwdqwddwqdwq XX.XX.XX.XX:2377
+   ```
+
+3. From the manager node (datagrok) set labels to all nodes in the swarm cluster.
 
    1. List all nodes:
 
@@ -66,19 +72,19 @@ More information about Datagrok design and components:
       docker node update --label-add  role==cvm <cvm_node>
       ```
 
-3. Download a Docker Compose YAML
+4. Download a Docker Compose YAML
    file: [link](https://github.com/datagrok-ai/public/blob/master/docker/swarm.docker-compose.yaml)
 
-4. Run the docker stack
+5. Run the docker stack
 
    ```shell
    docker stack deploy -c ./swarm,docker-compose.yaml datagrok
    ```
 
-5. Check if Datagrok started successfully: `http://<DATAGROK_VM_IP_ADDRESS>:8080`, login to Datagrok using the
+6. Check if Datagrok started successfully: `http://<DATAGROK_VM_IP_ADDRESS>:8080`, login to Datagrok using the
    username "`admin`" and password "`admin`".
 
-6. Edit settings in the running Datagrok platform (Tools -> Settings...). Do not forget to click Apply to save new settings.
+7. Edit settings in the running Datagrok platform (Tools -> Settings...). Do not forget to click Apply to save new settings.
     * Scripting:
         * CVM Url: `http://<CVM_VM_DNS_ADDRESS>:8090`
         * CVM URL Client: `http://<CVM_VM_DNS_ADDRESS>:8090`
