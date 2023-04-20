@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.72",
+  "version": "3.2.78",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -168,7 +168,7 @@
           "datagrok-api": "^1.6.0"
         }
       },
-      "description": "Tools for the Datagrok developers (TestManager, DevPanel). [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/DevTools/README.md)",
+      "description": "Tools for the Datagrok developers (TestManager, DevPanel).",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -484,9 +484,15 @@
         },
         "1.5.27": {
           "datagrok-api": "^1.13.8"
+        },
+        "1.5.28": {
+          "datagrok-api": "^1.13.8"
+        },
+        "1.5.29": {
+          "datagrok-api": "^1.14.0"
         }
       },
-      "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Chem/README.md)",
+      "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -1096,6 +1102,9 @@
         },
         "1.6.0": {
           "datagrok-api": "^1.13.0"
+        },
+        "1.7.0": {
+          "datagrok-api": "^1.14.0"
         }
       },
       "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
@@ -1269,6 +1278,12 @@
         },
         "1.2.0": {
           "datagrok-api": "latest"
+        },
+        "1.2.1": {
+          "datagrok-api": "latest"
+        },
+        "1.2.2": {
+          "datagrok-api": "^1.14.0"
         }
       },
       "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
@@ -2289,7 +2304,7 @@
           "datagrok-api": "^1.10.2"
         }
       },
-      "description": "Provides support for HELM notation (importing, detecting, rendering, conversion). [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Helm/README.md)",
+      "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -2309,7 +2324,7 @@
           "datagrok-api": "^1.12.0"
         }
       },
-      "description": "GIS (geographic information system) functionality, such as maps and geocoding. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/GIS/README.md)",
+      "description": "GIS (geographic information system) functionality, such as maps and geocoding.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -2368,6 +2383,9 @@
         },
         "1.2.6": {
           "datagrok-api": "^1.8.2"
+        },
+        "1.2.7": {
+          "datagrok-api": "^1.8.2"
         }
       },
       "description": "*PhyloTreeViewer* is a [Datagrok package](https://datagrok.ai/help/develop/develop#packages) for phylogenetic trees visualization.",
@@ -2398,19 +2416,6 @@
         "directory": "packages/ChemDraw"
       }
     },
-    "fae": {
-      "dependencies": {
-        "1.0.0": {
-          "datagrok-api": "latest"
-        }
-      },
-      "description": "Bispecifics FAE simulation V2.0",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public",
-        "directory": "packages/FAE"
-      }
-    },
     "dendrogram": {
       "dependencies": {
         "1.0.0": {
@@ -2423,7 +2428,7 @@
           "datagrok-api": "^1.11.1"
         }
       },
-      "description": "Computation and visualization of hierarchical data clustering. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Dendrogram/README.md)",
+      "description": "Computation and visualization of hierarchical data clustering.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",

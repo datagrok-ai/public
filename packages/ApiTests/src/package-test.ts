@@ -10,6 +10,7 @@ import './functions/functions';
 import './shell/shell';
 import './shell/windows';
 import './views/docking';
+import './views/docking-nested';
 import './views/events';
 import './views/layouts';
 import './views/files-view';

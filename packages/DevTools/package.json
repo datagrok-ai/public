@@ -6,7 +6,7 @@
     "name": "Diana Onufriienko",
     "email": "donufriienko@datagrok.ai"
   },
-  "description": "Tools for the Datagrok developers (TestManager, DevPanel). [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/DevTools/README.md)",
+  "description": "Tools for the Datagrok developers (TestManager, DevPanel).",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

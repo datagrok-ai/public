@@ -57,6 +57,11 @@ export interface AfterInputRenderPayload {
   input: DG.InputBase | FileInput;
 }
 
+export interface AfterOutputRenderPayload {
+  prop: DG.Property;
+  output: DG.Viewer;
+}
+
 export class RichFunctionView extends FunctionView {
   // emitted when runButton disability should be checked
   private checkDisability = new Subject();
@@ -102,10 +107,18 @@ export class RichFunctionView extends FunctionView {
     return Promise.resolve();
   }
 
+  // scripting api events
   public beforeInputPropertyRender = new Subject<DG.Property>();
   public afterInputPropertyRender = new Subject<AfterInputRenderPayload>();
   public beforeRenderControlls = new Subject<true>();
+  public afterOutputPropertyRender = new Subject<AfterOutputRenderPayload>();
+  public afterOutputSacalarTableRender = new Subject<HTMLElement>();
 
+  /*
+   * Will work only if called synchronously inside
+   * beforeRenderControlls subscriber.
+   * TODO: remove this limitation
+   */
   public replaceControlls(div: HTMLElement) {
     this.controllsDiv = div;
   }
@@ -207,6 +220,8 @@ export class RichFunctionView extends FunctionView {
 
           if (this.dfToViewerMapping[dfProp.name]) this.dfToViewerMapping[dfProp.name].push(viewer); else this.dfToViewerMapping[dfProp.name] = [viewer];
 
+          this.afterOutputPropertyRender.next({prop: dfProp, output: viewer});
+
           return viewer;
         }));
 
@@ -224,6 +239,7 @@ export class RichFunctionView extends FunctionView {
                   viewer.root.replaceWith(newViewer.root);
                   viewer = newViewer;
                 }
+                this.afterOutputPropertyRender.next({prop: dfProp, output: viewer});
               });
             });
 
@@ -278,6 +294,7 @@ export class RichFunctionView extends FunctionView {
             [scalarProp.caption ?? scalarProp.name, this.funcCall.outputs[scalarProp.name], scalarProp.options['units']],
         ).root;
         table.style.maxWidth = '400px';
+        this.afterOutputSacalarTableRender.next(table);
         return table;
       };
 
@@ -428,7 +445,6 @@ export class RichFunctionView extends FunctionView {
           if (prop.options['units']) t.addPostfix(prop.options['units']);
 
           this.syncFuncCallReplaced(t, val);
-          this.syncInputOnChanged(t, val)
           this.syncOnInput(t, val);
           this.syncValOnChanged(t, val);
 
@@ -440,7 +456,7 @@ export class RichFunctionView extends FunctionView {
         }
         prevCategory = prop.category;
       });
-
+    this.controllsDiv = undefined;
     this.beforeRenderControlls.next(true);
     if (!this.controllsDiv) {
       const runButton = this.getRunButton();
@@ -470,43 +486,45 @@ export class RichFunctionView extends FunctionView {
   private syncFuncCallReplaced(t: DG.InputBase<any>, val: DG.FuncCallParam) {
     const prop = val.property;
     const sub = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
-      t.value = this.funcCall!.inputs[val.name] ?? prop.defaultValue ?? null;
-      this.funcCall!.inputs[val.name] = this.funcCall!.inputs[val.name] ?? prop.defaultValue ?? null;
+      const newValue = this.funcCall!.inputs[val.name] ?? prop.defaultValue ?? null;
+      if (val.property.propertyType === DG.TYPE.DATA_FRAME) {
+        this.dfInputRecreate(t, val, newValue);
+      } else {
+        t.value = newValue;
+        this.funcCall!.inputs[val.name] = newValue;
+      }
     });
     this.subs.push(sub);
   }
 
-  private syncInputOnChanged(t: DG.InputBase<any>, val: DG.FuncCallParam) {
-    t.onChanged(() => {
-      // Resolving case of propertyType = DATAFRAME
-      if (!!t.property) return;
-
-      this.funcCall!.inputs[val.name] = t.value;
-    });
-  }
-
   private syncValOnChanged(t: DG.InputBase<any>, val: DG.FuncCallParam) {
-    const prop = val.property;
     const sub = val.onChanged.subscribe(() => {
       const newValue = this.funcCall!.inputs[val.name];
-
       if (val.property.propertyType === DG.TYPE.DATA_FRAME) {
-        // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12223
-        const newTableInput = ui.tableInput(prop.caption ?? prop.name, newValue, [...grok.shell.tables, newValue]);
-        t.root.replaceWith(newTableInput.root);
-        t = newTableInput;
-        this.syncOnInput(t, val);
-        this.afterInputPropertyRender.next({prop, input: t});
-      } else {
+        this.dfInputRecreate(t, val, newValue)
+        // there is no notify for DG.FuncCallParam, so we need to
+        // check if the value is not the same for floats, otherwise we
+        // will overwrite a user input with a lower precicsion decimal
+        // representation
+      } else if (((typeof newValue  === 'number') && Math.abs(t.value - newValue) > 0.0001) || typeof newValue  !== 'number') {
         t.notify = false;
         t.value = newValue;
         t.notify = true;
       }
-
       this.checkDisability.next();
     });
 
     this.subs.push(sub);
+  }
+
+  // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12223
+  private dfInputRecreate(t: DG.InputBase<any>, val: DG.FuncCallParam, newValue: DG.DataFrame) {
+    const prop = val.property;
+    const newTableInput = ui.tableInput(prop.caption ?? prop.name, newValue, [...grok.shell.tables, newValue]);
+    t.root.replaceWith(newTableInput.root);
+    t = newTableInput;
+    this.syncOnInput(t, val);
+    this.afterInputPropertyRender.next({prop, input: t});
   }
 
   private syncOnInput(t: DG.InputBase<any>, val: DG.FuncCallParam) {
