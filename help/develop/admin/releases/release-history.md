@@ -6,8 +6,8 @@ title: "Release History"
 
 | Service                                                  | Docker Image                                                                                      |
 |----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../infrastructure.md#datagrok-components)     | [datagrok/datagrok:1.14.0](https://hub.docker.com/r/datagrok/datagrok)                            |
-| [Grok Connect](../../../access/data-connection.md)       | [datagrok/grok_connect:2.0.9](https://hub.docker.com/r/datagrok/grok_connect)                     |
+| [Datagrok](../infrastructure.md#datagrok-components)     | [datagrok/datagrok:1.14.1](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Grok Connect](../../../access/data-connection.md)       | [datagrok/grok_connect:2.0.10](https://hub.docker.com/r/datagrok/grok_connect)                     |
 | Grok Spawner                                             | [datagrok/grok_spawner:1.3.2](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../infrastructure.md#grok-compute)        | [datagrok/grok_compute:1.5.1](https://hub.docker.com/r/datagrok/grok_compute)                     |
 | [Jupyter Kernel Gateway](../../../compute/scripting.md)  | [datagrok/jupyter_kernel_gateway:1.5.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
@@ -18,6 +18,28 @@ title: "Release History"
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../docker-compose.md)
+
+
+## 2023-04-20 1.14.1
+
+### Addressed Issues
+
+* (Improvement) GROK-12721: Tooltip modifications for dialog and drag-n-drop
+* (Improvement) GROK-12788: Cat filter: select one on first select, select all on deselecting last
+* Line Chart: minmax selection fix
+* (Enhancement) [#1583](https://github.com/datagrok-ai/public/issues/1575692020): Scatter Plot: "pack and zoom" option should response to changes when a numerical column is used
+* (Bug) [#1758](https://github.com/datagrok-ai/public/issues/1651500892): Filtering is slow if there are multiple bar charts on several views
+* (Enhancement) [#1778](https://github.com/datagrok-ai/public/issues/1662788717): Viewers: Organize properties consistently in the context panel
+* (Enhancement) [#1635](https://github.com/datagrok-ai/public/issues/1613838883): Box Plot: Add a zoom slider to adjust axes range
+* (Enhancement) [#1746](https://github.com/datagrok-ai/public/issues/1644383938): Scatter Plot: Date picker for X and Y axes min/max
+* (Bug) [#1671](https://github.com/datagrok-ai/public/issues/1624096862): Line chart: connects the first and last values when  resizing the window
+* Release: Release 1.14.1: Add public link
+* JS API: Missing deps
+* Package: JS-API: Added missing dependency
+* Grok Connect: Fixed issue
+* (Bug) GROK-12891: Dev.jnj | File Manager: scrollbar is missing in the File Tree
+* Release: Patch:  Run  Fix scatterplot conflict
+* Release: Patch:  Run Up GC version
 
 
 ## 2023-04-18 1.14.0
