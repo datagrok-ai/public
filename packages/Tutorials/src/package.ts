@@ -127,14 +127,14 @@ export function demoApp() {
 //name: Demo script example
 //tags: app
 export function demoScriptExample() {
-  const demoScript = new DemoScript('Demo', 'Description about demo');
+  const demoScript = new DemoScript('Demo', 'A scatter plot is a mathematical diagram that uses Cartesian coordinates to display values for typically two variables for a set of data. If the points are encoded by size, color, or marker shape, you can increase the number of displayed variables. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis.');
   demoScript
-    .step('Load', () => grok.shell.addTableView(grok.data.demo.demog()), {description: 'Aaaa', delay: 3000})
-    .step('Visualize', () => grok.shell.addTableView(grok.data.testData('biosensor')), {description: 'Bbb', delay: 3000})
+    .step('Load', () => grok.shell.addTableView(grok.data.demo.demog()), {description: 'There are a few ways to choose a column in a scatter plot. The easiest way to do this is to click on the column selector on the viewer.', delay: 3000})
+    .step('Visualize', () => grok.shell.addTableView(grok.data.testData('biosensor')), {description: 'Alternatively, you can drag the column right from the spreadsheet, or from the column list (Windows | Columns, or Alt+C). Also, you can make this choice from the context panel on the right (Windows | Properties, or F4).', delay: 3000})
     .step('Finish', () => {
       grok.shell.addTableView(grok.data.testData('geo'));
       console.log('End');
-    }, {description: 'Ccc', delay: 4000})
+    }, {description: 'Please try different ways in the next steps.', delay: 4000})
     .step('Final', () => console.log('Finished'));
 
   grok.shell.newView('Demo script example', [ui.button('Start script', () => demoScript.start())]);
