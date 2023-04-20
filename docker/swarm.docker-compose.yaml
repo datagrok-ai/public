@@ -98,13 +98,8 @@ services:
           "dbAdminPassword": "db_password",
           "dbLogin": "datagrok",
           "dbPassword": "datagrok123",
-          "testTrackLogin": "test_login",
-          "testTrackPassword": "test_password",
-          "testTrackDbServer": "host.docker.internal",
           "adminPassword": "admin",
-          "adminDevKey": "1111111111",
-          "isolatesCount": 4,
-          "testDevKey": "2222222222"
+          "isolatesCount": 4
         }
     ports:
       - target: 8080

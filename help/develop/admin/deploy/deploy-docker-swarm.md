@@ -23,7 +23,10 @@ More information about Datagrok design and components:
 
 1. We use native [Docker compose](https://docs.docker.com/compose/) commands to run applications on machines. It
    simplifies multi-container application development and deployment.
-    1. Download and install the latest version of [Docker Compose](https://docs.docker.com/compose/install/) to your
+    1. Platform requires 2 hosts: 1 for Datagrok, 1 for CVM with hardware parameters:
+       * Minimal: 30 GB free disk space, 2 CPUs, 4 GB RAM.
+       * Recommended: Over 30 GB free disk space, 4 CPUs, 8 GB RAM, or higher.
+    2. Download and install the latest version of [Docker Compose](https://docs.docker.com/compose/install/) to your
        environment (virtual machines, dedicated hosts, etc.)
 
 ## Preparations
@@ -47,28 +50,7 @@ More information about Datagrok design and components:
    To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
    ```
 
-2. Use the received token on worker nodes to join the swarm as described below. You can get
-   token any time by typing in the manager node shell for workers:
-
-   ```shell
-   docker swarm join-token worker
-
-   To add a worker to this swarm, run the following command:
-
-    docker swarm join --token SWMTKN-1-klkjojoijoidowqijd-jdiqjdowqdojwqduudu XX.XX.XX.XX:2377
-   ```
-
-   Or, if you want to add another manager node:
-
-   ```shell
-   docker swarm join-token manager
-
-   To add a manager to this swarm, run the following command:
-
-    docker swarm join --token SWMTKN-1-mkmocmomcoemeo334ad-,xowodoxmwddmoqw33 XX.XX.XX.XX:2377
-   ```
-
-3. From the manager node set labels to all nodes in the swarm cluster.
+2. From the manager node (datagrok) set labels to all nodes in the swarm cluster.
 
    1. List all nodes:
 
@@ -76,40 +58,37 @@ More information about Datagrok design and components:
       docker node ls
       ```
 
-   2. Add labels ```role==datagrok``` and ```role==cvm``` to nodes:
+   2. Add labels ```role==datagrok``` to datagrok node which is the manager and ```role==cvm```
+      to CVM node which is the worker in the cluster:
 
       ```shell
-      docker node update --label-add  role==datagrok <prefer_node>
+      docker node update --label-add  role==datagrok <datagrok_node>
+      docker node update --label-add  role==cvm <cvm_node>
       ```
 
-4. Download a Docker Compose YAML
+3. Download a Docker Compose YAML
    file: [link](https://github.com/datagrok-ai/public/blob/master/docker/swarm.docker-compose.yaml)
 
-5. Adjust in the downloaded file `GROK_PARAMETERS` values,
-`X_API_KEY`,`DOCKER_REGISTRY`,`DOCKER_REGISTRY_USER`,
-`DOCKER_REGISTRY_PASS`;`POSTGRES_USER` and `POSTGRES_PASSWORD`must be the same as
-`dbAdminLogin` and `dbAdminPassword` in `GROK_PARAMETERS`.
-
-6. Run the docker stack
+4. Run the docker stack
 
    ```shell
-   docker stack deploy -c ./swarm,docker-compose.yaml <STACK_NAME>
+   docker stack deploy -c ./swarm,docker-compose.yaml datagrok
    ```
 
-7. Check if Datagrok started successfully: `http://<DATAGROK_VM_IP_ADDRESS>:8080`, login to Datagrok using the
+5. Check if Datagrok started successfully: `http://<DATAGROK_VM_IP_ADDRESS>:8080`, login to Datagrok using the
    username "`admin`" and password "`admin`".
 
-8. Edit settings in the running Datagrok platform (Tools -> Settings...). Do not forget to click Apply to save new settings.
+6. Edit settings in the running Datagrok platform (Tools -> Settings...). Do not forget to click Apply to save new settings.
     * Scripting:
-        * CVM Url: `http://<CVM_VM_IP_ADDRESS>:8090`
-        * CVM URL Client: `http://<CVM_VM_IP_ADDRESS>:8090`
-        * H2o Url: `http://<CVM_VM_IP_ADDRESS>:54321`
-        * API Url: `http://<DATAGROK_VM_IP_ADDRESS>:8080/api`
+        * CVM Url: `http://<CVM_VM_DNS_ADDRESS>:8090`
+        * CVM URL Client: `http://<CVM_VM_DNS_ADDRESS>:8090`
+        * H2o Url: `http://<CVM_VM_DNS_ADDRESS>:54321`
+        * API Url: `http://<DATAGROK_VM_DNS_ADDRESS>:8080/api`
         * Cvm Split: `true`
     * Dev:
-        * CVM Url: `http://<CVM_VM_IP_ADDRESS>:8090`
+        * CVM Url: `http://<CVM_VM_DNS_ADDRESS>:8090`
         * Cvm Split: `true`
-        * API Url: `http://<DATAGROK_VM_IP_ADDRESS>:8080/api`
+        * API Url: `http://<DATAGROK_VM_DNS_ADDRESS>:8080/api`
 
 ## Users access
 

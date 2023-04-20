@@ -120,3 +120,8 @@ More information:
 
 * [Deployment on a regular machine](deploy-regular.md)
 * [Deployment on AWS EC2](deploy-amazon-ec2.md)
+
+Next steps:
+
+* [Configure authentification](configure-auth.md)
+* [Configure SMTP](configure-smtp.md)
