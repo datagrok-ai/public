@@ -313,21 +313,21 @@ You have multiple options to define input parameters:
 * Enter a single value.
 * Use parameter _functions_:
   * **Choices**. _Choices_ are functions with no parameters that return a list of strings. To learn more about _choices_
-    , see [Parameter choices](../compute/scripting.md#parameter-choices). Example:
+    , see [Parameter choices](../datagrok/functions/func-params-annotation.mdx#choices). Example:
 
     ```sql
     --input: string shipCountry = "France" {choices: ['France', 'Italy', 'Germany']}
     ```
 
   * **Editors**. _Editors_ are functions that generate parameters from another _function's_ output. To learn more
-    about _editors_, see [Parameter editors](../compute/scripting.md). Example:
+    about _editors_, see [Parameter editors](../datagrok/functions/func-params-annotation.mdx). Example:
 
     ```sql
     --input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
     ```
 
   * **Suggestions**. _Suggestions_ are functions that take a string argument and return a list of matching strings. To
-    learn more about _suggestions_, see [Parameter suggestions](../compute/scripting.md#parameter-suggestions).
+    learn more about _suggestions_, see [Parameter suggestions](../datagrok/functions/func-params-annotation.mdx#suggestions).
     Example:
 
     ```sql
@@ -336,7 +336,7 @@ You have multiple options to define input parameters:
 
   * **Validators**. _Validators_ are functions that take a value and check it against the specified criteria. When
     validation fails, _validators_ return a specified object and (optionally) an error message. To learn more about _
-    validators_, see [Parameter validators](../compute/scripting.md#parameter-validators).
+    validators_, see [Parameter validators](../datagrok/functions/func-params-annotation.mdx#validators).
 * Reuse other parameters as parameter values. Example:
 
   ```sql
