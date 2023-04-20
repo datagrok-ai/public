@@ -151,7 +151,26 @@ export class GridTutorial extends Tutorial {
       '<b>Column Sizing</b> (options are Minimal, Compact, Optimal, or Maximal).');
 
     this.title('Formatting');
-    // Formatting of dates and numbers
+
+    const heightColumn = this.t!.getCol('height');
+    const weightColumn = this.t!.getCol('weight');
+    const startedColumn = this.t!.getCol('started');
+    await this.action('Change number formatting of HEIGHT to "int"', this.t!.onMetadataChanged.pipe(filter((data) =>
+      (data.args.source as unknown as DG.Column).name === heightColumn.name && (data.args.key as unknown as string) ===
+      'format' && (data.args.change as unknown as string) === 'set' && (data.args.value as unknown as string) === 'int')),
+      null, 'One way to set a new numeric format is to right-click a column header and select <b>Format > int</b>.');
+
+    await this.action('Set number formatting of WEIGHT to "max two digits after comma"', this.t!.onMetadataChanged.pipe(
+      filter((data) => (data.args.source as unknown as DG.Column).name === weightColumn.name && (data.args.key as unknown as
+      string) === 'format' && (data.args.change as unknown as string) === 'set' && (data.args.value as unknown as string)
+      === 'max two digits after comma')));
+
+    await this.action('Set date formatting of STARTED to "dd.MM.yyyy"', this.t!.onMetadataChanged.pipe(filter((data) =>
+      (data.args.source as unknown as DG.Column).name === startedColumn.name && (data.args.key as unknown as string) ===
+      'format' && (data.args.change as unknown as string) === 'set' && (data.args.value as unknown as string) ===
+      'dd.MM.yyyy')), null, 'Learn more about ' + ui.link('formatting of numbers and dates',
+      'https://datagrok.ai/help/discover/tags#format').outerHTML);
+
     this.title('Color coding');
     // Color coding
     this.title('Summary columns');
