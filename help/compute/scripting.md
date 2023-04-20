@@ -11,9 +11,7 @@ visualizations available in
 
 ## Header
 
-Each script should have a header that contains some metadata, along with the information on input and output parameters.
-See all available
-[header parameters](#header-parameters). Each line starts with a comment.
+Each script should have a header that contains some metadata, along with the information on input and output parameters. Each line starts with a comment.
 
 Let's take a look at a simple R script that returns a square of the input parameter:
 
@@ -95,8 +93,8 @@ registered in the platform as a
 
 When a function is invoked with no explicitly specified parameters, a dialog is shown. The UI is automatically generated
 by creating editors for each parameter. Depending on the metadata associated with the parameters, the editor can be
-enriched by [validators](#parameter-validators), [choices](#parameter-choices),
-and [suggestions](#parameter-suggestions). Validators, choices, and suggestions are
+enriched by validators, choices,
+and suggestions that are
 [functions](../datagrok/functions/functions.md), that means they can be implemented in different ways (db query, script,
 etc), and reused.
 
