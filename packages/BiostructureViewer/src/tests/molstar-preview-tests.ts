@@ -7,26 +7,45 @@ import {
   test,
   expect
 } from "@datagrok-libraries/utils/src/test";
-import { _package, molecule3dNglView1 } from "../package";
+import { _package } from "../package";
 import { _packageName } from "./utils";
+import { previewBiostructure } from "../viewers/view-preview";
 
-const validFileNames = ['1bdq.pdb', '1bdq.sdf', 'dc.mol2', '4tkx.mmcif', ''];
+const validFileNames = ['1bdq.pdb', '1bdq.sdf', 'dc.mol2',
+  '4tkx.mmcif', 'caffeine.xyz', 'grofile.gro', 'pdbqt.pdbqt'];
 
 category("MolstarPreview", () => {
-  test("openpdb", async () => {
+
+  validFileNames.forEach(fn =>{
+    test(`open${fn.substring(fn.indexOf('.'),fn.length)}`, async () => {
+      let noException = true;
+      const folderName: string = `System:AppData/${_packageName}/samples`;
+      const file = (
+        await grok.dapi.files.list(folderName, false, fn))[0];
+
+      try {
+        const view = previewBiostructure(file);
+        grok.shell.newView("Molstar Preview", [view]);
+      } catch (e) {
+        noException = false;
+      }
+      expect(noException, true);
+    });
+  });
+
+  test('openCsvFile', async () => {
     let noException = true;
-    const pdbFolder: string = `System:AppData/${_packageName}/samples`;
-    const pdbFile = (
-      await grok.dapi.files.list(pdbFolder, false, 'mol1k.sdf')
-    )[0];
+    const folderName: string = `System:AppData/${_packageName}/samples`;
+    const file = (
+    await grok.dapi.files.list(folderName, false, 'dock.csv'))[0];
 
     try {
-      const view = molecule3dNglView1(pdbFile);
+      const view = previewBiostructure(file);
       grok.shell.newView("Molstar Preview", [view]);
     } catch (e) {
       noException = false;
     }
-    expect(noException, true);
-    await new Promise(r => setTimeout(r, 4000));
+    expect(noException, false);
   });
+
 });
