@@ -55,7 +55,7 @@ title: "Grid"
 |---------------------------|----------------------|
 | Drag column header        | Reorder columns      |
 | Drag column header border | Resize columns       |
-| Drag row header border    | Copy cell            |
+| Drag row header border    | Resize row height    |
 | Menu -> Column sizing     | Batch sizing options |
 
 ## Formatting
