@@ -100,16 +100,14 @@ export class DemoScript {
     const entryIndicators = this.activity.querySelectorAll('.tutorials-track .grok-icon');
     const entryInstructions = this.activity.querySelectorAll('.grok-tutorial-step-description');
 
-    console.log(entry);
-
     for (let i = 0; i < this.stepNumber; i++) {
       entryIndicators[i].className = 'grok-icon far fa-spinner-third fa-spin';
       entryInstructions[i].classList.remove('hidden');
       entryInstructions[i].classList.add('visible');
-      this.root.focus();
+      
       let currentStep = entry[i] as HTMLDivElement;
-      console.log(currentStep);
-      this.root.scrollTop = currentStep.offsetTop - this.mainHeader.offsetHeight;
+      console.log(this.root, this.root.offsetTop, currentStep.offsetTop-this.mainHeader.offsetHeight);
+      scrollInto(currentStep);
 
       this.steps[i].func();
 
@@ -121,4 +119,13 @@ export class DemoScript {
       this.progressSteps.innerText = `Step: ${this.progress.value} of ${this.stepNumber}`;
     }
   }
+}
+function scrollTo(element: HTMLDivElement, y:number) {
+    element.focus();
+    return element.scrollTop = y;
+}
+
+function scrollInto(element: HTMLDivElement) {
+  element.focus();
+  return element.scrollIntoView(false);
 }

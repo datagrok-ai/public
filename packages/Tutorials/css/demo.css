@@ -114,6 +114,10 @@
 }
 
 /* Autocomplete dock */
+.demo-app {
+    overflow: scroll;
+}
+
 .demo-app .tutorials-root-header{
     align-items: center;
 }
