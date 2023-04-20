@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.78",
+  "version": "3.2.79",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -2426,9 +2426,12 @@
         },
         "1.0.2": {
           "datagrok-api": "^1.11.1"
+        },
+        "1.1.2": {
+          "datagrok-api": "^1.11.1"
         }
       },
-      "description": "Computation and visualization of hierarchical data clustering.",
+      "description": "Computation and visualization of hierarchical data clustering. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Dendrogram/README.md)",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
