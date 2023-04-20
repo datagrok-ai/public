@@ -308,6 +308,9 @@ export class Shell {
   }
 
   get startUri(): string { return api.grok_Get_StartUri(); }
+
+  /** Shows the content in the help window for the [x] URL or object. */
+  showHelp(x: any) { api.grok_ShowHelp(x); }
 }
 
 

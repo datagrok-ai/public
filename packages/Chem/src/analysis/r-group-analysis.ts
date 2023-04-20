@@ -30,9 +30,9 @@ export function rGroupAnalysis(col: DG.Column): void {
     ui.setUpdateIndicator(sketcher.root, true);
     try {
       let molCol = col.dataFrame.columns.byName(columnInput.value!);
-      const smiles: string = await findMCS(molCol.name, molCol.dataFrame);
+      const smarts: string = await findMCS(molCol.name, molCol.dataFrame);
       ui.setUpdateIndicator(sketcher.root, false);
-      sketcher.setMolFile(convertMolNotation(smiles, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock));
+      sketcher.setMolFile(convertMolNotation(smarts, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock));
     } catch (e: any) {
       grok.shell.error(e);
       dlg.close();

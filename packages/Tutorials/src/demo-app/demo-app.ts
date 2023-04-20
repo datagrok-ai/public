@@ -133,7 +133,7 @@ export class DemoView extends DG.ViewBase {
           node?.click();
         };
 
-        if (f.description !== '')
+        if (f.description)
           ui.tooltip.bind(item, f.description)
 
         root.append(item);
@@ -152,7 +152,7 @@ export class DemoView extends DG.ViewBase {
 
       item.root.onmouseover = (event) => {
         const packageMessage = `Part of the ${f.package.name} package`;
-        ui.tooltip.show(f.description ? ui.divV([f.description, packageMessage]) : ui.div(packageMessage),
+        ui.tooltip.show(f.description ? ui.divV([f.description, ui.element('br'), packageMessage]) : ui.div(packageMessage),
           event.clientX, event.clientY);
       };
 

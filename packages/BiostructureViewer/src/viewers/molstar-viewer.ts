@@ -2,13 +2,12 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-// import {Viewer as rcsbViewer, ViewerProps as rcsbViewerProps} from '@rcsb/rcsb-molstar/src/viewer';
+import $ from 'cash-dom';
+import wu from 'wu';
+
 import {Viewer as RcsbViewer, ViewerProps as RcsbViewerProps} from '@rcsb/rcsb-molstar/build/src/viewer';
 import {PROPS as pdbPROPS} from './../viewers/ngl-viewer';
 
-
-import $ from 'cash-dom';
-import wu from 'wu';
 
 //@ts-ignore
 import {Unsubscribable} from 'rxjs';
@@ -19,7 +18,7 @@ import {ModelUrlProvider} from '@rcsb/rcsb-molstar/build/src/viewer/types';
 import {_package} from '../package';
 import {PluginContext} from 'molstar/lib/mol-plugin/context';
 import {PluginLayoutControlsDisplay} from 'molstar/lib/mol-plugin/layout';
-import {BuiltInTrajectoryFormat} from 'molstar/lib/mol-plugin-state/formats/trajectory';
+import {BuiltInTrajectoryFormat, BuiltInTrajectoryFormats} from 'molstar/lib/mol-plugin-state/formats/trajectory';
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
@@ -565,12 +564,20 @@ export async function byId(pdbId: string) {
 /**
  * Creates an instance of Mol* viewer.
  *
- * @param {string} pdbData Data in PDB
+ * @param {string} data Data in PDB
  */
-export async function byData(pdbData: string, name: string = 'Mol*') {
+export async function byData(data: string, name: string = 'Mol*') {
   initViewer(name)
     .then(async (viewer: RcsbViewer) => {
-      await viewer.loadStructureFromData(pdbData, 'pdb', false);
+      // detecting format by data content
+      let format: BuiltInTrajectoryFormat = 'pdb';
+      let binary: boolean = false;
+      if (data.includes('mmcif_pdbx.dic')) {
+        format = 'mmcif';
+        binary = false;
+      }
+
+      await viewer.loadStructureFromData(data, format, binary);
     });
   //v.handleResize();
 }
@@ -604,7 +611,8 @@ export function previewMolstarUI(file: DG.FileInfo): DG.View {
       .then(() => {}); // Ignoring Promise returned
   }
 
-  if (['pdb', 'sdf'].includes(file.extension))
+  // Handling binary data formats separately
+  if (['pdb', 'sdf', 'mmcif'].includes(file.extension))
     file.readAsString().then(loadString);
   else
     file.readAsBytes().then(loadBytes);

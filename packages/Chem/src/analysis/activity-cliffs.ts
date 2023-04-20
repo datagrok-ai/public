@@ -19,7 +19,7 @@ export function findMcsAndUpdateDrawings(params: ITooltipAndPanelParams, hosts: 
 async function drawMoleculesWithMcsAsync(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
   const mcsDf = DG.DataFrame.create(2);
   mcsDf.columns.addNewString('smiles').init((i) => params.seqCol.get(params.line.mols[i]));
-  const mcs = await findMCS('smiles', mcsDf, true);
+  const mcs = await findMCS('smiles', mcsDf);
   params.cashedData[params.line.id] = mcs;
   drawMolecules(params, hosts);
 }
@@ -67,7 +67,7 @@ function drawTooltipElement(params: ITooltipAndPanelParams, element: HTMLDivElem
 function moleculeInfo(df: DG.DataFrame, idx: number, seqColName: string): HTMLElement {
   const dict: {[key: string]: string} = {};
   for (const col of df.columns) {
-    if (col.name !== seqColName) 
+    if (col.name !== seqColName)
       dict[col.name] = df.get(col.name, idx);
   }
   return ui.tableFromMap(dict);
@@ -108,16 +108,16 @@ function drawPropPanelElement(params: ITooltipAndPanelParams, element: HTMLDivEl
   activity.style.paddingLeft = '15px';
   activity.style.paddingLeft = '10px';
   const molHost = ui.div();
-  if (params.df.currentRowIdx === molIdx) 
+  if (params.df.currentRowIdx === molIdx)
     molHost.style.border = 'solid 1px lightgrey';
-    
+
   ui.tooltip.bind(molHost, () => moleculeInfo(params.df, molIdx, params.seqCol.name));
   molHost.onclick = () => {
     const obj = grok.shell.o;
     molHost.style.border = 'solid 1px lightgrey';
     params.df.currentRowIdx = molIdx;
     hosts.forEach((h, i) => {
-      if (i !== idx) 
+      if (i !== idx)
         h.style.border = '';
     });
     setTimeout(() => {
