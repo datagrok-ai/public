@@ -132,10 +132,6 @@ export function demoScriptExample() {
   demoScript
     .step('Load', () => grok.shell.addTableView(grok.data.demo.demog()), {description: 'There are a few ways to choose a column in a scatter plot. The easiest way to do this is to click on the column selector on the viewer.', delay: 3000})
     .step('Visualize', () => grok.shell.addTableView(grok.data.testData('biosensor')), {description: 'Alternatively, you can drag the column right from the spreadsheet, or from the column list (Windows | Columns, or Alt+C). Also, you can make this choice from the context panel on the right (Windows | Properties, or F4).', delay: 3000})
-    .step('Visualize', () => grok.shell.addTableView(grok.data.testData('biosensor')), {description: 'Alternatively, you can drag the column right from the spreadsheet, or from the column list (Windows | Columns, or Alt+C). Also, you can make this choice from the context panel on the right (Windows | Properties, or F4).', delay: 3000})
-    .step('Visualize', () => grok.shell.addTableView(grok.data.testData('biosensor')), {description: 'Alternatively, you can drag the column right from the spreadsheet, or from the column list (Windows | Columns, or Alt+C). Also, you can make this choice from the context panel on the right (Windows | Properties, or F4).', delay: 3000})
-    .step('Visualize', () => grok.shell.addTableView(grok.data.testData('biosensor')), {description: 'Alternatively, you can drag the column right from the spreadsheet, or from the column list (Windows | Columns, or Alt+C). Also, you can make this choice from the context panel on the right (Windows | Properties, or F4).', delay: 3000})
-    .step('Visualize', () => grok.shell.addTableView(grok.data.testData('biosensor')), {description: 'Alternatively, you can drag the column right from the spreadsheet, or from the column list (Windows | Columns, or Alt+C). Also, you can make this choice from the context panel on the right (Windows | Properties, or F4).', delay: 3000})
     .step('Finish', () => {
       grok.shell.addTableView(grok.data.testData('geo'));
       console.log('End');

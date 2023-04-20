@@ -30,7 +30,10 @@ export class DemoView extends DG.ViewBase {
   }
 
   async startDemoFunc(func: DG.Func, viewPath: string) {
-    grok.shell.closeAll();
+    grok.shell.closeAll();  
+    //let dock = document.querySelector('.tutorials-demo-script-container');
+    //dock?.previousSibling?.remove();
+    //dock?.remove();
     ui.setUpdateIndicator(grok.shell.tv.root, true);
     grok.shell.windows.showHelp = true;
 

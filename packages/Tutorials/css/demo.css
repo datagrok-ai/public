@@ -114,42 +114,42 @@
 }
 
 /* Autocomplete dock */
-.demo-app {
+.demo-app-script {
     overflow: scroll;
 }
 
-.demo-app .tutorials-root-header{
+.demo-app-script .tutorials-root-header{
     align-items: center;
 }
 
-.demo-app .tutorials-main-header {
+.demo-app-script .tutorials-main-header {
     padding: 0 12px;
 }
 
-.demo-app .fa-clock {
+.demo-app-script .fa-clock {
     color: var(--grey-3);
 }
 
-.demo-app .fa-spin {
+.demo-app-script .fa-spin {
     color: var(--blue-1);
 }
 
-.demo-app .fa-check {
+.demo-app-script .fa-check {
     color: var(--green-2);
 }
 
-.demo-app .grok-tutorial-entry-instruction {
+.demo-app-script .grok-tutorial-entry-instruction {
     color: var(--grey-6);
 }
 
-.demo-app .grok-tutorial-step-description {
+.demo-app-script .grok-tutorial-step-description {
     padding-left: 22px;
 }
 
-.demo-app .grok-tutorial-step-description .hidden{
+.demo-app-script .grok-tutorial-step-description .hidden{
     display: none;
 }
 
-.demo-app .grok-tutorial-step-description .visible{
+.demo-app-script .grok-tutorial-step-description .visible{
     display: block;
 }

@@ -20,7 +20,7 @@ export class DemoScript {
   description: string = '';
   steps: Step[] = [];
 
-  root: HTMLDivElement = ui.div([], 'tutorials-root tutorials-track demo-app');
+  root: HTMLDivElement = ui.div([], 'tutorials-root tutorials-track demo-app-script');
   
   mainHeader: HTMLDivElement = ui.panel([], 'tutorials-main-header');
   header: HTMLHeadingElement = ui.h1('');
@@ -89,7 +89,7 @@ export class DemoScript {
   // TODO: add cancel button
   async start() {
     let node = grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.RIGHT, null, this.name, 0.3);
-
+    node.container.containerElement.classList.add('tutorials-demo-script-container');
     this._addHeader();
     this.root.append(this.mainHeader);
 
