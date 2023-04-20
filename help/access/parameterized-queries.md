@@ -21,7 +21,7 @@ select * from products where productname = @productName
 
 ## Syntax
 
-The syntax for defining query parameters is based on [functions syntax](../datagrok/functions/func-params-annotation.md)
+The syntax for defining query parameters is based on [functions syntax](../datagrok/functions/func-params-annotation.mdx)
 with additions specific to queries.
 
 ### Input parameters
@@ -72,7 +72,7 @@ Learn more about using the lists feature in this video: [link](https://www.youtu
 
 #### Choices and suggestions
 
-Options for supported types are described in the [Function parameter annotation](../datagrok/functions/func-params-annotation.md) article.
+Options for supported types are described in the [Function parameter annotation](../datagrok/functions/func-params-annotation.mdx) article.
 
 | Option        | Description                                                                       |
 |---------------|-----------------------------------------------------------------------------------|

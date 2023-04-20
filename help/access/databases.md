@@ -282,7 +282,7 @@ use the same query to retrieve data matching different criteria.
 
 #### Query parameters
 
-The syntax for defining query parameters is based on [functions syntax](../datagrok/functions/func-params-annotation.md)
+The syntax for defining query parameters is based on [functions syntax](../datagrok/functions/func-params-annotation.mdx)
 with additions specific to queries.
 
 Queries have a special `connection` parameter corresponding to the query connection name. It is optional, just like the

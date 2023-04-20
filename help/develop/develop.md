@@ -127,7 +127,7 @@ file. If you choose to include other files, such as CSS, in your package, import
 
 During the [publishing step](#publishing), the contents of `package.js` get parsed, and functions with the properly
 formatted
-[headers](../datagrok/functions/func-params-annotation.md#header-parameters) are registered as Grok
+[headers](../datagrok/functions/func-params-annotation.mdx#header-parameters) are registered as Grok
 [functions](../datagrok/functions/functions.md)
 . By annotating functions in a specific way, it is possible to register custom viewers, widgets, renderers, converters,
 validators, suggestions, info panels, and semantic type detectors. If function has more than one output, it must return

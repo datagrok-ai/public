@@ -173,7 +173,7 @@ select * from protein_classification
 --end
 ```
 
-SQL statements are annotated with comments, just like [functions](../../datagrok/functions/func-params-annotation.md),
+SQL statements are annotated with comments, just like [functions](../../datagrok/functions/func-params-annotation.mdx),
 since the underlying mechanism is essentially the same (read more on the concept of
 [functions](../../datagrok/functions/functions.md)). Here we have two header parameters: the query `name` and the
 `connection` to use. In fact, this particular query could have been even simpler: there is no need to specify
