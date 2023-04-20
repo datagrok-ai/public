@@ -106,12 +106,12 @@ export class DemoScript {
       entryInstructions[i].classList.add('visible');
       
       let currentStep = entry[i] as HTMLDivElement;
-      console.log(this.root, this.root.offsetTop, currentStep.offsetTop-this.mainHeader.offsetHeight);
-      scrollInto(currentStep);
 
       this.steps[i].func();
 
-      await delay(this.steps[i].options?.delay ? this.steps[i].options?.delay! : 2000);;
+      scrollTo(this.root, currentStep.offsetTop-this.mainHeader.offsetHeight);
+
+      await delay(this.steps[i].options?.delay ? this.steps[i].options?.delay! : 2000);
 
       entryIndicators[i].className = 'grok-icon far fa-check';
 
