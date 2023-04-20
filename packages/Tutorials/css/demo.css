@@ -112,3 +112,40 @@
 .demo-app-group-view.grok-gallery-grid {
     align-items: stretch;
 }
+
+/* Autocomplete dock */
+.demo-app .tutorials-root-header{
+    align-items: center;
+}
+
+.demo-app .tutorials-main-header {
+    padding: 0 12px;
+}
+
+.demo-app .fa-clock {
+    color: var(--grey-3);
+}
+
+.demo-app .fa-spin {
+    color: var(--blue-1);
+}
+
+.demo-app .fa-check {
+    color: var(--green-2);
+}
+
+.demo-app .grok-tutorial-entry-instruction {
+    color: var(--grey-6);
+}
+
+.demo-app .grok-tutorial-step-description {
+    padding-left: 22px;
+}
+
+.demo-app .grok-tutorial-step-description .hidden{
+    display: none;
+}
+
+.demo-app .grok-tutorial-step-description .visible{
+    display: block;
+}

@@ -20,7 +20,7 @@ export class DemoScript {
   description: string = '';
   steps: Step[] = [];
 
-  root: HTMLDivElement = ui.div([], 'tutorials-root tutorials-track');
+  root: HTMLDivElement = ui.div([], 'tutorials-root tutorials-track demo-app');
   
   mainHeader: HTMLDivElement = ui.panel([], 'tutorials-main-header');
   header: HTMLHeadingElement = ui.h1('');
@@ -50,7 +50,6 @@ export class DemoScript {
     this.header.innerText = this.name;
     this.headerDiv.append(this.header);
     this.headerDiv.append(ui.button(ui.iconFA('times-circle'),()=>{grok.shell.info('stop demo')}));
-    this.headerDiv.style.alignItems = 'center';
 
     this.progress.max = this.stepNumber;
     this.progressDiv.append(this.progress);
@@ -59,20 +58,16 @@ export class DemoScript {
     this.progressDiv.append(this.progressSteps);
 
     this.mainHeader.append(this.headerDiv, this.progressDiv);
-    this.mainHeader.style.paddingTop = '0px';
   }
 
   _addDescription(): void {
     this.activity.append(ui.div(this.description, 'tutorials-root-description'));
     for (let i = 0; i < this.stepNumber; i++) {
       const instructionIndicator = ui.iconFA('clock');
-      instructionIndicator.style.color = 'var(--grey-2)';
 
       const instructionDiv = ui.div(this.steps[i].name, 'grok-tutorial-entry-instruction');
-      instructionDiv.style.color = 'var(--grey-6)';
-      const currentStepDescription = ui.div(this.steps[i].options?.description, 'grok-tutorial-step-description');
-      currentStepDescription.style.paddingLeft = '22px';
-
+      const currentStepDescription = ui.div(this.steps[i].options?.description, 'grok-tutorial-step-description hidden');
+      
       const entry = ui.divH([
         instructionIndicator,
         instructionDiv,
@@ -93,7 +88,7 @@ export class DemoScript {
 
   // TODO: add cancel button
   async start() {
-    grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.RIGHT, null, this.name, 0.3);
+    let node = grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.RIGHT, null, this.name, 0.3);
 
     this._addHeader();
     this.root.append(this.mainHeader);
@@ -101,19 +96,26 @@ export class DemoScript {
     this._addDescription();
     this.root.append(this.activity);
 
+    const entry = this.activity.querySelectorAll('.grok-tutorial-entry');
     const entryIndicators = this.activity.querySelectorAll('.tutorials-track .grok-icon');
-    const entryInstructions = this.activity.getElementsByClassName('grok-tutorial-entry-instruction');
+    const entryInstructions = this.activity.querySelectorAll('.grok-tutorial-step-description');
+
+    console.log(entry);
 
     for (let i = 0; i < this.stepNumber; i++) {
       entryIndicators[i].className = 'grok-icon far fa-spinner-third fa-spin';
+      entryInstructions[i].classList.remove('hidden');
+      entryInstructions[i].classList.add('visible');
+      this.root.focus();
+      let currentStep = entry[i] as HTMLDivElement;
+      console.log(currentStep);
+      this.root.scrollTop = currentStep.offsetTop - this.mainHeader.offsetHeight;
+
       this.steps[i].func();
-      entryIndicators[i].setAttribute('style','color: var(--blue-1)');
 
       await delay(this.steps[i].options?.delay ? this.steps[i].options?.delay! : 2000);;
 
       entryIndicators[i].className = 'grok-icon far fa-check';
-      entryIndicators[i].setAttribute('style','color: var(--green-2)');
-      //entryInstructions[i].classList.add('grok-tutorial-entry-success');
 
       this.progress.value++;
       this.progressSteps.innerText = `Step: ${this.progress.value} of ${this.stepNumber}`;
