@@ -64,8 +64,7 @@ The goal for today is to gain experience with the platform by learning about its
    1. Watch a [First-class functions video](https://www.youtube.com/watch?v=p7_qOU_IzLM&t=724s)
    1. Read documentation:
       1. [Functions](../../datagrok/functions/functions.md)
-      1. [Parameter annotation](../../datagrok/functions/func-params-annotation.md)
-      1. [Parameter enhancement](../../datagrok/functions/func-params-enhancement.md)
+      1. [Parameter annotation](../../datagrok/functions/func-params-annotation.mdx)
       1. See the list of supported [constants](../../transform/functions/constants.md) and
          [operators](../../transform/functions/operators.md). Explore the groups of functions in the table of contents
          (statistical, math, text, conversion, etc.).

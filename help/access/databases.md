@@ -495,4 +495,4 @@ more information on workflow automation, see [Data preparation pipeline](data-pi
     * [![Using lists in parameterized queries tutorial](lists-in-param-queries-youtube-watch.png)](https://www.youtube.com/watch?v=meRAEF7ogtw)
     * [![Parameterized queries tutorial](param-queries-tutorial-youtube.png)](https://www.youtube.com/watch?v=sSJp5CXcYKQ)
 * Tutorials
-  * [Adding parameters to functions](../datagrok/functions/func-params-enhancement.md)
+  * [Adding parameters to functions](../datagrok/functions/func-params-annotation.mdx)
