@@ -17,7 +17,7 @@ export class GridTutorial extends Tutorial {
   }
 
   get steps(): number {
-    return 30;
+    return 31;
   }
 
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers/grid';
@@ -172,9 +172,25 @@ export class GridTutorial extends Tutorial {
       'https://datagrok.ai/help/discover/tags#format').outerHTML);
 
     this.title('Color coding');
-    // Color coding
+
+    await this.action('Set linear color coding for HEIGHT', this.t!.onMetadataChanged.pipe(filter((data) =>
+      (data.args.source as unknown as DG.Column).name === heightColumn.name && (data.args.key as unknown as string) ===
+      '.color-coding-type' && (data.args.change as unknown as string) === 'set' && (data.args.value as unknown as string) ===
+      'Linear')), null, 'Right-click the column header and enable <b>Color Coding > Linear</b>. This action will paint the ' +
+      'column cells in colors ranging from blue to red (by default). This way you can quickly tell which values are closer ' +
+      'to the column minimum and which are closer to the maximum. There are other color coding types (categorical and ' +
+      'conditional) as well as various color coding related options. Learn more about this topic in ' +
+      ui.link('the wiki article', 'https://datagrok.ai/help/visualize/viewers/grid#color-coding').outerHTML);
+
     this.title('Summary columns');
-    // Summary columns
-    // Hide columns
+
+    await this.action('Add a summary column with inline bar chart', interval(1000).pipe(filter(() => grid.col('barchart') !==
+      null)), null, 'Summary columns is a way to visualize multiple numerical values across the row. To add one, right-click ' +
+      'on any cell in the grid and select <b>Add > Summary Columns > Bar Chart</b>.');
+
+    await this.action('Click the "barchart" column header', interval(1000).pipe(filter(() => grok.shell.o instanceof
+      DG.GridColumn && grok.shell.o.name === 'barchart')), null, 'Summary columns contain an inline viewer that visualizes by ' +
+      'default up to 3 columns. When you click the column header, you can see which columns are used for a summary in the ' +
+      'context panel on the right.');
   }
 }
