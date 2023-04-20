@@ -8,8 +8,10 @@ import '../../css/demo.css';
 
 
 type Direction = {
+  category: string,
   name: string,
-  icon: string
+  description: string,
+  func: DG.Func
 };
 
 
@@ -50,45 +52,66 @@ export class DemoView extends DG.ViewBase {
 
     this.name = 'Demo app';
 
-    const title = ui.divText('Datagrok Platform Demo', 'demo-app-view-title');
-    const description = ui.divText(`Explore Datagrok functionality features.
-      Select a the category or choose the demo from the list.`, 'demo-app-view-subtitle');
-    const root = ui.div([], 'demo-app-view grok-gallery-grid');
+    let root = ui.divV([]);
 
-    const groups: Direction[] = [];
+    const tempGroups:String[] = [];
 
     for (const f of DG.Func.find({meta: {'demoPath': null}})) {
       const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
       const path = pathOption.split('|').map((s) => s.trim());
-      const categoryName = path[0];
-
-      const item: Direction = {
-        name: categoryName,
-        icon: f.package.getIconUrl()
-      };
-
-      if (!groups.some((elem) => elem.name === categoryName))
-        groups[groups.length] = item;
+      tempGroups.push(path[0]);
     }
 
-    for (let i = 0; i < groups.length; i++) {
-      const item = ui.card(ui.divV([
-        ui.image(groups[i].icon, 80, 80),
-        ui.div([groups[i].name], 'tutorials-card-title')
-      ]));
-
-      item.onclick = () => {
-        let node = this.tree.items.find(node => node.text == groups[i].name)?.root;
-        node?.click();
-      };
-      root.append(item);
+    const groups: String[] = [...new Set(tempGroups)];
+    
+    for (let i=0; i<groups.length; i++){
+      const name = groups[i] as string;
+      root.append(ui.div([ui.h1(name)], 'demo-app-group-title'));
+      root.append(this.groupRoot(name))
     }
 
-    this.root.append(ui.divV([
-      title,
-      description,
-      root
-    ]));
+    this.root.append(root);
+  }
+
+  groupRoot (groupName: string) {
+    const root = ui.div([], 'demo-app-group-view grok-gallery-grid');
+
+    for (const f of DG.Func.find({meta: {'demoPath': null}})) {
+      if (f.options[DG.FUNC_OPTIONS.DEMO_PATH].includes(groupName)) {
+        const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
+        const path = pathOption.split('|').map((s) => s.trim());
+        const demo = path[path.length - 1];
+
+        const imgPath = `${_package.webRoot}images/demoapp/${f.name}.jpg`;
+        const img = ui.div('', 'ui-image');
+
+        fetch(imgPath)
+          .then(res => {
+            if (res.ok)
+              img.style.backgroundImage = `url(${imgPath})`
+            else
+              img.style.backgroundImage = `url(${_package.webRoot}images/demoapp/emptyImg.jpg)`
+          })
+          .catch()
+
+        let item = ui.card(ui.divV([
+          img,
+          ui.div([demo], 'tutorials-card-title'),
+          ui.div([f.description], 'tutorials-card-description')
+        ], 'demo-app-card'));
+
+        item.onclick = () => {
+          let node = this.tree.items.find(node => node.text == demo)?.root;
+          node?.click();
+        };
+
+        if (f.description != '')
+          ui.tooltip.bind(item, f.description)
+
+        root.append(item);
+      }
+    }
+    return root
   }
 
   nodeView(viewName: string) {
