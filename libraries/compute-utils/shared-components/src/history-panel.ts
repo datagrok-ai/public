@@ -160,7 +160,6 @@ export class HistoryPanel {
     const fullFuncCalls = await Promise.all(wu(this.selectedCallsSet.keys()).map((selected) => historyUtils.loadRun(selected.id)));
     const parentCall = grok.shell.v.parentCall;
 
-    console.log(parentCall, fullFuncCalls);
     const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
     const v = await RunComparisonView.fromComparedRuns(fullFuncCalls, {
       parentView: cardView,
