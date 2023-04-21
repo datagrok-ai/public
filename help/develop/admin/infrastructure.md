@@ -63,7 +63,7 @@ example [AWS S3](https://aws.amazon.com/s3/) or [Google Cloud Storage](https://c
 to use scalable and highly reliable solutions for storage and avoid local file system setup to prevent datagrok internal
 information loss, such as projects, settings, etc. User data won't be affected anyhow on Datagrok storage loss.
 
-Check [How to deploy datagrok?](deploy.md) for details.
+Check [How to deploy datagrok?](deploy/deploy.md) for details.
 
 ## Scalability
 
@@ -520,8 +520,8 @@ The schema has the following tables:
 
 ## Useful links
 
-* [Deployment](deploy.md)
+* [Deployment](deploy/deploy.md)
 * [Configuration](configuration.md)
 * [Continuous integration](continuous-integration.png)
 * [Versioning policy](releases/versioning-policy.md)
-* [Try Datagrok locally](docker-compose.md)
+* [Try Datagrok locally](deploy/docker-compose.md)
