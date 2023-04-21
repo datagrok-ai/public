@@ -1,4 +1,4 @@
-# <a name="NglViewerl">NglViewer
+# <a name="NglViewerl">NglViewer</a>
 
 [NglViewer](../../../packages/BiostructureViewer/src/viewers/ngl-viewer.ts) is
 a Datagrok [DG.JsViewer](../../js-api/src/viewer.ts) derived component based on
