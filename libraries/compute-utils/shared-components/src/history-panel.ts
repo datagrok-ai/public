@@ -7,6 +7,7 @@ import wu from 'wu';
 import {BehaviorSubject, Subject} from 'rxjs';
 import {historyUtils} from '../../history-utils';
 import '../css/history-panel.css';
+import {RunComparisonView} from '../../function-views';
 
 export const defaultUsersIds = {
   'Test': 'ca1e672e-e3be-40e0-b79b-d2c68e68d380',
@@ -90,6 +91,7 @@ class HistoryPanelStore {
 const MY_PANE_LABEL = 'HISTORY' as const;
 const FAVORITES_LABEL = 'FAVORITES' as const;
 const SHARED_LABEL = 'SHARED' as const;
+const CARD_VIEW_TYPE = 'JsCardView' as const;
 
 export class HistoryPanel {
   // Emitted when FuncCall should is chosen. Contains FuncCall ID
@@ -131,6 +133,8 @@ export class HistoryPanel {
   private favRunsFilter = new Subject<true>();
   private sharedRunsFilter = new Subject<true>();
 
+  private selectedCallsSet = new Set<DG.FuncCall>;
+
   public allRunsFetch = new Subject<true>();
 
   historyTab = ui.div();
@@ -142,6 +146,7 @@ export class HistoryPanel {
     [FAVORITES_LABEL]: ui.box(this.favTab),
     [SHARED_LABEL]: ui.box(this.sharedTab),
   });
+  actionsSection = this.buildActionsSection();
 
   private _root = ui.divV([
     this.tabs.root,
@@ -150,6 +155,100 @@ export class HistoryPanel {
   myCards = [] as HTMLElement[];
   favoriteCards = [] as HTMLElement[];
   sharedCards = [] as HTMLElement[];
+
+  async compareRuns() {
+    const fullFuncCalls = await Promise.all(wu(this.selectedCallsSet.keys()).map((selected) => historyUtils.loadRun(selected.id)));
+    const parentCall = grok.shell.v.parentCall;
+
+    console.log(parentCall, fullFuncCalls);
+    const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
+    const v = await RunComparisonView.fromComparedRuns(fullFuncCalls, {
+      parentView: cardView,
+      parentCall,
+    });
+    grok.shell.addView(v);
+  }
+
+  buildActionsSection() {
+    return ui.divH([
+      ui.span([`Selected: ${this.selectedCallsSet.size}`], {style: {'align-self': 'center'}}),
+      ui.divH([
+        (() => {
+          const t = ui.iconFA('exchange', () => this.compareRuns());
+          t.style.margin = '5px';
+          if (this.selectedCallsSet.size < 2)
+            t.classList.add('hp-disabled');
+          return t;
+        })(),
+        (() => {
+          const t = ui.iconFA('trash-alt', () => this.showDeleteRunDialog(this.selectedCallsSet));
+          t.style.margin = '5px';
+          if (this.selectedCallsSet.size === 0)
+            t.classList.add('hp-disabled');
+          return t;
+        })(),
+        ...this.selectedCallsSet.size === 0 ? [(() => {
+          const t = ui.iconFA('square', () => {
+            switch (this.tabs.currentPane.name) {
+            case MY_PANE_LABEL:
+              this.store.myRuns.forEach((run) => this.selectedCallsSet.add(run));
+              this.myRunsFilter.next();
+              break;
+            case FAVORITES_LABEL:
+              this.store.favoriteRuns.forEach((run) => this.selectedCallsSet.add(run));
+              this.favRunsFilter.next();
+              break;
+            case SHARED_LABEL:
+              this.store.sharedRuns.forEach((run) => this.selectedCallsSet.add(run));
+              this.sharedRunsFilter.next();
+              break;
+            }
+            this.updateActionsSection();
+          }); t.style.margin = '5px'; return t;
+        })()]: [
+          (() => {
+            let fullListCount = 0;
+            switch (this.tabs.currentPane.name) {
+            case MY_PANE_LABEL:
+              fullListCount = this.store.myRuns.length;
+              break;
+            case FAVORITES_LABEL:
+              fullListCount = this.store.favoriteRuns.length;
+              break;
+            case SHARED_LABEL:
+              fullListCount = this.store.sharedRuns.length;
+              break;
+            }
+
+            const t = this.selectedCallsSet.size === fullListCount? ui.iconFA('check-square') : ui.iconFA('minus-square');
+
+            t.addEventListener('click', () => {
+              switch (this.tabs.currentPane.name) {
+              case MY_PANE_LABEL:
+                this.store.myRuns.forEach((run) => this.selectedCallsSet.delete(run));
+                this.myRunsFilter.next();
+                break;
+              case FAVORITES_LABEL:
+                this.store.favoriteRuns.forEach((run) => this.selectedCallsSet.delete(run));
+                this.favRunsFilter.next();
+                break;
+              case SHARED_LABEL:
+                this.store.sharedRuns.forEach((run) => this.selectedCallsSet.delete(run));
+                this.sharedRunsFilter.next();
+                break;
+              }
+              this.updateActionsSection();
+            });
+            t.style.margin = '5px';
+            return t;
+          })(),
+        ],
+      ]),
+    ], {style: {
+      'justify-content': 'space-between',
+      'padding': '0 12px',
+    }});
+  }
 
   buildFilterPane(currentTabName: string) {
     return ui.wait(async () => {
@@ -185,10 +284,16 @@ export class HistoryPanel {
       const filterTagEditor = DG.TagEditor.create();
       const dummyInput = ui.stringInput(' ', '');
       dummyInput.input.replaceWith(filterTagEditor.root);
+      dummyInput.root.style.display = 'none';
 
       filterTagEditor.onChanged(() => {
         //@ts-ignore
         this.store.filteringOptions.tags = filterTagEditor.tags.filter((tag) => !!tag);
+
+        if (this.store.filteringOptions.tags!.length === 0)
+          dummyInput.root.style.display = 'none';
+        else
+          dummyInput.root.style.removeProperty('display');
 
         this.myRunsFilter.next();
         this.favRunsFilter.next();
@@ -244,20 +349,29 @@ export class HistoryPanel {
     });
   };
 
-  myPaneFilter = this.buildFilterPane(MY_PANE_LABEL);
-  favoritesPaneFilter =this.buildFilterPane(FAVORITES_LABEL);
-  sharedPaneFilter = this.buildFilterPane(SHARED_LABEL);
+  myPaneFilter = this.buildFilterPane(MY_PANE_LABEL) as HTMLElement;
+  favoritesPaneFilter =this.buildFilterPane(FAVORITES_LABEL) as HTMLElement;
+  sharedPaneFilter = this.buildFilterPane(SHARED_LABEL)as HTMLElement;
 
-  showDeleteRunDialog(funcCall: DG.FuncCall) {
-    ui.dialog({title: 'Delete run'})
-      .add(ui.divText('The deleted run is impossible to restore. Are you sure?'))
+  showDeleteRunDialog(funcCalls: Set<DG.FuncCall>) {
+    ui.dialog({title: `Delete  ${funcCalls.size > 1 ? 'runs': 'run'}`})
+      .add(ui.divText(`The deleted ${funcCalls.size > 1 ? 'runs': 'run'} is impossible to restore. Are you sure?`))
       .onOK(async () => {
-        this.beforeRunDeleted.next(funcCall.id);
-        await historyUtils.deleteRun(funcCall);
-        this.afterRunDeleted.next(funcCall.id);
+        funcCalls.forEach(async (funcCall) => {
+          this.beforeRunDeleted.next(funcCall.id);
+          this.selectedCallsSet.delete(funcCall);
+          await historyUtils.deleteRun(funcCall);
+          this.afterRunDeleted.next(funcCall.id);
+        });
       })
       .show({center: true});
   };
+
+  updateActionsSection() {
+    const newActionsSection = this.buildActionsSection();
+    this.actionsSection.replaceWith(newActionsSection);
+    this.actionsSection = newActionsSection;
+  }
 
   updateSharedPane(sharedRuns: DG.FuncCall[]) {
     const sharedCards = (sharedRuns.length > 0) ? this.renderSharedCards(sharedRuns) : ui.divText('No runs are marked as shared', 'no-elements-label');
@@ -285,6 +399,7 @@ export class HistoryPanel {
     const myCards = (myRuns.length > 0) ? this.renderHistoryCards(myRuns) : ui.divText('No runs are found in history', 'no-elements-label');
     const newTab = ui.divV([
       this.myPaneFilter,
+      this.actionsSection,
       ui.element('div', 'splitbar-horizontal'),
       myCards,
     ]);
@@ -300,23 +415,53 @@ export class HistoryPanel {
     const cardLabel = ui.label(funcCall.options['title'] ?? funcCall.author.friendlyName, {style: {'color': 'var(--blue-1)'}});
     ui.bind(funcCall.author, icon);
 
+    const addToCompare = ui.iconFA('square', (ev) => {
+      ev.stopPropagation();
+      this.selectedCallsSet.add(funcCall);
+
+      addToCompare.style.display = 'none';
+      removeFromCompare.style.removeProperty('display');
+      this.updateActionsSection();
+    });
+    addToCompare.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
+
+    const removeFromCompare = ui.iconFA('check-square', (ev) => {
+      ev.stopPropagation();
+      this.selectedCallsSet.delete(funcCall);
+      removeFromCompare.style.display = 'none';
+
+      this.updateActionsSection();
+      addToCompare.style.removeProperty('display');
+    });
+    removeFromCompare.classList.add('hp-funccall-card-icon');
+
+    if (!this.selectedCallsSet.has(funcCall)) {
+      addToCompare.style.removeProperty('display');
+      removeFromCompare.style.display = 'none';
+    } else {
+      addToCompare.style.display = 'none';
+      removeFromCompare.style.removeProperty('display');
+    }
+
     const editIcon = ui.iconFA('edit', (ev) => {
       ev.stopPropagation();
       this.showEditDialog(funcCall);
     });
-    editIcon.classList.add('cv-funccall-card-hover-icon');
+    editIcon.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
 
     const deleteIcon = ui.iconFA('trash-alt', async (ev) => {
       ev.stopPropagation();
-      this.showDeleteRunDialog(funcCall);
+      const tempSet = new Set<DG.FuncCall>();
+      tempSet.add(funcCall);
+      this.showDeleteRunDialog(tempSet);
     }, 'Delete the run');
-    deleteIcon.classList.add('cv-funccall-card-hover-icon');
+    deleteIcon.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
 
     const favoritedIcon = ui.iconFA('star', null, 'Unfavorite the run');
-    favoritedIcon.classList.add('fas', 'cv-funccall-card-def-icon');
+    favoritedIcon.classList.add('fas', 'hp-funccall-card-def-icon');
 
     const sharedIcon = ui.iconFA('share-alt', null, 'Add to shared');
-    sharedIcon.classList.add('fas', 'cv-funccall-card-def-icon');
+    sharedIcon.classList.add('fas', 'hp-funccall-card-def-icon');
     sharedIcon.style.color = 'var(--blue-1)';
 
     const dateStarted = new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
@@ -330,14 +475,15 @@ export class HistoryPanel {
           ...(funcCall.options['description']) ? [ui.divText(funcCall.options['description'], 'description')]: [],
           ...(funcCall.options['tags'] && funcCall.options['tags'].length > 0) ?
             [ui.div(funcCall.options['tags'].map((tag: string) => ui.span([tag], 'd4-tag')))]:[],
-        ], 'cv-card-content'),
+        ], 'hp-card-content'),
       ]),
       ui.divH([
         editIcon, deleteIcon,
         ...(funcCall.options['isFavorite']) ? [favoritedIcon] : [],
         ...(funcCall.options['isShared']) ? [sharedIcon]: [],
+        addToCompare, removeFromCompare,
       ]),
-    ], 'cv-funccall-card');
+    ], 'hp-funccall-card');
 
     card.addEventListener('click', async () => {
       this.onRunChosen.next(funcCall.id);
@@ -476,6 +622,20 @@ export class HistoryPanel {
     this.tabs.root.style.width = '100%';
     this.tabs.root.style.height = '100%';
 
+    this.tabs.onTabChanged.subscribe(() => {
+      switch (this.tabs.currentPane.name) {
+      case MY_PANE_LABEL:
+        this.myPaneFilter.append(this.actionsSection);
+        break;
+      case FAVORITES_LABEL:
+        this.favoritesPaneFilter.append(this.actionsSection);
+        break;
+      case SHARED_LABEL:
+        this.sharedPaneFilter.append(this.actionsSection);
+        break;
+      }
+    });
+
     this.myRunsFilter.subscribe(() => this.updateMyPane(this.store.filteredMyRuns));
     this.favRunsFilter.subscribe(() => this.updateFavoritesPane(this.store.filteredFavoriteRuns));
     this.sharedRunsFilter.subscribe(() => this.updateSharedPane(this.store.filteredSharedRuns));
@@ -527,6 +687,7 @@ export class HistoryPanel {
 
     this.afterRunDeleted.subscribe((id) => {
       this.store.allRuns.next(this.store.allRuns.value.filter((call) => call.id !== id));
+      this.updateActionsSection();
     });
 
     this.allRunsFetch.next();
