@@ -168,6 +168,22 @@ element, you will see the row it represents in the grid.
 
 ![Current rows](../current-rows-2.gif "Current rows")
 
+### Column edit permissions
+
+You can specify a list of users who are allowed to edit a specific column. There are two ways to set edit permissions:
+
+* Click on the column header and go to the context panel. Select Advanced -> Permissions tab. Input a comma-separated list of usernames into the Editable By field.
+
+![Setting permissions via context pane](column_permissions_context_pane.png)
+
+* Open column properties and create a new EditableBy tag. The value is also a list of comma-separated usernames.
+
+![Setting permissions via column properties](column_permissions_col_tag.png)
+
+Once this is done, only users from the list are allowed to edit the column. If a user without permission tries to edit the column, a warning will occur.
+
+![Permission warning](column_permission_warning.gif)
+
 ## Videos
 
 [![Grid](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=2971s)
