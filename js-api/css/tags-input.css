@@ -8,7 +8,6 @@
     flex-direction: row;
     flex-wrap: wrap;
     padding: 4px 0;
-    gap: 1px;
 }
 
 .ui-form.ui-form-condensed .ui-input-root.ui-input-tags > .ui-input-root {
@@ -32,8 +31,8 @@
     align-items: center;
     text-align: center;
     line-height: 1;
-    background-color: var(--steel-1);
-    margin: 1px 2px;
+    background-color: var(--grey-1);
+    margin: 1px;
     text-decoration: none;
     white-space: nowrap;
     border-radius: 2px;
