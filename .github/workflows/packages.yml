@@ -154,7 +154,7 @@ jobs:
             profiles+=' --profile grok_compute'
           fi
           echo "Check if Grok Spawner is required for the package"
-          if [ -d "packages/${{ matrix.package }}/dockerfiles" ];
+          if [ -d "packages/${{ matrix.package }}/dockerfiles" ]; then
             profiles+=' --profile grok_spawner'
           fi
           echo "Run datagrok stand with profiles ${profiles}"
