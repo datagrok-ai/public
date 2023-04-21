@@ -8,7 +8,7 @@ export interface IMolContext {
 }
 
 export function isSmarts(molString: string): boolean {
-  return !!molString.match(/\[.?#\d|\$|&|;|,|!|:|\*.?\]/g) && !molString.includes('\n');
+  return !!molString.match(/\[.?#\d|\$|&|;|,|!\]/g) && !molString.includes('\n');
 }
 
 export function getMolSafe(molString: string, details: object = {}, rdKitModule: RDModule, warnOff: boolean = true): IMolContext {

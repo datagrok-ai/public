@@ -269,6 +269,9 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
       }
     });
     const fileLink = ui.link('Open...', '', '', {
+      processNode: (node: HTMLElement) => {
+        const k = 11;
+      },
       // @ts-ignore // ui.link argument options.onClick: (node: HTMLElement) => void
       onClick: (event: PointerEvent) => {
         event.preventDefault();

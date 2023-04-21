@@ -10,6 +10,7 @@ import {TutorialWidget} from './widget';
 import '../css/tutorial.css';
 import {Track} from '@datagrok-libraries/tutorials/src/track';
 import {DemoView} from './demo-app/demo-app';
+import {viewerDemo} from './demo-app/platform-viewers-demo';
 
 
 export const _package = new DG.Package();
@@ -109,17 +110,14 @@ export function demoApp() {
 
   if (pathSegments.length > 4) {
     const category = pathSegments[4];
-    if (pathSegments[pathSegments.length - 1] === category && category === 'Viewers') {
+    if (pathSegments[pathSegments.length - 1] === category) {
       demoView.nodeView(category);
       return;
     }
 
-    const viewerName = pathSegments[5].split('%20').join(' ');
+    const viewerName = pathSegments[5].replaceAll('%20', ' ');
     const f = DemoView.findDemoFunc(`${category} | ${viewerName}`);
     if (f) {
-      const loadingScreen = ui.div('Loading...', 'loading');
-      grok.shell.tv.root.appendChild(loadingScreen);
-
       const viewPath = `${category}/${viewerName}`;
       demoView.startDemoFunc(f, viewPath);
     }
@@ -175,4 +173,173 @@ function setPath(path: string, tutorialRunners: TutorialRunner[]): void {
   const tutorial = track?.tutorials?.find((t) => removeSpaces(t.name) === tutorialName);
   if (tutorial && trackIdx != null)
     tutorialRunners[trackIdx].run(tutorial);
+}
+
+
+//name: scatterPlotDemo
+//description: Scatter Plot ....
+//meta.demoPath: Viewers | Scatter Plot
+export async function _scatterPlotDemo() {
+  await viewerDemo(DG.VIEWER.SCATTER_PLOT);
+}
+
+//name: histogramDemo
+//description: Histogram ....
+//meta.demoPath: Viewers | Histogram
+export async function _histogramDemo() {
+  await viewerDemo(DG.VIEWER.HISTOGRAM);
+}
+
+//name: lineChartDemo
+//description: Line Chart ....
+//meta.demoPath: Viewers | Line Chart
+export async function _lineChartDemo() {
+  await viewerDemo(DG.VIEWER.LINE_CHART);
+}
+
+//name: barChartDemo
+//description: Bar Chart ....
+//meta.demoPath: Viewers | Bar Chart
+export async function _barChartDemo() {
+  await viewerDemo(DG.VIEWER.BAR_CHART);
+}
+
+//name: pieChartDemo
+//description: Pie Chart ....
+//meta.demoPath: Viewers | Pie Chart
+export async function _pieChartDemo() {
+  await viewerDemo(DG.VIEWER.PIE_CHART);
+}
+
+//name: trellisPlotDemo
+//description: Trellis Plot ....
+//meta.demoPath: Viewers | Trellis Plot
+export async function _trellisPlotDemo() {
+  await viewerDemo(DG.VIEWER.TRELLIS_PLOT);
+}
+
+//name: matrixPlotDemo
+//description: Matrix Plot ....
+//meta.demoPath: Viewers | Matrix Plot
+export async function _matrixPlotDemo() {
+  await viewerDemo(DG.VIEWER.MATRIX_PLOT);
+}
+
+//name: scatterPlot3DDemo
+//description: 3D Scatter Plot ....
+//meta.demoPath: Viewers | 3D Scatter Plot
+export async function _scatterPlot3DDemo() {
+  await viewerDemo(DG.VIEWER.SCATTER_PLOT_3D);
+}
+
+//name: densityPlotDemo
+//description: Density Plot ....
+//meta.demoPath: Viewers | Density Plot
+export async function _densityPlotDemo() {
+  await viewerDemo(DG.VIEWER.DENSITY_PLOT);
+}
+
+//name: pcPlotDemo
+//description: PC Plot ....
+//meta.demoPath: Viewers | PC Plot
+export async function _pcPlotDemo() {
+  await viewerDemo(DG.VIEWER.PC_PLOT);
+}
+
+//name: networkDiagramDemo
+//description: Network Diagram ....
+//meta.demoPath: Viewers | Network Diagram
+export async function _networkDiagramDemo() {
+  await viewerDemo(DG.VIEWER.NETWORK_DIAGRAM);
+}
+
+//name: boxPlotDemo
+//description: Box Plot ....
+//meta.demoPath: Viewers | Box Plot
+export async function _boxPlotDemo() {
+  await viewerDemo(DG.VIEWER.BOX_PLOT);
+}
+
+//name: treeMapDemo
+//description: Tree map ....
+//meta.demoPath: Viewers | Tree map
+export async function _treeMapDemo() {
+  await viewerDemo(DG.VIEWER.TREE_MAP);
+}
+
+//name: heatMapDemo
+//description: Heat map ....
+//meta.demoPath: Viewers | Heat map
+export async function _heatMapDemo() {
+  await viewerDemo(DG.VIEWER.HEAT_MAP);
+}
+
+//name: statisticsDemo
+//description: Statistics ....
+//meta.demoPath: Viewers | Statistics
+export async function _statisticsDemo() {
+  await viewerDemo(DG.VIEWER.STATISTICS);
+}
+
+//name: correlationPlotDemo
+//description: Correlation Plot ....
+//meta.demoPath: Viewers | Correlation Plot
+export async function _correlationPlotDemo() {
+  await viewerDemo(DG.VIEWER.CORR_PLOT);
+}
+
+//name: calendarDemo
+//description: Calendar ....
+//meta.demoPath: Viewers | Calendar
+export async function calendarDemo() {
+  await viewerDemo(DG.VIEWER.CALENDAR);
+}
+
+//name: gridDemo
+//description: Grid ....
+//meta.demoPath: Viewers | Grid
+export async function _gridDemo() {
+  await viewerDemo(DG.VIEWER.GRID);
+}
+
+//name: markupDemo
+//description: Markup ....
+//meta.demoPath: Viewers | Markup
+export async function _markupDemo() {
+  await viewerDemo(DG.VIEWER.MARKUP);
+}
+
+//name: tileViewerDemo
+//description: Tile viewer ....
+//meta.demoPath: Viewers | Tile Viewer
+export async function _tileViewerDemo() {
+  await viewerDemo(DG.VIEWER.TILE_VIEWER);
+}
+
+//name: formDemo
+//description: Form ....
+//meta.demoPath: Viewers | Form
+export async function _formDemo() {
+  await viewerDemo(DG.VIEWER.FORM);
+}
+
+//name: shapeMapDemo
+//description: Shape Map ....
+//meta.demoPath: Viewers | Shape Map
+export async function _shapeMapDemo() {
+  await viewerDemo(DG.VIEWER.SHAPE_MAP);
+}
+
+//name: pivotTableDemo
+//description: Pivot Table ....
+//meta.demoPath: Viewers | Pivot Table
+export async function _pivotTableDemo() {
+  await viewerDemo('Pivot table');
+}
+
+//name: mapDemo
+//description: Map ....
+//meta.demoPath: Viewers | Map
+export async function _mapDemo() {
+  await viewerDemo('Map');
 }

@@ -294,8 +294,10 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     protected List<String> getParameterNames(String query, DataQuery dataQuery, StringBuilder queryBuffer) {
-        Pattern pattern = Pattern.compile("(?m)@(\\w+)");
         List<String> names = new ArrayList<>();
+        String regex = descriptor.commentStart + "\\w+:.*";
+        query = query.replaceAll(regex, "").trim();
+        Pattern pattern = Pattern.compile("(?m)@(\\w+)");
         Matcher matcher = pattern.matcher(query);
         int idx = 0;
         while (matcher.find()) {
@@ -304,9 +306,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 queryBuffer.append(query, idx, matcher.start());
                 appendQueryParam(dataQuery, name, queryBuffer);
                 idx = matcher.end();
-                if (!names.contains(name)) {
-                    names.add(name);
-                }
+                names.add(name);
             }
         }
         queryBuffer.append(query, idx, query.length());
@@ -533,6 +533,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                                     valueToAdd = value.toString();
                                 }
                             }
+                            valueToAdd = valueToAdd
+                                    .replaceAll("&lt;", "<")
+                                    .replaceAll("&gt;", ">");
                             columns.get(c - 1).add(valueToAdd);
                         } else if (isBitString(type, precision, typeName)) {
                             String valueToAdd = "";
@@ -786,7 +789,11 @@ public abstract class JdbcDataProvider extends DataProvider {
 
         String type = "string";
         String _query = "(LOWER(" + matcher.colName + ") LIKE @" + param.name + ")";
-        String value = ((String)matcher.values.get(0)).toLowerCase();
+        List<Object> values = matcher.values;
+        String value = null;
+        if (values.size() > 0) {
+            value = ((String) values.get(0)).toLowerCase();
+        }
 
         switch (matcher.op) {
             case PatternMatcher.EQUALS:
@@ -978,7 +985,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 typeName.equalsIgnoreCase("bool") || (type == java.sql.Types.BIT && precision == 1);
     }
 
-    private static boolean isString(int type, String typeName) {
+    protected boolean isString(int type, String typeName) {
         return ((type == java.sql.Types.VARCHAR)|| (type == java.sql.Types.CHAR) ||
                 (type == java.sql.Types.LONGVARCHAR) || (type == java.sql.Types.CLOB)
                 || (type == java.sql.Types.NCLOB) ||

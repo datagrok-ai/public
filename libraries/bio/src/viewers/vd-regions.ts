@@ -33,7 +33,7 @@ export interface VdRegion {
   readonly positionEndName: string;
 }
 
-export class VdRegionsPropsDefault {
+export const VdRegionsPropsDefault = new class {
   regionTypes: VdRegionType[] = [VdRegionType.CDR];
   chains: string[] = ['Heavy', 'Light'];
   //sequenceColumnNamePostfix: string = 'chain sequence';
@@ -41,13 +41,19 @@ export class VdRegionsPropsDefault {
   skipEmptyPositions: boolean = false;
   positionWidth: number = 16;
   positionHeight: PositionHeight = PositionHeight.Entropy;
-}
+}();
 
-export type VdRegionsProps = Required<VdRegionsPropsDefault>;
+export type VdRegionsProps = Required<typeof VdRegionsPropsDefault>;
 
 /** Interface for VdRegionsViewer from @datagrok/bio to unbind dependency to Bio package */
 export interface IVdRegionsViewer extends VdRegionsProps, IViewer {
   init(): Promise<void>;
 
   setData(mlbDf: DG.DataFrame, regions: VdRegion[]): void;
+}
+
+declare module 'datagrok-api/dg' {
+  export interface DataFramePlotHelper {
+    fromType(viewerType: 'VdRegions', options: Partial<VdRegionsProps>): Promise<DG.Viewer & IVdRegionsViewer>;
+  }
 }
