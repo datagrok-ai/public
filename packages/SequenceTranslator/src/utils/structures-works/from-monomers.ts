@@ -35,7 +35,7 @@ export function sequenceToMolV3000(
   }
 
   const monomers: string[] = [];
-  const fivePrime = ['(ccBPmU)', '(VPmU)', '(tcBPmU)'];
+  const fivePrime = ['(ccBPmU)', '(VPmU)', '(tcBPmU)', '(VPccmU)'];
 
   for (let i = 0; i < codesList.length; i++) {
     const monomerWithPhosphateAt3Prime = i !== 0 && (fivePrime.includes(codesList[i]));
