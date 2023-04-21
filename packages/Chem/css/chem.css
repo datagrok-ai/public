@@ -247,3 +247,21 @@
 .chem-demo-sketcher-link {
   border: 2px solid var(--blue-1);
 }
+
+.chem-demo-button-pushed {
+  background: var(--blue-2)!important
+}
+
+.chem-demo-chembl-id-selected {
+  border-bottom: 2px solid var(--blue-2)!important
+}
+
+.chem-mcs-button-host {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.chem-mcs-button {
+  font-size: 12px!important;
+}
