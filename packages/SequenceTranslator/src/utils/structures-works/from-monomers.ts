@@ -35,11 +35,12 @@ export function sequenceToMolV3000(
   }
 
   const monomers: string[] = [];
+  const fivePrime = ['(ccBPmU)', '(VPmU)', '(tcBPmU)'];
 
   for (let i = 0; i < codesList.length; i++) {
-    const monomerWithPhosphateAt3Prime = i !== 0 && (codesList[i] === '(ccBPmU)' || codesList[i] === '(VPmU)');
+    const monomerWithPhosphateAt3Prime = i !== 0 && (fivePrime.includes(codesList[i]));
     if (monomerWithPhosphateAt3Prime)
-      monomers.pop();
+      throw new Error('ST: 5\' terminal monomer at wrong position');
     if (links.includes(codesList[i]) ||
       includesStandardLinkAlready.includes(codesList[i]) ||
       (i < codesList.length - 1 && links.includes(codesList[i + 1]))
