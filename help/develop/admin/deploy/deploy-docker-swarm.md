@@ -58,7 +58,7 @@ More information about Datagrok design and components:
 
 3. From the manager node (datagrok) set labels to all nodes in the swarm cluster.
 
-   1. List all nodes:
+   1. List all nodes. We will need ids of the datagrok and CVM nodes for the next step:
 
       ```shell
       docker node ls
@@ -68,8 +68,8 @@ More information about Datagrok design and components:
       to CVM node which is the worker in the cluster:
 
       ```shell
-      docker node update --label-add  role==datagrok <datagrok_node>
-      docker node update --label-add  role==cvm <cvm_node>
+      docker node update --label-add  role==datagrok <datagrok_node_id>
+      docker node update --label-add  role==cvm <cvm_node_id>
       ```
 
 4. Download a Docker Compose YAML

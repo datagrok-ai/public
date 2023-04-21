@@ -384,15 +384,8 @@ volumes:
   datagrok_db:
   datagrok_data:
   datagrok_cfg:
-  jkg_helper_cache:
-  jkg_helper_envs:
-  jkg_conda_envs:
-  jkg_kernels:
 
 networks:
   datagrok:
     driver: overlay
     attachable: true
-    ipam:
-      config:
-        - subnet: 192.168.2.0/24
