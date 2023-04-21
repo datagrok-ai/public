@@ -24,16 +24,13 @@ export class DemoView extends DG.ViewBase {
     this._initContent();
   }
 
-
   static findDemoFunc(demoPath: string) {
     return DG.Func.find({meta: {'demoPath': demoPath}})[0];
   }
 
   async startDemoFunc(func: DG.Func, viewPath: string) {
-    grok.shell.closeAll();  
-    //let dock = document.querySelector('.tutorials-demo-script-container');
-    //dock?.previousSibling?.remove();
-    //dock?.remove();
+    this._closeAll();
+
     ui.setUpdateIndicator(grok.shell.tv.root, true);
     grok.shell.windows.showHelp = true;
 
@@ -45,6 +42,18 @@ export class DemoView extends DG.ViewBase {
       grok.shell.v.path = grok.shell.v.basePath = `/apps/Tutorials/Demo/${viewPath}`;
   }
 
+
+  private _closeAll() {
+    grok.shell.closeAll();
+    this._closeDemoScript();
+  }
+
+  private _closeDemoScript() {
+    const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[1];
+    if (scriptDockNode.container.containerElement.classList.contains('tutorials-demo-script-container')) {
+      grok.shell.dockManager.close(scriptDockNode);
+    }
+  }
 
   private _initContent() {
     grok.shell.windows.showToolbox = false;
@@ -212,13 +221,10 @@ export class DemoView extends DG.ViewBase {
 
     this._initWindowOptions();
 
-    // TODO: if loading ended in 0.1s, then no div, if not - then div - DG.debounce, merge etc.
     // TODO: on click on viewer demo set viewer help url in property panel (func helpUrl)
     // TODO: implement search in demo - search on meta.keywords, name, description
-    // TODO: add all the platform viewers to demo (make demo functions in Tutorials)
 
     // TODO: if there empty space - add viewer/filter/etc.
-    // TODO: write API for step control and example, steps are written in context panel - first priority
 
     // TODO: add to script demo class grok.shell.windows.showPropertyPanel = true and showHelp = false
     // TODO: add GIS

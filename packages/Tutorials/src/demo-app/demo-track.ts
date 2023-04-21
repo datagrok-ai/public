@@ -18,67 +18,83 @@ interface Step {
 export class DemoScript {
   name: string = '';
   description: string = '';
-  steps: Step[] = [];
+  root: HTMLDivElement = ui.div([], {id: 'demo-script', classes: 'tutorials-root tutorials-track demo-app-script'});
 
-  root: HTMLDivElement = ui.div([], 'tutorials-root tutorials-track demo-app-script');
-  
-  mainHeader: HTMLDivElement = ui.panel([], 'tutorials-main-header');
-  header: HTMLHeadingElement = ui.h1('');
-  headerDiv: HTMLDivElement = ui.divH([], 'tutorials-root-header');
+  private _steps: Step[] = [];
 
-  activity: HTMLDivElement = ui.panel([], 'tutorials-root-description');
+  private _mainHeader: HTMLDivElement = ui.panel([], 'tutorials-main-header');
+  private _header: HTMLHeadingElement = ui.h1('');
+  private _headerDiv: HTMLDivElement = ui.divH([], 'tutorials-root-header');
 
-  progressDiv: HTMLDivElement = ui.divV([], 'tutorials-root-progress');
-  progress: HTMLProgressElement = ui.element('progress');
-  progressSteps: HTMLDivElement = ui.divText('');
+  private _activity: HTMLDivElement = ui.panel([], 'tutorials-root-description');
+
+  private _progressDiv: HTMLDivElement = ui.divV([], 'tutorials-root-progress');
+  private _progress: HTMLProgressElement = ui.element('progress');
+  private _progressSteps: HTMLDivElement = ui.divText('');
 
 
   constructor(name: string, description: string) {
     this.name = name;
     this.description = description;
-    this.root.setAttribute('id', 'demo-script');
 
-    this.progress.max = 0;
-    this.progress.value = 1;
+    this._progress.max = 0;
+    this._progress.value = 1;
+  }
+
+  get steps(): Step[] {
+    return this._steps;
   }
 
   get stepNumber(): number {
-    return this.steps.length;
+    return this._steps.length;
   }
 
-  _addHeader(): void {
-    this.header.innerText = this.name;
-    this.headerDiv.append(this.header);
-    this.headerDiv.append(ui.button(ui.iconFA('times-circle'),()=>{grok.shell.info('stop demo')}));
-
-    this.progress.max = this.stepNumber;
-    this.progressDiv.append(this.progress);
-    this.progressSteps = ui.divText(`Step: ${this.progress.value} of ${this.stepNumber}`);
-
-    this.progressDiv.append(this.progressSteps);
-
-    this.mainHeader.append(this.headerDiv, this.progressDiv);
+  private _addHeader(): void {
+    this._createHeaderDiv();
+    this._createProgressDiv();
+    this._mainHeader.append(this._headerDiv, this._progressDiv);
   }
 
-  _addDescription(): void {
-    this.activity.append(ui.div(this.description, 'tutorials-root-description'));
+  private _createHeaderDiv(): void {
+    this._header.innerText = this.name;
+    this._headerDiv.append(this._header);
+
+    // TODO: make cancel button
+    this._headerDiv.append(ui.button(ui.iconFA('times-circle'), () => {grok.shell.info('stop demo');}));
+  }
+
+  private _createProgressDiv(): void {
+    this._progress.max = this.stepNumber;
+    this._progressDiv.append(this._progress);
+    this._progressSteps = ui.divText(`Step: ${this._progress.value} of ${this.stepNumber}`);
+
+    this._progressDiv.append(this._progressSteps);
+  }
+
+  private _addDescription(): void {
+    this._activity.append(ui.div(this.description, 'tutorials-root-description'));
+
     for (let i = 0; i < this.stepNumber; i++) {
       const instructionIndicator = ui.iconFA('clock');
-
-      const instructionDiv = ui.div(this.steps[i].name, 'grok-tutorial-entry-instruction');
-      const currentStepDescription = ui.div(this.steps[i].options?.description, 'grok-tutorial-step-description hidden');
-      
+      const instructionDiv = ui.div(this._steps[i].name, 'grok-tutorial-entry-instruction');
+      const currentStepDescription = ui.div(this._steps[i].options?.description, 'grok-tutorial-step-description hidden');
       const entry = ui.divH([
         instructionIndicator,
         instructionDiv,
       ], 'grok-tutorial-entry');
 
-      this.activity.append(entry, currentStepDescription);
+      this._activity.append(entry, currentStepDescription);
     }
   }
 
+  private _scrollTo(element: HTMLDivElement, y: number): void {
+    element.focus();
+    element.scrollTop = y;
+  }
+
+
   step(name: string, func: () => void, options?: {description?: string, delay?: number}): this {
-    this.steps[this.steps.length] = {
+    this._steps[this.steps.length] = {
       name: name,
       func: func,
       options: options
@@ -86,46 +102,34 @@ export class DemoScript {
     return this;
   }
 
-  // TODO: add cancel button
   async start() {
-    let node = grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.RIGHT, null, this.name, 0.3);
+    const node = grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.RIGHT, null, this.name, 0.3);
     node.container.containerElement.classList.add('tutorials-demo-script-container');
+
     this._addHeader();
-    this.root.append(this.mainHeader);
+    this.root.append(this._mainHeader);
 
     this._addDescription();
-    this.root.append(this.activity);
+    this.root.append(this._activity);
 
-    const entry = this.activity.querySelectorAll('.grok-tutorial-entry');
-    const entryIndicators = this.activity.querySelectorAll('.tutorials-track .grok-icon');
-    const entryInstructions = this.activity.querySelectorAll('.grok-tutorial-step-description');
+    const entry = this._activity.getElementsByClassName('grok-tutorial-entry');
+    const entryIndicators = this._activity.getElementsByClassName('grok-icon');
+    const entryInstructions = this._activity.getElementsByClassName('grok-tutorial-step-description');
 
     for (let i = 0; i < this.stepNumber; i++) {
       entryIndicators[i].className = 'grok-icon far fa-spinner-third fa-spin';
       entryInstructions[i].classList.remove('hidden');
       entryInstructions[i].classList.add('visible');
-      
-      let currentStep = entry[i] as HTMLDivElement;
 
-      this.steps[i].func();
+      const currentStep = entry[i] as HTMLDivElement;
 
-      scrollTo(this.root, currentStep.offsetTop-this.mainHeader.offsetHeight);
-
-      await delay(this.steps[i].options?.delay ? this.steps[i].options?.delay! : 2000);
+      this._steps[i].func();
+      this._scrollTo(this.root, currentStep.offsetTop - this._mainHeader.offsetHeight);
+      await delay(this._steps[i].options?.delay ? this._steps[i].options?.delay! : 2000);
 
       entryIndicators[i].className = 'grok-icon far fa-check';
-
-      this.progress.value++;
-      this.progressSteps.innerText = `Step: ${this.progress.value} of ${this.stepNumber}`;
+      this._progress.value++;
+      this._progressSteps.innerText = `Step: ${this._progress.value} of ${this.stepNumber}`;
     }
   }
-}
-function scrollTo(element: HTMLDivElement, y:number) {
-    element.focus();
-    return element.scrollTop = y;
-}
-
-function scrollInto(element: HTMLDivElement) {
-  element.focus();
-  return element.scrollIntoView(false);
 }
