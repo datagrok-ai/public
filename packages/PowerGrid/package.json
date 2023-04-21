@@ -1,57 +1,58 @@
 {
-	"name": "@datagrok/power-grid",
-	"friendlyName": "PowerGrid",
-	"version": "1.1.22",
-	"author": {
-		"name": "Andrew Skalkin",
-		"email": "askalkin@datagrok.ai"
-	},
-	"description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/datagrok-ai/public.git",
-		"directory": "packages/PowerGrid"
-	},
-	"dependencies": {
-		"@datagrok-libraries/gridext": "^1.3.42",
-		"@types/wu": "latest",
-		"cash-dom": "latest",
-		"datagrok-api": "1.13.11",
-		"dayjs": "latest"
-	},
-	"devDependencies": {
-		"@typescript-eslint/eslint-plugin": "^5.20.0",
-		"@typescript-eslint/parser": "^5.20.0",
-		"eslint": "latest",
-		"eslint-config-google": "latest",
-		"source-map-loader": "^4.0.1",
-		"ts-loader": "latest",
-		"typescript": "latest",
-		"webpack": "latest",
-		"webpack-cli": "latest"
-	},
-	"scripts": {
-		"lint": "eslint src --ext .ts",
-		"lint-fix": "eslint src --ext .ts --fix",
-		"link-all": "npm link datagrok-api  @datagrok-libraries/utils @datagrok-libraries/statistics @datagrok-libraries/gridext",
-		"link-api": "npm link datagrok-api ",
-		"debug-powergrid": "grok publish",
-		"release-powergrid": "grok publish --release",
-		"build-powergrid": "webpack",
-		"powergrid-deploy": "webpack & grok publish",
-		"build-typescript": "tsc",
-		"build": "tsc && webpack",
-		"debug-powergrid-dev": "grok publish dev",
-		"release-powergrid-dev": "grok publish dev --release",
-		"debug-powergrid-public": "grok publish public",
-		"release-powergrid-public": "grok publish public --release",
-		"debug-powergrid-local": "tsc && webpack && grok publish local"
-	},
-	"canEdit": [
-		"Developers"
-	],
-	"canView": [
-		"All users"
-	],
-	"category": "Development"
+  "name": "@datagrok/power-grid",
+  "friendlyName": "PowerGrid",
+  "version": "1.1.22",
+  "author": {
+    "name": "Andrew Skalkin",
+    "email": "askalkin@datagrok.ai"
+  },
+  "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/PowerGrid"
+  },
+  "dependencies": {
+    "@datagrok-libraries/gridext": "^1.3.42",
+    "@types/wu": "latest",
+    "cash-dom": "latest",
+    "datagrok-api": "1.13.11",
+    "dayjs": "latest"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.20.0",
+    "@typescript-eslint/parser": "^5.20.0",
+    "eslint": "latest",
+    "eslint-config-google": "latest",
+    "source-map-loader": "^4.0.1",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest"
+  },
+  "scripts": {
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
+    "link-all": "npm link datagrok-api @datagrok-libraries/gridext",
+    "link-api": "npm link datagrok-api ",
+    "debug-powergrid": "grok publish",
+    "release-powergrid": "grok publish --release",
+    "build-powergrid": "webpack",
+    "powergrid-deploy": "webpack & grok publish",
+    "build-typescript": "tsc",
+    "build": "tsc && webpack",
+    "debug-powergrid-dev": "grok publish dev",
+    "release-powergrid-dev": "grok publish dev --release",
+    "debug-powergrid-public": "grok publish public",
+    "release-powergrid-public": "grok publish public --release",
+    "debug-powergrid-local": "tsc && webpack && grok publish local",
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/gridext run build && npm run build"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "category": "Development"
 }

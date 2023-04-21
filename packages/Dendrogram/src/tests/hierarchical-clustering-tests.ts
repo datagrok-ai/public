@@ -6,9 +6,8 @@ import {after, before, category, test, expect, expectObject, expectArray} from '
 import {hierarchicalClusteringUI} from '../utils/hierarchical-clustering';
 import {_package} from '../package-test';
 import {viewsTests} from './utils/views-tests';
-import {DistanceMetric} from '@datagrok-libraries/utils/src/type-declarations';
 import {TreeHelper} from '../utils/tree-helper';
-import {NodeType} from '@datagrok-libraries/bio/src/trees';
+import {DistanceMetric, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
@@ -86,7 +85,7 @@ category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vL
     ctx.vList.push(tv);
     ctx.dfList.push(dataDf);
 
-    await hierarchicalClusteringUI(dataDf, ['HEIGHT'], 'euclidean', 'average');
+    await hierarchicalClusteringUI(dataDf, ['HEIGHT'], DistanceMetric.Euclidean, 'average');
   });
 
   test('hierarchicalClustering1', async () => {

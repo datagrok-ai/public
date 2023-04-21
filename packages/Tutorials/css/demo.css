@@ -81,6 +81,10 @@
 	line-height: 1.5;
 }
 
+.demo-app-group-title {
+    margin-left: 24px;
+}
+
 .demo-app-view.grok-gallery-grid {
 	margin-top: 12px;
 	justify-content: center;

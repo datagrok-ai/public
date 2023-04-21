@@ -11,39 +11,9 @@ import {Subject} from 'rxjs';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
 import '../css/rich-function-view.css';
-import { FileInput } from '../../shared-components/src/file-input';
-import { startWith } from 'rxjs/operators';
-
-// mapping from internal Dart labels to JS DG.VIEWER labels
-const viewerTypesMapping: {[key: string]: string} = {
-  ['barchart']: DG.VIEWER.BAR_CHART,
-  ['boxplot']: DG.VIEWER.BOX_PLOT,
-  ['calendar']: DG.VIEWER.CALENDAR,
-  ['corrplot']: DG.VIEWER.CORR_PLOT,
-  ['densityplot']: DG.VIEWER.DENSITY_PLOT,
-  ['filters']: DG.VIEWER.FILTERS,
-  ['form']: DG.VIEWER.FORM,
-  ['globe']: DG.VIEWER.GLOBE,
-  ['googlemap']: DG.VIEWER.GOOGLE_MAP,
-  ['grid']: DG.VIEWER.GRID,
-  ['heatmap']: DG.VIEWER.HEAT_MAP,
-  ['histogram']: DG.VIEWER.HISTOGRAM,
-  ['linechart']: DG.VIEWER.LINE_CHART,
-  ['markup']: DG.VIEWER.MARKUP,
-  ['matrixplot']: DG.VIEWER.MATRIX_PLOT,
-  ['networkdiagram']: DG.VIEWER.NETWORK_DIAGRAM,
-  ['pcplot']: DG.VIEWER.PC_PLOT,
-  ['piechart']: DG.VIEWER.PIE_CHART,
-  ['scatterplot']: DG.VIEWER.SCATTER_PLOT,
-  ['scatterplot3d']: DG.VIEWER.SCATTER_PLOT_3D,
-  ['shapemap']: DG.VIEWER.SHAPE_MAP,
-  ['statistics']: DG.VIEWER.STATISTICS,
-  ['tileviewer']: DG.VIEWER.TILE_VIEWER,
-  ['timelines']: DG.VIEWER.TIMELINES,
-  ['treemap']: DG.VIEWER.TREE_MAP,
-  ['trellisplot']: DG.VIEWER.TRELLIS_PLOT,
-  ['wordcloud']: DG.VIEWER.WORD_CLOUD,
-};
+import {FileInput} from '../../shared-components/src/file-input';
+import {startWith} from 'rxjs/operators';
+import {viewerTypesMapping} from './shared/consts';
 
 const FILE_INPUT_TYPE = 'file';
 
@@ -432,7 +402,7 @@ export class RichFunctionView extends FunctionView {
           inputs.append(t.root);
           this.afterInputPropertyRender.next({prop, input: t});
         } else {
-          let t = prop.propertyType === DG.TYPE.DATA_FRAME ?
+          const t = prop.propertyType === DG.TYPE.DATA_FRAME ?
             ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables):
             ui.input.forProperty(prop);
 
@@ -487,9 +457,9 @@ export class RichFunctionView extends FunctionView {
     const prop = val.property;
     const sub = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
       const newValue = this.funcCall!.inputs[val.name] ?? prop.defaultValue ?? null;
-      if (val.property.propertyType === DG.TYPE.DATA_FRAME) {
+      if (val.property.propertyType === DG.TYPE.DATA_FRAME)
         this.dfInputRecreate(t, val, newValue);
-      } else {
+      else {
         t.value = newValue;
         this.funcCall!.inputs[val.name] = newValue;
       }
@@ -500,13 +470,13 @@ export class RichFunctionView extends FunctionView {
   private syncValOnChanged(t: DG.InputBase<any>, val: DG.FuncCallParam) {
     const sub = val.onChanged.subscribe(() => {
       const newValue = this.funcCall!.inputs[val.name];
-      if (val.property.propertyType === DG.TYPE.DATA_FRAME) {
-        this.dfInputRecreate(t, val, newValue)
+      if (val.property.propertyType === DG.TYPE.DATA_FRAME)
+        this.dfInputRecreate(t, val, newValue);
         // there is no notify for DG.FuncCallParam, so we need to
         // check if the value is not the same for floats, otherwise we
         // will overwrite a user input with a lower precicsion decimal
         // representation
-      } else if (((typeof newValue  === 'number') && Math.abs(t.value - newValue) > 0.0001) || typeof newValue  !== 'number') {
+      else if (((typeof newValue === 'number') && Math.abs(t.value - newValue) > 0.0001) || typeof newValue !== 'number') {
         t.notify = false;
         t.value = newValue;
         t.notify = true;
