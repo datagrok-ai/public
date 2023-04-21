@@ -179,8 +179,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                 query = manualQueryInterpolation(query, dataQuery);
 
                 Statement statement = connection.createStatement();
-//                if (supportsTransactions)
-//                    statement.setFetchSize(fetchSize);
+                if (supportsTransactions)
+                    statement.setFetchSize(fetchSize);
                 providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 statement.setQueryTimeout(timeout);
                 String logString = String.format("Query: %s \n", query);
@@ -603,33 +603,28 @@ public abstract class JdbcDataProvider extends DataProvider {
                             if ((value instanceof Byte) || (value instanceof Short) || (value instanceof Integer)) {
                                 column = new IntColumn();
                                 column.addAll(new Integer[rowCount - 1]);
-                                column.add(Integer.valueOf(value.toString()));
                             } else if ((value instanceof Float) || (value instanceof Double)) {
                                 column = new FloatColumn();
                                 column.addAll(new Float[rowCount - 1]);
-                                column.add(Float.valueOf(value.toString()));
                             } else if ((value instanceof Boolean)) {
                                 column = new BoolColumn();
                                 column.addAll(new Boolean[rowCount - 1]);
-                                column.add(value);
                             }
                             column.name = resultSetMetaData.getColumnLabel(c);
                             columns.set(c - 1, column);
                             initColumn.set(c - 1, true);
+
                             System.out.printf("Data type '%s' is not supported yet. Write as '%s'.\n",
                                     resultSetMetaData.getColumnTypeName(c), column.getType());
-                        } else {
-                            if ((value instanceof Byte) || (value instanceof Short) || (value instanceof Integer)) {
-                                column.add(Integer.valueOf(value.toString()));
-                            } else if ((value instanceof Float) || (value instanceof Double)) {
-                                column.add(Float.valueOf(value.toString()));
-                            } else if ((value instanceof Boolean)) {
-                                column.add(value);
-                            } else {
-                                value = (value != null) ? value.toString() : null;
-                                column.add(value);
-                            }
                         }
+
+                        if (value instanceof Double)
+                            value = new Float((Double)value);
+                        else if (!(value instanceof Byte) && !(value instanceof Short) &&
+                                !(value instanceof Integer) && !(value instanceof Boolean))
+                            value = (value != null) ? value.toString() : null;
+
+                        column.add(value);
                     }
                 }
 
