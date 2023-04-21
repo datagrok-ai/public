@@ -105,7 +105,7 @@ export class GridTutorial extends Tutorial {
     const severityColumn = this.t!.getCol('SEVERITY');
     await this.action('Find the SEVERITY column and select all rows with the "None" value', this.t!.onSelectionChanged.pipe(
       filter(() => this.t!.selection.trueCount === noneSeverityRowCount)), null, 'First, find any cell with "None" severity ' +
-      'and click to make it current. Then press <b>Ctrl+Enter</b>, it will select all rows containing the same value.');
+      'and click to make it current. Then press <b>Shift+Enter</b>, it will select all rows containing the same value.');
 
     await this.action(`Delete these rows (${noneSeverityRowCount})`, this.t!.onRowsRemoved.pipe(filter(() =>
       this.t!.rowCount === (rowCount - noneSeverityRowCount) && !severityColumn.categories.includes('None'))),
@@ -130,7 +130,9 @@ export class GridTutorial extends Tutorial {
       'Double-click the column header once. To change the order to ascending, double-click again. Repeating it one ' +
       'more time will remove the column sorting. You can also sort rows from the column context menu.');
 
-    await this.action('Reset sorting in the grid', grid.onRowsSorted.pipe(filter(() => grid.sortByColumns.length === 0)));
+    await this.action('Reset sorting in the grid', interval(1000).pipe(filter(() => grid.sortByColumns.length === 0)),
+      null, 'To clear sorting, right-click the column header and select <b>Sort > Reset</b>. The same can be achieved ' +
+      'by double-clicking the column header. It switches the state between three modes: descending, ascending, reset.');
 
     await this.action('Move columns HEIGHT, WEIGHT and STARTED to the beginning of the grid', interval(1000).pipe(
       filter(() => heightGridCol.idx === 1 && weightGridCol.idx === 2 && startedGridCol.idx === 3)), null, 'To reorder ' +
@@ -158,7 +160,9 @@ export class GridTutorial extends Tutorial {
     await this.action('Change number formatting of HEIGHT to "int"', this.t!.onMetadataChanged.pipe(filter((data) =>
       (data.args.source as unknown as DG.Column).name === heightColumn.name && (data.args.key as unknown as string) ===
       'format' && (data.args.change as unknown as string) === 'set' && (data.args.value as unknown as string) === 'int')),
-      null, 'One way to set a new numeric format is to right-click a column header and select <b>Format > int</b>.');
+      null, 'One way to set a new numeric format is to right-click a column header and select <b>Format > int</b>. For ' +
+      'convenience, there are examples for each format option in the menu. Hover the mouse over the list of options to ' +
+      'see the format name shown in a tooltip.');
 
     await this.action('Set number formatting of WEIGHT to "max two digits after comma"', this.t!.onMetadataChanged.pipe(
       filter((data) => (data.args.source as unknown as DG.Column).name === weightColumn.name && (data.args.key as unknown as
