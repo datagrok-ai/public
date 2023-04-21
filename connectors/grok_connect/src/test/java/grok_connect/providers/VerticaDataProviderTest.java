@@ -1,29 +1,56 @@
 package grok_connect.providers;
 
-import grok_connect.connectors_info.*;
+import grok_connect.connectors_info.Credentials;
+import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataProvider;
+import grok_connect.connectors_info.DbCredentials;
+import grok_connect.connectors_info.FuncCall;
 import grok_connect.providers.utils.DataFrameComparator;
 import grok_connect.providers.utils.NamedArgumentConverter;
 import grok_connect.providers.utils.Provider;
 import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryMonitor;
 import grok_connect.utils.SettingsManager;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
 import serialization.DataFrame;
+import java.io.IOException;
 
-@Disabled("Until test instance of Teradata Vantage will be available")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Testcontainers
 class VerticaDataProviderTest {
     private static final Provider type = Provider.VERTICA;
+    private static final String HOST_SCRIPT_PATH = "scripts/vertica/init.sql";
+    private static final String CONTAINER_SCRIPT_PATH = "/home/dbadmin/init.sql";
+    private static final int VERTICA_PORT = 5433;
+    @Container
+    private static final GenericContainer<?> container =
+            new GenericContainer<>(DockerImageName.parse(type.getProperties().get("image").toString()))
+                    .withCopyFileToContainer(MountableFile
+                                    .forClasspathResource(HOST_SCRIPT_PATH),
+                            CONTAINER_SCRIPT_PATH)
+                    .withExposedPorts(VERTICA_PORT);
     private JdbcDataProvider provider;
     private DataConnection connection;
     private DataFrameComparator dataFrameComparator;
 
     @BeforeAll
     public void init() {
+        initContainer();
         dataFrameComparator = new DataFrameComparator();
         SettingsManager settingsManager = SettingsManager.getInstance();
         settingsManager.initSettingsWithDefaults();
@@ -44,7 +71,7 @@ class VerticaDataProviderTest {
         connection.dataSource = provider.descriptor.type;
         connection.parameters.put(DbCredentials.SERVER, type.getProperties().get("server"));
         connection.parameters.put(DbCredentials.DB, type.getProperties().get("database"));
-        connection.parameters.put(DbCredentials.PORT, Double.valueOf(type.getProperties().get("port").toString()));
+        connection.parameters.put(DbCredentials.PORT, (double) container.getFirstMappedPort());
     }
 
     @DisplayName("Tests of testConnection(DataConnection conn)")
@@ -96,5 +123,68 @@ class VerticaDataProviderTest {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Parameters support for datetime")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.CommonObjectsMother#checkDatesParameterSupport_ok")
+    public void checkDatesParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support of character types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.VerticaObjectsMother#checkCharacterTypesSupport_ok")
+    public void checkCharacterTypesSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support of date types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.VerticaObjectsMother#checkDateTypesSupport_ok")
+    public void checkDateTypesSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support of numeric types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.VerticaObjectsMother#checkNumericTypesSupport_ok")
+    public void checkNumericTypesSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support of spatial types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.VerticaObjectsMother#checkSpatialTypesSupport_ok")
+    public void checkSpatialTypesSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support of uuid type")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.VerticaObjectsMother#checkUuidTypesSupport_ok")
+    public void checkUuidTypesSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    private void initContainer() {
+        try {
+            Thread.sleep(60000);
+            container.execInContainer("/opt/vertica/bin/vsql", "-f", CONTAINER_SCRIPT_PATH);
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException("Something went wrong when executing init script", e);
+        }
     }
 }

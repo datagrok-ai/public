@@ -14,7 +14,7 @@ import {TreeForGridCutApp} from './apps/tree-for-grid-cut-app';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import {injectTreeForGridUI2} from './viewers/inject-tree-for-grid2';
 import {DendrogramService} from './utils/dendrogram-service';
-import {NodeType} from '@datagrok-libraries/bio/src/trees';
+import {DistanceMetric, LinkageMethod, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {IDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 
@@ -213,15 +213,52 @@ export async function importNewick(fileContent: string): Promise<DG.DataFrame[]>
 // -- Top menu --
 
 //top-menu: ML | Hierarchical Clustering ...
-//name: hierarchicalClustering
+//name: Hierarchical Clustering
 //description: Calculates hierarchical clustering on features and injects tree to grid
-//input: dataframe table
-//input: column_list features {type: numerical}
-//input: string distance = 'euclidean' {choices: ['euclidean', 'manhattan']}
-//input: string linkage = 'ward' {choices: ['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward']}
-export async function hierarchicalClustering(
-  table: DG.DataFrame, features: DG.ColumnList, distance: string, linkage: string
-): Promise<void> {
-  const colNameList: string[] = features.names();
-  await hierarchicalClusteringUI(table, colNameList, distance, linkage);
+export async function hierarchicalClustering(): Promise<void> {
+  let currentTableView = grok.shell.tv.table;
+  let currentSelectedColNames: string[] = [];
+
+  const availableColNames = (table:DG.DataFrame): string[] => {
+    return table.columns.toList()
+      .filter(col => col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT || col.semType === 'Macromolecule')
+      .map(col => col.name);
+  }
+
+  const onColNamesChange = (columns: DG.Column<any>[]) => {
+    currentSelectedColNames = columns.map(c => c.name)
+  }
+
+  const onTableInputChanged = (table: DG.DataFrame) => {
+    const newColInput = ui.columnsInput('Features', table, onColNamesChange, { available: availableColNames(table) });
+    ui.empty(columnsInputDiv);
+    columnsInputDiv.appendChild(newColInput.root);
+    currentTableView = table;
+    currentSelectedColNames = [];
+  }
+
+  const tableInput = ui.tableInput('Table', currentTableView, grok.shell.tables, onTableInputChanged);
+  const columnsInput = ui.columnsInput('Features', currentTableView!,
+    onColNamesChange,
+    { available: availableColNames(currentTableView!) });
+  const columnsInputDiv = ui.div([columnsInput]);
+
+  const distanceInput = ui.choiceInput('Distance', DistanceMetric.Euclidean, Object.values(DistanceMetric));
+  const linkageInput = ui.choiceInput('Linkage', LinkageMethod.Ward, Object.values(LinkageMethod));
+
+  const verticalDiv = ui.divV([
+    tableInput.root,
+    columnsInputDiv,
+    distanceInput.root,
+    linkageInput.root
+  ])
+  const dialog = ui.dialog("Hierarchical Clustering")
+    .add(verticalDiv)
+    .show()
+    .onOK(async () => {
+      const pi = DG.TaskBarProgressIndicator.create('Creating dendrogram ...');
+      await hierarchicalClusteringUI(currentTableView!, currentSelectedColNames,
+        distanceInput.value!, linkageInput.value!);
+      pi.close();
+    });
 }

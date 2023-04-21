@@ -6,10 +6,10 @@ title: "Release History"
 
 | Service                                                  | Docker Image                                                                                      |
 |----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../infrastructure.md#datagrok-components)     | [datagrok/datagrok:1.14.0](https://hub.docker.com/r/datagrok/datagrok)                            |
-| [Grok Connect](../../../access/data-connection.md)       | [datagrok/grok_connect:1.3.6](https://hub.docker.com/r/datagrok/grok_connect)                     |
+| [Datagrok](../infrastructure.md#datagrok-components)     | [datagrok/datagrok:1.14.1](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Grok Connect](../../../access/data-connection.md)       | [datagrok/grok_connect:2.0.10](https://hub.docker.com/r/datagrok/grok_connect)                     |
 | Grok Spawner                                             | [datagrok/grok_spawner:1.3.2](https://hub.docker.com/r/datagrok/grok_spawner)                     |
-| [Grok Compute](../infrastructure.md#grok-compute)        | [datagrok/grok_compute:1.5.1](https://hub.docker.com/r/datagrok/grok_compute)                     |
+| [Grok Compute](../infrastructure.md#grok-compute)        | [datagrok/grok_compute:1.5.2](https://hub.docker.com/r/datagrok/grok_compute)                     |
 | [Jupyter Kernel Gateway](../../../compute/scripting.md)  | [datagrok/jupyter_kernel_gateway:1.5.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
 | [Jupyter Notebook](../../../compute/jupyter-notebook.md) | [datagrok/jupyter_notebook:1.1.0](https://hub.docker.com/r/datagrok/jupyter_notebook)             |
 | [H2O](../infrastructure.md#h2o)                          | [datagrok/h2o:1.1.0](https://hub.docker.com/r/datagrok/h2o)                                       |
@@ -17,7 +17,22 @@ title: "Release History"
 
 See also:
 - [Versioning policy](versioning-policy.md)
-- [Docker-Compose](../docker-compose.md)
+- [Docker-Compose](../deploy/docker-compose.md)
+
+
+## 2023-04-20 1.14.1
+
+### Addressed Issues
+
+* (Improvement) GROK-12721: Tooltip modifications for dialog and drag-n-drop
+* (Improvement) GROK-12788: Cat filter: select one on first select, select all on deselecting last
+* (Enhancement) [#1583](https://github.com/datagrok-ai/public/issues/1575692020): Scatter Plot: "pack and zoom" option should response to changes when a numerical column is used
+* (Bug) [#1758](https://github.com/datagrok-ai/public/issues/1651500892): Filtering is slow if there are multiple bar charts on several views
+* (Enhancement) [#1778](https://github.com/datagrok-ai/public/issues/1662788717): Viewers: Organize properties consistently in the context panel
+* (Enhancement) [#1635](https://github.com/datagrok-ai/public/issues/1613838883): Box Plot: Add a zoom slider to adjust axes range
+* (Enhancement) [#1746](https://github.com/datagrok-ai/public/issues/1644383938): Scatter Plot: Date picker for X and Y axes min/max
+* (Bug) [#1671](https://github.com/datagrok-ai/public/issues/1624096862): Line chart: connects the first and last values when  resizing the window
+* (Bug) GROK-12891: File Manager: scrollbar is missing in the File Tree
 
 
 ## 2023-04-18 1.14.0
@@ -1320,14 +1335,14 @@ We've released a new version of the Datagrok platform (1.12.0). This release foc
 and usability and traditionally on platform stability.
 Here are some of the biggest improvements:
 
-* New [Scaffold Tree](release-history.md/#enhancements-in-packages ) visualization that organizes molecular data sets by
+* New [Scaffold Tree](release-history.md#enhancements-in-packages ) visualization that organizes molecular data sets by
   arranging molecules into a tree hierarchy based on their scaffolds. For details,
   see [Scaffold tree](../../../domains/chem/scaffold-tree.md).
-* [Dendrogram](release-history.md/#enhancements-in-packages) for interactive exploration of the hierarchical clustering.
+* [Dendrogram](release-history.md#enhancements-in-packages) for interactive exploration of the hierarchical clustering.
   For details, see [Dendrogram](https://community.datagrok.ai/t/dendrogram/721).
-* Brand new [Map](release-history.md/#enhancements-in-packages). To learn more,
+* Brand new [Map](release-history.md#enhancements-in-packages). To learn more,
   see [Map viewer](https://community.datagrok.ai/t/visualization-related-updates/521/27)
-* [Peptides](release-history.md/#enhancements-in-packages) new features and capabilities, such as custom clustering and
+* [Peptides](release-history.md#enhancements-in-packages) new features and capabilities, such as custom clustering and
   multiple views, as well as a slightly redesigned user interface and improved application stability. To learn more,
   see [Macromolecules updates](https://community.datagrok.ai/t/macromolecules-updates/661/11)
 
@@ -1335,7 +1350,7 @@ Here are some of the biggest improvements:
 
 * Color coding
   * Scatter plot now has a legend for continuous color coding.
-  * In a grid, you can apply [color coding](../../../visualize/viewers/grid.md/#column-color-coding) to the text or
+  * In a grid, you can apply [color coding](../../../visualize/viewers/grid.md#column-color-coding) to the text or
     background. This option is available for all linear, categorical, and conditional schemas.
   * When inheriting the color coding from the grid, adjustments to the min/max made in the plot are reflected in the
     grid. However, if the original column is not color-coded and selected for the color column in the scatter plot, the

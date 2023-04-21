@@ -113,7 +113,7 @@ export function drawRdKitMoleculeToOffscreenCanvas(
     return;
   }
 
-  const opts = createRenderingOpts({width: Math.floor(w), height: Math.floor(h)});
+  const opts = createRenderingOpts({width: Math.ceil(w), height: Math.ceil(h)});
 
   g?.clearRect(0,0, w, h);
   if (substruct)

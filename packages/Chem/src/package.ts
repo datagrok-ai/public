@@ -8,13 +8,13 @@ import '../css/chem.css';
 import * as chemSearches from './chem-searches';
 import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
 import {getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors-calculation';
-import {assure} from '@datagrok-libraries/utils/src/test';
+import {assure, delay} from '@datagrok-libraries/utils/src/test';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import Sketcher = DG.chem.Sketcher;
-import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {activityCliffsIdx, CLIFFS_DF_NAME, getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {IUMAPOptions, ITSNEOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
@@ -66,6 +66,7 @@ import { renderMolecule } from './rendering/render-molecule';
 import { RDKitReactionRenderer } from './rendering/rdkit-reaction-renderer';
 import { structure3dWidget } from './widgets/structure3d';
 import { identifiersWidget } from './widgets/identifiers';
+import { closeAllAccordionPanes, demoScaffold, getAccordionPane, openSketcher, scrollTable } from './utils/demo-utils';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -1065,4 +1066,264 @@ export function removeDuplicates(molecules: string[], molecule: string): string[
   const filteredMolecules = molecules.filter((smiles) => !checkMolEqualSmiles(mol1, smiles));
   mol1.delete();
   return filteredMolecules;
+}
+
+//name: demoCh00
+//meta.demoPath: Cheminformatics | Overview
+export async function demoCh00(): Promise<void> {
+  const table = DG.DataFrame.fromCsv(await _package.files.readAsText('sar-small.csv'));
+  grok.shell.windows.showProperties = true;
+  const sketcherType = DG.chem.currentSketcherType;
+  DG.chem.currentSketcherType = 'OpenChemLib';
+
+  //1. Open table
+  const tv = grok.shell.addTableView(table);
+  await delay(2000);
+  const propPanel = document.getElementsByClassName('grok-entity-prop-panel')[0];
+  closeAllAccordionPanes(propPanel!);
+
+   //2. Show some molecule properties on context pane
+   grok.shell.windows.showHelp = false;
+   const structurePaneContent = getAccordionPane('Structure', propPanel!);
+   getAccordionPane('3D Structure', structurePaneContent!);
+   const biologyPaneContent = getAccordionPane('Biology', propPanel!);
+   getAccordionPane('Toxicity', biologyPaneContent!);
+   getAccordionPane('Drug Likeness', biologyPaneContent!);
+   await delay(3000);
+   table.currentRowIdx = 3;
+   await delay(3000);
+   table.currentRowIdx = 5;
+   await delay(3000);
+   grok.shell.windows.showHelp = true;
+
+   //3. Scroll a little bit
+  const canvas = tv.grid.root.getElementsByTagName('canvas')[2];
+  await scrollTable(canvas, 300, 15, 100);
+  await delay(2000);
+
+  //4. Filtering
+  const filters = tv.getFiltersGroup();
+  await delay(1000);
+  const sketcherDlg = await openSketcher(filters.root);
+  const sketcherInput = sketcherDlg!.getElementsByClassName('grok-sketcher-input')[0]?.children[0] as HTMLInputElement;
+  sketcherInput.value = 'C1CCCCC1';
+  await delay(1000);
+  sketcherInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
+  await delay(1000);
+  await scrollTable(canvas, 200, 10, 200);
+  await delay(1000);
+  Array.from(sketcherDlg!.getElementsByTagName('span')).find(el => el.textContent === 'CANCEL')?.click();
+  delay(500);
+  filters.close();
+  delay(1000);
+
+  //5.Align to scaffold
+  grok.shell.o = tv.dataFrame.col('smiles');
+  await delay(2000);
+  closeAllAccordionPanes(propPanel!);
+  const chemistryPaneContent = getAccordionPane('Chemistry', propPanel!);
+  const renderingPaneContent = getAccordionPane('Rendering', chemistryPaneContent!) as HTMLElement;
+  await delay(1000);
+  const scaffoldSketcher = await openSketcher(renderingPaneContent);
+  const scaffoldSketcherInput = scaffoldSketcher!.getElementsByClassName('grok-sketcher-input')[0]?.children[0] as HTMLInputElement;
+
+  let dT = null;
+  try {dT = new DataTransfer();} catch (e) { }
+  const evt = new ClipboardEvent('paste', {clipboardData: dT});
+  evt.clipboardData!.setData('text/plain', demoScaffold);
+  scaffoldSketcherInput.value = demoScaffold;
+  await delay(100);
+  scaffoldSketcherInput.dispatchEvent(evt);
+  await delay(1000);
+  await scrollTable(canvas, 200, 10, 200);
+  await delay(1000);
+  Array.from(scaffoldSketcher!.getElementsByTagName('span')).find(el => el.textContent === 'CANCEL')?.click();
+
+  DG.chem.currentSketcherType = sketcherType;
+
+}
+
+
+//name: demoCh01
+//meta.demoPath: Cheminformatics | Similarity Search
+export async function demoCh01(): Promise<void> {
+  const table = DG.DataFrame.fromCsv(await _package.files.readAsText('sar-small.csv'));
+  grok.shell.windows.showProperties = true;
+  grok.shell.windows.showHelp = true;
+
+  //1. Open table
+  const tv = grok.shell.addTableView(table);
+  await delay(2000);
+
+  //2. Add similarity search viewer
+  const similarityViewer = tv.addViewer('Chem Similarity Search');
+  grok.shell.o = similarityViewer;
+  await delay(2000);
+
+  //3. Change target molecule
+  table.currentRowIdx = 1;
+  await delay(1000);
+  table.currentRowIdx = 2;
+  await delay(1000);
+  table.currentRowIdx = 3;
+
+}
+
+
+//name: demoCh02
+//meta.demoPath: Cheminformatics | R Group Analysis
+export async function demoCh02(): Promise<void> {
+  const table = DG.DataFrame.fromCsv(await _package.files.readAsText('sar-small.csv'));
+  grok.shell.windows.showProperties = true;
+
+  //1. Open table
+  const tv = grok.shell.addTableView(table);
+  await delay(2000);
+
+  //2. Open RGroup analysis sketcher and run analysis
+  rGroupAnalysis(table.col('smiles')!);
+  await delay(2000);
+  const sketcher = document.getElementsByClassName('d4-dialog')[0];
+  const sketcherInput = sketcher!.getElementsByClassName('grok-sketcher-input')[0]?.children[0] as HTMLInputElement;
+  sketcherInput.value = 'O=C1CN=C(c2ccccc2N1)C3CCCCC3';
+  await delay(1000);
+  sketcherInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
+  await delay(1000);
+  Array.from(sketcher!.getElementsByTagName('span')).find(el => el.textContent === 'OK')?.click();
+}
+
+
+//name: demoCh03
+//meta.demoPath: Cheminformatics | Activity Cliffs
+export async function demoCh03(): Promise<void> {
+  const table = DG.DataFrame.fromCsv(await _package.files.readAsText('activity_cliffs.csv'));
+  grok.shell.windows.showProperties = true;
+
+  //1. Open table
+  const tv = grok.shell.addTableView(table);
+  await delay(1000);
+
+  //2. Run Activity cliffs
+  const molecules = table.col('smiles')!
+  const progressBar = DG.TaskBarProgressIndicator.create(`Activity cliffs running...`);
+  const axesNames = getEmbeddingColsNames(table); //@ts-ignore
+  const scatterPlot = await getActivityCliffs(table, molecules, null as any, axesNames, 'Activity cliffs', table.col('Activity')!, 80, 'Tanimoto',
+    't-SNE', DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
+    createTooltipElement, createPropPanelElement, undefined, undefined, 0.5);
+  progressBar.close();
+  await delay(1000);
+
+  //3. Open cliffs table
+  (Array.from(scatterPlot!.root.children)
+    .filter((it) => it.className === 'ui-btn ui-btn-ok scatter_plot_link cliffs_grid')[0] as HTMLElement).click();
+  await delay(1000);
+
+  //4. Select some random cliffs
+  let cliffsGrid: DG.Viewer | null = null;
+  for (const i of tv.viewers) {
+    if (i.dataFrame.name === `${CLIFFS_DF_NAME}${activityCliffsIdx}`)
+      cliffsGrid = i;
+  }
+  cliffsGrid!.dataFrame.currentRowIdx = 0;
+  await delay(2000);
+  cliffsGrid!.dataFrame.currentRowIdx = 1;
+  await delay(2000);
+  cliffsGrid!.dataFrame.currentRowIdx = 2;
+}
+
+
+//name: demoCh04
+export async function demoCh04(): Promise<void> { //Databases integration in property panel
+  const table = _importSdf(await _package.files.readAsBytes('mol1K.sdf'))[0];
+  grok.shell.windows.showProperties = true;
+  grok.shell.windows.showHelp = false;
+
+  //1. Open table
+  const tv = grok.shell.addTableView(table);
+  await delay(2000);
+
+  //2. Open tabs on property panel
+  const propPanel = document.getElementsByClassName('grok-entity-prop-panel')[0];
+  closeAllAccordionPanes(propPanel!);
+  const databasesPaneContent = getAccordionPane('Databases', propPanel!);
+  getAccordionPane('ChEMBL (Internal) Substructure Search', databasesPaneContent!) as HTMLElement;
+  getAccordionPane('ChEMBL (Internal) Similarity Search', databasesPaneContent!) as HTMLElement;
+  await delay(3000);
+  table.currentRowIdx = 2;
+  await delay(3000);
+  table.currentRowIdx = 5;
+}
+
+
+//name: demoCh05
+//meta.demoPath: Cheminformatics | Databases
+export async function demoCh05(): Promise<void> {
+  const ids = ['CHEMBL1827', 'CHEMBL1829', 'CHEMBL1830'];
+  const query = `SELECT m.chembl_id AS compound_chembl_id, s.canonical_smiles, act.standard_type, act.standard_value
+  FROM compound_structures s, molecule_dictionary m, compound_records r, docs d, activities act, assays a, target_dictionary t
+  WHERE s.molregno     = m.molregno
+  AND m.molregno       = r.molregno
+  AND r.record_id      = act.record_id
+  AND r.doc_id         = d.doc_id
+  AND act.assay_id     = a.assay_id
+  AND a.tid            = t.tid
+  AND act.standard_type = 'IC50'
+  AND t.chembl_id      = '~id~';`
+
+  const connection = await grok.functions.eval('Chembl:Chembl');
+  const queryPanel = ui.box();
+  const gridDiv = ui.div();
+  const scatterPlot = ui.div();
+  const barchart = ui.div();
+
+  const totalDiv = ui.splitV([
+    queryPanel,
+    gridDiv,
+    ui.splitH([
+      scatterPlot,
+      barchart
+    ])
+  ], {style: {height: '100%', width: '100%'}});
+
+  const loading = (isLoading: boolean) => {
+    ui.setUpdateIndicator(gridDiv, isLoading);
+    ui.setUpdateIndicator(scatterPlot, isLoading);
+    ui.setUpdateIndicator(barchart, isLoading);
+  }
+
+  const loadNewQuery = (id: string) => {
+    ui.empty(queryPanel);
+    const queryDiv = ui.textInput(`Compound activity details for target = ${id}`, query.replace(`~id~`, id));
+    queryDiv.input.style.height = '100%';
+    queryPanel.append(queryDiv.root);
+    const dBQuery = connection!.query('', query.replace(`~id~`, id));
+    dBQuery.adHoc = true;
+    ui.empty(gridDiv);
+    ui.empty(scatterPlot);
+    ui.empty(barchart);
+    loading(true);
+    return dBQuery;
+  }
+
+  const loadQueryResults = async (t: DG.DataFrame) => {
+    await grok.data.detectSemanticTypes(t);
+    const grid = t.plot.grid().root;
+    grid.style.width = '100%';
+    loading(false);
+    gridDiv.append(grid);
+    barchart.append(t.plot.bar().root);
+    scatterPlot.append(t.plot.scatter().root);
+    await delay(1500);
+  }
+
+
+  grok.shell.newView('Databases', [totalDiv]);
+
+  setTimeout(async () => {
+    for (const id of ids) {
+      const t = await loadNewQuery(id).executeTable();
+      await loadQueryResults(t);
+    }
+  }, 500);
+
 }
