@@ -1,6 +1,14 @@
 package grok_connect.providers.utils;
 
-import org.testcontainers.containers.*;
+import org.testcontainers.containers.BindMode;
+import org.testcontainers.containers.ClickHouseContainer;
+import org.testcontainers.containers.Db2Container;
+import org.testcontainers.containers.JdbcDatabaseContainer;
+import org.testcontainers.containers.MSSQLServerContainer;
+import org.testcontainers.containers.MariaDBContainer;
+import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.containers.OracleContainer;
+import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.DockerHealthcheckWaitStrategy;
 import org.testcontainers.utility.DockerImageName;
 import java.io.FileReader;
@@ -12,6 +20,8 @@ import java.util.Properties;
  * Enum that contains all necessary data related to specific provider and it's container
  */
 public enum Provider {
+    VIRTUOSO("src/test/resources/properties/virtuoso.properties"),
+
     VERTICA("src/test/resources/properties/vertica.properties"),
 
     TERADATA("src/test/resources/properties/teradata.properties"),
