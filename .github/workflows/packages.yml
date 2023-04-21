@@ -158,6 +158,7 @@ jobs:
             profiles+=' --profile grok_spawner'
           fi
           echo "Run datagrok stand with profiles ${profiles}"
+          docker system prune -af --volumes
           docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
           echo "Set docker_sha"
           docker_sha=$(docker images --quiet datagrok/datagrok:bleeding-edge)
