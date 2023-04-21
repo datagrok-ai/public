@@ -5,7 +5,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 module.exports = {
   mode: 'development',
   entry: {
-    package: './src/package.ts',
+    package: ['./src/package.ts'],
     test: {
       filename: 'package-test.js',
       library: {type: 'var', name: `${packageName}_test`},
@@ -15,6 +15,7 @@ module.exports = {
   resolve: {
     extensions: ['.ts', '.tsx', '.wasm', '.mjs', '.js', '.json'],
     fallback: {
+      'url': false,
       'fs': false,
       'path': false, //require.resolve('path-browserify'),
       'crypto': false, // require.resolve('crypto-browserify'),
@@ -22,19 +23,20 @@ module.exports = {
   },
   module: {
     rules: [
-      {test: /\.tsx?$/, loader: 'ts-loader'},
+      /* {test: /\.js$/, enforce: 'pre', use: ['source-map-loader']}, */
+      {test: /\.ts(x?)$/, loader: 'ts-loader', exclude: /node_modules/},
       {
         test: /\.(html|ico)$/,
-        use: [{
-          loader: 'file-loader',
-          options: {name: '[name].[ext]'},
-        }],
+        use: [
+          {loader: 'file-loader', options: {name: '[name].[ext]'}},
+        ],
       },
       {
         test: /\.(s*)css$/,
         use: [
+          'style-loader',
           MiniCssExtractPlugin.loader,
-          {loader: 'css-loader', options: {sourceMap: false}},
+          {loader: 'css-loader', options: {sourceMap: false, modules: {localIdentName: '[local]'}}},
           {loader: 'sass-loader', options: {sourceMap: false}},
         ],
       },
