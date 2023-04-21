@@ -133,21 +133,21 @@ export async function importPdb(fileContent: string): Promise<DG.DataFrame[]> {
 //tags: fileViewer, fileViewer-mol, fileViewer-cif, fileViewer-mcif, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-ent, fileViewer-pqr, fileViewer-mmtf, fileViewer-mtl, fileViewer-sd
 //input: file file
 //output: view v
-export function molecule3dNglView1(file: any): DG.View {
+export function molecule3dNglView1(file: DG.FileInfo): DG.View {
   return previewBiostructure(file);
 }
 
 //tags: fileViewer, fileViewer-ply, fileViewer-obj
 //input: file file
 //output: view v
-export function molecule3dNglView2(file: any): DG.View {
+export function molecule3dNglView2(file: DG.FileInfo): DG.View {
   return previewBiostructure(file);
 }
 
 //tags: fileViewer, fileViewer-prmtop, fileViewer-parm7, fileViewer-psf, fileViewer-top
 //input: file file
 //output: view v
-export function molecule3dNglView3(file: any): DG.View {
+export function molecule3dNglView3(file: DG.FileInfo): DG.View {
   return previewBiostructure(file);
 }
 
@@ -155,7 +155,7 @@ export function molecule3dNglView3(file: any): DG.View {
 //tags: fileViewer, fileViewer-dsn6, fileViewer-brix, fileViewer-cube, fileViewer-cub, fileViewer-dx, fileViewer-dxbin, fileViewer-xplor, fileViewer-cns, fileViewer-mrc, fileViewer-map, fileViewer-ccp4
 //input: file file
 //output: view v
-export function molecule3dNglView4(file: any): DG.View {
+export function molecule3dNglView4(file: DG.FileInfo): DG.View {
   return previewBiostructure(file);
 }
 

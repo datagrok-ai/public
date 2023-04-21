@@ -1,19 +1,19 @@
-import * as ui from "datagrok-api/ui";
-import * as grok from "datagrok-api/grok";
-import * as DG from "datagrok-api/dg";
+import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 
 import {
   category /*, expect*/,
   test,
   expect
-} from "@datagrok-libraries/utils/src/test";
-import { _package, molecule3dNglView1 } from "../package";
-import { _packageName } from "./utils";
+} from '@datagrok-libraries/utils/src/test';
+import { _package, molecule3dNglView1 } from '../package';
+import { _packageName } from './utils';
 
 const validFileNames = ['1bdq.pdb', '1bdq.sdf', 'dc.mol2',
   '4tkx.mmcif', 'caffeine.xyz', 'grofile.gro', 'pdbqt.pdbqt'];
 
-category("MolstarPreview", () => {
+category('MolstarPreview', () => {
 
   validFileNames.forEach(fn =>{
     test(`open${fn.substring(fn.indexOf('.'),fn.length)}`, async () => {
@@ -25,7 +25,7 @@ category("MolstarPreview", () => {
       try {
 
         const view = molecule3dNglView1(file);
-        grok.shell.newView("Molstar Preview", [view]);
+        grok.shell.newView('Molstar Preview', [view]);
       } catch (e) {
         noException = false;
       }
@@ -41,7 +41,7 @@ category("MolstarPreview", () => {
 
     try {
       const view = molecule3dNglView1(file);
-      grok.shell.newView("Molstar Preview", [view]);
+      grok.shell.newView('Molstar Preview', [view]);
     } catch (e) {
       noException = false;
     }
