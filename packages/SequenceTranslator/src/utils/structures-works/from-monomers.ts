@@ -37,6 +37,9 @@ export function sequenceToMolV3000(
   const monomers: string[] = [];
 
   for (let i = 0; i < codesList.length; i++) {
+    const monomerWithPhosphateAt3Prime = i !== 0 && (codesList[i] === '(ccBPmU)' || codesList[i] === '(VPmU)');
+    if (monomerWithPhosphateAt3Prime)
+      monomers.pop();
     if (links.includes(codesList[i]) ||
       includesStandardLinkAlready.includes(codesList[i]) ||
       (i < codesList.length - 1 && links.includes(codesList[i + 1]))
@@ -52,8 +55,10 @@ export function sequenceToMolV3000(
         monomers.push(aa);
       else
         monomers.push(codesList[i]);
+      // workaround for monomers with phosphate at 5', to be improved
       monomers.push('p linkage');
     }
+    // console.log(monomers);
   }
 
   const lib = getMonomerLib();
