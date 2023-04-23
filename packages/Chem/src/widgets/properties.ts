@@ -70,11 +70,12 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
     return new DG.Widget(ui.divText('Could not analyze properties'));
   }
 
-  function prop(p: IChemProperty) {//name: string, type: DG.ColumnType, extract: (mol: OCL.Molecule) => any) : HTMLElement {
+  function prop(p: IChemProperty) {
     const addColumnIcon = ui.iconFA('plus', () => {
       const molCol: DG.Column<string> = semValue.cell.column;
       const col : DG.Column = DG.Column.fromType(p.type, semValue.cell.dataFrame.columns.getUnusedName(p.name), molCol.length)
         .setTag('CHEM_WIDGET_PROPERTY', p.name)
+        .setTag('CHEM_ORIG_MOLECULE_COLUMN', molCol.name)
         .init((i) => {
           try {
             if (molCol.isNone(i)) return null;
