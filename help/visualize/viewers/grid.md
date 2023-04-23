@@ -21,21 +21,23 @@ title: "Grid"
 
 ## Navigation
 
-|                       |                      |
-|-----------------------|----------------------|
-| Up, Down, Left, Right | Navigate             |
-| Page Up, Page Down    | Navigate             |
-| Ctrl+Home             | Jump to first row    |
-| Ctrl+End              | Jump to last row     |
-| Home                  | Jump to first column |
-| End                   | Jump to last column  |
+|                       |                          |
+|-----------------------|--------------------------|
+| Up, Down, Left, Right | Navigate                 |
+| Page Up, Page Down    | Navigate                 |
+| Ctrl+Home             | Jump to first row        |
+| Ctrl+End              | Jump to last row         |
+| Home                  | Jump to first column     |
+| End                   | Jump to last column      |
+| Ctrl+UP / DOWN        | Prev / next selected row |
 
 ## Sorting
 
-|                           |                |
-|---------------------------|----------------|
-| Double-click column header | Sort          |
-| Menu\| Current Column\| Sort      | Sort |
+|                            |                     |
+|----------------------------|---------------------|
+| Double-click column header | Sort                |
+| Ctrl+Shift+UP              | Sort current column |
+| Menu\                      | Current Column\     | Sort      | Sort |
 
 ## Editing
 
@@ -170,23 +172,19 @@ element, you will see the row it represents in the grid.
 
 ### Column edit permissions
 
-You can specify a list of users who are allowed to edit a specific column. There are two ways to set edit permissions:
+You can specify who can edit a specific column. There are few  ways to do it:
 
-* Click on the column header and go to the context panel. Select Advanced -> Permissions tab. Input a comma-separated list of usernames into the Editable By field.
+* Click on the column header and go to the context panel. Select Advanced -> Permissions tab. 
+  Input a comma-separated list of usernames or group names into the "Editable By" field.
+* Open column properties and create a new "EditableBy" tag. The value is also a list of comma-separated usernames.
+* Programmatically: `table.col('myColumn').tags['editableBy'] = "askalkin"`;
 
-![Setting permissions via context pane](column_permissions_context_pane.png)
-
-* Open column properties and create a new EditableBy tag. The value is also a list of comma-separated usernames.
-
-![Setting permissions via column properties](column_permissions_col_tag.png)
-
-Once this is done, only users from the list are allowed to edit the column. If a user without permission tries to edit the column, a warning will occur.
-
-![Permission warning](column_permission_warning.gif)
+Once this is done, only users from the list are allowed to edit the column. 
+Everyone else will get a notification when trying to edit this column.
 
 ## Videos
 
-[![Grid](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=2971s)
+[![Grid](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www1.youtube.com/watch?v=7MBXWzdC0-I&t=2971s)
 
 See also:
 
