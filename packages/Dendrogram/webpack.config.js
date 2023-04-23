@@ -11,11 +11,27 @@ module.exports = {
       import: './src/package-test.ts',
     }
   },
+  devServer: {
+    contentBase: './dist'
+  },
+  experiments: {
+    asyncWebAssembly: true,
+    topLevelAwait: true
+  },
   resolve: {
     extensions: ['.wasm', '.mjs', '.ts', '.js', '.json', '.tsx'],
   },
   module: {
     rules: [
+      {
+        test: /\.(wasm)$/i,
+        type: "javascript/auto",
+        loader: "file-loader",
+        options: {
+          publicPath: "dist/",
+          name: '[name].[ext]'
+        }
+      },
       {
         test: /\.ts(x?)$/,
         use: 'ts-loader',

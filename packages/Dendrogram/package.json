@@ -57,6 +57,9 @@
   "canView": [
     "All users"
   ],
+  "sources": [
+    "wasm/CppLib.js"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

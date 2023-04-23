@@ -72,10 +72,12 @@ export async function hierarchicalClusteringUI(
         }
         return res;
       }));
-
+  console.time('matrix');
   const distanceMatrix = await th.calcDistanceMatrix(preparedDf,
     preparedDf.columns.toList().map(col => col.name),
     distance);
+  console.timeEnd('matrix');
+
   const hcPromise = hierarchicalClusteringByDistanceExec(distanceMatrix!, linkage);
 
   // Replace rows indexes with filtered
@@ -84,8 +86,9 @@ export async function hierarchicalClusteringUI(
   const fltRowCount: number = filteredDf.rowCount;
   for (let fltRowIdx: number = 0; fltRowIdx < fltRowCount; fltRowIdx++)
     fltRowIndexes[fltRowIdx] = filteredIndexList[fltRowIdx];
-
+  console.time('newick')
   const newickStr: string = await hcPromise;
+  console.timeEnd('newick');
   const newickRoot: NodeType = parseNewick(newickStr);
   // Fix branch_length for root node as required for hierarchical clustering result
   newickRoot.branch_length = 0;
