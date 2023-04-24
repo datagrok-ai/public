@@ -86,8 +86,7 @@ public class VirtuosoDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException, GrokConnectException {
-        prepareProvider();
-        return DriverManager.getConnection(getConnectionString(conn), getProperties(conn));
+    protected String getRegexQuery(String columnName, String regexExpression) {
+        return String.format("(RDF_REGEX(%s, '%s') = 1)", columnName, regexExpression);
     }
 }
