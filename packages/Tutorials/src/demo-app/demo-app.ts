@@ -52,8 +52,9 @@ export class DemoView extends DG.ViewBase {
 
     this.name = 'Demo app';
 
-    let root = ui.divV([]);
-
+    const tree = ui.tree();
+    tree.root.classList.add('demo-app-group-view');
+    
     const tempGroups:String[] = [];
 
     for (const f of DG.Func.find({meta: {'demoPath': null}})) {
@@ -66,11 +67,11 @@ export class DemoView extends DG.ViewBase {
     
     for (let i=0; i<groups.length; i++){
       const name = groups[i] as string;
-      root.append(ui.div([ui.h1(name)], 'demo-app-group-title'));
-      root.append(this.groupRoot(name))
+      console.log(name);
+      tree.group(name, null, true).root.lastChild?.appendChild(this.groupRoot(name));
     }
-
-    this.root.append(root);
+    console.log(tree);
+    this.root.append(ui.div([tree.root], 'grok-gallery-grid'));
   }
 
   groupRoot (groupName: string) {
@@ -125,7 +126,9 @@ export class DemoView extends DG.ViewBase {
     view.basePath = '/apps/Tutorials/Demo';
     view.path = `/${viewName}`;
 
-    const root = ui.div([], 'demo-app-group-view grok-gallery-grid');
+    const root = ui.div([], 'grok-gallery-grid');
+    const tree = ui.tree();
+    let treeNode = tree.group(viewName, null, true);
 
     for (const f of DG.Func.find({meta: {'demoPath': null}})) {
       if (f.options[DG.FUNC_OPTIONS.DEMO_PATH].includes(viewName)) {
@@ -161,9 +164,10 @@ export class DemoView extends DG.ViewBase {
 
         root.append(item);
       }
-
-      grok.shell.v.root.append(root);
     }
+    treeNode.root.lastChild?.appendChild(root);
+    tree.root.classList.add('demo-app-group-view');
+    grok.shell.v.root.append(ui.div([tree.root], 'grok-gallery-grid'));
   }
 
   private _initDockPanel() {
