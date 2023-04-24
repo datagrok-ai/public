@@ -11,6 +11,7 @@ export interface RDModule {
 export interface RDMol {
   d_defaultWidth: number;
   d_default_Height: number;
+  is_qmol: boolean;
 
   get_smiles(): string;
   get_cxsmiles(): string;
@@ -85,8 +86,7 @@ export interface Reaction {
   draw_to_canvas_with_offset(): string;
   draw_to_canvas(canvas: HTMLCanvasElement, width: number, height: number): string;
   draw_to_canvas_with_highlights(canvas: HTMLCanvasElement, details: string): string;
-  
+
    /** Reclaims the memory used for that molecule. */
    delete(): void;
 }
-
