@@ -164,6 +164,7 @@ export class HistoryPanel {
     const v = await RunComparisonView.fromComparedRuns(fullFuncCalls, {
       parentView: cardView,
       parentCall,
+      configFunc: this.func,
     });
     grok.shell.addView(v);
   }
