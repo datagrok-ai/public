@@ -69,7 +69,7 @@ export class DemoView extends DG.ViewBase {
     grok.shell.windows.showToolbox = false;
     grok.shell.windows.showHelp = false;
     grok.shell.windows.showProperties = false;
-
+    
     this.name = 'Demo app';
 
     const tree = ui.tree();
@@ -87,10 +87,8 @@ export class DemoView extends DG.ViewBase {
 
     for (let i=0; i<groups.length; i++){
       const name = groups[i] as string;
-      console.log(name);
       tree.group(name, null, true).root.lastChild?.appendChild(this.groupRoot(name));
     }
-    console.log(tree);
     this.root.append(ui.div([tree.root], 'grok-gallery-grid'));
   }
 
@@ -235,6 +233,15 @@ export class DemoView extends DG.ViewBase {
       this.searchInput.fireChanged();
     };
 
+    let homeNode = ui.element('div');
+    homeNode.className = 'demo-app-tree-home-node d4-tree-view-node';
+    homeNode.append(ui.iconFA('home'));
+    homeNode.append(ui.div('Home', 'd4-tree-view-group-label'));
+
+    homeNode.onclick = () => {
+      this._initContent();
+    }
+
     DG.debounce(this.tree.onSelectedNodeChanged, 300).subscribe(async (value) => {
       if (DemoScript.currentObject)
         DemoScript.currentObject.cancelScript();
@@ -252,6 +259,8 @@ export class DemoView extends DG.ViewBase {
         this.nodeView(value.text);
       }
     });
+
+    this.tree.root.prepend(homeNode);
 
     this.dockPanel = grok.shell.dockManager.dock(ui.panel([
       this.searchInput.root,
