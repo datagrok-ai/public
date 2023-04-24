@@ -4,17 +4,10 @@ import * as DG from 'datagrok-api/dg';
 
 import {UaView} from './tabs/ua';
 import {UaToolbox} from './ua-toolbox';
-// import {OverviewView} from './tabs/overview';
 import {EventsView} from './tabs/events';
-// import {ErrorsView} from './tabs/errors';
-// import {FunctionsView} from './tabs/function-errors';
-// import {UsersView} from './tabs/users';
-// import {DataView} from './tabs/data';
 import {PackagesView} from './tabs/packages';
 import {FunctionsView} from './tabs/functions';
 import {OverviewView} from './tabs/overview';
-// import {Func, View} from 'datagrok-api/dg';
-// import {Subscription} from 'rxjs';
 
 const APP_PREFIX: string = `/apps/UsageAnalysis/`;
 
