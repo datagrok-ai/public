@@ -6,6 +6,7 @@ import {delay} from '@datagrok-libraries/utils/src/test';
 
 import {DemoView} from './demo-app';
 
+
 /** Type for {@link DemoScript} step */
 type Step = {
   name: string;
@@ -23,9 +24,11 @@ export class DemoScript {
   name: string = '';
   description: string = '';
 
+  static currentObject: DemoScript | null = null;
+
   private _currentStep: number = 0;
   private _isStopped: boolean = false;
-  static isCancelled: boolean = false;
+  private _isCancelled: boolean = false;
 
   private _root: HTMLDivElement = ui.div([], {id: 'demo-script', classes: 'tutorials-root tutorials-track demo-app-script'});
 
@@ -34,6 +37,8 @@ export class DemoScript {
   private _mainHeader: HTMLDivElement = ui.panel([], 'tutorials-main-header');
   private _header: HTMLHeadingElement = ui.h1('');
   private _headerDiv: HTMLDivElement = ui.divH([], 'tutorials-root-header');
+  private _stopStartBtn: HTMLButtonElement = ui.button(ui.iconFA('play'), () => this._changeStopState());
+  private _restartBtn: HTMLButtonElement = ui.button(ui.iconFA('sync'), () => this._restartScript());
 
   private _activity: HTMLDivElement = ui.panel([], 'tutorials-root-description');
 
@@ -46,10 +51,10 @@ export class DemoScript {
     this.name = name;
     this.description = description;
 
-    DemoScript.isCancelled = false;
-
     this._progress.max = 0;
     this._progress.value = 1;
+
+    DemoScript.currentObject = this;
   }
 
   /** Returns demo script steps */
@@ -75,9 +80,7 @@ export class DemoScript {
     this._header.innerText = this.name;
     this._headerDiv.append(this._header);
 
-    const changeScriptStateBtn = ui.button(ui.iconFA('play'), () => this._changeStopState());
-
-    this._headerDiv.append(changeScriptStateBtn);
+    this._headerDiv.append(this._stopStartBtn);
   }
 
   /** Creates script progress div */
@@ -108,6 +111,7 @@ export class DemoScript {
 
   /** Initializes the root of the demo script */
   private _initRoot(): void {
+    grok.shell.windows.showContextPanel = true;
     grok.shell.windows.showHelp = false;
 
     const node = grok.shell.dockManager.dock(this._root, DG.DOCK_TYPE.RIGHT, null, this.name, 0.3);
@@ -120,8 +124,6 @@ export class DemoScript {
     this._root.append(this._activity);
   }
 
-  // TODO: add restart script
-
   /** Starts the demo script actions */
   private async _startScript(): Promise<void> {
     const entry = this._activity.getElementsByClassName('grok-tutorial-entry');
@@ -129,13 +131,8 @@ export class DemoScript {
     const entryInstructions = this._activity.getElementsByClassName('grok-tutorial-step-description');
 
     for (let i = this._currentStep; i < this.stepNumber; i++) {
-      if (this._isStopped)
+      if (this._isStopped || this._isCancelled)
         break;
-
-      if (DemoScript.isCancelled) {
-        DemoScript.cancelScript();
-        break;
-      }
 
       entryIndicators[i].className = 'grok-icon far fa-spinner-third fa-spin';
       entryInstructions[i].classList.remove('hidden');
@@ -153,6 +150,9 @@ export class DemoScript {
 
       this._currentStep++;
     }
+
+    if (this._currentStep === this.stepNumber)
+      this._stopStartBtn.replaceWith(this._restartBtn);
   }
 
   /**
@@ -172,19 +172,53 @@ export class DemoScript {
       this._startScript();
   }
 
-  /** Changes the cancel state of the demo script */
-  private _changeCancelState(): void {
-    DemoScript.isCancelled = true;
-  }
-
-  /** Cancels the script */
-  static cancelScript() {
-    DemoScript.isCancelled = true;
+  /** Restarts the script */
+  private _restartScript(): void {
     const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[1];
     if (scriptDockNode.container.containerElement.classList.contains('tutorials-demo-script-container')) {
       grok.shell.dockManager.close(scriptDockNode);
       grok.shell.closeAll();
-      grok.shell.addView(new DemoView());
+    }
+    this._clearRoot();
+    this._setInitParams();
+    this.start();
+  }
+
+  /** Clears the root element */
+  private _clearRoot(): void {
+    this._root = ui.div([], {id: 'demo-script', classes: 'tutorials-root tutorials-track demo-app-script'});
+
+    this._mainHeader = ui.panel([], 'tutorials-main-header');
+    this._header = ui.h1('');
+    this._headerDiv = ui.divH([], 'tutorials-root-header');
+
+    this._activity = ui.panel([], 'tutorials-root-description');
+
+    this._progressDiv = ui.divV([], 'tutorials-root-progress');
+    this._progress = ui.element('progress');
+    this._progressSteps = ui.divText('');
+
+    this._progress.max = 0;
+    this._progress.value = 1;
+  }
+
+  /** Sets initial parameters */
+  private _setInitParams(): void {
+    this._currentStep = 0;
+    this._isStopped = false;
+    this._isCancelled = false;
+  }
+
+
+  /** Cancels the script */
+  cancelScript(): void {
+    this._isCancelled = true;
+    const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[1];
+    if (scriptDockNode.container.containerElement.classList.contains('tutorials-demo-script-container')) {
+        DemoScript.currentObject = null;
+        grok.shell.dockManager.close(scriptDockNode);
+        grok.shell.closeAll();
+        grok.shell.addView(new DemoView());
     }
   }
 

@@ -232,7 +232,9 @@ export class DemoView extends DG.ViewBase {
     };
 
     DG.debounce(this.tree.onSelectedNodeChanged, 300).subscribe(async (value) => {
-      DemoScript.cancelScript();
+      if (DemoScript.currentObject)
+        DemoScript.currentObject.cancelScript();
+
       if (value.root.classList.contains('d4-tree-view-item')) {
         const categoryName = value.root.parentElement?.parentElement
           ?.getElementsByClassName('d4-tree-view-group-label')[0].innerHTML;
