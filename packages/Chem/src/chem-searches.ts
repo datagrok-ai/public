@@ -53,7 +53,7 @@ function _chemFindSimilar(molStringsColumn: DG.Column, fingerprints: (BitArray |
 }
 
 // Only this function receives {sorted} in settings
-function _chemGetSimilarities(queryMolString: string, fingerprints: (BitArray | null)[]): number[] {
+export function _chemGetSimilarities(queryMolString: string, fingerprints: (BitArray | null)[]): number[] {
   const distances = new Array(fingerprints.length).fill(0.0);
   try {
     const sample = chemGetFingerprint(queryMolString, Fingerprint.Morgan);
