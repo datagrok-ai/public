@@ -8,11 +8,17 @@ const WIDTH = 300;
 const HEIGHT = 300;
 
 export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
+  const rdKitModule = getRdKitModule();
+  try {
+    molecule = _convertMolNotation(molecule, 'unknown', 'molblock', rdKitModule);
+  } catch (e) {
+    return new DG.Widget(ui.divText('Molecule is possibly malformed'));
+  }
   let sdf: string;
   try {
     sdf = (await smilesTo3DCoordinates(molecule)).replaceAll('\\n', '\n');
   } catch (e) {
-    return new DG.Widget(ui.divText('Molecule has no atoms or malformed'));
+    return new DG.Widget(ui.divText('Molecule has no atoms'));
   }
   const stringBlob = new Blob([sdf], {type: 'text/plain'});
 
