@@ -527,6 +527,9 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
     if (value) {
       let column = DG.Column.fromInt32Array(elName, value);
       column.name = table.columns.getUnusedName(column.name);
+      invalid.map((i) => {
+        column.set(i, null);
+      })
       table.columns.add(column);
       columnNames.push(column.name);
     }
