@@ -115,6 +115,8 @@ export class DemoScript {
 
   /** Starts the demo script */
   async start() {
+    grok.shell.windows.showHelp = false;
+
     const node = grok.shell.dockManager.dock(this._root, DG.DOCK_TYPE.RIGHT, null, this.name, 0.3);
     node.container.containerElement.classList.add('tutorials-demo-script-container');
 
