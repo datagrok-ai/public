@@ -104,3 +104,49 @@
 .d4-tree-view-root.demo-app-group-view .d4-tree-view-node {
     padding: 4px 0;
 }
+
+/* Autocomplete dock */
+.demo-app-script {
+    overflow: scroll;
+}
+
+.demo-app-script .tutorials-root-header{
+    align-items: center;
+}
+
+.demo-app-script .tutorials-main-header {
+    padding: 0 12px;
+}
+
+.demo-app-script .fa-clock {
+    color: var(--grey-3);
+}
+
+.demo-app-script .fa-spin {
+    color: var(--blue-1);
+}
+
+.demo-app-script .fa-check {
+    color: var(--green-2);
+}
+
+.demo-app-script .grok-tutorial-entry-instruction {
+    color: var(--grey-6);
+}
+
+.demo-app-script .grok-tutorial-step-description {
+    padding-left: 22px;
+}
+
+.demo-app-script .grok-tutorial-step-description .hidden{
+    display: none;
+}
+
+.demo-app-script .grok-tutorial-step-description .visible{
+    display: block;
+}
+
+/* play-pause btn */
+.tutorials-root-header button>i.grok-icon.fa-play {
+    color:var(--green-2);
+}
