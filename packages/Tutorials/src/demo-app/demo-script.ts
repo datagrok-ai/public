@@ -37,8 +37,8 @@ export class DemoScript {
   private _mainHeader: HTMLDivElement = ui.panel([], 'tutorials-main-header');
   private _header: HTMLHeadingElement = ui.h1('');
   private _headerDiv: HTMLDivElement = ui.divH([], 'tutorials-root-header');
-  private _stopStartBtn: HTMLButtonElement = ui.button(ui.iconFA('play'), () => this._changeStopState());
-  private _restartBtn: HTMLButtonElement = ui.button(ui.iconFA('sync'), () => this._restartScript());
+  private _stopStartBtn: HTMLButtonElement = ui.button(ui.iconFA('pause'), () => this._changeStopState(), 'Play / pausa');
+  private _restartBtn: HTMLButtonElement = ui.button(ui.iconFA('redo'), () => this._restartScript(), 'Restart');
 
   private _activity: HTMLDivElement = ui.panel([], 'tutorials-root-description');
 
@@ -55,6 +55,8 @@ export class DemoScript {
     this._progress.value = 1;
 
     DemoScript.currentObject = this;
+    //this._stopStartBtn.getElementsByClassName('grok-icon')[0].classList.remove('fal');
+    //this._stopStartBtn.getElementsByClassName('grok-icon')[0].classList.add('fas');
   }
 
   /** Returns demo script steps */
@@ -167,9 +169,13 @@ export class DemoScript {
 
   /** Changes the state of the demo script (stop/play) */
   private _changeStopState(): void {
+    let icon = this._stopStartBtn.getElementsByClassName('grok-icon');
+    icon[0].className = 'grok-icon fas fa-play';
     this._isStopped = !this._isStopped;
-    if (!this._isStopped)
+    if (!this._isStopped){
+      icon[0].className = 'grok-icon fal fa-pause';
       this._startScript();
+    }
   }
 
   /** Restarts the script */

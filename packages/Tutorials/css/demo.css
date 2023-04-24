@@ -157,3 +157,8 @@
 .demo-app-script .grok-tutorial-step-description .visible{
     display: block;
 }
+
+/* play-pause btn */
+.tutorials-root-header button>i.grok-icon.fa-play {
+    color:var(--green-2);
+}
