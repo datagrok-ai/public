@@ -4,6 +4,7 @@ import * as grok from 'datagrok-api/grok';
 
 import {delay} from '@datagrok-libraries/utils/src/test';
 
+import {DemoView} from './demo-app';
 
 /** Type for {@link DemoScript} step */
 type Step = {
@@ -23,7 +24,8 @@ export class DemoScript {
   description: string = '';
 
   private _currentStep: number = 0;
-  private _state: boolean = true;
+  private _isStopped: boolean = false;
+  private _isCancelled: boolean = false;
 
   private _root: HTMLDivElement = ui.div([], {id: 'demo-script', classes: 'tutorials-root tutorials-track demo-app-script'});
 
@@ -70,8 +72,8 @@ export class DemoScript {
     this._header.innerText = this.name;
     this._headerDiv.append(this._header);
 
-    const changeScriptStateBtn = ui.button(ui.iconFA('play'), () => this._changeState());
-    const cancelScriptBtn = ui.button(ui.iconFA('times-circle'), () => this._changeState());
+    const changeScriptStateBtn = ui.button(ui.iconFA('play'), () => this._changeStopState());
+    const cancelScriptBtn = ui.button(ui.iconFA('times-circle'), () => this._changeCancelState());
     this._headerDiv.append(changeScriptStateBtn, cancelScriptBtn);
   }
 
@@ -122,7 +124,7 @@ export class DemoScript {
     const entryInstructions = this._activity.getElementsByClassName('grok-tutorial-step-description');
 
     for (let i = this._currentStep; i < this.stepNumber; i++) {
-      if (!this._state)
+      if (this._isStopped)
         break;
 
       entryIndicators[i].className = 'grok-icon far fa-spinner-third fa-spin';
@@ -140,6 +142,11 @@ export class DemoScript {
       this._progressSteps.innerText = `Step: ${this._progress.value} of ${this.stepNumber}`;
 
       this._currentStep++;
+
+      if (this._isCancelled) {
+        this._cancelScript();
+        break;
+      }
     }
   }
 
@@ -151,6 +158,28 @@ export class DemoScript {
   private _scrollTo(element: HTMLDivElement, y: number): void {
     element.focus();
     element.scrollTop = y;
+  }
+
+  /** Changes the state of the demo script (stop/play) */
+  private _changeStopState(): void {
+    this._isStopped = !this._isStopped;
+    if (!this._isStopped)
+      this._startScript();
+  }
+
+  /** Changes the cancel state of the demo script */
+  private _changeCancelState(): void {
+    this._isCancelled = !this._isCancelled;
+  }
+
+  /** Cancels the script */
+  private _cancelScript(): void {
+    const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[1];
+    if (scriptDockNode.container.containerElement.classList.contains('tutorials-demo-script-container')) {
+      grok.shell.dockManager.close(scriptDockNode);
+    }
+
+    grok.shell.closeAll();
   }
 
   /**
@@ -173,12 +202,5 @@ export class DemoScript {
   async start(): Promise<void> {
     this._initRoot();
     this._startScript();
-  }
-
-  /** Changes the state of the demo script */
-  _changeState(): void {
-    this._state = !this._state;
-    if (this._state)
-      this._startScript();
   }
 }
