@@ -5,20 +5,23 @@ import * as grok from 'datagrok-api/grok';
 import {delay} from '@datagrok-libraries/utils/src/test';
 
 
-interface Step {
+/** Type for {@link DemoScript} step */
+type Step = {
   name: string;
   func: () => void;
 
+  /** Step options: description and delay (in ms) after function ends */
   options?: {
     description?: string;
     delay?: number;
   }
 };
 
+/** Demo script class. Could be used for creating demo scripts to show the platform capabilities */
 export class DemoScript {
   name: string = '';
   description: string = '';
-  root: HTMLDivElement = ui.div([], {id: 'demo-script', classes: 'tutorials-root tutorials-track demo-app-script'});
+  private _root: HTMLDivElement = ui.div([], {id: 'demo-script', classes: 'tutorials-root tutorials-track demo-app-script'});
 
   private _steps: Step[] = [];
 
@@ -41,10 +44,12 @@ export class DemoScript {
     this._progress.value = 1;
   }
 
+  /** Returns demo script steps */
   get steps(): Step[] {
     return this._steps;
   }
 
+  /** Returns the amount of demo script steps */
   get stepNumber(): number {
     return this._steps.length;
   }
@@ -92,7 +97,13 @@ export class DemoScript {
     element.scrollTop = y;
   }
 
-
+  /**
+   * Adds a new step to script
+   * @param name - Step name
+   * @param func - Step function
+   * @param options - Step options (description and delay after step ends)
+   * @returns Returns the current demo script object
+   */
   step(name: string, func: () => void, options?: {description?: string, delay?: number}): this {
     this._steps[this.steps.length] = {
       name: name,
@@ -102,15 +113,16 @@ export class DemoScript {
     return this;
   }
 
+  /** Starts the demo script */
   async start() {
-    const node = grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.RIGHT, null, this.name, 0.3);
+    const node = grok.shell.dockManager.dock(this._root, DG.DOCK_TYPE.RIGHT, null, this.name, 0.3);
     node.container.containerElement.classList.add('tutorials-demo-script-container');
 
     this._addHeader();
-    this.root.append(this._mainHeader);
+    this._root.append(this._mainHeader);
 
     this._addDescription();
-    this.root.append(this._activity);
+    this._root.append(this._activity);
 
     const entry = this._activity.getElementsByClassName('grok-tutorial-entry');
     const entryIndicators = this._activity.getElementsByClassName('grok-icon');
@@ -124,7 +136,7 @@ export class DemoScript {
       const currentStep = entry[i] as HTMLDivElement;
 
       this._steps[i].func();
-      this._scrollTo(this.root, currentStep.offsetTop - this._mainHeader.offsetHeight);
+      this._scrollTo(this._root, currentStep.offsetTop - this._mainHeader.offsetHeight);
       await delay(this._steps[i].options?.delay ? this._steps[i].options?.delay! : 2000);
 
       entryIndicators[i].className = 'grok-icon far fa-check';
