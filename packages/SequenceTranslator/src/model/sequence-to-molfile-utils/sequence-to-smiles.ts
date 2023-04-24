@@ -24,10 +24,11 @@ export class SequenceToSmilesConverter {
     const parsedSequence = this.parser.parseSequence();
     const monomerSmilesArray: string[] = [];
     for (let idx = 0; idx < parsedSequence.length; idx++) {
-      const monomerName = parsedSequence[idx];
-      const monomerSmiles = this.getMonomerSmiles(monomerName, idx);
+      const monomerSymbol = parsedSequence[idx];
+      const monomerSmiles = this.getMonomerSmiles(monomerSymbol, idx);
       monomerSmilesArray.push(monomerSmiles);
     }
+    console.log('monomer Smiles array:', monomerSmilesArray);
     return this.getPolymerSmiles(monomerSmilesArray);
   }
 

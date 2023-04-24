@@ -31,25 +31,29 @@ export class MonomerSequenceParser {
     const monomerSymbolSequence: string[] = [];
     for (let i = 0; i < parsedRawCodes.length; i++) {
       const code = parsedRawCodes[i];
-      const monomerSymbol = this.codeMap.get(code);
-      // todo: port this validation to more appropriate place
-      if (monomerSymbol === undefined) {
-        console.log(this.codeMap);
-        throw new Error(`SequenceTranslator: monomer with code ${code} is absent in the code map`);
-      }
+      const monomerSymbol = this.getSymbolForCode(code);
       monomerSymbolSequence.push(monomerSymbol);
 
       const isLinker = LINKER_CODES.includes(code);
       const attachedToLink = isMonomerAttachedToLink(code);
-      const nextMonomerIsLinker = (i < parsedRawCodes.length - 1 && LINKER_CODES.includes(parsedRawCodes[i + 1]));
+      const lastMonomer = i === parsedRawCodes.length - 1;
+      const nextMonomerIsLinker = (i + 1 < parsedRawCodes.length && LINKER_CODES.includes(parsedRawCodes[i + 1]));
 
       // todo: refactor as molfile-specific
-      if (!isLinker && !attachedToLink && !nextMonomerIsLinker) {
+      if (!isLinker && !attachedToLink && !nextMonomerIsLinker && !lastMonomer) {
         // todo: replace by phosphate linkage ID
         monomerSymbolSequence.push(P_LINKAGE);
       }
     }
     return monomerSymbolSequence;
+  }
+
+  private getSymbolForCode(code: string): string {
+    let monomerSymbol = this.codeMap.get(code);
+    // todo: remove as a legacy workaround, codeMap must contain all the
+    // symbols, and symbols are not codes
+    monomerSymbol ??= code;
+    return monomerSymbol;
   }
 
   private parseRawSequence(): string[] {
@@ -74,6 +78,7 @@ export class MonomerSequenceParser {
     return reverseLengthSort(allCodesInTheFormat);
   }
 }
+
 // todo: eliminate this strange legacy condition, leads to bugs
 function isMonomerAttachedToLink(code: string) {
   const legacyList = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
