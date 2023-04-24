@@ -16,11 +16,11 @@ export class FunctionsView extends UaView {
   }
 
   async initViewers(): Promise<void> {
-    const functionsViewer = new UaFilterableQueryViewer(
-      this.uaToolbox.filterStream,
-      'Functions',
-      'FunctionsUsage',
-      (t: DG.DataFrame) => {
+    const functionsViewer = new UaFilterableQueryViewer({
+      filterSubscription: this.uaToolbox.filterStream,
+      name: 'Functions',
+      queryName: 'FunctionsUsage',
+      viewerFunction: (t: DG.DataFrame) => {
         t.onSelectionChanged.subscribe(async () => {
           if (!t.selection.anyTrue) return;
           let df = t.clone(t.selection);
@@ -82,7 +82,8 @@ export class FunctionsView extends UaView {
           showYSelector: false,
         });
         return viewer;
-      }, null, null);
+      }
+    });
 
     this.viewers.push(functionsViewer);
     this.root.append(functionsViewer.root);

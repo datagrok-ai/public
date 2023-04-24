@@ -20,11 +20,11 @@ export class PackagesView extends UaView {
   }
 
   async initViewers(): Promise<void> {
-    const packagesViewer = new UaFilterableQueryViewer(
-      this.uaToolbox.filterStream,
-      'Packages',
-      'PackagesUsage',
-      (t: DG.DataFrame) => {
+    const packagesViewer = new UaFilterableQueryViewer({
+      filterSubscription: this.uaToolbox.filterStream,
+      name: 'Packages',
+      queryName: 'PackagesUsage',
+      viewerFunction: (t: DG.DataFrame) => {
         t.onSelectionChanged.subscribe(async () => {
           PackagesView.showSelectionContextPanel(t, this.uaToolbox, this.expanded, 'Packages');
         });
@@ -65,39 +65,55 @@ export class PackagesView extends UaView {
           showYSelector: false,
         });
         return viewer;
-      }, null, null);
+      }});
 
     this.viewers.push(packagesViewer);
     this.root.append(packagesViewer.root);
   }
 
   static showSelectionContextPanel(t: DG.DataFrame, uaToolbox: UaToolbox, expanded: {[key: string]: boolean}, backToView: string) {
-    if (!t.selection.anyTrue) return;
+    if (!t.selection.anyTrue)
+      return;
     let df = t.clone(t.selection);
     const gen = t.rows[Symbol.iterator]();
     const dateMin = df.getCol('time_start').stats.min;
     const dateMax = df.getCol('time_end').stats.max;
     const dateFrom = new Date(dateMin / 1000);
     const dateTo = new Date(dateMax / 1000);
-    const packages: string[] = df.getCol('pid').categories;
+    const packages: string[] = df.getCol('pid').categories.filter((c) => c !== '');
+    console.log(packages);
+    const users: string[] = df.getCol('uid').categories;
     t.selection.init((i) => {
       const row = gen.next().value as DG.Row;
       return dateFrom <= row.time_start && row.time_start < dateTo &&
-        packages.includes(row.pid);
+        packages.includes(row.pid) && users.includes(row.uid);
     }, false);
     const cp = DG.Accordion.create();
     df = t.clone(t.selection);
     const groups: string[] = df.getCol('ugid').categories;
-    const users: string[] = df.getCol('uid').categories;
+    const usersHistogram = df
+      .groupBy(['uid'])
+      .sum('count')
+      .aggregate();
+
     const filter: Filter = {
       time_start: dateMin / 1000000, time_end: dateMax / 1000000,
       groups: groups, users: users, packages: packages
     };
     cp.addPane('Time interval', () => ui.tableFromMap({
       'From': getTime(dateFrom),
-      'To': getTime(dateTo)
+      'To': getTime(dateTo),
     }), true);
-    cp.addPane('Users', () => ui.divV(users.map((u) => ui.render(`#{x.${u}}`))), true);
+    const data: {[key: string]: number} = {};
+    const data1: {[key: string]: HTMLElement | string} = {};
+    for (const r of usersHistogram.rows) {
+      const d = data[r.uid];
+      data[r.uid] = r['sum(count)'] + (d ?? 0);
+      data1[r.uid] = ui.render(`#{x.${r.uid}}`);
+    }
+    cp.addPane('Users', () => ui.table(Object.keys(data).sort((a, b) =>
+      data[b] - data[a]), (k) => [data1[k], data[k]]), true);
+    //cp.addPane('Users', () => ui.divV(users.map((u) => ui.render(`#{x.${u}}`))), true);
     cp.addPane('Packages', () => ui.divV(packages.map((p) => ui.render(`#{x.${p}}`))), true);
     PackagesView.getFunctionsPane(cp, filter, [dateFrom, dateTo], df.getCol('package').categories, uaToolbox, expanded.f, backToView);
     PackagesView.getLogsPane(cp, filter);

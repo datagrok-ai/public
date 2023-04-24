@@ -5,11 +5,6 @@ import '../../css/usage_analysis.css';
 import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
-// import {UaQueryViewer} from '../viewers/abstract/ua-query-viewer';
-// import {TopPackagesViewer} from '../drilldown_viewers/events/top-packages-viewer';
-// import {TopPackageFunctionsViewer} from '../drilldown_viewers/events/top-package-functions-viewer';
-// import {TopFunctionsViewer} from '../drilldown_viewers/events/top-functions-viewer';
-// import {TopSourcesViewer} from '../drilldown_viewers/events/top-sources-viewer';
 
 
 export class EventsView extends UaView {
@@ -19,11 +14,11 @@ export class EventsView extends UaView {
   }
 
   async initViewers(): Promise<void> {
-    const packagesViewer1 = new UaFilterableQueryViewer(
-      this.uaToolbox.filterStream,
-      'Sources',
-      'EventsSources',
-      (t: DG.DataFrame) => {
+    const packagesViewer1 = new UaFilterableQueryViewer( {
+      filterSubscription: this.uaToolbox.filterStream,
+      name: 'Sources',
+      queryName: 'EventsSources',
+      viewerFunction: (t: DG.DataFrame) => {
         const viewer = DG.Viewer.scatterPlot(t, {
           x: 'time_start',
           y: 'source',
@@ -38,13 +33,13 @@ export class EventsView extends UaView {
           showYSelector: false,
         });
         return viewer;
-      }, null, null);
+      }});
 
-    const packagesViewer2 = new UaFilterableQueryViewer(
-      this.uaToolbox.filterStream,
-      'Unique Errors',
-      'UniqueErrors',
-      (t: DG.DataFrame) => {
+    const packagesViewer2 = new UaFilterableQueryViewer( {
+      filterSubscription: this.uaToolbox.filterStream,
+      name: 'Unique Errors',
+      queryName: 'UniqueErrors',
+      viewerFunction: (t: DG.DataFrame) => {
         const viewer = DG.Viewer.barChart(t, {
           // x: 'time_start',
           // y: 'source',
@@ -59,7 +54,7 @@ export class EventsView extends UaView {
           showCategorySelector: false,
         });
         return viewer;
-      }, null, null);
+      }});
 
     this.viewers.push(packagesViewer1);
     this.viewers.push(packagesViewer2);
