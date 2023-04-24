@@ -6,11 +6,12 @@ import '../../css/usage_analysis.css';
 import {UaToolbox} from '../ua-toolbox';
 import {Filter, UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
-import {UaDataFrameQueryViewer} from '../viewers/ua-data-frame-query-viewer';
-import {TopPackagesViewer} from '../drilldown_viewers/events/top-packages-viewer';
-import {UaQueryViewer} from "../viewers/abstract/ua-query-viewer";
+import {getTime} from '../utils';
+import {PackagesView} from './packages';
 
 export class OverviewView extends UaView {
+
+  expanded: {[key: string]: boolean} = {f: true, l: true};
 
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
@@ -44,7 +45,7 @@ export class OverviewView extends UaView {
       'PackageStats',
       'PackagesUsage',
       (t: DG.DataFrame) => {
-        return DG.Viewer.barChart(t, {
+        const viewer = DG.Viewer.barChart(t, {
           'valueColumnName': 'user',
           'valueAggrType': 'unique',
           'barSortType': 'by value',
@@ -58,6 +59,10 @@ export class OverviewView extends UaView {
           'showStackSelector': false,
           'title': 'Packages activity',
         });
+        viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
+          PackagesView.showSelectionContextPanel(t, this.uaToolbox, this.expanded, 'Overview');
+        });
+        return viewer;
       }, null, null);
 
     const userStatsViewer = new UaFilterableQueryViewer(
@@ -106,6 +111,4 @@ export class OverviewView extends UaView {
     ]));
     */
   }
-
-
 }
