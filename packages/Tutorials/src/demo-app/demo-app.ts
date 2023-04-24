@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import {_package} from '../package';
+import {DemoScript} from './demo-script';
 
 import '../../css/demo.css';
 
@@ -26,13 +27,13 @@ export class DemoView extends DG.ViewBase {
     this._initContent();
   }
 
-
   static findDemoFunc(demoPath: string) {
     return DG.Func.find({meta: {'demoPath': demoPath}})[0];
   }
 
   async startDemoFunc(func: DG.Func, viewPath: string) {
-    grok.shell.closeAll();
+    this._closeAll();
+
     ui.setUpdateIndicator(grok.shell.tv.root, true);
     grok.shell.windows.showHelp = true;
 
@@ -44,6 +45,25 @@ export class DemoView extends DG.ViewBase {
       grok.shell.v.path = grok.shell.v.basePath = `/apps/Tutorials/Demo/${viewPath}`;
   }
 
+
+  private _closeAll() {
+    grok.shell.closeAll();
+    this._closeDemoScript();
+  }
+
+  private _closeDemoScript() {
+    const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[1];
+    if (scriptDockNode.container.containerElement.classList.contains('tutorials-demo-script-container')) {
+      grok.shell.dockManager.close(scriptDockNode);
+    }
+  }
+
+  private _closeDockPanel() {
+    const panelDockNode = Array.from(grok.shell.dockManager.rootNode.children)[0];
+    if (panelDockNode.container.containerElement.classList.contains('tutorials-demo-container')) {
+      grok.shell.dockManager.close(panelDockNode);
+    }
+  }
 
   private _initContent() {
     grok.shell.windows.showToolbox = false;
@@ -64,7 +84,7 @@ export class DemoView extends DG.ViewBase {
     }
 
     const groups: String[] = [...new Set(tempGroups)];
-    
+
     for (let i=0; i<groups.length; i++){
       const name = groups[i] as string;
       console.log(name);
@@ -171,6 +191,10 @@ export class DemoView extends DG.ViewBase {
   }
 
   private _initDockPanel() {
+    if (this._isDockPanelInit()) {
+      this._closeDockPanel();
+    }
+
     for (const f of DG.Func.find({meta: {'demoPath': null}})) {
       const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
       const path = pathOption.split('|').map((s) => s.trim());
@@ -212,6 +236,9 @@ export class DemoView extends DG.ViewBase {
     };
 
     DG.debounce(this.tree.onSelectedNodeChanged, 300).subscribe(async (value) => {
+      if (DemoScript.currentObject)
+        DemoScript.currentObject.cancelScript();
+
       if (value.root.classList.contains('d4-tree-view-item')) {
         const categoryName = value.root.parentElement?.parentElement
           ?.getElementsByClassName('d4-tree-view-group-label')[0].innerHTML;
@@ -236,16 +263,18 @@ export class DemoView extends DG.ViewBase {
 
     this._initWindowOptions();
 
-    // TODO: if loading ended in 0.1s, then no div, if not - then div - DG.debounce, merge etc.
     // TODO: on click on viewer demo set viewer help url in property panel (func helpUrl)
     // TODO: implement search in demo - search on meta.keywords, name, description
-    // TODO: add all the platform viewers to demo (make demo functions in Tutorials)
 
     // TODO: if there empty space - add viewer/filter/etc.
-    // TODO: write API for step control and example, steps are written in context panel - first priority
 
     // TODO: add to script demo class grok.shell.windows.showPropertyPanel = true and showHelp = false
     // TODO: add GIS
+  }
+
+  private _isDockPanelInit(): boolean {
+    const panelDockNode = Array.from(grok.shell.dockManager.rootNode.children)[0];
+    return panelDockNode.container.containerElement.classList.contains('tutorials-demo-container');
   }
 
   private _initWindowOptions() {
