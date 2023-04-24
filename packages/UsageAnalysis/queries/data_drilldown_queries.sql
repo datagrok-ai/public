@@ -1,6 +1,5 @@
 --name: TopQueriesUsingDataSource
 --connection: System:Datagrok
---meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --input: string data_source
@@ -19,7 +18,6 @@ group by q.name
 
 --name: TopUsersOfQuery
 --connection: System:Datagrok
---meta.cache: true
 --input: string name
 --input: string date { pattern: datetime }
 --input: list users
@@ -36,7 +34,6 @@ group by u.name
 
 --name: TopUsersOfConnection
 --connection: System:Datagrok
---meta.cache: true
 --input: string name
 --input: string date { pattern: datetime }
 --input: list users

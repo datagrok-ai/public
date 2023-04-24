@@ -1,5 +1,4 @@
 --name: Queries1
---meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -14,7 +13,6 @@ order by e.event_time::date;
 --end
 
 --name: TopQueries
---meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -28,7 +26,6 @@ group by q.name
 --end
 
 --name: TopConnections
---meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -43,7 +40,6 @@ group by c.name
 --end
 
 --name: TopDataSources
---meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok

@@ -1,5 +1,4 @@
 --name: _groupCompleter
---meta.cache: true
 --input: string sub
 --connection: System:Datagrok
 select id, name from (
@@ -12,7 +11,6 @@ limit 50
 
 
 --name: _userCompleter
---meta.cache: true
 --input: string sub
 --connection: System:Datagrok
 select id, name from (
@@ -32,7 +30,6 @@ limit 50
 
 
 --name: _actionCompleter
---meta.cache: true
 --input: string sub
 --connection: System:Datagrok
 select name from (
@@ -45,7 +42,6 @@ limit 50
 
 
 --name: _queriesCompleter
---meta.cache: true
 --input: string sub
 --connection: System:Datagrok
 select id, name from (
@@ -58,7 +54,6 @@ limit 50
 
 
 --name: _projectCompleter
---meta.cache: true
 --input: string sub
 --connection: System:Datagrok
 select id, name from (
@@ -71,7 +66,6 @@ limit 50
 
 
 --name: @action by @user on @date
---meta.cache: true
 --input: string action { suggestions: LogAnalysis:actionCompleter }
 --input: string user { suggestions: LogAnalysis:userCompleter}
 --input: string date { pattern: datetime }
@@ -86,7 +80,6 @@ where u.id = @user and @date(e.event_time) and t.name = @action
 
 --name: @group members
 --tags: log
---meta.cache: true
 --input: string group { suggestions: LogAnalysis:groupCompleter }
 --connection: System:Datagrok
 WITH RECURSIVE children(id, name, is_admin, depth, path, path1, cycle) AS (
@@ -104,7 +97,6 @@ WITH RECURSIVE children(id, name, is_admin, depth, path, path1, cycle) AS (
 
 
 --name: actions by @user on @date
---meta.cache: true
 --input: string user { suggestions: LogAnalysis:userCompleter }
 --input: string date { pattern: datetime }
 --connection: System:Datagrok
@@ -118,7 +110,6 @@ where u.id = @user and @date(e.event_time)
 
 --name: @user events by hours
 --tags: log
---meta.cache: true
 --input: string @user { suggestions: logAnalysis:userCompleter }
 --connection: System:Datagrok
 select hh as hours_ago, description  from
