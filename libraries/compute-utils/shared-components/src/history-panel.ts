@@ -174,14 +174,14 @@ export class HistoryPanel {
       ui.span([`Selected: ${this.selectedCallsSet.size}`], {style: {'align-self': 'center'}}),
       ui.divH([
         (() => {
-          const t = ui.iconFA('exchange', () => this.compareRuns());
+          const t = ui.iconFA('exchange', () => this.compareRuns(), 'Compare selected runs');
           t.style.margin = '5px';
           if (this.selectedCallsSet.size < 2)
             t.classList.add('hp-disabled');
           return t;
         })(),
         (() => {
-          const t = ui.iconFA('trash-alt', () => this.showDeleteRunDialog(this.selectedCallsSet));
+          const t = ui.iconFA('trash-alt', () => this.showDeleteRunDialog(this.selectedCallsSet), 'Delete selected runs');
           t.style.margin = '5px';
           if (this.selectedCallsSet.size === 0)
             t.classList.add('hp-disabled');
@@ -204,7 +204,7 @@ export class HistoryPanel {
               break;
             }
             this.updateActionsSection();
-          }); t.style.margin = '5px'; return t;
+          }, 'Select all'); t.style.margin = '5px'; return t;
         })()]: [
           (() => {
             let fullListCount = 0;
@@ -220,9 +220,8 @@ export class HistoryPanel {
               break;
             }
 
-            const t = this.selectedCallsSet.size === fullListCount? ui.iconFA('check-square') : ui.iconFA('minus-square');
-
-            t.addEventListener('click', () => {
+            const iconType = this.selectedCallsSet.size === fullListCount? 'check-square': 'minus-square';
+            const t = ui.iconFA(iconType, () => {
               switch (this.tabs.currentPane.name) {
               case MY_PANE_LABEL:
                 this.store.myRuns.forEach((run) => this.selectedCallsSet.delete(run));
@@ -238,7 +237,8 @@ export class HistoryPanel {
                 break;
               }
               this.updateActionsSection();
-            });
+            }, 'Unselect all');
+
             t.style.margin = '5px';
             return t;
           })(),
