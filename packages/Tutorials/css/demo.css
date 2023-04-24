@@ -68,6 +68,16 @@
 	background-color: var(--grey-1);
 }
 
+.demo-app-tree-group > .d4-tree-view-node > i.grok-icon.fa-home {
+    color: var(--grey-6);
+    width: 24px;
+    height: 22px;
+}
+
+.demo-app-tree-group .d4-tree-view-group-label {
+    margin: 0px;
+}
+
 .demo-app-view-title {
 	font-size: 20px;
 	color: var(--grey-6);
