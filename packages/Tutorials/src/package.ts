@@ -11,7 +11,7 @@ import '../css/tutorial.css';
 import {Track} from '@datagrok-libraries/tutorials/src/track';
 import {DemoView} from './demo-app/demo-app';
 import {viewerDemo} from './demo-app/platform-viewers-demo';
-import {DemoScript} from './demo-app/demo-track';
+import {DemoScript} from './demo-app/demo-script';
 
 
 export const _package = new DG.Package();
