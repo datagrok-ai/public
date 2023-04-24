@@ -25,7 +25,7 @@ export class DemoScript {
 
   private _currentStep: number = 0;
   private _isStopped: boolean = false;
-  private _isCancelled: boolean = false;
+  static isCancelled: boolean = false;
 
   private _root: HTMLDivElement = ui.div([], {id: 'demo-script', classes: 'tutorials-root tutorials-track demo-app-script'});
 
@@ -45,6 +45,8 @@ export class DemoScript {
   constructor(name: string, description: string) {
     this.name = name;
     this.description = description;
+
+    DemoScript.isCancelled = false;
 
     this._progress.max = 0;
     this._progress.value = 1;
@@ -74,13 +76,8 @@ export class DemoScript {
     this._headerDiv.append(this._header);
 
     const changeScriptStateBtn = ui.button(ui.iconFA('play'), () => this._changeStopState());
-    const cancelScriptBtn = ui.button(ui.iconFA('times-circle'), () => {
-      this._changeCancelState();
-      if (this._isStopped)
-        DemoScript.cancelScript();
-    });
 
-    this._headerDiv.append(changeScriptStateBtn, cancelScriptBtn);
+    this._headerDiv.append(changeScriptStateBtn);
   }
 
   /** Creates script progress div */
@@ -123,6 +120,8 @@ export class DemoScript {
     this._root.append(this._activity);
   }
 
+  // TODO: add restart script
+
   /** Starts the demo script actions */
   private async _startScript(): Promise<void> {
     const entry = this._activity.getElementsByClassName('grok-tutorial-entry');
@@ -133,7 +132,7 @@ export class DemoScript {
       if (this._isStopped)
         break;
 
-      if (this._isCancelled) {
+      if (DemoScript.isCancelled) {
         DemoScript.cancelScript();
         break;
       }
@@ -175,11 +174,12 @@ export class DemoScript {
 
   /** Changes the cancel state of the demo script */
   private _changeCancelState(): void {
-    this._isCancelled = true;
+    DemoScript.isCancelled = true;
   }
 
   /** Cancels the script */
   static cancelScript() {
+    DemoScript.isCancelled = true;
     const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[1];
     if (scriptDockNode.container.containerElement.classList.contains('tutorials-demo-script-container')) {
       grok.shell.dockManager.close(scriptDockNode);
