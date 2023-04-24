@@ -50,6 +50,7 @@ title: "Grid"
 | ≡            | Open column filter      |
 | Enter or the "+" icon at the last row | Add a row (requires `Allow Edit` set to true) |
 | Edit \| Add Rows... | Add a specific number of rows at a specified position |
+| Shift+Del    | Delete selected rows and/or columns |
 
 ## Resizing and reordering
 
