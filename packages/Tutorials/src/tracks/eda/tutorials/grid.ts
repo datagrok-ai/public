@@ -109,8 +109,9 @@ export class GridTutorial extends Tutorial {
 
     await this.action(`Delete these rows (${noneSeverityRowCount})`, this.t!.onRowsRemoved.pipe(filter(() =>
       this.t!.rowCount === (rowCount - noneSeverityRowCount) && !severityColumn.categories.includes('None'))),
-      null, 'In the context panel on the right, you can find the list of actions for selected rows. One of ' +
-      'them is "Delete Rows". Pick this option to refine your dataset.');
+      $('div.d4-ribbon-item').has('i.svg-remove-selected-rows')[0], 'In the context panel on the right, you ' +
+      'can find the list of actions for selected rows. One of them is "Delete Rows". Pick this option to refine ' +
+      'your dataset. You can also use <b>Shift+Delete</b> or the "Remove rows" icon in the top menu.');
 
     const heightGridCol = grid.col('height')!;
     const weightGridCol = grid.col('weight')!;
@@ -128,7 +129,8 @@ export class GridTutorial extends Tutorial {
     await this.action('Sort subjects by AGE in the descending order', grid.onRowsSorted.pipe(filter(() =>
       grid.sortByColumns.length === 1 && grid.sortByColumns[0].name === 'AGE' && grid.sortTypes[0] === false)), null,
       'Double-click the column header once. To change the order to ascending, double-click again. Repeating it one ' +
-      'more time will remove the column sorting. You can also sort rows from the column context menu.');
+      'more time will remove the column sorting. You can also sort rows from the column context menu. If a column ' +
+      'you want to sort is current, simply press <b>Ctrl+Shift+UP</b> in any cell to order its rows.');
 
     await this.action('Reset sorting in the grid', interval(1000).pipe(filter(() => grid.sortByColumns.length === 0)),
       null, 'To clear sorting, right-click the column header and select <b>Sort > Reset</b>. The same can be achieved ' +
@@ -157,12 +159,12 @@ export class GridTutorial extends Tutorial {
     const heightColumn = this.t!.getCol('height');
     const weightColumn = this.t!.getCol('weight');
     const startedColumn = this.t!.getCol('started');
-    await this.action('Change number formatting of HEIGHT to "int"', this.t!.onMetadataChanged.pipe(filter((data) =>
-      (data.args.source as unknown as DG.Column).name === heightColumn.name && (data.args.key as unknown as string) ===
-      'format' && (data.args.change as unknown as string) === 'set' && (data.args.value as unknown as string) === 'int')),
-      null, 'One way to set a new numeric format is to right-click a column header and select <b>Format > int</b>. For ' +
-      'convenience, there are examples for each format option in the menu. Hover the mouse over the list of options to ' +
-      'see the format name shown in a tooltip.');
+    await this.action('Change number formatting of HEIGHT to scientific notation', this.t!.onMetadataChanged.pipe(
+      filter((data) => (data.args.source as unknown as DG.Column).name === heightColumn.name &&
+      (data.args.key as unknown as string) === 'format' && (data.args.change as unknown as string) === 'set' &&
+      (data.args.value as unknown as string) === 'scientific')), null, 'One way to set a new numeric format is to ' +
+      'right-click a column header and select <b>Format > scientific</b>. For convenience, there are examples for ' +
+      'each format option in the menu. Hover the mouse over the list of options to see the format name shown in a tooltip.');
 
     await this.action('Set number formatting of WEIGHT to "max two digits after comma"', this.t!.onMetadataChanged.pipe(
       filter((data) => (data.args.source as unknown as DG.Column).name === weightColumn.name && (data.args.key as unknown as
