@@ -49,6 +49,10 @@ export function generateImport(className: string, path: string, sep: string = '\
   return `import {${className}} from '${path}';${sep}`;
 }
 
+export function generateExport(className: string, sep: string = '\n'): string {
+  return `export {${className}};${sep}`;
+}
+
 export interface Indexable {
   [key: string]: any,
 }

@@ -1,33 +1,26 @@
 const fs = require('fs');
 const path = require('path');
+const FuncGeneratorPlugin = require('../tools/plugins/func-gen-plugin');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
-const funcEntryPath = path.join(process.cwd(), 'package.g.ts');
-// Create a file if it doesn't exist yet (to resolve the `functions` entry path)
-// Clear the content if the file already exists (to prevent duplications)
-fs.writeFileSync(funcEntryPath, '');
 
 module.exports = {
   mode: 'development',
   entry: {
     test: {filename: 'package-test.js', library: {type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},
     package: './src/package.ts',
-    functions: {filename: 'package-functions.js', library: {type: 'var', name:`${packageName}_functions`}, import: './package.g.ts'},
   },
   resolve: {
     extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
   },
-  resolveLoader: {
-    alias: {
-      'func-gen-loader': path.join(path.dirname(__dirname), 'tools', 'loaders', 'func-gen-loader.js'),
-    },
-  },
   module: {
     rules: [
       { test: /\.tsx?$/, loader: 'ts-loader' },
-      { test: /(?<!package|package-test|package.g)\.tsx?$/, loader: 'func-gen-loader', enforce: 'pre' },
     ],
   },
+  plugins: [
+    new FuncGeneratorPlugin({ outputPath: './src/package.g.ts' }),
+  ],
   devtool: 'inline-source-map',
   externals: {
     'datagrok-api/dg': 'DG',
