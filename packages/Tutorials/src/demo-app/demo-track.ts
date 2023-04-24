@@ -180,6 +180,7 @@ export class DemoScript {
     }
 
     grok.shell.closeAll();
+    grok.shell.addView(new DemoView());
   }
 
   /**

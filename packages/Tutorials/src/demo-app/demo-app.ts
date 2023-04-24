@@ -75,7 +75,7 @@ export class DemoView extends DG.ViewBase {
     }
 
     const groups: String[] = [...new Set(tempGroups)];
-    
+
     for (let i=0; i<groups.length; i++){
       const name = groups[i] as string;
       root.append(ui.div([ui.h1(name)], 'demo-app-group-title'));
@@ -179,6 +179,9 @@ export class DemoView extends DG.ViewBase {
   }
 
   private _initDockPanel() {
+    if (this._isDockPanelInit())
+      return;
+
     for (const f of DG.Func.find({meta: {'demoPath': null}})) {
       const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
       const path = pathOption.split('|').map((s) => s.trim());
@@ -220,6 +223,7 @@ export class DemoView extends DG.ViewBase {
     };
 
     DG.debounce(this.tree.onSelectedNodeChanged, 300).subscribe(async (value) => {
+
       if (value.root.classList.contains('d4-tree-view-item')) {
         const categoryName = value.root.parentElement?.parentElement
           ?.getElementsByClassName('d4-tree-view-group-label')[0].innerHTML;
@@ -251,6 +255,11 @@ export class DemoView extends DG.ViewBase {
 
     // TODO: add to script demo class grok.shell.windows.showPropertyPanel = true and showHelp = false
     // TODO: add GIS
+  }
+
+  private _isDockPanelInit(): boolean {
+    const panelDockNode = Array.from(grok.shell.dockManager.rootNode.children)[0];
+    return panelDockNode.container.containerElement.classList.contains('tutorials-demo-container');
   }
 
   private _initWindowOptions() {
