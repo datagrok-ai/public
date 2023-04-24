@@ -17,7 +17,6 @@ import {DendrogramService} from './utils/dendrogram-service';
 import {DistanceMetric, LinkageMethod, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {IDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
-import { testWasm } from '../wasm/worker';
 
 export const _package = new DG.Package();
 
@@ -217,7 +216,6 @@ export async function importNewick(fileContent: string): Promise<DG.DataFrame[]>
 //name: Hierarchical Clustering
 //description: Calculates hierarchical clustering on features and injects tree to grid
 export async function hierarchicalClustering(): Promise<void> {
-  testWasm();
   let currentTableView = grok.shell.tv.table;
   let currentSelectedColNames: string[] = [];
 

@@ -4,11 +4,12 @@ import * as DG from 'datagrok-api/dg';
 
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
-import {DistanceMetric, isLeaf, NodeType} from '@datagrok-libraries/bio/src/trees';
+import {DistanceMetric, isLeaf, LinkageMethod, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 import { DistanceMatrix } from '@datagrok-libraries/bio/src/trees/distance-matrix';
 import { TreeHelper } from './tree-helper';
 import { ITreeHelper } from '@datagrok-libraries/bio/src/trees/tree-helper';
+import { ClusterMatrix, getClustersFromDistMatWasm } from '../../wasm/clusterizerWasm';
 
 /** Custom UI form for hierarchical clustering */
 export async function hierarchicalClusteringUI2(df: DG.DataFrame): Promise<void> {
@@ -43,6 +44,9 @@ export async function hierarchicalClusteringUI(
   distance: DistanceMetric = DistanceMetric.Euclidean,
   linkage: string
 ): Promise<void> {
+
+  const linkageCode = Object.values(LinkageMethod).findIndex(method => method === linkage);
+
   const colNameSet: Set<string> = new Set(colNameList);
   const [filteredDf, filteredIndexList]: [DG.DataFrame, Int32Array] =
     hierarchicalClusteringFilterDfForNulls(df, colNameSet);
@@ -72,13 +76,14 @@ export async function hierarchicalClusteringUI(
         }
         return res;
       }));
-  console.time('matrix');
+
   const distanceMatrix = await th.calcDistanceMatrix(preparedDf,
     preparedDf.columns.toList().map(col => col.name),
     distance);
-  console.timeEnd('matrix');
 
-  const hcPromise = hierarchicalClusteringByDistanceExec(distanceMatrix!, linkage);
+  const clusterMatrix: ClusterMatrix = await getClustersFromDistMatWasm(distanceMatrix!.data, preparedDf.rowCount, linkageCode);
+
+  // const hcPromise = hierarchicalClusteringByDistanceExec(distanceMatrix!, linkage);
 
   // Replace rows indexes with filtered
   // newickStr returned with row indexes after filtering, so we need reversed dict { [fltIdx: number]: number}
@@ -86,10 +91,8 @@ export async function hierarchicalClusteringUI(
   const fltRowCount: number = filteredDf.rowCount;
   for (let fltRowIdx: number = 0; fltRowIdx < fltRowCount; fltRowIdx++)
     fltRowIndexes[fltRowIdx] = filteredIndexList[fltRowIdx];
-  console.time('newick')
-  const newickStr: string = await hcPromise;
-  console.timeEnd('newick');
-  const newickRoot: NodeType = parseNewick(newickStr);
+
+  const newickRoot: NodeType = parseClusterMatrix(clusterMatrix);
   // Fix branch_length for root node as required for hierarchical clustering result
   newickRoot.branch_length = 0;
   (function replaceNodeName(node: NodeType, fltRowIndexes: { [fltIdx: number]: number }) {
@@ -161,4 +164,50 @@ async function hierarchicalClusteringByDistanceExec(distance: DistanceMatrix, li
       {data: dataDf, size: distance.size, linkage_name: linkage});
 
   return newickStr;
+}
+
+function parseClusterMatrix(clusterMatrix:ClusterMatrix){
+  /*
+  clusert matrix is in R format, I.E. the indexings are 1-based.
+  one of the reasons is that values in merge arrays are not always positive. if the value is negative
+  it means that we are referencing a leaf node. otherwise we are referencing a cluster node.
+  for example :
+  1, -2, 0.1 would mean that the merge happened between cluster 0 and leaf node 1 with a distance of 0.1
+  */
+
+  function getSubTreeLength(node: NodeType) : number{
+    if(isLeaf(node)){
+      return (node.branch_length ?? 0);
+    } else {
+      return (node.branch_length ?? 0) + getSubTreeLength(node.children![0]);
+    }
+  }
+
+  const clusters: NodeType[] = [];
+  const {mergeRow1, mergeRow2, heightsResult} = clusterMatrix;
+  for(let i = 0; i<heightsResult.length; i++){
+    let left: NodeType, right: NodeType;
+    if(mergeRow1[i] < 0){
+      left = {name: (mergeRow1[i] * -1 - 1).toString(), branch_length: heightsResult[i]};
+    } else {
+      left = clusters[mergeRow1[i] - 1];
+    }
+    if(mergeRow2[i] < 0){
+      right = {name: (mergeRow2[i] * -1 - 1).toString(), branch_length: heightsResult[i]};
+    } else {
+      right = clusters[mergeRow2[i] - 1];
+    }
+
+    const leftLength = getSubTreeLength(left);
+    const rightLength = getSubTreeLength(right);
+
+    if (leftLength > rightLength) {
+      right.branch_length = leftLength - rightLength;
+    }
+    if(rightLength > leftLength){
+      left.branch_length = rightLength - leftLength;
+    }
+    clusters.push({name: '', children: [left, right], branch_length:0});
+  }
+  return clusters[clusters.length - 1];
 }
