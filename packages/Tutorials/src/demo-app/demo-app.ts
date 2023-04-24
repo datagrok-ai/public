@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import {_package} from '../package';
+import {DemoScript} from './demo-script';
 
 import '../../css/demo.css';
 
@@ -54,6 +55,13 @@ export class DemoView extends DG.ViewBase {
     const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[1];
     if (scriptDockNode.container.containerElement.classList.contains('tutorials-demo-script-container')) {
       grok.shell.dockManager.close(scriptDockNode);
+    }
+  }
+
+  private _closeDockPanel() {
+    const panelDockNode = Array.from(grok.shell.dockManager.rootNode.children)[0];
+    if (panelDockNode.container.containerElement.classList.contains('tutorials-demo-container')) {
+      grok.shell.dockManager.close(panelDockNode);
     }
   }
 
@@ -179,8 +187,9 @@ export class DemoView extends DG.ViewBase {
   }
 
   private _initDockPanel() {
-    if (this._isDockPanelInit())
-      return;
+    if (this._isDockPanelInit()) {
+      this._closeDockPanel();
+    }
 
     for (const f of DG.Func.find({meta: {'demoPath': null}})) {
       const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
@@ -223,7 +232,7 @@ export class DemoView extends DG.ViewBase {
     };
 
     DG.debounce(this.tree.onSelectedNodeChanged, 300).subscribe(async (value) => {
-
+      DemoScript.cancelScript();
       if (value.root.classList.contains('d4-tree-view-item')) {
         const categoryName = value.root.parentElement?.parentElement
           ?.getElementsByClassName('d4-tree-view-group-label')[0].innerHTML;

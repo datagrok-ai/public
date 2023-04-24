@@ -60,6 +60,7 @@ export class DemoScript {
     return this._steps.length;
   }
 
+
   /** Adds script header */
   private _addHeader(): void {
     this._createHeaderDiv();
@@ -73,7 +74,12 @@ export class DemoScript {
     this._headerDiv.append(this._header);
 
     const changeScriptStateBtn = ui.button(ui.iconFA('play'), () => this._changeStopState());
-    const cancelScriptBtn = ui.button(ui.iconFA('times-circle'), () => this._changeCancelState());
+    const cancelScriptBtn = ui.button(ui.iconFA('times-circle'), () => {
+      this._changeCancelState();
+      if (this._isStopped)
+        DemoScript.cancelScript();
+    });
+
     this._headerDiv.append(changeScriptStateBtn, cancelScriptBtn);
   }
 
@@ -127,6 +133,11 @@ export class DemoScript {
       if (this._isStopped)
         break;
 
+      if (this._isCancelled) {
+        DemoScript.cancelScript();
+        break;
+      }
+
       entryIndicators[i].className = 'grok-icon far fa-spinner-third fa-spin';
       entryInstructions[i].classList.remove('hidden');
       entryInstructions[i].classList.add('visible');
@@ -142,11 +153,6 @@ export class DemoScript {
       this._progressSteps.innerText = `Step: ${this._progress.value} of ${this.stepNumber}`;
 
       this._currentStep++;
-
-      if (this._isCancelled) {
-        this._cancelScript();
-        break;
-      }
     }
   }
 
@@ -169,18 +175,17 @@ export class DemoScript {
 
   /** Changes the cancel state of the demo script */
   private _changeCancelState(): void {
-    this._isCancelled = !this._isCancelled;
+    this._isCancelled = true;
   }
 
   /** Cancels the script */
-  private _cancelScript(): void {
+  static cancelScript() {
     const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[1];
     if (scriptDockNode.container.containerElement.classList.contains('tutorials-demo-script-container')) {
       grok.shell.dockManager.close(scriptDockNode);
+      grok.shell.closeAll();
+      grok.shell.addView(new DemoView());
     }
-
-    grok.shell.closeAll();
-    grok.shell.addView(new DemoView());
   }
 
   /**
