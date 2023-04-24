@@ -180,7 +180,7 @@ export async function _timelinesViewerDemo() {
 //description: Tree viewer visualizes hierarchical data by categories
 //meta.demoPath: Viewers | Tree
 export async function _treeViewerDemo() {
-  await viewerDemo('Tree');
+  await viewerDemo('Tree', {left: '40px', right: '75px'});
 }
 
 //name: wordCloudViewerDemo

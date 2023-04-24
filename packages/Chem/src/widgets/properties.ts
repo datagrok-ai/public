@@ -1,4 +1,3 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full';
@@ -9,6 +8,44 @@ import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import { MOL_FORMAT } from '../constants';
 import { addCopyIcon } from '../utils/ui-utils';
+
+interface IChemProperty {
+  name: string;
+  type: DG.ColumnType;
+  valueFunc: (mol: OCL.Molecule) => any;
+}
+
+const CHEM_PROPS : IChemProperty[] = [
+  {name: 'MW', type: DG.TYPE.FLOAT, valueFunc: (m: OCL.Molecule) => m.getMolecularFormula().absoluteWeight},
+  {name: 'HBA', type: DG.TYPE.INT, valueFunc: (m) => new OCL.MoleculeProperties(m).acceptorCount},
+  {name: 'HBD', type: DG.TYPE.INT, valueFunc: (m) => new OCL.MoleculeProperties(m).donorCount},
+  {name: 'LogP', type: DG.TYPE.FLOAT, valueFunc: (m) => new OCL.MoleculeProperties(m).logP},
+  {name: 'LogS', type: DG.TYPE.FLOAT, valueFunc: (m) => new OCL.MoleculeProperties(m).logS},
+  {name: 'PSA', type: DG.TYPE.FLOAT, valueFunc: (m) => new OCL.MoleculeProperties(m).polarSurfaceArea},
+  {name: 'Rotatable bonds', type: DG.TYPE.INT, valueFunc: (m) => new OCL.MoleculeProperties(m).rotatableBondCount},
+  {name: 'Stereo centers', type: DG.TYPE.INT, valueFunc: (m) => new OCL.MoleculeProperties(m).stereoCenterCount},
+  {name: 'Molecule charge', type: DG.TYPE.INT, valueFunc: (m) => getMoleculeCharge(m)}
+]
+
+export function calcChemProperty(name: string, smiles: string) : any {
+  const mol = oclMol(smiles);
+  for (let n = 0; n < CHEM_PROPS.length; ++n) {
+    if (CHEM_PROPS[n].name === name)
+      return CHEM_PROPS[n].valueFunc(mol);
+  }
+  return null;
+}
+
+export function getChemPropertyFunc(name: string) : null | ((smiles: string) => any) {
+  for (let n = 0; n < CHEM_PROPS.length; ++n) {
+    if (CHEM_PROPS[n].name === name)
+      return (smiles: string) => {
+      const mol = oclMol(smiles);
+      return CHEM_PROPS[n].valueFunc(mol);
+    };
+  }
+  return null;
+}
 
 export function getMoleculeCharge(mol: OCL.Molecule) {
   const atomsNumber = mol.getAllAtoms();
@@ -33,21 +70,23 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
     return new DG.Widget(ui.divText('Could not analyze properties'));
   }
 
-  function prop(name: string, type: DG.ColumnType, extract: (mol: OCL.Molecule) => any) {
-    var addColumnIcon = ui.iconFA('plus', () => {
-      let molCol: DG.Column<string> = semValue.cell.column;
-      semValue.cell.dataFrame.columns
-        .addNew(semValue.cell.dataFrame.columns.getUnusedName(name), type)
+  function prop(p: IChemProperty) {
+    const addColumnIcon = ui.iconFA('plus', () => {
+      const molCol: DG.Column<string> = semValue.cell.column;
+      const col : DG.Column = DG.Column.fromType(p.type, semValue.cell.dataFrame.columns.getUnusedName(p.name), molCol.length)
+        .setTag('CHEM_WIDGET_PROPERTY', p.name)
+        .setTag('CHEM_ORIG_MOLECULE_COLUMN', molCol.name)
         .init((i) => {
           try {
             if (molCol.isNone(i)) return null;
             const mol = oclMol(molCol.get(i)!);
-            return extract(mol);
+            return p.valueFunc(mol);
           }
           catch (_) {
             return null;
           }
         });
+      semValue.cell.dataFrame.columns.add(col);
     }, `Calculate ${name} for the whole table`);
 
     ui.tools.setHoverVisibility(host, [addColumnIcon]);
@@ -58,29 +97,21 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
       .css('left', '-12px')
       .css('margin-right', '5px');
 
-    return ui.divH([addColumnIcon, extract(mol)], { style: {'position': 'relative'}});
+    return ui.divH([addColumnIcon, p.valueFunc(mol)], { style: {'position': 'relative'}});
   }
 
-  let map = {
-    'Formula': prop('Formula', DG.TYPE.STRING, (m) => m.getMolecularFormula().formula),
-    'MW': prop('MW', DG.TYPE.FLOAT, (m) => m.getMolecularFormula().absoluteWeight),
-    'HBA': prop('HBA', DG.TYPE.INT, (m) => new OCL.MoleculeProperties(m).acceptorCount),
-    'HBD': prop('HBD', DG.TYPE.INT, (m) => new OCL.MoleculeProperties(m).donorCount),
-    'LogP': prop('LogP', DG.TYPE.FLOAT, (m) => new OCL.MoleculeProperties(m).logP),
-    'LogS': prop('LogS', DG.TYPE.FLOAT, (m) => new OCL.MoleculeProperties(m).logS),
-    'PSA': prop('PSA', DG.TYPE.FLOAT, (m) => new OCL.MoleculeProperties(m).polarSurfaceArea),
-    'Rotatable bonds': prop('Rotatable bonds', DG.TYPE.INT, (m) => new OCL.MoleculeProperties(m).rotatableBondCount),
-    'Stereo centers': prop('Stereo centers', DG.TYPE.INT, (m) => new OCL.MoleculeProperties(m).stereoCenterCount),
-    'Molecule charge': prop('Molecule charge', DG.TYPE.INT, (m) => getMoleculeCharge(m)),
-  };
+  let map  = {};
+  for (let n = 0; n < CHEM_PROPS.length; ++n) {
+    (map as any)[CHEM_PROPS[n].name] = prop(CHEM_PROPS[n]);
+  }
 
   host.appendChild(ui.tableFromMap(map));
-  
+
   let tableString = '';
-  for (const [key, value] of Object.entries(map)) 
-    tableString += `${key}\t${value.innerText}\n`;
-  
+  for (const [key, value] of Object.entries(map))
+    tableString += `${key}\t${(value as any).innerText}\n`;
+
   addCopyIcon(tableString, 'Properties');
-  
+
   return new DG.Widget(host);
 }

@@ -31,9 +31,24 @@ export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
   const stage = new NGL.Stage(nglHost, {backgroundColor: 'white'});
   //@ts-ignore
   stage.loadFile(stringBlob, {ext: 'sdf'}).then(function(comp: NGL.StructureComponent) {
-    stage.setSize(WIDTH, WIDTH);
+    stage.setSize(WIDTH, HEIGHT);
     comp.addRepresentation('ball+stick');
     comp.autoView();
   });
+  ui.tools.waitForElementInDom(nglHost).then(() => {
+    if (nglHost.closest('.dialog-floating')) {
+      const accPanel = nglHost.closest('.panel-content') as HTMLElement;
+      if (accPanel) {
+        ui.onSizeChanged(accPanel).subscribe((_) => {
+          if (accPanel.clientHeight > 300 && accPanel.clientWidth > 300) {
+              nglHost.style.width = `${accPanel.clientWidth}px`;
+              nglHost.style.height = `${accPanel.clientHeight}px`;
+              stage.setSize(accPanel.clientWidth, accPanel.clientHeight);
+          }
+        })
+      }
+    }
+  })
+
   return new DG.Widget(nglHost);
 }

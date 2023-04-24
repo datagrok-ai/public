@@ -67,9 +67,27 @@ select * from customers where country = @country
 --connection: PostgresNorthwind
 --input: string lookup
 select productname from products where productname like (@lookup || '%')
+--end
 
 
 --name: productDetails
 --connection: PostgresNorthwind
 --input: string productName {suggestions: northwind:productLookup}
 select * from products where productname = @productName
+--end
+
+
+--name: OrdersByEmployee
+--friendlyName: OrdersByEmployee
+--connection: PostgresNorthwind
+--input: string shipCountry = "Argentina" {choices: Query("SELECT DISTINCT shipCountry FROM orders")}
+--input: string shipCity {choices: Query("SELECT DISTINCT shipcity FROM orders WHERE shipCountry = @shipCountry")}
+--input: string customerId {choices: Query("SELECT DISTINCT customerid FROM orders WHERE shipCity = @shipCity")}
+--input: string employee {choices: Query("SELECT DISTINCT lastName FROM employees INNER JOIN orders ON employees.employeeId = orders.employeeId WHERE customerId = @customerId")}
+
+SELECT *
+FROM orders
+INNER JOIN employees
+ON orders.employeeId = employees.employeeId
+WHERE lastName = @employee
+--end

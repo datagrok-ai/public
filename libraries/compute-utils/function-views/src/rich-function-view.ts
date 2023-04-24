@@ -11,39 +11,26 @@ import {Subject} from 'rxjs';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
 import '../css/rich-function-view.css';
-
-// mapping from internal Dart labels to JS DG.VIEWER labels
-const viewerTypesMapping: {[key: string]: string} = {
-  ['barchart']: DG.VIEWER.BAR_CHART,
-  ['boxplot']: DG.VIEWER.BOX_PLOT,
-  ['calendar']: DG.VIEWER.CALENDAR,
-  ['corrplot']: DG.VIEWER.CORR_PLOT,
-  ['densityplot']: DG.VIEWER.DENSITY_PLOT,
-  ['filters']: DG.VIEWER.FILTERS,
-  ['form']: DG.VIEWER.FORM,
-  ['globe']: DG.VIEWER.GLOBE,
-  ['googlemap']: DG.VIEWER.GOOGLE_MAP,
-  ['grid']: DG.VIEWER.GRID,
-  ['heatmap']: DG.VIEWER.HEAT_MAP,
-  ['histogram']: DG.VIEWER.HISTOGRAM,
-  ['linechart']: DG.VIEWER.LINE_CHART,
-  ['markup']: DG.VIEWER.MARKUP,
-  ['matrixplot']: DG.VIEWER.MATRIX_PLOT,
-  ['networkdiagram']: DG.VIEWER.NETWORK_DIAGRAM,
-  ['pcplot']: DG.VIEWER.PC_PLOT,
-  ['piechart']: DG.VIEWER.PIE_CHART,
-  ['scatterplot']: DG.VIEWER.SCATTER_PLOT,
-  ['scatterplot3d']: DG.VIEWER.SCATTER_PLOT_3D,
-  ['shapemap']: DG.VIEWER.SHAPE_MAP,
-  ['statistics']: DG.VIEWER.STATISTICS,
-  ['tileviewer']: DG.VIEWER.TILE_VIEWER,
-  ['timelines']: DG.VIEWER.TIMELINES,
-  ['treemap']: DG.VIEWER.TREE_MAP,
-  ['trellisplot']: DG.VIEWER.TRELLIS_PLOT,
-  ['wordcloud']: DG.VIEWER.WORD_CLOUD,
-};
+import {FileInput} from '../../shared-components/src/file-input';
+import {startWith} from 'rxjs/operators';
+import {viewerTypesMapping} from './shared/consts';
 
 const FILE_INPUT_TYPE = 'file';
+
+enum DIRECTION {
+  INPUT = 'Input',
+  OUTPUT = 'Output'
+}
+
+export interface AfterInputRenderPayload {
+  prop: DG.Property;
+  input: DG.InputBase | FileInput;
+}
+
+export interface AfterOutputRenderPayload {
+  prop: DG.Property;
+  output: DG.Viewer;
+}
 
 export class RichFunctionView extends FunctionView {
   // emitted when runButton disability should be checked
@@ -51,6 +38,8 @@ export class RichFunctionView extends FunctionView {
 
   // stores the running state
   private isRunning = false;
+
+  private controllsDiv?: HTMLElement;
 
   static fromFuncCall(
     funcCall: DG.FuncCall,
@@ -86,6 +75,32 @@ export class RichFunctionView extends FunctionView {
     if (firstOutputTab) this.tabsElem.currentPane = firstOutputTab;
 
     return Promise.resolve();
+  }
+
+  // scripting api events
+  public beforeInputPropertyRender = new Subject<DG.Property>();
+  public afterInputPropertyRender = new Subject<AfterInputRenderPayload>();
+  public beforeRenderControlls = new Subject<true>();
+  public afterOutputPropertyRender = new Subject<AfterOutputRenderPayload>();
+  public afterOutputSacalarTableRender = new Subject<HTMLElement>();
+
+  /*
+   * Will work only if called synchronously inside
+   * beforeRenderControlls subscriber.
+   * TODO: remove this limitation
+   */
+  public replaceControlls(div: HTMLElement) {
+    this.controllsDiv = div;
+  }
+
+  public getRunButton(name = 'Run') {
+    const runButton = ui.bigButton(name, async () => await this.doRun());
+    const disabilitySub = this.checkDisability.subscribe(() => {
+      const isValid = (wu(this.funcCall!.inputs.values()).every((v) => v !== null && v !== undefined)) && !this.isRunning;
+      runButton.disabled = !isValid;
+    });
+    this.subs.push(disabilitySub);
+    return runButton;
   }
 
   /**
@@ -175,23 +190,26 @@ export class RichFunctionView extends FunctionView {
 
           if (this.dfToViewerMapping[dfProp.name]) this.dfToViewerMapping[dfProp.name].push(viewer); else this.dfToViewerMapping[dfProp.name] = [viewer];
 
+          this.afterOutputPropertyRender.next({prop: dfProp, output: viewer});
+
           return viewer;
         }));
 
         viewers.then((loadedViewers) => {
           const subscribeOnFcChanges = () => {
-            const currentParam: DG.FuncCallParam = this.funcCall!.outputParams[dfProp.name] ?? this.funcCall!.inputParams[dfProp.name];
+            const currentParam: DG.FuncCallParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
             const paramSub = currentParam.onChanged.subscribe(() => {
-              loadedViewers.forEach(async (viewer) => {
+              loadedViewers.forEach(async (viewer, idx) => {
                 if (Object.values(viewerTypesMapping).includes(viewer.type))
                   viewer.dataFrame = currentParam.value;
                 else {
                   // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
                   const newViewer = await currentParam.value.plot.fromType(viewer.type) as DG.Viewer;
                   viewer.root.replaceWith(newViewer.root);
-                  viewer = newViewer;
+                  loadedViewers[idx] = newViewer;
                 }
+                this.afterOutputPropertyRender.next({prop: dfProp, output: viewer});
               });
             });
 
@@ -246,6 +264,7 @@ export class RichFunctionView extends FunctionView {
             [scalarProp.caption ?? scalarProp.name, this.funcCall.outputs[scalarProp.name], scalarProp.options['units']],
         ).root;
         table.style.maxWidth = '400px';
+        this.afterOutputSacalarTableRender.next(table);
         return table;
       };
 
@@ -305,12 +324,12 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async onAfterLoadRun(loadedRun: DG.FuncCall) {
-    wu(this.funcCall!.outputParams.values() as DG.FuncCallParam[]).forEach((out) => {
-      this.funcCall!.setParamValue(out.name, loadedRun.outputs[out.name]);
+    wu(this.funcCall.outputParams.values() as DG.FuncCallParam[]).forEach((out) => {
+      this.funcCall.setParamValue(out.name, loadedRun.outputs[out.name]);
     });
 
-    wu(this.funcCall!.inputParams.values() as DG.FuncCallParam[]).forEach((inp) => {
-      this.funcCall!.setParamValue(inp.name, loadedRun.inputs[inp.name]);
+    wu(this.funcCall.inputParams.values() as DG.FuncCallParam[]).forEach((inp) => {
+      this.funcCall.setParamValue(inp.name, loadedRun.inputs[inp.name]);
     });
 
     this.tabsElem.root.style.removeProperty('display');
@@ -365,32 +384,13 @@ export class RichFunctionView extends FunctionView {
   }
 
   private renderRunSection(): HTMLElement {
-    const runButton = ui.bigButton('Run', async () => await this.doRun());
-    // REPLACE BY TYPE GUARD
-    const isFuncScript = () => {
-      //@ts-ignore
-      return !!this.func.script;
-    };
-    // TO DO: move button somewhere
-    const openScriptBtn = ui.button('Open script', async () => {
-      window.open(`${window.location.origin}/script/${(this.func as DG.Script).id}`, '_blank');
-    });
-    // const buttonWrapper = ui.div([...this.options.isTabbed && isFuncScript() ? [openScriptBtn]: [], runButton]);
-    const buttonWrapper = ui.div([runButton]);
-    ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
-
-    const disabilitySub = this.checkDisability.subscribe(() => {
-      const isValid = (wu(this.funcCall!.inputs.values()).every((v) => v !== null && v !== undefined)) && !this.isRunning;
-      runButton.disabled = !isValid;
-    });
-    this.subs.push(disabilitySub);
-
     const inputs = ui.divV([], 'ui-form');
     let prevCategory = 'Misc';
     wu(this.funcCall!.inputParams.values() as DG.FuncCallParam[])
       .filter((val) => !!val)
       .forEach((val) => {
         const prop = val.property;
+        this.beforeInputPropertyRender.next(prop);
         if (prop.propertyType.toString() === FILE_INPUT_TYPE) {
           const t = UiUtils.fileInput(prop.caption ?? prop.name, null, (file: File) => {
             this.funcCall!.inputs[prop.name] = file;
@@ -399,10 +399,10 @@ export class RichFunctionView extends FunctionView {
           if (prop.category !== prevCategory)
             inputs.append(ui.h2(prop.category));
 
-          this.checkDisability.next();
           inputs.append(t.root);
+          this.afterInputPropertyRender.next({prop, input: t});
         } else {
-          let t = prop.propertyType === DG.TYPE.DATA_FRAME ?
+          const t = prop.propertyType === DG.TYPE.DATA_FRAME ?
             ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables):
             ui.input.forProperty(prop);
 
@@ -414,72 +414,95 @@ export class RichFunctionView extends FunctionView {
           t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
           if (prop.options['units']) t.addPostfix(prop.options['units']);
 
-          const subscribeOnFcChanges = () => {
-            t.value = this.funcCall!.inputs[val.name] ?? prop.defaultValue ?? null;
-            this.funcCall!.inputs[val.name] = this.funcCall!.inputs[val.name] ?? prop.defaultValue ?? null;
-          };
-
-          subscribeOnFcChanges();
-          this.subs.push(
-            this.funcCallReplaced.subscribe(subscribeOnFcChanges),
-          );
-
-          t.onChanged(() => {
-            // Resolving case of propertyType = DATAFRAME
-            if (!!t.property) return;
-
-            this.funcCall!.inputs[val.name] = t.value;
-          });
-
-          t.onInput(() => {
-            this.funcCall!.inputs[val.name] = t.value;
-            if (t.value === null) setTimeout(() => t.input.classList.add('d4-invalid'), 100); else t.input.classList.remove('d4-invalid'); ;
-
-            this.checkDisability.next();
-          });
-
-          const valChangeSub = val.onChanged.subscribe(() => {
-            const newValue = this.funcCall!.inputs[val.name];
-
-            if (val.property.propertyType === DG.TYPE.DATA_FRAME) {
-              // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12223
-              const newTableInput = ui.tableInput(prop.caption ?? prop.name, newValue, [...grok.shell.tables, newValue]);
-              t.root.replaceWith(newTableInput.root);
-              t = newTableInput;
-
-              t.onInput(() => {
-                this.funcCall!.inputs[val.name] = t.value;
-                if (t.value === null) setTimeout(() => t.input.classList.add('d4-invalid'), 100); else t.input.classList.remove('d4-invalid'); ;
-
-                this.checkDisability.next();
-              });
-            } else {
-              t.notify = false;
-              t.value = newValue;
-              t.notify = true;
-            }
-
-            this.checkDisability.next();
-          });
-
-          this.subs.push(valChangeSub);
+          this.syncFuncCallReplaced(t, val);
+          this.syncOnInput(t, val);
+          this.syncValOnChanged(t, val);
 
           if (prop.category !== prevCategory)
             inputs.append(ui.h2(prop.category));
 
-          if (t.value === null) runButton.disabled = true;
           inputs.append(t.root);
+          this.afterInputPropertyRender.next({prop, input: t});
         }
         prevCategory = prop.category;
       });
-    // @ts-ignore
-    const buttons = ui.buttonsInput([buttonWrapper]);
-    inputs.append(buttons);
+    this.controllsDiv = undefined;
+    this.beforeRenderControlls.next(true);
+    if (!this.controllsDiv) {
+      const runButton = this.getRunButton();
+      // REPLACE BY TYPE GUARD
+      // const isFuncScript = () => {
+      //   //@ts-ignore
+      //   return !!this.func.script;
+      // };
+      // TO DO: move button somewhere
+      // const openScriptBtn = ui.button('Open script', async () => {
+      //   window.open(`${window.location.origin}/script/${(this.func as DG.Script).id}`, '_blank');
+      // });
+      // const buttonWrapper = ui.div([...this.options.isTabbed && isFuncScript() ? [openScriptBtn]: [], runButton]);
+      const buttonWrapper = ui.div([runButton]);
+      ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
+      this.controllsDiv = ui.buttonsInput([buttonWrapper as any]);
+    }
+    inputs.append(this.controllsDiv);
     inputs.classList.remove('ui-panel');
     inputs.style.paddingTop = '0px';
     inputs.style.paddingLeft = '0px';
+    this.checkDisability.next();
 
     return ui.div([inputs]);
+  }
+
+  private syncFuncCallReplaced(t: DG.InputBase<any>, val: DG.FuncCallParam) {
+    const prop = val.property;
+    const sub = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
+      const newValue = this.funcCall!.inputs[val.name] ?? prop.defaultValue ?? null;
+      if (val.property.propertyType === DG.TYPE.DATA_FRAME)
+        this.dfInputRecreate(t, val, newValue);
+      else {
+        t.value = newValue;
+        this.funcCall!.inputs[val.name] = newValue;
+      }
+    });
+    this.subs.push(sub);
+  }
+
+  private syncValOnChanged(t: DG.InputBase<any>, val: DG.FuncCallParam) {
+    const sub = val.onChanged.subscribe(() => {
+      const newValue = this.funcCall!.inputs[val.name];
+      if (val.property.propertyType === DG.TYPE.DATA_FRAME)
+        this.dfInputRecreate(t, val, newValue);
+        // there is no notify for DG.FuncCallParam, so we need to
+        // check if the value is not the same for floats, otherwise we
+        // will overwrite a user input with a lower precicsion decimal
+        // representation
+      else if (((typeof newValue === 'number') && Math.abs(t.value - newValue) > 0.0001) || typeof newValue !== 'number') {
+        t.notify = false;
+        t.value = newValue;
+        t.notify = true;
+      }
+      this.checkDisability.next();
+    });
+
+    this.subs.push(sub);
+  }
+
+  // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12223
+  private dfInputRecreate(t: DG.InputBase<any>, val: DG.FuncCallParam, newValue: DG.DataFrame) {
+    const prop = val.property;
+    const newTableInput = ui.tableInput(prop.caption ?? prop.name, newValue, [...grok.shell.tables, newValue]);
+    t.root.replaceWith(newTableInput.root);
+    t = newTableInput;
+    this.syncOnInput(t, val);
+    this.afterInputPropertyRender.next({prop, input: t});
+  }
+
+  private syncOnInput(t: DG.InputBase<any>, val: DG.FuncCallParam) {
+    t.onInput(() => {
+      this.funcCall!.inputs[val.name] = t.value;
+      if (t.value === null) setTimeout(() => t.input.classList.add('d4-invalid'), 100); else t.input.classList.remove('d4-invalid');
+      this.checkDisability.next();
+    });
   }
 
   /**
@@ -634,11 +657,6 @@ const getSheetName = (name: string, direction: DIRECTION) => {
   const idealName = `${direction} - ${name}`;
   return (idealName.length > 31) ? name.substring(0, 32) : idealName;
 };
-
-enum DIRECTION {
-  INPUT = 'Input',
-  OUTPUT = 'Output'
-}
 
 const scalarsToSheet = (sheet: ExcelJS.Worksheet, scalars: { caption: string, value: string, units: string }[]) => {
   sheet.addRow(['Parameter', 'Value', 'Units']).font = {bold: true};

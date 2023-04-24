@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 
 import * as echarts from 'echarts';
 import {option} from './constants';
+import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
 type MinimalIndicator = '1' | '5' | '10' | '25';
 type MaximumIndicator = '75' | '90' | '95' | '99';
@@ -261,7 +262,7 @@ export class RadarViewer extends DG.JsViewer {
       label: {
         show: true,
         formatter: function(params: any) {
-          return params.value as string;
+          return StringUtils.formatNumber(params.value) as string;
         },
       },
     };

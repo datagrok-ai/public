@@ -144,7 +144,7 @@ export class PhyloTreeViewer extends DG.JsViewer {
       {category: PROPS_CATS.STYLE, editor: 'slider', min: 0.0, max: 16, step: 0.1});
     this.nodeSize = this.float(PROPS.nodeSize, window.devicePixelRatio * 5,
       {category: PROPS_CATS.STYLE, editor: 'slider', min: 0.0, max: 16, step: 0.1});
-    this.brush = this.bool(PROPS.brush, true,
+    this.brush = this.bool(PROPS.brush, false,
       {category: PROPS_CATS.STYLE});
     this.fontSize = this.string(PROPS.fontSize, '9px',
       {category: PROPS_CATS.STYLE});
@@ -154,7 +154,7 @@ export class PhyloTreeViewer extends DG.JsViewer {
     // -- Behaviour --
     this.selection = this.string(PROPS.selection, SelectionType.PathToRootAndDescendants,
       {category: PROPS_CATS.BEHAVIOUR, choices: Object.values(SelectionType)});
-    this.zoom = this.bool(PROPS.zoom, false,
+    this.zoom = this.bool(PROPS.zoom, true,
       {category: PROPS_CATS.BEHAVIOUR});
     this.bootstrap = this.bool(PROPS.bootstrap, false,
       {category: PROPS_CATS.BEHAVIOUR});
@@ -201,6 +201,13 @@ export class PhyloTreeViewer extends DG.JsViewer {
       this.render(false); // onTableAttached onCurrentRowChanged
     }));
     this.render(); // onTableAttached
+    this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this));
+  }
+
+  private onContextMenuHandler(menu: DG.Menu) {
+    menu.item('Reset view', () => {
+      this.render(false);
+    });
   }
 
   onPropertyChanged(property: DG.Property | null) {

@@ -80,6 +80,22 @@ export class Rect {
     return new Rect(_bytes[0], _bytes[1], _bytes[2], _bytes[3]);
   }
 
+  static toDart(rect: Rect): any {
+    _bytes[0] = rect.x;
+    _bytes[1] = rect.y;
+    _bytes[2] = rect.width;
+    _bytes[3] = rect.height;
+    return api.grok_Rect_Unpack(_bytes);
+  }
+
+  toDart(): any {
+    _bytes[0] = this.x;
+    _bytes[1] = this.y;
+    _bytes[2] = this.width;
+    _bytes[3] = this.height;
+    return api.grok_Rect_Unpack(_bytes);
+  }
+
   /** Rectangle of the specified size, with the specified center */
   fromCenterSize(cx: number, cy: number, width: number, height: number): Rect {
     return new Rect(cx - width / 2, cy - height / 2, width, height);

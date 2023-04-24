@@ -1,5 +1,4 @@
 --name:UniqueUsersSummary
---meta.cache: true
 --meta.invalidate: 0 * * * *
 --connection: System:Datagrok
 select date(e.event_time) as date, count(distinct u.id)
@@ -11,7 +10,6 @@ group by date(e.event_time)
 --end
 
 --name:UsersEventsSummary
---meta.cache: true
 --meta.invalidate: 0 * * * *
 --connection: System:Datagrok
 select date(e.event_time) as date,  count(e.id)

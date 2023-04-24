@@ -214,4 +214,3 @@ export async function newickRepresentation(data: DG.DataFrame) {
   }
   return await findNewick(DG.DataFrame.fromColumns(columns));
 }
-

@@ -188,7 +188,7 @@ export abstract class FunctionView extends DG.ViewBase {
   protected async loadFuncCallById() {
     if (this.initValue instanceof DG.FuncCall) {
       // next tick is needed to run funcCallReplaced before building UI
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
       this.linkFunccall(this.initValue);
       return;
     }

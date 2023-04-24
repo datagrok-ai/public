@@ -6,11 +6,15 @@ import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {readDataframe} from './utils';
 import {findMCS, findRGroups} from '../scripts-api';
+import { _convertMolNotation } from '../utils/convert-notation-utils';
+import { getRdKitModule } from '../package';
 
 
 category('top menu r-groups', () => {
   let empty: DG.DataFrame;
-  let core: string;
+  let malformed: DG.DataFrame;
+  let coreEmpty: string;
+  let coreMalformed: string;
 
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
@@ -19,12 +23,15 @@ category('top menu r-groups', () => {
     }
     empty = await readDataframe('tests/sar-small_empty_vals.csv');
     await grok.data.detectSemanticTypes(empty);
-    core = await findMCS('smiles', empty);
+    malformed = await readDataframe('tests/Test_smiles_malformed.csv');
+    await grok.data.detectSemanticTypes(malformed);
+    coreEmpty = await findMCS('smiles', empty);
+    coreMalformed = await findMCS('canonical_smiles', malformed);
   });
 
   test('mcs', async () => {
     const mcs = await grok.functions.call('Chem:FindMCS', {molecules: 'smiles', df: t, returnSmarts: false});
-    expect(mcs, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1');
+    expect(mcs, '[#8]=[#6]1-[#6]-[#7]=[#6](-[#6]2:[#6](-[#7]-1):[#6]:[#6]:[#6]:[#6]:2)-[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1');
   });
 
   test('rgroups.smiles', async () => {
@@ -88,7 +95,8 @@ M  END
   });
 
   test('rgroups.emptyValues', async () => {
-    const res = await findRGroups('smiles', empty, core, 'R');
+    const res = await findRGroups('smiles', empty, _convertMolNotation(coreEmpty,
+      DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock, getRdKitModule()), 'R');
     expect(res.getCol('R1').stats.valueCount, 13);
     expect(res.getCol('R2').stats.valueCount, 13);
   });
@@ -96,6 +104,20 @@ M  END
   test('rgroups.emptyInput', async () => {
     await findRGroups('smiles', empty, '', 'R');
   });
+
+  test('rgroups.malformedData', async () => {
+    const res = await findRGroups('canonical_smiles', malformed, _convertMolNotation(coreMalformed,
+      DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock, getRdKitModule()), 'R');
+    expect(res.getCol('R1').stats.valueCount, 41);
+    expect(res.getCol('R2').stats.valueCount, 8);
+    expect(res.getCol('R3').stats.valueCount, 24);
+    expect(res.getCol('R4').stats.valueCount, 15);
+    expect(res.getCol('R5').stats.valueCount, 16);
+  });
+
+  test('rgroups.malformedInput', async () => {
+    await findRGroups('canonical_smiles', malformed, malformed.getCol('canonical_smiles').get(2), 'R');
+  }, {skipReason: '#1491'});
 
   after(async () => {
     grok.shell.closeAll();

@@ -13,6 +13,7 @@ export * from './src/dataframe';
 export * from './src/entities';
 export * from './src/api/ddt.api.g';
 export * from './src/api/grok_shared.api.g';
+export * from './src/api/d4.api.g';
 export * from './src/shell';
 export * from './src/functions';
 export * from './src/grid';

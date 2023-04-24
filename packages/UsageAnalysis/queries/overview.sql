@@ -1,7 +1,6 @@
 --name:UniqueUsersOverview
 --input: string date {pattern: datetime}
 --input: list groups
---meta.cache: true
 --meta.invalidate: 0 * * * *
 --connection: System:Datagrok
 with recursive selected_groups as (
@@ -23,7 +22,6 @@ group by date(e.event_time)
 --name:UniqueUsersStats
 --input: string date {pattern: datetime}
 --input: list groups
---meta.cache: true
 --meta.invalidate: 0 * * * *
 --connection: System:Datagrok
 with recursive selected_groups as (
