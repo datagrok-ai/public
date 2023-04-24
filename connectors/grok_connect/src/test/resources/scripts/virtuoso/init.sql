@@ -67,3 +67,13 @@ VALUES ('1999-01-08', '04:05:06.789', '1999-01-08 04:05:06', '1999-01-08 04:05:0
 CREATE TABLE XML_TYPE(xml_type LONG XML);
 INSERT INTO XML_TYPE(xml_type) VALUES ('<foo>Hello World!</foo>');
 INSERT INTO XML_TYPE(xml_type) VALUES ('<book><title>Manual</title><chapter>...</chapter></book>');
+
+create table DATES_PATTERNS (
+    dat DATE
+);
+
+insert into DATES_PATTERNS (dat) values (current_date);
+insert into DATES_PATTERNS (dat) values (current_date - 1);
+insert into DATES_PATTERNS (dat) values (dateadd('day', 7 - dayofweek(current_date), current_date));
+insert into DATES_PATTERNS (dat) values (current_date - 150);
+insert into DATES_PATTERNS (dat) values ('2021-04-09');

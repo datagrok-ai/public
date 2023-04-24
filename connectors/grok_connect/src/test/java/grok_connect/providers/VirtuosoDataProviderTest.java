@@ -90,8 +90,8 @@ class VirtuosoDataProviderTest {
     @DisplayName("Parameters support")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource({"grok_connect.providers.arguments_provider.CommonObjectsMother#checkParameterSupport_ok",
-            "grok_connect.providers.arguments_provider.CommonObjectsMother#checkMultipleParametersSupport_ok",
-            "grok_connect.providers.arguments_provider.CommonObjectsMother#checkListParameterSupport_ok",
+            "grok_connect.providers.arguments_provider.VirtuosoObjectsMother#checkMultipleParametersSupport_ok",
+            "grok_connect.providers.arguments_provider.VirtuosoObjectsMother#checkListParameterSupport_ok",
             "grok_connect.providers.arguments_provider.CommonObjectsMother#checkRegexSupport_ok"})
     public void checkParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
@@ -104,6 +104,51 @@ class VirtuosoDataProviderTest {
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.VirtuosoObjectsMother#checkIntegerTypesSupport_ok")
     public void checkIntegerTypesSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support of xml type")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.VirtuosoObjectsMother#checkXmlTypeSupport_ok")
+    public void checkXmlTypeSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support of character types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.VirtuosoObjectsMother#checkCharacterTypesSupport_ok")
+    public void checkCharacterTypesSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support of float types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.VirtuosoObjectsMother#checkFloatTypesSupport_ok")
+    public void checkFloatTypesSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Output support of date types")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.VirtuosoObjectsMother#checkDateTypesSupport_ok")
+    public void checkDateTypesSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
+        funcCall.func.connection = connection;
+        DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
+        Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
+    }
+
+    @DisplayName("Parameters support for datetime")
+    @ParameterizedTest(name = "{index} : {0}")
+    @MethodSource("grok_connect.providers.arguments_provider.VirtuosoObjectsMother#checkDatesParameterSupport_ok")
+    public void checkDatesParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));

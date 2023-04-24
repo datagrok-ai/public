@@ -18,11 +18,20 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 import serialization.*;
 import grok_connect.utils.*;
 import grok_connect.table_query.*;
 import grok_connect.connectors_info.*;
 import serialization.Types;
+
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 
 public abstract class JdbcDataProvider extends DataProvider {
@@ -529,8 +538,23 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 if (value instanceof  SQLXML) {
                                     SQLXML sqlxml = (SQLXML)value;
                                     valueToAdd = sqlxml.getString();
-                                } else if(value instanceof java.lang.String) {
+                                } else if (value instanceof java.lang.String) {
                                     valueToAdd = value.toString();
+                                } else if (value instanceof Document) {
+                                    try {
+                                        StringWriter writer = new StringWriter();
+                                        TransformerFactory tf = TransformerFactory.newInstance();
+                                        Transformer transformer = tf.newTransformer();
+                                        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+                                        transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+                                        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                                        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+                                        transformer.transform(new DOMSource((Node) value), new StreamResult(writer));
+                                        valueToAdd = writer.toString();
+                                    } catch (TransformerException exception) {
+                                        throw new RuntimeException("Something went wrong when "
+                                                + "converting xml to string");
+                                    }
                                 }
                             }
                             valueToAdd = valueToAdd
@@ -947,7 +971,8 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     private static boolean isXml(int type, String typeName) {
-        return (type == java.sql.Types.SQLXML || typeName.equalsIgnoreCase("xml"));
+        return (type == java.sql.Types.SQLXML || typeName.equalsIgnoreCase("xml")) ||
+                typeName.equalsIgnoreCase("XMLType");
     }
 
     private static boolean isTime(int type, String typeName) {
