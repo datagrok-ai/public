@@ -157,7 +157,7 @@ jobs:
           fi
           echo "Run datagrok stand with profiles ${profiles}"
           docker system prune -af --volumes
-          if [[ ${{ matrix.unpublished_deps }} == "" ]]; then
+          if [[ "${{ matrix.unpublished_deps }}" == "" ]]; then
             DATAGROK_VERSION='latest'
           else
             DATAGROK_VERSION='bleeding-edge'
