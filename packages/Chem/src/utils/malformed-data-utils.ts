@@ -16,8 +16,7 @@ export function malformedDataWarning(fingerprintCol: (BitArray | null)[], datafr
       for (const i of malformedData)
         dataframe.selection.set(i!, true);
     })
-    grok.shell.warning(message);
-    //grok.shell.warning(ui.div([ui.divText(message), selectRowsButton]));
+    grok.shell.warning(ui.div([ui.divText(message), selectRowsButton]));
   }
   return malformedData as number[];
 }
