@@ -2,7 +2,6 @@
 --input: string date {pattern: datetime}
 --input: list groups
 --input: list packages
---meta.cache: true
 --connection: System:Datagrok
 with recursive selected_groups as (
   select id from groups
@@ -62,7 +61,6 @@ GROUP BY res.package, res.user, time_start, time_end, res.uid, res.ugid, res.pid
 --input: int time_end
 --input: string users
 --input: string packages
---meta.cache: true
 --connection: System:Datagrok
 select pp.name as package, en.id, et.name, count(*)
 from events e
@@ -84,7 +82,6 @@ group by en.id, et.name, pp.name
 --input: int time_end
 --input: string users
 --input: string packages
---meta.cache: true
 --connection: System:Datagrok
 select et.source, count(*)
 from events e
@@ -108,7 +105,6 @@ group by et.source
 --input: int time_end
 --input: string users
 --input: string packages
---meta.cache: true
 --connection: System:Datagrok
 select et.friendly_name as name, count(*)
 from event_parameter_values e

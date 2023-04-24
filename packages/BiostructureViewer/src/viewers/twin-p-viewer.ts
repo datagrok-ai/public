@@ -7,17 +7,17 @@ import {PvizAspect} from './pviz-aspect';
 import {MiscMethods} from './misc';
 
 export class TwinPviewer {
-  root: HTMLElement;
-  nglHost: HTMLElement;
-  pVizHosts: { [key: string]: HTMLDivElement };
-  repChoice: DG.InputBase;
-  sequenceTabs: DG.TabControl;
-  accOptions: DG.Accordion;
-  panelNode: DG.DockNode;
-  nglNode: DG.DockNode;
-  sequenceNode: DG.DockNode;
+  root!: HTMLElement;
+  nglHost!: HTMLElement;
+  pVizHosts!: { [key: string]: HTMLDivElement };
+  repChoice!: DG.InputBase;
+  sequenceTabs!: DG.TabControl;
+  accOptions!: DG.Accordion;
+  panelNode!: DG.DockNode;
+  nglNode!: DG.DockNode;
+  sequenceNode!: DG.DockNode;
 
-  twinSelections: { [key: string]: {} };
+  twinSelections!: { [key: string]: {} };
   colorScheme = {
     'col_background': 'white',
     'col_chain': '#0069a7',
@@ -25,11 +25,11 @@ export class TwinPviewer {
     'col_highlight': '#45d145',
   };
 
-  ngl: NglAspect;
-  pViz: PvizAspect;
+  ngl!: NglAspect;
+  pViz!: PvizAspect;
 
-  entry: string;
-  ligandSelection: { [key: string]: any }
+  entry!: string;
+  ligandSelection!: { [key: string]: any };
 
   chains: any;
 
@@ -72,7 +72,6 @@ export class TwinPviewer {
   }
 
   public async reset(entry: string) {
-
     this.entry = entry;
     this.twinSelections = {};
     this.pVizHosts = {};
@@ -85,17 +84,15 @@ export class TwinPviewer {
     const items: DG.TreeViewNode[] = [];
 
     for (const g in groups) {
-      if (Object.prototype.hasOwnProperty.call(groups, g)) {
+      if (Object.prototype.hasOwnProperty.call(groups, g))
         groups[g].checked = false;
-      }
     }
     for (const i of items) i.checked = false;
 
     this.changeChoices();
 
-    if (!!this.ngl) {
+    if (!!this.ngl)
       this.ngl.stage.removeAllComponents();
-    }
   }
 
   public async show(bsView: DG.TableView) {
@@ -104,7 +101,7 @@ export class TwinPviewer {
         this.pViz.render(chain);
       });
 
-      this.ngl.render(val, this.ligandSelection);
+      await this.ngl.render(val, this.ligandSelection);
       MiscMethods.setDockSize(bsView, this.nglNode, this.sequenceTabs);
     };
 

@@ -38,9 +38,5 @@ export class UaView extends DG.ViewBase {
     return this.viewers[0];
   }
 
-  getTime(date: Date, format: string = 'en-GB'): string {
-    return date.toLocaleString(format, {hour12: false}).replace(',', '');
-  }
-
   async initViewers(): Promise<void> {}
 }

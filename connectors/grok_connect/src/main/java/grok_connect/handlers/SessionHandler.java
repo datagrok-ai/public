@@ -61,6 +61,7 @@ public class SessionHandler {
                 queryManager = new QueryManager(message);
                 FuncCall query = queryManager.getQuery();
                 if (query.debugQuery) {
+                    query.log += GrokConnect.properties.toString();
                     query.log += getOnMessageLogString(DEFAULT_GETTING_RESULT_SET_MESSAGE);
                 }
                 queryManager.initResultSet();
