@@ -10,12 +10,16 @@ export interface IMolContext {
   useMolBlockWedging: boolean;
 }
 
+export function isMolFragment(molString: string) {
+  return !isMolBlock(molString) ? !!molString.match(/\[.?:|\*.?\]/g) : false;
+}
+
 export function isSmarts(molString: string): boolean {
   if (isMolBlock(molString)) {
     const molfileHandler = MolfileHandler.getInstance(molString);
     return molfileHandler.isQuery();
   } else
-    return !!molString.match(/\[.?#\d|\$|&|;|,|!|:|\*.?\]/g);
+    return !!molString.match(/\[.?#\d|\$|&|;|,|!.?]/g);
 }
 
 export function getMolSafe(molString: string, details: object = {}, rdKitModule: RDModule, warnOff: boolean = true): IMolContext {
