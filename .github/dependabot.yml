@@ -1,0 +1,13 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "16:05"
+      timezone: "Europe/Kyiv"
+    labels:
+      - "dependencies"
+      - "npm"
+    open-pull-requests-limit: 10
+    title: "Update {{#dependencies}} {{name}}: From {{oldVersion}}: To {{newVersion}} {{/dependencies}}"
