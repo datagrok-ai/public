@@ -12,12 +12,19 @@ Datagrok also hosts [public datasets](public-datasets.md) that can be used for a
 
 ### Data connection
 
-A data connection allows you to work with files and database tables directly in Datagrok. When connecting to a data source, you can access data manually from the UI, or programmatically, [through an application](../develop/how-to/access-data.md). For manual data access, Datagrok provides a convenient UI that lets you connect directly to any of the [30+ supported connectors](supported-connectors.md), retrieve data using queries, and securely share data with others.
+A data connection is an [entity](../datagrok/objects.md) representing information required to connect to a specific data
+source, such as its address and credentials. A data connection allows you to work with files and database tables
+directly in Datagrok. When connecting to a data source, you can access data manually from the UI, or programmatically,
+[through an application](../develop/how-to/access-data.md). For manual data access, Datagrok provides a convenient UI
+that lets you connect directly to any of the [30+ supported connectors](supported-connectors.md), retrieve data using
+queries, and securely share data with others.
 
 :::note
 
-A connector can work with a database, an Excel file, a CSV file, a web service, or any other source capable
-of providing the data. Most of our data connectors are [open-sourced and extendable](https://github.com/datagrok-ai/public/tree/master/connectors) (under MIT license).
+A connector is a plugin that enables the integration of external data providers into the platform. It can work with a
+database, an Excel file, a CSV file, a web service, or any other source capable of providing the data. Most of our data
+connectors are [open-sourced and extendable](https://github.com/datagrok-ai/public/tree/master/connectors) (under MIT
+license).
 
 :::
 
@@ -53,13 +60,18 @@ A data connection is an [entity](../datagrok/objects.md), which means it can be 
 
 For instructions on how to add a supported data source, set credentials, share, and manage it from the UI, see documentation for each data source type.
 
-For instructions on how to add a supported data source, set credentials, share, and manage it prorammatically, see [developer's documentation](../develop/how-to/access-data.md/#connections).
+For instructions on how to add a supported data source, set credentials, share, and manage it programmatically, see [developer's documentation](../develop/how-to/access-data.md/#connections).
 
 For specific details on the configuration required, see each individual connector's documentation page in the Connectors directory.
 
 ### Data query
 
-Datagrok has a convenient interface for creating, running, and sharing query results, including visual query editors, auto-generated parameter dialogs, and an ability to create dynamic dashboards to visualize query results. All data governance features, such as data lineage, history, and security, are applicable to queries. For more information about queries, see documentation for the respective data source type.
+A data query is a [function](../datagrok/functions/functions.md) associated with a [data connection](#data-connection)
+that typically returns a dataframe. Queries can be executed either manually, or as part of [data jobs](data-job.md).
+Datagrok has a convenient interface for creating, running, and sharing query results, including visual query editors,
+auto-generated parameter dialogs, and an ability to create dynamic dashboards to visualize query results. All data
+governance features, such as data lineage, history, and security, are applicable to queries. For more information about
+queries, see documentation for the respective data source type.
 
 Typically, a query is run against a database, however the same concepts apply for other data sources that are listed
 below:
@@ -72,7 +84,7 @@ below:
 | Linked data          | SPARQL     |
 | Box                  | Filename   |
 
-The result of a query execution is represented by the [function call](../datagrok/functions/function-call.md). For instructions on how to run, share queries, and manage queries prorammatically, see [developer's documentation](../develop/how-to/access-data.md).
+The result of a query execution is represented by the [function call](../datagrok/functions/function-call.md). For instructions on how to run, share queries, and manage queries programmatically, see [developer's documentation](../develop/how-to/access-data.md).
 
 A data query is an [entity](../datagrok/objects.md), which means it can be shared, assigned permissions, annotated, and more.
 
