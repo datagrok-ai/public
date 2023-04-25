@@ -57,9 +57,8 @@ export abstract class MolfileHandlerBase extends ChemicalTableParserBase {
 
 
   protected queryCriterion(idx: number): boolean {
-    const letter = this.fileContent[idx];
-    const char = letter.charCodeAt(idx);
-    return char === R || !isAlpha(letter) ||
-      (char === L && !isAlpha(this.fileContent[idx + 1]));
+    const char = this.fileContent.charCodeAt(idx);
+    return char === R || !isAlpha(char) ||
+      (char === L && !isAlpha(this.fileContent.charCodeAt(idx + 1)));
   }
 }
