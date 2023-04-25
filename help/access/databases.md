@@ -1,284 +1,293 @@
----
-title: "Databases"
----
+# Databases
 
-## Connecting to a database
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+```
 
-> Key concept: [_Entity_](../datagrok/objects.md)
->
->Certain classes of objects in Datagrok have a standard set of operations that can apply to them. We call these
-> objects _entities_. You can share _entities_, set permissions, annotate, reuse them in multiple ways, and more.
-> Connections, queries, tables, and table columns are all Datagrok _entities_.
->
->Key concept: [_Function_](../datagrok/functions/functions.md)
->
->Any action executed within Datagrok is a _function_. For example, a data query, a calculation, or sending an email are
-> all _functions_. _Functions_ are scriptable and auditable, can be parameterized, used in automation workflows, and
-> more.
+Datagrok has native support for relational databases ([30+ databases supported](supported-connectors.md)), allowing to do the following:
 
-### Database connection
+* Browse databases schemas, tables, and columns.
+* Create and edit queries visually.
+* Query databases using parameterized queries.
+* Use query as a dynamically refreshed data source for dashboards.
+* Share connections and queries with others.
+* Configure user privileges.
+* Create data pipelines.
 
-A database connection lets you work with databases directly in Datagrok. You can connect to a supported database or a
-relational database that uses a Java Database Connectivity (JDBC) driver.
+:::note Developers
 
-Before you connect a database, the following prerequisites must be met:
+You can [create custom connectors](create-custom-connectors.md). You can also [connect to a data source, query data, and share connections programmatically](../develop/how-to/access-data.md/#connections).
 
-* Datagrok has a connector to the data source. Out-of-the-box, Datagrok connects to all major databases. For the
-  complete list of supported connectors, see [Connectors](supported-connectors.md).
-  > Developers: You can create [custom connectors](https://github.com/datagrok-ai/public/tree/master/connectors).
-  <!--need to create a How-to under Develop-->
-* You must have the appropriate privileges to the database. If you don't have database privileges, contact the database
-  administrator.
-* You must be able to authenticate the connection (typically, with a username and password).
+:::
 
-#### Add new connection
+## Connecting to database
 
-1. Go to **Data > Databases**.
-2. In the **Database Explorer**, right-click the desired connector and select **Add connection…** A dialog opens.
-3. Fill in the connection parameters.
-   > Notes:
-   >
-   >For connections that support JDBC, you can use the _Conn. string_ parameter to enter a custom JDBC connection
-   string. Leave all other parameter fields empty. You still need to enter credentials.
-   >
-   >You can enter credentials (typically, login/password) manually. When entered manually, Datagrok stores secrets in
-   a [secure privilege management system](../govern/security.md#credentials). You can also set up a connection using
-   Datagrok's integration with the AWS Secrets Manager (
-   see [Secrets Managers](data-connection-credentials.md#secrets-managers) for details).
-   >
-   >To define who can change the connection credentials, select from the _Credential owner_ dropdown.
-4. Click **TEST** to the connection, then click **OK** to save it.
+### Adding connection
 
 ![Add new database connection](database-connection.gif)
 
-Once you connect a database, it appears in the **Database Explorer** under the data source it relates to. From there,
-you can expand and view its content by double-clicking it.
+To add a new connection, follow these steps:
 
-### Modify a connection
+1. Go to **Data > Databases**.
+2. In the **Database Manager**, right-click the desired connector and select **Add connection…** to open the **Add new connection** dialog.
+3. Fill in the connection parameters.
+4. Click **TEST** to test the connection, then click **OK** to save it. If the connection fails, verify your connection details and that you added Datagrok's IP addresses to your allowlist.
 
-1. Right-click the connection and select **Edit...** A dialog opens.
-2. In the dialog, change the connection name, parameters, or credentials as needed.
-3. Click **TEST** to test the connection, then click **OK** to save the changes.
+:::note
 
-> Tip: When you have the connection set up the way you want it, you can clone it and make additional changes as needed:
->
-> 1. Right-click the connection and select **Clone...** A dialog opens.
-> 2. Type in a name for the new connection and make other changes as needed.
-> 3. Re-enter password or access keys.
-> 4. Click **OK** to save the new connection.
+Ensure your database is accessible from the Datagrok server, as the connection originates from there.
 
-## Database Explorer
+:::
 
-Using **Database Explorer**, you can visually explore and inspect database connections and queries from within Datagrok.
-In addition, where providers support it, you can browse and inspect schemas, tables, and table columns for relational
-databases (double-click to expand).
+Some connection parameters have unique characteristics, and it's important to specify them correctly:
 
-**Database Explorer** works in tandem with context-driven _views_, such as **Context Pane** or **Help**, to provide
-additional information: Clicking an object in **Database Explorer** updates the panes with object-specific details and
-available actions. For example, when you click a table, you can see its metadata, dynamically preview the table's
-content, run available queries and instantly preview the results, and do more.
+* _JDBC connection_. For connections that support JDBC, you can use the `Conn. string` parameter to enter a custom JDBC connection string. Leave all other parameter fields empty. You still need to enter credentials.
+* _Credentials_. You have two ways to specify credentials:
+  * Manually. When entered manually, Datagrok stores secrets in
+   a [secure privilege management system](../govern/security.md/#credentials). To specify who can change the connection credentials, click the **Gear** icon and select from the **Credential owner** dropdown.
 
-> Note: A **Context Pane** is a key discovery _view_ in Datagrok. <!--TODO - move to a separate document-->
->
->Developers: **Context Pane** can be extended. You can add custom [info panels](../develop/how-to/add-info-panel.md)
-> and [context actions](../develop/how-to/context-actions.md).
+  * Use the [Secrets Manager](data-connection-credentials.md/#secrets-managers), such as the AWS Secrets Manager.
+
+Upon successful connection, the database appears in the [Database Manager](https://public.datagrok.ai/connect) under the respective data source. By expanding the database, you can view its saved queries. [If connectors support it](supported-connectors.md), you can also inspect the schemas, tables, and columns of relational databases.
+
+:::note
+
+Like other objects in Datagrok, newly created connections are only visible to the user who created them. To let others access the connection, you must share it (right-click the connection and select **Share...** from the list of options).
+
+:::
+
+### Caching data
+
+You can cache query results to improve query performance. To change caching options, right-click the connection, select **Edit...**, and then select the appropriate checkboxes in the **Edit** dialog:
+
+1. **Cache Schema**: to speed up building the database schema.
+1. **Cache Results**: to reuse results for all queries under this connection. To cache results of individual queries, edit that query's properties.
+
+When you cache the query results, use the **Invalidate On** field to specify a [cron expression](https://www.freeformatter.com/cron-expression-generator-quartz.html) that defines when the cache is invalidated. Here is an example of a cron expression that invalidates the cache at 1 AM every night for a database that refreshes overnight: `0 0 1 * * ?`
+
+:::caution
+
+If you leave the **Invalidate On** field empty, the cache will never be updated.
+This may be suitable when the data stored in the database remains static and never changes.
+
+:::
+
+:::note developers
+
+You can cache data programmatically.
+
+<details>
+
+<summary> Caching package-defined connections </summary>
+
+To cache package-defined connections, you can specify the `cacheResults` parameter in the connection json definition:
+
+```json
+{
+  "name": "Northwind",
+  "parameters": {
+    "server": "dev.datagrok.ai",
+    "port": 23306,
+    "db": "Northwind",
+    "cacheSchema": false,
+    "cacheResults": true,
+    "ssl": false,
+    "connString": ""
+  }
+}
+```
+
+</details>
+
+<details>
+
+<summary> Setting cache options for queries </summary>
+
+To cache the query results programmatically, edit the corresponding SQL file in the package queries and specify the `meta.cache` and `meta.invalidate` fields. These fields determine whether and how to cache the query results:
+
+* `meta.cache` specifies whether the query is cached or not.
+* `meta.invalidate` specifies when the cached result should be invalidated.
+
+By setting these fields, you can control the caching behavior of individual queries and improve overall query performance.
+
+<details>
+
+<summary> Example </summary>
+
+```Grok Script
+--name: getProductNames
+--input: string department
+--meta.cache: true
+--meta.invalidate: 0 0 1 * * ?
+select distinct name from products p
+where p.department = @department
+```
+
+</details>
+
+</details>
+
+:::
+
+### Modifying connection
+
+To modify a connection, right-click it and select **Edit...** from the list of options. To quickly create a connection similar to an existing one, right-click it and select **Clone...**
+
+## Database Manager
+
+**Database Manager** provides a hierarchical browsing interface for schemas and database objects, such as queries, tables, and table columns (if supported by the providers). You can perform various operations like adding new connections and queries, previewing data, running queries, and managing objects using context actions that are accessible through right-clicking an object. If you don't see a certain action, it may be due to insufficient permissions. Contact your Datagrok administrator for assistance.
+
+The **Context Panel**, which is located to the right of the **Database Manager**, helps you work with database objects. Whenever you click an object within the **Database Manager**, the **Context Panel** displays the object's properties and context actions. For example, when you click a table, the **Context Panel** lets you view the table's metadata, dynamically preview the table's contents, run queries, and access other relevant information and options. To learn more about the **Context Panel**, see [Context Panel](../datagrok/navigation.md#context-panel).
+
+:::note developers
+
+**Context Panel** can be extended. You can add custom [info panes](../develop/how-to/add-info-panel.md) and [context actions](../develop/how-to/context-actions.md).
+
+:::
 
 ![DB Hierarchy Browser](../uploads/features/db-hierarchy-browser.gif "DB Hierarchy Browser")
 
-> Tip: You can reposition, resize, detach, or hide any pane. To learn more, see [Navigation](../datagrok/navigation.md).
-
-See also:
-
-* View<!--link out to a document when ready-->
-* [Context Panel](../datagrok/navigation.md#context-panel).
-
 ### Schema Browser
 
-**Schema Browser** provides a convenient way to simultaneously see all tables and associated columns. To open **Schema
-Browser**, right-click the database connection and select **Browse schema**.
+The **Schema Browser** helps you explore all tables and columns belonging to a connection. To open a **Schema Browser**, in the **Database Manager** right-click a connection and select **Browse schema**.
+
+Similar to the **Database Manager**, clicking an object in the **Schema Browser** updates the **Context Panel** with object-specific properties and actions. To open the object's context menu, right-click it.
 
 ![Schema browser](browse-schema.gif)
 
-### Open schema as dataframe
+### Viewing schema as dataframe
 
-You can explore a database schema from within Datagrok using an interactive spreadsheet. To do so, right-click the
-database connection and select **Open schema as table**. This action opens the dataframe. You can further explore the
-schema, cleanse and transform data, and more.
+Another way to explore a database schema is through an [interactive spreadsheet](../visualize/viewers/grid.md). To access this feature, in the **Database Manager**, right-click a connection and select **Open schema as table**.
 
-When you have the data set up the way you want it, you can persist the _layout_<!--add link when doc is ready--> or _
-upload_ the dataframe<!--add a link to "Saving and sharing" when ready--> to the server for future use.
+## Working with queries
 
-![Open schema as dataframe](open-schema-as-table.gif)
+Datagrok provides several tools for creating, exploring, and editing queries.
 
-See also:
+* _Editors_:
+  * [Query Editor](#query-editor) is the main interface for executing database queries. Using this tool, you can write and edit statements in SQL and other languages and use functions to add post-processing steps.
+  * [Aggregation Editor](#aggregation-editor) can be used for manipulating, summarizing, filtering, and pivoting table data.
+* _Built-in queries for tables_:
+  * **Get All**: retrieves all table data. Use it with caution.
+  * **Get TOP 100**: retrieves the first 100 rows.
 
-* [Dataframe](../datagrok/table.md)
+  :::tip
 
-## Querying databases
+  To retrieve specific columns, hold down the Shift key on your keyboard while clicking the desired columns in the schema. Once selected, right-click the selection and run **Get All** or **Get TOP 100** just for these columns.
 
-> Key concept: _Parameter_
->
->A _parameter_ is a piece of information you supply to a query right as you run it. Parameters can be used by themselves
-> or as part of a larger expression to form a criterion in the query.
->
->Key concept: _Parameter pattern_ (or _Filter_)
->
->A _parameter pattern_ is a filtering criterion you add to a query to specify which items are returned when you run the
-> query. Parameter patterns are similar to a formula — a string that may consist of field references, operators, and
-> constants. To see the list of available patterns and learn how they work,
-> see [Search patterns](../explore/data-search-patterns.md).
+  :::
 
-Once you have created a database connection, you can start querying it.
+* [_Join tables_](#join-tables): This tool lets you merge multiple tables within a database connection.
 
-Datagrok provides several convenient interfaces for querying databases:
+:::note
 
-* [**Query View**](#query-view) is the primary interface for querying a database. Using **Query View**, you can write
-  and edit SQL queries, add post-processing steps, and preview the results using an interactive spreadsheet.
-* **Visual Query** is for querying tables. Use it to calculate, summarize, filter, and pivot table data (
-  see [Create an aggregation query](#create-an-aggregation-query)).
-* **Build Query** is also for querying tables. Use it to combine data from different tables (
-  see [Create a join query](#create-a-join-query)).
+  The ability to query tables is connector-specific and may not be available for all.
 
-> Note: Querying tables is provider-dependent and may not available for a given data source.
+:::
 
-You can also use these built-in queries (available from the context menu):
+When you successfully create a query, it appears in the **Database Manager** under the corresponding connection or table. From there, you can run it, share it with others, manage access, and perform other tasks.
 
-* A **Get All** query retrieves all data.
-* A **Get TOP 100** query retrieves the first 100 rows.
+:::tip
 
-> Note: Context actions are also available from the **Context Pane**. To see the list of available actions, first,
-> select a connection or table. Then, on the **Context Pane**, expand the **Actions** info panel. Alternatively, at the
-> top of the **Context Pane**, locate the table name and click the **Down Arrow** control next to it.
+To see all queries belonging to a connection, right-click it and select **Browse queries** from the list of options.
 
-Once you have created a query, it appears in the **Database Explorer** under the connection or table it relates to. You
-can run it, share it with others, manage access, and more.
+:::
 
-> Note: Context menus display actions available to you based on your permissions. If you don't see an action, contact
-> your Datagrok administrator.
->
-> Tip: While queries are mostly used to query databases, you can also query other data sources:
->
-> | Data source          | Query                |
-> |----------------------|----------------------|
-> | Relational databases | SQL                  |
-> | File share           | Filename             |
-> | Excel file           | Sheet name           |
-> | Linked data          | SPARQL               |
-> | Box                  | Filename             |
+### Query Editor
 
-### Query View
+**Query Editor** is the main interface for executing database queries. To open it, right-click a database connection or a table and select **Add query** (for connections) or **New SQL Query...** (for tables).
 
-A **Query View** provides an interface for working with SQL queries. From the **Query View**, you can:
+The **Query Editor** has two tabs:
 
-* Write and edit SQL queries.
-* Add post-processing steps.
-* Preview query output using an interactive spreadsheet or open the results as a table (
-  see [Running queries](#running-queries)).
-* Use **Context Pane** to get details on selected objects.
-* Save the query for future use.
+<Tabs queryString="query-editor">
+<TabItem value="query" label="Query" default>
+
+This tab is where you write and edit queries. As you work on your query, you can preview the query output at any time by clicking the **Run/Refresh** button on the menu ribbon or by pressing the F5 key on the keyboard. The query result is displayed in the bottom part of the editor as an interactive dataframe. In the dataframe, you can view object details, perform actions on columns, and more.
+
+When your query is complete, give it a name and click the **Save** button. If you don't want to save the query, close the editor without saving.
 
 ![Create a database query](query-add.gif)
 
-#### Open **Query View**
+:::note
 
-The **Query View** opens when you create or edit a query:
+You can also add the query results to the workspace for further analysis. To do so, click the **Dropdown Arrow** control in the bottom left corner of the **Query** tab and select **Add results to workspace**.
 
-* To create a new query: (1) pight-click a database _connection_ and select **Add query** or (2) right click a _table_
-  and select **New SQL Query...** (provider-dependent).
-* To edit or clone an existing query, locate the query in the **Database Explorer** and right-click it to select **
-  Edit...** or **Clone...**.
-  > Tip: You can also search for queries using a built-in [smart search](../datagrok/smart-search.md) (go to **
-  Data** > **Queries**).
+:::
 
-#### Create and preview queries
+</TabItem>
 
-Use the **Query** tab in the **Query View** to write a query. At any time, click the **Run** button on top to preview
-the query output. Once the preview has been generated, it appears in the lower part of the **Query View**. You can
-scroll through the dataframe, get details about objects, and more.
+<TabItem value="transformations" label="Transformations" default>
 
-> Tip: You can also run a query by pressing the F5 key on a keyboard.
-
-#### Add post-processing steps
-
-On the **Transformations** tab:
-
-1. Use the checkboxes provided to select the desired operation. When you select, a list of applicable functions appears
-   to the right.
-
-2. Click the desired function. A parameter dialog opens.
-
-3. Set the parameters in the dialog, then click **OK**. The preview updates the output, and the transformation record
-   appears in the **Transformation Log** on the left.
-
-   > Tip: Use the menu ribbon to add or remove columns quickly.
-
-4. Repeat steps 2 and 3 as needed.
-   > Tip: To see the query output for each step, in the **Transformation Log**, click the associated transformation
-   record. The preview area updates accordingly.
-   >
-   >To edit a transformation step, click the **Dropdown Arrow** control next to the transformation record and select
-   from the menu.
-   >
-   >To remove the transformation record entirely, click the **Delete** icon.
-5. When you have the query the way you want it, click **Save**.
-   > Note: You can also open a query output in Datagrok to keep interrogating. To do so, in the bottom left corner of
-   the **Query Tab**, click the **Dropdown Arrow** control and select **Add results to workspace**
-   .<!--check about the tab, not sure-->
+Use this tab to apply post-processing operations to your query:
 
 ![Query transformations](transformations.gif)
 
-> Developers: You can create custom transformation functions in R, Python, or any other language.
-> See [Scripting](../compute/scripting.md).
+1. Select a function to apply to a query. Use checkboxes next to the operation categories to filter.
+1. Set the function parameters in the dialog that opens.
+1. Click **OK**.
+1. Repeat the steps as needed.
 
-#### Create an aggregation query
+Each transformation is recorded. To see the results of each record, locate the record on the left and click it. The data output for this step is displayed in the **Preview** section.
 
-An _aggregation_ query specifies which table columns you want and how to pivot and group them. To create an _
-aggregation_ query, do the following:
+You can also edit or remove transformation records as needed. To edit a transformation step, click the **Dropdown Arrow** control next to the transformation record and select from the list of options. To remove the transformation record entirely, click the **Delete** (**x**) icon.
 
-1. From a table's context actions, select **Visual Query**. A **Visual Query** view opens.
-2. First, specify the columns that remain the same to define the `GROUP BY` clause. Add them to _**Rows**_. These
-   columns are keys, and their unique values become row identifiers.
-3. Then, set the aggregation parameter to group and handle any non-unique data:
-   * First, select the aggregation column: Next to **Measures**, click the **Add...** icon and select from the list.
-   * Then, select the _aggregating function_: next to **Measures**, click the **Add...** icon again, and click **
-     Aggregation...** to select from the list.
-     > Note: The list of available functions may change depending on the provider and/or
-     the [packages](../collaborate/public-repository.md) installed. If data source providers expose custom functions (for
-     example, GIS functions exposed by PostreSQL), Datagrok makes them automatically available in the UI.
-     >
-     >Developers: You can [create custom aggregation functions](../compute/scripting.md).
-   * Add additional parameters as needed. Each aggregation parameter takes its aggregating function. To edit or remove
-     the parameter, right-click it and select the action from the context menu.
-4. Finally, define the unique values you want to pivot from one column in the expression into multiple columns in the
-   output. To do so, add the corresponding columns to _**Columns**_.
-5. Optional. Add _**Filters**_ to specify which items are returned when you run a query.
-6. As you work on your query, you can preview the results using a dynamic spreadsheet. When you have a query set up the
-   way you want it, add the query **Name**, then click **Save**.
+:::tip
 
-> Note: If you don't want to save a query, leave the **Visual Query** view without saving the query.
+Use the menu ribbon on top to add or remove columns quickly.
 
-![Visual query](databases-visual-query.gif)
+:::
 
-> Tip: At any time, open the query output as a dataframe for further inspection. To do so, click the **Run** button.
+:::note Developers
 
-#### Create a join query
+You can create custom transformation functions in R, Python, or any other language. See [Scripting](../compute/scripting.md).
 
-1. From a table's context actions, select **Query Builder**. A dialog opens. In the dialog, the platform displays a list
-   of columns connected by keys.
-2. Select the desired columns using the checkboxes provided. The platform generates an SQL query based on your selection
-   and displays the query output in the preview box.
-3. Optional. Manually edit the SQL query in the box provided. The preview of the query output updates automatically.
-4. When you have a query set up the way you want it, edit the query **Name** if needed, then click **Save**.
+:::
+
+</TabItem>
+</Tabs>
+
+### Aggregation Editor
+
+**Aggregation Editor** is a visual tool for summarizing and pivoting table data. To open it, right-click a table in the **Database Manager** and select **Aggregate data**.
+
+The **Aggregation Editor** has two tabs: **Queries** and **Transformations**. The **Transformations** tab works similarly to the [Query Editor](#query-editor)'s tab and lets you add post-processing steps.
+
+To aggregate data, use the **Query** tab. Here, you can choose which columns to include in your report and decide how to pivot and group them. You can show one or multiple aggregated values for rows, for example, average sales and headcount by country. Additionally, you can pivot rows into columns to show one or more aggregated values for each column. You can also perform both actions to produce a pivot table that shows an aggregated value for every intersection of rows and columns.
+
+* **Group by**: Use this field to specify columns to be used for grouping rows. To do so, click the **Add** (**+**) icon and select the desired column from the list. The chosen column then acts as a key, with its unique values serving as row identifiers. You can add multiple columns.
+* **Pivot**: Use this field to specify the rows that you want to show as columns. To do so, click the **Add** (**+**) icon and select the desired column from the list. You can pivot one or more columns.
+* **Aggregate**: Use this field to add aggregated values. First, click the **Add** (**+**) icon and select the column you want to aggregate. Datagrok automatically applies a default aggregating function based on the data type: _average_ for numerical data and _count_ for categorical data. To change the aggregating function, right-click the column, select **Aggregation**, and choose your preferred function from the list. Each column can only have one aggregating function, but you can add multiple columns or the same column with different aggregating functions.
+
+  :::note
+
+  If you add columns only to the **Aggregation** field without adding any columns to the **Group by** or **Pivot** fields, the resulting query returns a single row that shows the total aggregate values for each column added in the **Aggregation** field.
+
+  :::
+
+* **Filter**: Use this field to filter the results using the pattern syntax. To do so, click the **Add** (**+**) icon, select the column to which you want to apply the filter, then set the condition (see [parameter patterns](#parameterized-queries) for syntax).
+
+![Aggregation query](aggr-query.gif)
+
+As you work on your query, you can preview the query output as an interactive dataframe. In the dataframe, you can view object details, perform actions on columns, and more. When your query is complete, give it a name and click the **Save** button. If you don't want to save the query, close the editor without saving.
+
+### Join tables
+
+Use this tool to merge tables:
+
+  1. Right-click a table and select **Join tables**. This action opens a dialog with a list of columns connected by keys.
+  1. Select the checkboxes that correspond to the columns you want to include. Based on your selections, Datagrok automatically generates an SQL statement and a preview of the results. If desired, you can manually modify the SQL statement. The preview will update accordingly as you make changes.
+  1. When finished, use the **Dropdown Arrow** control in the bottom left corner of the dialog to choose between the two options:
+     * **Save as query**: This opens the **Query Editor** where you can further edit the query.
+     * **Add result to workspace**: This opens the query output as a dataframe for detailed exloration.
 
 ![Create a join query](query-builder.gif)
 
-> Tip: At any time, open the query output as a dataframe for further inspection. To do so, in the bottom left corner of
-> the dialog, click the **Dropdown Arrow** control and select **Add results to workspace**.
-
 ### Parameterized queries
 
-When you want a query to ask for input every time you run it, you can create a _parameterized query_. Doing so lets you
-use the same query to retrieve data matching different criteria.
+In Datagrok, queries are functions. Like with JavaScript functions, you can add metadata to a Datagrok function at the function level or the parameter level. This metadata can include things like the function's name, connection details, caching options, and more. At the parameter level, you can specify metadata such as the parameter's name as it should appear in the user interface, its semantic type, input type, and so on. To define query parameters, use SQL/Sparql comments in the query header : `--` for SQL, and `#` for Sparql. The syntax for defining query parameters is based on [scripting](https://datagrok.ai/help/datagrok/functions/func-params-annotation), with additions specific to queries.
+
+When you want a query to ask for input every time you run it, you can create a _parameterized query_. This type of query relies on one or more parameters, which are placeholders for input values. When you run a parameterized query, Datagrok autogenerates a parameter dialog, prompting you to enter the relevant parameter values. By doing so, you can
+use the same query to retrieve data that matches different criteria.
 
 #### Query parameters
 
@@ -308,191 +317,238 @@ supported. You can add an input/output of type `list<string>`.
 
 #### Input parameters
 
-You have multiple options to define input parameters:
+To define input parameters for your SQL query, use the `--input` annotation followed by the parameter's data type, name, default value, and any additional options. You can also include a brief description of the parameter that will appear in the UI:
 
-* Enter a single value.
-* Use parameter _functions_:
-  * **Choices**. _Choices_ are functions with no parameters that return a list of strings. To learn more about _choices_
-    , see [Parameter choices](../compute/scripting.md#parameter-choices). Example:
+`--input: <type> <name> = <value> {<option>: <value>; ...} [<description>]`
 
-    ```sql
-    --input: string shipCountry = "France" {choices: ['France', 'Italy', 'Germany']}
-    ```
+Supported parameter types include `integer`, `float`, `boolean`, `string`, `DateTime`, and `list<T>` (a list of parameter type `T`, currently supports the `strings` type only). [Additional options](https://datagrok.ai/help/datagrok/functions/func-params-annotation#options) are based on the parameter type, and may include _choices_, _suggestions_, and _validators_.
 
-  * **Editors**. _Editors_ are functions that generate parameters from another _function's_ output. To learn more
-    about _editors_, see [Parameter editors](../compute/scripting.md). Example:
+For example, to create a string input parameter for a _ship country_, you can use the following code snippet:
 
-    ```sql
-    --input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
-    ```
+```
+--input: string shipCountry = "France"
+SELECT * FROM customers where shipCountry = @country
+```
 
-  * **Suggestions**. _Suggestions_ are functions that take a string argument and return a list of matching strings. To
-    learn more about _suggestions_, see [Parameter suggestions](../compute/scripting.md#parameter-suggestions).
-    Example:
+Here, the input parameter is called `shipCountry` and has a default value of `France`.
 
-    ```sql
-    --input: string shipCountry = "France" {suggestions: Demo:northwind:countries}
-    ```
+You can also use lists to pass multiple values for a single parameter. For example, you can use lists to retrieve data for a specific set of users or analyze sales data for a particular country. To use lists in queries, you can specify `list<T>` as the parameter's data type and wrap its use inside the SQL query into `= ANY(p)`, or a similar operator with an alternative selection of the comparison type, such as `>= ANY` or `< ANY`. Here's an example:
 
-  * **Validators**. _Validators_ are functions that take a value and check it against the specified criteria. When
-    validation fails, _validators_ return a specified object and (optionally) an error message. To learn more about _
-    validators_, see [Parameter validators](../compute/scripting.md#parameter-validators).
-* Reuse other parameters as parameter values. Example:
+```
+--input: list<string> shipCountry = ['France', 'Italy', 'Germany']
+SELECT * FROM Orders WHERE shipCountry = ANY(@shipCountry)
+```
 
-  ```sql
-  --input: string firstLetter = "F"
-  --input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM Orders WHERE shipCountry LIKE @firstLetter || '%')}
-  SELECT * FROM Orders WHERE (shipCountry = @shipCountry)
-  ```
+This query returns all records from the `Orders` table where the `shipCountry` column matches any of the values in the `shipCountry` list.
 
-* Use parameter _patterns_ to allow users enter free text to filter (supported for the `string` and `datetime`
-  parameters only). Examples:
+To help users build queries more quickly and accurately, or for more complex queries, you can also use _choices_, _suggestions_, and _validators_. _Choices_ allow users to select from a predefined list of values for a given parameter, _suggestions_ provide users with auto-complete suggestions based on what they type in the input field, and query _validators_ validate the query without executing it.
 
-  Add filtering criteria for the column _freightValue_:
+You can define _choices_ using a comma-separated list of values, a name of another query, or by writing an actual SQL query. Here's an example of how to define _choices_ for a _ship country_ input parameter using all three methods:
 
-  ```sql
-  --input: string freightValue = >= 10.0 {pattern: double}
-  select * from Orders where @freightValue(freight)
-  ```
+```sql
+--input: string shipCountry = "France" {choices: ['France', 'Italy', 'Germany']}
+--input: string shipCountry = "France" {choices: Demo:northwind:countries}
+--input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
+```
 
-  Add a filtering criteria for the column _orderDate_:
+:::tip
 
-  ```sql
-  --input: string orderDate = "after 1/1/1995" {pattern: datetime}
-  select * from orders where @orderDate(orderDate)
-  ```
+Parameter's choices, validators, and suggestions can depend on the value of another parameter. This is useful when creating queries with hierarchical choices, where each subsequent parameter depends on the previous one. To do this, specify the input parameter you want to reuse and its default value, if applicable. Then, define the choices query using the `Query()` function and reference the input parameter using the `@` symbol.
 
-> Note: You can persist the collected parameters to use them with more than one query.
+<details>
+<summary> Here's an example </summary>
 
-### Running queries
+```sql
+--input: string state = "NY" {choices: Query("SELECT DISTINCT state FROM public.starbucks_us")}
+--input: string city = "Albany" {choices: Query("SELECT DISTINCT city FROM public.starbucks_us WHERE state = @state")}
+SELECT * FROM public.starbucks_us WHERE (city = @city)
+```
 
-Depending on your goals, use these methods to run a query:
+Here, the `state` and `city` parameters are defined as strings with default values. The `city` parameter's choices query references the `state` parameter using `@state`. This ensures that the choices are filtered based on the value of `state`.
 
-* Run a query from within the **Query View**. Use this option to preview the query output when you write or modify
-  queries.
-* In all other cases, use the **Run** context action. The results are opened in Datagrok using a _dataframe_ or as
-  otherwise specified by the output parameter. The context actions are available from the query's context menu or on
-  the **Context Pane** under the **Actions** info panel.
+</details>
 
-> Note: When you need to return a value of a different data type, you can specify it in the output parameter.
->
-> Example: Return a string with the semantic type `Molecule`:
->
-> ```sql
-> --output: string smiles {semType: Molecule}
-> ```
->
-> Developers: You can run a query programmatically (
-> see [this code snippet](https://public.datagrok.ai/js/samples/data-access/parameterized-query?)).
+:::
 
-When you run a _parameterized query_, Datagrok automatically generates a parameter dialog. For each input parameter,
-there is an input control that prompts you to enter values (such as _calendar_ for dates, _checkbox_ for boolean, or it
-can be a _button_ that launches a sketcher application to filter substructures). Datagrok automatically parses the entry
-and executes a parameterized, secure, provider-specific SQL query on the backend.
+To define _suggestions_ or _validators_, provide the name of the function that will be executed to generate suggestions or validators as the user types a value.
 
-> Example:
->
->```sql
->--input: int employeeId = 5
->--input: string shipVia = = 3 {pattern: int}
->--input: double freight = 10.0
->--input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
->--input: string shipCity = "starts with r" {pattern: string}
->--input: bool freightLess1000 = true
->--input: datetime requiredDate = "1/1/1995"
->--input: string orderDate = "after 1/1/1995" {pattern: datetime}
->SELECT * FROM Orders WHERE (employeeId = @employeeId)
->    AND (freight >= @freight)
->    AND @shipVia(shipVia)
->   AND ((freight < 1000) OR NOT @freightLess1000)
->    AND (shipCountry = @shipCountry)
->    AND @shipCity(shipCity)
->    AND @orderDate(orderDate)
->    AND (requiredDate >= @requiredDate)
->```
->
-> ![Run a parameterized query](parameterized-query.gif)
->
-> Developers: You can expose the parameter dialog to end-users as an [application](../develop/how-to/create-package.md)
-> .<!--Mention?: when the cartdridge is not deployed on that particular database, the query returns an error-->
+A special query input type is a _search pattern_ that allows you to enter free-text conditions that are then transformed into proper SQL clauses, for instance "this week" for a date column, or "> 50" for a numerical column.
 
-## Access control and sharing
+To use search patterns, set the input parameter's data type to `string`. Then, specify the actual data type in the `pattern` _option_. To reference the search pattern that will be used against the specified column, use `@<patternName>(columnName)`.
 
-When you create a connection, it's visible to you only. Subject to your permissions, you can share connections with
-others.
+Here's an example of a numerical pattern for filtering the "freightValue" column:
 
-### Sharing and managing connections
+```
+--input: string freightValue = >= 10.0 {pattern: double}
+select * from Orders where @freightValue(freight)
+```
 
-To share a connection:
+In this example, the `freightValue` input parameter is defined as a string with a default value of `>= 10.0`. The `pattern` _option_ specifies that the actual data type is a `double`. In the query, a reference to `@freightValue(freight)` specifies the _pattern_ that will be evaluated against the "freight" column.
 
-1. Right-click the connection and select **Share...** A dialog opens.
-2. Enter the user or group you want to share with and set corresponding permissions.
-3. Optional. Enter a description in the text field provided. You may also notify the users you share with. If you don’t
-   want to send a notification, uncheck the **Send notification** checkbox.
-   > Note: To send an email notification, enter the user's email in the identity/email field. The email notification
-   contains a link to the shared item and entered description. If you enter a user or group name, they will be notified
-   via the Datagrok interface.
-4. Click **OK** to share. Once shared, the shared connection appears in the recipient's **Database Explorer**.
+Here's a list of all supported search patterns:
+
+<details>
+<summary> Patterns </summary>
+
+| Type               | Value         | Description or example       |
+|--------------------|---------------|------------------------------|
+| `num, int, double` | `=`           | `= 100`                      |
+|                    | `>`           | `> 1.02`                     |
+|                    | `>=`          | `>= 4.1`                     |
+|                    | `<`           | `< 5`                        |
+|                    | `<=`          | `<= 2`                       |
+|                    | `in`          | `in (1, 3, 10.2)`            |
+|                    | `min-max`     | `Range: 1.5-10.0`            |
+| `string`           | `contains`    | `contains ea`                |
+|                    | `starts with` | `starts with R`              |
+|                    | `ends with`   | `ends with w`                |
+|                    | `regex`       | `regex 1(\w+)1`              |
+|                    | `in`          | `in (ab, "c d", "e\\"f\\"")` |
+| `datetime`         | `anytime`     |                              |
+|                    | `today`       |                              |
+|                    | `this week`   |                              |
+|                    | `this month`  |                              |
+|                    | `this year`   |                              |
+|                    | `yesterday`   |                              |
+|                    | `last week`   |                              |
+|                    | `last month`  |                              |
+|                    | `last year`   |                              |
+|                    | `before`      | `before July 1984`           |
+|                    | `after`       | `after March 2001`           |
+|                    | `min-max`     | `Range: 1941-1945`           |
+
+To learn more, see [search patterns](../explore/data-search-patterns.md).
+</details>
+
+#### Output parameters
+
+Output parameters define how the query output is presented. By default, a query's result is returned as a dataframe. You can specify a different data type in the output parameter. The following types are supported: `int`, `float`, `string`, `bool`, `map`. Here's an example from the [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) package, where the query returns a string of the semantic type `Molecule`:
+
+```sql
+--output: string smiles {semType: Molecule}
+```
+
+## Running queries
+
+To run a query, locate the query in the **Database Manager** and double-click it. For parameterized queries, Datagrok automatically generates a parameter dialog that prompts you to enter values for the input parameters. The input parameters are then substituted for inputs from the UI controls, allowing you to create complex queries with dynamic choices that are easy to use and maintain.
+
+Here's an example of a parameterized query with several input parameters and _options_:
+
+<Tabs>
+<TabItem value="patram-query" label="Parameterized query" default>
+
+```sql
+--input: int employeeId = 5
+--input: string shipVia = "=3" {pattern: int}
+--input: double freight = 10.0
+--input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
+--input: string shipCity = "starts with r" {pattern: string}
+--input: bool freightLess1000 = true
+--input: datetime requiredDate = "1/1/1995"
+--input: string orderDate = "after 1/1/1995" {pattern: datetime}
+SELECT * FROM Orders WHERE (employeeId = @employeeId)
+    AND (freight >= @freight)
+    AND @shipVia(shipVia)
+    AND ((freight < 1000) OR NOT @freightLess1000)
+    AND (shipCountry = @shipCountry)
+    AND @shipCity(shipCity)
+    AND @orderDate(orderDate)
+    AND (requiredDate >= @requiredDate)
+```
+
+</TabItem>
+<TabItem value="parameter-dialog" label="Parameter dialog">
+
+![Parametrized queries](parameterized-queries.png)
+
+</TabItem>
+</Tabs>
+
+:::note developers
+
+To run a query programmatically, see this [code snippet](https://public.datagrok.ai/js/samples/data-access/parameterized-query). Learn how to [expose the parameter dialog to end-users as an application](../develop/how-to/create-package.md).<!--Mention?: when the cartridge is not deployed on that particular database, the query returns an error-->
+
+:::
+
+After running a query, you typically get back a dataframe. You can perform various operations on this dataframe, such as data cleansing, transformation, [and more](../visualize/viewers/grid.md). All of these actions get recorded as macros, and will be replayed when the query is re-executed. Once you have the data set up to your satisfaction, you can add viewers and create a visualization.
+
+To view the queries you've created or those shared with you, you can use the **Queries Gallery** (**Data** > **Queries**). This gallery provides a convenient interface to quickly access and manage queries. You can search queries by their name or tag and use the **Context Panel** to view information and actions for the selected query.
+
+## Creating dynamic dashboards for query results
+
+You can create and publish dashboards that query data from a database and then present it in a visual layout. For parameterized queries, these dashboards can be dynamic, allowing dashboard users to change the query parameters right inside the dashboard to refine search criteria and interact with data in real-time.
+
+To save the query output as a dynamic dashboard, do the following:
+
+1. Run a query to open a dataframe and create a desired view of the query output.
+1. On the **Sidebar**, click **Projects** > **Upload**.
+1. In the **Upload project** dialog, enter a name and description (optional) in the fields provided.
+1. Select how to store data:
+    * Save the data as a static snapshot.
+    * Store the data as a generation script by toggling the **Data sync** control. The query re-executes each time the project is opened. To learn more about dynamic data updates in projects, see [Dynamic data](../datagrok/project.md/#dynamic-data).
+1. Click **OK** to upload the project.
+1. [Share](#sharing-query-results) the project with others.
+
+![Dynamic dashboards](dynamic-dashboards.gif)
+
+## Sharing query results
+
+You have two options to share query results in Datagrok:
+
+* Share its URL
+* Share it as a project.
+
+Each query output has a unique URL, which has all the information needed to recreate the query, including its parameters. This is especially useful for parameterized queries, where you can embed the query output on external websites with specific parameters applied. After you have executed a query, copy the URL from the address bar and share it with others. When this URL is accessed, a query gets re-executed, so the query output always displays the latest data. When the users open the report, they can still change the query parameters in the **Toolbox** on the left.
+
+:::note
+
+To access the query results from the link provided, users must have the necessary permissions to execute this query.
+
+:::
+
+If you want to persist a specific layout, create a dynamic dashboard, or assign access permissions to specific groups or users, you can share query results as a project. First, you need to [upload the project](#creating-dynamic-dashboards-for-query-results). Then, locate the desired project in **Data** > **Projects** and right-click it to share. Users will get an email notification with the access link. To learn more about access privileges, see [Access control](#access-control).
+
+## Access control
+
+In Datagrok, certain objects called _entities_ have a [set of operations](../datagrok/objects.md) that can be applied to them. These entities are connections, queries, tables, and table columns, all of which can be shared, assigned permissions, annotated, and more.
+
+When you create an entity such as a connection or a query, it's private and visible to you only. To make it accessible to others, you can share it.
+
+To share:
+
+1. Right-click the connection or a query you want to share and select **Share...**.
+2. In the **Share** dialog, enter a user or a group that needs access and set corresponding permissions. These privileges can be given to users or to [groups](../govern/group.md). For more information on the access privilege model, see [Privileges](../govern/security.md#privileges).
+3. Optional. Add a description in the provided text field. If you don't want to notify the recipients, clear the **Send notification** checkbox.
+   :::note
+
+   If you enter the name of a user or a group, they are notified through the Datagrok interface. To share an object with a user who doesn't have a Datagrok account, enter their email address. They will receive an email notification containing a link to the shared object and the entered description. After they sign up for a Datagrok account, they will be able to access the shared object.
+
+   :::
+
+4. Click **OK** to share.
 
 ![Share a database connection](sharing-database-connections.gif)
 
-Subject to your privileges, you can use the **Context Pane** on the left to inspect and quickly adjust access
-permissions to your databases, manage queries, view history and activity details, send comments to those you're sharing
-with, and more.
+If you can't share a connection or a query, you may have insufficient permissions. Contact your Datagrok administrator for assistance.
 
-1. First, select the database connection.
-2. Then, navigate to the **Context Pane** on the left and expand the appropriate info panel (for example, expanding
-   the **Share** info panels opens the list of users who can access the database).
-3. Use the controls provided to manage users, access levels, and queries as needed.
+:::tip
 
-> Tip: You can access the same list of actions from the connection's context menu. The context menu only displays
-> actions available to you based on your permissions.
+Use the **Context Pane** on the right to inspect and quickly adjust access permissions to your databases, manage queries, view history and activity details, send comments to those you're sharing with, and more.
 
-### Sharing and managing queries
+:::
 
-To share a query, right-click the query and follow
-the [steps for sharing database connections](databases.md#sharing-and-managing-connections). Once shared, the shared
-query appears in the recipient's **Database Explorer**. Use the **Context Pane** to manage access permissions, share
-with more users, and more.
+:::caution important
 
-> Note: Datagrok query belongs to the database connection for which it's created. It means you can’t share a query
-> without sharing a connection. Deleting a connection also deletes a query.
+Datagrok query belongs to the database connection for which it's created. It means you can’t share a query without sharing a connection. Deleting a connection also deletes a query.
 
-### Sharing query results as URL
-
-To share query results as URL, first, run the query. Once the query is executed, copy the URL from the address bar.
-Query parameters are encoded within the URL. Follow the link to _open_ the dataframe in Datagrok. To access the query
-results from the link provided, users must have permissions to execute this query.
-
-> Note: You can upload the dataframe to the server. When you do, you can store the data as a static snapshot.
-> Alternatively, you can store it as a generation script, in which case the query is executed every time you open the
-> project. To learn more about dynamic data updates in projects,
-> see [Dynamic data](../datagrok/project.md#dynamic-data).
-
-<!--add gif-->
-
-## Automation workflows
-
-Datagrok provides a visual interface to automate manual, repetitive data ingestion, and data transformation tasks. For
-more information on workflow automation, see [Data preparation pipeline](data-pipeline.md).
-
-## See also
-
-<!--* [Data sources](link)
-* [Access control](link)
-* [Customizations](link)-->
-
-* [SPARQL query](sparql-query.md)
-* [Socrata query](edit-socrata-query.md)
+:::
 
 ## Resources
 
 * Videos
-  * Database exploration
-    * [![DB exploration](../uploads/youtube/db_exploration.png "Watch on Youtube")](https://www.youtube.com/watch?v=YJmSvh3_uCM)
-  * Parameterized queries
-    * [![Parameterized queries](../uploads/youtube/data_access.png "Watch on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1980s)
-    * [![Using lists in parameterized queries tutorial](lists-in-param-queries-youtube-watch.png)](https://www.youtube.com/watch?v=meRAEF7ogtw)
-    * [![Parameterized queries tutorial](param-queries-tutorial-youtube.png)](https://www.youtube.com/watch?v=sSJp5CXcYKQ)
+  * [Database exploration](https://www.youtube.com/watch?v=YJmSvh3_uCM)
+  * [Parameterized queries - Overview](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1980s)
+  * [Parameterized queries - Example](https://www.youtube.com/watch?v=sSJp5CXcYKQ)
+  * [Using lists in parameterized queries](https://www.youtube.com/watch?v=meRAEF7ogtw)
 * Tutorials
   * [Adding parameters to functions](../datagrok/functions/func-params-enhancement.md)
