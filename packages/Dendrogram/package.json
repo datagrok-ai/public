@@ -16,7 +16,10 @@
     "dayjs": "latest",
     "fastest-levenshtein": "^1.0.16",
     "rxjs": "^6.5.5",
-    "wu": "latest"
+    "wu": "latest",
+    "file-loader": "latest",
+    "worker-loader": "latest",
+    "source-map-loader": "^4.0.1"
   },
   "devDependencies": {
     "@types/node": "^17.0.24",

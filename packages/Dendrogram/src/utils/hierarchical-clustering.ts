@@ -9,7 +9,8 @@ import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 import { DistanceMatrix } from '@datagrok-libraries/bio/src/trees/distance-matrix';
 import { TreeHelper } from './tree-helper';
 import { ITreeHelper } from '@datagrok-libraries/bio/src/trees/tree-helper';
-import { ClusterMatrix, getClustersFromDistMatWasm } from '../../wasm/clusterizerWasm';
+import { ClusterMatrix } from '../wasm/clusterizerWasm';
+import { getClusterMatrixWorker } from '../wasm/clustering-worker-creator';
 
 /** Custom UI form for hierarchical clustering */
 export async function hierarchicalClusteringUI2(df: DG.DataFrame): Promise<void> {
@@ -81,10 +82,10 @@ export async function hierarchicalClusteringUI(
     preparedDf.columns.toList().map(col => col.name),
     distance);
 
-  const clusterMatrix: ClusterMatrix = await getClustersFromDistMatWasm(distanceMatrix!.data, preparedDf.rowCount, linkageCode);
+  const clusterMatrixWorker = getClusterMatrixWorker({distMatArray: distanceMatrix!.data, n: preparedDf.rowCount, methodCode: linkageCode});
+  const clusterMatrix = await clusterMatrixWorker;
 
   // const hcPromise = hierarchicalClusteringByDistanceExec(distanceMatrix!, linkage);
-
   // Replace rows indexes with filtered
   // newickStr returned with row indexes after filtering, so we need reversed dict { [fltIdx: number]: number}
   const fltRowIndexes: { [fltIdx: number]: number } = {};

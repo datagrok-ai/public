@@ -30,7 +30,6 @@ export function info() {
   grok.shell.info(_package.webRoot);
 }
 
-
 // -- Viewers --
 
 //name: Dendrogram
