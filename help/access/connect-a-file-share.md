@@ -43,7 +43,7 @@ file search results. The following information gets extracted from CSV files dur
 * Data dimensions (number of rows and columns)
 * Column-level information (name, data type, [semantic type](../discover/semantic-types.md))
 
-Internally, file share indexing is done as a recurrent [job](data-job.md).
+Internally, file share indexing is done as a recurrent job.
 
 To enable indexing, set the `Index files` flag in the
 [connection properties](#adding-a-file-share).
@@ -55,5 +55,3 @@ To enable indexing, set the `Index files` flag in the
 See also:
 
 * [Data connection](data-connection.md)
-* [Indexing file shares](files-indexer.md)
-* [Data job](data-job.md)

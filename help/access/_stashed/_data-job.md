@@ -58,7 +58,6 @@ You can use these fields to filter jobs using [smart search](../datagrok/smart-s
 
 See also:
 
-* [Data pipeline](data-pipeline.md)
 * [Data connection](data-connection.md)
 * [Data query](data-query.md)
 * [Function call](../datagrok/functions/function-call.md)

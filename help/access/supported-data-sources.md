@@ -29,7 +29,7 @@ To import a local file, drag-and-drop it into the browser. Other data sources:
 | Oracle                           |
 | PostgreSQL                       |
 | SQLite                           |
-| [Socrata](edit-socrata-query.md) |
+| Socrata                          |
 | Sparql                           |
 | Teradata                         |
 | Twitter                          |

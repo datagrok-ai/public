@@ -28,8 +28,6 @@ See also:
 
 * [Data query](data-query.md)
 * [Queries using SODA](https://dev.socrata.com/docs/queries)
-* [Data pipeline](data-pipeline.md)
 * [Data connection](data-connection.md)
 * [Data query](data-query.md)
-* [Data job](data-job.md)
 * [Function call](../datagrok/functions/function-call.md)

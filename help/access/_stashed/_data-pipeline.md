@@ -36,7 +36,7 @@ under the 'Transformations' panel in the context panel. In addition to the basic
 functions are available as well. Examples of such transformations are R or Python scripts, applying predictive models,
 etc.
 
-Sometimes, you want more than a table to be returned. [Data jobs](data-job.md) let you get results from multiple queries
+Sometimes, you want more than a table to be returned. Data jobs let you get results from multiple queries
 at once, massage the data using transformations, and apply any visualizations on top of it. Just as data queries, data
 jobs can be parameterized as well. The output of the data job is a [project](../datagrok/project.md), which is
 essentially a dashboard.
@@ -57,5 +57,4 @@ See also:
 
 * [Data connection](data-connection.md)
 * [Data query](data-query.md)
-* [Data job](data-job.md)
 * [Function call](../datagrok/functions/function-call.md)

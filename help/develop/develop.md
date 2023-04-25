@@ -71,7 +71,7 @@ In addition to that, it might contain the following folders:
   <!--, [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst)-->
 * `layouts`: `json` files with table view [layouts](how-to/layouts.md)
 * `schemas`: `yaml` files with property schemas
-* `jobs`: [data jobs](../access/data-job.md)
+* `jobs`: data jobs
 
 ### <a href="#" id="package.json"></a>package.json
 

@@ -39,7 +39,7 @@ Seamlessly bring together data from the different silos and formats.
   using [schema browser](access/db-exploration.md#schema-browser)
   and [visual query](access/db-visual-query.md)
 * Connect to [thousands of public datasets](access/public-datasets.md)
-* Automate via [data preparation pipelines](access/data-pipeline.md)
+* Automate via data preparation pipelines
 
 ## Govern
 
@@ -109,7 +109,7 @@ Turn your data into actionable insights by using state-of-the art machine learni
 * Different [hosting options](develop/admin/hosting-options.md)
 * [Roles, groups and privileges](govern/security.md)
 * Flexible [authentication](govern/authentication.md)
-* Create [pipelines](transform/job-editor.md), schedule [jobs](access/data-job.md), and set up alerts
+* Create [pipelines](transform/job-editor.md), schedule jobs, and set up alerts
 * [Customizable by IT](develop/admin/it-customizations.md)
 * Easy to learn the platform with
   * [Interactive help](datagrok/navigation.md#help),

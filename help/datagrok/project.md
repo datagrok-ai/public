@@ -82,8 +82,6 @@ The following fields could be used to filter projects with [smart search](smart-
 See also:
 
 * [Create project](create-project.md)
-* [Data pipeline](../access/data-pipeline.md)
 * [Data connection](../access/data-connection.md)
 * [Data query](../access/data-query.md)
-* [Data job](../access/data-job.md)
 * [Function call](functions/function-call.md)

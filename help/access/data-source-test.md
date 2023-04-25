@@ -24,7 +24,7 @@
 1. Open a list of [connections](data-connection.md)
    on [Context Panel](../datagrok/navigation.md#context-panel)
 
-1. Open a list of [Jobs](data-job.md) on Context Panel
+1. Open a list of Jobs on Context Panel
 
 1. Open a list of Job Runs on [Context Panel](../datagrok/navigation.md#context-panel)
 

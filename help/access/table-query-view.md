@@ -16,11 +16,9 @@ Save and use this query as a regular data query.
 
 See also:
 
-* [Data pipeline](data-pipeline.md)
 * [Data connection](data-connection.md)
 * [Data query](data-query.md)
 * [DB visual query](db-visual-query.md)
-* [Data job](data-job.md)
 * [Function call](../datagrok/functions/function-call.md)
 * [Aggregate rows](../transform/aggregate-rows.md)
 * [Recipe Editor](../transform/recipe-editor.md)
