@@ -7,6 +7,7 @@ import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {PackagesView} from './packages';
+import {UaFilter} from "../filter";
 
 export class OverviewView extends UaView {
   expanded: {[key: string]: boolean} = {f: true, l: true};
@@ -51,21 +52,27 @@ export class OverviewView extends UaView {
         return `Users activity in ${p} package`;
     };
 
-    function resetViewers(skipEvent: boolean, table: DG.DataFrame) {
-      if (skipEvent)
-        return;
-      packageStatsViewer.viewer!.props.title = getPackagesViewerName();
-      userStatsViewer.viewer!.props.title = getUsersViewerName();
-      table.selection.setAll(false);
-      table.filter.setAll(true);
-    }
+    let df: Promise<DG.DataFrame>;
+    let packagesSelection: DG.BitSet;
+    let usersSelection: DG.BitSet;
 
+    function query(filter: UaFilter) {
+      df = grok.data.query('UsageAnalysis:PackagesUsageOverview', {...filter});
+      df.then((df) => {
+        packagesSelection = DG.BitSet.create(df.rowCount, (i) => true);
+        usersSelection = DG.BitSet.create(df.rowCount, (i) => true);
+      });
+    }
+    query(this.uaToolbox.getFilter());
+    this.uaToolbox.filterStream.subscribe( (filter) => {
+      query(filter);
+    });
     const packageStatsViewer = new UaFilterableQueryViewer({
       filterSubscription: this.uaToolbox.filterStream,
       name: 'PackageStats',
-      queryName: 'PackagesUsageOverview',
+      getDataFrame: () => df,
       viewerFunction: (t: DG.DataFrame) => {
-        const viewer = DG.Viewer.barChart(t, {
+        let viewer = DG.Viewer.barChart(t, {
           'valueColumnName': 'user',
           'valueAggrType': 'unique',
           'barSortType': 'by value',
@@ -78,22 +85,38 @@ export class OverviewView extends UaView {
           'stackColumnName': '',
           'showStackSelector': false,
           'title': getPackagesViewerName(),
-          'rowSource': 'Filtered',
-          'filter': '${package} != ""',
-          'onClick': 'Filter',
+          'rowSource': 'All',
         });
         let skipEvent: boolean = false;
         viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
-          t.selection.copyFrom(t.filter);
-          PackagesView.showSelectionContextPanel(t, this.uaToolbox, this.expanded, 'Overview');
-          userStatsViewer.viewer!.props.title = getUsersViewerName(args.args.categories[0]);
+
           skipEvent = true;
-          console.log('cat 1');
+          packagesSelection.init((i) => t.get('package', i) == args.args.categories[0]);
+          userStatsViewer.viewer!.props.title = getUsersViewerName(args.args.categories[0]);
+          userStatsViewer.viewer!.props.rowSource = 'Filtered';
+          t.filter.copyFrom(usersSelection).and(packagesSelection);
+          //t.selection.copyFrom(t.filter);
+          PackagesView.showSelectionContextPanel(t, this.uaToolbox, this.expanded, 'Overview');
         });
         viewer.root.onclick =(me) => {
-          resetViewers(skipEvent, viewer.table);
+          //resetViewers(skipEvent, viewer.table);
+          if (skipEvent) {
+            skipEvent = false;
+            return;
+          }
+          if (userStatsViewer.viewer!.props.rowSource != 'All') {
+            packagesSelection.setAll(true);
+            userStatsViewer.viewer!.props.rowSource = 'All';
+            userStatsViewer.viewer!.props.title = getUsersViewerName();
+          } else {
+            usersSelection.setAll(true);
+            packageStatsViewer.viewer!.props.rowSource = 'All';
+            packageStatsViewer.viewer!.props.title = getPackagesViewerName();
+          }
+          t.filter.copyFrom(usersSelection).and(packagesSelection);
+          t.selection.copyFrom(t.filter);
+          PackagesView.showSelectionContextPanel(t, this.uaToolbox, this.expanded, 'Overview');
           skipEvent = false;
-          console.log('click 1');
         };
         return viewer;
       }});
@@ -102,7 +125,7 @@ export class OverviewView extends UaView {
     const userStatsViewer = new UaFilterableQueryViewer({
       filterSubscription: this.uaToolbox.filterStream,
       name: 'UserStats',
-      getDataFrame: async () => await packageStatsViewer.dataFrame!,
+      getDataFrame: () => df,
       viewerFunction: (t: DG.DataFrame) => {
         const viewer = DG.Viewer.barChart(t, {
           'valueColumnName': 'count',
@@ -111,26 +134,44 @@ export class OverviewView extends UaView {
           'barSortOrder': 'desc',
           'showValueAxis': false,
           'showValueSelector': false,
-          'splitColumnName': 'name',
+          'splitColumnName': 'user',
           'showCategoryValues': false,
           'showCategorySelector': false,
           'showStackSelector': false,
           'title': getUsersViewerName(),
           'legendVisibility': 'Never',
-          'rowSource': 'Filtered',
-          'onClick': 'Filter',
+          'onClick': 'Select',
+          'rowSource': 'All',
         });
         let skipEvent: boolean = false;
         viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
+
+          skipEvent = true;
+          usersSelection.init((i) => t.get('user', i) == args.args.categories[0]);
+          packageStatsViewer.viewer!.props.title = getPackagesViewerName(args.args.categories[0]);
+          packageStatsViewer.viewer!.props.rowSource = 'Filtered';
+          t.filter.copyFrom(usersSelection).and(packagesSelection);
           t.selection.copyFrom(t.filter);
           PackagesView.showSelectionContextPanel(t, this.uaToolbox, this.expanded, 'Overview');
-          packageStatsViewer.viewer!.props.title = getPackagesViewerName(args.args.categories[0]);
-          skipEvent = true;
-          console.log('cat 2');
         });
         viewer.root.onclick =(me) => {
-          resetViewers(skipEvent, viewer.table);
-          console.log('click 2');
+          //resetViewers(skipEvent, viewer.table);
+          if (skipEvent) {
+            skipEvent = false;
+            return;
+          }
+          if (packageStatsViewer.viewer!.props.rowSource != 'All') {
+            usersSelection.setAll(true);
+            packageStatsViewer.viewer!.props.rowSource = 'All';
+            packageStatsViewer.viewer!.props.title = getPackagesViewerName();
+          } else {
+            packagesSelection.setAll(true);
+            userStatsViewer.viewer!.props.rowSource = 'All';
+            userStatsViewer.viewer!.props.title = getUsersViewerName();
+          }
+          t.filter.copyFrom(usersSelection).and(packagesSelection);
+          t.selection.copyFrom(t.filter);
+          PackagesView.showSelectionContextPanel(t, this.uaToolbox, this.expanded, 'Overview');
           skipEvent = false;
         };
         return viewer;
@@ -140,25 +181,11 @@ export class OverviewView extends UaView {
     this.viewers.push(uniqueUsersViewer);
     this.viewers.push(packageStatsViewer);
     this.viewers.push(userStatsViewer);
-    //this.root.append(uniqueUsersViewer.root);
     this.root.append(ui.splitH([
       ui.splitV([
         ui.box(uniqueUsersViewer.root, {style: {maxHeight: '250px'}}),
         ui.splitH([packageStatsViewer.root, userStatsViewer.root]),
       ]),
-
     ]));
-
-    /*
-    this.root.append(ui.block25([
-      ui.block([totalUsersViewer.root]),
-      ui.block([uniqueUsersListViewer.root]),
-    ]));
-
-    this.root.append(ui.block75([
-      ui.block([uniqueUsersViewer.root]),
-      ui.block([this.topPackagesViewer.root]),
-    ]));
-    */
   }
 }
