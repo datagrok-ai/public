@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.94",
+  "version": "3.2.95",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -793,6 +793,9 @@
         },
         "1.1.8": {
           "datagrok-api": "^1.9.1"
+        },
+        "1.1.9": {
+          "datagrok-api": "^1.14.1"
         }
       },
       "description": "Integration with the PubChem web service.",
