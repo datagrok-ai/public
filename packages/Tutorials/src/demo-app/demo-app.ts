@@ -53,14 +53,14 @@ export class DemoView extends DG.ViewBase {
 
   private _closeDemoScript() {
     const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[1];
-    if (scriptDockNode.container.containerElement.classList.contains('tutorials-demo-script-container')) {
+    if (scriptDockNode?.container.containerElement.classList.contains('tutorials-demo-script-container')) {
       grok.shell.dockManager.close(scriptDockNode);
     }
   }
 
   private _closeDockPanel() {
     const panelDockNode = Array.from(grok.shell.dockManager.rootNode.children)[0];
-    if (panelDockNode.container.containerElement.classList.contains('tutorials-demo-container')) {
+    if (panelDockNode?.container.containerElement.classList.contains('tutorials-demo-container')) {
       grok.shell.dockManager.close(panelDockNode);
     }
   }
@@ -286,11 +286,12 @@ export class DemoView extends DG.ViewBase {
 
     // TODO: add to script demo class grok.shell.windows.showPropertyPanel = true and showHelp = false
     // TODO: add GIS
+    // TODO: add breadcrumbs instead of name
   }
 
   private _isDockPanelInit(): boolean {
     const panelDockNode = Array.from(grok.shell.dockManager.rootNode.children)[0];
-    return panelDockNode.container.containerElement.classList.contains('tutorials-demo-container');
+    return panelDockNode?.container.containerElement.classList.contains('tutorials-demo-container');
   }
 
   private _initWindowOptions() {
@@ -298,5 +299,7 @@ export class DemoView extends DG.ViewBase {
     grok.shell.windows.showRibbon = true;
     grok.shell.windows.showHelp = true;
     grok.shell.windows.showProperties = false;
+
+    grok.shell.windows.help.syncCurrentObject = false;
   }
 }

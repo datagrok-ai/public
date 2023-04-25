@@ -104,7 +104,10 @@ export async function tutorialsInit() {
 //tags: app
 //description: Interactive demo of major Datagrok capabilities
 export function demoApp() {
-  const pathSegments = window.location.pathname.split('/');
+  let pathSegments = window.location.pathname.split('/');
+  if (!pathSegments[pathSegments.length - 1])
+    pathSegments.splice(pathSegments.length - 1, 1);
+
   const demoView = new DemoView();
   grok.shell.addView(demoView);
 
