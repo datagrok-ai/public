@@ -1,4 +1,4 @@
-import * as grok from 'datagrok-api/grok';
+// import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -9,7 +9,6 @@ import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {PackagesView} from './packages';
 
 export class OverviewView extends UaView {
-
   expanded: {[key: string]: boolean} = {f: true, l: true};
 
   constructor(uaToolbox: UaToolbox) {
@@ -95,7 +94,6 @@ export class OverviewView extends UaView {
           resetViewers(skipEvent, viewer.table);
           skipEvent = false;
           console.log('click 1');
-
         };
         return viewer;
       }});

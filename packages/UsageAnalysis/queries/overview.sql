@@ -9,14 +9,32 @@ with recursive selected_groups as (
   union
   select gr.child_id as id from selected_groups sg
   join groups_relations gr on sg.id = gr.parent_id
+),
+res AS (
+select e.event_time as time_old, u.group_id as ugid
+  from events e
+  inner join users_sessions s on e.session_id = s.id
+  inner join users u on u.id = s.user_id
+  WHERE @date(e.event_time)
+),
+t1 AS (
+  SELECT (MAX(res.time_old) - MIN(res.time_old)) as inter
+  FROM res
+),
+t2 AS (
+  SELECT case when inter >= INTERVAL '6 month' then 864000
+  when inter >= INTERVAL '70 day' then 432000
+	when inter >= INTERVAL '10 day' then 86400
+	when inter >= INTERVAL '2 day' then 21600
+	when inter >= INTERVAL '3 hour' then 3600
+	else 600 end as trunc
+from t1
 )
-select date(e.event_time) as date, count(distinct u.id)
-	from events e
-	inner join users_sessions s on e.session_id = s.id
-	inner join users u on u.id = s.user_id
-	inner join selected_groups sg on u.group_id = sg.id
-	WHERE @date(e.event_time)
-group by date(e.event_time)
+select to_timestamp(floor((extract('epoch' from res.time_old) / trunc )) * trunc)
+AT TIME ZONE 'UTC' as date, count(distinct res.ugid)
+from res, selected_groups sg, t2
+where res.ugid = sg.id
+group by date
 --end
 
 --name:UniqueUsersStats
