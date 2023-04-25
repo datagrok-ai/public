@@ -39,6 +39,6 @@ To import a local file, drag-and-drop it into the browser. Other data sources:
 
 [![Notebooks](../uploads/youtube/data_access.png "Open on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8&t=336s)
 
-## See also:
+See also:
 
 * [JS API: Load CSV](https://public.datagrok.ai/js/samples/data-access/load-csv)

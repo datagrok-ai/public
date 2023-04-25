@@ -27,9 +27,9 @@ To add a new connector, follow these steps:
 You have two options for testing your database connector:
 
 1. Test with `GrokConnectShell`:
-  *. Open `connectors/examples/query.json` (or another file that you need to use in the below configuration) and enter the query information: set the query itself, datasource equal to `descriptor.type` in your provider, credentials to server and server address, port, and the database name.
-  * Configure your next run: use `Application` and these program arguments:
-    * To save your output in the `connectors/examples/output.csv`, use `--q examples/query.json --o examples/output.csv`
-    * To print your output, use `--q examples/query.json`.
-  * Run `GrokConnectShell.main()` and check the output.
+   * Open `connectors/examples/query.json` (or another file that you need to use in the below configuration) and enter the query information: set the query itself, datasource equal to `descriptor.type` in your provider, credentials to server and server address, port, and the database name.
+   * Configure your next run: use `Application` and these program arguments:
+     * To save your output in the `connectors/examples/output.csv`, use `--q examples/query.json --o examples/output.csv`
+     * To print your output, use `--q examples/query.json`.
+   * Run `GrokConnectShell.main()` and check the output.
 1. Connect Datagrok Docker image to the grok_connect.

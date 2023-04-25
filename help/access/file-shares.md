@@ -197,8 +197,8 @@ Another option is to share directly in Datagrok by creating a _file share_ and s
 To share, follow these steps:
 
 1. Right-click the item you want to share and select **Share...** from its context menu. The **Share...** dialog opens.
-2. In the identity/email field, start typing a person's name, username, email, or group name, and pick from the list of matching identities.
-3. From the respective dropdowns, select access privileges for either or both: (1) the connection and (2) individual
+1. In the identity/email field, start typing a person's name, username, email, or group name, and pick from the list of matching identities.
+1. From the respective dropdowns, select access privileges for either or both: (1) the connection and (2) individual
    files/folders. You can select any or all of the following options:
 
     * _Can view_: Users can view, open, and download
@@ -210,7 +210,7 @@ To share, follow these steps:
 
     :::
 
-4. Optional. Enter a description in the text field provided. You may also notify the users you share with. If you don’t want to send a notification, clear the **Send notification** checkbox.
+1. Optional. Enter a description in the text field provided. You may also notify the users you share with. If you don’t want to send a notification, clear the **Send notification** checkbox.
 
   :::note
 
@@ -218,7 +218,7 @@ To share, follow these steps:
 
   :::
 
-5. Click **OK** to share. Once shared, the shared item appears in the recipient's **File Manager**.
+1. Click **OK** to share. Once shared, the shared item appears in the recipient's **File Manager**.
 
    ![Share a folder](share-the-folder.gif)
 

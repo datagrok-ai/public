@@ -170,9 +170,9 @@ Datagrok provides several tools for creating, exploring, and editing queries.
 * _Built-in queries for tables_:
   * **Get All**: retrieves all table data. Use it with caution.
   * **Get TOP 100**: retrieves the first 100 rows.
-  
+
   :::tip
-  
+
   To retrieve specific columns, hold down the Shift key on your keyboard while clicking the desired columns in the schema. Once selected, right-click the selection and run **Get All** or **Get TOP 100** just for these columns.
 
   :::
@@ -273,6 +273,7 @@ As you work on your query, you can preview the query output as an interactive da
 ### Join tables
 
 Use this tool to merge tables:
+
   1. Right-click a table and select **Join tables**. This action opens a dialog with a list of columns connected by keys.
   1. Select the checkboxes that correspond to the columns you want to include. Based on your selections, Datagrok automatically generates an SQL statement and a preview of the results. If desired, you can manually modify the SQL statement. The preview will update accordingly as you make changes.
   1. When finished, use the **Dropdown Arrow** control in the bottom left corner of the dialog to choose between the two options:
@@ -352,7 +353,7 @@ You can define _choices_ using a comma-separated list of values, a name of anoth
 
 :::tip
 
-Parameter's choices, validators, and suggestions can depend on the value of another parameter. This is useful when creating queries with hierarchical choices, where each subsequent parameter depends on the previous one. To do this, specify the input parameter you want to reuse and its default value, if applicable. Then, define the choices query using the `Query()` function and reference the input parameter using the `@` symbol. 
+Parameter's choices, validators, and suggestions can depend on the value of another parameter. This is useful when creating queries with hierarchical choices, where each subsequent parameter depends on the previous one. To do this, specify the input parameter you want to reuse and its default value, if applicable. Then, define the choices query using the `Query()` function and reference the input parameter using the `@` symbol.
 
 <details>
 <summary> Here's an example </summary>
@@ -505,7 +506,7 @@ To access the query results from the link provided, users must have the necessar
 
 :::
 
-If you want to persist a specific layout, create a dynamic dashboard, or assign access permissions to specific groups or users, you can share query results as a project. First, you need to [upload the project](#creating-views-for-query-results). Then, locate the desired project in **Data** > **Projects** and right-click it to share. Users will get an email notification with the access link. To learn more about access privileges, see [Access control](#access-control).
+If you want to persist a specific layout, create a dynamic dashboard, or assign access permissions to specific groups or users, you can share query results as a project. First, you need to [upload the project](#creating-dynamic-dashboards-for-query-results). Then, locate the desired project in **Data** > **Projects** and right-click it to share. Users will get an email notification with the access link. To learn more about access privileges, see [Access control](#access-control).
 
 ## Access control
 
