@@ -31,6 +31,7 @@ export class EventsView extends UaView {
           showSizeSelector: false,
           showXSelector: false,
           showYSelector: false,
+          title: 'Sources',
         });
         return viewer;
       }});
@@ -52,6 +53,7 @@ export class EventsView extends UaView {
           showStackSelector: false,
           showValueSelector: false,
           showCategorySelector: false,
+          title: 'Unique Errors',
         });
         return viewer;
       }});
