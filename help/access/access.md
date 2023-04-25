@@ -1,11 +1,11 @@
 <!-- TITLE: Access -->
 <!-- SUBTITLE: -->
 
-Datagrok provides a single, unified access point for data accross an organization, enforcing data restrictions throughout the platform. With Datagrok, you can centralize data you collect from disparate sources to visualize, explore, learn from it, and use the insights gained to take action.
+Datagrok provides a single, unified access point for data accross an organization, simplifying the process of centralizing data collected from multiple sources. You can easily visualize, explore, and learn from your data, and use the insights gained to take action. Additionally, the platform provides access controls, security features, caching, and automatic monitoring of connection health.
 
 ## Data sources
 
-Besides local files that you can drag and drop from your computer, Datagrok integrates with various data providers. You can connect to any machine readable source: [a remote file storage](file-shares.md) (like third-party cloud services or an organization-hosted Datagrok server), relational and non-relational [databases](databases.md), or [webservices](open-api.md).
+Besides local files that you can drag and drop from your computer, Datagrok integrates with various data providers. You can connect to any machine readable source: [a file storage](file-shares.md) (like third-party cloud services or an organization-hosted Datagrok server), [databases](databases.md), or [webservices](open-api.md).
 
 Datagrok also supports scripting in various languages, such as R, Julia, and Python, which means you can create custom data sources. For example, you can [load a dataframe](https://public.datagrok.ai/js/samples/data-access/load-csv) from an external website or package, [open a specific table using its ID](https://public.datagrok.ai/js/samples/data-access/open-table-by-id), or write a package to extract data from multiple sources and combine them into one. For more information on getting data using functions and scripts, see [Access data](../develop/how-to/access-data.md/#reading-files) section in the developers' documentation.
 
@@ -24,7 +24,7 @@ of providing the data. Most of our data connectors are [open-sourced and extenda
 
 :::tip
 
-To see all available data source connections at once, on the **Sidebar**, select **Manage** > **Connections**. From there, you can search connection by name or by tag.
+To see all available data source connections, on the **Sidebar**, select **Manage** > **Connections**. From there, you can search connection by name or by tag.
 
 <details>
 <summary> You can also search or filter data connections using these fields </summary>
@@ -62,7 +62,7 @@ For specific details on the configuration required, see each individual connecto
 
 Datagrok has a convenient interface for creating, running, and sharing query results, including visual query editors, auto-generated parameter dialogs, and an ability to create dynamic dashboards to visualize query results. All data governance features, such as data lineage, history, and security, are applicable to queries. For more information about queries, see documentation for the respective data source type.
 
-Typically, a query is used against a database, however the same concepts apply for other data sources that are listed
+Typically, a query is run against a database, however the same concepts apply for other data sources that are listed
 below:
 
 | Data source          | Query      |
@@ -91,10 +91,10 @@ Datagrok offers an array of capabilities and features designed to help users eff
 
 ## Sharing and access control
 
-Datagrok treats data connections, file shares, database tables and columns, and queries as [entities](../datagrok/objects.md), which means there is a comon set of operations that can be applied to them. These entities can be shared with others, assigned access privileges, commented on, versioned, [audited](../govern/audit.md), and so on. Some of the most popular privileges are: `view`, `edit`, `delete`, and `share`. These privileges can be given to individual users, or
+Datagrok treats data connections, file shares, database tables and columns, and queries as [entities](../datagrok/objects.md), which means there is a common set of operations that can be applied to them. These entities can be shared with others, assigned access privileges, commented on, versioned, [audited](../govern/audit.md), and so on. Some of the most popular privileges are: `view`, `edit`, `delete`, and `share`. These privileges can be given to individual users, or
 to [groups](../govern/group.md). For more information on the access privilege model, see [Privileges](../govern/security.md#privileges).
 
-Data connections can be shared as part of a [project](../datagrok/project.md), [package](../develop/develop.md#packages) (and [repository](connectors/git.md) containing this package), or as a standalone [entity](../datagrok/objects.md). The access rights of a database connection are inherited from the access rights of a query. However, the reverse is not true: access rights of a query don't inherit the access rights of the database connection. Consequently, when sharing a query, the associated database connection is shared automatically. On the other hand, sharing a database connection does not automatically share your queries. For web queries, they are shared automatically when the corresponding connection is shared.
+Data connections can be shared as part of a [project](../datagrok/project.md), [package](../develop/develop.md#packages) (and [repository](connectors/git.md) containing this package), or as a standalone [entity](../datagrok/objects.md). When you share a query with someone, the database connection associated with it is automatically shared as well. This is because the query's access rights depend on the access rights of the connection. However, if you share a database connection with someone, your queries won't be shared automatically. You need to share them separately. For web queries, they are shared automatically when the corresponding connection is shared.
 
 To learn how to control access for each data source, see the documentation for the corresponding data source.
 

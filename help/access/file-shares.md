@@ -5,7 +5,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 ```
 
-Datagrok offers a convenient interface for working with files. You can connect to [popular file systems](supported-connectors.md), including the [Amazon S3 bucket](connectors/s3.md), [Dropbox](connectors/dropbox.md), [Google Drive](connectors/googlecloud.md), and [Git](connectors/git.md), as well as [Windows and Linux network shares](connectors/files.md). In addition, each Datagrok user has a personal directory called **Home** for uploading files using the drag-and-drop feature. Datagrok automatically creates this directory upon signup.
+Datagrok lets you work with files and directories on your system from the convenience of a web browser. You can browse, preview, open, create, delete, rename, download, clone, and share files and directories. When you sign up for Datagrok, a personal directory called **Home** is automatically created for you. Additionally, you can connect to [popular file systems](supported-connectors.md), including the [Amazon S3 bucket](connectors/s3.md), [Dropbox](connectors/dropbox.md), [Google Drive](connectors/googlecloud.md), and [Git](connectors/git.md), as well as [Windows and Linux network shares](connectors/files.md).
 
 :::note
 
@@ -21,22 +21,20 @@ You can [create custom connectors](create-custom-connectors.md) and [read files 
 
 ## Connecting to file storage
 
-### Adding connection
-
-![File share connection parameters](add-a-file-share.gif)
-
 To connect to your file storage, follow these steps:
 
 1. Go to **Data** > **Files**.
 1. Open the **New file share** dialog (**Toolbox** > **Actions** > **New file share**). Alternatively, click the **New file share** icon on the **Menu Riboon**.
-1. In the the **New file share** dialog, choose the data source from the **Data Source** dropdown. The dialog updates with connection-specific parameters.
+1. In the dialog, choose the data source from the **Data Source** dropdown. The dialog updates with connection-specific parameters.
 1. Set the parameters.
-1. Click **TEST** to test the connection, then click **OK** to save it. A pop-up notification displays the connection status.
+1. Click **TEST** to test the connection, then click **OK** to save it.
+
+![File share connection parameters](add-a-file-share.gif)
 
 Some connection parameters have unique characteristics, and it's important to specify them correctly:
 
 * _Directory path_. When connecting to the root directory, leave the **Dir** field empty. Otherwise, enter a directory path.
-* _Credentials_. You can specifying credentials manually or using the [Secrets Manager](data-connection-credentials.md), such as the AWS Secrets Manager. When entered manually, Datagrok stores secrets in a [secure privilege management system](../govern/security.md/#credentials). To specify who can change the connection credentials, click the **Gear** icon and select from the **Credential owner** dropdown.
+* _Credentials_. You can specify credentials manually or using the [Secrets Manager](data-connection-credentials.md), such as the AWS Secrets Manager. When entered manually, Datagrok stores secrets in a [secure privilege management system](../govern/security.md/#credentials). To specify who can change the connection credentials, click the **Gear** icon and select from the **Credential owner** dropdown.
 
   :::caution
 
@@ -51,8 +49,6 @@ Once you have established a connection to a folder in your file system, the fold
 Like other objects in Datagrok, newly created connections are only visible to the user who created them. To let others access the file share, you must share it (right-click the connection and select **Share...** from the list of options).
 
 :::
-
-### Modifying connection
 
 To modify a connection, right-click it and select **Edit...** from the list of options. To quickly create a connection similar to an existing one, right-click it and select **Clone...**
 
@@ -110,11 +106,11 @@ If you don't see a certain action, it may be due to insufficient permissions. Fo
 
 :::
 
-In addition to the hierarchical browsing, the **File Manager** offers an array of advanced preview and data augmentation capabilities using **Directory**, **Preview**, and **Context Panel**.
+In addition to the hierarchical browsing, the **File Manager** offers advanced preview and data augmentation capabilities using **Directory**, **Preview**, and **Context Panel**.
 
-The **Directory** section shows the contents of your current folder with three viewing modes: icons, cards, and grid. You can click an object to view its content in the **Preview**, or right-click it to access available context actions. You can also use the search bar located above the **Directory** to search for files and folders within your current directory. The search bar allows you to search for items by name, file extension, or metadata.
+The **Directory** section shows the contents of your current folder. Click a file to see its preview and properties, or right-click it for more actions. Use the search bar to search for files and folders within your current directory. The search bar allows you to search for items by name, file extension, or metadata.
 
-The **Preview** is a context-sensitive view that adapts to the the selected object. For folders, the **Preview** generates a [treemap](../visualize/viewers/tree-map.md) that highlights the largest items. For files, the functionality varies based on the file's format and data properties. It includes custom viewers for [supported formats](supported-formats.md), such as interactive spreadsheets for displaying tabular data, cell and image renderers, and chemical and biological structure viewers. You can also view the content of ZIP files and edit Markdown, TXT, and HTML files.
+For folders, the **Preview** generates a [treemap](../visualize/viewers/tree-map.md) that highlights the largest items. For files, the functionality varies based on the file's format and data properties. It includes custom viewers for [supported formats](supported-formats.md), such as interactive spreadsheets for displaying tabular data, cell and image renderers, and chemical and biological structure viewers. You can also view the content of ZIP files and edit Markdown, TXT, and HTML files.
 
 ![File browsing and preview](file-manager-file-browsing.gif)
 
@@ -125,7 +121,7 @@ File preview is limited to files under 10MB. The platform won't display larger f
 :::
 
 :::note developers
-  
+
 You can [add custom formats using package extensions](../develop/how-to/create-package.md). In addition, you can create organization-specific previews:
 
 <details>
@@ -163,7 +159,7 @@ In this example, a [script](/develop/how-to/custom-cell-renderers.md) is execute
 
 :::
 
-Lastly, the [Context Panel](../datagrok/navigation.md#properties) provides specific information about a selected object and available actions. It works with folders, files, and data contained within these files. For example, when you click a CSV file, the **Context Panel** updates to show the file's metadata, available context actions, and other relevant information. If you subsequently click any of the dataframe's columns in the **Preview**, the **Context Panel** will update to display information and actions specific to that column, such as summary statistics for the column under **Stats**, or its data and semantic types under **Details**.
+The [Context Panel](../datagrok/navigation.md#properties) provides additional information about a selected file or folder, and the ability to execute conext actions. For example, when you click a CSV file, the **Context Panel** updates to show the file's metadata, available context actions, and other relevant information. If you subsequently click any of the dataframe's columns in the **Preview**, the **Context Panel** will update to display information and actions specific to that column, such as summary statistics for the column under **Stats**, or its data and semantic types under **Details**.
 
 ![Details on demand](file-manager-details.gif)
 
@@ -184,7 +180,7 @@ In this example, a [Python script](/develop/how-to/create-custom-file-viewers.md
 
 ## File sharing and access control
 
-In Datagrok, you can share files in two ways: by sharing the actual file (or folder), or by sharing an URL that points to it. To share an URL, open the file in Datagrok and copy the URL from the address bar. To access the file from the link provided, users must have permissions to open it. Once the file is open, users can download the file and then upload it to their **Home** directory, or [save the file as a project](/datagrok/create-project.md). The URL links never expire and can't be revoked.
+You can share files in two ways: by sharing the actual file (or folder), or by sharing an URL that points to it. To share an URL, open the file in Datagrok and copy the URL from the address bar. To access the file from the link provided, users must have permissions to open it. Once the file is open, users can download the file and then upload it to their **Home** directory, or [save the file as a project](/datagrok/create-project.md). The URL links never expire and can't be revoked.
 
 :::tip
 
@@ -200,7 +196,7 @@ Another option is to share directly in Datagrok by creating a _file share_ and s
 
 To share, follow these steps:
 
-1. Right-click the item you want to share and select **Share...** from its context menu. This action opens the **Share...** dialog.
+1. Right-click the item you want to share and select **Share...** from its context menu. The **Share...** dialog opens.
 2. In the identity/email field, start typing a person's name, username, email, or group name, and pick from the list of matching identities.
 3. From the respective dropdowns, select access privileges for either or both: (1) the connection and (2) individual
    files/folders. You can select any or all of the following options:
@@ -217,7 +213,7 @@ To share, follow these steps:
 4. Optional. Enter a description in the text field provided. You may also notify the users you share with. If you don’t want to send a notification, clear the **Send notification** checkbox.
 
   :::note
-  
+
   To send an email notification, enter the user's email in the identity/email field. The email notification contains a link to the shared item and entered description. If you enter a user or group name, they will be notified via the Datagrok interface.
 
   :::

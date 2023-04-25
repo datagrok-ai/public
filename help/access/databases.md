@@ -8,6 +8,7 @@ import TabItem from '@theme/TabItem';
 Datagrok has native support for relational databases ([30+ databases supported](supported-connectors.md)), allowing to do the following:
 
 * Browse databases schemas, tables, and columns.
+* Create and edit queries visually.
 * Query databases using parameterized queries.
 * Use query as a dynamically refreshed data source for dashboards.
 * Share connections and queries with others.
@@ -135,7 +136,7 @@ To modify a connection, right-click it and select **Edit...** from the list of o
 
 ## Database Manager
 
-**Database Manager** provides an interface for hierarchical browsing and managing of database objects. To access an object's context actions, right-click it. If you don't see a certain action, it may be due to insufficient permissions. Contact your Datagrok administrator for assistance.
+**Database Manager** provides a hierarchical browsing interface for schemas and database objects, such as queries, tables, and table columns (if supported by the providers). You can perform various operations like adding new connections and queries, previewing data, running queries, and managing objects using context actions that are accessible through right-clicking an object. If you don't see a certain action, it may be due to insufficient permissions. Contact your Datagrok administrator for assistance.
 
 The **Context Panel**, which is located to the right of the **Database Manager**, helps you work with database objects. Whenever you click an object within the **Database Manager**, the **Context Panel** displays the object's properties and context actions. For example, when you click a table, the **Context Panel** lets you view the table's metadata, dynamically preview the table's contents, run queries, and access other relevant information and options. To learn more about the **Context Panel**, see [Context Panel](../datagrok/navigation.md#context-panel).
 
@@ -159,9 +160,9 @@ Similar to the **Database Manager**, clicking an object in the **Schema Browser*
 
 Another way to explore a database schema is through an [interactive spreadsheet](../visualize/viewers/grid.md). To access this feature, in the **Database Manager**, right-click a connection and select **Open schema as table**.
 
-## Querying data
+## Working with queries
 
-Datagrok provides several tools for querying and filtering data.
+Datagrok provides several tools for creating, exploring, and editing queries.
 
 * _Editors_:
   * [Query Editor](#query-editor) is the main interface for executing database queries. Using this tool, you can write and edit statements in SQL and other languages and use functions to add post-processing steps.
@@ -247,13 +248,13 @@ You can create custom transformation functions in R, Python, or any other langua
 
 ### Aggregation Editor
 
-**Aggregation Editor** is a tool for summarizing and pivoting table data. To open it, right-click a table in the **Database Manager** and select **Aggregate data**.
+**Aggregation Editor** is a visual tool for summarizing and pivoting table data. To open it, right-click a table in the **Database Manager** and select **Aggregate data**.
 
 The **Aggregation Editor** has two tabs: **Queries** and **Transformations**. The **Transformations** tab works similarly to the [Query Editor](#query-editor)'s tab and lets you add post-processing steps.
 
 To aggregate data, use the **Query** tab. Here, you can choose which columns to include in your report and decide how to pivot and group them. You can show one or multiple aggregated values for rows, for example, average sales and headcount by country. Additionally, you can pivot rows into columns to show one or more aggregated values for each column. You can also perform both actions to produce a pivot table that shows an aggregated value for every intersection of rows and columns.
 
-* **Group by**: Use this field to specify the rows for which you want to show aggregated data. To do so, click the **Add** (**+**) icon and select the desired column from the list. The chosen column then acts as a key, with its unique values serving as row identifiers. You can add multiple columns.
+* **Group by**: Use this field to specify columns to be used for grouping rows. To do so, click the **Add** (**+**) icon and select the desired column from the list. The chosen column then acts as a key, with its unique values serving as row identifiers. You can add multiple columns.
 * **Pivot**: Use this field to specify the rows that you want to show as columns. To do so, click the **Add** (**+**) icon and select the desired column from the list. You can pivot one or more columns.
 * **Aggregate**: Use this field to add aggregated values. First, click the **Add** (**+**) icon and select the column you want to aggregate. Datagrok automatically applies a default aggregating function based on the data type: _average_ for numerical data and _count_ for categorical data. To change the aggregating function, right-click the column, select **Aggregation**, and choose your preferred function from the list. Each column can only have one aggregating function, but you can add multiple columns or the same column with different aggregating functions.
 
@@ -263,7 +264,7 @@ To aggregate data, use the **Query** tab. Here, you can choose which columns to 
 
   :::
 
-* **Filter**: Use this field to specify which items are returned when you run a query. To do so, click the **Add** (**+**) icon, select the column to which you want to apply the filter, then set the condition (see [parameter patterns](#parameterized-queries) for syntax).
+* **Filter**: Use this field to filter the results using the pattern syntax. To do so, click the **Add** (**+**) icon, select the column to which you want to apply the filter, then set the condition (see [parameter patterns](#parameterized-queries) for syntax).
 
 ![Aggregation query](aggr-query.gif)
 
@@ -275,18 +276,17 @@ Use this tool to merge tables:
   1. Right-click a table and select **Join tables**. This action opens a dialog with a list of columns connected by keys.
   1. Select the checkboxes that correspond to the columns you want to include. Based on your selections, Datagrok automatically generates an SQL statement and a preview of the results. If desired, you can manually modify the SQL statement. The preview will update accordingly as you make changes.
   1. When finished, use the **Dropdown Arrow** control in the bottom left corner of the dialog to choose between the two options:
-     * **Save as query**: This opens the **Query Editor** where you can  further edit the query.
-     * **Add result to workspace**: This opens the query output as a dataframe, which you can inspect and modify as needed.
+     * **Save as query**: This opens the **Query Editor** where you can further edit the query.
+     * **Add result to workspace**: This opens the query output as a dataframe for detailed exloration.
 
 ![Create a join query](query-builder.gif)
 
 ### Parameterized queries
 
-<<<<<<< HEAD
-Similar to functions in JavaScript, queries in Datagrok are functions that can be annotated to support parameters. To define query parameters, use SQL/Sparql comments in the query header : `--` for SQL, and `#` for Sparql. The syntax for defining query parameters is based on [scripting](https://datagrok.ai/help/datagrok/functions/func-params-annotation), with additions specific to queries.
-=======
-When you want a query to ask for input every time you run it, you can create a _parameterized query_. Doing so lets you
-use the same query to retrieve data matching different criteria.
+In Datagrok, queries are functions. Like with JavaScript functions, you can add metadata to a Datagrok function at the function level or the parameter level. This metadata can include things like the function's name, connection details, caching options, and more. At the parameter level, you can specify metadata such as the parameter's name as it should appear in the user interface, its semantic type, input type, and so on. To define query parameters, use SQL/Sparql comments in the query header : `--` for SQL, and `#` for Sparql. The syntax for defining query parameters is based on [scripting](https://datagrok.ai/help/datagrok/functions/func-params-annotation), with additions specific to queries.
+
+When you want a query to ask for input every time you run it, you can create a _parameterized query_. This type of query relies on one or more parameters, which are placeholders for input values. When you run a parameterized query, Datagrok autogenerates a parameter dialog, prompting you to enter the relevant parameter values. By doing so, you can
+use the same query to retrieve data that matches different criteria.
 
 #### Query parameters
 
@@ -313,7 +313,6 @@ supported. You can add an input/output of type `list<string>`.
    >```
 
 3. Click **Save**.
->>>>>>> a683a6145 (Wiki: GROK-12341 Functions: Parameter annotations)
 
 #### Input parameters
 
@@ -353,7 +352,7 @@ You can define _choices_ using a comma-separated list of values, a name of anoth
 
 :::tip
 
-You can reuse existing input parameters as values within parameter _choice_ queries. This is useful when creating queries with hierarchical choices, where each subsequent parameter depends on the previous one. To do this, specify the input parameter you want to reuse and its default value, if applicable. Then, define the choices query using the `Query()` function and reference the input parameter using the `@` symbol. 
+Parameter's choices, validators, and suggestions can depend on the value of another parameter. This is useful when creating queries with hierarchical choices, where each subsequent parameter depends on the previous one. To do this, specify the input parameter you want to reuse and its default value, if applicable. Then, define the choices query using the `Query()` function and reference the input parameter using the `@` symbol. 
 
 <details>
 <summary> Here's an example </summary>
@@ -372,11 +371,11 @@ Here, the `state` and `city` parameters are defined as strings with default valu
 
 To define _suggestions_ or _validators_, provide the name of the function that will be executed to generate suggestions or validators as the user types a value.
 
-In some cases, users may need to enter filtering criteria as free text. To support this, Datagrok uses a search patterns feature that transforms free-text queries into proper SQL clauses on the server side.
+A special query input type is a _search pattern_ that allows you to enter free-text conditions that are then transformed into proper SQL clauses, for instance "this week" for a date column, or "> 50" for a numerical column.
 
-To use search patterns, set the input parameter's data type to `string` (since the user will be entering free text). Then, specify the actual data type in the `pattern` _option_. To reference the search pattern that will be used against the specified column, use `@<patternName>(columnName)`.
+To use search patterns, set the input parameter's data type to `string`. Then, specify the actual data type in the `pattern` _option_. To reference the search pattern that will be used against the specified column, use `@<patternName>(columnName)`.
 
-For example, to allow users to enter a free text query for the "freight" column in a table, you can use the following code snippet:
+Here's an example of a numerical pattern for filtering the "freightValue" column:
 
 ```
 --input: string freightValue = >= 10.0 {pattern: double}
@@ -385,7 +384,7 @@ select * from Orders where @freightValue(freight)
 
 In this example, the `freightValue` input parameter is defined as a string with a default value of `>= 10.0`. The `pattern` _option_ specifies that the actual data type is a `double`. In the query, a reference to `@freightValue(freight)` specifies the _pattern_ that will be evaluated against the "freight" column.
 
-When using search patterns, you can specify a wide variety of patterns to match different data types and search criteria. Here's a list of the most common patterns for supported parameter types:
+Here's a list of all supported search patterns:
 
 <details>
 <summary> Patterns </summary>
@@ -422,7 +421,7 @@ To learn more, see [search patterns](../explore/data-search-patterns.md).
 
 #### Output parameters
 
-Output parameters define how the query output is presented. By default, a query's result is returned as a dataframe. You can specify a different data type in the output parameter. Here's an example from the [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) package, where the query returns a string of the semantic type `Molecule`:
+Output parameters define how the query output is presented. By default, a query's result is returned as a dataframe. You can specify a different data type in the output parameter. The following types are supported: `int`, `float`, `string`, `bool`, `map`. Here's an example from the [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) package, where the query returns a string of the semantic type `Molecule`:
 
 ```sql
 --output: string smiles {semType: Molecule}
@@ -466,17 +465,17 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
 
 :::note developers
 
-You can [_call_ a query](../datagrok/functions/function-call.md) across multiple Datagrok plugins instead of copy-pasting the same query every time. To run a query programmatically, see this [code snippet](https://public.datagrok.ai/js/samples/data-access/parameterized-query). Learn how to [expose the parameter dialog to end-users as an application](../develop/how-to/create-package.md).<!--Mention?: when the cartdridge is not deployed on that particular database, the query returns an error-->
+To run a query programmatically, see this [code snippet](https://public.datagrok.ai/js/samples/data-access/parameterized-query). Learn how to [expose the parameter dialog to end-users as an application](../develop/how-to/create-package.md).<!--Mention?: when the cartridge is not deployed on that particular database, the query returns an error-->
 
 :::
 
-After running a query, you typically get back a dataframe. You can perform various operations on this dataframe, such as data cleansing, transformation, [and more](../visualize/viewers/grid.md). All of these actions get recorded as macros, and will be replayed when the query is re-executed. Once you have the data set up to your satisfaction, you can add viewers and create a visualization.  
+After running a query, you typically get back a dataframe. You can perform various operations on this dataframe, such as data cleansing, transformation, [and more](../visualize/viewers/grid.md). All of these actions get recorded as macros, and will be replayed when the query is re-executed. Once you have the data set up to your satisfaction, you can add viewers and create a visualization.
 
 To view the queries you've created or those shared with you, you can use the **Queries Gallery** (**Data** > **Queries**). This gallery provides a convenient interface to quickly access and manage queries. You can search queries by their name or tag and use the **Context Panel** to view information and actions for the selected query.
 
-## Creating views for query results
+## Creating dynamic dashboards for query results
 
-You can persist the view of the query output and expose it to end users as a dashboard. For parameterized queries, these dashboards can be dynamic, allowing dashboard users to change the query parameters right inside the dashboard to view different datasets and interact with data in real-time.
+You can create and publish dashboards that query data from a database and then present it in a visual layout. For parameterized queries, these dashboards can be dynamic, allowing dashboard users to change the query parameters right inside the dashboard to refine search criteria and interact with data in real-time.
 
 To save the query output as a dynamic dashboard, do the following:
 
@@ -487,6 +486,7 @@ To save the query output as a dynamic dashboard, do the following:
     * Save the data as a static snapshot.
     * Store the data as a generation script by toggling the **Data sync** control. The query re-executes each time the project is opened. To learn more about dynamic data updates in projects, see [Dynamic data](../datagrok/project.md/#dynamic-data).
 1. Click **OK** to upload the project.
+1. [Share](#sharing-query-results) the project with others.
 
 ![Dynamic dashboards](dynamic-dashboards.gif)
 
@@ -497,7 +497,7 @@ You have two options to share query results in Datagrok:
 * Share its URL
 * Share it as a project.
 
-Each query output has a unique URL, which has all the information needed to recreate the query, including its parameters. This can be especially useful for parameterized queries, where you can embed the query output on external websites with specific parameters applied. After you have executed a query, copy the URL from the address bar and share it with others. When this URL is accessed, a query gets re-executed, so the query output always displays the latest data. When the users open the report, they can still change the query parameters in the **Toolbox** on the left.
+Each query output has a unique URL, which has all the information needed to recreate the query, including its parameters. This is especially useful for parameterized queries, where you can embed the query output on external websites with specific parameters applied. After you have executed a query, copy the URL from the address bar and share it with others. When this URL is accessed, a query gets re-executed, so the query output always displays the latest data. When the users open the report, they can still change the query parameters in the **Toolbox** on the left.
 
 :::note
 
@@ -505,22 +505,22 @@ To access the query results from the link provided, users must have the necessar
 
 :::
 
-If you want to persist a specific layout, create a dynamic dashboard, or assign access permissions to specific groups or users, you can share query results as a project. First, you need to [upload the project](#creating-views-for-query-results). Then, locate the desired project in **Data** > **Projects** and right-click it to share. To learn more about access privileges, see [Access control](#access-control).
+If you want to persist a specific layout, create a dynamic dashboard, or assign access permissions to specific groups or users, you can share query results as a project. First, you need to [upload the project](#creating-views-for-query-results). Then, locate the desired project in **Data** > **Projects** and right-click it to share. Users will get an email notification with the access link. To learn more about access privileges, see [Access control](#access-control).
 
 ## Access control
 
 In Datagrok, certain objects called _entities_ have a [set of operations](../datagrok/objects.md) that can be applied to them. These entities are connections, queries, tables, and table columns, all of which can be shared, assigned permissions, annotated, and more.
 
-When you create an entity such as a connection or a query, it's private and visible to you only. To make it accessible to others, you can share it. 
+When you create an entity such as a connection or a query, it's private and visible to you only. To make it accessible to others, you can share it.
 
 To share:
 
 1. Right-click the connection or a query you want to share and select **Share...**.
-2. In the **Share** dialog, enter a user or a group that needs access and set corresponding permissions. These privileges can be given to individuals or to [groups](../govern/group.md) (which can be defined via dynamic filters). For more information on the access privilege model, see [Privileges](../govern/security.md#privileges).
+2. In the **Share** dialog, enter a user or a group that needs access and set corresponding permissions. These privileges can be given to users or to [groups](../govern/group.md). For more information on the access privilege model, see [Privileges](../govern/security.md#privileges).
 3. Optional. Add a description in the provided text field. If you don't want to notify the recipients, clear the **Send notification** checkbox.
    :::note
 
-   To notify via email, enter the user's email in the identity/email field. The email contains a link to the shared item and entered description. When you enter a user or a group name, they are  notified via the Datagrok interface.
+   If you enter the name of a user or a group, they are notified through the Datagrok interface. To share an object with a user who doesn't have a Datagrok account, enter their email address. They will receive an email notification containing a link to the shared object and the entered description. After they sign up for a Datagrok account, they will be able to access the shared object.
 
    :::
 
