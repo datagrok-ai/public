@@ -406,6 +406,53 @@ export function diversitySearchTopMenu(): void {
 }
 
 
+//name: SearchSubstructureEditor
+//tags: editor
+//input: funccall call
+export function SearchSubstructureEditor(call: DG.FuncCall) {
+  
+  const molColumns = grok.shell.tv.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
+  if (!molColumns.length) {
+    grok.shell.warning(`Data doesn't contain molecule columns`);
+    return;
+  } else if (molColumns.length === 1) {
+    call.func.prepare({molecules: molColumns[0]}).call(true);
+  } else {
+    const colInput = ui.columnInput('Molecules', grok.shell.tv.dataFrame, molColumns[0])
+    ui.dialog({title: 'Substructure search'})
+    .add(colInput)
+    .onOK(async () => {
+      call.func.prepare({molecules: colInput.value}).call(true);
+    })
+    .show();
+  }
+}
+
+
+//top-menu: Chem | Search | Substructure Search...
+//name: Diversity Search
+//description: filters dataset by substructure
+//input: column molecules { semType: Molecule }
+//editor: Chem:SearchSubstructureEditor
+export function SubstructureSearchTopMenu(molecules: DG.Column): void {
+  const fg = grok.shell.tv.getFiltersGroup({createDefaultFilters: false});
+  grok.shell.tv.getFiltersGroup({createDefaultFilters: false}).add({
+    type: DG.FILTER_TYPE.SUBSTRUCTURE,
+    column: molecules.name,
+    columnName: molecules.name,
+    molBlock: DG.WHITE_MOLBLOCK,
+  });
+  grok.shell.tv.grid.scrollToCell(molecules, 0);
+  const filterHeader = Array.from(fg.root!.getElementsByClassName('d4-filter-header'))
+    .find((el) => Array.from(el!.getElementsByTagName('label')).find(it => it.textContent === molecules.name));
+  if (filterHeader) {
+    setTimeout(() => {
+      ((filterHeader.parentElement as HTMLElement).getElementsByClassName('sketch-link')[0] as HTMLElement).click();
+    }, 500);
+  }
+}
+
+
 //name: ChemSpaceEditor
 //tags: editor
 //input: funccall call
