@@ -601,7 +601,7 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
   if (radarGrid) {
     const packageExists = checkPackage('PowerGrid', 'radarCellRenderer');
     if (packageExists) {
-      let gc = view.grid.columns.add({gridColumnName: 'elementsRadar', cellType: 'radar'});
+      let gc = view.grid.columns.add({gridColumnName: `elements (${molCol.name})`, cellType: 'radar'});
       gc.settings = {columnNames: Array.from(elements.keys())};
       gc.width = 300;
     } else {
