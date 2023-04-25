@@ -73,7 +73,7 @@ create table DATES_PATTERNS (
 );
 
 insert into DATES_PATTERNS (dat) values (current_date);
-insert into DATES_PATTERNS (dat) values (current_date - 1);
+insert into DATES_PATTERNS (dat) values (dateadd('day', -1, current_date));
 insert into DATES_PATTERNS (dat) values (dateadd('day', 7 - dayofweek(current_date), current_date));
-insert into DATES_PATTERNS (dat) values (current_date - 150);
+insert into DATES_PATTERNS (dat) values (dateadd('day', -150, current_date));
 insert into DATES_PATTERNS (dat) values ('2021-04-09');
