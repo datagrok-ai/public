@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import {_package} from '../package';
-import {DemoScript} from './demo-script';
+import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
 import '../../css/demo.css';
 
@@ -243,8 +243,15 @@ export class DemoView extends DG.ViewBase {
     }
 
     DG.debounce(this.tree.onSelectedNodeChanged, 300).subscribe(async (value) => {
-      if (DemoScript.currentObject)
+      if (DemoScript.currentObject) {
         DemoScript.currentObject.cancelScript();
+        const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[1];
+        if (scriptDockNode.container.containerElement.classList.contains('tutorials-demo-script-container')) {
+            grok.shell.dockManager.close(scriptDockNode);
+            grok.shell.closeAll();
+            grok.shell.addView(new DemoView());
+        }
+      }
 
       if (value.root.classList.contains('d4-tree-view-item')) {
         const categoryName = value.root.parentElement?.parentElement

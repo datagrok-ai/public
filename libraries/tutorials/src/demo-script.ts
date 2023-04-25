@@ -4,11 +4,9 @@ import * as grok from 'datagrok-api/grok';
 
 import {delay} from '@datagrok-libraries/utils/src/test';
 
-import {DemoView} from './demo-app';
-
 
 /** Type for {@link DemoScript} step */
-type Step = {
+export type Step = {
   name: string;
   func: () => void;
 
@@ -30,14 +28,16 @@ export class DemoScript {
   private _isStopped: boolean = false;
   private _isCancelled: boolean = false;
 
-  private _root: HTMLDivElement = ui.div([], {id: 'demo-script', classes: 'tutorials-root tutorials-track demo-app-script'});
+  private _root: HTMLDivElement = ui.div([], {id: 'demo-script',
+    classes: 'tutorials-root tutorials-track demo-app-script'});
 
   private _steps: Step[] = [];
 
   private _mainHeader: HTMLDivElement = ui.panel([], 'tutorials-main-header');
   private _header: HTMLHeadingElement = ui.h1('');
   private _headerDiv: HTMLDivElement = ui.divH([], 'tutorials-root-header');
-  private _stopStartBtn: HTMLButtonElement = ui.button(ui.iconFA('pause'), () => this._changeStopState(), 'Play / pause');
+  private _stopStartBtn: HTMLButtonElement = ui.button(ui.iconFA('pause'),
+    () => this._changeStopState(), 'Play / pause');
   private _restartBtn: HTMLButtonElement = ui.button(ui.iconFA('redo'), () => this._restartScript(), 'Restart');
 
   private _activity: HTMLDivElement = ui.panel([], 'tutorials-root-description');
@@ -99,7 +99,8 @@ export class DemoScript {
     for (let i = 0; i < this.stepNumber; i++) {
       const instructionIndicator = ui.iconFA('clock');
       const instructionDiv = ui.div(this._steps[i].name, 'grok-tutorial-entry-instruction');
-      const currentStepDescription = ui.div(this._steps[i].options?.description, 'grok-tutorial-step-description hidden');
+      const currentStepDescription = ui.div(this._steps[i].options?.description,
+        'grok-tutorial-step-description hidden');
       const entry = ui.divH([
         instructionIndicator,
         instructionDiv,
@@ -221,13 +222,7 @@ export class DemoScript {
   /** Cancels the script */
   cancelScript(): void {
     this._isCancelled = true;
-    const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[1];
-    if (scriptDockNode.container.containerElement.classList.contains('tutorials-demo-script-container')) {
-        DemoScript.currentObject = null;
-        grok.shell.dockManager.close(scriptDockNode);
-        grok.shell.closeAll();
-        grok.shell.addView(new DemoView());
-    }
+    DemoScript.currentObject = null;
   }
 
   /**
@@ -241,7 +236,7 @@ export class DemoScript {
     this._steps[this.steps.length] = {
       name: name,
       func: func,
-      options: options
+      options: options,
     };
     return this;
   }
