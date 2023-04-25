@@ -98,6 +98,18 @@ export class RdKitService {
         obj.data);
   }
 
+  async getFingerprintsWithMolsOnFly(fingerprintType: Fingerprint, dict: string[]): Promise<Uint8Array[]> {
+    const t = this;
+    const res = await this._initParallelWorkers(dict, (i: number, segment: any) =>
+      t.parallelWorkers[i].getFingerprintsWithMolsOnFly(segment, fingerprintType),
+    (data: any) => {
+      return [].concat(...data);
+    });
+    return res.map(
+      (obj: any) =>
+        obj.data);
+  }
+
 
   async convertMolNotation(targetNotation: string): Promise<string[]> {
     const t = this;

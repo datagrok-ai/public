@@ -16,6 +16,7 @@ import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import { chem } from 'datagrok-api/dg';
 import { _convertMolNotation } from '../utils/convert-notation-utils';
 import { getRdKitModule } from '../package';
+import { MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT } from '../constants';
 
 const FILTER_SYNC_EVENT = 'chem-substructure-filter';
 const SKETCHER_TYPE_CHANGED = 'chem-sketcher-type-changed';
@@ -174,6 +175,10 @@ export class SubstructureFilter extends DG.Filter {
    * that would simply apply the bitset synchronously.
    */
   async _onSketchChanged(): Promise<void> {
+    if (this.dataFrame!.rowCount > MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT) {
+      grok.shell.warning(`Dataset is too large. Please use dataset with less than ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT} rows`);
+      return;
+    }
     grok.events.fireCustomEvent(SKETCHER_TYPE_CHANGED, {colName: this.columnName,
       filterId: this.filterId, tableName: this.tableName});
     if (!this.isFiltering) {

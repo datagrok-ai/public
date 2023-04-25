@@ -14,7 +14,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 
 export async function chemSpace(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
-  const fpColumn = await chemGetFingerprints(spaceParams.seqCol, Fingerprint.Morgan);
+  const fpColumn = await chemGetFingerprints(spaceParams.seqCol, Fingerprint.Morgan, true, false);
   const emptyMolIdxs = fpColumn.map((el: BitArray | null, idx: number) => el && el.allFalse ? idx : null).filter((it) => it !== null);
   const malformedIdxs = malformedDataWarning(fpColumn, spaceParams.seqCol.dataFrame);
   const emptyAndMalformedIdxs = emptyMolIdxs.concat(malformedIdxs);

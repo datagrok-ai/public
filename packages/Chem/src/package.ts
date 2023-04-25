@@ -19,7 +19,7 @@ import {IUMAPOptions, ITSNEOptions} from '@datagrok-libraries/ml/src/reduce-dime
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
-import {EMPTY_MOLECULE_MESSAGE, SMARTS_MOLECULE_MESSAGE, elementsTable} from './constants';
+import {EMPTY_MOLECULE_MESSAGE, MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, SMARTS_MOLECULE_MESSAGE, elementsTable} from './constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
 //widget imports
@@ -265,7 +265,7 @@ export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Co
   assure.notNull(molColumn, 'molColumn');
 
   try {
-    const fingerprints = await chemSearches.chemGetFingerprints(molColumn, Fingerprint.Morgan);
+    const fingerprints = await chemSearches.chemGetFingerprints(molColumn, Fingerprint.Morgan, true, false);
     const fingerprintsBitsets: (DG.BitSet | null)[] = [];
     for (let i = 0; i < fingerprints.length; ++i) {
       const fingerprint = fingerprints[i] ? DG.BitSet.fromBytes(fingerprints[i]!.getRawData().buffer, fingerprints[i]!.length) : null;
@@ -410,7 +410,10 @@ export function diversitySearchTopMenu(): void {
 //tags: editor
 //input: funccall call
 export function SearchSubstructureEditor(call: DG.FuncCall) {
-  
+  if (grok.shell.tv.dataFrame.rowCount > MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT) {
+    grok.shell.warning(`Dataset is too large. Please use dataset with less than ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT} rows`);
+    return;
+  }
   const molColumns = grok.shell.tv.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
   if (!molColumns.length) {
     grok.shell.warning(`Data doesn't contain molecule columns`);
@@ -483,25 +486,47 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     return;
   }
 
-  const embedColsNames = getEmbeddingColsNames(table);
+  const allowedRowCount = methodName === 'UMAP' ? 100000 : 10000;
+  const fastRowCount = methodName === 'UMAP' ? 5000 : 2000;
 
-  const chemSpaceParams = {
-    seqCol: molecules,
-    methodName: methodName,
-    similarityMetric: similarityMetric,
-    embedAxesNames: [embedColsNames[0], embedColsNames[1]],
-    options: options
-  };
-  const chemSpaceRes = await chemSpace(chemSpaceParams);
-  const embeddings = chemSpaceRes.coordinates;
-
-  for (const col of embeddings) {
-    table.columns.add(col);
+  if (table.rowCount > allowedRowCount) {
+    grok.shell.warning(`Dataset is too large. Please use dataset with less than ${allowedRowCount} rows`);
+    return;
   }
-  if (plotEmbeddings)
-    return grok.shell
-      .tableView(table.name)
-      .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
+
+  const runChemSpace = async () => {
+    const embedColsNames = getEmbeddingColsNames(table);
+
+    const chemSpaceParams = {
+      seqCol: molecules,
+      methodName: methodName,
+      similarityMetric: similarityMetric,
+      embedAxesNames: [embedColsNames[0], embedColsNames[1]],
+      options: options
+    };
+    const chemSpaceRes = await chemSpace(chemSpaceParams);
+    const embeddings = chemSpaceRes.coordinates;
+  
+    for (const col of embeddings) {
+      table.columns.add(col);
+    }
+    if (plotEmbeddings)
+      return grok.shell
+        .tableView(table.name)
+        .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
+  }
+
+  if (table.rowCount > fastRowCount) {
+    ui.dialog().add(ui.divText(`Chemical space analysis might take several minutes.
+    Do you want to continue?`))
+      .onOK(async () => {
+        const progressBar = DG.TaskBarProgressIndicator.create(`Running Chemical space...`);
+        await runChemSpace();
+        progressBar.close();
+      })
+      .show();
+  } else
+    await runChemSpace();
 }
 
 
@@ -647,6 +672,7 @@ export function ActivityCliffsEditor(call: DG.FuncCall) {
 //editor: Chem:ActivityCliffsEditor
 export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
   similarity: number, methodName: string, options?: IUMAPOptions | ITSNEOptions) {
+    const time  = Date.now();
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
@@ -655,8 +681,16 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
     grok.shell.error(`Column ${activities.name} is not numeric`);
     return;
   }
+
+  const allowedRowCount = 10000;
+  const fastRowCount = methodName === 'UMAP' ? 5000 : 2000;
+  if (df.rowCount > allowedRowCount) {
+    grok.shell.warning(`Dataset is too large. Please use dataset with less than ${allowedRowCount} rows`);
+    return;
+  }
+
   const axesNames = getEmbeddingColsNames(df);
-  if (df.rowCount > 10000) {
+  if (df.rowCount > fastRowCount) {
     ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
     Do you want to continue?`))
       .onOK(async () => {
