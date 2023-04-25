@@ -14,8 +14,8 @@ repos:
         stages: [commit, merge-commit, push, manual]
       - id: end-of-file-fixer
         stages: [commit, merge-commit, push, manual]
-#      - id: trailing-whitespace
-#        stages: [commit, merge-commit, push, manual]
+      - id: trailing-whitespace
+        stages: [commit, merge-commit, push, manual]
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
     rev: v9.4.0
     hooks:

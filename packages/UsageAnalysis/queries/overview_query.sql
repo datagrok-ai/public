@@ -1,4 +1,5 @@
 --name: UniqueUsersList
+--meta.cache: true
 --input: string date { pattern: datetime }
 --connection: System:Datagrok
 select u.name, u.id from events e

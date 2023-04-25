@@ -1,4 +1,3 @@
-/*
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -55,4 +54,3 @@ export class UsersView extends UaView {
     ]));
   }
 }
-*/

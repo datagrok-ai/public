@@ -8,7 +8,6 @@ import {UaView, Filter} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {ViewHandler} from '../view-handler';
-import {getTime} from "../utils";
 
 
 export class PackagesView extends UaView {
@@ -20,13 +19,43 @@ export class PackagesView extends UaView {
   }
 
   async initViewers(): Promise<void> {
-    const packagesViewer = new UaFilterableQueryViewer({
-      filterSubscription: this.uaToolbox.filterStream,
-      name: 'Packages',
-      queryName: 'PackagesUsage',
-      viewerFunction: (t: DG.DataFrame) => {
+    const packagesViewer = new UaFilterableQueryViewer(
+      this.uaToolbox.filterStream,
+      'Packages',
+      'PackagesUsage',
+      (t: DG.DataFrame) => {
         t.onSelectionChanged.subscribe(async () => {
-          PackagesView.showSelectionContextPanel(t, this.uaToolbox, this.expanded, 'Packages');
+          if (!t.selection.anyTrue) return;
+          // if (t.selection.trueCount === 1) {
+          //   t.currentRowIdx = t.selection.getSelectedIndexes()[0];
+          //   return;
+          // }
+          let df = t.clone(t.selection);
+          const gen = t.rows[Symbol.iterator]();
+          const dateMin = df.getCol('time_start').stats.min;
+          const dateMax = df.getCol('time_end').stats.max;
+          const dateFrom = new Date(dateMin / 1000);
+          const dateTo = new Date(dateMax / 1000);
+          const packages: string[] = df.getCol('pid').categories;
+          t.selection.init((i) => {
+            const row = gen.next().value as DG.Row;
+            return dateFrom <= row.time_start && row.time_start < dateTo &&
+            packages.includes(row.pid);
+          }, false);
+          const cp = DG.Accordion.create();
+          df = t.clone(t.selection);
+          const groups: string[] = df.getCol('ugid').categories;
+          const users: string[] = df.getCol('uid').categories;
+          const filter: Filter = {time_start: dateMin / 1000000, time_end: dateMax / 1000000,
+            groups: groups, users: users, packages: packages};
+          cp.addPane('Time interval', () => ui.tableFromMap({'From': this.getTime(dateFrom),
+            'To': this.getTime(dateTo)}), true);
+          cp.addPane('Users', () => ui.divV(users.map((u) => ui.render(`#{x.${u}}`))), true);
+          cp.addPane('Packages', () => ui.divV(packages.map((p) => ui.render(`#{x.${p}}`))), true);
+          this.getFunctionsPane(cp, filter, [dateFrom, dateTo], df.getCol('package').categories);
+          this.getLogsPane(cp, filter);
+          this.getAuditPane(cp, filter);
+          grok.shell.o = cp.root;
         });
 
         t.onCurrentRowChanged.subscribe(async () => {
@@ -43,12 +72,12 @@ export class PackagesView extends UaView {
           cp.addPane('Details', () => {
             return ui.tableFromMap({'User': ui.render(`#{x.${row.uid}}`),
               'Package': ui.render(`#{x.${row.pid}}`),
-              'From': getTime(dateFrom),
-              'To': getTime(dateTo)});
+              'From': this.getTime(dateFrom),
+              'To': this.getTime(dateTo)});
           }, true);
-          PackagesView.getFunctionsPane(cp, filter, [dateFrom, dateTo], [row.package], this.uaToolbox, this.expanded.f, 'Packages');
-          PackagesView.getLogsPane(cp, filter);
-          PackagesView.getAuditPane(cp, filter);
+          this.getFunctionsPane(cp, filter, [dateFrom, dateTo], [row.package]);
+          this.getLogsPane(cp, filter);
+          this.getAuditPane(cp, filter);
           grok.shell.o = cp.root;
         });
         const viewer = DG.Viewer.scatterPlot(t, {
@@ -65,76 +94,25 @@ export class PackagesView extends UaView {
           showYSelector: false,
         });
         return viewer;
-      }});
+      }, null, null);
 
     this.viewers.push(packagesViewer);
     this.root.append(packagesViewer.root);
   }
 
-  static showSelectionContextPanel(t: DG.DataFrame, uaToolbox: UaToolbox, expanded: {[key: string]: boolean}, backToView: string) {
-    if (!t.selection.anyTrue)
-      return;
-    let df = t.clone(t.selection);
-    const gen = t.rows[Symbol.iterator]();
-    const dateMin = df.getCol('time_start').stats.min;
-    const dateMax = df.getCol('time_end').stats.max;
-    const dateFrom = new Date(dateMin / 1000);
-    const dateTo = new Date(dateMax / 1000);
-    const packages: string[] = df.getCol('pid').categories.filter((c) => c !== '');
-    console.log(packages);
-    const users: string[] = df.getCol('uid').categories;
-    t.selection.init((i) => {
-      const row = gen.next().value as DG.Row;
-      return dateFrom <= row.time_start && row.time_start < dateTo &&
-        packages.includes(row.pid) && users.includes(row.uid);
-    }, false);
-    const cp = DG.Accordion.create();
-    df = t.clone(t.selection);
-    const groups: string[] = df.getCol('ugid').categories;
-    const usersHistogram = df
-      .groupBy(['uid'])
-      .sum('count')
-      .aggregate();
-
-    const filter: Filter = {
-      time_start: dateMin / 1000000, time_end: dateMax / 1000000,
-      groups: groups, users: users, packages: packages
-    };
-    cp.addPane('Time interval', () => ui.tableFromMap({
-      'From': getTime(dateFrom),
-      'To': getTime(dateTo),
-    }), true);
-    const data: {[key: string]: number} = {};
-    const data1: {[key: string]: HTMLElement | string} = {};
-    for (const r of usersHistogram.rows) {
-      const d = data[r.uid];
-      data[r.uid] = r['sum(count)'] + (d ?? 0);
-      data1[r.uid] = ui.render(`#{x.${r.uid}}`);
-    }
-    cp.addPane('Users', () => ui.table(Object.keys(data).sort((a, b) =>
-      data[b] - data[a]), (k) => [data1[k], data[k]]), true);
-    //cp.addPane('Users', () => ui.divV(users.map((u) => ui.render(`#{x.${u}}`))), true);
-    cp.addPane('Packages', () => ui.divV(packages.map((p) => ui.render(`#{x.${p}}`))), true);
-    PackagesView.getFunctionsPane(cp, filter, [dateFrom, dateTo], df.getCol('package').categories, uaToolbox, expanded.f, backToView);
-    PackagesView.getLogsPane(cp, filter);
-    PackagesView.getAuditPane(cp, filter);
-    grok.shell.o = cp.root;
-  }
-
-  static async getFunctionsPane(cp: DG.Accordion, filter: Filter, date: Date[], packageNames: string[], uaToolbox: UaToolbox, expanded: boolean, backToView: string): Promise<void> {
+  async getFunctionsPane(cp: DG.Accordion, filter: Filter, date: Date[], packageNames: string[]): Promise<void> {
     const button = ui.button('Details', async () => {
-      uaToolbox.dateFromDD.value = getTime(date[0]);
-      uaToolbox.dateToDD.value = getTime(date[1]);
-      uaToolbox.backToView = backToView;
-      uaToolbox.usersDD.value = filter.users.length === 1 ?
+      this.uaToolbox.dateFromDD.value = this.getTime(date[0]);
+      this.uaToolbox.dateToDD.value = this.getTime(date[1]);
+      this.uaToolbox.usersDD.value = filter.users.length === 1 ?
         (await grok.dapi.users.find(filter.users[0])).friendlyName : `${filter.users.length} users`;
-      uaToolbox.packagesDD.value = packageNames.length === 1 ?
+      this.uaToolbox.packagesDD.value = packageNames.length === 1 ?
         packageNames[0] : `${packageNames.length} packages`;
       ViewHandler.getView('Functions').getScatterPlot()
-        .reloadViewer({date: `${getTime(date[0], 'es-pa')}-${getTime(date[1], 'es-pa')}`,
+        .reloadViewer({date: `${this.getTime(date[0], 'es-pa')}-${this.getTime(date[1], 'es-pa')}`,
           groups: filter.groups, packages: packageNames});
       ViewHandler.changeTab('Functions');
-      uaToolbox.drilldown = ViewHandler.getCurrentView();
+      this.uaToolbox.drilldown = ViewHandler.getCurrentView();
     });
     button.classList.add('ua-details-button');
     const fPane = cp.addPane('Functions', () => {
@@ -165,10 +143,10 @@ export class PackagesView extends UaView {
         return ui.table(Object.keys(data).sort((a, b) =>
           data[b] - data[a]), (k) => [data1[k], data[k]]);
       });
-    }, expanded);
+    }, this.expanded.f);
   }
 
-  static async getLogsPane(cp: DG.Accordion, filter: Filter): Promise<void> {
+  async getLogsPane(cp: DG.Accordion, filter: Filter): Promise<void> {
     const lPane = cp.addPane('Log events summary', () => {
       return ui.wait(async () => {
         const df = await grok.data.query('UsageAnalysis:PackagesContextPaneLogs', filter);
@@ -182,7 +160,7 @@ export class PackagesView extends UaView {
     }, true);
   }
 
-  static async getAuditPane(cp: DG.Accordion, filter: Filter): Promise<void> {
+  async getAuditPane(cp: DG.Accordion, filter: Filter): Promise<void> {
     const pane = cp.addPane('Audit summary', () => {
       return ui.wait(async () => {
         const df = await grok.data.query('UsageAnalysis:PackagesContextPaneAudit', filter);

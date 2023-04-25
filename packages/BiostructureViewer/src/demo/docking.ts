@@ -19,10 +19,6 @@ export async function dockingDemoApp(appName: string, pi: TaskBarProgressIndicat
     'Chem:importSdf', {bytes: sdfBytes}))[0];
 
   const app = new NglViewerApp(appName);
-  app.onAfterBuildView.subscribe(() => {
-    // Selecting third row for example
-    ligands.selection.init((rowI: number) => rowI == 3);
-  });
   await app.init({ligands: ligands, macromolecule: pdbStr}).then(() => {
     pi.update(100, piMsg);
   });

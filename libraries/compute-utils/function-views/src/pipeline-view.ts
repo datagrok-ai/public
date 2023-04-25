@@ -142,6 +142,10 @@ export class PipelineView extends ComputationView {
   protected async onAfterStepFuncCallApply(nqName: string, scriptCall: DG.FuncCall, view: FunctionView) {
   }
 
+  protected override async onFuncCallReady() {
+    super.onFuncCallReady();
+  }
+
   public override buildIO() {
     const tabs = Object.entries(this.steps)
       .reduce((prev, [funcName, step]) => ({
@@ -178,19 +182,15 @@ export class PipelineView extends ComputationView {
     await this.funcCall.call(); // mutates the funcCall field
     pi.close();
 
-    const stepsSaving = Object.values(this.steps)
-      .map(async (step) => {
+    Object.values(this.steps)
+      .forEach(async (step) => {
         const scriptCall = step.view.funcCall;
 
         scriptCall.options['parentCallId'] = this.funcCall!.id;
 
         this.steps[scriptCall.func.nqName].view.lastCall =
           await this.steps[scriptCall.func.nqName].view.saveRun(scriptCall);
-
-        return Promise.resolve();
       });
-
-    await Promise.all(stepsSaving);
 
     await this.onAfterRun(this.funcCall);
 

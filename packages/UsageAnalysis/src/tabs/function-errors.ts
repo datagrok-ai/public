@@ -1,4 +1,3 @@
-/*
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -7,6 +6,8 @@ import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {UaQueryViewer} from '../viewers/abstract/ua-query-viewer';
+import {TopFunctionErrorsViewer} from '../drilldown_viewers/function_errors/top-function-errors-viewer';
+import {TopPackagesViewer} from '../drilldown_viewers/events/top-packages-viewer';
 
 export class FunctionsView extends UaView {
   static viewName = 'Functions';
@@ -16,16 +17,16 @@ export class FunctionsView extends UaView {
   }
 
   async initViewers() : Promise<void> {
-    const functionErrorsViewer = new UaFilterableQueryViewer({
-      filterSubscription: this.uaToolbox.filterStream,
-      name: 'Function Errors',
-      queryName: 'FunctionErrors',
-      viewerFunction: (t: DG.DataFrame) => {
+    const functionErrorsViewer = new UaFilterableQueryViewer(
+      this.uaToolbox.filterStream,
+      'Function Errors',
+      'FunctionErrors',
+      (t: DG.DataFrame) => {
         const viewer = DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions);
         viewer.root.style.maxHeight = '150px';
         return viewer;
       },
-    });
+    );
     this.viewers.push(functionErrorsViewer);
 
     const topFunctionErrorsViewer = new TopFunctionErrorsViewer(
@@ -47,4 +48,3 @@ export class FunctionsView extends UaView {
     ]));
   }
 }
-*/

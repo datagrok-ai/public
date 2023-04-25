@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import {PdbHelper} from '../utils/pdb-helper';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {getPdbHelper} from '../package';
-import {IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 
 /** The app for .pdb file handler, builds up PdbResDataFrame */
 export class BiostructureApp {
@@ -39,7 +38,7 @@ export class BiostructureApp {
   async buildView(): Promise<void> {
     this.view = grok.shell.addTableView(this.df);
 
-    const viewer: DG.Viewer & IBiostructureViewer = (await this.view.dataFrame.plot.fromType('Biostructure', {}));
+    const viewer: DG.JsViewer = (await this.view.dataFrame.plot.fromType('Biostructure', {})) as DG.JsViewer;
     this.view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'NGL', 0.4);
   }
 }

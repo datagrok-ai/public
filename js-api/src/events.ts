@@ -146,11 +146,7 @@ export class Events {
 
   get onProjectSaved(): rxjs.Observable<any> { return __obs('grok-project-saved'); }
 
-  get onProjectSaving(): rxjs.Observable<any> { return __obs('grok-project-saving'); }
-
   get onProjectOpened(): rxjs.Observable<any> { return __obs('grok-project-opened'); }
-
-  get onProjectClosing(): rxjs.Observable<any> { return __obs('grok-project-closing'); }
 
   get onProjectClosed(): rxjs.Observable<any> { return __obs('grok-project-closed'); }
 

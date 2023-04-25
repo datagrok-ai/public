@@ -1,5 +1,4 @@
 /// this file was generated automatically from grok_shared classes declarations
-import { toDart } from "../wrappers";
 let api = <any>window;
 
 import {Entity} from '../entities'
@@ -7,7 +6,7 @@ import {Entity} from '../entities'
 export class DockerImage extends Entity {
   constructor(dart: any) { super(dart); };
 
-  static fromJson(map: Map<any, any>): DockerImage { return new DockerImage(api.grok_DockerImage_fromJson(toDart(map)))};
+  static fromJson(map: Map<any, any>): DockerImage { return new DockerImage(api.grok_DockerImage_fromJson(map))};
   static STATUS_READY = 'ready';
 
   static STATUS_USED = 'used';

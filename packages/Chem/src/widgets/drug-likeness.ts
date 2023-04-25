@@ -29,5 +29,5 @@ export function drugLikenessWidget(molString: string): DG.Widget {
   const descriptionHost = renderDescription(description);
   descriptionHost.style.overflow = 'hidden';
   descriptionHost.style.maxHeight = '400px';
-  return new DG.Widget(ui.divV([ui.label(`Score: ${score.toFixed(2)}`), descriptionHost], {classes: 'ui-box'}));
+  return new DG.Widget(ui.divV([ui.label(`Score: ${score}`), descriptionHost], {classes: 'ui-box'}));
 }

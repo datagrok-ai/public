@@ -1,4 +1,5 @@
 --name: FunctionInfoByFriendlyName
+--meta.cache: true
 --input: string name
 --connection: System:Datagrok
 select * from event_types et
@@ -6,6 +7,7 @@ where friendly_name = @name;
 --end
 
 --name: FunctionInfoBySource
+--meta.cache: true
 --input: string name
 --input: string date { pattern: datetime }
 --input: list users

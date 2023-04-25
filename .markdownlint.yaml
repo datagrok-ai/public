@@ -37,14 +37,13 @@ MD007:
   start_indent: 2
 
 # MD009/no-trailing-spaces - Trailing spaces
-#MD009:
-#  # Spaces for line break
-#  br_spaces: 2
-#  # Allow spaces for empty lines in list items
-#  list_item_empty_lines: false
-#  # Include unnecessary breaks
-#  strict: true
-MD009: false
+MD009:
+  # Spaces for line break
+  br_spaces: 2
+  # Allow spaces for empty lines in list items
+  list_item_empty_lines: false
+  # Include unnecessary breaks
+  strict: true
 
 # MD010/no-hard-tabs - Hard tabs
 MD010:

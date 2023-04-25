@@ -1,15 +1,16 @@
-// import * as grok from 'datagrok-api/grok';
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import '../../css/usage_analysis.css';
 import {UaToolbox} from '../ua-toolbox';
-import {UaView} from './ua';
+import {Filter, UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
-import {PackagesView} from './packages';
+import {UaDataFrameQueryViewer} from '../viewers/ua-data-frame-query-viewer';
+import {TopPackagesViewer} from '../drilldown_viewers/events/top-packages-viewer';
+import {UaQueryViewer} from "../viewers/abstract/ua-query-viewer";
 
 export class OverviewView extends UaView {
-  expanded: {[key: string]: boolean} = {f: true, l: true};
 
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
@@ -17,12 +18,13 @@ export class OverviewView extends UaView {
   }
 
   async initViewers() : Promise<void> {
+
     this.root.className = 'grok-view ui-box';
-    const uniqueUsersViewer = new UaFilterableQueryViewer({
-      filterSubscription: this.uaToolbox.filterStream,
-      name: 'UniqueUsers',
-      queryName: 'UniqueUsersOverview',
-      viewerFunction: (t: DG.DataFrame) => {
+    const uniqueUsersViewer = new UaFilterableQueryViewer(
+      this.uaToolbox.filterStream,
+      'UniqueUsers',
+      'UniqueUsersOverview',
+      (t: DG.DataFrame) => {
         return DG.Viewer.lineChart(t, {
           'overviewColumnName': 'date',
           'xColumnName': 'date',
@@ -35,37 +37,14 @@ export class OverviewView extends UaView {
           'chartTypes': ['Line Chart'],
           'title': 'Unique users',
         });
-      }});
+      }, null, null);
 
-    const getPackagesViewerName = (user?: string) => {
-      if (user === undefined)
-        return 'Packages unique users';
-      else
-        return `Package used by ${user}`;
-    };
-
-    const getUsersViewerName = (p?: string) => {
-      if (p === undefined)
-        return 'Users activity';
-      else
-        return `Users activity in ${p} package`;
-    };
-
-    function resetViewers(skipEvent: boolean, table: DG.DataFrame) {
-      if (skipEvent)
-        return;
-      packageStatsViewer.viewer!.props.title = getPackagesViewerName();
-      userStatsViewer.viewer!.props.title = getUsersViewerName();
-      table.selection.setAll(false);
-      table.filter.setAll(true);
-    }
-
-    const packageStatsViewer = new UaFilterableQueryViewer({
-      filterSubscription: this.uaToolbox.filterStream,
-      name: 'PackageStats',
-      queryName: 'PackagesUsageOverview',
-      viewerFunction: (t: DG.DataFrame) => {
-        const viewer = DG.Viewer.barChart(t, {
+    const packageStatsViewer = new UaFilterableQueryViewer(
+      this.uaToolbox.filterStream,
+      'PackageStats',
+      'PackagesUsage',
+      (t: DG.DataFrame) => {
+        return DG.Viewer.barChart(t, {
           'valueColumnName': 'user',
           'valueAggrType': 'unique',
           'barSortType': 'by value',
@@ -77,34 +56,16 @@ export class OverviewView extends UaView {
           'showCategorySelector': false,
           'stackColumnName': '',
           'showStackSelector': false,
-          'title': getPackagesViewerName(),
-          'rowSource': 'Filtered',
-          'filter': '${package} != ""',
-          'onClick': 'Filter',
+          'title': 'Packages activity',
         });
-        let skipEvent: boolean = false;
-        viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
-          t.selection.copyFrom(t.filter);
-          PackagesView.showSelectionContextPanel(t, this.uaToolbox, this.expanded, 'Overview');
-          userStatsViewer.viewer!.props.title = getUsersViewerName(args.args.categories[0]);
-          skipEvent = true;
-          console.log('cat 1');
-        });
-        viewer.root.onclick =(me) => {
-          resetViewers(skipEvent, viewer.table);
-          skipEvent = false;
-          console.log('click 1');
-        };
-        return viewer;
-      }});
+      }, null, null);
 
-
-    const userStatsViewer = new UaFilterableQueryViewer({
-      filterSubscription: this.uaToolbox.filterStream,
-      name: 'UserStats',
-      getDataFrame: async () => await packageStatsViewer.dataFrame!,
-      viewerFunction: (t: DG.DataFrame) => {
-        const viewer = DG.Viewer.barChart(t, {
+    const userStatsViewer = new UaFilterableQueryViewer(
+      this.uaToolbox.filterStream,
+      'UserStats',
+      'UniqueUsersStats',
+      (t: DG.DataFrame) => {
+        return DG.Viewer.barChart(t, {
           'valueColumnName': 'count',
           'valueAggrType': 'sum',
           'barSortType': 'by value',
@@ -115,26 +76,10 @@ export class OverviewView extends UaView {
           'showCategoryValues': false,
           'showCategorySelector': false,
           'showStackSelector': false,
-          'title': getUsersViewerName(),
+          'title': 'Users activity',
           'legendVisibility': 'Never',
-          'rowSource': 'Filtered',
-          'onClick': 'Filter',
         });
-        let skipEvent: boolean = false;
-        viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
-          t.selection.copyFrom(t.filter);
-          PackagesView.showSelectionContextPanel(t, this.uaToolbox, this.expanded, 'Overview');
-          packageStatsViewer.viewer!.props.title = getPackagesViewerName(args.args.categories[0]);
-          skipEvent = true;
-          console.log('cat 2');
-        });
-        viewer.root.onclick =(me) => {
-          resetViewers(skipEvent, viewer.table);
-          console.log('click 2');
-          skipEvent = false;
-        };
-        return viewer;
-      }});
+      }, null, null);
 
 
     this.viewers.push(uniqueUsersViewer);
@@ -161,4 +106,6 @@ export class OverviewView extends UaView {
     ]));
     */
   }
+
+
 }

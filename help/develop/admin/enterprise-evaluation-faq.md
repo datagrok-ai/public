@@ -4,7 +4,7 @@ title: "Enterprise evaluation FAQ"
 
 * [Architecture](architecture.md)
   * Data flows
-  * [Deployment](deploy/deploy.md)
+  * [Deployment](deploy.md)
 
 * Security
   * [Security overview](security.md)

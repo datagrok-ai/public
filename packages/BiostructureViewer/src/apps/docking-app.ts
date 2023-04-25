@@ -6,14 +6,9 @@ import {TwinPviewer} from '../viewers/twin-p-viewer';
 import {_package} from '../package';
 
 export class DockingApp {
-  private readonly appFuncName: string = '';
   bsView: DG.TableView;
   twinPviewer: TwinPviewer;
   ligandSelection: { [key: string]: any };
-
-  constructor(appFuncName: string = 'dockingApp') {
-    this.appFuncName = appFuncName;
-  }
 
   private changeId = async (): Promise<void> => {
     const chains = ['A', 'B'];

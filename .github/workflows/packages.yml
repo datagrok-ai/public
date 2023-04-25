@@ -128,6 +128,8 @@ jobs:
       - name: Run datagrok stand
         id: datagrok-image
         if: ${{ matrix.test == 'true' }}
+        env:
+          DATAGROK_VERSION: 'bleeding-edge'
         run: |
           commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
@@ -156,13 +158,6 @@ jobs:
             profiles+=' --profile grok_spawner'
           fi
           echo "Run datagrok stand with profiles ${profiles}"
-          docker system prune -af --volumes
-          if [[ "${{ matrix.unpublished_deps }}" == "" ]]; then
-            DATAGROK_VERSION='latest'
-          else
-            DATAGROK_VERSION='bleeding-edge'
-          fi
-          export DATAGROK_VERSION
           docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
           echo "Set docker_sha"
           docker_sha=$(docker images --quiet datagrok/datagrok:bleeding-edge)
@@ -209,7 +204,6 @@ jobs:
           fi
         working-directory: packages/${{ matrix.package }}
       - name: Install datagrok tools
-        id: datagrok-tools
         if: ${{ matrix.test == 'true' }}
         run: npm install -g datagrok-tools@latest
       - name: Wait for Datagrok to become available
@@ -284,16 +278,13 @@ jobs:
           echo "::error title=${{ matrix.package }}: failed tests with datagrok:bleeding-edge SHA=${{ steps.datagrok-image.outputs.docker_sha }}::Check test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html report for results"
           echo "status=error" >> $GITHUB_OUTPUT
 
-      - name: Cleanup datagrok stand
-        if: steps.datagrok-image.outcome == 'success'
-        run: |
-          docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all down --volumes
-          docker system prune -af --volumes
-
-      - name: Cleanup datagrok-tools
-        if: steps.datagrok-tools.outcome == 'success'
-        timeout-minutes: 15
-        run: npm uninstall -g datagrok-tools@latest
+      - name: Upload Artifact
+        if: always() && (steps.test-package.outcome == 'failure' || steps.test-package.outcome == 'success')
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html
+          path: packages/${{ matrix.package }}/test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html
+          retention-days: 7
 
       - name: Check dockerfiles directory existence
         id: check_directory

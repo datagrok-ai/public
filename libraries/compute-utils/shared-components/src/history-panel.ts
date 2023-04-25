@@ -160,11 +160,11 @@ export class HistoryPanel {
     const fullFuncCalls = await Promise.all(wu(this.selectedCallsSet.keys()).map((selected) => historyUtils.loadRun(selected.id)));
     const parentCall = grok.shell.v.parentCall;
 
+    console.log(parentCall, fullFuncCalls);
     const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
     const v = await RunComparisonView.fromComparedRuns(fullFuncCalls, {
       parentView: cardView,
       parentCall,
-      configFunc: this.func,
     });
     grok.shell.addView(v);
   }
@@ -174,14 +174,14 @@ export class HistoryPanel {
       ui.span([`Selected: ${this.selectedCallsSet.size}`], {style: {'align-self': 'center'}}),
       ui.divH([
         (() => {
-          const t = ui.iconFA('exchange', () => this.compareRuns(), 'Compare selected runs');
+          const t = ui.iconFA('exchange', () => this.compareRuns());
           t.style.margin = '5px';
           if (this.selectedCallsSet.size < 2)
             t.classList.add('hp-disabled');
           return t;
         })(),
         (() => {
-          const t = ui.iconFA('trash-alt', () => this.showDeleteRunDialog(this.selectedCallsSet), 'Delete selected runs');
+          const t = ui.iconFA('trash-alt', () => this.showDeleteRunDialog(this.selectedCallsSet));
           t.style.margin = '5px';
           if (this.selectedCallsSet.size === 0)
             t.classList.add('hp-disabled');
@@ -204,7 +204,7 @@ export class HistoryPanel {
               break;
             }
             this.updateActionsSection();
-          }, 'Select all'); t.style.margin = '5px'; return t;
+          }); t.style.margin = '5px'; return t;
         })()]: [
           (() => {
             let fullListCount = 0;
@@ -220,8 +220,9 @@ export class HistoryPanel {
               break;
             }
 
-            const iconType = this.selectedCallsSet.size === fullListCount? 'check-square': 'minus-square';
-            const t = ui.iconFA(iconType, () => {
+            const t = this.selectedCallsSet.size === fullListCount? ui.iconFA('check-square') : ui.iconFA('minus-square');
+
+            t.addEventListener('click', () => {
               switch (this.tabs.currentPane.name) {
               case MY_PANE_LABEL:
                 this.store.myRuns.forEach((run) => this.selectedCallsSet.delete(run));
@@ -237,8 +238,7 @@ export class HistoryPanel {
                 break;
               }
               this.updateActionsSection();
-            }, 'Unselect all');
-
+            });
             t.style.margin = '5px';
             return t;
           })(),

@@ -43,6 +43,19 @@
   text-transform: none !important;
 }
 
+.ua-reload-div {
+  position: absolute;
+  background-color: rgb(25 36 64 / 50%);
+  height: 100%;
+  width: 100%;
+  z-index: 100;
+}
+
+.ua-reload-loader {
+  top: 50%;
+  left: 48%;
+}
+
 .ua-hint {
   padding: 10px;
   color: #805125;

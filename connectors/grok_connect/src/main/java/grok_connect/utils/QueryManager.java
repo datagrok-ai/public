@@ -77,18 +77,16 @@ public class QueryManager {
         if (connection.getMetaData().supportsTransactions() && df.rowCount != 0) {
             Double memInBytes = df.memoryInBytes() / 1024.0;
             double fetchSize = df.rowCount / memInBytes * 30000;
-
+    
             if (fetchSize > 40000)
                 fetchSize = 40000;
-
-            if (!provider.descriptor.type.equals("Virtuoso")) {
-                resultSet.setFetchSize((int)fetchSize);
-                LOGGER.trace("Set new fetch size");
-            }
+    
+            resultSet.setFetchSize((int)fetchSize);
+            LOGGER.trace("Set new fetch size");
         }
         return df;
     }
-
+    
     public void closeConnection() throws SQLException {
         LOGGER.trace("Closing connection");
         if (connection != null && !connection.isClosed()) {

@@ -7,7 +7,7 @@ import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import { getMolSafe } from './mol-creation_rdkit';
 
 
-export const MALFORMED_MOL_V2000 = `
+const MALFORMED_MOL_V2000 = `
 Malformed
 
   0  0  0  0  0  0  0  0  0  0999 V2000

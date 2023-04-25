@@ -18,7 +18,7 @@
 * In *Data source* field selected ```PostgreSQL``` and closed for edit
 * ```OK``` not available
 
-1. Enter "test_postgres" to "Name" field 
+1. Enter "test_postgres" to "Name" field
 
 1. Click on ```Test``` button
 

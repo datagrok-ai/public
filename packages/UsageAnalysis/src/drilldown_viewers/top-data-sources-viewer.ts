@@ -1,4 +1,3 @@
-/*
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {TopQueriesUsingDataSource} from './top-queries-using-data-source';
 import * as DG from 'datagrok-api/dg';
@@ -25,4 +24,3 @@ export class TopDataSourcesViewer extends UaFilterableQueryViewer {
     );
   }
 }
-*/

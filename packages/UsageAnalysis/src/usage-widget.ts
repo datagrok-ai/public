@@ -11,29 +11,19 @@ export class UsageWidget extends DG.Widget {
   constructor(header: HTMLDivElement) {
     const icon = ui.iconFA('external-link', (_) => usageAnalysisApp());
     icon.style.marginRight = '6px';
+    header.appendChild(icon);
     const uniqueUsersDiv = ui.box();
     const userEventsDiv = ui.box();
-    const userErrorsDiv = ui.box();
-    const link = ui.link('Open Usage Analysis', () => usageAnalysisApp());
-    const linkDiv = ui.box( ui.div([link], {style: {display: 'flex', justifyContent: 'end', padding: '8px'}}), {style: {maxHeight: '30px'}});
-    super(ui.box(ui.splitV([linkDiv, uniqueUsersDiv, userEventsDiv, userErrorsDiv], {classes: 'ua-widget'})));
+    super(ui.box(ui.splitV([uniqueUsersDiv, userEventsDiv], {classes: 'ua-widget'})));
 
-    uniqueUsersDiv.appendChild(ui.waitBox(async () => {
-      return ui.splitH([ui.box(ui.divText('Users', {style: {padding: '12px'}}),
-        {style: {maxWidth: '95px'}}), ui.box(DG.Viewer.fromType('Line chart',
-        await grok.data.query('UsageAnalysis:UniqueUsersSummary'), uniqueUsersChartStyle).root, {style: {paddingRight: '12px'}})]);
+    uniqueUsersDiv.appendChild(ui.wait(async () => {
+      return DG.Viewer.fromType('Line chart',
+        await grok.data.query('UsageAnalysis:UniqueUsersSummary'), uniqueUsersChartStyle).root;
     }));
 
-    userEventsDiv.appendChild(ui.waitBox(async () => {
-      return ui.splitH([ui.box(ui.divText('Events', {style: {padding: '12px'}}),
-        {style: {maxWidth: '95px'}}), ui.box(DG.Viewer.fromType('Line chart',
-        await grok.data.query('UsageAnalysis:UsersEventsSummary'), userEventsChartStyle).root, {style: {paddingRight: '12px'}})]);
-    }));
-
-    userErrorsDiv.appendChild(ui.waitBox(async () => {
-      return ui.splitH([ui.box(ui.divText('Errors', {style: {padding: '12px'}}),
-        {style: {maxWidth: '95px'}}), ui.box(DG.Viewer.fromType('Line chart',
-        await grok.data.query('UsageAnalysis:UsersErrorsSummary'), userErrorsChartStyle).root, {style: {paddingRight: '12px'}})]);
+    userEventsDiv.appendChild(ui.wait(async () => {
+      return DG.Viewer.fromType('Line chart',
+        await grok.data.query('UsageAnalysis:UsersEventsSummary'), userEventsChartStyle).root;
     }));
 
     // properties
@@ -46,10 +36,8 @@ const uniqueUsersChartStyle = {
   'aggrType': 'count',
   'innerChartMarginTop': 0,
   'innerChartMarginBottom': 0,
-  'outerChartMarginTop': 0,
+  'outerChartMarginTop': 5,
   'outerChartMarginBottom': 0,
-  'outerChartMarginLeft': 0,
-  'outerChartMarginRight': 0,
   'yGlobalScale': false,
   'showTopPanel': false,
   'showMouseOverRowLine': false,
@@ -59,16 +47,15 @@ const uniqueUsersChartStyle = {
   'showSplitSelector': false,
   'showYAxis': false,
   'showMarkers': 'Never',
+  'title': 'Unique users',
 };
 
 const userEventsChartStyle = {
   'aggrType': 'count',
   'innerChartMarginTop': 0,
   'innerChartMarginBottom': 0,
-  'outerChartMarginTop': 0,
+  'outerChartMarginTop': 5,
   'outerChartMarginBottom': 0,
-  'outerChartMarginLeft': 0,
-  'outerChartMarginRight': 0,
   'yGlobalScale': false,
   'showTopPanel': false,
   'showMouseOverRowLine': false,
@@ -79,25 +66,7 @@ const userEventsChartStyle = {
   'showYAxis': false,
   'legendVisibility': 'Never',
   'showMarkers': 'Never',
-};
-
-
-const userErrorsChartStyle = {
-  'aggrType': 'count',
-  'innerChartMarginTop': 0,
-  'innerChartMarginBottom': 0,
-  'outerChartMarginTop': 0,
-  'outerChartMarginBottom': 0,
-  'outerChartMarginLeft': 0,
-  'outerChartMarginRight': 0,
-  'yGlobalScale': false,
-  'showTopPanel': false,
-  'showMouseOverRowLine': false,
-  'showXSelector': false,
-  'showYSelectors': false,
-  'showAggrSelectors': false,
-  'showSplitSelector': false,
-  'showYAxis': false,
-  'legendVisibility': 'Never',
-  'showMarkers': 'Never',
+  'title': 'Total events',
+  'lineColoringType': 'Custom',
+  'lineColor': 16753920,
 };

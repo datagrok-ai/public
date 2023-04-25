@@ -20,8 +20,8 @@ category('converters', async () => {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
       await chemCommonRdKit.initRdKitModuleLocal();
     }
-    molfileV2K = await loadFileAsText('tests/molfileV2000_test_convert.mol');
-    molfileV3K = await loadFileAsText('tests/molfileV3000_test_convert.mol');
+    molfileV2K = await loadFileAsText('tests/molfileV2000.mol');
+    molfileV3K = await loadFileAsText('tests/molfileV3000.mol');
     molecules = {
       smiles: ['CN1C(=O)CN=C(C2CCCCC2)c2ccccc21'],
       smarts: [

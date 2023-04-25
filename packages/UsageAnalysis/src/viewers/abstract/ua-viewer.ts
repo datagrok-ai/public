@@ -40,8 +40,9 @@ export abstract class UaViewer {
     if (setStyle)
       this.setStyle = setStyle;
     const div = ui.div();
-    div.classList.add('grok-wait');
+    div.classList.add('ua-reload-div');
     const loader = ui.loader();
+    loader.classList.add('ua-reload-loader');
     div.appendChild(loader);
     this.loader = div;
   }

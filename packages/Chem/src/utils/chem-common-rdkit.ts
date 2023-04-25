@@ -84,7 +84,7 @@ export function getRdKitWebRoot() {
 }
 
 export function drawErrorCross(ctx: OffscreenCanvasRenderingContext2D, width: number, height: number) {
-      ctx.lineWidth = 1;
+  ctx.lineWidth = 1;
       ctx.strokeStyle = '#EFEFEF';
       ctx.beginPath();
       ctx.moveTo(0, 0);
@@ -113,16 +113,7 @@ export function drawRdKitMoleculeToOffscreenCanvas(
     return;
   }
 
-
-  w = Math.floor(w);
-  h = Math.floor(h);
-
-  if (!w || !h) {
-    console.warn('Molecule not rendered due to width or height less than 1');
-    return;
-  }
-
-  const opts = createRenderingOpts({width: w, height: h});
+  const opts = createRenderingOpts({width: Math.ceil(w), height: Math.ceil(h)});
 
   g?.clearRect(0,0, w, h);
   if (substruct)
@@ -157,11 +148,6 @@ export function drawRdKitReactionToOffscreenCanvas(
 export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
   onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null,
   options = {normalizeDepiction: true, straightenDepiction: true}) {
-
-  if (!w || !h) {
-    console.error('Width and height cannot be zero.');
-    return;
-  }
 
   $(onscreenCanvas).addClass('chem-canvas');
   const r = window.devicePixelRatio;
@@ -201,11 +187,7 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
       (isMolBlock(scaffoldMolString) ? getRdKitModule().get_qmol(scaffoldMolString) : getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!));
     let substructJson = '{}';
     if (scaffoldMol) {
-      try{
-        substructJson = mol.get_substruct_match(scaffoldMol);
-      } catch(e) {
-        console.error(`get_substruct_match failed for ${molString} and ${scaffoldMolString}`)
-      }
+      substructJson = mol.get_substruct_match(scaffoldMol);
       if (substructJson === '')
         substructJson = '{}';
     }

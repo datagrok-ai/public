@@ -27,7 +27,6 @@ import './tests/viewers';
 
 import './tests/mol2-importer-tests';
 import './tests/chemical-table-parsing';
-import './tests/is-smarts-tests';
 
 export const _package = new DG.Package();
 export {tests};
@@ -41,3 +40,4 @@ export async function test(category: string, test: string, testContext: TestCont
   const data = await runTests({category, test, testContext});
   return DG.DataFrame.fromObjects(data)!;
 }
+

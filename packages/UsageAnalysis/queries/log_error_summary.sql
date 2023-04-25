@@ -1,4 +1,5 @@
 --name: Log Error Summary
+--meta.cache: true
 --input: string eventTime = "today" {pattern: datetime}
 --connection: System:Datagrok
 

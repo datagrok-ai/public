@@ -3,7 +3,8 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 import {getSimilarityFromDistance} from '../distance-metrics-methods';
-import { Subject } from 'rxjs';
+import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
+import {Subject} from 'rxjs';
 import '../../css/styles.css';
 
 export let activityCliffsIdx = 0;
@@ -81,7 +82,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   methodName: string, semType: string, tags: {[index: string]: string},
   seqSpaceFunc: (params: ISequenceSpaceParams) => Promise<ISequenceSpaceResult>,
   simMatrixFunc: (dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string,
-    simArr: (DG.Column | null)[]) => Promise<(DG.Column | null)[]>,
+    simArr: DG.Column[]) => Promise<DG.Column[]>,
   tooltipFunc: (params: ITooltipAndPanelParams) => HTMLElement,
   propertyPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement,
   linesGridFunc?: (df: DG.DataFrame, pairColNames: string[]) => DG.Grid,
@@ -159,7 +160,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   const filterCliffsButton = ui.switchInput(`Show only cliffs`, false, () => {
     if (filterCliffsButton.value) {
       sp.dataFrame.setTag(CLIFFS_FILTER_APPLIED, cliffCol.name);
-      df.rows.match({ [cliffCol.name]: true}).filter();
+      df.filter.copyFrom(createCliffsOnlyFilter(df, cliffCol.name));
       filterCliffsSubj.next(cliffCol.name);
     } else {
       sp.dataFrame.setTag(CLIFFS_FILTER_APPLIED, '');
@@ -297,7 +298,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
         zoom = false;
       }
       if (filterCliffsButton.value) {
-        df.rows.match({ [cliffCol.name]: true}).filter();
+        df.filter.copyFrom(createCliffsOnlyFilter(df, cliffCol.name));
       }
       else
         if (filterCliffsButton.enabled === true)
@@ -309,15 +310,23 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   return sp;
 }
 
+function createCliffsOnlyFilter(df: DG.DataFrame, colName: string): DG.BitSet {
+  const filter = DG.BitSet.create(df.rowCount);
+  const raw = df.col(colName)!.getRawData();
+  for (let i = 0; i < raw.length; i++) {
+    filter.set(i, !!raw[i], false);
+  }
+  return filter;
+}
+
 async function createSimilaritiesMatrix(col: DG.Column, distance: Matrix, countFromDistance: boolean,
-  simMatrixFunc: (dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string,
-  simArr: (DG.Column | null)[]) => Promise<(DG.Column | null)[]>): Promise<(DG.Column | null)[]> {
+  simMatrixFunc: (dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string, simArr: DG.Column[]) => Promise<DG.Column[]>):Promise<DG.Column[]> {
   const cats = col.categories;
   const raw = col.getRawData();
   const newCol = DG.Column.string('seq', col.length).init((i) => cats[raw[i]]);
   const dfSeq = DG.DataFrame.fromColumns([newCol]);
   const dim = col.length;
-  let simArr: (DG.Column | null)[] = Array(dim - 1);
+  let simArr: DG.Column[] = Array(dim - 1);
 
   if (countFromDistance) {
     simArr = await simMatrixFunc(dim, col, dfSeq, 'seq', simArr);
@@ -328,7 +337,7 @@ async function createSimilaritiesMatrix(col: DG.Column, distance: Matrix, countF
   return simArr;
 }
 
-function getActivityCliffsMetrics(simArr: (DG.Column | null)[], similarityLimit: number, activities: DG.Column): IActivityCliffsMetrics {
+function getActivityCliffsMetrics(simArr: DG.Column[], similarityLimit: number, activities: DG.Column): IActivityCliffsMetrics {
   const simVals: number[] = [];
   const saliVals: number[] = [];
   const n1: number[] = [];
@@ -337,7 +346,7 @@ function getActivityCliffsMetrics(simArr: (DG.Column | null)[], similarityLimit:
 
   for (let i = 0; i != simArr.length; ++i) {
     for (let j = 0; j != simArr.length - i; ++j) {
-      const sim: number = simArr[i] ? simArr[i]!.get(j) : 0;
+      const sim: number = simArr[i] ? simArr[i].get(j) : 0;
 
       if (sim >= similarityLimit) {
         n1.push(i);
@@ -503,8 +512,8 @@ export async function getSimilaritiesMatrix( dim: number, seqCol: DG.Column, dfS
   return simArr;
 }
 
-export function getSimilaritiesFromDistances(dim: number, distances: Matrix,
-  simArr: (DG.Column | null)[]): (DG.Column | null)[] {
+export function getSimilaritiesFromDistances(dim: number, distances: Matrix, simArr: DG.Column[])
+  : DG.Column[] {
   for (let i = 0; i < dim - 1; ++i) {
     const similarityArr = new Float32Array(dim - i - 1).fill(0);
     for (let j = i + 1; j < dim; ++j) {

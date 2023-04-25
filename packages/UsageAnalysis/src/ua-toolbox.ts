@@ -21,17 +21,6 @@ export class UaToolbox {
   dateToDD: DG.InputBase = ui.stringInput('To', '');
   usersDD: DG.InputBase = ui.stringInput('Users', '');
   packagesDD: DG.InputBase = ui.stringInput('Packages', '');
-  private _backToView: string = 'Packages';
-  set backToView(value: string) {
-    this._backToView = value;
-    if (this.backButton !== undefined)
-      this.backButton.innerText = `🠔 back to ${value.toLowerCase()}`;
-  }
-  get backToView(): string {
-    return this._backToView;
-  }
-
-  backButton?: HTMLButtonElement;
   formDD: HTMLDivElement;
   drilldown: UaView | null = null;
   filters: DG.AccordionPane;
@@ -89,19 +78,19 @@ export class UaToolbox {
       this.formDD.style.display = 'none';
       const closeButton = ui.button('', () => this.exitDrilldown(), 'Close drilldown filter');
       closeButton.classList.add('ua-close-button', 'fal', 'fa-times');
-      this.backButton = ui.button(`🠔 back`, () => {
-        ViewHandler.changeTab(this._backToView);
+      const backButton = ui.button('🠔 back to packages', () => {
+        ViewHandler.changeTab('Packages');
         this.exitDrilldown();
-      }, 'Back to previous tab');
-      this.backButton.classList.add('ua-back-button');
-      this.formDD.append(this.backButton);
+      }, 'Back to Packages tab');
+      backButton.classList.add('ua-back-button');
+      this.formDD.append(backButton);
       this.formDD.prepend(closeButton);
       this.formDD.classList.add('ua-drilldown-form');
       return form;
     }, true);
     this.filters.root.before(this.formDD);
 
-    ViewHandler.UA.tabs.onTabChanged.subscribe((_) => {
+    ViewHandler.UA.tabs.onTabChanged.subscribe((tab) => {
       if (this.formDD.style.display === 'block') this.exitDrilldown();
       if (this.checkLabels()) {
         this.formDD.style.display = 'block';

@@ -45,12 +45,6 @@ export namespace historyUtils {
     funcCallId: string,
   ): Promise<{parentRun: DG.FuncCall, childRuns: DG.FuncCall[]}> {
     const parentRun = await grok.dapi.functions.calls.allPackageVersions().find(funcCallId);
-    const id = parentRun.func.id;
-    // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12464
-    const script = scriptsCache[id] ?? await grok.dapi.functions.allPackageVersions().find(id);
-
-    if (!scriptsCache[id]) scriptsCache[id] = script;
-    parentRun.func = script;
     parentRun.options['isHistorical'] = true;
 
     const childRuns = await grok.dapi.functions.calls.allPackageVersions()
