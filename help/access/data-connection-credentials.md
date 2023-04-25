@@ -21,15 +21,15 @@ To use the AWS Secrets Manager in a database connection, follow these steps:
   1. Paste the secret key and access key in the fields provided, name the connection, and fill in other connection parameters as appropriate.
 
    <!--![Create connection to AWS Secret Manager](connect-to-aws.png)-->
-  
+
   1. Click **TEST** to test the connection, then click **OK** to save it. If the connection fails, verify your secrets details.
 * _Step 2_. Create a connection that will use the AWS Secrets Manager.
   1. Open the **Add new connection** dialog by repeating the actions described in Step 1 above.
   1. In the **Add new connection** dialog, under **Credentials**, select the name of the connection that you created in Step 1.
   1. Enter the Secret Name and other connection parameters in the fields provided.
-  
+
   <!--![Add new Data connection](data-connection-secret-p02.png)-->
-  
+
   :::note
 
   You can set up connections to the AWS Secrets Managers for different user groups. Each connection has its own set of credentials which are stored in the Cloud Manager and which are identified by the specified Datagrok connection name and the Secret Name. The Secret Name is defined within the AWS Secrets Manager.
