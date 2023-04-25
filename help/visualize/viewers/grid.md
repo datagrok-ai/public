@@ -37,7 +37,7 @@ title: "Grid"
 |----------------------------|---------------------|
 | Double-click column header | Sort                |
 | Ctrl+Shift+UP              | Sort current column |
-| Menu\                      | Current Column\     | Sort      | Sort |
+| Menu \| Current Column \| Sort | Sort |
 
 ## Editing
 
