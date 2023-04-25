@@ -201,7 +201,11 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
       (isMolBlock(scaffoldMolString) ? getRdKitModule().get_qmol(scaffoldMolString) : getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!));
     let substructJson = '{}';
     if (scaffoldMol) {
-      substructJson = mol.get_substruct_match(scaffoldMol);
+      try{
+        substructJson = mol.get_substruct_match(scaffoldMol);
+      } catch(e) {
+        console.error(`get_substruct_match failed for ${molString} and ${scaffoldMolString}`)
+      }
       if (substructJson === '')
         substructJson = '{}';
     }

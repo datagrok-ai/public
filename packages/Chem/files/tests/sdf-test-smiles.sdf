@@ -83,7 +83,7 @@ M  END
 CHEMBL483900
 
 >  <Scaffold>
-*1cccc2ccc3ccc*c3c12
+*1=CC=CC2=CC=C3C=CC=*C3=C12
 
 >  <Name>
 
@@ -255,7 +255,7 @@ M  END
 CHEMBL497863
 
 >  <Scaffold>
-[1*]c1ccc2c(cnn2[2*])c1
+[1*]C1=CC=C2C(=C1)C=NN2[2*]
 
 >  <Name>
 
@@ -357,7 +357,7 @@ M  END
 CHEMBL497863
 
 >  <Scaffold>
-[1*]c1ccc2c(cnn2[2*])c1
+[1*]C1=CC=C2C(=C1)C=NN2[2*]
 
 >  <Name>
 
@@ -468,7 +468,7 @@ M  END
 CHEMBL497863
 
 >  <Scaffold>
-[1*]c1ccc2c(cnn2[2*])c1
+[1*]C1=CC=C2C(=C1)C=NN2[2*]
 
 >  <Name>
 

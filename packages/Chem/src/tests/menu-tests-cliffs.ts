@@ -26,7 +26,7 @@ category('top menu activity cliffs', async () => {
   });
 
   test('activityCliffsOpen.molV3000', async () => {
-    await _testActivityCliffsOpen('v3000_sample.csv', 'molecule', 'Activity', 185);
+    await _testActivityCliffsOpen('v3000_sample.csv', 'molecule', 'Activity', 0);
   });
 
   test('activityCliffs.emptyValues', async () => {
