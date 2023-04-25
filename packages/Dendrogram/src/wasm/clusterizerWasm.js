@@ -10,7 +10,7 @@ import { exportCppLib } from "./wasmClusterForWorker";
  together they describe the clustering as a dendrogram as a matrix of (n-1) X 3
  each row in the given matrix comprises the merge event at step i and last column is the height from the leaves.
 */
-export async function getClustersFromDistMatWasm(distmat , n, method){
+export async function getClustersFromDistMatWasm(distmat , n, method) {
 
     const wasmInstance = await exportCppLib();
     const getDendrogramWasm = wasmInstance.cwrap('getDendrogram', 'null', ['number', 'number', 'number', 'number', 'number']);

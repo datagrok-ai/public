@@ -167,7 +167,7 @@ async function hierarchicalClusteringByDistanceExec(distance: DistanceMatrix, li
   return newickStr;
 }
 
-function parseClusterMatrix(clusterMatrix:ClusterMatrix){
+function parseClusterMatrix(clusterMatrix:ClusterMatrix): NodeType {
   /*
   clusert matrix is in R format, I.E. the indexings are 1-based.
   one of the reasons is that values in merge arrays are not always positive. if the value is negative
@@ -176,8 +176,8 @@ function parseClusterMatrix(clusterMatrix:ClusterMatrix){
   1, -2, 0.1 would mean that the merge happened between cluster 0 and leaf node 1 with a distance of 0.1
   */
 
-  function getSubTreeLength(node: NodeType) : number{
-    if(isLeaf(node)){
+  function getSubTreeLength(node: NodeType): number {
+    if(isLeaf(node)) {
       return (node.branch_length ?? 0);
     } else {
       return (node.branch_length ?? 0) + getSubTreeLength(node.children![0]);
@@ -186,14 +186,14 @@ function parseClusterMatrix(clusterMatrix:ClusterMatrix){
 
   const clusters: NodeType[] = [];
   const {mergeRow1, mergeRow2, heightsResult} = clusterMatrix;
-  for(let i = 0; i<heightsResult.length; i++){
+  for(let i = 0; i<heightsResult.length; i++) {
     let left: NodeType, right: NodeType;
-    if(mergeRow1[i] < 0){
+    if(mergeRow1[i] < 0) {
       left = {name: (mergeRow1[i] * -1 - 1).toString(), branch_length: heightsResult[i]};
     } else {
       left = clusters[mergeRow1[i] - 1];
     }
-    if(mergeRow2[i] < 0){
+    if(mergeRow2[i] < 0) {
       right = {name: (mergeRow2[i] * -1 - 1).toString(), branch_length: heightsResult[i]};
     } else {
       right = clusters[mergeRow2[i] - 1];
@@ -205,7 +205,7 @@ function parseClusterMatrix(clusterMatrix:ClusterMatrix){
     if (leftLength > rightLength) {
       right.branch_length = leftLength - rightLength;
     }
-    if(rightLength > leftLength){
+    if(rightLength > leftLength) {
       left.branch_length = rightLength - leftLength;
     }
     clusters.push({name: '', children: [left, right], branch_length:0});
