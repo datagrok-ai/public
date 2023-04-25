@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Check for failures and send slack notification
-        if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+        if: ${{ github.event.workflow_run.conclusion == 'failure' }} && ${{ github.actor != 'dependabot[bot]' }}
         run: |
           SLACK_MESSAGE=$(echo "Workflow failed: ${{ github.event.workflow_run.html_url }}")
           key="${{ github.actor }}"
