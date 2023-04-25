@@ -177,15 +177,19 @@ function parseClusterMatrix(clusterMatrix:ClusterMatrix): NodeType {
   */
 
   function getSubTreeLength(node: NodeType): number {
+    function subTreeLength(children?:NodeType[]): number {
+      return children && children.length ? (children[0].branch_length ?? 0) + subTreeLength(children[0].children) : 0;
+    }
     if(isLeaf(node)) {
-      return (node.branch_length ?? 0);
+      return 0;
     } else {
-      return (node.branch_length ?? 0) + getSubTreeLength(node.children![0]);
+      return subTreeLength(node.children);
     }
   }
 
   const clusters: NodeType[] = [];
   const {mergeRow1, mergeRow2, heightsResult} = clusterMatrix;
+
   for(let i = 0; i<heightsResult.length; i++) {
     let left: NodeType, right: NodeType;
     if(mergeRow1[i] < 0) {
@@ -202,13 +206,10 @@ function parseClusterMatrix(clusterMatrix:ClusterMatrix): NodeType {
     const leftLength = getSubTreeLength(left);
     const rightLength = getSubTreeLength(right);
 
-    if (leftLength > rightLength) {
-      right.branch_length = leftLength - rightLength;
-    }
-    if(rightLength > leftLength) {
-      left.branch_length = rightLength - leftLength;
-    }
-    clusters.push({name: '', children: [left, right], branch_length:0});
+    left.branch_length = heightsResult[i] - leftLength;
+    right.branch_length = heightsResult[i] - rightLength;
+
+    clusters.push({name: '', children: [left, right], branch_length: 0});
   }
   return clusters[clusters.length - 1];
 }
