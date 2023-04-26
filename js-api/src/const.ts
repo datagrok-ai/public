@@ -129,6 +129,28 @@ export enum GRID_COLUMN_TAGS {
 
 }
 
+export enum INPUT_TYPE {
+  INT_INPUT = 'IntInput',
+  BIG_INT_INPUT = 'BigIntInput',
+  FLOAT_INPUT = 'FLoatInput',
+  QNUM_INPUT = 'QNumInput',
+  SLIDER_INPUT = 'SliderInput',
+  BOOL_INPUT = 'BoolInput',
+  TEXT_AREA_INPUT = 'TextAreaInput',
+  TEXT_INPUT = 'TextInput',
+  CHOICE_INPUT = 'ChoiceInput',
+  DATE_INPUT = 'DateInput',
+  MAP_INPUT = 'MapInput',
+  MULTI_CHOICE_INPUT = 'MultiChoiceInput',
+  LIST_INPUT = 'ListInput',
+  COLOR_INPUT = 'ColorInput',
+  COLUMN_INPUT = 'ColumnInput',
+  COLUMNS_INPUT = 'ColumnsInput',
+  COLUMNS_MAP_INPUT = 'ColumnsMapInput',
+  RADIO_INPUT = 'RadioInput',
+  MOLECULE_INPUT = 'MoleculeInput'
+}
+
 /** Commonly used options on the function level */
 export enum FUNC_OPTIONS {
   DEMO_PATH = 'demoPath',    // Demo path, such as 'Viewers | Radar'
