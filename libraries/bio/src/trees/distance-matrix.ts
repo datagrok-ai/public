@@ -86,8 +86,14 @@ export class DistanceMatrix {
 
   //normilze distance matrix in place
   public normalize() {
-    const max = Math.max(...this._data);
-    const min = Math.min(...this._data);
+    let min = this._data[0];
+    let max = this._data[0];
+    for (let i = 0; i < this._data.length; i++) {
+      if (this._data[i] < min)
+        min = this._data[i];
+      if (this._data[i] > max)
+        max = this._data[i];
+    }
     const range = max - min;
     for (let i = 0; i < this._data.length; i++)
       this._data[i] = range === 0 ? this._data[i] - min : (this._data[i] - min) / (max - min);
