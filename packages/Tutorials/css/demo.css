@@ -68,10 +68,6 @@
 	background-color: var(--grey-1);
 }
 
-.demo-app-tree-home-node {
-    order: 0
-}
-
 .demo-app-tree-home-node > .d4-tree-view-node > i.grok-icon.fa-home {
     color: var(--grey-6);
     width: 24px;

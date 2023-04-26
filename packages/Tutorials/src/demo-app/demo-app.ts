@@ -194,17 +194,17 @@ export class DemoView extends DG.ViewBase {
       this._closeDockPanel();
     }
 
+    let homeNode = this.tree.group('Home');
+    homeNode.root.classList.add('demo-app-tree-home-node');
+    homeNode.root.getElementsByClassName('d4-tree-view-node')[0]?.prepend(ui.iconFA('home'));
+    homeNode.root.getElementsByClassName('d4-tree-view-tri')[0].remove();
+
     for (const f of DG.Func.find({meta: {'demoPath': null}})) {
       const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
       const path = pathOption.split('|').map((s) => s.trim());
       const folder = this.tree.getOrCreateGroup(path.slice(0, path.length - 1).join(' | '));
       const item = folder.item(path[path.length - 1]);
-
-      if (folder.text === 'Viewers')
-        folder.root.style.order = '10'
-      else  
-        folder.root.style.order = '1';
-
+      
       item.root.onmouseover = (event) => {
         const packageMessage = `Part of the ${f.package.name} package`;
         ui.tooltip.show(f.description ? ui.divV([f.description, ui.element('br'), packageMessage]) : ui.div(packageMessage),
@@ -238,11 +238,6 @@ export class DemoView extends DG.ViewBase {
       this.searchInput.value = '';
       this.searchInput.fireChanged();
     };
-
-    let homeNode = this.tree.group('Home');
-    homeNode.root.classList.add('demo-app-tree-home-node');
-    homeNode.root.getElementsByClassName('d4-tree-view-node')[0]?.prepend(ui.iconFA('home'));
-    homeNode.root.getElementsByClassName('d4-tree-view-tri')[0].remove();
 
     DG.debounce(this.tree.onSelectedNodeChanged, 300).subscribe(async (value) => {
       if (DemoScript.currentObject) {
