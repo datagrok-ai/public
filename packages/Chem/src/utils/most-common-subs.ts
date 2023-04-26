@@ -3,37 +3,38 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {RDMol} from "@datagrok-libraries/chem-meta/src/rdkit-api";
 import {getRdKitModule} from "../package";
+import {getMolSafe} from './mol-creation_rdkit';
 
 
 export function getMCS(molecules: string, df: DG.DataFrame, compareElements: boolean, compareBonds: boolean): string {
-    // const returnSmarts = !!smarts;
-    // return await grok.functions.call('Chem:FindMCS', {molecules, df, returnSmarts});
-
     let rdkit = getRdKitModule();
-    //let test = rdkit.get_test_string();
-    //console.log(test);
 
     let molCol = df.columns.byName(molecules);
     let n = molCol.length;
 
     let mols: RDMol[] = [];
-    let arr = new Uint32Array(n);
+
     for(let i = 0; i < molCol.length; i++) {
-      mols.push(rdkit.get_mol(molCol.get(i)));
+      let molSafe = getMolSafe(molCol.get(i), {}, rdkit);
+      if(molSafe.mol !== null && !molSafe.isQMol)
+        mols.push(molSafe.mol);
+    }
+
+    let arr = new Uint32Array(mols.length);
+
+    for(let i = 0; i < mols.length; i++) {
       //@ts-ignore
       arr[i] = mols[i].$$.ptr;
     }
-    // let mol1 = rdkit.get_mol("CCCCCC");
-    // let mol2 = rdkit.get_mol("CCCC");
 
     //@ts-ignore
-    let buff = rdkit.asm.Zb(n*4);
+    let buff = rdkit.asm.Zb(mols.length*4);
 
     // >> 2 is the reduction of element number of 32 bit vs 8 bit for offset
     //@ts-ignore
     rdkit.HEAPU32.set(arr, buff >> 2);
 
-    let smarts: string = rdkit.get_mcs(buff, n, compareElements, compareBonds);
+    let smarts: string = rdkit.get_mcs(buff, mols.length, compareElements, compareBonds);
 
     //@ts-ignore
     //rdkit.asm.gb("get_mcs", "void", ["number", "number"], [2, buff]);
