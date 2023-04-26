@@ -1,4 +1,4 @@
-import { ClusterMatrix, getClustersFromDistMatWasm } from "../wasm/clusterizerWasm";
+import { ClusterMatrix, getClustersFromDistMatWasm } from "./clusterizerWasm";
 import { ClusteringWorkerInput } from "./clustering-worker-creator";
 
 

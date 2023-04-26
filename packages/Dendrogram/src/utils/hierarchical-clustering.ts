@@ -5,12 +5,12 @@ import * as DG from 'datagrok-api/dg';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
 import {DistanceMetric, isLeaf, LinkageMethod, NodeType} from '@datagrok-libraries/bio/src/trees';
-import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
-import { DistanceMatrix } from '@datagrok-libraries/bio/src/trees/distance-matrix';
-import { TreeHelper } from './tree-helper';
-import { ITreeHelper } from '@datagrok-libraries/bio/src/trees/tree-helper';
-import { ClusterMatrix } from '../wasm/clusterizerWasm';
-import { getClusterMatrixWorker } from '../wasm/clustering-worker-creator';
+
+import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
+import {TreeHelper} from './tree-helper';
+import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {ClusterMatrix} from '../wasm/clusterizerWasm';
+import {getClusterMatrixWorker} from '../wasm/clustering-worker-creator';
 
 /** Custom UI form for hierarchical clustering */
 export async function hierarchicalClusteringUI2(df: DG.DataFrame): Promise<void> {
@@ -45,8 +45,7 @@ export async function hierarchicalClusteringUI(
   distance: DistanceMetric = DistanceMetric.Euclidean,
   linkage: string
 ): Promise<void> {
-
-  const linkageCode = Object.values(LinkageMethod).findIndex(method => method === linkage);
+  const linkageCode = Object.values(LinkageMethod).findIndex((method) => method === linkage);
 
   const colNameSet: Set<string> = new Set(colNameList);
   const [filteredDf, filteredIndexList]: [DG.DataFrame, Int32Array] =
@@ -79,10 +78,12 @@ export async function hierarchicalClusteringUI(
       }));
 
   const distanceMatrix = await th.calcDistanceMatrix(preparedDf,
-    preparedDf.columns.toList().map(col => col.name),
+    preparedDf.columns.toList().map((col) => col.name),
     distance);
 
-  const clusterMatrixWorker = getClusterMatrixWorker({distMatArray: distanceMatrix!.data, n: preparedDf.rowCount, methodCode: linkageCode});
+  const clusterMatrixWorker = getClusterMatrixWorker(
+    {distMatArray: distanceMatrix!.data, n: preparedDf.rowCount, methodCode: linkageCode}
+  );
   const clusterMatrix = await clusterMatrixWorker;
 
   // const hcPromise = hierarchicalClusteringByDistanceExec(distanceMatrix!, linkage);
@@ -97,8 +98,6 @@ export async function hierarchicalClusteringUI(
   // Fix branch_length for root node as required for hierarchical clustering result
   newickRoot.branch_length = 0;
   (function replaceNodeName(node: NodeType, fltRowIndexes: { [fltIdx: number]: number }) {
-    const nodeFilteredIdx: number = parseInt(node.name);
-    const nodeIdx: number = fltRowIndexes[nodeFilteredIdx];
     if (!isLeaf(node)) {
       for (const childNode of node.children!)
         replaceNodeName(childNode, fltRowIndexes);
@@ -161,8 +160,8 @@ async function hierarchicalClusteringByDistanceExec(distance: DistanceMatrix, li
   const dataDf: DG.DataFrame = DG.DataFrame.fromColumns([distanceCol]);
 
   const newickStr: string = await grok.functions.call(
-      'Dendrogram:hierarchicalClusteringByDistanceScript',
-      {data: dataDf, size: distance.size, linkage_name: linkage});
+    'Dendrogram:hierarchicalClusteringByDistanceScript',
+    {data: dataDf, size: distance.size, linkage_name: linkage});
 
   return newickStr;
 }
@@ -177,31 +176,29 @@ function parseClusterMatrix(clusterMatrix:ClusterMatrix): NodeType {
   */
 
   function getSubTreeLength(node: NodeType): number {
-    function subTreeLength(children?:NodeType[]): number {
+    //Tradeoff between performance and memory usage - in this case better to use less memory.
+    //as wasm already takes up quite a bit
+    function subTreeLength(children?: NodeType[]): number {
       return children && children.length ? (children[0].branch_length ?? 0) + subTreeLength(children[0].children) : 0;
     }
-    if(isLeaf(node)) {
+    if (isLeaf(node))
       return 0;
-    } else {
+    else
       return subTreeLength(node.children);
-    }
   }
 
-  const clusters: NodeType[] = [];
-  const {mergeRow1, mergeRow2, heightsResult} = clusterMatrix;
 
-  for(let i = 0; i<heightsResult.length; i++) {
-    let left: NodeType, right: NodeType;
-    if(mergeRow1[i] < 0) {
-      left = {name: (mergeRow1[i] * -1 - 1).toString(), branch_length: heightsResult[i]};
-    } else {
-      left = clusters[mergeRow1[i] - 1];
-    }
-    if(mergeRow2[i] < 0) {
-      right = {name: (mergeRow2[i] * -1 - 1).toString(), branch_length: heightsResult[i]};
-    } else {
-      right = clusters[mergeRow2[i] - 1];
-    }
+  const {mergeRow1, mergeRow2, heightsResult} = clusterMatrix;
+  const clusters: NodeType[] = new Array<NodeType>(heightsResult.length);
+
+  for (let i = 0; i<heightsResult.length; i++) {
+    const left: NodeType = mergeRow1[i] < 0 ?
+      {name: (mergeRow1[i] * -1 - 1).toString(), branch_length: heightsResult[i]} :
+      clusters[mergeRow1[i] - 1];
+
+    const right = mergeRow2[i] < 0 ?
+      {name: (mergeRow2[i] * -1 - 1).toString(), branch_length: heightsResult[i]} :
+      clusters[mergeRow2[i] - 1];
 
     const leftLength = getSubTreeLength(left);
     const rightLength = getSubTreeLength(right);
@@ -209,7 +206,7 @@ function parseClusterMatrix(clusterMatrix:ClusterMatrix): NodeType {
     left.branch_length = heightsResult[i] - leftLength;
     right.branch_length = heightsResult[i] - rightLength;
 
-    clusters.push({name: '', children: [left, right], branch_length: 0});
+    clusters[i] = {name: '', children: [left, right], branch_length: 0};
   }
   return clusters[clusters.length - 1];
 }
