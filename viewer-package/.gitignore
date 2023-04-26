@@ -30,6 +30,3 @@ dist/
 
 # Emitted *.js files
 src/**/*.js
-
-# Emitted *.g.ts files
-*.g.ts
