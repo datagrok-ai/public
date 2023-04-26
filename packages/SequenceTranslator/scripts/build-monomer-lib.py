@@ -117,7 +117,6 @@ class Monomer:
         self.name = name
         self.author = 'SequenceTranslator'
         self.molfile = prepare_molblock(molfile, name)
-        self.naturalAnalog = ''
         self.rgroups = [{
             "capGroupSmiles": "O[*:1]",
             "alternateId": "R1-OH",
@@ -133,29 +132,29 @@ class Monomer:
         self.id = 0
         self.polymerType = 'RNA'
         self.symbol = symbol
-        self.codes: CodesType = codes
+        meta = {'codes': codes}
+        self.meta = meta
 
     @staticmethod
     def from_json(src_json: {}):
         obj = Monomer(src_json['symbol'], src_json['name'],
                       src_json['molfile'], src_json['smiles'],
-                      src_json['codes'])
+                      src_json['meta']['codes'])
         return obj
 
     def to_json(self):
         return {
-            'monomerType': self.monomerType,
-            'smiles': self.smiles,
-            'name': self.name,
-            'author': self.author,
-            'molfile': self.molfile,
-            'naturalAnalog': self.naturalAnalog,
-            'rgroups': self.rgroups,
-            'createDate': self.createDate,
-            'id': self.id,
-            'polymerType': self.polymerType,
             'symbol': self.symbol,
-            'codes': self.codes,
+            'name': self.name,
+            'molfile': self.molfile,
+            'author': self.author,
+            'id': self.id,
+            'rgroups': self.rgroups,
+            'smiles': self.smiles,
+            'polymerType': self.polymerType,
+            'monomerType': self.monomerType,
+            'createDate': self.createDate,
+            'meta': self.meta,
         }
 
 
@@ -366,54 +365,70 @@ class MolFileMap:
                 collection_idx_boundaries, collection_steabs_idx)
 
 
+def compile_object_for_monomer(monomer_name: str):
+    """
+    Compile HELM library object for the given monomers from files
+    """
+    default = monomer_name + '/default.json'
+    meta = monomer_name + '/meta.json'
+    molfile = monomer_name + '/molfile.mol'
+    for file in [default, meta, molfile]:
+        if not os.path.isfile(file):
+            raise FileNotFoundError(file)
+
+    monomer_json = {}
+    default_json = {}
+    meta_json = {}
+
+    with open(default, 'r') as default_json_file:
+        default_json_str = default_json_file.read()
+        default_json = orjson.loads(default_json_str)
+    with open(meta, 'r') as meta_json_file:
+        meta_json_str = meta_json_file.read()
+        meta_json = orjson.loads(meta_json_str)
+
+    monomer_json = {**default_json, 'meta': meta_json}
+    with open(molfile, 'r') as monomer_mol_f:
+        monomer_mol_lines = [line.rstrip() for line in monomer_mol_f.readlines()]
+        monomer_mol_txt = '\n'.join(monomer_mol_lines)
+        monomer_json['molfile'] = monomer_mol_txt
+    # print(monomer_json)
+    return monomer_json
+
+
 @click.command()
 @click.option('--lib',
-              'lib_f',
+              'output_library',
               help='Output library (HELM format) file.',
               type=click.File('wb', 'utf-8'))
 @click.option('--add-list',
               'monomer_list_file',
               multiple=False,
-              help='File with list of monomer json files',
+              help='File with list of monomer names',
               type=click.File('r', 'utf-8'))
-def main(lib_f: TextIOWrapper,
+def main(output_library: TextIOWrapper,
          monomer_list_file: TextIOWrapper):
     name_to_monomer_dict: dict[str, Monomer] = {}
-    monomer_filename_list = []
-    for monomer_filename in [filename for filename in
-            monomer_list_file.read().split('\n') if filename]:
-        monomer_filename_list.append(monomer_filename)
+    monomer_name_list = []
+    for monomer_name in [m for m in monomer_list_file.read().split('\n') if m]:
+        monomer_name_list.append(monomer_name)
 
-    print(monomer_filename_list)
+    print(monomer_name_list)
 
-    for monomer_filename in monomer_filename_list:
+    for monomer_name in monomer_name_list:
         # trying to load mol data if file with .mol extension exists
-        with open(monomer_filename, 'r') as monomer_json_file:
-            monomer_json_str = monomer_json_file.read()
-            monomer_lib_json = orjson.loads(monomer_json_str)
-            for monomer_obj in monomer_lib_json:
-                name = monomer_obj['name']
-                try:
-                    if not monomer_obj['molfile']:
-                        monomer_molfile = os.path.join(os.path.dirname(monomer_filename), monomer_obj['name'] + '.mol')
-                        if not os.path.isfile(monomer_molfile):
-                            raise FileNotFoundError(monomer_molfile)
-                        else:
-                            with open(monomer_molfile, 'r') as monomer_mol_f:
-                                monomer_mol_lines = [line.rstrip() for line in monomer_mol_f.readlines()]
-                                monomer_mol_txt = '\n'.join(monomer_mol_lines)
-                                monomer_obj['molfile'] = monomer_mol_txt
+        monomer_obj = compile_object_for_monomer(monomer_name)
+        try:
+            monomer_obj = Monomer.from_json(monomer_obj)
+            name_to_monomer_dict[monomer_obj.name] = monomer_obj
+        except Exception as ex:
+            sys.stderr.write(f"Invalid monomer '{monomer_obj['name']}' error:\n{str(ex)}")
 
-                    m = Monomer.from_json(monomer_obj)
-                    name_to_monomer_dict[m.name] = m
-                except Exception as ex:
-                    sys.stderr.write(f"Invalid monomer '{monomer_obj['name']}' error:\n{str(ex)}")
+    resulting_json = [obj.to_json() for obj in name_to_monomer_dict.values()]
+    resulting_json = sorted(resulting_json, key=lambda x: x['name'])
 
-    monomer_lib_json = [m.to_json() for m in name_to_monomer_dict.values()]
-    monomer_lib_json = sorted(monomer_lib_json, key=lambda x: x['name'])
-
-    lib_json_txt = orjson.dumps(monomer_lib_json, option=orjson.OPT_INDENT_2)
-    lib_f.write(lib_json_txt)
+    lib_json_txt = orjson.dumps(resulting_json, option=orjson.OPT_INDENT_2)
+    output_library.write(lib_json_txt)
 
 
 if __name__ == '__main__':
