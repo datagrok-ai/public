@@ -7,10 +7,10 @@ objects _entities_. Here they are:
 
 * [Function](functions/functions.md)
 * [Function Call](functions/function-call.md)
-* [Data Pipeline](../access/data-pipeline.md)
+* [Data Pipeline](../access/access.md)
 * [Data Connection](../access/data-connection.md)
 * [Data Query](../access/data-query.md)
-* [Data Job](../access/data-job.md)
+* [Data Job](../access/access.md)
 * [DB Table Info](../access/db-table-info.md)
 * [DB Column Info](../access/db-column-info.md)
 * [User](../govern/user.md)

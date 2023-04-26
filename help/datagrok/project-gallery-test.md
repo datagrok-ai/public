@@ -53,7 +53,7 @@ Project browser allows you to view previously created [projects](project.md), vi
    for [project](project.md)
 
 * "Jobs" tab is open
-* Display all [data jobs](../access/data-job.md) which are included in [project](project.md)
+* Display all data jobs which are included in [project](project.md)
 
 1. Open the "Activity" tab in [Context Panel](../datagrok/navigation.md#context-panel)
    for [project](project.md)

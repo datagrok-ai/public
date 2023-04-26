@@ -1,302 +1,233 @@
----
-title: File shares. File Manager
----
+# Files
 
-**File Manager** lets you work with files and directories on your system from the convenience of your web browser. You
-can browse, preview, open, create, delete, rename, download, clone, and share files and directories.
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+```
 
-To open **File Manager**, from the main menu, select **Data**>**Files**.
+Datagrok lets you work with files and directories on your system from the convenience of a web browser. You can browse, preview, open, create, delete, rename, download, clone, and share files and directories. When you sign up for Datagrok, a personal directory called **Home** is automatically created for you. Additionally, you can connect to [popular file systems](supported-connectors.md), including the [Amazon S3 bucket](connectors/s3.md), [Dropbox](connectors/dropbox.md), [Google Drive](connectors/googlecloud.md), and [Git](connectors/git.md), as well as [Windows and Linux network shares](connectors/files.md).
 
-In this article:
+:::note
 
-* [Getting data](#getting-data)
-* [Sharing files](#sharing-files)
-* [Manage file shares](#manage-file-shares)
-* [Manage files](#manage-file-shares)
-* [Preview file and folders](#browse-and-preview)
-* [Customizations](#customizations)
-* [Automation](#automation)
+Connecting to an SMB file storage is only available for on-premise deployment and is not available on the public Datagrok instance (public.datagrok.ai).
 
-> Key concept: _file share_
->
-> We use the term _file share_ when referring to the following:
->
->* Connections to folders and files located on a Datagrok server that you access with a Datagrok client.
->* Any folder or file in the **File Manager** that has been shared with others.
->
->_File shares_ are entities<!--inseert a link-->, meaning you can perform a standard set of operations against them (for
-> example,
-> annotate, set access privileges, [use in automation workflows](data-pipeline.md), or enable discovery by other
-> Datagrok
-> users).
->
-> Note: For enterprise users, the Datagrok administrator defines which file shares you can access and which privileges
-> you have in them.
+:::
 
-## Getting data
+:::note developers
 
-Each Datagrok user has a personal directory for files and folders they want to upload directly to Datagrok. This
-personal directory is accessible in the **Folder Tree** under the name _Home_. The **Home** directory is created
-automatically upon signup. By default, files and folders in your **Home** directory are visible to you only.
+You can [create custom connectors](create-custom-connectors.md) and [read files programmatically](../develop/how-to/access-data.md/#reading-files).
 
-In addition, you can connect network folders hosted on supported data sources, and access files and directories shared
-with you.
+:::
 
-### Supported data sources
+## Connecting to file storage
 
-You can connect to files and folders located on a remote server or a mapped drive. Out-of-the-box, Datagrok provides
-connectors to the following data sources:
+To connect to your file storage, follow these steps:
 
-* [An Amazon Simple Storage Service (S3) bucket](connectors/s3.md)
+1. Go to **Data** > **Files**.
+1. Open the **New file share** dialog (**Toolbox** > **Actions** > **New file share**). Alternatively, click the **New file share** icon on the **Menu Riboon**.
+1. In the dialog, choose the data source from the **Data Source** dropdown. The dialog updates with connection-specific parameters.
+1. Set the parameters.
+1. Click **TEST** to test the connection, then click **OK** to save it.
 
-* [Windows and Linux network shares](connectors/files.md)
+![File share connection parameters](add-a-file-share.gif)
 
-  > Note: Connecting to an SMB file share (that is, a file share mounted on a server, such as Linux or Windows network
-  > shares) is only available for on-premise deployment and is not available on the public Datagrok instance
-  > (public.datagrok.ai).
+Some connection parameters have unique characteristics, and it's important to specify them correctly:
 
-* [Dropbox](connectors/dropbox.md)
+* _Directory path_. When connecting to the root directory, leave the **Dir** field empty. Otherwise, enter a directory path.
+* _Credentials_. You can specify credentials manually or using the [Secrets Manager](data-connection-credentials.md), such as the AWS Secrets Manager. When entered manually, Datagrok stores secrets in a [secure privilege management system](../govern/security.md/#credentials). To specify who can change the connection credentials, click the **Gear** icon and select from the **Credential owner** dropdown.
 
-* [Git](connectors/git.md)
+  :::caution
 
-* [Google Drive](connectors/googlecloud.md)
+  When connecting to _public buckets_ in AWS S3, always check the **Anonymous** checkbox.
 
-> Developers: You can [create custom connectors](../develop/how-to/access-data.md/#connections).
+  :::
 
-### Add new connection
+Once you have established a connection to a folder in your file system, the folder appears in the **File Manager** under the corresponding data source. This connection is referred to as a _file share_. You can view the files and subfolders within the _file share_ by expanding it.
 
-To add a connection, follow these steps:
+:::note
 
-1. From the main menu on the left, click **Data** > **Files**.
-1. Open the **New file share** dialog by either: (1) expanding the **Actions** panel and clicking **New file share**, or
-   (2) Clicking the **New file share** icon on the **Menu Ribbon**.
-1. From the **Data Source** dropdown list, select the desired data source. This action updates the dialog with
-   connection-specific parameter fields.
+Like other objects in Datagrok, newly created connections are only visible to the user who created them. To let others access the file share, you must share it (right-click the connection and select **Share...** from the list of options).
 
-1. Fill in all dialog fields displayed.
+:::
 
-   > Notes:
-   >
-   >When connecting to the root directory, leave the **Dir** field empty. Otherwise, enter a directory path within the
-   > file share.
-   >
-   >You can enter _credentials_ (typically, login/password) manually. When entered manually, Datagrok stores secrets in
-   > a secure [privilege management system](../govern/security.md#credentials). You can also connect using Datagrok's
-   > integration with the AWS Secrets Manager (see [Secrets Managers](data-connection-credentials.md/#secrets-managers))
-   .
-   >
-   >You can define connection credentials for each user or group. To do so, select a user or group from the **Credential
-   > owner** dropdown, then enter the appropriate credentials in the fields provided. IMPORTANT: When connecting to
-   > _public buckets_ in AWS S3, always check the **Anonymous** checkbox.
+To modify a connection, right-click it and select **Edit...** from the list of options. To quickly create a connection similar to an existing one, right-click it and select **Clone...**
 
-1. Click **TEST** to the connection, then click **OK** to save it.
+<!--
+### File indexing
+For file shares, Datagrok supports indexing of folders and [supported file formats](supported-formats.md), including archives such as .tar or .zip.
 
-   ![File share connection parameters](add-a-file-share.gif)
+Connections and folders are indexed by default when you create a connection. File indexing is optional. To index files, select the **Index Files** option when creating a file share.
 
-Once you connect the network folder, it becomes the root folder for this connection. You can expand and view its content
-by double-clicking it.
+:::tip
 
-> Note: When you have a connection set up precisely the way you want it, you can clone it and make additional changes as
-> needed:
->
-> 1. Right-click the connection and select **Clone...**. This action opens the **Edit Connection** dialog.<!--confusing
->    UI, discuss-->
-> 1. Type in a **Name** for the new connection and make other changes as needed.
-> 1. Re-enter password or access keys.
-> 1. Click **OK** to save the new connection.
+You can enable file indexing at any time. Right-click the file share and select **Edit...** Then, check the **Index file** checkbox in the dialog that appears. Click **OK** to save.
 
-### Modify a connection
+:::
 
-You can modify a connection at any time. To modify a connection:
+File indexing is a recurring data job that runs every hour. Datagrok extracts the following information from the indexed file:
 
-1. Right-click the connection to open its context menu, then click **Edit...**. This action opens the **Edit
-   connection** dialog.
-1. In the **Edit Connection** dialog, change the connection name, parameters, and credentials as needed.
-1. Click **TEST** to the connection, then click **OK** to save the changes.
+* Filename
+* File size, in bytes
+* Number of rows and columns
+* Column-level information such as name, data type, and [semantic type](../discover/semantic-types.md).
 
-## Sharing files
+For instance, with indexing, you can browse columns within a CSV file inside a ZIP file:
 
-### Sharing methods
+![File Explorer](./connectors/files-browser.gif "File Explorer")
 
-You have two sharing methods:
+Indexing helps you find datasets quicker as indexed files appear in the search results based on metadata extracted. For example, you can search for dataframes matching the following criteria across specified or all data providers at once:
 
-1. **Sharing files** with individual users and groups directly from the **File Manager**. When you use this method, you
-   can specify access privileges for each shared item (such as separate files and subfolders). Once the item is shared,
-   it appears in the recipient's **File Manager**.
-1. **Distributing a file link**. Datagrok uses unique URLs for each file and folder. You can use these URLs as a quick
-   way to point users to a file or reference the file on external websites.
+* Created in the last month
+* Has a column that contains molecules, and
+* Has a column named "activity."
 
-   Unlike sharing _files_, when you share a _file link_, the shared file doesn't appear in the recipient's **File
-   Manager**. Instead, clicking the link _opens_ the file in Datagrok. From there, users can either download the file
-   and then upload it to Datagrok or save the file as a [project](../datagrok/create-project.md).
+:::note
 
-   To access the file or folder from the link provided, users must have access privileges for this file or folder.
+To learn how searching works in Datagrok, see [Smart search](../datagrok/smart-search.md).
 
-### Share files
+:::
+-->
 
-When your access privileges allow it, you can share folders and files available to you. You have several options:
+## Importing text
+
+Datagrok supports text-to-tabular-data conversion for delimiter-separated files with an option to manually edit or customize data during import. To use this feature, open the [**Text Manager**](https://public.datagrok.ai/text) (**Data** > **Text**) and load a file or paste text into the **Text Editor** area. Here you can change the data as needed. Adjust default import parameters like delimiters, decimal separators, and header settings in the **Toolbox** on the left. By default, changes are automatically applied and displayed in the **Preview**, which updates as you modify the data. To manually sync edits, disable the **Auto Sync** checkbox and use the **Sync** button.
+
+When satisfied with the data, click **Done** to open the dataframe in Datagrok. From there, you can export it, make further edits, save it as a project, or share with others via URL.
+
+![Text Manager](text-manager.gif)
+
+## File Manager
+
+The **File Manager** is an interface that allows you to manage connections, browse and preview file content, and perform standard file and folder actions such as opening, downloading, deleting, and renaming. To access an object's context actions, right-click it or left-click and expand the **Actions** pane in the **Context Panel** on the left. By clicking a file or folder in the **File Manager**, you can open its preview. Double-clicking a file opens it in Datagrok, and double-clicking a folder expands its content.
+
+:::note
+
+If you don't see a certain action, it may be due to insufficient permissions. For files and folders shared with you, contact the credentials owner. If you are a credentials owner, contact the data source owner.
+
+:::
+
+In addition to the hierarchical browsing, the **File Manager** offers advanced preview and data augmentation capabilities using **Directory**, **Preview**, and **Context Panel**.
+
+The **Directory** section shows the contents of your current folder. Click a file to see its preview and properties, or right-click it for more actions. Use the search bar to search for files and folders within your current directory. The search bar allows you to search for items by name, file extension, or metadata.
+
+For folders, the **Preview** generates a [treemap](../visualize/viewers/tree-map.md) that highlights the largest items. For files, the functionality varies based on the file's format and data properties. It includes custom viewers for [supported formats](supported-formats.md), such as interactive spreadsheets for displaying tabular data, cell and image renderers, and chemical and biological structure viewers. You can also view the content of ZIP files and edit Markdown, TXT, and HTML files.
+
+![File browsing and preview](file-manager-file-browsing.gif)
+
+:::note
+
+File preview is limited to files under 10MB. The platform won't display larger files. Unsupported file formats cannot be previewed, but you can download them.
+
+:::
+
+:::note developers
+
+You can [add custom formats using package extensions](../develop/how-to/create-package.md). In addition, you can create organization-specific previews:
+
+<details>
+<summary> Example: Create custom file viewers </summary>
+
+In this example, a script is executed against the folder content. If the folder contains files that match the file extension parameter PDB, the **Preview** displays a custom NGL viewer to visualize the molecule.
+
+![preview using custom viewer](preview-with-custom-viewer.gif)
+
+To add a custom viewers, you have two options:
+
+* Develop in JavaScript using the [Datagrok JavaScript API](../develop/js-api.md).
+* Use the visualizations available for popular programming languages like Python, R, or Julia.
+
+To learn more about each option, see [Develop custom viewer](../develop/how-to/develop-custom-viewer.md).
+
+</details>
+
+<details>
+<summary> Example: Create custom folder viewers </summary>
+
+In this example, a [script](../develop/how-to/folder-content-preview.md) is executed against the folder content. If the folder contains files matching the file extension parameter, the **Preview** shows a custom [widget](../visualize/widgets.md) (in this case - the application launch link) every time the folder is opened.
+
+![Suggest an application based on file types](clinical-case-file-manager.gif)
+
+</details>
+<details>
+<summary> Example: Create custom cell renderers </summary>
+
+In this example, a [script](/develop/how-to/custom-cell-renderers.md) is executed against the [SMILES](https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system) strings within the CSV file. The script computes the structure graph and 2D positional data, and renders the structure graphically.
+
+![Smiles renderer](Smiles-renderer.png)
+
+</details>
+
+:::
+
+The [Context Panel](../datagrok/navigation.md#properties) provides additional information about a selected file or folder, and the ability to execute conext actions. For example, when you click a CSV file, the **Context Panel** updates to show the file's metadata, available context actions, and other relevant information. If you subsequently click any of the dataframe's columns in the **Preview**, the **Context Panel** will update to display information and actions specific to that column, such as summary statistics for the column under **Stats**, or its data and semantic types under **Details**.
+
+![Details on demand](file-manager-details.gif)
+
+:::note developers
+
+**Context Panel** can be extended. You can add custom [info panes](../develop/how-to/add-info-panel.md) and [context actions](../develop/how-to/context-actions.md).
+
+<details>
+<summary> Example: Image augmentation </summary>
+
+In this example, a [Python script](/develop/how-to/create-custom-file-viewers.md) creates a custom _info pane_ called **Cell Imaging Segmentation**. This script executes against JPEG and JPG files during the indexing process and extracts custom metadata (such as the number of cells) and performs predefined transformations (such as cell segmentation). When a user selects the corresponding image, the **Context Panel** shows a custom info panel that displays the augmented file preview and the number of detected cell segments.
+
+![Cell image segmentation](Cell-image-segmentation.gif)
+
+</details>
+
+:::
+
+## File sharing and access control
+
+You can share files in two ways: by sharing the actual file (or folder), or by sharing an URL that points to it. To share an URL, open the file in Datagrok and copy the URL from the address bar. To access the file from the link provided, users must have permissions to open it. Once the file is open, users can download the file and then upload it to their **Home** directory, or [save the file as a project](/datagrok/create-project.md). The URL links never expire and can't be revoked.
+
+:::tip
+
+For tabular formats, you can create dynamic dashboards and share them with others via URL or reference them on external websites. To learn more about dynamic data updates, see [Dynamic data](../datagrok/project.md/#dynamic-data).
+
+:::
+
+Another option is to share directly in Datagrok by creating a _file share_ and specifying access privileges for each shared item, such as separate files and subfolders. Once the item is shared, it appears in the recipient's **File Manager**. When using this method, you have several options:
 
 * Share a _connection_ (root folder) to give access to the entire directory.
 * Share a _folder_ to give access to the content of individual folders in your directory.
-* Share a _file_ to limit access to individual files.<!--future-looking-->
+<!--* Share a _file_ to limit access to individual files within a folder.-->
 
-To share an item, do the following:
+To share, follow these steps:
 
-1. Right-click the item and select _share_ from the context menu. This action opens the **Share...** dialog.
-2. Enter the user or user group you want to share it with.
+1. Right-click the item you want to share and select **Share...** from its context menu. The **Share...** dialog opens.
+1. In the identity/email field, start typing a person's name, username, email, or group name, and pick from the list of matching identities.
+1. From the respective dropdowns, select access privileges for either or both: (1) the connection and (2) individual
+   files/folders. You can select any or all of the following options:
 
-   In the identity/email field, start typing a person’s name, username, email, or group name. Pick from the list of the
-   matching identities.
+    * _Can view_: Users can view, open, and download
+    * _Can edit_: Users can rename, edit, delete, and reshare with any other user or group.
 
-3. From the respective dropdowns, select access privileges for either or both: (1) the connection and (2) individual
-   files/folders. You can select any or all of the following options<!--TBU-->:
+    :::caution
 
-   * _Can view_: Users can view, open, and download
-   * _Can edit_: Users can rename and edit
-   * _Can delete_: Users can delete
-   * _Can share_: Users can reshare with any other user or group.<!--how does it work with URL links? -->
+    A file's _name_ and _namespace_ are encoded within the URL. When you rename a file (or its location), the link changes accordingly, which may cause broken URL links, script errors, and similar issues.
 
-   > Note: For each _file share_, Datagrok automatically assigns a _friendly name_ (a name displayed in the UI) that
-   > specifies all the directory names starting from the root folder. While you _can_ change the _friendly name_, we
-   > encourage you to exercise caution. Changing the item's _friendly name_ also changes its unique
-   > _namespace-qualified name_ used in URL links, automation workflows, and more.
+    :::
 
-4. Optionally, enter a description in the text field provided. You may also notify the users you share with. If you
-   don’t want to send a notification, uncheck the **Send notification** checkbox.
+1. Optional. Enter a description in the text field provided. You may also notify the users you share with. If you don’t want to send a notification, clear the **Send notification** checkbox.
 
-   > Note: To send an email notification, enter the user's email in the identity/email field. The email notification
-   > contains a link to the shared item and entered description. If you enter a user or group name, they will be
-   > notified via the Datagrok interface.
+  :::note
 
-5. Click **OK** to share. Once shared, the shared item appears in the recipient's **Folder Tree**.
+  To send an email notification, enter the user's email in the identity/email field. The email notification contains a link to the shared item and entered description. If you enter a user or group name, they will be notified via the Datagrok interface.
+
+  :::
+
+1. Click **OK** to share. Once shared, the shared item appears in the recipient's **File Manager**.
 
    ![Share a folder](share-the-folder.gif)
 
-   > Note: When you share a file or a folder, Datagrok automatically indexes folders <!--link out to indexing when ready-->
-   > and working--> and extracts basic metadata (like the date created or its size). File indexing is optional (to index
-   > files, toggle **Index Files** in the **Share...** dialog).
+:::tip
 
-## Manage file shares
+To inspect or quickly adjust access permissions to your file shares, send comments to those you're sharing with, and more, use the **Sharing** info pane in the **Context Panel**.
 
-Subject to your privileges, you can use the **Data Explorer** panel to inspect and quickly adjust access permissions to
-file shares, send comments to those you're sharing with, and more.
-
-1. First, select the connection, file, or folder.
-2. Then navigate to **Data Explorer** on the left and expand the **Sharing** info panel to see the complete list of
-   users with access and their privileges. From here, you can click any user or group to see their profile, your
-   conversation history with them, send them a note, and more.
-3. Use the buttons provided to share access with more users, revoke access, or edit permissions to the shared item.
-
-   > Note: The same actions are available from the context menu.
-
-<!--TBD: GIF pending changes in the UI-->
-
-## Managing folders and files
-
-The **File Manager** lets you perform standard file and folder actions such as open, download, delete, or rename. To see
-a complete list of available actions, right-click the file or folder.
-
-> Tip: The same list of actions is available from the **Data Explorer** on the right under the **Actions** info panel.
-
-Depending on your privileges, certain actions may not be available to you. For files and folders shared with you,
-contact the _credentials owner_. If you are a _credentials owner_, contact the _data source_ owner.
-
-## Browse and preview
-
-**File Manager** has multiple views to help you navigate and browse the content of your directory:
-
-1. A **Folder Tree** for hierarchical browsing
-2. A **Directory View** with three viewing modes (icons, cards, and grid) and built-in search
-3. A dynamic file/folder **Preview** (here, you can also do lightweight editing for CSV and TXT file formats).
-
-   You can reposition or close any pane<!--link to article when ready-->. You can also hide the **Preview** pane by
-   clicking the **Toggle file preview** icon above the **Folder Tree**.
-
-   <!--gif-->
-
-   Clicking a file or a folder opens its preview, double-clicking a file opens it in the platform, and double-clicking a
-   folder expands its content.
-
-   > Tip: Use built-in [smart search](../datagrok/smart-search.md) to find files and folders of interest quickly. You can
-   > type a word or part of a word to search for the following:
-   >
-   >* File and folder names
-   >* File extension
-   >* File and folder content metadata.<!--is this a complete list?-->
-
-Datagrok has multiple tools to help you find information you need precisely when you need it.
-
-* A [Treemap](../visualize/viewers/tree-map.md) helps you visually profile the content of your current folder and identify
-  the files that take up
-  the most space.
-  > Developers: You can [create custom folder viewers](../develop/how-to/folder-content-preview.md).
-  >
-  ><!--gif clinical data-->
-  >
-  >In the example above, a script is invoked against the folder content. If the folder contains files matching the file
-  > extension parameter, the **Preview** shows a custom widget (in this case - the application launch button) every time
-  > the folder is opened.
-
-* You can browse and preview the content of individual files in [30+ formats](supported-formats.md). What you see is
-  dynamically adjusted based on the file type. For example:
-
-  * You can view the content of ZIP files just like regular folders.
-  * View and edit Markdown for HTML files.
-  * View image data in cell output and as files preview.
-  * Scroll through an interactive spreadsheet for CSV files.
-  * Look at protein structure from multiple angles using a 3D protein browser.
-
-   <!--gif-->
-
-  > Developers: You can add custom formats via [package extensions](../develop/how-to/create-package.md).
-  > Note: File preview is limited to files less than 10MB in size. The platform won't display bigger files.
-  >
-  >You can't preview unsupported file formats, but you can download these files.
-
-* You can get on-demand information about folders and files, and data within these files:
-  * Hover over objects to see context-driven tooltips.
-
-  * Select an object and navigate to **Data Explorer** on the left to see all applicable [info
-    panels](../discover/info-panels.md) (for example, **Details** shows basic metadata about files and folders, **Stats**
-    shows summary column statistics for tabular datasets, and **Chem** lets you quickly find molecules of interest using
-    sketcher).
-  > Developers: You can augment file preview with custom metadata and [create organization-specific file
-  > viewers](../develop/how-to/create-custom-file-viewers.md).
-  >
-  > ![Cell image segmentation](Cell-image-segmentation.gif)
-  >
-  >In the example above, a Python script is invoked against the JPEG and JPG files, cells are automatically segmented in
-  > file preview, and the number of detected cell segments is displayed on the info panel.
-
-## Customizations
-
-Fundamentally, Datagrok is designed as an extensible environment. Datagrok extensions can customize or enhance any part
-of Datagrok. You can provide custom UI, file and folder viewers and editors, or [cell
-renderers](../develop/how-to/custom-cell-renderers.md) for rich preview. You can add new data types and extract
-organization-specific metadata. Extensions can add items to the menus and [context
-actions](../develop/how-to/context-actions.md), and so much more.
-
-To learn more about extensions, see [Extending and customizing Datagrok](../develop/packages/extensions.md).
-
-## Automation
-
-Any action performed in **File Manager** (other that uploading local files) is reproducable and can be used in
-automation workflows. For example, you can use data preparation pipeline to define jobs for data ingestion,
-postprocessing, and transformations.
-
-To learn more about automating workflows usung data preparation pipelines, see [Data preparation
-pipeline](data-pipeline.md)
+:::
 
 ## Resources
 
-<!--insert link to YouTube video-->
-
-See also:
-
-<!--* [Databases](link)-->
-
-<!--* [Web services](link)-->
-
-<!--*[Data explorer](link)-->
-
-<!--*[Indexing](link)-->
+[![Data Access - File Shares](file-manager-youtube.png)](https://www.youtube.com/watch?v=dKrCk38A1m8&t=417s)

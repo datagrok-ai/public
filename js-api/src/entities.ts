@@ -491,7 +491,7 @@ export class TableQueryBuilder {
 
 /** Represents a data job
  * @extends Func
- * {@link https://datagrok.ai/help/access/data-job}
+ * {@link https://datagrok.ai/help/access}
  * */
 export class DataJob extends Func {
   /** @constructs DataJob */

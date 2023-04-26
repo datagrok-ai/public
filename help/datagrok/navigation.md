@@ -245,7 +245,7 @@ part, so you can seamlessly have it both ways:
 use the console to examine which functions got triggered by particular UI events to reproduce those steps in the future,
 or call functions on your data directly from the console. The first case can be used
 in [data transformations](../transform/recipe-editor.md)
-and [data pipelines](../access/data-pipeline.md). The second use case is a common practice for debugging custom
+and data pipelines. The second use case is a common practice for debugging custom
 functions defined in a [package](../develop/develop.md#packages).
 
 ![Recording Macros](console-macros.gif "Console Macros")

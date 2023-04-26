@@ -1,5 +1,4 @@
 --name: EventsSources
---meta.cache: true
 --input: string date {pattern: datetime}
 --connection: System:Datagrok
 with res as (
@@ -31,7 +30,6 @@ GROUP BY res.source, time_start, time_end
 
 
 --name: UniqueErrors
---meta.cache: true
 --input: string date {pattern: datetime}
 --connection: System:Datagrok
 select et.friendly_name, et.id, count(*)

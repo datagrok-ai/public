@@ -31,4 +31,4 @@ export const viewerTypesMapping: {[key: string]: string} = {
   ['treemap']: DG.VIEWER.TREE_MAP,
   ['trellisplot']: DG.VIEWER.TRELLIS_PLOT,
   ['wordcloud']: DG.VIEWER.WORD_CLOUD,
-};
+} as const;

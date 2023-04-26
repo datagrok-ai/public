@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import {_package} from '../package';
+import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
 import '../../css/demo.css';
 
@@ -26,13 +27,13 @@ export class DemoView extends DG.ViewBase {
     this._initContent();
   }
 
-
   static findDemoFunc(demoPath: string) {
     return DG.Func.find({meta: {'demoPath': demoPath}})[0];
   }
 
   async startDemoFunc(func: DG.Func, viewPath: string) {
-    grok.shell.closeAll();
+    this._closeAll();
+
     ui.setUpdateIndicator(grok.shell.tv.root, true);
     grok.shell.windows.showHelp = true;
 
@@ -45,15 +46,35 @@ export class DemoView extends DG.ViewBase {
   }
 
 
+  private _closeAll() {
+    grok.shell.closeAll();
+    this._closeDemoScript();
+  }
+
+  private _closeDemoScript() {
+    const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[1];
+    if (scriptDockNode?.container.containerElement.classList.contains('tutorials-demo-script-container')) {
+      grok.shell.dockManager.close(scriptDockNode);
+    }
+  }
+
+  private _closeDockPanel() {
+    const panelDockNode = Array.from(grok.shell.dockManager.rootNode.children)[0];
+    if (panelDockNode?.container.containerElement.classList.contains('tutorials-demo-container')) {
+      grok.shell.dockManager.close(panelDockNode);
+    }
+  }
+
   private _initContent() {
     grok.shell.windows.showToolbox = false;
     grok.shell.windows.showHelp = false;
     grok.shell.windows.showProperties = false;
-
+    
     this.name = 'Demo app';
 
-    let root = ui.divV([]);
-
+    const tree = ui.tree();
+    tree.root.classList.add('demo-app-group-view');
+    
     const tempGroups:String[] = [];
 
     for (const f of DG.Func.find({meta: {'demoPath': null}})) {
@@ -63,14 +84,12 @@ export class DemoView extends DG.ViewBase {
     }
 
     const groups: String[] = [...new Set(tempGroups)];
-    
+
     for (let i=0; i<groups.length; i++){
       const name = groups[i] as string;
-      root.append(ui.div([ui.h1(name)], 'demo-app-group-title'));
-      root.append(this.groupRoot(name))
+      tree.group(name, null, true).root.lastChild?.appendChild(this.groupRoot(name));
     }
-
-    this.root.append(root);
+    this.root.append(ui.div([tree.root], 'grok-gallery-grid'));
   }
 
   groupRoot (groupName: string) {
@@ -125,7 +144,9 @@ export class DemoView extends DG.ViewBase {
     view.basePath = '/apps/Tutorials/Demo';
     view.path = `/${viewName}`;
 
-    const root = ui.div([], 'demo-app-group-view grok-gallery-grid');
+    const root = ui.div([], 'grok-gallery-grid');
+    const tree = ui.tree();
+    let treeNode = tree.group(viewName, null, true);
 
     for (const f of DG.Func.find({meta: {'demoPath': null}})) {
       if (f.options[DG.FUNC_OPTIONS.DEMO_PATH].includes(viewName)) {
@@ -161,12 +182,17 @@ export class DemoView extends DG.ViewBase {
 
         root.append(item);
       }
-
-      grok.shell.v.root.append(root);
     }
+    treeNode.root.lastChild?.appendChild(root);
+    tree.root.classList.add('demo-app-group-view');
+    grok.shell.v.root.append(ui.div([tree.root], 'grok-gallery-grid'));
   }
 
   private _initDockPanel() {
+    if (this._isDockPanelInit()) {
+      this._closeDockPanel();
+    }
+
     for (const f of DG.Func.find({meta: {'demoPath': null}})) {
       const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
       const path = pathOption.split('|').map((s) => s.trim());
@@ -207,7 +233,26 @@ export class DemoView extends DG.ViewBase {
       this.searchInput.fireChanged();
     };
 
+    let homeNode = ui.element('div');
+    homeNode.className = 'demo-app-tree-home-node d4-tree-view-node';
+    homeNode.append(ui.iconFA('home'));
+    homeNode.append(ui.div('Home', 'd4-tree-view-group-label'));
+
+    homeNode.onclick = () => {
+      this._initContent();
+    }
+
     DG.debounce(this.tree.onSelectedNodeChanged, 300).subscribe(async (value) => {
+      if (DemoScript.currentObject) {
+        DemoScript.currentObject.cancelScript();
+        const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[1];
+        if (scriptDockNode.container.containerElement.classList.contains('tutorials-demo-script-container')) {
+            grok.shell.dockManager.close(scriptDockNode);
+            grok.shell.closeAll();
+            grok.shell.addView(new DemoView());
+        }
+      }
+
       if (value.root.classList.contains('d4-tree-view-item')) {
         const categoryName = value.root.parentElement?.parentElement
           ?.getElementsByClassName('d4-tree-view-group-label')[0].innerHTML;
@@ -222,6 +267,8 @@ export class DemoView extends DG.ViewBase {
       }
     });
 
+    this.tree.root.prepend(homeNode);
+
     this.dockPanel = grok.shell.dockManager.dock(ui.panel([
       this.searchInput.root,
       this.tree.root,
@@ -232,16 +279,19 @@ export class DemoView extends DG.ViewBase {
 
     this._initWindowOptions();
 
-    // TODO: if loading ended in 0.1s, then no div, if not - then div - DG.debounce, merge etc.
     // TODO: on click on viewer demo set viewer help url in property panel (func helpUrl)
     // TODO: implement search in demo - search on meta.keywords, name, description
-    // TODO: add all the platform viewers to demo (make demo functions in Tutorials)
 
     // TODO: if there empty space - add viewer/filter/etc.
-    // TODO: write API for step control and example, steps are written in context panel - first priority
 
     // TODO: add to script demo class grok.shell.windows.showPropertyPanel = true and showHelp = false
     // TODO: add GIS
+    // TODO: add breadcrumbs instead of name
+  }
+
+  private _isDockPanelInit(): boolean {
+    const panelDockNode = Array.from(grok.shell.dockManager.rootNode.children)[0];
+    return panelDockNode?.container.containerElement.classList.contains('tutorials-demo-container');
   }
 
   private _initWindowOptions() {
@@ -249,5 +299,7 @@ export class DemoView extends DG.ViewBase {
     grok.shell.windows.showRibbon = true;
     grok.shell.windows.showHelp = true;
     grok.shell.windows.showProperties = false;
+
+    grok.shell.windows.help.syncCurrentObject = false;
   }
 }

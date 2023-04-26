@@ -1,5 +1,4 @@
 --name: EventByErrorMessageAndFriendlyName
---meta.cache: true
 --input: string errorMessage
 --input: string friendlyName
 --connection: System:Datagrok
@@ -10,7 +9,6 @@ and friendly_name = @friendlyName;
 
 
 --name: UpdateEventsIsErrorComment
---meta.cache: true
 --input: string errorMessage
 --input: string friendlyName
 --input: bool isError

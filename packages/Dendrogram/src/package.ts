@@ -220,12 +220,12 @@ export async function hierarchicalClustering(): Promise<void> {
 
   const availableColNames = (table:DG.DataFrame): string[] => {
     return table.columns.toList()
-    .filter(col => col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT || col.semType === 'Macromolecule')
-    .map(col => col.name);
+      .filter(col => col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT || col.semType === 'Macromolecule')
+      .map(col => col.name);
   }
 
   const onColNamesChange = (columns: DG.Column<any>[]) => {
-     currentSelectedColNames = columns.map(c => c.name)
+    currentSelectedColNames = columns.map(c => c.name)
   }
 
   const onTableInputChanged = (table: DG.DataFrame) => {
@@ -246,19 +246,18 @@ export async function hierarchicalClustering(): Promise<void> {
   const linkageInput = ui.choiceInput('Linkage', LinkageMethod.Ward, Object.values(LinkageMethod));
 
   const verticalDiv = ui.divV([
-      tableInput.root,
-      columnsInputDiv,
-      distanceInput.root,
-      linkageInput.root
-    ])
+    tableInput.root,
+    columnsInputDiv,
+    distanceInput.root,
+    linkageInput.root
+  ])
   const dialog = ui.dialog("Hierarchical Clustering")
-  .add(verticalDiv)
-  .show()
-  .onOK(async () => {
-    const pi = DG.TaskBarProgressIndicator.create('Creating dendrogram ...');
-    await hierarchicalClusteringUI(currentTableView!, currentSelectedColNames,
-      distanceInput.value!, linkageInput.value!);
-    pi.close();
-  });
-
+    .add(verticalDiv)
+    .show()
+    .onOK(async () => {
+      const pi = DG.TaskBarProgressIndicator.create('Creating dendrogram ...');
+      await hierarchicalClusteringUI(currentTableView!, currentSelectedColNames,
+        distanceInput.value!, linkageInput.value!);
+      pi.close();
+    });
 }

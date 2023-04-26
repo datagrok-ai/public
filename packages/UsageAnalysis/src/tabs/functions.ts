@@ -6,6 +6,7 @@ import '../../css/usage_analysis.css';
 import {UaToolbox} from '../ua-toolbox';
 import {UaView, Filter} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
+import {getTime} from "../utils";
 
 
 export class FunctionsView extends UaView {
@@ -15,11 +16,11 @@ export class FunctionsView extends UaView {
   }
 
   async initViewers(): Promise<void> {
-    const functionsViewer = new UaFilterableQueryViewer(
-      this.uaToolbox.filterStream,
-      'Functions',
-      'FunctionsUsage',
-      (t: DG.DataFrame) => {
+    const functionsViewer = new UaFilterableQueryViewer({
+      filterSubscription: this.uaToolbox.filterStream,
+      name: 'Functions',
+      queryName: 'FunctionsUsage',
+      viewerFunction: (t: DG.DataFrame) => {
         t.onSelectionChanged.subscribe(async () => {
           if (!t.selection.anyTrue) return;
           let df = t.clone(t.selection);
@@ -40,8 +41,8 @@ export class FunctionsView extends UaView {
           const users: string[] = df.getCol('uid').categories;
           const filter: Filter = {time_start: dateMin / 1000000, time_end: dateMax / 1000000,
             users: users, packages: packages, functions: functions};
-          cp.addPane('Time interval', () => ui.tableFromMap({'From': this.getTime(dateFrom),
-            'To': this.getTime(dateTo)}), true);
+          cp.addPane('Time interval', () => ui.tableFromMap({'From': getTime(dateFrom),
+            'To': getTime(dateTo)}), true);
           cp.addPane('Users', () => ui.divV(users.map((u) => ui.render(`#{x.${u}}`))), true);
           // cp.addPane('Packages', () => ui.divV(packages.map((p) => ui.render(`#{x.${p}}`))), true);
           this.getFunctionPane(cp, filter);
@@ -61,8 +62,8 @@ export class FunctionsView extends UaView {
           cp.addPane('Details', () => {
             return ui.tableFromMap({'User': ui.render(`#{x.${row.uid}}`),
               'Package': ui.render(`#{x.${row.pid}}`),
-              'From': this.getTime(new Date(row.time_start)),
-              'To': this.getTime(new Date(row.time_end))});
+              'From': getTime(new Date(row.time_start)),
+              'To': getTime(new Date(row.time_end))});
           }, true);
           this.getFunctionPane(cp, filter, true);
           grok.shell.o = cp.root;
@@ -81,7 +82,8 @@ export class FunctionsView extends UaView {
           showYSelector: false,
         });
         return viewer;
-      }, null, null);
+      }
+    });
 
     this.viewers.push(functionsViewer);
     this.root.append(functionsViewer.root);

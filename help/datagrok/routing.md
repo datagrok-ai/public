@@ -28,7 +28,7 @@ The platform has browsers for the following entities:
 | [Users](../govern/user.md)                     | [https://public.datagrok.ai/users](https://public.datagrok.ai/users)               |
 | [Groups](../govern/group.md)                   | [https://public.datagrok.ai/groups](https://public.datagrok.ai/groups)             |
 | [Connections](../access/data-connection.md)    | [https://public.datagrok.ai/connections](https://public.datagrok.ai/connections)   |
-| [Jobs](../access/data-job.md)                  | [https://public.datagrok.ai/jobs](https://public.datagrok.ai/jobs)                 |
+| [Jobs](../access/access.md)                  | [https://public.datagrok.ai/jobs](https://public.datagrok.ai/jobs)                 |
 | [Packages](../develop/develop.md)              | [https://public.datagrok.ai/packages](https://public.datagrok.ai/packages)         |
 | [Repositories](../develop/develop.md)          | [https://public.datagrok.ai/repositories](https://public.datagrok.ai/repositories) |
 | [Layouts](../visualize/view-layout.md)         | [https://public.datagrok.ai/view_layouts](https://public.datagrok.ai/view_layouts) |

@@ -9,6 +9,7 @@ const RUN_NAME_COL_LABEL = 'Run name' as const;
 const RUN_ID_COL_LABEL = 'RunId' as const;
 const CARD_VIEW_TYPE = 'JsCardView' as const;
 const SCRIPTS_VIEW_TYPE = 'scripts' as const;
+const FUNCTIONS_VIEW_TYPE = 'functions' as const;
 const VIEWER_PATH = 'viewer' as const;
 
 /**
@@ -27,6 +28,7 @@ export class RunComparisonView extends DG.TableView {
     options: {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
+      configFunc?: DG.Func,
     },
   ) {
     const getPropViewers = (prop: DG.Property): {name: string, config: Record<string, string | boolean>[]} => {
@@ -44,7 +46,8 @@ export class RunComparisonView extends DG.TableView {
         {name: prop.name, config: []};
     };
 
-    const configFunc = comparedRuns[0].func;
+    const configFunc = options.configFunc ?? comparedRuns[0].func;
+    console.log(configFunc);
 
     const allParamViewers = [
       ...configFunc.inputs,
@@ -112,11 +115,11 @@ export class RunComparisonView extends DG.TableView {
     ));
     comparisonDf.name = options.parentCall?.func.name ? `${options.parentCall?.func.name} - comparison` : `${comparedRuns[0].func.name} - comparison`;
 
-    configFunc.inputs.forEach((param) => addColumnsFromProp(param));
-    configFunc.outputs.forEach((param) => addColumnsFromProp(param));
+    configFunc.inputs.forEach((prop) => addColumnsFromProp(prop));
+    configFunc.outputs.forEach((prop) => addColumnsFromProp(prop));
 
     // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12878
-    const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE || view.type === SCRIPTS_VIEW_TYPE);
+    const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE || view.type === SCRIPTS_VIEW_TYPE || view.type === FUNCTIONS_VIEW_TYPE);
     if (cardView) grok.shell.v = cardView;
 
     // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12879

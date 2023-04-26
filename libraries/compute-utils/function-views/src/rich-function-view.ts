@@ -197,17 +197,17 @@ export class RichFunctionView extends FunctionView {
 
         viewers.then((loadedViewers) => {
           const subscribeOnFcChanges = () => {
-            const currentParam: DG.FuncCallParam = this.funcCall!.outputParams[dfProp.name] ?? this.funcCall!.inputParams[dfProp.name];
+            const currentParam: DG.FuncCallParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
             const paramSub = currentParam.onChanged.subscribe(() => {
-              loadedViewers.forEach(async (viewer) => {
+              loadedViewers.forEach(async (viewer, idx) => {
                 if (Object.values(viewerTypesMapping).includes(viewer.type))
                   viewer.dataFrame = currentParam.value;
                 else {
                   // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
                   const newViewer = await currentParam.value.plot.fromType(viewer.type) as DG.Viewer;
                   viewer.root.replaceWith(newViewer.root);
-                  viewer = newViewer;
+                  loadedViewers[idx] = newViewer;
                 }
                 this.afterOutputPropertyRender.next({prop: dfProp, output: viewer});
               });
@@ -324,12 +324,12 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async onAfterLoadRun(loadedRun: DG.FuncCall) {
-    wu(this.funcCall!.outputParams.values() as DG.FuncCallParam[]).forEach((out) => {
-      this.funcCall!.setParamValue(out.name, loadedRun.outputs[out.name]);
+    wu(this.funcCall.outputParams.values() as DG.FuncCallParam[]).forEach((out) => {
+      this.funcCall.setParamValue(out.name, loadedRun.outputs[out.name]);
     });
 
-    wu(this.funcCall!.inputParams.values() as DG.FuncCallParam[]).forEach((inp) => {
-      this.funcCall!.setParamValue(inp.name, loadedRun.inputs[inp.name]);
+    wu(this.funcCall.inputParams.values() as DG.FuncCallParam[]).forEach((inp) => {
+      this.funcCall.setParamValue(inp.name, loadedRun.inputs[inp.name]);
     });
 
     this.tabsElem.root.style.removeProperty('display');

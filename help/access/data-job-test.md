@@ -3,12 +3,12 @@
 
 # Tests: Data job
 
-[Data job](data-job.md) defines all actions that are needed to produce a dashboard. Each [data job](data-job.md)
+Data job defines all actions that are needed to produce a dashboard. Each data job
 consists of the following parts that are executed to produce a dataset.
 
 1. Open a "Create Data Job" dialog from context menu of "test" [data query](data-query.md).
 
-1. Name a new [job](data-job.md) "Test Data Job" and create them
+1. Name a new job "Test Data Job" and create them
 
 * New Data Job created with the name "Test Data Job"
 
@@ -42,7 +42,7 @@ consists of the following parts that are executed to produce a dataset.
 1. Open the "History" tab in [Context Panel](../datagrok/navigation.md#context-panel)
 
 * "History" tab is open
-* Display information about running of [jobs](data-job.md)
+* Display information about running of jobs
 * Here you can see the status and start time
 
 1. Open the "Statistics" tab in [Context Panel](../datagrok/navigation.md#context-panel)
@@ -65,4 +65,3 @@ See also:
 * [Data connections test](data-connection-test.md)
 * [Data query test](data-query-test.md)
 * [Data source test](data-source-test.md)
-* [Data job](data-job.md)

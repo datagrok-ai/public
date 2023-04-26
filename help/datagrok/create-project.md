@@ -21,5 +21,4 @@ See also:
 * [Project](project.md)
 * [Data connection](../access/data-connection.md)
 * [Data query](../access/data-query.md)
-* [Data job](../access/data-job.md)
 * [Function call](functions/function-call.md)
