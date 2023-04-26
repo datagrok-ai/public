@@ -1,6 +1,6 @@
 ---
 title: "Try Datagrok Locally"
-slug: https://datagrok.ai/help/develop/admin/docker-compose
+slug: /develop/admin/docker-compose
 ---
 
 This document contains instructions for running Datagrok on a machine
