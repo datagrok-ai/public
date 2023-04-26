@@ -1,10 +1,15 @@
 /// this file was generated automatically from ddt classes declarations
+import { toDart } from "../wrappers";
 let api = <any>window;
+
+export function histogram(col: any, bitset: any, flag: boolean, options?: {bins?: number, logScale?: boolean}): Int32List
+  { return api.grok_histogram(toDart(col), toDart(bitset), toDart(flag), toDart(options?.bins), toDart(options?.logScale)); }
 
 export class Tags {
   static Description = 'description';
 
-  static Author = 'author';
+  /// A user that created this entity
+  static CreatedBy = 'createdBy';
 
   static SemanticDetectionDuration = '.semantic-detection-duration';
 
@@ -179,5 +184,12 @@ export class Tags {
   static FriendlyName = 'friendlyName';
 
   static AllowRename = '.allow-rename';
+
+  /// Applies to columns or dataframes.
+  /// Comma-separated list of user or group names that are allowed to make changes to that column.
+  static EditableBy = 'editableBy';
+
+  /// Pin this column if you are specifically an editor (see "editable by").
+  static PinIfEditable = 'pinIfEditable';
 
 }

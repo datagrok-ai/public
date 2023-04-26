@@ -18,5 +18,5 @@ results in tabular form.
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Twitter](https://twitter.com/)

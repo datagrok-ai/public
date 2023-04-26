@@ -2,12 +2,7 @@
 title: "Molecular fingerprints"
 ---
 
-Fingerprints are a very abstract representation of certain structural features of a molecule.
-
-Similarity measures, calculations that quantify the similarity of two molecules, and screening, a way of rapidly
-eliminating molecules as candidates in a substructure search, are both processes that use fingerprints.
-
-## Available fingerprinters
+Datagrok supports calculation of the following fingerprinters:
 
 | Fingerprinter | Description |
 |--------|-------------|

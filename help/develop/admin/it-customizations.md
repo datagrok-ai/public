@@ -14,9 +14,9 @@ some of the features that can be controlled by the IT:
   * Role- and group-based privileges
   * Dataset sharing policies
 * [Audit](../../govern/audit.md)
-* Managing [network file shares](../../access/connect-a-file-share.md)
-* Managing [database connections](../../access/data-connection.md)
-  and [queries](../../access/data-query.md)
+* Managing [network file shares](../../access/file-shares.md)
+* Managing [database connections](../../access/access.md#data-connection)
+  and [queries](../../access/access.md#data-query)
 * Data Storage
   * AWS
   * GCP

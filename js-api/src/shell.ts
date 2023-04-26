@@ -285,9 +285,6 @@ export class Shell {
   }
 
   get startUri(): string { return api.grok_Get_StartUri(); }
-
-  /** Shows the content in the help window for the [x] URL or object. */
-  showHelp(x: any) { api.grok_ShowHelp(x); }
 }
 
 
@@ -301,6 +298,9 @@ export class ShellHelpPanel {
   /** Controls help panel visibility */
   get visible(): boolean { return grok.shell.windows.showHelp; }
   set visible(x: boolean) { grok.shell.windows.showHelp = x; }
+
+  /** Shows the content in the help window for the [x] URL or object. */
+  showHelp(x: any) { api.grok_ShowHelp(x); }
 }
 
 

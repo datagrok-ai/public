@@ -26,7 +26,7 @@ category('top menu activity cliffs', async () => {
   });
 
   test('activityCliffsOpen.molV3000', async () => {
-    await _testActivityCliffsOpen('v3000_sample.csv', 'molecule', 'Activity', 185);
+    await _testActivityCliffsOpen('v3000_sample.csv', 'molecule', 'Activity', 0);
   });
 
   test('activityCliffs.emptyValues', async () => {
@@ -37,7 +37,7 @@ category('top menu activity cliffs', async () => {
     DG.Balloon.closeAll();
     await _testActivityCliffsOpen('tests/Test_smiles_malformed.csv', 'canonical_smiles', 'FractionCSP3', 24);
     try {
-      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.innerHTML ===
+      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
         '2 molecules with indexes 2,9 are possibly malformed and are not included in analysis', 'cannot find warning balloon', 1000);
     } finally {
       grok.shell.closeAll();

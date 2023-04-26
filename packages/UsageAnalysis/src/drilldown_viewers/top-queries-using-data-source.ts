@@ -1,6 +1,6 @@
+/*
 import * as DG from 'datagrok-api/dg';
 import {UaQueryViewer} from '../viewers/abstract/ua-query-viewer';
-import {UaDataFrameQueryViewer} from '../viewers/ua-data-frame-query-viewer';
 import {UaFilter} from '../filter';
 import {BehaviorSubject} from 'rxjs';
 
@@ -16,3 +16,4 @@ export class TopQueriesUsingDataSource extends UaDataFrameQueryViewer {
     );
   }
 }
+*/

@@ -26,7 +26,7 @@ imported and appeared in the context panel. Alternatively we can go to `Web
 Services` and find the newly created connection there.
 
 Once expanded, we can see all the methods supported by the service. Each is a
-function just like a [query](https://datagrok.ai/help/access/data-query) or a
+function just like a [query](https://datagrok.ai/help/access/access#data-query) or a
 [script](https://datagrok.ai/help/compute/scripting). We can run it and the UI
 is formed automatically. Hint: it's possible to see the previous runs of the
 function using a `Watch` icon.

@@ -3,14 +3,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {viewerTypesMapping} from './shared/consts';
+import {CARD_VIEW_TYPE, FUNCTIONS_VIEW_TYPE, SCRIPTS_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from './shared/consts';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const RUN_ID_COL_LABEL = 'RunId' as const;
-const CARD_VIEW_TYPE = 'JsCardView' as const;
-const SCRIPTS_VIEW_TYPE = 'scripts' as const;
-const FUNCTIONS_VIEW_TYPE = 'functions' as const;
-const VIEWER_PATH = 'viewer' as const;
 
 /**
  * View designed to compare several FuncCalls.
@@ -28,6 +24,7 @@ export class RunComparisonView extends DG.TableView {
     options: {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
+      configFunc?: DG.Func,
     },
   ) {
     const getPropViewers = (prop: DG.Property): {name: string, config: Record<string, string | boolean>[]} => {
@@ -45,7 +42,7 @@ export class RunComparisonView extends DG.TableView {
         {name: prop.name, config: []};
     };
 
-    const configFunc = comparedRuns[0].func;
+    const configFunc = options.configFunc ?? comparedRuns[0].func;
 
     const allParamViewers = [
       ...configFunc.inputs,
@@ -113,8 +110,8 @@ export class RunComparisonView extends DG.TableView {
     ));
     comparisonDf.name = options.parentCall?.func.name ? `${options.parentCall?.func.name} - comparison` : `${comparedRuns[0].func.name} - comparison`;
 
-    configFunc.inputs.forEach((param) => addColumnsFromProp(param));
-    configFunc.outputs.forEach((param) => addColumnsFromProp(param));
+    configFunc.inputs.forEach((prop) => addColumnsFromProp(prop));
+    configFunc.outputs.forEach((prop) => addColumnsFromProp(prop));
 
     // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12878
     const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE || view.type === SCRIPTS_VIEW_TYPE || view.type === FUNCTIONS_VIEW_TYPE);
@@ -190,8 +187,13 @@ export class RunComparisonView extends DG.TableView {
               DG.Viewer.fromType(viewerType, initialValue) :
               await initialValue.plot.fromType(viewerType) as DG.Viewer;
 
-            viewer.setOptions(viewerConfig);
-            gc.tableColumn!.temp[VIEWER_PATH] = viewer.getOptions();
+            // Workaround required since getOptions and setOptions are not symmetrical
+            if (!gc.tableColumn!.temp[VIEWER_PATH]['look']) {
+              viewer.setOptions(viewerConfig);
+              gc.tableColumn!.temp[VIEWER_PATH] = viewer.getOptions();
+            } else
+              viewer.setOptions(gc.tableColumn!.temp[VIEWER_PATH]['look']);
+
             return viewer.root;
           });
 
@@ -218,6 +220,23 @@ export class RunComparisonView extends DG.TableView {
           for (let i = 1; i < column.length; i++) {
             const newRunDf = column.get(i).clone() as DG.DataFrame;
             newRunDf.columns.addNew(RUN_ID_COL_LABEL, DG.TYPE.STRING).init(column.dataFrame.get(RUN_NAME_COL_LABEL, i));
+
+            // If one of the columns is parsed as int, it could be converted into double for proper append
+            const convertibleTypes = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT] as DG.ColumnType[];
+            for (let j = 0; j < newRunDf.columns.length; j++) {
+              const newDfColumn = newRunDf.columns.byIndex(j);
+              const appendDfColumn = appendedDf.columns.byIndex(j);
+
+              if (
+                newDfColumn.type !== appendDfColumn.type &&
+                convertibleTypes.includes(newDfColumn.type) &&
+                convertibleTypes.includes(appendDfColumn.type)
+              ) {
+                if (newDfColumn.type !== DG.COLUMN_TYPE.FLOAT) newRunDf.columns.replace(newDfColumn, newDfColumn.convertTo(DG.COLUMN_TYPE.FLOAT));
+                if (appendDfColumn.type !== DG.COLUMN_TYPE.FLOAT) appendedDf.columns.replace(appendDfColumn, appendDfColumn.convertTo(DG.COLUMN_TYPE.FLOAT));
+              }
+            }
+
             appendedDf.append(newRunDf, true);
           }
 

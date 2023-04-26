@@ -77,5 +77,5 @@ queries via a JDBC driver.
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Snowflake](https://www.snowflake.com/)

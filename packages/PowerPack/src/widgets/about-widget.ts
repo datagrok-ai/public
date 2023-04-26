@@ -118,7 +118,7 @@ var introDev = `
 Think about Datagrok as an OS for data. Just like the way Linux enables application developers to be productive
 by handling low-level stuff and introducing high-level concepts like processes, pipes, and files, Datagrok
 does the same for data. By leveraging our proprietary high-performance [data engine](/help/develop/performance), we provide
-efficient solutions for [data connectivity](/help/access/db-exploration), [visualization](/help/visualize/viewers), 
+efficient solutions for [data connectivity](/help/access/databases#database-manager), [visualization](/help/visualize/viewers), 
 [scientific computations](/help/compute/scripting), and
 [predictive modeling](/help/learn/predictive-modeling). \n
 Extend the platform by [writing functions](/help/compute/scripting) in SQL, R, Python, or Julia. 

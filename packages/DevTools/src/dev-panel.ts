@@ -63,7 +63,8 @@ function formSnippetSection(snippets: DG.Script[], count: number = 3): HTMLDivEl
 function getViewerScript(viewer: DG.Viewer): string {
   const options = viewer.getOptions(false)['look'];
   delete options['#type'];
-  const script = `grok.shell.v.addViewer(DG.VIEWER.${viewerConst[viewer.type]}, ${JSON.stringify(options, null, 2)});`;
+  const type = viewerConst[viewer.type];
+  const script = `grok.shell.v.addViewer(${type ? `DG.VIEWER.${type}` : `'${viewer.type}'`}, ${JSON.stringify(options, null, 2)});`;
   return `<pre><code>${script}</code></pre>`;
 }
 

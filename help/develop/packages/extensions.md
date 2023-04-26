@@ -34,7 +34,7 @@ With using our [JavaScript API](../js-api.md), you can create your own:
   a [context menu](https://public.datagrok.ai/js/samples/events/viewer-events) of a viewer
 * [info panels](../how-to/add-info-panel.md), to augment data with additional information retrieved or calculated
   on-the-fly
-* [connections](../../access/data-connection.md), to add new public or in-house data sources, such
+* [connections](../../access/access.md#data-connection), to add new public or in-house data sources, such
   as [Chembl](https://www.ebi.ac.uk/chembl/) or [ENA](https://www.ebi.ac.uk/ena/browser/),
   custom [filters](https://github.com/datagrok-ai/public/blob/master/packages/Widgets/src/filters/radio-button-filter.ts)
   , which allow adding a filtering mask to an active dataset; in addition, viewers themselves may act as filters, and

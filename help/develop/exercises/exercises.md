@@ -529,7 +529,7 @@ from our server.
     ```
 
     There is another way to pass a country name to the query: you can provide a default value for the input parameter
-    (see examples in the article [Parameterized Queries](../../access/parameterized-queries)).
+    (see examples in the article [Parameterized Queries](../../access/databases.md#parameterized-queries)).
 
 ## Exercise 4: Creating a scripting viewer
 

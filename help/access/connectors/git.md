@@ -17,6 +17,6 @@ Provides access to [Git](https://git-scm.com/) repository as [file share](files.
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Git](https://git-scm.com/)
 * [Files](files.md)

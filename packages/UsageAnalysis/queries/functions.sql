@@ -2,7 +2,6 @@
 --input: string date {pattern: datetime}
 --input: list groups
 --input: list packages
---meta.cache: true
 --connection: System:Datagrok
 with recursive selected_groups as (
   select id from groups
@@ -55,7 +54,6 @@ res.uid, res.ugid, res.pid
 --input: string users
 --input: string packages
 --input: string functions
---meta.cache: true
 --connection: System:Datagrok
 select e.friendly_name as run, et.name as function,
 pp.package_id as pid, e.event_time as time, e.id as rid,

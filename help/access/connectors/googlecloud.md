@@ -17,6 +17,6 @@ Provides access to [Google Cloud](https://cloud.google.com/) service as [file sh
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Google Cloud](https://cloud.google.com/)
 * [Files](files.md)

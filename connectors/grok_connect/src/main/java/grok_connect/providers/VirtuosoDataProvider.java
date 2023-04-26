@@ -1,17 +1,10 @@
 package grok_connect.providers;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
-import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Property;
 import grok_connect.utils.ProviderManager;
 import serialization.Types;
@@ -29,17 +22,23 @@ public class VirtuosoDataProvider extends JdbcDataProvider {
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.canBrowseSchema = true;
         descriptor.typesMap = new HashMap<String, String>() {{
-            put("#.*char.*", Types.STRING);
+            put("long varchar", Types.OBJECT);
+            put("long nvarchar", Types.OBJECT);
+            put("varchar", Types.STRING);
+            put("nvarchar", Types.STRING);
             put("date", Types.DATE_TIME);
-            put("#timestamp.*", Types.DATE_TIME);
-            put("#time.*", Types.DATE_TIME);
-            put("#interval.*", Types.STRING);
-            put("int", Types.BIG_INT);
-            put("#numeric.*", Types.FLOAT);
-            put("float", Types.FLOAT);
-            put("#geometry.*", Types.OBJECT);
-            put("#geography.*", Types.OBJECT);
-            put("uuid", Types.STRING);
+            put("datetime", Types.DATE_TIME);
+            put("timestamp", Types.DATE_TIME);
+            put("time", Types.DATE_TIME);
+            put("integer", Types.INT);
+            put("bigint", Types.BIG_INT);
+            put("decimal", Types.FLOAT);
+            put("real", Types.FLOAT);
+            put("double precision", Types.FLOAT);
+            put("xmltype", Types.OBJECT);
+            put("any", Types.OBJECT);
+            put("#.*binary", Types.BLOB);
+            put("iri_id", Types.OBJECT);
         }};
     }
 
@@ -82,12 +81,11 @@ public class VirtuosoDataProvider extends JdbcDataProvider {
 
     @Override
     protected boolean isBigInt(int type, String typeName, int precision, int scale) {
-        return type == java.sql.Types.OTHER && precision == 19 && scale == 0;
+        return type == java.sql.Types.OTHER && precision >= 19 && scale == 0;
     }
 
     @Override
-    public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException, GrokConnectException {
-        prepareProvider();
-        return DriverManager.getConnection(getConnectionString(conn), getProperties(conn));
+    protected String getRegexQuery(String columnName, String regexExpression) {
+        return String.format("(RDF_REGEX(%s, '%s') = 1)", columnName, regexExpression);
     }
 }

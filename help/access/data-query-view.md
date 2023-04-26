@@ -2,7 +2,7 @@
 title: "Query View"
 ---
 
-An integrated environment for working with [data queries](data-query.md).
+An integrated environment for working with [data queries](access.md#data-query).
 
 To run query, press F5. Results will appear at the bottom of the screen. Switch to the "
 Transformations" tab to add post-processing steps if needed.
@@ -24,9 +24,7 @@ below:
 
 See also:
 
-* [Data pipeline](data-pipeline.md)
-* [Data connection](data-connection.md)
-* [Data query](data-query.md)
-* [Data job](data-job.md)
+* [Data connection](access.md#data-connection)
+* [Data query](access.md#data-query)
 * [Function call](../datagrok/functions/function-call.md)
 * [Recipe Editor](../transform/recipe-editor.md)

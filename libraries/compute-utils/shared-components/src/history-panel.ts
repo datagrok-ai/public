@@ -7,7 +7,6 @@ import wu from 'wu';
 import {BehaviorSubject, Subject} from 'rxjs';
 import {historyUtils} from '../../history-utils';
 import '../css/history-panel.css';
-import {RunComparisonView} from '../../function-views';
 
 export const defaultUsersIds = {
   'Test': 'ca1e672e-e3be-40e0-b79b-d2c68e68d380',
@@ -91,11 +90,13 @@ class HistoryPanelStore {
 const MY_PANE_LABEL = 'HISTORY' as const;
 const FAVORITES_LABEL = 'FAVORITES' as const;
 const SHARED_LABEL = 'SHARED' as const;
-const CARD_VIEW_TYPE = 'JsCardView' as const;
 
 export class HistoryPanel {
   // Emitted when FuncCall should is chosen. Contains FuncCall ID
   public onRunChosen = new Subject<string>();
+
+  // Emitted when FuncCalls are called for comparison. Contains FuncCalls' IDs
+  public onComparison = new Subject<string[]>();
 
   // Emitted when FuncCall is added to favorites
   public beforeRunAddToFavorites = new Subject<DG.FuncCall>();
@@ -156,31 +157,21 @@ export class HistoryPanel {
   favoriteCards = [] as HTMLElement[];
   sharedCards = [] as HTMLElement[];
 
-  async compareRuns() {
-    const fullFuncCalls = await Promise.all(wu(this.selectedCallsSet.keys()).map((selected) => historyUtils.loadRun(selected.id)));
-    const parentCall = grok.shell.v.parentCall;
-
-    const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
-    const v = await RunComparisonView.fromComparedRuns(fullFuncCalls, {
-      parentView: cardView,
-      parentCall,
-    });
-    grok.shell.addView(v);
-  }
-
   buildActionsSection() {
     return ui.divH([
       ui.span([`Selected: ${this.selectedCallsSet.size}`], {style: {'align-self': 'center'}}),
       ui.divH([
         (() => {
-          const t = ui.iconFA('exchange', () => this.compareRuns());
+          const t = ui.iconFA('exchange', async () => {
+            this.onComparison.next([...wu(this.selectedCallsSet.keys()).map((selected) => selected.id)]);
+          }, 'Compare selected runs');
           t.style.margin = '5px';
           if (this.selectedCallsSet.size < 2)
             t.classList.add('hp-disabled');
           return t;
         })(),
         (() => {
-          const t = ui.iconFA('trash-alt', () => this.showDeleteRunDialog(this.selectedCallsSet));
+          const t = ui.iconFA('trash-alt', () => this.showDeleteRunDialog(this.selectedCallsSet), 'Delete selected runs');
           t.style.margin = '5px';
           if (this.selectedCallsSet.size === 0)
             t.classList.add('hp-disabled');
@@ -203,7 +194,7 @@ export class HistoryPanel {
               break;
             }
             this.updateActionsSection();
-          }); t.style.margin = '5px'; return t;
+          }, 'Select all'); t.style.margin = '5px'; return t;
         })()]: [
           (() => {
             let fullListCount = 0;
@@ -219,9 +210,8 @@ export class HistoryPanel {
               break;
             }
 
-            const t = this.selectedCallsSet.size === fullListCount? ui.iconFA('check-square') : ui.iconFA('minus-square');
-
-            t.addEventListener('click', () => {
+            const iconType = this.selectedCallsSet.size === fullListCount? 'check-square': 'minus-square';
+            const t = ui.iconFA(iconType, () => {
               switch (this.tabs.currentPane.name) {
               case MY_PANE_LABEL:
                 this.store.myRuns.forEach((run) => this.selectedCallsSet.delete(run));
@@ -237,7 +227,8 @@ export class HistoryPanel {
                 break;
               }
               this.updateActionsSection();
-            });
+            }, 'Unselect all');
+
             t.style.margin = '5px';
             return t;
           })(),
