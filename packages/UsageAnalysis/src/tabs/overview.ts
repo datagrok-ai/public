@@ -1,4 +1,4 @@
-// import * as grok from 'datagrok-api/grok';
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -7,7 +7,7 @@ import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {PackagesView} from './packages';
-import {UaFilter} from "../filter";
+import {UaFilter} from '../filter';
 
 export class OverviewView extends UaView {
   expanded: {[key: string]: boolean} = {f: true, l: true};
@@ -72,7 +72,7 @@ export class OverviewView extends UaView {
       name: 'PackageStats',
       getDataFrame: () => df,
       viewerFunction: (t: DG.DataFrame) => {
-        let viewer = DG.Viewer.barChart(t, {
+        const viewer = DG.Viewer.barChart(t, {
           'valueColumnName': 'user',
           'valueAggrType': 'unique',
           'barSortType': 'by value',
@@ -89,7 +89,6 @@ export class OverviewView extends UaView {
         });
         let skipEvent: boolean = false;
         viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
-
           skipEvent = true;
           packagesSelection.init((i) => t.get('package', i) == args.args.categories[0]);
           userStatsViewer.viewer!.props.title = getUsersViewerName(args.args.categories[0]);
@@ -108,10 +107,13 @@ export class OverviewView extends UaView {
             packagesSelection.setAll(true);
             userStatsViewer.viewer!.props.rowSource = 'All';
             userStatsViewer.viewer!.props.title = getUsersViewerName();
-          } else {
+          } else if (packageStatsViewer.viewer!.props.rowSource != 'All') {
             usersSelection.setAll(true);
             packageStatsViewer.viewer!.props.rowSource = 'All';
             packageStatsViewer.viewer!.props.title = getPackagesViewerName();
+          } else {
+            skipEvent = false;
+            return viewer;
           }
           t.filter.copyFrom(usersSelection).and(packagesSelection);
           t.selection.copyFrom(t.filter);
@@ -145,7 +147,6 @@ export class OverviewView extends UaView {
         });
         let skipEvent: boolean = false;
         viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
-
           skipEvent = true;
           usersSelection.init((i) => t.get('user', i) == args.args.categories[0]);
           packageStatsViewer.viewer!.props.title = getPackagesViewerName(args.args.categories[0]);
@@ -164,10 +165,13 @@ export class OverviewView extends UaView {
             usersSelection.setAll(true);
             packageStatsViewer.viewer!.props.rowSource = 'All';
             packageStatsViewer.viewer!.props.title = getPackagesViewerName();
-          } else {
+          } else if (userStatsViewer.viewer!.props.rowSource != 'All') {
             packagesSelection.setAll(true);
             userStatsViewer.viewer!.props.rowSource = 'All';
             userStatsViewer.viewer!.props.title = getUsersViewerName();
+          } else {
+            skipEvent = false;
+            return viewer;
           }
           t.filter.copyFrom(usersSelection).and(packagesSelection);
           t.selection.copyFrom(t.filter);

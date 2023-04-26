@@ -24,7 +24,7 @@ Now we are ready to create a data query. To do that, choose **Add Query** from t
 editors are specific to data sources. For instance, for relational databases you would need to enter a SQL query, for
 linked data that would be a SPARQL query, and for Twitter it would be something completely different. Try running the
 query before saving it to make sure it works as intended. It is also possible to create
-[queries that accept parameters](../access/databases.md#parameterized-queries), which will be either explicitly
+[queries that accept parameters](../access/databases.mdx#parameterized-queries), which will be either explicitly
 provided by user, or provided by the parent data job. To browse all queries, open `Admin | Data Queries`.
 
 To run a query, double-click on it, or select **Run** from the context menu. To see information associated with the

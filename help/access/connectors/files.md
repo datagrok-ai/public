@@ -25,5 +25,5 @@ indexed and can be browsed.
 
 See also:
 
-* [File shares](../file-shares.md)
+* [File shares](../file-shares.mdx)
 * [Data connection](../access.md#data-connection)

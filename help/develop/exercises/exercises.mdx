@@ -55,7 +55,7 @@ predictive models, integration with the external utilities, data augmentation, a
 *Useful links:*
 
 * [Datagrok tools](https://www.npmjs.com/package/datagrok-tools)
-* [Naming conventions](https://datagrok.ai/help/develop/develop#naming-conventions)
+* [Naming conventions](../develop.md#naming-conventions)
 
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following
    [these instructions](../set-up-environment.md)
@@ -64,7 +64,7 @@ predictive models, integration with the external utilities, data augmentation, a
 3. Get a dev key for [Dev Server](https://dev.datagrok.ai) (you will work with this server) and add it by
    running `grok config`. Open [https://dev.datagrok.ai/u](https://dev.datagrok.ai/u), click on `Developer key`, copy
    the `grok` command and execute it to add the key to your config
-4. Create a default package in your branch [called](https://datagrok.ai/help/develop/develop#naming-conventions)
+4. Create a default package in your branch [called](../develop.md#naming-conventions)
    `<yourFirstName>-sequence` using datagrok-tools:
    `grok create <yourFirstName>-sequence` with specifying the `--ts` option to create a package with TypeScript
    configuration
@@ -79,7 +79,7 @@ predictive models, integration with the external utilities, data augmentation, a
 * via the [Functions](https://dev.datagrok.ai/functions?q=info) view
 * via the [Packages](https://dev.datagrok.ai/packages?) menu (find your package, click on it and run `info()`
   from the `Functions` pane in the context panel on the left)
-* via the [console](../../datagrok/navigation.md#console): press `~` key anywhere inside Datagrok, the Console will
+* via the [console](../../datagrok/navigation#console): press `~` key anywhere inside Datagrok, the Console will
   appear to the right; execute `<loginName>Sequence:info()` there. The identifier used as package name (before ':') will
   be obtained by transformation kebab style of folder name to camel style, or can be specified directly with
   attribute `friendlyName` in `package.json` file.
@@ -140,7 +140,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    met, it should return `"dna_nucleotide"` string.
 
    For best performance, don't iterate over all column values, instead
-   iterate [on `column.categories`](https://datagrok.ai/help/develop/advanced/data-frame#work-with-categories)
+   iterate [on `column.categories`](../advanced/data-frame.md#work-with-categories)
    . Full Datagrok Column type API could be found [here](https://datagrok.ai/js-api/classes/dg.Column).
 
 4. Upload your package to `dev.datagrok.ai` using `grok publish dev`
@@ -167,7 +167,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    panel on the right.
 7. Now let’s put the result of the previously created `complement` function into an [info panel](../how-to/add-info-panel.md):
    Create function `complementWidget` and add special comments block to allow Datagrok system recognise it and upload
-   properly (see an example [here][014]).
+   properly (see an example [here](../how-to/add-info-panel.md#functions)).
 
    ```javascript
     //name: complementWidget
@@ -190,7 +190,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 
 *Prerequisites:* basic Python knowledge.
 
-*Details:* [Scripting](../../compute/scripting), [Dev Meeting 1 | First-class functions][015]
+*Details:* [Scripting](../../compute/scripting.md), [Dev Meeting 1 | First-class functions][015]
 
 *You will learn:* how to create and invoke Datagrok scripts in data science languages like R and Python.
 
@@ -227,7 +227,7 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
 
 6. Run the script function, provide input values in the dialog and get to the console to see the result. Now run the
    script function again through the console completely, passing different arguments values:
-   ```<yourLogin>:CountSubsequencePython('ATGATC', 'A')```. You can find your login inside the profile page between name
+   `<yourLogin>:CountSubsequencePython('ATGATC', 'A')`. You can find your login inside the profile page between name
    and email (under avatar), or in the profile URL:
    `https://dev.datagrok.ai/u/<yourLogin>/summary`.
 7. Let's apply `CountSubsequencePython` to the input dataframe using Datagrok UI. Open a table — say, let's go
@@ -329,12 +329,12 @@ repeat what we've achieved in the last point of the previous exercise, now with 
 
 1. Go to `Functions | Scripts` and hit `New JavaScript Script`.
 2. Implement the function `CountSubsequenceJS` in JavaScript, which does the same as
-   [`CountSubsequencePython`]. Follow the same conventions on the parameters in the comments block and returning a
+   [`CountSubsequencePython`](#scripting-with-server-functions). Follow the same conventions on the parameters in the comments block and returning a
    result via a variable.
 3. Run `CountSubsequenceJS` using the `Play` button; using the console. From same console, run `CountSubsequencePython`
    yet again. You can notice that both Python and JS versions of our function, implemented as scripts, are homogeneous
    functions in Datagrok. It's also possible to call them in a uniform
-   fashion [using our JavaScript API](../../compute/scripting#running-a-script).
+   fashion [using our JavaScript API](../../compute/scripting.md#running-a-script).
 4. Don't forget to save these two scripts. We would re-use parts of them in the following exercises.
 
 The difference between the two scripts is that the first, `CountSubsequencePython`, runs on our server by
@@ -529,7 +529,7 @@ from our server.
     ```
 
     There is another way to pass a country name to the query: you can provide a default value for the input parameter
-    (see examples in the article [Parameterized Queries](../../access/databases.md#parameterized-queries)).
+    (see examples in the article [Parameterized Queries](../../access/databases#parameterized-queries)).
 
 ## Exercise 4: Creating a scripting viewer
 
@@ -695,9 +695,9 @@ First, let's explore how scripting viewer works.
 
 ## Exercise 7: Accessing web services with OpenAPI
 
-*Details:* [OpenAPI access](../../access/open-api)
+*Details:* [OpenAPI access](../../access/open-api.md)
 
-Web services often provide their API specs in an [OpenAPI (Swagger)](../../access/open-api) format in a JSON or a
+Web services often provide their API specs in an [OpenAPI (Swagger)](../../access/open-api.md) format in a JSON or a
 yaml file. Because OpenAPI spec file is standardized, the API may now be directly loaded and later queried. Datagrok
 provides for connecting to API data sources and fetching API querying results as dataframes. In this lesson we will
 connect to the [European Nucleotide Archive (ENA)](https://www.ebi.ac.uk/ena/) and fetch some nucleotide data regarding
@@ -880,11 +880,7 @@ Saving the search parameters
 A simple keyword search in the ENA database (with navigation)
 --->
 
-[014]: ../how-to/add-info-panel#functions "How to add an info panel"
-
 [015]: https://youtu.be/p7_qOU_IzLM?t=724 "Dev Meeting 1: Getting Started – First-class functions"
-
-[`CountSubsequencePython`]: #scripting-with-server-functions "Scripting with server functions"
 
 [016]: https://matplotlib.org/api/_as_gen/matplotlib.pyplot.hist.html "Matplotlib Histogram"
 
