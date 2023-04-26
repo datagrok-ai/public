@@ -110,7 +110,7 @@ section by the following code
         target: /home/grok/datagrok/html.build/web/js/api
 ```
 
-3.Restart docker containers as it is described in local Docker [instructions](https://datagrok.ai/help/develop/admin/deploy/docker-compose)
+3.Restart docker containers as it is described in local Docker [instructions](https://datagrok.ai/help/develop/admin/docker-compose)
 4.Clear browser cache, refresh browser page.
 
 ## Package injection

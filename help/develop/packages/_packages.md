@@ -307,7 +307,7 @@ Your package might contain the following additional folders, depending on your n
 
 [debug]: ./_debugging.md
 
-[deployment with Docker Compose section]: https://datagrok.ai/help/develop/admin/deploy/docker-compose
+[deployment with Docker Compose section]: https://datagrok.ai/help/develop/admin/docker-compose
 
 [development servers]: https://dev.datagrok.ai/u
 
