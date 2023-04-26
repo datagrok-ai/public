@@ -84,7 +84,7 @@ export class DemoView extends DG.ViewBase {
       tempGroups.push(path[0]);
     }
 
-    const groups: String[] = [...new Set(tempGroups)];
+    const groups: String[] = [...new Set(tempGroups)].sort();
 
     for (let i=0; i<groups.length; i++){
       const name = groups[i] as string;
@@ -96,7 +96,7 @@ export class DemoView extends DG.ViewBase {
   groupRoot (groupName: string) {
     const root = ui.div([], 'demo-app-group-view grok-gallery-grid');
 
-    for (const f of DG.Func.find({meta: {'demoPath': null}})) {
+    for (const f of DG.Func.find({meta: {'demoPath': null}}).sort(_sortFunctionsByDemoPathName)) {
       if (f.options[DG.FUNC_OPTIONS.DEMO_PATH].includes(groupName)) {
         const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
         const path = pathOption.split('|').map((s) => s.trim());
@@ -149,7 +149,7 @@ export class DemoView extends DG.ViewBase {
     const tree = ui.tree();
     let treeNode = tree.group(viewName, null, true);
 
-    for (const f of DG.Func.find({meta: {'demoPath': null}})) {
+    for (const f of DG.Func.find({meta: {'demoPath': null}}).sort(_sortFunctionsByDemoPathName)) {
       if (f.options[DG.FUNC_OPTIONS.DEMO_PATH].includes(viewName)) {
         const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
         const path = pathOption.split('|').map((s) => s.trim());
@@ -199,7 +199,7 @@ export class DemoView extends DG.ViewBase {
     homeNode.root.getElementsByClassName('d4-tree-view-node')[0]?.prepend(ui.iconFA('home'));
     homeNode.root.getElementsByClassName('d4-tree-view-tri')[0].remove();
 
-    for (const f of DG.Func.find({meta: {'demoPath': null}})) {
+    for (const f of DG.Func.find({meta: {'demoPath': null}}).sort(_sortFunctionsByDemoPathName)) {
       const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
       const path = pathOption.split('|').map((s) => s.trim());
       const folder = this.tree.getOrCreateGroup(path.slice(0, path.length - 1).join(' | '));
@@ -309,4 +309,15 @@ export class DemoView extends DG.ViewBase {
 
     grok.shell.windows.help.syncCurrentObject = false;
   }
+}
+
+function _sortFunctionsByDemoPathName(func1: DG.Func, func2: DG.Func): number {
+  const func1Name = _getFunctionDemoPathName(func1);
+  const func2Name = _getFunctionDemoPathName(func2);
+  return (func1Name > func2Name) ? 1 : (func2Name > func1Name) ? -1 : 0;
+}
+
+function _getFunctionDemoPathName(func: DG.Func): string {
+  const demoPath: string = func.options[DG.FUNC_OPTIONS.DEMO_PATH].split('|');
+  return demoPath[demoPath.length - 1].trim();
 }
