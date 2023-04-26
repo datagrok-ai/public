@@ -221,8 +221,11 @@ export class DemoView extends DG.ViewBase {
 
       for (let i = 0; i < dom.length; i++) {
         const item = dom[i] as HTMLElement;
-        if (item.innerText.toLowerCase().includes(this.searchInput.value.toLowerCase()))
+        if (item.innerText.toLowerCase().includes(this.searchInput.value.toLowerCase())) {
           item.classList.remove('hidden');
+          if (item.classList.contains('d4-tree-view-item'))
+            item.parentElement?.previousElementSibling?.classList.remove('hidden');
+        }
         else
           item.classList.add('hidden');
       }
