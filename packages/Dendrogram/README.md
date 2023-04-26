@@ -70,10 +70,6 @@ You will generate two files, ```wasmCluster.js``` and ```wasmCluster.wasm```. In
 
 1. Move the ```wasmCluster.js``` and ```wasmCluster.wasm``` to ```src/wasm``` directory.
 
-2. Create a copy of ```wasmCluster.js``` and call it ```wasmClusterForWorker.js```
-
-3. Open ```wasmClusterForWorker.js``` and before the second line ```var exportCppLib = (() => {``` add ```export```
-
-4. Find two occurances of ```fetch(binaryFile,{credentials:"same-origin"})``` and swap them with ```fetch(new URL('../../dist/wasmCluster.wasm', import.meta.url))```
+2. Open ```wasmCluster.js``` and before the second line ```var exportCppLib = (() => {``` add ```export```
 
 Done.
