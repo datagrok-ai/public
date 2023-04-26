@@ -159,7 +159,7 @@ In this example, a [script](/develop/how-to/custom-cell-renderers.md) is execute
 
 :::
 
-The [Context Panel](../datagrok/navigation.md#properties) provides additional information about a selected file or folder, and the ability to execute conext actions. For example, when you click a CSV file, the **Context Panel** updates to show the file's metadata, available context actions, and other relevant information. If you subsequently click any of the dataframe's columns in the **Preview**, the **Context Panel** will update to display information and actions specific to that column, such as summary statistics for the column under **Stats**, or its data and semantic types under **Details**.
+The [Context Panel](../datagrok/navigation.md#context-panel) provides additional information about a selected file or folder, and the ability to execute conext actions. For example, when you click a CSV file, the **Context Panel** updates to show the file's metadata, available context actions, and other relevant information. If you subsequently click any of the dataframe's columns in the **Preview**, the **Context Panel** will update to display information and actions specific to that column, such as summary statistics for the column under **Stats**, or its data and semantic types under **Details**.
 
 ![Details on demand](file-manager-details.gif)
 

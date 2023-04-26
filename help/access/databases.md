@@ -47,7 +47,7 @@ Some connection parameters have unique characteristics, and it's important to sp
   * Manually. When entered manually, Datagrok stores secrets in
    a [secure privilege management system](../govern/security.md/#credentials). To specify who can change the connection credentials, click the **Gear** icon and select from the **Credential owner** dropdown.
 
-  * Use the [Secrets Manager](data-connection-credentials.md/#secrets-managers), such as the AWS Secrets Manager.
+  * Use the [Secrets Manager](data-connection-credentials.md#secrets-managers), such as the AWS Secrets Manager.
 
 Upon successful connection, the database appears in the [Database Manager](https://public.datagrok.ai/connect) under the respective data source. By expanding the database, you can view its saved queries. [If connectors support it](supported-connectors.md), you can also inspect the schemas, tables, and columns of relational databases.
 

@@ -239,7 +239,7 @@ When you import the Swagger file, the following connection and queries appear in
 
 ![AirNow connection](../uploads/features/open-api-airnow-connection.png "AirNow")
 
-The queries are now standard [Datagrok queries](access.md/#data-query), with all platform features available. For example, you can run queries using a convenient [UI for entering parameters](databases.md/#running-queries) or edit queries with [built-in editors](databases.md/#querying-data). Data governance and automation capabilities also apply.
+The queries are now standard [Datagrok queries](access.md/#data-query), with all platform features available. For example, you can run queries using a convenient [UI for entering parameters](databases.md/#running-queries) or edit queries with [built-in editors](databases.md#working-with-queries). Data governance and automation capabilities also apply.
 
 Whenever you click a connection or query in the **Webservices Manager**, the [**Context Panel**](../datagrok/navigation.md#context-panel) to the right displays the object's properties and context actions. For example, when you click a query, the **Context Panel** lets you view the query's details, run, edit, or share it, and access other relevant information and options:
 
@@ -249,7 +249,7 @@ Running a query opens it in Datagrok as an [interactive grid](visualize/viewers/
 
 ![AirNow results](../uploads/features/open-api-airnow-results.png "AirNow")
 
-You can now explore the query results further, create [query views and dynamic dashboards](databases.md/#creating-views-for-query-results) and [share them with others](databases.md/#sharing-query-results).
+You can now explore the query results further, create [query views and dynamic dashboards](databases.md#creating-dynamic-dashboards-for-query-results) and [share them with others](databases.md/#sharing-query-results).
 
 :::tip
 
