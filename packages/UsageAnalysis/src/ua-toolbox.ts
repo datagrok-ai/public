@@ -113,7 +113,7 @@ export class UaToolbox {
   exitDrilldown() {
     this.formDD.style.display = 'none';
     this.clearFormDD();
-    this.drilldown?.getScatterPlot().reloadViewer();
+    this.drilldown?.viewers.forEach((v) => v.reloadViewer());
     this.drilldown = null;
     this.filters.root.style.display = 'flex';
   }

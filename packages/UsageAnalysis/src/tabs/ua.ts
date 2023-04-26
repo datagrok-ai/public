@@ -35,7 +35,7 @@ export class UaView extends DG.ViewBase {
   }
 
   getScatterPlot(): UaQueryViewer {
-    return this.viewers[0];
+    return this.viewers.find((v) => v.viewer?.type === 'Scatter plot') as UaQueryViewer;
   }
 
   async initViewers(): Promise<void> {}

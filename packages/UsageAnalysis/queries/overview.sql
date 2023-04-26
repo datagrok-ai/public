@@ -22,11 +22,11 @@ t1 AS (
   FROM res
 ),
 t2 AS (
-  SELECT case when inter >= INTERVAL '6 month' then 864000
-  when inter >= INTERVAL '70 day' then 432000
-	when inter >= INTERVAL '10 day' then 86400
-	when inter >= INTERVAL '2 day' then 21600
-	when inter >= INTERVAL '3 hour' then 3600
+  SELECT case when inter >= INTERVAL '6 month' then 604800
+  when inter >= INTERVAL '70 day' then 172800
+	when inter >= INTERVAL '10 day' then 43200
+	when inter >= INTERVAL '2 day' then 14400
+	when inter >= INTERVAL '3 hour' then 1800
 	else 600 end as trunc
 from t1
 )

@@ -6,7 +6,7 @@ import '../../css/usage_analysis.css';
 import {UaToolbox} from '../ua-toolbox';
 import {UaView, Filter} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
-import {getTime} from "../utils";
+import {getTime} from '../utils';
 
 
 export class FunctionsView extends UaView {
@@ -80,9 +80,10 @@ export class FunctionsView extends UaView {
           showSizeSelector: false,
           showXSelector: false,
           showYSelector: false,
+          invertYAxis: true,
         });
         return viewer;
-      }
+      },
     });
 
     this.viewers.push(functionsViewer);
