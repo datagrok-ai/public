@@ -138,8 +138,8 @@ async function getUint8ArrayFingerprints(
       return fgsCheck;
     else {
       await _invalidate(molCol, createMols);
-      const fingerprints = createMols ? await (await getRdKitService()).getFingerprints(fingerprintsType) :
-        await (await getRdKitService()).getFingerprintsWithMolsOnFly(fingerprintsType, molCol.toList());
+      const molecules = createMols ? undefined : molCol.toList();
+      const fingerprints = await (await getRdKitService()).getFingerprints(fingerprintsType, molecules);
       saveFingerprintsToCol(molCol, fingerprints, fingerprintsType);
       chemEndCriticalSection();
       return fingerprints;

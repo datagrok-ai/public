@@ -3,6 +3,11 @@ import { defaultMorganFpLength, defaultMorganFpRadius, Fingerprint } from '../ut
 import { RDModule } from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import { getMolSafe } from '../utils/mol-creation_rdkit';
 
+export interface IFingerprint {
+  data: Uint8Array;
+  length: number;
+}
+
 export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
   readonly _fpLength: number = defaultMorganFpLength;
   readonly _fpRadius: number = defaultMorganFpRadius;
@@ -11,98 +16,62 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
     super(module, webRoot);
   }
 
-  getFingerprints(fingerprintType: Fingerprint) {
-    if (this._rdKitMols === null)
+  getFingerprints(fingerprintType: Fingerprint, dict?: string[]): IFingerprint[] {
+    console.log(`************* dict is not null: ${dict != null}`);
+    if (this._rdKitMols === null && !dict)
       return [];
 
-    const fps: (Uint8Array | null)[] = [];
-    try {
-      switch (fingerprintType) {
-        case Fingerprint.Pattern:
-          for (let i = 0; i < this._rdKitMols.length; ++i) {
+    const fpLength = dict ? dict.length : this._rdKitMols!.length;
+    const fps = new Array<Uint8Array | null>(fpLength).fill(null);
+    for (let i = 0; i < fpLength; ++i) {
+      let mol;
+      if (dict) {
+        const item = dict[i];
+        if (!item || item === '') {
+          fps[i] = new Uint8Array();
+          continue;
+        }
+        mol = getMolSafe(item, {}, this._rdKitModule);
+      }
+      const rdMol = dict ? mol?.mol : this._rdKitMols![i];
+      const isQMol = dict ? mol?.isQMol : this._rdKitMols![i]?.is_qmol;
+      try {
+        switch (fingerprintType) {
+          case Fingerprint.Pattern:
             try {
-              if (!this._rdKitMols[i])
-                fps.push(null);
-              else
-                fps.push(this._rdKitMols[i]!.get_pattern_fp_as_uint8array());
+              if (rdMol)
+                fps[i] = rdMol.get_pattern_fp_as_uint8array();
             } catch {
-              fps.push(null);
-              continue;
+              //do nothing, fp is already null
             }
-          }
-          break;
-        case Fingerprint.Morgan:
-          for (let i = 0; i < this._rdKitMols.length; ++i) {
+            break;
+          case Fingerprint.Morgan:
             try {
-              if (!this._rdKitMols[i] || this._rdKitMols[i] && this._rdKitMols[i]?.is_qmol)
-                fps.push(null);
-              else
-                fps.push(this._rdKitMols[i]!.get_morgan_fp_as_uint8array(JSON.stringify({
+              if (rdMol && !isQMol)
+                fps[i] = rdMol.get_morgan_fp_as_uint8array(JSON.stringify({
                   radius: this._fpRadius,
                   nBits: this._fpLength,
-                })));
+                }));
             } catch (error) {
-              fps.push(null);
-              continue;
+              //do nothing, fp is already null
             }
-          }
-          break;
-        default:
-          throw Error('Unknown fingerprint type: ' + fingerprintType);
-      }
-    } catch (e) {
-      // nothing to do, bit is already 0
-    }
-    return fps!.map((el: any) => {
-      return { data: el, length: el ? el.length : 0 };
-    });
-  }
-
-
-  getFingerprintsWithMolsOnFly(dict: string[], fingerprintType: Fingerprint) {
-    const fps: (Uint8Array | null)[] = [];
-    for (let i = 0; i < dict.length; ++i) {
-      const item = dict[i];
-      let mol;
-      if (!item || item === '')
-        fps.push(new Uint8Array());
-      else {
-        const molSafe = getMolSafe(item, {}, this._rdKitModule);
-        mol = molSafe.mol;
-        if (mol === null) {
-          fps.push(null);
-        } else {
-          switch (fingerprintType) {
-            case Fingerprint.Pattern:
-              try {
-                fps.push(mol!.get_pattern_fp_as_uint8array());
-              } catch {
-                fps.push(null);
-              }
-              break;
-            case Fingerprint.Morgan:
-              try {
-                if (mol.is_qmol)
-                  fps.push(null);
-                else
-                  fps.push(mol.get_morgan_fp_as_uint8array(JSON.stringify({
-                    radius: this._fpRadius,
-                    nBits: this._fpLength,
-                  })));
-              } catch (error) {
-                fps.push(null);
-              }
-              break;
-            default:
-              mol.delete();
-              throw Error('Unknown fingerprint type: ' + fingerprintType);
-          }
-          mol.delete();
+            break;
+          default:
+            if (dict)
+              mol?.mol?.delete();
+            throw Error('Unknown fingerprint type: ' + fingerprintType);
         }
+      } catch {
+        // nothing to do, fp is already null
+      }
+      if (dict) {
+        console.log(`deleting mol`);
+        mol?.mol?.delete();
       }
     }
     return fps!.map((el: any) => {
       return { data: el, length: el ? el.length : 0 };
     });
   }
+
 }

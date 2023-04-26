@@ -15,7 +15,7 @@ import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import Sketcher = DG.chem.Sketcher;
 import {activityCliffsIdx, CLIFFS_DF_NAME, getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {IUMAPOptions, ITSNEOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {IUMAPOptions, ITSNEOptions, UMAP} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
@@ -486,8 +486,8 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     return;
   }
 
-  const allowedRowCount = methodName === 'UMAP' ? 100000 : 10000;
-  const fastRowCount = methodName === 'UMAP' ? 5000 : 2000;
+  const allowedRowCount = methodName === UMAP ? 100000 : 10000;
+  const fastRowCount = methodName === UMAP ? 5000 : 2000;
 
   if (table.rowCount > allowedRowCount) {
     grok.shell.warning(`Dataset is too large. Please use dataset with less than ${allowedRowCount} rows`);
@@ -507,9 +507,9 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     const chemSpaceRes = await chemSpace(chemSpaceParams);
     const embeddings = chemSpaceRes.coordinates;
   
-    for (const col of embeddings) {
+    for (const col of embeddings)
       table.columns.add(col);
-    }
+
     if (plotEmbeddings)
       return grok.shell
         .tableView(table.name)
@@ -683,7 +683,7 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
   }
 
   const allowedRowCount = 10000;
-  const fastRowCount = methodName === 'UMAP' ? 5000 : 2000;
+  const fastRowCount = methodName === UMAP ? 5000 : 2000;
   if (df.rowCount > allowedRowCount) {
     grok.shell.warning(`Dataset is too large. Please use dataset with less than ${allowedRowCount} rows`);
     return;

@@ -40,7 +40,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
   initMoleculesStructures(dict: string[]) : void {
     this.freeMoleculesStructures();
-    this._rdKitMols = [];
+    this._rdKitMols = new Array<RDMol | null>(dict.length).fill(null);
     let logged = false;
     for (let i = 0; i < dict.length; ++i) {
       const item = dict[i];
@@ -58,7 +58,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         } else
           mol.is_qmol = molSafe.isQMol;
       }
-      this._rdKitMols.push(mol);
+      if (mol)
+        this._rdKitMols[i] = mol;
     }
   }
 

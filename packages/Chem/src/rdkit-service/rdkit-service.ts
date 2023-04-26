@@ -84,27 +84,22 @@ export class RdKitService {
       });
   }
 
-  async getFingerprints(fingerprintType: Fingerprint): Promise<Uint8Array[]> {
+  
+  async getFingerprints(fingerprintType: Fingerprint, dict?: string[]): Promise<Uint8Array[]> {
     const t = this;
-    return (await this._doParallel(
-      (i: number, _: number) => {
-        return t.parallelWorkers[i].getFingerprints(fingerprintType);
-      },
-      (data: any) => {
-        return [].concat(...data);
-      })).map(
-      (obj: any) =>
-      // We deliberately choose Uint32Array over DG.BitSet here
-        obj.data);
-  }
-
-  async getFingerprintsWithMolsOnFly(fingerprintType: Fingerprint, dict: string[]): Promise<Uint8Array[]> {
-    const t = this;
-    const res = await this._initParallelWorkers(dict, (i: number, segment: any) =>
-      t.parallelWorkers[i].getFingerprintsWithMolsOnFly(segment, fingerprintType),
-    (data: any) => {
-      return [].concat(...data);
-    });
+    const res = dict ?
+      await this._initParallelWorkers(dict, (i: number, segment: any) =>
+        t.parallelWorkers[i].getFingerprints(fingerprintType, segment),
+        (data: any) => {
+          return [].concat(...data);
+        }) :
+      await this._doParallel(
+        (i: number, _: number) => {
+          return t.parallelWorkers[i].getFingerprints(fingerprintType, dict);
+        },
+        (data: any) => {
+          return [].concat(...data);
+        });
     return res.map(
       (obj: any) =>
         obj.data);

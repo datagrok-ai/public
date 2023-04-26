@@ -4,5 +4,4 @@ export enum WORKER_CALL {
   GET_FINGERPRINTS = 'getFingerprints',
   SEARCH_SUBSTRUCTURE = 'searchSubstructure',
   CONVERT_MOL_NOTATION = 'convertMolNotation',
-  GET_FINGERPRINTS_MOLS_ON_FLY = 'getFingerprintsWithMolsOnFly',
 }
