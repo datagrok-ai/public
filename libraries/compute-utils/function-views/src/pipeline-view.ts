@@ -144,8 +144,17 @@ export class PipelineView extends ComputationView {
     const childFuncCalls = await Promise.all(
       funcCallIds.map((funcCallId) => historyUtils.loadChildRuns(funcCallId)),
     );
+
+    // Main child function should habe `meta.isMain: true` tag or the last function is used
     const fullMainChildFuncCalls = await Promise.all(childFuncCalls
-      .map((res) => res.childRuns.find((childRun) => childRun.func.options['isMain'] === 'true')!)
+      .map(
+        (res) => res.childRuns.find(
+          (childRun) => childRun.func.options['isMain'] === 'true',
+        ) ??
+        res.childRuns.find(
+          (childRun) => childRun.func.nqName === this.stepsConfig[this.stepsConfig.length - 1].funcName,
+        )!,
+      )
       .map((mainChildRun) => historyUtils.loadRun(mainChildRun.id)));
 
     const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
