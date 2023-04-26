@@ -47,7 +47,7 @@ export function getChemPropertyFunc(name: string) : null | ((smiles: string) => 
   return null;
 }
 
-export function getMoleculeCharge(mol: OCL.Molecule) {
+export function getMoleculeCharge(mol: OCL.Molecule): number {
   const atomsNumber = mol.getAllAtoms();
   let moleculeCharge = 0;
   for (let atomIndx = 0; atomIndx <= atomsNumber; ++atomIndx) {
@@ -107,11 +107,7 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
 
   host.appendChild(ui.tableFromMap(map));
 
-  let tableString = '';
-  for (const [key, value] of Object.entries(map))
-    tableString += `${key}\t${(value as any).innerText}\n`;
-
-  addCopyIcon(tableString, 'Properties');
+  addCopyIcon(map, 'Properties');
 
   return new DG.Widget(host);
 }
