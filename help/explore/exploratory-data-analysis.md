@@ -28,7 +28,7 @@ _billions of rows_ at the speed of thought right in your browser.
 
 With Datagrok, you can:
 
-* [Seamlessly load data from any data source](../access/file-shares.md). Datagrok supports all popular databases,
+* [Seamlessly load data from any data source](../access/file-shares.mdx). Datagrok supports all popular databases,
   multiple [file formats](../access/supported-formats.md) and is both data-agnostic and
   domain-intelligent. <!--TODO link to a section on domains once ready-->
 
