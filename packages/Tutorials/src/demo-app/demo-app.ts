@@ -7,7 +7,6 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
 import '../../css/demo.css';
 
-
 type Direction = {
   category: string,
   name: string,
@@ -69,6 +68,8 @@ export class DemoView extends DG.ViewBase {
     grok.shell.windows.showToolbox = false;
     grok.shell.windows.showHelp = false;
     grok.shell.windows.showProperties = false;
+
+    this.root.innerHTML = '';
     
     this.name = 'Demo app';
 
@@ -132,7 +133,7 @@ export class DemoView extends DG.ViewBase {
     }
     return root
   }
-
+  
   nodeView(viewName: string) {
     grok.shell.windows.showToolbox = false;
     grok.shell.windows.showHelp = false;
@@ -199,6 +200,11 @@ export class DemoView extends DG.ViewBase {
       const folder = this.tree.getOrCreateGroup(path.slice(0, path.length - 1).join(' | '));
       const item = folder.item(path[path.length - 1]);
 
+      if (folder.text === 'Viewers')
+        folder.root.style.order = '10'
+      else  
+        folder.root.style.order = '1';
+
       item.root.onmouseover = (event) => {
         const packageMessage = `Part of the ${f.package.name} package`;
         ui.tooltip.show(f.description ? ui.divV([f.description, ui.element('br'), packageMessage]) : ui.div(packageMessage),
@@ -233,14 +239,10 @@ export class DemoView extends DG.ViewBase {
       this.searchInput.fireChanged();
     };
 
-    let homeNode = ui.element('div');
-    homeNode.className = 'demo-app-tree-home-node d4-tree-view-node';
-    homeNode.append(ui.iconFA('home'));
-    homeNode.append(ui.div('Home', 'd4-tree-view-group-label'));
-
-    homeNode.onclick = () => {
-      this._initContent();
-    }
+    let homeNode = this.tree.group('Home');
+    homeNode.root.classList.add('demo-app-tree-home-node');
+    homeNode.root.getElementsByClassName('d4-tree-view-node')[0]?.prepend(ui.iconFA('home'));
+    homeNode.root.getElementsByClassName('d4-tree-view-tri')[0].remove();
 
     DG.debounce(this.tree.onSelectedNodeChanged, 300).subscribe(async (value) => {
       if (DemoScript.currentObject) {
@@ -261,13 +263,20 @@ export class DemoView extends DG.ViewBase {
         const demoPath = `${categoryName}/${viewerName}`;
         await this.startDemoFunc(demoFunc, demoPath);
         this.tree.root.focus();
+      } else if (value.root.classList.contains('demo-app-tree-home-node')) { 
+        this._initContent();
+        grok.shell.windows.showToolbox = false;
+        grok.shell.windows.showHelp = false;
+        grok.shell.windows.showProperties = false;
+        grok.shell.closeAll();
+        const view = grok.shell.addView(this);
+        view.basePath = '/apps/Tutorials/Demo';
+        view.path = `/`;
       } else {
         this.tree.root.focus();
         this.nodeView(value.text);
       }
     });
-
-    this.tree.root.prepend(homeNode);
 
     this.dockPanel = grok.shell.dockManager.dock(ui.panel([
       this.searchInput.root,
