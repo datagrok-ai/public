@@ -344,7 +344,7 @@ export class Project extends Entity {
 
 /** Represents a data query
  * @extends Func
- * {@link https://datagrok.ai/help/access/data-query}
+ * {@link https://datagrok.ai/help/access/access#data-query}
  * */
 export class DataQuery extends Func {
   /** @constructs DataQuery*/
@@ -502,7 +502,7 @@ export class DataJob extends Func {
 
 /** Represents a data connection
  * @extends Entity
- * {@link https://datagrok.ai/help/access/data-connection}
+ * {@link https://datagrok.ai/help/access/access#data-connection}
  * */
 export class DataConnection extends Entity {
   parameters: any;

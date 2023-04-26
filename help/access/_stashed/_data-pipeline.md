@@ -10,11 +10,11 @@ ability to cancel running jobs.
 
 ## Concepts
 
-Datagrok offers [30+ connectors](data-connection.md#connectors) to different data sources. They include all popular
+Datagrok offers [30+ connectors](../supported-connectors.md) to different data sources. They include all popular
 databases, as well as other queryable data sources, such as Twitter or Facebook. To view a list of data sources
 currently available to you, run **File | Connect to Data...**.
 
-Before querying data, a [connection](data-connection.md) has to be created. To do that, right-click on a connection and
+Before querying data, a [connection](../access.md#data-connection) has to be created. To do that, right-click on a connection and
 choose **Add connection**. At this step, you should provide connection parameters. Fields are specific to the data
 source, typically you would need to specify server's address and login credentials. Keep in mind that the credentials
 are stored on the server in a secure way, and can be shared with others using our privilege management system. To see
@@ -24,7 +24,7 @@ Now we are ready to create a data query. To do that, choose **Add Query** from t
 editors are specific to data sources. For instance, for relational databases you would need to enter a SQL query, for
 linked data that would be a SPARQL query, and for Twitter it would be something completely different. Try running the
 query before saving it to make sure it works as intended. It is also possible to create
-[queries that accept parameters](../access/data-query.md#parameterized-queries), which will be either explicitly
+[queries that accept parameters](../access/databases.md#parameterized-queries), which will be either explicitly
 provided by user, or provided by the parent data job. To browse all queries, open `Admin | Data Queries`.
 
 To run a query, double-click on it, or select **Run** from the context menu. To see information associated with the
@@ -51,10 +51,10 @@ access control mechanism that lets us define people (or groups of people)
 that are allowed to execute actions against different entities, based on the entity attributes. For instance, it is
 possible to define a group of people who would be able to open dashboards, but would not have access to the underlying
 connection. See
-[Access Control](data-connection.md#access-control) for details.
+[Access Control](../access.md#sharing-and-access-control) for details.
 
 See also:
 
-* [Data connection](data-connection.md)
-* [Data query](data-query.md)
+* [Data connection](../access.md#data-connection)
+* [Data query](access.md#data-query)
 * [Function call](../datagrok/functions/function-call.md)

@@ -6,7 +6,7 @@ It contains various examples of [Grok API](https://datagrok.ai/help/develop/js-a
 Here are the directories of particular interest:
 
 * [data-access](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/data-access)
-  : directory with [data access](https://datagrok.ai/help/access/data-connection) examples
+  : directory with [data access](https://datagrok.ai/help/access/access#data-connection) examples
 * [data-frame](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/data-access)
   : directory with [table (data frame)](https://datagrok.ai/help/datagrok/table) manipulations
 * [domains](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/domains)

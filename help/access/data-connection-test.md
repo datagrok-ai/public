@@ -3,7 +3,7 @@
 
 # Tests: Data connection
 
-[Data connection](data-connection.md) defines a way to connect to a particular data source.
+[Data connection](access.md#data-connection) defines a way to connect to a particular data source.
 
 ## Testing scenarios
 
@@ -146,7 +146,7 @@
 * The correct information for all fields is displayed (Description, Server, Database, Created by, Created, Updated,
   Tags)
 
-1. Open a list of [Queries](data-query.md) on [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open a list of [Queries](access.md#data-query) on [Context Panel](../datagrok/navigation.md#context-panel)
 
 * "noethwind" connection queries are displayed
 
@@ -155,7 +155,7 @@
 
 * Projects that include "northwind" connection are displayed
 
-1. Delete all test [connections](data-connection.md) created in previous steps from their context menu
+1. Delete all test [connections](access.md#data-connection) created in previous steps from their context menu
 
 * When deleting connection, confirmation occurs in "Are you sure?" dialog
 * Deleted connections are no longer displayed in browser and on [Context Panel](../datagrok/navigation.md#context-panel)
@@ -169,4 +169,4 @@ See also:
 * [Data source test](data-source-test.md)
 * [Data job test](data-job-test.md)
 * [Data queries test](data-query-test.md)
-* [Data connection](data-connection.md)
+* [Data connection](access.md#data-connection)

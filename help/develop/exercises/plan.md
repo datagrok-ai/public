@@ -20,12 +20,12 @@ perspective.
 
 1. Register on [public.datagrok.ai](https://public.datagrok.ai) and [dev.datagrok.ai](https://dev.datagrok.ai)
 1. Now let's import data into the platform:
-   1. [Local files](../../access/import-text.md). Download a
+   1. [Local files](../../access/file-shares.md#importing-text). Download a
       [dataset](https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ApiTests/files/datasets/demog.csv)
       and import it into the platform using different approaches: drag-and-drop, double-click the "Data" icon on the
       sidebar, select "Data > Open local file", press `Ctrl+O`, and so on.
    1. [File shares](../../access/file-shares). Add the dataset to your *Home* directory.
-   1. [Databases](../../access/db-exploration).
+   1. [Databases](../../access/databases.md#database-manager).
       1. Watch a [DB exploration video](https://www.youtube.com/watch?v=YJmSvh3_uCM).
       1. Follow the [Data connectors](https://dev.datagrok.ai/apps/tutorials/DataAccess/DataConnectors) tutorial to
          connect to a Postgres DB and run a query.

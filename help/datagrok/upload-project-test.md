@@ -4,8 +4,8 @@
 # Tests: Upload project
 
 A [project](project.md) is a collection of different objects that you want to use together.
-[Project](project.md) can contain [tables](table.md), [queries](../access/data-query.md),
-[connections](../access/data-connection.md), data jobs,
+[Project](project.md) can contain [tables](table.md), [queries](../access/access.md#data-query),
+[connections](../access/access.md#data-connection), data jobs,
 [Jupyter notebooks](../compute/jupyter-notebook.md)
 , [predictive models](../learn/predictive-modeling.md), and other.
 
@@ -30,8 +30,8 @@ A [project](project.md) is a collection of different objects that you want to us
 1. Enter the name and description for new [project](project.md). (for example, name="test"). Add connection, query and
    data job to project.
 
-* Name and description have been changed successfully. [query](../access/data-query.md),
-  [connections](../access/data-connection.md) and data jobs added.
+* Name and description have been changed successfully. [query](../access/access.md#data-query),
+  [connections](../access/access.md#data-connection) and data jobs added.
 
 1. Click on "Ok" button of "Publish project" dialog
 

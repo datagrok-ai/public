@@ -26,8 +26,7 @@ Note that for equality comparisons, the $where clause can be replaced with using
 
 See also:
 
-* [Data query](data-query.md)
+* [Data query](access.md#data-query)
 * [Queries using SODA](https://dev.socrata.com/docs/queries)
-* [Data connection](data-connection.md)
-* [Data query](data-query.md)
+* [Data connection](access.md#data-connection)
 * [Function call](../datagrok/functions/function-call.md)

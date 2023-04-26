@@ -2,7 +2,7 @@
 title: "Neo4j"
 ---
 
-This is a [connector](../data-connection.md#connectors) that provides access to the [Neo4j](https://neo4j.com/) graph
+This is a [connector](../supported-connectors.md) that provides access to the [Neo4j](https://neo4j.com/) graph
 database via JDBC driver. Allows to query Neo4j using [Cypher](https://neo4j.com/developer/cypher-query-language)
 language, and use results in dashboards, data augmentation panels, or via the [JS API](../../develop/js-api.md).
 
@@ -70,5 +70,5 @@ language, and use results in dashboards, data augmentation panels, or via the [J
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Neo4j](https://neo4j.com/)

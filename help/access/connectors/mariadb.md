@@ -74,5 +74,5 @@ via JDBC driver.
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [MariaDB](https://mariadb.org/)

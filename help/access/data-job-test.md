@@ -6,7 +6,7 @@
 Data job defines all actions that are needed to produce a dashboard. Each data job
 consists of the following parts that are executed to produce a dataset.
 
-1. Open a "Create Data Job" dialog from context menu of "test" [data query](data-query.md).
+1. Open a "Create Data Job" dialog from context menu of "test" [data query](access.md#data-query).
 
 1. Name a new job "Test Data Job" and create them
 
@@ -37,7 +37,7 @@ consists of the following parts that are executed to produce a dataset.
 1. Open the "Run" tab in [Context Panel](../datagrok/navigation.md#context-panel)
 
 * "Run" tab is open
-* You can select [query](data-query.md) parameters here, run Data Job and see the parameters history
+* You can select [query](access.md#data-query) parameters here, run Data Job and see the parameters history
 
 1. Open the "History" tab in [Context Panel](../datagrok/navigation.md#context-panel)
 

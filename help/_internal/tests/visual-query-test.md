@@ -28,7 +28,7 @@ Visual Query allows you to get table with aggregated values by columns from DB t
 
 * Table with result of aggregations from "Visual Query" is added to [workspace](../../datagrok/workspace.md)
 
-1. Return to view with [Source Tree](../../access/data-source.md)
+1. Return to view with [Source Tree](../../access/access.md#data-sources)
 
 1. Click on "Get All" from context menu of **products** DB table
 
@@ -47,7 +47,7 @@ Visual Query allows you to get table with aggregated values by columns from DB t
 
 1. Click on "Add result to workspace" from dialog menu (v)
 
-* Result table of query from [Query Builder](../../access/query-builder.md) has been added to workspace
+* Result table of query from [Query Builder](../../access/databases.md#join-tables) has been added to workspace
 
 1. Click on "Get All" from context menu of **employees** DB table
 
@@ -59,5 +59,5 @@ Visual Query allows you to get table with aggregated values by columns from DB t
 See also:
 
 * [Data Sourse Test](../../access/data-source-test.md)
-* [Data Query](../../access/data-query.md)
+* [Data Query](../../access/access.md#data-query)
 * [Build Query Test](../tests/build-query-test.md)

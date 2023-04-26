@@ -69,5 +69,5 @@ SQL queries via JDBC driver.
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Vertica](https://www.vertica.com/overview/)
