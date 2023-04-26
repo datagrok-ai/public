@@ -9,6 +9,8 @@ import {FunctionView} from './function-view';
 import {ComputationView} from './computation-view';
 import {historyUtils} from '../../history-utils';
 import '../css/pipeline-view.css';
+import {RunComparisonView} from './run-comparison-view';
+import {CARD_VIEW_TYPE} from './shared/consts';
 
 export class PipelineView extends ComputationView {
   public steps = {} as {[scriptNqName: string]: { editor: string, view: FunctionView }};
@@ -136,6 +138,24 @@ export class PipelineView extends ComputationView {
     await this.onFuncCallReady();
   }
 
+  public override async onComparisonLaunch(funcCallIds: string[]) {
+    const parentCall = grok.shell.v.parentCall;
+
+    const childFuncCalls = await Promise.all(
+      funcCallIds.map((funcCallId) => historyUtils.loadChildRuns(funcCallId)),
+    );
+    const fullMainChildFuncCalls = await Promise.all(childFuncCalls
+      .map((res) => res.childRuns.find((childRun) => childRun.func.options['isMain'] === 'true')!)
+      .map((mainChildRun) => historyUtils.loadRun(mainChildRun.id)));
+
+    const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
+    const v = await RunComparisonView.fromComparedRuns(fullMainChildFuncCalls, {
+      parentView: cardView,
+      parentCall,
+    });
+    grok.shell.addView(v);
+  }
+
   protected async onBeforeStepFuncCallApply(nqName: string, scriptCall: DG.FuncCall, editorFunc: DG.Func) {
   }
 
@@ -182,7 +202,8 @@ export class PipelineView extends ComputationView {
       .map(async (step) => {
         const scriptCall = step.view.funcCall;
 
-        scriptCall.options['parentCallId'] = this.funcCall!.id;
+        scriptCall.options['parentCallId'] = this.funcCall.id;
+        scriptCall.newId();
 
         this.steps[scriptCall.func.nqName].view.lastCall =
           await this.steps[scriptCall.func.nqName].view.saveRun(scriptCall);
