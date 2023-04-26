@@ -7,7 +7,6 @@ import wu from 'wu';
 import {BehaviorSubject, Subject} from 'rxjs';
 import {historyUtils} from '../../history-utils';
 import '../css/history-panel.css';
-import {RunComparisonView} from '../../function-views';
 
 export const defaultUsersIds = {
   'Test': 'ca1e672e-e3be-40e0-b79b-d2c68e68d380',
@@ -91,11 +90,13 @@ class HistoryPanelStore {
 const MY_PANE_LABEL = 'HISTORY' as const;
 const FAVORITES_LABEL = 'FAVORITES' as const;
 const SHARED_LABEL = 'SHARED' as const;
-const CARD_VIEW_TYPE = 'JsCardView' as const;
 
 export class HistoryPanel {
   // Emitted when FuncCall should is chosen. Contains FuncCall ID
   public onRunChosen = new Subject<string>();
+
+  // Emitted when FuncCalls are called for comparison. Contains FuncCalls' IDs
+  public onComparison = new Subject<string[]>();
 
   // Emitted when FuncCall is added to favorites
   public beforeRunAddToFavorites = new Subject<DG.FuncCall>();
@@ -156,25 +157,14 @@ export class HistoryPanel {
   favoriteCards = [] as HTMLElement[];
   sharedCards = [] as HTMLElement[];
 
-  async compareRuns() {
-    const fullFuncCalls = await Promise.all(wu(this.selectedCallsSet.keys()).map((selected) => historyUtils.loadRun(selected.id)));
-    const parentCall = grok.shell.v.parentCall;
-
-    const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
-    const v = await RunComparisonView.fromComparedRuns(fullFuncCalls, {
-      parentView: cardView,
-      parentCall,
-      configFunc: this.func,
-    });
-    grok.shell.addView(v);
-  }
-
   buildActionsSection() {
     return ui.divH([
       ui.span([`Selected: ${this.selectedCallsSet.size}`], {style: {'align-self': 'center'}}),
       ui.divH([
         (() => {
-          const t = ui.iconFA('exchange', () => this.compareRuns(), 'Compare selected runs');
+          const t = ui.iconFA('exchange', async () => {
+            this.onComparison.next([...wu(this.selectedCallsSet.keys()).map((selected) => selected.id)]);
+          }, 'Compare selected runs');
           t.style.margin = '5px';
           if (this.selectedCallsSet.size < 2)
             t.classList.add('hp-disabled');
