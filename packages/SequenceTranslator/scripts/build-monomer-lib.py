@@ -11,7 +11,9 @@ import orjson
 
 import click
 
-CodesType = dict[str, dict[str, list[str]]]
+# CodesType = dict[str, dict[str, list[str]]]
+
+MonomerMetadata = dict
 
 BEGIN_ATOM_LINE = 'M  V30 BEGIN ATOM'
 END_ATOM_LINE = 'M  V30 END ATOM'
@@ -111,7 +113,7 @@ def prepare_molblock(src_molblock: str, name: str) -> str:
 
 class Monomer:
     def __init__(self, symbol: str, name: str, molfile: str, smiles: str,
-                 codes: CodesType):
+                 meta: MonomerMetadata):
         self.monomerType = 'Backbone'
         self.smiles = smiles
         self.name = name
@@ -132,14 +134,13 @@ class Monomer:
         self.id = 0
         self.polymerType = 'RNA'
         self.symbol = symbol
-        meta = {'codes': codes}
         self.meta = meta
 
     @staticmethod
     def from_json(src_json: {}):
         obj = Monomer(src_json['symbol'], src_json['name'],
                       src_json['molfile'], src_json['smiles'],
-                      src_json['meta']['codes'])
+                      src_json['meta'])
         return obj
 
     def to_json(self):
