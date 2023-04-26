@@ -29,7 +29,7 @@ package might contain different things:
 * JavaScript [functions](../datagrok/functions/functions.md), [viewers](../visualize/viewers/viewers.md)
   , [widgets](../visualize/widgets.md), [applications](../develop/how-to/build-an-app.md)
 * [Scripts](../compute/scripting.md) written in R, Python, Octave, Grok, Julia, JavaScript, NodeJS, or Java
-* [Queries](../access/data-query.md) and [connections](../access/data-connection.md)
+* [Queries](../access/access.md#data-query) and [connections](../access/access.md#data-connection)
 * [Tables](../access/supported-formats.md#tabular-formats), files, and other objects
 
 See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) for examples, or follow
@@ -59,8 +59,8 @@ In addition to that, it might contain the following folders:
 * `swaggers`: REST APIs in [Swagger/OpenAPI](../access/open-api.md) format.
   Examples: [EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore)
   , [Swaggers](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers)
-* `connections` and `queries`: [connections](../access/data-connection.md)
-  and [queries](../access/data-query.md) for data retrieval.
+* `connections` and `queries`: [connections](../access/access.md#data-connection)
+  and [queries](../access/access.md#data-query) for data retrieval.
   Examples: [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl)
   , [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
 * `css`: CSS files for custom styling.

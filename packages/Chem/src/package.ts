@@ -602,7 +602,7 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
     const packageExists = checkPackage('PowerGrid', 'radarCellRenderer');
     if (packageExists) {
       let gc = view.grid.columns.add({gridColumnName: `elements (${molCol.name})`, cellType: 'radar'});
-      gc.settings = {columnNames: Array.from(elements.keys())};
+      gc.settings = {columnNames: columnNames};
       gc.width = 300;
     } else {
       grok.shell.warning('PowerGrid package is not installed');

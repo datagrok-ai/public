@@ -41,13 +41,13 @@ Project browser allows you to view previously created [projects](project.md), vi
    for [project](project.md)
 
 * "Connections" tab is open
-* Display all [connections](../access/data-connection.md) which are included in [project](project.md)
+* Display all [connections](../access/access.md#data-connection) which are included in [project](project.md)
 
 1. Open the "Queries" tab in [Context Panel](../datagrok/navigation.md#context-panel)
    for [project](project.md)
 
 * "Queries" tab is open
-* Display all [queries](../access/data-query.md) which are included in [project](project.md)
+* Display all [queries](../access/access.md#data-query) which are included in [project](project.md)
 
 1. Open the "Jobs" tab in [Context Panel](../datagrok/navigation.md#context-panel)
    for [project](project.md)
@@ -96,7 +96,7 @@ Project browser allows you to view previously created [projects](project.md), vi
 
 * Here are all the elements created in the project ([tables](table.md)
   , [views](../visualize/view-layout.md),
-  [connections](../access/data-connection.md), [queries](../access/data-query.md), etc.)
+  [connections](../access/access.md#data-connection), [queries](../access/access.md#data-query), etc.)
 
 1. Test the work of project elements. (open views, run queries, run jobs, etc.)
 

@@ -11,7 +11,7 @@ Datagrok server installation consists of two big blocks:
   * [Persistent file storage](#storage)
   * [ElasticSearch](#elasticsearch)
   * [Credentials Management Service](../../govern/security.md#credentials)
-  * [Grok Connect](../../access/data-connection.md)
+  * [Grok Connect](../../access/access.md#data-connection)
   * [Nginx](https://www.nginx.com/) server
 * [Compute](#compute-components)
   * [Load balancer](#load-balancer)
@@ -84,7 +84,7 @@ Datagrok components are:
 * [ElasticSearch](#elasticsearch)
 * [Credentials Management Service](../../govern/security.md#credentials). Can be installed as a separate service in
   separate container with a separate database.
-* [Grok Connect](../../access/data-connection.md). Separate container with Java-based data connectors to 20+ databases.
+* [Grok Connect](../../access/access.md#data-connection). Separate container with Java-based data connectors to 20+ databases.
 * Nginx server
 
 ### Web Application

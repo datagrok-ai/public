@@ -8,7 +8,7 @@ import {UaView, Filter} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {ViewHandler} from '../view-handler';
-import {getTime} from "../utils";
+import {getTime} from '../utils';
 
 
 export class PackagesView extends UaView {
@@ -46,8 +46,10 @@ export class PackagesView extends UaView {
               'From': getTime(dateFrom),
               'To': getTime(dateTo)});
           }, true);
-          PackagesView.getFunctionsPane(cp, filter, [dateFrom, dateTo], [row.package], this.uaToolbox, this.expanded.f, 'Packages');
-          PackagesView.getLogsPane(cp, filter);
+          PackagesView.getFunctionsPane(cp, filter, [dateFrom, dateTo],
+            [row.package], this.uaToolbox, this.expanded.f, 'Packages');
+          PackagesView.getLogsPane(cp, filter, [dateFrom, dateTo],
+            this.uaToolbox, this.expanded.f, 'Packages');
           PackagesView.getAuditPane(cp, filter);
           grok.shell.o = cp.root;
         });
@@ -63,6 +65,7 @@ export class PackagesView extends UaView {
           showSizeSelector: false,
           showXSelector: false,
           showYSelector: false,
+          invertYAxis: true,
         });
         return viewer;
       }});
@@ -71,7 +74,8 @@ export class PackagesView extends UaView {
     this.root.append(packagesViewer.root);
   }
 
-  static showSelectionContextPanel(t: DG.DataFrame, uaToolbox: UaToolbox, expanded: {[key: string]: boolean}, backToView: string) {
+  static showSelectionContextPanel(t: DG.DataFrame, uaToolbox: UaToolbox,
+    expanded: {[key: string]: boolean}, backToView: string) {
     if (!t.selection.anyTrue && !t.filter.anyTrue)
       return;
     let df = t.clone(t.selection.and(t.filter));
@@ -98,7 +102,7 @@ export class PackagesView extends UaView {
 
     const filter: Filter = {
       time_start: dateMin / 1000000, time_end: dateMax / 1000000,
-      groups: groups, users: users, packages: packages
+      groups: groups, users: users, packages: packages,
     };
     cp.addPane('Time interval', () => ui.tableFromMap({
       'From': getTime(dateFrom),
@@ -115,13 +119,15 @@ export class PackagesView extends UaView {
       data[b] - data[a]), (k) => [data1[k], data[k]]), true);
     //cp.addPane('Users', () => ui.divV(users.map((u) => ui.render(`#{x.${u}}`))), true);
     cp.addPane('Packages', () => ui.divV(packages.map((p) => ui.render(`#{x.${p}}`))), true);
-    PackagesView.getFunctionsPane(cp, filter, [dateFrom, dateTo], df.getCol('package').categories, uaToolbox, expanded.f, backToView);
-    PackagesView.getLogsPane(cp, filter);
+    PackagesView.getFunctionsPane(cp, filter, [dateFrom, dateTo],
+      df.getCol('package').categories, uaToolbox, expanded.f, backToView);
+    PackagesView.getLogsPane(cp, filter, [dateFrom, dateTo], uaToolbox, expanded.f, backToView);
     PackagesView.getAuditPane(cp, filter);
     grok.shell.o = cp.root;
   }
 
-  static async getFunctionsPane(cp: DG.Accordion, filter: Filter, date: Date[], packageNames: string[], uaToolbox: UaToolbox, expanded: boolean, backToView: string): Promise<void> {
+  static async getFunctionsPane(cp: DG.Accordion, filter: Filter, date: Date[],
+    packageNames: string[], uaToolbox: UaToolbox, expanded: boolean, backToView: string): Promise<void> {
     const button = ui.button('Details', async () => {
       uaToolbox.dateFromDD.value = getTime(date[0]);
       uaToolbox.dateToDD.value = getTime(date[1]);
@@ -168,7 +174,26 @@ export class PackagesView extends UaView {
     }, expanded);
   }
 
-  static async getLogsPane(cp: DG.Accordion, filter: Filter): Promise<void> {
+  static async getLogsPane(cp: DG.Accordion, filter: Filter, date: Date[],
+    uaToolbox: UaToolbox, expanded: boolean, backToView: string): Promise<void> {
+    const button = ui.button('Details', async () => {
+      uaToolbox.dateFromDD.value = getTime(date[0]);
+      uaToolbox.dateToDD.value = getTime(date[1]);
+      uaToolbox.backToView = backToView;
+      uaToolbox.usersDD.value = filter.users.length === 1 ?
+        (await grok.dapi.users.find(filter.users[0])).friendlyName : `${filter.users.length} users`;
+      // uaToolbox.packagesDD.value = packageNames.length === 1 ?
+      //   packageNames[0] : `${packageNames.length} packages`;
+      uaToolbox.packagesDD.value = '';
+      ViewHandler.getView('Events').viewers[0]
+        .reloadViewer({date: `${getTime(date[0], 'es-pa')}-${getTime(date[1], 'es-pa')}`});
+      ViewHandler.getView('Events').viewers[1]
+        .reloadViewer({date: `${getTime(date[0], 'es-pa')}-${getTime(date[1], 'es-pa')}`,
+          groups: filter.groups});
+      ViewHandler.changeTab('Events');
+      uaToolbox.drilldown = ViewHandler.getCurrentView();
+    });
+    button.classList.add('ua-details-button');
     const lPane = cp.addPane('Log events summary', () => {
       return ui.wait(async () => {
         const df = await grok.data.query('UsageAnalysis:PackagesContextPaneLogs', filter);
@@ -177,9 +202,10 @@ export class PackagesView extends UaView {
         const info = lPane.root.querySelector('#info') as HTMLElement;
         info.textContent = df.getCol('count').stats.sum.toString();
         info.style.removeProperty('display');
+        info.after(button);
         return Object.keys(data).length ? ui.tableFromMap(data) : ui.divText('No data');
       });
-    }, true);
+    }, expanded);
   }
 
   static async getAuditPane(cp: DG.Accordion, filter: Filter): Promise<void> {

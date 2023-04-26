@@ -17,5 +17,5 @@ SQLite DBs.
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [SQLite](https://www.sqlite.org/index.html)

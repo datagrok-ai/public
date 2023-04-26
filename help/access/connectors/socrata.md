@@ -16,7 +16,7 @@ server using Socrata Query.
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Socrata](https://www.tylertech.com/products/socrata)
 * [Socrata Wiki](https://en.wikipedia.org/wiki/Socrata)
 * [SODA](https://dev.socrata.com/)

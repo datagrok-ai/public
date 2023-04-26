@@ -82,6 +82,6 @@ using SQL queries via the JDBC driver.
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Oracle Database](https://www.oracle.com/database/)
 * [Oracle Database Wiki](https://en.wikipedia.org/wiki/Oracle_Database)

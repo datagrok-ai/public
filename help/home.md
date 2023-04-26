@@ -31,13 +31,13 @@ Don't take our word for this – [run the platform](https://public.datagrok.ai/)
 
 Seamlessly bring together data from the different silos and formats.
 
-* [30+ connectors](access/data-connection.md) to all major databases
+* [30+ connectors](access/access.md#data-connection) to all major databases
 * 1,000+ services exposed via [OpenAPI](access/open-api.md)
-* Drag-and-drop files to open ([10+ formats](access/supported-data-sources.md)), or
+* Drag-and-drop files to open ([10+ formats](access/supported-connectors.md)), or
   browse [file shares](https://public.datagrok.ai/files)
-* [Visually explore](access/db-exploration.md) and manage relational databases
-  using [schema browser](access/db-exploration.md#schema-browser)
-  and [visual query](access/db-visual-query.md)
+* [Visually explore](access/databases.md#database-manager) and manage relational databases
+  using [schema browser](access/databases.md#schema-browser)
+  and [visual query](access/databases.md#aggregation-editor)
 * Connect to [thousands of public datasets](access/public-datasets.md)
 * Automate via data preparation pipelines
 

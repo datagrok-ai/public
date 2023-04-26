@@ -9,7 +9,7 @@
 
 1. Call the context menu of the data source
 
-* Adding a new [connection](data-connection.md) to the data source from context menu
+* Adding a new [connection](access.md#data-connection) to the data source from context menu
 
 1. Call context menu and select "Browse queries"
 
@@ -21,7 +21,7 @@
 * "Connections browser" is open with in queries belonging to selected connection
 * Patten "dataSource = {data_source_name}" is entered in browser search bar
 
-1. Open a list of [connections](data-connection.md)
+1. Open a list of [connections](access.md#data-connection)
    on [Context Panel](../datagrok/navigation.md#context-panel)
 
 1. Open a list of Jobs on Context Panel
@@ -30,7 +30,7 @@
 
 * Job Runs list is open. Display start time, status and name of Job
 
-1. Open a list of [Queries](data-query.md) on [Context Panel](../datagrok/navigation.md#context-panel)
+1. Open a list of [Queries](access.md#data-query) on [Context Panel](../datagrok/navigation.md#context-panel)
 
 1. Open a list of Query Runs on [Context Panel](../datagrok/navigation.md#context-panel)
 

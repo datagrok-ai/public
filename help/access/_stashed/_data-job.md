@@ -58,6 +58,6 @@ You can use these fields to filter jobs using [smart search](../datagrok/smart-s
 
 See also:
 
-* [Data connection](data-connection.md)
-* [Data query](data-query.md)
+* [Data connection](access.md#data-connection)
+* [Data query](access.md#data-query)
 * [Function call](../datagrok/functions/function-call.md)

@@ -99,7 +99,7 @@ You can run any system [action](functions/functions.md) by calling it from [cons
 ## Try it
 
 Open [console](navigation.md#console) by pressing ~ (tilde) or **Tools | Console**. and try to make some actions:
-run [query](../access/data-query.md) or job. Every step you take will be recorded, so you can
+run [query](../access/access.md#data-query) or job. Every step you take will be recorded, so you can
 re-run it, or use somewhere.
 
 See also:

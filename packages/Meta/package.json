@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.2.95",
+  "version": "3.2.96",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1382,6 +1382,9 @@
         },
         "1.0.24": {
           "datagrok-api": "^1.11.0"
+        },
+        "1.0.25": {
+          "datagrok-api": "^1.14.1"
         }
       },
       "description": "Chembl integration, commonly used queries and browser",

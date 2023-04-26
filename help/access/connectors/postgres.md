@@ -77,6 +77,6 @@ Provides access to [PostgreSQL](https://www.postgresql.org/) database using SQL 
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [PostgreSQL](https://www.postgresql.org/)
 * [Wikipedia](https://en.wikipedia.org/wiki/PostgreSQL)

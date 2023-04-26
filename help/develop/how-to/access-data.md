@@ -119,7 +119,7 @@ Datagrok has a [built-in credentials management system](../../govern/security.md
 
 #### Creating queries
 
-Once the connection is established, you can extract data by sending a [query](../../access/access.md/#data-query) to the data source. In a package, queries are typically placed in the `queries` folder.
+Once the connection is established, you can extract data by sending a [query](../../access/access.md#data-query) to the data source. In a package, queries are typically placed in the `queries` folder.
 
 Similar to [scripts](../../compute/scripting.md), you can annotate SQL statements with comments as the underlying
 mechanism is fundamentally the same ([learn more about functions](../../datagrok/functions/functions.md)). To use an existing connection in a query, provide its name along with the namespace in the `connection` parameter.

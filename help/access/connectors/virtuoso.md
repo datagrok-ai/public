@@ -65,5 +65,5 @@ Provides access to [Virtuoso](https://virtuoso.openlinksw.com/) data virtualizat
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Virtuoso](https://virtuoso.openlinksw.com/)

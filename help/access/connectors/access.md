@@ -16,5 +16,5 @@ DB file using SQL queries via JDBC driver. The file should be stored in Datagrok
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Microsoft Access](https://en.wikipedia.org/wiki/Microsoft_Access)

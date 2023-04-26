@@ -12,6 +12,6 @@ Upload scratchpad as your new project to server using _upload_ button and grant 
 
 See also:
 
-* [Data connection](../access/data-connection.md)
-* [Data query](../access/data-query.md)
+* [Data connection](../access/access.md#data-connection)
+* [Data query](../access/access.md#data-query)
 * [Function call](functions/function-call.md)

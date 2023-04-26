@@ -1,5 +1,5 @@
 //tags: DataQuery
-//help-url: https://datagrok.ai/help/access/parameterized-queries
+//help-url: https://datagrok.ai/help/access/databases#parameterized-queries
 // An example of using parameterized query
 
 grok.data.query('ApiTests:PostgresqlByDouble', {freight: 100.1})

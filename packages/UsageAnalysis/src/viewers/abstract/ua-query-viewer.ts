@@ -31,6 +31,7 @@ export abstract class UaQueryViewer extends UaViewer {
   }
 
   reloadViewer(staticFilter?: object) {
+    // console.log('reloading');
     this.dataFrame = new Promise<DG.DataFrame>((resolve, reject) => {
       this.loader.style.display = 'block';
       if (this.viewer !== undefined)
