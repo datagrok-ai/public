@@ -17,7 +17,6 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
   }
 
   getFingerprints(fingerprintType: Fingerprint, dict?: string[]): IFingerprint[] {
-    console.log(`************* dict is not null: ${dict != null}`);
     if (this._rdKitMols === null && !dict)
       return [];
 
@@ -64,10 +63,8 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
       } catch {
         // nothing to do, fp is already null
       }
-      if (dict) {
-        console.log(`deleting mol`);
+      if (dict)
         mol?.mol?.delete();
-      }
     }
     return fps!.map((el: any) => {
       return { data: el, length: el ? el.length : 0 };
