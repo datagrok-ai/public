@@ -14,6 +14,12 @@ export interface NodeCuttedType extends NodeType {
   cuttedChildren?: NodeType[];
 }
 
+export type ClusterMatrix = {
+  mergeRow1:Int32Array;
+  mergeRow2:Int32Array;
+  heightsResult:Float32Array;
+}
+
 export type TreeLeafDict = { [nodeName: string]: NodeType };
 export type DataNodeDict = { [nodeName: string]: number };
 export type NodeNameCallback = (nodeName: string) => void;
