@@ -35,8 +35,7 @@ export class ChoiceInputPackages {
       }));
     });
 
-    const all = packages.filter((p) => p.name.toLowerCase()
-      .includes(choices.input.value.toLowerCase()));
+    const all = packages;
     choices.setChoices(() => all.map((p: DG.Package) => {
       return {value: p.name, label: p.name};
     }));
