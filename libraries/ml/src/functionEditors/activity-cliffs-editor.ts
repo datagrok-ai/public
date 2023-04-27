@@ -6,9 +6,10 @@ import { SequenceSpaceBaseFuncEditor } from './seq-space-base-editor';
 export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
 
     activitiesInput: DG.InputBase;
+    activitiesInputRoot: HTMLElement;
     similarityInput: DG.InputBase;
     funcParamsDiv: HTMLDivElement;
-    activitiesColDiv: HTMLDivElement = ui.div();
+
 
     get funcParams(): any {
       return {table: this.tableInput.value!, molecules: this.molColInput.value!, activities: this.activitiesInput.value!,
@@ -22,23 +23,17 @@ export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
     constructor(semtype: DG.SemType){
       super(semtype);
       this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!, this.tableInput.value!.columns.byIndex(0));
-      this.activitiesInput.root.style.width = '335px';
-      this.activitiesColDiv.append(this.activitiesInput.root);
-      
+      this.activitiesInputRoot = this.activitiesInput.root;
       this.similarityInput = ui.intInput('Similarity', 80);
-      
-      this.funcParamsDiv = ui.form([
+      //@ts-ignore
+      this.funcParamsDiv = ui.inputs([
         this.tableInput,
-        //@ts-ignore
-        this.moleculesColDiv,
-        //@ts-ignore
-        this.activitiesColDiv,
+        this.molColInput,
+        this.activitiesInput,
         this.similarityInput,
-        //@ts-ignore
-        ui.divH([this.methodSettingsIcon, this.methodInput]),
-        //@ts-ignore
+        this.methodInput,
         this.methodSettingsDiv
-      ])
+      ], {style: {minWidth: '320px'}});
     }
   
     createAlgorithmSettingsDiv(paramsForm: HTMLDivElement, params: UMAPOptions | TSNEOptions) {
@@ -56,9 +51,8 @@ export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
 
     onTableInputChanged(semtype: DG.SemType) {
         super.onTableInputChanged(semtype);
-        ui.empty(this.activitiesColDiv);
+        ui.empty(this.activitiesInputRoot);
         this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!, this.tableInput.value!.columns.byIndex(0));
-        this.activitiesInput.root.style.width = '335px';
-        this.activitiesColDiv.append(this.activitiesInput.root);
+        Array.from(this.activitiesInput.root.children).forEach((it) => this.activitiesInputRoot.append(it));
     }
   }
