@@ -176,7 +176,11 @@ public abstract class JdbcDataProvider extends DataProvider {
                     }
                     stringValues.add(stringValue);
                 }
-                statement.setQueryTimeout(timeout);
+                try {
+                    statement.setQueryTimeout(timeout);
+                } catch (SQLException exception) {
+                    logger.debug("setQueryTimeout is not supported for " + descriptor.type);
+                }
                 String logString = String.format("Query: %s; \nParams array: %s \n", statement, stringValues);
                 logger.debug(logString);
                 if (queryRun.debugQuery)
@@ -206,7 +210,11 @@ public abstract class JdbcDataProvider extends DataProvider {
             if (supportsTransactions)
                 statement.setFetchSize(fetchSize);
             providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
-            statement.setQueryTimeout(timeout);
+            try {
+                statement.setQueryTimeout(timeout);
+            } catch (SQLException exception) {
+                logger.debug("setQueryTimeout is not supported for " + descriptor.type);
+            }
             String logString = String.format("Query: %s \n", query);
             logger.debug(logString);
             if (queryRun.debugQuery)

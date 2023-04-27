@@ -20,6 +20,8 @@ import java.util.Properties;
  * Enum that contains all necessary data related to specific provider and it's container
  */
 public enum Provider {
+    CASSANDRA("src/test/resources/properties/cassandra.properties"),
+
     VIRTUOSO("src/test/resources/properties/virtuoso.properties"),
 
     VERTICA("src/test/resources/properties/vertica.properties"),
