@@ -8,8 +8,12 @@ import {SYNTHESIZERS, TECHNOLOGIES} from '../../model/const';
 
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 
+import {HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
+
 import {HardcodeTerminator} from '../hardcode-terminator';
 const terminator = new HardcodeTerminator();
+
+const TERMINAL_SMILES = 'threePrimeTerminalSmiles';
 
 type CodesField = {
   [synthesizer: string]: {
@@ -29,6 +33,7 @@ export class MonomerLibWrapper {
       throw new Error('SequenceTranslator: monomer library is null');
     this.lib = lib!;
   }
+
   private lib: IMonomerLib;
   private static instance?: MonomerLibWrapper;
 
@@ -39,29 +44,56 @@ export class MonomerLibWrapper {
   }
 
   getMolfileByName(monomerName: string): string {
-    const monomer = this.lib?.getMonomer('RNA', monomerName);
-    return monomer?.molfile!;
+    const monomer = this.getMonomer(monomerName);
+    return monomer.molfile;
   }
 
   getSmilesByName(monomerName: string): string {
-    return terminator.getSmilesByName(monomerName);
+    const monomer = this.getMonomer(monomerName);
+    return monomer.smiles;
+    // return terminator.getSmilesByName(monomerName);
   }
 
   get3PrimeTerminalSmiles(modificationName: string): string {
-    return terminator.get3PrimeTerminalSmiles(modificationName);
+    if (!this.isModification(modificationName))
+      throw new Error(`SequenceTranslator: ${modificationName} is not a modification`);
+    const monomer = this.getMonomer(modificationName);
+    return monomer[OPT.META]![TERMINAL_SMILES];
   }
 
   isModification(monomerName: string): boolean {
-    const monomerMolfile = this.getMolfileByName(monomerName);
-    if (monomerMolfile !== undefined) {
-      return (monomerMolfile.includes('MODIFICATION')) ? true : false;
-    } else {
-      const modifications = terminator.getModificationCodes();
-      return (modifications.includes(monomerName)) ? true : false;
-    }
+    const molfile = this.getMolfileByName(monomerName);
+    return (molfile.includes('MODIFICATION')) ? true : false;
   }
 
   getCodeToNameMap(sequence: string, format: string): Map<string, string> {
+    // const codeToNameMap = new Map<string, string>;
+    // const NAME = 'name';
+    // if (format == null) {
+    //   for (const synthesizer of Object.keys(map)) {
+    //     for (const technology of Object.keys(map[synthesizer])) {
+    //       for (const code of Object.keys(map[synthesizer][technology]))
+    //         codeToNameMap.set(code, map[synthesizer][technology][code][NAME]!);
+    //     }
+    //   }
+    // } else {
+    //   for (const technology of Object.keys(map[format])) {
+    //     for (const code of Object.keys(map[format][technology]))
+    //       codeToNameMap.set(code, map[format][technology][code][NAME]!);
+    //   }
+    // }
+    // // what is the reason of the following condition?
+    // codeToNameMap.set(DELIMITER, '');
+    // const output = isValidSequence(sequence, format);
+    // const G = 'g';
+    // if (output.synthesizer!.includes(SYNTHESIZERS.MERMADE_12)) {
+    //   const value = map[SYNTHESIZERS.MERMADE_12][TECHNOLOGIES.SI_RNA][G][NAME]!;
+    //   codeToNameMap.set(G, value);
+    // } else if (output.synthesizer!.includes(SYNTHESIZERS.AXOLABS)) {
+    //   const value = map[SYNTHESIZERS.AXOLABS][TECHNOLOGIES.SI_RNA][G][NAME]!;
+    //   codeToNameMap.set(G, value);
+    // }
+    // return codeToNameMap;
     return (new HardcodeTerminator().getCodeToNameMap(sequence, format));
   }
 
@@ -71,10 +103,8 @@ export class MonomerLibWrapper {
 
   getTableForViewer(): DG.DataFrame {
     const monomerList = this.getAllMonomers();
-    const formattedObjectsList = new Array(monomerList.length);
-    for (let i = 0; i < monomerList.length; i++)
-      formattedObjectsList[i] = this.formatMonomerForViewer(monomerList[i]);
-    const df = DG.DataFrame.fromObjects(formattedObjectsList)!;
+    const formattedObjects = monomerList.map((monomer) => this.formatMonomerForViewer(monomer));
+    const df = DG.DataFrame.fromObjects(formattedObjects)!;
     return df;
   }
 
@@ -89,8 +119,10 @@ export class MonomerLibWrapper {
     const formattedObject: {[key: string]: string} = {};
     formattedObject[FIELD.NAME] = sourceObj[FIELD.NAME];
     formattedObject[FIELD.MOLFILE] = sourceObj[FIELD.MOLFILE];
+
     const meta = sourceObj[FIELD.META] as MetaField;
     const codes = meta[FIELD.CODES] as CodesField;
+
     for (const synthesizer of Object.values(SYNTHESIZERS)) {
       const fieldName = synthesizer;
       const valuesList = [];
@@ -100,7 +132,6 @@ export class MonomerLibWrapper {
             valuesList.push(codes[synthesizer][technology].toString());
         }
       }
-      // formattedObject['technologies'] = [...technologySet].toString();
       formattedObject[fieldName] = valuesList.toString();
     }
     return formattedObject;
@@ -117,5 +148,12 @@ export class MonomerLibWrapper {
       result = result.concat(monomersByType);
     }
     return result;
+  }
+
+  private getMonomer(monomerName: string): Monomer {
+    const monomer = this.lib.getMonomer('RNA', monomerName);
+    if (monomer === undefined)
+      throw new Error(`SequenceTranslator: no monomer with name ${monomerName}`);
+    return monomer!;
   }
 }
