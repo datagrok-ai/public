@@ -9,6 +9,7 @@ import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer, SIMILARITY} from './chem-search-base-viewer';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import { malformedDataWarning } from '../utils/malformed-data-utils';
+import { getMolSafe } from '../utils/mol-creation_rdkit';
 
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   hotSearch: boolean;
@@ -69,7 +70,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        if (this.isEmptyValue()) {
+        if (this.isEmptyOrMalformedValue()) {
           progressBar.close();
           return;
         }
@@ -159,9 +160,12 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     }
   }
 
-  isEmptyValue(): boolean {
-    if (!this.targetMolecule || DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule)) {
-      grok.shell.error(`Empty molecule cannot be used for similarity search`);
+  isEmptyOrMalformedValue(): boolean {
+    const malformed = !getMolSafe(this.targetMolecule, {}, getRdKitModule()).mol;
+    const empty = !this.targetMolecule || DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule);
+    const moleculeError = malformed ? `Malformed` : empty ? `Empty` : '';
+    if (moleculeError) {
+      grok.shell.error(`${moleculeError} molecule cannot be used for similarity search`);
       this.clearResults();
       return true;
     }
