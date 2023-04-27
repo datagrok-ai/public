@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {scriptEditor} from './script-editor';
+import {dataQueryEditor, scriptEditor} from './script-editor';
 import {IconTool} from './icon-tool';
 import {EntityType} from './constants';
 import '../css/styles.css';
@@ -55,7 +55,7 @@ export function _scriptEditor(): void {
 //tags: autostart
 export function _functionSignatureEditor(): void {
   grok.events.onViewAdded.subscribe((view) => {
-    if (view.type == 'ScriptView')
+    if (view.type == 'ScriptView' || view.type == 'DataQueryView')
       functionSignatureEditor(view);
   });
 }
