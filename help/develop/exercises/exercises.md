@@ -15,7 +15,7 @@ predictive models, integration with the external utilities, data augmentation, a
 ## Table of contents
 
 * [Setting up the environment](#setting-up-the-environment)
-* [Semantic-types](#exercise-1-semantic-types)
+* [Semantic types](#exercise-1-semantic-types)
 * [Scripting and functions](#exercise-2-scripting-and-functions)
   * [Scripting with server functions](#scripting-with-server-functions)
   * [Modifying dataframes with scripts](#modifying-dataframes-with-scripts)
@@ -51,8 +51,8 @@ predictive models, integration with the external utilities, data augmentation, a
 * [Datagrok tools](https://www.npmjs.com/package/datagrok-tools)
 * [Naming conventions](../develop.md#naming-conventions)
 
-1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following [these
-   instructions](../set-up-environment.md)
+1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following
+   [these instructions](../set-up-environment.md)
 2. Create a branch from master at [GitHub](https://github.com/datagrok-ai/public/branches) or using your IDE; Use your
    credentials as a name of the branch
 3. Get a dev key for [Dev Server](https://dev.datagrok.ai) (you will work with this server) and add it by running `grok
@@ -81,8 +81,9 @@ As a result of the function execution you should see an info notification with u
 
 *Prerequisites:* basic TypeScript or JavaScript knowledge.
 
-Details: [Parameter annotation](../../datagrok/functions/func-params-annotation.md), [How to define semantic type
-detectors](../how-to/define-semantic-type-detectors.md), [How to add an info panel](../how-to/add-info-panel.md).
+Details: [Parameter annotation](../../datagrok/functions/func-params-annotation.md),
+[How to define semantic type detectors](../how-to/define-semantic-type-detectors.md),
+[How to add an info panel](../how-to/add-info-panel.md).
 
 You will learn: how to write semantic type detectors, how to develop context-specific data augmentation.
 
@@ -130,9 +131,8 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    It should check whether a column is a string column, and whether each string represents a nucleotide. If condition is
    met, it should return `"dna_nucleotide"` string.
 
-   For best performance, don't iterate over all column values, instead iterate [on
-   `column.categories`](../advanced/data-frame.md#work-with-categories) . Full Datagrok Column type API could be found
-   [here](https://datagrok.ai/js-api/classes/dg.Column).
+   For best performance, don't iterate over all column values, instead iterate
+   [on `column.categories`](../advanced/data-frame.md#work-with-categories). Full Datagrok Column type API could be found [here](https://datagrok.ai/js-api/classes/dg.Column).
 
 4. Upload your package to `dev.datagrok.ai` using `grok publish dev` command. When everything is done correctly, the
    `detectors.js` file will get loaded by the platform automatically, and the `detectNucleotides` function will be
@@ -151,12 +151,15 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    ```
 
    Hover over the `sequence` column header after the data is imported — if everything is done correctly, you will see
-   `quality: dna_nucleotide` in the bottom of the tooltip: ![exercises-semantic-tooltip](exercises-semantic-tooltip.png)
+   `quality: dna_nucleotide` in the bottom of the tooltip:
+
+   ![exercises-semantic-tooltip](exercises-semantic-tooltip.png)
+
    Alternatively, you can find this information if you click on the column and expand the 'Details' pane in the property
    panel on the right.
-7. Now let’s put the result of the previously created `complement` function into an [info
-   panel](../how-to/add-info-panel.md): Create function `complementWidget` and add special comments block to allow
-   Datagrok system recognise it and upload properly (see an example [here](../how-to/add-info-panel.md#functions)).
+7. Now let’s put the result of the previously created `complement` function into an
+   [info panel](../how-to/add-info-panel.md): Create function `complementWidget` and add special comments block to
+   allow Datagrok system recognize it and upload properly (see an example [here](../how-to/add-info-panel.md#functions)).
 
    ```javascript
     //name: complementWidget
@@ -321,10 +324,10 @@ repeat what we've achieved in the last point of the previous exercise, now with 
    API](../../compute/scripting.md#running-a-script).
 4. Don't forget to save these two scripts. We would re-use parts of them in the following exercises.
 
-The difference between the two scripts is that the first, `CountSubsequencePython`, runs on our server by a [compute
-virtual machine](../admin/infrastructure.md#compute-components), whereas the second, `CountSubsequenceJS`, runs directly
-in the browser. To run `CountSubsequencePython`, Datagrok passes the script arguments over the network and fetches back
-the result to the browser.
+The difference between the two scripts is that the first, `CountSubsequencePython`, runs on our server by a
+[compute virtual machine](../admin/infrastructure.md#compute-components), whereas the second, `CountSubsequenceJS`, runs
+directly in the browser. To run `CountSubsequencePython`, Datagrok passes the script arguments over the network and
+fetches back the result to the browser.
 
 ## Exercise 3: Composing functions
 
@@ -483,8 +486,8 @@ nested script.
 
 *Prerequisites:* basic SQL knowledge
 
-*Details:* [Connecting to Databases](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s), [How to Access
-Data](../how-to/access-data)
+*Details:* [Connecting to Databases](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s),
+[How to Access Data](../how-to/access-data)
 
 *Note:* Editing an existing data query requires the respective access permission. You might need to request one.
 
@@ -598,14 +601,14 @@ Viewers | Python | Scatter Plot`.
 
 ## Exercise 6: Transforming dataframes
 
-*Prerequisites:* exercises ["Setting up the environment"](#setting-up-the-environment), ["Semantic
-types"](#exercise-1-semantic-types).
+*Prerequisites:* exercises ["Setting up the environment"](#setting-up-the-environment),
+["Semantic types"](#exercise-1-semantic-types).
 
 *You will learn:* how to join and union dataframes using the knowledge of semantic types, and display the result.
 
 1. Make sure the [prerequisites](#setting-up-the-environment) are prepared on your machine, including the package called
-   `<yourFirstName>-sequence` Assure the package carries a relevant semantic type detector from the exercise ["Semantic
-   Types"](#exercise-1-semantic-types).
+   `<yourFirstName>-sequence` Assure the package carries a relevant semantic type detector from the exercise
+   ["Semantic Types"](#exercise-1-semantic-types).
 2. Add a function to the package as follows:
 
    ```javascript
@@ -639,9 +642,9 @@ types"](#exercise-1-semantic-types).
 5. Launch the platform, open the two files from `"Demo files"`: `sars-cov-2.csv` and `a-h1n1.csv`, and run the package's
    `fuzzyJoin` function using one of the methods you've learned. The result for N=3 should look similar to:
    ![exercises-transforming-dataframes](exercises-transforming-dataframes.png)
-6. Read more about joining dataframes through the case reviewed at our [Community
-   Forum](https://community.datagrok.ai/t/table-to-table-augmentation/493/4), and with [a
-   sample](https://public.datagrok.ai/js/samples/data-frame/join-link/join-tables).
+6. Read more about joining dataframes through the case reviewed at our
+   [Community Forum](https://community.datagrok.ai/t/table-to-table-augmentation/493/4), and with
+   [a sample](https://public.datagrok.ai/js/samples/data-frame/join-link/join-tables).
 
 <!--- TODO: add linked dataframes demo here --->
 
@@ -649,11 +652,11 @@ types"](#exercise-1-semantic-types).
 
 *You will learn:* render cells by semantic types.
 
-*Prerequisites:* exercises ["Setting up the environment"](#setting-up-the-environment), ["Semantic
-types"](#exercise-1-semantic-types).
+*Prerequisites:* exercises ["Setting up the environment"](#setting-up-the-environment),
+["Semantic types"](#exercise-1-semantic-types).
 
-1. Navigate into the folder with your `<yourFirstName>-sequence` package created in ["Setting up the
-   environment"](#setting-up-the-environment).
+1. Navigate into the folder with your `<yourFirstName>-sequence` package created in
+   ["Setting up the environment"](#setting-up-the-environment).
 2. Let's add a custom cell renderer for a *nucleotide sequence box* to represent our sequences in different colors. We
    need to use monospace font and render each nucleotide (`A`, `G`, `C`, `T`) in a different color using on of the
    popular conventions, following [this link](https://www.biostars.org/p/171056/).
@@ -756,9 +759,9 @@ We will use the ENA REST API to output sequences and associated data in the info
 contained in a currently selected grid cell.
 
 1. Searching through [the ENA archive](https://www.ebi.ac.uk/ena/browser/text-search?query=coronavirus), you may notice
-   the sequences' IDs have a format of `[A-Z]{2}[0-9]{6}` (two capital letters + six digits). Go to the [detectors
-   file](#exercise-1-semantic-types) of your package and add a detector which recognizes a string of this form and sets
-   a proper semantic type to column:
+   the sequences' IDs have a format of `[A-Z]{2}[0-9]{6}` (two capital letters + six digits). Go to the
+   [detectors file](#exercise-1-semantic-types) of your package and add a detector which recognizes a string of this
+   form and sets a proper semantic type to column:
 
    ```javascript
    //tags: semTypeDetector
