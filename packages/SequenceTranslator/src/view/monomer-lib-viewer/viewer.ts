@@ -4,42 +4,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {drawZoomedInMolecule} from '../utils/draw-molecule';
-
-import {LIB_PATH, DEFAULT_LIB_FILENAME} from '../../model/data-loader/const';
-import {SYNTHESIZERS, TECHNOLOGIES} from '../../model/const';
-
-import {Monomer} from '@datagrok-libraries/bio/src/types';
-
-type CodesField = {
-  [synthesizer: string]: {
-    [technology: string]: string[]
-  }
-}
-
-type MetaField = {
-  [key: string]: string | CodesField,
-}
-
-type MonomerExtension = {
-  [key: string]: string | MetaField
-}
-
-type ExtendedMonomer = Monomer & MonomerExtension;
-
-type FormattedMonomer = {
-  [key: string]: string
-}
-
-const enum RELEVANT_FIELD {
-  NAME = 'name',
-  MOLFILE = 'molfile',
-  CODES = 'codes',
-  META = 'meta',
-}
+import {MonomerLibWrapper} from '../../model/monomer-lib-utils/lib-wrapper';
 
 export class MonomerLibViewer {
   static async view(): Promise<void> {
-    const table = await parseMonomerLib(LIB_PATH, DEFAULT_LIB_FILENAME);
+    const table = MonomerLibWrapper.getInstance().getTableForViewer();
     table.name = 'Monomer Library';
     const view = grok.shell.addTableView(table);
     view.grid.props.allowEdit = false;
@@ -50,37 +19,4 @@ export class MonomerLibViewer {
         await drawZoomedInMolecule(molfile);
     });
   }
-}
-
-async function parseMonomerLib(path: string, fileName: string): Promise<DG.DataFrame> {
-  const fileSource = new DG.FileSource(path);
-  const file = await fileSource.readAsText(fileName);
-  const objList = JSON.parse(file);
-  const formattedObjectsList = new Array(objList.length);
-  for (let i = 0; i < objList.length; i++)
-    formattedObjectsList[i] = formatMonomerObject(objList[i]);
-  const df = DG.DataFrame.fromObjects(formattedObjectsList)!;
-  return df;
-}
-
-function formatMonomerObject(sourceObj: ExtendedMonomer): FormattedMonomer {
-  const formattedObject: FormattedMonomer = {};
-  formattedObject[RELEVANT_FIELD.NAME] = sourceObj[RELEVANT_FIELD.NAME];
-  formattedObject[RELEVANT_FIELD.MOLFILE] = sourceObj[RELEVANT_FIELD.MOLFILE];
-  const meta = sourceObj[RELEVANT_FIELD.META] as MetaField;
-  const codes = meta[RELEVANT_FIELD.CODES] as CodesField;
-  for (const synthesizer of Object.values(SYNTHESIZERS)) {
-    const fieldName = synthesizer;
-    const valuesList = [];
-    // const technologySet = new Set();
-    for (const technology of Object.values(TECHNOLOGIES)) {
-      if (codes[synthesizer] !== undefined) {
-        if (codes[synthesizer][technology] !== undefined)
-          valuesList.push(codes[synthesizer][technology].toString());
-      }
-    }
-    // formattedObject['technologies'] = [...technologySet].toString();
-    formattedObject[fieldName] = valuesList.toString();
-  }
-  return formattedObject;
 }

@@ -1,7 +1,7 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {HELM_FIELDS, HELM_CORE_FIELDS, HELM_POLYMER_TYPE, HELM_MONOMER_TYPE, RGROUP_FIELDS, MODE} from '../utils/const';
+import {HELM_FIELDS, HELM_CORE_FIELDS, HELM_POLYMER_TYPE, HELM_MONOMER_TYPE, HELM_RGROUP_FIELDS, MODE} from '../utils/const';
 import {ALPHABET, getSplitter, NOTATION, SplitterFunc, TAGS} from '../utils/macromolecule';
 // import {UnitsHandler} from '../utils/units-handler';
 import {NotationConverter} from '../utils/notation-converter';
@@ -460,11 +460,11 @@ export function parseCapGroups(rGroupObjList: any[]): string[] {
   // supposing that elements in rGroupObjList are sorted w.r.t. the rgroups idx
   const capGroupsArray: string[] = [];
   for (const obj of rGroupObjList) {
-    let capGroup: string = obj[RGROUP_FIELDS.CAP_GROUP_SMILES];
+    let capGroup: string = obj[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES];
 
     // in some cases the smiles field is written with uppercase
     if (!capGroup)
-      capGroup = obj[RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE];
+      capGroup = obj[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES_UPPERCASE];
     capGroup = capGroup.replace(/(\[|\]|\*|:|\d)/g, '');
     capGroupsArray.push(capGroup);
   }

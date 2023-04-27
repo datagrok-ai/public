@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {
-  HELM_FIELDS, HELM_CORE_FIELDS, RGROUP_FIELDS, jsonSdfMonomerLibDict,
+  HELM_FIELDS, HELM_CORE_FIELDS, HELM_RGROUP_FIELDS, jsonSdfMonomerLibDict,
   MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME
 } from '../utils/const';
 import {getSplitter, SplitterFunc, TAGS} from '../utils/macromolecule';
@@ -114,10 +114,11 @@ export function createJsonMonomerLibFromSdf(table: DG.DataFrame): any {
           const rgroup: { [key: string]: string | any } = {};
           const altAtom = g.substring(g.lastIndexOf(']') + 1);
           const radicalNum = g.match(/\[R(\d+)\]/)![1];
-          rgroup[RGROUP_FIELDS.CAP_GROUP_SMILES] = altAtom === 'H' ? `[*:${radicalNum}][H]` : `O[*:${radicalNum}]`;
-          rgroup[RGROUP_FIELDS.ALTER_ID] = altAtom === 'H' ? `R${radicalNum}-H` : `R${radicalNum}-OH`;
-          rgroup[RGROUP_FIELDS.CAP_GROUP_NAME] = altAtom === 'H' ? `H` : `OH`;
-          rgroup[RGROUP_FIELDS.LABEL] = `R${radicalNum}`;
+          rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_SMILES] =
+            altAtom === 'H' ? `[*:${radicalNum}][H]` : `O[*:${radicalNum}]`;
+          rgroup[HELM_RGROUP_FIELDS.ALTERNATE_ID] = altAtom === 'H' ? `R${radicalNum}-H` : `R${radicalNum}-OH`;
+          rgroup[HELM_RGROUP_FIELDS.CAP_GROUP_NAME] = altAtom === 'H' ? `H` : `OH`;
+          rgroup[HELM_RGROUP_FIELDS.LABEL] = `R${radicalNum}`;
           jsonRgroups.push(rgroup);
         });
         monomer[key] = jsonRgroups;

@@ -9,6 +9,14 @@ import {
   expectedMonomerData,
   IMonomerLibHelper
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
+
+const HELM_REQUIRED_FIELDS_ARRAY = [
+  REQ.SYMBOL, REQ.NAME, REQ.MOLFILE, REQ.AUTHOR, REQ.ID,
+  REQ.RGROUPS, REQ.SMILES, REQ.POLYMER_TYPE, REQ.MONOMER_TYPE, REQ.CREATE_DATE
+] as const;
+
+const HELM_OPTIONAL_FIELDS_ARRAY = [OPT.NATURAL_ANALOG, OPT.META] as const;
 
 // -- Monomer libraries --
 export const LIB_STORAGE_NAME = 'Libraries';
@@ -135,18 +143,15 @@ export class MonomerLibHelper implements IMonomerLibHelper {
 
     const monomers: { [type: string]: { [name: string]: Monomer } } = {};
     const types: string[] = [];
-    //group monomers by their type
     data.forEach((monomer) => {
-      const monomerAdd: Monomer = {
-        'symbol': monomer['symbol'],
-        'name': monomer['name'],
-        'naturalAnalog': monomer['naturalAnalog'],
-        'molfile': monomer['molfile'],
-        'rgroups': monomer['rgroups'],
-        'polymerType': monomer['polymerType'],
-        'monomerType': monomer['monomerType'],
-        'data': {}
-      };
+      const monomerAdd: {[key: string]: any} = {};
+      for (const field of HELM_REQUIRED_FIELDS_ARRAY)
+        monomerAdd[field] = monomer[field];
+      for (const optField of HELM_OPTIONAL_FIELDS_ARRAY) {
+        const value = monomer[optField];
+        if (value !== undefined)
+          monomerAdd[optField] = value;
+      }
 
       Object.keys(monomer).forEach((prop) => {
         if (!expectedMonomerData.includes(prop))
@@ -158,7 +163,7 @@ export class MonomerLibHelper implements IMonomerLibHelper {
         types.push(monomer['polymerType']);
       }
 
-      monomers[monomer['polymerType']][monomer['symbol']] = monomerAdd;
+      monomers[monomer['polymerType']][monomer['symbol']] = monomerAdd as Monomer;
     });
 
     return new MonomerLib(monomers);

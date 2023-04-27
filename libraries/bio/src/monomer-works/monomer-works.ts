@@ -34,11 +34,4 @@ export class MonomerWorks {
 
     return null;
   }
-
-  /** Consumes a list of monomer symbols and restores molfileV3K (SequenceTranslator/ST version) */
-  public getAtomicLevel(monomers: string[], polymerType: string): string | null {
-    return sequenceToMolFileST(
-      monomers, this.monomerLib.getMonomerMolsByType(polymerType)!
-    );
-  }
 }

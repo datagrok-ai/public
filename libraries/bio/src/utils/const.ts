@@ -4,6 +4,34 @@ import * as DG from 'datagrok-api/dg';
 
 export const HELM_CORE_LIB_FILENAME = '/data/HELMCoreLibrary.json';
 
+/** Required HELM library monomer fields:
+ * https://github.com/PistoiaHELM/HELMMonomerSets/blob/master/HELMmonomerSchema.json */
+export const enum HELM_REQUIRED_FIELDS {
+  SYMBOL = 'symbol',
+  NAME = 'name',
+  MOLFILE = 'molfile',
+  AUTHOR = 'author',
+  ID = 'id',
+  RGROUPS = 'rgroups',
+  SMILES = 'smiles',
+  POLYMER_TYPE = 'polymerType',
+  MONOMER_TYPE = 'monomerType',
+  CREATE_DATE = 'createDate',
+}
+
+export const enum HELM_OPTIONAL_FIELDS {
+  NATURAL_ANALOG = 'naturalAnalog',
+  META = 'meta', // for SequenceTranslator
+}
+
+export const enum HELM_RGROUP_FIELDS {
+  CAP_GROUP_SMILES = 'capGroupSmiles',
+  CAP_GROUP_SMILES_UPPERCASE = 'capGroupSMILES', // alas, both variants coexist
+  ALTERNATE_ID = 'alternateId',
+  CAP_GROUP_NAME = 'capGroupName',
+  LABEL = 'label',
+}
+
 export const enum HELM_FIELDS {
   MONOMER_TYPE = 'monomerType',
   SMILES = 'smiles',
@@ -22,15 +50,6 @@ export const enum HELM_FIELDS {
 export const enum MODE {
   STANDARD, // work with standard monomer types, as in HELM Core Library
   SEQ_TRAN // non-standard monomer types for SequenceTranslator app, todo: consider possibility of the unification
-}
-
-// fields of "rgroups" sub-object in HELM library
-export const enum RGROUP_FIELDS {
-  CAP_GROUP_SMILES = 'capGroupSmiles',
-  CAP_GROUP_SMILES_UPPERCASE = 'capGroupSMILES', // alas, both variants coexist
-  ALTER_ID = 'alternateId',
-  CAP_GROUP_NAME = 'capGroupName',
-  LABEL = 'label',
 }
 
 // possible values of polymers
