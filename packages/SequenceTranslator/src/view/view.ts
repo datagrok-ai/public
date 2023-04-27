@@ -7,7 +7,7 @@ import {MAIN_TAB, AXOLABS_TAB, SDF_TAB} from './const/view';
 import {MainTabUI} from './tabs/main';
 import {SdfTabUI} from './tabs/sdf';
 import {AxolabsTabUI} from './tabs/axolabs';
-import {viewMonomerLib} from './monomer-lib-viewer/viewer';
+import {MonomerLibViewer} from './monomer-lib-viewer/viewer';
 
 export class SequenceTranslatorUI {
   constructor() {
@@ -24,7 +24,7 @@ export class SequenceTranslatorUI {
     windows.showHelp = false;
 
     // top panel icons
-    const viewMonomerLibIcon = ui.iconFA('book', viewMonomerLib, 'View monomer library');
+    const viewMonomerLibIcon = ui.iconFA('book', MonomerLibViewer.view, 'View monomer library');
     const viewHint = ui.iconFA('lightbulb', () => {}, 'About the app');
     this.topPanel = [
       viewMonomerLibIcon,

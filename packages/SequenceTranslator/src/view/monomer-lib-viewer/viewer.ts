@@ -16,8 +16,12 @@ type CodesField = {
   }
 }
 
+type MetaField = {
+  [key: string]: string | CodesField,
+}
+
 type MonomerExtension = {
-  [key: string]: string | CodesField
+  [key: string]: string | MetaField
 }
 
 type ExtendedMonomer = Monomer & MonomerExtension;
@@ -30,19 +34,22 @@ const enum RELEVANT_FIELD {
   NAME = 'name',
   MOLFILE = 'molfile',
   CODES = 'codes',
+  META = 'meta',
 }
 
-export async function viewMonomerLib(): Promise<void> {
-  const table = await parseMonomerLib(LIB_PATH, DEFAULT_LIB_FILENAME);
-  table.name = 'Monomer Library';
-  const view = grok.shell.addTableView(table);
-  view.grid.props.allowEdit = false;
-  const onDoubleClick = view.grid.onCellDoubleClick;
-  onDoubleClick.subscribe(async (gridCell: DG.GridCell) => {
-    const molfile = gridCell.cell.value;
-    if (gridCell.tableColumn?.semType === 'Molecule')
-      await drawZoomedInMolecule(molfile);
-  });
+export class MonomerLibViewer {
+  static async view(): Promise<void> {
+    const table = await parseMonomerLib(LIB_PATH, DEFAULT_LIB_FILENAME);
+    table.name = 'Monomer Library';
+    const view = grok.shell.addTableView(table);
+    view.grid.props.allowEdit = false;
+    const onDoubleClick = view.grid.onCellDoubleClick;
+    onDoubleClick.subscribe(async (gridCell: DG.GridCell) => {
+      const molfile = gridCell.cell.value;
+      if (gridCell.tableColumn?.semType === 'Molecule')
+        await drawZoomedInMolecule(molfile);
+    });
+  }
 }
 
 async function parseMonomerLib(path: string, fileName: string): Promise<DG.DataFrame> {
@@ -60,17 +67,16 @@ function formatMonomerObject(sourceObj: ExtendedMonomer): FormattedMonomer {
   const formattedObject: FormattedMonomer = {};
   formattedObject[RELEVANT_FIELD.NAME] = sourceObj[RELEVANT_FIELD.NAME];
   formattedObject[RELEVANT_FIELD.MOLFILE] = sourceObj[RELEVANT_FIELD.MOLFILE];
-  const codes = sourceObj[RELEVANT_FIELD.CODES] as CodesField;
+  const meta = sourceObj[RELEVANT_FIELD.META] as MetaField;
+  const codes = meta[RELEVANT_FIELD.CODES] as CodesField;
   for (const synthesizer of Object.values(SYNTHESIZERS)) {
     const fieldName = synthesizer;
     const valuesList = [];
     // const technologySet = new Set();
     for (const technology of Object.values(TECHNOLOGIES)) {
       if (codes[synthesizer] !== undefined) {
-        if (codes[synthesizer][technology] !== undefined) {
+        if (codes[synthesizer][technology] !== undefined)
           valuesList.push(codes[synthesizer][technology].toString());
-          // technologySet.add(technology);
-        }
       }
     }
     // formattedObject['technologies'] = [...technologySet].toString();
