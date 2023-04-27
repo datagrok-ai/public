@@ -6,7 +6,11 @@ import {updateDivInnerHTML} from '../utils/ui-utils';
 
 const BACKGROUND = 'background';
 const TEXT = 'text';
+export const SIMILARITY = 'similarity';
+export const DIVERSITY = 'diversity';
 export class ChemSearchBaseViewer extends DG.JsViewer {
+  isEditedFromSketcher: boolean = false;
+  gridSelect: boolean = false;
   name: string = '';
   distanceMetric: string;
   limit: number;
@@ -21,7 +25,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   moleculeColumn?: DG.Column|null;
   moleculeColumnName: string;
   initialized: boolean = false;
-  metricsDiv = ui.div('', {style: {height: '10px', display: 'flex', justifyContent: 'right'}});
+  metricsDiv: HTMLElement | null;
   moleculeProperties: string[];
   applyColorTo: string;
 
@@ -39,6 +43,9 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       this.moleculeColumn = col;
       this.moleculeColumnName = col.name!;
     }
+    const header = this.name === DIVERSITY ? `Most diverse structures` : `Most similar structures`;
+    this.metricsDiv = ui.div(ui.divText(header, {style: {whiteSpace: 'nowrap'}}),
+      {style: {height: '10px', display: 'flex', justifyContent: 'space-between'}});
   }
 
   init(): void {
@@ -54,9 +61,13 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
 
     if (this.dataFrame) {
       this.subs.push(DG.debounce(this.dataFrame.onRowsRemoved, 50).subscribe(async (_: any) => await this.render()));
-      const compute = this.name !== 'diversity';
+      const compute = this.name !== DIVERSITY;
       this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50)
-        .subscribe(async (_: any) => await this.render(compute)));
+        .subscribe(async (_: any) => {
+          if (this.isEditedFromSketcher && !this.gridSelect)
+            this.isEditedFromSketcher = false;
+          await this.render(compute)
+        }));
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50)
         .subscribe(async (_: any) => await this.render(false)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe(async (_: any) => await this.render(false)));
@@ -76,7 +87,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     if (!this.initialized)
       return;
     if (this.metricsProperties.includes(property.name))
-      this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
+      this.updateMetricsLink(this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
     if (property.name === 'moleculeColumnName') {
       const col = this.dataFrame.col(property.get(this))!;
       if (col.semType === DG.SEMTYPE.MOLECULE)
@@ -85,14 +96,16 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.render();
   }
 
-  updateMetricsLink(metricsDiv: HTMLDivElement, object: any, options: {[key: string]: string}): void {
+  updateMetricsLink(object: any, options: {[key: string]: string}): void {
     const metricsButton = ui.button(`${this.distanceMetric}/${this.fingerprint}`, () => {
       if (!grok.shell.windows.showProperties)
         grok.shell.windows.showProperties = true;
       grok.shell.o = object;
     });
     Object.keys(options).forEach((it: any) => metricsButton.style[it] = options[it]);
-    updateDivInnerHTML(metricsDiv, metricsButton);
+    if (this.metricsDiv!.children.length > 1)
+      this.metricsDiv!.removeChild(this.metricsDiv!.children[1]);
+    this.metricsDiv!.appendChild(metricsButton);
   }
 
   async render(computeData = true) {
@@ -123,7 +136,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     const propsDict: {[key: string]: any} = {};
     const grid = grok.shell.tv.grid;
     if (similarity)
-      propsDict['similarity'] = {val: similarity};
+      propsDict[SIMILARITY] = {val: similarity};
     for (const col of this.moleculeProperties) {
         propsDict[col] = {val: this.moleculeColumn!.dataFrame.col(col)!.getString(idx)};
         const colorCoding = this.moleculeColumn!.dataFrame.col(col)!.tags[DG.TAGS.COLOR_CODING_TYPE]
@@ -133,9 +146,10 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     }
     const div = ui.divV([]);
     for (const key of Object.keys(propsDict)) {
-      const label = ui.divText(`${key}`, 'similarity-prop-label');
-      ui.tooltip.bind(label, key);
+      const labelName = key === SIMILARITY ? '' : key;
+      const label = ui.divText(`${labelName}`, 'similarity-prop-label');
       const value = ui.divText(`${propsDict[key].val}`, 'similarity-prop-value');
+      ui.tooltip.bind(value, key);
       if (propsDict[key].color) {
         const bgColor = DG.Color.toHtml(propsDict[key].color);
         if (this.applyColorTo === BACKGROUND) {

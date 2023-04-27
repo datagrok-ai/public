@@ -71,5 +71,5 @@ Provides access to the [ClickHouse](https://clickhouse.com/clickhouse) database 
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [ClickHouse](https://clickhouse.com/clickhouse)

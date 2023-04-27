@@ -6,6 +6,8 @@ import * as DG from 'datagrok-api/dg';
 import {Subject} from 'rxjs';
 import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
+import {RunComparisonView} from './run-comparison-view';
+import {CARD_VIEW_TYPE} from './shared/consts';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
@@ -238,6 +240,25 @@ export abstract class FunctionView extends DG.ViewBase {
   public abstract buildIO(): HTMLElement;
 
   /**
+   * Override to change behavior on runs comparison
+   * @param funcCallIds FuncCalls to be compared
+   */
+
+  public async onComparisonLaunch(funcCallIds: string[]) {
+    const parentCall = grok.shell.v.parentCall;
+
+    const fullFuncCalls = await Promise.all(funcCallIds.map((funcCallId) => historyUtils.loadRun(funcCallId)));
+
+    const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
+    const v = await RunComparisonView.fromComparedRuns(fullFuncCalls, {
+      parentView: cardView,
+      parentCall,
+      configFunc: this.func,
+    });
+    grok.shell.addView(v);
+  }
+
+  /**
    * Override to create a custom historical runs control.
    * @returns The HTMLElement with history block UI
    * @stability Stable
@@ -247,6 +268,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
     this.subs.push(
       newHistoryBlock.onRunChosen.subscribe(async (id) => this.linkFunccall(await this.loadRun(id))),
+      newHistoryBlock.onComparison.subscribe(async (ids) => this.onComparisonLaunch(ids)),
     );
 
     ui.empty(this.historyRoot);
@@ -323,7 +345,7 @@ export abstract class FunctionView extends DG.ViewBase {
   public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
     await this.onBeforeSaveRun(callToSave);
     const savedCall = await historyUtils.saveRun(callToSave);
-    savedCall.options['isHistorical'] = false;
+
     this.linkFunccall(savedCall);
 
     if (this.options.historyEnabled) this.buildHistoryBlock();

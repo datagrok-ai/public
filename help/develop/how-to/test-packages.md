@@ -29,8 +29,7 @@ saved in a CSV file in the package folder).
 To see tests execution, pass the `--gui` flag that disables the headless browser mode. This option can help you debug
 your tests.
 
-If you do not have any datagrok instance run locally, you can use [docker-compose](../admin/docker-compose.md) to run
-the stand.
+If you do not have any datagrok instance run locally, you can use [docker-compose](../admin/deploy/docker-compose.md) to run the stand.
 
 ## Tests after a change in a public package
 

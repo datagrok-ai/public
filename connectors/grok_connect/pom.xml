@@ -5,13 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>grok_connect</artifactId>
-    <version>2.0.9</version>
+    <version>2.0.12</version>
     <packaging>jar</packaging>
 
     <parent>
         <groupId>connectors</groupId>
         <artifactId>build</artifactId>
-        <version>2.0.9</version>
+        <version>2.0.12</version>
     </parent>
 
     <properties>
@@ -147,6 +147,15 @@
                 </configuration>
             </plugin>
         </plugins>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/**</include>
+                </includes>
+            </resource>
+        </resources>
     </build>
 
     <repositories>
@@ -208,6 +217,14 @@
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.41.2.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.openlink.virtuoso</groupId>
+            <artifactId>virtjdbc4</artifactId>
+            <version>7.1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/virtjdbc4_1.jar</systemPath>
         </dependency>
 
         <dependency>

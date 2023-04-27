@@ -10,8 +10,9 @@ export function malformedDataWarning(fingerprintCol: (BitArray | null)[], datafr
       malformedData.push(i);
   }
   if (malformedData.length) {
-    const message = `${malformedData.length} molecules with indexes ${malformedData.length < 10 ?
-      malformedData.join(',') : `${malformedData.slice(0, 9)}...`} are possibly malformed and are not included in analysis`;
+    const malformedIdxsForError = malformedData.length < 10 ? malformedData.map((i) => i + 1).join(',') :
+      `${malformedData.slice(0, 9).map((i) => i + 1)}...`
+    const message = `${malformedData.length} molecules with indexes ${malformedIdxsForError} are possibly malformed and are not included in analysis`;
     const selectRowsButton = ui.button('Select', () => {
       for (const i of malformedData)
         dataframe.selection.set(i!, true);

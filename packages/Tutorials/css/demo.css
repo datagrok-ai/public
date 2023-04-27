@@ -34,6 +34,7 @@
 
 .demo-app-tree-group {
 	margin-top: 12px;
+    overflow: initial;
 }
 
 .demo-app-tree-group .d4-tree-view-group {
@@ -67,6 +68,16 @@
 	background-color: var(--grey-1);
 }
 
+.demo-app-tree-home-node > .d4-tree-view-node > i.grok-icon.fa-home {
+    color: var(--grey-6);
+    width: 24px;
+    height: 22px;
+}
+
+.demo-app-tree-home-node .d4-tree-view-group-label {
+    margin: 0px;
+}
+
 .demo-app-view-title {
 	font-size: 20px;
 	color: var(--grey-6);
@@ -81,34 +92,71 @@
 	line-height: 1.5;
 }
 
-.demo-app-view.grok-gallery-grid {
-	margin-top: 12px;
-	justify-content: center;
-	align-items: stretch;
+.demo-app-group-title {
+    margin-left: 24px;
 }
 
-.demo-app-view.grok-gallery-grid > .d4-item-card {
-	max-width: 150px;
-}
-
-.demo-app-view.grok-gallery-grid > .d4-item-card:hover {
-	cursor: pointer;
-}
-
-.demo-app-view.grok-gallery-grid > .d4-item-card > div {
-	text-align: center;
-}
-
-.demo-app-view.grok-gallery-grid > .d4-item-card div.ui-image {
-	margin: 0 auto 16px auto;
-}
-
-.demo-app-view.grok-gallery-grid > .d4-item-card div.tutorials-card-title {
-	margin: 8px 0;
-	font-size: 15px;
-	font-weight: normal;
-}
-
-.demo-app-group-view.grok-gallery-grid {
+/* View tree group */ 
+.d4-tree-view-root.demo-app-group-view .grok-gallery-grid {
+    margin: 0;
+    padding: 12px;
     align-items: stretch;
+}
+
+.d4-tree-view-root.demo-app-group-view .grok-gallery-grid > div {
+    margin: 12px;
+}
+
+.d4-tree-view-root.demo-app-group-view .d4-tree-view-group-label {
+    color: var(--grey-6);
+}
+
+.d4-tree-view-root.demo-app-group-view .d4-tree-view-node {
+    padding: 4px 0;
+}
+
+/* Autocomplete dock */
+.demo-app-script {
+    overflow: scroll;
+}
+
+.demo-app-script .tutorials-root-header{
+    align-items: center;
+}
+
+.demo-app-script .tutorials-main-header {
+    padding: 0 12px;
+}
+
+.demo-app-script .fa-clock {
+    color: var(--grey-3);
+}
+
+.demo-app-script .fa-spin {
+    color: var(--blue-1);
+}
+
+.demo-app-script .fa-check {
+    color: var(--green-2);
+}
+
+.demo-app-script .grok-tutorial-entry-instruction {
+    color: var(--grey-6);
+}
+
+.demo-app-script .grok-tutorial-step-description {
+    padding-left: 22px;
+}
+
+.demo-app-script .grok-tutorial-step-description .hidden{
+    display: none;
+}
+
+.demo-app-script .grok-tutorial-step-description .visible{
+    display: block;
+}
+
+/* play-pause btn */
+.tutorials-root-header button>i.grok-icon.fa-play {
+    color:var(--green-2);
 }

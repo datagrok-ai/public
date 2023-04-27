@@ -29,10 +29,10 @@
     "build": "webpack",
     "release-usageanalysis": "webpack && grok publish --release",
     "debug-usageanalysis-dev": "webpack && grok publish dev",
-    "release-usageanalysis-dev": "grok publish dev --release",
+    "release-usageanalysis-dev": "webpack && grok publish dev --release",
     "debug-usageanalysis-public": "grok publish public",
     "debug-usageanalysis-local": "webpack && grok publish local",
-    "release-usageanalysis-public": "webpack && grok publish dev --release",
+    "release-usageanalysis-public": "webpack && grok publish localhost --release",
     "test": "grok test",
     "test-dev": "grok test --host dev",
     "test-local": "grok test --host localhost"

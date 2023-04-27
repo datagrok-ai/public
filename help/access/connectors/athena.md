@@ -125,7 +125,7 @@ Simple steps to link csv files with Athena and get results in Datagrok:
    * To change CSV delimiter adjust "serialization.format" and "field.delim" parameters
    * To skip the header line add "skip.header.line.count" parameter
 
-4. Create a [data connection](../data-connection.md) in the Datagrok platform. The <a href="#" id="parameters">
+4. Create a [data connection](../access.md#data-connection) in the Datagrok platform. The <a href="#" id="parameters">
    parameters</a> may include: `"region"`, `"vpc endpoint"`, `"db"`
    , `"s3OutputLocation"`, `"s3OutputEncOption"`, `"accessKey"`, `"secretKey"`, or `"connString"`. For example:
 
@@ -140,7 +140,7 @@ Simple steps to link csv files with Athena and get results in Datagrok:
       * VPC Endpoint is optional. If not specified, then canonical endpoint - "`athena.[Region].amazonaws.com:443`" will be used
       * Do not forget "/" at "S3 Output Location" parameter end
 
-5. Create a [data query](../data-query.md) under the new connection. For example:
+5. Create a [data query](../access.md#data-query) under the new connection. For example:
 
    ```
    SELECT * FROM products;
@@ -148,6 +148,6 @@ Simple steps to link csv files with Athena and get results in Datagrok:
 
 See also:
 
-* [Data connection](../data-connection.md)
-* [Data query](../data-query.md)
+* [Data connection](../access.md#data-connection)
+* [Data query](../access.md#data-query)
 * [Amazon Athena](https://docs.aws.amazon.com/athena/latest/ug/what-is.html)

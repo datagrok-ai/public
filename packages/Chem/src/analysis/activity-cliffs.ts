@@ -19,7 +19,7 @@ export function findMcsAndUpdateDrawings(params: ITooltipAndPanelParams, hosts: 
 async function drawMoleculesWithMcsAsync(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
   const mcsDf = DG.DataFrame.create(2);
   mcsDf.columns.addNewString('smiles').init((i) => params.seqCol.get(params.line.mols[i]));
-  const mcs = await findMCS('smiles', mcsDf);
+  const mcs = await findMCS('smiles', mcsDf, true, true);
   params.cashedData[params.line.id] = mcs;
   drawMolecules(params, hosts);
 }

@@ -209,8 +209,8 @@ export class NglAspect {
     await this.stage.compList[0].addRepresentation(repChoice.value, schemeObj);
     await this.stage.compList[0].autoView();
 
-    // let va = this.stage;
-    // console.log(va.viewer.renderer.domElement.toDataURL('image/png'));
+    let va = this.stage;
+    console.log(va.viewer.renderer.domElement.toDataURL('image/png'));
   }
 
   // viewer resize

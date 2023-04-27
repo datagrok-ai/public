@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {DockingApp} from './apps/docking-app';
 import {byId, byData, MolstarViewer} from './viewers/molstar-viewer';
+import {SaguaroViewer} from './viewers/saguaro-viewer';
 import {PdbGridCellRenderer} from './utils/pdb-grid-cell-renderer';
 import {NglGlService} from './utils/ngl-gl-service';
 import {NglForGridTestApp} from './apps/ngl-for-grid-test-app';
@@ -15,15 +16,17 @@ import {PROPS as nglPROPS, NglViewer} from './viewers/ngl-viewer';
 import {NglViewerApp} from './apps/ngl-viewer-app';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
 import {PdbHelper} from './utils/pdb-helper';
-import {BiostructureApp} from './apps/biostructure-app';
+import {PdbApp} from './apps/pdb-app';
 import {nglViewUI, nglWidgetUI} from './viewers/ngl-ui';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
-import {MolstarViewerApp} from './apps/molstar-viewer-app';
 import {TaskBarProgressIndicator} from 'datagrok-api/dg';
 import {dockingDemoApp} from './demo/docking';
 import {biostructureInGridApp} from './demo/biostructure-in-grid';
+import {BiotrackViewerApp} from './apps/biotrack-viewer-app';
+import {BiostructureAndTrackViewerApp} from './apps/biostructure-and-track-viewer-app';
 import {previewBiostructure, viewBiostructure} from './viewers/view-preview';
+import {BiostructureViewerApp} from './apps/biostructure-viewer-app';
 
 class Package extends DG.Package {
   private _pLogger: DG.PackageLogger;
@@ -59,7 +62,8 @@ export function Molecule3dCellRenderer(): PdbGridCellRenderer {
 export async function dockingApp() {
   const pi = DG.TaskBarProgressIndicator.create('Opening BioStructure Viewer');
   try {
-    const app = new DockingApp();
+    grok.shell.warning('dockingApp demo deprecated');
+    const app = new DockingApp('dockingApp');
     await app.init();
   } finally {
     pi.close();
@@ -195,12 +199,36 @@ export async function nglViewerApp() {
   }
 }
 
-//name: molstarViewerApp
-//description: Test app for MolstarViewer
-export async function molstarViewerApp() {
-  const pi = DG.TaskBarProgressIndicator.create('open molstarViewer app');
+//name: biostructureViewerApp
+//description: Test app for BiostructureViewer (molstar)
+export async function biostructureViewerApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('open biostructureViewer app');
   try {
-    const app = new MolstarViewerApp('molstarViewerApp');
+    const app = new BiostructureViewerApp('biostructureViewerApp');
+    await app.init();
+  } finally {
+    pi.close();
+  }
+}
+
+//name: biotrackViewerApp
+//description: Test app for BiotrackViewer (saguaro)
+export async function biotrackViewerApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('open biotrackViewer app');
+  try {
+    const app = new BiotrackViewerApp('biotrackViewerApp');
+    await app.init();
+  } finally {
+    pi.close();
+  }
+}
+
+//name: biostructureAndTrackViewerApp
+//description: Test app for twin BiostructureViewer (molstar) and BiotrackViewer (saguaro)
+export async function biostructureAndTrackViewerApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('open biostructureAndTrackViewer app');
+  try {
+    const app = new BiostructureAndTrackViewerApp('biostructureAndTrackViewerApp');
     await app.init();
   } finally {
     pi.close();
@@ -229,6 +257,15 @@ export function nglViewer(): DG.JsViewer {
 //output: viewer result
 export function molstarViewer(): DG.JsViewer {
   return new MolstarViewer();
+}
+
+//name: Biotrack
+//description: structure polymer annotation tracks
+//meta.keywords: PDB, track
+//tags: viewer, panel
+//output: viewer result
+export function saguaroViewer(): DG.Viewer {
+  return new SaguaroViewer();
 }
 
 // -- Top menu --

@@ -18,6 +18,6 @@ SQL queries via HiveSever1 JDBC driver.
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Apache Hive](https://hive.apache.org/)
 * [Apache Hive Wiki](https://en.wikipedia.org/wiki/Apache_Hive)

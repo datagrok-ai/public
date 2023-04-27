@@ -18,5 +18,5 @@ using SQL queries via JDBC driver.
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Apache Cassandra](https://cassandra.apache.org/)
