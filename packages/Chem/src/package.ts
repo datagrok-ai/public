@@ -501,7 +501,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
   if (plotEmbeddings)
     return grok.shell
       .tableView(table.name)
-      .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
+      .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical Space'});
 }
 
 

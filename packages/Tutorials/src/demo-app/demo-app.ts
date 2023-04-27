@@ -3,16 +3,10 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import {_package} from '../package';
+import {sortFunctionsByDemoPath} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
 import '../../css/demo.css';
-
-type Direction = {
-  category: string,
-  name: string,
-  description: string,
-  func: DG.Func
-};
 
 
 export class DemoView extends DG.ViewBase {
@@ -26,11 +20,12 @@ export class DemoView extends DG.ViewBase {
     this._initContent();
   }
 
-  static findDemoFunc(demoPath: string) {
+
+  static findDemoFunc(demoPath: string): DG.Func {
     return DG.Func.find({meta: {'demoPath': demoPath}})[0];
   }
 
-  async startDemoFunc(func: DG.Func, viewPath: string) {
+  async startDemoFunc(func: DG.Func, viewPath: string): Promise<void> {
     this._closeAll();
 
     ui.setUpdateIndicator(grok.shell.tv.root, true);
@@ -45,59 +40,56 @@ export class DemoView extends DG.ViewBase {
   }
 
 
-  private _closeAll() {
+  private _closeAll(): void {
     grok.shell.closeAll();
     this._closeDemoScript();
   }
 
-  private _closeDemoScript() {
+  private _closeDemoScript(): void {
     const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[1];
-    if (scriptDockNode?.container.containerElement.classList.contains('tutorials-demo-script-container')) {
+    if (scriptDockNode?.container.containerElement.classList.contains('tutorials-demo-script-container'))
       grok.shell.dockManager.close(scriptDockNode);
-    }
   }
 
-  private _closeDockPanel() {
+  private _closeDockPanel(): void {
     const panelDockNode = Array.from(grok.shell.dockManager.rootNode.children)[0];
-    if (panelDockNode?.container.containerElement.classList.contains('tutorials-demo-container')) {
+    if (panelDockNode?.container.containerElement.classList.contains('tutorials-demo-container'))
       grok.shell.dockManager.close(panelDockNode);
-    }
   }
 
-  private _initContent() {
-    grok.shell.windows.showToolbox = false;
-    grok.shell.windows.showHelp = false;
-    grok.shell.windows.showProperties = false;
+  private _initContent(): void {
+    this._initWindowOptions();
 
     this.root.innerHTML = '';
-    
     this.name = 'Demo app';
 
     const tree = ui.tree();
     tree.root.classList.add('demo-app-group-view');
     
-    const tempGroups:String[] = [];
+    const tempGroups: string[] = [];
 
-    for (const f of DG.Func.find({meta: {'demoPath': null}})) {
-      const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
+    const functions = DG.Func.find({meta: {'demoPath': null}});
+    for (let i = 0; i < functions.length; i++) {
+      const pathOption = <string>functions[i].options[DG.FUNC_OPTIONS.DEMO_PATH];
       const path = pathOption.split('|').map((s) => s.trim());
-      tempGroups.push(path[0]);
+      tempGroups[i] = path[0];
     }
 
-    const groups: String[] = [...new Set(tempGroups)];
+    const groups: string[] = [...new Set(tempGroups)].sort();
 
-    for (let i=0; i<groups.length; i++){
-      const name = groups[i] as string;
-      tree.group(name, null, true).root.lastChild?.appendChild(this.groupRoot(name));
+    for (let i = 0; i < groups.length; i++) {
+      const name = groups[i];
+      tree.group(name, null, true).root.lastChild?.appendChild(this._groupRoot(name));
     }
+
     this.root.append(ui.div([tree.root], 'grok-gallery-grid'));
   }
 
-  groupRoot (groupName: string) {
-    const root = ui.div([], 'demo-app-group-view grok-gallery-grid');
+  private _createViewRootElement(viewOrGroupName: string): HTMLDivElement {
+    const root = ui.div([]);
 
-    for (const f of DG.Func.find({meta: {'demoPath': null}})) {
-      if (f.options[DG.FUNC_OPTIONS.DEMO_PATH].includes(groupName)) {
+    for (const f of DG.Func.find({meta: {'demoPath': null}}).sort(sortFunctionsByDemoPath)) {
+      if (f.options[DG.FUNC_OPTIONS.DEMO_PATH].includes(viewOrGroupName)) {
         const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
         const path = pathOption.split('|').map((s) => s.trim());
         const demo = path[path.length - 1];
@@ -107,12 +99,9 @@ export class DemoView extends DG.ViewBase {
 
         fetch(imgPath)
           .then(res => {
-            if (res.ok)
-              img.style.backgroundImage = `url(${imgPath})`
-            else
-              img.style.backgroundImage = `url(${_package.webRoot}images/demoapp/emptyImg.jpg)`
+            img.style.backgroundImage = res.ok ? `url(${imgPath})` : `url(${_package.webRoot}images/demoapp/emptyImg.jpg)`;
           })
-          .catch()
+          .catch();
 
         let item = ui.card(ui.divV([
           img,
@@ -121,92 +110,69 @@ export class DemoView extends DG.ViewBase {
         ], 'demo-app-card'));
 
         item.onclick = () => {
-          let node = this.tree.items.find(node => node.text == demo)?.root;
+          const node = this.tree.items.find(node => node.text === demo)?.root;
           node?.click();
         };
 
-        if (f.description != '')
-          ui.tooltip.bind(item, f.description)
+        const packageMessage = `Part of the ${f.package.name === 'Tutorials' ? 'platform core' : `${f.package.name} package`}`;
+        ui.tooltip.bind(item, () => f.description ?
+          ui.divV([f.description, ui.element('br'), packageMessage]) : ui.div(packageMessage));
 
         root.append(item);
       }
     }
-    return root
+
+    return root;
+  }
+
+  private _groupRoot(groupName: string): HTMLDivElement {
+    const root = this._createViewRootElement(groupName);
+    root.classList.add('demo-app-group-view');
+    root.classList.add('grok-gallery-grid');
+
+    return root;
   }
   
-  nodeView(viewName: string) {
-    grok.shell.windows.showToolbox = false;
-    grok.shell.windows.showHelp = false;
-    grok.shell.windows.showProperties = false;
-
-    grok.shell.closeAll();
+  nodeView(viewName: string): void {
+    this._initWindowOptions();
+    this._closeAll();
 
     const view = grok.shell.newView(viewName);
     view.basePath = '/apps/Tutorials/Demo';
     view.path = `/${viewName}`;
 
-    const root = ui.div([], 'grok-gallery-grid');
+    const root = this._createViewRootElement(viewName);
+    root.classList.add('grok-gallery-grid');
+
     const tree = ui.tree();
-    let treeNode = tree.group(viewName, null, true);
+    const treeGroup = tree.group(viewName, null, true);
 
-    for (const f of DG.Func.find({meta: {'demoPath': null}})) {
-      if (f.options[DG.FUNC_OPTIONS.DEMO_PATH].includes(viewName)) {
-        const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
-        const path = pathOption.split('|').map((s) => s.trim());
-        const demo = path[path.length - 1];
-
-        const imgPath = `${_package.webRoot}images/demoapp/${f.name}.jpg`;
-        const img = ui.div('', 'ui-image');
-
-        fetch(imgPath)
-          .then(res => {
-            if (res.ok)
-              img.style.backgroundImage = `url(${imgPath})`
-            else
-              img.style.backgroundImage = `url(${_package.webRoot}images/demoapp/emptyImg.jpg)`
-          })
-          .catch()
-
-        let item = ui.card(ui.divV([
-          img,
-          ui.div([demo], 'tutorials-card-title'),
-          ui.div([f.description], 'tutorials-card-description')
-        ], 'demo-app-card'));
-
-        item.onclick = () => {
-          let node = this.tree.items.find(node => node.text == demo)?.root;
-          node?.click();
-        };
-
-        if (f.description)
-          ui.tooltip.bind(item, f.description)
-
-        root.append(item);
-      }
-    }
-    treeNode.root.lastChild?.appendChild(root);
+    treeGroup.root.lastChild?.appendChild(root);
     tree.root.classList.add('demo-app-group-view');
-    grok.shell.v.root.append(ui.div([tree.root], 'grok-gallery-grid'));
+    view.root.append(ui.div([tree.root], 'grok-gallery-grid'));
   }
 
-  private _initDockPanel() {
-    if (this._isDockPanelInit()) {
-      this._closeDockPanel();
-    }
-
-    let homeNode = this.tree.group('Home');
+  private _createHomeNode(): void {
+    const homeNode = this.tree.group('Home');
     homeNode.root.classList.add('demo-app-tree-home-node');
     homeNode.root.getElementsByClassName('d4-tree-view-node')[0]?.prepend(ui.iconFA('home'));
     homeNode.root.getElementsByClassName('d4-tree-view-tri')[0].remove();
+  }
 
-    for (const f of DG.Func.find({meta: {'demoPath': null}})) {
+  private _initDockPanel(): void {
+    if (this._isDockPanelInit())
+      this._closeDockPanel();
+
+    this._createHomeNode();
+
+    for (const f of DG.Func.find({meta: {'demoPath': null}}).sort(sortFunctionsByDemoPath)) {
       const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
       const path = pathOption.split('|').map((s) => s.trim());
       const folder = this.tree.getOrCreateGroup(path.slice(0, path.length - 1).join(' | '));
       const item = folder.item(path[path.length - 1]);
       
       item.root.onmouseover = (event) => {
-        const packageMessage = `Part of the ${f.package.name} package`;
+        const packageMessage = `Part of the ${f.package.name === 'Tutorials' ? 'platform core' : `${f.package.name} package`}`;
         ui.tooltip.show(f.description ? ui.divV([f.description, ui.element('br'), packageMessage]) : ui.div(packageMessage),
           event.clientX, event.clientY);
       };
@@ -217,15 +183,7 @@ export class DemoView extends DG.ViewBase {
     }
 
     this.searchInput.onChanged(() => {
-      const dom = this.tree.root.getElementsByClassName('d4-tree-view-node');
-
-      for (let i = 0; i < dom.length; i++) {
-        const item = dom[i] as HTMLElement;
-        if (item.innerText.toLowerCase().includes(this.searchInput.value.toLowerCase()))
-          item.classList.remove('hidden');
-        else
-          item.classList.add('hidden');
-      }
+      this._searchItem();
     });
 
     this.searchInput.input.onkeyup = (event) => {
@@ -242,30 +200,28 @@ export class DemoView extends DG.ViewBase {
     DG.debounce(this.tree.onSelectedNodeChanged, 300).subscribe(async (value) => {
       if (DemoScript.currentObject) {
         DemoScript.currentObject.cancelScript();
-        const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[1];
-        if (scriptDockNode.container.containerElement.classList.contains('tutorials-demo-script-container')) {
-            grok.shell.dockManager.close(scriptDockNode);
-            grok.shell.closeAll();
-            grok.shell.addView(new DemoView());
-        }
+        this._closeAll();
+        grok.shell.addView(new DemoView());
       }
 
       if (value.root.classList.contains('d4-tree-view-item')) {
-        const categoryName = value.root.parentElement?.parentElement
-          ?.getElementsByClassName('d4-tree-view-group-label')[0].innerHTML;
+        const categoryName = (value.root.parentElement?.parentElement
+          ?.getElementsByClassName('d4-tree-view-group-label')[0] as HTMLElement).innerText;
         const viewerName = value.text;
+
+        // TODO: make it work for if multiple subcategories
         const demoFunc = DemoView.findDemoFunc(`${categoryName} | ${viewerName}`);
         const demoPath = `${categoryName}/${viewerName}`;
+
         await this.startDemoFunc(demoFunc, demoPath);
         this.tree.root.focus();
       } else if (value.root.classList.contains('demo-app-tree-home-node')) { 
         this._initContent();
-        grok.shell.windows.showToolbox = false;
-        grok.shell.windows.showHelp = false;
-        grok.shell.windows.showProperties = false;
-        grok.shell.closeAll();
+        this._closeAll();
+
         const view = grok.shell.addView(this);
         view.basePath = '/apps/Tutorials/Demo';
+        // TODO: check if we really need this
         view.path = `/`;
       } else {
         this.tree.root.focus();
@@ -276,21 +232,13 @@ export class DemoView extends DG.ViewBase {
     this.dockPanel = grok.shell.dockManager.dock(ui.panel([
       this.searchInput.root,
       this.tree.root,
-    ]), 'left', null, 'Categories');
+    ]), DG.DOCK_TYPE.LEFT, null, 'Categories');
     this.dockPanel.container.containerElement.classList.add('tutorials-demo-container');
 
     this.tree.root.classList.add('demo-app-tree-group');
 
-    this._initWindowOptions();
-
-    // TODO: on click on viewer demo set viewer help url in property panel (func helpUrl)
     // TODO: implement search in demo - search on meta.keywords, name, description
-
-    // TODO: if there empty space - add viewer/filter/etc.
-
-    // TODO: add to script demo class grok.shell.windows.showPropertyPanel = true and showHelp = false
-    // TODO: add GIS
-    // TODO: add breadcrumbs instead of name
+    // TODO?: add breadcrumbs instead of name
   }
 
   private _isDockPanelInit(): boolean {
@@ -298,10 +246,25 @@ export class DemoView extends DG.ViewBase {
     return panelDockNode?.container.containerElement.classList.contains('tutorials-demo-container');
   }
 
-  private _initWindowOptions() {
+  private _searchItem(): void {
+    const dom = this.tree.root.getElementsByClassName('d4-tree-view-node');
+
+    for (let i = 0; i < dom.length; i++) {
+      const item = dom[i] as HTMLElement;
+      if (item.innerText.toLowerCase().includes(this.searchInput.value.toLowerCase())) {
+        item.classList.remove('hidden');
+        if (item.classList.contains('d4-tree-view-item'))
+          item.parentElement?.previousElementSibling?.classList.remove('hidden');
+      }
+      else
+        item.classList.add('hidden');
+    }
+  }
+
+  private _initWindowOptions(): void {
     grok.shell.windows.showToolbox = false;
     grok.shell.windows.showRibbon = true;
-    grok.shell.windows.showHelp = true;
+    grok.shell.windows.showHelp = false;
     grok.shell.windows.showProperties = false;
 
     grok.shell.windows.help.syncCurrentObject = false;

@@ -304,8 +304,10 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     protected List<String> getParameterNames(String query, DataQuery dataQuery, StringBuilder queryBuffer) {
         List<String> names = new ArrayList<>();
-        String regex = descriptor.commentStart + "\\w+:.*";
-        query = query.replaceAll(regex, "").trim();
+        String regexComment = String.format("(?m)^(?<!['\\\"])%s.*(?!['\\\"])$", descriptor.commentStart);
+        query = query
+                .replaceAll(regexComment, "")
+                .trim();
         Pattern pattern = Pattern.compile("(?m)@(\\w+)");
         Matcher matcher = pattern.matcher(query);
         int idx = 0;

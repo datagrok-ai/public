@@ -129,4 +129,4 @@ extensions.
 
 [datagrok-tools README]: https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools
 
-[JavaScript exercises]: exercises/exercises.md
+[JavaScript exercises]: exercises/exercises.mdx

@@ -8,7 +8,7 @@ import {delay} from '@datagrok-libraries/utils/src/test';
 /** Type for {@link DemoScript} step */
 export type Step = {
   name: string;
-  func: () => void;
+  func: () => Promise<void>;
 
   /** Step options: description and delay (in ms) after function ends */
   options?: {
@@ -141,7 +141,7 @@ export class DemoScript {
 
       const currentStep = entry[i] as HTMLDivElement;
 
-      this._steps[i].func();
+      await this._steps[i].func();
       this._scrollTo(this._root, currentStep.offsetTop - this._mainHeader.offsetHeight);
       await delay(this._steps[i].options?.delay ? this._steps[i].options?.delay! : 2000);
 
@@ -232,7 +232,7 @@ export class DemoScript {
    * @param options - Step options (description and delay after step ends)
    * @returns Returns the current demo script object
    */
-  step(name: string, func: () => void, options?: {description?: string, delay?: number}): this {
+  step(name: string, func: () => Promise<void>, options?: {description?: string, delay?: number}): this {
     this._steps[this.steps.length] = {
       name: name,
       func: func,

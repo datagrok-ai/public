@@ -24,8 +24,8 @@ efficiently work with as big datasets as possible. It offers two modes:
 * **Remote data**—sometimes, it is impractical or impossible to download the whole dataset, but you still need to work
   with it. In this case, Datagrok offers several solutions that will transparently translate the necessary work to be
   performed on the server-side. Here are some of them:
-  * [DB Exploration](../access/databases.md#database-manager) to explore database schemas
-  * [DB Visual Query](../access/databases.md#aggregation-editor) to aggregate and pivot on the database side
+  * [DB Exploration](../access/databases.mdx#database-manager) to explore database schemas
+  * [DB Visual Query](../access/databases.mdx#aggregation-editor) to aggregate and pivot on the database side
 
 ## Complexity
 

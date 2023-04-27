@@ -47,7 +47,7 @@ Visual Query allows you to get table with aggregated values by columns from DB t
 
 1. Click on "Add result to workspace" from dialog menu (v)
 
-* Result table of query from [Query Builder](../../access/databases.md#join-tables) has been added to workspace
+* Result table of query from [Query Builder](../../access/databases.mdx#join-tables) has been added to workspace
 
 1. Click on "Get All" from context menu of **employees** DB table
 
