@@ -29,7 +29,7 @@ import {PluginLayoutControlsDisplay} from 'molstar/lib/mol-plugin/layout';
 import {Color as msColor} from 'molstar/lib/mol-util/color';
 import {getPdbHelper, IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 
-import {BuiltInTrajectoryFormat} from 'molstar/lib/mol-plugin-state/formats/trajectory';
+import {BuiltInTrajectoryFormat, BuiltInTrajectoryFormats} from 'molstar/lib/mol-plugin-state/formats/trajectory';
 
 // TODO: find out which extensions are needed.
 /*const Extensions = {
