@@ -88,7 +88,7 @@ export class PackagesView extends UaView {
     const packages: string[] = df.getCol('pid').categories.filter((c) => c !== '');
     // console.log(packages);
     const users: string[] = df.getCol('uid').categories;
-    df.selection.init((i) => {
+    t.selection.init((i) => {
       const row = gen.next().value as DG.Row;
       return dateFrom <= row.time_start && row.time_start < dateTo &&
         packages.includes(row.pid) && users.includes(row.uid);
