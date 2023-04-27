@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {DELIMITER} from '../const';
 import {LINKER_CODES, P_LINKAGE} from './const';
-import {MonomerLibWrapper} from './monomer-handler';
+import {MonomerLibWrapper} from '../monomer-lib-utils/monomer-handler';
 
 /** Wrapper for parsing a strand and getting a sequence of monomer IDs (with
  * omitted linkers, if needed)  */
