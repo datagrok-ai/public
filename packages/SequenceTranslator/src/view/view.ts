@@ -7,7 +7,7 @@ import {MAIN_TAB, AXOLABS_TAB, SDF_TAB} from './const/view';
 import {MainTabUI} from './tabs/main';
 import {SdfTabUI} from './tabs/sdf';
 import {AxolabsTabUI} from './tabs/axolabs';
-import {viewMonomerLib} from '../model/monomer-lib-viewer';
+import {viewMonomerLib} from './monomer-lib-viewer/viewer';
 
 export class SequenceTranslatorUI {
   constructor() {

@@ -11,10 +11,6 @@ import orjson
 
 import click
 
-# CodesType = dict[str, dict[str, list[str]]]
-
-MonomerMetadata = dict
-
 BEGIN_ATOM_LINE = 'M  V30 BEGIN ATOM'
 END_ATOM_LINE = 'M  V30 END ATOM'
 BEGIN_BOND_LINE = 'M  V30 BEGIN BOND'
@@ -113,7 +109,7 @@ def prepare_molblock(src_molblock: str, name: str) -> str:
 
 class Monomer:
     def __init__(self, symbol: str, name: str, molfile: str, smiles: str,
-                 meta: MonomerMetadata):
+                 meta: dict):
         self.monomerType = 'Backbone'
         self.smiles = smiles
         self.name = name
