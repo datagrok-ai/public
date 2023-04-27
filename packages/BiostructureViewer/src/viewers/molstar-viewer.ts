@@ -589,10 +589,14 @@ export async function viewMolstarUI(content: string, name?: string): Promise<voi
 /** Creates view with Molstar viewer to preview Biostructure (PDB) */
 export function previewMolstarUI(file: DG.FileInfo): DG.View {
   const builtinFormats = BuiltInTrajectoryFormats.map(obj => obj[0]) as string[];
+  const extendedFormats = ['cif', 'mcif'];
   if(!isSupportedFormat()) {
     grok.shell.error(`Unsupported format: ${file.extension}`);
     throw new Error(`Unsupported format: ${file.extension}`);
   }
+
+  const formatLoader = extendedFormats.includes(file.extension) ? 'mmcif' : file.extension;
+
   const view = DG.View.create();
   const viewer = new RcsbViewer(view.root, MolstarViewerDefaultOptions);
   const subs: Unsubscribable[] = [];
@@ -606,18 +610,18 @@ export function previewMolstarUI(file: DG.FileInfo): DG.View {
 
   function loadString(data: string) {
     const binary: boolean = false;
-    viewer.loadStructureFromData(data, file.extension as BuiltInTrajectoryFormat, binary)
+    viewer.loadStructureFromData(data, formatLoader as BuiltInTrajectoryFormat, binary)
       .then(() => {}); // Ignoring Promise returned
   }
 
   function loadBytes(bytes: any) {
     const binary: boolean = false;
-    viewer.loadStructureFromData(bytes, file.extension as BuiltInTrajectoryFormat, binary)
+    viewer.loadStructureFromData(bytes, formatLoader as BuiltInTrajectoryFormat, binary)
       .then(() => {}); // Ignoring Promise returned
   }
 
   function isSupportedFormat(){
-    return builtinFormats.includes(file.extension);
+    return [...builtinFormats, ...extendedFormats].includes(file.extension);
   }
 
   // Handling binary data formats separately

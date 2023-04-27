@@ -130,7 +130,7 @@ export async function importPdb(fileContent: string): Promise<DG.DataFrame[]> {
 // -- File (pre)viewers --
 
 // eslint-disable-next-line max-len
-//tags: fileViewer, fileViewer-mol, fileViewer-cif, fileViewer-mcif, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-ent, fileViewer-pqr, fileViewer-mmtf, fileViewer-mtl, fileViewer-sd
+//tags: fileViewer, fileViewer-mol, fileViewer-cif, fileViewer-mcif, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-ent, fileViewer-pqr, fileViewer-mmtf, fileViewer-mtl, fileViewer-sd, fileViewer-pdbqt
 //input: file file
 //output: view v
 export function molecule3dNglView1(file: DG.FileInfo): DG.View {
