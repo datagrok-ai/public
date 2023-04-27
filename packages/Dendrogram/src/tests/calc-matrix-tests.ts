@@ -7,9 +7,9 @@ import {
   test,
   expectArray,
 } from '@datagrok-libraries/utils/src/test';
-import { mapToFixed } from './utils/array-utils';
-import { ITreeHelper } from '@datagrok-libraries/bio/src/trees/tree-helper';
-import { TreeHelper } from '../utils/tree-helper';
+import {mapToFixed} from './utils/array-utils';
+import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {TreeHelper} from '../utils/tree-helper';
 const sequences = [
   'CATGT',
   'AATGA',
@@ -37,7 +37,7 @@ category('CalculateDistances', () => {
     const seqCols = [DG.Column.fromStrings('Sequence', sequences)];
     const df = DG.DataFrame.fromColumns(seqCols);
     seqCols[0].semType = DG.SEMTYPE.MACROMOLECULE;
-    const matrix = await th.calcDistanceMatrix(df, seqCols.map(col => col.name));
+    const matrix = await th.calcDistanceMatrix(df, seqCols.map((col) => col.name));
     expectArray(mapToFixed(matrix!.data), mapToFixed(DNADistances1));
   });
 
