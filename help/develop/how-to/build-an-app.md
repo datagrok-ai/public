@@ -507,7 +507,7 @@ When the script is run, here is what happens under the hood:
 * The script execution is fully stateless and isolated
 
 You can even return graphics from the script! Check it
-with [this exercise on Scripting Viewers](../exercises/exercises.mdx#exercise-4-creating-a-scripting-viewer).
+with [this exercise on Scripting Viewers](../exercises/exercises.md#exercise-4-creating-a-scripting-viewer).
 
 To add a script (in R, Python, Julia, Octave) to the package, put it into its `scripts` folder as a separate file. When
 it comes to JavaScript scripts, simply any JavaScript function in your package may become one. Just add a preamble to it
@@ -516,7 +516,7 @@ with a name, as we did [here](#the-entry-point), and a typed signature.
 *References:*:
 
 * [Datagrok architecture](../admin/architecture.md)
-* [Exercises](../exercises/exercises.mdx)
+* [Exercises](../exercises/exercises.md)
 * [Scripting](../../compute/scripting.md)
 
 #### Datagrok functions
