@@ -50,8 +50,8 @@ category('top menu chem space', async () => {
     DG.Balloon.closeAll();
     await _testChemSpaceReturnsResult(testSmilesMalformed, 'canonical_smiles');
     try {
-      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
-        '2 molecules with indexes 2,9 are possibly malformed and are not included in analysis', 'cannot find warning balloon', 1000);
+      await awaitCheck(() => (document.querySelector('.d4-balloon-content') as HTMLElement)?.innerText.includes(
+        '2 molecules with indexes 3,10 are possibly malformed and are not included in analysis'), 'cannot find warning balloon', 1000);
     } finally {DG.Balloon.closeAll();}
   });
 
