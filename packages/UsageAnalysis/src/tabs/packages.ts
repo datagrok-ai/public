@@ -76,18 +76,17 @@ export class PackagesView extends UaView {
 
   static showSelectionContextPanel(t: DG.DataFrame, uaToolbox: UaToolbox,
     expanded: {[key: string]: boolean}, backToView: string) {
-    if (!t.selection.anyTrue && !t.filter.anyTrue)
-      return;
-    let df = t.clone(t.selection.and(t.filter));
+    if (!t.selection.anyTrue) return;
+    let df = t.clone(t.selection);
     const gen = t.rows[Symbol.iterator]();
     const dateMin = df.getCol('time_start').stats.min;
     const dateMax = df.getCol('time_end').stats.max;
     const dateFrom = new Date(dateMin / 1000);
     const dateTo = new Date(dateMax / 1000);
     const packages: string[] = df.getCol('pid').categories.filter((c) => c !== '');
-    console.log(packages);
+    // console.log(packages);
     const users: string[] = df.getCol('uid').categories;
-    df.selection.init((i) => {
+    t.selection.init((i) => {
       const row = gen.next().value as DG.Row;
       return dateFrom <= row.time_start && row.time_start < dateTo &&
         packages.includes(row.pid) && users.includes(row.uid);

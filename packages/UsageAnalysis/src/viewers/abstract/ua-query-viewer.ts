@@ -37,7 +37,7 @@ export abstract class UaQueryViewer extends UaViewer {
       if (this.viewer !== undefined)
         this.viewer.root.style.display = 'none';
       const filter = {...this.filter, ...staticFilter};
-      console.log(this.queryName);
+      // console.log(this.queryName);
       if (this.queryName === undefined) {
         this.getDataFrame!().then(this.postQuery.bind(this)).then(resolve.bind(this));
         return;
