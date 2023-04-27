@@ -95,7 +95,7 @@ export class OverviewView extends UaView {
           userStatsViewer.viewer!.props.rowSource = 'Filtered';
           t.filter.copyFrom(usersSelection).and(packagesSelection);
           //t.selection.copyFrom(t.filter);
-          PackagesView.showSelectionContextPanel(t, this.uaToolbox, this.expanded, 'Overview');
+          PackagesView.showSelectionContextPanel(t, this.uaToolbox, 'Overview', {showDates: false});
         });
         viewer.root.onclick =(me) => {
           //resetViewers(skipEvent, viewer.table);
@@ -117,7 +117,7 @@ export class OverviewView extends UaView {
           }
           t.filter.copyFrom(usersSelection).and(packagesSelection);
           t.selection.copyFrom(t.filter);
-          PackagesView.showSelectionContextPanel(t, this.uaToolbox, this.expanded, 'Overview');
+          PackagesView.showSelectionContextPanel(t, this.uaToolbox, 'Overview', {showDates: false});
           skipEvent = false;
         };
         return viewer;
@@ -153,7 +153,7 @@ export class OverviewView extends UaView {
           packageStatsViewer.viewer!.props.rowSource = 'Filtered';
           t.filter.copyFrom(usersSelection).and(packagesSelection);
           t.selection.copyFrom(t.filter);
-          PackagesView.showSelectionContextPanel(t, this.uaToolbox, this.expanded, 'Overview');
+          PackagesView.showSelectionContextPanel(t, this.uaToolbox, 'Overview', {showDates: false});
         });
         viewer.root.onclick =(me) => {
           //resetViewers(skipEvent, viewer.table);
@@ -175,7 +175,7 @@ export class OverviewView extends UaView {
           }
           t.filter.copyFrom(usersSelection).and(packagesSelection);
           t.selection.copyFrom(t.filter);
-          PackagesView.showSelectionContextPanel(t, this.uaToolbox, this.expanded, 'Overview');
+          PackagesView.showSelectionContextPanel(t, this.uaToolbox, 'Overview', {showDates: false});
           skipEvent = false;
         };
         return viewer;
