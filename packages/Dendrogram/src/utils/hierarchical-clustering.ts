@@ -8,7 +8,6 @@ import {DistanceMetric, isLeaf, LinkageMethod, NodeType} from '@datagrok-librari
 
 import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
 import {TreeHelper} from './tree-helper';
-import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {ClusterMatrix} from '../wasm/clusterizerWasm';
 import {getClusterMatrixWorker} from '../wasm/clustering-worker-creator';
 
@@ -50,7 +49,7 @@ export async function hierarchicalClusteringUI(
   const colNameSet: Set<string> = new Set(colNameList);
   const [filteredDf, filteredIndexList]: [DG.DataFrame, Int32Array] =
     hierarchicalClusteringFilterDfForNulls(df, colNameSet);
-  const th: ITreeHelper = new TreeHelper();
+  const th = new TreeHelper();
 
   let tv: DG.TableView = grok.shell.getTableView(df.name);
   if (filteredDf.rowCount != df.rowCount) {
@@ -94,7 +93,7 @@ export async function hierarchicalClusteringUI(
   for (let fltRowIdx: number = 0; fltRowIdx < fltRowCount; fltRowIdx++)
     fltRowIndexes[fltRowIdx] = filteredIndexList[fltRowIdx];
 
-  const newickRoot: NodeType = parseClusterMatrix(clusterMatrix);
+  const newickRoot: NodeType = th.parseClusterMatrix(clusterMatrix);
   // Fix branch_length for root node as required for hierarchical clustering result
   newickRoot.branch_length = 0;
   (function replaceNodeName(node: NodeType, fltRowIndexes: { [fltIdx: number]: number }) {
@@ -164,49 +163,4 @@ async function hierarchicalClusteringByDistanceExec(distance: DistanceMatrix, li
     {data: dataDf, size: distance.size, linkage_name: linkage});
 
   return newickStr;
-}
-
-function parseClusterMatrix(clusterMatrix:ClusterMatrix): NodeType {
-  /*
-  clusert matrix is in R format, I.E. the indexings are 1-based.
-  one of the reasons is that values in merge arrays are not always positive. if the value is negative
-  it means that we are referencing a leaf node. otherwise we are referencing a cluster node.
-  for example :
-  1, -2, 0.1 would mean that the merge happened between cluster 0 and leaf node 1 with a distance of 0.1
-  */
-
-  function getSubTreeLength(node: NodeType): number {
-    //Tradeoff between performance and memory usage - in this case better to use less memory.
-    //as wasm already takes up quite a bit
-    function subTreeLength(children?: NodeType[]): number {
-      return children && children.length ? (children[0].branch_length ?? 0) + subTreeLength(children[0].children) : 0;
-    }
-    if (isLeaf(node))
-      return 0;
-    else
-      return subTreeLength(node.children);
-  }
-
-
-  const {mergeRow1, mergeRow2, heightsResult} = clusterMatrix;
-  const clusters: NodeType[] = new Array<NodeType>(heightsResult.length);
-
-  for (let i = 0; i<heightsResult.length; i++) {
-    const left: NodeType = mergeRow1[i] < 0 ?
-      {name: (mergeRow1[i] * -1 - 1).toString(), branch_length: heightsResult[i]} :
-      clusters[mergeRow1[i] - 1];
-
-    const right = mergeRow2[i] < 0 ?
-      {name: (mergeRow2[i] * -1 - 1).toString(), branch_length: heightsResult[i]} :
-      clusters[mergeRow2[i] - 1];
-
-    const leftLength = getSubTreeLength(left);
-    const rightLength = getSubTreeLength(right);
-
-    left.branch_length = heightsResult[i] - leftLength;
-    right.branch_length = heightsResult[i] - rightLength;
-
-    clusters[i] = {name: '', children: [left, right], branch_length: 0};
-  }
-  return clusters[clusters.length - 1];
 }

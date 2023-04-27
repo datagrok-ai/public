@@ -4,7 +4,7 @@
 #include "fastcluster.h"
 #include <iomanip>
 #include <sstream>
-// #include <emscripten.h>
+#include <emscripten.h>
 
 using namespace std;
 
@@ -54,11 +54,11 @@ extern "C"{
 //     return out;
 // }
 
-// EMSCRIPTEN_KEEPALIVE
+EMSCRIPTEN_KEEPALIVE
 void getDendrogram(float *distmat, int npoints, int optMethod, int *merge, float *heights){
 
     hclust_fast(npoints, distmat, optMethod, merge, heights);
-    delete[] distmat;
     // don't forget to delete merges and heights from the client;
+    free(distmat);
     return;
 }

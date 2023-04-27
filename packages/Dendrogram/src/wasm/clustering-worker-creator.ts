@@ -11,6 +11,7 @@ export async function getClusterMatrixWorker(
     const worker = new Worker(new URL('./clustering-worker.ts', import.meta.url));
     worker.postMessage({distMatArray, n, methodCode});
     worker.onmessage = ({data: {error, clusterMatrix}}): void => {
+      worker.terminate();
       error ? reject(error) : resolve(clusterMatrix);
     };
   });
