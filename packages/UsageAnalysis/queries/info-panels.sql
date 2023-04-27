@@ -1,5 +1,4 @@
 --name: userById
---meta.cache: true
 --tags: panel
 --render: RowToTable
 --input: string id { semType: user_id }
@@ -9,7 +8,6 @@ where id = @id
 --end
 
 --name: userInfoByEmailPanel
---meta.cache: true
 --connection: System:Datagrok
 --tags: panel
 --input: string email {semType:email}

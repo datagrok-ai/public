@@ -1,6 +1,6 @@
 import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, observeStream, StreamSubscription} from "./events";
-import {Observable, Subscription, fromEvent} from "rxjs";
+import {Observable, Subscription, fromEvent, Subject} from "rxjs";
 import {Func, Property, PropertyOptions} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
 import {ColorType, FILTER_TYPE, LegendPosition, Type} from "./const";
@@ -15,6 +15,7 @@ import {Dictionary, typeaheadConfig} from 'typeahead-standalone/dist/types';
 import '../css/breadcrumbs.css';
 import '../css/drop-down.css';
 import '../css/typeahead-input.css';
+import '../css/tags-input.css';
 
 declare let grok: any;
 declare let DG: any;
@@ -896,8 +897,8 @@ export class Menu {
 
   /** Shows the menu.
    * @returns {Menu} */
-  show(options?: {parent?: HTMLElement}): Menu {
-    return toJs(api.grok_Menu_Show(this.dart, options?.parent));
+  show(options?: {element?: Element, causedBy?: MouseEvent, x?: number, y?: number, nextToElement?: boolean}): Menu {
+    return toJs(api.grok_Menu_Show(this.dart, options?.element, options?.causedBy, options?.x, options?.y, options?.nextToElement));
   }
 
   get onContextMenuItemClick() {
@@ -1766,13 +1767,14 @@ export class Breadcrumbs {
     this.root = ui.div();
     this.path = path;
 
-    this.root = ui.divH(path.map((element) => ui.div(ui.link(element, () => {}, '',
-      `ui-breadcrumbs-text-element ${element}`), 'ui-breadcrumbs-element')), 'ui-breadcrumbs');
+    this.root = ui.divH(path.map((element) => ui.div(
+      ui.link(element, () => {}, '', 'ui-breadcrumbs-text-element'), 'ui-breadcrumbs-element')), 'ui-breadcrumbs');
 
     const rootElements = this.root.getElementsByClassName('ui-breadcrumbs-element');
     for (let i = 0; i < rootElements.length - 1; i++)
       rootElements[i].after(ui.iconFA('chevron-right'));
   }
+
 
   get onPathClick(): Observable<string[]> {
     const pathElements = this.root.getElementsByClassName('ui-breadcrumbs-text-element');
@@ -1780,7 +1782,7 @@ export class Breadcrumbs {
     return fromEvent<MouseEvent>(pathElements, 'click')
       .pipe(
         map((event) => {
-          const currentElement = (event.target as Element).innerHTML;
+          const currentElement = (event.target as HTMLElement).innerText;
           const currentPath = this.path.slice(0, this.path.indexOf(currentElement) + 1);
 
           return currentPath;
@@ -1800,27 +1802,20 @@ export class DropDown {
 
 
   constructor(label: string | Element, createElement: () => HTMLElement) {
-    this._element = ui.div();
-    this._dropDownElement = ui.div();
     this._isMouseOverElement = false;
-    this._label = label;
-
     this.isExpanded = false;
-    this.root = ui.div();
 
-    this._updateElement(createElement);
-    this._initEventListeners();
-  }
-
-
-  private _updateElement(createElement: () => HTMLElement) {
+    this._label = label;
     this._element = createElement();
 
     this._dropDownElement = ui.div(ui.div(this._element), 'ui-drop-down-content');
     this._dropDownElement.style.visibility = 'hidden';
 
     this.root = ui.div([this._label, this._dropDownElement], 'ui-drop-down-root');
+
+    this._initEventListeners();
   }
+
 
   private _initEventListeners() {
     this.root.addEventListener('mousedown', (e) => {
@@ -1876,16 +1871,173 @@ export class DropDown {
 }
 
 export class TypeAhead extends InputBase {
-  constructor(config: TypeAheadConfig) {
-    const inputElement = ui.stringInput('', '');
+  constructor(name: string, config: TypeAheadConfig) {
+    const inputElement = ui.stringInput(name, '');
     super(inputElement.dart);
 
     const typeAheadConfig: typeaheadConfig<Dictionary> = Object.assign(
       {input: <HTMLInputElement> this.input}, config);
 
     typeahead(typeAheadConfig);
+    this._changeStyles();
+  }
 
+  _changeStyles() {
     this.root.getElementsByClassName('tt-list')[0].className = 'ui-input-list';
+    this.root.getElementsByClassName('ui-input-list')[0].removeAttribute('style');
     this.root.getElementsByClassName('tt-input')[0].className = 'ui-input-editor';
+    this.root.getElementsByClassName('typeahead-standalone')[0].classList.add('ui-input-root');
+  }
+}
+
+export class TagsInput extends InputBase {
+  private _tags: string[];
+  private _tagsDiv: HTMLDivElement;
+  private _addTagIcon: HTMLElement;
+
+  private _onTagAdded: Subject<string> = new Subject<string>();
+  private _onTagRemoved: Subject<string> = new Subject<string>();
+
+
+  constructor(name: string, tags: string[], showBtn: boolean) {
+    super(ui.stringInput(name, '').dart);
+
+    this._addTagIcon = showBtn ?
+      ui.iconFA('plus', () => this.addTag((this.input as HTMLInputElement).value)) :
+      ui.iconFA('');
+
+    this._tags = tags;
+    this._tagsDiv = ui.div(tags.map((tag) => { return this._createTag(tag); }), 'ui-tag-list');
+
+    this._createRoot();
+    this._initEventListeners();
+  }
+
+
+  private _createTag(tag: string): HTMLElement {
+    const icon = ui.iconFA('times', () => this.removeTag(currentTag.innerText));
+    const currentTag = ui.span([ui.span([tag]), icon], `ui-tag`);
+    currentTag.dataset.tag = tag;
+
+    currentTag.ondblclick = () => {
+      const input = this._createTagEditInput(currentTag);
+      (currentTag.firstElementChild as HTMLElement).innerText = '';
+      currentTag.insertBefore(input, currentTag.firstElementChild);
+
+      input.select();
+      input.focus();
+    };
+
+    return currentTag;
+  }
+
+  private _createTagEditInput(currentTag: HTMLElement): HTMLInputElement {
+    const tagValue = currentTag.innerText;
+    const input = document.createElement('input');
+    input.value = tagValue;
+
+    let blurFlag = true;
+
+    input.onblur = () => {
+      if (!blurFlag)
+        return;
+      const newTag = input.value;
+      input.remove();
+      this._renameTag(tagValue, newTag, currentTag);
+    };
+
+    input.onkeyup = (event) => {
+      if (event.key === 'Escape') {
+        blurFlag = false;
+        input.remove();
+        (currentTag.firstElementChild as HTMLElement).innerText = tagValue;
+      } else if (event.key === 'Enter') {
+        blurFlag = false;
+        const newTag = input.value;
+        input.remove();
+        this._renameTag(tagValue, newTag, currentTag);
+      }
+    };
+
+    return input;
+  }
+
+  private _createRoot(): void {
+    const inputContainer = ui.div([this.captionLabel, this.input, ui.div(this._addTagIcon, 'ui-input-options')],
+      'ui-input-root');
+    const tagContainer = ui.div([ui.label(' ', 'ui-input-label'), this._tagsDiv], 'ui-input-root');
+
+    this.root.append(inputContainer, tagContainer);
+    this.root.classList.add('ui-input-tags');
+  }
+
+  private _initEventListeners(): void {
+    this.input.addEventListener('keyup', (event: KeyboardEvent) => {
+      if (event.code === 'Enter')
+        this.addTag((this.input as HTMLInputElement).value);
+    });
+
+    this.input.addEventListener('keydown', (event: KeyboardEvent) => {
+      if ((this.input as HTMLInputElement).value.length === 0 && event.code === 'Backspace')
+        this.removeTag(this._tags[0]);
+    });
+  }
+
+  private _renameTag(oldTag: string, newTag: string, currentTag: HTMLElement): void {
+    const currentTagSpan = currentTag.firstElementChild as HTMLElement;
+    if (!this._isProper(newTag)) {
+      currentTagSpan.innerText = oldTag;
+      return;
+    }
+
+    currentTagSpan.innerText = newTag;
+    currentTag.dataset.tag = newTag;
+    this._tags[this._tags.indexOf(oldTag)] = newTag;
+  }
+
+  private _isProper(tag: string): boolean {
+    return !(tag === '' || this._tags.includes(tag));
+  }
+
+
+  addTag(tag: string): void {
+    if (!this._isProper(tag))
+      return;
+
+    this._tags.unshift(tag);
+    const currentTag = this._createTag(tag);
+    this._tagsDiv.insertBefore(currentTag, this._tagsDiv.firstChild);
+    (this.input as HTMLInputElement).value = '';
+    this._onTagAdded.next(tag);
+  }
+
+  removeTag(tag: string): void {
+    const tagIndex = this._tags.indexOf(tag);
+    if (tagIndex === -1)
+      return;
+    this._tags.splice(tagIndex, 1);
+    const currentTag = this._tagsDiv.querySelector(`[data-tag="${tag}"]`);
+    this._tagsDiv.removeChild(currentTag!);
+    this._onTagRemoved.next(tag);
+  }
+
+  getTags(): string[] {
+    return this._tags;
+  }
+
+  setTags(tags: string[]): void {
+    this._tags = tags;
+    this._tagsDiv = ui.div(tags.map((tag) => { return this._createTag(tag); }), 'ui-tag-list');
+    const currentTagsDiv = this.root.getElementsByClassName('ui-tag-list')[0];
+    currentTagsDiv.replaceWith(this._tagsDiv);
+  }
+
+
+  get onTagAdded(): Observable<string> {
+    return this._onTagAdded;
+  }
+
+  get onTagRemoved(): Observable<string> {
+    return this._onTagRemoved;
   }
 }

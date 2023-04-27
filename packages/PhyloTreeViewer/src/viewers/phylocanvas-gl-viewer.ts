@@ -303,6 +303,8 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements IPhylocanvasGlVi
         onAfterRender: this.viewerDeckOnAfterRender.bind(this),
         onHover: this.viewerOnHover.bind(this),
       });
+
+      this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this));
       this.viewer.view.style.backgroundImage = 'none';
 
       // Preserve original selectNode method to call it bound from replacing method
@@ -329,6 +331,12 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements IPhylocanvasGlVi
     //this.viewer.handleHover = this.viewerHandleHover.bind(this);
 
     // this._viewSubs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe((_) => this.render(false)));
+  }
+
+  private onContextMenuHandler(menu: DG.Menu) {
+    menu.item('Reset view', () => {
+      this.viewer?.fitInCanvas();
+    });
   }
 
   override onTableAttached() {

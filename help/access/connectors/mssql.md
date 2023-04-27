@@ -78,6 +78,6 @@ driver.
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Microsoft SQL](https://www.microsoft.com/en-us/sql-server)
 * [Microsoft SQL Wiki](https://en.wikipedia.org/wiki/Microsoft_SQL_Server)

@@ -23,7 +23,8 @@ import {
   Breadcrumbs,
   DropDown,
   TypeAhead,
-  TypeAheadConfig
+  TypeAheadConfig,
+  TagsInput
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -742,8 +743,8 @@ export function moleculeInput(name: string, value: string, onValueChanged: Funct
   return new InputBase(api.grok_MoleculeInput(name, value), onValueChanged);
 }
 
-export function columnInput(name: string, table: DataFrame, value: Column | null, onValueChanged: Function | null = null): InputBase<Column | null> {
-  return new InputBase(api.grok_ColumnInput(name, table.dart, value?.dart), onValueChanged);
+export function columnInput(name: string, table: DataFrame, value: Column | null, filter: Function | null = null, onValueChanged: Function | null = null): InputBase<Column | null> {
+  return new InputBase(api.grok_ColumnInput(name, table.dart, value?.dart, filter ? (x: any) => filter(toJs(x)) : null), onValueChanged);
 }
 
 export function columnsInput(name: string, table: DataFrame, onValueChanged: (columns: Column[]) => void,
@@ -1375,8 +1376,12 @@ export function dropDown(label: string | Element, createElement: () => HTMLEleme
   return new DropDown(label, createElement);
 }
 
-export function typeAhead(config: TypeAheadConfig): TypeAhead {
-  return new TypeAhead(config);
+export function typeAhead(name: string, config: TypeAheadConfig): TypeAhead {
+  return new TypeAhead(name, config);
+}
+
+export function tagsInput(name: string, tags: string[], showBtn: boolean) {
+  return new TagsInput(name, tags, showBtn);
 }
 
 export let icons = {

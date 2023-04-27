@@ -1,20 +1,22 @@
 import * as grok from 'datagrok-api/grok';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {check} from './utils';
 
 
 category('Functions: Date', () => {
   test('Date', () => check({
-    'Date(2020, 1, 1)': dayjs('2020-01-01'),
-    'Date(2000, 10, 1)': dayjs('2000-10-01'),
-    'Date(2040, 1, 30)': dayjs('2040-01-30'),
+    'Date(2020, 1, 1)': dayjs.utc('2020-01-01'),
+    'Date(2000, 10, 1)': dayjs.utc('2000-10-01'),
+    'Date(2040, 1, 30)': dayjs.utc('2040-01-30'),
   }));
 
   test('DateAdd', () => check({
-    'DateAdd(Date(2020, 1, 1), 86400000)': dayjs('2020-01-01').add(1, 'd'),
-    'DateAdd(Date(2020, 1, 1), 10800000)': dayjs('2020-01-01').add(3, 'h'),
-    'DateAdd(Date(2020, 1, 1), 3605000)': dayjs('2020-01-01').add(1, 'h').add(5, 's'),
+    'DateAdd(Date(2020, 1, 1), 86400000)': dayjs.utc('2020-01-01').add(1, 'd'),
+    'DateAdd(Date(2020, 1, 1), 10800000)': dayjs.utc('2020-01-01').add(3, 'h'),
+    'DateAdd(Date(2020, 1, 1), 3605000)': dayjs.utc('2020-01-01').add(1, 'h').add(5, 's'),
   }));
 
   test('DateDiff', () => check({
@@ -27,13 +29,12 @@ category('Functions: Date', () => {
   test('DateNow', async () => {
     const now = await grok.functions.eval('DateNow()');
     const tolerance = 10;
-    console.log('Date', now.valueOf());
     expect(Math.abs(dayjs().valueOf() - now.valueOf()) <= tolerance, true);
   });
 
   test('DateTime', () => check({
-    'DateTime(2020, 1, 1, 23, 59, 45, 999)': dayjs(new Date(2020, 0, 1, 23, 59, 45, 999)),
-    'DateTime(2050, 10, 10, 0, 15, 5, 0)': dayjs(new Date(2050, 9, 10, 0, 15, 5, 0)),
+    'DateTime(2020, 1, 1, 23, 59, 45, 999)': dayjs.utc('2020-1-1 23:59:45.999'),
+    'DateTime(2050, 10, 10, 0, 15, 5, 0)': dayjs.utc('2050-10-10 0:15:5'),
   }));
 
   test('DayOfMonth', () => check({
@@ -109,7 +110,7 @@ category('Functions: Date', () => {
   }));
 
   test('Today', () => check({
-    'Today()': dayjs().hour(0).minute(0).second(0).millisecond(0),
+    'Today()': dayjs.utc().hour(0).minute(0).second(0).millisecond(0),
   }));
 
   test('Weeknum', () => check({

@@ -1,21 +1,20 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import {category, expect, test, delay, before, after} from '@datagrok-libraries/utils/src/test';
-import {_testSearchSubstructure, _testSearchSubstructureAllParameters} from './utils';
+// import * as ui from 'datagrok-api/ui';
+
+import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {_testFindSimilar, _testGetSimilarities} from './menu-tests-similarity-diversity';
 import {testCsv, testSubstructure} from './substructure-search-tests';
-import {getHTMLElementbyInnerText, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue, checkHTMLElementbyInnerText, isColumnPresent} from './gui-utils';
-import {_importSdf} from '../open-chem/sdf-importer';
+import {isColumnPresent} from './gui-utils';
+
 
 category('server features', () => {
   test('descriptors', async () => {
-
     const tree = await grok.chem.descriptorsTree();
     expect(tree !== undefined, true);
     const df = DG.DataFrame.fromCsv(testCsv);
-    const t: DG.DataFrame = await grok.chem.descriptors(df, 'smiles', 
-      ['MolWt', 'NumAromaticCarbocycles','NumHAcceptors', 'NumHeteroatoms', 'NumRotatableBonds', 'RingCount']);
+    const t: DG.DataFrame = await grok.chem.descriptors(df, 'smiles',
+      ['MolWt', 'NumAromaticCarbocycles', 'NumHAcceptors', 'NumHeteroatoms', 'NumRotatableBonds', 'RingCount']);
     grok.shell.addTableView(t);
 
     isColumnPresent(grok.shell.t.columns, 'MolWt');
@@ -33,14 +32,13 @@ category('server features', () => {
 });
 
 
-
 category('chem exported', () => {
   test('findSimilar.api.sar-small', async () => {
     await _testFindSimilar(grok.chem.findSimilar);
   });
 
   test('getSimilarities.api.molecules', async () => {
-    await _testGetSimilarities(grok.chem.getSimilarities);
+    await _testGetSimilarities(grok.chem.getSimilarities, grok.data.demo.molecules(100));
   });
 
   test('substructureSearch', async () => {

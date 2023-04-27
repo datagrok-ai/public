@@ -4,12 +4,6 @@
     flex-grow: 0;
 }
 
-.ui-input-root:hover {
-    cursor: default;
-    border-radius: 0px;
-    background-color: #FFFFFF;
-}
-
 .ui-form .ui-input-root > .typeahead-standalone {
     flex-grow: 1;
 }
@@ -35,7 +29,7 @@
     border: none;
 }
 
-.ui-input-list{
+.typeahead-standalone .ui-input-list {
     display: block;
     position: absolute;
     width: 100%;
@@ -60,8 +54,15 @@
     padding: 4px;
 }
 
-.tt-hide {
+.typeahead-standalone > .ui-input-list.tt-hide {
     display: none;
+}
+
+.tt-suggestion.tt-selected {
+    cursor: pointer;
+    background: var(--grey-1);
+    color: var(--grey-6);
+    padding: 4px;
 }
 
 .typeahead-standalone .ui-input-list .tt-suggestion .tt-highlight {

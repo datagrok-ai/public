@@ -73,6 +73,7 @@ async function _testDiversitySearchViewer() {
 }
 
 function getSearchViewer(viewer: DG.Viewer, name: string) {
+  //@ts-ignore
   for (const v of viewer.view.viewers) {
     if (v.type === name)
       return v;

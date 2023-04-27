@@ -3,10 +3,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
-import {isLeaf, NodeCuttedType, NodeType} from '@datagrok-libraries/bio/src/trees';
+import {DistanceMetric, isLeaf, NodeCuttedType, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {NO_NAME_ROOT, parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {getDistanceMatrixForNumerics, getDistanceMatrixForSequences} from '../workers/distance-worker-creator';
+import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
 
 type TreeLeafDict = { [nodeName: string]: NodeType };
 type DataNodeDict = { [nodeName: string]: number };
@@ -96,14 +98,14 @@ export class TreeHelper implements ITreeHelper {
       if (isLeaf) {
         return ([] as string[]).concat(
           node.name,
-          node.branch_length ? `:${node.branch_length}` : []
+          node.hasOwnProperty('branch_length') ? `:${node.branch_length}` : []
         ).join('');
       } else {
         const childrenText = node.children!.map((childNode) => toNewickInt(childNode)).join(',');
         return ([] as string[]).concat(
           `(${childrenText})`,
           node.name,
-          node.branch_length ? `:${node.branch_length}` : []
+          node.hasOwnProperty('branch_length') ? `:${node.branch_length}` : []
         ).join('');
       }
     }
@@ -457,6 +459,85 @@ export class TreeHelper implements ITreeHelper {
     if (!treeRoot.branch_length) treeRoot.branch_length = 0;
     return treeRoot;
   }
+
+  async calcDistanceMatrix(df: DG.DataFrame, colNames: string[], method: DistanceMetric = DistanceMetric.Euclidean) {
+    let out: DistanceMatrix | null = null;
+    const columns = colNames.map((name) => df.getCol(name));
+    for (const col of columns) {
+      let values: Float32Array;
+      if (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT)
+        values = await getDistanceMatrixForNumerics(col.toList() as unknown as Float32Array);
+      else if (col.semType ==='Macromolecule')
+        values = await getDistanceMatrixForSequences(col.toList() as unknown as string[]);
+      else throw new TypeError('Unsupported column type');
+
+      if (!out) {
+        out = new DistanceMatrix(values);
+        if (columns.length > 1) {
+          out.normalize();
+          out.square();
+        }
+      } else {
+        let newMat: DistanceMatrix | null = new DistanceMatrix(values);
+        newMat.normalize();
+        switch (method) {
+        case DistanceMetric.Manhattan:
+          out.add(newMat);
+        default:
+          newMat.square();
+          out.add(newMat);
+        }
+        // remove reference
+        newMat = null;
+      }
+    }
+    if (method === DistanceMetric.Euclidean && columns.length > 1)
+      out?.sqrt();
+
+    return out;
+  }
+  parseClusterMatrix(clusterMatrix:ClusterMatrix): NodeType {
+    /*
+    clusert matrix is in R format, I.E. the indexings are 1-based.
+    one of the reasons is that values in merge arrays are not always positive. if the value is negative
+    it means that we are referencing a leaf node. otherwise we are referencing a cluster node.
+    for example :
+    1, -2, 0.1 would mean that the merge happened between cluster 0 and leaf node 1 with a distance of 0.1
+    */
+
+    function getSubTreeLength(node: NodeType): number {
+      //Tradeoff between performance and memory usage - in this case better to use less memory.
+      //as wasm already takes up quite a bit
+      function subTreeLength(children?: NodeType[]): number {
+        return children && children.length ? (children[0].branch_length ?? 0) + subTreeLength(children[0].children) : 0;
+      }
+      if (isLeaf(node))
+        return 0;
+      else
+        return subTreeLength(node.children);
+    }
+
+
+    const {mergeRow1, mergeRow2, heightsResult} = clusterMatrix;
+    const clusters: NodeType[] = new Array<NodeType>(heightsResult.length);
+
+    for (let i = 0; i<heightsResult.length; i++) {
+      const left: NodeType = mergeRow1[i] < 0 ?
+        {name: (mergeRow1[i] * -1 - 1).toString(), branch_length: heightsResult[i]} :
+        clusters[mergeRow1[i] - 1];
+
+      const right = mergeRow2[i] < 0 ?
+        {name: (mergeRow2[i] * -1 - 1).toString(), branch_length: heightsResult[i]} :
+        clusters[mergeRow2[i] - 1];
+
+      const leftLength = getSubTreeLength(left);
+      const rightLength = getSubTreeLength(right);
+
+      left.branch_length = heightsResult[i] - leftLength;
+      right.branch_length = heightsResult[i] - rightLength;
+
+      clusters[i] = {name: '', children: [left, right], branch_length: 0};
+    }
+    return clusters[clusters.length - 1];
+  }
 }
-
-

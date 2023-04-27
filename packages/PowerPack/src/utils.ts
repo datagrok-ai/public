@@ -26,9 +26,9 @@ export function saveSettings(): Promise<void> {
   return grok.dapi.userDataStorage.post(WIDGETS_STORAGE, settings);
 }
 
-export function widgetHost(w: DG.Widget): HTMLElement {
+export function widgetHost(w: DG.Widget, widgetHeader?: HTMLDivElement): HTMLElement {
   let host = ui.box(null, 'power-pack-widget-host');
-
+  widgetHeader ??= ui.div();
   function remove(): void {
     host.remove();
     if (w.factory?.name) {
@@ -45,6 +45,7 @@ export function widgetHost(w: DG.Widget): HTMLElement {
 
   let header = ui.div([
     ui.divText(w.props.hasProperty('caption') ? w.props.caption : '', 'd4-dialog-title'),
+    widgetHeader,
     ui.icons.settings(() => { grok.shell.o = w}, 'Edit settings'),
     ui.icons.close(remove, 'Remove'),
   ], 'd4-dialog-header');

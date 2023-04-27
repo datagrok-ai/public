@@ -28,8 +28,8 @@ _billions of rows_ at the speed of thought right in your browser.
 
 With Datagrok, you can:
 
-* [Seamlessly load data from any data source](../access/file-browser-and-file-shares.md). Datagrok supports all popular databases,
-  multiple [file formats](../access/supported-data-sources.md#supported-file-types) and is both data-agnostic and
+* [Seamlessly load data from any data source](../access/file-shares.mdx). Datagrok supports all popular databases,
+  multiple [file formats](../access/supported-formats.md) and is both data-agnostic and
   domain-intelligent. <!--TODO link to a section on domains once ready-->
 
 * Visualize the data using domain-specific value renderers (such as molecules on scatter plot axes).
@@ -44,8 +44,7 @@ With Datagrok, you can:
   visualizations (
   like [scatterplots with built-in regression lines](../visualize/viewers/scatter-plot.md#regression-line)
   or [box-plots with built-in statistical tests](../visualize/viewers/box-plot.md#t-test)) and certain domain-specific
-  viewers, such as [chemically-aware   viewers](../domains/chem/chemically-aware-viewers.md). The tabular viewer, [_
-  grid_](../visualize/viewers/grid.md), is extremely powerful. Some of its features include:
+  viewers, such as [chemically-aware   viewers](../domains/chem/chemically-aware-viewers.md). The tabular viewer, [_grid_](../visualize/viewers/grid.md), is extremely powerful. Some of its features include:
 
   * Viewing datasets with _millions of columns_ and _billions of rows_
   * Dataset overview, including summary statistics for numerical data columns and distribution for categorical data
@@ -72,7 +71,7 @@ can [add custom viewers](../develop/how-to/develop-custom-viewer.md) or develop 
 in [R, Python, or Julia](../compute/scripting.md).
 
 Each of these actions can be [automated](../datagrok/functions/functions.md#macros) and used in
-[pipelines](../access/data-pipeline.md). Sharing the results of your analysis is easy and
+pipelines. Sharing the results of your analysis is easy and
 [secure](../govern/security.md).<!--TODO rewrite for clarity-->
 
 With Datagrok, anyone can use their domain knowledge and perceptive abilities to explore data and uncover its meaning.

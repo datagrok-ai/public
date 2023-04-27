@@ -6,6 +6,9 @@ title: "Conversion functions"
 
 - [Boolean](#booleanx)
 - [DateParse](#dateparses)
+- [ParseQnum](#parseqnum)
+- [Qnum](#qnum)
+- [QnumToString](#qnumtostring)
 - [TimeSpanParse](#timespanparses)
 - [ToString](#tostringx)
 
@@ -34,6 +37,34 @@ Constructs and returns a date based on string pattern `s`.
 
 ```javascript
 DateParse("20120227T132700")    // 2012-02-27 13:27:00.000
+```
+
+## <a name="parseqnum"></a>ParseQnum(`s`)
+
+Parses a qualified number from string `s`.
+
+```javascript
+ParseQnum("10")
+ParseQnum("<10")
+ParseQnum(" > 10")
+```
+
+## <a name="qnum"></a>Qnum(`x`, `q`)
+
+Returns a qualified number with value `x` and qualifier `q`.
+
+```javascript
+Qnum(1, "=")
+Qnum(2, "<")
+Qnum(3, ">")
+```
+
+## <a name="qnumtostring"></a>QnumToString(`x`)
+
+Converts a qualified number to a string representation.
+
+```javascript
+QnumToString(Qnum(1.5, "<"))  // <1.50
 ```
 
 ## <a name="timespanparse"></a>TimeSpanParse(`s`)

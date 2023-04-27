@@ -139,7 +139,7 @@ indexed and can be browsed.
 See also:
 
 * [Files](../../access/connectors/files.md)
-* [Data connection](../../access/data-connection.md)
+* [Data connection](../../access/access.md#data-connection)
 * [Data connection Test](../../access/data-connection-test.md)
-* [Data query](../../access/data-query.md)
+* [Data query](../../access/access.md#data-query)
 * [Data query-test](../../access/data-query-test.md)

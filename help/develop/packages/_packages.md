@@ -295,11 +295,11 @@ Your package might contain the following additional folders, depending on your n
 
 [competitor for jQuery]: https://www.npmjs.com/package/cash-dom
 
-[connections]: ../../access/data-connection.md "A data connection is a configuration in Datagrok that lets you access data in a data source such as GitHub repository or local file system."
+[connections]: ../../access/access.md#data-connection "A data connection is a configuration in Datagrok that lets you access data in a data source such as GitHub repository or local file system."
 
 [custom viewer built with D3.js]: https://github.com/datagrok-ai/public/tree/master/packages/Viewers
 
-[database queries]: ../../access/data-query.md "A data query extract data from a source. A data query can be an SQL query or a query to an Excel file."
+[database queries]: ../../access/access.md#data-query "A data query extract data from a source. A data query can be an SQL query or a query to an Excel file."
 
 [Datagrok configuration section]: _datagrok-configuration.md
 

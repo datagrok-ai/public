@@ -77,5 +77,5 @@ database using SQL queries via JDBC driver.
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Amazon Redshift](https://aws.amazon.com/en/redshift/)

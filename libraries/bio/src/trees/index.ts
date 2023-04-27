@@ -14,6 +14,12 @@ export interface NodeCuttedType extends NodeType {
   cuttedChildren?: NodeType[];
 }
 
+export type ClusterMatrix = {
+  mergeRow1:Int32Array;
+  mergeRow2:Int32Array;
+  heightsResult:Float32Array;
+}
+
 export type TreeLeafDict = { [nodeName: string]: NodeType };
 export type DataNodeDict = { [nodeName: string]: number };
 export type NodeNameCallback = (nodeName: string) => void;
@@ -36,6 +42,22 @@ export enum TreeColorNames {
   MouseOver = 'MouseOver',
   Selection = 'Selection',
 }
+
+export enum DistanceMetric{
+  Euclidean = 'euclidean',
+  Manhattan = 'manhattan',
+}
+
+export enum LinkageMethod{
+  Single = 'single',
+  Complete = 'complete',
+  Average = 'average',
+  Weighted = 'weighted',
+  Centroid = 'centroid',
+  Median = 'median',
+  Ward = 'ward',
+}
+
 
 export const TreeDefaultPalette: { [name: string]: number } = {
   [TreeColorNames.Main]: DG.Color.categoricalPalette[12],

@@ -43,7 +43,7 @@ category('Projects', () => {
     grok.shell.closeAll(); await delay(500);
 
     await grok.dapi.projects.open('Test upload project');
-    expect(grok.shell.v.name, 'demog 1000')
+    expect(grok.shell.v.name, 'Datagrok');
 
     grok.shell.closeAll();
     await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test upload project').first())

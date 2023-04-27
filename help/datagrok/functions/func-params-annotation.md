@@ -3,7 +3,7 @@ title: "Parameter annotation"
 ---
 
 There are various types of [functions](functions.md) such as [scripts](../../compute/scripting.md) or
-[queries](../../access/data-query.md). What is common to all of them is the annotation of parameters. This is part of
+[queries](../../access/access.md#data-query). What is common to all of them is the annotation of parameters. This is part of
 the mechanism that enables universal support for functions in the platform.
 
 A function annotation is a multi-line comment that is placed above the function declaration and contains information

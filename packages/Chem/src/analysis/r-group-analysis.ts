@@ -19,9 +19,11 @@ export function convertToRDKit(smiles: string): string {
  * and initiate the R-Group Analysis for the specified column with molecules.
  */
 export function rGroupAnalysis(col: DG.Column): void {
-  const sketcher = new grok.chem.Sketcher();
+  const sketcher = new DG.chem.Sketcher();
   const columnPrefixInput = ui.stringInput('Column prefix', 'R');
   const visualAnalysisCheck = ui.boolInput('Visual analysis', true);
+  const exactAtomsCheck = ui.boolInput('MCS exact atoms', true);
+  const exactBondsCheck = ui.boolInput('MCS exact bonds', true);
 
   let molColNames = col.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).map((c) => c.name);
   const columnInput = ui.choiceInput('Molecules', col.name, molColNames);
@@ -30,18 +32,17 @@ export function rGroupAnalysis(col: DG.Column): void {
     ui.setUpdateIndicator(sketcher.root, true);
     try {
       let molCol = col.dataFrame.columns.byName(columnInput.value!);
-      const smiles: string = await findMCS(molCol.name, molCol.dataFrame);
+      const smarts: string = await findMCS(molCol.name, molCol.dataFrame, exactAtomsCheck.value!, exactBondsCheck.value!);
       ui.setUpdateIndicator(sketcher.root, false);
-      sketcher.setMolFile(convertMolNotation(smiles, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock));
+      sketcher.setMolFile(convertMolNotation(smarts, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock));
     } catch (e: any) {
       grok.shell.error(e);
       dlg.close();
     }
   });
   ui.tooltip.bind(mcsButton, 'Calculate Most Common Substructure');
-  const mcsButtonHost = ui.div([mcsButton]);
-  mcsButtonHost.style.display = 'flex';
-  mcsButtonHost.style.justifyContent = 'center';
+  const mcsButtonHost = ui.div([mcsButton], 'chem-mcs-button-host');
+  mcsButton.classList.add('chem-mcs-button');
 
   const dlg = ui.dialog({
     title: 'R-Groups Analysis',
@@ -49,10 +50,15 @@ export function rGroupAnalysis(col: DG.Column): void {
   })
     .add(ui.div([
       sketcher,
-      mcsButtonHost,
+      ui.divH([
+        ui.divV([
+          exactAtomsCheck.root, exactBondsCheck.root
+        ]),
+        mcsButtonHost
+      ]),
       columnInput,
       columnPrefixInput,
-      visualAnalysisCheck,
+      visualAnalysisCheck.root
     ]))
     .onOK(async () => {
       col = col.dataFrame.columns.byName(columnInput.value!);
@@ -85,7 +91,7 @@ export function rGroupAnalysis(col: DG.Column): void {
               }
             }
             const rCol = DG.Column.fromStrings(resCol.name, molsArray);
-    
+
             rCol.semType = DG.SEMTYPE.MOLECULE;
             rCol.setTag(DG.TAGS.UNITS, DG.chem.Notation.MolBlock);
             col.dataFrame.columns.add(rCol);
@@ -97,8 +103,8 @@ export function rGroupAnalysis(col: DG.Column): void {
               xColumnNames: [res.columns.byIndex(0).name],
               yColumnNames: [res.columns.byIndex(1).name],
             });
-          } 
-        } else 
+          }
+        } else
           grok.shell.error('None R-Groups were found');
         progressBar.close();
       } catch (e: any) {

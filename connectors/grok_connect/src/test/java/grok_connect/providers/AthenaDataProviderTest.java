@@ -11,7 +11,6 @@ import grok_connect.providers.utils.Provider;
 import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryMonitor;
 import grok_connect.utils.SettingsManager;
-import org.apache.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,9 +37,8 @@ class AthenaDataProviderTest {
         dataFrameComparator = new DataFrameComparator();
         SettingsManager settingsManager = SettingsManager.getInstance();
         settingsManager.initSettingsWithDefaults();
-        Logger mockLogger = Mockito.mock(Logger.class);
         QueryMonitor mockMonitor = Mockito.mock(QueryMonitor.class);
-        ProviderManager providerManager = new ProviderManager(mockLogger);
+        ProviderManager providerManager = new ProviderManager();
         ProviderManager spy = Mockito.spy(providerManager);
         Mockito.when(spy.getQueryMonitor()).thenReturn(mockMonitor);
         provider = (JdbcDataProvider) spy.getByName(type.getProperties().get("providerName").toString());

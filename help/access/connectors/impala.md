@@ -26,5 +26,5 @@ Provides access to [Impala](https://impala.apache.org/) database using SQL queri
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Impala](https://impala.apache.org/)

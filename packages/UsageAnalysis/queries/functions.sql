@@ -2,7 +2,6 @@
 --input: string date {pattern: datetime}
 --input: list groups
 --input: list packages
---meta.cache: true
 --connection: System:Datagrok
 with recursive selected_groups as (
   select id from groups
@@ -12,7 +11,7 @@ with recursive selected_groups as (
   join groups_relations gr on sg.id = gr.parent_id
 ),
 res AS (
-select et.friendly_name as function, pp.name as package,
+select et.name as function, pp.name as package,
 u.friendly_name as user, e.event_time as time_old, u.id as uid,
 u.group_id as ugid, pp.package_id as pid
 from events e
@@ -46,4 +45,28 @@ where res.ugid = sg.id
 and (res.package = any(@packages) or @packages = ARRAY['all'])
 GROUP BY res.function, res.package, res.user, time_start, time_end,
 res.uid, res.ugid, res.pid
+--end
+
+
+--name: FunctionsContextPane
+--input: int time_start
+--input: int time_end
+--input: string users
+--input: string packages
+--input: string functions
+--connection: System:Datagrok
+select e.friendly_name as run, et.name as function,
+pp.package_id as pid, e.event_time as time, e.id as rid,
+pp.name as package
+from events e
+inner join event_types et on e.event_type_id = et.id
+inner join entities en on et.id = en.id
+inner join published_packages pp on en.package_id = pp.id
+inner join users_sessions s on e.session_id = s.id
+inner join users u on u.id = s.user_id
+where e.event_time between to_timestamp(@time_start)
+and to_timestamp(@time_end)
+and u.id = any(@users)
+and pp.package_id = any(@packages)
+and et.name = any(@functions)
 --end

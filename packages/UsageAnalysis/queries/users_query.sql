@@ -1,5 +1,4 @@
 --name: UniqueUsers
---meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -16,7 +15,6 @@ order by t.date::date;
 --end
 
 --name: UniqueSessions
---meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -32,7 +30,6 @@ group by t.date::date;
 --end
 
 --name: Usage
---meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -46,7 +43,6 @@ order by e.event_time desc
 --end
 
 --name: TopPackagesByUsers
---meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -74,7 +70,6 @@ limit 50;
 
 
 --name: TopUsers
---meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok

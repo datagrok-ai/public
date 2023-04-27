@@ -6,7 +6,7 @@ sidebar_position: 0
 Grok platform provides first-class support for functions, which is an incredibly powerful concept. Pretty much anything
 that can be executed within the platform is a function. Here are some examples of the different types of functions:
 
-* [Querying](../../access/data-query.md) external Postgres database
+* [Querying](../../access/access.md#data-query) external Postgres database
 * Executing a [JavaScript function](../../develop/develop.md) in the browser that uses Grok API for integration purposes
 * Calculating Sin(PI)
 * Deleting a column from the table

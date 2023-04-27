@@ -74,6 +74,6 @@ via JDBC driver.
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [MySQL](https://www.mysql.com/)
 * [MySQL Wiki](https://ru.wikipedia.org/wiki/MySQL)

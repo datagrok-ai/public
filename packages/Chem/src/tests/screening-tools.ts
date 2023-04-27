@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 
-import {category, test, before, after, expect} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, after, expect, expectArray} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {runStructuralAlertsDetection} from '../panels/structural-alerts';
@@ -45,6 +45,23 @@ category('screening tools', () => {
     const df = approvedDrugs100.clone();
     elementalAnalysis(df, df.getCol('molecule'), false, false);
     expect(df.columns.length, 41);
+  });
+
+  test('elementalAnalysis.emptyValues', async () => {
+    const df = await readDataframe('tests/sar-small_empty_vals.csv');
+    await grok.data.detectSemanticTypes(df);
+    elementalAnalysis(df, df.getCol('smiles'), false, false);
+    expect(df.columns.length, 6);
+    expectArray(Array.from(df.row(0).cells).map((c) => c.value), ['', 0, 0, 0, 0, 0]);
+  }, {skipReason: 'GROK-12227'});
+
+  test('elementalAnalysis.malformedData', async () => {
+    const df = await readDataframe('tests/Test_smiles_malformed.csv');
+    await grok.data.detectSemanticTypes(df);
+    elementalAnalysis(df, df.getCol('canonical_smiles'), false, false);
+    expect(df.columns.length, 29);
+    expect(Array.from(df.row(2).cells).map((c) => c.value).join(''),
+      '1480016COc1ccc2c|c(ccc2c1)C(C)C(=O)OCCCc3cccnc300040203710400.272729992866516126340');
   });
 
   after(async () => {

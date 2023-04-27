@@ -25,20 +25,16 @@ export class SequenceSpaceFunctionEditor extends SequenceSpaceBaseFuncEditor {
       this.similarityMetricInput = ui.choiceInput('Similarity metric', 'Tanimoto', SEQ_SPACE_SIMILARITY_METRICS);
       
       this.plotEmbeddingsInput = ui.boolInput('Plot Embeddings', true);
-      this.plotEmbeddingsInput.captionLabel.style.width = '130px';
-      this.plotEmbeddingsInput.input.style.marginLeft = '0px';
       
-      this.funcParamsDiv = ui.form([
+      //@ts-ignore  
+      this.funcParamsDiv = ui.inputs([
         this.tableInput,
-        //@ts-ignore
-        this.moleculesColDiv,
-        //@ts-ignore
-        ui.divH([this.methodSettingsIcon, this.methodInput]),
-        //@ts-ignore
+        this.molColInput,
+        this.methodInput,
         this.methodSettingsDiv,
         this.similarityMetricInput,
         this.plotEmbeddingsInput
-      ])
+      ], {style: {minWidth: '320px'}});
     }
   
     createAlgorithmSettingsDiv(paramsForm: HTMLDivElement, params: UMAPOptions | TSNEOptions) {

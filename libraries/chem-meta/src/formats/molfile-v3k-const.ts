@@ -25,6 +25,7 @@ export const enum V3K_CONST {
   ATOM_TYPE_COL = 4,
   X_COL = 5,
   FIRST_BONDED_ATOM_COL = 5,
+  BOND_TYPE_COL = 4,
 
   END = 'M  END',
 }

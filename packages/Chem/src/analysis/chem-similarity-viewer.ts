@@ -6,12 +6,12 @@ import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-meth
 import $ from 'cash-dom';
 import {Fingerprint} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
-import {ChemSearchBaseViewer} from './chem-search-base-viewer';
+import {ChemSearchBaseViewer, SIMILARITY} from './chem-search-base-viewer';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import { malformedDataWarning } from '../utils/malformed-data-utils';
+import { getMolSafe } from '../utils/mol-creation_rdkit';
 
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
-  isEditedFromSketcher: boolean = false;
   hotSearch: boolean;
   sketchButton: HTMLElement;
   sketchedMolecule: string = '';
@@ -20,7 +20,6 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   idxs: DG.Column | null = null;
   scores: DG.Column | null = null;
   cutoff: number;
-  gridSelect: boolean = false;
   targetMoleculeIdx: number = 0;
 
   get targetMolecule(): string {
@@ -30,7 +29,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   }
 
   constructor() {
-    super('similarity');
+    super(SIMILARITY);
     this.cutoff = this.float('cutoff', 0.01, {min: 0, max: 1});
     this.hotSearch = this.bool('hotSearch', true);
     this.sketchButton = ui.button(ui.icons.edit(() => {}), () => {
@@ -54,7 +53,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         .show();
     })
     this.sketchButton.classList.add('similarity-search-edit');
-    this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', height: '10px'});
+    this.updateMetricsLink(this, {fontSize: '10px', fontWeight: 'normal', height: '10px'});
   }
 
   init(): void {
@@ -71,7 +70,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        if (this.isEmptyValue()) {
+        if (this.isEmptyOrMalformedValue()) {
           progressBar.close();
           return;
         }
@@ -108,7 +107,6 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           grid.style.boxShadow = '0px 0px 1px var(--grey-6)';
           $(grid).addClass(divClass);
           grids[cnt2++] = grid;
-          this.isEditedFromSketcher = false;
         }
         for (let i = 0; i < this.molCol.length; ++i) {
           const idx = this.idxs.get(i);
@@ -162,9 +160,12 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     }
   }
 
-  isEmptyValue(): boolean {
-    if (!this.targetMolecule || DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule)) {
-      grok.shell.error(`Empty molecule cannot be used for similarity search`);
+  isEmptyOrMalformedValue(): boolean {
+    const malformed = !getMolSafe(this.targetMolecule, {}, getRdKitModule()).mol;
+    const empty = !this.targetMolecule || DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule);
+    const moleculeError = malformed ? `Malformed` : empty ? `Empty` : '';
+    if (moleculeError) {
+      grok.shell.error(`${moleculeError} molecule cannot be used for similarity search`);
       this.clearResults();
       return true;
     }

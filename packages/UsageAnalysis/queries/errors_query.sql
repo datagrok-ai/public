@@ -1,5 +1,4 @@
 --name: Errors1
---meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -16,7 +15,6 @@ order by e.event_time::date;
 --end
 
 --name: TopErrors
---meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -35,7 +33,6 @@ limit 50;
 --end
 
 --name: TopDisabledErrors
---meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -55,7 +52,6 @@ limit 50;
 
 
 --name: TopPackageErrors
---meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok
@@ -77,7 +73,6 @@ limit 50;
 
 
 --name: TopErrorSources
---meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:Datagrok

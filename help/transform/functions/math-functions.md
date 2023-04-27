@@ -47,6 +47,7 @@ to use parameters: `true`
 - [Or](#or)
 - [Percentile](#percentile)
 - [Pow](#pow)
+- [Qualifier](#qualifier)
 - [RandBetween](#randbetween)
 - [Rnd](#rnd)
 - [Round](#round)
@@ -339,6 +340,16 @@ Returns `x` to the power of `exponent`.
 ```javascript
 Pow(2, 3)     // 8
 Pow(2, -2)    // 0.25
+```
+
+## <a name="qualifier"></a>Qualifier(`x`)
+
+Extracts the qualifier from a qualified number `x`.
+
+```javascript
+Qualifier(Qnum(1.5, "="))   // =
+Qualifier(Qnum(1.5, "<"))   // <
+Qualifier(Qnum(1.5, ">"))   // >
 ```
 
 ## <a name="randbetween"></a>RandBetween(`m`, `n`)
