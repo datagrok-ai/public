@@ -114,8 +114,9 @@ export class DemoView extends DG.ViewBase {
           node?.click();
         };
 
-        if (f.description)
-          ui.tooltip.bind(item, f.description)
+        const packageMessage = `Part of the ${f.package.name === 'Tutorials' ? 'platform core' : `${f.package.name} package`}`;
+        ui.tooltip.bind(item, () => f.description ?
+          ui.divV([f.description, ui.element('br'), packageMessage]) : ui.div(packageMessage));
 
         root.append(item);
       }
@@ -171,7 +172,7 @@ export class DemoView extends DG.ViewBase {
       const item = folder.item(path[path.length - 1]);
       
       item.root.onmouseover = (event) => {
-        const packageMessage = `Part of the ${f.package.name} package`;
+        const packageMessage = `Part of the ${f.package.name === 'Tutorials' ? 'platform core' : `${f.package.name} package`}`;
         ui.tooltip.show(f.description ? ui.divV([f.description, ui.element('br'), packageMessage]) : ui.div(packageMessage),
           event.clientX, event.clientY);
       };
