@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {DELIMITER} from '../const';
 import {LINKER_CODES, P_LINKAGE} from './const';
-import {MonomerLibWrapper} from '../monomer-lib-utils/monomer-handler';
+import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
 
 /** Wrapper for parsing a strand and getting a sequence of monomer IDs (with
  * omitted linkers, if needed)  */
@@ -15,7 +15,7 @@ export class MonomerSequenceParser {
     // todo: remove from the list of parameters
     private codeMap: Map<string, string>
   ) {
-    this.lib = new MonomerLibWrapper();
+    this.lib = MonomerLibWrapper.getInstance();
   }
 
   private lib: MonomerLibWrapper;

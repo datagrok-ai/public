@@ -11,13 +11,21 @@ import {HardcodeTerminator} from '../hardcode-terminator';
 const terminator = new HardcodeTerminator();
 
 export class MonomerLibWrapper {
-  constructor() {
+  // todo: dependency injection of monomer lib instead of getMonomeLib
+  private constructor() {
     const lib = getMonomerLib();
     if (lib === null)
       throw new Error('SequenceTranslator: monomer library is null');
     this.lib = lib!;
   }
   private lib: IMonomerLib;
+  private static instance?: MonomerLibWrapper;
+
+  static getInstance(): MonomerLibWrapper {
+    if (MonomerLibWrapper.instance === undefined)
+      MonomerLibWrapper.instance = new MonomerLibWrapper();
+    return MonomerLibWrapper.instance!;
+  }
 
   getMolfileByName(monomerName: string): string {
     const monomer = this.lib?.getMonomer('RNA', monomerName);

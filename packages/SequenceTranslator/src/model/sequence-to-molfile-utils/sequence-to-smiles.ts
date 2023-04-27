@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {MonomerSequenceParser} from './monomer-code-parser';
-import {MonomerLibWrapper} from '../monomer-lib-utils/monomer-handler';
+import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
 
 // todo: merge with sequence-to-molfile
 export class SequenceToSmilesConverter {
@@ -12,7 +12,7 @@ export class SequenceToSmilesConverter {
     sequence: string, invert: boolean = false, format: string
   ) {
     // this.codeToSmilesMap = terminator.getCodeToSmilesMap(this.sequence, this.format);
-    this.lib = new MonomerLibWrapper();
+    this.lib = MonomerLibWrapper.getInstance();
     const codeToNameMap = this.lib.getCodeToNameMap(sequence, format);
     this.parser = new MonomerSequenceParser(sequence, invert, codeToNameMap);
   };
