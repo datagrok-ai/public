@@ -1,5 +1,5 @@
 ---
-title: "OpenAPI"
+title: "Webservices"
 ---
 
 [OpenAPI](https://swagger.io/docs/specification/about/), also known as Swagger, is a popular format that describes the structure of the server APIs allowing machines to read the document and use the service. Datagrok seamlessly integrates with OpenAPI and supports both major versions (OpenAPI 2.x and OpenAPI 3.x), making it easy to connect to webservices and execute queries using the platform's features.
