@@ -1,4 +1,5 @@
-import {ClusterMatrix} from '../wasm/clusterizerWasm';
+import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
+
 export type ClusteringWorkerInput = {
     distMatArray: Float32Array;
     n: number;

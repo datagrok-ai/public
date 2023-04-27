@@ -8,7 +8,7 @@ import {NO_NAME_ROOT, parseNewick} from '@datagrok-libraries/bio/src/trees/phylo
 import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {getDistanceMatrixForNumerics, getDistanceMatrixForSequences} from '../workers/distance-worker-creator';
-import {ClusterMatrix} from '../wasm/clusterizerWasm';
+import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
 
 type TreeLeafDict = { [nodeName: string]: NodeType };
 type DataNodeDict = { [nodeName: string]: number };

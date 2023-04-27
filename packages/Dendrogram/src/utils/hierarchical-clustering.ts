@@ -8,8 +8,8 @@ import {DistanceMetric, isLeaf, LinkageMethod, NodeType} from '@datagrok-librari
 
 import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
 import {TreeHelper} from './tree-helper';
-import {ClusterMatrix} from '../wasm/clusterizerWasm';
 import {getClusterMatrixWorker} from '../wasm/clustering-worker-creator';
+import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 
 /** Custom UI form for hierarchical clustering */
 export async function hierarchicalClusteringUI2(df: DG.DataFrame): Promise<void> {
@@ -49,7 +49,7 @@ export async function hierarchicalClusteringUI(
   const colNameSet: Set<string> = new Set(colNameList);
   const [filteredDf, filteredIndexList]: [DG.DataFrame, Int32Array] =
     hierarchicalClusteringFilterDfForNulls(df, colNameSet);
-  const th = new TreeHelper();
+  const th: ITreeHelper = new TreeHelper();
 
   let tv: DG.TableView = grok.shell.getTableView(df.name);
   if (filteredDf.rowCount != df.rowCount) {
