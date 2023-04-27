@@ -155,15 +155,15 @@ export class MonomerLibHelper implements IMonomerLibHelper {
 
       Object.keys(monomer).forEach((prop) => {
         if (!expectedMonomerData.includes(prop))
-          monomerAdd.data[prop] = monomer[prop];
+          monomerAdd[prop] = monomer[prop];
       });
 
-      if (!types.includes(monomer['polymerType'])) {
-        monomers[monomer['polymerType']] = {};
-        types.push(monomer['polymerType']);
+      if (!types.includes(monomer[REQ.POLYMER_TYPE])) {
+        monomers[monomer[REQ.POLYMER_TYPE]] = {};
+        types.push(monomer[REQ.POLYMER_TYPE]);
       }
 
-      monomers[monomer['polymerType']][monomer['symbol']] = monomerAdd as Monomer;
+      monomers[monomer[REQ.POLYMER_TYPE]][monomer[REQ.SYMBOL]] = monomerAdd as Monomer;
     });
 
     return new MonomerLib(monomers);
