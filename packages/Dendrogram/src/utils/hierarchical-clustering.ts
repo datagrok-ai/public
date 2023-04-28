@@ -49,7 +49,7 @@ export async function hierarchicalClusteringUI(
   const colNameSet: Set<string> = new Set(colNameList);
   const [filteredDf, filteredIndexList]: [DG.DataFrame, Int32Array] =
     hierarchicalClusteringFilterDfForNulls(df, colNameSet);
-  const th= new TreeHelper();
+  const th: ITreeHelper = new TreeHelper();
 
   let tv: DG.TableView = grok.shell.getTableView(df.name);
   if (filteredDf.rowCount != df.rowCount) {
