@@ -11,7 +11,7 @@
   "version": "6.3.19",
   "description": "Machine learning supporting utilities",
   "dependencies": {
-    "@datagrok-libraries/utils": "^2.4.3",
+    "@datagrok-libraries/utils": "^4",
     "@keckelt/tsne": "^1.0.2",
     "cash-dom": "latest",
     "datagrok-api": "^1.10.2",
