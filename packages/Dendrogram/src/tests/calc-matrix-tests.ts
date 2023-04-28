@@ -10,6 +10,7 @@ import {
 import {mapToFixed} from './utils/array-utils';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {TreeHelper} from '../utils/tree-helper';
+import {ALIGNMENT, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 const sequences = [
   'CATGT',
   'AATGA',
@@ -31,12 +32,19 @@ const DNAAndNumericsDistances = [0.333, 1.118, 0, 0.333, 1, 0.833];
 const numericsDistances = [2, 4, 1, 2, 1, 3];
 const numericsDistancesTwoCols = [0.745, 1.054, 0.333, 1.054, 1, 0.667];
 
+function setMacromoleculeTags(col: DG.Column) {
+  col.semType = DG.SEMTYPE.MACROMOLECULE;
+  col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+  col.setTag('aligned', ALIGNMENT.SEQ);
+  col.setTag('alphabet', 'DNA');
+}
+
 category('CalculateDistances', () => {
   test('CalcDistanceDNA', async () => {
     const th: ITreeHelper = new TreeHelper();
     const seqCols = [DG.Column.fromStrings('Sequence', sequences)];
     const df = DG.DataFrame.fromColumns(seqCols);
-    seqCols[0].semType = DG.SEMTYPE.MACROMOLECULE;
+    setMacromoleculeTags(seqCols[0]);
     const matrix = await th.calcDistanceMatrix(df, seqCols.map((col) => col.name));
     expectArray(mapToFixed(matrix!.data), mapToFixed(DNADistances1));
   });
@@ -45,8 +53,8 @@ category('CalculateDistances', () => {
     const th: ITreeHelper = new TreeHelper();
     const seqCol1 = DG.Column.fromStrings('Sequence', sequences);
     const seqCol2 = DG.Column.fromStrings('Sequence2', sequences2);
-    seqCol1.semType = DG.SEMTYPE.MACROMOLECULE;
-    seqCol2.semType = DG.SEMTYPE.MACROMOLECULE;
+    setMacromoleculeTags(seqCol1);
+    setMacromoleculeTags(seqCol2);
     const df = DG.DataFrame.fromColumns([seqCol1, seqCol2]);
     const matrix = await th.calcDistanceMatrix(df, ['Sequence', 'Sequence2']);
     expectArray(mapToFixed(matrix!.data), mapToFixed(DNADistances2Cols));
@@ -55,8 +63,8 @@ category('CalculateDistances', () => {
   test('CalcDistanceDNAAndNumeric', async () => {
     const th: ITreeHelper = new TreeHelper();
     const seqCol = DG.Column.fromStrings('Sequence', sequences);
+    setMacromoleculeTags(seqCol);
     const numCol = DG.Column.fromList('int', 'numbers', hNumbers);
-    seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
     const df = DG.DataFrame.fromColumns([seqCol, numCol]);
     const matrix = await th.calcDistanceMatrix(df, ['Sequence', 'numbers']);
     expectArray(mapToFixed(matrix!.data), mapToFixed(DNAAndNumericsDistances));
