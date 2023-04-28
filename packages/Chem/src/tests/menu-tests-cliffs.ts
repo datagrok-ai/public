@@ -18,7 +18,8 @@ category('top menu activity cliffs', async () => {
   });
 
   test('activityCliffsOpen.smiles', async () => {
-    await _testActivityCliffsOpen('tests/activity_cliffs_test.csv', 'smiles', 'Activity', 2);
+    if (DG.Test.isInBenchmark) await _testActivityCliffsOpen('smiles.csv', 'canonical_smiles', 'FractionCSP3', 550);
+    else await _testActivityCliffsOpen('tests/activity_cliffs_test.csv', 'smiles', 'Activity', 2);
   });
 
   test('activityCliffsOpen.molV2000', async () => {
