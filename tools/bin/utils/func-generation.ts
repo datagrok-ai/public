@@ -1,3 +1,5 @@
+import { FuncMetadata } from './interfaces';
+
 export const headerParams = ['name', 'description', 'tags', 'inputs', 'outputs'];
 
 /** Generates an annotation header for a function based on provided metadata. */
@@ -51,21 +53,4 @@ export function generateImport(className: string, path: string, sep: string = '\
 
 export function generateExport(className: string, sep: string = '\n'): string {
   return `export {${className}};${sep}`;
-}
-
-export interface Indexable {
-  [key: string]: any,
-}
-
-export interface FuncParam {
-  name?: string,
-  type: string,
-}
-
-export interface FuncMetadata extends Indexable {
-  name?: string,
-  inputs: FuncParam[],
-  outputs: FuncParam[],
-  tags?: string[],
-  description?: string,
 }

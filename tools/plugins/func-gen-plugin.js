@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { parse } = require('@babel/parser');
 const traverse = require('@babel/traverse').default;
-const { reservedDecorators, getFuncAnnotation, generateImport, generateExport } = require('../bin/utils/constants');
+const { reservedDecorators, getFuncAnnotation, generateImport, generateExport } = require('../bin/utils/func-generation');
 
 
 class FuncGeneratorPlugin {
@@ -22,6 +22,8 @@ class FuncGeneratorPlugin {
 
       for (const file of tsFiles) {
         const content = fs.readFileSync(file, 'utf-8');
+        if (!content)
+          continue;
         const ast = parse(content, {
           sourceType: 'module',
           plugins: ['typescript', [
