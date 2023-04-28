@@ -56,7 +56,7 @@ export class SequenceSpaceBaseFuncEditor {
       let settingsOpened = false;
     }
   
-    createAlgorithmSettingsDiv(paramsForm: HTMLDivElement, params: UMAPOptions | TSNEOptions) {
+    createAlgorithmSettingsDiv(paramsForm: HTMLDivElement, params: UMAPOptions | TSNEOptions): HTMLElement {
       ui.empty(paramsForm);
       Object.keys(params).forEach((it: any) => {
         const param: IDimReductionParam = (params as any)[it];

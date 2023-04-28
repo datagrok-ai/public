@@ -36,17 +36,5 @@ export class SequenceSpaceFunctionEditor extends SequenceSpaceBaseFuncEditor {
         this.plotEmbeddingsInput
       ], {style: {minWidth: '320px'}});
     }
-  
-    createAlgorithmSettingsDiv(paramsForm: HTMLDivElement, params: UMAPOptions | TSNEOptions) {
-      ui.empty(paramsForm);
-      Object.keys(params).forEach((it: any) => {
-        const param: IDimReductionParam = (params as any)[it];
-        const input = ui.floatInput(param.uiName, param.value, () => {
-          param.value = input.value;
-        });
-        ui.tooltip.bind(input.root, param.tooltip);
-        paramsForm.append(input.root);
-      });
-      return paramsForm;
-    }
+
   }
