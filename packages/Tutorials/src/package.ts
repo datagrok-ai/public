@@ -15,6 +15,7 @@ import {viewerDemo} from './demo-app/platform-viewers-demo';
 export const _package = new DG.Package();
 
 const tracks: Track[] = [];
+const PATH_START_INDEX: number = 4;
 
 //name: Tutorials
 //tags: app
@@ -110,19 +111,13 @@ export function demoApp() {
   const demoView = new DemoView();
   grok.shell.addView(demoView);
 
-  if (pathSegments.length > 4) {
-    const category = pathSegments[4];
-    if (pathSegments[pathSegments.length - 1] === category) {
-      demoView.nodeView(category, '');
-      return;
-    }
+  if (pathSegments.length > PATH_START_INDEX) {
+    const pathElements = pathSegments.slice(PATH_START_INDEX, pathSegments.length)
+      .map((elem) => elem.replaceAll('%20', ' '));
+    const path = pathElements.join('/');
 
-    const viewerName = pathSegments[5].replaceAll('%20', ' ');
-    const f = DemoView.findDemoFunc(`${category} | ${viewerName}`);
-    if (f) {
-      const viewPath = `${category}/${viewerName}`;
-      demoView.startDemoFunc(f, viewPath);
-    }
+    const func = DemoView.findDemoFunc(pathElements.join(' | '));
+    func ? demoView.startDemoFunc(func, path) : demoView.nodeView(pathElements[pathElements.length - 1], path);
   }
 }
 

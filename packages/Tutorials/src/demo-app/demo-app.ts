@@ -135,6 +135,21 @@ export class DemoView extends DG.ViewBase {
     return root;
   }
   
+  // TODO: in view show tree too
+  // TODO: Viewers: General -> Statistical
+  // TODO: make config for easy showing (Cheminformatics -> Bio -> Viewers -> ...)
+  // TODO: fix search, also on input show them in view, make it work on description and keywords
+
+  // TODO: in DemoScript - loading circle to end when delay ends (make interactive icon) to disappear like in balloon
+
+  // TODO: try to load breadcrumbs instead of view name (onViewLoaded)
+
+  // TODO: pause on exceptions in browser and vscode, check PowerGrid problem
+
+  // TODO: demos: FileManager: show files in folder with demo, show molecules table
+  // TODO: demos: Table linking: make custom view with 2 grids and link them with the proper API (filter in one table will set uo the second table)
+  // TODO: demos: Grid customizations (in PowerGrid): have to add some sparklines, also add frozen columns (check in PowerGrid)
+
   nodeView(viewName: string, path: string): void {
     this._initWindowOptions();
     this._closeAll();
@@ -186,14 +201,15 @@ export class DemoView extends DG.ViewBase {
           ui.tooltip.show(f.description ? ui.divV([f.description, ui.element('br'), packageMessage]) : ui.div(packageMessage),
             event.clientX, event.clientY);
         };
+
         item.root.onmouseout = (_) => {
           ui.tooltip.hide();
         };
-
       } else {
         const folder = this.tree.getOrCreateGroup(path.slice(0, path.length - 1).join(' | '), {path: path[0]});
         const item = folder.item(itemString, {path: pathOption});
-        item.root.onmouseover = (event:any) => {
+
+        item.root.onmouseover = (event) => {
           const packageMessage = `Part of the ${f.package.name === 'Tutorials' ? 'platform core' : `${f.package.name} package`}`;
           ui.tooltip.show(f.description ? ui.divV([f.description, ui.element('br'), packageMessage]) : ui.div(packageMessage),
             event.clientX, event.clientY);
@@ -202,12 +218,9 @@ export class DemoView extends DG.ViewBase {
         item.root.onmouseout = (_) => {
           ui.tooltip.hide();
         };
-      }
-
-      
-      //const folder = this.tree.getOrCreateGroup(path.slice(0, path.length - 1).join(' | '));
-      
+      }      
     }
+
     this.searchInput.onChanged(() => {
       this._searchItem();
     });
