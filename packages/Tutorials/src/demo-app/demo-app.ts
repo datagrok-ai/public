@@ -136,7 +136,6 @@ export class DemoView extends DG.ViewBase {
   }
   
   // TODO: in view show tree too
-  // TODO: Viewers: General -> Statistical
   // TODO: make config for easy showing (Cheminformatics -> Bio -> Viewers -> ...)
   // TODO: fix search, also on input show them in view, make it work on description and keywords
 
@@ -244,25 +243,14 @@ export class DemoView extends DG.ViewBase {
       }
 
       if (value.root.classList.contains('d4-tree-view-item')) {
-        const categoryName = (value.root.parentElement?.parentElement
-          ?.getElementsByClassName('d4-tree-view-group-label')[0] as HTMLElement).innerText;
-        const viewerName = value.text;
-
-        // TODO: make it work for if multiple subcategories
-        const demoFunc = DemoView.findDemoFunc(value.value.path);
-        const demoPath = `${categoryName}/${viewerName}`;
-        
-        //await DG.Func.find({meta: {'demoPath': value.value.path}});
+        const demoFunc = DemoView.findDemoFunc(value.value.path);        
         await this.startDemoFunc(demoFunc, value.value.path);
         this.tree.root.focus();
       } else if (value.root.classList.contains('demo-app-tree-home-node')) { 
         this._initContent();
         this._closeAll();
-
         const view = grok.shell.addView(this);
         view.basePath = '/apps/Tutorials/Demo';
-        // TODO: check if we really need this
-        view.path = `/`;
       } else {
         this.tree.root.focus();
         this.nodeView(value.text, value.value.path);
@@ -276,9 +264,6 @@ export class DemoView extends DG.ViewBase {
     this.dockPanel.container.containerElement.classList.add('tutorials-demo-container');
 
     this.tree.root.classList.add('demo-app-tree-group');
-
-    // TODO: implement search in demo - search on meta.keywords, name, description
-    // TODO?: add breadcrumbs instead of name
   }
 
   private _isDockPanelInit(): boolean {
