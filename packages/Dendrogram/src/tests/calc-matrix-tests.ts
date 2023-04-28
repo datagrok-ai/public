@@ -10,7 +10,7 @@ import {
 import {mapToFixed} from './utils/array-utils';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {TreeHelper} from '../utils/tree-helper';
-import {ALIGNMENT, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ALIGNMENT, ALPHABET, NOTATION, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 const sequences = [
   'CATGT',
   'AATGA',
@@ -35,8 +35,8 @@ const numericsDistancesTwoCols = [0.745, 1.054, 0.333, 1.054, 1, 0.667];
 function setMacromoleculeTags(col: DG.Column) {
   col.semType = DG.SEMTYPE.MACROMOLECULE;
   col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
-  col.setTag('aligned', ALIGNMENT.SEQ);
-  col.setTag('alphabet', 'DNA');
+  col.setTag(TAGS.aligned, ALIGNMENT.SEQ);
+  col.setTag(TAGS.alphabet, ALPHABET.DNA);
 }
 
 category('CalculateDistances', () => {

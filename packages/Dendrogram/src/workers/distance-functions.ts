@@ -28,7 +28,7 @@ type NumberDistanceFunctions = 'numericDistance';
 
 export type DistanceFunctionNames<T> = T extends string ? StringDistanceFunctions : NumberDistanceFunctions;
 
-export const distanceFunctions: Record<DistanceFunctionNames<any>, (a:any, b:any) => number> = {
+export const distanceFunctions: Record<DistanceFunctionNames<any>, (a: any, b: any) => number> = {
   levenstein: levensteinDistance,
   hamming: hammingDistance,
   numericDistance: numericDistance,
