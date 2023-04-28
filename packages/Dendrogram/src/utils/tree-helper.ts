@@ -7,9 +7,12 @@ import {DistanceMetric, isLeaf, NodeCuttedType, NodeType} from '@datagrok-librar
 import {NO_NAME_ROOT, parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
-import {getDistanceMatrixForNumerics, getDistanceMatrixForSequences} from '../workers/distance-worker-creator';
+import {
+  DistanceMatrixWorker
+} from '../workers/distance-matrix-calculator';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
-
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {DistanceFunctionNames} from '../workers/distance-functions';
 type TreeLeafDict = { [nodeName: string]: NodeType };
 type DataNodeDict = { [nodeName: string]: number };
 type NodeNameCallback = (nodeName: string) => void;
@@ -460,16 +463,29 @@ export class TreeHelper implements ITreeHelper {
     return treeRoot;
   }
 
-  async calcDistanceMatrix(df: DG.DataFrame, colNames: string[], method: DistanceMetric = DistanceMetric.Euclidean) {
+  async calcDistanceMatrix(
+    df: DG.DataFrame, colNames: string[], method: DistanceMetric = DistanceMetric.Euclidean
+  ) {
+    // Output distance matrix. reusing it saves a lot of memory
     let out: DistanceMatrix | null = null;
+
+    const distanceMatrixWorker = new DistanceMatrixWorker();
     const columns = colNames.map((name) => df.getCol(name));
+    const hammingColumns: string[] = [];
     for (const col of columns) {
       let values: Float32Array;
-      if (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT)
-        values = await getDistanceMatrixForNumerics(col.toList() as unknown as Float32Array);
-      else if (col.semType ==='Macromolecule')
-        values = await getDistanceMatrixForSequences(col.toList() as unknown as string[]);
-      else throw new TypeError('Unsupported column type');
+      if (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) {
+        values = await distanceMatrixWorker.calc(col.toList(), 'numericDistance');
+      } else if (col.semType ==='Macromolecule') {
+        const uh = new UnitsHandler(col);
+        // Use Hamming distance when sequences are aligned
+        let seqDistanceFunction: DistanceFunctionNames<string> = 'levenstein';
+        if (uh.isMsa()) {
+          seqDistanceFunction = 'hamming';
+          hammingColumns.push(col.name);
+        }
+        values = await distanceMatrixWorker.calc(col.toList(), seqDistanceFunction);
+      } else { throw new TypeError('Unsupported column type'); }
 
       if (!out) {
         out = new DistanceMatrix(values);
@@ -491,6 +507,10 @@ export class TreeHelper implements ITreeHelper {
         newMat = null;
       }
     }
+    if (hammingColumns.length > 0)
+      grok.shell.info(`Using hamming distance for columns: ${hammingColumns.join(', ')}`);
+    distanceMatrixWorker.terminate();
+
     if (method === DistanceMetric.Euclidean && columns.length > 1)
       out?.sqrt();
 

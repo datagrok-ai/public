@@ -225,6 +225,14 @@ category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vL
     await _testHierarchicalClusteringWasm(tgt2Dist, AVERAGE_METHOD_CODE, tgt2ClusterMat);
   });
 
+  test('hierarchicalClusteringWasmNoWorker1', async () => {
+    await _testHierarchicalClusteringWasm(tgt1Dist, AVERAGE_METHOD_CODE, tgt1ClusterMat);
+  });
+
+  test('hierarchicalClusteringWasmNoWorker2', async () => {
+    await _testHierarchicalClusteringWasm(tgt2Dist, AVERAGE_METHOD_CODE, tgt2ClusterMat);
+  });
+
   async function _testHierarchicalClusteringWasm(
     distA: number[], linkage: number, tgtClusterMatrix: ClusterMatrix
   ) {
@@ -232,9 +240,8 @@ category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vL
     const n = (1 + Math.sqrt(1 + 4 * 2 * distA.length)) / 2;
     const distanceMatrix: DistanceMatrix = new DistanceMatrix(new Float32Array(distA));
     const clusterMatrix: ClusterMatrix = await getClusterMatrixWorker(
-      {distMatArray: distanceMatrix.data, n, methodCode: linkage}
+      distanceMatrix.data, n, linkage
     );
-    console.log(clusterMatrix);
     expectObject(clusterMatrix, tgtClusterMatrix);
   }
 }));
