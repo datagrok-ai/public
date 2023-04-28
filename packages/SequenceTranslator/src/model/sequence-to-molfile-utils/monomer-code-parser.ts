@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {DELIMITER} from '../const';
 import {LINKER_CODES, P_LINKAGE} from './const';
 import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
 
@@ -73,8 +72,8 @@ export class MonomerSequenceParser {
   // todo: port to monomer handler
   private getAllCodesOfFormat(): string[] {
     let allCodesInTheFormat = Array.from(this.codeMap.keys());
-    const modifications = this.lib.getModificationCodes();
-    allCodesInTheFormat = allCodesInTheFormat.concat(modifications).concat(DELIMITER);
+    const modifications = this.lib.getModificationGCRSCodes();
+    allCodesInTheFormat = allCodesInTheFormat.concat(modifications);
     return reverseLengthSort(allCodesInTheFormat);
   }
 }

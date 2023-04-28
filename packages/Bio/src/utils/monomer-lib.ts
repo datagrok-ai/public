@@ -24,10 +24,10 @@ export const LIB_PATH = 'System:AppData/Bio/libraries/';
 export const LIB_DEFAULT: { [fileName: string]: string } = {'HELMCoreLibrary.json': 'HELMCoreLibrary.json'};
 
 export class MonomerLib implements IMonomerLib {
-  private _monomers: { [type: string]: { [name: string]: Monomer } } = {};
+  private _monomers: { [type: string]: { [monomerName: string]: Monomer } } = {};
   private _onChanged = new Subject<any>();
 
-  constructor(monomers: { [type: string]: { [name: string]: Monomer } }) {
+  constructor(monomers: { [type: string]: { [monomerName: string]: Monomer } }) {
     this._monomers = monomers;
   }
 
@@ -42,11 +42,11 @@ export class MonomerLib implements IMonomerLib {
     return Object.keys(this._monomers);
   }
 
-  getMonomerMolsByType(type: string): { [symbol: string]: string } {
-    const res: { [symbol: string]: string } = {};
+  getMonomerMolsByType(type: string): { [monomerName: string]: string } {
+    const res: { [monomerName: string]: string } = {};
 
-    Object.keys(this._monomers[type]).forEach((monomerSymbol) => {
-      res[monomerSymbol] = this._monomers[type][monomerSymbol].molfile;
+    Object.keys(this._monomers[type]).forEach((monomerName) => {
+      res[monomerName] = this._monomers[type][monomerName].molfile;
     });
 
     return res;
@@ -163,7 +163,7 @@ export class MonomerLibHelper implements IMonomerLibHelper {
         types.push(monomer[REQ.POLYMER_TYPE]);
       }
 
-      monomers[monomer[REQ.POLYMER_TYPE]][monomer[REQ.SYMBOL]] = monomerAdd as Monomer;
+      monomers[monomer[REQ.POLYMER_TYPE]][monomer[REQ.NAME]] = monomerAdd as Monomer;
     });
 
     return new MonomerLib(monomers);

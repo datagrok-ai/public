@@ -8,6 +8,8 @@ import {download} from '../helpers';
 import {SequenceToMolfileConverter} from './sequence-to-molfile';
 import {linkStrandsV3000} from './mol-transformations';
 import {isValidSequence} from '../code-converter/conversion-validation-tools';
+import {SYNTHESIZERS} from '../const';
+
 import '../../view/css/sdf-tab.css';
 
 export type StrandData = {
@@ -19,11 +21,13 @@ export type StrandData = {
 export function getMolfileForStrand(strand: string, invert: boolean): string {
   if (strand === '')
     return '';
-  const validationOutput = isValidSequence(strand, null);
-  const format = validationOutput.synthesizer![0];
+  // const validationOutput = isValidSequence(strand, null);
+  // const format = validationOutput.synthesizer![0];
+  // restrict to GCRS codes only
+  const format = SYNTHESIZERS.GCRS;
   let molfile = '';
   try {
-    molfile = (new SequenceToMolfileConverter(strand, invert, format!)).convert();
+    molfile = (new SequenceToMolfileConverter(strand, invert, format)).convert();
   } catch (err) {
     const errStr = errorToConsole(err);
     console.error(errStr);

@@ -4,27 +4,22 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {getMonomerLib} from '../../package';
-import {DELIMITER, SYNTHESIZERS, TECHNOLOGIES} from '../../model/const';
+import {SYNTHESIZERS, TECHNOLOGIES} from '../../model/const';
 
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 
 import {HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
 
-import {isValidSequence} from '../code-converter/conversion-validation-tools';
-
-import {HardcodeTerminator} from '../hardcode-terminator';
-const terminator = new HardcodeTerminator();
-
 const TERMINAL_SMILES = 'threePrimeTerminalSmiles';
 
-type CodesField = {
+type Codes = {
   [synthesizer: string]: {
     [technology: string]: string[]
   }
 }
 
-type MetaField = {
-  [key: string]: string | CodesField,
+type Meta = {
+  [key: string]: string | Codes,
 }
 
 export class MonomerLibWrapper {
@@ -34,10 +29,12 @@ export class MonomerLibWrapper {
     if (lib === null)
       throw new Error('SequenceTranslator: monomer library is null');
     this.lib = lib!;
+    this.allMonomers = this.getAllMonomers();
   }
 
   private lib: IMonomerLib;
   private static instance?: MonomerLibWrapper;
+  private allMonomers: Monomer[];
 
   static getInstance(): MonomerLibWrapper {
     if (MonomerLibWrapper.instance === undefined)
@@ -53,7 +50,6 @@ export class MonomerLibWrapper {
   getSmilesByName(monomerName: string): string {
     const monomer = this.getMonomer(monomerName);
     return monomer.smiles;
-    // return terminator.getSmilesByName(monomerName);
   }
 
   get3PrimeTerminalSmiles(modificationName: string): string {
@@ -69,15 +65,13 @@ export class MonomerLibWrapper {
   }
 
   getCodeToNameMap(format: string): Map<string, string> {
-    const monomers = this.getAllMonomers();
     const codeToNameMap = new Map<string, string>;
 
-    for (const monomer of monomers) {
+    for (const monomer of this.allMonomers) {
       const name = monomer[REQ.NAME];
-      const codes = monomer[OPT.META]?.codes;
-      console.log('name, codes:', name, codes);
+      const codes = this.getCodesObject(monomer);
       if (Object.keys(codes).includes(format)) {
-        for (const technology of Object.keys(codes[format])) {
+        for (const technology in codes[format]) {
           for (const code of codes[format][technology])
             codeToNameMap.set(code, name);
         }
@@ -86,13 +80,29 @@ export class MonomerLibWrapper {
     return codeToNameMap;
   }
 
-  getModificationCodes(): string[] {
-    return terminator.getModificationCodes();
+  getModificationGCRSCodes(): string[] {
+    let result: string[] = [];
+    const modifications = this.getMonomersByFormat(SYNTHESIZERS.GCRS)
+      .filter((monomer) => this.isModification(monomer.name));
+    for (const monomer of modifications) {
+      const codes = this.getCodesObject(monomer)[SYNTHESIZERS.GCRS];
+      for (const technology in codes)
+        result = result.concat(codes[technology]);
+    }
+    return result;
+  }
+
+  private getCodesObject(monomer: Monomer): Codes {
+    const meta: Meta = monomer[OPT.META] as Meta;
+    return meta['codes'] as Codes;
+  };
+
+  private getMonomersByFormat(format: string) {
+    return this.allMonomers.filter((monomer) => Object.keys(monomer[OPT.META]?.codes).includes(format));
   }
 
   getTableForViewer(): DG.DataFrame {
-    const monomerList = this.getAllMonomers();
-    const formattedObjects = monomerList.map((monomer) => this.formatMonomerForViewer(monomer));
+    const formattedObjects = this.allMonomers.map((monomer) => this.formatMonomerForViewer(monomer));
     const df = DG.DataFrame.fromObjects(formattedObjects)!;
     return df;
   }
@@ -109,8 +119,8 @@ export class MonomerLibWrapper {
     formattedObject[FIELD.NAME] = sourceObj[FIELD.NAME];
     formattedObject[FIELD.MOLFILE] = sourceObj[FIELD.MOLFILE];
 
-    const meta = sourceObj[FIELD.META] as MetaField;
-    const codes = meta[FIELD.CODES] as CodesField;
+    const meta = sourceObj[FIELD.META] as Meta;
+    const codes = meta[FIELD.CODES] as Codes;
 
     for (const synthesizer of Object.values(SYNTHESIZERS)) {
       const fieldName = synthesizer;
