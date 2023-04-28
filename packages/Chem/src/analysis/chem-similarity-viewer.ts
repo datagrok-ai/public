@@ -10,6 +10,7 @@ import {ChemSearchBaseViewer, SIMILARITY} from './chem-search-base-viewer';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import { malformedDataWarning } from '../utils/malformed-data-utils';
 import { getMolSafe } from '../utils/mol-creation_rdkit';
+import '../../css/chem.css';
 
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   hotSearch: boolean;
@@ -32,7 +33,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     super(SIMILARITY);
     this.cutoff = this.float('cutoff', 0.01, {min: 0, max: 1});
     this.hotSearch = this.bool('hotSearch', true);
-    this.sketchButton = ui.button(ui.icons.edit(() => {}), () => {
+    this.sketchButton = ui.icons.edit(() => {
       const sketcher = new grok.chem.Sketcher();
       const savedMolecule = this.targetMolecule;
       sketcher.setMolecule(this.targetMolecule);
@@ -53,7 +54,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         .show();
     })
     this.sketchButton.classList.add('similarity-search-edit');
-    this.updateMetricsLink(this, {fontSize: '10px', fontWeight: 'normal', height: '10px'});
+    this.sketchButton.classList.add('chem-mol-view-icon');
+    this.updateMetricsLink(this , {});
   }
 
   init(): void {
@@ -99,9 +101,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           const grid = ui.div([
             renderMolecule(
               this.targetMolecule, {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
-            label],
-          {style: {margin: '5px', padding: '3px', position: 'relative'}},
-          );
+            label]);
           let divClass = 'd4-flex-col';
           divClass += ' d4-current';
           grid.style.boxShadow = '0px 0px 1px var(--grey-6)';
@@ -118,9 +118,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             renderMolecule(
               this.molCol?.get(i), {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
             label,
-            molProps],
-          {style: {margin: '5px', padding: '3px', position: 'relative'}},
-          );
+            molProps]);
           let divClass = 'd4-flex-col';
           if (idx == this.curIdx) {
             divClass += ' d4-current';
@@ -154,8 +152,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           grids[cnt2++] = grid;
         }
       }
-      panel[cnt++] = ui.div(grids, {classes: 'd4-flex-wrap'});
-      this.root.appendChild(ui.div(panel, {style: {margin: '5px'}}));
+      panel[cnt++] = ui.divH(grids, 'chem-viewer-grid');
+      this.root.appendChild(ui.panel([ui.divV(panel)]));
       progressBar.close();
     }
   }

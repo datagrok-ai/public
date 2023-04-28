@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {updateDivInnerHTML} from '../utils/ui-utils';
+import '../../css/chem.css';
 
 const BACKGROUND = 'background';
 const TEXT = 'text';
@@ -44,8 +45,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       this.moleculeColumnName = col.name!;
     }
     const header = this.name === DIVERSITY ? `Most diverse structures` : `Most similar structures`;
-    this.metricsDiv = ui.div(ui.divText(header, {style: {whiteSpace: 'nowrap'}}),
-      {style: {height: '10px', display: 'flex', justifyContent: 'space-between'}});
+    this.metricsDiv = ui.divH([ui.divText(header)], 'similarity-header');
   }
 
   init(): void {
@@ -87,7 +87,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     if (!this.initialized)
       return;
     if (this.metricsProperties.includes(property.name))
-      this.updateMetricsLink(this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
+      this.updateMetricsLink(this, {});
     if (property.name === 'moleculeColumnName') {
       const col = this.dataFrame.col(property.get(this))!;
       if (col.semType === DG.SEMTYPE.MOLECULE)
@@ -97,11 +97,11 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   }
 
   updateMetricsLink(object: any, options: {[key: string]: string}): void {
-    const metricsButton = ui.button(`${this.distanceMetric}/${this.fingerprint}`, () => {
+    const metricsButton = ui.link(` ${this.distanceMetric}, ${this.fingerprint}`, () => {
       if (!grok.shell.windows.showProperties)
         grok.shell.windows.showProperties = true;
       grok.shell.o = object;
-    });
+    }, 'Distance metric and fingerprint', '');
     Object.keys(options).forEach((it: any) => metricsButton.style[it] = options[it]);
     if (this.metricsDiv!.children.length > 1)
       this.metricsDiv!.removeChild(this.metricsDiv!.children[1]);
@@ -144,6 +144,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
             propsDict[col].color = grid.cell(col, idx).color;
         }
     }
+    //const item = ui.divH([], 'similarity-prop-item');
     const div = ui.divV([]);
     for (const key of Object.keys(propsDict)) {
       const labelName = key === SIMILARITY ? '' : key;
