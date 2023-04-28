@@ -21,8 +21,11 @@ export function getMCS(molecules: string, df: DG.DataFrame, compareElements: boo
 
     for(let j = 0; j < currentBatchSize; j++) {
       const add = batchSize * i;
-      let molSafe = getMolSafe(molCol.get(add + j), {}, rdkit);
-      if(molSafe.mol !== null && !molSafe.isQMol)
+
+      let molString = molCol.get(add + j);
+
+      let molSafe = getMolSafe(molString, {}, rdkit);
+      if(molSafe.mol !== null && !molSafe.isQMol && molSafe.mol.is_valid())
         mols.push(molSafe.mol);
       else
         molSafe.mol?.delete();
