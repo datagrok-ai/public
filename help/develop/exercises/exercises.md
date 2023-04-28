@@ -382,6 +382,15 @@ functions.
    </div>
    </details>
    :::
+1. Read instructions for [package testing](../how-to/add-package-tests.md#testing-functions) and add several tests
+   to the `CountSubsequencePython` script annotation. Publish you package and check that tests run successfully in
+   the [Test Manager](../how-to/test-packages.md#test-manager), or by calling the `test` function of your package.
+
+   :::note
+   Annotation tests have a limitation on the number of output parameters in the script. To test a script with multiple
+   outputs, get it via `DG.Func.find` and use the `getParamValue` method to obtain each output parameter by its name
+   from the function call (refer to the [Scripting](../../compute/scripting.md#running-a-script) article for details).
+   :::
 
 1. We can use API methods to take the `CountSubsequencePythonDataframe` script one step further. First, let's give a
    proper name to a new column. Create a wrapping function for `CountSubsequenceTableAugment` in `src/package.ts`:
@@ -423,64 +432,6 @@ functions.
 
 1. Publish your package and prepare a visual layout before running the script. Navigate to `Data | Files` and open
    `Demo Files / bio / sars-cov-2.csv`. Run the script and check that a new column appears in the grid.
-
-<!--
-### Composing two JavaScript functions
-
-8. Let's repeat this augmentation for a JavaScript function. First, delete the newly created `N(ATG)` column
-   by clicking with a right mouse button on it and selecting `Remove`.
-
-9. Create a function `CountSubsequenceTableJS`, which has the following structure:
-    ```javascript
-    //name: CountSubsequenceTableJS
-    //language: javascript
-    //input: dataframe inputDf
-    //input: string inputColName
-    //input: string outputColName
-    //input: string subseq
-    //output: dataframe outputDf
-
-    let newCol = DG.Column.fromType(
-      DG.COLUMN_TYPE.INT, outputColName, inputDf.rowCount);
-    for (let i = 0; i < newCol.length; ++i) {
-      const seq = inputDf.get(inputColName, i);
-      const count = ...; // your subsequence counting here
-      newCol.set(i, count);
-    }
-    outputDf = DG.DataFrame.fromColumns([newCol]);
-    ```
-   Grasp a number of techniques with Datagrok JS API:
-     * creating a new column of a given type
-     * iterating through a dataframe by a row index
-     * creating a dataframe from an array of columns
-
-10. In `CountSubsequenceTablePythonAugment`, replace `CountSubsequenceTablePython` to `CountSubsequenceTableJS`,
-    rename itself to `CountSubsequenceTableJSAugment` and run it. Check that the exact same new column is produced
-    as it was for a Python version.
-
-11. Add `CountSubsequenceTableJS` and `CountSubsequenceTableJSAugment` as part of the
-    package `<yourFirstName>-sequence` prepared in ["Semantic types"](#exercise-1-semantic-types) exercise.
-    Deploy the package, reload Datagrok and run `CountSubsequenceTableJSAugment` from the package.
-
-12. In contrast to `CountSubsequenceTablePythonAugment` running in the browser and `CountSubsequenceTablePython`
-    running on the server, now both `CountSubsequenceTableJSAugment` and `CountSubsequenceTableJS` run
-    in the same browser tab. Also, the dataframe-typed arguments passed from one JS function to another
-    are just references to one JS object. Would it make sense to optimize the 2 functions in the same fashion
-    as in p.6 of the previous exercise? If not, show a suitable optimization.
-
-In these two exercises, we could try another approach. Instead of passing the column to
-and forming the new column in the function being called, we could just populate the new column
-in a loop inside the `CountSubsequenceTable` by calls to a function operating on row data, such as
-the one created in ["Scripting and functions"](#scripting-and-functions):
-`CountSubsequencePython(seq, subseq)`.
-
-However, this incurs a substantial overhead in a Python version.
-For a table of 10 rows we'd have to call the server scripting 10 times with a network roundtrip
-to deliver parameters to [compute virtual machine](). This will be less overhead for a JavaScript version,
-as all will happen in the browser, but still not as optimal as the case where we do just one call to a
-nested script.
-
--->
 
 ## Exercise 4: Querying databases
 

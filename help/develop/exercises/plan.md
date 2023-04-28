@@ -168,10 +168,7 @@ After Day 5, you will learn how to:
 
 1. Scripting:
    1. Complete [Exercise #2](exercises.md#exercise-2-scripting-and-functions)
-   1. Create folder `scripts` under the package root and place your Python script there
-   1. Create a wrapper function that runs your script from the package via `grok api` (see
-      [documentation](https://github.com/datagrok-ai/public/blob/f4bff7510a08b5486eebc6f10cfea83b5dd4710e/tools/README.md))
-   1. Add tests to the script annotation
+   1. Complete [Exercise #3](exercises.md#exercise-3-composing-functions)
 1. Scripting viewers:
    1. Watch a [Scripting viewers video](https://www.youtube.com/watch?v=jHRpOnhBAz4)
    1. Read [documentation](../how-to/develop-custom-viewer.md#scripting-viewers)
