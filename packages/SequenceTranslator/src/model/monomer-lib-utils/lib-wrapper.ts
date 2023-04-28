@@ -4,11 +4,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {getMonomerLib} from '../../package';
-import {SYNTHESIZERS, TECHNOLOGIES} from '../../model/const';
+import {DELIMITER, SYNTHESIZERS, TECHNOLOGIES} from '../../model/const';
 
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 
-import {HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
+import {HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
+
+import {isValidSequence} from '../code-converter/conversion-validation-tools';
 
 import {HardcodeTerminator} from '../hardcode-terminator';
 const terminator = new HardcodeTerminator();
@@ -66,35 +68,22 @@ export class MonomerLibWrapper {
     return (molfile.includes('MODIFICATION')) ? true : false;
   }
 
-  getCodeToNameMap(sequence: string, format: string): Map<string, string> {
-    // const codeToNameMap = new Map<string, string>;
-    // const NAME = 'name';
-    // if (format == null) {
-    //   for (const synthesizer of Object.keys(map)) {
-    //     for (const technology of Object.keys(map[synthesizer])) {
-    //       for (const code of Object.keys(map[synthesizer][technology]))
-    //         codeToNameMap.set(code, map[synthesizer][technology][code][NAME]!);
-    //     }
-    //   }
-    // } else {
-    //   for (const technology of Object.keys(map[format])) {
-    //     for (const code of Object.keys(map[format][technology]))
-    //       codeToNameMap.set(code, map[format][technology][code][NAME]!);
-    //   }
-    // }
-    // // what is the reason of the following condition?
-    // codeToNameMap.set(DELIMITER, '');
-    // const output = isValidSequence(sequence, format);
-    // const G = 'g';
-    // if (output.synthesizer!.includes(SYNTHESIZERS.MERMADE_12)) {
-    //   const value = map[SYNTHESIZERS.MERMADE_12][TECHNOLOGIES.SI_RNA][G][NAME]!;
-    //   codeToNameMap.set(G, value);
-    // } else if (output.synthesizer!.includes(SYNTHESIZERS.AXOLABS)) {
-    //   const value = map[SYNTHESIZERS.AXOLABS][TECHNOLOGIES.SI_RNA][G][NAME]!;
-    //   codeToNameMap.set(G, value);
-    // }
-    // return codeToNameMap;
-    return (new HardcodeTerminator().getCodeToNameMap(sequence, format));
+  getCodeToNameMap(format: string): Map<string, string> {
+    const monomers = this.getAllMonomers();
+    const codeToNameMap = new Map<string, string>;
+
+    for (const monomer of monomers) {
+      const name = monomer[REQ.NAME];
+      const codes = monomer[OPT.META]?.codes;
+      console.log('name, codes:', name, codes);
+      if (Object.keys(codes).includes(format)) {
+        for (const technology of Object.keys(codes[format])) {
+          for (const code of codes[format][technology])
+            codeToNameMap.set(code, name);
+        }
+      }
+    }
+    return codeToNameMap;
   }
 
   getModificationCodes(): string[] {
