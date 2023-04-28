@@ -26,6 +26,8 @@ export class DemoView extends DG.ViewBase {
   }
 
   async startDemoFunc(func: DG.Func, viewPath: string): Promise<void> {
+    const path = viewPath.split('|').map((s) => s.trim()).join('/');
+
     this._closeAll();
 
     ui.setUpdateIndicator(grok.shell.tv.root, true);
@@ -35,8 +37,8 @@ export class DemoView extends DG.ViewBase {
     ui.setUpdateIndicator(grok.shell.tv.root, false);
 
     grok.shell.v.path.includes('/apps/Tutorials/Demo') ?
-      grok.shell.v.path = grok.shell.v.basePath = `/${viewPath}` :
-      grok.shell.v.path = grok.shell.v.basePath = `/apps/Tutorials/Demo/${viewPath}`;
+      grok.shell.v.path = grok.shell.v.basePath = `/${path}` :
+      grok.shell.v.path = grok.shell.v.basePath = `/apps/Tutorials/Demo/${path}`;
   }
 
 
@@ -133,13 +135,13 @@ export class DemoView extends DG.ViewBase {
     return root;
   }
   
-  nodeView(viewName: string): void {
+  nodeView(viewName: string, path: string): void {
     this._initWindowOptions();
     this._closeAll();
 
     const view = grok.shell.newView(viewName);
     view.basePath = '/apps/Tutorials/Demo';
-    view.path = `/${viewName}`;
+    view.path = `/${path}`;
 
     const root = this._createViewRootElement(viewName);
     root.classList.add('grok-gallery-grid');
@@ -168,20 +170,44 @@ export class DemoView extends DG.ViewBase {
     for (const f of DG.Func.find({meta: {'demoPath': null}}).sort(sortFunctionsByDemoPath)) {
       const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
       const path = pathOption.split('|').map((s) => s.trim());
-      const folder = this.tree.getOrCreateGroup(path.slice(0, path.length - 1).join(' | '));
-      const item = folder.item(path[path.length - 1]);
+      const itemString = path[path.length - 1];
+
+      if (path.length > 2) {
+        let groupPath = path[0];
+        let treePath = this.tree.getOrCreateGroup(path[0], {path: groupPath});
+        for (let i = 1; i < path.length - 1; i++) {
+            groupPath += `/${path[i]}`;
+            treePath = treePath.getOrCreateGroup(path[i], {path: groupPath})
+        }
+
+        const item = treePath.item(itemString, {path: pathOption});
+        item.root.onmouseover = (event:any) => {
+          const packageMessage = `Part of the ${f.package.name === 'Tutorials' ? 'platform core' : `${f.package.name} package`}`;
+          ui.tooltip.show(f.description ? ui.divV([f.description, ui.element('br'), packageMessage]) : ui.div(packageMessage),
+            event.clientX, event.clientY);
+        };
+        item.root.onmouseout = (_) => {
+          ui.tooltip.hide();
+        };
+
+      } else {
+        const folder = this.tree.getOrCreateGroup(path.slice(0, path.length - 1).join(' | '), {path: path[0]});
+        const item = folder.item(itemString, {path: pathOption});
+        item.root.onmouseover = (event:any) => {
+          const packageMessage = `Part of the ${f.package.name === 'Tutorials' ? 'platform core' : `${f.package.name} package`}`;
+          ui.tooltip.show(f.description ? ui.divV([f.description, ui.element('br'), packageMessage]) : ui.div(packageMessage),
+            event.clientX, event.clientY);
+        };
+
+        item.root.onmouseout = (_) => {
+          ui.tooltip.hide();
+        };
+      }
+
       
-      item.root.onmouseover = (event) => {
-        const packageMessage = `Part of the ${f.package.name === 'Tutorials' ? 'platform core' : `${f.package.name} package`}`;
-        ui.tooltip.show(f.description ? ui.divV([f.description, ui.element('br'), packageMessage]) : ui.div(packageMessage),
-          event.clientX, event.clientY);
-      };
-
-      item.root.onmouseout = (_) => {
-        ui.tooltip.hide();
-      };
+      //const folder = this.tree.getOrCreateGroup(path.slice(0, path.length - 1).join(' | '));
+      
     }
-
     this.searchInput.onChanged(() => {
       this._searchItem();
     });
@@ -210,10 +236,11 @@ export class DemoView extends DG.ViewBase {
         const viewerName = value.text;
 
         // TODO: make it work for if multiple subcategories
-        const demoFunc = DemoView.findDemoFunc(`${categoryName} | ${viewerName}`);
+        const demoFunc = DemoView.findDemoFunc(value.value.path);
         const demoPath = `${categoryName}/${viewerName}`;
-
-        await this.startDemoFunc(demoFunc, demoPath);
+        
+        //await DG.Func.find({meta: {'demoPath': value.value.path}});
+        await this.startDemoFunc(demoFunc, value.value.path);
         this.tree.root.focus();
       } else if (value.root.classList.contains('demo-app-tree-home-node')) { 
         this._initContent();
@@ -225,7 +252,7 @@ export class DemoView extends DG.ViewBase {
         view.path = `/`;
       } else {
         this.tree.root.focus();
-        this.nodeView(value.text);
+        this.nodeView(value.text, value.value.path);
       }
     });
 

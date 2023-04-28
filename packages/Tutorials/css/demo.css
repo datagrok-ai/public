@@ -46,13 +46,12 @@
 }
 
 .demo-app-tree-group .d4-tree-view-group-host .d4-tree-view-group-host {
-	margin: 0px;
+	padding-left: 10px;
+    margin-left: 0px;
 }
 
 .demo-app-tree-group .d4-tree-view-item {
-	margin: 0;
-	padding:1px;
-	padding-left: 32px;
+	padding-left: 5px; 
 	display: block;
 }
 
