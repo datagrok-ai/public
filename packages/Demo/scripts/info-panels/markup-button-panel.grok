@@ -5,6 +5,5 @@
 #condition: table.name == "demog"
 #input: dataframe table
 #output: string markup {action:markup}
-#test: MarkupButtonDemo(OpenServerFile('System:AppData/ApiTests/datasets/demog.csv')) == "#{button(\ntext = \"Open File...\",\nonClick = \"CmdOpenLocalFile()\")}"
 
 markup = "#{button(\ntext = \"Open File...\",\nonClick = \"CmdOpenLocalFile()\")}"

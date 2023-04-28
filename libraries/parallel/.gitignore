@@ -1,8 +1,0 @@
-upload.keys.json
-node_modules/
-dist/
-.idea
-
-src/**/*.js
-src/**/*.d.ts
-src/**/*.d.ts.map

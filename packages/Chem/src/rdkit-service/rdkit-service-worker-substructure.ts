@@ -1,7 +1,7 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {syncQueryAromatics} from "../utils/aromatic-utils";
-import {getMolSafe} from "../utils/mol-creation_rdkit";
+import {syncQueryAromatics} from '../utils/aromatic-utils';
+import {getMolSafe} from '../utils/mol-creation_rdkit';
 import {isMolBlock} from '../utils/chem-common';
 
 export enum MolNotation {
@@ -41,12 +41,22 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   initMoleculesStructures(dict: string[]) : void {
     this.freeMoleculesStructures();
     this._rdKitMols = [];
+    let logged = false;
     for (let i = 0; i < dict.length; ++i) {
       const item = dict[i];
-      let mol = getMolSafe(item, {}, this._rdKitModule).mol;
-      if (mol === null) {
-        console.error('Chem | Possibly a malformed molString at init: `' + item + '`');
+      let mol;
+      if (!item || item === '')
         mol = this._rdKitModule.get_mol('');
+      else {
+        const molSafe = getMolSafe(item, {}, this._rdKitModule);
+        mol = molSafe.mol;
+        if (mol === null) {
+          if (!logged) {
+            const errorMessage = 'Chem | Possibly a malformed molString at init: `' + item + '`';
+            logged = true;
+          }
+        } else
+          mol.is_qmol = molSafe.isQMol;
       }
       this._rdKitMols.push(mol);
     }
@@ -107,12 +117,12 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     if (queryMol !== null) {
         if (bitset) {
           for (let i = 0; i < bitset.length; ++i) {
-            if (bitset[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
+            if (bitset[i] && this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
               matches.push(i);
           }
         } else {
           for (let i = 0; i < this._rdKitMols!.length; ++i) {
-            if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
+            if (this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
               matches.push(i);
           }
         }
@@ -126,7 +136,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   freeMoleculesStructures(): void {
     if (this._rdKitMols !== null) {
       for (const mol of this._rdKitMols!)
-        mol.delete();
+        mol?.delete();
       this._rdKitMols = null;
     }
   }
@@ -139,7 +149,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     let mol: RDMol | null = null;
     for (let i = 0; i < this._rdKitMols!.length; ++i) {
       mol = this._rdKitMols![i];
-      if (targetNotation === MolNotation.MolBlock) {
+      if (mol) {
+        if (targetNotation === MolNotation.MolBlock) {
           if (!mol.has_coords())
             mol.set_new_coords();
          result = mol.get_molblock();
@@ -150,7 +161,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           result = mol.get_v3Kmolblock();
         else if (targetNotation === MolNotation.Smarts)
           result = mol.get_smarts();
-
+      }
      results[i] = result;
     }
 

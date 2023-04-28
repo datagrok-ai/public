@@ -2,18 +2,31 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import CodeMirror from 'codemirror';
-import {BehaviorSubject} from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import 'codemirror/mode/javascript/javascript';
 import 'codemirror/mode/python/python';
 import 'codemirror/mode/octave/octave';
 import 'codemirror/mode/r/r';
 import 'codemirror/mode/julia/julia';
+import 'codemirror/mode/sql/sql.js';
+import '../css/styles.css';
 
 export function functionSignatureEditor(view: DG.View) {
-  addFseRibbon(view);
+  if (view.type == 'DataQueryView') 
+    addFseRibbonQuery(view);
+  else
+    addFseRibbonScript(view);
 }
 
-function addFseRibbon(v: DG.View) {
+function addFseRibbonQuery(v: DG.View) {
+  setTimeout(() => {
+    //@ts-ignore
+    const iconFse = ui.iconFA('magic', () => openFse(v, v.root.lastChild.lastChild.parentElement.getElementsByClassName('CodeMirror cm-s-default')[0].CodeMirror.getDoc().getValue()), 'Open Signature Editor');
+    v.root.lastChild.lastChild.parentElement.querySelectorAll('.d4-tab-header-stripe')[0].appendChild(iconFse);
+  }, 500);
+}
+
+function addFseRibbonScript(v: DG.View) {
   setTimeout(() => {
     const panels = v.getRibbonPanels();
     // @ts-ignore
@@ -26,7 +39,17 @@ function addFseRibbon(v: DG.View) {
   }, 500);
 }
 
+function getInputBaseArray(props: DG.Property[], param: any): DG.InputBase[] {
+  const inputBaseArray = props.map((prop) => {
+    const input = DG.InputBase.forProperty(prop, param);
+    input.setTooltip(tooltipMessage[prop.name as OPTIONAL_TAG_NAME]);
+    return input;
+  });
+  return inputBaseArray;
+}
+
 const DEFAULT_CATEGORY = 'Misc';
+
 
 const enum FUNC_PROPS_FIELDS {
   NAME = 'name',
@@ -37,48 +60,69 @@ const enum FUNC_PROPS_FIELDS {
   LOGIN = 'author?.login',
   SAMPLE = 'sample',
   ENVIRONMENT = 'environment',
-  TAGS = 'tags'
+  TAGS = 'tags',
+  CONNECTION = "connection"
+}
+
+const tooltipMessage = {
+  'caption': 'Custom field caption',
+  'postfix': 'Field postfix',
+  'units': 'Value unit name',
+  'editor': 'Editor',
+  'semType': 'Semantic type',
+  'columns': 'Numerical or categorical columns will be loaded',
+  'type': 'Column type',
+  'format': 'Datetime format',
+  'allowNulls': 'Validation of the missing values presence',
+  'action': 'For output parameters only',
+  'choices': 'List of choices for string parameter',
+  'suggestions': 'List of suggestions for string parameter',
+  'min': 'Minimum value',
+  'max': 'Maximum value',
 }
 
 const obligatoryFuncProps = ['name', 'description', 'helpUrl', 'language'];
 
 const functionPropsLabels = (key: FUNC_PROPS_FIELDS) => {
   switch (key) {
-  case FUNC_PROPS_FIELDS.NAME: return 'Name';
-  case FUNC_PROPS_FIELDS.DESCRIPTION: return 'Description';
-  case FUNC_PROPS_FIELDS.LOGIN: return 'Author';
-  case FUNC_PROPS_FIELDS.HELP_URL: return 'Help URL';
-  case FUNC_PROPS_FIELDS.LANGUAGE: return 'Language';
-  case FUNC_PROPS_FIELDS.REFERENCE: return 'Reference';
-  case FUNC_PROPS_FIELDS.SAMPLE: return 'Sample';
-  case FUNC_PROPS_FIELDS.ENVIRONMENT: return 'Environment';
-  case FUNC_PROPS_FIELDS.TAGS: return 'Tags';
+    case FUNC_PROPS_FIELDS.NAME: return 'Name';
+    case FUNC_PROPS_FIELDS.CONNECTION: return 'Connection';
+    case FUNC_PROPS_FIELDS.DESCRIPTION: return 'Description';
+    case FUNC_PROPS_FIELDS.LOGIN: return 'Author';
+    case FUNC_PROPS_FIELDS.HELP_URL: return 'Help URL';
+    case FUNC_PROPS_FIELDS.LANGUAGE: return 'Language';
+    case FUNC_PROPS_FIELDS.REFERENCE: return 'Reference';
+    case FUNC_PROPS_FIELDS.SAMPLE: return 'Sample';
+    case FUNC_PROPS_FIELDS.ENVIRONMENT: return 'Environment';
+    case FUNC_PROPS_FIELDS.TAGS: return 'Tags';
   }
 };
 
 const highlightModeByLang = (key: LANGUAGE) => {
   switch (key) {
-  case LANGUAGE.JS:
-  case LANGUAGE.NODEJS: return 'javascript';
-  case LANGUAGE.PYTHON:
-  case LANGUAGE.GROK: return 'python';
-  case LANGUAGE.OCTAVE: return 'octave';
-  case LANGUAGE.JULIA: return 'julia';
-  case LANGUAGE.R: return 'r';
+    case LANGUAGE.JS:
+    case LANGUAGE.NODEJS: return 'javascript';
+    case LANGUAGE.PYTHON:
+    case LANGUAGE.GROK: return 'python';
+    case LANGUAGE.OCTAVE: return 'octave';
+    case LANGUAGE.JULIA: return 'julia';
+    case LANGUAGE.R: return 'r';
+    case LANGUAGE.SQL: return 'sql';
   }
 };
 
 const functionPropsCode = (key: string) => {
   switch (key) {
-  case FUNC_PROPS_FIELDS.NAME: return 'name';
-  case FUNC_PROPS_FIELDS.DESCRIPTION: return 'description';
-  case FUNC_PROPS_FIELDS.LOGIN: return 'author';
-  case FUNC_PROPS_FIELDS.HELP_URL: return 'helpUrl';
-  case FUNC_PROPS_FIELDS.LANGUAGE: return 'language';
-  case FUNC_PROPS_FIELDS.REFERENCE: return 'reference';
-  case FUNC_PROPS_FIELDS.SAMPLE: return 'sample';
-  case FUNC_PROPS_FIELDS.ENVIRONMENT: return 'environment';
-  case FUNC_PROPS_FIELDS.TAGS: return 'tags';
+    case FUNC_PROPS_FIELDS.NAME: return 'name';
+    case FUNC_PROPS_FIELDS.CONNECTION: return 'connection';
+    case FUNC_PROPS_FIELDS.DESCRIPTION: return 'description';
+    case FUNC_PROPS_FIELDS.LOGIN: return 'author';
+    case FUNC_PROPS_FIELDS.HELP_URL: return 'helpUrl';
+    case FUNC_PROPS_FIELDS.LANGUAGE: return 'language';
+    case FUNC_PROPS_FIELDS.REFERENCE: return 'reference';
+    case FUNC_PROPS_FIELDS.SAMPLE: return 'sample';
+    case FUNC_PROPS_FIELDS.ENVIRONMENT: return 'environment';
+    case FUNC_PROPS_FIELDS.TAGS: return 'tags';
   }
 };
 
@@ -104,8 +148,8 @@ const enum FUNC_PARAM_FIELDS {
 }
 
 const enum DIRECTION {
-  INPUT= 'input',
-  OUTPUT= 'output',
+  INPUT = 'input',
+  OUTPUT = 'output',
 }
 
 const functionParamsMapping = {
@@ -152,22 +196,22 @@ const DF_TAG_NAMES = [
 const COLUMN_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.TYPE, OPTIONAL_TAG_NAME.FORMAT,
   OPTIONAL_TAG_NAME.ALLOW_NULLS, OPTIONAL_TAG_NAME.ACTION];
 const STRING_TAG_NAMES = [...Object.values(COMMON_TAG_NAME),
-  /*OPTIONAL_TAG_NAME.CHOICES ,*/ OPTIONAL_TAG_NAME.SUGGESTIONS];
+  OPTIONAL_TAG_NAME.CHOICES , OPTIONAL_TAG_NAME.SUGGESTIONS];
 const INT_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.MIN, OPTIONAL_TAG_NAME.MAX];
 
 const optionTags = ((param: DG.Property) => {
   switch (param.propertyType) {
-  case DG.TYPE.INT:
-    return INT_TAG_NAMES;
-  case DG.TYPE.DATA_FRAME:
-    return DF_TAG_NAMES;
-  case DG.TYPE.COLUMN_LIST:
-  case DG.TYPE.COLUMN:
-    return COLUMN_TAG_NAMES;
-  case DG.TYPE.STRING:
-    return STRING_TAG_NAMES;
-  default:
-    return COMMON_TAG_NAMES;
+    case DG.TYPE.INT:
+      return INT_TAG_NAMES;
+    case DG.TYPE.DATA_FRAME:
+      return DF_TAG_NAMES;
+    case DG.TYPE.COLUMN_LIST:
+    case DG.TYPE.COLUMN:
+      return COLUMN_TAG_NAMES;
+    case DG.TYPE.STRING:
+      return STRING_TAG_NAMES;
+    default:
+      return COMMON_TAG_NAMES;
   }
 });
 
@@ -178,25 +222,52 @@ enum LANGUAGE {
   JULIA = 'julia',
   OCTAVE = 'octave',
   NODEJS = 'nodejs',
-  GROK = 'grok'
+  GROK = 'grok',
+  SQL = 'sql'
 }
-const languages = ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok'];
+const languages = ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok', 'sql'];
+
 const headerSign = (lang: LANGUAGE) => {
   switch (lang) {
-  case LANGUAGE.JS:
-  case LANGUAGE.NODEJS:
-    return '//';
-  case LANGUAGE.R:
-  case LANGUAGE.GROK:
-  case LANGUAGE.JULIA:
-  case LANGUAGE.PYTHON:
-  case LANGUAGE.OCTAVE:
-    return '#';
+    case LANGUAGE.JS:
+    case LANGUAGE.NODEJS:
+      return '//';
+    case LANGUAGE.R:
+    case LANGUAGE.GROK:
+    case LANGUAGE.JULIA:
+    case LANGUAGE.PYTHON:
+    case LANGUAGE.OCTAVE:
+      return '#';
+    case LANGUAGE.SQL:
+      return '--';
   }
 };
 
+let CONNECTION;
+
+async function getEditorSql(sql: string): Promise<DG.DataQuery> {
+  const regex = /--connection:\s*(\S+)/;
+  const match = sql.match(regex);
+  let connectionName;
+  if (match) 
+    connectionName = match[1];
+  const connection = await grok.functions.eval(connectionName);
+  CONNECTION = connectionName;
+  const query = connection.query('sql', sql);
+  return query;
+}
+
+
 async function openFse(v: DG.View, functionCode: string) {
-  const inputScriptCopy = DG.Script.create(functionCode);
+  let inputScriptCopy;
+  let language;
+  if (v.type == 'ScriptView') {
+    inputScriptCopy = DG.Script.create(functionCode);
+    language = inputScriptCopy.language;
+  } else {
+    inputScriptCopy = await getEditorSql(functionCode);
+    language = 'sql';
+  }
 
   const editorView = DG.View.create();
   editorView.name = v.name;
@@ -204,8 +275,13 @@ async function openFse(v: DG.View, functionCode: string) {
   const openScript = () => {
     editorView.close();
     grok.shell.addView(v);
-    // @ts-ignore
-    const editor = v.root.lastChild.lastChild.CodeMirror;
+    let editor;
+    if (v.type == 'ScriptView')
+      //@ts-ignore
+      editor = v.root.lastChild.lastChild.CodeMirror;
+    else
+      //@ts-ignore
+      editor = v.root.lastChild.lastChild.getElementsByClassName('CodeMirror cm-s-default')[0].CodeMirror;
     const doc = editor.getDoc();
     doc.setValue(myCM.getDoc().getValue());
   };
@@ -218,19 +294,24 @@ async function openFse(v: DG.View, functionCode: string) {
   const generateParamLine = (param: DG.Property, direction: string) => {
     const optionTagsPreview = optionTags(param)
       .map((tag) => {
-        return {tag: tag, val: param.options[tag]};
+        return { tag: tag, val: param.options[tag] };
       })
       .filter((value) => !!value.val)
-      .map(({tag, val}) => `${tag}: ${val}`)
-      .concat(...(param.category && param.category!== DEFAULT_CATEGORY)? [`category: ${param.category}`]:[])
+      .map(({ tag, val }) => `${tag}: ${val}`)
+      .concat(...(param.category && param.category !== DEFAULT_CATEGORY) ? [`category: ${param.category}`] : [])
       .join('; ');
-    return `${headerSign(inputScriptCopy.language as LANGUAGE)}${direction}: ${param.propertyType} ${param.name ? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
+    return `${headerSign(language as LANGUAGE)}${direction}: ${param.propertyType} ${param.name ? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
   };
 
   const functionProps = {
     [functionPropsLabels(FUNC_PROPS_FIELDS.NAME)]: DG.Property.create(
       FUNC_PROPS_FIELDS.NAME, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.NAME],
       (x: any, v) => updateFuncPropValue(FUNC_PROPS_FIELDS.NAME, v),
+      '',
+    ),
+    [functionPropsLabels(FUNC_PROPS_FIELDS.CONNECTION)]: DG.Property.create(
+      FUNC_PROPS_FIELDS.CONNECTION, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.CONNECTION],
+      (x: any, v) => updateFuncPropValue(FUNC_PROPS_FIELDS.CONNECTION, v),
       '',
     ),
     [functionPropsLabels(FUNC_PROPS_FIELDS.DESCRIPTION)]: DG.Property.create(
@@ -243,7 +324,7 @@ async function openFse(v: DG.View, functionCode: string) {
         FUNC_PROPS_FIELDS.LANGUAGE, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.LANGUAGE],
         (x: any, v) => updateFuncPropValue(FUNC_PROPS_FIELDS.LANGUAGE, v),
         '');
-      temp.fromOptions({choices: languages});
+      temp.fromOptions({ choices: languages });
       return temp;
     })(),
     [functionPropsLabels(FUNC_PROPS_FIELDS.HELP_URL)]: DG.Property.create(
@@ -293,30 +374,30 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const functionPropsInput = (prop: DG.Property) => {
     switch (prop.name) {
-    case FUNC_PROPS_FIELDS.LANGUAGE:
-      return ui.choiceInput(
-        functionPropsLabels(prop.name as FUNC_PROPS_FIELDS),
-        prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
-        prop.choices,
-      );
+      case FUNC_PROPS_FIELDS.LANGUAGE:
+        return ui.choiceInput(
+          functionPropsLabels(prop.name as FUNC_PROPS_FIELDS),
+          prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
+          prop.choices,
+        );
       // case FUNC_PROPS_FIELDS.TAGS:
       //   return ui.multiChoiceInput(
       //     functionPropsLabels(prop.name as FUNC_PROPS_FIELDS),
       //     prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
       //     prop.choices,
       //   );
-    default:
-      return ui.stringInput(functionPropsLabels(prop.name as FUNC_PROPS_FIELDS),
-        prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name]);
+      default:
+        return ui.stringInput(functionPropsLabels(prop.name as FUNC_PROPS_FIELDS),
+          prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name]);
     }
   };
 
   const renderAddPropButton = () => {
     if (!getNewProps().length) return ui.div();
 
-    const onItemClick = (item: DG.Property) => {
-      item.set(inputScriptCopy, ' ');
-      const newInputs = ui.inputs(
+    const onItemClick = async (item: DG.Property) => {
+      inputScriptCopy[item.name] = ' ';
+      const newInputs = ui.inputs(  
         Object.values(functionProps)
           .filter((prop) => !!prop.get(inputScriptCopy) || !!(inputScriptCopy as any)[prop.name])
           .map((prop) => addFullWidthInput(
@@ -336,7 +417,7 @@ async function openFse(v: DG.View, functionCode: string) {
       (prop) => menu.item(functionPropsLabels(prop.name as FUNC_PROPS_FIELDS), () => onItemClick(prop)),
     );
 
-    const button = ui.button([ui.icons.add(()=>{})], () => {
+    const button = ui.button([ui.icons.add(() => { })], () => {
       menu.show();
     });
 
@@ -346,24 +427,24 @@ async function openFse(v: DG.View, functionCode: string) {
   };
 
   const addFullWidthInput = (input: DG.InputBase, prop: DG.Property) => {
-    (input.root.lastChild as HTMLElement).style.cssText+='width: 400px; max-width: inherit;';
+    (input.root.lastChild as HTMLElement).style.cssText += 'width: 400px; max-width: inherit;';
     input.onInput(() => {
-      prop.set(inputScriptCopy, input.stringValue);
+      inputScriptCopy[prop.name] = input.stringValue;
       refreshPreview();
     });
     (input.root as HTMLInputElement).placeholder = 'Enter your value...';
-    input.root.appendChild(ui.button(ui.icons.delete(()=>{}), () => {
-      prop.set(inputScriptCopy, prop.defaultValue);
+    input.root.appendChild(ui.button(ui.icons.delete(() => { }), () => {
+      inputScriptCopy[prop.name] = prop.defaultValue;
       refreshPreview();
       input.root.remove();
       const newAddButton = renderAddPropButton();
       addButton.replaceWith(newAddButton);
       addButton = newAddButton;
     }));
-    (input.root.lastChild as HTMLElement).style.cssText+='display: inline-flex; justify-content: center; flex-direction: column';
+    (input.root.lastChild as HTMLElement).style.cssText += 'display: inline-flex; justify-content: center; flex-direction: column';
     if (obligatoryFuncProps.includes(prop.name)) {
       input.root.style.cssText += 'padding-right: 35.375px';
-      (input.root.lastChild as HTMLElement).style.cssText+='display: none;';
+      (input.root.lastChild as HTMLElement).style.cssText += 'display: none;';
     }
     return input;
   };
@@ -379,6 +460,7 @@ async function openFse(v: DG.View, functionCode: string) {
           prop,
         )),
     );
+
     return ui.panel([
       ui.divV([
         inputs,
@@ -402,19 +484,40 @@ async function openFse(v: DG.View, functionCode: string) {
 
     if (!param) return ui.div('');
 
-    const result = ui.input.form(param,
-      [
-        ...obligatoryFuncParamsTags,
-        ...optionalFuncParamsTags.filter((prop) => optionTags(param).includes(prop.name as OPTIONAL_TAG_NAME)),
-      ]);
+    const obligatoryTagsInputBase = getInputBaseArray(obligatoryFuncParamsTags, param);
 
-    grok.shell.o = ui.divV([ui.h1(`Param: ${paramName}`), ui.block75([result])]);
+    const optionalTagsInputBase = getInputBaseArray(
+      optionalFuncParamsTags.filter((prop) => optionTags(param).includes(prop.name as OPTIONAL_TAG_NAME)),
+      param
+    );
+
+    const result = ui.form([
+      ...obligatoryTagsInputBase,
+      ...optionalTagsInputBase,
+    ]);
+
+    const helpIcon = ui.iconFA('question', () => {
+      window.open(
+        'https://datagrok.ai/help/datagrok/functions/func-params-annotation', 
+        '_blank'
+      );
+    });
+    helpIcon.classList.add('dt-help-icon');
+
+    grok.shell.o = ui.divV([
+      ui.divH(
+        [
+          ui.h1(`Param: ${paramName}`), 
+          helpIcon
+        ],
+      ), ui.block75([result])
+    ]);
   };
 
   const updateValue = (param: DG.Property, propName: string, v: any) => {
     (param as any)[propName] = v;
     const globalParam =
-        functionParamsCopy.find((copy) => copy.name === param.name);
+      functionParamsCopy.find((copy) => copy.name === param.name);
     if (globalParam) globalParam.options[propName] = v;
     functionParamsState.next(functionParamsCopy);
     refreshPreview();
@@ -424,30 +527,30 @@ async function openFse(v: DG.View, functionCode: string) {
     (() => {
       const temp = DG.Property.create(FUNC_PARAM_FIELDS.DIRECTION, DG.TYPE.STRING,
         (x: any) => x.options?.[FUNC_PARAM_FIELDS.DIRECTION],
-        (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.DIRECTION, v), '');
-      temp.fromOptions({choices: [DIRECTION.INPUT, DIRECTION.OUTPUT]});
+        (x: any, v) => updateFuncPropValue(FUNC_PARAM_FIELDS.DIRECTION, v), '');
+      temp.fromOptions({ choices: [DIRECTION.INPUT, DIRECTION.OUTPUT] });
       return temp;
     })(),
     DG.Property.create(FUNC_PARAM_FIELDS.NAME, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.NAME],
-      (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.NAME, v), ''),
+      (x: any, v) => updateFuncPropValue(FUNC_PARAM_FIELDS.NAME, v), ''),
     (() => {
       const temp = DG.Property.create(FUNC_PARAM_FIELDS.TYPE, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.TYPE],
         (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.TYPE, v), '');
-      temp.fromOptions({choices: funcParamTypes});
+      temp.fromOptions({ choices: funcParamTypes });
       return temp;
     })(),
     DG.Property.create(FUNC_PARAM_FIELDS.DEFAULT_VALUE, DG.TYPE.STRING,
       (x: any) => String(DG.toJs(x)[FUNC_PARAM_FIELDS.DEFAULT_VALUE] || ''),
-      (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.DEFAULT_VALUE, v), ''),
+      (x: any, v) => updateFuncPropValue(FUNC_PARAM_FIELDS.DEFAULT_VALUE, v), ''),
     (() => {
       const temp = DG.Property.create(FUNC_PARAM_FIELDS.DESCRIPTION, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.DESCRIPTION], (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.DESCRIPTION, v), '');
-      temp.fromOptions({editor: 'textarea'});
+      temp.fromOptions({ editor: 'textarea' });
       return temp;
     })(),
     DG.Property.create(FUNC_PARAM_FIELDS.CATEGORY, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.CATEGORY],
-      (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.CATEGORY, v), ''),
+      (x: any, v) => updateFuncPropValue(FUNC_PARAM_FIELDS.CATEGORY, v), ''),
   ];
-
+  
   const obligatoryFuncParamsTags: DG.Property[] = [
     DG.Property.create(COMMON_TAG_NAME.CAPTION, DG.TYPE.STRING,
       (x: any) => x.options[COMMON_TAG_NAME.CAPTION],
@@ -479,7 +582,7 @@ async function openFse(v: DG.View, functionCode: string) {
       (x: any) => x.options[OPTIONAL_TAG_NAME.ALLOW_NULLS],
       (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.ALLOW_NULLS, v), ''),
 
-    DG.Property.create(OPTIONAL_TAG_NAME.CHOICES, DG.TYPE.LIST,
+    DG.Property.create(OPTIONAL_TAG_NAME.CHOICES, DG.TYPE.DYNAMIC,
       (x: any) => x.options[OPTIONAL_TAG_NAME.CHOICES],
       (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.CHOICES, v), ''),
 
@@ -487,7 +590,7 @@ async function openFse(v: DG.View, functionCode: string) {
       const temp = DG.Property.create(OPTIONAL_TAG_NAME.COLUMNS, DG.TYPE.STRING,
         (x: any) => x.options[OPTIONAL_TAG_NAME.COLUMNS],
         (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.COLUMNS, v), '');
-      temp.fromOptions({choices: ['numerical', 'categorical']});
+      temp.fromOptions({ choices: ['numerical', 'categorical'] });
       return temp;
     })(),
 
@@ -503,7 +606,7 @@ async function openFse(v: DG.View, functionCode: string) {
       (x: any) => x.options[OPTIONAL_TAG_NAME.MIN],
       (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.MIN, v), ''),
 
-    DG.Property.create(OPTIONAL_TAG_NAME.SUGGESTIONS, DG.TYPE.STRING,
+    DG.Property.create(OPTIONAL_TAG_NAME.SUGGESTIONS, DG.TYPE.DYNAMIC,
       (x: any) => x.options[OPTIONAL_TAG_NAME.SUGGESTIONS],
       (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.SUGGESTIONS, v), ''),
 
@@ -511,10 +614,11 @@ async function openFse(v: DG.View, functionCode: string) {
       const temp = DG.Property.create(OPTIONAL_TAG_NAME.TYPE, DG.TYPE.STRING,
         (x: any) => x.options[OPTIONAL_TAG_NAME.TYPE],
         (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.TYPE, v), '');
-      temp.fromOptions({choices: ['numerical', 'categorical', 'dateTime']});
+      temp.fromOptions({ choices: ['numerical', 'categorical', 'dateTime'] });
       return temp;
     })(),
   ];
+
   const paramsDF = DG.DataFrame.create(functionParamsCopy.length);
   for (const p of obligatoryFuncParamsProps) {
     (paramsDF.columns as DG.ColumnList)
@@ -526,7 +630,10 @@ async function openFse(v: DG.View, functionCode: string) {
       });
   }
   (paramsDF.columns as DG.ColumnList).addNew('+', DG.TYPE.STRING);
-  paramsDF.onCurrentRowChanged.subscribe(() => onFunctionParamClick((paramsDF.currentRow as any)['Name']));
+
+  paramsDF.onCurrentRowChanged.subscribe(() => {
+    onFunctionParamClick((paramsDF.currentRow as any)['Name']);
+  });
 
   const paramsGrid = DG.Grid.create(paramsDF);
   paramsGrid.root.style.width = '100%';
@@ -534,7 +641,7 @@ async function openFse(v: DG.View, functionCode: string) {
     .setTag(DG.TAGS.CHOICES, `["${funcParamTypes.join(`", "`)}"]`);
   paramsGrid.dataFrame?.getCol(functionParamsMapping[FUNC_PARAM_FIELDS.DIRECTION as keyof typeof functionParamsMapping])
     .setTag(DG.TAGS.CHOICES, `["${[DIRECTION.INPUT, DIRECTION.OUTPUT].join(`", "`)}"]`);
-  paramsGrid.setOptions({'showColumnGridlines': false});
+  paramsGrid.setOptions({ 'showColumnGridlines': false });
 
   const col = paramsGrid.columns.byName('+');
   col.cellType = 'html';
@@ -548,7 +655,7 @@ async function openFse(v: DG.View, functionCode: string) {
       ui.icons.delete(() => {
         functionParamsCopy = functionParamsCopy.filter((param) => param.name !== name);
         functionParamsState.next(functionParamsCopy);
-      }, 'Remove the param'), {style: {'text-align': 'center', 'margin': '6px'}},
+      }, 'Remove the param'), { style: { 'text-align': 'center', 'margin': '6px' } },
     );
 
     if (gc.isTableCell) {
@@ -566,7 +673,7 @@ async function openFse(v: DG.View, functionCode: string) {
   });
 
   const codeArea = ui.textInput('', '');
-  const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), {mode: highlightModeByLang(inputScriptCopy.language as LANGUAGE)});
+  const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), { mode: highlightModeByLang(language as LANGUAGE) });
   const uiArea = await inputScriptCopy.prepare().getEditor();
   const codePanel = ui.panel([codeArea.root]);
   codePanel.style.height = '100%';
@@ -587,7 +694,7 @@ async function openFse(v: DG.View, functionCode: string) {
     [
       'Add parameter',
       ui.div(ui.icons.add(() => {
-      }), {style: {'text-align': 'center', 'margin': '6px'}}),
+      }), { style: { 'text-align': 'center', 'margin': '6px' } }),
     ],
     () => {
       const newParam = {
@@ -635,22 +742,35 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const refreshPreview = async () => {
     let result = '';
+    if (v.type === 'DataQueryView') 
+      result += `${headerSign(language as LANGUAGE)}${functionPropsCode(FUNC_PROPS_FIELDS.CONNECTION)}: ${CONNECTION}\n`;
     Object.values(functionProps).map((propField) => {
       const propValue = propField.get(inputScriptCopy) || (inputScriptCopy as any)[propField.name];
-      if (!!propValue && !!propValue.length)
-        result += `${headerSign(inputScriptCopy.language as LANGUAGE)}${functionPropsCode(propField.name as FUNC_PROPS_FIELDS)}: ${propValue}\n`;
+      if (!!propValue && !!propValue.length) {
+        const propName = functionPropsCode(propField.name as FUNC_PROPS_FIELDS);
+        result += `${headerSign(language as LANGUAGE)}${functionPropsCode(propName)}: ${propValue}\n`;
+      }
     });
     functionParamsCopy.map((param) => {
       result += generateParamLine(param, param.options.direction);
     });
-    const regex = new RegExp(`^(${headerSign(inputScriptCopy.language as LANGUAGE)}.*\n)*`, 'g');
-    result += inputScriptCopy.script.substring(inputScriptCopy.script.match(regex)[0].length + 1);
-    myCM.setOption('mode', highlightModeByLang(inputScriptCopy.language as LANGUAGE));
+    const regex = new RegExp(`^(${headerSign(language as LANGUAGE)}.*\n)*`, 'g');
+    if (v.type == 'ScriptView') 
+      result += inputScriptCopy.script.substring(inputScriptCopy.script.match(regex)[0].length + 1);
+    else 
+      result += inputScriptCopy.query.substring(inputScriptCopy.query.match(regex)[0].length + 1);
+    myCM.setOption('mode', highlightModeByLang(language as LANGUAGE));
     myCM.setValue(result);
     myCM.setSize('100%', '100%');
 
-    const newUiArea = await inputScriptCopy.prepare().getEditor();
-    uiArea.replaceWith(newUiArea);
+    let modifiedScript;
+    if (v.type == 'ScriptView') 
+      modifiedScript = DG.Script.create(result);
+    else 
+      modifiedScript = await getEditorSql(result);
+    const newUiArea = await modifiedScript.prepare().getEditor();
+    uiArea.innerHTML = '';
+    uiArea.append(newUiArea);
   };
 
   v.close();
@@ -672,7 +792,7 @@ async function openFse(v: DG.View, functionCode: string) {
     }
 
     if (functionParamsCopy.length > paramsDF.rowCount) {
-      const newParam = functionParamsCopy[functionParamsCopy.length-1];
+      const newParam = functionParamsCopy[functionParamsCopy.length - 1];
       paramsDF.rows.addNew(
         [
           newParam.options.direction, newParam.name,
@@ -698,14 +818,15 @@ async function openFse(v: DG.View, functionCode: string) {
     refreshPreview();
   });
 
-  paramsGrid.onCellValueEdited.subscribe((editedCell)=> {
+  paramsGrid.onCellValueEdited.subscribe((editedCell) => {
     const rowIndex = functionParamsCopy.findIndex((param) => param.name === (editedCell.tableRow as any)['Name']);
     if (rowIndex) {
       (functionParamsCopy[rowIndex] as any)
-        [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value || undefined;
+      [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value || undefined;
       functionParamsCopy[rowIndex].options
-        [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value || undefined;
+      [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value || undefined;
       functionParamsState.next(functionParamsCopy);
     }
+    onFunctionParamClick((editedCell.tableRow as any)['Name']);
   });
 }

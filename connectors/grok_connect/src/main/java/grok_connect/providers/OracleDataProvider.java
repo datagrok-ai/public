@@ -13,8 +13,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import grok_connect.connectors_info.*;
+import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataQuery;
+import grok_connect.connectors_info.DataSource;
+import grok_connect.connectors_info.DbCredentials;
+import grok_connect.connectors_info.FuncParam;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.Property;
@@ -25,13 +28,12 @@ import oracle.sql.ZONEIDMAP;
 import oracle.sql.json.OracleJsonObject;
 import serialization.Types;
 
-
 public class OracleDataProvider extends JdbcDataProvider {
     private static final String SYS_SCHEMAS_FILTER =
-            "OWNER != 'SYSTEM' AND OWNER != 'CTXSYS' AND OWNER != 'MDSYS' " +
-            "AND OWNER != 'XDB' AND OWNER != 'APEX_040000' AND OWNER != 'SYS' " +
-            "AND OWNER != 'WMSYS' AND OWNER != 'EXFSYS' AND OWNER != 'ORDSYS' " +
-            "AND OWNER != 'ORDDATA'";
+            "COL.OWNER != 'SYSTEM' AND COL.OWNER != 'CTXSYS' AND COL.OWNER != 'MDSYS' " +
+            "AND COL.OWNER != 'XDB' AND COL.OWNER != 'APEX_040000' AND COL.OWNER != 'SYS' " +
+            "AND COL.OWNER != 'WMSYS' AND COL.OWNER != 'EXFSYS' AND COL.OWNER != 'ORDSYS' " +
+            "AND COL.OWNER != 'ORDDATA'";
     private static final byte REGIONIDBIT = (byte) 0b1000_0000;
 
     public OracleDataProvider(ProviderManager providerManager) {
@@ -49,15 +51,21 @@ public class OracleDataProvider extends JdbcDataProvider {
 
         descriptor.typesMap = new HashMap<String, String>() {{
             put("long", Types.INT);
-            put("#float.*", Types.FLOAT);
-            put("#number.*", Types.FLOAT);
+            put("float", Types.FLOAT);
+            put("number", Types.FLOAT);
             put("binary_float", Types.FLOAT);
             put("binary_double", Types.FLOAT);
-            put("#.char.*", Types.STRING);
-            put("#.varchar.*", Types.STRING);
-            put("#.clob.*", Types.STRING);
+            put("#.*char.*", Types.STRING);
+            put("#.*varchar.*", Types.STRING);
             put("date", Types.DATE_TIME);
-            put("timestamp", Types.DATE_TIME);
+            put("#timestamp.*", Types.DATE_TIME);
+            put("#interval.*", Types.DATE_TIME);
+            put("json", Types.OBJECT);
+            put("#.*clob.*", Types.BLOB);
+            put("blob", Types.BLOB);
+            put("uritype", Types.OBJECT);
+            put("mem_type", Types.OBJECT);
+            put("xmltype", Types.OBJECT);
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stddev(#)", Types.dataFrameNumericTypes));
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "median(#)", Types.dataFrameNumericTypes));
@@ -170,6 +178,7 @@ public class OracleDataProvider extends JdbcDataProvider {
         return lst.size() - 1;
     }
 
+    @Override
     public String getConnectionStringImpl(DataConnection conn) {
         conn.getPort();
         return "jdbc:oracle:thin:@(DESCRIPTION=" +
@@ -180,20 +189,24 @@ public class OracleDataProvider extends JdbcDataProvider {
                 "(CONNECT_DATA=(SERVICE_NAME=" + conn.getDb() + ")))";
     }
 
+    @Override
     public String getSchemasSql(String db) {
-        return "SELECT OWNER as TABLE_SCHEMA FROM ALL_TAB_COLUMNS WHERE " + SYS_SCHEMAS_FILTER +
-                " GROUP BY OWNER ORDER BY OWNER";
+        return "SELECT COL.OWNER as TABLE_SCHEMA FROM ALL_TAB_COLUMNS COL WHERE " + SYS_SCHEMAS_FILTER +
+                " GROUP BY COL.OWNER ORDER BY COL.OWNER";
     }
 
+    @Override
     public String getSchemaSql(String db, String schema, String table) {
         String whereClause = "WHERE " + SYS_SCHEMAS_FILTER;
 
         if (table != null)
-            whereClause = whereClause + " AND (TABLE_NAME = '" + table + "')";
+            whereClause = whereClause + " AND (COL.TABLE_NAME = '" + table + "')";
         if (schema != null)
-            whereClause = whereClause + " AND (OWNER = '" + schema + "')";
+            whereClause = whereClause + " AND (COL.OWNER = '" + schema + "')";
 
-        return "SELECT OWNER as TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM ALL_TAB_COLUMNS " + whereClause +
+        return "SELECT COL.OWNER as TABLE_SCHEMA, COL.TABLE_NAME AS TABLE_NAME, COL.COLUMN_NAME AS COLUMN_NAME, COL.DATA_TYPE AS DATA_TYPE, " +
+                "CASE WHEN O.OBJECT_TYPE = 'VIEW' THEN 1 ELSE 0 END AS IS_VIEW" +
+                " FROM ALL_TAB_COLUMNS COL INNER JOIN ALL_OBJECTS O ON O.OBJECT_NAME = COL.TABLE_NAME " + whereClause +
                 " ORDER BY TABLE_NAME";
     }
 
@@ -204,13 +217,13 @@ public class OracleDataProvider extends JdbcDataProvider {
     public String addBrackets(String name) {
         String brackets = descriptor.nameBrackets;
         return name.startsWith(brackets.substring(0, 1)) ? name :
-                brackets.substring(0, 1) + name + brackets.substring(brackets.length() - 1, brackets.length());
+                brackets.charAt(0) + name + brackets.substring(brackets.length() - 1);
     }
 
     private boolean isOracleFloatNumber(String typeName, int precision, int scale) {
         // https://markhoxey.wordpress.com/2016/05/31/maximum-number-precision/ ==>  Precision >= 38
         // https://stackoverflow.com/questions/29537292/why-can-number-type-in-oracle-scale-up-to-127 ==> scale >= 127
-        return typeName.equalsIgnoreCase("number") && (scale == 0 || scale >= 127) && (precision <= 0);
+        return typeName.equalsIgnoreCase("number") && (scale == 0 || scale >= 127) && (precision < 0);
     }
 
     private static OffsetDateTime extractUtc(byte[] bytes) {

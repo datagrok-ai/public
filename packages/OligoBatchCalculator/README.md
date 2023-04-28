@@ -2,9 +2,10 @@
 
 ![Oligo Batch Calculator](img/screen.jpg)
 
-Presentation: https://www.youtube.com/watch?v=2xuxJjpjXi4&t=4908s
+Presentation: <https://www.youtube.com/watch?v=2xuxJjpjXi4&t=4908s>
 
 **Calculates the following oligonucleotide properties:**
+
 1. Length
 2. Optical Density
 3. NMoles
@@ -13,6 +14,7 @@ Presentation: https://www.youtube.com/watch?v=2xuxJjpjXi4&t=4908s
 6. Extinction Coefficient (using nearest neighbour method)
 
 **To calculate these properties:**
+
 1. Paste your sequences into input text field
 2. Specify amount and units
 3. Click "SAVE AS CSV" to export calculations.

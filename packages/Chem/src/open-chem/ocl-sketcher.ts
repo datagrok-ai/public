@@ -9,6 +9,9 @@ let sketcherId = 0;
 export class OpenChemLibSketcher extends grok.chem.SketcherBase {
 
   _sketcher: OCL.StructureEditor | null = null;
+  mouseDown = false;
+  savedMolecule: string | null = null;
+  setSavedMolecule = false;
 
   constructor() {
     super();
@@ -20,7 +23,31 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
     this.root.id = id;
     this._sketcher = OCL.StructureEditor.createSVGEditor(id, 1);
     this._sketcher.setChangeListenerCallback((id: any, molecule: any) => {
-      this.onChanged.next(null);
+      if (this.setSavedMolecule) {
+        this.setSavedMolecule = false;
+        this.molFile = this.savedMolecule!;
+        this.savedMolecule = null;
+      } else
+        this.onChanged.next(null);
+    });
+
+    /* workaround for situations when mouse was down outside sketcher editor but up inside sketcher editor
+    (in this case the action selected on the toolbox is applyed unintendedly. For instance, molecule is removed).
+    stopImmediatePropagation doesn't prevent OCL editor from deleting molecule.
+    Using pointerup instead of mouseup here since at the moment of mouseup event molecule is already removed
+    TODO!!!:  create issue on openChemLib github*/
+
+    const canvas = this.root.querySelectorAll("canvas")[1];
+    canvas!.addEventListener("pointerdown", (e) => {
+      this.mouseDown = true;
+    });
+    canvas!.addEventListener("pointerup", (e) => {
+      if (this.mouseDown) {
+        this.mouseDown = false;
+      } else {
+        this.setSavedMolecule = true;
+        this.savedMolecule = this.molFile;
+      }
     });
   }
 

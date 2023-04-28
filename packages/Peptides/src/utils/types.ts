@@ -17,9 +17,13 @@ export type PeptidesSettings = {
   clustersColumnName?: string,
   scaling?: ScalingMethods,
   isBidirectional?: boolean,
+  showMonomerPosition?: boolean,
+  showMostPotentResidues?: boolean,
+  showLogoSummaryTable?: boolean,
+  showDendrogram?: boolean,
   maxMutations?: number,
   minActivityDelta?: number,
-  columns?: {[col: string]: string},
+  columns?: {[col: string]: DG.AggregationType},
 };
 
 export type DrawOptions = {

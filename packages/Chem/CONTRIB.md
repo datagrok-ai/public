@@ -23,7 +23,7 @@ put it under a project `Chem`
 
 Make sure to follow our common contributor's guide:
 
-https://github.com/datagrok-ai/public/blob/master/CONTRIB.md
+<https://github.com/datagrok-ai/public/blob/master/CONTRIB.md>
 
 ### Preparing working environment
 
@@ -42,9 +42,9 @@ They have corresponding npm packages at
 [`@datagrok-libraries/utils`](https://www.npmjs.com/package/@datagrok-libraries/utils),
 [`@datagrok-libraries/ml`](https://www.npmjs.com/package/@datagrok-libraries/ml),
 and
-['js-api`](https://www.npmjs.com/package/datagrok-api).
+['js-api`](<https://www.npmjs.com/package/datagrok-api>).
 Often you will be editing both the Chem package and some corresponding functionality in the
-mentioned libraries. Publishing these libraries to npm after changing them to let Chem `npm install`
+mentioned libraries. Publishing these libraries to npm after changing them to let Chem`npm install`
 fetch the changes isn't a feasible approach either, as the changes in these packages often
 batch together.
 
@@ -100,7 +100,7 @@ environment use case, and deprecate `setup.cmd` in their favor, when possible.
 
 @ptosco assembles special builds of RdKit WASM library (called MinimalLib) from his fork:
 
-https://github.com/ptosco/rdkit/tree/master/Code/MinimalLib
+<https://github.com/ptosco/rdkit/tree/master/Code/MinimalLib>
 
 The reason for it is that this fork ships customer-specific things.
 
@@ -133,7 +133,7 @@ We need to resolve this part eventually, but the priority isn't the highest.
 
 Rendering of both is possible, but will generally look differently for the same SMILES pattern:
 
-![](./misc/resources/drawing-mol-qmol.png)
+![drawing-mol-qmol](./misc/resources/drawing-mol-qmol.png)
 
 ### The testbed
 
@@ -188,7 +188,7 @@ sketcher.
 Here's an example of this MolBlock':
 
 ```
-  MJ201900                      
+  MJ201900
 
   6  6  1  0  0  0  0  0  0  0999 V2000
    -2.2321    0.8473    0.0000 L   0  0  0  0  0  0  0  0  0  0  0  0
@@ -204,7 +204,7 @@ Here's an example of this MolBlock':
   1  2  2  0  0  0  0
   6  1  1  0  0  0  0
   1 F    2   6   7
-M  ALS   1  2 F C   N   
+M  ALS   1  2 F C   N
 M  END
 ```
 
@@ -227,12 +227,12 @@ For example, `c1ccccc1` and `C1(=CC=CC=C1)` are the same molecule (check it thro
 for Benzene from OCL sketcher, the second — Benzene as represented in one of the commercial
 sketchers.
 
-However (as of `RDKit_minimal_2022.03_1.wasm`), we *cannot* construct a search pattern by
+However (as of `RDKit_minimal_2022.03_1.wasm`), we _cannot_ construct a search pattern by
 `.get_qmol()` from `C1(=CC=CC=C1)`, but we can do a `.get_qmol()` for `c1ccccc1`.
 
 A related question is registered at `RdKit` github:
 
-https://github.com/rdkit/rdkit/issues/5337
+<https://github.com/rdkit/rdkit/issues/5337>
 
 A workaround is to check if a pattern with `.get_qmol()` is constructed (and `.is_valid()`)
 is `true`, but also a `.get_mol()` can be constructed for the same pattern, and the
@@ -240,7 +240,7 @@ result of searching by the `.get_qmol()`-constructed molecule in `.get_mol()` mo
 is empty. If that's the case, it means that the search pattern won't really find anything
 anywhere and we need to re-construct the pattern with `.get_mol()` instead.
 
-#### SMARTS which isn't SMILES cannot be constructed in `.get_mol()` 
+#### SMARTS which isn't SMILES cannot be constructed in `.get_mol()`
 
 Easy to check in RdKit MinimalLib.
 
@@ -265,7 +265,7 @@ corner. It is automatically re-converted by OCL Sketcher to `c1ccccc1`.
 
 #### Commercial sketcers may return obscure SMARTS
 
-For example, returning a `[?]1(=CC=CC=C1)` for a Benzene with top atom excluded `C,N`.  
+For example, returning a `[?]1(=CC=CC=C1)` for a Benzene with top atom excluded `C,N`.
 This SMARTS is certainly not correct. This may be happening due to lacking licenses,
 but we need to check for sure. For these cases, we implement a failover, receiving
 an additional MolBlock value from the sketcher and passing it to Substructure Search
@@ -280,7 +280,7 @@ Let's see in respect to substructure search, what can be done on the RdKit side
 to process all possible peculiarities of sketcher formats when searching on
 substructures.
 
-*Several conditions*
+##### Several conditions
 
 `c1`: `s` molString is provided and it is NOT MolBlock
 `c2`: a failover MolBlock `mb` is provided (but still need to check `c1` = 1)
@@ -292,7 +292,7 @@ substructures.
 
 By "successfully", we mean that there's no exception and `.is_valid` is `true`.
 
-*Outcomes*
+##### Outcomes
 
 `o1`: search pattern is from `.get_mol(s)`
 `o2`: search pattern is from `.get_qmol(s)`
@@ -302,10 +302,8 @@ x   : impossible configuration
 
 Handling of these arguments is reflected in this issue:
 
-https://github.com/datagrok-ai/public/issues/663.
+<https://github.com/datagrok-ai/public/issues/663>.
 
 ## Benchmarks
 
-
 ## Future plans
-

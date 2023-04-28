@@ -4,26 +4,28 @@ import * as DG from 'datagrok-api/dg';
 
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {getSimilarityFromDistance} from '@datagrok-libraries/ml/src/distance-metrics-methods';
-import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
-import {TAGS} from '../utils/constants';
+import {AvailableMetrics, AvailableMetricsTypes, StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
 import * as C from '../utils/constants';
 import {GridColumn} from 'datagrok-api/dg';
 import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
-import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {getSplitter, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export async function getDistances(col: DG.Column, seq: string): Promise<Array<number>> {
   const stringArray = col.toList();
   const distances = new Array(stringArray.length).fill(0);
+  const distanceMethod: (x: string, y: string) => number =
+    AvailableMetrics[AvailableMetricsTypes.String][StringMetricsNames.Levenshtein];
   for (let i = 0; i < stringArray.length; ++i) {
-    const distance = stringArray[i] ? AvailableMetrics['String']['Levenshtein'](stringArray[i], seq) : null;
+    const distance = stringArray[i] ? distanceMethod(stringArray[i], seq) : null;
     distances[i] = distance ? distance / Math.max((stringArray[i] as string).length, seq.length) : null;
   }
   return distances;
 }
 
-export async function getSimilaritiesMarix(dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string, simArr: DG.Column[])
-  : Promise<DG.Column[]> {
+export async function getSimilaritiesMatrix(
+  dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string, simArr: DG.Column[]
+): Promise<DG.Column[]> {
   const distances = new Array(simArr.length).fill(null);
   for (let i = 0; i != dim - 1; ++i) {
     const seq: string = seqCol.get(i);
@@ -40,7 +42,7 @@ export async function getSimilaritiesMarix(dim: number, seqCol: DG.Column, df: D
   return simArr;
 }
 
-export async function getChemSimilaritiesMarix(dim: number, seqCol: DG.Column,
+export async function getChemSimilaritiesMatrix(dim: number, seqCol: DG.Column,
   df: DG.DataFrame, colName: string, simArr: DG.Column[])
   : Promise<DG.Column[]> {
   if (seqCol.version !== seqCol.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
@@ -104,7 +106,7 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
 
   const molDifferences: { [key: number]: HTMLCanvasElement } = {};
   const units = params.seqCol.getTag(DG.TAGS.UNITS);
-  const separator = params.seqCol.getTag(TAGS.SEPARATOR);
+  const separator = params.seqCol.getTag(bioTAGS.separator);
   const splitter = getSplitter(units, separator);
   const subParts1 = splitter(sequencesArray[0]);
   const subParts2 = splitter(sequencesArray[1]);
@@ -164,7 +166,7 @@ export function createLinesGrid(df: DG.DataFrame, colNames: string[]): DG.Grid {
     .init((i) => `${df.get(colNames[0], i)}#${df.get(colNames[1], i)}`);
   seqDiffCol.semType = 'MacromoleculeDifference';
   seqDiffCol.setTag(DG.TAGS.UNITS, df.col(colNames[0])!.getTag(DG.TAGS.UNITS));
-  seqDiffCol.setTag(C.TAGS.SEPARATOR, df.col(colNames[0])!.getTag(C.TAGS.SEPARATOR));
+  seqDiffCol.setTag(bioTAGS.separator, df.col(colNames[0])!.getTag(bioTAGS.separator));
   df.columns.add(seqDiffCol);
   const grid = df.plot.grid();
   grid.col(colNames[0])!.visible = false;

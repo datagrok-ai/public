@@ -5,10 +5,9 @@ import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations'
 import $ from 'cash-dom';
 
 import * as C from '../utils/constants';
-import {getStats, MaskInfo, Stats} from '../utils/statistics';
+import {getAggregatedValue, getStats, MaskInfo, Stats} from '../utils/statistics';
 import {PeptidesModel} from '../model';
 import {wrapDistroAndStatsDefault} from '../utils/misc';
-import wu from 'wu';
 
 const allConst = 'All';
 const otherConst = 'Other';
@@ -26,7 +25,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   const positionsLen = positions.length;
   let aarStr = allConst;
   let otherStr = '';
-  const useSelectedStr = model.isPeptideSpaceChangingBitset;
+  // const useSelectedStr = model.isPeptideSpaceChangingBitset;
 
   const updateDistributionHost = (): void => {
     model.splitByPos = splitByPosition.value!;
@@ -81,13 +80,14 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
 
         //OPTIMIZE: don't create Bitset, use bool[]
         const mask = DG.BitSet.create(rowCount, (i) => aarList.includes(posCol.get(i)));
+        const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
+
         const maskInfo: MaskInfo = {
-          mask: mask.getBuffer(),
+          mask: splitCol.toList() as boolean[],
           trueCount: mask.trueCount,
           falseCount: mask.falseCount,
         };
         const stats = getStats(activityScaledData, maskInfo);
-        const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
         const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
 
         const indexes = mask.getSelectedIndexes();
@@ -137,13 +137,14 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
           }
           return false;
         });
+        const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
+
         const maskInfo: MaskInfo = {
-          mask: mask.getBuffer(),
+          mask: splitCol.toList() as boolean[],
           trueCount: mask.trueCount,
           falseCount: mask.falseCount,
         };
         const stats = getStats(activityScaledData, maskInfo);
-        const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
         const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
 
         const indexes = mask.getSelectedIndexes();
@@ -169,7 +170,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         res.push(ui.divText('No distribution'));
       else {
         otherStr = '';
-        if (useSelectedStr) {
+        if (false /*useSelectedStr*/) {
           aarStr = 'Selected';
           otherStr = otherConst;
         } else if (positionsLen) {
@@ -185,22 +186,18 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         }
 
         const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
-        // distributionTable.filter.copyFrom(table.filter);
 
-        const indexes = model.getCompoundBitest().getSelectedIndexes();
+        const compoundBs = model.getCompoundBitest();
         const colResults: {[colName: string]: number} = {};
         for (const [col, agg] of Object.entries(model.settings.columns || {})) {
           const currentCol = table.getCol(col);
-          const currentColData = currentCol.getRawData();
-          const tempCol = DG.Column.float('', indexes.length);
-          tempCol.init((i) => currentColData[indexes[i]]);
-          colResults[`${agg}(${col})`] = tempCol.stats[agg as keyof DG.Stats] as number;
+          colResults[`${agg}(${col})`] = getAggregatedValue(currentCol, agg, compoundBs);
         }
 
         const maskInfo: MaskInfo = {
-          mask: table.selection.getBuffer(),
-          trueCount: table.selection.trueCount,
-          falseCount: table.selection.falseCount,
+          mask: splitCol.toList() as boolean[],
+          trueCount: compoundBs.trueCount,
+          falseCount: compoundBs.falseCount,
         };
         const stats = getStats(activityScaledCol.getRawData(), maskInfo);
         const das = getDistributionAndStats(distributionTable, stats, aarStr, otherStr);

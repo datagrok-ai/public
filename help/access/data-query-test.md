@@ -3,13 +3,13 @@
 
 # Tests: Data query
 
-[Data query](data-query.md) defines which data should be extracted from the
-[data source](data-connection.md#connectors). For databases, that would typically be the SQL query; for Excel file, that
-would be sheet name, etc. The system allows you to create parameterized and non-parameterized [queries](data-query.md).
+[Data query](access.md#data-query) defines which data should be extracted from the
+[data source](supported-connectors.md). For databases, that would typically be the SQL query; for Excel file, that
+would be sheet name, etc. The system allows you to create parameterized and non-parameterized [queries](access.md#data-query).
 
 ## Testing scenarios
 
-1. Create a new non-parameterized [query](data-query.md)  with name = "Test"
+1. Create a new non-parameterized [query](access.md#data-query)  with name = "Test"
    (example query: select * from Products)
 
 1. Open "Data Queries" from "Admin" menu
@@ -21,7 +21,7 @@ would be sheet name, etc. The system allows you to create parameterized and non-
 
 * Query "Test" will find.
 
-1. Call context menu for [data query](data-query.md). Test the functionality of the context menu items.
+1. Call context menu for [data query](access.md#data-query). Test the functionality of the context menu items.
 
 * Context menu is open.
 * All its elements work correctly
@@ -40,10 +40,10 @@ would be sheet name, etc. The system allows you to create parameterized and non-
 * You can change the view, use sort and search
 * The list shows the status of run and start time
 
-1. Run [query](data-query.md) from different places (context
+1. Run [query](access.md#data-query) from different places (context
    menu, [Context Panel](../datagrok/navigation.md#context-panel), by double-clicking)
 
-1. Find in the list [queries](data-query.md) from the previous paragraphs
+1. Find in the list [queries](access.md#data-query) from the previous paragraphs
 
 * Queries are present in the list
 * The runtime is correct
@@ -65,7 +65,7 @@ would be sheet name, etc. The system allows you to create parameterized and non-
 * "Activity" tab is open
 * Display information about tables that were created after the query was executed.
 
-1. Run the "Test" [query](data-query.md)
+1. Run the "Test" [query](access.md#data-query)
 
 * Look on "Activity" tab
 * New record about actually query is added here
@@ -74,34 +74,34 @@ would be sheet name, etc. The system allows you to create parameterized and non-
 
 * "Usage" tab is open. Display query runs statistics.
 
-1. Delete "Test" [query](data-query.md)
+1. Delete "Test" [query](access.md#data-query)
 
-* "Test" [query](data-query.md) deleted successfully
+* "Test" [query](access.md#data-query) deleted successfully
 * No any errors and exceptions
 
-1. Create a new parameterized [query](data-query.md)  with name = "Test_param"
+1. Create a new parameterized [query](access.md#data-query)  with name = "Test_param"
 
-* New parameterized [query](data-query.md) created
+* New parameterized [query](access.md#data-query) created
 * Check this in "Data Queries" in menu "Admin"
 
 1. Open the "Run" tab in [Context Panel](../datagrok/navigation.md#context-panel) for "
-   Test_param" [query](data-query.md)
+   Test_param" [query](access.md#data-query)
 
 * "Run" tab is open, there are fields for entering parameters
 
-1. Run parameterized [query](data-query.md) with correct parameters
+1. Run parameterized [query](access.md#data-query) with correct parameters
 
-* Parameterized [query](data-query.md) is run
+* Parameterized [query](access.md#data-query) is run
 * Check this in "Data Query Runs" in menu "Admin"
 
-1. Run parameterized [query](data-query.md) with not-correct parameters (nulls, incorrect types of input data,
+1. Run parameterized [query](access.md#data-query) with not-correct parameters (nulls, incorrect types of input data,
    incomplete data for strings, negative values for numbers, error datetime, etc.
 
 * Warning about incorrect input parameters is shown to user.
 
 The scenarios listed in clauses 2-17 must also be performed for parameterized queries
 
-_example parameterized [query](data-query.md):_
+_example parameterized [query](access.md#data-query):_
 
 ```
 --input: int employeeId = 5
@@ -127,4 +127,4 @@ See also:
 * [Data connections test](data-connection-test.md)
 * [Data job test](data-job-test.md)
 * [Data source test](data-source-test.md)
-* [Data query](data-query.md)
+* [Data query](access.md#data-query)

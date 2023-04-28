@@ -3,12 +3,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
-import {MapProxy} from "datagrok-api/dg";
 
 const AGGR_TYPE = 'Aggregate';
 const CHART_TYPE = 'Chart';
 const STAT_TYPE = 'Statistics';
-const ROW_HEIGHT = 70;
+// const ROW_HEIGHT = 70;
 
 const COL_TYPES = {
   [AGGR_TYPE]: {
@@ -92,7 +91,7 @@ interface IAnalyzedColumn {
 export class GroupAnalysisViewer extends DG.JsViewer {
   initialized: boolean = false;
   name = 'group';
-  groupByColumns: string[];
+  groupByColumnNames: string[];
   analyzedColumns: IAnalyzedColumn[];
   totalColumns: string[] | undefined = undefined;
   grouppedDf: DG.DataFrame | undefined = undefined;
@@ -105,7 +104,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
 
   constructor() {
     super();
-    this.groupByColumns = this.stringList('groupByColumns', undefined);
+    this.groupByColumnNames = this.addProperty('groupByColumnNames', DG.TYPE.COLUMN_LIST);
     this.analyzedColumns = [];
     this.parentViewers = {};
   }
@@ -122,8 +121,8 @@ export class GroupAnalysisViewer extends DG.JsViewer {
     this.init();
     this.initChartEventListeners();
     this.totalColumns = this.dataFrame.columns.names().concat(['']);
-    this.groupByColumns ??= [this.totalColumns[0]];
-    this.updateColumnChoices(this.groupByColumns, 'Group by', this.grouppingColsDiv);
+    this.groupByColumnNames ??= [this.totalColumns[0]];
+    this.updateColumnChoices(this.groupByColumnNames, 'Group by', this.grouppingColsDiv);
     this.mainView.append(
       ui.box(ui.panel([this.grouppingColsDiv], {style: {padding: '0px'}}), {style: {maxHeight: '30px'}}));
     const addColToAnalyze = ui.icons.add(() => {this.createAddColumnDialog();}, 'Add column to analyze');
@@ -140,8 +139,8 @@ export class GroupAnalysisViewer extends DG.JsViewer {
   }
 
   onPropertyChanged(p: DG.Property) {
-    if (p?.name === 'groupByColumns') {
-      this.updateColumnChoices(this.groupByColumns, 'Group by', this.grouppingColsDiv);
+    if (p?.name === 'groupByColumnNames') {
+      this.updateColumnChoices(this.groupByColumnNames, 'Group by', this.grouppingColsDiv);
       this.updateGrid();
     }
   }
@@ -234,12 +233,12 @@ export class GroupAnalysisViewer extends DG.JsViewer {
   }
 
   getAggregateCols(columnList: IAnalyzedColumn[]): DG.Column[] {
-    let grouppedDfQuery = this.dataFrame.groupBy(this.groupByColumns).whereRowMask(this.dataFrame.filter);
+    let grouppedDfQuery = this.dataFrame.groupBy(this.groupByColumnNames).whereRowMask(this.dataFrame.filter);
     for (const col of columnList)
       grouppedDfQuery = (COL_TYPES[AGGR_TYPE] as any)[col.typeName](grouppedDfQuery, col.colName);
     try {
       const grouppedDf = grouppedDfQuery.aggregate();
-      const colsToReturnNames = grouppedDf.columns.names().filter((it) => !this.groupByColumns.includes(it));
+      const colsToReturnNames = grouppedDf.columns.names().filter((it) => !this.groupByColumnNames.includes(it));
       const colList: DG.Column[] = colsToReturnNames.map((colName) => grouppedDf.col(colName)!);
       return colList;
     } catch {
@@ -285,7 +284,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
 
 
   updateGrid() {
-    this.grouppedDf = this.dataFrame.groupBy(this.groupByColumns).whereRowMask(this.dataFrame.filter).aggregate();
+    this.grouppedDf = this.dataFrame.groupBy(this.groupByColumnNames).whereRowMask(this.dataFrame.filter).aggregate();
     this.grid = this.grouppedDf.plot.grid();
     const aggregateCols = this.analyzedColumns.filter((it) => it.type === AGGR_TYPE);
     const chartAndStatCols = this.analyzedColumns.filter((it) => it.type !== AGGR_TYPE);
@@ -300,7 +299,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
         this.addColumnAndSetWidth(calculatedCol, col.type);
     }
 
-    this.grid.columns.setOrder(this.groupByColumns.concat(this.analyzedColumns.map((it) => it.gridColName!)));
+    this.grid.columns.setOrder(this.groupByColumnNames.concat(this.analyzedColumns.map((it) => it.gridColName!)));
     this.grid.root.style.width = '100%';
     this.grid.root.style.height = '100%';
 
@@ -350,7 +349,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
 
   createFilterCondition(idx: number): { [key: string]: any } {
     const condition: { [key: string]: any } = {};
-    for (const col of this.groupByColumns)
+    for (const col of this.groupByColumnNames)
       condition[col] = this.grouppedDf!.get(col, idx);
     return condition;
   }
@@ -363,7 +362,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
     const rowCount = df.rowCount;
     for (let i = 0; i < rowCount; i++) {
       let otherGroupFound = false;
-      for (const group of this.groupByColumns) {
+      for (const group of this.groupByColumnNames) {
         if (df.get(group, i) !== this.grouppedDf!.get(group, idx!))
           otherGroupFound = true;
       }
@@ -377,7 +376,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
     const colList = [];
     const filteredDf = this.dataFrame.groupBy(this.dataFrame.columns.names()).
       whereRowMask(this.dataFrame.filter).aggregate();
-    this.groupByColumns.forEach((col) => colList.push(filteredDf.col(col)!));
+    this.groupByColumnNames.forEach((col) => colList.push(filteredDf.col(col)!));
     colList.push(filteredDf.col(colToAnalyzeName)!);
     const df = DG.DataFrame.fromColumns(colList);
     return df;
@@ -386,7 +385,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
   createViewerDf(colToAnalyzeName: string, idx: number): DG.DataFrame {
     const df = this.extractGroupAndAnalyzedColFromInitialDf(colToAnalyzeName);
     df.columns.addNewString('group').init((j) => {
-      for (const group of this.groupByColumns) {
+      for (const group of this.groupByColumnNames) {
         if (df.get(group, j) !== this.grouppedDf!.get(group, idx!))
           return 'other';
       }

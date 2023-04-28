@@ -5,7 +5,7 @@
 #sample: geo/us_2016_election_by_county.csv
 #condition: col.name == "county_name"
 #input: column col
-#test: HarmonizeCountyMaps(Demo:getColumn(Demo:getTable('us_2016_election_by_county', folder='geo'), 'county_name'))
+#test_: HarmonizeCountyMaps(ApiTests:getColumn(ApiTests:getTable('us_2016_election_by_county'), 'county_name'))
 
 ReplaceValues(col.table.name, [col.name], " city", "", false, false, false, false, true)
 ReplaceValues(col.table.name, [col.name], " County", "", false, false, false, false, true)

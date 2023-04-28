@@ -80,6 +80,22 @@ export class Rect {
     return new Rect(_bytes[0], _bytes[1], _bytes[2], _bytes[3]);
   }
 
+  static toDart(rect: Rect): any {
+    _bytes[0] = rect.x;
+    _bytes[1] = rect.y;
+    _bytes[2] = rect.width;
+    _bytes[3] = rect.height;
+    return api.grok_Rect_Unpack(_bytes);
+  }
+
+  toDart(): any {
+    _bytes[0] = this.x;
+    _bytes[1] = this.y;
+    _bytes[2] = this.width;
+    _bytes[3] = this.height;
+    return api.grok_Rect_Unpack(_bytes);
+  }
+
   /** Rectangle of the specified size, with the specified center */
   fromCenterSize(cx: number, cy: number, width: number, height: number): Rect {
     return new Rect(cx - width / 2, cy - height / 2, width, height);
@@ -128,6 +144,11 @@ export class Rect {
   }
 
   // --
+
+  /** Moves rectangle by the specified offsets. */
+  move(dx: number, dy: number): Rect {
+    return new Rect(this.x + dx, this.y + dy, this.width, this.height);
+  }
 
   /**
    * Rectangle's top part of height {@link height}.
@@ -527,6 +548,13 @@ export class GridCell {
    */
   get bounds(): Rect {
     return Rect.fromDart(api.grok_GridCell_Get_Bounds(this.dart));
+  }
+
+  /** Grid cell bounds, relative to the document. Useful for showing hints, tooltips, etc.*/
+  get documentBounds(): Rect {
+    const r = this.bounds;
+    this.grid.root.offsetLeft
+    return this.bounds;
   }
 
   /** Returns grid cell renderer. */
@@ -953,6 +981,9 @@ export class Grid extends Viewer<IGridLookSettings> {
 
   get onCellValueEdited(): Observable<GridCell> { return __obs('d4-grid-cell-value-edited', this.dart); }
   get onCurrentCellChanged(): Observable<GridCell> { return __obs('d4-grid-current-cell-changed', this.dart); }
+  get onCellMouseEnter(): Observable<GridCell> { return __obs('d4-grid-cell-mouse-enter', this.dart); }
+  get onCellMouseLeave(): Observable<GridCell> { return __obs('d4-grid-cell-mouse-leave', this.dart); }
+
   get onCellClick(): Observable<GridCell> { return __obs('d4-grid-cell-click', this.dart); }
   get onCellDoubleClick(): Observable<GridCell> { return __obs('d4-grid-cell-double-click', this.dart); }
   get onCellMouseDown(): Observable<GridCell> { return __obs('d4-grid-cell-mouse-down', this.dart); }
@@ -982,6 +1013,10 @@ export class GridCellStyle {
 
   constructor(dart: any) {
     this.dart = dart;
+  }
+
+  static create(): GridCellStyle {
+    return new GridCellStyle(api.grok_GridCellStyle_Create());
   }
 
   /** Font. Example: 12px Verdana */

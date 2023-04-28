@@ -31,6 +31,7 @@ export const distanceMetrics: { [name: string]: (x: BitArray, y: BitArray) => nu
 };
 
 export const CHEM_SIMILARITY_METRICS = ['Tanimoto', 'Dice', 'Cosine', 'Hamming', 'Euclidean'];
+export const SEQ_SPACE_SIMILARITY_METRICS = ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal'];
 
 export function tanimotoSimilarity(x: BitArray, y: BitArray): number {
   const total = x.trueCount() + y.trueCount();

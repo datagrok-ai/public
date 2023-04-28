@@ -35,7 +35,7 @@ proprietary extensions.
 For developers: check out [getting started](help/develop/develop.md)
 and [contributor's guide](CONTRIB.md).
 
-# Academia
+## Academia
 
 Datagrok grants free license to academic institutions to use it in any context, either research or
 educational. Moreover, publishing scientific methods as Datagrok packages provides a number of
@@ -53,7 +53,7 @@ unique benefits that are specifically important to academia:
 
 For academic collaborations, please email `info@datagrok.ai`.
 
-# Ideas for contributions
+## Ideas for contributions
 
 If you want to get familiar with the platform, here are some ideas. Pick whatever interests you, and
 reach out to Andrew (askalkin@datagrok.ai) or post on
@@ -79,7 +79,7 @@ our [community forum](https://community.datagrok.ai/).
 * Telecom
 * Fintech
 
-# See also:
+## See also
 
 * [Datagrok home](https://datagrok.ai/)
 * [JavaScript development](https://datagrok.ai/help/develop/develop)

@@ -62,34 +62,7 @@ file with the settings
 
 ## Git
 
-In this public repo, we follow some Git best practices:
-
-1. Configure the commit authorship. Set your name and email address correctly.
-
-   ```shell
-   git config user.name "<Name> <Surname>"
-   git config user.email "<email@address>"
-   ```
-
-2. Write descriptive and meaningful commit messages. Commit messages will be included in changelogs
-3. Keep your working branch up to date by frequently fetching changes from the remote server. It will prevent bugs,
-   rework, and the tiresome resolve of conflicts
-4. Test your changes before pushing to avoid the broken code in the repository
-5. Refer to the issue or task number in your commit. It will help to track the work done on the task or issue
-6. Name of branches should be meaningful. Please, use the agreed
-   standard: `<first letter of your name><you surname>/<task ID and meaningful short description>`. Task ID can be from
-   any task tracking system. Use the full ID. For example `jdoe/GROK-1234-description` for Jira issues or `jdoe/#123-description`
-   for GitHub issues.
-7. Do not mix "refactoring" with a new feature
-8. Do not create unnecessary merge loops. To pull changes after commit creation use `git pull --rebase`. Run the
-   following commands to make the work easier with rebase.
-
-   ```shell
-   git config --global pull.rebase true
-   git config --global rebase.autoStash true
-   ```
-
-9. Push one commit at a time to avoid unexpected GitHub Actions behavior
+Check our [git recommendations](https://datagrok.ai/help/develop/advanced/git-policy) to work with the repository
 
 ## Performance recommendations
 
@@ -133,14 +106,14 @@ array is needed, or [wu.count](https://fitzgen.github.io/wu.js/#count) if you on
 
 ### Common root causes of performance problems
 
-* **Using the suboptimal algorithm**. Think whether a different approach would 
+* **Using the suboptimal algorithm**. Think whether a different approach would
   be faster.
 * **Doing unnecessary computations upfront**. See if the result
   is needed right now, or perhaps it could be computed later. Example: column tooltips
   are calculated dynamically right when a user needs to see it, but not earlier.
 * **Computing what already has been computed**. See if the input has changed,
-  perhaps there is no need for recalculation. 
-* **Recalculating too often**. In case of applications reacting to the streams 
+  perhaps there is no need for recalculation.
+* **Recalculating too often**. In case of applications reacting to the streams
   of events, consider using event debouncing to allow multiple events to
   be fired, and then recalculating only once after that.
 * **Using DataFrame's API for number crunching**. For maximum performance, consider
@@ -149,14 +122,14 @@ array is needed, or [wu.count](https://fitzgen.github.io/wu.js/#count) if you on
   things that influences the performance is cache locality. Try to arrange data
   (usually in raw memory buffers) in such a way that your algorithm would access
   data sequentially. Minimize the memory footprint.
-* **Using the wrong containers for the job**. Typical error is creating a list 
+* **Using the wrong containers for the job**. Typical error is creating a list
   of objects for the sole purpose to find out whether another object is in the
   list. Consider using Map.
 * **Creating too many objects**. Each object comes at a cost - this includes
-    allocation, memory consumption, and garbage collection. Think whether you 
-    need it, especially within inner loops, or as part of a commonly used structure.
-* **Chatty client-server interactions**. Calling a web service is expensive, and 
-  each call introduce additional time penalty. Consider minimizing the number of 
+  allocation, memory consumption, and garbage collection. Think whether you
+  need it, especially within inner loops, or as part of a commonly used structure.
+* **Chatty client-server interactions**. Calling a web service is expensive, and
+  each call introduce additional time penalty. Consider minimizing the number of
   calls, and the amount of data transferred. Use `Network` tab in the Chrome Dev Tools
   to see what's happening.
 * **Not caching results of data queries**. If the underlying data has a known

@@ -1,77 +1,80 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
 
-import {UaView} from './views/ua-view';
+import {UaView} from './tabs/ua';
 import {UaToolbox} from './ua-toolbox';
-import {OverviewView} from './views/overview-view';
-import {EventsView} from './views/events-view';
-import {ErrorsView} from './views/errors-view';
-import {FunctionsView} from './views/function-errors-view';
-import {UsersView} from './views/users-view';
-import {DataView} from './views/data-view';
-import {PackagesView} from './views/packages-view';
+import {EventsView} from './tabs/events';
+import {PackagesView} from './tabs/packages';
+import {FunctionsView} from './tabs/functions';
+import {OverviewView} from './tabs/overview';
 
 const APP_PREFIX: string = `/apps/UsageAnalysis/`;
+
+
 export class ViewHandler {
   private static instance: ViewHandler;
   private urlParams: Map<string, string> = new Map<string, string>();
+  public static UAname = 'Usage Analysis';
+  static UA: DG.MultiView;
 
   public static getInstance(): ViewHandler {
     if (!ViewHandler.instance)
       ViewHandler.instance = new ViewHandler();
-
-
     return ViewHandler.instance;
   }
 
-  private constructor() { }
-
   async init() {
-    const pathSplits = decodeURI(window.location.pathname).split('/');
-    const params = this.getSearchParameters();
-
+    ViewHandler.UA = new DG.MultiView({viewFactories: {}});
     const toolbox = await UaToolbox.construct();
-
-    const tabs = ui.tabControl();
-    tabs.root.style.width = 'inherit';
-    tabs.root.style.height = 'inherit';
-
-    const viewClasses: (typeof UaView)[] = [OverviewView, EventsView,
-      ErrorsView, FunctionsView, UsersView, DataView, PackagesView];
-
-    for (let i = 0; i < viewClasses.length; ++i) {
-      tabs.addPane(viewClasses[i].viewName, () => {
-        const currentView = new viewClasses[i](toolbox);
-        currentView.tryToinitViewers();
-        return currentView.root;
-      });
+    const params = this.getSearchParameters();
+    // [ErrorsView, FunctionsView, UsersView, DataView];
+    const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView];
+    // const viewFactories: {[name: string]: any} = {};
+    for (let i = 0; i < viewClasses.length; i++) {
+      const currentView = new viewClasses[i](toolbox);
+      currentView.tryToinitViewers();
+      ViewHandler.UA.addView(currentView.name, () => currentView, false);
     }
-
-    if (pathSplits.length > 3 && pathSplits[3] != '') {
-      const viewName = pathSplits[3];
-
-      if (tabs.panes.map((p) => p.name).includes(viewName))
-        tabs.currentPane = tabs.getPane(viewName);
-      else
-        tabs.currentPane = tabs.getPane(viewClasses[0].viewName);
-    } else
-      tabs.currentPane = tabs.getPane(viewClasses[0].viewName);
-
     const paramsHaveDate = params.has('date');
     const paramsHaveUsers = params.has('users');
-    if (paramsHaveDate || paramsHaveUsers) {
+    const paramsHavePackages = params.has('packages');
+    if (paramsHaveDate || paramsHaveUsers || paramsHavePackages) {
       if (paramsHaveDate)
         toolbox.setDate(params.get('date')!);
-
-
       if (paramsHaveUsers)
-        await toolbox.setUsers(params.get('users')!);
-
-
-      await toolbox.applyFilter();
+        toolbox.setGroups(params.get('users')!);
+      if (paramsHavePackages)
+        toolbox.setPackages(params.get('packages')!);
+      toolbox.applyFilter();
     }
+    const sub = ViewHandler.UA.tabs.onTabChanged.subscribe((tab) => {
+      if (ViewHandler.UA.currentView instanceof PackagesView || ViewHandler.UA.currentView instanceof FunctionsView) {
+        grok.shell.windows.showToolbox = true;
+        grok.shell.windows.showContextPanel = true;
+        const info = ui.divText(`To view more detailed information about the events represented by a particular point,\
+    simply click on the point of interest. You can also select multiple points. Once you've made your selection,\
+    more information about the selected events will be displayed on context pane`);
+        info.classList.add('ua-hint');
+        grok.shell.o = info;
+      }
+      sub.unsubscribe();
+    });
+    ViewHandler.UA.name = ViewHandler.UAname;
+    ViewHandler.UA.box = true;
+    grok.shell.addView(ViewHandler.UA);
+  }
 
-    grok.shell.newView('Usage Analysis', [tabs]);
+  public static getView(name: string) {
+    return ViewHandler.UA.getView(name) as UaView;
+  }
+
+  public static getCurrentView(): UaView {
+    return ViewHandler.UA.currentView as UaView;
+  }
+
+  public static changeTab(name: string) {
+    ViewHandler.UA.tabs.currentPane = ViewHandler.UA.tabs.getPane(name);
   }
 
   getSearchParameters() : Map<string, string> {

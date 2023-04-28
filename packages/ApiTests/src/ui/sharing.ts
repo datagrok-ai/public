@@ -69,7 +69,7 @@ category('UI: Sharing', () => {
     await dapi.save(entity);
     try {
       // @ts-ignore
-      expect((await grok.dapi.permissions.get(entity)).edit, undefined);
+      expect((await grok.dapi.permissions.get(entity)).edit == undefined);
       await grok.dapi.permissions.grant(entity, testUser.group, true);
     } finally {
       // @ts-ignore

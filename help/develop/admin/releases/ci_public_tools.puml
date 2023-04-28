@@ -1,0 +1,17 @@
+@startuml
+scale 800*500
+start
+:Developers;
+:Commit and push code;
+:GitHub Actions 'Tools Package' job start;
+:Install npm dependencies;
+:Build npm package datagrok-tools;
+if (Branch Master?) then (Yes)
+if (Version already exists in NPM?) then (Yes)
+else(No)
+:Publish to NPM registry;
+endif
+else (No)
+endif
+stop
+@enduml

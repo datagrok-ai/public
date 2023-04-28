@@ -1,0 +1,18 @@
+{
+  "#type": "DataConnection",
+  "name": "Neo4jApiTests",
+  "friendlyName": "Tests",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "port": 7688,
+    "db": "test"
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "neo4j",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "Neo4j",
+  "description": "Test data"
+}

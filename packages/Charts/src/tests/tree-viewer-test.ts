@@ -6,7 +6,7 @@ import {getOptions} from './utils';
 
 
 category('TreeViewer', () => {
-  const TYPE = 'TreeViewer';
+  const TYPE = 'Tree';
   let df: DG.DataFrame;
   let tv: DG.TableView;
 

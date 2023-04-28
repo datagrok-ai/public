@@ -13,6 +13,7 @@ import {Grid, Point, Rect} from "./grid";
 import {FormulaLinesHelper} from "./helpers";
 import * as interfaces from "./interfaces/d4";
 import dayjs from "dayjs";
+import {TableView, View} from "./views/view";
 
 declare let DG: any;
 declare let ui: any;
@@ -153,7 +154,12 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   }
 
   /** Returns a view this viewer is associated with, or null */
-  get view(): any | null {
+  get view(): View | null {
+    return toJs(api.grok_Viewer_Get_View(this.dart));
+  }
+
+  /** Returns a view this viewer is associated with, or null */
+  get tableView(): TableView | null {
     return toJs(api.grok_Viewer_Get_View(this.dart));
   }
 
@@ -382,7 +388,7 @@ export class JsViewer extends Viewer {
 
   /** Returns the column bound to the specified data property.
    *  Note that "ColumnName" suffix (this determines whether this is a data property) should be omitted. */
-  protected column(dataPropertyName: string, options: { [key: string]: any } & PropertyOptions | null = null): Column {
+  protected column(dataPropertyName: string, options: { [key: string]: any } & PropertyOptions | null = null): string {
     return this.addProperty(`${dataPropertyName}ColumnName`, TYPE.STRING, null, options);
   }
 

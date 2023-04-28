@@ -15,9 +15,14 @@ module.exports = {
         test: /\.css$/,
         use: ['style-loader', 'css-loader'],
       },
+      {
+        test: /\.js$/,
+        enforce: 'pre',
+        use: ['source-map-loader'],
+      },
     ],
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {                    // external modules won't be loaded to the output, but taken from the environment
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',

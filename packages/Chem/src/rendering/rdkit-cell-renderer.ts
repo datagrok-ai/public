@@ -94,7 +94,7 @@ M  END
       } else {
         const aromaMolString = aromatizeMolBlock(molString, _rdKitModule)
         mol = this.rdKitModule.get_qmol(aromaMolString);
-        molCtx = {mol: mol, kekulize: false, isQMol: true};
+        molCtx = {mol: mol, kekulize: false, isQMol: true, useMolBlockWedging: false };
       }
     }
     else {
@@ -132,7 +132,7 @@ M  END
                 if (molHasOwnCoords) {
                   mol.straighten_depiction(true);
                 }
-              } else 
+              } else
                 substruct = JSON.parse(substructJson);
             }
           }
@@ -146,15 +146,21 @@ M  END
           } else if (!molHasOwnCoords) {
             mol.normalize_depiction(0);
           }
+          molCtx.useMolBlockWedging = molHasOwnCoords;
         }
         else {
           console.error(
             'Chem | In _fetchMolGetOrCreate: RDKit mol is invalid on a molString molecule: `' + molString + '`');
           mol.delete();
+          molCtx.mol = null;
         }
       } catch (e) {
         console.error(
           'In _fetchMolGetOrCreate: RDKit crashed, possibly a malformed molString molecule: `' + molString + '`');
+        if (mol !== null) {
+          mol.delete();
+          molCtx.mol = null;
+        }
       }
     }
 
@@ -189,10 +195,11 @@ M  END
       drawRdKitMoleculeToOffscreenCanvas(rdKitMolCtx, width, height, canvas, highlightScaffold ? substruct : null);
     else {
       // draw a crossed rectangle
+      ctx.clearRect(0, 0, width, height);
       drawErrorCross(ctx, width, height);
     }
 
-    return ctx.getImageData(0, 0, width, height);
+    return ctx.getImageData(0, 0, !Math.floor(width) ? 1 : width, !Math.floor(height) ? 1 : height);
   }
 
   _fetchRender(

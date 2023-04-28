@@ -1,4 +1,4 @@
-### Medical History
+# Medical History
 
 The view contains summary of medical history (mh) domain.
 

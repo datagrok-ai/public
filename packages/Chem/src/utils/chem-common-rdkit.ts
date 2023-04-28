@@ -43,6 +43,7 @@ const RDKIT_COMMON_RENDER_OPTS: {[key: string]: any} = {
     53: [0.247, 0.0, 0.498],
   },
   backgroundColour: [1, 1, 1, 1],
+  queryColour: [0, 0, 0, 1],
 };
 
 export function setRdKitWebRoot(webRootValue: string): void {
@@ -55,6 +56,7 @@ export async function initRdKitModuleLocal(): Promise<void> {
   if (!_rdKitModule)
     throw 'RdKit Module is not loaded';
   _rdKitModule.prefer_coordgen(false);
+  _rdKitModule.use_legacy_stereo_perception(false);
   console.log('RDKit module package instance was initialized');
   moduleInitialized = true;
   _rdKitService = new RdKitService();
@@ -82,7 +84,7 @@ export function getRdKitWebRoot() {
 }
 
 export function drawErrorCross(ctx: OffscreenCanvasRenderingContext2D, width: number, height: number) {
-  ctx.lineWidth = 1;
+      ctx.lineWidth = 1;
       ctx.strokeStyle = '#EFEFEF';
       ctx.beginPath();
       ctx.moveTo(0, 0);
@@ -111,7 +113,16 @@ export function drawRdKitMoleculeToOffscreenCanvas(
     return;
   }
 
-  const opts = createRenderingOpts({width: Math.floor(w), height: Math.floor(h)});
+
+  w = Math.floor(w);
+  h = Math.floor(h);
+
+  if (!w || !h) {
+    console.warn('Molecule not rendered due to width or height less than 1');
+    return;
+  }
+
+  const opts = createRenderingOpts({width: w, height: h});
 
   g?.clearRect(0,0, w, h);
   if (substruct)
@@ -120,9 +131,15 @@ export function drawRdKitMoleculeToOffscreenCanvas(
   if (!kekulize)
     Object.assign(opts, { kekulize });
 
+  const useMolBlockWedging = molCtx.useMolBlockWedging;
+  const wedgeBonds = false;
+  const addChiralHs = false;
+  if (useMolBlockWedging)
+    Object.assign(opts, { useMolBlockWedging, wedgeBonds, addChiralHs });
+
   try { rdKitMol.draw_to_canvas_with_highlights((offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(opts));}
   catch(e) {
-    console.error('Molecule ffailed to render ' + rdKitMol.get_molblock());
+    console.error('Molecule failed to render ' + rdKitMol.get_molblock());
     drawErrorCross(g, w, h);
     return;
   }
@@ -141,10 +158,19 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
   onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null,
   options = {normalizeDepiction: true, straightenDepiction: true}) {
 
+  if (!w || !h) {
+    console.error('Width and height cannot be zero.');
+    return;
+  }
+
   $(onscreenCanvas).addClass('chem-canvas');
   const r = window.devicePixelRatio;
-  onscreenCanvas.width = w * r;
-  onscreenCanvas.height = h * r;
+
+  const nW = w * r;
+  const nH = h * r;
+
+  onscreenCanvas.width = nW;// w * r;
+  onscreenCanvas.height = nH;// h * r;
   onscreenCanvas.style.width = (w).toString() + 'px';
   onscreenCanvas.style.height = (h).toString() + 'px';
 
@@ -152,7 +178,7 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
   if (!isMol)
     molString = convertToRDKit(molString);
 
-  const offscreenCanvas = new OffscreenCanvas(w, h);
+  const offscreenCanvas = new OffscreenCanvas(nW, nH);
   const molCtx = getMolSafe(molString, {}, getRdKitModule());
   const mol : RDMol | null = molCtx.mol;
   if (mol === null) {
@@ -175,13 +201,17 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
       (isMolBlock(scaffoldMolString) ? getRdKitModule().get_qmol(scaffoldMolString) : getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!));
     let substructJson = '{}';
     if (scaffoldMol) {
-      substructJson = mol.get_substruct_match(scaffoldMol);
+      try{
+        substructJson = mol.get_substruct_match(scaffoldMol);
+      } catch(e) {
+        console.error(`get_substruct_match failed for ${molString} and ${scaffoldMolString}`)
+      }
       if (substructJson === '')
         substructJson = '{}';
     }
     const substruct = JSON.parse(substructJson);
-    drawRdKitMoleculeToOffscreenCanvas(molCtx, w, h, offscreenCanvas, substruct);
-    const image = offscreenCanvas!.getContext('2d')!.getImageData(0, 0, w, h);
+    drawRdKitMoleculeToOffscreenCanvas(molCtx, nW, nH, offscreenCanvas, substruct);
+    const image = offscreenCanvas!.getContext('2d')!.getImageData(0, 0, nW, nH);
     const context = onscreenCanvas.getContext('2d')!;
     context.putImageData(image, x, y);
   } finally {

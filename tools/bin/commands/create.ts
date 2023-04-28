@@ -22,7 +22,7 @@ const confTemplate = yaml.load(fs.readFileSync(confTemplateDir, { encoding: 'utf
 
 let dependencies: string[] = [];
 
-function createDirectoryContents(name: string, config: utils.Config, templateDir: string, packageDir: string, ide: string = '', ts: boolean = true, eslint: boolean = false, jest: boolean = false) {
+function createDirectoryContents(name: string, config: utils.Config, templateDir: string, packageDir: string, ide: string = '', ts: boolean = true, eslint: boolean = false, test: boolean = false) {
 
   const filesToCreate = fs.readdirSync(templateDir);
 
@@ -67,7 +67,7 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
             'lint-fix': `eslint src${ts ? ' --ext .ts' : ''} --fix`,
           });
         }
-        if (jest) {
+        if (test) {
           Object.assign(_package.dependencies, {
             '@datagrok-libraries/utils': 'latest',
           });
@@ -79,7 +79,7 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
         // Save module names for installation prompt
         for (let [module, tag] of Object.entries(Object.assign({}, _package.dependencies, _package.devDependencies)))
           dependencies.push(`${module}@${tag}`);
-        contents = JSON.stringify(_package, null, '\t');
+        contents = JSON.stringify(_package, null, 2);
       }
       if (file === 'package.js' && ts) copyFilePath = path.join(packageDir, 'package.ts');
       if (file === 'package-test.js' && ts) return false;
@@ -92,7 +92,7 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
           let eslintConf = JSON.parse(contents);
           eslintConf.parser = '@typescript-eslint/parser';
           eslintConf.plugins = ['@typescript-eslint'];
-          contents = JSON.stringify(eslintConf, null, '\t');
+          contents = JSON.stringify(eslintConf, null, 2);
         }
       }
       if (file === 'gitignore') {
@@ -107,13 +107,13 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
       if (file === '.vscode' && !(ide == 'vscode' && platform == 'win32')) return;
       fs.mkdirSync(copyFilePath);
       // recursive call
-      createDirectoryContents(name, config, origFilePath, copyFilePath, ide, ts, eslint, jest);
+      createDirectoryContents(name, config, origFilePath, copyFilePath, ide, ts, eslint, test);
     }
   })
 }
 
 export function create(args: CreateArgs) {
-  const options = ['ide', 'js', 'ts', 'eslint', 'jest'];
+  const options = ['ide', 'js', 'ts', 'eslint', 'test'];
   const nOptions = Object.keys(args).length - 1;
   const nArgs = args['_'].length;
 
@@ -176,12 +176,12 @@ export function create(args: CreateArgs) {
         const packagePath = path.join(packageDir, 'package.json');
         const p = JSON.parse(fs.readFileSync(packagePath, 'utf-8'));
         p.repository = repositoryInfo;
-        fs.writeFileSync(packagePath, JSON.stringify(p, null, '\t'), 'utf-8');
+        fs.writeFileSync(packagePath, JSON.stringify(p, null, 2), 'utf-8');
       }
       process.exit();
     });
 
-    createDirectoryContents(name, config, templateDir, packageDir, args.ide, ts, !!args.eslint, !!args.jest);
+    createDirectoryContents(name, config, templateDir, packageDir, args.ide, ts, !!args.eslint, !!args.test);
     color.success('Successfully created package ' + name);
     console.log(help.package(ts));
     console.log(`\nThe package has the following dependencies:\n${dependencies.join(' ')}\n`);
@@ -202,7 +202,7 @@ interface CreateArgs {
   js?: boolean,
   ts?: boolean,
   eslint?: boolean,
-  jest?: boolean
+  test?: boolean
 }
 
 interface RepositoryInfo {

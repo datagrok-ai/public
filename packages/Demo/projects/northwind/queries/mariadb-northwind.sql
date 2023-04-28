@@ -1,23 +1,25 @@
 --name: Orders
 --friendlyName: Orders
 --connection: MariaDBNorthwind
---input: int employeeId = 5
---input: string shipVia = "= 3" {pattern: int}
+--input: int employeeid = 5
+--input: string shipvia = "= 3" {pattern: int}
 --input: double freight = 10.0
---input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
---input: string shipCity = "starts with r" {pattern: string}
---input: bool freightLess1000 = true
---input: datetime requiredDate = "1/1/1995"
---input: string orderDate = "after 1/1/1995" {pattern: datetime}
+--input: string shipcountry = "france" {choices: query("select distinct shipcountry from orders")}
+--input: string shipcity = "starts with r" {pattern: string}
+--input: bool freightless1000 = true
+--input: datetime requireddate = "1/1/1995"
+--input: string orderdate = "after 1/1/1995" {pattern: datetime}
 
-SELECT * FROM Orders WHERE (employeeId = @employeeId)
-    AND (freight >= @freight)
-    AND @shipVia(shipVia)
-    AND ((freight < 1000) OR NOT @freightLess1000)
-    AND (shipCountry = @shipCountry)
-    AND @shipCity(shipCity)
-    AND @orderDate(orderDate)
-    AND (requiredDate >= @requiredDate)
+SELECT *
+FROM orders
+WHERE (employeeid = @employeeid)
+  and (freight >= @freight)
+  and @shipvia(shipvia)
+    and ((freight < 1000) or not @freightless1000)
+    and (shipcountry = @shipcountry)
+    and @shipcity(shipcity)
+    and @orderdate(orderdate)
+    and (requireddate >= @requireddate)
 
 --end
 
@@ -25,6 +27,7 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
 --friendlyName: Products
 --connection: MariaDBNorthwind
 
-SELECT * FROM Products 
+SELECT *
+FROM products
 
 --end

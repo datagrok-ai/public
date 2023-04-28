@@ -1,0 +1,13 @@
+.pipeline-view .d4-ribbon-name.selected {
+  color: #104161;
+}
+
+.pipeline-view .d4-ribbon-name {
+  color: var(--blue-1);
+  margin: 12px 6px;
+  font-weight: normal;
+}
+
+.pipeline-view .d4-ribbon-name + .d4-ribbon-name::before {
+  color: var(--grey-3);
+}

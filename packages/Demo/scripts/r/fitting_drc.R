@@ -8,6 +8,7 @@
 #input: column x {type:numerical} [X axis column name]
 #input: column y {type:numerical} [Y axis column name]
 #output: graphics
+#test: FittingDRC(ApiTests:getDT(), 'height', 'weight') != null
 
 require(drc)
 

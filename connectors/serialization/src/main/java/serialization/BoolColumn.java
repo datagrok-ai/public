@@ -13,6 +13,11 @@ public class BoolColumn extends Column<Boolean> {
     public String getType() {
         return TYPE;
     }
+    
+    public void empty() {
+        length = 0;
+        data = new int[100]; 
+    }
 
     public BoolColumn() {
         data = new int[100];

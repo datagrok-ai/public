@@ -5,7 +5,7 @@
 | [ApiSamples](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples) | [Grok API](https://datagrok.ai/help/develop/js-api) |
 | [Biosensors](https://github.com/datagrok-ai/public/tree/master/packages/Biosensors) | |
 | [ChaRPy](https://github.com/datagrok-ai/public/tree/master/packages/ChaRPy) | [Scripting Viewers](https://datagrok.ai/help/visualize/viewers/scripting-viewer) |
-| [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) | [Data Connection](https://datagrok.ai/help/access/data-connection), [Data Query](https://datagrok.ai/help/access/data-query), [Info Panels](https://datagrok.ai/help/discover/info-panels), [Semantic Types](https://datagrok.ai/help/discover/semantic-types) |
+| [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) | [Data Connection](https://datagrok.ai/help/access/access#data-connection), [Data Query](https://datagrok.ai/help/access/access#data-query), [Info Panels](https://datagrok.ai/help/discover/info-panels), [Semantic Types](https://datagrok.ai/help/discover/semantic-types) |
 | [ChemScripts](https://github.com/datagrok-ai/public/tree/master/packages/ChemScripts) | [Scripting](https://datagrok.ai/help/compute/scripting), [Cheminformatics](https://datagrok.ai/help/domains/chem/cheminformatics), [RDKit](https://www.rdkit.org/) |
 | [Covid](https://github.com/datagrok-ai/public/tree/master/packages/Covid) | [Web Connectors](https://datagrok.ai/help/access/connectors/web), [Swagger/OpenAPI](https://swagger.io/) |
 | [DemoScripts](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts) | [Scripting](https://datagrok.ai/help/compute/scripting), [Scripting Viewers](https://datagrok.ai/help/visualize/viewers/scripting-viewer) |
@@ -23,9 +23,9 @@
 | [PlateManagement](https://github.com/datagrok-ai/public/tree/master/packages/PlateManagement) | |
 | [RDKitDemo](https://github.com/datagrok-ai/public/tree/master/packages/RDKitDemo) | [Introducing new RDKit JavaScript wrappers](http://rdkit.blogspot.com/2019/11/introducing-new-rdkit-javascript.html), [Webassembly](https://webassembly.org/) |
 | [ReactDemo](https://github.com/datagrok-ai/public/tree/master/packages/ReactDemo) | |
-| [SDTM](https://github.com/datagrok-ai/public/tree/master/packages/SDTM) | [Data Connection](https://datagrok.ai/help/access/data-connection), [Data Query](https://datagrok.ai/help/access/data-query), [Application](https://datagrok.ai/help/develop/how-to/build-an-app), [View Layout](https://datagrok.ai/help/visualize/view-layout), [Info Panels](https://datagrok.ai/help/discover/info-panels), [Semantic Types](https://datagrok.ai/help/discover/semantic-types) |
+| [SDTM](https://github.com/datagrok-ai/public/tree/master/packages/SDTM) | [Data Connection](https://datagrok.ai/help/access/access#data-connection), [Data Query](https://datagrok.ai/help/access/access#data-query), [Application](https://datagrok.ai/help/develop/how-to/build-an-app), [View Layout](https://datagrok.ai/help/visualize/view-layout), [Info Panels](https://datagrok.ai/help/discover/info-panels), [Semantic Types](https://datagrok.ai/help/discover/semantic-types) |
 | [Sequence](https://github.com/datagrok-ai/public/tree/master/packages/Sequence) | |
-| [SPGi](https://github.com/datagrok-ai/public/tree/master/packages/SPGi) | [Data Connection](https://datagrok.ai/help/access/data-connection), [Data Query](https://datagrok.ai/help/access/data-query), [Table View](https://datagrok.ai/help/datagrok/table-view), [Viewers](https://datagrok.ai/help/visualize/viewers), [View Layout](https://datagrok.ai/help/visualize/view-layout), [Project](https://datagrok.ai/help/datagrok/project), [Info Panels](https://datagrok.ai/help/discover/info-panels) |
+| [SPGi](https://github.com/datagrok-ai/public/tree/master/packages/SPGi) | [Data Connection](https://datagrok.ai/help/access/access#data-connection), [Data Query](https://datagrok.ai/help/access/access#data-query), [Table View](https://datagrok.ai/help/datagrok/table-view), [Viewers](https://datagrok.ai/help/visualize/viewers), [View Layout](https://datagrok.ai/help/visualize/view-layout), [Project](https://datagrok.ai/help/datagrok/project), [Info Panels](https://datagrok.ai/help/discover/info-panels) |
 | [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst) | [Viewers](https://datagrok.ai/help/visualize/viewers), [Custom Viewers](https://datagrok.ai/help/develop/how-to/develop-custom-viewer) |
 | [Swaggers](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers) | [Web Connectors](https://datagrok.ai/help/access/connectors/web), [Swagger/OpenAPI](https://swagger.io/) |
 | [Test](https://github.com/datagrok-ai/public/tree/master/packages/Test) | |
@@ -35,8 +35,8 @@
 | [Weather](https://github.com/datagrok-ai/public/tree/master/packages/Weather) | |
 | [Widgets](https://github.com/datagrok-ai/public/tree/master/packages/Widgets) | |
 
+See also:
 
-See also: 
-  * [Grok API](https://datagrok.ai/help/develop/js-api)
-  * [Packages](https://datagrok.ai/help/develop/develop#packages)
-  * [Application](https://datagrok.ai/help/develop/how-to/build-an-app)
+* [Grok API](https://datagrok.ai/help/develop/js-api)
+* [Packages](https://datagrok.ai/help/develop/develop#packages)
+* [Application](https://datagrok.ai/help/develop/how-to/build-an-app)

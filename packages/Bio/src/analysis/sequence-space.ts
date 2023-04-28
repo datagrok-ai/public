@@ -47,7 +47,8 @@ export async function sequenceSpaceByFingerprints(spaceParams: ISequenceSpacePar
     methodName: spaceParams.methodName,
     similarityMetric: spaceParams.similarityMetric,
     xAxis: spaceParams.embedAxesNames[0],
-    yAxis: spaceParams.embedAxesNames[1]
+    yAxis: spaceParams.embedAxesNames[1],
+    options: spaceParams.options
   });
   return result;
 }

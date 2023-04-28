@@ -2,11 +2,12 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {ITreeStyler, markupNode, MarkupNodeType, TreeStylerBase} from './markup';
-import {toRgba, setAlpha} from '@datagrok-libraries/utils/src/color';
+import {intToHtmlA, setAlpha} from '@datagrok-libraries/utils/src/color';
 import {GridTreeRendererBase} from './grid-tree-renderer-base';
-import {LINE_WIDTH, NODE_SIZE, TreeColorNames, TreeDefaultPalette} from '../dendrogram';
+import {LINE_WIDTH, NODE_SIZE} from '../dendrogram';
 import {GridTreePlacer} from './grid-tree-placer';
 import {NodeType} from '@datagrok-libraries/bio/src/trees';
+import {TreeColorNames, TreeDefaultPalette} from '@datagrok-libraries/bio/src/trees';
 
 const TRANS_ALPHA = 0.7;
 
@@ -39,8 +40,8 @@ export class LeafRangeGridTreeRenderer extends GridTreeRendererBase<MarkupNodeTy
   ): GridTreeRendererBase<MarkupNodeType> {
     const mainStyler = new TreeStylerBase<MarkupNodeType>('main',
       LINE_WIDTH, NODE_SIZE, true,
-      toRgba(setAlpha(TreeDefaultPalette[TreeColorNames.Main], TRANS_ALPHA)),
-      toRgba(setAlpha(TreeDefaultPalette[TreeColorNames.Main], TRANS_ALPHA)));
+      intToHtmlA(setAlpha(TreeDefaultPalette[TreeColorNames.Main], TRANS_ALPHA)),
+      intToHtmlA(setAlpha(TreeDefaultPalette[TreeColorNames.Main], TRANS_ALPHA)));
     mainStyler.onTooltipShow.subscribe(({node, e}) => {
       // Do not show tooltips on nodes of injected tree
       // if (node) {
@@ -54,23 +55,23 @@ export class LeafRangeGridTreeRenderer extends GridTreeRendererBase<MarkupNodeTy
 
     const lightStyler = new TreeStylerBase<MarkupNodeType>('light',
       LINE_WIDTH, NODE_SIZE, false,
-      toRgba(setAlpha(TreeDefaultPalette[TreeColorNames.Light], TRANS_ALPHA)),
-      toRgba(setAlpha(TreeDefaultPalette[TreeColorNames.Light], TRANS_ALPHA)));
+      intToHtmlA(setAlpha(TreeDefaultPalette[TreeColorNames.Light], TRANS_ALPHA)),
+      intToHtmlA(setAlpha(TreeDefaultPalette[TreeColorNames.Light], TRANS_ALPHA)));
 
     const currentStyler = new TreeStylerBase<MarkupNodeType>('current',
       LINE_WIDTH, NODE_SIZE, false,
-      toRgba(setAlpha(TreeDefaultPalette[TreeColorNames.Current], TRANS_ALPHA)),
-      toRgba(setAlpha(TreeDefaultPalette[TreeColorNames.Current], TRANS_ALPHA)));
+      intToHtmlA(setAlpha(TreeDefaultPalette[TreeColorNames.Current], TRANS_ALPHA)),
+      intToHtmlA(setAlpha(TreeDefaultPalette[TreeColorNames.Current], TRANS_ALPHA)));
 
     const mouseOverStyler = new TreeStylerBase<MarkupNodeType>('mouseOver',
       LINE_WIDTH, NODE_SIZE, false,
-      toRgba(setAlpha(TreeDefaultPalette[TreeColorNames.MouseOver], TRANS_ALPHA)),
-      toRgba(setAlpha(TreeDefaultPalette[TreeColorNames.MouseOver], TRANS_ALPHA)));
+      intToHtmlA(setAlpha(TreeDefaultPalette[TreeColorNames.MouseOver], TRANS_ALPHA)),
+      intToHtmlA(setAlpha(TreeDefaultPalette[TreeColorNames.MouseOver], TRANS_ALPHA)));
 
     const selectionStyler = new TreeStylerBase<MarkupNodeType>('selection',
       LINE_WIDTH, NODE_SIZE, false,
-      toRgba(setAlpha(TreeDefaultPalette[TreeColorNames.Selection], TRANS_ALPHA)),
-      toRgba(setAlpha(TreeDefaultPalette[TreeColorNames.Selection], TRANS_ALPHA)));
+      intToHtmlA(setAlpha(TreeDefaultPalette[TreeColorNames.Selection], TRANS_ALPHA)),
+      intToHtmlA(setAlpha(TreeDefaultPalette[TreeColorNames.Selection], TRANS_ALPHA)));
 
     // TODO: Attach Dendrogram properties to grid (type or object?)
 

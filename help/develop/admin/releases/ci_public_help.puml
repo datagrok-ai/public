@@ -1,0 +1,18 @@
+@startuml
+scale 800*500
+start
+:Developers;
+:Commit and push code;
+:GitHub Actions 'Docusaurus' job start;
+:Lint help markdown files;
+:Install Docusaurus npm dependencies;
+:Install JS API npm dependencies to build documentation for JS API;
+:Build Docusaurus static files;
+:Check links and anchors in static files;
+if (Branch Master?) then (Yes)
+:Deploy static pages to server;
+:Run DocSearch scraper for Help to update search indexes;
+else (No)
+endif
+stop
+@enduml

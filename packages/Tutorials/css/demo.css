@@ -1,0 +1,161 @@
+.loading {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: white;
+}
+
+.tutorials-demo-container {
+	max-width: 280px;
+	min-width: 280px;
+	width: 280px;
+	overflow: auto;
+}
+
+.demo-app-card:hover {
+  cursor: pointer;
+}
+
+.demo-app-card .ui-image{
+	min-width: 100%;
+	min-height: 120px;
+	background-size: cover;
+	margin-bottom: 12px;
+}
+
+.demo-text {
+	text-align: center;
+}
+
+.demo-app-tree-group {
+	margin-top: 12px;
+    overflow: initial;
+}
+
+.demo-app-tree-group .d4-tree-view-group {
+	width: 100%;
+}
+
+.demo-app-tree-group .d4-tree-view-tri .d4-tree-view-tri-expanded {
+	width: 22px;
+}
+
+.demo-app-tree-group .d4-tree-view-group-host .d4-tree-view-group-host {
+	padding-left: 10px;
+    margin-left: 0px;
+}
+
+.demo-app-tree-group .d4-tree-view-item {
+	padding-left: 5px; 
+	display: block;
+}
+
+.demo-app-tree-group .d4-tree-view-item.hidden {
+	display: none;
+}
+
+.demo-app-tree-group .d4-tree-view-item:hover {
+	cursor: pointer;
+}
+
+.demo-app-tree-group .d4-tree-view-item:focus {
+	background-color: var(--grey-1);
+}
+
+.demo-app-tree-home-node > .d4-tree-view-node > i.grok-icon.fa-home {
+    color: var(--grey-6);
+    width: 24px;
+    height: 22px;
+}
+
+.demo-app-tree-home-node .d4-tree-view-group-label {
+    margin: 0px;
+}
+
+.demo-app-view-title {
+	font-size: 20px;
+	color: var(--grey-6);
+	text-align: center;
+	margin: 6px auto;
+}
+
+.demo-app-view-subtitle {
+	color: var(--grey-5);
+	text-align: center;
+	margin: 6px auto;
+	line-height: 1.5;
+}
+
+.demo-app-group-title {
+    margin-left: 24px;
+}
+
+/* View tree group */ 
+.d4-tree-view-root.demo-app-group-view .grok-gallery-grid {
+    margin: 0;
+    padding: 12px;
+    align-items: stretch;
+}
+
+.d4-tree-view-root.demo-app-group-view .grok-gallery-grid > div {
+    margin: 12px;
+}
+
+.d4-tree-view-root.demo-app-group-view .d4-tree-view-group-label {
+    color: var(--grey-6);
+}
+
+.d4-tree-view-root.demo-app-group-view .d4-tree-view-node {
+    padding: 4px 0;
+}
+
+/* Autocomplete dock */
+.demo-app-script {
+    overflow: scroll;
+}
+
+.demo-app-script .tutorials-root-header{
+    align-items: center;
+}
+
+.demo-app-script .tutorials-main-header {
+    padding: 0 12px;
+}
+
+.demo-app-script .fa-clock {
+    color: var(--grey-3);
+}
+
+.demo-app-script .fa-spin {
+    color: var(--blue-1);
+}
+
+.demo-app-script .fa-check {
+    color: var(--green-2);
+}
+
+.demo-app-script .grok-tutorial-entry-instruction {
+    color: var(--grey-6);
+}
+
+.demo-app-script .grok-tutorial-step-description {
+    padding-left: 22px;
+}
+
+.demo-app-script .grok-tutorial-step-description .hidden{
+    display: none;
+}
+
+.demo-app-script .grok-tutorial-step-description .visible{
+    display: block;
+}
+
+/* play-pause btn */
+.tutorials-root-header button>i.grok-icon.fa-play {
+    color:var(--green-2);
+}

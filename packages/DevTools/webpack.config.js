@@ -22,7 +22,7 @@ module.exports = {
       },
     ]
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
@@ -32,6 +32,7 @@ module.exports = {
     'rxjs/operators': 'rxjs.operators',
     'cash-dom': '$',
     'dayjs': 'dayjs',
+    'codemirror': 'CodeMirror',
   },
   output: {
     filename: '[name].js',

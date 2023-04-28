@@ -7,7 +7,7 @@ import {getOptions} from './utils';
 
 
 category('Radar', () => {
-  const TYPE = 'RadarViewer';
+  const TYPE = 'Radar';
   let df: DG.DataFrame;
   let tv: DG.TableView;
   const subs: Subscription[] = [];
@@ -42,7 +42,7 @@ category('Radar', () => {
       showMin: true,
       showMax: true,
       showValues: true,
-      valuesColumnNames: ['AGE', 'COUNTRYID'],
+      valuesColumnNames: null,
     };
     expect(JSON.stringify(standardOptions), JSON.stringify(await getOptions(viewer)));
   });

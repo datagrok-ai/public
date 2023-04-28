@@ -3,13 +3,11 @@
 _Dendrogram_ is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai)
 platform for phylogenetic trees visualization.
 
-
-# Notations
+## Notations
 
 Now only the _Newick_ tree format is supported.
 
-
-# Viewers
+## Viewers
 
 [Dendrogram viewer](./src/viewers/dendrogram.ts) is a ure typescript component derived from
 [DG.JsViewer](../../js-api/src/viewer.ts) to be used as [a Datagrok viewer](../../help/visualize/viewers/viewers.md).
@@ -33,15 +31,13 @@ const viewer = await df.plot.fromType('Dendrogram', {});
 tv.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT); // TypeError: Cannot read properties of undefined (reading 'H')
 ```
 
-
-# Optimized for large trees
+## Optimized for large trees
 
 The Dendrogram viewer is highly optimized to render trees with hundreds of thousands of nodes.
 
 ![Large tree](../../help/uploads/gifs/dendrogram-large-tree-selections-current-fixed.gif)
 
-
-# File handlers
+## File handlers
 
 Opening file with .nwk, .newick extension will be transformed to a DataFrame of nodes (node, parent, leaf, distance
 columns) with a DendrogramViewer docked on the right side of the grid. The dendrogram viewer interacts with the data
@@ -50,8 +46,7 @@ hover, and selection are supported and displayed with specific styles in the den
 
 ![.nwk file handler with interactivity](../../help/uploads/gifs/dendrogram-newick-file-handler-with-interactivity.gif)
 
-
-# Dendrogram injected to grid, hierarchical clustering
+## Dendrogram injected to grid, hierarchical clustering
 
 An application developer can inject Dendrogram viewer to a grid linked by row number or leaves' column name.
 For example Top menu function ML | Hierarchical Clustering calculates the tree on selected features/columns set with
@@ -60,5 +55,21 @@ are synchronized between grid and injected tree in both directions.
 
 ![ML | Hierarchical Clustering](../../help/uploads/gifs/dendrogram-hierarchical-clustering-interactivity.gif)
 
-   
+## Web Assembly
 
+Package contains webAssembly code (compiled from cpp) of hierarchical clustering using reduced distance matrix.
+the files are contained in ```src/wasm``` and corresponding cpp files are in ```src/wasm/cpp```. to modify the cpp code and compile it, following steps are to be done. 
+
+1. Emscripten has to be installed on system and found in global PATH
+
+2. In command line prompt, cd into the ```src/wasm/cpp``` directory and execute command ```emsdk activate lates``` .  This will init the working directory.
+
+3. Then execute command fount in same folder under the name ```emsc command.txt```.
+
+You will generate two files, ```wasmCluster.js``` and ```wasmCluster.wasm```. In order to allow the wasm to work with webworkers, following has to be done:
+
+1. Move the ```wasmCluster.js``` and ```wasmCluster.wasm``` to ```src/wasm``` directory.
+
+2. Open ```wasmCluster.js``` and before the second line ```var exportCppLib = (() => {``` add ```export```
+
+Done.

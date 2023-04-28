@@ -1,23 +1,26 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {UsageWidget} from './usage-widget';
 import '../css/usage_analysis.css';
-
 import {ViewHandler} from './view-handler';
 
 export const _package = new DG.Package();
 
+
 //name: Usage Analysis
 //tags: app
 export function usageAnalysisApp(): void {
-  ViewHandler.getInstance().init();
+  ViewHandler.getInstance();
+  if (!grok.shell.view(ViewHandler.UAname)) ViewHandler.getInstance().init();
 }
 
+//input: dynamic header
 //output: widget result
 //tags: dashboard
-export function usageWidget(): DG.Widget {
-  return new UsageWidget();
+export function usageWidget(header: HTMLDivElement): DG.Widget {
+  return new UsageWidget(header);
 }
 
 //name: Create JIRA ticket

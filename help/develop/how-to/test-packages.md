@@ -10,7 +10,7 @@ those tests any time during development.
 
 ## Local testing
 
-To test packages locally before release, you can use the Jest framework.
+To test packages locally before release, you can use the [datagrok toolkit](../tools/libraries.md#datagrok-toolkit).
 The easiest way is to execute the following commands:
 
 ```shell
@@ -18,47 +18,18 @@ cd <package-dir>
 grok test [--host]
 ```
 
-It will publish your package in the debug mode to a specified host and run the
-tests. The `host` option should correspond to one of the server aliases provided
-in the configuration file. If not given, the default host is used for testing.
-For your local setup, there may be additional steps to successfully launch tests
-(see the full algorithm below).
+It will build your package and publish it in the debug mode to a specified host and run the tests. The `host` option
+should correspond to one of the server aliases provided in the configuration file (`.grok/config.yaml`). If not given,
+the default host is used for testing. The building and publishing steps can be skipped with flags `--skip-build` and
+`--skip-publish` correspondingly.
 
-1. Set environment variables:
+The results are printed to the terminal. If you want to save a test run result, add the `--csv` flag (the report will be
+saved in a CSV file in the package folder).
 
-   - HOST - for host to publish and test package, for example 'localhost'. It should be the same as the host alias
-     in `~/.grok/config.yaml`
-   - TARGET_PACKAGE - `friendlyName` or `fullName` for the package from `package.json`
+To see tests execution, pass the `--gui` flag that disables the headless browser mode. This option can help you debug
+your tests.
 
-2. [Run Datagrok instance locally](../admin/docker-compose.md). Skip this step if you already have a stand.
-3. [Configure grok tool](../set-up-environment.md#configuration) with the credentials of you local stand, for example '
-   localhost'.
-4. [Publish the package to the HOST](publish-packages.md#private-packages), which was set on the first step.
-
-   Linux/Unix:
-
-   ```shell
-   grok publish $HOST
-   ```
-
-   Windows:
-
-   ```shell
-   grok publish %HOST%
-   ```
-
-5. Set proper Web Root and Api Root for the stand: Log in as admin user go to Settings -> Admin:
-   set `Web Root` and `Api Root` -> Apply. In most cases `Web Root` is the same as the main URL you use to access the
-   platform, for example `http://localhost:8080`, and `Api Root` is the same with suffix `/api`, for
-   example `http://localhost:8080/api`.
-
-6. Run tests for the package
-
-   ```shell
-   npm run test
-   ```
-
-7. The results are available in the command-line output or the `test-report.html` file.
+If you do not have any datagrok instance run locally, you can use [docker-compose](../admin/deploy/docker-compose.md) to run the stand.
 
 ## Tests after a change in a public package
 
@@ -69,7 +40,7 @@ are tested using GitHub Actions on every commit. For every changed package GitHu
 Datagrok from the latest Datagrok docker image. Then, it publishes a new version of the package to this instance. And
 then, the tests are executed on it.
 
-The results are available in the actions artifacts: `test-<PACKAGE NAME>-<DOCKER IMAGE SHA>-<COMMIT SHA>.html`
+The results are available in the actions output.
 
 ### Trigger GitHub Actions manually
 
@@ -79,12 +50,7 @@ If an error occurred for the action triggered by the commit, it is possible to t
 2. Press `run workflow` and set packages list to test separated with spaces, for example: `Demo Tutorials`. Choose the
    target branch. Then `Run workflow`. Note that publish to the NPM registry is executed for the master branch only.
 3. Check that the GitHub Actions workflow finished successfully
-4. The results are available in the actions artifacts: `test-<PACKAGE NAME>-<DOCKER IMAGE SHA>-<COMMIT SHA>.html`
-
-The same steps can be applied
-for [Libraries workflow](https://github.com/datagrok-ai/public/actions/workflows/libraries.yaml)
-, [datagrok-tools package](https://github.com/datagrok-ai/public/actions/workflows/tools.yml) and
-[datagrok-api package](https://github.com/datagrok-ai/public/actions/workflows/js-api.yml)
+4. The results are available in the actions output
 
 ## Test manager
 
@@ -131,15 +97,15 @@ workspace for further exploration.
 
 ![Test results](test_results.gif)
 
-## Running tests in the console
+## Running tests in the platform console
 
-It is possible to run tests in the platform's console. Press the tilde key `~`
-to open the console or enable it from the toolbox (`Windows | Console`). To
+It is possible to run tests in the platform's console. Press the tilde key `~` to open the console or enable it from the
+toolbox (`Windows | Console`). To
 launch tests for a category, type `PackageName:test(category="category-name")`,
 e.g., `ApiTests:test(category="Layouts")`, or add a specific test as a
 parameter: `PackageName:test(category="category-name", test="test-name")`, e.g.,
 `ApiTests:test(category="Layouts", test="ViewLayout.toJson()")`.
 
-See also:
+## More information
 
 - [How to add package tests](add-package-tests.md)

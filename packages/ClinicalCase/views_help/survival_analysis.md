@@ -1,11 +1,12 @@
-### Survival analysis
+# Survival analysis
+
 This view is designed to create Kaplan-Meier curves and perform covariates analysis.
 
 Steps to perform survival analysis:
 
 - create dataset (`Dataset` tab)
 
-Choose endpoint for which you want to create Kaplan-Meier curve. Optionally you can include basic covariates(age, sex, race, treatment arm) into dataset. Click `Create dataset` button. 
+Choose endpoint for which you want to create Kaplan-Meier curve. Optionally you can include basic covariates(age, sex, race, treatment arm) into dataset. Click `Create dataset` button.
 
 Dataset can be further filtered.
 

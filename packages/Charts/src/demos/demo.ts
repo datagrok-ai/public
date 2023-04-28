@@ -5,33 +5,53 @@ import {_package} from '../package';
 
 
 const VIEWER_TABLES_PATH: {[key: string]: string} = {
-  ChordViewer: 'energy_uk.csv',
-  GlobeViewer: 'geo/earthquakes.csv',
-  GroupAnalysisViewer: 'files/r-groups.csv',
-  RadarViewer: 'demog.csv',
-  SankeyViewer: 'energy_uk.csv',
-  SunburstViewer: 'demog.csv',
+  Chord: 'energy_uk.csv',
+  Globe: 'geo/earthquakes.csv',
+  GroupAnalysis: 'files/r-groups.csv',
+  Radar: 'demog.csv',
+  Sankey: 'energy_uk.csv',
+  Sunburst: 'demog.csv',
   SurfacePlot: 'files/surface-plot.csv',
-  TimelinesViewer: 'files/ae.csv',
-  TreeViewer: 'demog.csv',
-  WordCloudViewer: 'word_cloud.csv',
+  Timelines: 'files/ae.csv',
+  Tree: 'demog.csv',
+  WordCloud: 'word_cloud.csv',
 };
 
 
 export async function viewerDemo(viewerName: string, options?: object | null) {
-  let df: DG.DataFrame;
-
-  if (['GroupAnalysisViewer', 'SurfacePlot', 'TimelinesViewer'].includes(viewerName))
-    df = await grok.data.loadTable(`${_package.webRoot}${VIEWER_TABLES_PATH[viewerName]}`);
-  else
-    df = await grok.data.getDemoTable(VIEWER_TABLES_PATH[viewerName]);
+  const df = await (['GroupAnalysis', 'SurfacePlot', 'Timelines'].includes(viewerName) ?
+    grok.data.loadTable(`${_package.webRoot}${VIEWER_TABLES_PATH[viewerName]}`) :
+    grok.data.getDemoTable(VIEWER_TABLES_PATH[viewerName]));
 
   const tableView = grok.shell.addTableView(df);
 
-  if (['GlobeViewer', 'GroupAnalysisViewer'].includes(viewerName)) {
-    DG.debounce(df.onSemanticTypeDetected, 300).subscribe((_) => tableView.addViewer(viewerName, options));
+  if (['Globe', 'GroupAnalysis'].includes(viewerName)) {
+    DG.debounce(df.onSemanticTypeDetected, 800).subscribe((_) => {
+      const viewer = tableView.addViewer(viewerName, options);
+      dockViewers(tableView, viewer, viewerName);
+    });
     return;
   }
 
-  tableView.addViewer(viewerName, options);
+  const viewer = tableView.addViewer(viewerName, options);
+  dockViewers(tableView, viewer, viewerName);
+}
+
+function dockViewers(tableView: DG.TableView, viewer: DG.Viewer, viewerName: string) {
+  if (viewerName === 'GroupAnalysis')
+    return;
+
+  const rootNode = tableView.dockManager.rootNode;
+
+  if (viewerName === 'WordCloud') {
+    tableView.dockManager.dock(tableView.filters(), DG.DOCK_TYPE.RIGHT, rootNode, 'Filters', 0.6);
+    tableView.dockManager.dock(viewer, DG.DOCK_TYPE.TOP, null, viewerName, 0.7);
+    return;
+  }
+
+  const scatterplotNode = tableView.dockManager.dock(tableView.addViewer('scatterplot'), DG.DOCK_TYPE.RIGHT,
+    rootNode, 'Scatter plot', 0.5);
+  tableView.dockManager.dock(tableView.addViewer('histogram'), DG.DOCK_TYPE.RIGHT, scatterplotNode, 'Histogram', 0.3);
+  const viewerNode = tableView.dockManager.dock(viewer, DG.DOCK_TYPE.TOP, null, viewerName, 0.7);
+  tableView.dockManager.dock(tableView.filters(), DG.DOCK_TYPE.LEFT, viewerNode, 'Filters', 0.3);
 }

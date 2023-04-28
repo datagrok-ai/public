@@ -140,21 +140,20 @@ export interface IHistogramLookSettings {
   /// A categorical column to split data on (each bar represents a category)
   splitColumnName: string;
 
-  /// Whether the distribution should be rendered as bars or as a spline.
-  /// When *Split* is defined, histogram always shows splines.
-  spline: boolean;
-
-  /// Whether the area below the spline should be filled with the corresponding color.
-  /// Only applicable when *spline* is true and *split* is empty
-  fillSpline: boolean;
-
-  showYAxis: boolean;
-
-  showColumnSelector: boolean;
+  /// Whether the values should be normalized when multiple histograms are shown.
+  /// If true, you are comparing distributions; if false, you are comparing absolute values.
+  /// Requires *Split Column Name* to be set.
+  normalizeValues: boolean;
 
   /// Spline tension in case multiple histograms are shown.
   /// Requires *Split Column Name* to be set.
   splineTension: number;
+
+  showYAxis: boolean;
+
+  /// Whether markers should be drown when multiple histograms are shown.
+  /// Requires *Split Column Name* to be set.
+  showMarkers: boolean;
 
   /// Numerical column to be used for color-coding.
   /// The values in the bin get aggregated using the *Color Aggr Type* property.
@@ -172,6 +171,16 @@ export interface IHistogramLookSettings {
 
   /// Show the distribution of the values that the mouse is currently over in another viewer.
   showMouseOverRowGroup: boolean;
+
+  /// Whether the distribution should be rendered as bars or as a spline.
+  /// When *Split* is defined, histogram always shows splines.
+  spline: boolean;
+
+  /// Whether the area below the spline should be filled with the corresponding color.
+  /// Only applicable when *spline* is true and *split* is empty
+  fillSpline: boolean;
+
+  showColumnSelector: boolean;
 
   showRangeSlider: boolean;
 
@@ -376,6 +385,8 @@ export interface IScatterPlotLookSettings {
   /// Regression line visibility (toggle by pressing R)
   showRegressionLine: boolean;
 
+  showRegressionLineEquation: boolean;
+
   /// Control the visibility of dataframe-originated formula lines.
   /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
   /// Requires the PowerPack plugin.
@@ -520,6 +531,8 @@ export interface ILineChartLookSettings {
 
   showXSelector: boolean;
 
+  xAxisLabelOrientation: string;
+
   /// Numerical columns to be used on Y axes.
   /// Depending on the *
   yColumnNames: Array<string>;
@@ -590,6 +603,13 @@ export interface ILineChartLookSettings {
 
   histogramWidth: number;
 
+  /// If true, *X Axis Height* is calculated automatically to fit the required precision.
+  /// If false, the specified *X Axis Height*
+  autoAxisSize: boolean;
+
+  /// Requires *Auto Axis Size* to be turned off.
+  xAxisHeight: number;
+
   chartTypes: Array<string>;
 
   lineColoringType: string;
@@ -602,25 +622,13 @@ export interface ILineChartLookSettings {
 
   axisTextColor: number;
 
+  axisFont: string;
+
   markerColor: number;
 
   mouseOverLineColor: number;
 
   currentLineColor: number;
-
-//  int innerChartMarginLeft = 5;
-//  int innerChartMarginRight = 0;
-  innerChartMarginTop: number;
-
-  innerChartMarginBottom: number;
-
-  outerChartMarginLeft: number;
-
-  outerChartMarginTop: number;
-
-  outerChartMarginRight: number;
-
-  outerChartMarginBottom: number;
 
   xAxisMin: number;
 
@@ -641,6 +649,27 @@ export interface ILineChartLookSettings {
   xAxisCustomTickmarks: Array<number>;
 
   yAxisCustomTickmarks: Array<number>;
+
+  /// Controls scatter plot tooltip visibility
+  showTooltip: string;
+
+  /// Newline-separated list of column names to be used in a tooltip.
+  /// Requires *showTooltip* to be enabled.
+  rowTooltip: string;
+
+  rowGroupTooltip: string;
+
+  innerChartMarginTop: number;
+
+  innerChartMarginBottom: number;
+
+  outerChartMarginLeft: number;
+
+  outerChartMarginTop: number;
+
+  outerChartMarginRight: number;
+
+  outerChartMarginBottom: number;
 
   formulaLines: string;
 
@@ -1064,7 +1093,6 @@ export interface IGridLookSettings {
   showFilteredRowsOnly: boolean;
 
   /// Indicates whether the grid is editable.
-  /// See also *Show Add New Row Icon*
   allowEdit: boolean;
 
   /// When [allowEditable] is true, shows the last virtual row that the user can edit.
@@ -1073,7 +1101,6 @@ export interface IGridLookSettings {
   showAddNewRowIcon: boolean;
 
   /// Automatically adds a new row in the end of the dataframe when the last row is edited
-  /// The grid should also be in the editable mode
   addNewRowOnLastRowEdit: boolean;
 
   showColumnLabels: boolean;
@@ -1082,134 +1109,120 @@ export interface IGridLookSettings {
   /// In spreadsheet mode, it defaults to horizontal no matter how small the columns are.
   /// In heat map mode, it depends on whether the text can fit in the area.
   /// Column header height. If not specified, it is calculated automatically.
-  /// See also *Col Labels Orientation*, *Horz Col Labels Height*
   colHeaderHeight: number;
 
   /// Height of the column labels when the orientation is vertical,
-  /// and *Col Header Height* is not specified.
   vertColLabelsHeight: number;
 
   /// Height of the column labels when the orientation is horizontal,
-  /// and *Col Header Height* is not specified.
   horzColLabelsHeight: number;
 
   rowHeight: number;
 
-  /// Indicates mouse-over row by drawing a vertical stripe on the row header
   showMouseOverRowIndicator: boolean;
 
-  /// Indicates current row with the *Current Row Color*.
   showCurrentRowIndicator: boolean;
 
+  /// Indicates current row with the *Current Row Color*.
   pinnedRows: Array<number>;
 
   /// Indicates whether the control is in the grid or heatmap mode.
-  /// Typically, you don't need to change it manually.
   isGrid: boolean;
 
-  /// When set to false, default menu appears under the 'Grid' submenu.
   topLevelDefaultMenu: boolean;
 
   /// Whether items applicable to all viewers (such as Pickup Style) should
-  /// be shown in a popup menu. Also requires *Show Context Menu*.
   showDefaultPopupMenu: boolean;
 
-  /// Mouse drag on the data cells selects both rows and columns
   allowBlockSelection: boolean;
 
   /// Shift+click on a header to select a column
-  /// Ctrl+click to invert selection
-  /// Ctrl+Shift+click to deselect
   allowColSelection: boolean;
 
-  /// Reorder rows by drag-and-dropping
+  /// Shift+click on a header to select a column
+  /// Ctrl+click to invert selection
   allowRowReordering: boolean;
+
+  /// Mouse drag on the row header selects rows
+  allowRowSelection: boolean;
+
+  /// Mouse drag on the row header selects rows
+  /// Ctrl+click to invert selection
+  showRowHeader: boolean;
 
   /// Mouse drag on the row header selects rows
   /// Ctrl+click to invert selection
   /// Shift+mouse drag to select multiple rows
-  /// Ctrl+Shift+mouse drag to unselect
-  allowRowSelection: boolean;
-
-  showRowHeader: boolean;
-
   showRowGridlines: boolean;
+
+  allowColumnMenu: boolean;
 
   /// Whether the "hamburger" menu should be shown for a column
   /// when the mouse is over its header
-  allowColumnMenu: boolean;
-
-  /// Automatically scroll current row into view when this column becomes current
   autoScrollColumnIntoView: boolean;
 
   /// Automatically scroll current row into view when it is set from outside
-  /// (for instance, as a result of clicking on a point in a scatter plot)
   autoScrollRowIntoView: boolean;
 
+  /// Automatically scroll current row into view when it is set from outside
   showColumnGridlines: boolean;
 
-  /// Reordering columns by dragging the header
+  /// Automatically scroll current row into view when it is set from outside
+  /// (for instance, as a result of clicking on a point in a scatter plot)
   allowColReordering: boolean;
 
-  /// Whether the current object (shown in the context panel) is changed
-  /// when you click on a column header.
+  /// Reordering columns by dragging the header
   allowChangeCurrentObject: boolean;
 
-  /// Whether row rows can be dragged out of the grid.
+  /// Whether the current object (shown in the context panel) is changed
   allowRowDragging: boolean;
 
   extendLastColumn: boolean;
 
-  /// Resize rows by dragging the border between rows on a row header
   allowRowResizing: boolean;
 
   /// Indicates the way colors are sampled in the heatmap mode when there is not enough
   /// pixels on the screen for each row:
   /// True: each row is draws (but the result is blended and the resulting color might not represent any row)
-  /// False: a row is sampled and then drawn as one pixel (but non-sampled rows do not get drawn at all)
   drawEveryRow: boolean;
 
-  /// Whether the context menu is shown
+  /// Indicates the way colors are sampled in the heatmap mode when there is not enough
+  /// pixels on the screen for each row:
+  /// True: each row is draws (but the result is blended and the resulting color might not represent any row)
+  /// False: a row is sampled and then drawn as one pixel (but non-sampled rows do not get drawn at all)
   showContextMenu: boolean;
 
+  /// Indicates the way colors are sampled in the heatmap mode when there is not enough
+  /// pixels on the screen for each row:
+  /// True: each row is draws (but the result is blended and the resulting color might not represent any row)
+  /// False: a row is sampled and then drawn as one pixel (but non-sampled rows do not get drawn at all)
   frozenColumns: number;
-
-  showCellTooltip: boolean;
-
-  /// Include currently visible columns in a tooltip
-  showVisibleColumnsInTooltip: boolean;
-
-  showColumnTooltip: boolean;
-
-  /// Controls grid tooltip visibility
-  showTooltip: string;
-
-  /// Newline-separated list of column names to be used in a tooltip.
-  /// Requires *showTooltip* to be enabled.
-  rowTooltip: string;
 
   showCurrentCellOutline: boolean;
 
   /// Color-coding that applies to all columns.
-  /// Additionally, each column can be individually color-coded.
   defaultCellFont: string;
 
+  /// Color-coding that applies to all columns.
+  /// Additionally, each column can be individually color-coded.
   maxFontSize: number;
 
   colHeaderFont: string;
 
-  /// Resizing column header by dragging the border between the header and the first row
   allowColHeaderResizing: boolean;
 
-  /// Resizing columns by dragging the border between column headers
+  /// Resizing column header by dragging the border between the header and the first row
   allowColResizing: boolean;
 
+  /// Resizing column header by dragging the border between the header and the first row
   missingValueColor: number;
 
   selectedRowsColor: number;
 
+  /// Resizing columns by dragging the border between column headers
   selectedColsColor: number;
 
+  /// Resizing columns by dragging the border between column headers
   currentRowColor: number;
 
   mouseOverRowColor: number;
@@ -1218,22 +1231,44 @@ export interface IGridLookSettings {
 
   backColor: number;
 
+  /// A column according to which all content is color-coded.
   colHeaderTextColor: number;
 
+  /// A column according to which all content is color-coded.
   colHeaderBackColor: number;
 
+  /// A column according to which all content is color-coded.
+  //todo: implement https://reddata.atlassian.net/browse/GROK-2009?filter=10000
   colHeaderMouseOverTextColor: number;
 
+  /// A column according to which all content is color-coded.
+  //todo: implement https://reddata.atlassian.net/browse/GROK-2009?filter=10000
   cellTextColor: number;
 
+  /// A column according to which all content is color-coded.
+  //todo: implement https://reddata.atlassian.net/browse/GROK-2009?filter=10000
+  //String colorCodedByColumnName;
   currentCellTextColor: number;
 
   rowHeaderBackColor: number;
 
+  showTooltip: string;
+
+  showCellTooltip: boolean;
+
+  showVisibleColumnsInTooltip: boolean;
+
+  showColumnTooltip: boolean;
+
+  rowTooltip: string;
+
   marginLeft: number;
 
+  /// Newline-separated list of column names to be used in a tooltip.
   marginTop: number;
 
+  /// Newline-separated list of column names to be used in a tooltip.
+  /// Requires *showTooltip* to be enabled.
   marginRight: number;
 
   marginBottom: number;
@@ -1358,9 +1393,9 @@ export interface IPcPlotLookSettings {
   /// if units are the same (for instance, use it for tracking change over time).'
   normalizeEachColumn: boolean;
 
-  showCurrentPoint: boolean;
+  showCurrentLine: boolean;
 
-  showMouseOverPoint: boolean;
+  showMouseOverLine: boolean;
 
   showMouseOverRowGroup: boolean;
 
@@ -1535,6 +1570,10 @@ export interface IFormLookSettings {
   showDesignEditor: boolean;
 
   showColumnSelector: boolean;
+
+  showSaveFile: boolean;
+
+  showOpenFile: boolean;
 
   sketchState: Map<any, any>;
 
@@ -1738,6 +1777,7 @@ export interface ICardLookSettings {
   /// Source-type specific value.
   value: string;
 
+  /// Source-type specific value.
   format: string;
 
   //StreamController _changes;
@@ -1760,7 +1800,11 @@ export interface ICardLookSettings {
 }
 
 export interface ITileViewerLookSettings {
+  lanesColumnName: string;
+
   cardMarkup: string;
+
+  allowDragBetweenLanes: boolean;
 
   /// Whether the form auto-generates whenever columns change
   autoGenerate: boolean;

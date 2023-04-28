@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 
 import * as echarts from 'echarts';
 import {option} from './constants';
+import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
 type MinimalIndicator = '1' | '5' | '10' | '25';
 type MaximumIndicator = '75' | '90' | '95' | '99';
@@ -52,8 +53,7 @@ export class RadarViewer extends DG.JsViewer {
     const columnNames: string[] = [];
     for (const column of this.dataFrame.columns.numerical)
       columnNames.push(column.name);
-    this.valuesColumnNames = columnNames;
-
+  
     const columns = this.getColumns();
     for (const c of columns) {
       let minimalVal = 0;
@@ -261,7 +261,7 @@ export class RadarViewer extends DG.JsViewer {
       label: {
         show: true,
         formatter: function(params: any) {
-          return params.value as string;
+          return StringUtils.formatNumber(params.value) as string;
         },
       },
     };
@@ -274,28 +274,18 @@ export class RadarViewer extends DG.JsViewer {
 
   getColumns() : DG.Column<any>[] {
     let columns: DG.Column<any>[] = [];
-    const numericalColumns: DG.Column<any>[] = Array.from(this.dataFrame.columns.numerical);
-
+    let numericalColumns: DG.Column<any>[] = Array.from(this.dataFrame.columns.numerical);
     if (this.valuesColumnNames?.length > 0) {
-      const selectedColumns = this.dataFrame.columns.byNames(this.valuesColumnNames);
-      for (let i = 0; i < selectedColumns.length; ++i) {
-        if (numericalColumns.includes(selectedColumns[i])) {
-          const filteredIndexList = this.dataFrame.filter.getSelectedIndexes();
-          const columnValues: Array<number> = new Array<number>(filteredIndexList.length);
-          for (let j = 0; j < filteredIndexList.length; j++)
-            columnValues[j] = selectedColumns[i].get(filteredIndexList[j]);
-
-          const column = DG.Column.fromList(selectedColumns[i].type, selectedColumns[i].name, columnValues);
-          columns.push(column);
-        }
-      }
-    } else
+      let selectedColumns = this.dataFrame.columns.byNames(this.valuesColumnNames);
+      for (let i = 0; i < selectedColumns.length; ++i) 
+        if (numericalColumns.includes(selectedColumns[i])) 
+          columns.push(selectedColumns[i]);
+    } else {
       columns = numericalColumns.slice(0, 20);
-
-    for (let i = 0; i < columns.length; ++i) {
-      if (columns[i].type === DG.TYPE.DATE_TIME)
-        columns.splice(i, 1);
     }
+    for (let i = 0; i < columns.length; ++i) 
+      if (columns[i].type === DG.TYPE.DATE_TIME) 
+        columns.splice(i, 1);
     return columns;
   }
 

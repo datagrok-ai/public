@@ -1,0 +1,53 @@
+{
+	"name": "@datagrok/forms",
+	"friendlyName": "Forms",
+	"version": "0.0.1",
+	"description": "Forms viewer provides a convenient way to visualize a set of selected rows.",
+	"author": {
+		"name": "Dmytro Kovalyov",
+		"email": "kovalyov.dmytro@eigenmethod.com"
+	},
+	"dependencies": {
+		"datagrok-api": "^1.13.8",
+		"cash-dom": "^8.1.4",
+		"dayjs": "^1.11.7",
+		"@datagrok-libraries/utils": "^3.0.3"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest",
+		"ts-loader": "latest",
+		"typescript": "latest",
+		"eslint": "latest",
+		"eslint-config-google": "latest",
+		"@typescript-eslint/eslint-plugin": "latest",
+		"@typescript-eslint/parser": "latest",
+		"css-loader": "^6.7.3",
+		"style-loader": "^3.3.2"
+	},
+	"scripts": {
+		"link-all": "",
+		"debug-forms": "webpack && grok publish",
+		"release-forms": "webpack && grok publish --release",
+		"build-forms": "webpack",
+		"build": "webpack",
+		"debug-forms-public": "webpack && grok publish public",
+		"release-forms-public": "webpack && grok publish public --release",
+		"debug-forms-local": "webpack && grok publish local",
+		"release-forms-local": "webpack && grok publish local --release",
+		"lint": "eslint src --ext .ts",
+		"lint-fix": "eslint src --ext .ts --fix"
+	},
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	],
+	"category": "Visualizations",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/datagrok-ai/public.git",
+		"directory": "packages/Forms"
+	}
+}

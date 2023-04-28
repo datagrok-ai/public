@@ -1,0 +1,34 @@
+.d4-multi-form {
+}
+
+.d4-multi-form-header {
+	width: 170px;
+	margin-right: 10px;
+	padding-top: 10px;
+}
+
+.d4-multi-form-column-name {
+	font-weight: bold;
+	position: absolute;
+	left: 10px;
+}
+
+.d4-multi-form-form {
+	min-width: 170px;
+}
+
+.d4-multi-form-form.temp {
+	position: absolute;
+	visibility: hidden;
+}
+
+.d4-multi-form-value {
+}
+
+.d4-multi-form #vlist {
+	height: initial;
+}
+
+.d4-multi-form .ui-input-editor {
+	padding: initial;
+}

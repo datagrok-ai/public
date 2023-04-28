@@ -47,7 +47,7 @@ export function convert(col: DG.Column): void {
   });
 
   if (convertDialog == null) {
-    convertDialog = ui.dialog('Convert sequence notation')
+    convertDialog = ui.dialog('Convert Sequence Notation')
       .add(ui.div([
         ui.divText(
           'Current notation: ' + currentNotation,
@@ -86,6 +86,11 @@ export async function convertDo(
   const converter = new NotationConverter(srcCol);
   const newColumn = converter.convert(targetNotation, separator);
   srcCol.dataFrame.columns.add(newColumn);
+
+  // Call detector directly to escape some error on detectSemanticTypes
+  const semType = await grok.functions.call('Bio:detectMacromolecule', {col: newColumn});
+  if (semType)
+    newColumn.semType = semType;
 
   // call to calculate 'cell.renderer' tag
   await grok.data.detectSemanticTypes(srcCol.dataFrame);

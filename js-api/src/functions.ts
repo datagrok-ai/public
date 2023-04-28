@@ -121,12 +121,20 @@ export class Functions {
     return toJs(await api.grok_EvalFunc(name, context?.dart));
   }
 
-  async find(name: string): Promise<any> {
+  /** Returns a function with the specified name, or throws an error if
+   * there is no such function. See also {@link find}. */
+  async get(name: string): Promise<Func> {
+    let f = await this.find(name);
+    if (!f)
+      throw `Function not found: "${name}"`;
+    return f;
+  }
+
+  /** Returns a function with the specified name, or null if not found.
+   * See also {@link find}. */
+  async find(name: string): Promise<Func | null> {
     let f = await this.eval(name);
-    if (f instanceof Func)
-      return f;
-    else
-      return null;
+    return (f instanceof Func) ? f : null;
   }
 
   scriptSync(s: string): any {
@@ -139,6 +147,7 @@ export class Functions {
 
   get onBeforeRunAction(): Observable<FuncCall> { return __obs('d4-before-run-action'); }
   get onAfterRunAction(): Observable<FuncCall> { return __obs('d4-after-run-action'); }
+  get onParamsUpdated(): Observable<FuncCall> { return __obs('d4-func-call-output-params-updated'); }
 }
 
 
@@ -253,8 +262,13 @@ export class FuncCall extends Entity {
   /** Error message, if this call resulted in an exception, or null. */
   get errorMessage(): string | null { return api.grok_FuncCall_Get_ErrorMessage(this.dart); }
 
+  /** Returns the first output parameter value, or null. */
   getOutputParamValue(): any {
     return toJs(api.grok_FuncCall_Get_Output_Param_Value(this.dart));
+  }
+
+  setAuxValue(name: string, value: any): void {
+    api.grok_FuncCall_Set_Aux_Value(this.dart, name, toDart(value));
   }
 
   setParamValue(name: string, value: any): void {
@@ -264,6 +278,10 @@ export class FuncCall extends Entity {
   /** Executes the function call */
   call(showProgress: boolean = false, progress?: ProgressIndicator, options?: {processed?: boolean, report?: boolean}): Promise<FuncCall> {
     return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.dart, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress), options?.processed, options?.report));
+  }
+
+  cancel(): Promise<void> {
+    return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.dart, (out: any) => resolve(toJs(out)), (err: any) => reject(err)));
   }
 
   /** Executes the function call synchronously*/

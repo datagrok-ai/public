@@ -122,6 +122,8 @@ export class Events {
 
   get onViewRemoved(): rxjs.Observable<View> { return __obs('grok-view-removed'); }
 
+  get onViewRemoving(): rxjs.Observable<EventData<ViewArgs>> { return __obs('grok-view-removing'); }
+
   get onViewRenamed(): rxjs.Observable<View> { return __obs('grok-view-renamed'); }
 
   get onResetFilterRequest(): rxjs.Observable<any> { return __obs('d4-reset-filter-request'); }
@@ -144,7 +146,11 @@ export class Events {
 
   get onProjectSaved(): rxjs.Observable<any> { return __obs('grok-project-saved'); }
 
+  get onProjectSaving(): rxjs.Observable<any> { return __obs('grok-project-saving'); }
+
   get onProjectOpened(): rxjs.Observable<any> { return __obs('grok-project-opened'); }
+
+  get onProjectClosing(): rxjs.Observable<any> { return __obs('grok-project-closing'); }
 
   get onProjectClosed(): rxjs.Observable<any> { return __obs('grok-project-closed'); }
 
@@ -298,6 +304,10 @@ export interface MapChangeArgs<K, V> {
 
 export interface ViewerArgs {
   viewer: Viewer;
+}
+
+export interface ViewArgs {
+  view: View;
 }
 
 export class ColumnsArgs extends EventData {

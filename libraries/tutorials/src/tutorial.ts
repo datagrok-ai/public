@@ -21,6 +21,12 @@ export abstract class Tutorial extends DG.Widget {
     return this._t;
   }
 
+  get url(): string {
+    const removeSpaces = (s: string) => s.split(' ').join('');
+    const root = window.location.origin;
+    return `${root}/apps/tutorials/${removeSpaces(this.track!.name)}/${removeSpaces(this.name)}`;
+  }
+
   imageUrl: string = '';
   nextLink: HTMLAnchorElement = ui.link('next',
     '',
@@ -45,6 +51,7 @@ export abstract class Tutorial extends DG.Widget {
     'jupyter': 'Jupyter',
     'grokCompute': 'GrokCompute',
     'grokConnect': 'Grok Connect',
+    'h2o': 'H2O',
   };
 
   async updateStatus(): Promise<void> {
@@ -91,9 +98,11 @@ export abstract class Tutorial extends DG.Widget {
       }
     }
 
+    const services = await grok.dapi.admin.getServiceInfos();
+
     for (const [service, flag] of Object.entries(this.prerequisites)) {
       if (service in Tutorial.SERVICES && flag === true) {
-        const serviceAvailable = await this.checkService(Tutorial.SERVICES[service]);
+        const serviceAvailable = await this.checkService(Tutorial.SERVICES[service], services);
         if (!serviceAvailable)
           return;
       }
@@ -183,8 +192,9 @@ export abstract class Tutorial extends DG.Widget {
     }
   }
 
-  async checkService(name: string): Promise<boolean> {
-    const services = await grok.dapi.admin.getServiceInfos();
+  async checkService(name: string, services?: DG.ServiceInfo[]): Promise<boolean> {
+    if (!services)
+      services = await grok.dapi.admin.getServiceInfos();
     const service = services.find((si) => si.name === name);
     const serviceAvailable = service == null ? false : service.enabled && service.status === 'Running';
     if (!serviceAvailable) {
@@ -212,8 +222,13 @@ export abstract class Tutorial extends DG.Widget {
 
     const closeTutorial = ui.button(ui.iconFA('times-circle'), () => this.close());
 
+    const linkIcon = ui.button(ui.iconFA('link'), () => {
+      navigator.clipboard.writeText(this.url);
+      grok.shell.info('Link copied to clipboard');
+    }, `Copy the tutorial link`);
+
     closeTutorial.style.minWidth = '30px';
-    this.headerDiv.append(this.header);
+    this.headerDiv.append(ui.divH([this.header, linkIcon], {style: {alignItems: 'center'}}));
     this.headerDiv.append(closeTutorial);
   }
 
@@ -568,4 +583,5 @@ export interface TutorialPrerequisites {
   jupyter?: boolean,
   grokCompute?: boolean,
   grokConnect?: boolean,
+  h2o?: boolean,
 }

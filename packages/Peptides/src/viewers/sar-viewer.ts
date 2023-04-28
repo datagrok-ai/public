@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
-import {PeptidesModel} from '../model';
+import {PeptidesModel, VIEWER_TYPE} from '../model';
 
 export class SARViewerBase extends DG.JsViewer {
   tempName!: string;
@@ -53,7 +53,7 @@ export class SARViewerBase extends DG.JsViewer {
   render(refreshOnly = false): void {
     if (!refreshOnly) {
       $(this.root).empty();
-      let switchHost = ui.divText('Most Potent Residues', {id: 'pep-viewer-title'});
+      let switchHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
       if (this.name == 'MC') {
         const mutationCliffsMode = ui.boolInput('', this.isMutationCliffsMode === '1');
         mutationCliffsMode.root.addEventListener('click', () => {
@@ -172,7 +172,7 @@ export class MonomerPosition extends SARViewerBase {
 /** Vertical structure activity relationship viewer */
 export class MostPotentResiduesViewer extends SARViewerBase {
   _name = 'MPR';
-  _titleHost = ui.divText('Most Potent Residues', {id: 'pep-viewer-title'});
+  _titleHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
   _isVertical = true;
 
   constructor() {

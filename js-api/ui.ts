@@ -19,7 +19,12 @@ import {
   FilesWidget,
   DateInput,
   fileShares,
-  SliderOptions
+  SliderOptions,
+  Breadcrumbs,
+  DropDown,
+  TypeAhead,
+  TypeAheadConfig,
+  TagsInput
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -655,6 +660,8 @@ export namespace input {
     const input = InputBase.forProperty(property, source);
     if (options?.onCreated)
       options.onCreated(input);
+    if (options?.onValueChanged)
+      input.onChanged(() => options.onValueChanged!(input));
     return input;
   }
 
@@ -807,6 +814,10 @@ export class tools {
     let interval = setInterval(() => {
       let newWidth = element.clientWidth;
       let newHeight = element.clientHeight;
+      if ((newWidth === 0 && newHeight === 0)) {
+        return
+      }
+
       if (newWidth !== width || newHeight !== height) {
         width = newWidth;
         height = newHeight;
@@ -1112,7 +1123,7 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
           childs++;
         }
         totalHeigh = totalHeigh + $(b.childNodes[i]).height();
-      } 
+      }
 
       for (let i = 0; i < b.children.length; i++){
           if ($(b.childNodes[i]).hasClass('ui-split-v-divider')!=true){
@@ -1120,7 +1131,7 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
           } else {
             $(b.childNodes[i]).css('height', 4);
           }
-      } 
+      }
 
     });
   } else {
@@ -1141,7 +1152,7 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
       $(b).addClass('ui-split-h').append(box(v))
       if (i != items.length - 1) {
         $(b).append(divider)
-        spliterResize(divider, items[i], items[i + 1], true);     
+        spliterResize(divider, items[i], items[i + 1], true);
       }
     })
 
@@ -1153,7 +1164,7 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
           childs++;
         }
         totalWidth = totalWidth + $(b.childNodes[i]).width();
-      } 
+      }
 
       for (let i = 0; i < b.children.length; i++){
           if ($(b.childNodes[i]).hasClass('ui-split-h-divider')!=true){
@@ -1357,6 +1368,22 @@ function _iconFA(type: string, handler: Function | null, tooltipMsg: string | nu
   return e;
 }
 
+export function breadcrumbs(path: string[]): Breadcrumbs {
+  return new Breadcrumbs(path);
+}
+
+export function dropDown(label: string | Element, createElement: () => HTMLElement): DropDown {
+  return new DropDown(label, createElement);
+}
+
+export function typeAhead(name: string, config: TypeAheadConfig): TypeAhead {
+  return new TypeAhead(name, config);
+}
+
+export function tagsInput(name: string, tags: string[], showBtn: boolean) {
+  return new TagsInput(name, tags, showBtn);
+}
+
 export let icons = {
   close: (handler: Function, tooltipMsg: string | null = null) => _icon('close', handler, tooltipMsg),
   help: (handler: Function, tooltipMsg: string | null = null) => _icon('help', handler, tooltipMsg),
@@ -1521,17 +1548,42 @@ export namespace hints {
     const horizontalOffset = 10;
     const wizard = new Wizard({title: options.title, helpUrl: options.helpUrl});
 
+    const cancelBtn = wizard.getButton('CANCEL');
+    $(cancelBtn)?.hide();
+    const prevBtn = wizard.getButton('<<');
+    $(prevBtn).empty();
+    const prevIcon = iconFA('chevron-left');
+    $(prevIcon).css('color', 'inherit');
+    prevBtn.append(prevIcon);
+    const nextBtn = wizard.getButton('>>');
+    nextBtn.innerText = 'OK';
+
     if (options.pages) {
+      nextBtn.innerText = (wizard.pageIndex === options.pages.length - 1) ? 'OK' : 'NEXT';
       const pageNumberStr = `${wizard.pageIndex + 1}/${options.pages.length}`;
-      wizard.addButton(pageNumberStr, () => {}, 3);
+      wizard.addButton(pageNumberStr, () => {}, 1);
       const pageNumberField = wizard.getButton(pageNumberStr);
       pageNumberField.classList.add('disabled');
-      $(pageNumberField).css('margin-right', 'auto');
       $(pageNumberField).css('font-weight', 500);
+
+      function ok() {
+        if (nextBtn.innerText === 'OK')
+          wizard.close();
+      }
 
       for (const p of options.pages) {
         const page = Object.assign({}, p);
         page.onActivated = () => {
+          if (wizard.pageIndex === options.pages!.length - 1) {
+            nextBtn.innerText = 'OK';
+            // Use delay to override default wizard behavior
+            setTimeout(() => nextBtn.classList.remove('disabled'), 10);
+            $(nextBtn).on('click', ok);
+          } else {
+            nextBtn.innerText = 'NEXT';
+            $(nextBtn).off('click', ok);
+          }
+
           pageNumberField.innerText = `${wizard.pageIndex + 1}/${options.pages!.length}`;
           if (p.showNextTo) {
             if (targetElement)
@@ -1550,6 +1602,7 @@ export namespace hints {
       }
     }
     wizard.onClose.subscribe(() => remove(targetElement));
+    $(overlay).on('click', () => wizard.close());
     const _x = $(wizard.root).css('left');
     const _y = $(wizard.root).css('top');
     wizard.show({width: 250, height: 200,

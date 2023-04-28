@@ -176,7 +176,8 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
     grok.shell.addTableView(table!);
   }, 'Open compounds as table'));
   compsHost.style.overflowY = 'auto';
-  compsHost.parentElement!.style.width = 'auto';
+  if (compsHost.parentElement)
+    compsHost.parentElement!.style.width = 'auto';
   grid.root.style.width = 'auto';
   compsHost.firstChild?.remove();
 

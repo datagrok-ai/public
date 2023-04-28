@@ -6,10 +6,7 @@ import grok_connect.table_query.Stats;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import grok_connect.utils.ProviderManager;
-import net.snowflake.client.jdbc.SnowflakePreparedStatement;
-import net.snowflake.client.jdbc.SnowflakeStatement;
 import serialization.Types;
-
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -18,9 +15,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class SnowflakeDataProvider extends JdbcDataProvider{
     private static final boolean CAN_BROWSE_SCHEMA = true;
@@ -68,11 +62,15 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
 
     @Override
     public String getSchemaSql(String db, String schema, String table) {
-        schema = schema != null ? schema : DEFAULT_SCHEMA;
-        String query = "SELECT table_schema, table_name, column_name, data_type "
-                + "FROM information_schema.columns "
-                + "WHERE table_schema = '%s' ORDER BY table_name";
-        return String.format(query, schema);
+        String whereClause = String.format(" WHERE%s%s%s",
+                db == null ? "" : String.format(" LOWER(c.table_catalog) = LOWER('%s')", db),
+                schema == null ? "" : String.format("%s c.table_schema = '%s'", db == null ? "" : " AND",schema),
+                table == null ? "" : String.format("%s c.table_name = '%s'", db == null && schema == null ? "" : " AND", table));
+        return String.format("SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
+                        + "c.data_type as data_type, "
+                        + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
+                        + "JOIN information_schema.tables t ON t.table_name = c.table_name%s"
+                , db == null && schema == null && table == null ? "" : whereClause);
     }
 
     @Override
@@ -93,6 +91,11 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
     @Override
     protected String getRegexQuery(String columnName, String regexExpression) {
         return String.format("%s REGEXP '%s'", columnName, regexExpression);
+    }
+
+    @Override
+    public String addBrackets(String name) {
+        return String.format("\"%s\"", name);
     }
 
     @Override
@@ -121,13 +124,11 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
         descriptor.description = DESCRIPTION;
         descriptor.canBrowseSchema = CAN_BROWSE_SCHEMA;
         descriptor.defaultSchema = DEFAULT_SCHEMA;
-        Prop notNullProperty = new Prop();
-        notNullProperty.nullable = false;
-        Property cloudProviders = new Property(Property.STRING_TYPE, DbCredentials.CLOUD, notNullProperty);
+        Property cloudProviders = new Property(Property.STRING_TYPE, DbCredentials.CLOUD);
         cloudProviders.choices = AVAILABLE_CLOUDS;
         descriptor.connectionTemplate = new ArrayList<Property>(){{
-            add(new Property(Property.STRING_TYPE, DbCredentials.ACCOUNT_LOCATOR, notNullProperty));
-            add(new Property(Property.STRING_TYPE, DbCredentials.REGION_ID, notNullProperty));
+            add(new Property(Property.STRING_TYPE, DbCredentials.ACCOUNT_LOCATOR));
+            add(new Property(Property.STRING_TYPE, DbCredentials.REGION_ID));
             add(cloudProviders);
             add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
             add(new Property(Property.STRING_TYPE, DbCredentials.WAREHOUSE));
@@ -140,31 +141,19 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.nameBrackets = "\"";
 
-        //TODO: .*
         descriptor.typesMap = new HashMap<String, String>() {{
             put("number", Types.FLOAT);
-            put("decimal", Types.FLOAT);
-            put("numeric", Types.FLOAT);
-            put("int", Types.INT);
-            put("integer", Types.INT);
-            put("bigint", Types.BIG_INT);
-            put("smallint", Types.INT);
             put("float", Types.FLOAT);
-            put("float4", Types.FLOAT);
-            put("float8", Types.FLOAT);
-            put("double", Types.FLOAT);
-            put("double precision", Types.FLOAT);
-            put("real", Types.FLOAT);
-            put("varchar", Types.STRING);
-            put("char", Types.STRING);
-            put("character", Types.STRING);
-            put("string", Types.STRING);
             put("text", Types.STRING);
             put("boolean", Types.BOOL);
             put("date", Types.DATE_TIME);
-            put("datetime", Types.DATE_TIME);
             put("time", Types.DATE_TIME);
-            put("timestamp", Types.DATE_TIME);
+            put("#timestamp.*", Types.DATE_TIME);
+            put("array", Types.LIST);
+            put("object", Types.OBJECT);
+            put("variant", Types.OBJECT);
+            put("geography", Types.OBJECT);
+            put("binary", Types.BLOB);
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stddev(#)", Types.dataFrameNumericTypes));
     }

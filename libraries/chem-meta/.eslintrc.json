@@ -1,7 +1,7 @@
 {
 	"env": {
 		"browser": true,
-		"es2021": true
+		"es2022": true
 	},
 	"extends": [
 		"google"
@@ -25,6 +25,7 @@
 		],
 		"no-unused-vars": "warn",
 		"require-jsdoc": "off",
+    "valid-jsdoc": "off",
 		"spaced-comment": "off",
 		"linebreak-style": "off",
 		"curly": [

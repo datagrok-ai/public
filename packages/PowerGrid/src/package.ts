@@ -14,14 +14,9 @@ import {BarChartCellRenderer} from './sparklines/bar-chart';
 import {PieChartCellRenderer} from './sparklines/piechart';
 import {RadarChartCellRender} from './sparklines/radar-chart';
 import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
-import {FitCellRenderer} from './fit/fit-curve';
 import {names, SparklineType, sparklineTypes} from './sparklines/shared';
 import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
-
-import {curveFitDemo} from './fit/fit-demo';
-import {FitViewer} from './fit/fit-viewer';
-import {FitGridCellHandler} from './fit/fit-grid-cell-handler';
-import {FitChartCellRenderer} from './fit/fit-renderer';
+import {PinnedColumn} from "@datagrok-libraries/gridext/src/pinned/PinnedColumn";
 
 export const _package = new DG.Package();
 
@@ -72,37 +67,6 @@ export function barCellRenderer() {
 //output: grid_cell_renderer result
 export function sparklineCellRenderer() {
   return new SparklineCellRenderer();
-}
-
-//name: Fit
-//tags: cellRenderer
-//meta.cellType: fit
-//meta.virtual: true
-//output: grid_cell_renderer result
-export function fitCellRenderer() {
-  return new FitChartCellRenderer();
-}
-
-//tags: cellRenderer
-//meta.cellType: fit-old
-//meta.virtual: true
-//output: grid_cell_renderer result
-export function fitOldCellRenderer() {
-  return new FitCellRenderer();
-}
-
-//name: FitViewer
-//description: Creates a fit viewer
-//tags: viewer
-//output: viewer result
-export function _FitViewer() {
-  return new FitViewer();
-}
-
-//tags: app
-//name: Curve Fit Demo
-export function curveFitDemoApp() {
-  curveFitDemo();
 }
 
 //name: Scatter Plot
@@ -201,6 +165,13 @@ export function testUnitsTonCellRenderer() {
   return new HtmlTestCellRenderer();
 }
 
+//name: addPinnedColumn
+//input: object gridCol
+//output: object result
+export function addPinnedColumn(gridCol: DG.GridColumn) : PinnedColumn {
+  return PinnedUtils.addPinnedColumn(gridCol);
+}
+
 //name: demoTestUnitsCellRenderer
 export function demoTestUnitsCellRenderer() {
   const t = DG.DataFrame.fromColumns([
@@ -216,5 +187,4 @@ export function demoTestUnitsCellRenderer() {
 export function _autoPowerGrid(): void {
   PinnedUtils.registerPinnedColumns();
   DG.GridCellRenderer.register(new ScatterPlotCellRenderer());
-  DG.ObjectHandler.register(new FitGridCellHandler());
 }

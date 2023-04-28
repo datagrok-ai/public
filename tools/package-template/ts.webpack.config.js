@@ -19,7 +19,7 @@ module.exports = {
   plugins: [
     new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
   ],
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
@@ -31,6 +31,7 @@ module.exports = {
     'dayjs': 'dayjs',
     'wu': 'wu',
     'exceljs': 'ExcelJS',
+    'html2canvas': 'html2canvas',
   },
   output: {
     filename: '[name].js',
