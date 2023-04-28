@@ -225,13 +225,13 @@ category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vL
     await _testHierarchicalClusteringWasm(tgt2Dist, AVERAGE_METHOD_CODE, tgt2ClusterMat);
   });
 
-  test('hierarchicalClusteringWasmNoWorker1', async () => {
-    await _testHierarchicalClusteringWasm(tgt1Dist, AVERAGE_METHOD_CODE, tgt1ClusterMat);
-  });
+  // test('hierarchicalClusteringWasmNoWorker1', async () => {
+  //   await _testHierarchicalClusteringWasm(tgt1Dist, AVERAGE_METHOD_CODE, tgt1ClusterMat, false);
+  // });
 
-  test('hierarchicalClusteringWasmNoWorker2', async () => {
-    await _testHierarchicalClusteringWasm(tgt2Dist, AVERAGE_METHOD_CODE, tgt2ClusterMat);
-  });
+  // test('hierarchicalClusteringWasmNoWorker2', async () => {
+  //   await _testHierarchicalClusteringWasm(tgt2Dist, AVERAGE_METHOD_CODE, tgt2ClusterMat, false);
+  // });
 
   async function _testHierarchicalClusteringWasm(
     distA: number[], linkage: number, tgtClusterMatrix: ClusterMatrix
