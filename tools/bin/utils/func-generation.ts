@@ -34,15 +34,22 @@ export const reservedDecorators: {[decorator: string]: {metadata: FuncMetadata, 
     metadata: {
       tags: ['viewer'],
       inputs: [],
-      outputs: [{name: 'v', type: 'viewer'}],
+      outputs: [{name: 'viewer', type: 'viewer'}],
     },
-    genFunc: generateViewerFunc,
+    genFunc: generateClassFunc,
   },
-  // TODO: add other decorators
+  grokCellRenderer: {
+    metadata: {
+      tags: ['cellRenderer'],
+      inputs: [],
+      outputs: [{name: 'renderer', type: 'grid_cell_renderer'}],
+    },
+    genFunc: generateClassFunc,
+  },
 };
 
 /** Generates a DG function. */
-export function generateViewerFunc(annotation: string, className: string, sep: string = '\n'): string {
+export function generateClassFunc(annotation: string, className: string, sep: string = '\n'): string {
   // TODO: add an import statement for the class
   return annotation + `export function _${className}() {${sep}  return new ${className}();${sep}}${sep.repeat(2)}`;
 }
