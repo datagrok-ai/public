@@ -27,9 +27,9 @@ const CHEM_PROPS : IChemProperty[] = [
   {name: 'LogP', type: DG.TYPE.FLOAT, valueFunc: (m) => new OCL.MoleculeProperties(m).logP},
   {name: 'LogS', type: DG.TYPE.FLOAT, valueFunc: (m) => new OCL.MoleculeProperties(m).logS},
   {name: 'PSA', type: DG.TYPE.FLOAT, valueFunc: (m) => new OCL.MoleculeProperties(m).polarSurfaceArea},
-  {name: 'Rotatable bonds', type: DG.TYPE.INT, valueFunc: (m) => new OCL.MoleculeProperties(m).rotatableBondCount},
-  {name: 'Stereo centers', type: DG.TYPE.INT, valueFunc: (m) => new OCL.MoleculeProperties(m).stereoCenterCount},
-  {name: 'Molecule charge', type: DG.TYPE.INT, valueFunc: (m) => getMoleculeCharge(m)}
+  {name: 'RotB', type: DG.TYPE.INT, valueFunc: (m) => new OCL.MoleculeProperties(m).rotatableBondCount},
+  {name: 'StereoC', type: DG.TYPE.INT, valueFunc: (m) => new OCL.MoleculeProperties(m).stereoCenterCount},
+  {name: 'Charge', type: DG.TYPE.INT, valueFunc: (m) => getMoleculeCharge(m)}
 ]
 
 export function calcChemProperty(name: string, smiles: string) : any {
@@ -63,6 +63,19 @@ function getPropertyValue(molCol: DG.Column, idx: number, p: IChemProperty) {
   }
 }
 
+function getIcon(p: IChemProperty, molCol: DG.Column): HTMLElement {
+  const addColumnIcon = ui.iconFA('plus', () => {
+    const col : DG.Column = DG.Column.fromType(p.type, molCol.dataFrame.columns.getUnusedName(p.name), molCol.length)
+    .setTag('CHEM_WIDGET_PROPERTY', p.name)
+    .setTag('CHEM_ORIG_MOLECULE_COLUMN', molCol.name)
+    .init((i) => {
+      return getPropertyValue(molCol, i, p);
+    });
+    molCol.dataFrame.columns.add(col);
+  }, `Calculate ${p.name} for the whole table`);
+  return addColumnIcon;
+}
+
 export function getMoleculeCharge(mol: OCL.Molecule): number {
   const atomsNumber = mol.getAllAtoms();
   let moleculeCharge = 0;
@@ -71,7 +84,6 @@ export function getMoleculeCharge(mol: OCL.Molecule): number {
   }
   return moleculeCharge;
 }
-
 
 export async function statsWidget(molCol: DG.Column<string>): Promise<DG.Widget> {
   let host = ui.div();
@@ -85,11 +97,7 @@ export async function statsWidget(molCol: DG.Column<string>): Promise<DG.Widget>
       propertiesArray[idx] = getPropertyValue(molCol, randomIndexes[idx], p);
     const col = DG.Column.fromList(p.type, molCol.dataFrame.columns.getUnusedName(p.name), propertiesArray);
 
-    var addColumnIcon = ui.iconFA('plus', () => {
-      molCol.dataFrame.columns.addNewVirtual(molCol.dataFrame.columns.getUnusedName(p.name), (idx: number) => {
-        return getPropertyValue(molCol, idx, p);
-      });
-    }, `Calculate ${p.name} for the whole table`);
+    var addColumnIcon = getIcon(p, molCol); 
 
     ui.tools.setHoverVisibility(host, [addColumnIcon]);
     $(addColumnIcon).addClass('chem-plus-icon');
@@ -157,24 +165,10 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
   }
 
   function prop(p: IChemProperty) {
-    const addColumnIcon = ui.iconFA('plus', () => {
-      const molCol: DG.Column<string> = semValue.cell.column;
-      const col : DG.Column = DG.Column.fromType(p.type, semValue.cell.dataFrame.columns.getUnusedName(p.name), molCol.length)
-        .setTag('CHEM_WIDGET_PROPERTY', p.name)
-        .setTag('CHEM_ORIG_MOLECULE_COLUMN', molCol.name)
-        .init((i) => {
-          return getPropertyValue(molCol, i, p);
-        });
-      semValue.cell.dataFrame.columns.add(col);
-    }, `Calculate ${p.name} for the whole table`);
-
+    const molCol: DG.Column<string> = semValue.cell.column;
+    const addColumnIcon = getIcon(p, molCol);
     ui.tools.setHoverVisibility(host, [addColumnIcon]);
-    $(addColumnIcon)
-      .css('color', '#2083d5')
-      .css('position', 'absolute')
-      .css('top', '2px')
-      .css('left', '-12px')
-      .css('margin-right', '5px');
+    addColumnIcon.classList.add('chem-plus-icon');
 
     return ui.divH([addColumnIcon, p.valueFunc(mol)], { style: {'position': 'relative'}});
   }
