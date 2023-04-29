@@ -464,7 +464,7 @@ export function ChemSpaceEditor(call: DG.FuncCall) {
 }
 
 
-//top-menu: Chem | Analyze Structure | Chemical Space...
+//top-menu: Chem | Analyze | Chemical Space...
 //name: Chem Space
 //input: dataframe table
 //input: column molecules { semType: Molecule }
@@ -545,7 +545,7 @@ export async function getChemSimilaritiesMatrix(dim: number, col: DG.Column,
   return await getSimilaritiesMarix(dim, col, df, colName, simArr);
 }
 
-//top-menu: Chem | Analyze Structure | Elemental Analysis...
+//top-menu: Chem | Analyze | Elemental Analysis...
 //name: Elemental Analysis
 //description: function that implements elemental analysis
 //input: dataframe table
@@ -608,7 +608,7 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
 }
 
 //name: R-Groups Analysis
-//top-menu: Chem | Analyze SAR | R-Groups Analysis...
+//top-menu: Chem | Analyze | R-Groups Analysis...
 
 export function rGroupsAnalysisMenu(): void {
   const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MOLECULE);
@@ -632,7 +632,7 @@ export function ActivityCliffsEditor(call: DG.FuncCall) {
     .show();
 }
 
-//top-menu: Chem | Analyze SAR | Activity Cliffs...
+//top-menu: Chem | Analyze | Activity Cliffs...
 //name: Activity Cliffs
 //description: detect activity cliffs
 //input: dataframe table [Input data table]
@@ -1097,7 +1097,7 @@ export async function callChemDiversitySearch(
 }
 
 
-//top-menu: Chem | Analyze Structure | Scaffold Tree
+//top-menu: Chem | Analyze | Scaffold Tree
 //name: addScaffoldTree
 export function addScaffoldTree(): void {
   grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
