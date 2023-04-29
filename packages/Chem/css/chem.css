@@ -279,3 +279,18 @@
   margin: 0 auto;
   position: relative;
 }
+
+.chem-plus-icon {
+  color: #2083d5;
+  position: absolute;
+  top: 2px;
+  left: -12px;
+  margin-right: 2px;
+}
+
+.chem-distribution-hist {
+  width: 100px;
+  height: 35px;
+  position: relative;
+  top: -8px;
+}

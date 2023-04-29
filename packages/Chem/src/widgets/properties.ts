@@ -1,5 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import *as grok from 'datagrok-api/grok';
 import * as OCL from 'openchemlib/full';
 import {oclMol} from '../utils/chem-common-ocl';
 import {div} from "datagrok-api/ui";
@@ -8,6 +9,10 @@ import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import { MOL_FORMAT } from '../constants';
 import { addCopyIcon } from '../utils/ui-utils';
+import { StringUtils } from '@datagrok-libraries/utils/src/string-utils';
+import { renderMolecule } from '../rendering/render-molecule';
+import { renderMultipleHistograms } from '../../../../js-api/dg';
+import { histogram } from '../../../../js-api/src/api/ddt.api.g';
 
 interface IChemProperty {
   name: string;
@@ -47,6 +52,17 @@ export function getChemPropertyFunc(name: string) : null | ((smiles: string) => 
   return null;
 }
 
+function getPropertyValue(molCol: DG.Column, idx: number, p: IChemProperty) {
+  try {
+    if (molCol.isNone(idx)) return null;
+    const mol = oclMol(molCol.get(idx)!);
+    return p.valueFunc(mol);
+  }
+  catch (_) {
+    return null;
+  }
+}
+
 export function getMoleculeCharge(mol: OCL.Molecule): number {
   const atomsNumber = mol.getAllAtoms();
   let moleculeCharge = 0;
@@ -54,6 +70,76 @@ export function getMoleculeCharge(mol: OCL.Molecule): number {
     moleculeCharge += mol.getAtomCharge(atomIndx);
   }
   return moleculeCharge;
+}
+
+
+export async function statsWidget(molCol: DG.Column<string>): Promise<DG.Widget> {
+  let host = ui.div();
+  host.style.marginLeft = '-25px';
+  const size = Math.min(molCol.length, 1000);
+  const randomIndexes = Array.from({length: size}, () => Math.floor(Math.random() * molCol.length));
+
+  function getAverage(p: IChemProperty) {
+    let propertiesArray = new Array(size);
+    for (let idx = 0; idx < randomIndexes.length; ++idx) 
+      propertiesArray[idx] = getPropertyValue(molCol, randomIndexes[idx], p);
+    const col = DG.Column.fromList(p.type, molCol.dataFrame.columns.getUnusedName(p.name), propertiesArray);
+
+    var addColumnIcon = ui.iconFA('plus', () => {
+      molCol.dataFrame.columns.addNewVirtual(molCol.dataFrame.columns.getUnusedName(p.name), (idx: number) => {
+        return getPropertyValue(molCol, idx, p);
+      });
+    }, `Calculate ${p.name} for the whole table`);
+
+    ui.tools.setHoverVisibility(host, [addColumnIcon]);
+    $(addColumnIcon).addClass('chem-plus-icon');
+    addColumnIcon.style.top = '10px';
+
+    let bins = DG.BitSet.create(col.length);
+    bins.setAll(true);
+    let hist = histogram(col, bins, true, {bins: 20, logScale: false});
+  
+    const histRoot = ui.div();
+    histRoot.classList.add('chem-distribution-hist');
+  
+    const canvas = document.createElement('canvas');
+    let hw = 100;
+    let hh = 35;
+    let m = 4;
+    canvas.width = hw;
+    canvas.height = hh;
+
+    const ctx = canvas.getContext('2d');
+    if (ctx) 
+      renderMultipleHistograms(ctx, new DG.Rect(m, m, hw - 2 * m, hh - 2 * m), [hist], {fill: false, markerSize: 1});
+    histRoot.appendChild(canvas);
+    
+    const colAvg = StringUtils.formatNumber(col.stats.avg);
+    const colStdev = StringUtils.formatNumber(col.stats.stdev);
+    return ui.divH([
+      addColumnIcon, 
+      ui.divText(`${colAvg} ± ${colStdev}`, {style: {'width': '100px', 'position': 'relative', 'top': '8px'}}),
+      histRoot
+    ], { style: {'position': 'relative'}});
+  
+  };
+
+  let map: { [_: string]: HTMLElement }  = {};
+  for (let n = 0; n < CHEM_PROPS.length; ++n) {
+    (map as any)[CHEM_PROPS[n].name] = getAverage(CHEM_PROPS[n]);
+  }
+
+  if (molCol.length === size) {
+    await grok.functions.call('Chem:FindMCS',
+      {molecules: molCol.name, df: molCol.dataFrame, exactAtomSearch: true, exactBondSearch: true}).then((res: string) => {
+      map['MCS'] = renderMolecule(res, {renderer: 'RDKit'})
+    });
+  }
+
+  host.appendChild(ui.tableFromMap(map));
+
+  return new DG.Widget(host);
+
 }
 
 export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget {
@@ -77,17 +163,10 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
         .setTag('CHEM_WIDGET_PROPERTY', p.name)
         .setTag('CHEM_ORIG_MOLECULE_COLUMN', molCol.name)
         .init((i) => {
-          try {
-            if (molCol.isNone(i)) return null;
-            const mol = oclMol(molCol.get(i)!);
-            return p.valueFunc(mol);
-          }
-          catch (_) {
-            return null;
-          }
+          return getPropertyValue(molCol, i, p);
         });
       semValue.cell.dataFrame.columns.add(col);
-    }, `Calculate ${name} for the whole table`);
+    }, `Calculate ${p.name} for the whole table`);
 
     ui.tools.setHoverVisibility(host, [addColumnIcon]);
     $(addColumnIcon)
