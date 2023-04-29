@@ -86,34 +86,34 @@ export function getMoleculeCharge(mol: OCL.Molecule): number {
 }
 
 export async function statsWidget(molCol: DG.Column<string>): Promise<DG.Widget> {
-  let host = ui.div();
+  const host = ui.div();
   host.style.marginLeft = '-25px';
   const size = Math.min(molCol.length, 1000);
   const randomIndexes = Array.from({length: size}, () => Math.floor(Math.random() * molCol.length));
 
   function getAverage(p: IChemProperty) {
-    let propertiesArray = new Array(size);
+    const propertiesArray = new Array(size);
     for (let idx = 0; idx < randomIndexes.length; ++idx) 
       propertiesArray[idx] = getPropertyValue(molCol, randomIndexes[idx], p);
     const col = DG.Column.fromList(p.type, molCol.dataFrame.columns.getUnusedName(p.name), propertiesArray);
 
-    var addColumnIcon = getIcon(p, molCol); 
+    const addColumnIcon = getIcon(p, molCol); 
 
     ui.tools.setHoverVisibility(host, [addColumnIcon]);
     $(addColumnIcon).addClass('chem-plus-icon');
     addColumnIcon.style.top = '10px';
 
-    let bins = DG.BitSet.create(col.length);
+    const bins = DG.BitSet.create(col.length);
     bins.setAll(true);
-    let hist = histogram(col, bins, true, {bins: 20, logScale: false});
+    const hist = histogram(col, bins, true, {bins: 20, logScale: false});
   
     const histRoot = ui.div();
     histRoot.classList.add('chem-distribution-hist');
   
     const canvas = document.createElement('canvas');
-    let hw = 100;
-    let hh = 35;
-    let m = 4;
+    const hw = 100;
+    const hh = 35;
+    const m = 4;
     canvas.width = hw;
     canvas.height = hh;
 
