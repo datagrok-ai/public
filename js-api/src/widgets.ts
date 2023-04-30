@@ -787,7 +787,7 @@ export class Dialog extends DartWidget {
 /** See {@link Menu.items} */
 export interface IMenuItemsOptions<T = any> {
 
-  /** Whether or not a check box appears before the item */
+  /** Whether a check box appears before the item */
   isChecked?: (item: T) => boolean;
 
   /** If result is not null, the item is grayed out and the result is shown in the tooltip */
@@ -810,8 +810,25 @@ export interface IMenuItemOptions {
   /** Identifies a group of items where only one can be checked at a time. */
   radioGroup?: string;
 
+  /** Position in the menu */
+  order?: number;
+
+  /** Shortcut to be shown on the item. NOTE: it does not handle the keypress, just shows the shortcut*/
+  shortcut?: string;
+
+  /** Whether the menu is visible; if false, the menu is not added. Might be handy in for-loops and fluent API. */
+  visible?: boolean;
+
+  /** A function that gets called each time an item is shown.
+   * Should return null if the item is enabled, otherwise the reason why it's disabled.
+   * The reason for being disabled is shown in a tooltip. */
+  isEnabled?: () => (string | null);
+
   /** For items preceded by checkboxes, indicates if the item is checked. */
   check?: boolean;
+
+  /** Tooltip to be shown on the menu item */
+  description?: string;
 }
 
 
@@ -824,7 +841,7 @@ export interface IMenuItemOptions {
  * DG.Menu.popup()
  *   .item('Show info', () => grok.shell.info('Info'))
  *   .separator()
- *   .items(['First', 'Second'], showBalloon)
+ *   .items(['First', 'Second'], (s) => grok.shell.info(s))
  *   .show();
  * */
 export class Menu {
@@ -886,7 +903,8 @@ export class Menu {
   /** For each item in items, adds a menu group with the specified text and handler. */
   items<T = any>(items: T[], onClick: (item: T) => void, options: IMenuItemsOptions<T> | null = null): Menu {
     return toJs(api.grok_Menu_Items(this.dart, items, onClick, options?.isValid, options?.isChecked,
-      options?.toString, options?.getTooltip, options?.onMouseEnter, options?.radioGroup));
+      options?.hasOwnProperty('toString') ? options.toString : null,
+      options?.getTooltip, options?.onMouseEnter, options?.radioGroup));
   }
 
   /** Adds a separator line.
