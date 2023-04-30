@@ -12,12 +12,12 @@ category('UI', () => {
 
   before(async () => {
     grok.shell.closeAll();
-    grok.shell.windows.showProperties = true;
+    grok.shell.windows.showProperties = true; 
   });
 
   test('similarity search', async () => {
-    const smiles = grok.data.demo.molecules(20);
-    const v = grok.shell.addTableView(smiles);
+    smiles = grok.data.demo.molecules(20);
+    v = grok.shell.addTableView(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     grok.shell.topMenu.find('Chem').group('Search').find('Similarity Search...').click();
     await awaitCheck(() => document.querySelector('.d4-chem-similarity-search') !== null, 'cannot load Similarity Search viewer', 2000);
@@ -382,7 +382,74 @@ category('UI', () => {
     grok.shell.o = ui.div();
   }, {skipReason: 'GROK-12226'});
 
+  test('fingerprints', async () => {
+    smiles = grok.data.demo.molecules(20);
+    v = grok.shell.addTableView(smiles);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+    const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
+    grok.shell.o = smiles.columns.byName('smiles');
+    await awaitCheck(() => {
+      return findAccordionPanelElement(pp, 'Actions') !== undefined;
+    }, 'cannot load Smiles column properties', 5000);
+    expandAccordionPane(pp, 'Actions');
+    (Array.from(pp.querySelectorAll('.d4-link-action'))
+      .find((el) => el.textContent === 'Chem | Fingerprints...') as HTMLElement).click();
+    await getDlgAndClickOK('cannot load Fingerprints dialog');
+    await delay(1000);
+    expect(smiles.columns.names().includes('Fingerprints'), true, `Fingerprints column has not been added`);
+  });
+
+  test('substructure search', async () => {
+    smiles = grok.data.demo.molecules(20);
+    v = grok.shell.addTableView(smiles);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+    grok.shell.topMenu.find('Chem').group('Search').find('Substructure Search...').click();
+    await awaitCheck(() => document.querySelector('.grok-sketcher ') !== null, 'cannot open sketcher', 2000);
+    v.close();
+    grok.shell.o = ui.div();
+  });
+
+  test('to inchi', async () => {
+    await testCalculateGroup('To InchI...', 'inchi');
+  });
+
+  test('to inchi keys', async () => {
+    await testCalculateGroup('To InchI Keys...', 'inchi_key');
+  });
+
   after(async () => {
     grok.shell.closeAll();
   });
 });
+
+async function testCalculateGroup(funcName: string, colName: string) {
+  const smiles = grok.data.demo.molecules(20);
+    const v = grok.shell.addTableView(smiles);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+    grok.shell.topMenu.find('Chem').group('Calculate').find(funcName).click();
+    await getDlgAndClickOK(`cannot load ${funcName} dialog`);
+    await delay(2000);
+    expect(v.dataFrame.columns.names().includes(colName), true, `${colName} column has not been added`);
+    v.close();
+    grok.shell.o = ui.div();
+}
+
+function findAccordionPanelElement(propPanel: HTMLElement, elName: string): HTMLElement {
+  return Array.from(propPanel.querySelectorAll('div.d4-accordion-pane-header'))
+  .find((el) => el.textContent === 'Actions') as HTMLElement;
+}
+
+async function expandAccordionPane(propPanel: HTMLElement, elName: string) {
+  const pane = findAccordionPanelElement(propPanel, elName);
+    if (!pane.classList.contains('expanded')) 
+      await pane.click();
+}
+
+async function getDlgAndClickOK(error: string) {
+  await awaitCheck(() => {
+    return document.querySelector('.d4-dialog') !==null;
+  }, error, 5000);
+  await delay(1000);
+  Array.from(document.querySelector('.d4-dialog')!.getElementsByTagName('span'))
+    .find(el => el.textContent === 'OK')?.click();
+}
