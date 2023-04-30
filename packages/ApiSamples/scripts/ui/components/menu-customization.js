@@ -2,13 +2,18 @@
 
 let host = ui.divText('Click for context menu');
 let menu = DG.Menu.popup()
-  .item('Foo', () => grok.shell.info('Foo'), null, {
-    description: 'Explore Foo',
-    shortcut: 'Ctrl+E' })
+  .item('Explore', () => grok.shell.info('Foo'), null, {
+      description: 'Explore Foo',
+      shortcut: 'Ctrl+E' })
   .group('Single choice')
-  .items(['Apple', 'Banana', 'Peach'], (s) => grok.shell.info(s), { toString: s => s, isChecked: (s) => s === 'Banana'})
+  .items(['Apple', 'Banana', 'Peach'], (s) => grok.shell.info(s), { radioGroup: 'Fruits', isChecked: (s) => s === 'Banana'})
   .endGroup()
-  .item('Bar', () => grok.shell.info('Bar'), null, {order: 0, check: true})
+  .group('Multi choice')
+  .items(['Apple', 'Banana', 'Peach'], (s) => grok.shell.info(s), { isChecked: (s) => s === 'Banana'})
+  .endGroup()
   .separator()
-  .items(['Apple', 'Banana', 'Peach'], (s) => grok.shell.info(s), {radioGroup: 'Fruits'})
+  .item('Touch', () => grok.shell.info('Foo'), null, { isEnabled: () => "Can't touch this!" })
+  .bind(host)
   .show();
+
+host

@@ -1,11 +1,11 @@
 import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, observeStream, StreamSubscription} from "./events";
-import {Observable, Subscription, fromEvent, Subject} from "rxjs";
+import * as rxjs from "rxjs";
+import {fromEvent, Observable, Subject, Subscription} from "rxjs";
 import {Func, Property, PropertyOptions} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
-import {ColorType, FILTER_TYPE, LegendPosition, Type} from "./const";
-import * as rxjs from "rxjs";
-import { filter, map } from 'rxjs/operators';
+import {ColorType, LegendPosition, Type} from "./const";
+import {filter, map} from 'rxjs/operators';
 import $ from "cash-dom";
 import {MapProxy} from "./utils";
 import dayjs from "dayjs";
@@ -832,6 +832,14 @@ export interface IMenuItemOptions {
 }
 
 
+export interface IShowMenuOptions {
+  element?: HTMLElement,
+  causedBy?: MouseEvent,
+  x?: number,
+  y?: number,
+  nextToElement?: boolean
+}
+
 /**
  * Menu (either top menu or popup menu).
  * Top menu sample: {@link https://public.datagrok.ai/js/samples/ui/menu}
@@ -915,8 +923,17 @@ export class Menu {
 
   /** Shows the menu.
    * @returns {Menu} */
-  show(options?: {element?: Element, causedBy?: MouseEvent, x?: number, y?: number, nextToElement?: boolean}): Menu {
+  show(options?: IShowMenuOptions): Menu {
     return toJs(api.grok_Menu_Show(this.dart, options?.element, options?.causedBy, options?.x, options?.y, options?.nextToElement));
+  }
+
+  /** Binds the menu to the specified {@link options.element} */
+  bind(element: HTMLElement): Menu {
+    element.oncontextmenu = (ev) => {
+      ev.preventDefault();
+      this.show({causedBy: ev});
+    }
+    return this;
   }
 
   get onContextMenuItemClick() {
@@ -1801,9 +1818,7 @@ export class Breadcrumbs {
       .pipe(
         map((event) => {
           const currentElement = (event.target as HTMLElement).innerText;
-          const currentPath = this.path.slice(0, this.path.indexOf(currentElement) + 1);
-
-          return currentPath;
+          return this.path.slice(0, this.path.indexOf(currentElement) + 1);
         })
       );
   }
