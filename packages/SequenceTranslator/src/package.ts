@@ -45,6 +45,7 @@ let monomerLib: IMonomerLib | null = null;
 export let monomerWorks: MonomerWorks | null = null;
 
 export function getMonomerWorks() {
+  console.log('Got to getMonomerWorks');
   return monomerWorks;
 }
 

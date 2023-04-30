@@ -97,8 +97,20 @@ export class MonomerLibWrapper {
     return meta['codes'] as Codes;
   };
 
-  private getMonomersByFormat(format: string) {
+  private getMonomersByFormat(format: string): Monomer[] {
     return this.allMonomers.filter((monomer) => Object.keys(monomer[OPT.META]?.codes).includes(format));
+  }
+
+  getCodesByFromat(format: string): string[] {
+    let codes: string[] = [];
+    const monomers = this.getMonomersByFormat(format);
+    for (const monomer of monomers) {
+      const codesObj = this.getCodesObject(monomer);
+      for (const technology in codesObj) {
+        codes = codes.concat(codesObj[format][technology]);
+      }
+    }
+    return codes;
   }
 
   getTableForViewer(): DG.DataFrame {

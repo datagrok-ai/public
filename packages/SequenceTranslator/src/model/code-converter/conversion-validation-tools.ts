@@ -1,5 +1,5 @@
 import {
-  map, MODIFICATIONS, gcrsCodesWithoutSmiles,
+  map, MODIFICATIONS,
 } from '../../hardcode-to-be-eliminated/map';
 import {SYNTHESIZERS, TECHNOLOGIES, DELIMITER, NUCLEOTIDES} from '../const';
 import {sortByStringLengthInDescendingOrder} from '../helpers';
@@ -11,6 +11,8 @@ import {
   siRnaAxolabsToBioSpring, siRnaAxolabsToGcrs, siRnaGcrsToNucleotides,
   siRnaGcrsToBioSpring, siRnaGcrsToAxolabs, gcrsToNucleotides, gcrsToLcms
 } from '../../hardcode-to-be-eliminated/converters';
+
+import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
 
 const noTranslationTableAvailable = 'No translation table available';
 export const undefinedInputSequence = 'Type of input sequence is undefined';
@@ -62,7 +64,9 @@ export function getFormat(sequence: string): string | null {
   outputIndex = 0;
 
   possibleTechnologies.forEach((technology: string) => {
-    const codes = Object.keys(map[possibleSynthesizers[0]][technology]);
+    const codes = Object.keys(
+      map[possibleSynthesizers[0]][technology]
+    );
     while (outputIndex < sequence.length) {
       const matchedCode = codes.find((c) => c === sequence.slice(outputIndex, outputIndex + c.length));
 
@@ -146,18 +150,20 @@ export function isValidSequence(sequence: string, format: string | null): {
 }
 
 export function getAllCodesOfSynthesizer(synthesizer: string): string[] {
-  let codes: string[] = [];
-  for (const technology of Object.keys(map[synthesizer]))
-    codes = codes.concat(Object.keys(map[synthesizer][technology]));
-  return codes.concat(Object.keys(MODIFICATIONS)).concat(DELIMITER);
+  console.log('got to get All codes')
+  return MonomerLibWrapper.getInstance().getCodesByFromat(synthesizer);
+  // let codes: string[] = [];
+  // for (const technology of Object.keys(map[synthesizer]))
+  //   codes = codes.concat(Object.keys(map[synthesizer][technology]));
+  // return codes.concat(Object.keys(MODIFICATIONS)).concat(DELIMITER);
 }
 
 function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string): string[] {
   let synthesizers: string[] = [];
   Object.keys(map).forEach((synthesizer: string) => {
     let codes = sortByStringLengthInDescendingOrder(getAllCodesOfSynthesizer(synthesizer));
-    if (synthesizer === 'Janssen GCRS Codes')
-      codes = codes.concat(gcrsCodesWithoutSmiles);
+    // if (synthesizer === SYNTHESIZERS.GCRS)
+    //   codes = codes.concat(gcrsCodesWithoutSmiles);
     //TODO: get first non-dropdown code when there are two modifications
     let start = 0;
     for (let i = 0; i < sequence.length; i++) {
@@ -166,8 +172,8 @@ function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string): stri
         break;
       }
     }
-    if (gcrsCodesWithoutSmiles.some((s: string) => s === sequence.slice(start, start + s.length)))
-      synthesizers = ['Janssen GCRS Codes'];
+    // if (gcrsCodesWithoutSmiles.some((s: string) => s === sequence.slice(start, start + s.length)))
+    //   synthesizers = [SYNTHESIZERS.GCRS];
     if (codes.some((s: string) => s === sequence.slice(start, start + s.length)))
       synthesizers.push(synthesizer);
   });
