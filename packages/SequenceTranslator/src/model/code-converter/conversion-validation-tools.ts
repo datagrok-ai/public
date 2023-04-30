@@ -1,5 +1,5 @@
 import {
-  map, MODIFICATIONS,
+  map,
 } from '../../hardcode-to-be-eliminated/map';
 import {SYNTHESIZERS, TECHNOLOGIES, DELIMITER, NUCLEOTIDES} from '../const';
 import {sortByStringLengthInDescendingOrder} from '../helpers';
@@ -16,84 +16,6 @@ import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
 
 const noTranslationTableAvailable = 'No translation table available';
 export const undefinedInputSequence = 'Type of input sequence is undefined';
-
-export function getFormat(sequence: string): string | null {
-  const possibleSynthesizers = getListOfPossibleSynthesizersByFirstMatchedCode(sequence);
-
-  if (possibleSynthesizers.length === 0)
-    return null;
-
-  let outputIndex = 0;
-
-  const firstUniqueCharacters = ['r', 'd'];
-
-  possibleSynthesizers.forEach((synthesizer) => {
-    const codes = getAllCodesOfSynthesizer(synthesizer);
-    while (outputIndex < sequence.length) {
-      const matchedCode = codes.find((c) => c === sequence.slice(outputIndex, outputIndex + c.length));
-
-      if (!matchedCode) break;
-
-      if ( // for mistake pattern 'rAA'
-        outputIndex > 1 &&
-        NUCLEOTIDES.includes(sequence[outputIndex]) &&
-        firstUniqueCharacters.includes(sequence[outputIndex - 2])
-      ) break;
-
-      if ( // for mistake pattern 'ArA'
-        firstUniqueCharacters.includes(sequence[outputIndex + 1]) &&
-        NUCLEOTIDES.includes(sequence[outputIndex])
-      ) {
-        outputIndex++;
-        break;
-      }
-
-      outputIndex += matchedCode.length;
-    }
-  });
-
-  const indexOfFirstInvalidChar = (outputIndex === sequence.length) ? -1 : outputIndex;
-  if (indexOfFirstInvalidChar !== -1)
-    return possibleSynthesizers[0];
-
-  const possibleTechnologies = getListOfPossibleTechnologiesByFirstMatchedCode(sequence, possibleSynthesizers[0]);
-
-  if (possibleTechnologies.length === 0)
-    return null;
-
-  outputIndex = 0;
-
-  possibleTechnologies.forEach((technology: string) => {
-    const codes = Object.keys(
-      map[possibleSynthesizers[0]][technology]
-    );
-    while (outputIndex < sequence.length) {
-      const matchedCode = codes.find((c) => c === sequence.slice(outputIndex, outputIndex + c.length));
-
-      if (matchedCode === null)
-        break;
-
-      if ( // for mistake pattern 'rAA'
-        outputIndex > 1 &&
-        NUCLEOTIDES.includes(sequence[outputIndex]) &&
-        firstUniqueCharacters.includes(sequence[outputIndex - 2])
-      ) break;
-
-      if ( // for mistake pattern 'ArA'
-        firstUniqueCharacters.includes(sequence[outputIndex + 1]) &&
-        NUCLEOTIDES.includes(sequence[outputIndex])
-      ) {
-        outputIndex++;
-        break;
-      }
-
-      outputIndex += matchedCode!.length;
-    }
-  });
-
-  return possibleSynthesizers[0];
-}
-
 
 export function isValidSequence(sequence: string, format: string | null): {
   indexOfFirstInvalidChar: number,
@@ -178,16 +100,6 @@ function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string): stri
       synthesizers.push(synthesizer);
   });
   return synthesizers;
-}
-
-function getListOfPossibleTechnologiesByFirstMatchedCode(sequence: string, synthesizer: string): string[] {
-  const technologies: string[] = [];
-  Object.keys(map[synthesizer]).forEach((technology: string) => {
-    const codes = Object.keys(map[synthesizer][technology]).concat(Object.keys(MODIFICATIONS));
-    if (codes.some((s) => s === sequence.slice(0, s.length)))
-      technologies.push(technology);
-  });
-  return technologies;
 }
 
 export function convertSequence(sequence: string, output: {
