@@ -23,7 +23,7 @@
 			"error",
 			120
 		],
-    "no-unused-vars": "warn",
+    "no-unused-vars": ["warn", { "varsIgnorePattern":"(grok|ui|DG|_)" }],
 		"require-jsdoc": "off",
     "valid-jsdoc": "warn",
 		"spaced-comment": "off",
