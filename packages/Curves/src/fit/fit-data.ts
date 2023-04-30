@@ -70,6 +70,7 @@ export interface IFitSeriesOptions {
   showFitLine?: boolean;
   showPoints?: boolean;
   showCurveConfidenceInterval?: boolean;   // show ribbon
+  showIntercept?: boolean;
   showBoxPlot?: boolean;      // if true, multiple values with the same X are rendered as a candlestick
   showConfidenceForX?: number;
 
