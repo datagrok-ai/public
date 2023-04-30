@@ -8,9 +8,9 @@ function numericDistance(a: number, b: number): number {
   return Math.abs(a - b);
 }
 
-function hammingDistance(a: string, b: string) {
-  // hamming distance should be using with same size strings,
-  // but still, lets add a check and if so add the difference to the result
+function hammingDistance(a: string, b: string): number {
+  // hamming distance should be used with same size strings,
+  // but still, lets add a check and if they are not same length add the difference to the result
   let diff = 0;
   if (a.length !== b.length)
     diff = Math.abs(a.length - b.length);

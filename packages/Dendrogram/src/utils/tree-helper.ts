@@ -475,7 +475,7 @@ export class TreeHelper implements ITreeHelper {
     for (const col of columns) {
       let values: Float32Array;
       if (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) {
-        values = await distanceMatrixWorker.calc(col.toList(), 'numericDistance');
+        values = await distanceMatrixWorker.calc(col.getRawData(), 'numericDistance');
       } else if (col.semType ==='Macromolecule') {
         const uh = new UnitsHandler(col);
         // Use Hamming distance when sequences are aligned
@@ -491,7 +491,8 @@ export class TreeHelper implements ITreeHelper {
         out = new DistanceMatrix(values);
         if (columns.length > 1) {
           out.normalize();
-          out.square();
+          if (method === DistanceMetric.Euclidean)
+            out.square();
         }
       } else {
         let newMat: DistanceMatrix | null = new DistanceMatrix(values);
