@@ -8,14 +8,31 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
 import '../../css/demo.css';
 
+const DIRECTIONS: string[] = [
+  'Cheminformatics',
+  'Bioinformatics',
+  'Viewers',
+];
+
+type DemoFunc = {
+  name: string;
+  func: DG.Func,
+  category: string;
+  path: string;
+  keywords: string;
+  imagePath: string;
+};
+
 
 export class DemoView extends DG.ViewBase {
   dockPanel: DG.DockNode = new DG.DockNode(undefined);
   tree: DG.TreeViewGroup = ui.tree();
   searchInput: DG.InputBase = ui.searchInput('', '');
+  funcs: DemoFunc[] = [];
 
   constructor() {
     super();
+    this._initFunctions();
     this._initDockPanel();
     this._initContent();
   }
@@ -59,6 +76,36 @@ export class DemoView extends DG.ViewBase {
       grok.shell.dockManager.close(panelDockNode);
   }
 
+  private _initFunctions(): void {
+    const funcs = DG.Func.find({meta: {'demoPath': null}}).sort(sortFunctionsByDemoPath);
+    for (let i = 0; i < DIRECTIONS.length; ++i) {
+      const directionFuncs = funcs.filter((func) => {
+        return (func.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes(DIRECTIONS[i]);
+      });
+
+      for (let j = 0; j < directionFuncs.length; ++j) {
+        let imgPath = `${_package.webRoot}images/demoapp/${directionFuncs[j].name}.jpg`;
+        fetch(imgPath)
+          .then(res => {
+            imgPath = res.ok ? imgPath : `${_package.webRoot}images/demoapp/emptyImg.jpg`;
+          })
+          .catch();
+
+        const path = directionFuncs[j].options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
+        const pathArray = path.split('|').map((s) => s.trim());
+
+        this.funcs[this.funcs.length] = {
+          name: pathArray[pathArray.length - 1],
+          func: directionFuncs[j],
+          category: DIRECTIONS[i],
+          path: path,
+          keywords: (directionFuncs[j].options['keywords'] !== undefined) ? directionFuncs[j].options['keywords'] as string : '',
+          imagePath: imgPath,
+        };
+      }
+    }
+  }
+
   private _initContent(): void {
     this._initWindowOptions();
 
@@ -68,19 +115,8 @@ export class DemoView extends DG.ViewBase {
     const tree = ui.tree();
     tree.root.classList.add('demo-app-group-view');
     
-    const tempGroups: string[] = [];
-
-    const functions = DG.Func.find({meta: {'demoPath': null}});
-    for (let i = 0; i < functions.length; i++) {
-      const pathOption = <string>functions[i].options[DG.FUNC_OPTIONS.DEMO_PATH];
-      const path = pathOption.split('|').map((s) => s.trim());
-      tempGroups[i] = path[0];
-    }
-
-    const groups: string[] = [...new Set(tempGroups)].sort();
-
-    for (let i = 0; i < groups.length; i++) {
-      const name = groups[i];
+    for (let i = 0; i < DIRECTIONS.length; i++) {
+      const name = DIRECTIONS[i];
       tree.group(name, null, true).root.lastChild?.appendChild(this._groupRoot(name));
     }
 
@@ -90,38 +126,31 @@ export class DemoView extends DG.ViewBase {
   private _createViewRootElement(viewOrGroupName: string): HTMLDivElement {
     const root = ui.div([]);
 
-    for (const f of DG.Func.find({meta: {'demoPath': null}}).sort(sortFunctionsByDemoPath)) {
-      if (f.options[DG.FUNC_OPTIONS.DEMO_PATH].includes(viewOrGroupName)) {
-        const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
-        const path = pathOption.split('|').map((s) => s.trim());
-        const demo = path[path.length - 1];
+    const directionFuncs = this.funcs.filter((func) => {
+      return (func.func.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes(viewOrGroupName);
+    });
 
-        const imgPath = `${_package.webRoot}images/demoapp/${f.name}.jpg`;
-        const img = ui.div('', 'ui-image');
+    for (let i = 0; i < directionFuncs.length; i++) {
+      const img = ui.div('', 'ui-image');
+      img.style.backgroundImage = `url(${directionFuncs[i].imagePath}`;
 
-        fetch(imgPath)
-          .then(res => {
-            img.style.backgroundImage = res.ok ? `url(${imgPath})` : `url(${_package.webRoot}images/demoapp/emptyImg.jpg)`;
-          })
-          .catch();
+      let item = ui.card(ui.divV([
+        img,
+        ui.div([directionFuncs[i].name], 'tutorials-card-title'),
+        ui.div([directionFuncs[i].func.description], 'tutorials-card-description')
+      ], 'demo-app-card'));
 
-        let item = ui.card(ui.divV([
-          img,
-          ui.div([demo], 'tutorials-card-title'),
-          ui.div([f.description], 'tutorials-card-description')
-        ], 'demo-app-card'));
+      item.onclick = () => {
+        const node = this.tree.items.find(node => node.text === directionFuncs[i].name)?.root;
+        node?.click();
+      };
 
-        item.onclick = () => {
-          const node = this.tree.items.find(node => node.text === demo)?.root;
-          node?.click();
-        };
+      const packageMessage = `Part of the ${directionFuncs[i].func.package.name === 'Tutorials' ?
+        'platform core' : `${directionFuncs[i].func.package.name} package`}`;
+      ui.tooltip.bind(item, () => directionFuncs[i].func.description ?
+        ui.divV([directionFuncs[i].func.description, ui.element('br'), packageMessage]) : ui.div(packageMessage));
 
-        const packageMessage = `Part of the ${f.package.name === 'Tutorials' ? 'platform core' : `${f.package.name} package`}`;
-        ui.tooltip.bind(item, () => f.description ?
-          ui.divV([f.description, ui.element('br'), packageMessage]) : ui.div(packageMessage));
-
-        root.append(item);
-      }
+      root.append(item);
     }
 
     return root;
@@ -181,43 +210,51 @@ export class DemoView extends DG.ViewBase {
 
     this._createHomeNode();
 
-    for (const f of DG.Func.find({meta: {'demoPath': null}}).sort(sortFunctionsByDemoPath)) {
-      const pathOption = <string>f.options[DG.FUNC_OPTIONS.DEMO_PATH];
-      const path = pathOption.split('|').map((s) => s.trim());
-      const itemString = path[path.length - 1];
+    for (let i = 0; i < DIRECTIONS.length; ++i) {
+      const directionFuncs = this.funcs.filter((func) => {
+        return (func.func.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes(DIRECTIONS[i]);
+      });
 
-      if (path.length > 2) {
-        let groupPath = path[0];
-        let treePath = this.tree.getOrCreateGroup(path[0], {path: groupPath});
-        for (let i = 1; i < path.length - 1; i++) {
+      for (let j = 0; j < directionFuncs.length; ++j) {
+        const path = directionFuncs[j].path.split('|').map((s) => s.trim());
+
+        if (path.length > 2) {
+          let groupPath = path[0];
+          let treePath = this.tree.getOrCreateGroup(path[0], {path: groupPath});
+          for (let i = 1; i < path.length - 1; i++) {
             groupPath += `/${path[i]}`;
             treePath = treePath.getOrCreateGroup(path[i], {path: groupPath})
+          }
+
+          const item = treePath.item(directionFuncs[j].name, {path: directionFuncs[j].path});
+          item.root.onmouseover = (event) => {
+            const packageMessage = `Part of the ${directionFuncs[j].func.package.name === 'Tutorials' ?
+              'platform core' : `${directionFuncs[j].func.package.name} package`}`;
+            ui.tooltip.show(directionFuncs[j].func.description ?
+              ui.divV([directionFuncs[j].func.description, ui.element('br'), packageMessage]) :
+              ui.div(packageMessage), event.clientX, event.clientY);
+          };
+
+          item.root.onmouseout = (_) => {
+            ui.tooltip.hide();
+          };
+        } else {
+          const folder = this.tree.getOrCreateGroup(directionFuncs[j].category, {path: path[0]});
+          const item = folder.item(directionFuncs[j].name, {path: directionFuncs[j].path});
+
+          item.root.onmouseover = (event) => {
+            const packageMessage = `Part of the ${directionFuncs[j].func.package.name === 'Tutorials' ?
+              'platform core' : `${directionFuncs[j].func.package.name} package`}`;
+            ui.tooltip.show(directionFuncs[j].func.description ?
+              ui.divV([directionFuncs[j].func.description, ui.element('br'), packageMessage]) :
+              ui.div(packageMessage), event.clientX, event.clientY);
+          };
+
+          item.root.onmouseout = (_) => {
+            ui.tooltip.hide();
+          };
         }
-
-        const item = treePath.item(itemString, {path: pathOption});
-        item.root.onmouseover = (event:any) => {
-          const packageMessage = `Part of the ${f.package.name === 'Tutorials' ? 'platform core' : `${f.package.name} package`}`;
-          ui.tooltip.show(f.description ? ui.divV([f.description, ui.element('br'), packageMessage]) : ui.div(packageMessage),
-            event.clientX, event.clientY);
-        };
-
-        item.root.onmouseout = (_) => {
-          ui.tooltip.hide();
-        };
-      } else {
-        const folder = this.tree.getOrCreateGroup(path.slice(0, path.length - 1).join(' | '), {path: path[0]});
-        const item = folder.item(itemString, {path: pathOption});
-
-        item.root.onmouseover = (event) => {
-          const packageMessage = `Part of the ${f.package.name === 'Tutorials' ? 'platform core' : `${f.package.name} package`}`;
-          ui.tooltip.show(f.description ? ui.divV([f.description, ui.element('br'), packageMessage]) : ui.div(packageMessage),
-            event.clientX, event.clientY);
-        };
-
-        item.root.onmouseout = (_) => {
-          ui.tooltip.hide();
-        };
-      }      
+      }
     }
 
     this.searchInput.onChanged(() => {
