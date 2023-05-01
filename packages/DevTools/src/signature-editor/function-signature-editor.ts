@@ -361,12 +361,12 @@ async function openFse(v: DG.View, functionCode: string) {
       }, 'Remove the param'), { style: { 'text-align': 'center', 'margin': '6px' } },
     );
 
+
     if (gc.isTableCell) {
-      gc.style.element =
-        ui.divH([
-          ui.div(deleteBtn(gc.grid.dataFrame?.get('Name', gc.gridRow))),
-          ui.div(addParamBtn(), {style: {'marginTop': 'unset'}})
-        ]);
+      gc.style.element = ui.divH([
+        deleteBtn(gc.grid.dataFrame?.get('Name', gc.gridRow)),
+        addParamBtn(gc.cell.rowIndex)
+      ], {style: {'width': '100px'}});
       gc.style.element.style.display = 'flex';
       gc.style.element.style.justifyContent = 'center';
       gc.style.element.style.color = 'var(--blue-1)';
@@ -394,7 +394,7 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const propsForm = functionPropsForm();
 
-  const addParamBtn = () => ui.button(
+  const addParamBtn = (rowIdx: number) => ui.button(
     [
       ui.div(ui.icons.add(() => {
       }, 'Add the param'), { style: { 'text-align': 'center', 'margin': '6px'} }),
@@ -412,7 +412,7 @@ async function openFse(v: DG.View, functionCode: string) {
       const t = DG.Property.create(newParam.name, newParam.propertyType, (x: any) => x, (x: any, v) => x = v);
       t.options.direction = newParam.direction;
       t.description = newParam.description;
-      functionParamsCopy.push(t);
+      functionParamsCopy.splice(rowIdx + 1, 0, t);
       functionParamsState.next(functionParamsCopy);
     },
   );
@@ -420,7 +420,6 @@ async function openFse(v: DG.View, functionCode: string) {
   const editorTabs = ui.tabControl({
     'PROPERTIES': propsForm,
     'PARAMETERS': ui.divV([
-      //addParamBtn(),
       paramsGrid.root,
     ]),
   });
@@ -495,14 +494,18 @@ async function openFse(v: DG.View, functionCode: string) {
     }
 
     if (functionParamsCopy.length > paramsDF.rowCount) {
-      const newParam = functionParamsCopy[functionParamsCopy.length - 1];
-      paramsDF.rows.addNew(
-        [
-          newParam.options.direction, newParam.name,
-          newParam.propertyType, newParam.defaultValue,
-          newParam.description, newParam.category,
-        ],
-      );
+      const newProps = functionParamsCopy.map((el: DG.Property) => el.caption);
+      const oldProps = paramsDF.columns.byName(FUNC_PARAM_FIELDS.NAME).toList();
+      let rowIdx = newProps.map((element, index) => [element, index])
+      .filter(([element, index]) => element !== oldProps[index])
+      .map(([_, index]) => index);
+      const newParam = functionParamsCopy[rowIdx[0]];
+      paramsDF.rows.insertAt(rowIdx[0] as number, 1);
+      paramsDF.rows.setValues(rowIdx[0] as number, [
+        newParam.options.direction, newParam.name,
+        newParam.propertyType, newParam.defaultValue,
+        newParam.description, newParam.category,
+      ],)
     }
 
     if (functionParamsCopy.length < paramsDF.rowCount) {
