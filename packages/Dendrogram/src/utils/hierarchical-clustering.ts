@@ -14,10 +14,11 @@ export async function hierarchicalClusteringDialog(): Promise<void> {
   let currentTableView = grok.shell.tv.table;
   let currentSelectedColNames: string[] = [];
 
-  const availableColNames = (table:DG.DataFrame): string[] => {
+  const availableColNames = (table: DG.DataFrame): string[] => {
     return table.columns.toList()
-      .filter((col) => col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT || col.semType === 'Macromolecule')
-      .map((col) => col.name);
+      .filter(
+        (col) => col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT || col.semType === DG.SEMTYPE.MACROMOLECULE
+      ).map((col) => col.name);
   };
 
   const onColNamesChange = (columns: DG.Column<any>[]) => {
@@ -139,6 +140,7 @@ export async function hierarchicalClusteringUI(
     injectTreeForGridUI2(tv.grid, newickRoot, undefined, neighborWidth);
   } catch (err) {
     console.error(err);
+    tv.grid.invalidate();
     loaderNB.close();
   }
 }

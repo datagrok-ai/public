@@ -34,11 +34,8 @@ export class HierarchicalClusteringSequencesApp {
     }
 
     this._df = df;
-
-    if (!this.viewed) {
-      await this.buildView();
-      this.viewed = true;
-    }
+    await this.buildView();
+    this.viewed = true;
   }
 
   // -- View --
