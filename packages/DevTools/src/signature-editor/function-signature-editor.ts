@@ -3,39 +3,45 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import CodeMirror from 'codemirror';
 import { BehaviorSubject } from 'rxjs';
+import { DEFAULT_CATEGORY, FUNC_PROPS_FIELDS, tooltipMessage, obligatoryFuncProps, 
+  functionPropsLabels, highlightModeByLang, functionPropsCode, funcParamTypes, FUNC_PARAM_FIELDS, 
+  DIRECTION, functionParamsMapping, COMMON_TAG_NAMES, OPTIONAL_TAG_NAME, LANGUAGE, headerSign, 
+  languages, optionTags, OPTIONAL_TAG_NAMES, getChoicesByName, FUNC_PROPS_FIELD } from './const';
 import 'codemirror/mode/javascript/javascript';
 import 'codemirror/mode/python/python';
 import 'codemirror/mode/octave/octave';
 import 'codemirror/mode/r/r';
 import 'codemirror/mode/julia/julia';
 import 'codemirror/mode/sql/sql.js';
-import '../css/styles.css';
+import '../../css/styles.css';
 
 export function functionSignatureEditor(view: DG.View) {
   if (view.type == 'DataQueryView') 
     addFseRibbonQuery(view);
-  else
+  else 
     addFseRibbonScript(view);
 }
 
 function addFseRibbonQuery(v: DG.View) {
   setTimeout(() => {
     //@ts-ignore
-    const iconFse = ui.iconFA('magic', () => openFse(v, v.root.lastChild.lastChild.parentElement.getElementsByClassName('CodeMirror cm-s-default')[0].CodeMirror.getDoc().getValue()), 'Open Signature Editor');
-    v.root.lastChild.lastChild.parentElement.querySelectorAll('.d4-tab-header-stripe')[0].appendChild(iconFse);
+    const iconFse = ui.iconFA('magic', () => openFse(v, v.root.querySelector('.CodeMirror').CodeMirror.getDoc().getValue()), 'Open Signature Editor');
+    /** ui.iconFA('magic') to ribbon */
+    //@ts-ignore
+    v.ribbonMenu.root.previousSibling.append(ui.div(iconFse,'d4-ribbon-item'));
+    //v.root.lastChild.lastChild.parentElement.querySelectorAll('.d4-tab-header-stripe')[0].appendChild(iconFse)
   }, 500);
 }
 
 function addFseRibbonScript(v: DG.View) {
   setTimeout(() => {
     const panels = v.getRibbonPanels();
-    // @ts-ignore
-    const iconFse = ui.iconFA('magic', () => openFse(v, v.root.lastChild.lastChild.CodeMirror.getDoc().getValue()), 'Open Signature Editor');
+    //@ts-ignore
+    const iconFse = ui.iconFA('magic', () => openFse(v, v.root.querySelector('.CodeMirror').CodeMirror.getDoc().getValue()), 'Open Signature Editor');
     if (!panels.some((panel) => panel.some((icon) => {
       return (icon.firstChild as HTMLElement).outerHTML === iconFse.outerHTML;
-    })))
-
-      v.setRibbonPanels([...panels, [iconFse]]);
+    }))) 
+    v.setRibbonPanels([...panels, [iconFse]]);
   }, 500);
 }
 
@@ -43,220 +49,26 @@ function getInputBaseArray(props: DG.Property[], param: any): DG.InputBase[] {
   const inputBaseArray = props.map((prop) => {
     const input = DG.InputBase.forProperty(prop, param);
     input.setTooltip(tooltipMessage[prop.name as OPTIONAL_TAG_NAME]);
+    /**InputBase elements should take the whole place in the form */
+    input.root.style.width = '350px';
+    input.root.style.position = 'relative';
+    input.root.style.marginLeft = '-80px';
     return input;
   });
   return inputBaseArray;
 }
 
-const DEFAULT_CATEGORY = 'Misc';
+let conn; //needs to be removed, capital letters are for constants
 
-
-const enum FUNC_PROPS_FIELDS {
-  NAME = 'name',
-  DESCRIPTION = 'description',
-  LANGUAGE = 'language',
-  HELP_URL = 'helpUrl',
-  REFERENCE = 'reference',
-  LOGIN = 'author?.login',
-  SAMPLE = 'sample',
-  ENVIRONMENT = 'environment',
-  TAGS = 'tags',
-  CONNECTION = "connection"
-}
-
-const tooltipMessage = {
-  'caption': 'Custom field caption',
-  'postfix': 'Field postfix',
-  'units': 'Value unit name',
-  'editor': 'Editor',
-  'semType': 'Semantic type',
-  'columns': 'Numerical or categorical columns will be loaded',
-  'type': 'Column type',
-  'format': 'Datetime format',
-  'allowNulls': 'Validation of the missing values presence',
-  'action': 'For output parameters only',
-  'choices': 'List of choices for string parameter',
-  'suggestions': 'List of suggestions for string parameter',
-  'min': 'Minimum value',
-  'max': 'Maximum value',
-}
-
-const obligatoryFuncProps = ['name', 'description', 'helpUrl', 'language'];
-
-const functionPropsLabels = (key: FUNC_PROPS_FIELDS) => {
-  switch (key) {
-    case FUNC_PROPS_FIELDS.NAME: return 'Name';
-    case FUNC_PROPS_FIELDS.CONNECTION: return 'Connection';
-    case FUNC_PROPS_FIELDS.DESCRIPTION: return 'Description';
-    case FUNC_PROPS_FIELDS.LOGIN: return 'Author';
-    case FUNC_PROPS_FIELDS.HELP_URL: return 'Help URL';
-    case FUNC_PROPS_FIELDS.LANGUAGE: return 'Language';
-    case FUNC_PROPS_FIELDS.REFERENCE: return 'Reference';
-    case FUNC_PROPS_FIELDS.SAMPLE: return 'Sample';
-    case FUNC_PROPS_FIELDS.ENVIRONMENT: return 'Environment';
-    case FUNC_PROPS_FIELDS.TAGS: return 'Tags';
-  }
-};
-
-const highlightModeByLang = (key: LANGUAGE) => {
-  switch (key) {
-    case LANGUAGE.JS:
-    case LANGUAGE.NODEJS: return 'javascript';
-    case LANGUAGE.PYTHON:
-    case LANGUAGE.GROK: return 'python';
-    case LANGUAGE.OCTAVE: return 'octave';
-    case LANGUAGE.JULIA: return 'julia';
-    case LANGUAGE.R: return 'r';
-    case LANGUAGE.SQL: return 'sql';
-  }
-};
-
-const functionPropsCode = (key: string) => {
-  switch (key) {
-    case FUNC_PROPS_FIELDS.NAME: return 'name';
-    case FUNC_PROPS_FIELDS.CONNECTION: return 'connection';
-    case FUNC_PROPS_FIELDS.DESCRIPTION: return 'description';
-    case FUNC_PROPS_FIELDS.LOGIN: return 'author';
-    case FUNC_PROPS_FIELDS.HELP_URL: return 'helpUrl';
-    case FUNC_PROPS_FIELDS.LANGUAGE: return 'language';
-    case FUNC_PROPS_FIELDS.REFERENCE: return 'reference';
-    case FUNC_PROPS_FIELDS.SAMPLE: return 'sample';
-    case FUNC_PROPS_FIELDS.ENVIRONMENT: return 'environment';
-    case FUNC_PROPS_FIELDS.TAGS: return 'tags';
-  }
-};
-
-const funcParamTypes = [
-  DG.TYPE.BOOL,
-  DG.TYPE.COLUMN_LIST,
-  DG.TYPE.COLUMN,
-  DG.TYPE.DATA_FRAME,
-  DG.TYPE.DATE_TIME,
-  DG.TYPE.FLOAT,
-  DG.TYPE.GRAPHICS,
-  DG.TYPE.INT,
-  DG.TYPE.STRING,
-];
-
-const enum FUNC_PARAM_FIELDS {
-  DIRECTION = 'direction',
-  TYPE = 'propertyType',
-  NAME = 'name',
-  DEFAULT_VALUE = 'defaultValue',
-  DESCRIPTION = 'description',
-  CATEGORY = 'category',
-}
-
-const enum DIRECTION {
-  INPUT = 'input',
-  OUTPUT = 'output',
-}
-
-const functionParamsMapping = {
-  [FUNC_PARAM_FIELDS.DIRECTION]: 'Direction',
-  [FUNC_PARAM_FIELDS.TYPE]: 'Type',
-  [FUNC_PARAM_FIELDS.NAME]: 'Name',
-  [FUNC_PARAM_FIELDS.DEFAULT_VALUE]: 'Default value',
-  [FUNC_PARAM_FIELDS.DESCRIPTION]: 'Description',
-  [FUNC_PARAM_FIELDS.CATEGORY]: 'Category',
-  'Direction': FUNC_PARAM_FIELDS.DIRECTION,
-  'Type': FUNC_PARAM_FIELDS.TYPE,
-  'Name': FUNC_PARAM_FIELDS.NAME,
-  'Default value': FUNC_PARAM_FIELDS.DEFAULT_VALUE,
-  'Description': FUNC_PARAM_FIELDS.DESCRIPTION,
-  'Category': FUNC_PARAM_FIELDS.CATEGORY,
-};
-
-enum COMMON_TAG_NAME {
-  VALIDATORS = 'validators',
-  CAPTION = 'caption',
-  POSTFIX = 'postfix',
-  UNITS = 'units',
-  EDITOR = 'editor',
-  SEM_TYPE = 'semType',
-}
-
-enum OPTIONAL_TAG_NAME {
-  COLUMNS = 'columns',
-  TYPE = 'type',
-  FORMAT = 'format',
-  ALLOW_NULLS = 'allowNulls',
-  ACTION = 'action',
-  CHOICES = 'choices',
-  SUGGESTIONS = 'suggestions',
-  MIN = 'min',
-  MAX = 'max',
-}
-
-const COMMON_TAG_NAMES = [...Object.values(COMMON_TAG_NAME)];
-const DF_TAG_NAMES = [
-  ...Object.values(COMMON_TAG_NAME),
-  OPTIONAL_TAG_NAME.COLUMNS,
-  OPTIONAL_TAG_NAME.ACTION];
-const COLUMN_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.TYPE, OPTIONAL_TAG_NAME.FORMAT,
-  OPTIONAL_TAG_NAME.ALLOW_NULLS, OPTIONAL_TAG_NAME.ACTION];
-const STRING_TAG_NAMES = [...Object.values(COMMON_TAG_NAME),
-  OPTIONAL_TAG_NAME.CHOICES , OPTIONAL_TAG_NAME.SUGGESTIONS];
-const INT_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.MIN, OPTIONAL_TAG_NAME.MAX];
-
-const optionTags = ((param: DG.Property) => {
-  switch (param.propertyType) {
-    case DG.TYPE.INT:
-      return INT_TAG_NAMES;
-    case DG.TYPE.DATA_FRAME:
-      return DF_TAG_NAMES;
-    case DG.TYPE.COLUMN_LIST:
-    case DG.TYPE.COLUMN:
-      return COLUMN_TAG_NAMES;
-    case DG.TYPE.STRING:
-      return STRING_TAG_NAMES;
-    default:
-      return COMMON_TAG_NAMES;
-  }
-});
-
-enum LANGUAGE {
-  JS = 'javascript',
-  PYTHON = 'python',
-  R = 'r',
-  JULIA = 'julia',
-  OCTAVE = 'octave',
-  NODEJS = 'nodejs',
-  GROK = 'grok',
-  SQL = 'sql'
-}
-const languages = ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok', 'sql'];
-
-const headerSign = (lang: LANGUAGE) => {
-  switch (lang) {
-    case LANGUAGE.JS:
-    case LANGUAGE.NODEJS:
-      return '//';
-    case LANGUAGE.R:
-    case LANGUAGE.GROK:
-    case LANGUAGE.JULIA:
-    case LANGUAGE.PYTHON:
-    case LANGUAGE.OCTAVE:
-      return '#';
-    case LANGUAGE.SQL:
-      return '--';
-  }
-};
-
-let CONNECTION;
-
-async function getEditorSql(sql: string): Promise<DG.DataQuery> {
+async function getDataQuery(sql: string): Promise<DG.DataQuery> {
   const regex = /--connection:\s*(\S+)/;
   const match = sql.match(regex);
-  let connectionName;
-  if (match) 
-    connectionName = match[1];
+  const connectionName = match ? match[1]: null;
   const connection = await grok.functions.eval(connectionName);
-  CONNECTION = connectionName;
+  conn = connectionName;
   const query = connection.query('sql', sql);
   return query;
 }
-
 
 async function openFse(v: DG.View, functionCode: string) {
   let inputScriptCopy;
@@ -265,8 +77,8 @@ async function openFse(v: DG.View, functionCode: string) {
     inputScriptCopy = DG.Script.create(functionCode);
     language = inputScriptCopy.language;
   } else {
-    inputScriptCopy = await getEditorSql(functionCode);
-    language = 'sql';
+    inputScriptCopy = await getDataQuery(functionCode);
+    language = LANGUAGE.SQL;
   }
 
   const editorView = DG.View.create();
@@ -275,13 +87,8 @@ async function openFse(v: DG.View, functionCode: string) {
   const openScript = () => {
     editorView.close();
     grok.shell.addView(v);
-    let editor;
-    if (v.type == 'ScriptView')
-      //@ts-ignore
-      editor = v.root.lastChild.lastChild.CodeMirror;
-    else
-      //@ts-ignore
-      editor = v.root.lastChild.lastChild.getElementsByClassName('CodeMirror cm-s-default')[0].CodeMirror;
+    //@ts-ignore
+    const editor = v.root.querySelector('.CodeMirror').CodeMirror;
     const doc = editor.getDoc();
     doc.setValue(myCM.getDoc().getValue());
   };
@@ -303,62 +110,20 @@ async function openFse(v: DG.View, functionCode: string) {
     return `${headerSign(language as LANGUAGE)}${direction}: ${param.propertyType} ${param.name ? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
   };
 
-  const functionProps = {
-    [functionPropsLabels(FUNC_PROPS_FIELDS.NAME)]: DG.Property.create(
-      FUNC_PROPS_FIELDS.NAME, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.NAME],
-      (x: any, v) => updateFuncPropValue(FUNC_PROPS_FIELDS.NAME, v),
-      '',
-    ),
-    [functionPropsLabels(FUNC_PROPS_FIELDS.CONNECTION)]: DG.Property.create(
-      FUNC_PROPS_FIELDS.CONNECTION, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.CONNECTION],
-      (x: any, v) => updateFuncPropValue(FUNC_PROPS_FIELDS.CONNECTION, v),
-      '',
-    ),
-    [functionPropsLabels(FUNC_PROPS_FIELDS.DESCRIPTION)]: DG.Property.create(
-      FUNC_PROPS_FIELDS.DESCRIPTION, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.DESCRIPTION],
-      (x: any, v) => updateFuncPropValue(FUNC_PROPS_FIELDS.DESCRIPTION, v),
-      '',
-    ),
-    [functionPropsLabels(FUNC_PROPS_FIELDS.LANGUAGE)]: (() => {
-      const temp = DG.Property.create(
-        FUNC_PROPS_FIELDS.LANGUAGE, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.LANGUAGE],
-        (x: any, v) => updateFuncPropValue(FUNC_PROPS_FIELDS.LANGUAGE, v),
-        '');
-      temp.fromOptions({ choices: languages });
-      return temp;
-    })(),
-    [functionPropsLabels(FUNC_PROPS_FIELDS.HELP_URL)]: DG.Property.create(
-      FUNC_PROPS_FIELDS.HELP_URL, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.HELP_URL],
-      (x: any, v) => updateFuncPropValue(FUNC_PROPS_FIELDS.HELP_URL, v),
-      '',
-    ),
-    [functionPropsLabels(FUNC_PROPS_FIELDS.REFERENCE)]: DG.Property.create(
-      FUNC_PROPS_FIELDS.REFERENCE, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.REFERENCE],
-      (x: any, v) => updateFuncPropValue(FUNC_PROPS_FIELDS.REFERENCE, v),
-      '',
-    ),
-    [functionPropsLabels(FUNC_PROPS_FIELDS.LOGIN)]: DG.Property.create(
-      FUNC_PROPS_FIELDS.LOGIN, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.LOGIN],
-      (x: any, v) => updateFuncPropValue(FUNC_PROPS_FIELDS.LOGIN, v),
-      '',
-    ),
-    [functionPropsLabels(FUNC_PROPS_FIELDS.SAMPLE)]: DG.Property.create(
-      FUNC_PROPS_FIELDS.SAMPLE, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.SAMPLE],
-      (x: any, v) => updateFuncPropValue(FUNC_PROPS_FIELDS.SAMPLE, v),
-      '',
-    ),
-    [functionPropsLabels(FUNC_PROPS_FIELDS.ENVIRONMENT)]: DG.Property.create(
-      FUNC_PROPS_FIELDS.ENVIRONMENT, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.ENVIRONMENT],
-      (x: any, v) => updateFuncPropValue(FUNC_PROPS_FIELDS.ENVIRONMENT, v),
-      '',
-    ),
-    [functionPropsLabels(FUNC_PROPS_FIELDS.TAGS)]: DG.Property.create(
-      FUNC_PROPS_FIELDS.TAGS, DG.TYPE.LIST,
-      (x: any) => x[FUNC_PROPS_FIELDS.TAGS],
-      (x: any, v) => updateFuncPropValue(FUNC_PROPS_FIELDS.TAGS, v),
-      [],
-    ),
+  //CodeMirror as an output
+  function getCodeMirror() {
+    return (v.root.querySelector('.CodeMirror') as any).CodeMirror;
+  }
+
+  const nameToProp = (name, options?: {[key: string]: any}) => {
+    const prop = DG.Property.create(name, DG.TYPE.STRING,
+    (x: any) => x.options[name],
+    (x: any, v) => updateValue(x, name, v), '');
+    if (options) prop.fromOptions(options);
+    return prop;
   };
+
+  const functionProps: DG.Property[] = FUNC_PROPS_FIELDS.map((name) => nameToProp(name, getChoicesByName(name)));
 
   const getNewProps = () => {
     const newProps = [];
@@ -374,9 +139,9 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const functionPropsInput = (prop: DG.Property) => {
     switch (prop.name) {
-      case FUNC_PROPS_FIELDS.LANGUAGE:
+      case FUNC_PROPS_FIELD.LANGUAGE:
         return ui.choiceInput(
-          functionPropsLabels(prop.name as FUNC_PROPS_FIELDS),
+          functionPropsLabels(prop.name as FUNC_PROPS_FIELD),
           prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
           prop.choices,
         );
@@ -387,7 +152,7 @@ async function openFse(v: DG.View, functionCode: string) {
       //     prop.choices,
       //   );
       default:
-        return ui.stringInput(functionPropsLabels(prop.name as FUNC_PROPS_FIELDS),
+        return ui.stringInput(functionPropsLabels(prop.name as FUNC_PROPS_FIELD),
           prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name]);
     }
   };
@@ -414,7 +179,7 @@ async function openFse(v: DG.View, functionCode: string) {
     };
     const menu = DG.Menu.popup();
     getNewProps().forEach(
-      (prop) => menu.item(functionPropsLabels(prop.name as FUNC_PROPS_FIELDS), () => onItemClick(prop)),
+      (prop) => menu.item(functionPropsLabels(prop.name as FUNC_PROPS_FIELD), () => onItemClick(prop)),
     );
 
     const button = ui.button([ui.icons.add(() => { })], () => {
@@ -523,6 +288,8 @@ async function openFse(v: DG.View, functionCode: string) {
     refreshPreview();
   };
 
+  //const obligatoryFuncParamsProps: DG.Property[] = FUNC_PARAM_FIELDS.map((name) => nameToProp(name, getChoicesByName(name)));
+
   const obligatoryFuncParamsProps: DG.Property[] = [
     (() => {
       const temp = DG.Property.create(FUNC_PARAM_FIELDS.DIRECTION, DG.TYPE.STRING,
@@ -550,75 +317,11 @@ async function openFse(v: DG.View, functionCode: string) {
     DG.Property.create(FUNC_PARAM_FIELDS.CATEGORY, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.CATEGORY],
       (x: any, v) => updateFuncPropValue(FUNC_PARAM_FIELDS.CATEGORY, v), ''),
   ];
+
+  const obligatoryFuncParamsTags: DG.Property[] = COMMON_TAG_NAMES.map((name) => nameToProp(name));
+
+  const optionalFuncParamsTags: DG.Property[] = OPTIONAL_TAG_NAMES.map((name) => nameToProp(name, getChoicesByName(name)));
   
-  const obligatoryFuncParamsTags: DG.Property[] = [
-    DG.Property.create(COMMON_TAG_NAME.CAPTION, DG.TYPE.STRING,
-      (x: any) => x.options[COMMON_TAG_NAME.CAPTION],
-      (x: any, v) => updateValue(x, COMMON_TAG_NAME.CAPTION, v), ''),
-
-    DG.Property.create(COMMON_TAG_NAME.UNITS, DG.TYPE.STRING,
-      (x: any) => x.options[COMMON_TAG_NAME.UNITS],
-      (x: any, v) => updateValue(x, COMMON_TAG_NAME.UNITS, v), ''),
-
-    DG.Property.create(COMMON_TAG_NAME.EDITOR, DG.TYPE.STRING,
-      (x: any) => x.options[COMMON_TAG_NAME.EDITOR],
-      (x: any, v) => updateValue(x, COMMON_TAG_NAME.EDITOR, v), ''),
-
-    DG.Property.create(COMMON_TAG_NAME.POSTFIX, DG.TYPE.STRING,
-      (x: any) => x.options[COMMON_TAG_NAME.POSTFIX],
-      (x: any, v) => updateValue(x, COMMON_TAG_NAME.POSTFIX, v), ''),
-
-    DG.Property.create(COMMON_TAG_NAME.SEM_TYPE, DG.TYPE.STRING,
-      (x: any) => x.options[COMMON_TAG_NAME.SEM_TYPE],
-      (x: any, v) => updateValue(x, COMMON_TAG_NAME.SEM_TYPE, v), ''),
-  ];
-
-  const optionalFuncParamsTags: DG.Property[] = [
-    DG.Property.create(OPTIONAL_TAG_NAME.ACTION, DG.TYPE.STRING,
-      (x: any) => x.options[OPTIONAL_TAG_NAME.ACTION],
-      (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.ACTION, v), ''),
-
-    DG.Property.create(OPTIONAL_TAG_NAME.ALLOW_NULLS, DG.TYPE.BOOL,
-      (x: any) => x.options[OPTIONAL_TAG_NAME.ALLOW_NULLS],
-      (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.ALLOW_NULLS, v), ''),
-
-    DG.Property.create(OPTIONAL_TAG_NAME.CHOICES, DG.TYPE.DYNAMIC,
-      (x: any) => x.options[OPTIONAL_TAG_NAME.CHOICES],
-      (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.CHOICES, v), ''),
-
-    (() => {
-      const temp = DG.Property.create(OPTIONAL_TAG_NAME.COLUMNS, DG.TYPE.STRING,
-        (x: any) => x.options[OPTIONAL_TAG_NAME.COLUMNS],
-        (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.COLUMNS, v), '');
-      temp.fromOptions({ choices: ['numerical', 'categorical'] });
-      return temp;
-    })(),
-
-    DG.Property.create(OPTIONAL_TAG_NAME.FORMAT, DG.TYPE.STRING,
-      (x: any) => x.options[OPTIONAL_TAG_NAME.FORMAT],
-      (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.FORMAT, v), ''),
-
-    DG.Property.create(OPTIONAL_TAG_NAME.MAX, DG.TYPE.INT,
-      (x: any) => x.options[OPTIONAL_TAG_NAME.MAX],
-      (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.MAX, v), ''),
-
-    DG.Property.create(OPTIONAL_TAG_NAME.MIN, DG.TYPE.INT,
-      (x: any) => x.options[OPTIONAL_TAG_NAME.MIN],
-      (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.MIN, v), ''),
-
-    DG.Property.create(OPTIONAL_TAG_NAME.SUGGESTIONS, DG.TYPE.DYNAMIC,
-      (x: any) => x.options[OPTIONAL_TAG_NAME.SUGGESTIONS],
-      (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.SUGGESTIONS, v), ''),
-
-    (() => {
-      const temp = DG.Property.create(OPTIONAL_TAG_NAME.TYPE, DG.TYPE.STRING,
-        (x: any) => x.options[OPTIONAL_TAG_NAME.TYPE],
-        (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.TYPE, v), '');
-      temp.fromOptions({ choices: ['numerical', 'categorical', 'dateTime'] });
-      return temp;
-    })(),
-  ];
-
   const paramsDF = DG.DataFrame.create(functionParamsCopy.length);
   for (const p of obligatoryFuncParamsProps) {
     (paramsDF.columns as DG.ColumnList)
@@ -661,7 +364,8 @@ async function openFse(v: DG.View, functionCode: string) {
     if (gc.isTableCell) {
       gc.style.element =
         ui.divH([
-          deleteBtn(gc.grid.dataFrame?.get('Name', gc.gridRow)),
+          ui.div(deleteBtn(gc.grid.dataFrame?.get('Name', gc.gridRow))),
+          ui.div(addParamBtn(), {style: {'marginTop': 'unset'}})
         ]);
       gc.style.element.style.display = 'flex';
       gc.style.element.style.justifyContent = 'center';
@@ -692,9 +396,8 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const addParamBtn = () => ui.button(
     [
-      'Add parameter',
       ui.div(ui.icons.add(() => {
-      }), { style: { 'text-align': 'center', 'margin': '6px' } }),
+      }, 'Add the param'), { style: { 'text-align': 'center', 'margin': '6px'} }),
     ],
     () => {
       const newParam = {
@@ -717,7 +420,7 @@ async function openFse(v: DG.View, functionCode: string) {
   const editorTabs = ui.tabControl({
     'PROPERTIES': propsForm,
     'PARAMETERS': ui.divV([
-      addParamBtn(),
+      //addParamBtn(),
       paramsGrid.root,
     ]),
   });
@@ -743,11 +446,11 @@ async function openFse(v: DG.View, functionCode: string) {
   const refreshPreview = async () => {
     let result = '';
     if (v.type === 'DataQueryView') 
-      result += `${headerSign(language as LANGUAGE)}${functionPropsCode(FUNC_PROPS_FIELDS.CONNECTION)}: ${CONNECTION}\n`;
+      result += `${headerSign(language as LANGUAGE)}${functionPropsCode(FUNC_PROPS_FIELD.CONNECTION)}: ${conn}\n`;
     Object.values(functionProps).map((propField) => {
       const propValue = propField.get(inputScriptCopy) || (inputScriptCopy as any)[propField.name];
       if (!!propValue && !!propValue.length) {
-        const propName = functionPropsCode(propField.name as FUNC_PROPS_FIELDS);
+        const propName = functionPropsCode(propField.name as FUNC_PROPS_FIELD);
         result += `${headerSign(language as LANGUAGE)}${functionPropsCode(propName)}: ${propValue}\n`;
       }
     });
@@ -767,7 +470,7 @@ async function openFse(v: DG.View, functionCode: string) {
     if (v.type == 'ScriptView') 
       modifiedScript = DG.Script.create(result);
     else 
-      modifiedScript = await getEditorSql(result);
+      modifiedScript = await getDataQuery(result);
     const newUiArea = await modifiedScript.prepare().getEditor();
     uiArea.innerHTML = '';
     uiArea.append(newUiArea);
