@@ -39,7 +39,7 @@ most casees, the viewer will auto-detect content type. Use the "mode" property t
 
 * Viewer from an external source displayed on markup view
 * All external viewer functionality is available inside the platform1. Return to view
-  with [Source Tree](../../access/data-source.md)
+  with [Source Tree](../../access/access.md#data-sources)
 
 (*):
 

@@ -651,30 +651,34 @@ export function bioSubstructureFilter(): BioSubstructureFilter {
 
 // -- Demo --
 
-//name: demoBio01
-//meta.demoPath: Bioinformatics | Similarity & Diversity
+// demoBio01
+//name: demoBioSimilarityDiversity
+//meta.demoPath: Bioinformatics | Similarity, Diversity
 //description:
-export async function demoBio01(): Promise<void> {
+export async function demoBioSimilarityDiversity(): Promise<void> {
   await demoBio01UI('func/Bio.demoBio01');
 }
 
-//name:demoBio01a
-//meta.demoPath: Bioinformatics | Hierarchical Clustering & Sequence Space
+// demoBio01a
+//name:demoBioSequenceSpace
+//meta.demoPath: Bioinformatics | Sequence Space
 //description:
-export async function demoBio01a(): Promise<void> {
+export async function demoBioSequenceSpace(): Promise<void> {
   await demoBio01aUI('func/Bio.demoBio01a');
 }
 
-//name: demoBio01c
-//meta.demoPath: Bioinformatics | Hierarchical Clustering & Activity Cliffs
+// demoBio01b
+//name: demoBioActivityCliffs
+//meta.demoPath: Bioinformatics | Activity Cliffs
 //description:
-export async function demoBio01b(): Promise<void> {
+export async function demoBioActivityCliffs(): Promise<void> {
   await demoBio01bUI('func/Bio.demoBio01b');
 }
 
-//name: demoBio05
+// demoBio05
+//name: demoBioHelmMsaSequenceSpace
 //meta.demoPath: Bioinformatics | Helm, MSA, Sequence Space
 //description:
-export async function demoBio05(): Promise<void> {
+export async function demoBioHelmMsaSequenceSpace(): Promise<void> {
   await demoBio05UI('func/demoBio05');
 }

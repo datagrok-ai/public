@@ -35,6 +35,10 @@ export class ChoiceInputPackages {
       }));
     });
 
+    const all = packages;
+    choices.setChoices(() => all.map((p: DG.Package) => {
+      return {value: p.name, label: p.name};
+    }));
     return new ChoiceInputPackages(choices, field);
   }
 

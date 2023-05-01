@@ -1,52 +1,53 @@
 {
-	"name": "@datagrok/curves",
-	"friendlyName": "Curves",
-	"version": "1.0.0",
-	"description": "",
-	"author": {
-		"name": "Dmytro Kovalyov",
-		"email": "dkovalyov@datagrok.ai"
-	},
-	"dependencies": {
-		"@datagrok-libraries/statistics": "^1.1.7",
-		"@datagrok-libraries/utils": "^4.0.0",
-		"@types/wu": "^2.1.42",
-		"cash-dom": "latest",
-		"datagrok-api": "latest",
-		"rxjs": "6.5.5",
-		"dayjs": "latest"
-	},
-	"devDependencies": {
-		"ts-loader": "latest",
-		"css-loader": "^5.0.0",
-		"style-loader": "^2.0.0",
-		"typescript": "latest",
-		"webpack": "latest",
-		"webpack-cli": "latest",
-		"source-map-loader": "^4.0.1"
-	},
-	"scripts": {
-		"link-all": "npm link datagrok-api  @datagrok-libraries/utils @datagrok-libraries/statistics @datagrok-libraries/chem-meta",
-		"debug-curves": "webpack && grok publish",
-		"release-curves": "webpack && grok publish --release",
-		"build-curves": "webpack",
-		"build": "tsc && webpack",
-		"debug-curves-dev": "webpack && grok publish dev",
-		"release-curves-dev": "webpack && grok publish dev --release",
-		"debug-curves-public": "webpack && grok publish public",
-		"release-curves-public": "webpack && grok publish public --release",
-		"debug-curves-local": "tsc && webpack && grok publish local",
-		"test": "grok test"
-	},
-	"canEdit": [
-		"Developers"
-	],
-	"canView": [
-		"All users"
-	],
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/datagrok-ai/public.git",
-		"directory": "packages/Curves"
-	}
+  "name": "@datagrok/curves",
+  "friendlyName": "Curves",
+  "version": "1.0.1",
+  "description": "",
+  "author": {
+    "name": "Dmytro Kovalyov",
+    "email": "dkovalyov@datagrok.ai"
+  },
+  "dependencies": {
+    "@datagrok-libraries/statistics": "^1.1.7",
+    "@datagrok-libraries/utils": "^4.0.0",
+    "@types/wu": "^2.1.42",
+    "cash-dom": "latest",
+    "datagrok-api": "latest",
+    "rxjs": "6.5.5",
+    "dayjs": "latest"
+  },
+  "devDependencies": {
+    "ts-loader": "latest",
+    "css-loader": "^5.0.0",
+    "style-loader": "^2.0.0",
+    "typescript": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "source-map-loader": "^4.0.1"
+  },
+  "scripts": {
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/statistics",
+    "debug-curves": "webpack && grok publish",
+    "release-curves": "webpack && grok publish --release",
+    "build-curves": "webpack",
+    "build": "tsc && webpack",
+    "debug-curves-dev": "webpack && grok publish dev",
+    "release-curves-dev": "webpack && grok publish dev --release",
+    "debug-curves-public": "webpack && grok publish public",
+    "release-curves-public": "webpack && grok publish public --release",
+    "debug-curves-local": "tsc && webpack && grok publish local",
+    "test": "grok test",
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/statistics run build && npm run build"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Curves"
+  }
 }

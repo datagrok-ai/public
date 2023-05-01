@@ -82,12 +82,12 @@ export namespace Paint {
       vertAxis(g, worldBounds.minY, worldBounds.maxY, yAxis.x, yAxis.y, yAxis.width, yAxis.height);
   }
 
-  export function horzAxis(g: CanvasRenderingContext2D, min: number, max: number, x: number, y: number, w: number, h: number) {
-    api.grok_Paint_HorzAxis(g, min, max, x, y, w, h);
+  export function horzAxis(g: CanvasRenderingContext2D, min: number, max: number, x: number, y: number, w: number, h: number, log: boolean = false, inverse: boolean = false) {
+    api.grok_Paint_HorzAxis(g, min, max, x, y, w, h, log, inverse);
   }
 
-  export function vertAxis(g: CanvasRenderingContext2D, min: number, max: number, x: number, y: number, w: number, h: number) {
-    api.grok_Paint_VertAxis(g, min, max, x, y, w, h);
+  export function vertAxis(g: CanvasRenderingContext2D, min: number, max: number, x: number, y: number, w: number, h: number, log: boolean = false, inverse: boolean = false) {
+    api.grok_Paint_VertAxis(g, min, max, x, y, w, h, log, inverse);
   }
 
   export function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): CanvasRenderingContext2D {

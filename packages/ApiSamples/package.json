@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/api-samples",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "author": {
     "name": "Alexander Paramonov",
     "email": "aparamonov@datagrok.ai"
@@ -40,7 +40,9 @@
     "build": "webpack",
     "test": "grok test",
     "test-dev": "grok test --host dev",
-    "test-local": "grok test --host localhost"
+    "test-local": "grok test --host localhost",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils",
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build"
   },
   "canEdit": [
     "Developers"

@@ -3,11 +3,15 @@
   "publishConfig": {
     "access": "public"
   },
+  "author": {
+    "name": "Volodymyr Dyma",
+    "email": "vdyma@datagrok.ai"
+  },
   "friendlyName": "Datagrok ML library",
-  "version": "6.3.16",
+  "version": "6.3.20",
   "description": "Machine learning supporting utilities",
   "dependencies": {
-    "@datagrok-libraries/utils": "^2.4.3",
+    "@datagrok-libraries/utils": "^4",
     "@keckelt/tsne": "^1.0.2",
     "cash-dom": "latest",
     "datagrok-api": "^1.10.2",

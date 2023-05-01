@@ -8,13 +8,25 @@ import 'codemirror/mode/python/python';
 import 'codemirror/mode/octave/octave';
 import 'codemirror/mode/r/r';
 import 'codemirror/mode/julia/julia';
+import 'codemirror/mode/sql/sql.js';
 import '../css/styles.css';
 
 export function functionSignatureEditor(view: DG.View) {
-  addFseRibbon(view);
+  if (view.type == 'DataQueryView') 
+    addFseRibbonQuery(view);
+  else
+    addFseRibbonScript(view);
 }
 
-function addFseRibbon(v: DG.View) {
+function addFseRibbonQuery(v: DG.View) {
+  setTimeout(() => {
+    //@ts-ignore
+    const iconFse = ui.iconFA('magic', () => openFse(v, v.root.lastChild.lastChild.parentElement.getElementsByClassName('CodeMirror cm-s-default')[0].CodeMirror.getDoc().getValue()), 'Open Signature Editor');
+    v.root.lastChild.lastChild.parentElement.querySelectorAll('.d4-tab-header-stripe')[0].appendChild(iconFse);
+  }, 500);
+}
+
+function addFseRibbonScript(v: DG.View) {
   setTimeout(() => {
     const panels = v.getRibbonPanels();
     // @ts-ignore
@@ -38,6 +50,7 @@ function getInputBaseArray(props: DG.Property[], param: any): DG.InputBase[] {
 
 const DEFAULT_CATEGORY = 'Misc';
 
+
 const enum FUNC_PROPS_FIELDS {
   NAME = 'name',
   DESCRIPTION = 'description',
@@ -47,7 +60,8 @@ const enum FUNC_PROPS_FIELDS {
   LOGIN = 'author?.login',
   SAMPLE = 'sample',
   ENVIRONMENT = 'environment',
-  TAGS = 'tags'
+  TAGS = 'tags',
+  CONNECTION = "connection"
 }
 
 const tooltipMessage = {
@@ -72,6 +86,7 @@ const obligatoryFuncProps = ['name', 'description', 'helpUrl', 'language'];
 const functionPropsLabels = (key: FUNC_PROPS_FIELDS) => {
   switch (key) {
     case FUNC_PROPS_FIELDS.NAME: return 'Name';
+    case FUNC_PROPS_FIELDS.CONNECTION: return 'Connection';
     case FUNC_PROPS_FIELDS.DESCRIPTION: return 'Description';
     case FUNC_PROPS_FIELDS.LOGIN: return 'Author';
     case FUNC_PROPS_FIELDS.HELP_URL: return 'Help URL';
@@ -99,6 +114,7 @@ const highlightModeByLang = (key: LANGUAGE) => {
 const functionPropsCode = (key: string) => {
   switch (key) {
     case FUNC_PROPS_FIELDS.NAME: return 'name';
+    case FUNC_PROPS_FIELDS.CONNECTION: return 'connection';
     case FUNC_PROPS_FIELDS.DESCRIPTION: return 'description';
     case FUNC_PROPS_FIELDS.LOGIN: return 'author';
     case FUNC_PROPS_FIELDS.HELP_URL: return 'helpUrl';
@@ -210,7 +226,6 @@ enum LANGUAGE {
   SQL = 'sql'
 }
 const languages = ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok', 'sql'];
-const scriptingLanguages = ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok'];
 
 const headerSign = (lang: LANGUAGE) => {
   switch (lang) {
@@ -228,21 +243,31 @@ const headerSign = (lang: LANGUAGE) => {
   }
 };
 
-async function getEditorSql(sql: string) {
+let CONNECTION;
+
+async function getEditorSql(sql: string): Promise<DG.DataQuery> {
   const regex = /--connection:\s*(\S+)/;
   const match = sql.match(regex);
   let connectionName;
   if (match) 
     connectionName = match[1];
   const connection = await grok.functions.eval(connectionName);
+  CONNECTION = connectionName;
   const query = connection.query('sql', sql);
-  const editor = await query.prepare().getEditor();
-  return editor;
+  return query;
 }
 
 
 async function openFse(v: DG.View, functionCode: string) {
-  const inputScriptCopy = DG.Script.create(functionCode);
+  let inputScriptCopy;
+  let language;
+  if (v.type == 'ScriptView') {
+    inputScriptCopy = DG.Script.create(functionCode);
+    language = inputScriptCopy.language;
+  } else {
+    inputScriptCopy = await getEditorSql(functionCode);
+    language = 'sql';
+  }
 
   const editorView = DG.View.create();
   editorView.name = v.name;
@@ -250,8 +275,13 @@ async function openFse(v: DG.View, functionCode: string) {
   const openScript = () => {
     editorView.close();
     grok.shell.addView(v);
-    // @ts-ignore
-    const editor = v.root.lastChild.lastChild.CodeMirror;
+    let editor;
+    if (v.type == 'ScriptView')
+      //@ts-ignore
+      editor = v.root.lastChild.lastChild.CodeMirror;
+    else
+      //@ts-ignore
+      editor = v.root.lastChild.lastChild.getElementsByClassName('CodeMirror cm-s-default')[0].CodeMirror;
     const doc = editor.getDoc();
     doc.setValue(myCM.getDoc().getValue());
   };
@@ -270,13 +300,18 @@ async function openFse(v: DG.View, functionCode: string) {
       .map(({ tag, val }) => `${tag}: ${val}`)
       .concat(...(param.category && param.category !== DEFAULT_CATEGORY) ? [`category: ${param.category}`] : [])
       .join('; ');
-    return `${headerSign(inputScriptCopy.language as LANGUAGE)}${direction}: ${param.propertyType} ${param.name ? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
+    return `${headerSign(language as LANGUAGE)}${direction}: ${param.propertyType} ${param.name ? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
   };
 
   const functionProps = {
     [functionPropsLabels(FUNC_PROPS_FIELDS.NAME)]: DG.Property.create(
       FUNC_PROPS_FIELDS.NAME, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.NAME],
       (x: any, v) => updateFuncPropValue(FUNC_PROPS_FIELDS.NAME, v),
+      '',
+    ),
+    [functionPropsLabels(FUNC_PROPS_FIELDS.CONNECTION)]: DG.Property.create(
+      FUNC_PROPS_FIELDS.CONNECTION, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.CONNECTION],
+      (x: any, v) => updateFuncPropValue(FUNC_PROPS_FIELDS.CONNECTION, v),
       '',
     ),
     [functionPropsLabels(FUNC_PROPS_FIELDS.DESCRIPTION)]: DG.Property.create(
@@ -425,6 +460,7 @@ async function openFse(v: DG.View, functionCode: string) {
           prop,
         )),
     );
+
     return ui.panel([
       ui.divV([
         inputs,
@@ -546,7 +582,7 @@ async function openFse(v: DG.View, functionCode: string) {
       (x: any) => x.options[OPTIONAL_TAG_NAME.ALLOW_NULLS],
       (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.ALLOW_NULLS, v), ''),
 
-    DG.Property.create(OPTIONAL_TAG_NAME.CHOICES, DG.TYPE.LIST,
+    DG.Property.create(OPTIONAL_TAG_NAME.CHOICES, DG.TYPE.DYNAMIC,
       (x: any) => x.options[OPTIONAL_TAG_NAME.CHOICES],
       (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.CHOICES, v), ''),
 
@@ -570,7 +606,7 @@ async function openFse(v: DG.View, functionCode: string) {
       (x: any) => x.options[OPTIONAL_TAG_NAME.MIN],
       (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.MIN, v), ''),
 
-    DG.Property.create(OPTIONAL_TAG_NAME.SUGGESTIONS, DG.TYPE.STRING,
+    DG.Property.create(OPTIONAL_TAG_NAME.SUGGESTIONS, DG.TYPE.DYNAMIC,
       (x: any) => x.options[OPTIONAL_TAG_NAME.SUGGESTIONS],
       (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.SUGGESTIONS, v), ''),
 
@@ -637,12 +673,8 @@ async function openFse(v: DG.View, functionCode: string) {
   });
 
   const codeArea = ui.textInput('', '');
-  const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), { mode: highlightModeByLang(inputScriptCopy.language as LANGUAGE) });
-  let uiArea;
-  if (scriptingLanguages.includes(inputScriptCopy.language)) 
-    uiArea = await inputScriptCopy.prepare().getEditor();
-  else 
-    uiArea = await getEditorSql(functionCode);
+  const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), { mode: highlightModeByLang(language as LANGUAGE) });
+  const uiArea = await inputScriptCopy.prepare().getEditor();
   const codePanel = ui.panel([codeArea.root]);
   codePanel.style.height = '100%';
   codeArea.root.style.height = '100%';
@@ -710,26 +742,34 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const refreshPreview = async () => {
     let result = '';
+    if (v.type === 'DataQueryView') 
+      result += `${headerSign(language as LANGUAGE)}${functionPropsCode(FUNC_PROPS_FIELDS.CONNECTION)}: ${CONNECTION}\n`;
     Object.values(functionProps).map((propField) => {
       const propValue = propField.get(inputScriptCopy) || (inputScriptCopy as any)[propField.name];
-      if (!!propValue && !!propValue.length)
-        result += `${headerSign(inputScriptCopy.language as LANGUAGE)}${functionPropsCode(propField.name as FUNC_PROPS_FIELDS)}: ${propValue}\n`;
+      if (!!propValue && !!propValue.length) {
+        const propName = functionPropsCode(propField.name as FUNC_PROPS_FIELDS);
+        result += `${headerSign(language as LANGUAGE)}${functionPropsCode(propName)}: ${propValue}\n`;
+      }
     });
     functionParamsCopy.map((param) => {
       result += generateParamLine(param, param.options.direction);
     });
-    const regex = new RegExp(`^(${headerSign(inputScriptCopy.language as LANGUAGE)}.*\n)*`, 'g');
-    result += inputScriptCopy.script.substring(inputScriptCopy.script.match(regex)[0].length + 1);
-    myCM.setOption('mode', highlightModeByLang(inputScriptCopy.language as LANGUAGE));
+    const regex = new RegExp(`^(${headerSign(language as LANGUAGE)}.*\n)*`, 'g');
+    if (v.type == 'ScriptView') 
+      result += inputScriptCopy.script.substring(inputScriptCopy.script.match(regex)[0].length + 1);
+    else 
+      result += inputScriptCopy.query.substring(inputScriptCopy.query.match(regex)[0].length + 1);
+    myCM.setOption('mode', highlightModeByLang(language as LANGUAGE));
     myCM.setValue(result);
     myCM.setSize('100%', '100%');
 
-    let modifiedScript = DG.Script.create(result);
-    let newUiArea;
-    if (scriptingLanguages.includes(inputScriptCopy.language)) 
-      newUiArea = await modifiedScript.prepare().getEditor();
-    else
-      newUiArea = await getEditorSql(result);
+    let modifiedScript;
+    if (v.type == 'ScriptView') 
+      modifiedScript = DG.Script.create(result);
+    else 
+      modifiedScript = await getEditorSql(result);
+    const newUiArea = await modifiedScript.prepare().getEditor();
+    uiArea.innerHTML = '';
     uiArea.append(newUiArea);
   };
 

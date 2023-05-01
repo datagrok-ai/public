@@ -65,11 +65,11 @@ Provides access to the [ClickHouse](https://clickhouse.com/clickhouse) database 
 ## Supported features
 
 * Schema browsing
-* Build query
-* Visual query
+* Join DB tables
+* Aggregation query
 * Connection test
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [ClickHouse](https://clickhouse.com/clickhouse)

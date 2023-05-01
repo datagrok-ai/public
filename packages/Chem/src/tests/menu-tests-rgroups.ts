@@ -6,11 +6,14 @@ import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {readDataframe} from './utils';
 import {findMCS, findRGroups} from '../scripts-api';
+import {_convertMolNotation} from '../utils/convert-notation-utils';
+import {getRdKitModule} from '../package';
 
 
 category('top menu r-groups', () => {
   let empty: DG.DataFrame;
   let malformed: DG.DataFrame;
+  let dfForMcs: DG.DataFrame;
   let coreEmpty: string;
   let coreMalformed: string;
 
@@ -23,16 +26,46 @@ category('top menu r-groups', () => {
     await grok.data.detectSemanticTypes(empty);
     malformed = await readDataframe('tests/Test_smiles_malformed.csv');
     await grok.data.detectSemanticTypes(malformed);
-    coreEmpty = await findMCS('smiles', empty);
-    coreMalformed = await findMCS('canonical_smiles', malformed);
+    coreEmpty = await findMCS('smiles', empty, true, true);
+    coreMalformed = await findMCS('canonical_smiles', malformed, true, true);
+    dfForMcs = await readDataframe('tests/spgi-100.csv');
   });
 
-  test('mcs', async () => {
-    const mcs = await grok.functions.call('Chem:FindMCS', {molecules: 'smiles', df: t, returnSmarts: false});
-    expect(mcs, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1');
+  test('mcs.exactAtomsExactBonds', async () => {
+    const mcs = await grok.functions.call('Chem:FindMCS',
+      {molecules: 'Structure', df: dfForMcs, exactAtomSearch: true, exactBondSearch: true});
+    expect(mcs, '[#6]-[#6]-[#7]-[#6]');
+  });
+
+  test('mcs.anyAtomsExactBonds', async () => {
+    const mcs = await grok.functions.call('Chem:FindMCS',
+      {molecules: 'Structure', df: dfForMcs, exactAtomSearch: false, exactBondSearch: true});
+    expect(mcs, '[#6,#7,#8,#9]-[#6,#7,#8]-[#7,#6](-[#6,#8,#9,#16])-[#6,#7,#9]');
+  });
+
+  test('mcs.exactAtomsAnyBonds', async () => {
+    const mcs = await grok.functions.call('Chem:FindMCS',
+      {molecules: 'Structure', df: dfForMcs, exactAtomSearch: true, exactBondSearch: false});
+    expect(mcs, '[#6]-,:[#6]-,:[#7]-,:[#6]-,:[#6]');
+  });
+
+  test('mcs.anyAtomsAnyBonds', async () => {
+    const mcs = await grok.functions.call('Chem:FindMCS',
+      {molecules: 'Structure', df: dfForMcs, exactAtomSearch: false, exactBondSearch: false});
+    expect(mcs, `[#6,#8,#9]-,:[#6,#7,#8]-,:[#7,#6](-,:[#6,#7,#8,#16]-,:[#6,#7,#8]-,:[#6,#7]-,:\
+[#7,#6,#8]-,:[#6,#7,#8,#16]-,:[#6,#7,#8,#16])-,:[#6,#7,#8]-,:[#6,#7]-,:[#6,#7,#8]-,:[#6,#7,#8,#9]`);
   });
 
   test('rgroups.smiles', async () => {
+    if (DG.Test.isInBenchmark) {
+      await grok.functions.call('Chem:FindRGroups', {
+        molecules: 'canonical_smiles',
+        df: await readDataframe('smiles.csv'),
+        core: 'N',
+        prefix: 'R',
+      });
+      return;
+    }
     const rgroups: DG.DataFrame = await grok.functions.call('Chem:FindRGroups', {
       molecules: 'smiles',
       df: t,
@@ -93,7 +126,8 @@ M  END
   });
 
   test('rgroups.emptyValues', async () => {
-    const res = await findRGroups('smiles', empty, coreEmpty, 'R');
+    const res = await findRGroups('smiles', empty, _convertMolNotation(coreEmpty,
+      DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock, getRdKitModule()), 'R');
     expect(res.getCol('R1').stats.valueCount, 13);
     expect(res.getCol('R2').stats.valueCount, 13);
   });
@@ -103,12 +137,12 @@ M  END
   });
 
   test('rgroups.malformedData', async () => {
-    const res = await findRGroups('canonical_smiles', malformed, coreMalformed, 'R');
-    expect(res.getCol('R1').stats.valueCount, 32);
-    expect(res.getCol('R2').stats.valueCount, 9);
-    expect(res.getCol('R3').stats.valueCount, 11);
-    expect(res.getCol('R4').stats.valueCount, 13);
-    expect(res.getCol('R5').stats.valueCount, 3);
+    const res = await findRGroups('canonical_smiles', malformed, _convertMolNotation(coreMalformed,
+      DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock, getRdKitModule()), 'R');
+    expect(res.getCol('R1').stats.valueCount, 38);
+    expect(res.getCol('R2').stats.valueCount, 1);
+    expect(res.getCol('R3').stats.valueCount, 1);
+    expect(res.getCol('R4').stats.valueCount, 1);
   });
 
   test('rgroups.malformedInput', async () => {
