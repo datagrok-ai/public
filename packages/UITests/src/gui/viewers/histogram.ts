@@ -23,7 +23,7 @@ category('Viewers: Histogram', () => {
     isViewerPresent(Array.from(v.viewers), 'Histogram');
     const protpertiesBtn = document.getElementsByClassName('panel-titlebar disable-selection panel-titlebar-tabhost')[0]
       .getElementsByClassName('grok-icon grok-font-icon-settings')[0] as HTMLElement;
-    protpertiesBtn.click(); 
+    protpertiesBtn.click();
     await awaitCheck(() => document.querySelector('.grok-prop-panel') !== null, 'histogram properties not found', 1000);
     const hamburgerBtn = document.getElementsByClassName('panel-titlebar disable-selection panel-titlebar-tabhost')[0]
       .getElementsByClassName('grok-icon grok-font-icon-menu')[0] as HTMLElement;
@@ -44,26 +44,26 @@ category('Viewers: Histogram', () => {
     await awaitCheck(() => document.querySelector('.d4-histogram') !== null, 'histogram not found', 3000);
 
     if (histogram.props.valueColumnName != 'weight')
-      throw 'Value column has not been set'; 
+      throw 'Value column has not been set';
     if (histogram.props.binWidthRatio != 2)
-      throw 'binWidthRatio has not been set to 2';     
+      throw 'binWidthRatio has not been set to 2';
     const filterCheckbox = document.getElementsByClassName('d4-layout-root d4-root d4-viewer d4-histogram ui-box')[0]
       .getElementsByClassName('d4-filter-out-missing-values')[0] as HTMLInputElement;
     if (!filterCheckbox)
-      throw 'filterCheckbox element not found';      
+      throw 'filterCheckbox element not found';
 
     histogram.setOptions({
       title: 'Test Histogram',
       colorColumnName: 'age',
       showRangeInputs: true,
-      bins: 30, 
+      bins: 30,
     });
 
     await awaitCheck(() => (document.
       querySelector('#elementContent > div.d4-layout-top > div > textarea') as HTMLSelectElement).
       value === 'Test Histogram', 'title property has not been set', 2000);
     if (histogram.props.bins != 30)
-      throw 'bins property has not been set to 30'; 
+      throw 'bins property has not been set to 30';
     if (histogram.props.colorColumnName != 'age')
       throw 'colorColumnName property has not been set';
     const rangeInputMin = document.getElementsByClassName('d4-layout-root d4-root d4-viewer d4-histogram ui-box')[0]
@@ -73,8 +73,8 @@ category('Viewers: Histogram', () => {
     if (!rangeInputMin)
       throw 'min range input from showRangeInputs property not found';
     if (!rangeInputMax)
-      throw 'max range input from showRangeInputs property not found';   
-  });  
+      throw 'max range input from showRangeInputs property not found';
+  });
 
   // Does not work through Test Manager
   test('histogram.serialization', async () => {
@@ -86,11 +86,11 @@ category('Viewers: Histogram', () => {
     const histogram = findViewer('Histogram', v);
 
     if (histogram!.props.valueColumnName != 'weight')
-      throw 'Value column has not been deserialized'; 
+      throw 'Value column has not been deserialized';
     if (histogram!.props.binWidthRatio != 2)
-      throw 'binWidthRatio has not been deserialized';   
+      throw 'binWidthRatio has not been deserialized';
     if (histogram!.props.bins != 30)
-      throw 'bins property has not been deserialized'; 
+      throw 'bins property has not been deserialized';
     if (histogram!.props.colorColumnName != 'age')
       throw 'colorColumnName property has not been deserialized';
     if (!histogram!.props.showRangeInputs)
@@ -99,7 +99,7 @@ category('Viewers: Histogram', () => {
     const filterCheckbox = document.getElementsByClassName('d4-layout-root d4-root d4-viewer d4-histogram ui-box')[0]
       .getElementsByClassName('d4-filter-out-missing-values')[0] as HTMLInputElement;
     if (!filterCheckbox)
-      throw 'filterCheckbox element not found';  
+      throw 'filterCheckbox element not found';
     const rangeInputMin = document.getElementsByClassName('d4-layout-root d4-root d4-viewer d4-histogram ui-box')[0]
       .getElementsByClassName('ui-input-editor d4-filter-input d4-filter-input-min')[0] as HTMLInputElement;
     const rangeInputMax = document.getElementsByClassName('d4-layout-root d4-root d4-viewer d4-histogram ui-box')[0]
@@ -107,11 +107,59 @@ category('Viewers: Histogram', () => {
     if (!rangeInputMin)
       throw 'min range input from showRangeInputs property not found';
     if (!rangeInputMax)
-      throw 'max range input from showRangeInputs property not found'; 
-  }); 
+      throw 'max range input from showRangeInputs property not found';
+  });
+
+  test('histogram.spline.range.overlapped', async () => {
+    const df: DG.DataFrame = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, 'id', [1, 2, 3]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'value', [0, 6, 8])]);
+    df.getCol('value').setTag('.charts', JSON.stringify([{
+      title: 'Test spline', type: 'spline',
+      color: '#7570B3', width: 1, ['normalize-y']: true, visible: true,
+      x: [2, 7, 10],
+      y: [1, 2, 1],
+    }]));
+    const tv = grok.shell.addTableView(df);
+
+    try {
+      const viewer = (await df.plot.fromType(DG.VIEWER.HISTOGRAM, {})) as DG.Viewer;
+      tv.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Histogram test', 0.3);
+
+      await awaitCheck(() => document.querySelector('.d4-histogram') !== null, 'histogram not found', 3000);
+      isViewerPresent(Array.from(v.viewers), 'Histogram');
+    } finally {
+      tv.close();
+      grok.shell.closeTable(df);
+    }
+  });
+
+  test('histogram.spline.range.non-overlapped', async () => {
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, 'id', [1, 2, 3]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'value', [1000, 1006, 1008])]);
+    df.getCol('value').setTag('.charts', JSON.stringify([{
+      title: 'Test spline', type: 'spline',
+      color: '#7570B3', width: 1, ['normalize-y']: true, visible: true,
+      x: [1, 3, 12],
+      y: [1, 3, 2],
+    }]));
+    const tv = grok.shell.addTableView(df);
+
+    try {
+      const viewer = (await df.plot.fromType(DG.VIEWER.HISTOGRAM, {value: 'value'})) as DG.Viewer;
+      tv.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Histogram test', 0.3);
+
+      await awaitCheck(() => document.querySelector('.d4-histogram') !== null, 'histogram not found', 3000);
+      isViewerPresent(Array.from(v.viewers), 'Histogram');
+    } finally {
+      tv.close();
+      grok.shell.closeTable(df);
+    }
+  }, {skipReason: 'GROK-12698'});
 
   after(async () => {
     grok.shell.closeAll();
     await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Histogram').first());
-  }); 
+  });
 });
