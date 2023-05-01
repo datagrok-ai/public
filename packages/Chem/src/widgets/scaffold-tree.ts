@@ -957,7 +957,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       ui.iconFA('pencil', () => this.openEditSketcher(group), 'Edit scaffold'),
       ui.divText(''),
       ui.iconFA('check-square', () => this.selectTableRows(group, true), 'Select rows'),
-      ui.iconFA('square', () => this.selectTableRows(group, false), 'Unselect rows'),
+      ui.iconFA('square', () => this.selectTableRows(group, false), 'Deselect rows'),
     ], 'chem-mol-box-info-buttons');
     iconsDiv.onclick = (e) => e.stopImmediatePropagation();
     iconsDiv.onmousedown = (e) => e.stopImmediatePropagation();
