@@ -63,7 +63,7 @@ SELECT * FROM orders WHERE @orderDate(orderDate);
 --connection: PostgreSQLTest
 --tags: unit-test
 --input: int employeeId = 5
---input: string shipVia = 3 {pattern: int}
+--input: string shipVia = "3" {pattern: int}
 --input: double freight = 10.0
 --input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
 --input: string shipCity = "contains r" {pattern: string}
@@ -86,4 +86,34 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
 --connection: PostgreSQLTest
 --meta.testExpectedRows: 77
 select * from Products
+--end
+
+--name: PostgresPerf
+--friendlyName: Perf
+--connection: PostgresTest
+--output: dataframe res
+SELECT * FROM generate_series(1,200000);
+--end
+
+--name: PostgreScalarOutput
+--connection: PostgreSQLTest
+--output: int result
+select Count(*) from orders;
+--end
+
+--friendlyName: ChemblPerfGenerated
+--connection: PostgresChemblTest
+--input: int num = 5000000
+select
+    left(md5(i::text), 10),
+    md5(random()::text),
+    md5(random()::text),
+    md5(random()::text),
+    left(md5(random()::text), 4)
+from generate_series(1, @num) s(i)
+--end
+
+--friendlyName: ChemblPerfGenerated
+--connection: PostgresChemblTest
+select * from compound_structures
 --end

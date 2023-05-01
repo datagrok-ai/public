@@ -1,5 +1,4 @@
 --name: TopEventsOfUser
---meta.cache: true
 --input: string date { pattern: datetime }
 --input: string name
 --connection: System:Datagrok
@@ -15,4 +14,3 @@ and et.friendly_name != ''
 group by et.friendly_name
 limit 50
 --end
-

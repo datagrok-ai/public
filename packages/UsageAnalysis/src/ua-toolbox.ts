@@ -21,6 +21,17 @@ export class UaToolbox {
   dateToDD: DG.InputBase = ui.stringInput('To', '');
   usersDD: DG.InputBase = ui.stringInput('Users', '');
   packagesDD: DG.InputBase = ui.stringInput('Packages', '');
+  private _backToView: string = 'Packages';
+  set backToView(value: string) {
+    this._backToView = value;
+    if (this.backButton !== undefined)
+      this.backButton.innerText = `🠔 back to ${value.toLowerCase()}`;
+  }
+  get backToView(): string {
+    return this._backToView;
+  }
+
+  backButton?: HTMLButtonElement;
   formDD: HTMLDivElement;
   drilldown: UaView | null = null;
   filters: DG.AccordionPane;
@@ -57,8 +68,13 @@ export class UaToolbox {
         groupsInput.field,
         packagesInput.field,
       ]);
-      const applyB = ui.bigButton('Apply', () => this.applyFilter());
-      applyB.style.marginLeft = 'auto';
+      const applyB = ui.bigButton('Apply', () => {
+        applyB.disabled = true;
+        this.applyFilter();
+      });
+      applyB.classList.add('ua-apply-button');
+      applyB.disabled = true;
+      dateInput.onChanged(() => applyB.disabled = false);
       $(form).append(applyB);
       this.dateFromDD.readOnly = true;
       this.dateToDD.readOnly = true;
@@ -72,21 +88,20 @@ export class UaToolbox {
       ]);
       this.formDD.style.display = 'none';
       const closeButton = ui.button('', () => this.exitDrilldown(), 'Close drilldown filter');
-      closeButton.classList.add('ua-small-button', 'fal', 'fa-times');
-      const backButton = ui.button('', () => {
-        ViewHandler.changeTab('Packages');
+      closeButton.classList.add('ua-close-button', 'fal', 'fa-times');
+      this.backButton = ui.button(`🠔 back`, () => {
+        ViewHandler.changeTab(this._backToView);
         this.exitDrilldown();
-      }, 'Back to Packages tab');
-      backButton.classList.add('ua-small-button', 'far', 'fa-chevron-square-left');
-      backButton.style.marginRight = '10px';
-      this.formDD.prepend(backButton);
+      }, 'Back to previous tab');
+      this.backButton.classList.add('ua-back-button');
+      this.formDD.append(this.backButton);
       this.formDD.prepend(closeButton);
       this.formDD.classList.add('ua-drilldown-form');
       return form;
     }, true);
     this.filters.root.before(this.formDD);
 
-    ViewHandler.UA.tabs.onTabChanged.subscribe((tab) => {
+    ViewHandler.UA.tabs.onTabChanged.subscribe((_) => {
       if (this.formDD.style.display === 'block') this.exitDrilldown();
       if (this.checkLabels()) {
         this.formDD.style.display = 'block';
@@ -98,7 +113,7 @@ export class UaToolbox {
   exitDrilldown() {
     this.formDD.style.display = 'none';
     this.clearFormDD();
-    this.drilldown?.getScatterPlot().reloadViewer();
+    this.drilldown?.viewers.forEach((v) => v.reloadViewer());
     this.drilldown = null;
     this.filters.root.style.display = 'flex';
   }

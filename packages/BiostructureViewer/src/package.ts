@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {DockingApp} from './apps/docking-app';
 import {byId, byData, MolstarViewer} from './viewers/molstar-viewer';
+import {SaguaroViewer} from './viewers/saguaro-viewer';
 import {PdbGridCellRenderer} from './utils/pdb-grid-cell-renderer';
 import {NglGlService} from './utils/ngl-gl-service';
 import {NglForGridTestApp} from './apps/ngl-for-grid-test-app';
@@ -19,10 +20,13 @@ import {PdbApp} from './apps/pdb-app';
 import {nglViewUI, nglWidgetUI} from './viewers/ngl-ui';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
-import {MolstarViewerApp} from './apps/molstar-viewer-app';
 import {TaskBarProgressIndicator} from 'datagrok-api/dg';
 import {dockingDemoApp} from './demo/docking';
 import {biostructureInGridApp} from './demo/biostructure-in-grid';
+import {BiotrackViewerApp} from './apps/biotrack-viewer-app';
+import {BiostructureAndTrackViewerApp} from './apps/biostructure-and-track-viewer-app';
+import {previewBiostructure, viewBiostructure} from './viewers/view-preview';
+import {BiostructureViewerApp} from './apps/biostructure-viewer-app';
 
 class Package extends DG.Package {
   private _pLogger: DG.PackageLogger;
@@ -58,7 +62,8 @@ export function Molecule3dCellRenderer(): PdbGridCellRenderer {
 export async function dockingApp() {
   const pi = DG.TaskBarProgressIndicator.create('Opening BioStructure Viewer');
   try {
-    const app = new DockingApp();
+    grok.shell.warning('dockingApp demo deprecated');
+    const app = new DockingApp('dockingApp');
     await app.init();
   } finally {
     pi.close();
@@ -108,52 +113,54 @@ export function getNglGlService(): NglGlServiceBase {
 
 // -- File handlers --
 
+/* The Chem package is opening formats 'mol2', 'sdf', 'mol' for small molecules */
 //name: importPdb
 //description: Opens PDB file
 //tags: file-handler
-//meta.ext: pdb
+//meta.ext: mmcif, cifCore, pdb, pdbqt, gro, xyz
 //input: string fileContent
 //output: list tables
 export async function importPdb(fileContent: string): Promise<DG.DataFrame[]> {
-  const ph: IPdbHelper = await getPdbHelper();
-  const df: DG.DataFrame = await ph.pdbToDf(fileContent, '');
+  // Do not build up data frame from PDB file, allows to open various formats
+  // const ph: IPdbHelper = await getPdbHelper();
+  // const df: DG.DataFrame = await ph.pdbToDf(fileContent, '');
+  // const app = new BiostructureApp();
+  // await app.init(df);
 
-  const app = new PdbApp();
-  await app.init(df);
-
+  await viewBiostructure(fileContent);
   return [];
 }
 
 // -- File (pre)viewers --
 
 // eslint-disable-next-line max-len
-//tags: fileViewer, fileViewer-mol, fileViewer-cif, fileViewer-mcif, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-ent, fileViewer-pqr, fileViewer-mmtf, fileViewer-mtl, fileViewer-sd
+//tags: fileViewer, fileViewer-mol, fileViewer-cif, fileViewer-mcif, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-ent, fileViewer-pqr, fileViewer-mmtf, fileViewer-mtl, fileViewer-sd, fileViewer-pdbqt
 //input: file file
 //output: view v
-export function molecule3dNglView1(file: any): DG.View {
-  return nglViewUI(file);
+export function molecule3dNglView1(file: DG.FileInfo): DG.View {
+  return previewBiostructure(file);
 }
 
 //tags: fileViewer, fileViewer-ply, fileViewer-obj
 //input: file file
 //output: view v
-export function molecule3dNglView2(file: any): DG.View {
-  return nglViewUI(file);
+export function molecule3dNglView2(file: DG.FileInfo): DG.View {
+  return previewBiostructure(file);
 }
 
 //tags: fileViewer, fileViewer-prmtop, fileViewer-parm7, fileViewer-psf, fileViewer-top
 //input: file file
 //output: view v
-export function molecule3dNglView3(file: any): DG.View {
-  return nglViewUI(file);
+export function molecule3dNglView3(file: DG.FileInfo): DG.View {
+  return previewBiostructure(file);
 }
 
 // eslint-disable-next-line max-len
 //tags: fileViewer, fileViewer-dsn6, fileViewer-brix, fileViewer-cube, fileViewer-cub, fileViewer-dx, fileViewer-dxbin, fileViewer-xplor, fileViewer-cns, fileViewer-mrc, fileViewer-map, fileViewer-ccp4
 //input: file file
 //output: view v
-export function molecule3dNglView4(file: any): DG.View {
-  return nglViewUI(file);
+export function molecule3dNglView4(file: DG.FileInfo): DG.View {
+  return previewBiostructure(file);
 }
 
 // -- Panel widgets --
@@ -192,12 +199,36 @@ export async function nglViewerApp() {
   }
 }
 
-//name: molstarViewerApp
-//description: Test app for MolstarViewer
-export async function molstarViewerApp() {
-  const pi = DG.TaskBarProgressIndicator.create('open molstarViewer app');
+//name: biostructureViewerApp
+//description: Test app for BiostructureViewer (molstar)
+export async function biostructureViewerApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('open biostructureViewer app');
   try {
-    const app = new MolstarViewerApp('molstarViewerApp');
+    const app = new BiostructureViewerApp('biostructureViewerApp');
+    await app.init();
+  } finally {
+    pi.close();
+  }
+}
+
+//name: biotrackViewerApp
+//description: Test app for BiotrackViewer (saguaro)
+export async function biotrackViewerApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('open biotrackViewer app');
+  try {
+    const app = new BiotrackViewerApp('biotrackViewerApp');
+    await app.init();
+  } finally {
+    pi.close();
+  }
+}
+
+//name: biostructureAndTrackViewerApp
+//description: Test app for twin BiostructureViewer (molstar) and BiotrackViewer (saguaro)
+export async function biostructureAndTrackViewerApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('open biostructureAndTrackViewer app');
+  try {
+    const app = new BiostructureAndTrackViewerApp('biostructureAndTrackViewerApp');
     await app.init();
   } finally {
     pi.close();
@@ -226,6 +257,15 @@ export function nglViewer(): DG.JsViewer {
 //output: viewer result
 export function molstarViewer(): DG.JsViewer {
   return new MolstarViewer();
+}
+
+//name: Biotrack
+//description: structure polymer annotation tracks
+//meta.keywords: PDB, track
+//tags: viewer, panel
+//output: viewer result
+export function saguaroViewer(): DG.Viewer {
+  return new SaguaroViewer();
 }
 
 // -- Top menu --

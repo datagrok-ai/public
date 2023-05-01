@@ -98,7 +98,7 @@ export class VirtualScreeningTutorial extends Tutorial {
         'with different counterions, and there might be different inconsistencies in the raw data. Let\'s curate ' +
         'the chemical structures given in the dataset. We will assume that all these compounds are present in the ' +
         'body in a neutralized form.';
-      const curationDlg = await this.openDialog('Open "Chem | Curate"', 'Curate Chem Structures', chemMenu, curationInfo);
+      const curationDlg = await this.openDialog('Open "Chem | Curate"', 'Curate', chemMenu, curationInfo);
 
       const neutralizationInfo = 'Perform "Neutralization" to remove charges.';
       await this.dlgInputAction(curationDlg, 'Check "Neutralization"', 'Neutralization', 'true', neutralizationInfo);
@@ -112,7 +112,7 @@ export class VirtualScreeningTutorial extends Tutorial {
       const outputComment = '';
       await this.action('Click "OK" and wait for the procedures to complete',
         grok.functions.onAfterRunAction.pipe(filter((call) => {
-          return call.func.name === 'CurateChemStructures' &&
+          return call.func.name === 'Curate' &&
           call.inputs.get('neutralization') &&
           call.inputs.get('tautomerization') &&
           call.inputs.get('mainFragment');

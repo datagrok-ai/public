@@ -4,7 +4,7 @@
 # Tests: Community forum
 
 A place to socialize and ask either generic questions, or questions related to particular entities, such as
-[queries](../access/data-query.md) or [projects](../datagrok/project.md). In the latter case, entity owner will get
+[queries](../access/access.md#data-query) or [projects](../datagrok/project.md). In the latter case, entity owner will get
 notified that someone asked for help.
 
 ## Testing scenarios

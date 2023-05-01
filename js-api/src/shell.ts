@@ -5,11 +5,12 @@ import { toDart, toJs } from "./wrappers";
 import { Menu, TabControl } from "./widgets";
 import { DockManager } from "./docking";
 import { DockType, DOCK_TYPE } from "./const";
-import { JsViewer } from "./viewer";
+import { JsViewer, Viewer } from "./viewer";
 import {_toIterable} from "./utils";
 import {FuncCall} from "./functions";
 
 declare let ui: any;
+declare let grok: { shell: Shell };
 let api = <any>window;
 
 /**
@@ -18,21 +19,10 @@ let api = <any>window;
  * grok.shell.addTableView(grok.data.demo.biosensor(1000));
  * */
 export class Shell {
-  windows: Windows;
-  settings: Settings;
+  windows: Windows = new Windows();
+  settings: Settings = new Settings();
 
-  constructor() {
-    /** Tool windows
-     * @type Windows */
-    this.windows = new Windows();
-
-    /** Settings
-     * @type {Settings} */
-    this.settings = new Settings();
-  }
-
-  /** Current table, or null.
-   *  @type {DataFrame} */
+  /** Current table, or null. */
   get t(): DataFrame {
     return toJs(api.grok_CurrentTable());
   }
@@ -44,32 +34,24 @@ export class Shell {
   /** Current table view, or null */
   get tv(): TableView { return toJs(api.grok_Get_CurrentView()); }
 
-  /** Current project
-   *  @type {Project} */
+  /** Current project */
   get project(): Project {
     return toJs(api.grok_Project());
   }
 
-  /** Adds a table to the workspace.
-   * @param {DataFrame} table*/
+  /** Adds a table to the workspace. */
   addTable(table: DataFrame): void {
     api.grok_AddTable(table.dart);
   }
 
-  /** Closes a table and removes from the workspace.
-   * @param {DataFrame} table */
+  /** Closes a table and removes from the workspace. */
   closeTable(table: DataFrame): void {
     api.grok_CloseTable(table.dart);
   }
 
   /** Last error state */
-  get lastError(): string {
-    return api.grok_Get_LastError();
-  }
-
-  set lastError(s: string) {
-    api.grok_Set_LastError(s);
-  }
+  get lastError(): string { return api.grok_Get_LastError(); }
+  set lastError(s: string) { api.grok_Set_LastError(s); }
 
   /** Current user
    *  @type {User} */
@@ -78,12 +60,16 @@ export class Shell {
   }
 
   /** Current object (rendered in the context panel) */
-  get o(): any {
-    return toJs(api.grok_Get_CurrentObject(), false);
+  get o(): any { return toJs(api.grok_Get_CurrentObject(), false); }
+  set o(x: any) { api.grok_Set_CurrentObject(toDart(x)); }
+
+  /** Current viewer */
+  get viewer(): Viewer {
+    return toJs(api.grok_Get_CurrentViewer(), false);
   }
 
-  set o(x: any) {
-    api.grok_Set_CurrentObject(toDart(x));
+  set viewer(x: Viewer) {
+    api.grok_Set_CurrentViewer(toDart(x));
   }
 
   /** @type {TabControl} */
@@ -302,8 +288,40 @@ export class Shell {
 }
 
 
+/** Represents help panel that shows help for the current object and is toggleable
+ * by pressing F1 */
+export class ShellHelpPanel {
+  /** Controls whether the help panel shows help for the current object as it changes */
+  get syncCurrentObject(): boolean { return api.grok_HelpPanel_Get_SyncCurrentObject(); }
+  set syncCurrentObject(x: boolean) { api.grok_HelpPanel_Set_SyncCurrentObject(x); }
+
+  /** Controls help panel visibility */
+  get visible(): boolean { return grok.shell.windows.showHelp; }
+  set visible(x: boolean) { grok.shell.windows.showHelp = x; }
+
+  /** Shows the content in the help window for the [x] URL or object. */
+  showHelp(x: any) { api.grok_ShowHelp(x); }
+}
+
+
+/** Represents context panel that shows properties for the current object
+ and is toggleable by pressing F1 */
+export class ShellContextPanel {
+  /** Controls whether the context panel shows context for the current object as it changes */
+  get syncCurrentObject(): boolean { return api.grok_ContextPanel_Get_SyncCurrentObject(); }
+  set syncCurrentObject(x: boolean) { api.grok_ContextPanel_Set_SyncCurrentObject(x); }
+
+  /** Controls context panel visibility */
+  get visible(): boolean { return grok.shell.windows.showContextPanel; }
+  set visible(x: boolean) { grok.shell.windows.showContextPanel = x; }
+}
+
+
 /** Controls tool windows visibility */
 export class Windows {
+
+  help: ShellHelpPanel = new ShellHelpPanel();
+  context: ShellContextPanel = new ShellContextPanel();
 
   /** Controls the visibility of the sidebar. */
   get showSidebar(): boolean { return api.grok_Windows_Get_ShowSidebar(); }

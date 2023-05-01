@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import * as rxjs from 'rxjs';
 
-import {Subscription} from 'rxjs';
 import {SliderOptions} from 'datagrok-api/dg';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
@@ -13,8 +12,17 @@ import {
   getSplitter, monomerToShort, pickUpPalette, pickUpSeqCol, SplitterFunc,
   TAGS as bioTAGS
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {
+  WebLogoPropsDefault, WebLogoProps, IWebLogoViewer,
+  PositionHeight,
+  positionSeparator,
+  VerticalAlignments,
+  HorizontalAlignments,
+  PositionMarginStates,
+  FilterSources,
+} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import {TAGS as wlTAGS} from '@datagrok-libraries/bio/src/viewers/web-logo';
 
 declare global {
   interface HTMLCanvasElement {
@@ -76,29 +84,6 @@ export class PositionInfo {
   }
 }
 
-export enum VerticalAlignments {
-  TOP = 'top',
-  MIDDLE = 'middle',
-  BOTTOM = 'bottom',
-}
-
-export enum HorizontalAlignments {
-  LEFT = 'left',
-  CENTER = 'center',
-  RIGHT = 'right',
-}
-
-export enum PositionMarginStates {
-  AUTO = 'auto',
-  ON = 'on',
-  OFF = 'off',
-}
-
-export enum FilterSources {
-  Filtered = 'Filtered',
-  Selected = 'Selected',
-}
-
 export enum PROPS_CATS {
   STYLE = 'Style',
   BEHAVIOR = 'Behavior',
@@ -133,6 +118,8 @@ export enum PROPS {
   // -- Behavior --
   filterSource = 'filterSource',
 }
+
+const defaults: WebLogoProps = WebLogoPropsDefault;
 
 export class WebLogoViewer extends DG.JsViewer {
   public static residuesSet = 'nucleotides';
@@ -254,7 +241,7 @@ export class WebLogoViewer extends DG.JsViewer {
     return (this.visibleSlider) ? Math.floor(this.slider.min) : 0;
   }
 
-  private viewSubs: Subscription[] = [];
+  private viewSubs: rxjs.Unsubscribable[] = [];
 
   constructor() {
     super();
@@ -266,43 +253,41 @@ export class WebLogoViewer extends DG.JsViewer {
     this.unitsHandler = null;
 
     // -- Data --
-    this.sequenceColumnName = this.string(PROPS.sequenceColumnName, null,
+    this.sequenceColumnName = this.string(PROPS.sequenceColumnName, defaults.sequenceColumnName,
       {category: PROPS_CATS.DATA});
-    this.startPositionName = this.string(PROPS.startPositionName, null,
+    this.startPositionName = this.string(PROPS.startPositionName, defaults.startPositionName,
       {category: PROPS_CATS.DATA});
-    this.endPositionName = this.string(PROPS.endPositionName, null,
+    this.endPositionName = this.string(PROPS.endPositionName, defaults.endPositionName,
       {category: PROPS_CATS.DATA});
-    this.skipEmptySequences = this.bool(PROPS.skipEmptySequences, true,
+    this.skipEmptySequences = this.bool(PROPS.skipEmptySequences, defaults.skipEmptySequences,
       {category: PROPS_CATS.DATA});
-    this.skipEmptyPositions = this.bool(PROPS.skipEmptyPositions, false,
+    this.skipEmptyPositions = this.bool(PROPS.skipEmptyPositions, defaults.skipEmptyPositions,
       {category: PROPS_CATS.DATA});
-    this.shrinkEmptyTail = this.bool(PROPS.shrinkEmptyTail, true,
+    this.shrinkEmptyTail = this.bool(PROPS.shrinkEmptyTail, defaults.shrinkEmptyTail,
       {category: PROPS_CATS.DATA});
-
 
     // -- Style --
-    this.backgroundColor = this.int(PROPS.backgroundColor, 0xFFFFFFFF,
+    this.backgroundColor = this.int(PROPS.backgroundColor, defaults.backgroundColor,
       {category: PROPS_CATS.STYLE});
-    this.positionHeight = this.string(PROPS.positionHeight, PositionHeight.full,
+    this.positionHeight = this.string(PROPS.positionHeight, defaults.positionHeight,
       {category: PROPS_CATS.STYLE, choices: Object.values(PositionHeight)});
-    this._positionWidth = this.positionWidth = this.float(PROPS.positionWidth, 16,
+    this._positionWidth = this.positionWidth = this.float(PROPS.positionWidth, defaults.positionWidth,
       {category: PROPS_CATS.STYLE/* editor: 'slider', min: 4, max: 64, postfix: 'px' */});
 
-
     // -- Layout --
-    this.verticalAlignment = this.string(PROPS.verticalAlignment, VerticalAlignments.MIDDLE,
+    this.verticalAlignment = this.string(PROPS.verticalAlignment, defaults.verticalAlignment,
       {category: PROPS_CATS.LAYOUT, choices: Object.values(VerticalAlignments)});
-    this.horizontalAlignment = this.string(PROPS.horizontalAlignment, HorizontalAlignments.CENTER,
+    this.horizontalAlignment = this.string(PROPS.horizontalAlignment, defaults.horizontalAlignment,
       {category: PROPS_CATS.LAYOUT, choices: Object.values(HorizontalAlignments)});
-    this.fixWidth = this.bool(PROPS.fixWidth, false,
+    this.fixWidth = this.bool(PROPS.fixWidth, defaults.fixWidth,
       {category: PROPS_CATS.LAYOUT});
-    this.fitArea = this.bool(PROPS.fitArea, true,
+    this.fitArea = this.bool(PROPS.fitArea, defaults.fitArea,
       {category: PROPS_CATS.LAYOUT});
-    this.minHeight = this.float(PROPS.minHeight, 50,
+    this.minHeight = this.float(PROPS.minHeight, defaults.minHeight,
       {category: PROPS_CATS.LAYOUT/*, editor: 'slider', min: 25, max: 250, postfix: 'px'*/});
-    this.maxHeight = this.float(PROPS.maxHeight, 100,
+    this.maxHeight = this.float(PROPS.maxHeight, defaults.maxHeight,
       {category: PROPS_CATS.LAYOUT/*, editor: 'slider', min: 25, max: 500, postfix: 'px'*/});
-    this.positionMarginState = this.string(PROPS.positionMarginState, PositionMarginStates.AUTO,
+    this.positionMarginState = this.string(PROPS.positionMarginState, defaults.positionMarginState,
       {category: PROPS_CATS.LAYOUT, choices: Object.values(PositionMarginStates)});
     let defaultValueForPositionMargin = 0;
     if (this.positionMarginState === 'auto') defaultValueForPositionMargin = 4;
@@ -310,7 +295,7 @@ export class WebLogoViewer extends DG.JsViewer {
       {category: PROPS_CATS.LAYOUT, min: 0, max: 16});
 
     // -- Behavior --
-    this.filterSource = this.string(PROPS.filterSource, FilterSources.Filtered,
+    this.filterSource = this.string(PROPS.filterSource, defaults.filterSource,
       {category: PROPS_CATS.BEHAVIOR, choices: Object.values(FilterSources)}) as FilterSources;
 
     const style: SliderOptions = {style: 'barbell'};
@@ -421,9 +406,9 @@ export class WebLogoViewer extends DG.JsViewer {
       (s) => s !== null ? this.splitter!(s).length : 0)) : 0;
 
     // Get position names from data column tag 'positionNames'
-    const positionNamesTxt = this.seqCol.getTag('positionNames');
+    const positionNamesTxt = this.seqCol.getTag(wlTAGS.positionNames);
     // Fallback if 'positionNames' tag is not provided
-    this.positionNames = positionNamesTxt ? positionNamesTxt.split(', ').map((n) => n.trim()) :
+    this.positionNames = positionNamesTxt ? positionNamesTxt.split(positionSeparator).map((n) => n.trim()) :
       [...Array(maxLength).keys()].map((jPos) => `${jPos + 1}`);
 
     this.startPosition = (this.startPositionName && this.positionNames &&

@@ -325,25 +325,26 @@ export async function delay(ms: number) {
 }
 
 export async function awaitCheck(checkHandler: () => boolean,
-  error: string = 'Timeout exceeded', wait: number = 500): Promise<void> {
+  error: string = 'Timeout exceeded', wait: number = 500, interval: number = 50): Promise<void> {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
-      clearInterval(interval);
+      clearInterval(intervalId);
       reject(new Error(error));
     }, wait);
     // @ts-ignore
-    const interval: Timeout = setInterval(() => {
+    const intervalId: Timeout = setInterval(() => {
       if (checkHandler()) {
-        clearInterval(interval);
+        clearInterval(intervalId);
         resolve();
       }
-    }, 50);
+    }, interval);
   });
 }
 
 export function isDialogPresent(dialogTitle: string): boolean {
-  for (let i = 0; i < DG.Dialog.getOpenDialogs().length; i++) {
-    if (DG.Dialog.getOpenDialogs()[i].title == dialogTitle)
+  const dialogs = DG.Dialog.getOpenDialogs();
+  for (let i = 0; i < dialogs.length; i++) {
+    if (dialogs[i].title == dialogTitle)
       return true;
   }
   return false;

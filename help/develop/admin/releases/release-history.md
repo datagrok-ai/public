@@ -6,10 +6,10 @@ title: "Release History"
 
 | Service                                                  | Docker Image                                                                                      |
 |----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../infrastructure.md#datagrok-components)     | [datagrok/datagrok:1.13.10](https://hub.docker.com/r/datagrok/datagrok)                            |
-| [Grok Connect](../../../access/data-connection.md)       | [datagrok/grok_connect:1.3.6](https://hub.docker.com/r/datagrok/grok_connect)                     |
+| [Datagrok](../infrastructure.md#datagrok-components)     | [datagrok/datagrok:1.14.1](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Grok Connect](../../../access/access.md#data-connection)       | [datagrok/grok_connect:2.0.10](https://hub.docker.com/r/datagrok/grok_connect)                     |
 | Grok Spawner                                             | [datagrok/grok_spawner:1.3.2](https://hub.docker.com/r/datagrok/grok_spawner)                     |
-| [Grok Compute](../infrastructure.md#grok-compute)        | [datagrok/grok_compute:1.5.1](https://hub.docker.com/r/datagrok/grok_compute)                     |
+| [Grok Compute](../infrastructure.md#grok-compute)        | [datagrok/grok_compute:1.5.2](https://hub.docker.com/r/datagrok/grok_compute)                     |
 | [Jupyter Kernel Gateway](../../../compute/scripting.md)  | [datagrok/jupyter_kernel_gateway:1.5.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
 | [Jupyter Notebook](../../../compute/jupyter-notebook.md) | [datagrok/jupyter_notebook:1.1.0](https://hub.docker.com/r/datagrok/jupyter_notebook)             |
 | [H2O](../infrastructure.md#h2o)                          | [datagrok/h2o:1.1.0](https://hub.docker.com/r/datagrok/h2o)                                       |
@@ -17,14 +17,331 @@ title: "Release History"
 
 See also:
 - [Versioning policy](versioning-policy.md)
-- [Docker-Compose](../docker-compose.md)
+- [Docker-Compose](../deploy/docker-compose.md)
+
+
+## 2023-04-20 1.14.1
+
+### Addressed Issues
+
+* (Improvement) GROK-12721: Tooltip modifications for dialog and drag-n-drop
+* (Improvement) GROK-12788: Cat filter: select one on first select, select all on deselecting last
+* (Enhancement) [#1583](https://github.com/datagrok-ai/public/issues/1575692020): Scatter Plot: "pack and zoom" option should response to changes when a numerical column is used
+* (Bug) [#1758](https://github.com/datagrok-ai/public/issues/1651500892): Filtering is slow if there are multiple bar charts on several views
+* (Enhancement) [#1778](https://github.com/datagrok-ai/public/issues/1662788717): Viewers: Organize properties consistently in the context panel
+* (Enhancement) [#1635](https://github.com/datagrok-ai/public/issues/1613838883): Box Plot: Add a zoom slider to adjust axes range
+* (Enhancement) [#1746](https://github.com/datagrok-ai/public/issues/1644383938): Scatter Plot: Date picker for X and Y axes min/max
+* (Bug) [#1671](https://github.com/datagrok-ai/public/issues/1624096862): Line chart: connects the first and last values when  resizing the window
+* (Bug) GROK-12891: File Manager: scrollbar is missing in the File Tree
+
+## 2023-04-18 1.14.0
+
+We've launched a new version of the Datagrok platform (1.14.0). This release focuses on improving data access speed and convenience, new visualization and usability features, and ensuring platform stability. Here are some of the biggest improvements made in this release:
+
+* New version of Grok Connect with a completely redesigned data delivery system. Thanks to streaming, you can now work with large data volumes and receive data as the query is being executed.
+* [Biostructure Viewer](#biostructureviewer) package for interactive exploration of biological structures. For details, see [Biostructure Viewer](https://community.datagrok.ai/t/macromolecules-updates/661/14).
+* New user-designed cell forms feature that allows you to include more details in cells, displaying additional values alongside the cell content. In-grid forms also inherit the color-coding scheme of the grid, enabling you to view even more additional information in the cell.
+* [Tile Viewer]( https://public.datagrok.ai/apps/Tutorials/Demo/Viewers/Tile%20Viewer) supporting swimlanes mode, where you can drag and drop cards between lanes.
+* Completely redesigned [table link editor](../../../explore/link-tables.md).
+* Improvement in the function execution efficiency with a significant performance boost of 10x, specifically in formula calculations.
+* Multiple improvements in plugins, such as [Chem](#chem), [Bio](#bio), [Helm](#helm), [Peptides](#peptides), [Dendrogram](#dendrogram).
+
+### Visualization and usability improvements
+
+* Core viewers now render molecular structures in the legend marking them with their corresponding colors.
+* Placed a hint in the form of three dots (...) in the corner of an element to trigger the context menu when clicked.
+* Added a scroll bar in the context menu to handle options that do not fit on the screen.
+* For all dialogs that require selecting a molecular column, it is now set as the initial option.
+* Ability to select and import multiple files at once using the **Open local file** dialog.
+* Consistently reorganized viewers’ properties in the **Context pane**:
+	 * Moved **Label orientation** to the **Style** tab for PC plot and the other viewers with this property.
+   * Moved **Segments Font** to the **Style** tab for line chart.
+   * Moved tooltip properties from **Misc** to **Tooltip** and column properties from **Misc** to **Columns** for heatmap and grid.
+   * Renamed `Point` to `Line` for PC plot
+   * Reordered the properties of the viewers in a way that ensures they use the same order of categories.
+* [Grid](../../../visualize/viewers/grid.md):
+  * Ability to add info panels as columns in the grid.
+  * Implemented the column-based edit permissions. Now you can set different editing permissions for each column based on user roles or other criteria.
+  * Implemented the ability to view the column’s private tags by clicking the **Show private** button (**Context Pane** > **Details**).
+  * Added the capability for users to design their own tooltips specific to each column.
+  * Implemented a warning that displays the reason why a read-only cell cannot be edited when a user attempts to start editing it.
+  *  Implemented the ability to specify columns for in-grid [Default Forms](../../../visualize/viewers/grid.md#forms) (**Context Menu** > **Add** > **Forms** > **Default HTML**).
+  * Improved default scientific format to show two digits after comma.
+  * Fixed:
+    * The issue where colouring and format changes were resetting unexpectedly upon interacting with filters, if a group tooltip was set
+    * Table is not rendered properly after switching dataframe after sorting data in a column
+    * An error when double-clicking on a column header.
+* [Filter Panel](../../../visualize/viewers/filters.md):
+  * Added the ability to drag-and-drop custom filters to the filter panel.
+  * Now filters use column format in the tooltip for dates.
+  * Consolidated filters application across different tabs so that the behavior is intuitive to users. The **Reset** button resets all filters in the analysis:
+      * Turns all filters on.
+      * Clears all selected options.
+      * Clears visualization filters (e.g. scatterplot color label or `filter by zoom`)
+      * Turning on / off a filter makes it turned on /off across all tabs
+      * Turning off a filter makes the filter inactive but its selection remains set
+  * Fixed:
+    * The list of filters becomes empty in **Reorder Filters** dialog
+    * Filters synchronization when clicking the **Clear** button
+    * Filters re-ordering dialog is not opened if a custom filter was added to filters panel
+    * The usability of range filters when min/max values existing in the table were shown instead of actually set range
+    * Slow filtering if there are multiple bar charts on several views.
+* [Scatter plot](../../../visualize/viewers/scatter-plot.md):
+  * Now it displays legend labels for conditional coloring.
+  * Added date picker for X and Y axes min/max values.
+  * Harmonized the scatter plot context menu:
+    * Renamed **Drop Lines** to **Show Drop Lines**.
+    * Renamed **Regression Line** to **Show Regression Line**.
+    * Added a checkbox for toggling **Rectangle/Lasso selection**.
+    * Added **Label Color As Marker** to **Context menu** > **Markers**.
+    * Now, we've disabled marker type when the marker axis is defined.
+  * Made some improvements for **Formula Lines** on the scatter plot:
+    * Formula lines labels are now parallel to lines
+    * You can hide the regression lines formula by toggling the corresponding checkbox in the context menu (**Tools** > **Show Regression Lines**)
+  * Fixed:
+    * Table unexpected filtering if scatter plot has `filter by zoom` setting and empty column on log scale axis
+    * Error loading scatter plot for specific data and log scale axes on applying layout
+    * Incorrect response on enabling `pack and zoom` option when a numerical column is used
+    * The visibility of the selected dot on zooming when it is outside the currently shown range
+    * Error loading scatter plot for specific data on applying layout
+    * Zoom slider behavior for inverted axes
+    * Disappearing of the legend when specific filter is applied.
+* [Histogram](https://community.datagrok.ai/t/visualization-related-updates/521/32):
+  * Added the multi-distribution mode: the ability to show markers and a choice of whether or not distributions should be normalized.
+  * Added an option to show markers and straight lines for the split mode.
+  * Added an option to normalize distribution in  the split mode.
+  * Fixed:
+     * incorrect behavior when filtering
+     * resetting filter when filtering out missing values.
+* [Line Chart](../../../visualize/viewers/line-chart.md)
+  * Now the line chart renders molecule structures on the X axis.
+  * Added the zoom slider on the X axis.
+  * Fixed:
+    * Wrong data is shown on line chart
+    * Unsupported operation: NaN.floor() error
+    * Incorrect legend for **Split by** when **Row Source** is set to `Selected`
+    * Formula lines error
+    * Change columns bug.
+* For [PC Plot](../../../visualize/viewers/pc-plot.md) we’ve fixed:
+   * Density recalculation on normalization or switching columns to log scale
+   * Adding Measures in PC plot transformation.
+* [Box Plot](../../../visualize/viewers/box-plot.md)
+  * Added a zoom slider to adjust axes range
+  * Harmonized the box plot context menu:
+    * Added new menu entries to **Markers**: **Marker Type**, **Marker Size**, **Marker Opacity**, **Show Inside Values**, and **Show Outside Values**.
+    * Added menu **Statistics** on the top level with two entries: **Show Statistics** and **Show p-Value**.
+    * Added menu Y axis with **Show Value Axis**, **Axis Type**, **Invert Y axis**, and **Show Value Selector**.
+    * Added menu X axis with **Show Category Axis**, **Label Orientation**, and **Show Category Selector**.
+* [Bar chart](../../../visualize/viewers/bar-chart.md)
+  * Harmonized the context menu.
+  * Implemented a fix that correctly hides the tooltip when the user selects the **Tooltip** > **Hide** option.
+*  [Tile Viewer](../../../visualize/viewers/tile-viewer.md) now shows long values that are not fully visible in a tooltip.
+* Resolved the issue where the  [Trellis Plot](../../../visualize/viewers/trellis-plot.md) displayed not all data until a user clicked a bar chart.
+
+### Data Access
+
+* Improvements:
+  * Added the support of [CoreWeave Object Storage](../../../access/connectors/coreweave.md).
+  * Conducted Postgres harmonization, which includes complete types support and the addition of regex support in the string pattern for the connector.
+  * The MySQL connector now fully supports all types.
+  * Added the ability to display SQL views along with tables.
+* Fixed:
+  * Regex for auery annotation.
+  * Query annotation: Allow extra spaces.
+  * **Browse Schema** action for MySQL now returns the name of the current database.
+  * Snowflake: Browse Schema doesn't work.
+  * Snowflake: error on the **Content** tab.
+  * DataQuery: Query created from connection doesn't return a result.
+  * Databases | MS SQL | NorthwindTest | Schemas | dbo: 'com.microsoft.sqlserver.jdbc.SQLServerException:'error in the **Inspect** tab for the column.
+  * Error on the **Activity** tab for some connections
+  * Snowflake handling of doubles, infinity, -infinity, NaN, and large scale floating point numbers.
+  * Exception in parametrized queries with two identical parameter names.
+  * Databases | PostgresDart | NorthwindTest: error for the `orders` query.
+  * Databases | PostgresDart | ChemblSQL: error on the **Content** tab when clicking the `domains` table.
+  * Databases: can't add Visual Query.
+  * Databases | Build Query: doesn't show query preview.
+  * Databases | Visual Query: error when adding a column.
+
+### Enhancements in packages
+
+<!--#### [ApiSamples](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples#readme)
+
+
+ApiSamples now includes new control demos and the "hide-empty-columns" script.-->
+
+#### [BiostructureViewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer#readme)
+
+The package provides the functionality of two viewers  that enable the visualization of biological structures on the Datagrok platform.  For details, see [Biostructure Viewer](https://community.datagrok.ai/t/macromolecules-updates/661/14)
+
+#### [Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio#readme)
+
+* Renamed the dialogs and the items in **Top Menu** > **Bio**.
+* Fixed:
+  * 'NullError: method not found: 'Q' on null' error when running Sequence Actitvity Cliffs
+  * The aggressiveness of the Macromolecule detector was reduced.
+
+#### [Helm](https://github.com/datagrok-ai/public/tree/master/packages/Helm#readme)
+
+* Fixed:
+  * `Neither peptide, nor nucleotide` error when calling **Helm Web Editor**
+  * Macromolecule detector for alphabet UN.
+
+#### [Chem](https://github.com/datagrok-ai/public/tree/7c62a0c018ec631d3b23760d538a17aaf4d4ca36/packages/Chem#readme)
+
+* Improvements:
+   * Renamed the dialogs and the items in **Top Menu** > **Chem**. Specifically, we've removed the **Sketcher** item and added [**ADME/Tox**](https://community.datagrok.ai/t/cheminformatics-updates/457/23?u=oahadzhanian.datagrok.ai).
+   * Updated the column and cell properties and now all chemical information on the **Context Pane** is located under the **Chemistry** info panel. Also, we’ve removed the diversity Search widget from the **Context Pane** > **Details**.
+   * Made tooltip modifications for molecular data. Now, the tooltip in dialogs no longer covers the data and shrinks during drag-n-drop.
+   * Improved the handling of malformed and empty data. Now a warning appears with the indexes of the failed molecules in chem analyses.
+  * Customization of dimensionality reduction algorithms is now possible, especially in the context of **Chemical Space** and **Activity Cliffs** functions. For details, see [Dimensionality reduction algorithms](https://community.datagrok.ai/t/cheminformatics-updates/457/21).
+  * Implemented improvements for Similarity and Diversity Search viewers. Information from any column of the initial dataset can now be added to these viewers, and the color coding applied to the initial dataframe is also displayed there. To learn more, see [New functionality in Similarity/Diversity search](https://community.datagrok.ai/t/cheminformatics-updates/457/19).
+  * When a large structure is depicted in the sketch box of the filters panel, it is now rendered in a tooltip.
+  * [Scaffold tree](../../../domains/chem/scaffold-tree.md) improvements:
+    * Scaffold tree now uses the default sketcher set in the Chem package properties.
+    * Implemented logical AND, OR, NOT operations for scaffold tree elements.
+* Fixed:
+   * Structure display in the structure filter.
+   * Scaffold Tree fails on a large dataset.
+   * Error occurring on hovering the molecular and macromolecular column's header.
+   * Infinite updating when switching to the **Chem Draw** sketcher.
+   * Filter synchronization between **Marvin** sketcher and the **Filter Panel** while filtering smarts.
+   * Handling empty values in **Fingerprints**.
+   * **Group Analysis** viewer: can't open properties by clicking the **Gear** icon.
+   * `Result of truncating division is NaN` error when hovering over molecular column's header.
+   * **Marvin** filtering via `List/NOT List`.
+   * Filter synchronization for different tables if they have the same name of the molecular column.
+   * Chem tooltip displaying on the **Context Pane**.
+   * `Chem | Possibly a malformed molString at init: 'undefined'` error when hovering over molecular column's header.
+   * The issue where the **Cancel** button was not resetting the filter when using **Marvin**.
+   * Grid scrolling to the right when hovering over a molecular column.
+   * Wrong rendering of malformed data.
+   * Molfile copying.
+   * The issue with the synchronization of the sketcher. Now, when you switch the sketcher on the **Filter Panel**, it changes the sketcher in the **Hamburger Menu** and on the **Context Pane** accordingly.
+   * The  **copy as smiles** action.
+   * Color coding for the similarity search viewer.
+   * **Elemental Analysis**: false message `Charts package is not installed`.
+   * The `Sketcher not found` warning on package init.
+   * Sketcher popup clipping in the dialog.
+   * Empty values handling in **Descriptors** and **Map Identifiers**.
+   * Sketcher duplicating in the **Filter Panel**.
+   * Browser tab freezing on hovering a molecule column’s header after data was removed.
+   * Sketcher tooltip after opening a molecule in Marvin.
+   * The molblock native wedging usage. Now it’s used where available.
+
+#### [Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram#readme)
+
+The dendrogram viewer now uses standard default colors.
+
+#### [Peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides#readme)
+
+We've significantly improved the Peptides package, including a new feature integrating with dendrograms. For more information, see [Peptides updates](https://community.datagrok.ai/t/macromolecules-updates/661/13).
+
+#### [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts#readme)
+
+We’ve added routing to the viewers' demo.
+
+#### [GIS](https://github.com/datagrok-ai/public/tree/master/packages/GIS#readme)
+
+We’ve reduced the aggressiveness of detectors and added a column name check.
+
+#### [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials#readme)
+
+ You can now open and share a tutorial via a link.
+
+#### [PowerGrid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid#readme)
+
+We’ve now exposed the pinned columns functionality in the PowerGrid package and fixed the following issues:
+  * Unclickable Id link on pinned columns
+  * Incorrect displaying after applying the layout with the viewer stacked over the table.
+
+### Improvements for developers
+
+We’ve separated **Images** and **Docker Containers** in the platform.
+
+#### [PowerPack](https://github.com/datagrok-ai/public/tree/master/packages/PowerPack#readme)
+
+We’ve added `Qnum` to supported column types and fixed the issue with the execution of some functions in the **Add new column** dialog.
+
+#### [Viewers](../../../develop/how-to/develop-custom-viewer.md)
+
+* Added canvas grid cell renderers to the gridext library to render multiple values in a grid cell using a vertical layout.
+* Cell renderer now can estimate the desired cell size based on the entire column
+
+#### [JS API](../../../develop/js-api.md)
+
+* Improvements:
+  * Introduced a new feature for application developers. Now you can [place hints](https://community.datagrok.ai/t/javascript-api-updates/526/21) for users in the form of indicators, and popups, as well as describe a series of visual components in the wizard.  UI methods now come equipped with interactive hints, similar to those found in tutorials, that can be attached to various elements. With the addition of these methods, application authors are able to incorporate interactive hints in their app code, allowing them to introduce new features to their users, among other things.
+  * To work with custom filters, we’ve added `.custom-filter-type` and `.ignore-custom-filter` tags . See [column tags](../../../visualize/viewers/filters#column-tags) to learn more.
+  * Provided `typeAhead`, `dropDown` and `breadcrumbs` controls for the platform.
+  * Implemented the capability to export graphics of scatter plot to JS API. You can now render scatter plot viewer to an arbitrary graphics context using JS API. Basically, we’ve made a viewer that works directly with the cell renderer. This means you can now show cells as viewers and manipulate them in other ways too.
+  * Added classes for form viewers in the API: `Form` and `FormViewer`.
+  * Added the `onViewRemoving` event.
+  * Improved the table join feature by adding the option to merge "all columns" without having to list each individual column.
+  * Added `DataQuery.connection`.
+  * Added JS renderers: `getDefaultSize(gridColumn)`.
+  * Exposed the row tooltip of ScatterPlot viewer to JS API
+  * Added the `tags` field to `GridColumn` for storing serializable JS objects.
+  * Added the `autoHideTabHeader` property to **Accordion**.
+  * Balloon: added the ability to pass elements as content
+  * Exposed the `Menu.show` options.
+  * Grid: exposed `gridRowToTable` and `tableRowToGrid` methods.
+* Fixed:
+  * Fixed the TableInput reacting to the programmatic value setting.
+  * TableInput does not fire onInput when user uses **Open file** button.
+  * The ` whereRowMask()` function to correctly apply the mask to the selection.
+  * Signatures of `_render` function for all plots with `CanvasViewerMixin`.
+  * Color calculation when the data range is 0.
+
+### Other bug fixes
+
+* Console error on closing viewers.
+* Browser tab freezes on hovering a molecule column header after data was removed.
+* Floating viewer appears unexpectedly on applying layout in some cases.
+* Out of memory on adding viewer with specific data.
+* While dragging windows, sometimes text in them might get selected.
+* Group Analysis viewer opens twice in the demo.
+* Nested context panel's expanded state is not remembered.
+* Incorrect bounds of `Datetime` pattern with operator `this week`.
+* 3d scatter plot: failed to load if **Show Axes** property is set to `false`.
+*  Issue with formula line opacity: opacity set in one formula line object also applies to the others.
+* issue with the condensed form, where the icons for options and postfixes overlapped.
+* `RegExpExtract` function throwing an exception when no match is found.
+* Wrong docker status when making a request.
+* Databases: error in the **Sharing** tab of the **Context Pane** after deleting the shared query.
+
+## 2023-04-18 1.13.13
+
+### Addressed Issues
+
+* closes #1808 Line chart with logarithmic Y axis is rendering data points incorrectly
+
+
+## 2023-04-12 1.13.12
+
+### Addressed Issues
+
+* (Enhancement) [#1583](https://github.com/datagrok-ai/public/issues/1575692020): Scatter Plot: "pack and zoom" option should response to changes when a numerical column is used
+* (Bug) [#1761](https://github.com/datagrok-ai/public/issues/1653528027): Out of memory on adding viewer with specific data
+* (Bug) [#1764](https://github.com/datagrok-ai/public/issues/1655940422): Error loading scatter plot for specific data and log scale axes on applying layout
+* closes 1744 Table is unexpectedly filtered if scatter plot has 'filter by zoom' setting and empty column on log scale axis
+* (Bug) [#1744](https://github.com/datagrok-ai/public/issues/1644087257): Table is unexpectedly filtered if scatter plot has 'filter by zoom' setting and empty column on log scale axis (WIP)
+* (Bug) [#1745](https://github.com/datagrok-ai/public/issues/1644091651): Floating viewer appears unexpectedly on applying layout in some cases
+* (Bug) [#1758](https://github.com/datagrok-ai/public/issues/1651500892): Filtering is slow if there are multiple bar charts on several views
+* Filters: return select filters dialog
+
+
+## 2023-03-30 1.13.11
+
+### Addressed Issues
+
+* (Bug) GROK-12646: for_entity method is very slow
 
 
 ## 2023-03-29 1.13.10
 
 ### Addressed Issues
 
-* (Bug) GROK-12646: for_entity method is very slow
+* (Bug) GROK-12646: for_entity method is very slow (WIP)
 
 
 ## 2023-03-28 1.13.9
@@ -582,14 +899,14 @@ We've released a new version of the Datagrok platform (1.12.0). This release foc
 and usability and traditionally on platform stability.
 Here are some of the biggest improvements:
 
-* New [Scaffold Tree](release-history.md/#enhancements-in-packages ) visualization that organizes molecular data sets by
+* New [Scaffold Tree](release-history.md#enhancements-in-packages ) visualization that organizes molecular data sets by
   arranging molecules into a tree hierarchy based on their scaffolds. For details,
   see [Scaffold tree](../../../domains/chem/scaffold-tree.md).
-* [Dendrogram](release-history.md/#enhancements-in-packages) for interactive exploration of the hierarchical clustering.
+* [Dendrogram](release-history.md#enhancements-in-packages) for interactive exploration of the hierarchical clustering.
   For details, see [Dendrogram](https://community.datagrok.ai/t/dendrogram/721).
-* Brand new [Map](release-history.md/#enhancements-in-packages). To learn more,
+* Brand new [Map](release-history.md#enhancements-in-packages). To learn more,
   see [Map viewer](https://community.datagrok.ai/t/visualization-related-updates/521/27)
-* [Peptides](release-history.md/#enhancements-in-packages) new features and capabilities, such as custom clustering and
+* [Peptides](release-history.md#enhancements-in-packages) new features and capabilities, such as custom clustering and
   multiple views, as well as a slightly redesigned user interface and improved application stability. To learn more,
   see [Macromolecules updates](https://community.datagrok.ai/t/macromolecules-updates/661/11)
 
@@ -597,7 +914,7 @@ Here are some of the biggest improvements:
 
 * Color coding
   * Scatter plot now has a legend for continuous color coding.
-  * In a grid, you can apply [color coding](../../../visualize/viewers/grid.md/#column-color-coding) to the text or
+  * In a grid, you can apply [color coding](../../../visualize/viewers/grid.md#column-color-coding) to the text or
     background. This option is available for all linear, categorical, and conditional schemas.
   * When inheriting the color coding from the grid, adjustments to the min/max made in the plot are reflected in the
     grid. However, if the original column is not color-coded and selected for the color column in the scatter plot, the

@@ -17,5 +17,5 @@ Provides access to the  [Neptune](https://aws.amazon.com/neptune/) database serv
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Neptune](https://aws.amazon.com/neptune/)

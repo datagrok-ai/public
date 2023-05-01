@@ -3,8 +3,15 @@ import {GridCellRendererEx} from "./GridCellRendererEx";
 import * as TextUtils from "../utils/TextUtils";
 
 export class AbstractVertLayoutTextRenderer extends GridCellRendererEx {
-  constructor() {
-    super();
+
+  private m_bGapToBottom: boolean = true;
+
+  isGapToBottom() : boolean {
+    return this.m_bGapToBottom;
+  }
+
+  setGapToBottom(bGap: boolean): void {
+    this.m_bGapToBottom = bGap;
   }
 
   fillLabelsAndUI(cellGrid : DG.GridCell, arTextLabels : string[], arTextFonts: string[], arTextColors : string[], arBackColors: string[]) : void {
@@ -47,6 +54,7 @@ export class AbstractVertLayoutTextRenderer extends GridCellRendererEx {
 
     let nHFont = -1;
     let nHSum = 0;
+    let nHSumExcl0 = 0;
     let nHTmp = 0;
     let nFittedRowCount = 0;
     let nFontOrCrIndexFromEnd = -1;
@@ -62,13 +70,16 @@ export class AbstractVertLayoutTextRenderer extends GridCellRendererEx {
       tm = g.measureText("W");
       nHFont = Math.abs(tm.actualBoundingBoxAscent) + tm.actualBoundingBoxDescent + 2*nYInset;
 
-      if(nLabel === 0)
+      if (nLabel === 0)
         nHTmp = Math.floor(nHFont/2);
       else
         nHTmp += nHFont;
 
-      if(nHSum + nHFont> nHAvail)
+      if (nHSum + nHFont > nHAvail)
         break;
+
+      if (nLabel > 0)
+        nHSumExcl0 += nHFont;
 
       nHSum += nHFont;
       ++nFittedRowCount;
@@ -96,13 +107,13 @@ export class AbstractVertLayoutTextRenderer extends GridCellRendererEx {
       str = ob === null ? "" : ob.toString();
       str = TextUtils.trimText(str, g, nW);
       if (bHasRoom)
-        nYY = nY + Math.floor((nH /2)+(nHFont/2));
+        nYY = nY + Math.floor((nH + nHFont)/2);
       else {
         let nDeltaY = Math.floor((nHAvail - nFittedHeight)/2);
         nYY =  nY + nDeltaY + nHFont;
       }
       cr = arBackColors[nFittedRow];
-      if(cr !== null) {
+      if (cr !== null) {
         g.fillStyle = cr;
         g.fillRect(nX, nYY - nHFont, nW, nHFont);
       }
@@ -114,7 +125,7 @@ export class AbstractVertLayoutTextRenderer extends GridCellRendererEx {
       g.fillText(str, nX + ((nW - nWLabel)>>1), nYY - nHFont + nYInset);
     }
 
-    nYY = nY + nH;
+    nYY = this.isGapToBottom() ? nY + nH : nYY + nHSumExcl0;
 
     for (nFittedRow = nLabelCount-1; nFittedRow >= nLabelCount-1 - nFittedRowCount+2; --nFittedRow) {
       nFontOrCrIndexFromEnd = arTextFonts.length-1 - (nLabelCount-1 - nFittedRow);
@@ -131,27 +142,12 @@ export class AbstractVertLayoutTextRenderer extends GridCellRendererEx {
       if (typeof ob == "number") {
         cr = arBackColors[nFittedRow];
         g.fillStyle = cr;
-
-        /*
-        let fPctEff = ob;
-        if (fPctEff <= 100.0) {
-          let fK = fPctEff/100.0;
-          g.fillRect(nX, nYY - nHFont, Math.floor(nW*fK), nHFont);
-        }
-        else {
-          g.fillRect(nX, nYY - nHFont, nW, nHFont);
-          g.fillStyle = "white";
-          let fK = 100.0/fPctEff;
-          g.strokeLine(nX + Math.floor(nW*fK), nYY - nHFont, nX + Math.floor(nW*fK), nYY);
-        }*/
-
-        str = ob.toString();//  + "% Eff";
+        str = ob.toString();
       }
       else {
         str = ob == null ? "" : ob.toString();
         cr = arBackColors[nFittedRow];
-        if(cr !== null)
-        {
+        if(cr !== null) {
           g.fillStyle = cr;
           g.fillRect(nX, nYY - nHFont, nW, nHFont);
         }

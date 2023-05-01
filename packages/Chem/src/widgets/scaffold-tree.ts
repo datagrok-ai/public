@@ -301,7 +301,10 @@ function getFlagIcon(group: TreeViewGroup) : HTMLElement | null {
 
 function getNotIcon(group: TreeViewGroup) : HTMLElement | null {
   const molHost: HTMLElement = group.captionLabel;
-  const c = molHost.getElementsByClassName('fa-not-equal');
+  let c = molHost.getElementsByClassName('fa-equals');//'fa-not-equal');
+  if (c.length === 0)
+    c = molHost.getElementsByClassName('fa-not-equal');
+
   return c.length === 0 ? null : c[0] as HTMLElement;
 }
 
@@ -925,21 +928,21 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     notIcon!.style.cssText += ('color: ' + color);
 
     if (isNot) {
-      notIcon!.classList.remove('fal');
-      notIcon!.classList.add('fas');//, 'icon-fill');
+      notIcon!.classList.remove('fa-equals');//'fal');
+      notIcon!.classList.add('fa-not-equal');//'fas');//, 'icon-fill');
       notIcon!.style.visibility = 'visible';
     } else {
-      notIcon!.classList.remove('fas');
-      notIcon!.classList.add('fal');//, 'icon-fill');
+      notIcon!.classList.remove('fa-not-equal');//'fas');
+      notIcon!.classList.add('fa-equals');//'fal');//, 'icon-fill');
       notIcon!.style.removeProperty('visibility');
     }
   }
 
   addIcons(molHost: HTMLDivElement, label: string, group: TreeViewGroup): void {
     const thisViewer = this;
-    const notIcon = ui.iconFA('not-equal', () => thisViewer.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot), 'Exclude structures containing this scaffold');
+    const notIcon = ui.iconFA('equals', () => thisViewer.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot), 'Exclude structures containing this scaffold');
     //notIcon.onclick = (e) => e.stopImmediatePropagation();
-    //my changes notIcon.onmousedown = (e) => e.stopImmediatePropagation();
+    //changes notIcon.onmousedown = (e) => e.stopImmediatePropagation();
 
     const zoomIcon = ui.iconFA('search-plus');
     zoomIcon.onclick = (e) => e.stopImmediatePropagation();

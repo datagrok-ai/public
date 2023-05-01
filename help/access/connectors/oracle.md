@@ -72,8 +72,8 @@ using SQL queries via the JDBC driver.
 ## Supported features
 
 * Schema browsing
-* Build query
-* Visual query
+* Join DB tables
+* Aggregation query
 * Connection test
 
 ## Remarks
@@ -82,6 +82,6 @@ using SQL queries via the JDBC driver.
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Oracle Database](https://www.oracle.com/database/)
 * [Oracle Database Wiki](https://en.wikipedia.org/wiki/Oracle_Database)

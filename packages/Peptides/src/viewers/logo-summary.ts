@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
-import {ClusterType, CLUSTER_TYPE, PeptidesModel} from '../model';
+import {ClusterType, CLUSTER_TYPE, PeptidesModel, VIEWER_TYPE} from '../model';
 import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -17,8 +17,8 @@ import {wrapDistroAndStatsDefault} from '../utils/misc';
 const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
 
 
-export class LogoSummary extends DG.JsViewer {
-  _titleHost = ui.divText('Logo Summary Table', {id: 'pep-viewer-title'});
+export class LogoSummaryTable extends DG.JsViewer {
+  _titleHost = ui.divText(VIEWER_TYPE.LOGO_SUMMARY_TABLE, {id: 'pep-viewer-title'});
   model!: PeptidesModel;
   viewerGrid!: DG.Grid;
   initialized: boolean = false;
@@ -145,7 +145,7 @@ export class LogoSummary extends DG.JsViewer {
 
         stats = getStats(activityColData, maskInfo);
       } else
-        stats = this.model.clusterStats[CLUSTER_TYPE.CUSTOM][rowIdx];
+        stats = this.model.clusterStats[CLUSTER_TYPE.CUSTOM][customClustCol.name];
 
       customMembersColData[rowIdx] = stats.count;
       customWebLogoPlots[rowIdx] = this.createWebLogoPlot(pepCol, bsMask);
@@ -171,7 +171,7 @@ export class LogoSummary extends DG.JsViewer {
     const origLSTCols = origLST.columns;
     const origLSTClustCol: DG.Column<string> = origLST.getCol(clustersColName);
 
-    const origLSTCLustColCat = origLSTClustCol.categories;
+    const origLSTClustColCat = origLSTClustCol.categories;
 
     const origMembersColData = origLSTCols.addNewInt(C.LST_COLUMN_NAMES.MEMBERS).getRawData();
     const origWebLogoCol = origLSTCols.addNewString(C.LST_COLUMN_NAMES.WEB_LOGO);
@@ -188,7 +188,7 @@ export class LogoSummary extends DG.JsViewer {
 
     for (let rowIdx = 0; rowIdx < filteredDfRowCount; ++rowIdx) {
       const filteredClustName = filteredDfClustColCat[filteredDfClustColData[rowIdx]];
-      const origClustIdx = origLSTCLustColCat.indexOf(filteredClustName);
+      const origClustIdx = origLSTClustColCat.indexOf(filteredClustName);
       origClustMasks[origClustIdx][rowIdx] = true;
     }
 
@@ -206,7 +206,7 @@ export class LogoSummary extends DG.JsViewer {
         };
         stats = getStats(activityColData, maskInfo);
       } else
-        stats = this.model.clusterStats[CLUSTER_TYPE.ORIGINAL][rowIdx];
+        stats = this.model.clusterStats[CLUSTER_TYPE.ORIGINAL][origLSTClustColCat[rowIdx]];
 
       origMembersColData[rowIdx] = stats.count;
       origWebLogoPlots[rowIdx] = this.createWebLogoPlot(pepCol, bsMask);

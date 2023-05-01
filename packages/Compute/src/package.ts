@@ -6,8 +6,7 @@ import {ModelHandler} from './model-handler';
 import {_functionParametersGrid} from './function-parameters-grid';
 import {ModelCatalogView} from './model-catalog-view';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
-import {delay} from "@datagrok-libraries/utils/src/test";
-import {RichFunctionView} from "@datagrok-libraries/utils/src/rich-function-view";
+import {RichFunctionView} from "@datagrok-libraries/compute-utils";
 import './css/model-card.css';
 import { ImportScriptGeneratorApp } from './import-script-generator/view';
 
@@ -227,22 +226,4 @@ export function modelCatalog() {
       });
     }
   } else grok.shell.v = modelsView;
-}
-
-
-//name: computationTest
-//input: int delayMs {description: Wait time; units: ms}
-//input: string error {description: When specified, throws this error}
-//output: dataframe result
-export async function computationTest(delayMs: number, error: string): Promise<DG.DataFrame> {
-  await delay(delayMs);
-  if (error != null || error != '')
-    throw error;
-  return grok.data.demo.demog();
-}
-
-//name: testComputationView();
-export function testComputationView() {
-  let f = DG.Func.find({name: 'computationTest'})[0];
-  //grok.shell.addView(new ComputationView(f));
 }

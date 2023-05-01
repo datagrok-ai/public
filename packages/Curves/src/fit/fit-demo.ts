@@ -25,15 +25,16 @@ function createSigmoidPoints(length: number, step: number, pointsPerX: number = 
   const end = start + (step * (length - 1));
   for (let num = start, i = 0; num <= end; num += step, i++) {
     for (let j = 0; j < pointsPerX; j++) {
-      x[i * pointsPerX + j] = num;
+      x[i * pointsPerX + j] = num - start + 0.1;
       y[i * pointsPerX + j] = fitMath.sigmoid(params, num);
     }
   }
 
   // adding 20% noise
   const range = (pointsPerX == 1 ? 0.2 : 0.4) * (Math.max(...y) - Math.min(...y));
+  const minY = Math.min(...y);
   for (let i = 0; i < x.length; i++) {
-    y[i] = y[i] + rnd(0, range) - range / 2;
+    y[i] = -minY + y[i] + rnd(0, range);
   }
 
   return {x: x, y: y, params: params};
@@ -90,8 +91,8 @@ export function createDemoDataFrame(rowCount: number, chartsCount: number, chart
   return df;
 }
 
-export function curveFitDemo() {
+export async function curveDemo() {
   const df = createDemoDataFrame(30, 5, 2);
-  const grid = grok.shell.addTableView(df).grid;
-  //grid.props.rowHeight = 150;
+  const tableView = grok.shell.addTableView(df);
+  tableView.addViewer('MultiCurveViewer');
 }

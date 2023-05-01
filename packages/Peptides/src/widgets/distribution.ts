@@ -25,7 +25,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   const positionsLen = positions.length;
   let aarStr = allConst;
   let otherStr = '';
-  const useSelectedStr = model.isPeptideSpaceChangingBitset;
+  // const useSelectedStr = model.isPeptideSpaceChangingBitset;
 
   const updateDistributionHost = (): void => {
     model.splitByPos = splitByPosition.value!;
@@ -80,13 +80,14 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
 
         //OPTIMIZE: don't create Bitset, use bool[]
         const mask = DG.BitSet.create(rowCount, (i) => aarList.includes(posCol.get(i)));
+        const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
+
         const maskInfo: MaskInfo = {
-          mask: mask.getBuffer(),
+          mask: splitCol.toList() as boolean[],
           trueCount: mask.trueCount,
           falseCount: mask.falseCount,
         };
         const stats = getStats(activityScaledData, maskInfo);
-        const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
         const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
 
         const indexes = mask.getSelectedIndexes();
@@ -136,13 +137,14 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
           }
           return false;
         });
+        const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
+
         const maskInfo: MaskInfo = {
-          mask: mask.getBuffer(),
+          mask: splitCol.toList() as boolean[],
           trueCount: mask.trueCount,
           falseCount: mask.falseCount,
         };
         const stats = getStats(activityScaledData, maskInfo);
-        const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
         const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
 
         const indexes = mask.getSelectedIndexes();
@@ -168,7 +170,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         res.push(ui.divText('No distribution'));
       else {
         otherStr = '';
-        if (useSelectedStr) {
+        if (false /*useSelectedStr*/) {
           aarStr = 'Selected';
           otherStr = otherConst;
         } else if (positionsLen) {
@@ -193,7 +195,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         }
 
         const maskInfo: MaskInfo = {
-          mask: compoundBs.getBuffer(),
+          mask: splitCol.toList() as boolean[],
           trueCount: compoundBs.trueCount,
           falseCount: compoundBs.falseCount,
         };
