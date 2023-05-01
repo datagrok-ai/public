@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 
-export function sortByStringLengthInDescendingOrder(array: string[]): string[] {
-  return array.sort(function(a, b) { return b.length - a.length; });
+export function sortByReverseLength(array: string[]): string[] {
+  return array.sort((a, b) => b.length - a.length);
 }
 
 /** Builds JSON-like string from string array and doubles back-slash specifically for DG.Column '.choices' tag */

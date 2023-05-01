@@ -1,8 +1,4 @@
-import {
-  map,
-} from '../../hardcode-to-be-eliminated/map';
 import {SYNTHESIZERS, TECHNOLOGIES, DELIMITER, NUCLEOTIDES} from '../const';
-import {sortByStringLengthInDescendingOrder} from '../helpers';
 import {
   asoGapmersNucleotidesToBioSpring, asoGapmersNucleotidesToGcrs,
   asoGapmersBioSpringToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12, siRnaNucleotideToBioSpringSenseStrand,
@@ -12,7 +8,7 @@ import {
   siRnaGcrsToBioSpring, siRnaGcrsToAxolabs, gcrsToNucleotides, gcrsToLcms
 } from '../../hardcode-to-be-eliminated/converters';
 
-import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
+import {FormatDetector} from '../parsing-validation-utils/format-detector';
 
 const noTranslationTableAvailable = 'No translation table available';
 export const undefinedInputSequence = 'Type of input sequence is undefined';
@@ -21,85 +17,15 @@ export function isValidSequence(sequence: string, format: string | null): {
   indexOfFirstInvalidChar: number,
   synthesizer: string[] | null,
 } {
-  const possibleSynthesizers = format === null ?
-    getListOfPossibleSynthesizersByFirstMatchedCode(sequence) :
-    [format];
-  if (possibleSynthesizers.length === 0)
+  const formatDetector = new FormatDetector(sequence);
+  const synthesizer = format ? format : formatDetector.getFormat();
+  if (!synthesizer)
     return {indexOfFirstInvalidChar: 0, synthesizer: null};
-
-  const outputIndices = Array(possibleSynthesizers.length).fill(0);
-
-  const firstUniqueCharacters = ['r', 'd'];
-  possibleSynthesizers.forEach(function(synthesizer, i) {
-    const codes = sortByStringLengthInDescendingOrder(getAllCodesOfSynthesizer(synthesizer));
-    while (outputIndices[i] < sequence.length) {
-      const matchedCode = codes.find((c) => c === sequence.slice(outputIndices[i], outputIndices[i] + c.length));
-
-      if (!matchedCode) break;
-
-      if ( // for mistake pattern 'rAA'
-        outputIndices[i] > 1 &&
-        NUCLEOTIDES.includes(sequence[outputIndices[i]]) &&
-        firstUniqueCharacters.includes(sequence[outputIndices[i] - 2])
-      ) break;
-
-      if ( // for mistake pattern 'ArA'
-        firstUniqueCharacters.includes(sequence[outputIndices[i] + 1]) &&
-        NUCLEOTIDES.includes(sequence[outputIndices[i]])
-      ) {
-        outputIndices[i]++;
-        break;
-      }
-
-      outputIndices[i] += matchedCode.length;
-    }
-  });
-
-  const outputIndex = Math.max(...outputIndices);
-  const synthesizer = possibleSynthesizers[outputIndices.indexOf(outputIndex)];
-  const indexOfFirstInvalidChar = (outputIndex === sequence.length) ? -1 : outputIndex;
-  if (indexOfFirstInvalidChar !== -1) {
-    return {
-      indexOfFirstInvalidChar: indexOfFirstInvalidChar,
-      synthesizer: [synthesizer],
-    };
-  }
-
+  const indexOfFirstInvalidChar = formatDetector.getInvalidCodeIndex();
   return {
     indexOfFirstInvalidChar: indexOfFirstInvalidChar,
     synthesizer: [synthesizer],
   };
-}
-
-export function getAllCodesOfSynthesizer(synthesizer: string): string[] {
-  console.log('got to get All codes')
-  return MonomerLibWrapper.getInstance().getCodesByFromat(synthesizer);
-  // let codes: string[] = [];
-  // for (const technology of Object.keys(map[synthesizer]))
-  //   codes = codes.concat(Object.keys(map[synthesizer][technology]));
-  // return codes.concat(Object.keys(MODIFICATIONS)).concat(DELIMITER);
-}
-
-function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string): string[] {
-  let synthesizers: string[] = [];
-  Object.keys(map).forEach((synthesizer: string) => {
-    let codes = sortByStringLengthInDescendingOrder(getAllCodesOfSynthesizer(synthesizer));
-    // if (synthesizer === SYNTHESIZERS.GCRS)
-    //   codes = codes.concat(gcrsCodesWithoutSmiles);
-    //TODO: get first non-dropdown code when there are two modifications
-    let start = 0;
-    for (let i = 0; i < sequence.length; i++) {
-      if (sequence[i] === ')' && i !== sequence.length - 1) {
-        start = i + 1;
-        break;
-      }
-    }
-    // if (gcrsCodesWithoutSmiles.some((s: string) => s === sequence.slice(start, start + s.length)))
-    //   synthesizers = [SYNTHESIZERS.GCRS];
-    if (codes.some((s: string) => s === sequence.slice(start, start + s.length)))
-      synthesizers.push(synthesizer);
-  });
-  return synthesizers;
 }
 
 export function convertSequence(sequence: string, output: {
@@ -107,7 +33,6 @@ export function convertSequence(sequence: string, output: {
 }) {
   if (output.indexOfFirstInvalidChar !== -1) {
     return {
-      // type: '',
       indexOfFirstInvalidChar: JSON.stringify(output),
       Error: undefinedInputSequence,
     };

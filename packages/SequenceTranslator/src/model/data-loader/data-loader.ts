@@ -12,7 +12,7 @@ const enum QUERY_NAME {
   SALTS = 'salts'
 }
 
-export abstract class DataLoaderBase {
+export abstract class DBLoaderBase {
   abstract get Users(): DG.DataFrame;
 
   abstract get ICDs(): DG.DataFrame;
@@ -28,7 +28,7 @@ export abstract class DataLoaderBase {
  * In order for that to work, we suppose that the queries have tags
  * 'app-SequenceTranslator' and 'entity-<Entity>' (e.g. 'entity-Users').
  */
-export class DataLoaderDB extends DataLoaderBase {
+export class DataLoaderDB extends DBLoaderBase {
   private _users: DG.DataFrame;
   private _ICDs: DG.DataFrame;
   private _IDPs: DG.DataFrame;

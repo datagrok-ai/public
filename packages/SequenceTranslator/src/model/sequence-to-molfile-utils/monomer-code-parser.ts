@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {LINKER_CODES, P_LINKAGE} from './const';
+import {sortByReverseLength} from '../helpers';
 import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
 
 /** Wrapper for parsing a strand and getting a sequence of monomer IDs (with
@@ -74,7 +75,7 @@ export class MonomerSequenceParser {
     let allCodesInTheFormat = Array.from(this.codeMap.keys());
     const modifications = this.lib.getModificationGCRSCodes();
     allCodesInTheFormat = allCodesInTheFormat.concat(modifications);
-    return reverseLengthSort(allCodesInTheFormat);
+    return sortByReverseLength(allCodesInTheFormat);
   }
 }
 
@@ -82,8 +83,4 @@ export class MonomerSequenceParser {
 function isMonomerAttachedToLink(code: string) {
   const legacyList = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
   return legacyList.includes(code);
-}
-
-function reverseLengthSort(array: string[]): string[] {
-  return array.sort((a, b) => b.length - a.length);
 }

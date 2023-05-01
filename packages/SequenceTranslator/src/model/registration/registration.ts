@@ -15,7 +15,7 @@ import {RegistrationColumnsHandler} from './add-columns';
 import {sdfSaveTable} from './save-table';
 import {PREFIXES, SEQ_TYPE, SEQ_TYPE_CATEGORY, seqTypeToCategoryDict} from './const';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
-import {DataLoaderBase} from '../data-loader/data-loader';
+import {DBLoaderBase} from '../data-loader/data-loader';
 import {Unsubscribable} from 'rxjs';
 
 /** Style used for cells in 'Type' column  */
@@ -129,9 +129,10 @@ function oligoSdFileGrid(view: DG.TableView): void {
 }
 
 export async function engageViewForOligoSdFileUI(view: DG.TableView) {
-  await _package.initDataLoader();
+  console.log('From engageViewForOligoSdFile')
+  await _package.initDBLoader();
   oligoSdFileGrid(view);
-  await oligoSdFile(_package.dataLoader, view.dataFrame);
+  await oligoSdFile(_package.dbLoader, view.dataFrame);
 
   const subs: Unsubscribable[] = [];
 
@@ -192,7 +193,7 @@ export async function engageViewForOligoSdFileUI(view: DG.TableView) {
   }));
 }
 
-export async function oligoSdFile(dl: DataLoaderBase, table: DG.DataFrame) {
+export async function oligoSdFile(dl: DBLoaderBase, table: DG.DataFrame) {
   const saltCol = table.getCol(COL_NAMES.SALT);
   const equivalentsCol = table.getCol(COL_NAMES.EQUIVALENTS);
 

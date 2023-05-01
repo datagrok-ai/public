@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {sortByStringLengthInDescendingOrder} from '../helpers';
+import {sortByReverseLength} from '../helpers';
 import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
 
 export function saltMass(
@@ -28,7 +28,7 @@ export function batchMolWeight(compoundMolWeightCol: DG.Column, saltMassCol: DG.
 }
 
 export function molecularWeight(sequence: string, weightsObj: { [index: string]: number }): number {
-  const codes = sortByStringLengthInDescendingOrder(Object.keys(weightsObj)).concat(MonomerLibWrapper.getInstance().getModificationGCRSCodes());
+  const codes = sortByReverseLength(Object.keys(weightsObj)).concat(MonomerLibWrapper.getInstance().getModificationGCRSCodes());
   let weight = 0;
   let i = 0;
   while (i < sequence.length) {
