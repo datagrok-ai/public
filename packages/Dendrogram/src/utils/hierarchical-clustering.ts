@@ -77,14 +77,12 @@ export async function hierarchicalClusteringUI(
       }));
 
   const distanceMatrix = await th.calcDistanceMatrix(preparedDf,
-    preparedDf.columns.toList().map((col) => col.name),
-    distance);
+    preparedDf.columns.toList().map((col) => col.name), distance);
 
   const clusterMatrixWorker = getClusterMatrixWorker(
-    {distMatArray: distanceMatrix!.data, n: preparedDf.rowCount, methodCode: linkageCode}
+    distanceMatrix!.data, preparedDf.rowCount, linkageCode
   );
   const clusterMatrix = await clusterMatrixWorker;
-
   // const hcPromise = hierarchicalClusteringByDistanceExec(distanceMatrix!, linkage);
   // Replace rows indexes with filtered
   // newickStr returned with row indexes after filtering, so we need reversed dict { [fltIdx: number]: number}
