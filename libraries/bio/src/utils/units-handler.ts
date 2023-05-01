@@ -28,22 +28,22 @@ export class UnitsHandler {
   public static readonly RnaFastaAlphabet = new Set<string>(['A', 'C', 'G', 'U']);
 
   public static setUnitsToFastaColumn(col: DG.Column) {
-    if (col.semType !== DG.SEMTYPE.MACROMOLECULE || col.getTag(DG.TAGS.UNITS) != NOTATION.FASTA)
+    if (col.semType !== DG.SEMTYPE.MACROMOLECULE || col.getTag(DG.TAGS.UNITS) !== NOTATION.FASTA)
       throw new Error(`The column of notation '${NOTATION.FASTA}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
 
     col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
-    UnitsHandler.setTags(col, 5, splitterAsFasta);
+    UnitsHandler.setTags(col, splitterAsFasta);
   }
 
   public static setUnitsToSeparatorColumn(col: DG.Column, separator?: string) {
-    if (col.semType !== DG.SEMTYPE.MACROMOLECULE || col.getTag(DG.TAGS.UNITS) != NOTATION.SEPARATOR || !separator)
+    if (col.semType !== DG.SEMTYPE.MACROMOLECULE || col.getTag(DG.TAGS.UNITS) !== NOTATION.SEPARATOR || !separator)
       throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
     if (!separator)
       throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must have the separator tag.`);
 
     col.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
     col.setTag(TAGS.separator, separator);
-    UnitsHandler.setTags(col, 5, getSplitterWithSeparator(separator));
+    UnitsHandler.setTags(col, getSplitterWithSeparator(separator));
   }
 
   public static setUnitsToHelmColumn(col: DG.Column) {
@@ -51,11 +51,11 @@ export class UnitsHandler {
       throw new Error(`The column of notation '${NOTATION.HELM}' must be '${DG.SEMTYPE.MACROMOLECULE}'`);
 
     col.setTag(DG.TAGS.UNITS, NOTATION.HELM);
-    UnitsHandler.setTags(col, 5, splitterAsHelm);
+    UnitsHandler.setTags(col, splitterAsHelm);
   }
 
   /** From detectMacromolecule */
-  public static setTags(col: DG.Column, seqMinLength: number, splitter: SplitterFunc): void {
+  public static setTags(col: DG.Column, splitter: SplitterFunc): void {
     const units = col.getTag(DG.TAGS.UNITS) as NOTATION;
     const stats: SeqColStats = getStats(col, 5, splitter);
     const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
