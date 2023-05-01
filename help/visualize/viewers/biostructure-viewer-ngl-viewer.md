@@ -1,8 +1,8 @@
 # <a name="NglViewerl">NglViewer</a>
 
 [NglViewer](../../../packages/BiostructureViewer/src/viewers/ngl-viewer.ts) is
-a Datagrok [DG.JsViewer](../../js-api/src/viewer.ts) derived component based on
-the [NGL Viewer library](https://nglviewer.org/) developed by Alexander Rose.
+a Datagrok [DG.JsViewer](../../../js-api/src/viewer.ts) derived component based on
+the NGL Viewer [nglviewer.org](https://nglviewer.org/) library developed by Alexander Rose.
 
 NglViewer obtains a structural data into the viewer from different sources
 (in order of priority) controlled by properties of the 'Data' category:
