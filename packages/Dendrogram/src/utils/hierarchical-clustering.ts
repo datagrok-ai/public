@@ -104,38 +104,43 @@ export async function hierarchicalClusteringUI(
         return res;
       }));
 
-  const distanceMatrix = await th.calcDistanceMatrix(preparedDf,
-    preparedDf.columns.toList().map((col) => col.name),
-    distance);
+  try {
+    const distanceMatrix = await th.calcDistanceMatrix(preparedDf,
+      preparedDf.columns.toList().map((col) => col.name),
+      distance);
 
-  const clusterMatrixWorker = getClusterMatrixWorker(
-    {distMatArray: distanceMatrix!.data, n: preparedDf.rowCount, methodCode: linkageCode}
-  );
-  const clusterMatrix = await clusterMatrixWorker;
+    const clusterMatrixWorker = getClusterMatrixWorker(
+      {distMatArray: distanceMatrix!.data, n: preparedDf.rowCount, methodCode: linkageCode}
+    );
+    const clusterMatrix = await clusterMatrixWorker;
 
-  // const hcPromise = hierarchicalClusteringByDistanceExec(distanceMatrix!, linkage);
-  // Replace rows indexes with filtered
-  // newickStr returned with row indexes after filtering, so we need reversed dict { [fltIdx: number]: number}
-  const fltRowIndexes: { [fltIdx: number]: number } = {};
-  const fltRowCount: number = filteredDf.rowCount;
-  for (let fltRowIdx: number = 0; fltRowIdx < fltRowCount; fltRowIdx++)
-    fltRowIndexes[fltRowIdx] = filteredIndexList[fltRowIdx];
+    // const hcPromise = hierarchicalClusteringByDistanceExec(distanceMatrix!, linkage);
+    // Replace rows indexes with filtered
+    // newickStr returned with row indexes after filtering, so we need reversed dict { [fltIdx: number]: number}
+    const fltRowIndexes: { [fltIdx: number]: number } = {};
+    const fltRowCount: number = filteredDf.rowCount;
+    for (let fltRowIdx: number = 0; fltRowIdx < fltRowCount; fltRowIdx++)
+      fltRowIndexes[fltRowIdx] = filteredIndexList[fltRowIdx];
 
-  const newickRoot: NodeType = th.parseClusterMatrix(clusterMatrix);
-  // Fix branch_length for root node as required for hierarchical clustering result
-  newickRoot.branch_length = 0;
-  (function replaceNodeName(node: NodeType, fltRowIndexes: { [fltIdx: number]: number }) {
-    if (!isLeaf(node)) {
-      for (const childNode of node.children!)
-        replaceNodeName(childNode, fltRowIndexes);
-    }
-  })(newickRoot, fltRowIndexes);
+    const newickRoot: NodeType = th.parseClusterMatrix(clusterMatrix);
+    // Fix branch_length for root node as required for hierarchical clustering result
+    newickRoot.branch_length = 0;
+    (function replaceNodeName(node: NodeType, fltRowIndexes: { [fltIdx: number]: number }) {
+      if (!isLeaf(node)) {
+        for (const childNode of node.children!)
+          replaceNodeName(childNode, fltRowIndexes);
+      }
+    })(newickRoot, fltRowIndexes);
 
-  // empty clusterDf to stub injectTreeForGridUI2
-  // const clusterDf = DG.DataFrame.fromColumns([
-  //   DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'cluster', [])]);
-  loaderNB.close();
-  injectTreeForGridUI2(tv.grid, newickRoot, undefined, neighborWidth);
+    // empty clusterDf to stub injectTreeForGridUI2
+    // const clusterDf = DG.DataFrame.fromColumns([
+    //   DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'cluster', [])]);
+    loaderNB.close();
+    injectTreeForGridUI2(tv.grid, newickRoot, undefined, neighborWidth);
+  } catch (err) {
+    console.error(err);
+    loaderNB.close();
+  }
 }
 
 export function hierarchicalClusteringFilterDfForNulls(
