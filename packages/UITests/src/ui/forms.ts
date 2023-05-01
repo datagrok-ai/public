@@ -82,4 +82,3 @@ category('UI: Forms from props', () => {
     grok.shell.closeAll();
   });
 });
-

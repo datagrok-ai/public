@@ -47,4 +47,3 @@ category('UI: Buttons', () => {
     root.remove();
   }
 });
-
