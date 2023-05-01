@@ -17,7 +17,7 @@ See also:
 
 * [Grok API](https://datagrok.ai/help/develop/js-api)
 * [Packages](https://datagrok.ai/help/develop/develop#packages)
-* [Data Connection](https://datagrok.ai/help/access/data-connection)
-* [Data Query](https://datagrok.ai/help/access/data-query)
+* [Data Connection](https://datagrok.ai/help/access/access#data-connection)
+* [Data Query](https://datagrok.ai/help/access/access#data-query)
 * [Info Panels](https://datagrok.ai/help/discover/info-panels)
 * [Semantic Types](https://datagrok.ai/help/discover/semantic-types)

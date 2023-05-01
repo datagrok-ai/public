@@ -16,6 +16,5 @@ Provides access to data sources via REST API based on
 
 See also:
 
-* [Data connection](../data-connection.md)
 * [Swagger](https://swagger.io/)
 * [OpenAPI](https://swagger.io/docs/specification/about/)

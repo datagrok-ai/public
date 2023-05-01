@@ -4,7 +4,7 @@
 
 Welcome to the Coffee Place Project! Right now, there is sales data in front of your eyes, and based on it, we will be
 selecting a new spot for the coffee franchise. To repeat these steps on your data, check
-out [these instructions](https://datagrok.ai/help/access/data-connection), or
+out [these instructions](https://datagrok.ai/help/access/access#data-connection), or
 watch [this video](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=23s). Now, let's get started!
 
 ## [Data exploration](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=60s)

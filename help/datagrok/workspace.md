@@ -7,7 +7,7 @@ Workspace is a collection of currently opened projects.
 ## Workspace tree
 
 Workspace Tree is a hierarchical viewer that is used for navigating and managing [projects](project.md),
-[tables](table.md), [connections](../access/data-connection.md), and other entitites.
+[tables](table.md), [connections](../access/access.md#data-connection), and other entities.
 
 Use [drag-and-drop](../datagrok/drag-and-drop.md) to move entities between projects. When you open a project, you can
 find it added to workspace tree. Close project using context menu to remove it. When you open data or run query, or job,

@@ -18,11 +18,20 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 import serialization.*;
 import grok_connect.utils.*;
 import grok_connect.table_query.*;
 import grok_connect.connectors_info.*;
 import serialization.Types;
+
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 
 public abstract class JdbcDataProvider extends DataProvider {
@@ -167,7 +176,11 @@ public abstract class JdbcDataProvider extends DataProvider {
                     }
                     stringValues.add(stringValue);
                 }
-                statement.setQueryTimeout(timeout);
+                try {
+                    statement.setQueryTimeout(timeout);
+                } catch (SQLException exception) {
+                    logger.debug("setQueryTimeout is not supported for " + descriptor.type);
+                }
                 String logString = String.format("Query: %s; \nParams array: %s \n", statement, stringValues);
                 logger.debug(logString);
                 if (queryRun.debugQuery)
@@ -197,7 +210,11 @@ public abstract class JdbcDataProvider extends DataProvider {
             if (supportsTransactions)
                 statement.setFetchSize(fetchSize);
             providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
-            statement.setQueryTimeout(timeout);
+            try {
+                statement.setQueryTimeout(timeout);
+            } catch (SQLException exception) {
+                logger.debug("setQueryTimeout is not supported for " + descriptor.type);
+            }
             String logString = String.format("Query: %s \n", query);
             logger.debug(logString);
             if (queryRun.debugQuery)
@@ -294,8 +311,12 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     protected List<String> getParameterNames(String query, DataQuery dataQuery, StringBuilder queryBuffer) {
-        Pattern pattern = Pattern.compile("(?m)@(\\w+)");
         List<String> names = new ArrayList<>();
+        String regexComment = String.format("(?m)^(?<!['\\\"])%s.*(?!['\\\"])$", descriptor.commentStart);
+        query = query
+                .replaceAll(regexComment, "")
+                .trim();
+        Pattern pattern = Pattern.compile("(?m)@(\\w+)");
         Matcher matcher = pattern.matcher(query);
         int idx = 0;
         while (matcher.find()) {
@@ -304,9 +325,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 queryBuffer.append(query, idx, matcher.start());
                 appendQueryParam(dataQuery, name, queryBuffer);
                 idx = matcher.end();
-                if (!names.contains(name)) {
-                    names.add(name);
-                }
+                names.add(name);
             }
         }
         queryBuffer.append(query, idx, query.length());
@@ -529,10 +548,28 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 if (value instanceof  SQLXML) {
                                     SQLXML sqlxml = (SQLXML)value;
                                     valueToAdd = sqlxml.getString();
-                                } else if(value instanceof java.lang.String) {
+                                } else if (value instanceof java.lang.String) {
                                     valueToAdd = value.toString();
+                                } else if (value instanceof Document) {
+                                    try {
+                                        StringWriter writer = new StringWriter();
+                                        TransformerFactory tf = TransformerFactory.newInstance();
+                                        Transformer transformer = tf.newTransformer();
+                                        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+                                        transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+                                        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                                        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+                                        transformer.transform(new DOMSource((Node) value), new StreamResult(writer));
+                                        valueToAdd = writer.toString();
+                                    } catch (TransformerException exception) {
+                                        throw new RuntimeException("Something went wrong when "
+                                                + "converting xml to string");
+                                    }
                                 }
                             }
+                            valueToAdd = valueToAdd
+                                    .replaceAll("&lt;", "<")
+                                    .replaceAll("&gt;", ">");
                             columns.get(c - 1).add(valueToAdd);
                         } else if (isBitString(type, precision, typeName)) {
                             String valueToAdd = "";
@@ -589,6 +626,13 @@ public abstract class JdbcDataProvider extends DataProvider {
                             } else if (value instanceof OffsetDateTime) {
                                 time = java.util.Date.from(((OffsetDateTime) value)
                                         .toInstant());
+                            } else if (value instanceof Instant) {
+                                time = java.util.Date.from((Instant) value);
+                            } else if (value instanceof LocalTime) {
+                                LocalTime localTime = (LocalTime) value;
+                                Instant instant = localTime.atDate(LocalDate.of(1970, 1, 1))
+                                        .atZone(ZoneId.systemDefault()).toInstant();
+                                time = java.util.Date.from(instant);
                             } else {
                                 time = ((java.util.Date) value);
                             }
@@ -786,7 +830,11 @@ public abstract class JdbcDataProvider extends DataProvider {
 
         String type = "string";
         String _query = "(LOWER(" + matcher.colName + ") LIKE @" + param.name + ")";
-        String value = ((String)matcher.values.get(0)).toLowerCase();
+        List<Object> values = matcher.values;
+        String value = null;
+        if (values.size() > 0) {
+            value = ((String) values.get(0)).toLowerCase();
+        }
 
         switch (matcher.op) {
             case PatternMatcher.EQUALS:
@@ -940,7 +988,8 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     private static boolean isXml(int type, String typeName) {
-        return (type == java.sql.Types.SQLXML || typeName.equalsIgnoreCase("xml"));
+        return (type == java.sql.Types.SQLXML || typeName.equalsIgnoreCase("xml")) ||
+                typeName.equalsIgnoreCase("XMLType");
     }
 
     private static boolean isTime(int type, String typeName) {
@@ -978,7 +1027,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 typeName.equalsIgnoreCase("bool") || (type == java.sql.Types.BIT && precision == 1);
     }
 
-    private static boolean isString(int type, String typeName) {
+    protected boolean isString(int type, String typeName) {
         return ((type == java.sql.Types.VARCHAR)|| (type == java.sql.Types.CHAR) ||
                 (type == java.sql.Types.LONGVARCHAR) || (type == java.sql.Types.CLOB)
                 || (type == java.sql.Types.NCLOB) ||

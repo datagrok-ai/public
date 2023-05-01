@@ -2,6 +2,9 @@ import * as DG from 'datagrok-api/dg';
 import { V2000_ATOM_NAME_LEN, V2000_ATOM_NAME_POS } from '../constants';
 import { convertMolNotation } from '../package';
 import * as OCL from 'openchemlib/full';
+import { MALFORMED_MOL_V2000 } from './convert-notation-utils';
+import { getMolSafe } from './mol-creation_rdkit';
+import { _rdKitModule } from './chem-common-rdkit';
 
 /** Gets map of chem elements to list with counts of atoms in rows */
 export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, number[]] {
@@ -13,19 +16,20 @@ export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, num
     for (let rowI = 0; rowI < molCol.length; rowI++) {
       let el: string = molCol.get(rowI);
       if (smiles) {
-        try {
-          el = convertMolNotation(el, DG.UNITS.Molecule.SMILES, DG.UNITS.Molecule.MOLBLOCK);
-        } 
-        catch {
-          invalid[rowI] = rowI;
-        }
+        el = convertMolNotation(el, DG.UNITS.Molecule.SMILES, DG.UNITS.Molecule.MOLBLOCK);
+        el === MALFORMED_MOL_V2000 ? invalid[rowI] = rowI : el;
       }
-      if (v3Kmolblock) {
-        try {
-          el = convertMolNotation(el, DG.UNITS.Molecule.V3K_MOLBLOCK, DG.UNITS.Molecule.MOLBLOCK);
-        }
-        catch {
+      else if (v3Kmolblock) {
+        el = convertMolNotation(el, DG.UNITS.Molecule.V3K_MOLBLOCK, DG.UNITS.Molecule.MOLBLOCK);
+        el === MALFORMED_MOL_V2000 ? invalid[rowI] = rowI : el;
+      } 
+      else {
+        let mol = getMolSafe(el, {}, _rdKitModule).mol;
+        if (mol) {
+          el = mol.get_molblock();
+        } else {
           invalid[rowI] = rowI;
+          continue;
         }
       }
       let curPos = 0;

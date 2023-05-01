@@ -62,8 +62,13 @@ public class TableQuery
         String sql = "";
         String str = "";
         List<String> selectFields = fields.stream().map(addBrackets::convert).collect(Collectors.toList());
-        for (GroupAggregation func : getAggFuncs())
-            selectFields.add(aggrToSql.convert(func));
+        for (GroupAggregation func : getAggFuncs()) {
+            String convert = aggrToSql.convert(func);
+            if (convert != null) {
+                selectFields.add(convert);
+            }
+        }
+
         if (selectFields.size() == 0)
             return "";
         selectFields = pad(selectFields);

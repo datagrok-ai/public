@@ -11,39 +11,9 @@ import {Subject} from 'rxjs';
 import {UiUtils} from '../../shared-components';
 import {FunctionView} from './function-view';
 import '../css/rich-function-view.css';
-import { FileInput } from '../../shared-components/src/file-input';
-import { startWith } from 'rxjs/operators';
-
-// mapping from internal Dart labels to JS DG.VIEWER labels
-const viewerTypesMapping: {[key: string]: string} = {
-  ['barchart']: DG.VIEWER.BAR_CHART,
-  ['boxplot']: DG.VIEWER.BOX_PLOT,
-  ['calendar']: DG.VIEWER.CALENDAR,
-  ['corrplot']: DG.VIEWER.CORR_PLOT,
-  ['densityplot']: DG.VIEWER.DENSITY_PLOT,
-  ['filters']: DG.VIEWER.FILTERS,
-  ['form']: DG.VIEWER.FORM,
-  ['globe']: DG.VIEWER.GLOBE,
-  ['googlemap']: DG.VIEWER.GOOGLE_MAP,
-  ['grid']: DG.VIEWER.GRID,
-  ['heatmap']: DG.VIEWER.HEAT_MAP,
-  ['histogram']: DG.VIEWER.HISTOGRAM,
-  ['linechart']: DG.VIEWER.LINE_CHART,
-  ['markup']: DG.VIEWER.MARKUP,
-  ['matrixplot']: DG.VIEWER.MATRIX_PLOT,
-  ['networkdiagram']: DG.VIEWER.NETWORK_DIAGRAM,
-  ['pcplot']: DG.VIEWER.PC_PLOT,
-  ['piechart']: DG.VIEWER.PIE_CHART,
-  ['scatterplot']: DG.VIEWER.SCATTER_PLOT,
-  ['scatterplot3d']: DG.VIEWER.SCATTER_PLOT_3D,
-  ['shapemap']: DG.VIEWER.SHAPE_MAP,
-  ['statistics']: DG.VIEWER.STATISTICS,
-  ['tileviewer']: DG.VIEWER.TILE_VIEWER,
-  ['timelines']: DG.VIEWER.TIMELINES,
-  ['treemap']: DG.VIEWER.TREE_MAP,
-  ['trellisplot']: DG.VIEWER.TRELLIS_PLOT,
-  ['wordcloud']: DG.VIEWER.WORD_CLOUD,
-};
+import {FileInput} from '../../shared-components/src/file-input';
+import {startWith} from 'rxjs/operators';
+import {viewerTypesMapping} from './shared/consts';
 
 const FILE_INPUT_TYPE = 'file';
 
@@ -55,6 +25,11 @@ enum DIRECTION {
 export interface AfterInputRenderPayload {
   prop: DG.Property;
   input: DG.InputBase | FileInput;
+}
+
+export interface AfterOutputRenderPayload {
+  prop: DG.Property;
+  output: DG.Viewer;
 }
 
 export class RichFunctionView extends FunctionView {
@@ -102,10 +77,18 @@ export class RichFunctionView extends FunctionView {
     return Promise.resolve();
   }
 
+  // scripting api events
   public beforeInputPropertyRender = new Subject<DG.Property>();
   public afterInputPropertyRender = new Subject<AfterInputRenderPayload>();
   public beforeRenderControlls = new Subject<true>();
+  public afterOutputPropertyRender = new Subject<AfterOutputRenderPayload>();
+  public afterOutputSacalarTableRender = new Subject<HTMLElement>();
 
+  /*
+   * Will work only if called synchronously inside
+   * beforeRenderControlls subscriber.
+   * TODO: remove this limitation
+   */
   public replaceControlls(div: HTMLElement) {
     this.controllsDiv = div;
   }
@@ -207,23 +190,26 @@ export class RichFunctionView extends FunctionView {
 
           if (this.dfToViewerMapping[dfProp.name]) this.dfToViewerMapping[dfProp.name].push(viewer); else this.dfToViewerMapping[dfProp.name] = [viewer];
 
+          this.afterOutputPropertyRender.next({prop: dfProp, output: viewer});
+
           return viewer;
         }));
 
         viewers.then((loadedViewers) => {
           const subscribeOnFcChanges = () => {
-            const currentParam: DG.FuncCallParam = this.funcCall!.outputParams[dfProp.name] ?? this.funcCall!.inputParams[dfProp.name];
+            const currentParam: DG.FuncCallParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
             const paramSub = currentParam.onChanged.subscribe(() => {
-              loadedViewers.forEach(async (viewer) => {
+              loadedViewers.forEach(async (viewer, idx) => {
                 if (Object.values(viewerTypesMapping).includes(viewer.type))
                   viewer.dataFrame = currentParam.value;
                 else {
                   // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
                   const newViewer = await currentParam.value.plot.fromType(viewer.type) as DG.Viewer;
                   viewer.root.replaceWith(newViewer.root);
-                  viewer = newViewer;
+                  loadedViewers[idx] = newViewer;
                 }
+                this.afterOutputPropertyRender.next({prop: dfProp, output: viewer});
               });
             });
 
@@ -278,6 +264,7 @@ export class RichFunctionView extends FunctionView {
             [scalarProp.caption ?? scalarProp.name, this.funcCall.outputs[scalarProp.name], scalarProp.options['units']],
         ).root;
         table.style.maxWidth = '400px';
+        this.afterOutputSacalarTableRender.next(table);
         return table;
       };
 
@@ -337,12 +324,12 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async onAfterLoadRun(loadedRun: DG.FuncCall) {
-    wu(this.funcCall!.outputParams.values() as DG.FuncCallParam[]).forEach((out) => {
-      this.funcCall!.setParamValue(out.name, loadedRun.outputs[out.name]);
+    wu(this.funcCall.outputParams.values() as DG.FuncCallParam[]).forEach((out) => {
+      this.funcCall.setParamValue(out.name, loadedRun.outputs[out.name]);
     });
 
-    wu(this.funcCall!.inputParams.values() as DG.FuncCallParam[]).forEach((inp) => {
-      this.funcCall!.setParamValue(inp.name, loadedRun.inputs[inp.name]);
+    wu(this.funcCall.inputParams.values() as DG.FuncCallParam[]).forEach((inp) => {
+      this.funcCall.setParamValue(inp.name, loadedRun.inputs[inp.name]);
     });
 
     this.tabsElem.root.style.removeProperty('display');
@@ -415,7 +402,7 @@ export class RichFunctionView extends FunctionView {
           inputs.append(t.root);
           this.afterInputPropertyRender.next({prop, input: t});
         } else {
-          let t = prop.propertyType === DG.TYPE.DATA_FRAME ?
+          const t = prop.propertyType === DG.TYPE.DATA_FRAME ?
             ui.tableInput(prop.caption ?? prop.name, null, grok.shell.tables):
             ui.input.forProperty(prop);
 
@@ -428,7 +415,6 @@ export class RichFunctionView extends FunctionView {
           if (prop.options['units']) t.addPostfix(prop.options['units']);
 
           this.syncFuncCallReplaced(t, val);
-          this.syncInputOnChanged(t, val)
           this.syncOnInput(t, val);
           this.syncValOnChanged(t, val);
 
@@ -440,7 +426,7 @@ export class RichFunctionView extends FunctionView {
         }
         prevCategory = prop.category;
       });
-
+    this.controllsDiv = undefined;
     this.beforeRenderControlls.next(true);
     if (!this.controllsDiv) {
       const runButton = this.getRunButton();
@@ -470,43 +456,45 @@ export class RichFunctionView extends FunctionView {
   private syncFuncCallReplaced(t: DG.InputBase<any>, val: DG.FuncCallParam) {
     const prop = val.property;
     const sub = this.funcCallReplaced.pipe(startWith(true)).subscribe(() => {
-      t.value = this.funcCall!.inputs[val.name] ?? prop.defaultValue ?? null;
-      this.funcCall!.inputs[val.name] = this.funcCall!.inputs[val.name] ?? prop.defaultValue ?? null;
+      const newValue = this.funcCall!.inputs[val.name] ?? prop.defaultValue ?? null;
+      if (val.property.propertyType === DG.TYPE.DATA_FRAME)
+        this.dfInputRecreate(t, val, newValue);
+      else {
+        t.value = newValue;
+        this.funcCall!.inputs[val.name] = newValue;
+      }
     });
     this.subs.push(sub);
   }
 
-  private syncInputOnChanged(t: DG.InputBase<any>, val: DG.FuncCallParam) {
-    t.onChanged(() => {
-      // Resolving case of propertyType = DATAFRAME
-      if (!!t.property) return;
-
-      this.funcCall!.inputs[val.name] = t.value;
-    });
-  }
-
   private syncValOnChanged(t: DG.InputBase<any>, val: DG.FuncCallParam) {
-    const prop = val.property;
     const sub = val.onChanged.subscribe(() => {
       const newValue = this.funcCall!.inputs[val.name];
-
-      if (val.property.propertyType === DG.TYPE.DATA_FRAME) {
-        // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12223
-        const newTableInput = ui.tableInput(prop.caption ?? prop.name, newValue, [...grok.shell.tables, newValue]);
-        t.root.replaceWith(newTableInput.root);
-        t = newTableInput;
-        this.syncOnInput(t, val);
-        this.afterInputPropertyRender.next({prop, input: t});
-      } else {
+      if (val.property.propertyType === DG.TYPE.DATA_FRAME)
+        this.dfInputRecreate(t, val, newValue);
+        // there is no notify for DG.FuncCallParam, so we need to
+        // check if the value is not the same for floats, otherwise we
+        // will overwrite a user input with a lower precicsion decimal
+        // representation
+      else if (((typeof newValue === 'number') && Math.abs(t.value - newValue) > 0.0001) || typeof newValue !== 'number') {
         t.notify = false;
         t.value = newValue;
         t.notify = true;
       }
-
       this.checkDisability.next();
     });
 
     this.subs.push(sub);
+  }
+
+  // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12223
+  private dfInputRecreate(t: DG.InputBase<any>, val: DG.FuncCallParam, newValue: DG.DataFrame) {
+    const prop = val.property;
+    const newTableInput = ui.tableInput(prop.caption ?? prop.name, newValue, [...grok.shell.tables, newValue]);
+    t.root.replaceWith(newTableInput.root);
+    t = newTableInput;
+    this.syncOnInput(t, val);
+    this.afterInputPropertyRender.next({prop, input: t});
   }
 
   private syncOnInput(t: DG.InputBase<any>, val: DG.FuncCallParam) {
