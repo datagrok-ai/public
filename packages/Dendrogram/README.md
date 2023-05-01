@@ -9,7 +9,7 @@ Now only the _Newick_ tree format is supported.
 
 ## Viewers
 
-[Dendrogram viewer](./src/viewers/dendrogram.ts) is a ure typescript component derived from
+[Dendrogram viewer](./src/viewers/dendrogram.ts) is a pure typescript component derived from
 [DG.JsViewer](../../js-api/src/viewer.ts) to be used as [a Datagrok viewer](../../help/visualize/viewers/viewers.md).
 Exposed properties allow customizing the viewer appearance for the line width and color, the node size and fill color.
 
