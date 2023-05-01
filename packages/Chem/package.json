@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.5.29",
+  "version": "1.6.7",
   "author": {
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
@@ -43,9 +43,10 @@
   ],
   "dependencies": {
     "datagrok-api": "^1.14.0",
-    "@datagrok-libraries/chem-meta": "^1.0.9",
-    "@datagrok-libraries/ml": "^6.3.17",
-    "@datagrok-libraries/utils": "^2.4.3",
+    "@datagrok-libraries/chem-meta": "^1.0.12",
+    "@datagrok-libraries/ml": "^6.3.20",
+    "@datagrok-libraries/utils": "^4",
+    "@datagrok-libraries/tutorials": "^1.2.1",
     "cash-dom": "latest",
     "dayjs": "latest",
     "file-loader": "latest",
@@ -83,7 +84,7 @@
     "link-utils": "npm link @datagrok-libraries/utils",
     "link-ml": "npm link @datagrok-libraries/ml",
     "link-chem-meta": "npm link @datagrok-libraries/chem-meta",
-    "link-all": "npm install && npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/ml",
+    "link-all": "npm install && npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/ml @datagrok-libraries/chem-meta",
     "build-chem-local": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm run build",
     "build": "webpack",
     "debug-local": "tsc && webpack && grok publish local",

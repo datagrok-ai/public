@@ -119,7 +119,7 @@ let playlists = [
 let help = [
   {
     'title': 'Access',
-    'url': 'https://datagrok.ai/help/access/db-exploration'
+    'url': 'https://datagrok.ai/help/access/databases.md#database-manager'
   },
   {
     'title':'Collaborate',
@@ -170,4 +170,3 @@ let help = [
     'url': 'https://datagrok.ai/help/acknowledgements'
   }
 ];
-

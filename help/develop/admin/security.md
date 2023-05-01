@@ -43,7 +43,7 @@ using [Datagrok Credentials Management Service](../../govern/security.md#credent
 are [encrypted and stored securely](../../govern/security.md#credentials-storage).
 
 In case of AWS deployment, you can bypass Datagrok Credential Management Service and use
-[AWS Secret Manager](../../access/data-connection-credentials.md#secrets-managers) instead.
+[AWS Secret Manager](../../access/data-connection-credentials.md#) instead.
 
 Once a connection is set up, access to it (either `use` or `edit`) is subject to [user permissions](#user-permissions).
 
@@ -104,7 +104,7 @@ company policies.
 #### CloudFormation deployment
 
 To simplify deployment with all security policies taken into consideration, we created
-an [ECS CloudFormation deployment template](deploy-amazon-cloudformation.md).
+an [ECS CloudFormation deployment template](deploy/deploy-amazon-cloudformation.md).
 
 CloudFormation Template is tested by [Snyk](https://snyk.io/) on every change. The results
 are [available publicly](https://github.com/datagrok-ai/public/actions/workflows/iaac.yaml)
@@ -117,5 +117,5 @@ accessed directly, all requests goes through Application Load Balancer.
 
 * [Architecture](architecture.md)
 * [Infrastructure](infrastructure.md)
-* [CloudFormation deployment](deploy-amazon-cloudformation.md)
+* [CloudFormation deployment](deploy/deploy-amazon-cloudformation.md)
 * [Security](../../govern/security.md)

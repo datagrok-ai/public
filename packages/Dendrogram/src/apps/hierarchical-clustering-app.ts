@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../package';
 import {hierarchicalClusteringUI} from '../utils/hierarchical-clustering';
+import { DistanceMetric } from '@datagrok-libraries/bio/src/trees';
 
 export class HierarchicalClusteringApp {
   private viewed: boolean = false;
@@ -56,6 +57,6 @@ export class HierarchicalClusteringApp {
       this.tv = grok.shell.addTableView(this.df, DG.DOCK_TYPE.FILL);
 
     this.tv.path = this.tv.basePath = `/func/${_package.name}.hierarchicalClusteringApp`;
-    await hierarchicalClusteringUI(this.df, ['HEIGHT'], 'euclidean', 'ward');
+    await hierarchicalClusteringUI(this.df, ['HEIGHT'], DistanceMetric.Euclidean, 'ward');
   }
 }

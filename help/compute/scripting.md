@@ -87,7 +87,7 @@ registered in the platform as a
 [function](../datagrok/functions/functions.md), and can be invoked in different ways:
 
 * From the [console](../datagrok/navigation.md#console)
-* From the [data job](../access/data-job.md)
+* From the data job
 * From the [transformations editor](../transform/recipe-editor.md)
 * From the [function browser](https://public.datagrok.ai/functions)
 

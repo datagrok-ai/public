@@ -63,11 +63,11 @@ SQL queries via JDBC driver.
 ## Supported features
 
 * Schema browsing
-* Build query
-* Visual query
+* Join DB tables
+* Aggregation query
 * Connection test
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Vertica](https://www.vertica.com/overview/)

@@ -68,12 +68,12 @@ via JDBC driver.
 ## Supported features
 
 * Schema browsing
-* Build query
-* Visual query
+* Join DB tables
+* Aggregation query
 * Connection test
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [MySQL](https://www.mysql.com/)
 * [MySQL Wiki](https://ru.wikipedia.org/wiki/MySQL)

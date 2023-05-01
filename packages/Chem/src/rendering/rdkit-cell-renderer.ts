@@ -199,7 +199,7 @@ M  END
       drawErrorCross(ctx, width, height);
     }
 
-    return ctx.getImageData(0, 0, width, height);
+    return ctx.getImageData(0, 0, !Math.floor(width) ? 1 : width, !Math.floor(height) ? 1 : height);
   }
 
   _fetchRender(

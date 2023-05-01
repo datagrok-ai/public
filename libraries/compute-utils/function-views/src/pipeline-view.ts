@@ -2,13 +2,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import JSZip from 'jszip';
+import {zipSync, Zippable} from 'fflate';
 import {Subject} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import {FunctionView} from './function-view';
 import {ComputationView} from './computation-view';
 import {historyUtils} from '../../history-utils';
 import '../css/pipeline-view.css';
+import {RunComparisonView} from './run-comparison-view';
+import {CARD_VIEW_TYPE} from './shared/consts';
 
 export class PipelineView extends ComputationView {
   public steps = {} as {[scriptNqName: string]: { editor: string, view: FunctionView }};
@@ -34,7 +36,7 @@ export class PipelineView extends ComputationView {
     if (!this.stepTabs)
       throw new Error('Set step tabs please for export');
 
-    const zip = new JSZip();
+    const zipConfig = {} as Zippable;
 
     for (const {nqName, stepView} of Object.entries(this.steps)
       .map(([nqName, step]) => ({nqName, stepView: step.view}))) {
@@ -42,10 +44,10 @@ export class PipelineView extends ComputationView {
       await new Promise((r) => setTimeout(r, 100));
       const stepBlob = await stepView.exportConfig!.export('Excel');
 
-      zip.file(stepView.exportConfig!.filename('Excel'), stepBlob, {binary: true, createFolders: false});
+      zipConfig[stepView.exportConfig!.filename('Excel')] = [new Uint8Array(await stepBlob.arrayBuffer()), {level: 0}];
     };
 
-    return await zip.generateAsync({type: 'blob'});
+    return new Blob([zipSync(zipConfig)]);
   };
 
   exportConfig = {
@@ -136,14 +138,37 @@ export class PipelineView extends ComputationView {
     await this.onFuncCallReady();
   }
 
+  public override async onComparisonLaunch(funcCallIds: string[]) {
+    const parentCall = grok.shell.v.parentCall;
+
+    const childFuncCalls = await Promise.all(
+      funcCallIds.map((funcCallId) => historyUtils.loadChildRuns(funcCallId)),
+    );
+
+    // Main child function should habe `meta.isMain: true` tag or the last function is used
+    const fullMainChildFuncCalls = await Promise.all(childFuncCalls
+      .map(
+        (res) => res.childRuns.find(
+          (childRun) => childRun.func.options['isMain'] === 'true',
+        ) ??
+        res.childRuns.find(
+          (childRun) => childRun.func.nqName === this.stepsConfig[this.stepsConfig.length - 1].funcName,
+        )!,
+      )
+      .map((mainChildRun) => historyUtils.loadRun(mainChildRun.id)));
+
+    const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
+    const v = await RunComparisonView.fromComparedRuns(fullMainChildFuncCalls, {
+      parentView: cardView,
+      parentCall,
+    });
+    grok.shell.addView(v);
+  }
+
   protected async onBeforeStepFuncCallApply(nqName: string, scriptCall: DG.FuncCall, editorFunc: DG.Func) {
   }
 
   protected async onAfterStepFuncCallApply(nqName: string, scriptCall: DG.FuncCall, view: FunctionView) {
-  }
-
-  protected override async onFuncCallReady() {
-    super.onFuncCallReady();
   }
 
   public override buildIO() {
@@ -182,15 +207,20 @@ export class PipelineView extends ComputationView {
     await this.funcCall.call(); // mutates the funcCall field
     pi.close();
 
-    Object.values(this.steps)
-      .forEach(async (step) => {
+    const stepsSaving = Object.values(this.steps)
+      .map(async (step) => {
         const scriptCall = step.view.funcCall;
 
-        scriptCall.options['parentCallId'] = this.funcCall!.id;
+        scriptCall.options['parentCallId'] = this.funcCall.id;
+        scriptCall.newId();
 
         this.steps[scriptCall.func.nqName].view.lastCall =
           await this.steps[scriptCall.func.nqName].view.saveRun(scriptCall);
+
+        return Promise.resolve();
       });
+
+    await Promise.all(stepsSaving);
 
     await this.onAfterRun(this.funcCall);
 

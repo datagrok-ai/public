@@ -8,24 +8,23 @@ import '../css/chem.css';
 import * as chemSearches from './chem-searches';
 import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
 import {getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors-calculation';
-import {assure, delay} from '@datagrok-libraries/utils/src/test';
+import {assure} from '@datagrok-libraries/utils/src/test';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import Sketcher = DG.chem.Sketcher;
-import {activityCliffsIdx, CLIFFS_DF_NAME, getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {IUMAPOptions, ITSNEOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
-import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
-import {EMPTY_MOLECULE_MESSAGE, elementsTable} from './constants';
+import {EMPTY_MOLECULE_MESSAGE, SMARTS_MOLECULE_MESSAGE, elementsTable} from './constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
 //widget imports
 import {SubstructureFilter} from './widgets/chem-substructure-filter';
 import {drugLikenessWidget} from './widgets/drug-likeness';
-import {propertiesWidget} from './widgets/properties';
+import {calcChemProperty, getChemPropertyFunc, propertiesWidget} from './widgets/properties';
 import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
 import {toxicityWidget} from './widgets/toxicity';
@@ -33,14 +32,13 @@ import {toxicityWidget} from './widgets/toxicity';
 //panels imports
 import {addInchiKeys, addInchis} from './panels/inchi';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
-import {checkForStructuralAlerts} from './panels/structural-alerts';
-import { addDescriptors } from './descriptors/descriptors-calculation';
+
 
 //utils imports
 import { ScaffoldTreeViewer} from "./widgets/scaffold-tree";
 import {Fingerprint} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
-import {IMolContext, getMolSafe, isSmarts} from './utils/mol-creation_rdkit';
+import {IMolContext, getMolSafe, isFragment, isSmarts} from './utils/mol-creation_rdkit';
 import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
 import {_convertMolNotation} from './utils/convert-notation-utils';
 import {molToMolblock} from './utils/convert-notation-utils';
@@ -54,7 +52,6 @@ import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversit
 import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {chemSpace, getEmbeddingColsNames} from './analysis/chem-space';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
-import {ChemSearchBaseViewer} from './analysis/chem-search-base-viewer';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
@@ -66,7 +63,7 @@ import { renderMolecule } from './rendering/render-molecule';
 import { RDKitReactionRenderer } from './rendering/rdkit-reaction-renderer';
 import { structure3dWidget } from './widgets/structure3d';
 import { identifiersWidget } from './widgets/identifiers';
-import { closeAllAccordionPanes, demoScaffold, getAccordionPane, openSketcher, scrollTable } from './utils/demo-utils';
+import { _demoActivityCliffs, _demoChemOverview, _demoDatabases, _demoRgroupAnalysis, _demoSimilaritySearch } from './demo/demo';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -406,6 +403,53 @@ export function diversitySearchTopMenu(): void {
 }
 
 
+//name: SearchSubstructureEditor
+//tags: editor
+//input: funccall call
+export function SearchSubstructureEditor(call: DG.FuncCall) {
+  
+  const molColumns = grok.shell.tv.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
+  if (!molColumns.length) {
+    grok.shell.warning(`Data doesn't contain molecule columns`);
+    return;
+  } else if (molColumns.length === 1) {
+    call.func.prepare({molecules: molColumns[0]}).call(true);
+  } else {
+    const colInput = ui.columnInput('Molecules', grok.shell.tv.dataFrame, molColumns[0])
+    ui.dialog({title: 'Substructure search'})
+    .add(colInput)
+    .onOK(async () => {
+      call.func.prepare({molecules: colInput.value}).call(true);
+    })
+    .show();
+  }
+}
+
+
+//top-menu: Chem | Search | Substructure Search...
+//name: Diversity Search
+//description: filters dataset by substructure
+//input: column molecules { semType: Molecule }
+//editor: Chem:SearchSubstructureEditor
+export function SubstructureSearchTopMenu(molecules: DG.Column): void {
+  const fg = grok.shell.tv.getFiltersGroup({createDefaultFilters: false});
+  grok.shell.tv.getFiltersGroup({createDefaultFilters: false}).add({
+    type: DG.FILTER_TYPE.SUBSTRUCTURE,
+    column: molecules.name,
+    columnName: molecules.name,
+    molBlock: DG.WHITE_MOLBLOCK,
+  });
+  grok.shell.tv.grid.scrollToCell(molecules, 0);
+  const filterHeader = Array.from(fg.root!.getElementsByClassName('d4-filter-header'))
+    .find((el) => Array.from(el!.getElementsByTagName('label')).find(it => it.textContent === molecules.name));
+  if (filterHeader) {
+    setTimeout(() => {
+      ((filterHeader.parentElement as HTMLElement).getElementsByClassName('sketch-link')[0] as HTMLElement).click();
+    }, 500);
+  }
+}
+
+
 //name: ChemSpaceEditor
 //tags: editor
 //input: funccall call
@@ -420,7 +464,7 @@ export function ChemSpaceEditor(call: DG.FuncCall) {
 }
 
 
-//top-menu: Chem | Analyze Structure | Chemical Space...
+//top-menu: Chem | Analyze | Chemical Space...
 //name: Chem Space
 //input: dataframe table
 //input: column molecules { semType: Molecule }
@@ -454,7 +498,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
   if (plotEmbeddings)
     return grok.shell
       .tableView(table.name)
-      .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
+      .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical Space'});
 }
 
 
@@ -492,7 +536,7 @@ export async function getChemSpaceEmbeddings(col: DG.Column, methodName: string,
 //input: object simArr
 //output: object res
 export async function getChemSimilaritiesMatrix(dim: number, col: DG.Column,
-  df: DG.DataFrame, colName: string, simArr: DG.Column[]): Promise<DG.Column[]> {
+  df: DG.DataFrame, colName: string, simArr: DG.Column[]): Promise<(DG.Column | null)[]> {
   //need to create dataframe to add fingerprints column
   if (!col.dataFrame) {
     const dfForFp = DG.DataFrame.create(col.length);
@@ -501,7 +545,7 @@ export async function getChemSimilaritiesMatrix(dim: number, col: DG.Column,
   return await getSimilaritiesMarix(dim, col, df, colName, simArr);
 }
 
-//top-menu: Chem | Analyze Structure | Elemental Analysis...
+//top-menu: Chem | Analyze | Elemental Analysis...
 //name: Elemental Analysis
 //description: function that implements elemental analysis
 //input: dataframe table
@@ -522,11 +566,16 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
     grok.shell.warning('Dataset contains malformed data!');
   }
 
-  for (let elName of elementsTable) {
+  const extendedElementsTable = ['R'].concat(elementsTable).concat(['Molecule Charge']);
+
+  for (let elName of extendedElementsTable) {
     const value = elements.get(elName);
     if (value) {
       let column = DG.Column.fromInt32Array(elName, value);
       column.name = table.columns.getUnusedName(column.name);
+      invalid.map((i) => {
+        column.set(i, null);
+      })
       table.columns.add(column);
       columnNames.push(column.name);
     }
@@ -549,8 +598,8 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
   if (radarGrid) {
     const packageExists = checkPackage('PowerGrid', 'radarCellRenderer');
     if (packageExists) {
-      let gc = view.grid.columns.add({gridColumnName: 'elementsRadar', cellType: 'radar'});
-      gc.settings = {columnNames: Array.from(elements.keys())};
+      let gc = view.grid.columns.add({gridColumnName: `elements (${molCol.name})`, cellType: 'radar'});
+      gc.settings = {columnNames: columnNames};
       gc.width = 300;
     } else {
       grok.shell.warning('PowerGrid package is not installed');
@@ -559,7 +608,7 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
 }
 
 //name: R-Groups Analysis
-//top-menu: Chem | Analyze SAR | R-Groups Analysis...
+//top-menu: Chem | Analyze | R-Groups Analysis...
 
 export function rGroupsAnalysisMenu(): void {
   const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MOLECULE);
@@ -583,7 +632,7 @@ export function ActivityCliffsEditor(call: DG.FuncCall) {
     .show();
 }
 
-//top-menu: Chem | Analyze SAR | Activity Cliffs...
+//top-menu: Chem | Analyze | Activity Cliffs...
 //name: Activity Cliffs
 //description: detect activity cliffs
 //input: dataframe table [Input data table]
@@ -604,7 +653,7 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
     return;
   }
   const axesNames = getEmbeddingColsNames(df);
-  if (df.rowCount > 500) {
+  if (df.rowCount > 10000) {
     ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
     Do you want to continue?`))
       .onOK(async () => {
@@ -656,7 +705,9 @@ export function molColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export function descriptorsWidget(smiles: string): DG.Widget {
-  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ? getDescriptorsSingle(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ?
+     isSmarts(smiles) || isFragment(smiles) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
+     getDescriptorsSingle(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
 }
 
 //name: Biology | Drug Likeness
@@ -666,7 +717,9 @@ export function descriptorsWidget(smiles: string): DG.Widget {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export function drugLikeness(smiles: string): DG.Widget {
-  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ? drugLikenessWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ?
+    isSmarts(smiles) || isFragment(smiles) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
+    drugLikenessWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
 }
 
 
@@ -676,7 +729,26 @@ export function drugLikeness(smiles: string): DG.Widget {
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
 export async function properties(smiles: DG.SemanticValue): Promise<DG.Widget> {
-  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles.value) ? propertiesWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles.value) ?
+    isSmarts(smiles.value)  || isFragment(smiles.value)? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
+    propertiesWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+}
+
+//name: calculateChemProperty
+//description: Calculate chem property
+//input: string name
+//input: string smiles
+//output: object result
+export async function calculateChemProperty(name: string, smiles: string) : Promise<object> {
+  return calcChemProperty(name, smiles);
+}
+
+//name: getChemPropertyFunction
+//description: Return chem property function
+//input: string name
+//output: object result
+export async function getChemPropertyFunction(name: string) : Promise<any> {
+  return getChemPropertyFunc(name);
 }
 
 //name: Biology | Structural Alerts
@@ -686,7 +758,9 @@ export async function properties(smiles: DG.SemanticValue): Promise<DG.Widget> {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export async function structuralAlerts(smiles: string): Promise<DG.Widget> {
-  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ? structuralAlertsWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ?
+    isSmarts(smiles) || isFragment(smiles) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
+    structuralAlertsWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
 }
 
 
@@ -695,7 +769,9 @@ export async function structuralAlerts(smiles: string): Promise<DG.Widget> {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export async function identifiers(smiles: string): Promise<DG.Widget> {
-  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ? await identifiersWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  return smiles && !DG.chem.Sketcher.isEmptyMolfile(smiles) ?
+    isSmarts(smiles) || isFragment(smiles) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
+    await identifiersWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
 }
 
 
@@ -705,7 +781,9 @@ export async function identifiers(smiles: string): Promise<DG.Widget> {
 //input: string molecule { semType: Molecule }
 //output: widget result
 export async function structure3D(molecule: string): Promise<DG.Widget> {
-  return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ? structure3dWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ?
+    isSmarts(molecule) || isFragment(molecule) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
+    structure3dWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
 }
 
 
@@ -715,7 +793,8 @@ export async function structure3D(molecule: string): Promise<DG.Widget> {
 //input: string molecule { semType: Molecule }
 //output: widget result
 export function structure2d(molecule: string): DG.Widget {
-  return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ? structure2dWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  return molecule && !DG.chem.Sketcher.isEmptyMolfile(molecule) ?
+    structure2dWidget(molecule) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
 }
 
 
@@ -726,7 +805,9 @@ export function structure2d(molecule: string): DG.Widget {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export function toxicity(smiles: string): DG.Widget {
-  return smiles  && !DG.chem.Sketcher.isEmptyMolfile(smiles) ? toxicityWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  return smiles  && !DG.chem.Sketcher.isEmptyMolfile(smiles) ?
+    isSmarts(smiles) || isFragment(smiles) ? new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE)) :
+    toxicityWidget(smiles) : new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
 }
 
 
@@ -1016,7 +1097,7 @@ export async function callChemDiversitySearch(
 }
 
 
-//top-menu: Chem | Analyze Structure | Scaffold Tree
+//top-menu: Chem | Analyze | Scaffold Tree
 //name: addScaffoldTree
 export function addScaffoldTree(): void {
   grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
@@ -1068,262 +1149,36 @@ export function removeDuplicates(molecules: string[], molecule: string): string[
   return filteredMolecules;
 }
 
-//name: demoCh00
+
+//name: Demo Chem Overview
 //meta.demoPath: Cheminformatics | Overview
-export async function demoCh00(): Promise<void> {
-  const table = DG.DataFrame.fromCsv(await _package.files.readAsText('sar-small.csv'));
-  grok.shell.windows.showProperties = true;
-  const sketcherType = DG.chem.currentSketcherType;
-  DG.chem.currentSketcherType = 'OpenChemLib';
-
-  //1. Open table
-  const tv = grok.shell.addTableView(table);
-  await delay(2000);
-  const propPanel = document.getElementsByClassName('grok-entity-prop-panel')[0];
-  closeAllAccordionPanes(propPanel!);
-
-   //2. Show some molecule properties on context pane
-   grok.shell.windows.showHelp = false;
-   const structurePaneContent = getAccordionPane('Structure', propPanel!);
-   getAccordionPane('3D Structure', structurePaneContent!);
-   const biologyPaneContent = getAccordionPane('Biology', propPanel!);
-   getAccordionPane('Toxicity', biologyPaneContent!);
-   getAccordionPane('Drug Likeness', biologyPaneContent!);
-   await delay(3000);
-   table.currentRowIdx = 3;
-   await delay(3000);
-   table.currentRowIdx = 5;
-   await delay(3000);
-   grok.shell.windows.showHelp = true;
-
-   //3. Scroll a little bit
-  const canvas = tv.grid.root.getElementsByTagName('canvas')[2];
-  await scrollTable(canvas, 300, 15, 100);
-  await delay(2000);
-
-  //4. Filtering
-  const filters = tv.getFiltersGroup();
-  await delay(1000);
-  const sketcherDlg = await openSketcher(filters.root);
-  const sketcherInput = sketcherDlg!.getElementsByClassName('grok-sketcher-input')[0]?.children[0] as HTMLInputElement;
-  sketcherInput.value = 'C1CCCCC1';
-  await delay(1000);
-  sketcherInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
-  await delay(1000);
-  await scrollTable(canvas, 200, 10, 200);
-  await delay(1000);
-  Array.from(sketcherDlg!.getElementsByTagName('span')).find(el => el.textContent === 'CANCEL')?.click();
-  delay(500);
-  filters.close();
-  delay(1000);
-
-  //5.Align to scaffold
-  grok.shell.o = tv.dataFrame.col('smiles');
-  await delay(2000);
-  closeAllAccordionPanes(propPanel!);
-  const chemistryPaneContent = getAccordionPane('Chemistry', propPanel!);
-  const renderingPaneContent = getAccordionPane('Rendering', chemistryPaneContent!) as HTMLElement;
-  await delay(1000);
-  const scaffoldSketcher = await openSketcher(renderingPaneContent);
-  const scaffoldSketcherInput = scaffoldSketcher!.getElementsByClassName('grok-sketcher-input')[0]?.children[0] as HTMLInputElement;
-
-  let dT = null;
-  try {dT = new DataTransfer();} catch (e) { }
-  const evt = new ClipboardEvent('paste', {clipboardData: dT});
-  evt.clipboardData!.setData('text/plain', demoScaffold);
-  scaffoldSketcherInput.value = demoScaffold;
-  await delay(100);
-  scaffoldSketcherInput.dispatchEvent(evt);
-  await delay(1000);
-  await scrollTable(canvas, 200, 10, 200);
-  await delay(1000);
-  Array.from(scaffoldSketcher!.getElementsByTagName('span')).find(el => el.textContent === 'CANCEL')?.click();
-
-  DG.chem.currentSketcherType = sketcherType;
-
+export async function demoChemOverview(): Promise<void> {
+  _demoChemOverview();
 }
 
 
-//name: demoCh01
+//name: Demo Similarity Search
 //meta.demoPath: Cheminformatics | Similarity Search
-export async function demoCh01(): Promise<void> {
-  const table = DG.DataFrame.fromCsv(await _package.files.readAsText('sar-small.csv'));
-  grok.shell.windows.showProperties = true;
-  grok.shell.windows.showHelp = true;
-
-  //1. Open table
-  const tv = grok.shell.addTableView(table);
-  await delay(2000);
-
-  //2. Add similarity search viewer
-  const similarityViewer = tv.addViewer('Chem Similarity Search');
-  grok.shell.o = similarityViewer;
-  await delay(2000);
-
-  //3. Change target molecule
-  table.currentRowIdx = 1;
-  await delay(1000);
-  table.currentRowIdx = 2;
-  await delay(1000);
-  table.currentRowIdx = 3;
-
+export async function demoSimilaritySearch(): Promise<void> {
+  _demoSimilaritySearch();
 }
 
 
-//name: demoCh02
+//name: Demo R Group Analysis
 //meta.demoPath: Cheminformatics | R Group Analysis
-export async function demoCh02(): Promise<void> {
-  const table = DG.DataFrame.fromCsv(await _package.files.readAsText('sar-small.csv'));
-  grok.shell.windows.showProperties = true;
-
-  //1. Open table
-  const tv = grok.shell.addTableView(table);
-  await delay(2000);
-
-  //2. Open RGroup analysis sketcher and run analysis
-  rGroupAnalysis(table.col('smiles')!);
-  await delay(2000);
-  const sketcher = document.getElementsByClassName('d4-dialog')[0];
-  const sketcherInput = sketcher!.getElementsByClassName('grok-sketcher-input')[0]?.children[0] as HTMLInputElement;
-  sketcherInput.value = 'O=C1CN=C(c2ccccc2N1)C3CCCCC3';
-  await delay(1000);
-  sketcherInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
-  await delay(1000);
-  Array.from(sketcher!.getElementsByTagName('span')).find(el => el.textContent === 'OK')?.click();
+export async function demoRgroupAnalysis(): Promise<void> {
+  _demoRgroupAnalysis();
 }
 
 
-//name: demoCh03
-//meta.demoPath: Cheminformatics | Activity Cliffs
-export async function demoCh03(): Promise<void> {
-  const table = DG.DataFrame.fromCsv(await _package.files.readAsText('activity_cliffs.csv'));
-  grok.shell.windows.showProperties = true;
-
-  //1. Open table
-  const tv = grok.shell.addTableView(table);
-  await delay(1000);
-
-  //2. Run Activity cliffs
-  const molecules = table.col('smiles')!
-  const progressBar = DG.TaskBarProgressIndicator.create(`Activity cliffs running...`);
-  const axesNames = getEmbeddingColsNames(table); //@ts-ignore
-  const scatterPlot = await getActivityCliffs(table, molecules, null as any, axesNames, 'Activity cliffs', table.col('Activity')!, 80, 'Tanimoto',
-    't-SNE', DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
-    createTooltipElement, createPropPanelElement, undefined, undefined, 0.5);
-  progressBar.close();
-  await delay(1000);
-
-  //3. Open cliffs table
-  (Array.from(scatterPlot!.root.children)
-    .filter((it) => it.className === 'ui-btn ui-btn-ok scatter_plot_link cliffs_grid')[0] as HTMLElement).click();
-  await delay(1000);
-
-  //4. Select some random cliffs
-  let cliffsGrid: DG.Viewer | null = null;
-  for (const i of tv.viewers) {
-    if (i.dataFrame.name === `${CLIFFS_DF_NAME}${activityCliffsIdx}`)
-      cliffsGrid = i;
-  }
-  cliffsGrid!.dataFrame.currentRowIdx = 0;
-  await delay(2000);
-  cliffsGrid!.dataFrame.currentRowIdx = 1;
-  await delay(2000);
-  cliffsGrid!.dataFrame.currentRowIdx = 2;
+//name: Demo Activity Cliffs
+//meta.demoPath: Cheminformatics | Molecule Activity Cliffs
+export async function demoActivityCliffs(): Promise<void> {
+  _demoActivityCliffs();
 }
 
-
-//name: demoCh04
-export async function demoCh04(): Promise<void> { //Databases integration in property panel
-  const table = _importSdf(await _package.files.readAsBytes('mol1K.sdf'))[0];
-  grok.shell.windows.showProperties = true;
-  grok.shell.windows.showHelp = false;
-
-  //1. Open table
-  const tv = grok.shell.addTableView(table);
-  await delay(2000);
-
-  //2. Open tabs on property panel
-  const propPanel = document.getElementsByClassName('grok-entity-prop-panel')[0];
-  closeAllAccordionPanes(propPanel!);
-  const databasesPaneContent = getAccordionPane('Databases', propPanel!);
-  getAccordionPane('ChEMBL (Internal) Substructure Search', databasesPaneContent!) as HTMLElement;
-  getAccordionPane('ChEMBL (Internal) Similarity Search', databasesPaneContent!) as HTMLElement;
-  await delay(3000);
-  table.currentRowIdx = 2;
-  await delay(3000);
-  table.currentRowIdx = 5;
-}
-
-
-//name: demoCh05
+//name: Demo Databases
 //meta.demoPath: Cheminformatics | Databases
-export async function demoCh05(): Promise<void> {
-  const ids = ['CHEMBL1827', 'CHEMBL1829', 'CHEMBL1830'];
-  const query = `SELECT m.chembl_id AS compound_chembl_id, s.canonical_smiles, act.standard_type, act.standard_value
-  FROM compound_structures s, molecule_dictionary m, compound_records r, docs d, activities act, assays a, target_dictionary t
-  WHERE s.molregno     = m.molregno
-  AND m.molregno       = r.molregno
-  AND r.record_id      = act.record_id
-  AND r.doc_id         = d.doc_id
-  AND act.assay_id     = a.assay_id
-  AND a.tid            = t.tid
-  AND act.standard_type = 'IC50'
-  AND t.chembl_id      = '~id~';`
-
-  const connection = await grok.functions.eval('Chembl:Chembl');
-  const queryPanel = ui.box();
-  const gridDiv = ui.div();
-  const scatterPlot = ui.div();
-  const barchart = ui.div();
-
-  const totalDiv = ui.splitV([
-    queryPanel,
-    gridDiv,
-    ui.splitH([
-      scatterPlot,
-      barchart
-    ])
-  ], {style: {height: '100%', width: '100%'}});
-
-  const loading = (isLoading: boolean) => {
-    ui.setUpdateIndicator(gridDiv, isLoading);
-    ui.setUpdateIndicator(scatterPlot, isLoading);
-    ui.setUpdateIndicator(barchart, isLoading);
-  }
-
-  const loadNewQuery = (id: string) => {
-    ui.empty(queryPanel);
-    const queryDiv = ui.textInput(`Compound activity details for target = ${id}`, query.replace(`~id~`, id));
-    queryDiv.input.style.height = '100%';
-    queryPanel.append(queryDiv.root);
-    const dBQuery = connection!.query('', query.replace(`~id~`, id));
-    dBQuery.adHoc = true;
-    ui.empty(gridDiv);
-    ui.empty(scatterPlot);
-    ui.empty(barchart);
-    loading(true);
-    return dBQuery;
-  }
-
-  const loadQueryResults = async (t: DG.DataFrame) => {
-    await grok.data.detectSemanticTypes(t);
-    const grid = t.plot.grid().root;
-    grid.style.width = '100%';
-    loading(false);
-    gridDiv.append(grid);
-    barchart.append(t.plot.bar().root);
-    scatterPlot.append(t.plot.scatter().root);
-    await delay(1500);
-  }
-
-
-  grok.shell.newView('Databases', [totalDiv]);
-
-  setTimeout(async () => {
-    for (const id of ids) {
-      const t = await loadNewQuery(id).executeTable();
-      await loadQueryResults(t);
-    }
-  }, 500);
-
+export async function demoDatabases(): Promise<void> {
+  _demoDatabases();
 }

@@ -7,19 +7,19 @@
 }
 
 .chem-mol-view-icon {
+  width: 14px;
+  text-align: center;
+  padding: 2px;
+  margin: 2px;
   position: absolute;
-  top: 5px;
-  visibility: hidden;
-  margin: 5px;
   z-index: 1;
 }
 
 .pep-more-icon {
-  right: 10px;
-}
-
-.chem-mol-view-icon i {
-  font-size: 13px;
+  visibility: hidden;
+  color: var(--steel-6);
+  right: 0;
+  font-size: 15px;
 }
 
 .chem-mol-view-icon:hover {
@@ -157,9 +157,14 @@
   opacity: 1.0;
 }
 
+.similarity-header {
+  justify-content: space-between;
+}
+
 .similarity-prop-label {
-  min-width: 100px;
-  max-width: 100px;
+  width: 75%;
+  margin-left: 5px;
+  text-align: start;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -167,22 +172,20 @@
 }
 
 .similarity-prop-value {
-  padding-left: 10px;
-  padding-right: 5px;
-  width: 100%;
+  margin-right: 5px;
+  text-align: end;
   overflow-wrap: break-word;
   color: var(--grey-5);
 }
 
 .similarity-prop-item {
-  padding-top: 5px;
+  justify-content: space-between;
 }
 
 .similarity-search-edit {
-  position: absolute;
-  margin: 0px!important;
-  height: 14px!important;
-  padding-left: 2px!important;
+  font-size: 12px;
+  padding: 4px;
+  color:var(--blue-1);
 }
 .chem-scaffold-tree-toolbar {
   max-height: 24px;
@@ -246,4 +249,33 @@
 
 .chem-demo-sketcher-link {
   border: 2px solid var(--blue-1);
+}
+
+.chem-demo-button-pushed {
+  background: var(--blue-2)!important
+}
+
+.chem-demo-chembl-id-selected {
+  border-bottom: 2px solid var(--blue-2)!important
+}
+
+.chem-mcs-button-host {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.chem-mcs-button {
+  font-size: 12px!important;
+}
+
+.chem-viewer-grid {
+  margin: 6px 0;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chem-viewer-grid > div > div.chem-mol-box {
+  margin: 0 auto;
+  position: relative;
 }

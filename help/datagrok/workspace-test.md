@@ -7,7 +7,7 @@
 
 [Workspace](workspace.md) Tree is a hierarchical viewer that is used for navigating and
 managing [projects](project.md),
-[tables](table.md), [connections](../access/data-connection.md), and other entities.
+[tables](table.md), [connections](../access/access.md#data-connection), and other entities.
 
 ## Testing scenarios
 

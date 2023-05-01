@@ -1,0 +1,20 @@
+{
+  "#type": "DataConnection",
+  "name": "SnowflakeDBTests",
+  "friendlyName": "SnowflakeDBTests",
+  "parameters": {
+    "region": "us-east4",
+    "accountLocator": "mf34438",
+    "cloud": "gcp",
+    "db": "test",
+    "warehouse": "COMPUTE_WH"
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "datagrok",
+      "password": "Datagrok1"
+    }
+  },
+  "dataSource": "Snowflake",
+  "description": "Test data"
+}

@@ -33,7 +33,7 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
       case Fingerprint.Morgan:
         for (let i = 0; i < this._rdKitMols.length; ++i) {
           try{
-            if (!this._rdKitMols[i])
+            if (!this._rdKitMols[i] || this._rdKitMols[i] && this._rdKitMols[i]?.is_qmol)
               fps.push(null);
             else
               fps.push(this._rdKitMols[i]!.get_morgan_fp_as_uint8array(JSON.stringify({

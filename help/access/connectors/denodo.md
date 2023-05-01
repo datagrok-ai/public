@@ -18,5 +18,5 @@ platform via JDBC driver.
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Denodo](https://www.denodo.com/)
