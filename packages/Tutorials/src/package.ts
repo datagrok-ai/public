@@ -6,6 +6,7 @@ import {chem} from './tracks/chem';
 import {eda} from './tracks/eda';
 import {da} from './tracks/data-access';
 import {ml} from './tracks/ml';
+import {dataTransformation} from './tracks/transform';
 import {TutorialWidget} from './widget';
 import '../css/tutorial.css';
 import {Track} from '@datagrok-libraries/tutorials/src/track';
@@ -130,6 +131,7 @@ function setProperties(properties: { [propertyName: string]: boolean }): void {
     'machineLearningTrack': ml,
     'cheminformaticsTrack': chem,
     'dataAccessTrack': da,
+    'dataTransformation': dataTransformation,
   };
 
   for (const property in properties) {
