@@ -38,8 +38,10 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.size = this.string('size', Object.keys(this.sizesMap)[0], {choices: Object.keys(this.sizesMap)});
     this.moleculeColumnName = this.string('moleculeColumnName');
     this.name = name;
-    this.moleculeProperties = this.columnList('moleculeProperties', []);
-    this.applyColorTo = this.string('applyColorTo', BACKGROUND, {choices: [BACKGROUND, TEXT]});
+    this.moleculeProperties = this.columnList('moleculeProperties', [],
+      { description: 'Adds selected fields from the grid to similarity search viewer'});
+    this.applyColorTo = this.string('applyColorTo', BACKGROUND, {choices: [BACKGROUND, TEXT],
+      description: 'Applies to data added via Molecule Properties control (color-code the column in the grid first)'});
     if (col) {
       this.moleculeColumn = col;
       this.moleculeColumnName = col.name!;
@@ -58,7 +60,6 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
 
   async onTableAttached(): Promise<void> {
     this.init();
-
     if (this.dataFrame) {
       this.subs.push(DG.debounce(this.dataFrame.onRowsRemoved, 50).subscribe(async (_: any) => await this.render()));
       const compute = this.name !== DIVERSITY;
