@@ -191,6 +191,11 @@ export class OverviewView extends UaView {
 
     const counters: {[key: string]: string} = {
       'Active users': 'UsageAnalysis:UniqueUsersCount',
+      'New users': 'UsageAnalysis:NewUsersCount',
+      'Sessions': 'UsageAnalysis:SessionsCount',
+      'Views': 'UsageAnalysis:ViewsCount',
+      'Connections': 'UsageAnalysis:ConnectionsCount',
+      'Queries': 'UsageAnalysis:QueriesCount',
     };
 
     const refresh = (filter: UaFilter): void => {
