@@ -66,8 +66,6 @@ export class DemoView extends DG.ViewBase {
     this._closeAll();
 
     ui.setUpdateIndicator(grok.shell.tv.root, true);
-    grok.shell.windows.showHelp = true;
-
     await func.apply();
     ui.setUpdateIndicator(grok.shell.tv.root, false);
 
