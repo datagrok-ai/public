@@ -7,7 +7,6 @@ import {_package} from '../package';
 const VIEWER_TABLES_PATH: {[key: string]: string} = {
   Chord: 'energy_uk.csv',
   Globe: 'geo/earthquakes.csv',
-  GroupAnalysis: 'files/r-groups.csv',
   Radar: 'demog.csv',
   Sankey: 'energy_uk.csv',
   Sunburst: 'demog.csv',
@@ -19,13 +18,13 @@ const VIEWER_TABLES_PATH: {[key: string]: string} = {
 
 
 export async function viewerDemo(viewerName: string, options?: object | null) {
-  const df = await (['GroupAnalysis', 'SurfacePlot', 'Timelines'].includes(viewerName) ?
+  const df = await (['SurfacePlot', 'Timelines'].includes(viewerName) ?
     grok.data.loadTable(`${_package.webRoot}${VIEWER_TABLES_PATH[viewerName]}`) :
     grok.data.getDemoTable(VIEWER_TABLES_PATH[viewerName]));
 
   const tableView = grok.shell.addTableView(df);
 
-  if (['Globe', 'GroupAnalysis'].includes(viewerName)) {
+  if (viewerName === 'Globe') {
     DG.debounce(df.onSemanticTypeDetected, 800).subscribe((_) => {
       const viewer = tableView.addViewer(viewerName, options);
       dockViewers(tableView, viewer, viewerName);
@@ -39,9 +38,6 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
 }
 
 function dockViewers(tableView: DG.TableView, viewer: DG.Viewer, viewerName: string) {
-  if (viewerName === 'GroupAnalysis')
-    return;
-
   const rootNode = tableView.dockManager.rootNode;
 
   if (viewerName === 'WordCloud') {

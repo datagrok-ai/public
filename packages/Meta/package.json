@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.3.1",
+  "version": "3.3.3",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -2504,6 +2504,33 @@
         "directory": "packages/Dendrogram"
       },
       "category": "Visualizations"
+    },
+    "biostructure-viewer": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "^1.10.2"
+        }
+      },
+      "description": "Protein viewers: support for multiple file formats, stand-alone viewer, and in-grid viewer.",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/BiostructureViewer"
+      },
+      "category": "Bioinformatics"
+    },
+    "bioreactors": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "latest"
+        }
+      },
+      "description": "Bioreactor simulation",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/Bioreactors"
+      }
     }
   }
 }

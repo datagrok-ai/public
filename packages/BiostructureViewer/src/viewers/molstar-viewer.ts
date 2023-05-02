@@ -336,6 +336,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
 
     const superDetach = super.detach.bind(this);
     this.detachPromise = this.detachPromise.then(async () => { // detach
+      await this.viewPromise;
       if (this.viewed) {
         await this.destroyView('detach');
         this.viewed = false;
@@ -537,9 +538,9 @@ export async function initViewer(viewName: string = 'Mol*'): Promise<RcsbViewer>
  * @param {string} pdbId ID of an entity in PDB.
  */
 export async function byId(pdbId: string) {
-  initViewer()
-    .then((v: any) => {
-      v.loadPdb(pdbId);
+  await initViewer()
+    .then((v: RcsbViewer) => {
+      v.loadPdbId(pdbId);
     });
   //v.handleResize();
 }
@@ -550,7 +551,7 @@ export async function byId(pdbId: string) {
  * @param {string} data Data in PDB
  */
 export async function byData(data: string, name: string = 'Mol*') {
-  initViewer(name)
+  await initViewer(name)
     .then(async (viewer: RcsbViewer) => {
       // detecting format by data content
       let format: BuiltInTrajectoryFormat = 'pdb';
@@ -571,9 +572,9 @@ export async function viewMolstarUI(content: string, name?: string): Promise<voi
 
 /** Creates view with Molstar viewer to preview Biostructure (PDB) */
 export function previewMolstarUI(file: DG.FileInfo): DG.View {
-  const builtinFormats = BuiltInTrajectoryFormats.map(obj => obj[0]) as string[];
+  const builtinFormats = BuiltInTrajectoryFormats.map((obj) => obj[0]) as string[];
   const extendedFormats = ['cif', 'mcif'];
-  if(!isSupportedFormat()) {
+  if (!isSupportedFormat()) {
     grok.shell.error(`Unsupported format: ${file.extension}`);
     throw new Error(`Unsupported format: ${file.extension}`);
   }
@@ -603,7 +604,7 @@ export function previewMolstarUI(file: DG.FileInfo): DG.View {
       .then(() => {}); // Ignoring Promise returned
   }
 
-  function isSupportedFormat(){
+  function isSupportedFormat() {
     return [...builtinFormats, ...extendedFormats].includes(file.extension);
   }
 
