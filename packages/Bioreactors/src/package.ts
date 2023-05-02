@@ -3,7 +3,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
+
 import {_initReactor, _simulateBioreactor} from '../wasm/reactorAPI';
+import {customRun, showCustomRunResults} from '../wasm/demoTools';
 
 export const _package = new DG.Package();
 
@@ -53,13 +56,27 @@ export async function Bioreactor(initial: number, final: number, step: number,
   _MEAthiolInitial: number, _CO2Initial: number, _yO2PInitial: number, _CystamineInitial: number, 
   _VLInitial: number, _qinVal: number, _percentO2saturationVal: number, _yO2inVal: number, 
   _pKa2MEAVal: number, _HVal: number, _TVal: number, _RVal: number, _PVal: number, 
-  _TimeToSwitchVal: number): Promise<number>
+  _TimeToSwitchVal: number): Promise<DG.DataFrame>
 {
-  return _simulateBioreactor(initial, final, step,
+  return await _simulateBioreactor(initial, final, step,
     _FFoxInitial, _KKoxInitial, _FFredInitial, _KKredInitial, 
     _FfreeInitial, _KfreeInitial, _FKredInitial, _FKoxInitial,
     _MEAthiolInitial, _CO2Initial, _yO2PInitial, _CystamineInitial, 
     _VLInitial, _qinVal, _percentO2saturationVal, _yO2inVal, 
     _pKa2MEAVal, _HVal, _TVal, _RVal, _PVal, 
     _TimeToSwitchVal);
+}
+
+//name: Bioreactor Demo
+//description: Bioreactor simulation demo.
+//meta.demoPath: Bioreactors | Simulate bioreactor
+export async function demoScript(): Promise<any>  {
+  const demoScript = new DemoScript('Bioreactor Demo', 'Bioreactor simulation demo.'); 
+
+  let tables: any;
+    
+  await demoScript    
+    .step('Run', async () => { tables = await customRun() }, {description: 'Launch bioreactor simulation with different parameters.', delay: 5000})  
+    .step('Compare', async () => { showCustomRunResults(tables) }, {description: 'Compare results of different runs.'})  
+    .start();
 }

@@ -1,13 +1,14 @@
 {
 	"name": "@datagrok/bioreactors",
 	"friendlyName": "Bioreactor",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Bioreactor simulation",
 	"dependencies": {
 		"datagrok-api": "latest",
 		"cash-dom": "latest",
 		"dayjs": "latest",
-		"@datagrok-libraries/utils": "latest"
+		"@datagrok-libraries/utils": "latest",
+		"@datagrok-libraries/tutorials": "^1.2.1"
 	},
 	"author": {
         "name": "Viktor Makarichev",

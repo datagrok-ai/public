@@ -13,7 +13,7 @@ export async function _simulateBioreactor(initial, final, step,
   let _tCount = Math.trunc((final - initial) / step) + 1;
   let _varsCount = 14;
   
-  return callWasm(Reactor, 'solveReactor',
+  return await callWasm(Reactor, 'solveReactor',
     [ initial, final, step,
      _FFoxInitial, _KKoxInitial, _FFredInitial, _KKredInitial, _FfreeInitial, 
      _KfreeInitial, _FKredInitial, _FKoxInitial, _MEAthiolInitial, _CO2Initial, _yO2PInitial, 
