@@ -36,14 +36,16 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
   //   return;
   // }
 
+  grok.shell.windows.showHelp = true;
+  grok.shell.windows.help.syncCurrentObject = false;
+
   const viewer = tableView.addViewer(viewerName, options);
+  grok.shell.windows.help.showHelp(viewer.helpUrl);
+
   dockViewers(tableView, viewer, viewerName);
 }
 
 function dockViewers(tableView: DG.TableView, viewer: DG.Viewer, viewerName: string) {
-  // if (viewerName === 'GroupAnalysis')
-  //   return;
-
   const rootNode = tableView.dockManager.rootNode;
 
   // if (viewerName === 'WordCloud') {
