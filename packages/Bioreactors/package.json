@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/bioreactors",
 	"friendlyName": "Bioreactor",
-	"version": "0.0.1",
+	"version": "1.0.0",
 	"description": "Bioreactor simulation",
 	"dependencies": {
 		"datagrok-api": "latest",
@@ -40,5 +40,8 @@
 		"type": "git",
 		"url": "https://github.com/datagrok-ai/public.git",
 		"directory": "packages/Bioreactors"
-	}
+	},
+	"sources": [
+        "wasm/Reactor.js"
+    ]
 }
