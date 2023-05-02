@@ -26,7 +26,7 @@ export class RunComparisonView extends DG.TableView {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
       configFunc?: DG.Func,
-    },
+    } = {parentView: undefined, parentCall: undefined, configFunc: undefined},
   ) {
     const configFunc = options.configFunc ?? comparedRuns[0].func;
 

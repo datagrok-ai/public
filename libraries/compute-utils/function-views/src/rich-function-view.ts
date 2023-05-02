@@ -15,6 +15,7 @@ import {FileInput} from '../../shared-components/src/file-input';
 import {startWith} from 'rxjs/operators';
 import {DIRECTION, EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getFuncRunLabel, getPropViewers} from './shared/utils';
+import {SensitivityAnalysisView} from './sensitivity-analysis-view';
 
 const FILE_INPUT_TYPE = 'file';
 
@@ -232,12 +233,15 @@ export class RichFunctionView extends FunctionView {
       ...this.isUploadMode.value ? ['d4-current']: [],
     );
 
+    const sensitivityAnalysis = ui.iconFA('analytics', async () => await this.onSALaunch(), 'Run sensitivity analysis');
+
     const newRibbonPanels = [
       ...this.getRibbonPanels(),
       [
         ...this.runningOnInput || this.options.isTabbed ? []: [play],
         ...(this.hasUploadMode && this.isUploadMode.value) ? [save] : [],
         ...this.hasUploadMode ? [toggleUploadMode]: [],
+        sensitivityAnalysis,
       ],
     ];
 
@@ -512,6 +516,10 @@ export class RichFunctionView extends FunctionView {
     outputs.style.paddingLeft = '0px';
 
     return outputs;
+  }
+
+  private async onSALaunch(): Promise<void> {
+    SensitivityAnalysisView.openInDockMode(this.func);
   }
 
   private renderInputForm(): HTMLElement {
