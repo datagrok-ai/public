@@ -234,6 +234,15 @@
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/cassandrajdbc.jar</systemPath>
         </dependency>
+
+        <dependency>
+            <groupId>com.cloudera</groupId>
+            <artifactId>impala</artifactId>
+            <version>2.6.30</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/ImpalaJDBC42.jar</systemPath>
+        </dependency>
+
         <dependency>
             <groupId>com.datastax.oss</groupId>
             <artifactId>java-driver-core</artifactId>
