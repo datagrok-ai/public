@@ -140,13 +140,12 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
   }
 
   const divMain = ui.div();
-  divMain.append(ui.divText('Most diverse structures'));
+  divMain.append(ui.divText('Most diverse structures', {style: {'position': 'relative', 'left': '20px'}}));
   const divStructures = ui.div();
   divStructures.classList.add('d4-flex-wrap');
-
   if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
     const molIds = await chemDiversitySearch(
-      col, similarityMetric['Tanimoto'], 9, 'Morgan' as Fingerprint, true);
+      col, similarityMetric['Tanimoto'], 7, 'Morgan' as Fingerprint, true);
 
     Object.assign(col.temp, {
       'version': version,
@@ -156,11 +155,13 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
 
   const molIdsCached = col.temp['molIds'];
   for (let i = 0; i < molIdsCached.length; ++i) {
-    divStructures.append(renderMolecule(col.get(molIdsCached[i]), {width: 150, height: 75}));
+    divStructures.append(renderMolecule(col.get(molIdsCached[i]), {width: 75, height: 32}));
   }
 
   divMain.append(divStructures);
-  return new DG.Widget(divMain);
+  const widget = new DG.Widget(divMain);
+  widget.root.classList.add('chem-tooltip-widget');
+  return widget;
 }
 
 //name: Scaffold Tree
