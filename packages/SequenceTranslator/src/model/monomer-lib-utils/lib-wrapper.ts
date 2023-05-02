@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {getMonomerLib} from '../../package';
+import {_package} from '../../package';
 import {SYNTHESIZERS, TECHNOLOGIES} from '../../model/const';
 
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
@@ -25,7 +25,7 @@ type Meta = {
 export class MonomerLibWrapper {
   // todo: dependency injection of monomer lib instead of getMonomeLib
   private constructor() {
-    const lib = getMonomerLib();
+    const lib = _package.monomerLib;
     if (lib === null)
       throw new Error('SequenceTranslator: monomer library is null');
     this.lib = lib!;

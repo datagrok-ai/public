@@ -7,12 +7,12 @@ import {sortByReverseLength} from '../helpers';
 import {SYNTHESIZERS, NUCLEOTIDES} from '../const';
 import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
 
-const libWrapper = MonomerLibWrapper.getInstance();
-
 export class FormatDetector {
   constructor (private sequence: string) { };
 
   private invalidCodeIdx?: number;
+  private libWrapper = MonomerLibWrapper.getInstance();
+
 
   getInvalidCodeIndex(format?: string) {
     if (this.invalidCodeIdx)
@@ -47,7 +47,7 @@ export class FormatDetector {
     for (let i = 0; i < possibleSynthesizers.length; ++i) {
       const synthesizer = possibleSynthesizers[i];
       const codes = sortByReverseLength(
-        libWrapper.getCodesByFromat(synthesizer)
+        this.libWrapper.getCodesByFromat(synthesizer)
       );
       while (outputIndices[i] < this.sequence.length) {
         const matchedCode = codes.find((c) => c === this.sequence.slice(outputIndices[i], outputIndices[i] + c.length));
@@ -91,7 +91,7 @@ export class FormatDetector {
     let synthesizers: string[] = [];
     // iterate over all possible formats and 
     Object.values(SYNTHESIZERS).forEach((synthesizer: string) => {
-      let codes = sortByReverseLength(libWrapper.getCodesByFromat(synthesizer));
+      let codes = sortByReverseLength(this.libWrapper.getCodesByFromat(synthesizer));
       let start = 0;
       for (let i = 0; i < sequence.length; i++) {
         if (sequence[i] === ')' && i !== sequence.length - 1) {

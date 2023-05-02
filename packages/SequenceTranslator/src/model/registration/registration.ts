@@ -15,7 +15,7 @@ import {RegistrationColumnsHandler} from './add-columns';
 import {sdfSaveTable} from './save-table';
 import {PREFIXES, SEQ_TYPE, SEQ_TYPE_CATEGORY, seqTypeToCategoryDict} from './const';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
-import {DBLoaderBase} from '../data-loader/data-loader';
+import {DBLoaderBase} from '../database-loader/data-loader';
 import {Unsubscribable} from 'rxjs';
 
 /** Style used for cells in 'Type' column  */
