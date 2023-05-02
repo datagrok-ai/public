@@ -24,9 +24,13 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
 
   const tableView = grok.shell.addTableView(df);
 
+  grok.shell.windows.showHelp = true;
+  grok.shell.windows.help.syncCurrentObject = false;
+
   if (viewerName === 'Globe') {
     DG.debounce(df.onSemanticTypeDetected, 800).subscribe((_) => {
       const viewer = tableView.addViewer(viewerName, options);
+      grok.shell.windows.help.showHelp(viewer.helpUrl);
       dockViewers(tableView, viewer, viewerName);
     });
     return;
@@ -34,6 +38,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
 
   const viewer = tableView.addViewer(viewerName, options);
   grok.shell.windows.help.showHelp(viewer.helpUrl);
+
   dockViewers(tableView, viewer, viewerName);
 }
 
