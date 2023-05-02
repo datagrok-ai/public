@@ -41,6 +41,7 @@ language, and use results in dashboards, data augmentation panels, or via the [J
 |                        | last year   |                            |
 |                        | min-max     |                            |
 |                        | April 2021  |                            |
+|                        | last        | last 10 days, last 2 weeks |
 
 * Note, that patterns are supported only in WHERE clause, not in MATCH
 

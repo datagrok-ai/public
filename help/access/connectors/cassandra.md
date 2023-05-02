@@ -65,7 +65,6 @@ using SQL queries via JDBC driver.
 ## Supported features
 
 * Schema browsing
-* Join DB tables
 * Connection test
 
 See also:
