@@ -354,9 +354,9 @@ async function openFse(v: DG.View, functionCode: string) {
       return;
 
 
-    const deleteBtn = (name: string) => ui.div(
+    const deleteBtn = (rowIdx: number) => ui.div(
       ui.icons.delete(() => {
-        functionParamsCopy = functionParamsCopy.filter((param) => param.name !== name);
+        functionParamsCopy.splice(rowIdx, 1);
         functionParamsState.next(functionParamsCopy);
       }, 'Remove the param'), { style: { 'text-align': 'center', 'margin': '6px' } },
     );
@@ -364,7 +364,7 @@ async function openFse(v: DG.View, functionCode: string) {
 
     if (gc.isTableCell) {
       gc.style.element = ui.divH([
-        deleteBtn(gc.grid.dataFrame?.get('Name', gc.gridRow)),
+        deleteBtn(gc.gridRow),
         addParamBtn(gc.cell.rowIndex)
       ], {style: {'width': '100px'}});
       gc.style.element.style.display = 'flex';
