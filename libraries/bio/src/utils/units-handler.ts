@@ -292,7 +292,7 @@ export class UnitsHandler {
         UnitsHandler._defaultGapSymbolsDict.SEPARATOR;
 
     if (!this.column.tags.has(TAGS.aligned) || !this.column.tags.has(TAGS.alphabet) ||
-        (!this.column.tags.has(TAGS.alphabetIsMultichar) && !this.isHelm())
+        (!this.column.tags.has(TAGS.alphabetIsMultichar) && !this.isHelm() && this.alphabet === ALPHABET.UN)
     ) {
       if (this.isFasta()) {
         UnitsHandler.setUnitsToFastaColumn(this.column);
