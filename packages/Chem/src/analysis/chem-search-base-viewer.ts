@@ -133,11 +133,14 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       darkColor : lightColor;
   }
 
-  createMoleculePropertiesDiv(idx: number, similarity?: number): HTMLDivElement{
+  createMoleculePropertiesDiv(idx: number, refMolecule: boolean, similarity?: number): HTMLDivElement{
     const propsDict: {[key: string]: any} = {};
     const grid = grok.shell.tv.grid;
     if (similarity)
-      propsDict[SIMILARITY] = {val: similarity};
+      if (refMolecule)
+        propsDict['Reference'] = {val: ''};
+      else
+        propsDict[SIMILARITY] = {val: similarity};
     for (const col of this.moleculeProperties) {
         propsDict[col] = {val: this.moleculeColumn!.dataFrame.col(col)!.getString(idx)};
         const colorCoding = this.moleculeColumn!.dataFrame.col(col)!.tags[DG.TAGS.COLOR_CODING_TYPE]
@@ -146,7 +149,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
         }
     }
     //const item = ui.divH([], 'similarity-prop-item');
-    const div = ui.divV([]);
+    const div = ui.divV([], {style: {marginTop: '5px'}});
     for (const key of Object.keys(propsDict)) {
       const labelName = key === SIMILARITY ? '' : key;
       const label = ui.divText(`${labelName}`, 'similarity-prop-label');

@@ -48,7 +48,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
 
       panel[cnt++] = this.metricsDiv;
       for (let i = 0; i < this.renderMolIds.length; ++i) {
-        const molProps = this.createMoleculePropertiesDiv(this.renderMolIds[i]);
+        const molProps = this.createMoleculePropertiesDiv(this.renderMolIds[i], false);
         const grid = ui.div([
           renderMolecule(
             this.moleculeColumn!.get(this.renderMolIds[i]),

@@ -65,6 +65,10 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     this.initialized = true;
   }
 
+  isReferenceMolecule(idx: number): boolean {
+    return idx === this.targetMoleculeIdx && !this.isEditedFromSketcher;
+  }
+
   async render(computeData = true): Promise<void> {
     if (!this.beforeRender())
       return;
@@ -112,9 +116,9 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         for (let i = 0; i < this.molCol.length; ++i) {
           const idx = this.idxs.get(i);
           const similarity = this.scores.get(i).toPrecision(2);
-          const label = idx === this.targetMoleculeIdx && !this.isEditedFromSketcher ?
-            this.sketchButton : ui.div();
-          const molProps = this.createMoleculePropertiesDiv(idx, similarity);
+          const refMolecule = this.isReferenceMolecule(idx);
+          const label = refMolecule ? this.sketchButton : ui.div();
+          const molProps = this.createMoleculePropertiesDiv(idx, refMolecule, similarity);
           const grid = ui.div([
             renderMolecule(
               this.molCol?.get(i), {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
