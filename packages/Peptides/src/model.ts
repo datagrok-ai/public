@@ -287,14 +287,6 @@ export class PeptidesModel {
     this.df.tags['distributionSplit'] = `${splitByAARFlag}${flag ? 1 : 0}`;
   }
 
-  get isInvariantMap(): boolean {
-    return this.df.getTag('isInvariantMap') === '1';
-  }
-
-  set isInvariantMap(x: boolean) {
-    this.df.setTag('isInvariantMap', x ? '1' : '0');
-  }
-
   get isMutationCliffSelectionEmpty(): boolean {
     for (const aarList of Object.values(this.mutationCliffsSelection)) {
       if (aarList.length !== 0)
