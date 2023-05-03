@@ -54,6 +54,7 @@ export function htestCellRenderer() {
 
 //name: barCellRenderer
 //tags: cellRenderer
+//meta.gridChart: true
 //meta.cellType: bar
 //output: grid_cell_renderer result
 export function barCellRenderer() {
@@ -63,6 +64,7 @@ export function barCellRenderer() {
 //name: Sparklines
 //tags: cellRenderer
 //meta.cellType: sparkline
+//meta.gridChart: true
 //meta.virtual: true
 //output: grid_cell_renderer result
 export function sparklineCellRenderer() {
@@ -81,6 +83,7 @@ export function scatterPlotRenderer() {
 //name: Bar Chart
 //tags: cellRenderer
 //meta.cellType: barchart
+//meta.gridChart: true
 //meta.virtual: true
 //output: grid_cell_renderer result
 export function barchartCellRenderer() {
@@ -90,6 +93,7 @@ export function barchartCellRenderer() {
 //name: Pie Chart
 //tags: cellRenderer
 //meta.cellType: piechart
+//meta.gridChart: true
 //meta.virtual: true
 //output: grid_cell_renderer result
 export function piechartCellRenderer() {
@@ -99,6 +103,7 @@ export function piechartCellRenderer() {
 //name: Radar
 //tags: cellRenderer
 //meta.cellType: radar
+//meta.gridChart: true
 //meta.virtual: true
 //output: grid_cell_renderer result
 export function radarCellRenderer() {

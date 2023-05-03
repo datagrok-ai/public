@@ -20,9 +20,10 @@ is not specified, then the Logo will be plotted from the first (till the last) p
 
 ## General
 
-|             |              |
-|-------------|--------------|
-| Right click | Context menu |
+|             |                     |
+|-------------|---------------------|
+| Right click | Context menu        |
+| Alt+F       | Show in full screen |
 
 ## Properties
 

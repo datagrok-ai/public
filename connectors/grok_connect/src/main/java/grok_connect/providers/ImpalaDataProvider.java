@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Properties;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataQuery;
@@ -25,7 +26,7 @@ import serialization.Types;
 public class ImpalaDataProvider extends JdbcDataProvider {
     public ImpalaDataProvider(ProviderManager providerManager) {
         super(providerManager);
-        driverClassName = "com.cloudera.impala.jdbc41.Driver";
+        driverClassName = "com.cloudera.impala.jdbc.Driver";
 
         descriptor = new DataSource();
         descriptor.type = "Impala";
@@ -44,6 +45,24 @@ public class ImpalaDataProvider extends JdbcDataProvider {
             add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
         }};
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+        descriptor.typesMap = new HashMap<String, String>() {{
+            put("#.*char.*", Types.STRING);
+            put("string", Types.STRING);
+            put("boolean", Types.BOOL);
+            put("date", Types.DATE_TIME);
+            put("#timestamp.*", Types.DATE_TIME);
+            put("int", Types.INT);
+            put("smallint", Types.INT);
+            put("tinyint", Types.INT);
+            put("bigint", Types.BIG_INT);
+            put("#decimal.*", Types.FLOAT);
+            put("float", Types.FLOAT);
+            put("double", Types.FLOAT);
+            put("#array.*", Types.OBJECT);
+            put("#struct.*", Types.OBJECT);
+            put("#map.*", Types.OBJECT);
+            put("#binary.*", Types.BLOB);
+        }};
     }
 
     @Override
@@ -149,6 +168,17 @@ public class ImpalaDataProvider extends JdbcDataProvider {
             }
         }
         return properties;
+    }
+
+    @Override
+    protected String getRegexQuery(String columnName, String regexExpression) {
+        return String.format("REGEXP_LIKE(%s, '%s')", columnName, regexExpression);
+    }
+
+    @Override
+    protected boolean isInteger(int type, String typeName, int precision, int scale) {
+        return (type == java.sql.Types.INTEGER) || (type == java.sql.Types.TINYINT) ||
+                (type == java.sql.Types.SMALLINT);
     }
 
     private DataFrame handleNoTable(DataConnection connection) throws GrokConnectException, QueryCancelledByUser, SQLException, ParseException, IOException, ClassNotFoundException {

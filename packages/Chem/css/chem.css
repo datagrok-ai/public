@@ -279,3 +279,11 @@
   margin: 0 auto;
   position: relative;
 }
+
+.chem-tooltip-widget {
+  position: relative;
+  top: -80px;
+  left: 120px;
+  width: 335px;
+  height: 0px;
+}

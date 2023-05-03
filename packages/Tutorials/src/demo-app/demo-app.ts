@@ -14,6 +14,24 @@ const DIRECTIONS: string[] = [
   'Viewers',
 ];
 
+// const CHEMINFORMATICS_CATEGORIES: string[] = [];
+// const BIOINFORMATICS_CATEGORIES: string[] = [];
+// const VIEWERS_CATEGORIES: string[] = [
+//   'Data flow and hierarchy',
+//   'Data separation',
+//   'General',
+//   'Geographical',
+//   'Input and edit',
+//   'Statistical',
+//   'Time and date'
+// ];
+
+// const SUBCATEGORIES = {
+//   Cheminformatics: CHEMINFORMATICS_CATEGORIES,
+//   Bioinformatics: BIOINFORMATICS_CATEGORIES,
+//   Viewers: VIEWERS_CATEGORIES,
+// };
+
 type DemoFunc = {
   name: string;
   func: DG.Func,
@@ -48,8 +66,6 @@ export class DemoView extends DG.ViewBase {
     this._closeAll();
 
     ui.setUpdateIndicator(grok.shell.tv.root, true);
-    grok.shell.windows.showHelp = true;
-
     await func.apply();
     ui.setUpdateIndicator(grok.shell.tv.root, false);
 
@@ -200,6 +216,7 @@ export class DemoView extends DG.ViewBase {
   private _createHomeNode(): void {
     const homeNode = this.tree.group('Home');
     homeNode.root.classList.add('demo-app-tree-home-node');
+    (homeNode.root.firstElementChild as HTMLElement).dataset.name = 'Home';
     homeNode.root.getElementsByClassName('d4-tree-view-node')[0]?.prepend(ui.iconFA('home'));
     homeNode.root.getElementsByClassName('d4-tree-view-tri')[0].remove();
   }
@@ -221,9 +238,11 @@ export class DemoView extends DG.ViewBase {
         if (path.length > 2) {
           let groupPath = path[0];
           let treePath = this.tree.getOrCreateGroup(path[0], {path: groupPath});
+          (treePath.root.firstElementChild as HTMLElement).dataset.name = path[0];
           for (let i = 1; i < path.length - 1; i++) {
             groupPath += `/${path[i]}`;
-            treePath = treePath.getOrCreateGroup(path[i], {path: groupPath})
+            treePath = treePath.getOrCreateGroup(path[i], {path: groupPath});
+            (treePath.root.firstElementChild as HTMLElement).dataset.name = path[i];
           }
 
           const item = treePath.item(directionFuncs[j].name, {path: directionFuncs[j].path});
@@ -240,6 +259,7 @@ export class DemoView extends DG.ViewBase {
           };
         } else {
           const folder = this.tree.getOrCreateGroup(directionFuncs[j].category, {path: path[0]});
+          (folder.root.firstElementChild as HTMLElement).dataset.name = directionFuncs[j].category;
           const item = folder.item(directionFuncs[j].name, {path: directionFuncs[j].path});
 
           item.root.onmouseover = (event) => {
@@ -309,14 +329,32 @@ export class DemoView extends DG.ViewBase {
   }
 
   private _searchItem(): void {
+    const foundFuncs = this.funcs.filter((func) => {
+      return func.name.toLowerCase().includes(this.searchInput.value.toLowerCase()) ||
+        func.func.description.toLowerCase().includes(this.searchInput.value.toLowerCase()) ||
+        func.keywords.toLowerCase().includes(this.searchInput.value.toLowerCase())
+    });
+    
     const dom = this.tree.root.getElementsByClassName('d4-tree-view-node');
 
     for (let i = 0; i < dom.length; i++) {
       const item = dom[i] as HTMLElement;
-      if (item.innerText.toLowerCase().includes(this.searchInput.value.toLowerCase())) {
+      const foundFunc = foundFuncs.find((func) => func.name.toLowerCase() === item.innerText.toLowerCase());
+      if (foundFunc) {
+        const foundFuncPath = foundFunc.path.split('|').map((s) => s.trim());
         item.classList.remove('hidden');
-        if (item.classList.contains('d4-tree-view-item'))
-          item.parentElement?.previousElementSibling?.classList.remove('hidden');
+        if (item.classList.contains('d4-tree-view-item')) {
+          for (let i = foundFuncPath.length - 2; i >= 0; i--) {
+            const currentCategory = this.tree.root.querySelector(`[data-name="${foundFuncPath[i]}"]`);
+            currentCategory?.classList.remove('hidden');
+          }
+        }
+      }
+      else if (item.innerText.toLowerCase().includes(this.searchInput.value.toLowerCase())) {
+        item.classList.remove('hidden');
+        // if (!DIRECTIONS.includes(this.searchInput.value.toLowerCase())) {
+
+        // }
       }
       else
         item.classList.add('hidden');

@@ -2,8 +2,7 @@
 title: "MongoDB"
 ---
 
-Provides access to [Apache HBase](https://hbase.apache.org/) NoSQL database
-using SQL queries via JDBC driver.
+Provides access to [Mongo](https://www.mongodb.com/) NoSQL database via JDBC driver.
 
 ## Connection parameters
 

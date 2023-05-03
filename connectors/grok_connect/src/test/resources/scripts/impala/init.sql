@@ -36,7 +36,7 @@ insert into mock_data (id, first_name, last_name, email, gender, ip_address, boo
 insert into mock_data (id, first_name, last_name, email, gender, ip_address, bool, country, dat, some_number) values (23, 'Waly', 'Rogliero', 'wroglierom@berkeley.edu', 'Female', '122.90.196.231/32', true, 'Sweden', '2011-12-18', 147.69);
 insert into mock_data (id, first_name, last_name, email, gender, ip_address, bool, country, dat, some_number) values (24, 'Dillie', 'Iannazzi', 'diannazzin@biblegateway.com', 'Male', '112.79.17.198/32', true, 'Bangladesh', '2013-12-22', 699.62);
 insert into mock_data (id, first_name, last_name, email, gender, ip_address, bool, country, dat, some_number) values (25, 'Zolly', 'Wimmers', 'zwimmerso@hatena.ne.jp', 'Male', '123.12.225.114/32', false, 'Bosnia and Herzegovina', '2003-02-12', 217.18);
-insert into mock_data (id, first_name, last_name, email, gender, ip_address, bool, country, dat, some_number) values (26, 'Daryle', 'O''Shaughnessy', 'doshaughnessyp@com.com', 'Male', '204.107.16.207/32', false, 'Honduras', '2010-05-04', 983.03);
+insert into mock_data (id, first_name, last_name, email, gender, ip_address, bool, country, dat, some_number) values (26, 'Daryle', "O'Shaughnessy", 'doshaughnessyp@com.com', 'Male', '204.107.16.207/32', false, 'Honduras', '2010-05-04', 983.03);
 insert into mock_data (id, first_name, last_name, email, gender, ip_address, bool, country, dat, some_number) values (27, 'Nick', 'Sings', 'nsingsq@boston.com', 'Male', '110.64.63.165/32', true, 'United States', '2011-03-17', 514.48);
 insert into mock_data (id, first_name, last_name, email, gender, ip_address, bool, country, dat, some_number) values (28, 'Ilsa', 'Huguenet', 'ihuguenetr@harvard.edu', 'Female', '147.1.198.181/32', false, 'China', '2014-05-11', 318.96);
 insert into mock_data (id, first_name, last_name, email, gender, ip_address, bool, country, dat, some_number) values (29, 'Grantham', 'Fayter', 'gfayters@desdev.cn', 'Male', '26.120.76.78/32', false, 'Sweden', '2009-10-02', 595.22);
@@ -55,12 +55,12 @@ CREATE TABLE DATE_TYPES(date_type DATE, stamp_type TIMESTAMP);
 INSERT INTO DATE_TYPES(date_type, stamp_type) VALUES ('2023-02-06', '2001-01-09 01:05:01');
 INSERT INTO DATE_TYPES(date_type, stamp_type) VALUES ('1111-11-11', '1985-09-25 17:45:30.005');
 
-CREATE TABLE DATES_PATTERNS(dat DATE);
-INSERT INTO DATES_PATTERNS(dat) VALUES (current_date());
-INSERT INTO DATES_PATTERNS(dat) VALUES (date_add(current_date(), -1));
-INSERT INTO DATES_PATTERNS(dat) VALUES (date_add(current_date(), 7 -  dayofweek(current_date()) + 1));
-INSERT INTO DATES_PATTERNS(dat) VALUES (date_add(current_date(), -150));
-insert into DATES_PATTERNS (dat) values ('2021-04-09');
+CREATE TABLE DATES_PATTERNS(id INT, dat DATE);
+INSERT INTO DATES_PATTERNS(id, dat) VALUES (1, current_date());
+INSERT INTO DATES_PATTERNS(id, dat) VALUES (2, date_add(current_date(), -1));
+INSERT INTO DATES_PATTERNS(id, dat) VALUES (3, date_add(current_date(), 7 -  dayofweek(current_date()) + 1));
+INSERT INTO DATES_PATTERNS(id, dat) VALUES (4, date_add(current_date(), -150));
+insert into DATES_PATTERNS (id, dat) values (5, '2021-04-09');
 
 CREATE TABLE CHARACTER_TYPES(char_type CHAR(8), varchar_type VARCHAR(8), string_type STRING);
-INSERT INTO CHARACTER_TYPES(char_type, varchar_type, string_type) VALUES ('Datagrok', 'Datagrok', 'Hello, world!');
+INSERT INTO CHARACTER_TYPES(char_type, varchar_type, string_type) VALUES (CAST('Datagrok' AS CHAR(8)), CAST('Datagrok' AS VARCHAR(8)), 'Hello, world!');

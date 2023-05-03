@@ -39,8 +39,7 @@ import './viewers/viewers';
 import './viewers/filters';
 import './grid/grid';
 import './grid/color-coding';
-// import './connections/queries-test';
-// import './connections/perf-tests';
+import './connections/queries-test';
 import './connections/get-all-top100';
 import './scripts/scripts-params';
 

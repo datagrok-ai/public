@@ -1,0 +1,12 @@
+sequence,activity,cluster,rank
+PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$$,5.3,0,3.5
+PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.D-Chg.dV.Phe_ab-dehydro.N.D-Orn.D-aThr.Phe_4Me}$$$$,5.7,0,7.5
+PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.D-Chg.dV.Phe_ab-dehydro.N.D-Orn.D-aThr.Phe_4Me}$$$$,5.7,0,7.5
+PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.D-Chg.dV.Thr_PO3H2.N.D-Orn.D-aThr}$$$$,5.1,1,1.5
+PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.D-Chg.dV.Thr_PO3H2.N.D-Orn.D-aThr}$$$$,6.2,1,2.6
+PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.Chg.N.D-Orn.D-aThr}$$$$,3.8,1,8.3
+PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_Bn.dV.E.N.dV.Phe_4Me}$$$$,3.2,2,2.3
+PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Aze.dV.E.N.dV.Phe_4Me}$$$$,2.1,2,1.2
+PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.meQ.dV.E.N.dV.Phe_4Me}$$$$,1.8,2,8.1
+PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.Oic_3aS-7aS.D-Chg.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$$,6.3,2,3.6
+PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.Oic_3aS-7aS.D-Chg.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$$,6.3,2,3.6
