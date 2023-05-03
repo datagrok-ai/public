@@ -11,6 +11,7 @@ import '../css/tutorial.css';
 import {Track} from '@datagrok-libraries/tutorials/src/track';
 import {DemoView} from './demo-app/demo-app';
 import {viewerDemo} from './demo-app/platform-viewers-demo';
+import { DemoAppWidget } from './demo-app/widget';
 
 export const _package = new DG.Package();
 
@@ -172,6 +173,10 @@ function setPath(path: string, tutorialRunners: TutorialRunner[]): void {
     tutorialRunners[trackIdx].run(tutorial);
 }
 
+//output: widget tutorial
+export function demoAppWidget(): DG.Widget {
+  return new DemoAppWidget();
+}
 
 //name: scatterPlotDemo
 //description: A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the points are color-coded you can increase the number of displayed variables to three. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis..
