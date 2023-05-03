@@ -97,7 +97,7 @@ export class OverviewView extends UaView {
           //t.selection.copyFrom(t.filter);
           PackagesView.showSelectionContextPanel(t, this.uaToolbox, 'Overview', {showDates: false});
         });
-        viewer.root.onclick =(me) => {
+        viewer.root.onclick = (_) => {
           //resetViewers(skipEvent, viewer.table);
           if (skipEvent) {
             skipEvent = false;
@@ -185,8 +185,40 @@ export class OverviewView extends UaView {
     this.viewers.push(uniqueUsersViewer);
     this.viewers.push(packageStatsViewer);
     this.viewers.push(userStatsViewer);
+
+    const cardsView = ui.div([
+    ], {classes: 'ua-cards'});
+
+    const counters: {[key: string]: string} = {
+      'Active users': 'UsageAnalysis:UniqueUsersCount',
+      'New users': 'UsageAnalysis:NewUsersCount',
+      'Sessions': 'UsageAnalysis:SessionsCount',
+      'Views': 'UsageAnalysis:ViewsCount',
+      'Connections': 'UsageAnalysis:ConnectionsCount',
+      'Queries': 'UsageAnalysis:QueriesCount',
+    };
+
+    const refresh = (filter: UaFilter): void => {
+      cardsView.textContent = '';
+      for (const k of Object.keys(counters)) {
+        cardsView.append(ui.div([ui.divText(k), ui.wait(async () => {
+          const fc = await grok.data.callQuery(counters[k], filter);
+          const valuePrev = fc.outputs.count1;
+          const valueNow = fc.outputs.count2;
+          const d = valueNow - valuePrev;
+          return ui.div([ui.divText(`${valueNow}`),
+            ui.divText(`${d}`, {classes: d > 0 ? 'ua-card-plus' : d < 0 ? 'ua-card-minus' : ''})]);
+        })], 'ua-card'));
+      }
+    };
+    refresh(this.uaToolbox.getFilter());
+    this.uaToolbox.filterStream.subscribe( (filter) => {
+      refresh(filter);
+    });
+
     this.root.append(ui.splitH([
       ui.splitV([
+        ui.box(cardsView, {style: {maxHeight: '100px'}}),
         ui.box(uniqueUsersViewer.root, {style: {maxHeight: '250px'}}),
         ui.splitH([packageStatsViewer.root, userStatsViewer.root]),
       ]),

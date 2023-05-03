@@ -44,10 +44,7 @@ export abstract class FunctionView extends DG.ViewBase {
     this.build();
 
     if (this.getStartId()) {
-      await this.onBeforeLoadRun();
-      this.lastCall = this.funcCall;
-      await this.onAfterLoadRun(this.funcCall);
-
+      await this.loadRun(this.funcCall.id);
       this.setAsLoaded();
     }
   }

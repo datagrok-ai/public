@@ -40,11 +40,11 @@ types and additional metadata, there is also a way to quickly inspect it with th
 ### Querying by aggregation
 
 For example, let us do a couple of visual queries against the `Orders` table of the celebrated
-`Northwind` database. Let us right-click on the `Orders` table to which we navigated and select a `Visual Query`
+`Northwind` database. Let us right-click on the `Orders` table to which we navigated and select `New Aggregation Query`
 command. What this particular tool does is it lets you create an aggregation query against a particular table visually.
 
 While the functionality for joining tables is not yet available and comes later, it is often possible to add a view to
-the actual database and then interrogate this view from the `Visual Query`
+the actual database and then interrogate this view from the `Aggregation Editor`
 tool.
 
 Building an aggregate query is easy. Start with the `Measures` section. For example, we select an average of `freight`,
@@ -69,5 +69,5 @@ attributes using left join which are related to that table.
 
 For example, ...
 
-Right-click on the table and choose `Build Query`. Our platform figures out the schema of the database, and starting
+Right-click on the table and choose `Join DB Tables`. Our platform figures out the schema of the database, and starting
 from that table it adds all the tables that could be reached by following the foreign keys.

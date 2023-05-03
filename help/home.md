@@ -37,7 +37,7 @@ Seamlessly bring together data from the different silos and formats.
   browse [file shares](https://public.datagrok.ai/files)
 * [Visually explore](access/databases.mdx#database-manager) and manage relational databases
   using [schema browser](access/databases.mdx#schema-browser)
-  and [visual query](access/databases.mdx#aggregation-editor)
+  and [aggregation editor](access/databases.mdx#aggregation-editor)
 * Connect to [thousands of public datasets](access/public-datasets.md)
 * Automate via data preparation pipelines
 

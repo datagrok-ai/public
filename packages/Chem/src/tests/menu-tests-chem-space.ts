@@ -29,7 +29,8 @@ category('top menu chem space', async () => {
   });
 
   test('chemSpaceOpens.smiles', async () => {
-    await _testChemSpaceReturnsResult(smallDf, 'smiles');
+    if (DG.Test.isInBenchmark) await _testChemSpaceReturnsResult(await readDataframe('smiles.csv'), 'canonical_smiles');
+    else await _testChemSpaceReturnsResult(smallDf, 'smiles');
   });
 
   test('chemSpaceOpens.molV2000', async () => {

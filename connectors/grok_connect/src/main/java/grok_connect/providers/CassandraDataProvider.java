@@ -4,18 +4,22 @@ import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.text.ParseException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
-import java.sql.Date;
-
-import com.datastax.oss.driver.internal.core.type.codec.DateCodec;
-import grok_connect.connectors_info.*;
+import com.datastax.oss.driver.api.core.data.GettableByIndex;
+import com.datastax.oss.driver.internal.core.data.DefaultUdtValue;
+import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataQuery;
+import grok_connect.connectors_info.DataSource;
+import grok_connect.connectors_info.DbCredentials;
+import grok_connect.connectors_info.FuncCall;
+import grok_connect.connectors_info.FuncParam;
+import grok_connect.table_query.AggrFunctionInfo;
+import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.PatternMatcher;
 import grok_connect.utils.PatternMatcherResult;
@@ -28,6 +32,9 @@ import serialization.StringColumn;
 import serialization.Types;
 
 public class CassandraDataProvider extends JdbcDataProvider {
+    private static final String DEFAULT_EXCEPTION_MESSAGE = "Cassandra doesn't support this feature";
+    private static final String NULL_MESSAGE = "Cassandra doesn't have explicit null type";
+
     public CassandraDataProvider(ProviderManager providerManager) {
         super(providerManager);
         driverClassName = "com.wisecoders.dbschema.cassandra.JdbcDriver";
@@ -50,17 +57,34 @@ public class CassandraDataProvider extends JdbcDataProvider {
         descriptor.canBrowseSchema = true;
         descriptor.typesMap = new HashMap<String, String>() {{
             put("text", Types.STRING);
+            put("duration", Types.STRING);
+            put("uuid", Types.STRING);
             put("boolean", Types.BOOL);
             put("date", Types.DATE_TIME);
-            put("#timestamp.*", Types.DATE_TIME);
-            put("#time.*", Types.DATE_TIME);
-            put("#interval.*", Types.STRING);
+            put("timestamp", Types.DATE_TIME);
+            put("time", Types.DATE_TIME);
             put("bigint", Types.BIG_INT);
+            put("varint", Types.BIG_INT);
+            put("int", Types.INT);
+            put("smallint", Types.INT);
+            put("tinyint", Types.INT);
             put("decimal", Types.FLOAT);
             put("float", Types.FLOAT);
-            put("#geometry.*", Types.OBJECT);
-            put("#geography.*", Types.OBJECT);
-            put("uuid", Types.STRING);
+            put("double", Types.FLOAT);
+            put("#frozen.*", Types.OBJECT);
+            put("#list.*", Types.OBJECT);
+            put("#map.*", Types.OBJECT);
+            put("#set.*", Types.OBJECT);
+            put("inet", Types.OBJECT);
+            put("blob", Types.BLOB);
+        }};
+        descriptor.aggregations = new ArrayList<AggrFunctionInfo>() {{
+            add(new AggrFunctionInfo(Stats.AVG, "avg(#)", Types.dataFrameNumericTypes));
+            add(new AggrFunctionInfo(Stats.MIN, "min(#)", Types.dataFrameNumericTypes));
+            add(new AggrFunctionInfo(Stats.MAX, "max(#)", Types.dataFrameNumericTypes));
+            add(new AggrFunctionInfo(Stats.SUM, "sum(#)", Types.dataFrameNumericTypes));
+            add(new AggrFunctionInfo(Stats.TOTAL_COUNT, "count(*)", Types.dataFrameColumnTypes));
+            add(new AggrFunctionInfo(Stats.VALUE_COUNT, "count(#)", Types.dataFrameNumericTypes));
         }};
     }
 
@@ -122,12 +146,6 @@ public class CassandraDataProvider extends JdbcDataProvider {
     @Override
     public PatternMatcherResult stringPatternConverter(FuncParam param, PatternMatcher matcher) {
         PatternMatcherResult result = new PatternMatcherResult();
-
-        if (matcher.op.equals(PatternMatcher.NONE)) {
-            result.query = "1 = 1";
-            return result;
-        }
-
         String type = "string";
         String _query = matcher.colName +  " LIKE @" + param.name;
         List<Object> values = matcher.values;
@@ -164,10 +182,9 @@ public class CassandraDataProvider extends JdbcDataProvider {
                 break;
             case PatternMatcher.IS_NULL:
             case PatternMatcher.IS_NOT_NULL:
-                throw new UnsupportedOperationException("Cassandra doesn't have explicit null type");
+                throw new UnsupportedOperationException(NULL_MESSAGE);
             default:
-                result.query = "1 = 1";
-                break;
+                throw new UnsupportedOperationException(DEFAULT_EXCEPTION_MESSAGE);
         }
 
         return result;
@@ -195,7 +212,7 @@ public class CassandraDataProvider extends JdbcDataProvider {
                 break;
             case PatternMatcher.IS_NULL:
             case PatternMatcher.IS_NOT_NULL:
-                throw new UnsupportedOperationException("Cassandra doesn't have explicit null type");
+                throw new UnsupportedOperationException(NULL_MESSAGE);
             default:
                 result.query = matcher.colName + " " + matcher.op + " @" + param.name;
                 result.params.add(new FuncParam(type, param.name, matcher.values.get(0)));
@@ -228,9 +245,9 @@ public class CassandraDataProvider extends JdbcDataProvider {
                 break;
             case PatternMatcher.IS_NULL:
             case PatternMatcher.IS_NOT_NULL:
-                throw new UnsupportedOperationException("Cassandra doesn't have explicit null type");
+                throw new UnsupportedOperationException(NULL_MESSAGE);
             default:
-                throw new UnsupportedOperationException("Cassandra doesn't support this feature");
+                throw new UnsupportedOperationException(DEFAULT_EXCEPTION_MESSAGE);
         }
 
         return result;
@@ -257,5 +274,42 @@ public class CassandraDataProvider extends JdbcDataProvider {
             throw new RuntimeException(String.format("Something went wrong when setting datetime parameter at %s index",
                     parameterIndex), e);
         }
+    }
+
+    @Override
+    protected Object convertArrayType(Object value) {
+        if (value instanceof GettableByIndex) {
+            return convertComplexType(value);
+        } else {
+            return value.toString();
+        }
+    }
+
+    @Override
+    protected boolean isArray(int type, String typeName) {
+        return typeName.startsWith("Tuple") || typeName.startsWith("UDT") || typeName.startsWith("List");
+    }
+
+    private String convertComplexType(Object value) {
+        GettableByIndex complex = (GettableByIndex) value;
+        StringBuilder builder = new StringBuilder("{");
+        for (int i = 0; i < complex.size(); i++) {
+            Object object = complex.getObject(i);
+            if (object instanceof GettableByIndex) {
+                builder.append(convertComplexType(object));
+            } else {
+                if (value instanceof DefaultUdtValue) {
+                    String fieldName = ((DefaultUdtValue) value).getType()
+                            .getFieldNames().get(i).toString();
+                    builder.append(fieldName).append("=");
+                }
+                builder.append(object);
+            }
+            if (i != complex.size() - 1) {
+                builder.append(", ");
+            }
+        }
+        builder.append("}");
+        return builder.toString();
     }
 }
