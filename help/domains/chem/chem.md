@@ -621,7 +621,7 @@ To download a file with the scaffold tree to your local drive, hover over any sc
 ![scaffold-tree-controls](img/scaffold-tree-toolbar-actions-1.png)
 
 <details>
-<summary>Manually sketching and modyfying the scaffold tree</summary>
+<summary>Manually sketch and modyfy a scaffold tree</summary>
 
 To manually sketch or modify the scaffold tree, use these controls:
 
@@ -636,7 +636,7 @@ To manually sketch or modify the scaffold tree, use these controls:
 </details>
 
 <details>
-<summary>Filtering a dataset</summary>
+<summary>Filter a dataset</summary>
 
 To filter a dataset using a scaffold tree, do the following:
 
@@ -740,7 +740,7 @@ properties, descriptors, and fingerprints as features, and the observable proper
 researchers build models that can be trained, assessed, executed, reused by other scientists, and included in pipelines.
 
 <details>
-<summary>Training</summary>
+<summary>Train</summary>
 
 Train a model based on a measured response, using calculated descriptors as features. Use the
 built-in [model building mechanism](../../learn/predictive-modeling.md) that supports different backends and dozens of
@@ -751,7 +751,7 @@ models with hundreds of hyperparameters available.
 </details>
 
 <details>
-<summary>Applying</summary>
+<summary>Apply</summary>
 
 [Model building mechanism](../../learn/predictive-modeling.md#apply-model)
 
@@ -760,7 +760,7 @@ models with hundreds of hyperparameters available.
 </details>
 
 <details>
-<summary>Augmenting</summary>
+<summary>Augment</summary>
 
 A simple yet efficient way to deploy models is to use [info panels](../../discover/info-panels.md), which show the predicted value This way, whenever a user clicks on a chemical structure or [sketches](#sketching-and-filtering) it.
 
