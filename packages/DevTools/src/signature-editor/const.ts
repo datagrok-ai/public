@@ -211,3 +211,5 @@ export const headerSign = (lang: LANGUAGE) => {
       return '--';
   }
 };
+
+export const DATA_QUERY_VIEW = 'DataQueryView';
