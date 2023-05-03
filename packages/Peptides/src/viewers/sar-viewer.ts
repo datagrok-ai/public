@@ -7,6 +7,11 @@ import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
 
+export enum MONOMER_POSITION_MODE {
+  MUTATION_CLIFFS = 'Mutation Cliffs',
+  INVARIANT_MAP = 'Invariant Map',
+}
+
 export class SARViewerBase extends DG.JsViewer {
   tempName!: string;
   _viewerGrid!: DG.Grid;
@@ -54,7 +59,7 @@ export class SARViewerBase extends DG.JsViewer {
     if (!refreshOnly) {
       $(this.root).empty();
       let switchHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
-      if (this.name == 'MC') {
+      if (this.name == VIEWER_TYPE.MONOMER_POSITION) {
         const mutationCliffsMode = ui.boolInput('', this.isMutationCliffsMode === '1');
         mutationCliffsMode.root.addEventListener('click', () => {
           invariantMapMode.value = false;
@@ -108,7 +113,6 @@ export class SARViewerBase extends DG.JsViewer {
 /** Structure-activity relationship viewer */
 export class MonomerPosition extends SARViewerBase {
   _titleHost = ui.divText('Mutation Cliffs', {id: 'pep-viewer-title'});
-  _name = 'MC';
   _isVertical = false;
   colorColumnName: string;
   aggregation: string;
@@ -119,7 +123,7 @@ export class MonomerPosition extends SARViewerBase {
     this.aggregation = this.string('aggregation', 'avg', {category: 'Invariant Map', choices: Object.values(DG.AGG)});
   }
 
-  get name(): string {return this._name;}
+  get name(): string {return VIEWER_TYPE.MONOMER_POSITION;}
 
   get viewerGrid(): DG.Grid {
     if (!this._viewerGrid)
@@ -171,7 +175,6 @@ export class MonomerPosition extends SARViewerBase {
 
 /** Vertical structure activity relationship viewer */
 export class MostPotentResiduesViewer extends SARViewerBase {
-  _name = 'MPR';
   _titleHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
   _isVertical = true;
 
@@ -179,7 +182,7 @@ export class MostPotentResiduesViewer extends SARViewerBase {
     super();
   }
 
-  get name(): string {return this._name;}
+  get name(): string {return VIEWER_TYPE.MOST_POTENT_RESIDUES;}
 
   get viewerGrid(): DG.Grid {
     if (!this._viewerGrid)
