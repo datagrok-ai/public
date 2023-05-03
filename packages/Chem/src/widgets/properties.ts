@@ -110,14 +110,13 @@ export async function statsWidget(molCol: DG.Column<string>): Promise<DG.Widget>
     const histRoot = ui.div();
     histRoot.classList.add('chem-distribution-hist');
   
-    const canvas = document.createElement('canvas');
     const hw = 100;
     const hh = 35;
     const m = 4;
-    canvas.width = hw;
-    canvas.height = hh;
 
-    const ctx = canvas.getContext('2d');
+    const canvas = ui.canvas(hw, hh);
+    const ctx = canvas.getContext('2d', {willReadFrequently : true});
+    
     if (ctx) 
       renderMultipleHistograms(ctx, new DG.Rect(m, m, hw - 2 * m, hh - 2 * m), [hist], {fill: false, markerSize: 1});
     histRoot.appendChild(canvas);
