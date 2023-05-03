@@ -5,7 +5,7 @@
   "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
   "author": {
     "name": "Dmytro Kovalyov",
-    "email": "kovalyov.dmytro@eigenmethod.com"
+    "email": "dkovalyov@datagrok.ai"
   },
   "repository": {
     "type": "git",

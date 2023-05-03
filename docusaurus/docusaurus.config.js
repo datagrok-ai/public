@@ -57,6 +57,10 @@ const config = {
                   "flags": "gi",
                   "replace": "(../../help/develop/$1.$2"
               },
+              {
+                "pattern": "title: \"(.*)\"",
+                "replace": "$1"
+              }
           ]
         }
       },

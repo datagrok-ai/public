@@ -2,11 +2,12 @@ import * as DG from 'datagrok-api/dg';
 
 import {category, test, before, expect} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
-import { PeptidesModel } from '../model';
-import { startAnalysis } from '../widgets/peptides';
-import { ScalingMethods } from '../utils/types';
-import { scaleActivity } from '../utils/misc';
-import { NOTATION } from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {PeptidesModel} from '../model';
+import {startAnalysis} from '../widgets/peptides';
+import {ScalingMethods} from '../utils/types';
+import {scaleActivity} from '../utils/misc';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {COLUMNS_NAMES} from '../utils/constants';
 
 category('Table view', () => {
   let df: DG.DataFrame;
@@ -15,7 +16,7 @@ category('Table view', () => {
   let sequenceCol: DG.Column<string>;
   let clusterCol: DG.Column<any>;
   let scaledActivityCol: DG.Column<number>;
-  let scaling: ScalingMethods = 'none';
+  const scaling: ScalingMethods = 'none';
 
   const firstPair = {monomer: 'N', position: '4', count: 7};
   const secondPair = {monomer: 'meI', position: '1', count: 10};
@@ -35,12 +36,20 @@ category('Table view', () => {
   });
 
   test('Tooltip', async () => {
-    
+
   }, {skipReason: 'Not implemented yet'});
 
   test('Visible columns', async () => {
-    
-  }, {skipReason: 'Not implemented yet'});
+    const gridCols = model.analysisView.grid.columns;
+    const posCols = model.splitSeqDf.columns.names();
+    const visibleColumns = Object.keys(model.settings.columns ?? {});
+    for (let colIdx = 1; colIdx < gridCols.length; colIdx++) {
+      const col = gridCols.byIndex(colIdx)!;
+      const tableColName = col.column!.name;
+      expect(col.visible, posCols.includes(tableColName) || (tableColName === COLUMNS_NAMES.ACTIVITY_SCALED) ||
+        visibleColumns.includes(tableColName));
+    }
+  });
 
   test('Selection', async () => {
     const selection = model.df.selection;
@@ -64,7 +73,7 @@ category('Table view', () => {
     model.initMutationCliffsSelection(true);
     expect(selection.trueCount, 0);
   });
-  
+
   test('Filtering', async () => {
     const filter = model.df.filter;
 
