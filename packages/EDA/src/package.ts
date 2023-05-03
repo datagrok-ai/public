@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {_initEDAAPI} from '../wasm/EDAAPI';
 import {computePCA, computePLS} from './EDAtools';
+import {renamePCAcolumns, addPLSvisualization} from './EDAui';
 
 export const _package = new DG.Package();
 
@@ -25,7 +26,7 @@ export async function init(): Promise<void> {
 //input: int components = 3
 //output: dataframe result {action:join(table)}
 export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number): Promise<DG.DataFrame> {
-  return await computePCA(table, features, components);
+  return renamePCAcolumns(await computePCA(table, features, components));
 }
 
 //name: PLS
@@ -35,5 +36,7 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
 //input: column predict
 //input: int components = 3
 export async function PLS(table: DG.DataFrame, features: DG.ColumnList, predict: DG.Column, components: number): Promise<void> {
-  await computePLS(table, features, predict, components);
+  const plsResults = await computePLS(table, features, predict, components);
+
+  addPLSvisualization(table, features, predict, plsResults);
 }
