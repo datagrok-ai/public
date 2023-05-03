@@ -35,7 +35,7 @@ import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 
 
 //utils imports
-import { ScaffoldTreeViewer} from "./widgets/scaffold-tree";
+import { ScaffoldTreeFilter, ScaffoldTreeViewer} from "./widgets/scaffold-tree";
 import {Fingerprint} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {IMolContext, getMolSafe, isFragment, isSmarts} from './utils/mol-creation_rdkit';
@@ -1104,6 +1104,13 @@ export function addScaffoldTree(): void {
   grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
 }
 
+//name: ScaffoldTree
+//description: Scaffold Tree filter
+//tags: filter
+//output: filter result
+export function scaffoldTreeFilter() {
+  return new ScaffoldTreeFilter();
+}
 
 //name: getScaffoldTree
 //input: dataframe data

@@ -827,6 +827,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       checkedNodes[n].checked = false;
     this.checkBoxesUpdateInProgress = false;
 
+  
     this.dataFrame.rows.requestFilter();
     this.updateUI();
   }
@@ -910,6 +911,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         this.bitset.setAll(false, false);
         this.bitset = this.bitset.or(bitset);
       }
+
       this.dataFrame.rows.requestFilter();
       this.updateUI();
     }
@@ -1511,4 +1513,51 @@ class SketcherDialogWrapper {
 
   static SUCCESS_MSG_COLOR = 'green';
   static FAILURE_MSG_COLOR = 'red';
+}
+
+export class ScaffoldTreeFilter extends DG.Filter {
+
+  constructor() {
+    super();
+    this.root = ui.divV([]);
+    this.subs = [];
+  };
+
+  get isFiltering(): boolean {
+    return true;
+  };
+
+  get filterSummary(): string {
+    return ScaffoldTreeViewer.TYPE;  
+  };
+
+  attach(dataFrame: DG.DataFrame): void {
+    super.attach(dataFrame);
+    this.column ??= dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+    this.columnName ??= this.column?.name;
+    this.render(dataFrame);
+  };
+
+  applyState(state: any): void {
+    super.applyState(state);
+    if (this.dataFrame) 
+      this.render(this.dataFrame);
+  };
+
+  detach(): void {
+    super.detach();
+  };
+
+  applyFilter(): void {
+    if (this.dataFrame)
+      this.dataFrame.rows.requestFilter();
+  };
+
+  render(dataFrame: DG.DataFrame) {
+    const viewer = new ScaffoldTreeViewer();
+    viewer.onFrameAttached(dataFrame);
+    viewer._generateLink!.style.visibility = 'hidden';
+    viewer.root.style.height = '100%';
+    this.root.appendChild(viewer.root);
+  }
 }
