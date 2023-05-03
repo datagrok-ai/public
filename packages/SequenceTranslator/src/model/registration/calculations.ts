@@ -27,13 +27,16 @@ export function batchMolWeight(compoundMolWeightCol: DG.Column, saltMassCol: DG.
     compoundMolWeightCol.get(i) + saltMassCol.get(i);
 }
 
-export function molecularWeight(sequence: string, weightsObj: { [index: string]: number }): number {
-  const codes = sortByReverseLength(Object.keys(weightsObj)).concat(MonomerLibWrapper.getInstance().getModificationGCRSCodes());
+export function molecularWeight(sequence: string, codesToWeightsMap: Map<string, number>): number {
+  const codes = sortByReverseLength(Array.from(codesToWeightsMap.keys()));
+  // const codes = sortByReverseLength(Object.keys(codesToWeightsMap)).concat(MonomerLibWrapper.getInstance().getModificationGCRSCodes());
   let weight = 0;
   let i = 0;
   while (i < sequence.length) {
     const matchedCode = codes.find((s) => s == sequence.slice(i, i + s.length))!;
-    weight += weightsObj[sequence.slice(i, i + matchedCode.length)];
+    const code = sequence.slice(i, i + matchedCode.length);
+    const value = codesToWeightsMap.get(code);
+    weight += (value === undefined) ? 0 : value;
     i += matchedCode.length;
   }
   return weight - 61.97;

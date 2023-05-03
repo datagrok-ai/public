@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import {RegistrationSequenceParser} from './sequence-parser';
 import {isValidSequence} from '../code-converter/conversion-validation-tools';
 import {batchMolWeight, molecularWeight, saltMass, saltMolWeigth} from './calculations';
-import {weightsObj} from '../../hardcode-to-be-eliminated/map';
+import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
 
 export class SdfColumnsExistsError extends Error {
   constructor(message: string) {
@@ -65,10 +65,11 @@ export class RegistrationColumnsHandler {
     this.df.columns.addNewFloat(COL_NAMES.COMPOUND_MOL_WEIGHT).init((i: number) => {
       let res: number = Number.NaN;
       const parser = new RegistrationSequenceParser();
+      const codesToWeightsMap = MonomerLibWrapper.getInstance().getCodesToWeightsMap();
       try {
         if ([SEQUENCE_TYPES.SENSE_STRAND, SEQUENCE_TYPES.ANTISENSE_STRAND].includes(typeCol.get(i))) {
           res = (isValidSequence(sequenceCol.get(i), null).indexOfFirstInvalidChar == -1) ?
-            molecularWeight(sequenceCol.get(i), weightsObj) :
+            molecularWeight(sequenceCol.get(i), codesToWeightsMap) :
             DG.FLOAT_NULL;
         } else if (typeCol.get(i) == SEQUENCE_TYPES.DUPLEX) {
           const obj = parser.getDuplexStrands(sequenceCol.get(i));
@@ -81,13 +82,13 @@ export class RegistrationColumnsHandler {
             // console.log(`invalid char ${invalidChar}:`, seq.substr(invalidChar-5, 10));
             return validity;
           }) ?
-            molecularWeight(obj.ss, weightsObj) + molecularWeight(obj.as, weightsObj) :
+            molecularWeight(obj.ss, codesToWeightsMap) + molecularWeight(obj.as, codesToWeightsMap) :
             DG.FLOAT_NULL;
         } else if ([SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(typeCol.get(i))) {
           const obj = parser.getDimerStrands(sequenceCol.get(i));
           res = (Object.values(obj).every((seq) => isValidSequence(seq, null).indexOfFirstInvalidChar == -1)) ?
-            molecularWeight(obj.ss, weightsObj) + molecularWeight(obj.as1, weightsObj) +
-            molecularWeight(obj.as2, weightsObj) :
+            molecularWeight(obj.ss, codesToWeightsMap) + molecularWeight(obj.as1, codesToWeightsMap) +
+            molecularWeight(obj.as2, codesToWeightsMap) :
             DG.FLOAT_NULL;
         }
       } catch (err) {

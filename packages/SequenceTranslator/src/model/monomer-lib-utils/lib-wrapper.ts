@@ -187,4 +187,29 @@ export class MonomerLibWrapper {
       throw new Error(`SequenceTranslator: no monomer with name ${monomerName}`);
     return monomer!;
   }
+
+  getCodesToWeightsMap(): Map<string, number> {
+    const codesToWeightsMap = new Map<string, number>();
+    const monomers = this.getAllMonomers();
+    for (const monomer of monomers) {
+      const codesObj = this.getCodesObject(monomer);
+      const weight = monomer[OPT.META]?.['weight'];
+      let codesArray: string[] = [];
+      for (const synthesizer in codesObj){
+        if (Array.isArray(codesObj[synthesizer])) {
+          const arr = codesObj[synthesizer] as Array<string>;
+          codesArray = codesArray.concat(arr);
+        } else {
+          for (const technology in codesObj[synthesizer]) {
+            const obj = codesObj[synthesizer] as TechnologiesObject;
+            codesArray = codesArray.concat(obj[technology]);
+          }
+        }
+      }
+      for (const code of codesArray) {
+        codesToWeightsMap.set(code, weight);
+      }
+    }
+    return codesToWeightsMap;
+  }
 }

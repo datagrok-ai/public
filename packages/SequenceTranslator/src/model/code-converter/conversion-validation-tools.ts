@@ -1,4 +1,4 @@
-import {SYNTHESIZERS, TECHNOLOGIES, DELIMITER, NUCLEOTIDES} from '../const';
+import {SYNTHESIZERS, TECHNOLOGIES} from '../const';
 import {
   asoGapmersNucleotidesToBioSpring, asoGapmersNucleotidesToGcrs,
   asoGapmersBioSpringToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12, siRnaNucleotideToBioSpringSenseStrand,
