@@ -55,8 +55,8 @@ export enum VIEWER_TYPE {
 export class PeptidesModel {
   static modelName = 'peptidesModel';
 
-  settingsSubject: rxjs.Subject<type.PeptidesSettings> = new rxjs.Subject();
-  _mutatinCliffsSelectionSubject: rxjs.Subject<undefined> = new rxjs.Subject();
+  _settingsSubject: rxjs.Subject<type.PeptidesSettings> = new rxjs.Subject();
+  _monomerPositionSelectionSubject: rxjs.Subject<undefined> = new rxjs.Subject();
   _newClusterSubject: rxjs.Subject<undefined> = new rxjs.Subject();
   _removeClusterSubject: rxjs.Subject<undefined> = new rxjs.Subject();
   _filterChangedSubject: rxjs.Subject<undefined> = new rxjs.Subject();
@@ -70,9 +70,9 @@ export class PeptidesModel {
   splitCol!: DG.Column<boolean>;
   _monomerPositionStats?: MonomerPositionStats;
   _clusterStats?: ClusterTypeStats;
-  _mutationCliffsSelection!: type.PositionToAARList;
-  _invariantMapSelection!: type.PositionToAARList;
-  _logoSummarySelection!: string[];
+  _monomerPositionSelection!: type.PositionToAARList;
+  _monomerPositionFilter!: type.PositionToAARList;
+  _clusterSelection!: string[];
   _substitutionsInfo?: type.SubstitutionsInfo;
   isInitialized = false;
   _analysisView?: DG.TableView;
@@ -208,12 +208,12 @@ export class PeptidesModel {
     return this._analysisView;
   }
 
-  get onMutationCliffsSelectionChanged(): rxjs.Observable<undefined> {
-    return this._mutatinCliffsSelectionSubject.asObservable();
+  get onMonomerPositionSelectionChanged(): rxjs.Observable<undefined> {
+    return this._monomerPositionSelectionSubject.asObservable();
   }
 
   get onSettingsChanged(): rxjs.Observable<type.PeptidesSettings> {
-    return this.settingsSubject.asObservable();
+    return this._settingsSubject.asObservable();
   }
 
   get onNewCluster(): rxjs.Observable<undefined> {
@@ -228,26 +228,26 @@ export class PeptidesModel {
     return this._filterChangedSubject.asObservable();
   }
 
-  get mutationCliffsSelection(): type.PositionToAARList {
-    this._mutationCliffsSelection ??= JSON.parse(this.df.tags[C.TAGS.SELECTION] || '{}');
-    return this._mutationCliffsSelection;
+  get monomerPositionSelection(): type.PositionToAARList {
+    this._monomerPositionSelection ??= JSON.parse(this.df.tags[C.TAGS.SELECTION] || '{}');
+    return this._monomerPositionSelection;
   }
 
-  set mutationCliffsSelection(selection: type.PositionToAARList) {
-    this._mutationCliffsSelection = selection;
+  set monomerPositionSelection(selection: type.PositionToAARList) {
+    this._monomerPositionSelection = selection;
     this.df.tags[C.TAGS.SELECTION] = JSON.stringify(selection);
     this.fireBitsetChanged();
-    this._mutatinCliffsSelectionSubject.next();
+    this._monomerPositionSelectionSubject.next();
     this.analysisView.grid.invalidate();
   }
 
-  get invariantMapSelection(): type.PositionToAARList {
-    this._invariantMapSelection ??= JSON.parse(this.df.tags[C.TAGS.FILTER] || '{}');
-    return this._invariantMapSelection;
+  get monomerPositionFilter(): type.PositionToAARList {
+    this._monomerPositionFilter ??= JSON.parse(this.df.tags[C.TAGS.FILTER] || '{}');
+    return this._monomerPositionFilter;
   }
 
-  set invariantMapSelection(selection: type.PositionToAARList) {
-    this._invariantMapSelection = selection;
+  set monomerPositionFilter(selection: type.PositionToAARList) {
+    this._monomerPositionFilter = selection;
     this.df.tags[C.TAGS.FILTER] = JSON.stringify(selection);
     this.isInvariantMapTrigger = true;
     this.fireBitsetChanged(true);
@@ -255,13 +255,13 @@ export class PeptidesModel {
     this.analysisView.grid.invalidate();
   }
 
-  get logoSummarySelection(): string[] {
-    this._logoSummarySelection ??= JSON.parse(this.df.tags[C.TAGS.CLUSTER_SELECTION] || '[]');
-    return this._logoSummarySelection;
+  get clusterSelection(): string[] {
+    this._clusterSelection ??= JSON.parse(this.df.tags[C.TAGS.CLUSTER_SELECTION] || '[]');
+    return this._clusterSelection;
   }
 
-  set logoSummarySelection(selection: string[]) {
-    this._logoSummarySelection = selection;
+  set clusterSelection(selection: string[]) {
+    this._clusterSelection = selection;
     this.df.tags[C.TAGS.CLUSTER_SELECTION] = JSON.stringify(selection);
     this.fireBitsetChanged();
     this.analysisView.grid.invalidate();
@@ -287,16 +287,16 @@ export class PeptidesModel {
     this.df.tags['distributionSplit'] = `${splitByAARFlag}${flag ? 1 : 0}`;
   }
 
-  get isMutationCliffSelectionEmpty(): boolean {
-    for (const aarList of Object.values(this.mutationCliffsSelection)) {
+  get isMonomerPositionSelectionEmpty(): boolean {
+    for (const aarList of Object.values(this.monomerPositionSelection)) {
       if (aarList.length !== 0)
         return false;
     }
     return true;
   }
 
-  get isLogoSummarySelectionEmpty(): boolean {
-    return this.logoSummarySelection.length === 0;
+  get isClusterSelectionEmpty(): boolean {
+    return this.clusterSelection.length === 0;
   }
 
   get customClusters(): Iterable<DG.Column<boolean>> {
@@ -382,7 +382,7 @@ export class PeptidesModel {
     }
 
     //TODO: handle settings change
-    this.settingsSubject.next(this.settings);
+    this._settingsSubject.next(this.settings);
   }
 
   createMonomerPositionDf(): DG.DataFrame {
@@ -462,8 +462,8 @@ export class PeptidesModel {
 
     this.createScaledCol();
 
-    this.initInvariantMapSelection();
-    this.initMutationCliffsSelection();
+    this.initMonomerPositionFilter();
+    this.initMonomerPositionSelection();
 
     this.setWebLogoInteraction();
     this.webLogoBounds = {};
@@ -477,26 +477,26 @@ export class PeptidesModel {
     this.postProcessGrids();
   }
 
-  initInvariantMapSelection(cleanInit = false): void {
-    const tempInvariantMapSelection: type.PositionToAARList = this.invariantMapSelection;
+  initMonomerPositionFilter(cleanInit = false): void {
+    const tempFilter: type.PositionToAARList = this.monomerPositionFilter;
     const positionColumns = this.splitSeqDf.columns.names();
     for (const pos of positionColumns) {
-      if (cleanInit || !tempInvariantMapSelection.hasOwnProperty(pos))
-        tempInvariantMapSelection[pos] = [];
+      if (cleanInit || !tempFilter.hasOwnProperty(pos))
+        tempFilter[pos] = [];
     }
 
-    this.invariantMapSelection = tempInvariantMapSelection;
+    this.monomerPositionFilter = tempFilter;
   }
 
-  initMutationCliffsSelection(cleanInit = false): void {
-    const mutationCliffsSelection: type.PositionToAARList = this.mutationCliffsSelection;
+  initMonomerPositionSelection(cleanInit = false): void {
+    const tempSelection: type.PositionToAARList = this.monomerPositionSelection;
     const positionColumns = this.splitSeqDf.columns.names();
     for (const pos of positionColumns) {
-      if (cleanInit || !mutationCliffsSelection.hasOwnProperty(pos))
-        mutationCliffsSelection[pos] = [];
+      if (cleanInit || !tempSelection.hasOwnProperty(pos))
+        tempSelection[pos] = [];
     }
 
-    this.mutationCliffsSelection = mutationCliffsSelection;
+    this.monomerPositionSelection = tempSelection;
   }
 
   joinDataFrames(): void {
@@ -724,18 +724,18 @@ export class PeptidesModel {
   }
 
   modifyClusterSelection(cluster: string): void {
-    const tempSelection = this.logoSummarySelection;
+    const tempSelection = this.clusterSelection;
     const idx = tempSelection.indexOf(cluster);
     if (idx !== -1)
       tempSelection.splice(idx, 1);
     else
       tempSelection.push(cluster);
 
-    this.logoSummarySelection = tempSelection;
+    this.clusterSelection = tempSelection;
   }
 
   initClusterSelection(cluster: string): void {
-    this.logoSummarySelection = [cluster];
+    this.clusterSelection = [cluster];
   }
 
   setWebLogoInteraction(): void {
@@ -767,14 +767,16 @@ export class PeptidesModel {
     return null;
   }
 
-  requestBarchartAction(ev: MouseEvent, barPart: { position: string, monomer: string } | null): void {
+  requestBarchartAction(ev: MouseEvent, barPart: {position: string, monomer: string} | null): void {
     if (!barPart)
       return;
     const monomer = barPart.monomer;
     const position = barPart.position;
     if (ev.type === 'click') {
-      ev.shiftKey ? this.modifyMonomerPositionSelection(monomer, position, false) :
-        this.initMonomerPositionSelection(monomer, position, false);
+      if (!ev.shiftKey)
+        this.initMonomerPositionSelection(true);
+
+      this.modifyMonomerPositionSelection(monomer, position, false);
     } else {
       const bar = `${position} = ${monomer}`;
       if (this.cachedWebLogoTooltip.bar == bar)
@@ -891,8 +893,8 @@ export class PeptidesModel {
     return distroStatsElem;
   }
 
-  modifyMonomerPositionSelection(aar: string, position: string, isInvariantMapSelection: boolean): void {
-    const tempSelection = isInvariantMapSelection ? this.invariantMapSelection : this.mutationCliffsSelection;
+  modifyMonomerPositionSelection(aar: string, position: string, isFilter: boolean): void {
+    const tempSelection = isFilter ? this.monomerPositionFilter : this.monomerPositionSelection;
     const tempSelectionAt = tempSelection[position];
     const aarIndex = tempSelectionAt.indexOf(aar);
     if (aarIndex === -1)
@@ -900,22 +902,10 @@ export class PeptidesModel {
     else
       tempSelectionAt.splice(aarIndex, 1);
 
-    if (isInvariantMapSelection)
-      this.invariantMapSelection = tempSelection;
+    if (isFilter)
+      this.monomerPositionFilter = tempSelection;
     else
-      this.mutationCliffsSelection = tempSelection;
-  }
-
-  initMonomerPositionSelection(aar: string, position: string, isInvariantMapSelection: boolean): void {
-    const tempSelection = isInvariantMapSelection ? this.invariantMapSelection : this.mutationCliffsSelection;
-    for (const key of Object.keys(tempSelection))
-      tempSelection[key] = [];
-    tempSelection[position] = [aar];
-
-    if (isInvariantMapSelection)
-      this.invariantMapSelection = tempSelection;
-    else
-      this.mutationCliffsSelection = tempSelection;
+      this.monomerPositionSelection = tempSelection;
   }
 
   setBitsetCallback(): void {
@@ -929,7 +919,7 @@ export class PeptidesModel {
       clustColData: type.RawData, customClust: {[key: string]: boolean[]}): void => {
       const getBitAt = (i: number): boolean => {
         for (const posRawCol of posList) {
-          if (this.mutationCliffsSelection[posRawCol.name].includes(posRawCol.cat![posRawCol.rawData[i]]))
+          if (this.monomerPositionSelection[posRawCol.name].includes(posRawCol.cat![posRawCol.rawData[i]]))
             return true;
         }
 
@@ -937,7 +927,7 @@ export class PeptidesModel {
         if (typeof currentOrigClust === undefined)
           return false;
 
-        for (const clust of this.logoSummarySelection) {
+        for (const clust of this.clusterSelection) {
           if (clust === currentOrigClust)
             return true;
 
@@ -954,7 +944,7 @@ export class PeptidesModel {
       if (this.isUserChangedSelection)
         return;
 
-      const positionList: type.RawColumn[] = Object.keys(this.mutationCliffsSelection).map((pos) => {
+      const positionList: type.RawColumn[] = Object.keys(this.monomerPositionSelection).map((pos) => {
         const posCol = this.df.getCol(pos);
         return {name: pos, cat: posCol.categories, rawData: posCol.getRawData()};
       });
@@ -969,11 +959,11 @@ export class PeptidesModel {
     });
 
     filter.onChanged.subscribe(() => {
-      const positionList = Object.keys(this.invariantMapSelection);
+      const positionList = Object.keys(this.monomerPositionFilter);
       const invariantMapBitset = DG.BitSet.create(filter.length, (index) => {
         let result = true;
         for (const position of positionList) {
-          const aarList = this.invariantMapSelection[position];
+          const aarList = this.monomerPositionFilter[position];
           result &&= aarList.length === 0 || aarList.includes(this.df.get(position, index));
           if (!result)
             return result;
@@ -1091,7 +1081,7 @@ export class PeptidesModel {
       this.isRibbonSet = true;
       grok.events.onResetFilterRequest.subscribe(() => {
         this.isInvariantMapTrigger = true;
-        this.initInvariantMapSelection(true);
+        this.initMonomerPositionFilter(true);
         this.isInvariantMapTrigger = false;
       });
     }

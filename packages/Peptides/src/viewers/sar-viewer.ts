@@ -1,4 +1,3 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -55,7 +54,7 @@ export class MonomerPosition extends DG.JsViewer {
 
   onTableAttached(): void {
     super.onTableAttached();
-    this.subs.push(this.model.onMutationCliffsSelectionChanged.subscribe(() => this.viewerGrid.invalidate()));
+    this.subs.push(this.model.onMonomerPositionSelectionChanged.subscribe(() => this.viewerGrid.invalidate()));
     this.helpUrl = '/help/domains/bio/peptides.md';
     this.subs.push(this.model.onSettingsChanged.subscribe(() => {
       this.createMonomerPositionGrid();
@@ -170,7 +169,7 @@ export class MostPotentResiduesViewer extends DG.JsViewer {
 
   onTableAttached(): void {
     super.onTableAttached();
-    this.subs.push(this.model.onMutationCliffsSelectionChanged.subscribe(() => this.viewerGrid.invalidate()));
+    this.subs.push(this.model.onMonomerPositionSelectionChanged.subscribe(() => this.viewerGrid.invalidate()));
     this.helpUrl = '/help/domains/bio/peptides.md';
     this.subs.push(this.model.onSettingsChanged.subscribe(() => {
       this.createMostPotentResiduesGrid();
@@ -291,10 +290,10 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
 
     const color = DG.Color.scaleColor(cellColorDataCol.aggregate(colorAgg!), colorColStats.min, colorColStats.max);
     CR.renderInvaraintMapCell(
-      canvasContext, currentMonomer, currentPosition, model.invariantMapSelection, value, bound, color);
+      canvasContext, currentMonomer, currentPosition, model.monomerPositionFilter, value, bound, color);
   } else {
     CR.renderMutationCliffCell(canvasContext, currentMonomer, currentPosition, model.monomerPositionStats, bound,
-      model.mutationCliffsSelection, model.substitutionsInfo, model.settings.isBidirectional);
+      model.monomerPositionSelection, model.substitutionsInfo, model.settings.isBidirectional);
   }
   args.preventDefault();
   canvasContext.restore();
@@ -322,12 +321,12 @@ function showTooltip(cell: DG.GridCell, x: number, y: number, model: PeptidesMod
   return true;
 }
 
-function chooseAction(aar: string, position: string, isShiftPressed: boolean, isInvariantMapSelection: boolean,
+function chooseAction(aar: string, position: string, isShiftPressed: boolean, isFilter: boolean,
   model: PeptidesModel): void {
-  if (isShiftPressed)
-    model.modifyMonomerPositionSelection(aar, position, isInvariantMapSelection);
-  else
-    model.initMonomerPositionSelection(aar, position, isInvariantMapSelection);
+  if (!isShiftPressed)
+    model.initMonomerPositionSelection(true);
+
+  model.modifyMonomerPositionSelection(aar, position, isFilter);
 }
 
 function cellChanged(table: DG.DataFrame, model: PeptidesModel): void {

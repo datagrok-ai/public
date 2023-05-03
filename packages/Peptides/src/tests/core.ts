@@ -39,7 +39,7 @@ category('Core', () => {
     expect(model instanceof PeptidesModel, true);
 
     if (model != null)
-      model.mutationCliffsSelection = {'11': ['D']};
+      model.monomerPositionSelection = {'11': ['D']};
   });
 
   test('Start analysis: сomplex', async () => {
@@ -59,7 +59,7 @@ category('Core', () => {
     expect(model instanceof PeptidesModel, true);
 
     if (model != null)
-      model.mutationCliffsSelection = {'13': ['-']};
+      model.monomerPositionSelection = {'13': ['-']};
   });
 
   test('Save and load project', async () => {

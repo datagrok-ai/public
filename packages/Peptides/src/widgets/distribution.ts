@@ -15,11 +15,11 @@ const otherConst = 'Other';
 export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
   const activityScaledCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
   const rowCount = activityScaledCol.length;
-  const selectionObject = model.mutationCliffsSelection;
+  const selectionObject = model.monomerPositionSelection;
   const clustersColName = model.settings.clustersColumnName;
   let clustersProcessedObject: string[] = [];
   if (clustersColName)
-    clustersProcessedObject = model.logoSummarySelection;
+    clustersProcessedObject = model.clusterSelection;
 
   const positions = Object.keys(selectionObject);
   const positionsLen = positions.length;
@@ -212,14 +212,14 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   };
 
   const setDefaultProperties = (input: DG.InputBase): void => {
-    input.enabled = !model.isMutationCliffSelectionEmpty;
+    input.enabled = !model.isMonomerPositionSelectionEmpty;
     $(input.root).find('.ui-input-editor').css('margin', '0px');
     $(input.root).find('.ui-input-description').css('padding', '0px').css('padding-left', '5px');
   };
 
   let defaultValuePos = model.splitByPos;
   let defaultValueAAR = model.splitByAAR;
-  if (!model.isLogoSummarySelectionEmpty && model.isMutationCliffSelectionEmpty) {
+  if (!model.isClusterSelectionEmpty && model.isMonomerPositionSelectionEmpty) {
     defaultValuePos = false;
     defaultValueAAR = false;
   }

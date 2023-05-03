@@ -53,13 +53,16 @@ category('Viewers: Monomer-Position', () => {
     if (mpViewer === null)
       throw new Error('Monomer-Position viewer doesn\'t exist');
 
-    expect(mpViewer.mode, MONOMER_POSITION_MODE.MUTATION_CLIFFS);
+    expect(mpViewer.mode, MONOMER_POSITION_MODE.MUTATION_CLIFFS,
+      `Default Monomer-Position mode is not ${MONOMER_POSITION_MODE.MUTATION_CLIFFS}`);
 
     mpViewer.mode = MONOMER_POSITION_MODE.INVARIANT_MAP;
-    expect(mpViewer.mode, MONOMER_POSITION_MODE.INVARIANT_MAP);
+    expect(mpViewer.mode, MONOMER_POSITION_MODE.INVARIANT_MAP,
+      `Monomer-Position mode is not ${MONOMER_POSITION_MODE.INVARIANT_MAP} after switching`);
 
     mpViewer.mode = MONOMER_POSITION_MODE.MUTATION_CLIFFS;
-    expect(mpViewer.mode, MONOMER_POSITION_MODE.MUTATION_CLIFFS);
+    expect(mpViewer.mode, MONOMER_POSITION_MODE.MUTATION_CLIFFS,
+      `Monomer-Position mode is not ${MONOMER_POSITION_MODE.MUTATION_CLIFFS} after switching`);
   });
 });
 

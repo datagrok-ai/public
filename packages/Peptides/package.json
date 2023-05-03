@@ -16,7 +16,7 @@
     "@datagrok-libraries/bio": "^5.27.0",
     "@datagrok-libraries/ml": "^6.3.3",
     "@datagrok-libraries/statistics": "^0.1.6",
-    "@datagrok-libraries/utils": "^1.19.2",
+    "@datagrok-libraries/utils": "^4.0.2",
     "cash-dom": "^8.1.2",
     "datagrok-api": "^1.6.0",
     "file-loader": "^6.2.0",
