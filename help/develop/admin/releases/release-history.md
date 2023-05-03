@@ -8,7 +8,7 @@ title: "Release History"
 |------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
 | [Datagrok](../infrastructure.md#datagrok-components)       | [datagrok/datagrok:1.14.3](https://hub.docker.com/r/datagrok/datagrok)                            |
 | [Grok Connect](../../../access/access.md#data-connection)  | [datagrok/grok_connect:2.0.12](https://hub.docker.com/r/datagrok/grok_connect)                    |
-| Grok Spawner                                               | [datagrok/grok_spawner:1.3.2](https://hub.docker.com/r/datagrok/grok_spawner)                     |
+| Grok Spawner                                               | [datagrok/grok_spawner:1.4.2](https://hub.docker.com/r/datagrok/grok_spawner)                     |
 | [Grok Compute](../infrastructure.md#grok-compute)          | [datagrok/grok_compute:1.5.2](https://hub.docker.com/r/datagrok/grok_compute)                     |
 | [Jupyter Kernel Gateway](../../../compute/scripting.md)    | [datagrok/jupyter_kernel_gateway:1.5.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
 | [Jupyter Notebook](../../../compute/jupyter-notebook.md)   | [datagrok/jupyter_notebook:1.1.0](https://hub.docker.com/r/datagrok/jupyter_notebook)             |
