@@ -3,8 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {newickToDf} from './utils';
-import {PhyloTreeViewer} from './viewers/phylotree-viewer';
 import {PhylocanvasGlViewer} from './viewers/phylocanvas-gl-viewer';
 import {PhylocanvasGlViewerApp} from './apps/phylocanvas-gl-viewer-app';
 import {TreeToGridApp} from './apps/tree-to-grid-app';
