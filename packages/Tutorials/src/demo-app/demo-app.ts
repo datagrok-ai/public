@@ -71,13 +71,39 @@ export class DemoView extends DG.ViewBase {
 
     ui.setUpdateIndicator(grok.shell.tv.root, true);
     await func.apply();
+
+    // grok.events.onViewAdded.subscribe((view) => {
+    //   const breadcrumbs = ui.breadcrumbs(viewPath.split('|').map((s) => s.trim()));
+    //   breadcrumbs.onPathClick.subscribe((value) => grok.shell.info(value));
+    //   const viewNameRoot = view.root.parentElement?.parentElement?.parentElement?.
+    //     getElementsByClassName('tab-handle-list-container')[0].getElementsByClassName('d4-ribbon')[0].
+    //     getElementsByClassName('d4-ribbon-name')[0];
+
+    //   viewNameRoot?.firstChild?.replaceWith(breadcrumbs.root);
+    // });
+
     ui.setUpdateIndicator(grok.shell.tv.root, false);
 
     grok.shell.v.path.includes('/apps/Tutorials/Demo') ?
       grok.shell.v.path = grok.shell.v.basePath = `/${path}` :
       grok.shell.v.path = grok.shell.v.basePath = `/apps/Tutorials/Demo/${path}`;
+    
+    this._setBreadcrumbsInViewName(viewPath.split('|').map((s) => s.trim()));
   }
 
+
+  private _setBreadcrumbsInViewName(viewPath: string[]): void {
+    const breadcrumbs = ui.breadcrumbs(viewPath);
+    // breadcrumbs.onPathClick.subscribe((value) => grok.shell.info(value));
+    const viewNameRoot = grok.shell.v.root.parentElement?.parentElement?.parentElement?.
+      getElementsByClassName('tab-handle-list-container')[0].getElementsByClassName('d4-ribbon')[0].
+      getElementsByClassName('d4-ribbon-name')[0];
+      
+    // TODO: rewrite as this approach
+    // console.log(grok.shell.v.ribbonMenu.root);
+
+    viewNameRoot?.firstChild?.replaceWith(breadcrumbs.root);
+  }
 
   private _closeAll(): void {
     grok.shell.closeAll();
@@ -256,6 +282,9 @@ export class DemoView extends DG.ViewBase {
   // TODO: demos: Table linking: make custom view with 2 grids and link them with the proper API (filter in one table will set uo the second table)
   // TODO: demos: Grid customizations (in PowerGrid): have to add some sparklines, also add frozen columns (check in PowerGrid)
 
+  // TODO: close demo app on categories closing
+  // TODO: add demoScript node to class
+
   nodeView(viewName: string, path: string): void {
     this._initWindowOptions();
     this._closeAll();
@@ -308,6 +337,8 @@ export class DemoView extends DG.ViewBase {
 
     tree.root.classList.add('demo-app-group-view');
     view.root.append(ui.div([tree.root], 'grok-gallery-grid'));
+
+    this._setBreadcrumbsInViewName(path.split('/').map((s) => s.trim()));
   }
 
   private _createHomeNode(): void {
