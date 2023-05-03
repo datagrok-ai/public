@@ -66,6 +66,7 @@ export const _package: StPackage = new StPackage();
 //tags: init
 export async function initSequenceTranslator(): Promise<void> {
   await _package.initMonomerLib();
+  _package.initDBLoader().then(() => {}); // Do not wait for lists loaded from the database
 }
 
 //name: Sequence Translator
@@ -73,8 +74,6 @@ export async function initSequenceTranslator(): Promise<void> {
 export async function sequenceTranslatorApp(): Promise<void> {
   const pi: DG.TaskBarProgressIndicator = DG.TaskBarProgressIndicator.create('Loading Sequence Translator app ...');
   try {
-    _package.initDBLoader().then(() => {}); // Do not wait for lists loaded from the database
-
     const v = new SequenceTranslatorUI();
     await v.createLayout();
   } catch (err: any) {

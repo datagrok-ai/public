@@ -12,10 +12,12 @@ import {HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagro
 
 const TERMINAL_SMILES = 'threePrimeTerminalSmiles';
 
+type TechnologiesObject = {
+  [technology: string]: string[]
+}
+
 type Codes = {
-  [synthesizer: string]: {
-    [technology: string]: string[]
-  }
+  [synthesizer: string]: TechnologiesObject | string[]
 }
 
 type Meta = {
@@ -71,9 +73,15 @@ export class MonomerLibWrapper {
       const name = monomer[REQ.NAME];
       const codes = this.getCodesObject(monomer);
       if (Object.keys(codes).includes(format)) {
-        for (const technology in codes[format]) {
-          for (const code of codes[format][technology])
-            codeToNameMap.set(code, name);
+        if (Array.isArray(codes[format])) {
+          const arr = codes[format] as string[];
+          arr.forEach((code) => codeToNameMap.set(code, name));
+        } else {
+          const obj = codes[format] as TechnologiesObject;
+          for (const technology in obj) {
+            for (const code of obj[technology])
+              codeToNameMap.set(code, name);
+          }
         }
       }
     }
@@ -85,7 +93,7 @@ export class MonomerLibWrapper {
     const modifications = this.getMonomersByFormat(SYNTHESIZERS.GCRS)
       .filter((monomer) => this.isModification(monomer.name));
     for (const monomer of modifications) {
-      const codes = this.getCodesObject(monomer)[SYNTHESIZERS.GCRS];
+      const codes = this.getCodesObject(monomer)[SYNTHESIZERS.GCRS] as TechnologiesObject;
       for (const technology in codes)
         result = result.concat(codes[technology]);
     }
@@ -101,13 +109,19 @@ export class MonomerLibWrapper {
     return this.allMonomers.filter((monomer) => Object.keys(monomer[OPT.META]?.codes).includes(format));
   }
 
-  getCodesByFromat(format: string): string[] {
+  getCodesByFormat(format: string): string[] {
     let codes: string[] = [];
     const monomers = this.getMonomersByFormat(format);
     for (const monomer of monomers) {
       const codesObj = this.getCodesObject(monomer);
-      for (const technology in codesObj) {
-        codes = codes.concat(codesObj[format][technology]);
+      if (Array.isArray(codesObj[format])) {
+        const array = codesObj[format] as string[];
+        codes = codes.concat(array);
+      } else {
+        for (const technology in codesObj[format]) {
+          const obj = codesObj[format] as TechnologiesObject;
+          codes = codes.concat(obj[technology]);
+        }
       }
     }
     return codes;
@@ -137,10 +151,16 @@ export class MonomerLibWrapper {
     for (const synthesizer of Object.values(SYNTHESIZERS)) {
       const fieldName = synthesizer;
       const valuesList = [];
-      for (const technology of Object.values(TECHNOLOGIES)) {
-        if (codes[synthesizer] !== undefined) {
-          if (codes[synthesizer][technology] !== undefined)
-            valuesList.push(codes[synthesizer][technology].toString());
+      if (codes[synthesizer] !== undefined) {
+        if (Array.isArray(codes[synthesizer])) {
+          const arr = codes[synthesizer] as string[];
+          valuesList.push(arr.toString());
+        } else {
+          for (const technology of Object.values(TECHNOLOGIES)) {
+            const obj = codes[synthesizer] as TechnologiesObject;
+            if (obj[technology] !== undefined)
+              valuesList.push(obj[technology].toString());
+          }
         }
       }
       formattedObject[fieldName] = valuesList.toString();
