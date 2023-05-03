@@ -42,7 +42,7 @@ export async function customRun() {
       tables[i].name = outputNames[i];
     }
   
-    const count = 36;
+    const count = 30;
   
     let view = grok.shell.newView('Simulation results');
   

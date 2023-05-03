@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/bioreactors",
 	"friendlyName": "Bioreactor",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "Bioreactor simulation",
 	"dependencies": {
 		"datagrok-api": "latest",
