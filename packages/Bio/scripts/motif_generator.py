@@ -103,7 +103,6 @@ for n_cluster in range(args.clusters):
         is_cliff = random.random() <= args.cliff_probability
         if is_cliff:
             # Making activity cliff
-            
             cliff_motif = make_cliff(motif_template, alphabet, motif)
             cliff_seq = prefix + cliff_motif + suffix
             # Recalculating activity
@@ -114,7 +113,7 @@ for n_cluster in range(args.clusters):
             sys.stderr.write(f"Cliff for sequence #{line_number:4}, cluster {n_cluster} \n")
             sys.stderr.write(f"{activity_average}\t{motif}\t{activity}\n")
             sys.stderr.write(f"{activity_average}\t{cliff_motif}\t{cliff_activity}\n")
-            print(f"{n_cluster}\t{cliff_seq}\t{cliff_activity:5.2f}\t{is_cliff}")
+            print(f"{n_cluster}\tc{n_cluster}_seq{line_number}\t{cliff_seq}\t{cliff_activity:5.2f}\t{is_cliff}")
             line_number +=1
-        print(f"{n_cluster}\t{seq}\t{activity:5.2f}\t{is_cliff}")
+        print(f"{n_cluster}\tc{n_cluster}_seq{line_number}\t{seq}\t{activity:5.2f}\t{is_cliff}")
             
