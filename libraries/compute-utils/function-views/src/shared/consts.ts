@@ -37,3 +37,7 @@ export const CARD_VIEW_TYPE = 'JsCardView' as const;
 export const SCRIPTS_VIEW_TYPE = 'scripts' as const;
 export const FUNCTIONS_VIEW_TYPE = 'functions' as const;
 export const VIEWER_PATH = 'viewer' as const;
+export enum DIRECTION {
+  INPUT = 'Input',
+  OUTPUT = 'Output'
+};

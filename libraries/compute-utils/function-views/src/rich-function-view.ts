@@ -13,14 +13,10 @@ import {FunctionView} from './function-view';
 import '../css/rich-function-view.css';
 import {FileInput} from '../../shared-components/src/file-input';
 import {startWith} from 'rxjs/operators';
-import {viewerTypesMapping} from './shared/consts';
+import {DIRECTION, viewerTypesMapping} from './shared/consts';
+import {getDataFrame} from './shared/utils';
 
 const FILE_INPUT_TYPE = 'file';
-
-enum DIRECTION {
-  INPUT = 'Input',
-  OUTPUT = 'Output'
-}
 
 export interface AfterInputRenderPayload {
   prop: DG.Property;
@@ -96,7 +92,7 @@ export class RichFunctionView extends FunctionView {
   public getRunButton(name = 'Run') {
     const runButton = ui.bigButton(name, async () => await this.doRun());
     const disabilitySub = this.checkDisability.subscribe(() => {
-      const isValid = (wu(this.funcCall!.inputs.values()).every((v) => v !== null && v !== undefined)) && !this.isRunning;
+      const isValid = this.isRunnable();
       runButton.disabled = !isValid;
     });
     this.subs.push(disabilitySub);
@@ -149,9 +145,16 @@ export class RichFunctionView extends FunctionView {
     const play = ui.iconFA('play', async () => await this.doRun());
     play.classList.add('fas');
 
+    const save = ui.iconFA('save', async () => {
+      if (this.lastCall)
+        await this.saveRun(this.lastCall);
+      else
+        grok.shell.warning('Function was not called. Call it before saving');
+    });
+
     const newRibbonPanels = [
       ...this.getRibbonPanels(),
-      [play],
+      ...this.isFuncImmediate && !this.options.isTabbed ? [[save]]: [[play]],
     ];
 
     this.setRibbonPanels(newRibbonPanels);
@@ -411,12 +414,17 @@ export class RichFunctionView extends FunctionView {
               await this.doRun();
           };
 
+          // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13004
           t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
+          // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-13005
           if (prop.options['units']) t.addPostfix(prop.options['units']);
 
           this.syncFuncCallReplaced(t, val);
           this.syncOnInput(t, val);
           this.syncValOnChanged(t, val);
+
+          if (this.isFuncImmediate)
+            this.runOnInput(t, val);
 
           if (prop.category !== prevCategory)
             inputs.append(ui.h2(prop.category));
@@ -430,21 +438,13 @@ export class RichFunctionView extends FunctionView {
     this.beforeRenderControlls.next(true);
     if (!this.controllsDiv) {
       const runButton = this.getRunButton();
-      // REPLACE BY TYPE GUARD
-      // const isFuncScript = () => {
-      //   //@ts-ignore
-      //   return !!this.func.script;
-      // };
-      // TO DO: move button somewhere
-      // const openScriptBtn = ui.button('Open script', async () => {
-      //   window.open(`${window.location.origin}/script/${(this.func as DG.Script).id}`, '_blank');
-      // });
-      // const buttonWrapper = ui.div([...this.options.isTabbed && isFuncScript() ? [openScriptBtn]: [], runButton]);
       const buttonWrapper = ui.div([runButton]);
       ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
       this.controllsDiv = ui.buttonsInput([buttonWrapper as any]);
     }
-    inputs.append(this.controllsDiv);
+    if (!this.isFuncImmediate)
+      inputs.append(this.controllsDiv);
+
     inputs.classList.remove('ui-panel');
     inputs.style.paddingTop = '0px';
     inputs.style.paddingLeft = '0px';
@@ -487,6 +487,10 @@ export class RichFunctionView extends FunctionView {
     this.subs.push(sub);
   }
 
+  private isRunnable() {
+    return (wu(this.funcCall!.inputs.values()).every((v) => v !== null && v !== undefined)) && !this.isRunning;
+  }
+
   // DEALING WITH BUG: https://reddata.atlassian.net/browse/GROK-12223
   private dfInputRecreate(t: DG.InputBase<any>, val: DG.FuncCallParam, newValue: DG.DataFrame) {
     const prop = val.property;
@@ -494,6 +498,8 @@ export class RichFunctionView extends FunctionView {
     t.root.replaceWith(newTableInput.root);
     t = newTableInput;
     this.syncOnInput(t, val);
+    if (this.isFuncImmediate)
+      this.runOnDgInput(t, val);
     this.afterInputPropertyRender.next({prop, input: t});
   }
 
@@ -505,6 +511,26 @@ export class RichFunctionView extends FunctionView {
     });
   }
 
+  private runOnInput(t: DG.InputBase, val: DG.FuncCallParam) {
+    t.onInput(async () => {
+      if (this.isRunnable())
+        await this.doRun();
+    });
+  }
+
+  private runOnDgInput(t: DG.InputBase<DG.DataFrame>, val: DG.FuncCallParam) {
+    t.onInput(async () => await this.doRun());
+
+    // DataFrame inputs has internal mutability, so we need check for it
+    const ref = t.value as DG.DataFrame;
+    const sub = ref.onDataChanged.subscribe(async () => {
+      if (this.isRunnable())
+        await this.doRun();
+    });
+
+    this.subs.push(sub);
+  }
+
   /**
    * RichFunctionView know everything about its UI, so it exports not only data, but also viewer screenshots.
    * This function iterates over all of the tabs and sequentally exports all dataframes, their viewers and scalars.
@@ -513,6 +539,7 @@ export class RichFunctionView extends FunctionView {
    */
   protected defaultExport = async (format: string) => {
     const lastCall = this.lastCall;
+
     if (!lastCall) throw new Error(`Function was not called`);
 
     if (!this.exportConfig!.supportedFormats.includes(format)) throw new Error(`Format "${format}" is not supported.`);
@@ -538,7 +565,7 @@ export class RichFunctionView extends FunctionView {
       const visibleTitle = dfInput.options.caption || dfInput.name;
       const currentDfSheet = exportWorkbook.addWorksheet(getSheetName(visibleTitle, DIRECTION.INPUT));
 
-      const currentDf = (lastCall.inputs[dfInput.name] as DG.DataFrame);
+      const currentDf = getDataFrame(lastCall, dfInput.name, DIRECTION.INPUT);
       dfToSheet(currentDfSheet, currentDf);
     });
 
@@ -555,7 +582,7 @@ export class RichFunctionView extends FunctionView {
       const visibleTitle = dfOutput.options.caption || dfOutput.name;
       const currentDfSheet = exportWorkbook.addWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT));
 
-      const currentDf = (lastCall.outputs[dfOutput.name] as DG.DataFrame);
+      const currentDf = getDataFrame(lastCall, dfOutput.name, DIRECTION.OUTPUT);
       dfToSheet(currentDfSheet, currentDf);
     });
 
@@ -579,9 +606,9 @@ export class RichFunctionView extends FunctionView {
             .filter((viewer) => viewer.type !== DG.VIEWER.GRID)
             .filter((viewer) => Object.values(viewerTypesMapping).includes(viewer.type));
 
-          const dfInput = dfInputs.find((input) => input.name === inputParam.name);
+          const dfInput = dfInputs.find((input) => input.name === inputParam.name)!;
           const visibleTitle = dfInput!.options.caption || inputParam.name;
-          const currentDf = (lastCall.inputs[dfInput!.name] as DG.DataFrame);
+          const currentDf = getDataFrame(lastCall, dfInput.name, DIRECTION.INPUT);
 
           for (const [index, viewer] of nonGridViewers.entries()) {
             await plotToSheet(
@@ -607,7 +634,7 @@ export class RichFunctionView extends FunctionView {
 
           const dfOutput = dfOutputs.find((output) => output.name === outputParam.property.name)!;
           const visibleTitle = dfOutput.options.caption || outputParam.property.name;
-          const currentDf = (lastCall.outputs[dfOutput.name] as DG.DataFrame);
+          const currentDf = getDataFrame(lastCall, dfOutput.name, DIRECTION.OUTPUT);
 
           for (const [index, viewer] of nonGridViewers.entries()) {
             if (viewer.type === DG.VIEWER.STATISTICS) {

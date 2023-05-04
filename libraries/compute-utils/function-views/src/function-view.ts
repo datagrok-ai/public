@@ -438,7 +438,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
     // If a view is incapuslated into a tab (e.g. in PipelineView),
     // there is no need to save run till an entire pipeline is over.
-    this.lastCall = this.options.isTabbed ? this.funcCall.clone() : await this.saveRun(this.funcCall);
+    this.lastCall = (this.options.isTabbed || this.isFuncImmediate) ? this.funcCall.clone() : await this.saveRun(this.funcCall);
   }
 
   protected historyRoot: HTMLDivElement = ui.divV([], {style: {'justify-content': 'center'}});
@@ -462,4 +462,8 @@ export abstract class FunctionView extends DG.ViewBase {
   protected defaultSupportedExportFormats = () => {
     return ['Excel'];
   };
+
+  protected get isFuncImmediate() {
+    return this.func.options['isImmediate'] === 'true';
+  }
 }
