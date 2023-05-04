@@ -294,6 +294,8 @@ export class UnitsHandler {
     if (!this.column.tags.has(TAGS.aligned) || !this.column.tags.has(TAGS.alphabet) ||
         (!this.column.tags.has(TAGS.alphabetIsMultichar) && !this.isHelm() && this.alphabet === ALPHABET.UN)
     ) {
+      // The following detectors and setters are to be called because the column is likely
+      // as the UnitsHandler constructor was called on the column.
       if (this.isFasta()) {
         UnitsHandler.setUnitsToFastaColumn(this.column);
       } else if (this.isSeparator()) {
