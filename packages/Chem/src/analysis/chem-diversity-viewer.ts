@@ -21,7 +21,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
   constructor(tooltipUse = false, col?: DG.Column) {
     super(DIVERSITY, col);
     this.renderMolIds = [];
-    this.updateMetricsLink(this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
+    this.updateMetricsLink(this, {fontSize: '13px', fontWeight: 'normal', paddingBottom: '15px'});
     this.tooltipUse = tooltipUse;
   }
 
