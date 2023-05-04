@@ -61,10 +61,10 @@ export function renderMolecule(
             .add(sketcher)
             .show();
         });
-        menu.item('Explore', () => {
+        /*menu.item('Explore', () => {
           grok.shell.o = DG.SemanticValue.fromValueType(molStr, DG.SEMTYPE.MOLECULE);
         }, null, {description: 'Explore molecule in context panel'});
-        menu.show();
+        menu.show();*/
       },
       'More',
     );
