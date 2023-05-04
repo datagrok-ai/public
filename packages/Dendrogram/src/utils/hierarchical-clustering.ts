@@ -84,7 +84,8 @@ export async function hierarchicalClusteringUI(
     tv = grok.shell.addTableView(filteredDf);
   };
 
-  const loaderNB = attachLoaderDivToGrid(tv.grid, 300);
+  const loaderNB = attachLoaderDivToGrid(tv.grid, neighborWidth);
+
   // TODO: Filter rows with nulls in selected columns
   const preparedDf = DG.DataFrame.fromColumns(
     filteredDf.columns.toList()
