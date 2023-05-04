@@ -9,6 +9,7 @@ const BACKGROUND = 'background';
 const TEXT = 'text';
 export const SIMILARITY = 'similarity';
 export const DIVERSITY = 'diversity';
+export const MAX_LIMIT = 50;
 export class ChemSearchBaseViewer extends DG.JsViewer {
   isEditedFromSketcher: boolean = false;
   gridSelect: boolean = false;
@@ -33,7 +34,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   constructor(name: string, col?: DG.Column) {
     super();
     this.fingerprint = this.string('fingerprint', this.fingerprintChoices[0], {choices: this.fingerprintChoices});
-    this.limit = this.int('limit', 10);
+    this.limit = this.int('limit', 10, {min: 1, max: MAX_LIMIT});
     this.distanceMetric = this.string('distanceMetric', CHEM_SIMILARITY_METRICS[0], {choices: CHEM_SIMILARITY_METRICS});
     this.size = this.string('size', Object.keys(this.sizesMap)[0], {choices: Object.keys(this.sizesMap)});
     this.moleculeColumnName = this.string('moleculeColumnName');
@@ -76,9 +77,6 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
         .subscribe(async (_: any) => await this.render(false)));
       this.moleculeColumn ??= this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
       this.moleculeColumnName ??= this.moleculeColumn?.name!;
-      this.getProperty('limit')!.fromOptions({min: 1, max: this.dataFrame.rowCount});
-      if (this.limit > this.dataFrame.rowCount)
-        this.limit = this.dataFrame.rowCount;
     }
     await this.render(true);
   }
@@ -94,6 +92,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       if (col.semType === DG.SEMTYPE.MOLECULE)
         this.moleculeColumn = col;
     }
+    if (property.name === 'limit' && property.get(this) > MAX_LIMIT )
+      this.limit = MAX_LIMIT;
     this.render();
   }
 
