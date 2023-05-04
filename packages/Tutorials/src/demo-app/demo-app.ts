@@ -72,16 +72,6 @@ export class DemoView extends DG.ViewBase {
     ui.setUpdateIndicator(grok.shell.tv.root, true);
     await func.apply();
 
-    // grok.events.onViewAdded.subscribe((view) => {
-    //   const breadcrumbs = ui.breadcrumbs(viewPath.split('|').map((s) => s.trim()));
-    //   breadcrumbs.onPathClick.subscribe((value) => grok.shell.info(value));
-    //   const viewNameRoot = view.root.parentElement?.parentElement?.parentElement?.
-    //     getElementsByClassName('tab-handle-list-container')[0].getElementsByClassName('d4-ribbon')[0].
-    //     getElementsByClassName('d4-ribbon-name')[0];
-
-    //   viewNameRoot?.firstChild?.replaceWith(breadcrumbs.root);
-    // });
-
     ui.setUpdateIndicator(grok.shell.tv.root, false);
 
     grok.shell.v.path.includes('/apps/Tutorials/Demo') ?
@@ -94,14 +84,18 @@ export class DemoView extends DG.ViewBase {
 
   private _setBreadcrumbsInViewName(viewPath: string[]): void {
     const breadcrumbs = ui.breadcrumbs(viewPath);
-    // breadcrumbs.onPathClick.subscribe((value) => grok.shell.info(value));
-    const viewNameRoot = grok.shell.v.root.parentElement?.parentElement?.parentElement?.
-      getElementsByClassName('tab-handle-list-container')[0].getElementsByClassName('d4-ribbon')[0].
-      getElementsByClassName('d4-ribbon-name')[0];
-      
-    // TODO: rewrite as this approach
-    // console.log(grok.shell.v.ribbonMenu.root);
 
+    breadcrumbs.onPathClick.subscribe((value) => {
+      const currentFunc = this.funcs.filter((func) => {
+        return (func.name === value[value.length - 1]);
+      });
+      if (currentFunc.length !== 0)
+        return;
+
+      this.nodeView(value[value.length - 1], value.join('/'));
+    });
+
+    const viewNameRoot = grok.shell.v.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
     viewNameRoot?.firstChild?.replaceWith(breadcrumbs.root);
   }
 
@@ -268,7 +262,6 @@ export class DemoView extends DG.ViewBase {
     return root;
   }
   
-  // TODO: in view show tree too
   // TODO: make config for easy showing (Cheminformatics -> Bio -> Viewers -> ...)
   // TODO: fix search, also on input show them in view, make it work on description and keywords
 
