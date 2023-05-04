@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import *as grok from 'datagrok-api/grok';
+import * as grok from 'datagrok-api/grok';
 import * as OCL from 'openchemlib/full';
 import {oclMol} from '../utils/chem-common-ocl';
 import {div} from "datagrok-api/ui";
@@ -13,6 +13,7 @@ import { StringUtils } from '@datagrok-libraries/utils/src/string-utils';
 import { renderMolecule } from '../rendering/render-molecule';
 import { renderMultipleHistograms } from '../../../../js-api/dg';
 import { histogram } from '../../../../js-api/src/api/ddt.api.g';
+import { findMCS } from '../scripts-api';
 
 interface IChemProperty {
   name: string;
@@ -31,6 +32,8 @@ const CHEM_PROPS : IChemProperty[] = [
   {name: 'StereoC', type: DG.TYPE.INT, valueFunc: (m) => new OCL.MoleculeProperties(m).stereoCenterCount},
   {name: 'Charge', type: DG.TYPE.INT, valueFunc: (m) => getMoleculeCharge(m)}
 ]
+
+const MAX_COL_LENGTH = 1000;
 
 export function calcChemProperty(name: string, smiles: string) : any {
   const mol = oclMol(smiles);
@@ -52,7 +55,7 @@ export function getChemPropertyFunc(name: string) : null | ((smiles: string) => 
   return null;
 }
 
-function getPropertyValue(molCol: DG.Column, idx: number, p: IChemProperty) {
+function getPropertyValue(molCol: DG.Column, idx: number, p: IChemProperty): any {
   try {
     if (molCol.isNone(idx)) return null;
     const mol = oclMol(molCol.get(idx)!);
@@ -88,10 +91,10 @@ export function getMoleculeCharge(mol: OCL.Molecule): number {
 export async function statsWidget(molCol: DG.Column<string>): Promise<DG.Widget> {
   const host = ui.div();
   host.style.marginLeft = '-25px';
-  const size = Math.min(molCol.length, 1000);
+  const size = Math.min(molCol.length, MAX_COL_LENGTH);
   const randomIndexes = Array.from({length: size}, () => Math.floor(Math.random() * molCol.length));
 
-  function getAverage(p: IChemProperty) {
+  function getAverage(p: IChemProperty): HTMLDivElement {
     const propertiesArray = new Array(size);
     for (let idx = 0; idx < randomIndexes.length; ++idx) 
       propertiesArray[idx] = getPropertyValue(molCol, randomIndexes[idx], p);
@@ -123,9 +126,11 @@ export async function statsWidget(molCol: DG.Column<string>): Promise<DG.Widget>
     
     const colAvg = StringUtils.formatNumber(col.stats.avg);
     const colStdev = StringUtils.formatNumber(col.stats.stdev);
+    const textStats = ui.divText(`${colAvg} ± ${colStdev}`);
+    textStats.classList.add('chem-stats-text');
     return ui.divH([
       addColumnIcon, 
-      ui.divText(`${colAvg} ± ${colStdev}`, {style: {'width': '100px', 'position': 'relative', 'top': '8px'}}),
+      textStats,
       histRoot
     ], { style: {'position': 'relative'}});
   
@@ -133,12 +138,11 @@ export async function statsWidget(molCol: DG.Column<string>): Promise<DG.Widget>
 
   let map: { [_: string]: HTMLElement }  = {};
   for (let n = 0; n < CHEM_PROPS.length; ++n) {
-    (map as any)[CHEM_PROPS[n].name] = getAverage(CHEM_PROPS[n]);
+    map[CHEM_PROPS[n].name] = getAverage(CHEM_PROPS[n]);
   }
 
   if (molCol.length === size) {
-    await grok.functions.call('Chem:FindMCS',
-      {molecules: molCol.name, df: molCol.dataFrame, exactAtomSearch: true, exactBondSearch: true}).then((res: string) => {
+    await findMCS(molCol.name, molCol.dataFrame, true, true).then((res: string) => {
       map['MCS'] = renderMolecule(res, {renderer: 'RDKit'})
     });
   }
@@ -146,7 +150,6 @@ export async function statsWidget(molCol: DG.Column<string>): Promise<DG.Widget>
   host.appendChild(ui.tableFromMap(map));
 
   return new DG.Widget(host);
-
 }
 
 export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget {

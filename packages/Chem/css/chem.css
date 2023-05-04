@@ -294,3 +294,9 @@
   position: relative;
   top: -8px;
 }
+
+.chem-stats-text {
+  width: 100px;
+  position: relative;
+  top: 8px;
+}
