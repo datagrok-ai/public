@@ -1,7 +1,7 @@
 {
     "name": "@datagrok/eda",
-    "friendlyName": "EDATS",
-    "version": "0.0.2",
+    "friendlyName": "EDA",
+    "version": "1.0.1",
     "description": "",
     "dependencies": {
         "datagrok-api": "latest",

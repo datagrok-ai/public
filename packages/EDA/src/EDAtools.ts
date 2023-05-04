@@ -26,7 +26,7 @@ export async function computePCA(table: DG.DataFrame, features: DG.ColumnList, c
 } 
 
 // Partial least square regression (PLS)
-export async function computePLS(table: DG.DataFrame, features: DG.ColumnList, predict: DG.Column, components: number): Promise<void> 
+export async function computePLS(table: DG.DataFrame, features: DG.ColumnList, predict: DG.Column, components: number): Promise<any> 
 {
   checkComponenets(features, components);
 
