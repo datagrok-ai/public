@@ -34,10 +34,14 @@ export async function multipleSequenceAlignmentUI(col: DG.Column<string> | null 
     const gapExtendInput = ui.floatInput('Gap extend', 0);
     gapExtendInput.setTooltip('Gap extension penalty to skip the alignment');
     const inputRootStyles = [methodInput.root.style, gapOpenInput.root.style, gapExtendInput.root.style];
-
     let performAlignment: () => Promise<DG.Column<string> | null>;
 
-    const colInput = ui.columnInput('Sequence', table, seqCol, () => {
+    const macromoleculeColumnsTable = DG.DataFrame.fromColumns(
+      table.columns.toList()
+        .filter((col) => col.semType === DG.SEMTYPE.MACROMOLECULE)
+    );
+
+    const colInput = ui.columnInput('Sequence', macromoleculeColumnsTable, seqCol, () => {
       try {
         const potentialCol = colInput.value;
         const unusedName = table.columns.getUnusedName(`msa(${potentialCol.name})`);

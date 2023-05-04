@@ -410,7 +410,7 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
 //name: MSA...
 //tags: bio, panel
 export function multipleSequenceAlignmentAny(): void {
-  multipleSequenceAlignmentUI().then(); // Ignore promise returned
+  multipleSequenceAlignmentUI();
 }
 
 //top-menu: Bio | Structure | Composition Analysis
