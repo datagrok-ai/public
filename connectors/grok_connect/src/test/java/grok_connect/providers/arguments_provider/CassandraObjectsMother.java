@@ -7,13 +7,16 @@ import grok_connect.providers.utils.FuncCallBuilder;
 import grok_connect.providers.utils.Parser;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.params.provider.Arguments;
-import serialization.*;
-
+import serialization.BigIntColumn;
+import serialization.BoolColumn;
+import serialization.DataFrame;
+import serialization.DateTimeColumn;
+import serialization.FloatColumn;
+import serialization.IntColumn;
+import serialization.StringColumn;
 import java.time.LocalDate;
 import java.time.Year;
 import java.time.temporal.TemporalAdjusters;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.stream.Stream;
 
 public class CassandraObjectsMother {
@@ -634,5 +637,53 @@ public class CassandraObjectsMother {
                 .build();
         FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM datagrok.integers;");
         return Stream.of(Arguments.of(Named.of("INTEGER TYPES SUPPORT", funcCall), expected));
+    }
+
+    public static Stream<Arguments> checkFloatTypesSupport_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new FloatColumn(new Float[]{-20.01001f, 123003.336f}), "decimal_type")
+                .setColumn(new FloatColumn(new Float[]{-3.134576f, 3.134576f}),
+                        "double_type")
+                .setColumn(new FloatColumn(new Float[]{-9990.992f, 1.23E-4f}), "float_type")
+                .build();
+        FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM datagrok.float_types;");
+        return Stream.of(Arguments.of(Named.of("FLOAT TYPES SUPPORT", funcCall), expected));
+    }
+
+    public static Stream<Arguments> checkDateTypesSupport_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(2)
+                .setColumn(new BigIntColumn(new String[]{"2", "1"}), "id")
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles("yyyy-MM-dd",
+                        "2023-04-27", "2011-02-03")), "date_type")
+                .setColumn(new StringColumn(new String[]{"9m51s", "89h4m48s"}), "duration_type")
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles("yyyy-MM-dd HH:mm:ss X",
+                                "2011-02-03 04:05:08 +03:00", "2011-02-03 04:05:01 +01:00")),
+                        "stamp_type")
+                .setColumn(new DateTimeColumn(parser.parseDatesToDoubles("yyyy-MM-dd HH:mm:ss.SSS",
+                        "1970-01-01 12:50:54.333", "1970-01-01 08:12:54.111")), "time_type")
+                .build();
+        FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM datagrok.date_types;");
+        return Stream.of(Arguments.of(Named.of("DATE TYPES SUPPORT", funcCall), expected));
+    }
+
+    public static Stream<Arguments> checkComplexTypesSupport_ok() {
+        DataFrame expected = DataFrameBuilder.getBuilder()
+                .setRowCount(1)
+                .setColumn(new BigIntColumn(new String[]{"1"}), "id")
+                .setColumn(new StringColumn(new String[]{"[hello, world]"}),
+                        "list_type")
+                .setColumn(new StringColumn(new String[]{"{band=Beatles, fruit=Apple}"}),
+                        "map_type")
+                .setColumn(new StringColumn(new String[]{"[3, 15, 16]"}),
+                        "set_type")
+                .setColumn(new StringColumn(new String[]{"{3, hours}"}),
+                        "tuple_type")
+                .setColumn(new StringColumn(new String[]{"{country_code=380, number=+3800900909}"}),
+                        "udt_type")
+                .build();
+        FuncCall funcCall = FuncCallBuilder.fromQuery("SELECT * FROM datagrok.complex_types;");
+        return Stream.of(Arguments.of(Named.of("COMPLEX TYPES SUPPORT", funcCall), expected));
     }
 }

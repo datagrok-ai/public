@@ -55,7 +55,7 @@ export async function demoBio01aUI(funcPath: string) {
       df.selection.init((idx: number) => [15].includes(idx));
     })();
 
-    await step('Select bunch of sequences.', async () => {
+    await step('Select a bunch of sequences.', async () => {
       df.selection.init((idx: number) => [21, 9, 58].includes(idx));
       df.currentRowIdx = 27;
     })();

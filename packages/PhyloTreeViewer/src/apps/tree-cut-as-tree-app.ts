@@ -31,9 +31,9 @@ export class TreeCutAsTreeApp {
   }
 
   async loadData(): Promise<void> {
-    const csv = await _package.files.readAsText('data/tree-gen-10000.csv');
-    const newick = await _package.files.readAsText('data/tree-gen-10000.nwk');
-    const leafColName = 'Leaf';
+    const csv = await _package.files.readAsText('data/tree95df.csv');
+    const newick = await _package.files.readAsText('data/tree95.nwk');
+    const leafColName = 'id';
 
     const dataDf = DG.DataFrame.fromCsv(csv);
     dataDf.setTag(treeTAGS.NEWICK, newick);

@@ -752,7 +752,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     ++this.treeBuildCount;
     this.cancelled = false;
     const thisViewer = this;
-    this.wrapper = SketcherDialogWrapper.create("Add New Scaffold...", "Add", group,async (molStrSketcher: string, parent: TreeViewGroup, errorMsg: string | null) => {
+    this.wrapper = SketcherDialogWrapper.create("Add new scaffold...", "Add", group,async (molStrSketcher: string, parent: TreeViewGroup, errorMsg: string | null) => {
       const child = thisViewer.createGroup(molStrSketcher, parent);
       if (child !== null) {
         enableNodeExtendArrow(child, false);
@@ -957,7 +957,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       ui.iconFA('pencil', () => this.openEditSketcher(group), 'Edit scaffold'),
       ui.divText(''),
       ui.iconFA('check-square', () => this.selectTableRows(group, true), 'Select rows'),
-      ui.iconFA('square', () => this.selectTableRows(group, false), 'Unselect rows'),
+      ui.iconFA('square', () => this.selectTableRows(group, false), 'Deselect rows'),
     ], 'chem-mol-box-info-buttons');
     iconsDiv.onclick = (e) => e.stopImmediatePropagation();
     iconsDiv.onmousedown = (e) => e.stopImmediatePropagation();
@@ -1314,12 +1314,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this._bitOpInput.setTooltip('AND: all selected substructures match \n\r OR: any selected substructures match');
     this._bitOpInput.root.style.marginLeft = '20px';
     const iconHost = ui.box(ui.divH([
-      this._iconAdd = ui.iconFA('plus', () => thisViewer.openAddSketcher(thisViewer.tree), 'Add New Root Structure'),
-      ui.iconFA('filter', () => thisViewer.clearFilters(), 'Clear Filter'),
+      this._iconAdd = ui.iconFA('plus', () => thisViewer.openAddSketcher(thisViewer.tree), 'Add new root structure'),
+      ui.iconFA('filter', () => thisViewer.clearFilters(), 'Clear filter'),
       ui.iconFA('folder-open', () => this.loadTree(), 'Open saved tree'),
       ui.iconFA('arrow-to-bottom', () => this.saveTree(), 'Save this tree to disk'),
       ui.divText(' '),
-      this._iconDelete = ui.iconFA('trash-alt', () => { thisViewer.cancelled = true; thisViewer.clear();}, 'Drop All Trees'),
+      this._iconDelete = ui.iconFA('trash-alt', () => { thisViewer.cancelled = true; thisViewer.clear();}, 'Drop all trees'),
       ui.divText(' '),
       this._bitOpInput.root
     ]), 'chem-scaffold-tree-toolbar');
@@ -1330,7 +1330,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this._generateLink = ui.link('Generate',
       async () => await thisViewer.generateTree(),
-      'Generates Scaffold Tree',
+      'Generates scaffold tree',
       'chem-scaffold-tree-generate-hint');
     this.root.appendChild(this._generateLink);
     this.updateSizes();

@@ -2,11 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-
 import {after, before, category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
 
-import {checkInputColumn, multipleSequenceAlignmentAny} from '../package';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {checkInputColumn} from '../utils/check-input-column';
 
 category('checkInputColumn', () => {
   const csv = `seq

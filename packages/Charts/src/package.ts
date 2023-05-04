@@ -134,13 +134,6 @@ export async function _globeViewerDemo() {
   await viewerDemo('Globe');
 }
 
-//name: groupAnalysisViewerDemo
-//description: Group analysis viewer groups data by different options
-//meta.demoPath: Viewers | Group Analysis
-export async function _groupAnalysisViewerDemo() {
-  await viewerDemo('GroupAnalysis');
-}
-
 //name: radarViewerDemo
 //description: Radar viewer is used on multivariate data to plot groups of values over several common variables
 //meta.demoPath: Viewers | Radar

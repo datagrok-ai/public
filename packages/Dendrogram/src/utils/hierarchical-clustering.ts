@@ -111,7 +111,7 @@ export async function hierarchicalClusteringUI(
       distance);
 
     const clusterMatrixWorker = getClusterMatrixWorker(
-      {distMatArray: distanceMatrix!.data, n: preparedDf.rowCount, methodCode: linkageCode}
+       distanceMatrix!.data, preparedDf.rowCount, linkageCode
     );
     const clusterMatrix = await clusterMatrixWorker;
 

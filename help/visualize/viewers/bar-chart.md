@@ -12,6 +12,7 @@ for categorical values.
 | Right click    | Context menu                      |
 | Double-click   | Reset View                        |
 | Alt+drag       | Zoom                              |
+| Alt+F          | Show in full screen               |
 
 ![Bar Chart](../../uploads/viewers/bar-chart.png "Bar Chart")
 

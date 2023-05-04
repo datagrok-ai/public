@@ -49,7 +49,7 @@ export class PackagesView extends UaView {
               'To': getTime(dateTo)});
           }, true);
           PackagesView.getFunctionsPane(cp, filter, [dateFrom, dateTo],
-            [row.package], this.uaToolbox, 'Packages');
+            this.uaToolbox, 'Packages');
           PackagesView.getLogsPane(cp, filter, [dateFrom, dateTo],
             this.uaToolbox, 'Packages');
           PackagesView.getAuditPane(cp, filter);
@@ -85,13 +85,13 @@ export class PackagesView extends UaView {
     const dateMax = df.getCol('time_end').stats.max;
     const dateFrom = new Date(dateMin / 1000);
     const dateTo = new Date(dateMax / 1000);
-    const packages: string[] = df.getCol('pid').categories.filter((c) => c !== '');
-    // console.log(packages);
+    // const packages: string[] = df.getCol('pid').categories.filter((c) => c !== '');
+    const packages: string[] = df.getCol('package').categories;
     const users: string[] = df.getCol('uid').categories;
     t.selection.init((i) => {
       const row = gen.next().value as DG.Row;
       return dateFrom <= row.time_start && row.time_start < dateTo &&
-        packages.includes(row.pid) && users.includes(row.uid);
+        packages.includes(row.package) && users.includes(row.uid);
     }, false);
     df = t.clone(t.selection);
     const groups: string[] = df.getCol('ugid').categories;
@@ -106,7 +106,7 @@ export class PackagesView extends UaView {
 
     const filter: Filter = {
       time_start: dateMin / 1000000, time_end: dateMax / 1000000,
-      groups: groups, users: users, packages: packages
+      groups: groups, users: users, packages: packages,
     };
 
     const a = DG.Accordion.create();
@@ -116,16 +116,15 @@ export class PackagesView extends UaView {
     const timeFilterDiv = ui.tableFromMap({
       'From': getTime(dateFrom),
       'To': getTime(dateTo)});
-    if (options?.showDates ?? true) {
+    if (options?.showDates ?? true)
       filterDiv.append(timeFilterDiv);
-    }
     const usersData: {[key: string]: { e: HTMLElement, c: number }} = {};
     for (const r of usersHistogram.rows)
       usersData[r.uid] = {c: r['sum(count)'], e: ui.render(`#{x.${r.uid}}`)};
 
     const packagesData: {[key: string]: { e: HTMLElement, c: number }} = {};
     for (const r of packagesHistogram.rows)
-      packagesData[r.pid] = {c: r['sum(count)'], e: ui.render(`#{x.${r.pid}}`)};
+      packagesData[r.pid] = {c: r['sum(count)'], e: r.pid ? ui.render(`#{x.${r.pid}}`) : ui.label('Core')};
 
     const filterAccordion = DG.Accordion.create();
     const usersTable = ui.table(Object.keys(usersData).sort((a, b) =>
@@ -141,25 +140,23 @@ export class PackagesView extends UaView {
     else
       filterDiv.append(packagesTable);
     filterDiv.append(filterAccordion.root);
-    PackagesView.getFunctionsPane(a, filter, [dateFrom, dateTo], df.getCol('package').categories, uaToolbox, backToView);
-    PackagesView.getLogsPane(a, filter,[dateFrom, dateTo], uaToolbox, backToView);
+    PackagesView.getFunctionsPane(a, filter, [dateFrom, dateTo], uaToolbox, backToView);
+    PackagesView.getLogsPane(a, filter, [dateFrom, dateTo], uaToolbox, backToView);
     PackagesView.getAuditPane(a, filter);
     grok.shell.o = cp;
   }
 
-  static async getFunctionsPane(cp: DG.Accordion, filter: Filter, date: Date[],
-    packageNames: string[], uaToolbox: UaToolbox, backToView: string): Promise<void> {
+  static async getFunctionsPane(cp: DG.Accordion, filter: Filter, date: Date[], uaToolbox: UaToolbox, backToView: string): Promise<void> {
     const button = ui.button('Details', async () => {
       uaToolbox.dateFromDD.value = getTime(date[0]);
       uaToolbox.dateToDD.value = getTime(date[1]);
       uaToolbox.backToView = backToView;
       uaToolbox.usersDD.value = filter.users.length === 1 ?
         (await grok.dapi.users.find(filter.users[0])).friendlyName : `${filter.users.length} users`;
-      uaToolbox.packagesDD.value = packageNames.length === 1 ?
-        packageNames[0] : `${packageNames.length} packages`;
+      uaToolbox.packagesDD.value = filter.packages.length === 1 ?
+        filter.packages[0] : `${filter.packages.length} packages`;
       ViewHandler.getView('Functions').getScatterPlot()
-        .reloadViewer({date: `${getTime(date[0], 'es-pa')}-${getTime(date[1], 'es-pa')}`,
-          groups: filter.groups, packages: packageNames});
+        .reloadViewer({...filter, date: `${getTime(date[0], 'es-pa')}-${getTime(date[1], 'es-pa')}`});
       ViewHandler.changeTab('Functions');
       uaToolbox.drilldown = ViewHandler.getCurrentView();
     });

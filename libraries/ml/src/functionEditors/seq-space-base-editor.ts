@@ -4,8 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import { IDimReductionParam, ITSNEOptions, IUMAPOptions, TSNEOptions, T_SNE, UMAP, UMAPOptions } from '../reduce-dimensionality';
 
 export const SEQ_COL_NAMES = {
-    [DG.SEMTYPE.MOLECULE]: 'Molecule',
-    [DG.SEMTYPE.MACROMOLECULE]: 'Sequence'
+    [DG.SEMTYPE.MOLECULE]: 'Molecules',
+    [DG.SEMTYPE.MACROMOLECULE]: 'Sequences'
 }
 
 export class SequenceSpaceBaseFuncEditor {

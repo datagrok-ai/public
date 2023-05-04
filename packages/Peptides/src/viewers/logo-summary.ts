@@ -285,7 +285,7 @@ export class LogoSummaryTable extends DG.JsViewer {
       canvasContext.beginPath();
       canvasContext.rect(bound.x, bound.y, bound.width, bound.height);
       canvasContext.clip();
-      CR.renderLogoSummaryCell(canvasContext, gc.cell.value, this.model.logoSummarySelection, bound);
+      CR.renderLogoSummaryCell(canvasContext, gc.cell.value, this.model.clusterSelection, bound);
       gridCellArgs.preventDefault();
       canvasContext.restore();
     });
@@ -387,7 +387,7 @@ export class LogoSummaryTable extends DG.JsViewer {
   }
 
   removeCluster(): void {
-    const lss = this.model.logoSummarySelection;
+    const lss = this.model.clusterSelection;
     const dfCols = this.dataFrame.columns;
 
     // Names of the clusters to remove
@@ -409,7 +409,7 @@ export class LogoSummaryTable extends DG.JsViewer {
       this.distributionDfPlot.splice(clustIdx, 1);
     }
 
-    this.model.logoSummarySelection = lss;
+    this.model.clusterSelection = lss;
     this.render();
   }
 
