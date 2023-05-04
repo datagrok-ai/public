@@ -9,8 +9,7 @@ import {SYNTHESIZERS, TECHNOLOGIES} from '../../model/const';
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 
 import {HELM_REQUIRED_FIELDS as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
-
-const TERMINAL_SMILES = 'threePrimeTerminalSmiles';
+import {META_FIELDS as MET} from './const';
 
 type TechnologiesObject = {
   [technology: string]: string[]
@@ -25,7 +24,6 @@ type Meta = {
 }
 
 export class MonomerLibWrapper {
-  // todo: dependency injection of monomer lib instead of getMonomeLib
   private constructor() {
     const lib = _package.monomerLib;
     if (lib === null)
@@ -58,9 +56,10 @@ export class MonomerLibWrapper {
     if (!this.isModification(modificationName))
       throw new Error(`SequenceTranslator: ${modificationName} is not a modification`);
     const monomer = this.getMonomer(modificationName);
-    return monomer[OPT.META]![TERMINAL_SMILES];
+    return monomer[OPT.META]![MET.TERMINAL_SMILES];
   }
 
+  // todo: a better criterion
   isModification(monomerName: string): boolean {
     const molfile = this.getMolfileByName(monomerName);
     return (molfile.includes('MODIFICATION')) ? true : false;
@@ -102,7 +101,7 @@ export class MonomerLibWrapper {
 
   private getCodesObject(monomer: Monomer): Codes {
     const meta: Meta = monomer[OPT.META] as Meta;
-    return meta['codes'] as Codes;
+    return meta[MET.CODES] as Codes;
   };
 
   private getMonomersByFormat(format: string): Monomer[] {
@@ -134,19 +133,12 @@ export class MonomerLibWrapper {
   }
 
   private formatMonomerForViewer(sourceObj: Monomer): {[key: string]: string} {
-    const enum FIELD {
-      NAME = 'name',
-      MOLFILE = 'molfile',
-      CODES = 'codes',
-      META = 'meta',
-    }
-
     const formattedObject: {[key: string]: string} = {};
-    formattedObject[FIELD.NAME] = sourceObj[FIELD.NAME];
-    formattedObject[FIELD.MOLFILE] = sourceObj[FIELD.MOLFILE];
+    formattedObject[REQ.NAME] = sourceObj[REQ.NAME];
+    formattedObject[REQ.MOLFILE] = sourceObj[REQ.MOLFILE];
 
-    const meta = sourceObj[FIELD.META] as Meta;
-    const codes = meta[FIELD.CODES] as Codes;
+    const meta = sourceObj[OPT.META] as Meta;
+    const codes = meta[MET.CODES] as Codes;
 
     for (const synthesizer of Object.values(SYNTHESIZERS)) {
       const fieldName = synthesizer;
@@ -193,7 +185,7 @@ export class MonomerLibWrapper {
     const monomers = this.getAllMonomers();
     for (const monomer of monomers) {
       const codesObj = this.getCodesObject(monomer);
-      const weight = monomer[OPT.META]?.['weight'];
+      const weight = monomer[OPT.META]?.[MET.MOLWEIGHT];
       let codesArray: string[] = [];
       for (const synthesizer in codesObj){
         if (Array.isArray(codesObj[synthesizer])) {

@@ -3,7 +3,7 @@ import {COL_NAMES, GENERATED_COL_NAMES, SEQUENCE_TYPES} from './const';
 import * as grok from 'datagrok-api/grok';
 import {RegistrationSequenceParser} from './sequence-parser';
 import {isValidSequence} from '../code-converter/conversion-validation-tools';
-import {batchMolWeight, molecularWeight, saltMass, saltMolWeigth} from './calculations';
+import {batchMolWeight, getMolWeight, saltMass, saltMolWeigth} from './calculations';
 import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
 
 export class SdfColumnsExistsError extends Error {
@@ -17,79 +17,105 @@ export class RegistrationColumnsHandler {
   constructor(
     private df: DG.DataFrame,
     private onError: (rowI: number, err: any) => void
-  ) { }
+  ) {
+    this.sequenceCol = this.df.getCol(COL_NAMES.SEQUENCE);
+    this.saltCol = this.df.getCol(COL_NAMES.SALT);
+    this.equivalentsCol = this.df.getCol(COL_NAMES.EQUIVALENTS);
+    this.typeCol = this.df.getCol(COL_NAMES.TYPE);
+    this.chemistryNameCol = this.df.getCol(COL_NAMES.CHEMISTRY_NAME);
+
+    this.validate();
+    this.removeEmptyRows(this.sequenceCol);
+  }
+
+  private sequenceCol: DG.Column;
+  private saltCol: DG.Column;
+  private equivalentsCol: DG.Column;
+  private typeCol: DG.Column;
+  private chemistryNameCol: DG.Column;
 
   addColumns(
     saltNamesList: string[], saltsMolWeightList: number[]
   ): DG.DataFrame {
-    const sequenceCol = this.df.getCol(COL_NAMES.SEQUENCE);
-    const saltCol = this.df.getCol(COL_NAMES.SALT);
-    const equivalentsCol = this.df.getCol(COL_NAMES.EQUIVALENTS);
-    const typeCol = this.df.getCol(COL_NAMES.TYPE);
-    const chemistryNameCol = this.df.getCol(COL_NAMES.CHEMISTRY_NAME);
+    this.addCompoundNameCol();
+    this.addCompoundCommentsCol();
+    this.addCompoundMolWeightCol();
+    this.addSaltMassCol(saltNamesList, saltsMolWeightList);
+    this.addSaltMolWeightCol(saltNamesList, saltsMolWeightList);
+    this.addBatchMolWeightCol();
 
-    this.validate();
-    this.removeEmptyRows(sequenceCol);
+    return this.df;
+  }
 
+  private addCompoundNameCol(): void {
     this.df.columns.addNewString(COL_NAMES.COMPOUND_NAME).init((i: number) => {
-      let res: string = '';
+      let cellValue: string = '';
       try {
-        res = ([SEQUENCE_TYPES.DUPLEX, SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(typeCol.get(i))) ?
-          chemistryNameCol.get(i) :
-          sequenceCol.get(i);
+        cellValue = ([SEQUENCE_TYPES.DUPLEX, SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(this.typeCol.get(i))) ?
+          this.chemistryNameCol.get(i) :
+          this.sequenceCol.get(i);
       } catch (err) {
         this.onError(i, err);
       }
-      return res;
+      return cellValue;
     });
+  }
 
+  private addCompoundCommentsCol(): void {
     this.df.columns.addNewString(COL_NAMES.COMPOUND_COMMENTS).init((i: number) => {
       let res: string = '';
       const parser = new RegistrationSequenceParser();
       try {
-        if ([SEQUENCE_TYPES.SENSE_STRAND, SEQUENCE_TYPES.ANTISENSE_STRAND].includes(typeCol.get(i))) {
-          res = sequenceCol.get(i);
-        } else if (typeCol.get(i) == SEQUENCE_TYPES.DUPLEX) {
-          const obj = parser.getDuplexStrands(sequenceCol.get(i));
-          res = `${chemistryNameCol.get(i)}; duplex of SS: ${obj.ss} and AS: ${obj.as}`;
-        } else if ([SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(typeCol.get(i))) {
-          const obj = parser.getDimerStrands(sequenceCol.get(i));
-          res = `${chemistryNameCol.get(i)}; duplex of SS: ${obj.ss} and AS1: ${obj.as1} and AS2: ${obj.as2}`;
+        if ([SEQUENCE_TYPES.SENSE_STRAND, SEQUENCE_TYPES.ANTISENSE_STRAND].includes(this.typeCol.get(i))) {
+          res = this.sequenceCol.get(i);
+        } else if (this.typeCol.get(i) == SEQUENCE_TYPES.DUPLEX) {
+          const obj = parser.getDuplexStrands(this.sequenceCol.get(i));
+          res = `${this.chemistryNameCol.get(i)}; duplex of SS: ${obj.ss} and AS: ${obj.as}`;
+        } else if ([SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(this.typeCol.get(i))) {
+          const obj = parser.getDimerStrands(this.sequenceCol.get(i));
+          res = `${this.chemistryNameCol.get(i)}; duplex of SS: ${obj.ss} and AS1: ${obj.as1} and AS2: ${obj.as2}`;
         }
       } catch (err) {
         this.onError(i, err);
       }
       return res;
     });
+  }
 
+  private addCompoundMolWeightCol(): void {
     this.df.columns.addNewFloat(COL_NAMES.COMPOUND_MOL_WEIGHT).init((i: number) => {
       let res: number = Number.NaN;
       const parser = new RegistrationSequenceParser();
       const codesToWeightsMap = MonomerLibWrapper.getInstance().getCodesToWeightsMap();
       try {
-        if ([SEQUENCE_TYPES.SENSE_STRAND, SEQUENCE_TYPES.ANTISENSE_STRAND].includes(typeCol.get(i))) {
-          res = (isValidSequence(sequenceCol.get(i), null).indexOfFirstInvalidChar == -1) ?
-            molecularWeight(sequenceCol.get(i), codesToWeightsMap) :
-            DG.FLOAT_NULL;
-        } else if (typeCol.get(i) == SEQUENCE_TYPES.DUPLEX) {
-          const obj = parser.getDuplexStrands(sequenceCol.get(i));
+        if ([SEQUENCE_TYPES.SENSE_STRAND, SEQUENCE_TYPES.ANTISENSE_STRAND].includes(this.typeCol.get(i))) {
+          const seq: string = this.sequenceCol.get(i);
+          const firstInvalidIndex = isValidSequence(seq, null).indexOfFirstInvalidChar;
+          console.log('invalid idx:', firstInvalidIndex);
+          console.log('substring:', `${seq.substring(firstInvalidIndex)}`)
+          const isValid = isValidSequence(seq, null).indexOfFirstInvalidChar == -1; 
+          res = (isValid) ? getMolWeight(this.sequenceCol.get(i), codesToWeightsMap) : DG.FLOAT_NULL;
+          console.log(`sequence ${seq} has molWeight ${res}`);
+        } else if (this.typeCol.get(i) == SEQUENCE_TYPES.DUPLEX) {
+          const seq = this.sequenceCol.get(i);
+          const obj = parser.getDuplexStrands(seq);
           const strands = Object.values(obj);
           res = strands.every((seq) => {
-            // console.log('sequence:', seq);
             const invalidChar = isValidSequence(seq, null).indexOfFirstInvalidChar;
             const validity = invalidChar === -1;
-            // console.log('validity:', validity);
-            // console.log(`invalid char ${invalidChar}:`, seq.substr(invalidChar-5, 10));
             return validity;
           }) ?
-            molecularWeight(obj.ss, codesToWeightsMap) + molecularWeight(obj.as, codesToWeightsMap) :
+            getMolWeight(obj.ss, codesToWeightsMap) + getMolWeight(obj.as, codesToWeightsMap) :
             DG.FLOAT_NULL;
-        } else if ([SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(typeCol.get(i))) {
-          const obj = parser.getDimerStrands(sequenceCol.get(i));
+          console.log(`sequence ${seq} has molWeight ${res}`);
+        } else if ([SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(this.typeCol.get(i))) {
+          const seq = this.sequenceCol.get(i);
+          const obj = parser.getDimerStrands(seq);
           res = (Object.values(obj).every((seq) => isValidSequence(seq, null).indexOfFirstInvalidChar == -1)) ?
-            molecularWeight(obj.ss, codesToWeightsMap) + molecularWeight(obj.as1, codesToWeightsMap) +
-            molecularWeight(obj.as2, codesToWeightsMap) :
+            getMolWeight(obj.ss, codesToWeightsMap) + getMolWeight(obj.as1, codesToWeightsMap) +
+            getMolWeight(obj.as2, codesToWeightsMap) :
             DG.FLOAT_NULL;
+          console.log(`sequence ${seq} has molWeight ${res}`);
         }
       } catch (err) {
         this.onError(i, err);
@@ -97,26 +123,34 @@ export class RegistrationColumnsHandler {
       return res;
     });
 
+  }
+
+  private addSaltMassCol(saltNamesList: string[], saltsMolWeightList: number[]): void {
     this.df.columns.addNewFloat(COL_NAMES.SALT_MASS).init((i: number) => {
       let res: number = Number.NaN;
       try {
-        res = saltMass(saltNamesList, saltsMolWeightList, equivalentsCol, i, saltCol);
+        res = saltMass(saltNamesList, saltsMolWeightList, this.equivalentsCol, i, this.saltCol);
       } catch (err) {
         this.onError(i, err);
       }
       return res;
     });
 
+  }
+
+  private addSaltMolWeightCol(saltNamesList: string[], saltsMolWeightList: number[]): void {
     this.df.columns.addNewFloat(COL_NAMES.SALT_MOL_WEIGHT).init((i: number) => {
       let res: number = Number.NaN;
       try {
-        res = saltMolWeigth(saltNamesList, saltCol, saltsMolWeightList, i);
+        res = saltMolWeigth(saltNamesList, this.saltCol, saltsMolWeightList, i);
       } catch (err) {
         this.onError(i, err);
       }
       return res;
     });
+  }
 
+  private addBatchMolWeightCol(): void {
     const compoundMolWeightCol = this.df.getCol(COL_NAMES.COMPOUND_MOL_WEIGHT);
     const saltMassCol = this.df.getCol(COL_NAMES.SALT_MASS);
     this.df.columns.addNewFloat(COL_NAMES.BATCH_MOL_WEIGHT).init((i: number) => {
@@ -128,8 +162,6 @@ export class RegistrationColumnsHandler {
       }
       return res;
     });
-
-    return this.df;
   }
 
   private validate() {

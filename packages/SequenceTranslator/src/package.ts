@@ -10,7 +10,7 @@ import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/database-loader/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
-export class StPackage extends DG.Package {
+class StPackage extends DG.Package {
   private _dbLoader?: DBLoaderBase;
   private _monomerLib?: IMonomerLib;
 

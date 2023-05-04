@@ -27,9 +27,8 @@ export function batchMolWeight(compoundMolWeightCol: DG.Column, saltMassCol: DG.
     compoundMolWeightCol.get(i) + saltMassCol.get(i);
 }
 
-export function molecularWeight(sequence: string, codesToWeightsMap: Map<string, number>): number {
+export function getMolWeight(sequence: string, codesToWeightsMap: Map<string, number>): number {
   const codes = sortByReverseLength(Array.from(codesToWeightsMap.keys()));
-  // const codes = sortByReverseLength(Object.keys(codesToWeightsMap)).concat(MonomerLibWrapper.getInstance().getModificationGCRSCodes());
   let weight = 0;
   let i = 0;
   while (i < sequence.length) {
