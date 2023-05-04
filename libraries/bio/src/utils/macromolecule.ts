@@ -28,6 +28,7 @@ export const enum ALPHABET {
   DNA = 'DNA',
   RNA = 'RNA',
   PT = 'PT',
+  /** Unknown */
   UN = 'UN',
 }
 
