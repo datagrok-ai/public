@@ -252,7 +252,7 @@ export async function _pcPlotDemo() {
 //description: Network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply to the values that represent an edge or a Node.js.
 //meta.demoPath: Viewers | Data flow and hierarchy | Network Diagram
 export async function _networkDiagramDemo() {
-  await viewerDemo(DG.VIEWER.NETWORK_DIAGRAM);
+  await viewerDemo(DG.VIEWER.NETWORK_DIAGRAM, {'node1ColumnName': 'Source', 'node2ColumnName': 'Target', useGoogleImage: true});
 }
 
 //name: boxPlotDemo

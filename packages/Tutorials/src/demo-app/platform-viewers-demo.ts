@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {_package} from '../package';
+import {delay} from '@datagrok-libraries/utils/src/test';
 
 
 // TODO: add customized datasets, fix the docking, etc.
@@ -44,6 +45,14 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
   grok.shell.windows.help.syncCurrentObject = false;
 
   const viewer = tableView.addViewer(viewerName, options);
+  
+  // because of GROK-11670
+  if (viewerName === DG.VIEWER.NETWORK_DIAGRAM) {
+    await delay(100);
+    viewer.props.node1ColumnName = 'Source';
+    viewer.props.node2ColumnName = 'Target';
+  }
+
   grok.shell.windows.help.showHelp(viewer.helpUrl);
 
   dockViewers(tableView, viewer, viewerName);
