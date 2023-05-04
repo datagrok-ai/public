@@ -5,36 +5,40 @@ import {_package} from '../package';
 
 
 // TODO: add customized datasets, fix the docking, etc.
-// const VIEWER_TABLES_PATH: {[key: string]: string} = {
-//   Chord: 'energy_uk.csv',
-//   Globe: 'geo/earthquakes.csv',
-//   GroupAnalysis: 'files/r-groups.csv',
-//   Radar: 'demog.csv',
-//   Sankey: 'energy_uk.csv',
-//   Sunburst: 'demog.csv',
-//   SurfacePlot: 'files/surface-plot.csv',
-//   Timelines: 'files/ae.csv',
-//   Tree: 'demog.csv',
-//   WordCloud: 'word_cloud.csv',
-// };
+const VIEWER_TABLES_PATH: {[key: string]: string} = {
+  'Scatter plot': 'files/demog.csv',
+  Histogram: 'files/demog.csv',
+  'Line chart': 'sensors/eeg.csv',
+  'Bar chart': 'files/demog.csv',
+  'Pie chart': 'files/demog.csv',
+  'Trellis plot': 'files/demog.csv',
+  'Matrix plot': 'files/demog.csv',
+  '3d scatter plot': 'files/demog.csv',
+  'Density plot': 'files/demog.csv',
+  'PC Plot': 'files/demog.csv',
+  'Network diagram': 'got-s1-edges.csv',
+  'Box plot': 'files/demog.csv',
+  'Tree map': 'files/demog.csv',
+  'Heat map': 'files/demog.csv',
+  Statistics: 'files/demog.csv',
+  'Correlation plot': 'sensors/eeg.csv',
+  Calendar: 'files/demog.csv',
+  Grid: 'files/demog.csv',
+  Markup: 'files/demog.csv',
+  'Tile Viewer': 'files/demog.csv',
+  Form: 'files/demog.csv',
+  'Shape Map': 'files/demog.csv',
+  'Pivot table': 'files/demog.csv',
+  Map: 'files/demog.csv',
+};
 
 
 export async function viewerDemo(viewerName: string, options?: object | null) {
-  // const df = await (['GroupAnalysis', 'SurfacePlot', 'Timelines'].includes(viewerName) ?
-  //   grok.data.loadTable(`${_package.webRoot}${VIEWER_TABLES_PATH[viewerName]}`) :
-  //   grok.data.getDemoTable(VIEWER_TABLES_PATH[viewerName]));
-
-	const df = grok.data.demo.demog();
+  const df = ['Line chart', 'Network diagram', 'Correlation plot'].includes(viewerName) ?
+    await grok.data.getDemoTable(VIEWER_TABLES_PATH[viewerName]) :
+    await grok.data.loadTable(`${_package.webRoot}${VIEWER_TABLES_PATH[viewerName]}`);
 
   const tableView = grok.shell.addTableView(df);
-
-  // if (['Globe', 'GroupAnalysis'].includes(viewerName)) {
-  //   DG.debounce(df.onSemanticTypeDetected, 800).subscribe((_) => {
-  //     const viewer = tableView.addViewer(viewerName, options);
-  //     dockViewers(tableView, viewer, viewerName);
-  //   });
-  //   return;
-  // }
 
   grok.shell.windows.showHelp = true;
   grok.shell.windows.help.syncCurrentObject = false;
