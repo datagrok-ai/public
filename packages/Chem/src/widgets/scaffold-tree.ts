@@ -331,7 +331,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   checkBoxesUpdateInProgress: boolean = false;
   treeEncodeUpdateInProgress: boolean = false;
   dataFrameSwitchgInProgress: boolean = false;
-  autoGenerate: boolean = false;
+  autoGenerate: boolean = true;
 
   _generateLink?: HTMLElement;
   _message?: HTMLElement | null = null;
@@ -1288,7 +1288,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     const nodes = this.root.getElementsByClassName('d4-tree-view-node');
     for (let n = 0; n < nodes.length; ++n) {
       (nodes[n] as HTMLElement).style.height = this.sizesMap[this.size].height + 'px';
-      (nodes[n] as HTMLElement).style.width = this.sizesMap[this.size].width + 'px';
+      (nodes[n] as HTMLElement).style.width = this.sizesMap[this.size].width + 120 + 'px';
     }
   }
 
@@ -1522,6 +1522,9 @@ class SketcherDialogWrapper {
 }
 
 export class ScaffoldTreeFilter extends DG.Filter {
+  viewer: ScaffoldTreeViewer = new ScaffoldTreeViewer();
+  savedTree: string = '';
+  
   constructor() {
     super();
     this.root = ui.divV([]);
@@ -1543,9 +1546,15 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.add(dataFrame);
   };
 
+  saveState(): void {
+    const state = super.saveState();
+    state.savedTree = JSON.stringify(ScaffoldTreeViewer.serializeTrees(this.viewer.tree));
+    return state;
+  }
+
   applyState(state: any): void {
-    //safeState
     super.applyState(state);
+    this.viewer.loadTreeStr(state.savedTree);
   };
 
   detach(): void {
@@ -1557,10 +1566,9 @@ export class ScaffoldTreeFilter extends DG.Filter {
   };
 
   add(dataFrame: DG.DataFrame) {
-    const viewer: ScaffoldTreeViewer = new ScaffoldTreeViewer();
-    viewer.dataFrame = dataFrame;
-    viewer.autoGenerate = false;
-    viewer.root.getElementsByClassName('ui-box ui-split-v')[0].remove();
-    this.root.appendChild(viewer.root);
+    this.viewer.autoGenerate = false;
+    this.viewer.dataFrame = dataFrame;
+    this.viewer.root.getElementsByClassName('ui-box ui-split-v')[0].remove();
+    this.root.appendChild(this.viewer.root);
   }
 }
