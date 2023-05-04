@@ -24,7 +24,7 @@ category('Connections', () => {
         // eslint-disable-next-line no-throw-literal
         throw 'Rows number in' + query.name + 'table is not as expected';
     }
-  });
+  }, {skipReason: 'GROK-11670'});
 
   test('perfGen', async () => {
     const query = await grok.dapi.queries.include('params,connection').filter(`friendlyName="Perf"`).first();

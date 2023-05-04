@@ -63,8 +63,8 @@ SQL queries via JDBC driver.
 ## Supported features
 
 * Schema browsing
-* Build query
-* Visual query
+* Join DB tables
+* Aggregation query
 * Connection test
 
 See also:

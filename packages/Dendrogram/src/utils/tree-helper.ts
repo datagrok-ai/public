@@ -7,8 +7,12 @@ import {DistanceMetric, isLeaf, NodeCuttedType, NodeType} from '@datagrok-librar
 import {NO_NAME_ROOT, parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
-import { getDistanceMatrixForNumerics, getDistanceMatrixForSequences } from '../workers/distance-worker-creator';
-
+import {
+  DistanceMatrixWorker
+} from '../workers/distance-matrix-calculator';
+import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {DistanceFunctionNames} from '../workers/distance-functions';
 type TreeLeafDict = { [nodeName: string]: NodeType };
 type DataNodeDict = { [nodeName: string]: number };
 type NodeNameCallback = (nodeName: string) => void;
@@ -459,43 +463,102 @@ export class TreeHelper implements ITreeHelper {
     return treeRoot;
   }
 
-  async calcDistanceMatrix(df: DG.DataFrame, colNames: string[], method: DistanceMetric = DistanceMetric.Euclidean) {
+  async calcDistanceMatrix(
+    df: DG.DataFrame, colNames: string[], method: DistanceMetric = DistanceMetric.Euclidean
+  ) {
+    // Output distance matrix. reusing it saves a lot of memory
     let out: DistanceMatrix | null = null;
-    const columns = colNames.map((name) => df.getCol(name));
-    for(const col of columns) {
-      let values: Float32Array;
-      if(col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) {
-          values = await getDistanceMatrixForNumerics(col.toList() as unknown as Float32Array);
-      }
-      else if(col.semType ==='Macromolecule') {
-          values = await getDistanceMatrixForSequences(col.toList() as unknown as string[]);
-      }
-      else throw new TypeError('Unsupported column type');
 
-      if(!out){
-        out = new DistanceMatrix(values);
-        if(columns.length > 1){
-          out.normalize();
-          out.square();
+    const distanceMatrixWorker = new DistanceMatrixWorker();
+    const columns = colNames.map((name) => df.getCol(name));
+    const hammingColumns: string[] = [];
+    for (const col of columns) {
+      let values: Float32Array;
+      if (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) {
+        values = await distanceMatrixWorker.calc(col.getRawData(), 'numericDistance');
+      } else if (col.semType ==='Macromolecule') {
+        const uh = new UnitsHandler(col);
+        // Use Hamming distance when sequences are aligned
+        let seqDistanceFunction: DistanceFunctionNames<string> = 'levenstein';
+        if (uh.isMsa()) {
+          seqDistanceFunction = 'hamming';
+          hammingColumns.push(col.name);
         }
-      }
-      else {
+        values = await distanceMatrixWorker.calc(col.toList(), seqDistanceFunction);
+      } else { throw new TypeError('Unsupported column type'); }
+
+      if (!out) {
+        out = new DistanceMatrix(values);
+        if (columns.length > 1) {
+          out.normalize();
+          if (method === DistanceMetric.Euclidean)
+            out.square();
+        }
+      } else {
         let newMat: DistanceMatrix | null = new DistanceMatrix(values);
         newMat.normalize();
-        switch(method) {
-          case DistanceMetric.Manhattan:
-            out.add(newMat);
-          default:
-            newMat.square();
-            out.add(newMat);
+        switch (method) {
+        case DistanceMetric.Manhattan:
+          out.add(newMat);
+        default:
+          newMat.square();
+          out.add(newMat);
         }
         // remove reference
         newMat = null;
       }
     }
-    if (method === DistanceMetric.Euclidean && columns.length > 1){
+    if (hammingColumns.length > 0)
+      grok.shell.info(`Using hamming distance for columns: ${hammingColumns.join(', ')}`);
+    distanceMatrixWorker.terminate();
+
+    if (method === DistanceMetric.Euclidean && columns.length > 1)
       out?.sqrt();
-    }
+
     return out;
-}
+  }
+  parseClusterMatrix(clusterMatrix:ClusterMatrix): NodeType {
+    /*
+    clusert matrix is in R format, I.E. the indexings are 1-based.
+    one of the reasons is that values in merge arrays are not always positive. if the value is negative
+    it means that we are referencing a leaf node. otherwise we are referencing a cluster node.
+    for example :
+    1, -2, 0.1 would mean that the merge happened between cluster 0 and leaf node 1 with a distance of 0.1
+    */
+
+    function getSubTreeLength(node: NodeType): number {
+      //Tradeoff between performance and memory usage - in this case better to use less memory.
+      //as wasm already takes up quite a bit
+      function subTreeLength(children?: NodeType[]): number {
+        return children && children.length ? (children[0].branch_length ?? 0) + subTreeLength(children[0].children) : 0;
+      }
+      if (isLeaf(node))
+        return 0;
+      else
+        return subTreeLength(node.children);
+    }
+
+
+    const {mergeRow1, mergeRow2, heightsResult} = clusterMatrix;
+    const clusters: NodeType[] = new Array<NodeType>(heightsResult.length);
+
+    for (let i = 0; i<heightsResult.length; i++) {
+      const left: NodeType = mergeRow1[i] < 0 ?
+        {name: (mergeRow1[i] * -1 - 1).toString(), branch_length: heightsResult[i]} :
+        clusters[mergeRow1[i] - 1];
+
+      const right = mergeRow2[i] < 0 ?
+        {name: (mergeRow2[i] * -1 - 1).toString(), branch_length: heightsResult[i]} :
+        clusters[mergeRow2[i] - 1];
+
+      const leftLength = getSubTreeLength(left);
+      const rightLength = getSubTreeLength(right);
+
+      left.branch_length = heightsResult[i] - leftLength;
+      right.branch_length = heightsResult[i] - rightLength;
+
+      clusters[i] = {name: '', children: [left, right], branch_length: 0};
+    }
+    return clusters[clusters.length - 1];
+  }
 }

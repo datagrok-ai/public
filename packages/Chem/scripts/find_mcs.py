@@ -2,6 +2,8 @@
 #language: python
 #input: string molecules
 #input: dataframe df
+#input: bool exactAtomSearch
+#input: bool exactBondSearch
 #output: string result
 
 from rdkit import Chem
@@ -25,4 +27,6 @@ for n in range(0, length):
     continue
   mols[n] = mol
 mols = mols[mols != np.array(None)]
-result = rdFMCS.FindMCS(mols).smartsString
+atomSearch = rdFMCS.AtomCompare.CompareElements if exactAtomSearch else rdFMCS.AtomCompare.CompareAny
+bondSearch = rdFMCS.BondCompare.CompareOrderExact if exactBondSearch else rdFMCS.BondCompare.CompareOrder
+result = rdFMCS.FindMCS(mols, bondCompare=bondSearch, atomCompare=atomSearch).smartsString

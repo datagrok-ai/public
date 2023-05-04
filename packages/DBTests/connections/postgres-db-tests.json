@@ -1,0 +1,18 @@
+{
+  "#type": "DataConnection",
+  "name": "PostgreSQLDBTests",
+  "friendlyName": "PostgreSQLDBTests",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "port": 54327,
+    "db": "test"
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "Postgres",
+  "description": "Test data"
+}

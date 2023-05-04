@@ -81,29 +81,38 @@ GROUP BY res.package, res.user, time_start, time_end, res.uid, res.ugid, res.pid
 --name: PackagesContextPaneFunctions
 --input: int time_start
 --input: int time_end
---input: string users
---input: string packages
+--input: list users
+--input: list packages
 --connection: System:Datagrok
-select pp.name as package, en.id, et.name, count(*)
-from events e
-inner join event_types et on e.event_type_id = et.id
-inner join entities en on et.id = en.id
-inner join published_packages pp on en.package_id = pp.id
-inner join users_sessions s on e.session_id = s.id
-inner join users u on u.id = s.user_id
-where e.event_time between to_timestamp(@time_start)
-and to_timestamp(@time_end)
-and u.id = any(@users)
-and pp.package_id = any(@packages)
-group by en.id, et.name, pp.name
+with res AS (
+  select coalesce(pp.name, p.name, 'Core') as package, en.id, et.name
+  from events e
+  inner join event_types et on e.event_type_id = et.id
+  inner join entities en on et.id = en.id
+  left join project_relations pr ON pr.entity_id = en.id
+  left join projects p ON p.id = pr.project_id
+  and p.is_root = true
+  and p.is_package = true
+  left join published_packages pp on en.package_id = pp.id
+  inner join users_sessions s on e.session_id = s.id
+  inner join users u on u.id = s.user_id
+  where e.event_time between to_timestamp(@time_start)
+  and to_timestamp(@time_end)
+  and u.id = any(@users)
+  and et.name is not null
+)
+select res.*, count(*)
+from res
+where res.package = any(@packages)
+group by res.package, res.id, res.name
 --end
 
 
 --name: PackagesContextPaneLogs
 --input: int time_start
 --input: int time_end
---input: string users
---input: string packages
+--input: list users
+--input: list packages
 --connection: System:Datagrok
 select et.source, count(*)
 from events e
@@ -111,13 +120,13 @@ inner join event_types et on e.event_type_id = et.id
 inner join event_parameter_values epv inner join event_parameters ep
 on epv.parameter_id = ep.id and ep.name = 'package' and ep.type != 'entity_id'
 on epv.event_id = e.id
-inner join published_packages pp on pp.id::text = epv.value
+left join published_packages pp on pp.id::text = epv.value
 inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
 where e.event_time between to_timestamp(@time_start)
 and to_timestamp(@time_end)
 and u.id = any(@users)
-and pp.package_id = any(@packages)
+and pp.name = any(@packages)
 group by et.source
 --end
 
@@ -125,8 +134,8 @@ group by et.source
 --name: PackagesContextPaneAudit
 --input: int time_start
 --input: int time_end
---input: string users
---input: string packages
+--input: list users
+--input: list packages
 --connection: System:Datagrok
 select et.friendly_name as name, count(*)
 from event_parameter_values e
@@ -138,10 +147,10 @@ left join published_packages pp inner join packages p1 on p1.id = pp.package_id 
 left join packages p on p.id = en.id
 inner join users_sessions s on ev.session_id = s.id
 inner join users u on u.id = s.user_id
-where (not p.id is null or not p1.id is null)
+-- where (not p.id is null or not p1.id is null)
 and ev.event_time between to_timestamp(@time_start)
 and to_timestamp(@time_end)
 and u.id = any(@users)
-and COALESCE(p.id, p1.id) = any(@packages)
+and COALESCE(p.name, p1.name, 'Core') = any(@packages)
 group by et.friendly_name
 --end

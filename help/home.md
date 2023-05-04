@@ -35,9 +35,9 @@ Seamlessly bring together data from the different silos and formats.
 * 1,000+ services exposed via [OpenAPI](access/open-api.md)
 * Drag-and-drop files to open ([10+ formats](access/supported-connectors.md)), or
   browse [file shares](https://public.datagrok.ai/files)
-* [Visually explore](access/databases.md#database-manager) and manage relational databases
-  using [schema browser](access/databases.md#schema-browser)
-  and [visual query](access/databases.md#aggregation-editor)
+* [Visually explore](access/databases.mdx#database-manager) and manage relational databases
+  using [schema browser](access/databases.mdx#schema-browser)
+  and [aggregation editor](access/databases.mdx#aggregation-editor)
 * Connect to [thousands of public datasets](access/public-datasets.md)
 * Automate via data preparation pipelines
 

@@ -210,6 +210,32 @@ export async function importNewick(fileContent: string): Promise<DG.DataFrame[]>
   return [];
 }
 
+// -- File preview --
+
+//tags: fileViewer, fileViewer-nwk, fileViewer-newick
+//input: file file
+//output: view preview
+export async function previewNewick(file: DG.FileInfo) {
+  const newickString = await file.readAsString();
+  const treeHelper = await getTreeHelper();
+  const df = treeHelper.newickToDf(newickString, file.fileName.slice(0, -4));
+
+  const preview = DG.View.create();
+  const host = ui.divH([
+    ui.button('Load dataframe', () => {
+      const view = grok.shell.addTableView(df);
+      const viewer = DG.Viewer.fromType('PhyloTree', df);
+      view.addViewer(viewer);
+      view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT);
+      return view;
+    }, 'View in a dataframe'),
+    DG.Viewer.fromType('Dendrogram', df).root,
+  ], 'd4-ngl-viewer');
+
+  preview.append(host);
+  return preview;
+}
+
 // -- Top menu --
 
 //top-menu: ML | Hierarchical Clustering ...
@@ -221,26 +247,26 @@ export async function hierarchicalClustering(): Promise<void> {
 
   const availableColNames = (table:DG.DataFrame): string[] => {
     return table.columns.toList()
-      .filter(col => col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT || col.semType === 'Macromolecule')
-      .map(col => col.name);
-  }
+      .filter((col) => col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT || col.semType === 'Macromolecule')
+      .map((col) => col.name);
+  };
 
   const onColNamesChange = (columns: DG.Column<any>[]) => {
-    currentSelectedColNames = columns.map(c => c.name)
-  }
+    currentSelectedColNames = columns.map((c) => c.name);
+  };
 
   const onTableInputChanged = (table: DG.DataFrame) => {
-    const newColInput = ui.columnsInput('Features', table, onColNamesChange, { available: availableColNames(table) });
+    const newColInput = ui.columnsInput('Features', table, onColNamesChange, {available: availableColNames(table)});
     ui.empty(columnsInputDiv);
     columnsInputDiv.appendChild(newColInput.root);
     currentTableView = table;
     currentSelectedColNames = [];
-  }
+  };
 
   const tableInput = ui.tableInput('Table', currentTableView, grok.shell.tables, onTableInputChanged);
   const columnsInput = ui.columnsInput('Features', currentTableView!,
     onColNamesChange,
-    { available: availableColNames(currentTableView!) });
+    {available: availableColNames(currentTableView!)});
   const columnsInputDiv = ui.div([columnsInput]);
 
   const distanceInput = ui.choiceInput('Distance', DistanceMetric.Euclidean, Object.values(DistanceMetric));
@@ -251,8 +277,8 @@ export async function hierarchicalClustering(): Promise<void> {
     columnsInputDiv,
     distanceInput.root,
     linkageInput.root
-  ])
-  const dialog = ui.dialog("Hierarchical Clustering")
+  ]);
+  const dialog = ui.dialog('Hierarchical Clustering')
     .add(verticalDiv)
     .show()
     .onOK(async () => {

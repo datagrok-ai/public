@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import JSZip from 'jszip';
+import {zipSync, Zippable} from 'fflate';
 import {Subject} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import {FunctionView} from './function-view';
@@ -36,7 +36,7 @@ export class PipelineView extends ComputationView {
     if (!this.stepTabs)
       throw new Error('Set step tabs please for export');
 
-    const zip = new JSZip();
+    const zipConfig = {} as Zippable;
 
     for (const {nqName, stepView} of Object.entries(this.steps)
       .map(([nqName, step]) => ({nqName, stepView: step.view}))) {
@@ -44,10 +44,10 @@ export class PipelineView extends ComputationView {
       await new Promise((r) => setTimeout(r, 100));
       const stepBlob = await stepView.exportConfig!.export('Excel');
 
-      zip.file(stepView.exportConfig!.filename('Excel'), stepBlob, {binary: true, createFolders: false});
+      zipConfig[stepView.exportConfig!.filename('Excel')] = [new Uint8Array(await stepBlob.arrayBuffer()), {level: 0}];
     };
 
-    return await zip.generateAsync({type: 'blob'});
+    return new Blob([zipSync(zipConfig)]);
   };
 
   exportConfig = {

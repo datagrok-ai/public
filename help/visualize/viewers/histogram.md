@@ -9,6 +9,7 @@ General:
 |                  |                        |
 |------------------|------------------------|
 | Right click      | Context menu           |
+| Alt+F            | Show in full screen    |
 | Bin: click       | Select bin exclusively |
 | Bin: ctrl+click  | Invert bin selection   |
 | Bin: shift+click | Select bin             |

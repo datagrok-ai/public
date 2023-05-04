@@ -9,7 +9,7 @@ import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 
 category('fastaFileHandler', () => {
-  const fastaNormalFormatting = `>description:1
+  const fastaNormalFormatting: string = `>description:1
 MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW
 
 >description:2
@@ -22,7 +22,7 @@ MMELVLKTIIGPIVVGVVLRIVDKWLNKDK
 MDRTDEVSNHTHDKPTLTWFEEIFEEYHSPFHN
 `;
 
-  const fastaExtraSpaces = `>description:1
+  const fastaExtraSpaces: string = `>description:1
      MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW
 
 >description:2
@@ -35,7 +35,7 @@ M      MELVLKTI      IGPI    VVGVVLR      IVDKWLNKDK
 MDR    TDEVSNHTHDKP        TLTWFEEIFEEYHSPFHN
     `;
 
-  const fastaExtraNewlines = `>description:1
+  const fastaExtraNewlines: string = `>description:1
 
 MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW
 
@@ -67,39 +67,6 @@ TLTWFEEIFEE
 
 YHSPFHN
 `;
-  // a "broken" fasta file
-  // const fastaBroken = `
-    
-  //   >description:1
-// MDYKETLLM
-// PKTDFPMRGGLPN
-// KEPQIQEKW
-
-
-
-  //     >description:2
-// MIEVFL    FGIVLGLIPI     TLAGLFVTAYLQYRRGDQLDL
-
-// >description:3
-
-// M
-  // MELVLKTIIGP
- // IVVGVVLR
-// IVDKWLNKD
-
-// K
-
-  // >description:4
-  //       MDRTDEV
-
-  //   SNHTHDKP
-// TLTWFEEI
-// FEE
-
-// YHSPFHN
-
-
-  //       `;
 
   const descriptionsArray = [
     'description:1', 'description:2', 'description:3', 'description:4',
@@ -112,11 +79,6 @@ YHSPFHN
     'MMELVLKTIIGPIVVGVVLRIVDKWLNKDK',
     'MDRTDEVSNHTHDKPTLTWFEEIFEEYHSPFHN',
   ];
-  const sequencesCol = DG.Column.fromStrings('sequence', sequencesArray);
-  sequencesCol.semType = DG.SEMTYPE.MACROMOLECULE;
-  UnitsHandler.setUnitsToFastaColumn(sequencesCol);
-
-  const fastaDf = DG.DataFrame.fromColumns([descriptionCol, sequencesCol]);
 
   function _testColumnsParser(inputFasta: string) {
     const ffh = new FastaFileHandler(inputFasta);

@@ -8,6 +8,7 @@ Many options are available under the context menu.
 
 |                                     |                                                           |
 |-----------------------------------------|-----------------------------------------------------------|
+| Alt+F                                   | Show in full screen                                       |
 | Rows                                    | Choose which rows to include (All, Filtered, or Selected) |
 | Context menu \| Statistics \| Histogram | Show histogram                                            |
 | Context menu \| Statistics              | Choose descriptive statistics to show                     |

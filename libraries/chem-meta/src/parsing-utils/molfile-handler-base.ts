@@ -1,5 +1,5 @@
 import {ChemicalTableParserBase, AtomAndBondCounts} from './chemical-table-parser-base';
-import { D_QUOTE, L, R, S_QUOTE } from './const';
+import { ASTERISK, D_QUOTE, L, R, S_QUOTE } from './const';
 import { isAlpha } from './utils';
 
 export abstract class MolfileHandlerBase extends ChemicalTableParserBase {
@@ -44,21 +44,28 @@ export abstract class MolfileHandlerBase extends ChemicalTableParserBase {
   }
 
   public isQuery(): boolean {
+    return this.isQueryOrFragment((char: number, idx: number) => {
+      return char === S_QUOTE || char === D_QUOTE ||
+      (char === L && !isAlpha(this.fileContent.charCodeAt(idx + 1)))
+    })
+  };
+
+  public isFragment(): boolean {
+    return this.isQueryOrFragment((char: number) => {
+      return char === R || char === ASTERISK;
+    })
+  };
+
+  protected isQueryOrFragment(condition: (char: number, idx: number) => boolean): boolean {
     const atomCount = this.atomCount;
     let idx = this.getAtomBlockIdx();
     for (let i = 0; i < atomCount; i++) {
       idx = this.shiftIdxToAtomType(idx);
-      if (this.queryCriterion(idx))
+      const char = this.fileContent.charCodeAt(idx);
+      if (condition(char, idx))
         return true;
       idx = this.getNextLineIdx(idx);
     }
     return false;
   };
-
-
-  protected queryCriterion(idx: number): boolean {
-    const char = this.fileContent.charCodeAt(idx);
-    return char === R || !isAlpha(char) ||
-      (char === L && !isAlpha(this.fileContent.charCodeAt(idx + 1)));
-  }
 }

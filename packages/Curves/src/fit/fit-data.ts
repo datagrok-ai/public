@@ -70,6 +70,7 @@ export interface IFitSeriesOptions {
   showFitLine?: boolean;
   showPoints?: boolean;
   showCurveConfidenceInterval?: boolean;   // show ribbon
+  showIntercept?: boolean;
   showBoxPlot?: boolean;      // if true, multiple values with the same X are rendered as a candlestick
   showConfidenceForX?: number;
 
@@ -279,11 +280,13 @@ export function getConfidenceIntrevals(series: IFitSeries): {top: (x: number) =>
 export function getChartData(gridCell: DG.GridCell): IFitChartData {
   const cellChartData: IFitChartData = gridCell.cell?.column?.type == DG.TYPE.STRING ?
     (JSON.parse(gridCell.cell.value ?? '{}') ?? {}) : createDefaultChartData();
-  cellChartData.series ??= [];
 
   const columnChartOptions = getColumnChartOptions(gridCell.gridColumn);
 
-  // merge cell options with column options
+  cellChartData.series ??= [];
+  cellChartData.chartOptions ??= columnChartOptions.chartOptions;
+
+    // merge cell options with column options
   mergeProperties(fitChartDataProperties, columnChartOptions.chartOptions, cellChartData.chartOptions);
   for (const series of cellChartData.series)
     mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, series);

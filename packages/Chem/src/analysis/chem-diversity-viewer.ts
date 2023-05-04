@@ -8,7 +8,7 @@ import $ from 'cash-dom';
 import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
 import {defaultMorganFpLength, defaultMorganFpRadius, Fingerprint, rdKitFingerprintToBitArray} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
-import {ChemSearchBaseViewer} from './chem-search-base-viewer';
+import {ChemSearchBaseViewer, DIVERSITY} from './chem-search-base-viewer';
 import { malformedDataWarning } from '../utils/malformed-data-utils';
 import { getRdKitModule } from '../package';
 import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
@@ -19,9 +19,9 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
   tooltipUse: boolean;
 
   constructor(tooltipUse = false, col?: DG.Column) {
-    super('diversity', col);
+    super(DIVERSITY, col);
     this.renderMolIds = [];
-    this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
+    this.updateMetricsLink(this, {fontSize: '13px', fontWeight: 'normal', paddingBottom: '15px'});
     this.tooltipUse = tooltipUse;
   }
 
@@ -48,7 +48,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
 
       panel[cnt++] = this.metricsDiv;
       for (let i = 0; i < this.renderMolIds.length; ++i) {
-        const molProps = this.createMoleculePropertiesDiv(this.renderMolIds[i]);
+        const molProps = this.createMoleculePropertiesDiv(this.renderMolIds[i], false);
         const grid = ui.div([
           renderMolecule(
             this.moleculeColumn!.get(this.renderMolIds[i]),

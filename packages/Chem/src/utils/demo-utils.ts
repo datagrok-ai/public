@@ -1,4 +1,7 @@
 import { delay } from "@datagrok-libraries/utils/src/test";
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
+import { _package } from "../package";
 
 export const demoScaffold = `
 Actelion Java MolfileCreator 1.0
@@ -29,8 +32,8 @@ export async function scrollTable(el: HTMLElement, delta: number, cycles: number
     }
 }
 
-export async function openSketcher(parent: HTMLElement) {
-    const sketcherFilter = parent.getElementsByClassName('sketch-link')[0];
+export async function openSketcher(parent: HTMLElement, className: string) {
+    const sketcherFilter = parent.getElementsByClassName(className)[0];
     sketcherFilter!.classList.add('chem-demo-sketcher-link');
     await delay(1000);
     (sketcherFilter as HTMLElement).click();
@@ -55,3 +58,9 @@ export function closeAllAccordionPanes(parent: Element) {
             (panelHeader as HTMLElement)!.click();
     })
 }
+
+export async function openMoleculeDataset(name: string): Promise<DG.TableView> {
+    const table = DG.DataFrame.fromCsv(await _package.files.readAsText(name));
+    grok.shell.windows.showProperties = true;
+    return grok.shell.addTableView(table);
+  }

@@ -1,10 +1,13 @@
-# Data access
+---
+title: "Access"
+sidebar_position: 0
+---
 
 Datagrok provides a single, unified access point for data accross an organization, simplifying the process of centralizing data collected from multiple sources. You can easily visualize, explore, and learn from your data, and use the insights gained to take action. Additionally, the platform provides access controls, security features, caching, and automatic monitoring of connection health.
 
 ## Data sources
 
-Besides local files that you can drag and drop from your computer, Datagrok integrates with various data providers. You can connect to any machine readable source: [a file storage](file-shares.md) (like third-party cloud services or an organization-hosted Datagrok server), [databases](databases.md), or [webservices](open-api.md).
+Besides local files that you can drag and drop from your computer, Datagrok integrates with various data providers. You can connect to any machine readable source: [a file storage](file-shares.mdx) (like third-party cloud services or an organization-hosted Datagrok server), [databases](databases.mdx), or [webservices](open-api.md).
 
 Datagrok also supports scripting in various languages, such as R, Julia, and Python, which means you can create custom data sources. For example, you can [load a dataframe](https://public.datagrok.ai/js/samples/data-access/load-csv) from an external website or package, [open a specific table using its ID](https://public.datagrok.ai/js/samples/data-access/open-table-by-id), or write a package to extract data from multiple sources and combine them into one. For more information on getting data using functions and scripts, see [Access data](../develop/how-to/access-data.md/#reading-files) section in the developers' documentation.
 
@@ -68,7 +71,7 @@ For specific details on the configuration required, see each individual connecto
 
 A data query is a [function](../datagrok/functions/functions.md) associated with a [data connection](#data-connection)
 that typically returns a dataframe. Queries can be executed either manually, or as part of data jobs.
-Datagrok has a convenient interface for creating, running, and sharing query results, including visual query editors,
+Datagrok has a convenient interface for creating, running, and sharing query results, including aggregation editor,
 auto-generated parameter dialogs, and an ability to create dynamic dashboards to visualize query results. All data
 governance features, such as data lineage, history, and security, are applicable to queries. For more information about
 queries, see documentation for the respective data source type.
@@ -96,9 +99,9 @@ With Datagrok, you can retrieve both structured and unstructured data. Datagrok 
 
 Datagrok offers an array of capabilities and features designed to help users efficiently browse, manage, and preview the content of their data. For more information, see:
 
-* [Database Manager](databases.md/#database-manager)
-* [File Manager](file-shares.md/#file-manager)
-* [Webservices Manager](open-api.md/#webservices-manager).
+* [Database Manager](databases.mdx#database-manager)
+* [File Manager](file-shares.mdx#file-manager)
+* [Webservices Manager](open-api.md#webservices-manager).
 
 ## Sharing and access control
 
@@ -114,7 +117,7 @@ To learn how to control access for each data source, see the documentation for t
 We designed Datagrok as an extensible environment, where extensions can customize or enhance any part
 of the platform. For example, you can [create custom connectors](create-custom-connectors.md), add organization-specific data formats, customize menus, add context actions, customize data preview, and more.
 
-To learn more about extending and customizing Datagrok, see the [Develop](../develop/) section of our documentation. For examples related to data access, see [File Manager](file-shares.md/#file-manager).
+To learn more about extending and customizing Datagrok, see the [Develop](../develop/) section of our documentation. For examples related to data access, see [File Manager](file-shares.mdx/#file-manager).
 
 ## Resources
 

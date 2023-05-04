@@ -11,7 +11,10 @@ export async function viewBiostructure(content: string): Promise<void> {
   await viewMolstarUI(content);
 }
 
-/** Preview Biostructure (PDB) for file (pre) viewer */
+/** Preview Biostructure (PDB) for file (pre) viewer
+ * @param file - file to preview, supported formats:
+ *  "mmcif" | "cifCore" | "pdb" | "pdbqt" | "gro" | "xyz" | "mol" | "sdf" | "mol2"
+*/
 export function previewBiostructure(file: DG.FileInfo): DG.View {
   //return nglViewUI(file); // Deprecated functionality with NGL
   return previewMolstarUI(file);

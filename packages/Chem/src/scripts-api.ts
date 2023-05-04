@@ -4,8 +4,8 @@ import { getRdKitModule } from './utils/chem-common-rdkit';
 import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 
-export async function findMCS(molecules: string, df: DG.DataFrame): Promise<string> {
-  return await grok.functions.call('Chem:FindMCS', {molecules, df});
+export async function findMCS(molecules: string, df: DG.DataFrame, exactAtomSearch: boolean, exactBondSearch: boolean): Promise<string> {
+  return await grok.functions.call('Chem:FindMCS', {molecules, df, exactAtomSearch, exactBondSearch});
 }
 
 export async function findRGroups(

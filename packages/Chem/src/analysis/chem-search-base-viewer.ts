@@ -3,10 +3,16 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {updateDivInnerHTML} from '../utils/ui-utils';
+import '../../css/chem.css';
 
 const BACKGROUND = 'background';
 const TEXT = 'text';
+export const SIMILARITY = 'similarity';
+export const DIVERSITY = 'diversity';
+export const MAX_LIMIT = 50;
 export class ChemSearchBaseViewer extends DG.JsViewer {
+  isEditedFromSketcher: boolean = false;
+  gridSelect: boolean = false;
   name: string = '';
   distanceMetric: string;
   limit: number;
@@ -21,24 +27,28 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   moleculeColumn?: DG.Column|null;
   moleculeColumnName: string;
   initialized: boolean = false;
-  metricsDiv = ui.div('', {style: {height: '10px', display: 'flex', justifyContent: 'right'}});
+  metricsDiv: HTMLElement | null;
   moleculeProperties: string[];
   applyColorTo: string;
 
   constructor(name: string, col?: DG.Column) {
     super();
     this.fingerprint = this.string('fingerprint', this.fingerprintChoices[0], {choices: this.fingerprintChoices});
-    this.limit = this.int('limit', 10);
+    this.limit = this.int('limit', 10, {min: 1, max: MAX_LIMIT});
     this.distanceMetric = this.string('distanceMetric', CHEM_SIMILARITY_METRICS[0], {choices: CHEM_SIMILARITY_METRICS});
     this.size = this.string('size', Object.keys(this.sizesMap)[0], {choices: Object.keys(this.sizesMap)});
     this.moleculeColumnName = this.string('moleculeColumnName');
     this.name = name;
-    this.moleculeProperties = this.columnList('moleculeProperties', []);
-    this.applyColorTo = this.string('applyColorTo', BACKGROUND, {choices: [BACKGROUND, TEXT]});
+    this.moleculeProperties = this.columnList('moleculeProperties', [],
+      { description: 'Adds selected fields from the grid to similarity search viewer'});
+    this.applyColorTo = this.string('applyColorTo', BACKGROUND, {choices: [BACKGROUND, TEXT],
+      description: 'Applies to data added via Molecule Properties control (color-code the column in the grid first)'});
     if (col) {
       this.moleculeColumn = col;
       this.moleculeColumnName = col.name!;
     }
+    const header = this.name === DIVERSITY ? `Most diverse structures` : `Most similar structures`;
+    this.metricsDiv = ui.divH([ui.divText(header)], 'similarity-header');
   }
 
   init(): void {
@@ -51,12 +61,15 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
 
   async onTableAttached(): Promise<void> {
     this.init();
-
     if (this.dataFrame) {
       this.subs.push(DG.debounce(this.dataFrame.onRowsRemoved, 50).subscribe(async (_: any) => await this.render()));
-      const compute = this.name !== 'diversity';
+      const compute = this.name !== DIVERSITY;
       this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50)
-        .subscribe(async (_: any) => await this.render(compute)));
+        .subscribe(async (_: any) => {
+          if (this.isEditedFromSketcher && !this.gridSelect)
+            this.isEditedFromSketcher = false;
+          await this.render(compute)
+        }));
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50)
         .subscribe(async (_: any) => await this.render(false)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe(async (_: any) => await this.render(false)));
@@ -64,9 +77,6 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
         .subscribe(async (_: any) => await this.render(false)));
       this.moleculeColumn ??= this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
       this.moleculeColumnName ??= this.moleculeColumn?.name!;
-      this.getProperty('limit')!.fromOptions({min: 1, max: this.dataFrame.rowCount});
-      if (this.limit > this.dataFrame.rowCount)
-        this.limit = this.dataFrame.rowCount;
     }
     await this.render(true);
   }
@@ -76,23 +86,27 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     if (!this.initialized)
       return;
     if (this.metricsProperties.includes(property.name))
-      this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
+      this.updateMetricsLink(this, {});
     if (property.name === 'moleculeColumnName') {
       const col = this.dataFrame.col(property.get(this))!;
       if (col.semType === DG.SEMTYPE.MOLECULE)
         this.moleculeColumn = col;
     }
+    if (property.name === 'limit' && property.get(this) > MAX_LIMIT )
+      this.limit = MAX_LIMIT;
     this.render();
   }
 
-  updateMetricsLink(metricsDiv: HTMLDivElement, object: any, options: {[key: string]: string}): void {
-    const metricsButton = ui.button(`${this.distanceMetric}/${this.fingerprint}`, () => {
+  updateMetricsLink(object: any, options: {[key: string]: string}): void {
+    const metricsButton = ui.link(` ${this.distanceMetric}, ${this.fingerprint}`, () => {
       if (!grok.shell.windows.showProperties)
         grok.shell.windows.showProperties = true;
       grok.shell.o = object;
-    });
+    }, 'Distance metric and fingerprint', '');
     Object.keys(options).forEach((it: any) => metricsButton.style[it] = options[it]);
-    updateDivInnerHTML(metricsDiv, metricsButton);
+    if (this.metricsDiv!.children.length > 1)
+      this.metricsDiv!.removeChild(this.metricsDiv!.children[1]);
+    this.metricsDiv!.appendChild(metricsButton);
   }
 
   async render(computeData = true) {
@@ -119,11 +133,14 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       darkColor : lightColor;
   }
 
-  createMoleculePropertiesDiv(idx: number, similarity?: number): HTMLDivElement{
+  createMoleculePropertiesDiv(idx: number, refMolecule: boolean, similarity?: number): HTMLDivElement{
     const propsDict: {[key: string]: any} = {};
     const grid = grok.shell.tv.grid;
     if (similarity)
-      propsDict['similarity'] = {val: similarity};
+      if (refMolecule)
+        propsDict['Reference'] = {val: ''};
+      else
+        propsDict[SIMILARITY] = {val: similarity};
     for (const col of this.moleculeProperties) {
         propsDict[col] = {val: this.moleculeColumn!.dataFrame.col(col)!.getString(idx)};
         const colorCoding = this.moleculeColumn!.dataFrame.col(col)!.tags[DG.TAGS.COLOR_CODING_TYPE]
@@ -131,11 +148,13 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
             propsDict[col].color = grid.cell(col, idx).color;
         }
     }
-    const div = ui.divV([]);
+    //const item = ui.divH([], 'similarity-prop-item');
+    const div = ui.divV([], {style: {marginTop: '5px'}});
     for (const key of Object.keys(propsDict)) {
-      const label = ui.divText(`${key}`, 'similarity-prop-label');
-      ui.tooltip.bind(label, key);
+      const labelName = key === SIMILARITY ? '' : key;
+      const label = ui.divText(`${labelName}`, 'similarity-prop-label');
       const value = ui.divText(`${propsDict[key].val}`, 'similarity-prop-value');
+      ui.tooltip.bind(value, key);
       if (propsDict[key].color) {
         const bgColor = DG.Color.toHtml(propsDict[key].color);
         if (this.applyColorTo === BACKGROUND) {

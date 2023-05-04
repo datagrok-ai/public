@@ -176,7 +176,11 @@ public abstract class JdbcDataProvider extends DataProvider {
                     }
                     stringValues.add(stringValue);
                 }
-                statement.setQueryTimeout(timeout);
+                try {
+                    statement.setQueryTimeout(timeout);
+                } catch (SQLException exception) {
+                    logger.debug("setQueryTimeout is not supported for " + descriptor.type);
+                }
                 String logString = String.format("Query: %s; \nParams array: %s \n", statement, stringValues);
                 logger.debug(logString);
                 if (queryRun.debugQuery)
@@ -206,7 +210,11 @@ public abstract class JdbcDataProvider extends DataProvider {
             if (supportsTransactions)
                 statement.setFetchSize(fetchSize);
             providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
-            statement.setQueryTimeout(timeout);
+            try {
+                statement.setQueryTimeout(timeout);
+            } catch (SQLException exception) {
+                logger.debug("setQueryTimeout is not supported for " + descriptor.type);
+            }
             String logString = String.format("Query: %s \n", query);
             logger.debug(logString);
             if (queryRun.debugQuery)
@@ -304,8 +312,10 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     protected List<String> getParameterNames(String query, DataQuery dataQuery, StringBuilder queryBuffer) {
         List<String> names = new ArrayList<>();
-        String regex = descriptor.commentStart + "\\w+:.*";
-        query = query.replaceAll(regex, "").trim();
+        String regexComment = String.format("(?m)^(?<!['\\\"])%s.*(?!['\\\"])$", descriptor.commentStart);
+        query = query
+                .replaceAll(regexComment, "")
+                .trim();
         Pattern pattern = Pattern.compile("(?m)@(\\w+)");
         Matcher matcher = pattern.matcher(query);
         int idx = 0;
@@ -616,6 +626,13 @@ public abstract class JdbcDataProvider extends DataProvider {
                             } else if (value instanceof OffsetDateTime) {
                                 time = java.util.Date.from(((OffsetDateTime) value)
                                         .toInstant());
+                            } else if (value instanceof Instant) {
+                                time = java.util.Date.from((Instant) value);
+                            } else if (value instanceof LocalTime) {
+                                LocalTime localTime = (LocalTime) value;
+                                Instant instant = localTime.atDate(LocalDate.of(1970, 1, 1))
+                                        .atZone(ZoneId.systemDefault()).toInstant();
+                                time = java.util.Date.from(instant);
                             } else {
                                 time = ((java.util.Date) value);
                             }

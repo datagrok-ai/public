@@ -5,13 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>grok_connect</artifactId>
-    <version>2.0.11</version>
+    <version>2.0.13</version>
     <packaging>jar</packaging>
 
     <parent>
         <groupId>connectors</groupId>
         <artifactId>build</artifactId>
-        <version>2.0.11</version>
+        <version>2.0.13</version>
     </parent>
 
     <properties>
@@ -225,6 +225,40 @@
             <version>7.1.0</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/lib/virtjdbc4_1.jar</systemPath>
+        </dependency>
+
+        <dependency>
+            <groupId>com.wisecoders.dbschema</groupId>
+            <artifactId>cassandra</artifactId>
+            <version>2.3.2</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/cassandrajdbc.jar</systemPath>
+        </dependency>
+
+        <dependency>
+            <groupId>com.cloudera</groupId>
+            <artifactId>impala</artifactId>
+            <version>2.6.30</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/ImpalaJDBC42.jar</systemPath>
+        </dependency>
+
+        <dependency>
+            <groupId>com.datastax.oss</groupId>
+            <artifactId>java-driver-core</artifactId>
+            <version>4.15.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.datastax.oss</groupId>
+            <artifactId>java-driver-mapper-runtime</artifactId>
+            <version>4.15.0</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>secretsmanager</artifactId>
+            <version>2.20.52</version>
         </dependency>
 
         <dependency>
@@ -529,7 +563,7 @@
         <dependency>
             <groupId>utils</groupId>
             <artifactId>serialization</artifactId>
-            <version>1.0.1</version>
+            <version>1.0.2</version>
             <scope>compile</scope>
             <exclusions>
                 <exclusion>
@@ -616,6 +650,12 @@
             <groupId>org.testcontainers</groupId>
             <artifactId>mongodb</artifactId>
             <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>cassandra</artifactId>
+            <version>1.18.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

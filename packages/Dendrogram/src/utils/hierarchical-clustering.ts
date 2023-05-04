@@ -4,11 +4,12 @@ import * as DG from 'datagrok-api/dg';
 
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
-import {DistanceMetric, isLeaf, NodeType} from '@datagrok-libraries/bio/src/trees';
-import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
-import { DistanceMatrix } from '@datagrok-libraries/bio/src/trees/distance-matrix';
-import { TreeHelper } from './tree-helper';
-import { ITreeHelper } from '@datagrok-libraries/bio/src/trees/tree-helper';
+import {DistanceMetric, isLeaf, LinkageMethod, NodeType} from '@datagrok-libraries/bio/src/trees';
+
+import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
+import {TreeHelper} from './tree-helper';
+import {getClusterMatrixWorker} from '../wasm/clustering-worker-creator';
+import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 
 /** Custom UI form for hierarchical clustering */
 export async function hierarchicalClusteringUI2(df: DG.DataFrame): Promise<void> {
@@ -43,6 +44,8 @@ export async function hierarchicalClusteringUI(
   distance: DistanceMetric = DistanceMetric.Euclidean,
   linkage: string
 ): Promise<void> {
+  const linkageCode = Object.values(LinkageMethod).findIndex((method) => method === linkage);
+
   const colNameSet: Set<string> = new Set(colNameList);
   const [filteredDf, filteredIndexList]: [DG.DataFrame, Int32Array] =
     hierarchicalClusteringFilterDfForNulls(df, colNameSet);
@@ -74,10 +77,13 @@ export async function hierarchicalClusteringUI(
       }));
 
   const distanceMatrix = await th.calcDistanceMatrix(preparedDf,
-    preparedDf.columns.toList().map(col => col.name),
-    distance);
-  const hcPromise = hierarchicalClusteringByDistanceExec(distanceMatrix!, linkage);
+    preparedDf.columns.toList().map((col) => col.name), distance);
 
+  const clusterMatrixWorker = getClusterMatrixWorker(
+    distanceMatrix!.data, preparedDf.rowCount, linkageCode
+  );
+  const clusterMatrix = await clusterMatrixWorker;
+  // const hcPromise = hierarchicalClusteringByDistanceExec(distanceMatrix!, linkage);
   // Replace rows indexes with filtered
   // newickStr returned with row indexes after filtering, so we need reversed dict { [fltIdx: number]: number}
   const fltRowIndexes: { [fltIdx: number]: number } = {};
@@ -85,13 +91,10 @@ export async function hierarchicalClusteringUI(
   for (let fltRowIdx: number = 0; fltRowIdx < fltRowCount; fltRowIdx++)
     fltRowIndexes[fltRowIdx] = filteredIndexList[fltRowIdx];
 
-  const newickStr: string = await hcPromise;
-  const newickRoot: NodeType = parseNewick(newickStr);
+  const newickRoot: NodeType = th.parseClusterMatrix(clusterMatrix);
   // Fix branch_length for root node as required for hierarchical clustering result
   newickRoot.branch_length = 0;
   (function replaceNodeName(node: NodeType, fltRowIndexes: { [fltIdx: number]: number }) {
-    const nodeFilteredIdx: number = parseInt(node.name);
-    const nodeIdx: number = fltRowIndexes[nodeFilteredIdx];
     if (!isLeaf(node)) {
       for (const childNode of node.children!)
         replaceNodeName(childNode, fltRowIndexes);
@@ -154,8 +157,8 @@ async function hierarchicalClusteringByDistanceExec(distance: DistanceMatrix, li
   const dataDf: DG.DataFrame = DG.DataFrame.fromColumns([distanceCol]);
 
   const newickStr: string = await grok.functions.call(
-      'Dendrogram:hierarchicalClusteringByDistanceScript',
-      {data: dataDf, size: distance.size, linkage_name: linkage});
+    'Dendrogram:hierarchicalClusteringByDistanceScript',
+    {data: dataDf, size: distance.size, linkage_name: linkage});
 
   return newickStr;
 }
