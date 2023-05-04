@@ -4,10 +4,9 @@ import {category, test, before, expect} from '@datagrok-libraries/utils/src/test
 import {_package} from '../package-test';
 import {PeptidesModel} from '../model';
 import {startAnalysis} from '../widgets/peptides';
-import {ScalingMethods} from '../utils/types';
 import {scaleActivity} from '../utils/misc';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {COLUMNS_NAMES} from '../utils/constants';
+import {COLUMNS_NAMES, SCALING_METHODS} from '../utils/constants';
 
 category('Table view', () => {
   let df: DG.DataFrame;
@@ -16,7 +15,7 @@ category('Table view', () => {
   let sequenceCol: DG.Column<string>;
   let clusterCol: DG.Column<any>;
   let scaledActivityCol: DG.Column<number>;
-  const scaling: ScalingMethods = 'none';
+  const scaling = 'none' as SCALING_METHODS;
 
   const firstMonomerPair = {monomer: 'N', position: '4', count: 7};
   const secondMonomerPair = {monomer: 'meI', position: '1', count: 10};

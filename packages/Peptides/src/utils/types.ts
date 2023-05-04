@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import { SCALING_METHODS } from './constants';
 
 export type DataFrameDict = {[key: string]: DG.DataFrame};
 
@@ -10,12 +11,11 @@ export type PositionToAARList = {[postiton: string]: string[]};
 
 export type MonomerSelectionStats = {[position: string]: {[monomer: string]: number}};
 
-export type ScalingMethods = 'none' | 'lg' | '-lg';
 export type PeptidesSettings = {
   sequenceColumnName?: string,
   activityColumnName?: string,
   clustersColumnName?: string,
-  scaling?: ScalingMethods,
+  scaling?: SCALING_METHODS,
   isBidirectional?: boolean,
   showMonomerPosition?: boolean,
   showMostPotentResidues?: boolean,

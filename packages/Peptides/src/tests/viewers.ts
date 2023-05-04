@@ -3,12 +3,12 @@ import * as DG from 'datagrok-api/dg';
 import {before, category, expect, test, testViewer} from '@datagrok-libraries/utils/src/test';
 import {aligned1} from './test-data';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
-import {ScalingMethods} from '../utils/types';
 import {_package} from '../package-test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
 import {MONOMER_POSITION_MODE, MonomerPosition} from '../viewers/sar-viewer';
+import { SCALING_METHODS } from '../utils/constants';
 
 
 category('Viewers: Basic', () => {
@@ -28,7 +28,6 @@ category('Viewers: Monomer-Position', () => {
   let sequenceCol: DG.Column<string>;
   let clusterCol: DG.Column<any>;
   let scaledActivityCol: DG.Column<number>;
-  const scaling: ScalingMethods = 'none';
 
   before(async () => {
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
@@ -36,9 +35,10 @@ category('Viewers: Monomer-Position', () => {
     sequenceCol = df.getCol('sequence');
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
     sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
-    scaledActivityCol = scaleActivity(activityCol, scaling);
+    scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
     clusterCol = df.getCol('cluster');
-    const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol, scaling);
+    const tempModel = await startAnalysis(
+      activityCol, sequenceCol, clusterCol, df, scaledActivityCol,SCALING_METHODS.NONE);
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
