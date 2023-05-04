@@ -1,5 +1,5 @@
 import { Track } from '@datagrok-libraries/tutorials/src/track';
-import { CalculatedColumnsTutorial } from './tutorials/add-new-column';
+import { CalculatedColumnsTutorial } from './tutorials/calculated-columns';
 
 
 export const tutorials = [

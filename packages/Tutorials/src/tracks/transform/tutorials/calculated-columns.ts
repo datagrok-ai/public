@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import { interval } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
 
@@ -15,7 +14,7 @@ export class CalculatedColumnsTutorial extends Tutorial {
     return 'Learn about calculated columns, how to add them to a dataframe, and how to edit predefined formulas.';
   }
   get steps(): number {
-    return 10;
+    return 8;
   }
 
   helpUrl: string = 'https://datagrok.ai/help/transform/add-new-column';
@@ -25,9 +24,6 @@ export class CalculatedColumnsTutorial extends Tutorial {
   protected async _run(): Promise<void> {
     grok.shell.windows.showContextPanel = true;
     this.header.textContent = this.name;
-    // To do: remove once https://github.com/datagrok-ai/public/issues/1840 is fixed
-    const heightCol = this.t!.getCol('height');
-    this.t!.rows.removeWhereIdx((i) => heightCol.isNone(i));
 
     this.describe('Columns based on an evaluated expression are called <b>calculated</b>. Such expressions, or ' +
       'formulas, can include mathematical functions, constants, platform objects properties and functions. Moreover, ' +
@@ -38,17 +34,23 @@ export class CalculatedColumnsTutorial extends Tutorial {
     this.describe('The dialog contains column name and type inputs and an expression field. Below it, there is a preview ' +
       'that shows the columns used in a formula and the result. Next to it, there is a column and function search.');
 
-    const columnName = 'Rounded height';
+    const columnName = 'Height, m';
     await this.dlgInputAction(addNCDlg, `Name a column "${columnName}"`, '', columnName);
 
-    const simpleFormula = 'Round(170.5)';
+    const simpleFormula = 'Div(170, 100)';
     await this.dlgInputAction(addNCDlg, `Enter the expression "${simpleFormula}"`, '', simpleFormula, '', false, 2);
 
     await this.action('Click "OK"', this.t!.onColumnsAdded.pipe(filter((data) =>
       data.args.columns.some((col: DG.Column) => col.name === columnName && col.tags.has(DG.TAGS.FORMULA) &&
       col.tags[DG.TAGS.FORMULA] === simpleFormula))), addNCDlg.getButton('OK'), 'Once a valid expression is entered, ' +
-      'a new column will appear in the preview. Note that the column type is set automatically to "int". The type is ' +
-      'determined based on the function output parameter type. You can change the column type manually, if necessary.');
+      'a new column will appear in the preview. Note that the column type is set automatically to "double". The type is ' +
+      'determined based on the function output parameter type. You can change the column type manually, if necessary. For ' +
+      'convenience, we\'ll automatically change the number formatting to match the format of the original column. You ' +
+      'will see the formatted results once the column is added to the grid.');
+
+    const heightCol = this.t!.getCol('height');
+    const heightInMetersCol = this.t!.getCol(columnName);
+    heightInMetersCol.tags[DG.TAGS.FORMAT] = heightCol.tags[DG.TAGS.FORMAT];
 
     this.describe('Now you should see a new column added to the grid. Let\'s learn how to edit a formula to replace ' +
       'the constant value with the actual patient height from the corresponding column.');
@@ -70,18 +72,22 @@ export class CalculatedColumnsTutorial extends Tutorial {
       'is calculated on. You can edit it in the field and apply the changes directly from the context panel, ' +
       'or re-open the dialog by pressing "Edit".');
 
-    const formulaWithCol = 'Round(${HEIGHT})';
-    await this.dlgInputAction(editDlg, 'Edit the formula to use the "HEIGHT" column values', '', formulaWithCol,
-      '<p>To apply a function to column values, drag the column into the dialog formula field either from the grid ' +
-      'or from the column list in the dialog (use search input to find a column in large datasets). These ' +
-      'actions will create a column reference. The notation is <b>${COLUMN_NAME}</b>.</p><p>You can also press "$" ' +
-      'while editing the formula to open up a column list popup and use arrow keys + "Enter" to select a column. ' +
-      'If you are editing the formula from the context panel, or in the column properties dialog, type the column ' +
-      'name in this notation manually.</p><p>Note that the column type is not updated automatically during editing.</p>',
-      false, 2);
+    const formulaWithColInfo = 'To apply a function to column values, drag the column into the dialog formula ' +
+      'field either from the grid or from the column list in the dialog (use search input to find a column in ' +
+      'large datasets). These actions will create a column reference. The notation is <b>${COLUMN_NAME}</b>, ' +
+      'e.g., <b>Div(${HEIGHT}, 100)</b>.<br>You can also press "$" while editing the formula to open up a ' +
+      'column list popup and use arrow keys + "Enter" to select a column. If you are editing the formula from ' +
+      'the context panel, or in the column properties dialog, type the column name in this notation manually.<br>' +
+      'Note that the column type is not updated automatically during editing.<br>Some mathematical functions, ' +
+      'such as <i>Div, Mul</i>, and <i>Pow</i>, have equivalent operators. Check out our wiki to learn more about ' +
+      ui.link('operators', 'https://datagrok.ai/help/transform/functions/operators').outerHTML;
 
-    await this.action('Click "OK"', this.t!.onMetadataChanged.pipe(filter((data) =>
-      (data.args.key as unknown as string) === 'formula' && (data.args.change as unknown as string) === 'set' &&
-      (data.args.value as unknown as string).toLowerCase() === formulaWithCol.toLowerCase())), editDlg.getButton('OK'));
+    await this.action('Edit the formula to use the "HEIGHT" column values and click "OK"',
+      grok.functions.onAfterRunAction.pipe(filter((call) => {
+        const column = call.outputs.get('result');
+        const tolerance = 1e-3;
+        return call.func.name === 'AddNewColumn' && column.name === columnName &&
+          Math.abs(column.min - 1.275) < tolerance && Math.abs(column.max - 2.033) < tolerance;
+      })), editDlg.getButton('OK'), formulaWithColInfo);
   }
 }
