@@ -2,6 +2,7 @@ import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Fingerprint} from '../utils/chem-common';
 import {BitSet} from 'datagrok-api/dg';
+import { IFingerprint } from './rdkit-service-worker-similarity';
 
 export class RdKitService {
   workerCount: number;
@@ -31,7 +32,7 @@ export class RdKitService {
 
   async _doParallel(
     fooScatter: (i: number, workerCount: number) => Promise<any>,
-    fooGather = (_: any) => []): Promise<any> {
+    fooGather: (_: any) => any[] = (_: any) => []): Promise<any> {
     const promises = [];
     const workerCount = this.workerCount;
     for (let i = 0; i < workerCount; i++)
@@ -88,20 +89,20 @@ export class RdKitService {
   async getFingerprints(fingerprintType: Fingerprint, dict?: string[]): Promise<Uint8Array[]> {
     const t = this;
     const res = dict ?
-      await this._initParallelWorkers(dict, (i: number, segment: any) =>
+      await this._initParallelWorkers(dict, (i: number, segment: string[]) =>
         t.parallelWorkers[i].getFingerprints(fingerprintType, segment),
-        (data: any) => {
-          return [].concat(...data);
+        (data: IFingerprint[][]) => {
+          return ([] as IFingerprint[]).concat(...data);
         }) :
       await this._doParallel(
         (i: number, _: number) => {
           return t.parallelWorkers[i].getFingerprints(fingerprintType, dict);
         },
-        (data: any) => {
-          return [].concat(...data);
+        (data: IFingerprint[][]) => {
+          return ([] as IFingerprint[]).concat(...data);
         });
     return res.map(
-      (obj: any) =>
+      (obj: IFingerprint) =>
         obj.data);
   }
 

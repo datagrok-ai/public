@@ -1,7 +1,7 @@
 import { RdKitServiceWorkerBase } from './rdkit-service-worker-base';
 import { defaultMorganFpLength, defaultMorganFpRadius, Fingerprint } from '../utils/chem-common';
 import { RDModule } from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import { getMolSafe } from '../utils/mol-creation_rdkit';
+import { getMolSafe, IMolContext } from '../utils/mol-creation_rdkit';
 
 export interface IFingerprint {
   data: Uint8Array;
@@ -16,6 +16,13 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
     super(module, webRoot);
   }
 
+   /**
+   * Calculates fingerprints either on pre-created array of RDMols or creating RDMOls on the fly.
+   * 
+   * @param {Fingerprint} fingerprintType Type of Fingerprint
+   * @param {dict} string[] List of molecule strings to calculate fingerprints on. In case it is passed to function RDMols will be created on the fly
+   */
+
   getFingerprints(fingerprintType: Fingerprint, dict?: string[]): IFingerprint[] {
     if (this._rdKitMols === null && !dict)
       return [];
@@ -23,14 +30,12 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
     const fpLength = dict ? dict.length : this._rdKitMols!.length;
     const fps = new Array<Uint8Array | null>(fpLength).fill(null);
     for (let i = 0; i < fpLength; ++i) {
-      let mol;
+      let mol: IMolContext | null = null;
       if (dict) {
         const item = dict[i];
-        if (!item || item === '') {
-          fps[i] = new Uint8Array();
-          continue;
+        if (item && item !== '') {
+          mol = getMolSafe(item, {}, this._rdKitModule);
         }
-        mol = getMolSafe(item, {}, this._rdKitModule);
       }
       const rdMol = dict ? mol?.mol : this._rdKitMols![i];
       const isQMol = dict ? mol?.isQMol : this._rdKitMols![i]?.is_qmol;

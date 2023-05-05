@@ -407,9 +407,9 @@ export function diversitySearchTopMenu(): void {
 //name: SearchSubstructureEditor
 //tags: editor
 //input: funccall call
-export function SearchSubstructureEditor(call: DG.FuncCall) {
+export function searchSubstructureEditor(call: DG.FuncCall) {
   if (grok.shell.tv.dataFrame.rowCount > MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT) {
-    grok.shell.warning(`Dataset is too large. Please use dataset with less than ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT} rows`);
+    grok.shell.warning(`"Too many rows, maximum for substructure search is ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT}".`);
     return;
   }
   const molColumns = grok.shell.tv.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
@@ -488,7 +488,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
   const fastRowCount = methodName === UMAP ? 5000 : 2000;
 
   if (table.rowCount > allowedRowCount) {
-    grok.shell.warning(`Dataset is too large. Please use dataset with less than ${allowedRowCount} rows`);
+    grok.shell.warning(`Too many rows, maximum for chemical space is ${allowedRowCount}`);
     return;
   }
 
@@ -683,7 +683,7 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
   const allowedRowCount = 10000;
   const fastRowCount = methodName === UMAP ? 5000 : 2000;
   if (df.rowCount > allowedRowCount) {
-    grok.shell.warning(`Dataset is too large. Please use dataset with less than ${allowedRowCount} rows`);
+    grok.shell.warning(`Too many rows, maximum for activity cliffs is ${allowedRowCount}`);
     return;
   }
 

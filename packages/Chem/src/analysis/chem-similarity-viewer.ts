@@ -192,7 +192,7 @@ export async function chemSimilaritySearch(
 ) : Promise<DG.DataFrame> {
   const targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint);
   const fingerprintCol = await chemSearches.chemGetFingerprints(smiles, fingerprint, true, false);
-  malformedDataWarning(fingerprintCol, table);
+  malformedDataWarning(fingerprintCol, smiles);
   const distances: number[] = [];
 
   const fpSim = similarityMetric[metricName];

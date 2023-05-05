@@ -38,28 +38,19 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     super(module, webRoot);
   }
 
-  initMoleculesStructures(dict: string[]) : void {
+  initMoleculesStructures(dict: string[]): void {
     this.freeMoleculesStructures();
     this._rdKitMols = new Array<RDMol | null>(dict.length).fill(null);
-    let logged = false;
     for (let i = 0; i < dict.length; ++i) {
       const item = dict[i];
-      let mol;
-      if (!item || item === '')
-        mol = this._rdKitModule.get_mol('');
-      else {
+      if (item && item !== '') {
         const molSafe = getMolSafe(item, {}, this._rdKitModule);
-        mol = molSafe.mol;
-        if (mol === null) {
-          if (!logged) {
-            const errorMessage = 'Chem | Possibly a malformed molString at init: `' + item + '`';
-            logged = true;
-          }
-        } else
+        const mol = molSafe.mol;
+        if (mol) {
           mol.is_qmol = molSafe.isQMol;
+          this._rdKitMols[i] = mol;
+        }          
       }
-      if (mol)
-        this._rdKitMols[i] = mol;
     }
   }
 
