@@ -82,8 +82,7 @@ async function openFse(v: DG.View, functionCode: string) {
   const openScript = () => {
     editorView.close();
     grok.shell.addView(v);
-    //@ts-ignore
-    const editor = v.root.querySelector('.CodeMirror').CodeMirror;
+    const editor = (v.root.querySelector('.CodeMirror') as any).CodeMirror;
     const doc = editor.getDoc();
     doc.setValue(myCM.getDoc().getValue());
   };
