@@ -128,4 +128,3 @@ export async function _trainAndAnalyzeLSSVMInWebWorker(gamma, kernel, kernelPara
     }
   });
 }
-

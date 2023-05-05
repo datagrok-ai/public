@@ -8,7 +8,9 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {_initEDAAPI} from '../wasm/EDAAPI';
 import {computePCA, computePLS} from './EDAtools';
 import {renamePCAcolumns, addPLSvisualization} from './EDAui';
-import {demoPLS, carsDataframe} from './demos';
+import {demoPLS} from './demos';
+import {carsDataframe, testDataForBinaryClassification} from './dataGenerators';
+import {LINEAR, RBF} from './svm';
 
 export const _package = new DG.Package();
 
@@ -74,8 +76,41 @@ export async function demoScript(): Promise<any>  {
       const componentsProp = DG.Property.js('components', DG.TYPE.INT);      
       ui.dialog({title:'Set'})
         .add(ui.input.form(params, [itemsProp, featuresProp, componentsProp]))
-        .addButton('Run', async () => demoPLS(params.items, params.features, params.components))
+        .addButton('Run', async () => await demoPLS(params.items, params.features, params.components))
         .show();      
     }, {description: 'Random walk test dataframe of the given size is generated, and its multivariate analysis is performed.'})    
     .start();
+}
+
+//name: Generate linear separable dataset
+//description: Generates linear separble dataset for testing binary classificators.
+//input: string name = 'Data' {caption: name; category: Dataset}
+//input: int samplesCount = 1000 {caption: samples; category: Size}
+//input: int featuresCount = 2 {caption: features; category: Size}
+//input: double min = -39 {caption: min; category: Range}
+//input: double max = 173 {caption: max; category: Range}
+//input: double violatorsPercentage = 5 {caption: violators; units: %; category: Dataset}
+//output: dataframe df
+export async function testDataLinearSeparable(name: string, samplesCount: number, featuresCount: number, 
+  min: number, max: number, violatorsPercentage: number): Promise<DG.DataFrame> 
+{
+  return await testDataForBinaryClassification(LINEAR, [0, 0], name, samplesCount, featuresCount,
+    min, max, violatorsPercentage);
+}
+
+//name: Generate linear non-separable dataset
+//description: Generates linear non-separble dataset for testing binary classificators.
+//input: string name = 'Data' {caption: name; category: Dataset}
+//input: double sigma = 90  {caption: sigma; category: Hyperparameters} [RBF-kernel paramater]
+//input: int samplesCount = 1000 {caption: samples; category: Size}
+//input: int featuresCount = 2 {caption: features; category: Size}
+//input: double min = -39 {caption: min; category: Range}
+//input: double max = 173 {caption: max; category: Range}
+//input: double violatorsPercentage = 5 {caption: violators; units: %; category: Dataset}
+//output: dataframe df
+export async function testDataLinearNonSeparable(name: string, sigma: number, samplesCount: number, 
+  featuresCount: number, min: number, max: number, violatorsPercentage: number): Promise<DG.DataFrame> 
+{
+  return await testDataForBinaryClassification(RBF, [sigma, 0], name, samplesCount, featuresCount,
+    min, max, violatorsPercentage);
 }

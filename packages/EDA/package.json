@@ -1,8 +1,8 @@
 {
     "name": "@datagrok/eda",
     "friendlyName": "EDA",
-    "version": "1.0.1",
-    "description": "",
+    "version": "1.0.2",
+    "description": "Eploratory Data Analysis tools",
     "dependencies": {
         "datagrok-api": "latest",
         "cash-dom": "latest",
@@ -42,6 +42,7 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/EDA"
     },
+    "category": "Machine Learning",
     "sources": [
         "wasm/EDA.js"
     ]

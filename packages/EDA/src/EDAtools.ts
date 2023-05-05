@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import {_principalComponentAnalysisInWebWorker,
   _partialLeastSquareRegressionInWebWorker} from '../wasm/EDAAPI';
 
-import {checkComponenets} from './utils';
+import {checkComponenets, checkGeneratorSVMinputs} from './utils';
 
 // Principal components analysis (PCA)
 export async function computePCA(table: DG.DataFrame, features: DG.ColumnList, components: number): Promise<DG.DataFrame> 

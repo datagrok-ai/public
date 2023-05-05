@@ -1,35 +1,4 @@
-import {_initEDAAPI, _principalComponentAnalysis, _principalComponentAnalysisInWebWorker, _error, _errorInWebWorker, _partialLeastSquareRegression, _partialLeastSquareRegressionInWebWorker, _generateDataset, _generateDatasetInWebWorker, _normalizeDataset, _normalizeDatasetInWebWorker, _trainLSSVM, _trainLSSVMInWebWorker, _predictByLSSVM, _predictByLSSVMInWebWorker, _trainAndAnalyzeLSSVM, _trainAndAnalyzeLSSVMInWebWorker} from '../wasm/EDAAPI';
 
-//tags: init
-export async function init(): Promise<void> {
-  await _initEDAAPI();
-}
-
-//name: principalComponentAnalysis
-//input: dataframe table
-//input: column_list columns
-//input: int componentsCount
-//output: dataframe result 
-export function principalComponentAnalysis(table: DG.DataFrame, columns: DG.ColumnList, componentsCount: number): DG.DataFrame {
-  return _principalComponentAnalysis(table, columns, componentsCount);
-}
-
-//name: principalComponentAnalysisInWebWorker
-//input: dataframe table
-//input: column_list columns
-//input: int componentsCount
-//output: dataframe result 
-export async function principalComponentAnalysisInWebWorker(table: DG.DataFrame, columns: DG.ColumnList, componentsCount: number): Promise<DG.DataFrame> {
-  let _output: any;
-  let _promise = _principalComponentAnalysisInWebWorker(table, columns, componentsCount);
-
-  await _promise.then(
-    _result => {  _output = _result; },
-    _error => {  throw new Error (`Error: ${_error}`); }
-  );
-
-  return _output;
-}
 
 //name: error
 //input: dataframe df
