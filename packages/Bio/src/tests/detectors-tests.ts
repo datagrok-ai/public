@@ -429,7 +429,7 @@ class PosCol {
     public readonly alphabetIsMultichar: boolean,
     public readonly separator?: string
   ) { };
-};
+}
 
 export async function _testDf(readDf: DfReaderFunc, posCols: { [colName: string]: PosCol }): Promise<void> {
   const df: DG.DataFrame = await readDf();

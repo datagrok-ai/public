@@ -34,7 +34,7 @@
 
 .demo-app-tree-group {
 	margin-top: 12px;
-    overflow: initial;
+  overflow: initial;
 }
 
 .demo-app-tree-group .d4-tree-view-group {
@@ -46,13 +46,12 @@
 }
 
 .demo-app-tree-group .d4-tree-view-group-host .d4-tree-view-group-host {
-	margin: 0px;
+	padding-left: 10px;
+  margin-left: 0px;
 }
 
 .demo-app-tree-group .d4-tree-view-item {
-	margin: 0;
-	padding:1px;
-	padding-left: 32px;
+	padding-left: 5px; 
 	display: block;
 }
 
@@ -68,14 +67,14 @@
 	background-color: var(--grey-1);
 }
 
-.demo-app-tree-group > .d4-tree-view-node > i.grok-icon.fa-home {
-    color: var(--grey-6);
-    width: 24px;
-    height: 22px;
+.demo-app-tree-home-node > .d4-tree-view-node > i.grok-icon.fa-home {
+	color: var(--grey-6);
+	width: 24px;
+	height: 22px;
 }
 
-.demo-app-tree-group .d4-tree-view-group-label {
-    margin: 0px;
+.demo-app-tree-home-node .d4-tree-view-group-label {
+	margin: 0px;
 }
 
 .demo-app-view-title {
@@ -93,70 +92,70 @@
 }
 
 .demo-app-group-title {
-    margin-left: 24px;
+	margin-left: 24px;
 }
 
 /* View tree group */ 
 .d4-tree-view-root.demo-app-group-view .grok-gallery-grid {
-    margin: 0;
-    padding: 12px;
-    align-items: stretch;
+	margin: 0;
+	padding: 12px;
+	align-items: stretch;
 }
 
 .d4-tree-view-root.demo-app-group-view .grok-gallery-grid > div {
-    margin: 12px;
+	margin: 12px;
 }
 
 .d4-tree-view-root.demo-app-group-view .d4-tree-view-group-label {
-    color: var(--grey-6);
+	color: var(--grey-6);
 }
 
 .d4-tree-view-root.demo-app-group-view .d4-tree-view-node {
-    padding: 4px 0;
+	padding: 4px 0;
 }
 
 /* Autocomplete dock */
 .demo-app-script {
-    overflow: scroll;
+	overflow: scroll;
 }
 
 .demo-app-script .tutorials-root-header{
-    align-items: center;
+	align-items: center;
 }
 
 .demo-app-script .tutorials-main-header {
-    padding: 0 12px;
+	padding: 0 12px;
 }
 
 .demo-app-script .fa-clock {
-    color: var(--grey-3);
+	color: var(--grey-3);
 }
 
 .demo-app-script .fa-spin {
-    color: var(--blue-1);
+	color: var(--blue-1);
 }
 
 .demo-app-script .fa-check {
-    color: var(--green-2);
+	color: var(--green-2);
 }
 
 .demo-app-script .grok-tutorial-entry-instruction {
-    color: var(--grey-6);
+	color: var(--grey-6);
 }
 
 .demo-app-script .grok-tutorial-step-description {
-    padding-left: 22px;
+	padding-left: 22px;
 }
 
 .demo-app-script .grok-tutorial-step-description .hidden{
-    display: none;
+	display: none;
 }
 
 .demo-app-script .grok-tutorial-step-description .visible{
-    display: block;
+	display: block;
 }
 
 /* play-pause btn */
 .tutorials-root-header button>i.grok-icon.fa-play {
-    color:var(--green-2);
+	color:var(--green-2);
 }

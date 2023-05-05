@@ -110,7 +110,7 @@ export function _TreeViewer() {
   return new TreeViewer();
 }
 
-//name: Word Cloud
+//name: Word Cloud Viewer
 //description: Creates a word cloud viewer
 //tags: viewer
 //output: viewer result
@@ -132,13 +132,6 @@ export async function _chordViewerDemo() {
 //meta.demoPath: Viewers | Globe
 export async function _globeViewerDemo() {
   await viewerDemo('Globe');
-}
-
-//name: groupAnalysisViewerDemo
-//description: Group analysis viewer groups data by different options
-//meta.demoPath: Viewers | Group Analysis
-export async function _groupAnalysisViewerDemo() {
-  await viewerDemo('GroupAnalysis');
 }
 
 //name: radarViewerDemo
@@ -187,5 +180,5 @@ export async function _treeViewerDemo() {
 //description: Word Cloud viewer visualizes unstructured text data
 //meta.demoPath: Viewers | Word Cloud
 export async function _wordCloudViewerDemo() {
-  await viewerDemo('WordCloud');
+  await viewerDemo('WordCloudViewer', {drawOutOfBound: false});
 }

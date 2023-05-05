@@ -30,6 +30,7 @@ title: "Grid"
 | Home                  | Jump to first column     |
 | End                   | Jump to last column      |
 | Ctrl+UP / DOWN        | Prev / next selected row |
+| Alt+F                 | Show in full screen      |
 
 ## Sorting
 

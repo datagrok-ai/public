@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {DistanceMetric, NodeCuttedType, NodeType} from './index';
+import {ClusterMatrix, DistanceMetric, NodeCuttedType, NodeType} from './index';
 import {DistanceMatrix} from './distance-matrix';
 
 export interface ITreeHelper {
@@ -63,6 +63,8 @@ export interface ITreeHelper {
 
   calcDistanceMatrix(df: DG.DataFrame, colNames: string[],
     distanceMetric?: DistanceMetric): Promise<DistanceMatrix | null>;
+
+  parseClusterMatrix(clusterMatrix:ClusterMatrix): NodeType;
 }
 
 export async function getTreeHelper(): Promise<ITreeHelper> {

@@ -1,7 +1,7 @@
 {
 	"env": {
 		"browser": true,
-		"es2022": true
+		"es6": true
 	},
 	"extends": [
 		"google"
@@ -23,7 +23,7 @@
 			"error",
 			120
 		],
-    "no-unused-vars": "warn",
+    "no-unused-vars": ["warn", { "varsIgnorePattern":"(grok|ui|DG|_)" }],
 		"require-jsdoc": "off",
     "valid-jsdoc": "warn",
 		"spaced-comment": "off",

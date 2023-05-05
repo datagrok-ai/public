@@ -18,7 +18,3 @@ of the data flows. They answer the following questions:
 * Who are end users of a particular database / connection / query?
 * Which data sources does a particular group of users use?
 * Which algorithms and visualizations are used on the data retrieved from the particular query?
-
-See also:
-
-* [Data pipelines](../access/data-pipeline.md)

@@ -7,9 +7,10 @@ five number summary: minimum, first quartile, median, third quartile, and maximu
 
 General:
 
-|             |              |
-|-------------|--------------|
-| Right click | Context menu |
+|             |                     |
+|-------------|---------------------|
+| Right click | Context menu        |
+| Alt+F       | Show in full screen |
 
 ![Box Plot](../../uploads/viewers/box-plot.png "Box Plot")
 

@@ -64,7 +64,7 @@ representations, planar and 3D.
 
 ### Importing molecular data in Datagrok<!--corr: should it be here?-->
 
-[Import the dataset](../../access/file-browser-and-file-shares.md), as you normally would, by opening a file, querying a
+[Import the dataset](../../access/file-shares.mdx), as you normally would, by opening a file, querying a
 database, connecting to a webservice, or by any other method. The platform is smart enough to automatically recognize
 chemical structures.
 ![representations1](../../uploads/chem/representations1.png "graphs")

@@ -5,7 +5,7 @@ See application examples at https://public.datagrok.ai/apps`;
 
 const connection = (connectionName: string) => `
 The connection ${connectionName} has been added successfully
-Read more at https://datagrok.ai/help/access/data-connection,
+Read more at https://datagrok.ai/help/access/access#data-connection,
 https://datagrok.ai/help/develop/how-to/access-data#connections
 See examples at https://github.com/datagrok-ai/public/tree/master/packages/Chembl`;
 
@@ -23,7 +23,7 @@ const func = (funcName: string, isPanel: boolean = false) => {
 
 const query = (queryName: string) => `
 The query ${queryName} has been added successfully
-Read more at https://datagrok.ai/help/access/data-query,
+Read more at https://datagrok.ai/help/access/access#data-query,
 https://datagrok.ai/help/develop/how-to/access-data#queries
 See examples at https://github.com/datagrok-ai/public/tree/master/packages/Chembl`;
 

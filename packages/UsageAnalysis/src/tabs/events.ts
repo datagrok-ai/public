@@ -19,11 +19,32 @@ export class EventsView extends UaView {
       name: 'Sources',
       queryName: 'EventsSources',
       viewerFunction: (t: DG.DataFrame) => {
+        const viewer = DG.Viewer.lineChart(t, {
+          // 'overviewColumnName': 'date',
+          xColumnName: 'time_start',
+          showXSelector: false,
+          yColumnNames: ['count'],
+          showYSelectors: false,
+          showAggrSelectors: false,
+          showSplitSelector: false,
+          // 'showMarkers': 'Never',
+          chartTypes: ['Line Chart'],
+          title: 'Sources',
+          split: 'source',
+        });
+        return viewer;
+      }});
+
+    const packagesViewer2 = new UaFilterableQueryViewer( {
+      filterSubscription: this.uaToolbox.filterStream,
+      name: 'User events',
+      queryName: 'EventsUsersSources',
+      viewerFunction: (t: DG.DataFrame) => {
         const viewer = DG.Viewer.scatterPlot(t, {
           x: 'time_start',
           y: 'source',
           size: 'count',
-          // color: 'user',
+          color: 'user',
           jitterSize: 5,
           markerMinSize: 10,
           markerMaxSize: 30,
@@ -31,29 +52,8 @@ export class EventsView extends UaView {
           showSizeSelector: false,
           showXSelector: false,
           showYSelector: false,
-          title: 'Sources',
-        });
-        return viewer;
-      }});
-
-    const packagesViewer2 = new UaFilterableQueryViewer( {
-      filterSubscription: this.uaToolbox.filterStream,
-      name: 'Unique Errors',
-      queryName: 'UniqueErrors',
-      viewerFunction: (t: DG.DataFrame) => {
-        const viewer = DG.Viewer.barChart(t, {
-          // x: 'time_start',
-          // y: 'source',
-          // size: 'count',
-          // color: 'user',
-          // jitterSize: 5,
-          // markerMinSize: 10,
-          // markerMaxSize: 30,
-          // showColorSelector: false,
-          showStackSelector: false,
-          showValueSelector: false,
-          showCategorySelector: false,
-          title: 'Unique Errors',
+          title: 'User events',
+          invertYAxis: true,
         });
         return viewer;
       }});

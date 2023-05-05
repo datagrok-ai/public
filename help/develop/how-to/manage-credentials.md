@@ -6,7 +6,7 @@ title: "Manage credentials"
 database connections typically require a pair of login and password, whereas web services normally expect a token or an
 access key. You can associate such data with two types of [entities](../../datagrok/objects.md) within the
 platform: [packages](../develop.md#packages)
-and [connections](../../access/data-connection.md). This article describes how to transfer this information to the
+and [connections](../../access/access.md#data-connection). This article describes how to transfer this information to the
 platform and common practices to keep it secure.
 
 ## Package credentials
@@ -107,4 +107,4 @@ See also:
 * [Security](../../govern/security.md#credentials)
 * [How to access data](access-data.md)
 * [Packages](../develop.md)
-* [Data connection](../../access/data-connection.md)
+* [Data connection](../../access/access.md#data-connection)

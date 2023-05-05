@@ -116,12 +116,20 @@ export class Functions {
     return toJs(await api.grok_EvalFunc(name, context?.dart));
   }
 
-  async find(name: string): Promise<any> {
+  /** Returns a function with the specified name, or throws an error if
+   * there is no such function. See also {@link find}. */
+  async get(name: string): Promise<Func> {
+    let f = await this.find(name);
+    if (!f)
+      throw `Function not found: "${name}"`;
+    return f;
+  }
+
+  /** Returns a function with the specified name, or null if not found.
+   * See also {@link find}. */
+  async find(name: string): Promise<Func | null> {
     let f = await this.eval(name);
-    if (f instanceof Func)
-      return f;
-    else
-      return null;
+    return (f instanceof Func) ? f : null;
   }
 
   scriptSync(s: string): any {

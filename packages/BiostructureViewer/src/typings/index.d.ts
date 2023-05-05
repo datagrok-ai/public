@@ -17,19 +17,23 @@ declare module 'NGL' {
 
   export const ColormakerRegistry: ColormakerRegistryClass;
 
-  export type RepresentationParameters = {
-    [p: name]: any
-  }
+  export type RepresentationParameters = { [k: string]: any }
+
+  export type StructureRepresentationType = (
+    'angle' | 'axes' | 'backbone' | 'ball+stick' | 'base' | 'cartoon' | 'contact' | 'dihedral' |
+    'distance' | 'helixorient' | 'hyperball' | 'label' | 'licorice' | 'line' | 'surface' |
+    'ribbon' | 'rocket' | 'rope' | 'spacefill' | 'trace' | 'tube' | 'unitcell'
+    ) // from NGL lib
 
   export class Component {
-    addRepresentation(type: string, object: object, params?: RepresentationParameters): RepresentationComponent;
+    addRepresentation(type: StructureRepresentationType, params?: RepresentationParameters = {}): RepresentationElement;
 
     autoView(duration?: number): undefined;
 
     removeAllRepresentations(): undefined;
   }
 
-  export class RepresentationComponent extends Component {
+  export class RepresentationElement extends Component {
 
   }
 

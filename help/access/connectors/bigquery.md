@@ -23,5 +23,5 @@ Provides access to [Google BigQuery](https://cloud.google.com/bigquery/) databas
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [BigQuery](https://cloud.google.com/bigquery/)

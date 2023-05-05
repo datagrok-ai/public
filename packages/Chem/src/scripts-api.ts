@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 
-export async function findMCS(molecules: string, df: DG.DataFrame): Promise<string> {
-  return await grok.functions.call('Chem:FindMCS', {molecules, df});
+export async function findMCS(molecules: string, df: DG.DataFrame, exactAtomSearch: boolean, exactBondSearch: boolean): Promise<string> {
+  return await grok.functions.call('Chem:FindMCS', {molecules, df, exactAtomSearch, exactBondSearch});
 }
 
 export async function findRGroups(

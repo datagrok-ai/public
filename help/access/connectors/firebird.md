@@ -18,6 +18,6 @@ queries via JDBC driver.
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [FirebirdSQL](https://firebirdsql.org/)
 * [Firebird](https://en.wikipedia.org/wiki/Firebird)

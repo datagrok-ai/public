@@ -59,11 +59,11 @@ Provides access to [Virtuoso](https://virtuoso.openlinksw.com/) data virtualizat
 ## Supported features
 
 * Schema browsing
-* Build query
-* Visual query
+* Join DB tables
+* Aggregation query
 * Connection test
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [Virtuoso](https://virtuoso.openlinksw.com/)

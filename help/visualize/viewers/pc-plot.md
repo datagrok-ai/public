@@ -14,11 +14,12 @@ location.
 
 General:
 
-|                    |                   |
-|--------------------|-------------------|
-| Right click        | Context menu      |
-| Drag column name   | Rearrange columns |
-| Drag column filter | Filter data       |
+|                    |                     |
+|--------------------|---------------------|
+| Right click        | Context menu        |
+| Alt+F              | Show in full screen |
+| Drag column name   | Rearrange columns   |
+| Drag column filter | Filter data         |
 
 ![PC Plot](../../uploads/gifs/pc-plot.gif "PC Plot")
 

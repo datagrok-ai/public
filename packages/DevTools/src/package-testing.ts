@@ -74,7 +74,7 @@ export class TestManager extends DG.ViewBase {
   selectedNode: DG.TreeViewGroup | DG.TreeViewNode;
   nodeDict: { [id: string]: any } = {};
   debugMode = false;
-  benchmarkMode = false;
+  benchmarkMode = DG.Test.isInBenchmark;
   runSkippedMode = false;
   tree: DG.TreeViewGroup;
   ribbonPanelDiv = undefined;
@@ -102,7 +102,7 @@ export class TestManager extends DG.ViewBase {
     this.testManagerView.append(testUIElements.ribbonPanelDiv);
     this.testManagerView.append(testUIElements.testsTree.root);
     if (this.dockLeft)
-      grok.shell.dockManager.dock(this.testManagerView.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.2);
+      grok.shell.dockManager.dock(this.testManagerView.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.25);
     this.runTestsForSelectedNode();
   }
 
@@ -267,17 +267,21 @@ export class TestManager extends DG.ViewBase {
     //runAllButton.classList.add('btn-outline');
     runTestsButton.classList.add('ui-btn-outline');
 
-    const debugButton = ui.boolInput('Debug', false, () => {this.debugMode = !this.debugMode;});
+    const debugButton = ui.boolInput('Debug', this.debugMode, () => {this.debugMode = !this.debugMode;});
     debugButton.captionLabel.style.order = '1';
     debugButton.captionLabel.style.marginLeft = '5px';
     debugButton.root.style.marginLeft = '10px';
 
-    const benchmarkButton = ui.boolInput('Benchmark', false, () => {this.benchmarkMode = !this.benchmarkMode;});
+    const benchmarkButton = ui.boolInput('Benchmark', this.benchmarkMode, () => {
+      this.benchmarkMode = !this.benchmarkMode;
+      DG.Test.isInBenchmark = this.benchmarkMode;
+    });
     benchmarkButton.captionLabel.style.order = '1';
     benchmarkButton.captionLabel.style.marginLeft = '5px';
     benchmarkButton.root.style.marginLeft = '5px';
 
-    const runSkippedButton = ui.boolInput('Run skipped', false, () => {this.runSkippedMode = !this.runSkippedMode;});
+    const runSkippedButton = ui.boolInput('Run skipped', this.runSkippedMode,
+      () => {this.runSkippedMode = !this.runSkippedMode;});
     runSkippedButton.captionLabel.style.order = '1';
     runSkippedButton.captionLabel.style.marginLeft = '5px';
     runSkippedButton.root.style.marginLeft = '5px';

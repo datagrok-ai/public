@@ -31,12 +31,13 @@ export abstract class UaQueryViewer extends UaViewer {
   }
 
   reloadViewer(staticFilter?: object) {
+    // console.log('reloading');
     this.dataFrame = new Promise<DG.DataFrame>((resolve, reject) => {
       this.loader.style.display = 'block';
       if (this.viewer !== undefined)
         this.viewer.root.style.display = 'none';
       const filter = {...this.filter, ...staticFilter};
-      console.log(this.queryName);
+      // console.log(this.queryName);
       if (this.queryName === undefined) {
         this.getDataFrame!().then(this.postQuery.bind(this)).then(resolve.bind(this));
         return;

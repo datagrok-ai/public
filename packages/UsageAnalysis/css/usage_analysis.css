@@ -76,3 +76,42 @@
 .ua-markup label {
   margin-left: 22px !important;
 }
+
+.ua-cards.ui-div {
+  flex-direction: row;
+  display: flex;
+}
+
+.ua-cards .ua-card {
+  width: 100px;
+  margin: 12px;
+  /* padding: 4px; */
+  box-shadow: 0px 0px 2px var(--grey-3);
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.ua-cards .ua-card > .grok-wait > .ui-div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ua-cards .ua-card > .grok-wait > .ui-div > div:first-child {
+  font-size: 32px;
+  line-height: 32px;
+}
+
+.ua-card .ua-card-plus::before {
+  content: '+';
+}
+
+.ua-card .ua-card-plus {
+  color: var(--green-2);
+}
+
+.ua-card .ua-card-minus {
+  color: var(--red-3);
+}

@@ -54,8 +54,15 @@
     padding: 4px;
 }
 
-.tt-hide {
+.typeahead-standalone > .ui-input-list.tt-hide {
     display: none;
+}
+
+.tt-suggestion.tt-selected {
+    cursor: pointer;
+    background: var(--grey-1);
+    color: var(--grey-6);
+    padding: 4px;
 }
 
 .typeahead-standalone .ui-input-list .tt-suggestion .tt-highlight {

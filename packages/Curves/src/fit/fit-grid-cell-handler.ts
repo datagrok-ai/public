@@ -40,7 +40,7 @@ export class FitGridCellHandler extends DG.ObjectHandler {
 
     acc.addPane('Options', () => ui.divV([
         ui.input.form(columnChartOptions.seriesOptions, fit.fitSeriesProperties, refresh),
-        ui.input.form(chartData.chartOptions, fit.fitChartDataProperties, refresh),
+        ui.input.form(columnChartOptions.chartOptions, fit.fitChartDataProperties, refresh),
       ]));
 
     acc.addPane('Results', () => {

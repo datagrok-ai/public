@@ -100,6 +100,7 @@ category('screening tools: benchmarks', () => {
 
   test('elementalAnalysis', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(await _package.files.readAsText('test.csv'));
+    await grok.data.detectSemanticTypes(df);
     const col: DG.Column = df.getCol('molecule');
     DG.time('Elemental Analysis', async () => {
       await elementalAnalysis(df, col, false, false);

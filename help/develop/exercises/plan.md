@@ -20,12 +20,12 @@ perspective.
 
 1. Register on [public.datagrok.ai](https://public.datagrok.ai) and [dev.datagrok.ai](https://dev.datagrok.ai)
 1. Now let's import data into the platform:
-   1. [Local files](../../access/import-text.md). Download a
+   1. [Local files](../../access/file-shares.mdx#importing-text). Download a
       [dataset](https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ApiTests/files/datasets/demog.csv)
       and import it into the platform using different approaches: drag-and-drop, double-click the "Data" icon on the
       sidebar, select "Data > Open local file", press `Ctrl+O`, and so on.
    1. [File shares](../../access/file-shares). Add the dataset to your *Home* directory.
-   1. [Databases](../../access/db-exploration).
+   1. [Databases](../../access/databases.mdx#database-manager).
       1. Watch a [DB exploration video](https://www.youtube.com/watch?v=YJmSvh3_uCM).
       1. Follow the [Data connectors](https://dev.datagrok.ai/apps/tutorials/DataAccess/DataConnectors) tutorial to
          connect to a Postgres DB and run a query.
@@ -168,18 +168,15 @@ After Day 5, you will learn how to:
 
 1. Scripting:
    1. Complete [Exercise #2](exercises.md#exercise-2-scripting-and-functions)
-   1. Create folder `scripts` under the package root and place your Python script there
-   1. Create a wrapper function that runs your script from the package via `grok api` (see
-      [documentation](https://github.com/datagrok-ai/public/blob/f4bff7510a08b5486eebc6f10cfea83b5dd4710e/tools/README.md))
-   1. Add tests to the script annotation
+   1. Complete [Exercise #3](exercises.md#exercise-3-composing-functions)
 1. Scripting viewers:
    1. Watch a [Scripting viewers video](https://www.youtube.com/watch?v=jHRpOnhBAz4)
    1. Read [documentation](../how-to/develop-custom-viewer.md#scripting-viewers)
-   1. Complete [Exercise #4](exercises.md#exercise-4-creating-a-scripting-viewer)
+   1. Complete [Exercise #5](exercises.md#exercise-5-creating-a-scripting-viewer)
 1. Data access:
-   1. Complete [Exercise #3](exercises.md#exercise-3-querying-databases)
+   1. Complete [Exercise #4](exercises.md#exercise-4-querying-databases)
    1. Read [documentation](../how-to/access-data)
-1. Complete [Exercise #5](exercises.md#exercise-5-transforming-dataframes)
+1. Complete [Exercise #6](exercises.md#exercise-6-transforming-dataframes)
 
 At the end of the day push your changes to GitHub and deploy your package to the platform.
 
@@ -193,12 +190,12 @@ After Day 6, you will learn how to:
 
 1. Cell renderers:
    1. Read [documentation](../how-to/custom-cell-renderers.md)
-   1. Complete [Exercise #6](exercises.md#exercise-6-custom-cell-renderers)
+   1. Complete [Exercise #7](exercises.md#exercise-7-custom-cell-renderers)
 1. Connecting to a webservice:
    1. Read [documentation](../how-to/access-data)
-   1. Complete [Exercise #7](exercises.md#exercise-7-creating-an-info-panel-with-a-rest-web-service)
+   1. Complete [Exercise #8](exercises.md#exercise-8-creating-an-info-panel-with-a-rest-web-service)
 1. Building a user interface:
-   1. Complete [Exercise #8](exercises.md#exercise-8-enhancing-datagrok-with-dialog-based-functions)
+   1. Complete [Exercise #9](exercises.md#exercise-9-enhancing-datagrok-with-dialog-based-functions)
    1. Refer to [UI components](../advanced/ui.md) article
 
 At the end of the day push your changes to GitHub and deploy your package to the platform.

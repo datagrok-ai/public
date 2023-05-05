@@ -10,14 +10,16 @@ export interface IMolContext {
   useMolBlockWedging: boolean;
 }
 
-export function isMolFragment(molString: string) {
-  return !isMolBlock(molString) ? !!molString.match(/\[.?:|\*.?\]/g) : false;
+export function isFragment(molString: string) {
+  if (isMolBlock(molString)) {
+    return MolfileHandler.getInstance(molString).isFragment();
+  } else
+    return !!molString.match(/\[.?:|\*.?\]/g);
 }
 
 export function isSmarts(molString: string): boolean {
   if (isMolBlock(molString)) {
-    const molfileHandler = MolfileHandler.getInstance(molString);
-    return molfileHandler.isQuery();
+    return MolfileHandler.getInstance(molString).isQuery();
   } else
     return !!molString.match(/\[.?#\d|\$|&|;|,|!.?]/g);
 }

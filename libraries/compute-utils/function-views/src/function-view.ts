@@ -6,6 +6,8 @@ import * as DG from 'datagrok-api/dg';
 import {Subject} from 'rxjs';
 import {historyUtils} from '../../history-utils';
 import {UiUtils} from '../../shared-components';
+import {RunComparisonView} from './run-comparison-view';
+import {CARD_VIEW_TYPE} from './shared/consts';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
@@ -42,10 +44,7 @@ export abstract class FunctionView extends DG.ViewBase {
     this.build();
 
     if (this.getStartId()) {
-      await this.onBeforeLoadRun();
-      this.lastCall = this.funcCall;
-      await this.onAfterLoadRun(this.funcCall);
-
+      await this.loadRun(this.funcCall.id);
       this.setAsLoaded();
     }
   }
@@ -238,6 +237,25 @@ export abstract class FunctionView extends DG.ViewBase {
   public abstract buildIO(): HTMLElement;
 
   /**
+   * Override to change behavior on runs comparison
+   * @param funcCallIds FuncCalls to be compared
+   */
+
+  public async onComparisonLaunch(funcCallIds: string[]) {
+    const parentCall = grok.shell.v.parentCall;
+
+    const fullFuncCalls = await Promise.all(funcCallIds.map((funcCallId) => historyUtils.loadRun(funcCallId)));
+
+    const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
+    const v = await RunComparisonView.fromComparedRuns(fullFuncCalls, {
+      parentView: cardView,
+      parentCall,
+      configFunc: this.func,
+    });
+    grok.shell.addView(v);
+  }
+
+  /**
    * Override to create a custom historical runs control.
    * @returns The HTMLElement with history block UI
    * @stability Stable
@@ -247,6 +265,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
     this.subs.push(
       newHistoryBlock.onRunChosen.subscribe(async (id) => this.linkFunccall(await this.loadRun(id))),
+      newHistoryBlock.onComparison.subscribe(async (ids) => this.onComparisonLaunch(ids)),
     );
 
     ui.empty(this.historyRoot);
@@ -323,7 +342,7 @@ export abstract class FunctionView extends DG.ViewBase {
   public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
     await this.onBeforeSaveRun(callToSave);
     const savedCall = await historyUtils.saveRun(callToSave);
-    savedCall.options['isHistorical'] = false;
+
     this.linkFunccall(savedCall);
 
     if (this.options.historyEnabled) this.buildHistoryBlock();
@@ -419,7 +438,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
     // If a view is incapuslated into a tab (e.g. in PipelineView),
     // there is no need to save run till an entire pipeline is over.
-    this.lastCall = this.options.isTabbed ? this.funcCall.clone() : await this.saveRun(this.funcCall);
+    this.lastCall = (this.options.isTabbed || this.isFuncImmediate) ? this.funcCall.clone() : await this.saveRun(this.funcCall);
   }
 
   protected historyRoot: HTMLDivElement = ui.divV([], {style: {'justify-content': 'center'}});
@@ -443,4 +462,8 @@ export abstract class FunctionView extends DG.ViewBase {
   protected defaultSupportedExportFormats = () => {
     return ['Excel'];
   };
+
+  protected get isFuncImmediate() {
+    return this.func.options['isImmediate'] === 'true';
+  }
 }

@@ -1,11 +1,11 @@
 import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, observeStream, StreamSubscription} from "./events";
-import {Observable, Subscription, fromEvent, Subject} from "rxjs";
+import * as rxjs from "rxjs";
+import {fromEvent, Observable, Subject, Subscription} from "rxjs";
 import {Func, Property, PropertyOptions} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
-import {ColorType, FILTER_TYPE, LegendPosition, Type} from "./const";
-import * as rxjs from "rxjs";
-import { filter, map } from 'rxjs/operators';
+import {ColorType, LegendPosition, Type} from "./const";
+import {filter, map} from 'rxjs/operators';
 import $ from "cash-dom";
 import {MapProxy} from "./utils";
 import dayjs from "dayjs";
@@ -787,7 +787,7 @@ export class Dialog extends DartWidget {
 /** See {@link Menu.items} */
 export interface IMenuItemsOptions<T = any> {
 
-  /** Whether or not a check box appears before the item */
+  /** Whether a check box appears before the item */
   isChecked?: (item: T) => boolean;
 
   /** If result is not null, the item is grayed out and the result is shown in the tooltip */
@@ -810,10 +810,35 @@ export interface IMenuItemOptions {
   /** Identifies a group of items where only one can be checked at a time. */
   radioGroup?: string;
 
+  /** Position in the menu */
+  order?: number;
+
+  /** Shortcut to be shown on the item. NOTE: it does not handle the keypress, just shows the shortcut*/
+  shortcut?: string;
+
+  /** Whether the menu is visible; if false, the menu is not added. Might be handy in for-loops and fluent API. */
+  visible?: boolean;
+
+  /** A function that gets called each time an item is shown.
+   * Should return null if the item is enabled, otherwise the reason why it's disabled.
+   * The reason for being disabled is shown in a tooltip. */
+  isEnabled?: () => (string | null);
+
   /** For items preceded by checkboxes, indicates if the item is checked. */
   check?: boolean;
+
+  /** Tooltip to be shown on the menu item */
+  description?: string;
 }
 
+
+export interface IShowMenuOptions {
+  element?: HTMLElement,
+  causedBy?: MouseEvent,
+  x?: number,
+  y?: number,
+  nextToElement?: boolean
+}
 
 /**
  * Menu (either top menu or popup menu).
@@ -824,7 +849,7 @@ export interface IMenuItemOptions {
  * DG.Menu.popup()
  *   .item('Show info', () => grok.shell.info('Info'))
  *   .separator()
- *   .items(['First', 'Second'], showBalloon)
+ *   .items(['First', 'Second'], (s) => grok.shell.info(s))
  *   .show();
  * */
 export class Menu {
@@ -886,7 +911,8 @@ export class Menu {
   /** For each item in items, adds a menu group with the specified text and handler. */
   items<T = any>(items: T[], onClick: (item: T) => void, options: IMenuItemsOptions<T> | null = null): Menu {
     return toJs(api.grok_Menu_Items(this.dart, items, onClick, options?.isValid, options?.isChecked,
-      options?.toString, options?.getTooltip, options?.onMouseEnter, options?.radioGroup));
+      options?.hasOwnProperty('toString') ? options.toString : null,
+      options?.getTooltip, options?.onMouseEnter, options?.radioGroup));
   }
 
   /** Adds a separator line.
@@ -897,8 +923,17 @@ export class Menu {
 
   /** Shows the menu.
    * @returns {Menu} */
-  show(options?: {element?: Element, causedBy?: MouseEvent, x?: number, y?: number, nextToElement?: boolean}): Menu {
+  show(options?: IShowMenuOptions): Menu {
     return toJs(api.grok_Menu_Show(this.dart, options?.element, options?.causedBy, options?.x, options?.y, options?.nextToElement));
+  }
+
+  /** Binds the menu to the specified {@link options.element} */
+  bind(element: HTMLElement): Menu {
+    element.oncontextmenu = (ev) => {
+      ev.preventDefault();
+      this.show({causedBy: ev});
+    }
+    return this;
   }
 
   get onContextMenuItemClick() {
@@ -1783,9 +1818,7 @@ export class Breadcrumbs {
       .pipe(
         map((event) => {
           const currentElement = (event.target as HTMLElement).innerText;
-          const currentPath = this.path.slice(0, this.path.indexOf(currentElement) + 1);
-
-          return currentPath;
+          return this.path.slice(0, this.path.indexOf(currentElement) + 1);
         })
       );
   }
