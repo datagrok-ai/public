@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, expectArray, expectFloat} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, expect, expectFloat} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {PeptidesModel} from '../model';
 import {startAnalysis} from '../widgets/peptides';

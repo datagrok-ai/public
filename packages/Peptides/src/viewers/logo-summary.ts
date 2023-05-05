@@ -11,7 +11,7 @@ import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {getAggregatedValue, getStats, MaskInfo, Stats} from '../utils/statistics';
 import wu from 'wu';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {getDistributionAndStats} from '../widgets/distribution';
+import {getActivityDistribution, getDistributionLegend, getStatsTableMap} from '../widgets/distribution';
 import {wrapDistroAndStatsDefault} from '../utils/misc';
 
 const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
@@ -269,10 +269,10 @@ export class LogoSummaryTable extends DG.JsViewer {
         return;
 
       summaryTable.currentRowIdx = -1;
-      if (ev.shiftKey)
-        this.model.modifyClusterSelection(cell.cell.value);
-      else
-        this.model.initClusterSelection(cell.cell.value);
+      if (!ev.shiftKey)
+        this.model.initClusterSelection({notify: false});
+
+      this.model.modifyClusterSelection(cell.cell.value);
       this.viewerGrid.invalidate();
     });
     this.viewerGrid.onCellRender.subscribe((gridCellArgs) => {
@@ -455,20 +455,16 @@ export class LogoSummaryTable extends DG.JsViewer {
     if (!stats.count)
       return null;
 
-    const colResults: {[colName: string]: number} = {};
     const mask = DG.BitSet.create(rowCount, (i) => maskInfo.mask[i] as boolean);
-    const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
-    const distDf = DG.DataFrame.fromColumns([activityCol, splitCol]);
+    const distributionTable = DG.DataFrame.fromColumns(
+      [activityCol, DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask)]);
+    const labels = getDistributionLegend(`Cluster: ${clustName}`, 'Other');
+    const hist = getActivityDistribution(distributionTable, true);
+    const tableMap = getStatsTableMap(stats, {fractionDigits: 2});
+    const aggregatedColMap = this.model.getAggregatedColumnValues({filterDf: true, mask: mask, fractionDigits: 2});
 
-    for (const [colName, aggFn] of Object.entries(this.model.settings.columns || {})) {
-      const newColName = getAggregatedColName(colName, aggFn);
-      const value = getAggregatedValue(filteredDf.getCol(colName), aggFn, mask);
-      colResults[newColName] = value;
-    }
-
-    const das = getDistributionAndStats(distDf, stats, `Cluster: ${clustName}`, 'Other', true, splitCol.name);
-    const resultMap: {[key: string]: any} = {...das.tableMap, ...colResults};
-    const tooltip = wrapDistroAndStatsDefault(das.labels, das.histRoot, resultMap, true);
+    const resultMap: {[key: string]: any} = {...tableMap, ...aggregatedColMap};
+    const tooltip = wrapDistroAndStatsDefault(labels, hist.root, resultMap, true);
 
     ui.tooltip.show(tooltip, x, y);
 
