@@ -17,6 +17,15 @@ export enum FUNC_PROPS_FIELD {
   CONNECTION = "connection"
 }
 
+export enum COMMON_TAG_NAME {
+  VALIDATORS = 'validators',
+  CAPTION = 'caption',
+  POSTFIX = 'postfix',
+  UNITS = 'units',
+  EDITOR = 'editor',
+  SEM_TYPE = 'semType',
+}
+
 export const tooltipMessage = {
   'caption': 'Custom field caption',
   'postfix': 'Field postfix',
@@ -32,6 +41,28 @@ export const tooltipMessage = {
   'suggestions': 'List of suggestions for string parameter',
   'min': 'Minimum value',
   'max': 'Maximum value',
+}
+
+export enum OPTIONAL_TAG_NAME {
+  COLUMNS = 'columns',
+  TYPE = 'type',
+  FORMAT = 'format',
+  ALLOW_NULLS = 'allowNulls',
+  ACTION = 'action',
+  CHOICES = 'choices',
+  SUGGESTIONS = 'suggestions',
+  MIN = 'min',
+  MAX = 'max',
+}
+
+export const helpUrls: {[_: string]: string} = {
+  [COMMON_TAG_NAME.CAPTION]: '/help/compute/scripting-for-non-developers#input-captions',
+  [COMMON_TAG_NAME.VALIDATORS]: '/help/compute/scripting-for-non-developers#validating-inputs',
+  [COMMON_TAG_NAME.EDITOR]: '/help/compute/scripting#parameter-editors',
+  [COMMON_TAG_NAME.POSTFIX]: '/help/compute/scripting-for-non-developers#units',
+  [COMMON_TAG_NAME.UNITS]: '/help/compute/scripting-for-non-developers#units',
+  [OPTIONAL_TAG_NAME.CHOICES]: '/help/compute/scripting#parameter-choices',
+  [OPTIONAL_TAG_NAME.SUGGESTIONS]: '/help/compute/scripting#parameter-suggestions'
 }
 
 export const obligatoryFuncProps = ['name', 'description', 'helpUrl', 'language'];
@@ -68,18 +99,6 @@ export const funcParamTypes = [
   DG.TYPE.INT,
   DG.TYPE.STRING,
 ];
-
-export enum OPTIONAL_TAG_NAME {
-  COLUMNS = 'columns',
-  TYPE = 'type',
-  FORMAT = 'format',
-  ALLOW_NULLS = 'allowNulls',
-  ACTION = 'action',
-  CHOICES = 'choices',
-  SUGGESTIONS = 'suggestions',
-  MIN = 'min',
-  MAX = 'max',
-}
 
 export const getChoicesByName: {[_: string]: {}} = {
   [FUNC_PROPS_FIELD.LANGUAGE]: {choices: languages},
@@ -148,15 +167,6 @@ export const functionParamsMapping = {
   'Description': FUNC_PARAM_FIELDS.DESCRIPTION,
   'Category': FUNC_PARAM_FIELDS.CATEGORY,
 };
-
-export enum COMMON_TAG_NAME {
-  VALIDATORS = 'validators',
-  CAPTION = 'caption',
-  POSTFIX = 'postfix',
-  UNITS = 'units',
-  EDITOR = 'editor',
-  SEM_TYPE = 'semType',
-}
 
 export const COMMON_TAG_NAMES = [...Object.values(COMMON_TAG_NAME)];
 export const OPTIONAL_TAG_NAMES = [...Object.values(OPTIONAL_TAG_NAME)];

@@ -6,7 +6,7 @@ import { BehaviorSubject } from 'rxjs';
 import { DEFAULT_CATEGORY, FUNC_PROPS_FIELDS, tooltipMessage, obligatoryFuncProps, 
   functionPropsLabels, highlightModeByLang, functionPropsCode, funcParamTypes, FUNC_PARAM_FIELDS, 
   DIRECTION, functionParamsMapping, COMMON_TAG_NAMES, OPTIONAL_TAG_NAME, LANGUAGE, headerSign, 
-  optionTags, OPTIONAL_TAG_NAMES, getChoicesByName, FUNC_PROPS_FIELD, DATA_QUERY_VIEW } from './const';
+  optionTags, OPTIONAL_TAG_NAMES, getChoicesByName, FUNC_PROPS_FIELD, DATA_QUERY_VIEW, helpUrls } from './const';
 import 'codemirror/mode/javascript/javascript';
 import 'codemirror/mode/python/python';
 import 'codemirror/mode/octave/octave';
@@ -46,6 +46,7 @@ function getInputBaseArray(props: DG.Property[], param: any): DG.InputBase[] {
     input.setTooltip(tooltipMessage[prop.name as OPTIONAL_TAG_NAME]);
     input.root.onclick = (_) => {
       grok.shell.windows.showHelp = true;
+      grok.shell.windows.help.showHelp(helpUrls[prop.caption]);
     };
     return input;
   });
