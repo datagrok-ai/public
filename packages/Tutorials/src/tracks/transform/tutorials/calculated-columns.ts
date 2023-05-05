@@ -14,7 +14,7 @@ export class CalculatedColumnsTutorial extends Tutorial {
     return 'Learn about calculated columns, how to add them to a dataframe, and how to edit predefined formulas.';
   }
   get steps(): number {
-    return 8;
+    return 13;
   }
 
   helpUrl: string = 'https://datagrok.ai/help/transform/add-new-column';
@@ -81,13 +81,47 @@ export class CalculatedColumnsTutorial extends Tutorial {
       'Note that the column type is not updated automatically during editing.<br>Some mathematical functions, ' +
       'such as <i>Div, Mul</i>, and <i>Pow</i>, have equivalent operators. Check out our wiki to learn more about ' +
       ui.link('operators', 'https://datagrok.ai/help/transform/functions/operators').outerHTML;
+    const tolerance = 1e-3;
 
     await this.action('Edit the formula to use the "HEIGHT" column values and click "OK"',
       grok.functions.onAfterRunAction.pipe(filter((call) => {
         const column = call.outputs.get('result');
-        const tolerance = 1e-3;
         return call.func.name === 'AddNewColumn' && column.name === columnName &&
           Math.abs(column.min - 1.275) < tolerance && Math.abs(column.max - 2.033) < tolerance;
-      })), editDlg.getButton('OK'), formulaWithColInfo);
+      })), editDlg.inputs.filter((input) => input.caption == '')[2]?.root, formulaWithColInfo);
+
+    await this.action('Change the "HEIGHT" value in the first row to "170"', this.t!.onValuesChanged.pipe(filter(() =>
+      this.t!.cell(0, 'HEIGHT').value === 170)), null, 'Now we will examine in which circumstances the values of a ' +
+      'calculated column get re-calculated. There is a distinction between column data and metadata changes. As ' +
+      'you can see, the value of height in meters in the first row doesn\'t change along with our value change. ' +
+      'However, if you want to refresh computations after a value change, you can click the <b>Apply</b> button ' +
+      'in the <b>Formula</b> pane of the context panel.');
+
+    const addNCDlgBMI = await this.openAddNCDialog('Add a new column that calculates BMI');
+    const columnNameBMI = 'BMI';
+    await this.dlgInputAction(addNCDlgBMI, `Name a column "${columnNameBMI}"`, '', columnNameBMI);
+
+    await this.action('Enter the BMI formula and click "OK"', grok.functions.onAfterRunAction.pipe(filter((call) => {
+      const column = call.outputs.get('result');
+      return call.func.name === 'AddNewColumn' && column.name === columnNameBMI &&
+        Math.abs(column.min - 12.891) < tolerance && Math.abs(column.max - 62.932) < tolerance;
+      })), addNCDlgBMI.inputs.filter((input) => input.caption == '')[2]?.root, 'The body mass index (BMI) is ' +
+      `calculated as mass (kg) divided by height (m) raised to power 2. Use the "WEIGHT" and "${columnName}" ` +
+      'columns and functions "Div" and "Pow" (or the corresponding operators). We will use this new column to ' +
+      'check what happens when we change the column metadata.');
+
+    await this.action(`Update the formula for "${columnName}" to round the values to 2 decimal places`,
+      grok.functions.onAfterRunAction.pipe(filter((call) => {
+        const column = call.outputs.get('result');
+        return call.func.name === 'AddNewColumn' && column.name === columnName &&
+          Math.abs(column.min - 1.279) < tolerance && Math.abs(column.max - 2.029) < tolerance;
+      })), null, 'You can apply the new formula from the <b>Formula</b> pane of the context panel. Use the ' +
+      '"Round10" function with two arguments (the previous expression column and the number of decimal places). Pay attention to ' +
+      `the "${columnNameBMI}" column. When we change the formula of the underlying column (that is, its metadata), ` +
+      're-calculation is triggered automatically.');
+    
+    this.describe('Calculated columns can be based on various functions: core functions (shown in the function search), ' +
+      'platform commands, scripts, and package functions. Aside from core functions, you need to specify a fully-' +
+      'qualified function name.');
   }
 }
