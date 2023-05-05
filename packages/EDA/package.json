@@ -7,7 +7,8 @@
         "datagrok-api": "latest",
         "cash-dom": "latest",
         "dayjs": "latest",
-        "@datagrok-libraries/utils": "latest"
+        "@datagrok-libraries/utils": "latest",
+        "@datagrok-libraries/tutorials": "^1.2.1"
     },
     "author": {
         "name": "Viktor Makarichev",

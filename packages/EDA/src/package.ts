@@ -7,8 +7,7 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
 import {_initEDAAPI} from '../wasm/EDAAPI';
 import {computePCA, computePLS} from './EDAtools';
-import {renamePCAcolumns, addPLSvisualization, 
-  predictedVersusReferenceScatterPlot} from './EDAui';
+import {renamePCAcolumns, addPLSvisualization} from './EDAui';
 import {demoPLS, carsDataframe} from './demos';
 
 export const _package = new DG.Package();
