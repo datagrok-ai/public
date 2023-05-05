@@ -36,59 +36,26 @@ export const tooltipMessage = {
 
 export const obligatoryFuncProps = ['name', 'description', 'helpUrl', 'language'];
 
-export const functionPropsLabels = (key: FUNC_PROPS_FIELD) => {
-  switch (key) {
-    case FUNC_PROPS_FIELD.NAME: return 'Name';
-    case FUNC_PROPS_FIELD.CONNECTION: return 'Connection';
-    case FUNC_PROPS_FIELD.DESCRIPTION: return 'Description';
-    case FUNC_PROPS_FIELD.LOGIN: return 'Author';
-    case FUNC_PROPS_FIELD.HELP_URL: return 'Help URL';
-    case FUNC_PROPS_FIELD.LANGUAGE: return 'Language';
-    case FUNC_PROPS_FIELD.REFERENCE: return 'Reference';
-    case FUNC_PROPS_FIELD.SAMPLE: return 'Sample';
-    case FUNC_PROPS_FIELD.ENVIRONMENT: return 'Environment';
-    case FUNC_PROPS_FIELD.TAGS: return 'Tags';
-  }
+
+export const functionPropsLabels: {[_: string]: string} = {
+  [FUNC_PROPS_FIELD.NAME]: 'Name',
+  [FUNC_PROPS_FIELD.CONNECTION]: 'Connection',
+  [FUNC_PROPS_FIELD.DESCRIPTION]: 'Description',
+  [FUNC_PROPS_FIELD.LOGIN]: 'Author',
+  [FUNC_PROPS_FIELD.HELP_URL]: 'Help URL',
+  [FUNC_PROPS_FIELD.LANGUAGE]: 'Language',
+  [FUNC_PROPS_FIELD.REFERENCE]: 'Reference',
+  [FUNC_PROPS_FIELD.SAMPLE]: 'Sample',
+  [FUNC_PROPS_FIELD.ENVIRONMENT]: 'Environment',
+  [FUNC_PROPS_FIELD.TAGS]: 'Tags'
 };
 
+export const languages = ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok', 'sql'];
 
-export const getChoicesByName = (name) => {
-    switch (name) {
-        case FUNC_PROPS_FIELD.LANGUAGE: return {choices: languages};
-        case FUNC_PROPS_FIELD.DESCRIPTION: return {editor: 'textarea'};
-        case FUNC_PARAM_FIELDS.DIRECTION: return {choices: [...Object.values(DIRECTION)]};
-        case FUNC_PARAM_FIELDS.TYPE: return {choices: funcParamTypes};
-        case OPTIONAL_TAG_NAME.COLUMNS: return {choices: ['numerical', 'categorical']};
-        case OPTIONAL_TAG_NAME.TYPE: return {choices: ['numerical', 'categorical', 'dateTime']}; 
-    }
+export enum DIRECTION {
+  INPUT = 'input',
+  OUTPUT = 'output',
 }
-export const highlightModeByLang = (key: LANGUAGE) => {
-  switch (key) {
-    case LANGUAGE.JS:
-    case LANGUAGE.NODEJS: return 'javascript';
-    case LANGUAGE.PYTHON:
-    case LANGUAGE.GROK: return 'python';
-    case LANGUAGE.OCTAVE: return 'octave';
-    case LANGUAGE.JULIA: return 'julia';
-    case LANGUAGE.R: return 'r';
-    case LANGUAGE.SQL: return 'sql';
-  }
-};
-
-export const functionPropsCode = (key: string) => {
-  switch (key) {
-    case FUNC_PROPS_FIELD.NAME: return 'name';
-    case FUNC_PROPS_FIELD.CONNECTION: return 'connection';
-    case FUNC_PROPS_FIELD.DESCRIPTION: return 'description';
-    case FUNC_PROPS_FIELD.LOGIN: return 'author';
-    case FUNC_PROPS_FIELD.HELP_URL: return 'helpUrl';
-    case FUNC_PROPS_FIELD.LANGUAGE: return 'language';
-    case FUNC_PROPS_FIELD.REFERENCE: return 'reference';
-    case FUNC_PROPS_FIELD.SAMPLE: return 'sample';
-    case FUNC_PROPS_FIELD.ENVIRONMENT: return 'environment';
-    case FUNC_PROPS_FIELD.TAGS: return 'tags';
-  }
-};
 
 export const funcParamTypes = [
   DG.TYPE.BOOL,
@@ -102,6 +69,62 @@ export const funcParamTypes = [
   DG.TYPE.STRING,
 ];
 
+export enum OPTIONAL_TAG_NAME {
+  COLUMNS = 'columns',
+  TYPE = 'type',
+  FORMAT = 'format',
+  ALLOW_NULLS = 'allowNulls',
+  ACTION = 'action',
+  CHOICES = 'choices',
+  SUGGESTIONS = 'suggestions',
+  MIN = 'min',
+  MAX = 'max',
+}
+
+export const getChoicesByName: {[_: string]: {}} = {
+  [FUNC_PROPS_FIELD.LANGUAGE]: {choices: languages},
+  [FUNC_PROPS_FIELD.DESCRIPTION]: {editor: 'textarea'},
+  [FUNC_PARAM_FIELDS.DIRECTION]: {choices: [...Object.values(DIRECTION)]},
+  [FUNC_PARAM_FIELDS.TYPE]: {choices: funcParamTypes},
+  [OPTIONAL_TAG_NAME.COLUMNS]: {choices: ['numerical', 'categorical']},
+  [OPTIONAL_TAG_NAME.TYPE]: {choices: ['numerical', 'categorical', 'dateTime']}     
+}
+
+export enum LANGUAGE {
+  JS = 'javascript',
+  PYTHON = 'python',
+  R = 'r',
+  JULIA = 'julia',
+  OCTAVE = 'octave',
+  NODEJS = 'nodejs',
+  GROK = 'grok',
+  SQL = 'sql'
+};
+
+export const highlightModeByLang: {[_: string]: string}  = {
+  [LANGUAGE.JS]: 'javascript',
+  [LANGUAGE.NODEJS]: 'javascript',
+  [LANGUAGE.PYTHON]: 'python',
+  [LANGUAGE.GROK]: 'python',
+  [LANGUAGE.OCTAVE]: 'octave',
+  [LANGUAGE.JULIA]: 'julia',
+  [LANGUAGE.R]: 'r',
+  [LANGUAGE.SQL]: 'sql'
+};
+
+export const functionPropsCode: {[_: string]: string} = {
+  [FUNC_PROPS_FIELD.NAME]: 'name',
+  [FUNC_PROPS_FIELD.CONNECTION]: 'connection',
+  [FUNC_PROPS_FIELD.DESCRIPTION]: 'description',
+  [FUNC_PROPS_FIELD.LOGIN]: 'author',
+  [FUNC_PROPS_FIELD.HELP_URL]: 'helpUrl',
+  [FUNC_PROPS_FIELD.LANGUAGE]: 'language',
+  [FUNC_PROPS_FIELD.REFERENCE]: 'reference',
+  [FUNC_PROPS_FIELD.SAMPLE]: 'sample',
+  [FUNC_PROPS_FIELD.ENVIRONMENT]: 'environment',
+  [FUNC_PROPS_FIELD.TAGS]: 'tags'
+}
+
 export const enum FUNC_PARAM_FIELDS {
   DIRECTION = 'direction',
   TYPE = 'propertyType',
@@ -110,13 +133,6 @@ export const enum FUNC_PARAM_FIELDS {
   DESCRIPTION = 'description',
   CATEGORY = 'category',
 }
-
-export enum DIRECTION {
-  INPUT = 'input',
-  OUTPUT = 'output',
-}
-
-
 
 export const functionParamsMapping = {
   [FUNC_PARAM_FIELDS.DIRECTION]: 'Direction',
@@ -140,18 +156,6 @@ export enum COMMON_TAG_NAME {
   UNITS = 'units',
   EDITOR = 'editor',
   SEM_TYPE = 'semType',
-}
-
-export enum OPTIONAL_TAG_NAME {
-  COLUMNS = 'columns',
-  TYPE = 'type',
-  FORMAT = 'format',
-  ALLOW_NULLS = 'allowNulls',
-  ACTION = 'action',
-  CHOICES = 'choices',
-  SUGGESTIONS = 'suggestions',
-  MIN = 'min',
-  MAX = 'max',
 }
 
 export const COMMON_TAG_NAMES = [...Object.values(COMMON_TAG_NAME)];
@@ -183,33 +187,15 @@ export const optionTags = ((param: DG.Property) => {
   }
 });
 
-export enum LANGUAGE {
-  JS = 'javascript',
-  PYTHON = 'python',
-  R = 'r',
-  JULIA = 'julia',
-  OCTAVE = 'octave',
-  NODEJS = 'nodejs',
-  GROK = 'grok',
-  SQL = 'sql'
-};
-
-export const languages = ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok', 'sql'];
-
-export const headerSign = (lang: LANGUAGE) => {
-  switch (lang) {
-    case LANGUAGE.JS:
-    case LANGUAGE.NODEJS:
-      return '//';
-    case LANGUAGE.R:
-    case LANGUAGE.GROK:
-    case LANGUAGE.JULIA:
-    case LANGUAGE.PYTHON:
-    case LANGUAGE.OCTAVE:
-      return '#';
-    case LANGUAGE.SQL:
-      return '--';
-  }
+export const headerSign: {[_: string]: string} = {
+  [LANGUAGE.JS]: '//',
+  [LANGUAGE.NODEJS]: '//',
+  [LANGUAGE.R]: '#',
+  [LANGUAGE.GROK]: '#',
+  [LANGUAGE.JULIA]: '#',
+  [LANGUAGE.PYTHON]: '#',
+  [LANGUAGE.OCTAVE]: '#',
+  [LANGUAGE.SQL]: '--'
 };
 
 export const DATA_QUERY_VIEW = 'DataQueryView';

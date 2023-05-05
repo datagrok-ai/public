@@ -19,10 +19,11 @@ export function functionSignatureEditor(view: DG.View) {
   view.type === DATA_QUERY_VIEW ? addFseRibbonQuery(view) : addFseRibbonScript(view);
 }
 
+const editor = (v: DG.View) => (v.root.querySelector('.CodeMirror') as any).CodeMirror.getDoc().getValue();
+
 function addFseRibbonQuery(v: DG.View) {
   setTimeout(() => {
-    //@ts-ignore
-    const iconFse = ui.iconFA('magic', () => openFse(v, v.root.querySelector('.CodeMirror').CodeMirror.getDoc().getValue()), 'Open Signature Editor');
+    const iconFse = ui.iconFA('magic', () => openFse(v, editor(v)), 'Open Signature Editor');
     //@ts-ignore
     v.ribbonMenu.root.previousSibling.append(ui.div(iconFse,'d4-ribbon-item'));
   }, 500);
@@ -31,8 +32,7 @@ function addFseRibbonQuery(v: DG.View) {
 function addFseRibbonScript(v: DG.View) {
   setTimeout(() => {
     const panels = v.getRibbonPanels();
-    //@ts-ignore
-    const iconFse = ui.iconFA('magic', () => openFse(v, v.root.querySelector('.CodeMirror').CodeMirror.getDoc().getValue()), 'Open Signature Editor');
+    const iconFse = ui.iconFA('magic', () => openFse(v, editor(v)), 'Open Signature Editor');
     if (!panels.some((panel) => panel.some((icon) => {
       return (icon.firstChild as HTMLElement).outerHTML === iconFse.outerHTML;
     }))) 
@@ -43,11 +43,10 @@ function addFseRibbonScript(v: DG.View) {
 function getInputBaseArray(props: DG.Property[], param: any): DG.InputBase[] {
   const inputBaseArray = props.map((prop) => {
     const input = DG.InputBase.forProperty(prop, param);
-    input.classList.add('dt-input');
     input.setTooltip(tooltipMessage[prop.name as OPTIONAL_TAG_NAME]);
-    input.root.addEventListener('click', (_) => {
+    input.root.onclick = (_) => {
       grok.shell.windows.showHelp = true;
-    });
+    };
     return input;
   });
   return inputBaseArray;
@@ -66,16 +65,15 @@ async function getDataQuery(sql: string): Promise<DG.DataQuery> {
 }
 
 async function getInputCode(v: DG.View, functionCode: string) {
-  let inputCodeCopy;
-  v.type === DATA_QUERY_VIEW 
-  ? inputCodeCopy = await getDataQuery(functionCode) 
-  : inputCodeCopy = DG.Script.create(functionCode);
+  const inputCodeCopy = v.type === DATA_QUERY_VIEW 
+  ? await getDataQuery(functionCode) 
+  : DG.Script.create(functionCode);
   return inputCodeCopy;
 }
 
 async function openFse(v: DG.View, functionCode: string) {
   const inputScriptCopy = await getInputCode(v, functionCode);
-  const language = inputScriptCopy.language || LANGUAGE.SQL;
+  const language = (inputScriptCopy as DG.Script).language || LANGUAGE.SQL;
 
   const editorView = DG.View.create();
   editorView.name = v.name;
@@ -103,7 +101,7 @@ async function openFse(v: DG.View, functionCode: string) {
       .map(({ tag, val }) => `${tag}: ${val}`)
       .concat(...(param.category && param.category !== DEFAULT_CATEGORY) ? [`category: ${param.category}`] : [])
       .join('; ');
-    return `${headerSign(language as LANGUAGE)}${direction}: ${param.propertyType} ${param.name ? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
+    return `${headerSign[language]}${direction}: ${param.propertyType} ${param.name ? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
   };
 
   const nameToProp = (name, options?: {[key: string]: any}) => {
@@ -114,7 +112,7 @@ async function openFse(v: DG.View, functionCode: string) {
     return prop;
   };
 
-  const functionProps: DG.Property[] = FUNC_PROPS_FIELDS.map((name) => nameToProp(name, getChoicesByName(name)));
+  const functionProps: DG.Property[] = FUNC_PROPS_FIELDS.map((name) => nameToProp(name, getChoicesByName[name]));
 
   const getNewProps = () => {
     const newProps = [];
@@ -132,7 +130,7 @@ async function openFse(v: DG.View, functionCode: string) {
     switch (prop.name) {
       case FUNC_PROPS_FIELD.LANGUAGE:
         return ui.choiceInput(
-          functionPropsLabels(prop.name as FUNC_PROPS_FIELD),
+          functionPropsLabels[prop.name as FUNC_PROPS_FIELD],
           prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
           prop.choices,
         );
@@ -143,7 +141,7 @@ async function openFse(v: DG.View, functionCode: string) {
       //     prop.choices,
       //   );
       default:
-        return ui.stringInput(functionPropsLabels(prop.name as FUNC_PROPS_FIELD),
+        return ui.stringInput(functionPropsLabels[prop.name as FUNC_PROPS_FIELD],
           prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name]);
     }
   };
@@ -170,7 +168,7 @@ async function openFse(v: DG.View, functionCode: string) {
     };
     const menu = DG.Menu.popup();
     getNewProps().forEach(
-      (prop) => menu.item(functionPropsLabels(prop.name as FUNC_PROPS_FIELD), () => onItemClick(prop)),
+      (prop) => menu.item(functionPropsLabels[prop.name as FUNC_PROPS_FIELD], () => onItemClick(prop)),
     );
 
     const button = ui.button([ui.icons.add(() => { })], () => {
@@ -252,6 +250,9 @@ async function openFse(v: DG.View, functionCode: string) {
       ...optionalTagsInputBase,
     ]);
 
+    result.style.display = 'flex';
+    result.style.flexDirection = 'column';
+
     const helpIcon = ui.iconFA('question', () => {
       window.open(
         'https://datagrok.ai/help/datagrok/functions/func-params-annotation', 
@@ -309,7 +310,7 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const obligatoryFuncParamsTags: DG.Property[] = COMMON_TAG_NAMES.map((name) => nameToProp(name));
 
-  const optionalFuncParamsTags: DG.Property[] = OPTIONAL_TAG_NAMES.map((name) => nameToProp(name, getChoicesByName(name)));
+  const optionalFuncParamsTags: DG.Property[] = OPTIONAL_TAG_NAMES.map((name) => nameToProp(name, getChoicesByName[name]));
   
   const paramsDF = DG.DataFrame.create(functionParamsCopy.length);
   for (const p of obligatoryFuncParamsProps) {
@@ -366,7 +367,7 @@ async function openFse(v: DG.View, functionCode: string) {
   });
 
   const codeArea = ui.textInput('', '');
-  const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), { mode: highlightModeByLang(language as LANGUAGE) });
+  const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), { mode: highlightModeByLang[language] });
   const uiArea = await inputScriptCopy.prepare().getEditor();
   const codePanel = ui.panel([codeArea.root]);
   codePanel.style.height = '100%';
@@ -434,22 +435,22 @@ async function openFse(v: DG.View, functionCode: string) {
   const refreshPreview = async () => {
     let result = '';
     if (v.type === DATA_QUERY_VIEW) 
-      result += `${headerSign(language as LANGUAGE)}${functionPropsCode(FUNC_PROPS_FIELD.CONNECTION)}: ${conn}\n`;
+      result += `${headerSign[language]}${functionPropsCode[FUNC_PROPS_FIELD.CONNECTION]}: ${conn}\n`;
     Object.values(functionProps).map((propField) => {
       const propValue = propField.get(inputScriptCopy) || (inputScriptCopy as any)[propField.name];
       if (!!propValue && !!propValue.length) {
-        const propName = functionPropsCode(propField.name as FUNC_PROPS_FIELD);
-        result += `${headerSign(language as LANGUAGE)}${functionPropsCode(propName)}: ${propValue}\n`;
+        const propName = functionPropsCode[propField.name];
+        result += `${headerSign[language]}${functionPropsCode[propName]}: ${propValue}\n`;
       }
     });
     functionParamsCopy.map((param) => {
       result += generateParamLine(param, param.options.direction);
     });
-    const regex = new RegExp(`^(${headerSign(language as LANGUAGE)}.*\n)*`, 'g');
+    const regex = new RegExp(`^(${headerSign[language]}.*\n)*`, 'g');
     result += (v.type === DATA_QUERY_VIEW) 
-    ? inputScriptCopy.query.substring(inputScriptCopy.query.match(regex)[0].length + 1) 
-    : inputScriptCopy.script.substring(inputScriptCopy.script.match(regex)[0].length + 1);
-    myCM.setOption('mode', highlightModeByLang(language as LANGUAGE));
+    ? (inputScriptCopy as DG.DataQuery).query.substring((inputScriptCopy as DG.DataQuery).query.match(regex)[0].length + 1) 
+    : (inputScriptCopy as DG.Script).script.substring((inputScriptCopy as DG.Script).script.match(regex)[0].length + 1);
+    myCM.setOption('mode', highlightModeByLang[language]);
     myCM.setValue(result);
     myCM.setSize('100%', '100%');
 
