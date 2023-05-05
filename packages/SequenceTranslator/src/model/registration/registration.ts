@@ -3,12 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../../package';
-import {
-  siRnaBioSpringToGcrs, siRnaAxolabsToGcrs, gcrsToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12,
-  siRnaNucleotidesToGcrs
-} from '../../hardcode-to-be-eliminated/converters';
 import {SEQUENCE_TYPES, COL_NAMES, GENERATED_COL_NAMES} from './constants';
-import {saltMass, saltMolWeigth, batchMolWeight} from './calculations';
+import {getSaltMass, getSaltMolWeigth, getBatchMolWeight} from './calculations';
 import {stringify} from '../helpers';
 
 import {RegistrationColumnsHandler} from './add-columns';
@@ -136,58 +132,6 @@ export async function engageViewForOligoSdFileUI(view: DG.TableView) {
 
   const subs: Unsubscribable[] = [];
 
-  // Should be removed after fixing bug https://github.com/datagrok-ai/public/issues/808
-  subs.push(grok.events.onContextMenu.subscribe((event: DG.EventData) => {
-    if (!(event.args.context instanceof DG.Grid)) return;
-    const grid: DG.Grid = event.args.context as DG.Grid;
-    const menu: DG.Menu = event.args.menu;
-
-    const seqCol = grid.table.currentCol; // /^[fsACGUacgu]{6,}$/
-    if (DG.Detector.sampleCategories(seqCol,
-      (s) => /(\(invAb\)|\(GalNAc2\)|A|U|G|C){6,}$/.test(s))) {
-      menu.item('Convert raw nucleotides to GCRS', () => {
-        grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
-          return siRnaNucleotidesToGcrs(seqCol.get(i));
-        });
-      });
-    } else if (DG.Detector.sampleCategories(seqCol,
-      (s) => /(\(invAb\)|\(GalNAc2\)|f|s|A|C|G|U|a|c|g|u){6,}$/.test(s))) {
-      menu.item('Convert Axolabs to GCRS', () => {
-        grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
-          return siRnaAxolabsToGcrs(seqCol.get(i));
-        });
-      }); // /^[fmpsACGU]{6,}$/
-    } else if (DG.Detector.sampleCategories(seqCol,
-        (s) => /(\(invAb\)|\(GalNAc2\)|f|m|ps|A|C|G|U){6,}$/.test(s)) ||
-      DG.Detector.sampleCategories(seqCol, (s) => /^(?=.*moe)(?=.*5mC)(?=.*ps){6,}/.test(s))) {
-      menu.item('Convert GCRS to raw', () => {
-        grid.table.columns.addNewString(seqCol.name + ' to raw').init((i: number) => {
-          return gcrsToNucleotides(seqCol.get(i));
-        });
-      });
-      menu.item('Convert GCRS to MM12', () => {
-        grid.table.columns.addNewString(seqCol.name + ' to MM12').init((i: number) => {
-          return gcrsToMermade12(seqCol.get(i));
-        });
-      }); // /^[*56789ATGC]{6,}$/
-    } else if (DG.Detector.sampleCategories(seqCol,
-      (s) => /(\(invAb\)|\(GalNAc2\)|\*|5|6|7|8|9|A|T|G|C){6,}$/.test(s))) {
-      menu.item('Convert Biospring to GCRS', () => {
-        const seqCol = grid.table.currentCol;
-        grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
-          return asoGapmersBioSpringToGcrs(seqCol.get(i));
-        });
-      }); // /^[*1-8]{6,}$/
-    } else if (DG.Detector.sampleCategories(seqCol,
-      (s) => /(\(invAb\)|\(GalNAc2\)|\*|1|2|3|4|5|6|7|8){6,}$/.test(s))) {
-      menu.item('Convert Biospring to GCRS', () => {
-        grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
-          return siRnaBioSpringToGcrs(seqCol.get(i));
-        });
-      });
-    }
-  }));
-
   subs.push(grok.events.onViewRemoved.subscribe((view: DG.View) => {
     for (const sub of subs) sub.unsubscribe();
   }));
@@ -267,11 +211,11 @@ export async function oligoSdFile(dl: DBLoaderBase, table: DG.DataFrame) {
       });
 
       function updateCalculatedColumns(t: DG.DataFrame, i: number): void {
-        const smValue = saltMass(saltNamesList, saltsMolWeightList, equivalentsCol, i, saltCol);
+        const smValue = getSaltMass(saltNamesList, saltsMolWeightList, equivalentsCol, i, saltCol);
         t.getCol(COL_NAMES.SALT_MASS).set(i, smValue, false);
-        const smwValue = saltMolWeigth(saltNamesList, saltCol, saltsMolWeightList, i);
+        const smwValue = getSaltMolWeigth(saltNamesList, saltCol, saltsMolWeightList, i);
         t.getCol(COL_NAMES.SALT_MOL_WEIGHT).set(i, smwValue, false);
-        const bmw = batchMolWeight(t.getCol(COL_NAMES.COMPOUND_MOL_WEIGHT), t.getCol(COL_NAMES.SALT_MASS), i);
+        const bmw = getBatchMolWeight(t.getCol(COL_NAMES.COMPOUND_MOL_WEIGHT), t.getCol(COL_NAMES.SALT_MASS), i);
         t.getCol(COL_NAMES.BATCH_MOL_WEIGHT).set(i, bmw, false);
       }
     }),

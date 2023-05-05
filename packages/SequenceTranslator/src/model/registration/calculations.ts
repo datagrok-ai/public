@@ -1,9 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 
 import {sortByReverseLength} from '../helpers';
-import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
 
-export function saltMass(
+export function getSaltMass(
   saltNames: string[], saltsMolWeightList: number[], equivalentsCol: DG.Column, i: number, saltCol: DG.Column
 ): number {
   const saltRowIndex = saltNames.indexOf(saltCol.get(i));
@@ -14,14 +13,14 @@ export function saltMass(
     saltsMolWeightList[saltRowIndex] * equivalentsCol.get(i);
 }
 
-export function saltMolWeigth(
+export function getSaltMolWeigth(
   saltNamesList: string[], saltCol: DG.Column, saltsMolWeightList: number[], i: number
 ): number {
   const saltRowIndex = saltNamesList.indexOf(saltCol.get(i));
   return (saltRowIndex == -1) ? DG.FLOAT_NULL : saltsMolWeightList[saltRowIndex];
 }
 
-export function batchMolWeight(compoundMolWeightCol: DG.Column, saltMassCol: DG.Column, i: number): number {
+export function getBatchMolWeight(compoundMolWeightCol: DG.Column, saltMassCol: DG.Column, i: number): number {
   return (compoundMolWeightCol.getString(i) == '' || saltMassCol.getString(i) == '') ?
     DG.FLOAT_NULL :
     compoundMolWeightCol.get(i) + saltMassCol.get(i);

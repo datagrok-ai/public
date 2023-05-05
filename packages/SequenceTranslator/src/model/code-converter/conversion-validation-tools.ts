@@ -1,12 +1,5 @@
-import {SYNTHESIZERS, TECHNOLOGIES} from '../const';
-import {
-  asoGapmersNucleotidesToBioSpring, asoGapmersNucleotidesToGcrs,
-  asoGapmersBioSpringToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12, siRnaNucleotideToBioSpringSenseStrand,
-  siRnaNucleotideToAxolabsSenseStrand, siRnaNucleotidesToGcrs, siRnaBioSpringToNucleotides,
-  siRnaBioSpringToAxolabs, siRnaBioSpringToGcrs, siRnaAxolabsToNucleotides,
-  siRnaAxolabsToBioSpring, siRnaAxolabsToGcrs, siRnaGcrsToNucleotides,
-  siRnaGcrsToBioSpring, siRnaGcrsToAxolabs, gcrsToNucleotides, gcrsToLcms
-} from '../../hardcode-to-be-eliminated/converters';
+import {SYNTHESIZERS as FORMAT, TECHNOLOGIES} from '../const';
+import {FormatConverter} from '../../hardcode-to-be-eliminated/converters';
 
 import {FormatDetector} from '../parsing-validation-utils/format-detector';
 
@@ -37,85 +30,50 @@ export function convertSequence(sequence: string, output: {
       Error: undefinedInputSequence,
     };
   }
-  if (output.synthesizer!.includes(SYNTHESIZERS.RAW_NUCLEOTIDES) /*&& output.technology!.includes(TECHNOLOGIES.DNA)*/) {
+  if (output.synthesizer!.includes(FORMAT.RAW_NUCLEOTIDES) /*&& output.technology!.includes(TECHNOLOGIES.DNA)*/) {
+    const converter = new FormatConverter(sequence, FORMAT.RAW_NUCLEOTIDES);
     return {
-      type: SYNTHESIZERS.RAW_NUCLEOTIDES, // + ' ' + TECHNOLOGIES.DNA,
+      type: FORMAT.RAW_NUCLEOTIDES, // + ' ' + TECHNOLOGIES.DNA,
       Nucleotides: sequence,
-      BioSpring: asoGapmersNucleotidesToBioSpring(sequence),
-      GCRS: asoGapmersNucleotidesToGcrs(sequence),
+      BioSpring: converter.convert(FORMAT.BIOSPRING),
+      GCRS: converter.convert(FORMAT.GCRS),
     };
   }
-  if (output.synthesizer!.includes(SYNTHESIZERS.BIOSPRING)) {
+  if (output.synthesizer!.includes(FORMAT.BIOSPRING)) {
+    const converter = new FormatConverter(sequence, FORMAT.BIOSPRING);
     // && output.technology!.includes(TECHNOLOGIES.ASO_GAPMERS)) {
     return {
-      type: SYNTHESIZERS.BIOSPRING + ' ' + TECHNOLOGIES.ASO_GAPMERS,
-      Nucleotides: asoGapmersBioSpringToNucleotides(sequence),
+      type: FORMAT.BIOSPRING + ' ' + TECHNOLOGIES.ASO_GAPMERS,
+      Nucleotides: converter.convert(FORMAT.RAW_NUCLEOTIDES),
       BioSpring: sequence,
-      GCRS: asoGapmersBioSpringToGcrs(sequence),
+      GCRS: converter.convert(FORMAT.GCRS),
     };
   }
-  if (output.synthesizer!.includes(SYNTHESIZERS.GCRS)) { // && output.technology!.includes(TECHNOLOGIES.ASO_GAPMERS)) {
+  if (output.synthesizer!.includes(FORMAT.GCRS)) { // && output.technology!.includes(TECHNOLOGIES.ASO_GAPMERS)) {
+    const converter = new FormatConverter(sequence, FORMAT.GCRS);
     return {
-      type: SYNTHESIZERS.GCRS + ' ' + TECHNOLOGIES.ASO_GAPMERS,
-      Nucleotides: gcrsToNucleotides(sequence),
-      BioSpring: siRnaGcrsToBioSpring(sequence),
-      Axolabs: siRnaGcrsToAxolabs(sequence),
-      Mermade12: gcrsToMermade12(sequence),
+      type: FORMAT.GCRS + ' ' + TECHNOLOGIES.ASO_GAPMERS,
+      Nucleotides: converter.convert(FORMAT.RAW_NUCLEOTIDES),
+      BioSpring: converter.convert(FORMAT.BIOSPRING),
+      Axolabs: converter.convert(FORMAT.AXOLABS),
+      Mermade12: converter.convert(FORMAT.MERMADE_12),
       GCRS: sequence,
-      LCMS: gcrsToLcms(sequence),
+      LCMS: converter.convert(FORMAT.LCMS),
     };
   }
-  if (output.synthesizer!.includes(SYNTHESIZERS.RAW_NUCLEOTIDES)) {
-    // && output.technology!.includes(TECHNOLOGIES.RNA)) {
+  if (output.synthesizer!.includes(FORMAT.AXOLABS)) {
+    const converter = new FormatConverter(sequence, FORMAT.AXOLABS);
     return {
-      type: SYNTHESIZERS.RAW_NUCLEOTIDES + ' ' + TECHNOLOGIES.RNA,
-      Nucleotides: sequence,
-      BioSpring: siRnaNucleotideToBioSpringSenseStrand(sequence),
-      Axolabs: siRnaNucleotideToAxolabsSenseStrand(sequence),
-      GCRS: siRnaNucleotidesToGcrs(sequence),
-    };
-  }
-  if (output.synthesizer!.includes(SYNTHESIZERS.BIOSPRING)) { // && output.technology!.includes(TECHNOLOGIES.SI_RNA)) {
-    return {
-      type: SYNTHESIZERS.BIOSPRING + ' ' + TECHNOLOGIES.SI_RNA,
-      Nucleotides: siRnaBioSpringToNucleotides(sequence),
-      BioSpring: sequence,
-      Axolabs: siRnaBioSpringToAxolabs(sequence),
-      GCRS: siRnaBioSpringToGcrs(sequence),
-    };
-  }
-  if (output.synthesizer!.includes(SYNTHESIZERS.AXOLABS)) {
-    return {
-      type: SYNTHESIZERS.AXOLABS + ' ' + TECHNOLOGIES.SI_RNA,
-      Nucleotides: siRnaAxolabsToNucleotides(sequence),
-      BioSpring: siRnaAxolabsToBioSpring(sequence),
+      type: FORMAT.AXOLABS + ' ' + TECHNOLOGIES.SI_RNA,
+      Nucleotides: converter.convert(FORMAT.RAW_NUCLEOTIDES),
+      BioSpring: converter.convert(FORMAT.BIOSPRING),
       Axolabs: sequence,
-      GCRS: siRnaAxolabsToGcrs(sequence),
+      GCRS: converter.convert(FORMAT.GCRS),
     };
   }
-  if (output.synthesizer!.includes(SYNTHESIZERS.GCRS)) { // && output.technology!.includes(TECHNOLOGIES.SI_RNA)) {
+  if (output.synthesizer!.includes(FORMAT.MERMADE_12)) {
     return {
-      type: SYNTHESIZERS.GCRS + ' ' + TECHNOLOGIES.SI_RNA,
-      Nucleotides: siRnaGcrsToNucleotides(sequence),
-      BioSpring: siRnaGcrsToBioSpring(sequence),
-      Axolabs: siRnaGcrsToAxolabs(sequence),
-      MM12: gcrsToMermade12(sequence),
-      GCRS: sequence,
-      LCMS: gcrsToLcms(sequence),
-    };
-  }
-  if (output.synthesizer!.includes(SYNTHESIZERS.GCRS)) {
-    return {
-      type: SYNTHESIZERS.GCRS,
-      Nucleotides: gcrsToNucleotides(sequence),
-      GCRS: sequence,
-      Mermade12: gcrsToMermade12(sequence),
-      LCMS: gcrsToLcms(sequence),
-    };
-  }
-  if (output.synthesizer!.includes(SYNTHESIZERS.MERMADE_12)) {
-    return {
-      type: SYNTHESIZERS.MERMADE_12,
+      type: FORMAT.MERMADE_12,
       Nucleotides: noTranslationTableAvailable,
       GCRS: noTranslationTableAvailable,
       Mermade12: sequence,
