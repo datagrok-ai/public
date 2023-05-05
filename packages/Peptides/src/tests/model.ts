@@ -37,42 +37,52 @@ category('Model: Settings', () => {
   });
 
   test('Activity scaling', async () => {
+    const getError = (row: number, method: SCALING_METHODS) =>
+      `Activity mismatch at row ${row} for scaling method '${method}'`;
     const tolerance = 0.0001;
     const origActivityData =
       model.df.getCol(model.settings.activityColumnName!).getRawData();
     const scaledActivity = model.df.getCol(COLUMNS_NAMES.ACTIVITY_SCALED);
     const dfLen = model.df.rowCount;
 
-    // Check 'none' scaling
+    // Check initial 'none' scaling
     let scaledActivityData = scaledActivity.getRawData();
-    for (let i = 0; i < dfLen; i++) {
-      expectFloat(scaledActivityData[i], origActivityData[i], tolerance,
-        `Activity mismatch at row ${i} for scaling method ` +
-        `'${SCALING_METHODS.NONE}'`);
-    }
+    for (let i = 0; i < dfLen; i++)
+      expectFloat(scaledActivityData[i], origActivityData[i], tolerance, getError(i, SCALING_METHODS.NONE));
     
     // Check 'lg' scaling
     model.settings = {scaling: SCALING_METHODS.LG};
     scaledActivityData = scaledActivity.getRawData();
-    for (let i = 0; i < dfLen; i++) {
-      expectFloat(scaledActivityData[i], Math.log10(origActivityData[i]),
-        tolerance, `Activity mismatch at row ${i} for scaling method ` +
-        `'${SCALING_METHODS.LG}'`);
-    }
+    for (let i = 0; i < dfLen; i++)
+      expectFloat(scaledActivityData[i], Math.log10(origActivityData[i]), tolerance, getError(i, SCALING_METHODS.LG));
 
     // Check '-lg' scaling
     model.settings = {scaling: SCALING_METHODS.MINUS_LG};
     scaledActivityData = scaledActivity.getRawData();
     for (let i = 0; i < dfLen; i++) {
-      expectFloat(scaledActivityData[i], -Math.log10(origActivityData[i]),
-        tolerance, `Activity mismatch at row ${i} for scaling method ` +
-        `'${SCALING_METHODS.MINUS_LG}'`);
+      expectFloat(scaledActivityData[i], -Math.log10(origActivityData[i]), tolerance,
+        getError(i, SCALING_METHODS.MINUS_LG));
     }
+
+    // Check 'none' scaling
+    model.settings = {scaling: SCALING_METHODS.NONE};
+    scaledActivityData = scaledActivity.getRawData();
+    for (let i = 0; i < dfLen; i++)
+      expectFloat(scaledActivityData[i], origActivityData[i], tolerance, getError(i, SCALING_METHODS.NONE));
   });
 
   test('Bidirectional analysis', async () => {
+    // Check that bidirectional analysis is disabled by default
+    expect(model.settings.isBidirectional ?? false, false, 'Bidirectional analysis is enabled by default');
 
-  }, {skipReason: 'Not implemented yet'});
+    // Check that bidirectional analysis can be enabled
+    model.settings = {isBidirectional: true};
+    expect(model.settings.isBidirectional, true, 'Bidirectional analysis is disabled after enabling');
+
+    // Check that bidirectional analysis can be disabled
+    model.settings = {isBidirectional: false};
+    expect(model.settings.isBidirectional, false, 'Bidirectional analysis is enabled after disabling');
+  });
 
   test('Mutation Cliffs', async () => {
 
