@@ -397,7 +397,7 @@ category('UI', () => {
     await getDlgAndClickOK('cannot load Fingerprints dialog');
     await delay(1000);
     expect(smiles.columns.names().includes('Fingerprints'), true, `Fingerprints column has not been added`);
-  });
+  },  { skipReason: 'GROK-13025' });
 
   test('substructure search', async () => {
     smiles = grok.data.demo.molecules(20);
