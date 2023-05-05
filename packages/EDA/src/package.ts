@@ -10,7 +10,8 @@ import {computePCA, computePLS} from './EDAtools';
 import {renamePCAcolumns, addPLSvisualization} from './EDAui';
 import {demoPLS} from './demos';
 import {carsDataframe, testDataForBinaryClassification} from './dataGenerators';
-import {LINEAR, RBF} from './svm';
+import {LINEAR, RBF, POLYNOMIAL, SIGMOID, 
+  getTrainedModel, getPrediction, showTrainReport, getPackedModel} from './svm';
 
 export const _package = new DG.Package();
 
@@ -49,7 +50,7 @@ export async function PLS(table: DG.DataFrame, features: DG.ColumnList, predict:
 
 //name: MVA demo
 //description: Multivariate analysis (PLS) demo.
-//meta.demoPath: Statistical | Multivariate analysis
+//meta.demoPath: Data analysis | Multivariate analysis
 export async function demoScript(): Promise<any>  {
   const demoScript = new DemoScript('Multivariate analysis', 
     'Provides partial least sqaure regression analysis of the given data.'); 
@@ -113,4 +114,131 @@ export async function testDataLinearNonSeparable(name: string, sigma: number, sa
 {
   return await testDataForBinaryClassification(RBF, [sigma, 0], name, samplesCount, featuresCount,
     min, max, violatorsPercentage);
+}
+
+//name: trainLinearKernelSVM
+//meta.mlname: linear kernel LS-SVM
+//meta.mlrole: train
+//input: dataframe df
+//input: string predict_column
+//input: double gamma = 1.0 {category: Hyperparameters}
+//input: bool toShowReport = false {caption: to show report; category: Report}
+//output: dynamic model
+export async function trainLinearKernelSVM(df: DG.DataFrame, predict_column: string, 
+  gamma: number, toShowReport: boolean): Promise<any> 
+{    
+  const trainedModel = await getTrainedModel({gamma: gamma, kernel: LINEAR}, df, predict_column);   
+
+  if (toShowReport)
+    showTrainReport(df, trainedModel);
+
+  return getPackedModel(trainedModel);
+}
+
+//name: applyLinearKernelSVM
+//meta.mlname: linear kernel LS-SVM
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export async function applyLinearKernelSVM(df: DG.DataFrame, model: any): Promise<DG.DataFrame> { 
+  return await getPrediction(df, model); 
+}
+
+//name: trainRBFkernelSVM
+//meta.mlname: RBF-kernel LS-SVM
+//meta.mlrole: train
+//input: dataframe df
+//input: string predict_column
+//input: double gamma = 1.0 {category: Hyperparameters}
+//input: double sigma = 1.5 {category: Hyperparameters}
+//input: bool toShowReport = false {caption: to show report; category: Report}
+//output: dynamic model
+export async function trainRBFkernelSVM(df: DG.DataFrame, predict_column: string, 
+  gamma: number, sigma: number, toShowReport: boolean): Promise<any> 
+{  
+  const trainedModel = await getTrainedModel(
+    {gamma: gamma, kernel: RBF, sigma: sigma}, 
+    df, predict_column);   
+
+  if (toShowReport)
+    showTrainReport(df, trainedModel);
+
+  return getPackedModel(trainedModel);
+}
+
+//name: applyRBFkernelSVM
+//meta.mlname: RBF-kernel LS-SVM
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export async function applyRBFkernelSVM(df: DG.DataFrame, model: any): Promise<DG.DataFrame> { 
+  return await getPrediction(df, model); 
+} 
+
+//name: trainPolynomialKernelSVM
+//meta.mlname: polynomial kernel LS-SVM
+//meta.mlrole: train
+//input: dataframe df
+//input: string predict_column
+//input: double gamma = 1.0 {category: Hyperparameters}
+//input: double c = 1 {category: Hyperparameters}
+//input: double d = 2 {category: Hyperparameters}
+//input: bool toShowReport = false {caption: to show report; category: Report}
+//output: dynamic model
+export async function trainPolynomialKernelSVM(df: DG.DataFrame, predict_column: string, 
+  gamma: number, c: number, d: number, toShowReport: boolean): Promise<any> 
+{  
+  const trainedModel = await getTrainedModel(
+    {gamma: gamma, kernel: POLYNOMIAL, cParam: c, dParam: d}, 
+    df, predict_column);   
+
+  if (toShowReport)
+    showTrainReport(df, trainedModel);
+
+  return getPackedModel(trainedModel);
+} // trainPolynomialKernelSVM
+
+//name: applyPolynomialKernelSVM
+//meta.mlname: polynomial kernel LS-SVM
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export async function applyPolynomialKernelSVM(df: DG.DataFrame, model: any): Promise<DG.DataFrame> { 
+  return await getPrediction(df, model); 
+}
+
+//name: trainSigmoidKernelSVM
+//meta.mlname: sigmoid kernel LS-SVM
+//meta.mlrole: train
+//input: dataframe df
+//input: string predict_column
+//input: double gamma = 1.0 {category: Hyperparameters}
+//input: double kappa = 1 {category: Hyperparameters}
+//input: double theta = 1 {category: Hyperparameters}
+//input: bool toShowReport = false {caption: to show report; category: Report}
+//output: dynamic model
+export async function trainSigmoidKernelSVM(df: DG.DataFrame, predict_column: string, 
+  gamma: number, kappa: number, theta: number, toShowReport: boolean): Promise<any> 
+{  
+  const trainedModel = await getTrainedModel(
+    {gamma: gamma, kernel: SIGMOID, kappa: kappa, theta: theta}, 
+    df, predict_column);   
+
+  if (toShowReport)
+    showTrainReport(df, trainedModel);
+
+  return getPackedModel(trainedModel);
+} // trainSigmoidKernelSVM
+
+//name: applySigmoidKernelSVM
+//meta.mlname: sigmoid kernel LS-SVM
+//meta.mlrole: apply
+//input: dataframe df
+//input: dynamic model
+//output: dataframe table
+export async function applySigmoidKernelSVM(df: DG.DataFrame, model: any): Promise<DG.DataFrame> { 
+  return await getPrediction(df, model); 
 }
