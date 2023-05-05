@@ -7,7 +7,6 @@ import grok_connect.utils.QueryManager;
 import org.eclipse.jetty.websocket.api.Session;
 import com.google.gson.Gson;
 import java.nio.ByteBuffer;
-import java.sql.ResultSet;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -19,9 +18,9 @@ import grok_connect.GrokConnect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import serialization.DataFrame;
-import shadow.org.apache.jena.base.Sys;
 
 public class SessionHandler {
+    public static final String LOG_MESSAGE = "| %s |";
     private static final Logger LOGGER = LoggerFactory.getLogger(SessionHandler.class);
     private static final Gson gson = new Gson();
     private static final int rowsPerChunk = 10000;
@@ -72,20 +71,20 @@ public class SessionHandler {
             queryManager = new QueryManager(message);
             FuncCall query = queryManager.getQuery();
             if (query.debugQuery) {
-                query.log += GrokConnect.properties.toString();
-                query.log += getOnMessageLogString(DEFAULT_GETTING_RESULT_SET_MESSAGE);
+                query.log += String.format(LOG_MESSAGE, GrokConnect.properties.toString());
+                query.log += String.format(LOG_MESSAGE, getOnMessageLogString(DEFAULT_GETTING_RESULT_SET_MESSAGE));
             }
             queryManager.initResultSet();
             if (query.debugQuery) {
-                query.log += getOnMessageLogString(DEFAULT_GOT_RESULT_SET_MESSAGE);
+                query.log += String.format(LOG_MESSAGE, getOnMessageLogString(DEFAULT_GOT_RESULT_SET_MESSAGE));
             }
             if (queryManager.isResultSetInitialized()) {
                 if (query.debugQuery) {
-                    query.log += getOnMessageLogString(DEFAULT_INITIALIZING_SCHEME_MESSAGE);
+                    query.log += String.format(LOG_MESSAGE, getOnMessageLogString(DEFAULT_INITIALIZING_SCHEME_MESSAGE));
                 }
                 queryManager.initScheme();
                 if (query.debugQuery) {
-                    query.log += getOnMessageLogString(DEFAULT_FINISHED_INITIALIZATION_SCHEME_MESSAGE);
+                    query.log += String.format(LOG_MESSAGE, getOnMessageLogString(DEFAULT_FINISHED_INITIALIZATION_SCHEME_MESSAGE));
                 }
                 dataFrame = queryManager.getSubDF(100);
             } else {
@@ -98,6 +97,10 @@ public class SessionHandler {
             return;
         } else if (message.startsWith(SIZE_RECIEVED_MESSAGE)) {
             fdf = threadPool.submit(() -> queryManager.getSubDF(rowsPerChunk));
+            if (queryManager.getQuery().debugQuery) {
+                queryManager.getQuery().log += String.format(LOG_MESSAGE,
+                        String.format("Sending bytes, start time: %s", LocalDateTime.now()));
+            }
             session.getRemote().sendBytes(ByteBuffer.wrap(bytes));
             return;
         } else {
@@ -116,7 +119,9 @@ public class SessionHandler {
             }
         }
         if (dataFrame != null && (dataFrame.rowCount != 0 || !oneDfSent)) {
+            LOGGER.debug("Calculating dataframe weight");
             bytes = dataFrame.toByteArray();
+            LOGGER.debug("Calculated dataframe weight: {}", bytes.length);
             session.getRemote().sendString(checksumMessage(bytes.length));
         } else {
             queryManager.closeConnection();
@@ -159,6 +164,10 @@ public class SessionHandler {
     private String getFailedQueryInfo() {
         FuncCall query = queryManager.getQuery();
         return new StringBuilder()
+                .append("Log during execution: ")
+                .append(System.lineSeparator())
+                .append(query.log)
+                .append(System.lineSeparator())
                 .append("Current time: ")
                 .append(System.lineSeparator())
                 .append(LocalDateTime.now())
