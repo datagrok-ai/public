@@ -293,7 +293,7 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
       canvasContext, currentMonomer, currentPosition, model.monomerPositionFilter, value, bound, color);
   } else {
     CR.renderMutationCliffCell(canvasContext, currentMonomer, currentPosition, model.monomerPositionStats, bound,
-      model.monomerPositionSelection, model.substitutionsInfo, model.settings.isBidirectional);
+      model.monomerPositionSelection, model.mutationCliffs, model.settings.isBidirectional);
   }
   args.preventDefault();
   canvasContext.restore();

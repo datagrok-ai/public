@@ -73,7 +73,7 @@ export class PeptidesModel {
   _monomerPositionSelection!: type.PositionToAARList;
   _monomerPositionFilter!: type.PositionToAARList;
   _clusterSelection!: string[];
-  _substitutionsInfo?: type.SubstitutionsInfo;
+  _mutationCliffs?: type.MutationCliffs;
   isInitialized = false;
   _analysisView?: DG.TableView;
 
@@ -165,19 +165,19 @@ export class PeptidesModel {
     return col.getTag(bioTAGS.alphabet);
   }
 
-  get substitutionsInfo(): type.SubstitutionsInfo {
-    if (this._substitutionsInfo)
-      return this._substitutionsInfo;
+  get mutationCliffs(): type.MutationCliffs {
+    if (this._mutationCliffs)
+      return this._mutationCliffs;
 
     const scaledActivityCol: DG.Column<number> = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     //TODO: set categories ordering the same to share compare indexes instead of strings
     const monomerColumns: type.RawColumn[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractMonomerInfo);
-    this._substitutionsInfo = findMutations(scaledActivityCol.getRawData(), monomerColumns, this.settings);
-    return this._substitutionsInfo;
+    this._mutationCliffs = findMutations(scaledActivityCol.getRawData(), monomerColumns, this.settings);
+    return this._mutationCliffs;
   }
 
-  set substitutionsInfo(si: type.SubstitutionsInfo) {
-    this._substitutionsInfo = si;
+  set mutationCliffs(si: type.MutationCliffs) {
+    this._mutationCliffs = si;
   }
 
   get clusterStats(): ClusterTypeStats {
@@ -306,7 +306,7 @@ export class PeptidesModel {
   }
 
   get settings(): type.PeptidesSettings {
-    this._settings ??= JSON.parse(this.df.getTag('settings') || '{}');
+    this._settings ??= JSON.parse(this.df.getTag('settings')!);
     return this._settings;
   }
 
@@ -352,7 +352,7 @@ export class PeptidesModel {
         const scaledActivityCol: DG.Column<number> = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
         //TODO: set categories ordering the same to share compare indexes instead of strings
         const monomerCols: type.RawColumn[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractMonomerInfo);
-        this.substitutionsInfo = findMutations(scaledActivityCol.getRawData(), monomerCols, this.settings);
+        this.mutationCliffs = findMutations(scaledActivityCol.getRawData(), monomerCols, this.settings);
         break;
       case 'stats':
         this.monomerPositionStats = this.calculateMonomerPositionStatistics();

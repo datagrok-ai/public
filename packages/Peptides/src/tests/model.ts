@@ -16,10 +16,8 @@ category('Model: Settings', () => {
   let clusterCol: DG.Column<any>;
   let scaledActivityCol: DG.Column<number>;
 
-  const firstMonomerPair = {monomer: 'N', position: '4', count: 7};
-  const secondMonomerPair = {monomer: 'meI', position: '1', count: 10};
-  const firstCluster = {name: '0', count: 3};
-  const secondCluster = {name: '1', count: 3};
+  const mutationCliffsDefaultParams = {maxMutations: 1, minActivityDelta: 0};
+  const mutationCliffsTestParams = {maxMutations: 2, minActivityDelta: 0.5};
 
   before(async () => {
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
@@ -37,7 +35,7 @@ category('Model: Settings', () => {
   });
 
   test('Activity scaling', async () => {
-    const getError = (row: number, method: SCALING_METHODS) =>
+    const getError = (row: number, method: SCALING_METHODS): string =>
       `Activity mismatch at row ${row} for scaling method '${method}'`;
     const tolerance = 0.0001;
     const origActivityData =
@@ -49,7 +47,7 @@ category('Model: Settings', () => {
     let scaledActivityData = scaledActivity.getRawData();
     for (let i = 0; i < dfLen; i++)
       expectFloat(scaledActivityData[i], origActivityData[i], tolerance, getError(i, SCALING_METHODS.NONE));
-    
+
     // Check 'lg' scaling
     model.settings = {scaling: SCALING_METHODS.LG};
     scaledActivityData = scaledActivity.getRawData();
@@ -73,7 +71,7 @@ category('Model: Settings', () => {
 
   test('Bidirectional analysis', async () => {
     // Check that bidirectional analysis is disabled by default
-    expect(model.settings.isBidirectional ?? false, false, 'Bidirectional analysis is enabled by default');
+    expect(model.settings.isBidirectional, false, 'Bidirectional analysis is enabled by default');
 
     // Check that bidirectional analysis can be enabled
     model.settings = {isBidirectional: true};
@@ -85,8 +83,20 @@ category('Model: Settings', () => {
   });
 
   test('Mutation Cliffs', async () => {
+    // Check default mutation cliffs parameters
+    expect(model.settings.maxMutations, mutationCliffsDefaultParams.maxMutations, `Max mutations mismatch: expected ` +
+      `${mutationCliffsDefaultParams.maxMutations}, actual ${model.settings.maxMutations}`);
+    expect(model.settings.minActivityDelta, mutationCliffsDefaultParams.minActivityDelta, `Min activity delta ` +
+      `mismatch: expected ${mutationCliffsDefaultParams.minActivityDelta}, actual ${model.settings.minActivityDelta}`);
 
-  }, {skipReason: 'Not implemented yet'});
+    // Check test mutation cliffs parameters
+    model.settings = {maxMutations: mutationCliffsTestParams.maxMutations,
+      minActivityDelta: mutationCliffsTestParams.minActivityDelta};
+    expect(model.settings.maxMutations, mutationCliffsTestParams.maxMutations, `Max mutations mismatch: expected ` +
+      `${mutationCliffsTestParams.maxMutations}, actual ${model.settings.maxMutations}`);
+    expect(model.settings.minActivityDelta, mutationCliffsTestParams.minActivityDelta, `Min activity delta ` +
+      `mismatch: expected ${mutationCliffsTestParams.minActivityDelta}, actual ${model.settings.minActivityDelta}`);
+  });
 
   test('Include columns', async () => {
 

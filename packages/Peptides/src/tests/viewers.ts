@@ -8,7 +8,7 @@ import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
 import {MONOMER_POSITION_MODE, MonomerPosition} from '../viewers/sar-viewer';
-import { SCALING_METHODS } from '../utils/constants';
+import {SCALING_METHODS} from '../utils/constants';
 
 
 category('Viewers: Basic', () => {
@@ -38,7 +38,7 @@ category('Viewers: Monomer-Position', () => {
     scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
     clusterCol = df.getCol('cluster');
     const tempModel = await startAnalysis(
-      activityCol, sequenceCol, clusterCol, df, scaledActivityCol,SCALING_METHODS.NONE);
+      activityCol, sequenceCol, clusterCol, df, scaledActivityCol, SCALING_METHODS.NONE);
     if (tempModel === null)
       throw new Error('Model is null');
     model = tempModel;
