@@ -1,5 +1,5 @@
 import {SYNTHESIZERS as FORMAT, TECHNOLOGIES} from '../const';
-import {FormatConverter} from '../../hardcode-to-be-eliminated/converters';
+import {FormatConverter} from './format-converter';
 
 import {FormatDetector} from '../parsing-validation-utils/format-detector';
 
@@ -30,10 +30,10 @@ export function convertSequence(sequence: string, output: {
       Error: undefinedInputSequence,
     };
   }
-  if (output.synthesizer!.includes(FORMAT.RAW_NUCLEOTIDES) /*&& output.technology!.includes(TECHNOLOGIES.DNA)*/) {
-    const converter = new FormatConverter(sequence, FORMAT.RAW_NUCLEOTIDES);
+  if (output.synthesizer!.includes(FORMAT.NUCLEOTIDES) /*&& output.technology!.includes(TECHNOLOGIES.DNA)*/) {
+    const converter = new FormatConverter(sequence, FORMAT.NUCLEOTIDES);
     return {
-      type: FORMAT.RAW_NUCLEOTIDES, // + ' ' + TECHNOLOGIES.DNA,
+      type: FORMAT.NUCLEOTIDES, // + ' ' + TECHNOLOGIES.DNA,
       Nucleotides: sequence,
       BioSpring: converter.convert(FORMAT.BIOSPRING),
       GCRS: converter.convert(FORMAT.GCRS),
@@ -44,7 +44,7 @@ export function convertSequence(sequence: string, output: {
     // && output.technology!.includes(TECHNOLOGIES.ASO_GAPMERS)) {
     return {
       type: FORMAT.BIOSPRING + ' ' + TECHNOLOGIES.ASO_GAPMERS,
-      Nucleotides: converter.convert(FORMAT.RAW_NUCLEOTIDES),
+      Nucleotides: converter.convert(FORMAT.NUCLEOTIDES),
       BioSpring: sequence,
       GCRS: converter.convert(FORMAT.GCRS),
     };
@@ -53,7 +53,7 @@ export function convertSequence(sequence: string, output: {
     const converter = new FormatConverter(sequence, FORMAT.GCRS);
     return {
       type: FORMAT.GCRS + ' ' + TECHNOLOGIES.ASO_GAPMERS,
-      Nucleotides: converter.convert(FORMAT.RAW_NUCLEOTIDES),
+      Nucleotides: converter.convert(FORMAT.NUCLEOTIDES),
       BioSpring: converter.convert(FORMAT.BIOSPRING),
       Axolabs: converter.convert(FORMAT.AXOLABS),
       Mermade12: converter.convert(FORMAT.MERMADE_12),
@@ -65,7 +65,7 @@ export function convertSequence(sequence: string, output: {
     const converter = new FormatConverter(sequence, FORMAT.AXOLABS);
     return {
       type: FORMAT.AXOLABS + ' ' + TECHNOLOGIES.SI_RNA,
-      Nucleotides: converter.convert(FORMAT.RAW_NUCLEOTIDES),
+      Nucleotides: converter.convert(FORMAT.NUCLEOTIDES),
       BioSpring: converter.convert(FORMAT.BIOSPRING),
       Axolabs: sequence,
       GCRS: converter.convert(FORMAT.GCRS),

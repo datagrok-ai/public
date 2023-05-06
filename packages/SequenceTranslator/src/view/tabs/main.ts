@@ -11,7 +11,7 @@ import {INPUT_FORMATS} from '../../model/const';
 import {SequenceToSmilesConverter} from '../../model/sequence-to-molfile-utils/sequence-to-smiles';
 import {SequenceToMolfileConverter} from '../../model/sequence-to-molfile-utils/sequence-to-molfile';
 import {convertSequence, undefinedInputSequence,
-  isValidSequence} from '../../model/code-converter/conversion-validation-tools';
+  isValidSequence} from '../../model/translation-tools/conversion-validation-tools';
 import {drawMolecule} from '../utils/draw-molecule';
 import {download} from '../../model/helpers';
 import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, DEFAULT_INPUT} from '../const/main-tab';

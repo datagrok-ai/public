@@ -14,7 +14,7 @@ export const TECHNOLOGIES = {
 };
 
 export const INPUT_FORMATS = {
-  RAW_NUCLEOTIDES: 'Nucleotides',
+  NUCLEOTIDES: 'Nucleotides',
   BIOSPRING: 'BioSpring',
   GCRS: 'GCRS',
   AXOLABS: 'Axolabs',
