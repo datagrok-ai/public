@@ -81,7 +81,7 @@ export class SubstructureFilter extends DG.Filter {
     this.subs.push(grok.events.onCustomEvent(SKETCHER_TYPE_CHANGED).subscribe((state: ISubstructureFilterState) => {
       if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
         if (this.sketcher.sketcher?.isInitialized) {
-          if (DG.chem.currentSketcherType !== this.sketcher.sketcher!.name) {
+          if (DG.chem.currentSketcherType !== this.sketcher.type && this.sketcher._mode !== DG.chem.SKETCHER_MODE.EXTERNAL) {
             this.sketcher.sketcherType = DG.chem.currentSketcherType;
           }
         }
@@ -102,8 +102,11 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   attach(dataFrame: DG.DataFrame): void {
+    if (dataFrame.rowCount > MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT) {
+      this.sketcher.disableSketcher(`Too many rows, maximum for substructure search is ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT}`);
+      return;
+    }
     super.attach(dataFrame);
-
     this.column ??= dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
     this.columnName ??= this.column?.name;
     this.tableName = dataFrame.name;
@@ -175,10 +178,6 @@ export class SubstructureFilter extends DG.Filter {
    * that would simply apply the bitset synchronously.
    */
   async _onSketchChanged(): Promise<void> {
-    if (this.dataFrame!.rowCount > MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT) {
-      grok.shell.warning(`Dataset is too large. Please use dataset with less than ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT} rows`);
-      return;
-    }
     grok.events.fireCustomEvent(SKETCHER_TYPE_CHANGED, {colName: this.columnName,
       filterId: this.filterId, tableName: this.tableName});
     if (!this.isFiltering) {
