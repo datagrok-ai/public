@@ -3,22 +3,22 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-export const DELIMITER = ';';
+export const DELIMITER = ';'; // what is the need for this?
 export const NUCLEOTIDES = ['A', 'G', 'C', 'U', 'T'];
 
 export const TECHNOLOGIES = {
   DNA: 'DNA',
   RNA: 'RNA',
-  ASO_GAPMERS: 'For ASO Gapmers',
-  SI_RNA: 'For 2\'-OMe and 2\'-F modified siRNA',
+  ASO_GAPMERS: 'ASOGapmers',
+  SI_RNA: 'siRNA',
 };
 
 export const INPUT_FORMATS = {
-  RAW_NUCLEOTIDES: 'Raw Nucleotides',
-  BIOSPRING: 'BioSpring Codes',
-  GCRS: 'Janssen GCRS Codes',
-  AXOLABS: 'Axolabs Codes',
-  MERMADE_12: 'Mermade 12',
+  RAW_NUCLEOTIDES: 'Nucleotides',
+  BIOSPRING: 'BioSpring',
+  GCRS: 'GCRS',
+  AXOLABS: 'Axolabs',
+  MERMADE_12: 'Mermade12',
 };
 
 export const SYNTHESIZERS = {
