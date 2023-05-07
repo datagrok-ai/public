@@ -15,7 +15,7 @@ import {drawMolecule} from '../utils/draw-molecule';
 import {download} from '../../model/helpers';
 import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, DEFAULT_INPUT} from '../const/main-tab';
 import {FormatDetector} from '../../model/parsing-validation-utils/format-detector';
-import {SequenceValidator} from '../../model/parsing-validation-utils/sequence-validation';
+import {SequenceValidator} from '../../model/parsing-validation-utils/sequence-validator';
 
 export class MainTabUI {
   constructor() {

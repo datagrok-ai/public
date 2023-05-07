@@ -1,4 +1,4 @@
-import {FormatDetector} from '../parsing-validation-utils/format-detector';
+import {FormatDetector} from './format-detector';
 import {NUCLEOTIDES} from '../const';
 import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
 import {sortByReverseLength} from '../helpers';
@@ -48,19 +48,3 @@ export class SequenceValidator {
     return this.getInvalidCodeIndex(format) === -1;
   }
 }
-
-// export function isValidSequence(sequence: string, format: string | null): {
-//   indexOfFirstInvalidChar: number,
-//   synthesizer: string[] | null,
-// } {
-//   const formatDetector = new FormatDetector(sequence);
-//   const synthesizer = format ? format : formatDetector.getFormat();
-//   if (!synthesizer)
-//     return {indexOfFirstInvalidChar: 0, synthesizer: null};
-//   const validator = new SequenceValidator(sequence);
-//   const indexOfFirstInvalidChar = validator.getInvalidCodeIndex(synthesizer);
-//   return {
-//     indexOfFirstInvalidChar: indexOfFirstInvalidChar,
-//     synthesizer: [synthesizer],
-//   };
-// }

@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {SequenceValidator} from '../../../model/parsing-validation-utils/sequence-validation';
+import {SequenceValidator} from '../../../model/parsing-validation-utils/sequence-validator';
 import {FormatDetector} from '../../../model/parsing-validation-utils/format-detector';
 
 import $ from 'cash-dom';

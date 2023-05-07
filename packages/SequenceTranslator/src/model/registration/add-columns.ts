@@ -5,7 +5,7 @@ import {RegistrationSequenceParser} from './sequence-parser';
 import {getBatchMolWeight, getMolWeight, getSaltMass, getSaltMolWeigth} from './calculations';
 import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
 import {FormatDetector} from '../parsing-validation-utils/format-detector';
-import {SequenceValidator} from '../parsing-validation-utils/sequence-validation';
+import {SequenceValidator} from '../parsing-validation-utils/sequence-validator';
 
 export class SdfColumnsExistsError extends Error {
   constructor(message: string) {
