@@ -2,13 +2,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {DBLoaderBase, DataLoaderDB} from './model/database-loader/data-loader';
+import {DBLoaderBase, DataLoaderDB} from './model/database-utils/loader';
 
 import {engageViewForOligoSdFileUI} from './model/registration/registration';
 import {SequenceTranslatorUI} from './view/view';
-import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/database-loader/const';
+import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/database-utils/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {FormatDictionaryLoader} from './model/translation-utils/dictionary-loader';
 
 class StPackage extends DG.Package {
   private _dbLoader?: DBLoaderBase;
@@ -35,7 +36,7 @@ class StPackage extends DG.Package {
         this._monomerLib = await libHelper.readLibrary(LIB_PATH, DEFAULT_LIB_FILENAME);
       } catch (err: any) {
         const errMsg: string = err.hasOwnProperty('message') ? err.message : err.toString();
-        throw new Error('Loading monomer library error: ' + errMsg);
+        throw new Error('ST: Loading monomer library error: ' + errMsg);
       } finally {
         pi.close();
       }
@@ -65,6 +66,7 @@ export const _package: StPackage = new StPackage();
 
 //tags: init
 export async function initSequenceTranslator(): Promise<void> {
+  await FormatDictionaryLoader.getInstance().init();
   await _package.initMonomerLib();
   _package.initDBLoader().then(() => {}); // Do not wait for lists loaded from the database
 }

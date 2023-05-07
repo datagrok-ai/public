@@ -3,19 +3,21 @@ import {DELIMITER} from '../const';
 import {sortByReverseLength} from '../helpers';
 import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
 import {SYNTHESIZERS as FORMAT} from '../const';
-import {dict} from '../../hardcode-to-be-eliminated/format-converter-dict';
+import {KeyToValue, Dict, FormatDictionaryLoader} from '../translation-utils/dictionary-loader';
 
 const EDGES = 'edges';
 const CENTER = 'center';
 
-type KeyToValue = {[key: string]: string};
-
 // todo: remove strange legacy logic with magic numbers
 export class FormatConverter {
-  constructor(private sequence: string, private sourceFormat: string) {};
+  constructor(private sequence: string, private sourceFormat: string) {
+    this.dict = FormatDictionaryLoader.getInstance().getDictionary();
+  };
+
+  private dict: Dict;
 
   convert(targetFormat: string): string {
-    const codeMapping = dict[this.sourceFormat][targetFormat];
+    const codeMapping = this.dict[this.sourceFormat][targetFormat];
     if (codeMapping === undefined) {
       throw new Error (`ST: unsupported translation direction ${this.sourceFormat} -> ${targetFormat}`);
     } else if (this.sourceFormat === FORMAT.BIOSPRING && targetFormat === FORMAT.GCRS)
