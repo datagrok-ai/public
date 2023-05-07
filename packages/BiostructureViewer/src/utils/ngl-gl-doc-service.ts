@@ -26,7 +26,8 @@ export class NglGlDocService implements NglGlServiceBase {
     this.ngl.viewer.signals.rendered.add(this.onNglRendered.bind(this));
 
     // The single NGL component
-    this.hostDiv = ui.div([this.nglDiv]);
+    this.hostDiv = ui.box(this.nglDiv);
+    // this.hostDiv.style.display = 'none'; // Disables drawing at all
     this.hostDiv.style.position = 'absolute';
     this.hostDiv.style.left = '0px';
     this.hostDiv.style.right = '0px';
