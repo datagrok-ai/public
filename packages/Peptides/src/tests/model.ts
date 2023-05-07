@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, expectFloat} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, expect, expectFloat, expectObject} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {PeptidesModel} from '../model';
 import {startAnalysis} from '../widgets/peptides';
@@ -99,8 +99,23 @@ category('Model: Settings', () => {
   });
 
   test('Include columns', async () => {
+    const testColumns = {'rank': 'avg'};
 
-  }, {skipReason: 'Not implemented yet'});
+    // Include column
+    model.settings = {columns: {'rank': 'avg'}};
+
+    expect(Object.keys(model.settings.columns!)[0], Object.keys(testColumns)[0], 'Expected to include column ' +
+      `'${Object.keys(testColumns)[0]}' but '${Object.keys(model.settings.columns!)[0]}' is included instead`);
+    expect(model.settings.columns!['rank'], testColumns['rank'], `Expected to aggregate column ` +
+      `'${Object.keys(testColumns)[0]}' with '${testColumns['rank']}' but aggregated with ` +
+      `'${model.settings.columns!['rank']}' instead`);
+
+    // Remove column
+    model.settings = {columns: {}};
+    expect(Object.keys(model.settings.columns!).length, 0,
+      `Expected to remove all column aggregations but columns {${Object.keys(model.settings.columns!).join(' & ')}} ` +
+      `are still included`);
+  });
 
   test('Dendrogram', async () => {
 
