@@ -582,25 +582,9 @@ export class PeptidesModel {
         if (monomer == '')
           continue;
 
-        // const mask: boolean[] = new Array(sourceDfLen);
-        // let trueCount = 0;
-        // for (let j = 0; j < sourceDfLen; ++j) {
-        //   mask[j] = posColData[j] == categoryIndex;
-
-        //   if (mask[j])
-        //     ++trueCount;
-        // }
-
-        // const maskInfo = {
-        //   trueCount: trueCount,
-        //   falseCount: sourceDfLen - trueCount,
-        //   mask: mask,
-        // };
         const bitArray = BitArray.fromSeq(sourceDfLen, (i: number) => posColData[i] === categoryIndex);
-
         const stats = getStats(activityColData, bitArray);
         currentPositionObject[monomer] = stats;
-
         this.getSummaryStats(currentPositionObject.general, stats);
       }
       monomerPositionObject[posCol.name] = currentPositionObject;
@@ -682,9 +666,6 @@ export class PeptidesModel {
       const resultStats = clustType == 0 ? origClustStats : customClustStats;
       for (let maskIdx = 0; maskIdx < masks.length; ++maskIdx) {
         const mask = masks[maskIdx];
-        // const trueCount = mask.filter((v) => v).length;
-        // const maskInfo = {trueCount: trueCount, falseCount: rowCount - trueCount, mask: mask};
-
         const stats = getStats(activityColData, mask);
         resultStats[clustNames[maskIdx]] = stats;
       }
@@ -859,12 +840,12 @@ export class PeptidesModel {
     });
   }
 
-  showMonomerTooltip(aar: string, x: number, y: number): void {
+  showMonomerTooltip(aar: string, x: number, y: number): boolean {
     const tooltipElements: HTMLDivElement[] = [];
     const monomerName = aar.toLowerCase();
 
     const mw = getMonomerWorksInstance();
-    const mol = mw?.getCappedRotatedMonomer('PEPTIDE', aar);
+    const mol = mw.getCappedRotatedMonomer('PEPTIDE', aar);
 
     if (mol) {
       tooltipElements.push(ui.div(monomerName));
@@ -874,6 +855,8 @@ export class PeptidesModel {
       tooltipElements.push(ui.div(aar));
 
     ui.tooltip.show(ui.divV(tooltipElements), x, y);
+
+    return mol !== null;
   }
 
   //TODO: move out to viewer code

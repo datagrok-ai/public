@@ -37,8 +37,9 @@ category('Table view', () => {
   });
 
   test('Tooltip', async () => {
-
-  }, {skipReason: 'Not implemented yet'});
+    expect(model.showMonomerTooltip(firstMonomerPair.monomer, 0, 0), true,
+      `Couldn't structure for monomer ${firstMonomerPair.monomer}`);
+  }, {skipReason: 'Need to find a way to replace _package variable to call for Bio function with tests'});
 
   test('Visible columns', async () => {
     const gridCols = model.analysisView.grid.columns;

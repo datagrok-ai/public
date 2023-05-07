@@ -10,12 +10,6 @@ export type Stats = {
   ratio: number,
 };
 
-// export type MaskInfo = {
-//   trueCount: number,
-//   falseCount: number,
-//   mask: BitArray,
-// };
-
 export function getStats(data: RawData | number[], bitArray: BitArray): Stats {
   const selected = new Float32Array(bitArray.trueCount());
   const rest = new Float32Array(bitArray.falseCount());
