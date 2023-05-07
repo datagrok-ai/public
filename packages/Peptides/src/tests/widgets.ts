@@ -8,6 +8,8 @@ import {startAnalysis} from '../widgets/peptides';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {SCALING_METHODS} from '../utils/constants';
 import {PANES_INPUTS, SETTINGS_PANES, getSettingsDialog} from '../widgets/settings';
+import {getDistributionWidget} from '../widgets/distribution';
+import {mutationCliffsWidget} from '../widgets/mutation-cliffs';
 
 category('Widgets: Settings', () => {
   let df: DG.DataFrame;
@@ -51,9 +53,31 @@ category('Widgets: Settings', () => {
 });
 
 category('Widgets: Distribution panel', () => {
-  test('UI', async () => {
+  let df: DG.DataFrame;
+  let model: PeptidesModel;
+  let activityCol: DG.Column<number>;
+  let sequenceCol: DG.Column<string>;
+  let clusterCol: DG.Column<any>;
+  let scaledActivityCol: DG.Column<number>;
 
-  }, {skipReason: 'Not implemented yet'});
+  before(async () => {
+    df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
+    activityCol = df.getCol('activity');
+    sequenceCol = df.getCol('sequence');
+    sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+    scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
+    clusterCol = df.getCol('cluster');
+    const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
+      SCALING_METHODS.NONE);
+    if (tempModel === null)
+      throw new Error('Model is null');
+    model = tempModel;
+  });
+
+  test('UI', async () => {
+    getDistributionWidget(model.df, model);
+  });
 
   test('Split', async () => {
 
@@ -61,15 +85,51 @@ category('Widgets: Distribution panel', () => {
 });
 
 category('Widgets: Mutation cliffs', () => {
-  test('UI', async () => {
+  let df: DG.DataFrame;
+  let model: PeptidesModel;
+  let activityCol: DG.Column<number>;
+  let sequenceCol: DG.Column<string>;
+  let clusterCol: DG.Column<any>;
+  let scaledActivityCol: DG.Column<number>;
 
-  }, {skipReason: 'Not implemented yet'});
+  before(async () => {
+    df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
+    activityCol = df.getCol('activity');
+    sequenceCol = df.getCol('sequence');
+    sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    sequenceCol.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+    scaledActivityCol = scaleActivity(activityCol, SCALING_METHODS.NONE);
+    clusterCol = df.getCol('cluster');
+    const tempModel = await startAnalysis(activityCol, sequenceCol, clusterCol, df, scaledActivityCol,
+      SCALING_METHODS.NONE);
+    if (tempModel === null)
+      throw new Error('Model is null');
+    model = tempModel;
+  });
+
+  test('UI', async () => {
+    mutationCliffsWidget(model.df, model);
+  });
 
   test('General', async () => {
 
-  });
+  }, {skipReason: 'Not implemented yet'});
 
   test('Filtering', async () => {
+
+  }, {skipReason: 'Not implemented yet'});
+});
+
+category('Widgets: Actions', () => {
+  test('New view', async () => {
+
+  }, {skipReason: 'Not implemented yet'});
+
+  test('New cluster', async () => {
+
+  });
+
+  test('Remove cluster', async () => {
 
   }, {skipReason: 'Not implemented yet'});
 });
