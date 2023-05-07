@@ -9,9 +9,9 @@ import {NglGlServiceBase, NglGlTask} from '@datagrok-libraries/bio/src/viewers/n
 
 export class NglGlDocService implements NglGlServiceBase {
   private readonly nglDiv: HTMLDivElement;
-  private readonly ngl: any;
+  private readonly ngl: NGL.Stage;
 
-  private readonly hostDiv: HTMLDivElement | null = null;
+  private readonly hostDiv: HTMLDivElement;
 
   private readonly _queue: { key?: keyof any, task: NglGlTask, dt: number }[];
   private readonly _queueDict: { [key: keyof any]: NglGlTask };
@@ -75,9 +75,6 @@ export class NglGlDocService implements NglGlServiceBase {
 
       this.task = undefined;
       this.key = undefined;
-      // this.nglDiv.style.width = `0px`;
-      // this.nglDiv.style.height = `0px`;
-      // await this.ngl.handleResize();
       // TODO: Use canvas size switching 0/1 px to required
 
       this.ngl.removeAllComponents();
@@ -85,9 +82,6 @@ export class NglGlDocService implements NglGlServiceBase {
       await this.ngl.compList[0].addRepresentation('cartoon');
       await this.ngl.compList[0].autoView();
 
-      // const canvas = this.nglDiv.querySelector('canvas');
-      // canvas!.width = Math.floor(task.props.width);
-      // canvas!.height = Math.floor(task.props.height);
       this.nglDiv.style.width = `${Math.floor(task.props.width) / r}px`;
       this.nglDiv.style.height = `${Math.floor(task.props.height) / r}px`;
 
@@ -131,38 +125,20 @@ export class NglGlDocService implements NglGlServiceBase {
   private async onNglRendered(): Promise<void> {
     try {
       if (this.task === undefined) return;
-
       _package.logger.debug('NglGlService onAfterRenderHandler() ' + `key = ${JSON.stringify(this.key)}`);
-      let taskCompleted: boolean = false;
 
-      //TODO: Use canvas size switching 0/1 px to required to detect rendering completed
-      //TODO: HTMLCanvas.toBlob()
-      if (this.emptyPaintingSize === undefined) {
-        this.emptyPaintingSize = this.ngl.viewer.renderer.domElement.toDataURL('image/png').length;
+      const canvas = this.ngl.viewer.renderer.domElement;
+      await this.task.onAfterRender(canvas);
+      this.task = undefined;
+      this.key = undefined;
+      this.emptyPaintingSize = undefined;
+
+      if (this._queue.length > 0) {
+        // Schedule processQueue the next item only afterRender has asynchronously completed for the previous one
+        window.setTimeout(async () => { await this._processQueue(); }, 0 /* next event cycle */);
       } else {
-        const currentPaintingSize = this.ngl.viewer.renderer.domElement.toDataURL('image/png').length;
-        if (currentPaintingSize > this.emptyPaintingSize * 2) {
-          _package.logger.debug('NglGlService taskCompleted ' + `key = ${JSON.stringify(this.key)}`);
-          taskCompleted = true;
-        }
-      }
-
-      taskCompleted = true; // ???
-
-      if (taskCompleted) {
-        const canvas = this.ngl.viewer.renderer.domElement;
-        await this.task.onAfterRender(canvas);
-        this.task = undefined;
-        this.key = undefined;
-        this.emptyPaintingSize = undefined;
-
-        if (this._queue.length > 0) {
-          // Schedule processQueue the next item only afterRender has asynchronously completed for the previous one
-          window.setTimeout(async () => { await this._processQueue(); }, 0 /* next event cycle */);
-        } else {
-          // release flag allowing _processQueue on add queue item
-          this._busy = false;
-        }
+        // release flag allowing _processQueue on add queue item
+        this._busy = false;
       }
     } catch (err: any) {
       const errMsg: string = err instanceof Error ? err.message : err.toString();
