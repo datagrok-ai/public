@@ -9,7 +9,8 @@ import {scaleActivity} from '../utils/misc';
 import {startAnalysis} from '../widgets/peptides';
 import {MONOMER_POSITION_MODE, MonomerPosition, MostPotentResiduesViewer, showTooltip} from '../viewers/sar-viewer';
 import {SCALING_METHODS} from '../utils/constants';
-import {LogoSummaryTable} from '../viewers/logo-summary';
+import {LST_PROPERTIES, LogoSummaryTable} from '../viewers/logo-summary';
+import {PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 
 
 category('Viewers: Basic', () => {
@@ -130,8 +131,21 @@ category('Viewers: Logo Summary Table', () => {
   });
 
   test('Properties', async () => {
+    // Change Logo Summary Table Web Logo Mode property to full
+    const webLogoMode = lstViewer.getProperty(LST_PROPERTIES.WEB_LOGO_MODE);
+    webLogoMode!.set(lstViewer, PositionHeight.full);
+    expect(lstViewer.webLogoMode, PositionHeight.full,
+      `Web Logo Mode property is not changed to ${PositionHeight.full}, got ${lstViewer.webLogoMode} instead`);
 
-  }, {skipReason: 'Not implemented yet'});
+    // Change Logo Summary Table Members Ratio Threshold proprty to 0
+    const threshold = 0;
+    const membersRatioThreshold = lstViewer.getProperty(LST_PROPERTIES.MEMBERS_RATIO_THRESHOLD);
+    membersRatioThreshold!.set(lstViewer, threshold);
+    expect(lstViewer.membersRatioThreshold, threshold,
+      `Members Ratio Threshold property is not changed to 0, got ${lstViewer.membersRatioThreshold} instead`);
+    expect(lstViewer.viewerGrid.table.filter.anyTrue, true, `Expected to filter out all rows, but ` +
+      `${lstViewer.viewerGrid.table.filter.trueCount} rows are left unfiltered`);
+  });
 
   test('Tooltip', async () => {
     const cluster = '0';
