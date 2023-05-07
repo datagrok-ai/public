@@ -4,10 +4,9 @@ import {category, test, before, expect} from '@datagrok-libraries/utils/src/test
 import {_package} from '../package-test';
 import {PeptidesModel} from '../model';
 import {startAnalysis} from '../widgets/peptides';
-import {ScalingMethods} from '../utils/types';
 import {scaleActivity} from '../utils/misc';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {COLUMNS_NAMES} from '../utils/constants';
+import {COLUMNS_NAMES, SCALING_METHODS} from '../utils/constants';
 
 category('Table view', () => {
   let df: DG.DataFrame;
@@ -16,7 +15,7 @@ category('Table view', () => {
   let sequenceCol: DG.Column<string>;
   let clusterCol: DG.Column<any>;
   let scaledActivityCol: DG.Column<number>;
-  const scaling: ScalingMethods = 'none';
+  const scaling = 'none' as SCALING_METHODS;
 
   const firstMonomerPair = {monomer: 'N', position: '4', count: 7};
   const secondMonomerPair = {monomer: 'meI', position: '1', count: 10};
@@ -82,7 +81,7 @@ category('Table view', () => {
       `for monomer ${firstMonomerPair.monomer} at position ${firstMonomerPair.position}`);
 
     // Clear monomer-position selection
-    model.initMonomerPositionSelection(true);
+    model.initMonomerPositionSelection({cleanInit: true});
     for (const [position, selectedMonomers] of Object.entries(model.monomerPositionSelection)) {
       expect(selectedMonomers.length, 0, `Selection is not empty for position ${position} after clearing ` +
         `monomer-position selection`);
@@ -111,7 +110,7 @@ category('Table view', () => {
       `cluster ${secondCluster.name} after deselection of cluster ${firstCluster.name}`);
 
     // Clear selection
-    model.clusterSelection = [];
+    model.initClusterSelection();
     expect(model.clusterSelection.length, 0, `Selection is not empty after clearing cluster selection`);
     expect(selection.trueCount, 0, `Selection count is not equal to 0 after clearing cluster selection`);
   });
@@ -146,7 +145,7 @@ category('Table view', () => {
       `monomer ${secondMonomerPair.monomer} at position ${secondMonomerPair.position}`);
 
     // Clear selection
-    model.initMonomerPositionFilter(true);
+    model.initMonomerPositionFilter({cleanInit: true});
     expect(filter.trueCount, df.rowCount, `Filter count is not equal to ${df.rowCount} after clearing ` +
       `monomer-position filter`);
 

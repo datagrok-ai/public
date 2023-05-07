@@ -79,13 +79,13 @@ function setScriptRibbon(v: DG.View, doc: any) {
 
     try {
       // @ts-ignore
-      viewsPopup.find('Simple View')._check.append(ui.iconFA('window-maximize'));
+      viewsPopup.find('Simple View')._check.appendChild(ui.iconFA('window-maximize'));
       // @ts-ignore
-      viewsPopup.find('Table View')._check.append(ui.iconFA('table'));
+      viewsPopup.find('Table View')._check.appendChild(ui.iconFA('table'));
       // @ts-ignore
-      viewsPopup.find('Viewer')._check.append(ui.iconFA('chart-bar'));
+      viewsPopup.find('Viewer')._check.appendChild(ui.iconFA('chart-bar'));
       // @ts-ignore
-      viewsPopup.group('Dock Manager').find('Fixed').parentMenu._check.append(ui.iconFA('window-restore'));
+      viewsPopup.group('Dock Manager').find('Fixed').parentMenu._check.appendChild(ui.iconFA('window-restore'));
     } catch (x) {
 
     } finally {
@@ -327,34 +327,24 @@ function setScriptRibbon(v: DG.View, doc: any) {
       .endGroup();
 
     try {
-      // @ts-ignore
-      elementsPopup.group('Special Icons').find('Add')._check.append(ui.icons.add(() => { }, ''));
-      // @ts-ignore
-      elementsPopup.group('Special Icons').find('Close')._check.append(ui.icons.close(() => { }, ''));
-      // @ts-ignore
-      elementsPopup.group('Special Icons').find('Copy')._check.append(ui.icons.copy(() => { }, ''));
-      // @ts-ignore
-      elementsPopup.group('Special Icons').find('Delete')._check.append(ui.icons.delete(() => { }, ''));
-      // @ts-ignore
-      elementsPopup.group('Special Icons').find('Edit')._check.append(ui.icons.edit(() => { }, ''));
-      // @ts-ignore
-      elementsPopup.group('Special Icons').find('Filter')._check.append(ui.icons.filter(() => { }, ''));
-      // @ts-ignore
-      elementsPopup.group('Special Icons').find('Help')._check.append(ui.icons.help(() => { }, ''));
-      // @ts-ignore
-      elementsPopup.group('Special Icons').find('Info')._check.append(ui.icons.info(() => { }, ''));
-      // @ts-ignore
-      elementsPopup.group('Special Icons').find('Remove')._check.append(ui.icons.remove(() => { }, ''));
-      // @ts-ignore
-      elementsPopup.group('Special Icons').find('Save')._check.append(ui.icons.save(() => { }, ''));
-      // @ts-ignore
-      elementsPopup.group('Special Icons').find('Search')._check.append(ui.icons.search(() => { }, ''));
-      // @ts-ignore
-      elementsPopup.group('Special Icons').find('Settings')._check.append(ui.icons.settings(() => { }, ''));
-      // @ts-ignore
-      elementsPopup.group('Special Icons').find('Sync')._check.append(ui.icons.sync(() => { }, ''));
-      // @ts-ignore
-      elementsPopup.group('Special Icons').find('Undo')._check.append(ui.icons.undo(() => { }, ''));
+      const add = (name: string, makeIcon: Function) => {
+        elementsPopup.group('Special Icons').find(name)._check.append(makeIcon(() => { }, ''));
+      }
+
+      add('Add', ui.icons.add);
+      add('Close', ui.icons.close);
+      add('Copy', ui.icons.copy);
+      add('Delete', ui.icons.delete);
+      add('Edit', ui.icons.edit);
+      add('Filter', ui.icons.filter);
+      add('Help', ui.icons.help);
+      add('Info', ui.icons.info);
+      add('Remove', ui.icons.remove);
+      add('Save', ui.icons.save);
+      add('Search', ui.icons.search);
+      add('Settings', ui.icons.settings);
+      add('Sync', ui.icons.sync);
+      add('Undo', ui.icons.undo);
     } catch (x) {
       console.log(x);
     } finally {

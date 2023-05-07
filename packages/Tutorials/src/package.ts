@@ -6,6 +6,7 @@ import {chem} from './tracks/chem';
 import {eda} from './tracks/eda';
 import {da} from './tracks/data-access';
 import {ml} from './tracks/ml';
+import {dataTransformation} from './tracks/transform';
 import {TutorialWidget} from './widget';
 import '../css/tutorial.css';
 import {Track} from '@datagrok-libraries/tutorials/src/track';
@@ -131,6 +132,7 @@ function setProperties(properties: { [propertyName: string]: boolean }): void {
     'machineLearningTrack': ml,
     'cheminformaticsTrack': chem,
     'dataAccessTrack': da,
+    'dataTransformation': dataTransformation,
   };
 
   for (const property in properties) {
@@ -252,7 +254,7 @@ export async function _pcPlotDemo() {
 //description: Network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply to the values that represent an edge or a Node.js.
 //meta.demoPath: Viewers | Data flow and hierarchy | Network Diagram
 export async function _networkDiagramDemo() {
-  await viewerDemo(DG.VIEWER.NETWORK_DIAGRAM);
+  await viewerDemo(DG.VIEWER.NETWORK_DIAGRAM, {'node1ColumnName': 'Source', 'node2ColumnName': 'Target', useGoogleImage: true});
 }
 
 //name: boxPlotDemo

@@ -15,8 +15,8 @@ export function getSettingsDialog(model: PeptidesModel): DG.Dialog {
   const result: type.PeptidesSettings = {columns: {}};
 
   // General pane options
-  const activityScaling = ui.choiceInput('Activity scaling', settings.scaling ?? 'none', ['none', 'lg', '-lg'],
-    () => result.scaling = activityScaling.value! as type.ScalingMethods);
+  const activityScaling = ui.choiceInput('Activity scaling', settings.scaling ?? C.SCALING_METHODS.NONE,
+    Object.values(C.SCALING_METHODS), () => result.scaling = activityScaling.value! as C.SCALING_METHODS);
   const bidirectionalAnalysis = ui.boolInput('Bidirectional analysis', settings.isBidirectional ?? false,
     () => result.isBidirectional = bidirectionalAnalysis.value!);
 

@@ -21,7 +21,7 @@ export function setAARRenderer(col: DG.Column, alphabet: string): void {
 
 export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
   currentPosition: string, monomerPositionStats: MonomerPositionStats, bound: DG.Rect,
-  mutationCliffsSelection: types.PositionToAARList, substitutionsInfo: types.SubstitutionsInfo,
+  mutationCliffsSelection: types.PositionToAARList, substitutionsInfo: types.MutationCliffs,
   twoColorMode: boolean = false): void {
   const positionStats = monomerPositionStats[currentPosition];
   const pVal: number = positionStats[currentAAR].pValue;
