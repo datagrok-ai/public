@@ -2,10 +2,10 @@ import * as DG from 'datagrok-api/dg';
 import {COL_NAMES, GENERATED_COL_NAMES, SEQUENCE_TYPES} from './const';
 import * as grok from 'datagrok-api/grok';
 import {RegistrationSequenceParser} from './sequence-parser';
-import {isValidSequence} from '../parsing-validation-utils/sequence-validation';
 import {getBatchMolWeight, getMolWeight, getSaltMass, getSaltMolWeigth} from './calculations';
 import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
 import {FormatDetector} from '../parsing-validation-utils/format-detector';
+import {SequenceValidator} from '../parsing-validation-utils/sequence-validation';
 
 export class SdfColumnsExistsError extends Error {
   constructor(message: string) {
@@ -91,27 +91,18 @@ export class RegistrationColumnsHandler {
       const codesToWeightsMap = MonomerLibWrapper.getInstance().getCodesToWeightsMap();
       try {
         if ([SEQUENCE_TYPES.SENSE_STRAND, SEQUENCE_TYPES.ANTISENSE_STRAND].includes(seqType)) {
-          const formatDetector = new FormatDetector(this.sequenceCol.get(i));
-          const isValid = formatDetector.isValidSequence();
-          res = (isValid) ? getMolWeight(this.sequenceCol.get(i), codesToWeightsMap) : DG.FLOAT_NULL;
+          const seq = this.sequenceCol.get(i);
+          res = (isValid(seq)) ? getMolWeight(seq, codesToWeightsMap) : DG.FLOAT_NULL;
         } else if (seqType == SEQUENCE_TYPES.DUPLEX) {
           const seq = this.sequenceCol.get(i);
           const obj = parser.getDuplexStrands(seq);
           const strands = Object.values(obj);
-          res = strands.every((seq) => {
-            const formatDetector = new FormatDetector(seq);
-            return formatDetector.getInvalidCodeIndex() === -1;
-          }) ?
-            getMolWeight(obj.ss, codesToWeightsMap) + getMolWeight(obj.as, codesToWeightsMap) :
-            DG.FLOAT_NULL;
+          res = strands.every((seq) => isValid(seq)) ?
+            getMolWeight(obj.ss, codesToWeightsMap) + getMolWeight(obj.as, codesToWeightsMap) : DG.FLOAT_NULL;
         } else if ([SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(seqType)) {
           const seq = this.sequenceCol.get(i);
           const obj = parser.getDimerStrands(seq);
-          res = (Object.values(obj).every(
-            (seq) => {
-              isValidSequence(seq, null).indexOfFirstInvalidChar == -1
-            }
-          )) ?
+          res = (Object.values(obj).every((seq) => isValid(seq))) ?
             getMolWeight(obj.ss, codesToWeightsMap) + getMolWeight(obj.as1, codesToWeightsMap) +
             getMolWeight(obj.as2, codesToWeightsMap) :
             DG.FLOAT_NULL;
@@ -174,4 +165,10 @@ export class RegistrationColumnsHandler {
         this.df.rows.removeAt(i, 1, false);
     }
   }
+}
+
+function isValid(sequence: string): boolean {
+  const validator = new SequenceValidator(sequence);
+  const format = (new FormatDetector(sequence).getFormat());
+  return (format === null) ? false : validator.isValidSequence(format!);
 }

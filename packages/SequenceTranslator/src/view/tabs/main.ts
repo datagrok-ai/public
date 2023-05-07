@@ -11,10 +11,11 @@ import {INPUT_FORMATS} from '../../model/const';
 import {SequenceToSmilesConverter} from '../../model/sequence-to-molfile-utils/sequence-to-smiles';
 import {SequenceToMolfileConverter} from '../../model/sequence-to-molfile-utils/sequence-to-molfile';
 import {convertSequence, UNDEFINED_SEQ_MSG} from '../../model/translation-utils/conversion-utils';
-import {isValidSequence} from '../../model/parsing-validation-utils/sequence-validation';
 import {drawMolecule} from '../utils/draw-molecule';
 import {download} from '../../model/helpers';
 import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, DEFAULT_INPUT} from '../const/main-tab';
+import {FormatDetector} from '../../model/parsing-validation-utils/format-detector';
+import {SequenceValidator} from '../../model/parsing-validation-utils/sequence-validation';
 
 export class MainTabUI {
   constructor() {
@@ -105,8 +106,11 @@ export class MainTabUI {
 
   private updateTable(): void {
     this.outputTableDiv.innerHTML = '';
-    const output = isValidSequence(this.sequence, null);
-    const outputSequenceObj = convertSequence(this.sequence, output);
+    const format = (new FormatDetector(this.sequence)).getFormat();
+    if (format === null)
+      throw new Error('ST: wrong input format');
+    const indexOfInvalidChar = (new SequenceValidator(this.sequence)).getInvalidCodeIndex(format);
+    const outputSequenceObj = convertSequence(this.sequence, indexOfInvalidChar, format);
     const tableRows = [];
 
     for (const key of Object.keys(outputSequenceObj).slice(1)) {
@@ -136,8 +140,11 @@ export class MainTabUI {
   private async updateMolImg(): Promise<void> {
     this.moleculeImgDiv.innerHTML = ''; // ??
     // todo: eliminate after refactoring legacy
-    const output = isValidSequence(this.sequence, null);
-    const outputSequenceObj = convertSequence(this.sequence, output);
+    const format = (new FormatDetector(this.sequence)).getFormat();
+    if (format === null)
+      throw new Error('ST: wrong input format');
+    const indexOfInvalidChar = (new SequenceValidator(this.sequence)).getInvalidCodeIndex(format);
+    const outputSequenceObj = convertSequence(this.sequence, indexOfInvalidChar, format);
     if (outputSequenceObj.type !== UNDEFINED_SEQ_MSG && outputSequenceObj.Error !== UNDEFINED_SEQ_MSG) {
       const formCanvasWidth = 500;
       const formCanvasHeight = 170;
@@ -163,11 +170,11 @@ export class MainTabUI {
     return molfile;
   }
 
-  // todo: put synthesizers into an object/enum
-  // todo: take into account possible exceptions
   private getInputFormat(): string {
-    const vadimsOutput = isValidSequence(this.sequence, null);
-    return vadimsOutput.synthesizer![0];
+    const format = (new FormatDetector(this.sequence)).getFormat();
+    if (format === null)
+      throw new Error('ST: undefined sequence format')
+    return format;
   }
 
   private async updateLayout(): Promise<void> {

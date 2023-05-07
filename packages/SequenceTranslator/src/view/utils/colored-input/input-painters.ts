@@ -3,9 +3,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import $ from 'cash-dom';
+import {SequenceValidator} from '../../../model/parsing-validation-utils/sequence-validation';
+import {FormatDetector} from '../../../model/parsing-validation-utils/format-detector';
 
-import {isValidSequence} from '../../../model/parsing-validation-utils/sequence-validation';
+import $ from 'cash-dom';
 
 /** Set different colors for letters, can be upgraded to color various monomers */
 export function demoPainter(input: string): HTMLSpanElement[] {
@@ -25,7 +26,10 @@ export function demoPainter(input: string): HTMLSpanElement[] {
 // todo: port to another place
 export function highlightInvalidSubsequence(input: string): HTMLSpanElement[] {
   // validate sequence
-  const cutoff = isValidSequence(input, null).indexOfFirstInvalidChar;
+  let cutoff = 0;
+  const format = (new FormatDetector(input)).getFormat();
+  if (format !== null)
+    cutoff = (new SequenceValidator(input)).getInvalidCodeIndex(format!);
   const isValid = cutoff < 0 || input === '';
   const greyTextSpan = ui.span([]);
   $(greyTextSpan).css('-webkit-text-fill-color', 'var(--grey-6)');

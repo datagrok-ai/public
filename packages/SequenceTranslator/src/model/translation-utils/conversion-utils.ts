@@ -4,16 +4,14 @@ import {FormatConverter} from './format-converter';
 const NO_TRANSLATION_MSG = 'No translation table available';
 export const UNDEFINED_SEQ_MSG = 'Type of input sequence is undefined';
 
-export function convertSequence(sequence: string, output: {
-  indexOfFirstInvalidChar: number, synthesizer: string[] | null
-}) {
-  if (output.indexOfFirstInvalidChar !== -1) {
+export function convertSequence(sequence: string, indexOfFirstInvalidChar: number, format: string) {
+  if (indexOfFirstInvalidChar !== -1) {
     return {
-      indexOfFirstInvalidChar: JSON.stringify(output),
+      indexOfFirstInvalidChar: indexOfFirstInvalidChar,
       Error: UNDEFINED_SEQ_MSG,
     };
   }
-  if (output.synthesizer!.includes(FORMAT.NUCLEOTIDES) ) {
+  if (format === FORMAT.NUCLEOTIDES ) {
     const converter = new FormatConverter(sequence, FORMAT.NUCLEOTIDES);
     return {
       type: FORMAT.NUCLEOTIDES,
@@ -22,7 +20,7 @@ export function convertSequence(sequence: string, output: {
       GCRS: converter.convert(FORMAT.GCRS),
     };
   }
-  if (output.synthesizer!.includes(FORMAT.BIOSPRING)) {
+  if (format === FORMAT.BIOSPRING) {
     const converter = new FormatConverter(sequence, FORMAT.BIOSPRING);
     return {
       type: FORMAT.BIOSPRING + ' ' + TECHNOLOGIES.ASO_GAPMERS,
@@ -31,7 +29,7 @@ export function convertSequence(sequence: string, output: {
       GCRS: converter.convert(FORMAT.GCRS),
     };
   }
-  if (output.synthesizer!.includes(FORMAT.GCRS)) {
+  if (format === FORMAT.GCRS) {
     const converter = new FormatConverter(sequence, FORMAT.GCRS);
     return {
       type: FORMAT.GCRS + ' ' + TECHNOLOGIES.ASO_GAPMERS,
@@ -43,7 +41,7 @@ export function convertSequence(sequence: string, output: {
       LCMS: converter.convert(FORMAT.LCMS),
     };
   }
-  if (output.synthesizer!.includes(FORMAT.AXOLABS)) {
+  if (format === FORMAT.AXOLABS) {
     const converter = new FormatConverter(sequence, FORMAT.AXOLABS);
     return {
       type: FORMAT.AXOLABS + ' ' + TECHNOLOGIES.SI_RNA,
@@ -53,7 +51,7 @@ export function convertSequence(sequence: string, output: {
       GCRS: converter.convert(FORMAT.GCRS),
     };
   }
-  if (output.synthesizer!.includes(FORMAT.MERMADE_12)) {
+  if (format === FORMAT.MERMADE_12) {
     return {
       type: FORMAT.MERMADE_12,
       Nucleotides: NO_TRANSLATION_MSG,
