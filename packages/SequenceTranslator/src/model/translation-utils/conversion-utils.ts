@@ -1,25 +1,8 @@
 import {SYNTHESIZERS as FORMAT, TECHNOLOGIES} from '../const';
 import {FormatConverter} from './format-converter';
 
-import {FormatDetector} from '../parsing-validation-utils/format-detector';
-
-const noTranslationTableAvailable = 'No translation table available';
-export const undefinedInputSequence = 'Type of input sequence is undefined';
-
-export function isValidSequence(sequence: string, format: string | null): {
-  indexOfFirstInvalidChar: number,
-  synthesizer: string[] | null,
-} {
-  const formatDetector = new FormatDetector(sequence);
-  const synthesizer = format ? format : formatDetector.getFormat();
-  if (!synthesizer)
-    return {indexOfFirstInvalidChar: 0, synthesizer: null};
-  const indexOfFirstInvalidChar = formatDetector.getInvalidCodeIndex();
-  return {
-    indexOfFirstInvalidChar: indexOfFirstInvalidChar,
-    synthesizer: [synthesizer],
-  };
-}
+const NO_TRANSLATION_MSG = 'No translation table available';
+export const UNDEFINED_SEQ_MSG = 'Type of input sequence is undefined';
 
 export function convertSequence(sequence: string, output: {
   indexOfFirstInvalidChar: number, synthesizer: string[] | null
@@ -27,13 +10,13 @@ export function convertSequence(sequence: string, output: {
   if (output.indexOfFirstInvalidChar !== -1) {
     return {
       indexOfFirstInvalidChar: JSON.stringify(output),
-      Error: undefinedInputSequence,
+      Error: UNDEFINED_SEQ_MSG,
     };
   }
-  if (output.synthesizer!.includes(FORMAT.NUCLEOTIDES) /*&& output.technology!.includes(TECHNOLOGIES.DNA)*/) {
+  if (output.synthesizer!.includes(FORMAT.NUCLEOTIDES) ) {
     const converter = new FormatConverter(sequence, FORMAT.NUCLEOTIDES);
     return {
-      type: FORMAT.NUCLEOTIDES, // + ' ' + TECHNOLOGIES.DNA,
+      type: FORMAT.NUCLEOTIDES,
       Nucleotides: sequence,
       BioSpring: converter.convert(FORMAT.BIOSPRING),
       GCRS: converter.convert(FORMAT.GCRS),
@@ -41,7 +24,6 @@ export function convertSequence(sequence: string, output: {
   }
   if (output.synthesizer!.includes(FORMAT.BIOSPRING)) {
     const converter = new FormatConverter(sequence, FORMAT.BIOSPRING);
-    // && output.technology!.includes(TECHNOLOGIES.ASO_GAPMERS)) {
     return {
       type: FORMAT.BIOSPRING + ' ' + TECHNOLOGIES.ASO_GAPMERS,
       Nucleotides: converter.convert(FORMAT.NUCLEOTIDES),
@@ -49,7 +31,7 @@ export function convertSequence(sequence: string, output: {
       GCRS: converter.convert(FORMAT.GCRS),
     };
   }
-  if (output.synthesizer!.includes(FORMAT.GCRS)) { // && output.technology!.includes(TECHNOLOGIES.ASO_GAPMERS)) {
+  if (output.synthesizer!.includes(FORMAT.GCRS)) {
     const converter = new FormatConverter(sequence, FORMAT.GCRS);
     return {
       type: FORMAT.GCRS + ' ' + TECHNOLOGIES.ASO_GAPMERS,
@@ -74,13 +56,13 @@ export function convertSequence(sequence: string, output: {
   if (output.synthesizer!.includes(FORMAT.MERMADE_12)) {
     return {
       type: FORMAT.MERMADE_12,
-      Nucleotides: noTranslationTableAvailable,
-      GCRS: noTranslationTableAvailable,
+      Nucleotides: NO_TRANSLATION_MSG,
+      GCRS: NO_TRANSLATION_MSG,
       Mermade12: sequence,
     };
   }
   return {
-    type: undefinedInputSequence,
-    Nucleotides: undefinedInputSequence,
+    type: UNDEFINED_SEQ_MSG,
+    Nucleotides: UNDEFINED_SEQ_MSG,
   };
 }

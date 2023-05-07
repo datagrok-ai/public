@@ -10,8 +10,8 @@ import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
 import {INPUT_FORMATS} from '../../model/const';
 import {SequenceToSmilesConverter} from '../../model/sequence-to-molfile-utils/sequence-to-smiles';
 import {SequenceToMolfileConverter} from '../../model/sequence-to-molfile-utils/sequence-to-molfile';
-import {convertSequence, undefinedInputSequence,
-  isValidSequence} from '../../model/translation-tools/conversion-validation-tools';
+import {convertSequence, UNDEFINED_SEQ_MSG} from '../../model/translation-utils/conversion-utils';
+import {isValidSequence} from '../../model/parsing-validation-utils/sequence-validation';
 import {drawMolecule} from '../utils/draw-molecule';
 import {download} from '../../model/helpers';
 import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, DEFAULT_INPUT} from '../const/main-tab';
@@ -138,7 +138,7 @@ export class MainTabUI {
     // todo: eliminate after refactoring legacy
     const output = isValidSequence(this.sequence, null);
     const outputSequenceObj = convertSequence(this.sequence, output);
-    if (outputSequenceObj.type !== undefinedInputSequence && outputSequenceObj.Error !== undefinedInputSequence) {
+    if (outputSequenceObj.type !== UNDEFINED_SEQ_MSG && outputSequenceObj.Error !== UNDEFINED_SEQ_MSG) {
       const formCanvasWidth = 500;
       const formCanvasHeight = 170;
       await drawMolecule(this.moleculeImgDiv, formCanvasWidth, formCanvasHeight, this.molfile);

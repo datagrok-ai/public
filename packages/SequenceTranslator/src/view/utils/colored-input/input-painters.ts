@@ -3,11 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-// external modules dependencies
 import $ from 'cash-dom';
 
-// inner dependencies
-import {isValidSequence} from '../../../model/translation-tools/conversion-validation-tools';
+import {isValidSequence} from '../../../model/parsing-validation-utils/sequence-validation';
 
 /** Set different colors for letters, can be upgraded to color various monomers */
 export function demoPainter(input: string): HTMLSpanElement[] {

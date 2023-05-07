@@ -7,7 +7,6 @@ import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {download} from '../helpers';
 import {SequenceToMolfileConverter} from './sequence-to-molfile';
 import {linkStrandsV3000} from './mol-transformations';
-import {isValidSequence} from '../translation-tools/conversion-validation-tools';
 import {SYNTHESIZERS} from '../const';
 
 import '../../view/css/sdf-tab.css';
@@ -21,8 +20,6 @@ export type StrandData = {
 export function getMolfileForStrand(strand: string, invert: boolean): string {
   if (strand === '')
     return '';
-  // const validationOutput = isValidSequence(strand, null);
-  // const format = validationOutput.synthesizer![0];
   // restrict to GCRS codes only
   const format = SYNTHESIZERS.GCRS;
   let molfile = '';

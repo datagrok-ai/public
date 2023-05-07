@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {COL_NAMES, GENERATED_COL_NAMES, SEQUENCE_TYPES} from './const';
 import * as grok from 'datagrok-api/grok';
 import {RegistrationSequenceParser} from './sequence-parser';
-import {isValidSequence} from '../translation-tools/conversion-validation-tools';
+import {isValidSequence} from '../parsing-validation-utils/sequence-validation';
 import {getBatchMolWeight, getMolWeight, getSaltMass, getSaltMolWeigth} from './calculations';
 import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
 
