@@ -19,7 +19,7 @@ import * as uuid from 'uuid';
 
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {calculateSelected, extractMonomerInfo, scaleActivity, wrapDistroAndStatsDefault} from './utils/misc';
+import {calculateSelected, extractMonomerInfo, scaleActivity, getStatsSummary} from './utils/misc';
 import {MonomerPosition, MostPotentResiduesViewer} from './viewers/sar-viewer';
 import * as CR from './utils/cell-renderer';
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
@@ -31,6 +31,7 @@ import {getSettingsDialog} from './widgets/settings';
 import {_package, getMonomerWorksInstance, getTreeHelperInstance} from './package';
 import {findMutations} from './utils/algorithms';
 import {createDistanceMatrixWorker} from './utils/worker-creator';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 export type SummaryStats = {
   minCount: number, maxCount: number,
@@ -573,29 +574,31 @@ export class PeptidesModel {
 
     for (const posCol of positionColumns) {
       const posColData = posCol.getRawData();
-      const currentMonomerSet = posCol.categories;
+      const posColCateogries = posCol.categories;
       const currentPositionObject = {general: {}} as PositionStats & { general: SummaryStats };
 
-      for (const [categoryIndex, monomer] of currentMonomerSet.entries()) {
+      for (let categoryIndex = 0; categoryIndex < posColCateogries.length; ++categoryIndex) {
+        const monomer = posColCateogries[categoryIndex];
         if (monomer == '')
           continue;
 
-        const mask: boolean[] = new Array(sourceDfLen);
-        let trueCount = 0;
-        for (let j = 0; j < sourceDfLen; ++j) {
-          mask[j] = posColData[j] == categoryIndex;
+        // const mask: boolean[] = new Array(sourceDfLen);
+        // let trueCount = 0;
+        // for (let j = 0; j < sourceDfLen; ++j) {
+        //   mask[j] = posColData[j] == categoryIndex;
 
-          if (mask[j])
-            ++trueCount;
-        }
+        //   if (mask[j])
+        //     ++trueCount;
+        // }
 
-        const maskInfo = {
-          trueCount: trueCount,
-          falseCount: sourceDfLen - trueCount,
-          mask: mask,
-        };
+        // const maskInfo = {
+        //   trueCount: trueCount,
+        //   falseCount: sourceDfLen - trueCount,
+        //   mask: mask,
+        // };
+        const bitArray = BitArray.fromSeq(sourceDfLen, (i: number) => posColData[i] === categoryIndex);
 
-        const stats = getStats(activityColData, maskInfo);
+        const stats = getStats(activityColData, bitArray);
         currentPositionObject[monomer] = stats;
 
         this.getSummaryStats(currentPositionObject.general, stats);
@@ -652,28 +655,21 @@ export class PeptidesModel {
   }
 
   calculateClusterStatistics(): ClusterTypeStats {
+    const rowCount = this.df.rowCount;
+
     const origClustCol = this.df.getCol(this.settings.clustersColumnName!);
     const origClustColData = origClustCol.getRawData();
     const origClustColCat = origClustCol.categories;
+    const origClustMasks: BitArray[] = Array.from({length: origClustColCat.length},
+      () => BitArray.fromSeq(rowCount, (_: number) => false));
+    for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx)
+      origClustMasks[origClustColData[rowIdx]].setTrue(rowIdx);
+
 
     const customClustColList = wu(this.customClusters).toArray();
-    const customClustColDataList = customClustColList.map((v) => v.toList() as boolean[]);
+    const customClustMasks = customClustColList.map(
+      (v) => BitArray.fromUint32Array(rowCount, v.getRawData() as Uint32Array));
     const customClustColNamesList = customClustColList.map((v) => v.name);
-
-    const rowCount = this.df.rowCount;
-
-    const origClustMasks: boolean[][] = Array.from({length: origClustColCat.length},
-      () => new Array(rowCount) as boolean[]);
-    const customClustMasks: boolean[][] = Array.from({length: customClustColList.length},
-      () => new Array(rowCount) as boolean[]);
-
-    // get original cluster masks in one pass
-    // complexity is O(N * (M + 1)) where N is the number of rows and M is the number of custom clusters
-    for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
-      origClustMasks[origClustColData[rowIdx]][rowIdx] = true;
-      for (let customClustIdx = 0; customClustIdx < customClustColList.length; ++customClustIdx)
-        customClustMasks[customClustIdx][rowIdx] = customClustColDataList[customClustIdx][rowIdx];
-    }
 
     const activityColData: type.RawData = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData();
 
@@ -686,9 +682,10 @@ export class PeptidesModel {
       const resultStats = clustType == 0 ? origClustStats : customClustStats;
       for (let maskIdx = 0; maskIdx < masks.length; ++maskIdx) {
         const mask = masks[maskIdx];
-        const trueCount = mask.filter((v) => v).length;
-        const maskInfo = {trueCount: trueCount, falseCount: rowCount - trueCount, mask: mask};
-        const stats = getStats(activityColData, maskInfo);
+        // const trueCount = mask.filter((v) => v).length;
+        // const maskInfo = {trueCount: trueCount, falseCount: rowCount - trueCount, mask: mask};
+
+        const stats = getStats(activityColData, mask);
         resultStats[clustNames[maskIdx]] = stats;
       }
     }
@@ -900,7 +897,7 @@ export class PeptidesModel {
     const aggregatedColMap = this.getAggregatedColumnValues({mask: mask, fractionDigits: 2});
 
     const resultMap = {...tableMap, ...aggregatedColMap};
-    const distroStatsElem = wrapDistroAndStatsDefault(labels, hist.root, resultMap, true);
+    const distroStatsElem = getStatsSummary(labels, hist, resultMap, true);
 
     ui.tooltip.show(distroStatsElem, x, y);
 
@@ -945,7 +942,7 @@ export class PeptidesModel {
     const clusterCol = this.df.col(this.settings.clustersColumnName!);
 
     const changeSelectionBitset = (currentBitset: DG.BitSet, posList: type.RawColumn[], clustColCat: string[],
-      clustColData: type.RawData, customClust: {[key: string]: boolean[]}): void => {
+      clustColData: type.RawData, customClust: {[key: string]: BitArray}): void => {
       const getBitAt = (i: number): boolean => {
         for (const posRawCol of posList) {
           if (this.monomerPositionSelection[posRawCol.name].includes(posRawCol.cat![posRawCol.rawData[i]]))
@@ -960,7 +957,7 @@ export class PeptidesModel {
           if (clust === currentOrigClust)
             return true;
 
-          if (Object.hasOwn(customClust, clust) && customClust[clust][i] === true)
+          if (Object.hasOwn(customClust, clust) && customClust[clust].getBit(i))
             return true;
         }
 
@@ -980,9 +977,10 @@ export class PeptidesModel {
 
       const clustColCat = clusterCol?.categories ?? [];
       const clustColData = clusterCol?.getRawData() ?? new Int32Array(0);
-      const customClust: {[key: string]: boolean[]} = {};
+      const customClust: {[key: string]: BitArray} = {};
+      const rowCount = this.df.rowCount;
       for (const clust of this.customClusters)
-        customClust[clust.name] = clust.toList();
+        customClust[clust.name] = BitArray.fromUint32Array(rowCount, clust.getRawData() as Uint32Array);
 
       changeSelectionBitset(selection, positionList, clustColCat, clustColData, customClust);
     });
