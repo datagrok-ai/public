@@ -9,7 +9,7 @@ import {SequenceTranslatorUI} from './view/view';
 import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/database-utils/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {FormatDictionaryLoader} from './model/translation-utils/dictionary-loader';
+import {FormatDictionaryLoader} from './model/format-translation/dictionary-loader';
 
 class StPackage extends DG.Package {
   private _dbLoader?: DBLoaderBase;

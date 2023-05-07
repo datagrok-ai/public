@@ -1,5 +1,5 @@
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {SequenceToSmilesConverter} from '../model/sequence-to-molfile-utils/sequence-to-smiles';
+import {SequenceToSmilesConverter} from '../model/sequence-to-structure-utils/sequence-to-smiles';
 import {SYNTHESIZERS} from '../model/const';
 
 function getSmiles(strand: string, format: string): string {

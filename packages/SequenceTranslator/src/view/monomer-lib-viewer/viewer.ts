@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {drawZoomedInMolecule} from '../utils/draw-molecule';
-import {MonomerLibWrapper} from '../../model/monomer-lib-utils/lib-wrapper';
+import {MonomerLibWrapper} from '../../model/monomer-lib/lib-wrapper';
 
 export class MonomerLibViewer {
   static async view(): Promise<void> {

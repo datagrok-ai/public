@@ -8,14 +8,14 @@ import * as rxjs from 'rxjs';
 import {highlightInvalidSubsequence} from '../utils/colored-input/input-painters';
 import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
 import {INPUT_FORMATS} from '../../model/const';
-import {SequenceToSmilesConverter} from '../../model/sequence-to-molfile-utils/sequence-to-smiles';
-import {SequenceToMolfileConverter} from '../../model/sequence-to-molfile-utils/sequence-to-molfile';
-import {convertSequence, UNDEFINED_SEQ_MSG} from '../../model/translation-utils/conversion-utils';
+import {SequenceToSmilesConverter} from '../../model/sequence-to-structure-utils/sequence-to-smiles';
+import {SequenceToMolfileConverter} from '../../model/sequence-to-structure-utils/sequence-to-molfile';
+import {convertSequence, UNDEFINED_SEQ_MSG} from '../../model/format-translation/conversion-utils';
 import {drawMolecule} from '../utils/draw-molecule';
 import {download} from '../../model/helpers';
 import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, DEFAULT_INPUT} from '../const/main-tab';
-import {FormatDetector} from '../../model/parsing-validation-utils/format-detector';
-import {SequenceValidator} from '../../model/parsing-validation-utils/sequence-validator';
+import {FormatDetector} from '../../model/parsing-validation/format-detector';
+import {SequenceValidator} from '../../model/parsing-validation/sequence-validator';
 
 export class MainTabUI {
   constructor() {

@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {MonomerSequenceParser} from './monomer-code-parser';
-import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
+import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
 
 // todo: merge with sequence-to-molfile
 export class SequenceToSmilesConverter {

@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../../package';
-import {SYNTHESIZERS, TECHNOLOGIES} from '../../model/const';
+import {SYNTHESIZERS, TECHNOLOGIES} from '../const';
 
 import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
 

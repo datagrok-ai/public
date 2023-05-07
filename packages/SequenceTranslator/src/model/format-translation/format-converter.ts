@@ -1,9 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import {DELIMITER} from '../const';
 import {sortByReverseLength} from '../helpers';
-import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
+import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
 import {SYNTHESIZERS as FORMAT} from '../const';
-import {KeyToValue, Dict, FormatDictionaryLoader} from '../translation-utils/dictionary-loader';
+import {KeyToValue, Dict, FormatDictionaryLoader} from './dictionary-loader';
 
 const EDGES = 'edges';
 const CENTER = 'center';

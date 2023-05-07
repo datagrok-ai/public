@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {sortByReverseLength} from '../helpers';
 import {SYNTHESIZERS} from '../const';
-import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
+import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
 import {SequenceValidator} from './sequence-validator';
 
 export class FormatDetector {

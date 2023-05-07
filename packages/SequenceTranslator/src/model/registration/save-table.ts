@@ -3,9 +3,9 @@ import {COL_NAMES, GENERATED_COL_NAMES, SEQUENCE_TYPES} from './constants';
 import {differenceOfTwoArrays, download} from '../helpers';
 import * as grok from 'datagrok-api/grok';
 import {SYNTHESIZERS} from '../const';
-import {SequenceToMolfileConverter} from '../sequence-to-molfile-utils/sequence-to-molfile';
+import {SequenceToMolfileConverter} from '../sequence-to-structure-utils/sequence-to-molfile';
 import {RegistrationSequenceParser} from './sequence-parser';
-import {linkStrandsV3000} from '../sequence-to-molfile-utils/mol-transformations';
+import {linkStrandsV3000} from '../sequence-to-structure-utils/mol-transformations';
 
 export async function sdfSaveTable(table: DG.DataFrame, onError: (rowI: number, err: any) => void) {
   if (GENERATED_COL_NAMES.some((colName) => !table.columns.contains(colName))) {
