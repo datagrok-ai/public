@@ -4,10 +4,10 @@ import {FormatConverter} from './format-converter';
 const NO_TRANSLATION_MSG = 'No translation table available';
 export const UNDEFINED_SEQ_MSG = 'Type of input sequence is undefined';
 
-export function convertSequence(sequence: string, indexOfFirstInvalidChar: number, format: string) {
+export function convertSequence(sequence: string, indexOfFirstInvalidChar: number, format: string | null): {[key: string]: string} {
   if (indexOfFirstInvalidChar !== -1) {
     return {
-      indexOfFirstInvalidChar: indexOfFirstInvalidChar,
+      indexOfFirstInvalidChar: indexOfFirstInvalidChar.toString(),
       Error: UNDEFINED_SEQ_MSG,
     };
   }

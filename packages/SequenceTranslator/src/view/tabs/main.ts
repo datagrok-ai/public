@@ -107,9 +107,8 @@ export class MainTabUI {
   private updateTable(): void {
     this.outputTableDiv.innerHTML = '';
     const format = (new FormatDetector(this.sequence)).getFormat();
-    if (format === null)
-      throw new Error('ST: wrong input format');
-    const indexOfInvalidChar = (new SequenceValidator(this.sequence)).getInvalidCodeIndex(format);
+    // todo: does not detect correctly (U-A)(U-A)
+    const indexOfInvalidChar = (format === null) ? 0 : (new SequenceValidator(this.sequence)).getInvalidCodeIndex(format!);
     const outputSequenceObj = convertSequence(this.sequence, indexOfInvalidChar, format);
     const tableRows = [];
 
@@ -117,9 +116,7 @@ export class MainTabUI {
       const sequence = ('indexOfFirstInvalidChar' in outputSequenceObj) ?
         ui.divH([]) :
         ui.link(
-          //@ts-ignore // why ts-ignore? refactor to remove
           outputSequenceObj[key],
-          //@ts-ignore // why ts-ignore? refactor to remove
           () => navigator.clipboard.writeText(outputSequenceObj[key])
             .then(() => grok.shell.info(SEQUENCE_COPIED_MSG)),
           SEQ_TOOLTIP_MSG, ''
