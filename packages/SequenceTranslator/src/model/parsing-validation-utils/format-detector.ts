@@ -12,85 +12,71 @@ export class FormatDetector {
     this.libWrapper = MonomerLibWrapper.getInstance();
   };
 
-  private invalidCodeIdx?: number;
   private libWrapper: MonomerLibWrapper;
 
-  getInvalidCodeIndex(format?: string) {
-    if (this.invalidCodeIdx)
-      return this.invalidCodeIdx!;
-    return this.computeInvalidCodeIndex(format);
-  }
-
-  private computeInvalidCodeIndex(format?: string): number {
-    const possibleSynthesizers = (format === undefined) ?
-      this.getListOfPossibleSynthesizersByFirstMatchedCode() :
-      [format];
-    if (possibleSynthesizers.length === 0)
+  getInvalidCodeIndex(format?: string): number {
+    const encodingFormat = (format === undefined) ? this.getFormat() : format;
+    if (!encodingFormat)
       return 0;
-    const result = this.compute(possibleSynthesizers);
-    return result.indexOfFirstInvalidChar;
+    return this.computeInvalidCharIdx(encodingFormat);
   }
 
   getFormat(): string | null {
-    const possibleSynthesizers = this.getListOfPossibleSynthesizersByFirstMatchedCode();
-    if (possibleSynthesizers.length === 0)
+    const possibleFormats = this.getListOfPossibleSynthesizersByFirstMatchedCode();
+    if (possibleFormats.length === 0)
       return null;
-    const result = this.compute(possibleSynthesizers);
-    return result?.synthesizer[0];
+
+    const outputIndices = Array(possibleFormats.length).fill(0);
+    for (let i = 0; i < possibleFormats.length; ++i) {
+      const format = possibleFormats[i];
+      outputIndices[i] = this.computeInvalidCharIdx(format);
+    }
+    const formatIdx = (outputIndices.some((idx) => idx === -1)) ? -1 : Math.max(...outputIndices);
+    return possibleFormats[outputIndices.indexOf(formatIdx)];
   }
 
-  // todo: rename + refactor + include this.invalidCodeIdx insead of
-  // indexOfFirstInvalidChar
-  private compute(possibleSynthesizers: string[]) {
-    const outputIndices = Array(possibleSynthesizers.length).fill(0);
+  isValidSequence(format?: string): boolean {
+    return this.getInvalidCodeIndex(format) === -1;
+  }
 
-    const firstUniqueCharacters = ['r', 'd'];
-    for (let i = 0; i < possibleSynthesizers.length; ++i) {
-      const synthesizer = possibleSynthesizers[i];
-      const codes = sortByReverseLength(
-        this.libWrapper.getCodesByFormat(synthesizer)
-      );
-      while (outputIndices[i] < this.sequence.length) {
-        const matchedCode = codes.find((c) => c === this.sequence.slice(outputIndices[i], outputIndices[i] + c.length));
+  private computeInvalidCharIdx(format: string): number {
+    const firstUniqueCharacters = ['r', 'd']; // what for?
+    const codes = sortByReverseLength(
+      this.libWrapper.getCodesByFormat(format)
+    );
+    let indexOfFirstInvalidChar = 0;
+    while (indexOfFirstInvalidChar < this.sequence.length) {
+      const matchedCode = codes.find((code) => {
+        const subSequence = this.sequence.substring(indexOfFirstInvalidChar, indexOfFirstInvalidChar + code.length);
+        return code === subSequence;
+      });
 
-        if (!matchedCode) break;
+      if (!matchedCode) break;
 
-        if ( // for mistake pattern 'rAA'
-          outputIndices[i] > 1 &&
-          NUCLEOTIDES.includes(this.sequence[outputIndices[i]]) &&
-          firstUniqueCharacters.includes(this.sequence[outputIndices[i] - 2])
-        ) break;
+      // todo: refactor the vague condition
+      if ( // for mistake pattern 'rAA'
+        indexOfFirstInvalidChar > 1 &&
+        NUCLEOTIDES.includes(this.sequence[indexOfFirstInvalidChar]) &&
+        firstUniqueCharacters.includes(this.sequence[indexOfFirstInvalidChar - 2])
+      ) break;
 
-        if ( // for mistake pattern 'ArA'
-          firstUniqueCharacters.includes(this.sequence[outputIndices[i] + 1]) &&
-          NUCLEOTIDES.includes(this.sequence[outputIndices[i]])
-        ) {
-          outputIndices[i]++;
-          break;
-        }
-        outputIndices[i] += matchedCode.length;
+      if ( // for mistake pattern 'ArA'
+        firstUniqueCharacters.includes(this.sequence[indexOfFirstInvalidChar + 1]) &&
+        NUCLEOTIDES.includes(this.sequence[indexOfFirstInvalidChar])
+      ) {
+        indexOfFirstInvalidChar++;
+        break;
       }
+      indexOfFirstInvalidChar += matchedCode.length;
     }
-
-    const outputIndex = Math.max(...outputIndices);
-    const synthesizer = possibleSynthesizers[outputIndices.indexOf(outputIndex)];
-    const indexOfFirstInvalidChar = (outputIndex === this.sequence.length) ? -1 : outputIndex;
-    if (indexOfFirstInvalidChar !== -1) {
-      return {
-        indexOfFirstInvalidChar: indexOfFirstInvalidChar,
-        synthesizer: [synthesizer],
-      };
-    }
-    return {
-      indexOfFirstInvalidChar: indexOfFirstInvalidChar,
-      synthesizer: [synthesizer],
-    }
+    if (indexOfFirstInvalidChar === this.sequence.length)
+      indexOfFirstInvalidChar = -1
+    return indexOfFirstInvalidChar;
   }
 
   private getListOfPossibleSynthesizersByFirstMatchedCode(): string[] {
     const sequence = this.sequence;
     let synthesizers: string[] = [];
-    // iterate over all possible formats and 
     for (const synthesizer of Object.values(SYNTHESIZERS)) {
       let codes = sortByReverseLength(this.libWrapper.getCodesByFormat(synthesizer));
       let start = 0;

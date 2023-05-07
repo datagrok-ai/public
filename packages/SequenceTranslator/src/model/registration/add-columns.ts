@@ -5,6 +5,7 @@ import {RegistrationSequenceParser} from './sequence-parser';
 import {isValidSequence} from '../parsing-validation-utils/sequence-validation';
 import {getBatchMolWeight, getMolWeight, getSaltMass, getSaltMolWeigth} from './calculations';
 import {MonomerLibWrapper} from '../monomer-lib-utils/lib-wrapper';
+import {FormatDetector} from '../parsing-validation-utils/format-detector';
 
 export class SdfColumnsExistsError extends Error {
   constructor(message: string) {
@@ -90,24 +91,27 @@ export class RegistrationColumnsHandler {
       const codesToWeightsMap = MonomerLibWrapper.getInstance().getCodesToWeightsMap();
       try {
         if ([SEQUENCE_TYPES.SENSE_STRAND, SEQUENCE_TYPES.ANTISENSE_STRAND].includes(seqType)) {
-          const seq: string = this.sequenceCol.get(i);
-          const isValid = isValidSequence(seq, null).indexOfFirstInvalidChar == -1; 
+          const formatDetector = new FormatDetector(this.sequenceCol.get(i));
+          const isValid = formatDetector.isValidSequence();
           res = (isValid) ? getMolWeight(this.sequenceCol.get(i), codesToWeightsMap) : DG.FLOAT_NULL;
         } else if (seqType == SEQUENCE_TYPES.DUPLEX) {
           const seq = this.sequenceCol.get(i);
           const obj = parser.getDuplexStrands(seq);
           const strands = Object.values(obj);
           res = strands.every((seq) => {
-            const invalidChar = isValidSequence(seq, null).indexOfFirstInvalidChar;
-            const validity = invalidChar === -1;
-            return validity;
+            const formatDetector = new FormatDetector(seq);
+            return formatDetector.getInvalidCodeIndex() === -1;
           }) ?
             getMolWeight(obj.ss, codesToWeightsMap) + getMolWeight(obj.as, codesToWeightsMap) :
             DG.FLOAT_NULL;
         } else if ([SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(seqType)) {
           const seq = this.sequenceCol.get(i);
           const obj = parser.getDimerStrands(seq);
-          res = (Object.values(obj).every((seq) => isValidSequence(seq, null).indexOfFirstInvalidChar == -1)) ?
+          res = (Object.values(obj).every(
+            (seq) => {
+              isValidSequence(seq, null).indexOfFirstInvalidChar == -1
+            }
+          )) ?
             getMolWeight(obj.ss, codesToWeightsMap) + getMolWeight(obj.as1, codesToWeightsMap) +
             getMolWeight(obj.as2, codesToWeightsMap) :
             DG.FLOAT_NULL;
