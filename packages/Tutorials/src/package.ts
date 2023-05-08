@@ -6,11 +6,13 @@ import {chem} from './tracks/chem';
 import {eda} from './tracks/eda';
 import {da} from './tracks/data-access';
 import {ml} from './tracks/ml';
+import {dataTransformation} from './tracks/transform';
 import {TutorialWidget} from './widget';
 import '../css/tutorial.css';
 import {Track} from '@datagrok-libraries/tutorials/src/track';
 import {DemoView} from './demo-app/demo-app';
 import {viewerDemo} from './demo-app/platform-viewers-demo';
+import { DemoAppWidget } from './demo-app/widget';
 
 export const _package = new DG.Package();
 
@@ -130,6 +132,7 @@ function setProperties(properties: { [propertyName: string]: boolean }): void {
     'machineLearningTrack': ml,
     'cheminformaticsTrack': chem,
     'dataAccessTrack': da,
+    'dataTransformation': dataTransformation,
   };
 
   for (const property in properties) {
@@ -172,6 +175,10 @@ function setPath(path: string, tutorialRunners: TutorialRunner[]): void {
     tutorialRunners[trackIdx].run(tutorial);
 }
 
+//output: widget tutorial
+export function demoAppWidget(): DG.Widget {
+  return new DemoAppWidget();
+}
 
 //name: scatterPlotDemo
 //description: A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the points are color-coded you can increase the number of displayed variables to three. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis..
@@ -247,7 +254,7 @@ export async function _pcPlotDemo() {
 //description: Network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply to the values that represent an edge or a Node.js.
 //meta.demoPath: Viewers | Data flow and hierarchy | Network Diagram
 export async function _networkDiagramDemo() {
-  await viewerDemo(DG.VIEWER.NETWORK_DIAGRAM);
+  await viewerDemo(DG.VIEWER.NETWORK_DIAGRAM, {'node1ColumnName': 'Source', 'node2ColumnName': 'Target', useGoogleImage: true});
 }
 
 //name: boxPlotDemo

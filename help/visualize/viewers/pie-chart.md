@@ -8,10 +8,11 @@ the entire dataset (the whole pie).
 
 Controls:
 
-|               |                |
-|---------------|----------------|
-| Right click   | Context menu   |
-| Segment click | Select segment |
+|               |                     |
+|---------------|---------------------|
+| Right click   | Context menu        |
+| Alt+F         | Show in full screen |
+| Segment click | Select segment      |
 
 ## Videos
 

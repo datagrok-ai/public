@@ -152,7 +152,8 @@ export class VirtualScreeningTutorial extends Tutorial {
           .some((group) => group === el.textContent))
         .get();
 
-      if (hasHistory) groupHints.push($(descriptorDlg.root).find('i.fa-history.d4-command-bar-icon')[0]​!);
+      if (hasHistory)
+        groupHints.push($(descriptorDlg.root).find('i.fa-history.d4-command-bar-icon')[0]!);
 
       const groupDescription = 'To exclude <b>ExactMolWt</b>, expand the <b>Descriptors</b> group. ' +
         'The fastest way is to check the box for the entire group and unselect this particular descriptor. ' +

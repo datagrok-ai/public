@@ -8,6 +8,7 @@ General:
 |-----------------------|-----------------|
 | Right click           | Context menu    |
 | Alt+Mouse Drag        | Zoom            |
+| Alt+F                 | Show in full screen |
 | Shift+Mouse Drag      | Select          |
 | Up, Down, Left, Right | Scroll          |
 | Ctrl -                | Zoom out        |

@@ -27,12 +27,10 @@ export function injectTreeForGridUI2(
 ): GridNeighbor {
   const th: ITreeHelper = new TreeHelper();
   const treeNb: GridNeighbor = attachDivToGrid(grid, neighborWidth);
-
   // const treeDiv = ui.div();
   // treeRoot.appendChild(treeDiv);
   // treeRoot.style.backgroundColor = '#FFF0F0';
   // treeRoot.style.setProperty('overflow-y', 'hidden', 'important');
-
   // TODO: adapt tree: bio.NodeType to MarkupNodeType
   if (treeRoot) markupNode(treeRoot);
   const totalLength: number = treeRoot ? (treeRoot as MarkupNodeType).subtreeLength! : 1;
@@ -102,8 +100,8 @@ export function injectTreeForGridUI2(
   function alignGridWithTree(): void {
     const [viewedRoot] = th.setGridOrder(treeRoot, grid, leafColName);
     if (viewedRoot) markupNode(viewedRoot);
-    const source = viewedRoot ? {type: 'biojs', data: viewedRoot} :
-      {type: 'biojs', data: {name: 'NONE', branch_length: 1, children: []}};
+    // const source = viewedRoot ? {type: 'biojs', data: viewedRoot} :
+    //   {type: 'biojs', data: {name: 'NONE', branch_length: 1, children: []}};
 
     renderer.treeRoot = viewedRoot as MarkupNodeType;
   }
@@ -116,10 +114,10 @@ export function injectTreeForGridUI2(
   try {
     const lineWidthProperty = DG.Property.int(D_PROPS.lineWidth,
       (obj) => {
-        let k = 11;
+        return obj;
       },
       (obj, value) => {
-        let k = 11;
+        obj = value;
       },
       1);
     lineWidthProperty.category = `Dendrogram ${D_PROPS_CATS.STYLE}`;
@@ -200,7 +198,7 @@ export function injectTreeForGridUI2(
 
       const oldSelection: DG.BitSet = grid.dataFrame.selection.clone();
       if (renderer.selections.length == 0) {
-        grid.dataFrame.selection.init((rowI) => { return false; }, false);
+        grid.dataFrame.selection.init((_) => { return false; }, false);
       } else {
         const leafCol: DG.Column | null = !!leafColName ? grid.dataFrame.getCol(leafColName) : null;
         const nodeNameSet = new Set(
@@ -339,6 +337,7 @@ export function injectTreeForGridUI2(
   subs.push(renderer.onSelectionChanged.subscribe(rendererOnSelectionChanged));
 
   let sortingSub = grid.onRowsSorted.subscribe(dfOnSortingChanged);
+  subs.push(sortingSub);
 
   subs.push(grid.dataFrame.onCurrentRowChanged.subscribe(dataFrameOnCurrentRowChanged));
   subs.push(grid.dataFrame.onMouseOverRowChanged.subscribe(dataFrameOnMouseOverRowChanged));

@@ -71,6 +71,10 @@ export interface IScatterPlot3dLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface ITreeMapLookSettings {
@@ -112,6 +116,10 @@ export interface ITreeMapLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -239,6 +247,10 @@ export interface IHistogramLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface IFiltersLookSettings {
@@ -282,6 +294,10 @@ export interface IFiltersLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -495,6 +511,10 @@ export interface IScatterPlotLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface ILineChartLookSettings {
@@ -700,6 +720,10 @@ export interface ILineChartLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface IBarChartLookSettings {
@@ -823,6 +847,10 @@ export interface IBarChartLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface IDensityPlotLookSettings {
@@ -858,6 +886,10 @@ export interface IDensityPlotLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -977,6 +1009,10 @@ export interface IBoxPlotLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface IPieChartLookSettings {
@@ -1050,6 +1086,10 @@ export interface IPieChartLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface IMatrixPlotLookSettings {
@@ -1085,6 +1125,10 @@ export interface IMatrixPlotLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -1290,6 +1334,10 @@ export interface IGridLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface ICalendarLookSettings {
@@ -1325,6 +1373,10 @@ export interface ICalendarLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -1364,6 +1416,10 @@ export interface ITrellisPlotLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -1445,6 +1501,10 @@ export interface IPcPlotLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface IMapViewerLookSettings {
@@ -1483,6 +1543,10 @@ export interface IMapViewerLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface IStatsViewerLookSettings {
@@ -1510,6 +1574,10 @@ export interface IStatsViewerLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -1544,6 +1612,10 @@ export interface ICorrelationPlotLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -1588,6 +1660,10 @@ export interface IFormLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface IMarkupViewerLookSettings {
@@ -1615,6 +1691,10 @@ export interface IMarkupViewerLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -1657,6 +1737,10 @@ export interface IWordCloudLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -1763,6 +1847,10 @@ export interface INetworkDiagramLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface ICardLookSettings {
@@ -1789,6 +1877,10 @@ export interface ICardLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
@@ -1823,6 +1915,10 @@ export interface ITileViewerLookSettings {
   // Markup is supported.
   description: string;
 
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
 }
 
 export interface IPivotViewerLookSettings {
@@ -1850,6 +1946,10 @@ export interface IPivotViewerLookSettings {
   // Viewer description that gets shown at the *Descriptor Position*.
   // Markup is supported.
   description: string;
+
+  // Help to be shown when user clicks on the '?' icon on top.
+  // Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
 
 }
 
