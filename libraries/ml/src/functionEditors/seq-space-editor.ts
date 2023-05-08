@@ -15,7 +15,6 @@ export interface ISimilaritySpaceParams {
 
 export class SequenceSpaceFunctionEditor extends SequenceSpaceBaseFuncEditor {
 
-  similarityMetricInput: DG.InputBase;
   plotEmbeddingsInput: DG.InputBase;
   funcParamsDiv: HTMLDivElement;
 
@@ -36,7 +35,6 @@ export class SequenceSpaceFunctionEditor extends SequenceSpaceBaseFuncEditor {
 
   constructor(semtype: DG.SemType){
     super(semtype);
-    this.similarityMetricInput = ui.choiceInput('Similarity', 'Tanimoto', SEQ_SPACE_SIMILARITY_METRICS);
 
     this.plotEmbeddingsInput = ui.boolInput('Plot Embeddings', true);
 
