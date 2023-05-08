@@ -70,11 +70,11 @@ export function extractMonomerInfo(col: DG.Column<string>): type.RawColumn {
   };
 }
 
-export function wrapDistroAndStatsDefault(labels: HTMLDivElement, histRoot: HTMLElement, tableMap: StringDictionary,
-  isTooltip: boolean = false): HTMLDivElement {
-  const result = ui.divV([labels, histRoot, ui.tableFromMap(tableMap)]);
+export function getStatsSummary(legend: HTMLDivElement, hist: DG.Viewer<DG.IHistogramLookSettings>,
+  statsMap: StringDictionary, isTooltip: boolean = false): HTMLDivElement {
+  const result = ui.divV([legend, hist.root, ui.tableFromMap(statsMap)]);
   result.style.minWidth = '200px';
   if (isTooltip)
-    histRoot.style.maxHeight = '150px';
+    hist.root.style.maxHeight = '150px';
   return result;
 }

@@ -9,6 +9,7 @@ const BACKGROUND = 'background';
 const TEXT = 'text';
 export const SIMILARITY = 'similarity';
 export const DIVERSITY = 'diversity';
+export const MAX_LIMIT = 50;
 export class ChemSearchBaseViewer extends DG.JsViewer {
   isEditedFromSketcher: boolean = false;
   gridSelect: boolean = false;
@@ -33,7 +34,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   constructor(name: string, col?: DG.Column) {
     super();
     this.fingerprint = this.string('fingerprint', this.fingerprintChoices[0], {choices: this.fingerprintChoices});
-    this.limit = this.int('limit', 10);
+    this.limit = this.int('limit', 10, {min: 1, max: MAX_LIMIT});
     this.distanceMetric = this.string('distanceMetric', CHEM_SIMILARITY_METRICS[0], {choices: CHEM_SIMILARITY_METRICS});
     this.size = this.string('size', Object.keys(this.sizesMap)[0], {choices: Object.keys(this.sizesMap)});
     this.moleculeColumnName = this.string('moleculeColumnName');
@@ -76,9 +77,6 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
         .subscribe(async (_: any) => await this.render(false)));
       this.moleculeColumn ??= this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
       this.moleculeColumnName ??= this.moleculeColumn?.name!;
-      this.getProperty('limit')!.fromOptions({min: 1, max: this.dataFrame.rowCount});
-      if (this.limit > this.dataFrame.rowCount)
-        this.limit = this.dataFrame.rowCount;
     }
     await this.render(true);
   }
@@ -94,6 +92,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       if (col.semType === DG.SEMTYPE.MOLECULE)
         this.moleculeColumn = col;
     }
+    if (property.name === 'limit' && property.get(this) > MAX_LIMIT )
+      this.limit = MAX_LIMIT;
     this.render();
   }
 
@@ -133,11 +133,14 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       darkColor : lightColor;
   }
 
-  createMoleculePropertiesDiv(idx: number, similarity?: number): HTMLDivElement{
+  createMoleculePropertiesDiv(idx: number, refMolecule: boolean, similarity?: number): HTMLDivElement{
     const propsDict: {[key: string]: any} = {};
     const grid = grok.shell.tv.grid;
     if (similarity)
-      propsDict[SIMILARITY] = {val: similarity};
+      if (refMolecule)
+        propsDict['Reference'] = {val: ''};
+      else
+        propsDict[SIMILARITY] = {val: similarity};
     for (const col of this.moleculeProperties) {
         propsDict[col] = {val: this.moleculeColumn!.dataFrame.col(col)!.getString(idx)};
         const colorCoding = this.moleculeColumn!.dataFrame.col(col)!.tags[DG.TAGS.COLOR_CODING_TYPE]
@@ -146,7 +149,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
         }
     }
     //const item = ui.divH([], 'similarity-prop-item');
-    const div = ui.divV([]);
+    const div = ui.divV([], {style: {marginTop: '5px'}});
     for (const key of Object.keys(propsDict)) {
       const labelName = key === SIMILARITY ? '' : key;
       const label = ui.divText(`${labelName}`, 'similarity-prop-label');

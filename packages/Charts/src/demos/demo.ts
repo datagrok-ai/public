@@ -13,7 +13,7 @@ const VIEWER_TABLES_PATH: {[key: string]: string} = {
   SurfacePlot: 'files/surface-plot.csv',
   Timelines: 'files/ae.csv',
   Tree: 'demog.csv',
-  WordCloud: 'word_cloud.csv',
+  WordCloudViewer: 'word_cloud.csv',
 };
 
 
@@ -45,7 +45,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
 function dockViewers(tableView: DG.TableView, viewer: DG.Viewer, viewerName: string) {
   const rootNode = tableView.dockManager.rootNode;
 
-  if (viewerName === 'WordCloud') {
+  if (viewerName === 'WordCloudViewer') {
     tableView.dockManager.dock(tableView.filters(), DG.DOCK_TYPE.RIGHT, rootNode, 'Filters', 0.6);
     tableView.dockManager.dock(viewer, DG.DOCK_TYPE.TOP, null, viewerName, 0.7);
     return;

@@ -80,7 +80,7 @@ export class SubstructureFilter extends DG.Filter {
     this.subs.push(grok.events.onCustomEvent(SKETCHER_TYPE_CHANGED).subscribe((state: ISubstructureFilterState) => {
       if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
         if (this.sketcher.sketcher?.isInitialized) {
-          if (DG.chem.currentSketcherType !== this.sketcher.sketcher!.name) {
+          if (DG.chem.currentSketcherType !== this.sketcher.sketcher!.name && this.sketcher._mode !== DG.chem.SKETCHER_MODE.EXTERNAL) {
             this.sketcher.sketcherType = DG.chem.currentSketcherType;
           }
         }

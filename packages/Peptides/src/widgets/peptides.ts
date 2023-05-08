@@ -113,7 +113,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
     const sequencesCol = col ?? seqColInput!.value;
     if (sequencesCol) {
       const model = await startAnalysis(activityColumnChoice.value!, sequencesCol, clustersColumnChoice.value, df,
-        scaledCol, activityScalingMethod.stringValue as type.ScalingMethods ?? 'none');
+        scaledCol, activityScalingMethod.stringValue as C.SCALING_METHODS ?? C.SCALING_METHODS.NONE);
       if (model != null) {
         bitsetChanged.unsubscribe();
         return true;
@@ -150,7 +150,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
 }
 
 export async function startAnalysis(activityColumn: DG.Column<number>, peptidesCol: DG.Column<string>,
-  clustersColumn: DG.Column | null, currentDf: DG.DataFrame, scaledCol: DG.Column<number>, scaling: type.ScalingMethods,
+  clustersColumn: DG.Column | null, currentDf: DG.DataFrame, scaledCol: DG.Column<number>, scaling: C.SCALING_METHODS,
 ): Promise<PeptidesModel | null> {
   const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
   let model = null;
@@ -167,6 +167,11 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
       sequenceColumnName: peptidesCol.name,
       activityColumnName: activityColumn.name,
       scaling: scaling,
+      isBidirectional: false,
+      columns: {},
+      maxMutations: 1,
+      minActivityDelta: 0,
+      showDendrogram: false,
     };
     if (clustersColumn) {
       const clusterCol = newDf.getCol(clustersColumn.name);

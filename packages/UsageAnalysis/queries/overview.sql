@@ -64,8 +64,9 @@ with recursive selected_groups as (
   join groups_relations gr on sg.id = gr.parent_id
 ),
 res AS (
-select e.id, e.event_time, u.friendly_name as user, u.id as uid, u.group_id as ugid,
-coalesce(pp.name, pp1.name, pp2.name) as package, coalesce(pp.package_id, pp1.package_id, pp2.package_id) as pid
+select e.event_time, u.friendly_name as user, u.id as uid, u.group_id as ugid,
+coalesce(pp.name, pp1.name, pp2.name, 'Core') as package,
+coalesce(pp.package_id, pp1.package_id, pp2.package_id) as pid
 from events e
 inner join event_types et on e.event_type_id = et.id
 left join entities en on et.id = en.id
@@ -77,15 +78,13 @@ left join event_parameter_values epv1 inner join event_parameters ep1 on epv1.pa
 inner join entities e1 on epv1.value != 'null' and e1.id = epv1.value::uuid
 inner join published_packages pp2 inner join packages p2 on p2.id = pp2.package_id on e1.package_id = pp2.id
 on epv1.event_id = e.id
-
 inner join users_sessions s on e.session_id = s.id
 inner join users u on u.id = s.user_id
-
 where @date(e.event_time)
-
 )
-select coalesce(res.package, 'Core') as package, res.user, res.user as name, count(*) AS count,
-res.uid, res.ugid, res.pid, max(event_time) as time_end, min(event_time) as time_start
+select res.package as package, res.user, res.user as name,
+count(*) AS count, res.uid, res.ugid, coalesce(res.pid, '00000000-0000-0000-0000-000000000000') as pid,
+max(event_time) as time_end, min(event_time) as time_start
 from res, selected_groups sg
 where res.ugid = sg.id
 and (res.package = any(@packages) or @packages = ARRAY['all'])

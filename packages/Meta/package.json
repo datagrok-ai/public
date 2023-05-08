@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.3.4",
+  "version": "3.3.9",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1138,6 +1138,9 @@
         },
         "1.7.0": {
           "datagrok-api": "^1.14.0"
+        },
+        "1.7.1": {
+          "datagrok-api": "^1.14.0"
         }
       },
       "description": "Automated tests for the [Datagrok JS API](https://datagrok.ai/js-api)",
@@ -1968,6 +1971,15 @@
         },
         "2.4.10": {
           "datagrok-api": "^1.13.3"
+        },
+        "2.4.11": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.4.12": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.4.13": {
+          "datagrok-api": "^1.13.3"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -2497,6 +2509,9 @@
           "datagrok-api": "^1.11.1"
         },
         "1.2.3": {
+          "datagrok-api": "^1.11.1"
+        },
+        "1.2.4": {
           "datagrok-api": "^1.11.1"
         }
       },

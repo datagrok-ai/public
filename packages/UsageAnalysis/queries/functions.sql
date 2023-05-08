@@ -44,7 +44,7 @@ to_timestamp(floor((extract('epoch' from res.time_old) / trunc )) * trunc)
 AT TIME ZONE 'UTC' as time_start,
 to_timestamp(floor((extract('epoch' from res.time_old) / trunc )) * trunc)
 AT TIME ZONE 'UTC' + trunc * interval '1 sec' as time_end,
-res.uid, res.ugid, res.pid
+res.uid, res.ugid, coalesce(res.pid, '00000000-0000-0000-0000-000000000000') as pid
 from res, t2, selected_groups sg
 where res.ugid = sg.id
 and (res.package = any(@packages) or @packages = ARRAY['all'])
@@ -62,7 +62,8 @@ res.uid, res.ugid, res.pid
 --connection: System:Datagrok
 with res AS (
   select e.friendly_name as run, et.name as function,
-  pp.package_id as pid, e.event_time as time, e.id as rid,
+  coalesce(pp.package_id, p1.id, '00000000-0000-0000-0000-000000000000') as pid,
+  e.event_time as time, e.id as rid,
   coalesce(pp.name, p.name, 'Core') as package
   from events e
   inner join event_types et on e.event_type_id = et.id
@@ -72,6 +73,7 @@ with res AS (
   and p.is_root = true
   and p.is_package = true
   left join published_packages pp on en.package_id = pp.id
+  left join packages p1 on p.name = p1.name
   inner join users_sessions s on e.session_id = s.id
   inner join users u on u.id = s.user_id
   where e.event_time between to_timestamp(@time_start)
@@ -81,5 +83,5 @@ with res AS (
 )
 select *
 from res
-where res.package = any(@packages)
+where res.pid = any(@packages)
 --end

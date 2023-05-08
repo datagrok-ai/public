@@ -21,7 +21,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
   constructor(tooltipUse = false, col?: DG.Column) {
     super(DIVERSITY, col);
     this.renderMolIds = [];
-    this.updateMetricsLink(this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
+    this.updateMetricsLink(this, {fontSize: '13px', fontWeight: 'normal', paddingBottom: '15px'});
     this.tooltipUse = tooltipUse;
   }
 
@@ -48,7 +48,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
 
       panel[cnt++] = this.metricsDiv;
       for (let i = 0; i < this.renderMolIds.length; ++i) {
-        const molProps = this.createMoleculePropertiesDiv(this.renderMolIds[i]);
+        const molProps = this.createMoleculePropertiesDiv(this.renderMolIds[i], false);
         const grid = ui.div([
           renderMolecule(
             this.moleculeColumn!.get(this.renderMolIds[i]),
