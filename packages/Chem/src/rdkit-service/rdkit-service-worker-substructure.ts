@@ -66,7 +66,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     let mol = null;
     try { mol = this._rdKitModule.get_qmol(molString); }
     catch(e) {
-      if (mol !== null && mol.is_valid())
+      if (mol !== null)
         mol.delete();
       return null;
     }
