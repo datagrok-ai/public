@@ -10,15 +10,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
+import grok_connect.GrokConnect;
 import grok_connect.connectors_info.*;
 import grok_connect.providers.proxy.HiveMetaDataProviderProxyProvider;
-import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryCancelledByUser;
 import serialization.DataFrame;
 import serialization.Types;
@@ -28,8 +27,7 @@ public class HiveDataProvider extends JdbcDataProvider {
             Collections.unmodifiableList(Arrays.asList("MySQL", "Postgres", "Oracle", "MS SQL"));
     private static final String DEFAULT_META_STORE_DB = "metastore";
 
-    public HiveDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
-        super(resultSetManager, providerManager);
+    public HiveDataProvider() {
         driverClassName = "org.apache.hadoop.hive.jdbc.HiveDriver";
 
         descriptor = new DataSource();
@@ -142,12 +140,12 @@ public class HiveDataProvider extends JdbcDataProvider {
 
     private JdbcDataProvider getProxyMetaStoreProvider(DataConnection connection) {
         return new HiveMetaDataProviderProxyProvider()
-                .getProxy(providerManager, resultSetManager, getMetaDataProvider(connection).getClass());
+                .getProxy(getMetaDataProvider(connection).getClass());
     }
 
     private JdbcDataProvider getMetaDataProvider(DataConnection connection) {
         if (connection.parameters.containsKey(DbCredentials.META_STORE)) {
-            return providerManager.getByName((String) connection.parameters.get(DbCredentials.META_STORE));
+            return GrokConnect.providerManager.getByName((String) connection.parameters.get(DbCredentials.META_STORE));
         }
         throw new UnsupportedOperationException("Hive Metastore information should be provided for schema browsing");
     }

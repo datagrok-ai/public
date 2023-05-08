@@ -7,31 +7,40 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
+import grok_connect.column.BigIntColumnProvider;
+import grok_connect.column.ColumnProvider;
+import grok_connect.column.IntColumnProvider;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataQuery;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
-import grok_connect.resultset.ResultSetManager;
+import grok_connect.converter.ConverterManager;
+import grok_connect.converter.bigint.BigIntConverterManager;
+import grok_connect.converter.integer.IntegerTypeConverterManager;
+import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
+import grok_connect.type.TypeChecker;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import oracle.jdbc.OracleResultSet;
 import oracle.sql.json.OracleJsonObject;
 import serialization.Types;
 
 public class OracleDataProvider extends JdbcDataProvider {
+    private static final TypeChecker BIGINT_TYPECHECKER = (type, typeName, precision, scale) ->
+            typeName.equalsIgnoreCase("number") && precision > 10 && scale == 0;
+    private static final TypeChecker INT_TYPECHECKER = (type, typeName, precision, scale) ->
+            typeName.equalsIgnoreCase("number") && precision < 10 && scale == 0;
     private static final String SYS_SCHEMAS_FILTER =
             "COL.OWNER != 'SYSTEM' AND COL.OWNER != 'CTXSYS' AND COL.OWNER != 'MDSYS' " +
             "AND COL.OWNER != 'XDB' AND COL.OWNER != 'APEX_040000' AND COL.OWNER != 'SYS' " +
             "AND COL.OWNER != 'WMSYS' AND COL.OWNER != 'EXFSYS' AND COL.OWNER != 'ORDSYS' " +
             "AND COL.OWNER != 'ORDDATA'";
 
-    public OracleDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
-        super(resultSetManager, providerManager);
+    public OracleDataProvider() {
+        initResultSetManager();
         driverClassName = "oracle.jdbc.OracleDriver";
-
         descriptor = new DataSource();
         descriptor.type = "Oracle";
         descriptor.description = "Query Oracle database";
@@ -152,5 +161,20 @@ public class OracleDataProvider extends JdbcDataProvider {
         String brackets = descriptor.nameBrackets;
         return name.startsWith(brackets.substring(0, 1)) ? name :
                 brackets.charAt(0) + name + brackets.substring(brackets.length() - 1);
+    }
+
+    private void initResultSetManager() {
+        List<ConverterManager<?>> defaultConverterManagers
+                = DefaultResultSetManager.getDefaultConverterManagers();
+        defaultConverterManagers.set(0, new BigIntConverterManager(BIGINT_TYPECHECKER));
+        defaultConverterManagers.set(1, new IntegerTypeConverterManager(INT_TYPECHECKER));
+        List<ColumnProvider> defaultColumnProviders = DefaultResultSetManager.getDefaultColumnProviders();
+        List<TypeChecker> bigIntCheckers = new ArrayList<>();
+        bigIntCheckers.add(BIGINT_TYPECHECKER);
+        defaultColumnProviders.set(2, new BigIntColumnProvider(bigIntCheckers));
+        List<TypeChecker> intCheckers = new ArrayList<>();
+        intCheckers.add(INT_TYPECHECKER);
+        defaultColumnProviders.set(0, new IntColumnProvider(intCheckers));
+        resultSetManager = new DefaultResultSetManager(defaultConverterManagers, defaultColumnProviders);
     }
 }

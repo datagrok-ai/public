@@ -3,6 +3,7 @@ package grok_connect.converter.xml;
 import grok_connect.converter.AbstractConverterManager;
 import grok_connect.converter.Converter;
 import grok_connect.converter.xml.impl.XMLTypeConverter;
+import grok_connect.type.DefaultTypeCheckers;
 import grok_connect.type.TypeChecker;
 import oracle.xdb.XMLType;
 import org.postgresql.jdbc.PgSQLXML;
@@ -18,14 +19,21 @@ public class XmlConverterManager extends AbstractConverterManager<String> {
     private static final Converter<String> defaultConverter = Object::toString;
     private final Map<Class<?>, Converter<String>> converterMap;
 
-    public XmlConverterManager(TypeChecker typeChecker) {
-        super(typeChecker);
+    {
         converterMap = new HashMap<>();
         XMLTypeConverter xmlTypeConverter = new XMLTypeConverter();
         converterMap.put(SQLXML.class, xmlTypeConverter);
         converterMap.put(PgSQLXML.class, xmlTypeConverter);
         converterMap.put(db.class, xmlTypeConverter);
         converterMap.put(XMLType.class, xmlTypeConverter);
+    }
+
+    public XmlConverterManager() {
+        super(DefaultTypeCheckers.DEFAULT_XML_TYPECHECKER);
+    }
+
+    public XmlConverterManager(TypeChecker typeChecker) {
+        super(typeChecker);
     }
 
     @Override

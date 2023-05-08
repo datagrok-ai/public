@@ -5,6 +5,7 @@ import com.clickhouse.data.value.UnsignedShort;
 import grok_connect.converter.AbstractConverterManager;
 import grok_connect.converter.Converter;
 import grok_connect.converter.integer.impl.*;
+import grok_connect.type.DefaultTypeCheckers;
 import grok_connect.type.TypeChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,8 +18,7 @@ public class IntegerTypeConverterManager extends AbstractConverterManager<Intege
     private static final Converter<Integer> defaultConverter = value -> (Integer) value;
     private final Map<Class<?>, Converter<Integer>> converterMap;
 
-    public IntegerTypeConverterManager(TypeChecker typeChecker) {
-        super(typeChecker);
+    {
         converterMap = new HashMap<>();
         converterMap.put(BigDecimal.class, new BigDecimalTypeConverter());
         converterMap.put(Byte.class, new ByteTypeConverter());
@@ -28,6 +28,14 @@ public class IntegerTypeConverterManager extends AbstractConverterManager<Intege
         converterMap.put(Float.class, new FloatTypeConverter());
         converterMap.put(Long.class, new LongTypeConverter());
         converterMap.put(Short.class, new ShortTypeConverter());
+    }
+
+    public IntegerTypeConverterManager() {
+        super(DefaultTypeCheckers.DEFAULT_INT_TYPECHECKER);
+    }
+
+    public IntegerTypeConverterManager(TypeChecker typeChecker) {
+        super(typeChecker);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package grok_connect.column;
 
+import grok_connect.type.DefaultTypeCheckers;
 import grok_connect.type.TypeChecker;
 import microsoft.sql.DateTimeOffset;
 import oracle.sql.DATE;
@@ -7,12 +8,24 @@ import oracle.sql.TIMESTAMP;
 import oracle.sql.TIMESTAMPTZ;
 import serialization.Column;
 import serialization.DateTimeColumn;
-
 import java.time.temporal.Temporal;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 
 public class DateTimeColumnProvider extends AbstractColumnProvider {
+    private static final List<TypeChecker> DEFAULT_TYPE_CHECKERS;
+
+    static {
+        DEFAULT_TYPE_CHECKERS = new ArrayList<>();
+        DEFAULT_TYPE_CHECKERS.add(DefaultTypeCheckers.DEFAULT_DATETIME_TYPECHECKER);
+    }
+
+    public DateTimeColumnProvider() {
+        super(DEFAULT_TYPE_CHECKERS);
+    }
+
     public DateTimeColumnProvider(Collection<TypeChecker> typeCheckers) {
         super(typeCheckers);
     }

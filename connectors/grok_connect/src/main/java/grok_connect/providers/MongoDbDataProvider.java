@@ -1,33 +1,32 @@
 package grok_connect.providers;
 
+import grok_connect.column.ColumnProvider;
+import grok_connect.column.ComplexTypeColumnProvider;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataQuery;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncCall;
-import grok_connect.resultset.ResultSetManager;
+import grok_connect.converter.ConverterManager;
+import grok_connect.converter.complex.ComplexTypeConverterManager;
+import grok_connect.resultset.DefaultResultSetManager;
+import grok_connect.type.TypeChecker;
 import grok_connect.utils.GrokConnectException;
-import grok_connect.utils.ProviderManager;
 import grok_connect.utils.SchemeInfo;
-import org.bson.Document;
-import serialization.BoolColumn;
 import serialization.Column;
 import serialization.DataFrame;
-import serialization.FloatColumn;
-import serialization.IntColumn;
-import serialization.StringColumn;
-import serialization.Types;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 public class MongoDbDataProvider extends JdbcDataProvider {
+    private static final TypeChecker COMPLEX_TYPECHECKER = (type, typeName, precision, scale) ->
+            typeName.equalsIgnoreCase("NODE") || typeName.equalsIgnoreCase("map");
+
     private static final int OBJECT_INDEX = 1;
 
-    public MongoDbDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
-        super(resultSetManager, providerManager);
+    public MongoDbDataProvider() {
+        initResultSetManager();
         driverClassName = "com.dbschema.MongoJdbcDriver";
         descriptor = new DataSource();
         descriptor.type = "MongoDB";
@@ -112,5 +111,16 @@ public class MongoDbDataProvider extends JdbcDataProvider {
         } catch (SQLException e) {
             throw new RuntimeException("Something went wrong when retrieving meta data of resultSet", e);
         }
+    }
+
+    private void initResultSetManager() {
+        List<ConverterManager<?>> defaultConverterManagers
+                = DefaultResultSetManager.getDefaultConverterManagers();
+        defaultConverterManagers.set(2, new ComplexTypeConverterManager(COMPLEX_TYPECHECKER));
+        List<ColumnProvider> defaultColumnProviders = DefaultResultSetManager.getDefaultColumnProviders();
+        List<TypeChecker> complexCheckers = new ArrayList<>();
+        complexCheckers.add(COMPLEX_TYPECHECKER);
+        defaultColumnProviders.set(1, new ComplexTypeColumnProvider(complexCheckers));
+        resultSetManager = new DefaultResultSetManager(defaultConverterManagers, defaultColumnProviders);
     }
 }

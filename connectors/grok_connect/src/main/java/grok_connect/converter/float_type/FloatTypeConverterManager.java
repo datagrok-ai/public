@@ -4,6 +4,7 @@ import grok_connect.converter.AbstractConverterManager;
 import grok_connect.converter.Converter;
 import grok_connect.converter.float_type.impl.BigDecimalTypeConverter;
 import grok_connect.converter.float_type.impl.DoubleTypeConverter;
+import grok_connect.type.DefaultTypeCheckers;
 import grok_connect.type.TypeChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,11 +17,18 @@ public class FloatTypeConverterManager extends AbstractConverterManager<Float> {
     private static final Converter<Float> defaultConverter = value -> (Float) value;
     private final Map<Class<?>, Converter<Float>> converterMap;
 
-    public FloatTypeConverterManager(TypeChecker typeChecker) {
-        super(typeChecker);
+    {
         converterMap = new HashMap<>();
         converterMap.put(Double.class, new DoubleTypeConverter());
         converterMap.put(BigDecimal.class, new BigDecimalTypeConverter());
+    }
+
+    public FloatTypeConverterManager() {
+        super(DefaultTypeCheckers.DEFAULT_FLOAT_TYPECHECKER);
+    }
+
+    public FloatTypeConverterManager(TypeChecker typeChecker) {
+        super(typeChecker);
     }
 
     @Override

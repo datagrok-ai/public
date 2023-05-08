@@ -4,7 +4,9 @@ import grok_connect.GrokConnect;
 import grok_connect.converter.AbstractConverterManager;
 import grok_connect.converter.Converter;
 import grok_connect.converter.complex.impl.ComplexTypeConverter;
+import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
+import grok_connect.type.DefaultTypeCheckers;
 import grok_connect.type.TypeChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,8 +25,7 @@ public class ComplexTypeConverterManager extends AbstractConverterManager<List<C
     private static final int COLUMN_NAME_INDEX = 0;
     private final Map<String, Integer> typesMap;
 
-    public ComplexTypeConverterManager(TypeChecker typeChecker) {
-        super(typeChecker);
+    {
         typesMap = new HashMap<>();
         typesMap.put(serialization.Types.BIG_INT, Types.BIGINT);
         typesMap.put(serialization.Types.INT, Types.INTEGER);
@@ -32,6 +33,14 @@ public class ComplexTypeConverterManager extends AbstractConverterManager<List<C
         typesMap.put(serialization.Types.DATE_TIME, Types.DATE);
         typesMap.put(serialization.Types.BOOL, Types.BOOLEAN);
         typesMap.put(serialization.Types.STRING, Types.VARCHAR);
+    }
+
+    public ComplexTypeConverterManager() {
+        super(DefaultTypeCheckers.DEFAULT_COMPLEX_TYPECHECKER);
+    }
+
+    public ComplexTypeConverterManager(TypeChecker typeChecker) {
+        super(typeChecker);
     }
 
     @Override
@@ -85,9 +94,10 @@ public class ComplexTypeConverterManager extends AbstractConverterManager<List<C
     }
 
     protected Column getColumnForObject(Object object) {
-        ResultSetManager resultSetManager = GrokConnect.providerManager.getDefaultManager();
+        ResultSetManager resultSetManager = DefaultResultSetManager.getDefaultManager();
         Column column = resultSetManager.getColumn(object);
-        column.add(resultSetManager.convert(object, typesMap.get(column.getType()), "", 0, 0));
+        column.add(resultSetManager.convert(object, typesMap.get(column.getType()), "",
+                0, 0));
         return column;
     }
 }

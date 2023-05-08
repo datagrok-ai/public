@@ -3,6 +3,7 @@ package grok_connect.converter.string;
 import grok_connect.converter.AbstractConverterManager;
 import grok_connect.converter.Converter;
 import grok_connect.converter.string.impl.ClobTypeConverter;
+import grok_connect.type.DefaultTypeCheckers;
 import grok_connect.type.TypeChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,12 +17,19 @@ public class StringTypeConverterManager extends AbstractConverterManager<String>
     private static final Converter<String> defaultConverter = Object::toString;
     private final Map<Class<?>, Converter<String>> converterMap;
 
-    public StringTypeConverterManager(TypeChecker typeChecker) {
-        super(typeChecker);
+    {
         converterMap = new HashMap<>();
         Converter<String> clobConverter = new ClobTypeConverter();
         converterMap.put(Clob.class, clobConverter);
         converterMap.put(c9.class, clobConverter);
+    }
+
+    public StringTypeConverterManager() {
+        super(DefaultTypeCheckers.DEFAULT_STRING_TYPECHECKER);
+    }
+
+    public StringTypeConverterManager(TypeChecker typeChecker) {
+        super(typeChecker);
     }
 
     @Override

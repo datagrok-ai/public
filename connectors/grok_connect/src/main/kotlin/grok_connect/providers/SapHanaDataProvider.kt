@@ -3,12 +3,10 @@ package grok_connect.providers
 import grok_connect.connectors_info.DataConnection
 import grok_connect.connectors_info.DataSource
 import grok_connect.connectors_info.DbCredentials
-import grok_connect.resultset.ResultSetManager
 import grok_connect.table_query.AggrFunctionInfo
 import grok_connect.table_query.Stats
 import grok_connect.utils.Prop
 import grok_connect.utils.Property
-import grok_connect.utils.ProviderManager
 import serialization.Types
 import utilities.extetions.orIfNull
 import utilities.extetions.substringOrEmpty
@@ -19,7 +17,7 @@ private const val FIRST_INDEX = 0
 private const val FIELD_SCHEMA_NAME = "schema_name"
 private const val FIELD_ALIAS_SCHEMA_NAME = "table_schema"
 
-class SapHanaDataProvider(resultSetManager:ResultSetManager, providerManager: ProviderManager) : JdbcDataProvider(resultSetManager, providerManager) {
+class SapHanaDataProvider() : JdbcDataProvider() {
 
     init {
         driverClassName = "com.sap.db.jdbc.Driver"

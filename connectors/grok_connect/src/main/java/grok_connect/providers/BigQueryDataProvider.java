@@ -1,15 +1,12 @@
 package grok_connect.providers;
 
 import java.util.*;
-
-import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.*;
 import grok_connect.connectors_info.*;
 
 
 public class BigQueryDataProvider extends JdbcDataProvider {
-    public BigQueryDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
-        super(resultSetManager, providerManager);
+    public BigQueryDataProvider() {
         driverClassName = "net.starschema.clouddb.jdbc.BQDriver";
 
         descriptor = new DataSource();

@@ -1,12 +1,22 @@
 package grok_connect.providers;
 
-import grok_connect.connectors_info.*;
-import grok_connect.resultset.ResultSetManager;
+import grok_connect.column.BigIntColumnProvider;
+import grok_connect.column.ColumnProvider;
+import grok_connect.column.IntColumnProvider;
+import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataQuery;
+import grok_connect.connectors_info.DataSource;
+import grok_connect.connectors_info.DbCredentials;
+import grok_connect.connectors_info.FuncParam;
+import grok_connect.converter.ConverterManager;
+import grok_connect.converter.bigint.BigIntConverterManager;
+import grok_connect.converter.integer.IntegerTypeConverterManager;
+import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
+import grok_connect.type.TypeChecker;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import serialization.Types;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -17,7 +27,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 
-public class SnowflakeDataProvider extends JdbcDataProvider{
+public class SnowflakeDataProvider extends JdbcDataProvider {
+    private static final TypeChecker BIGINT_TYPECHECKER = (type, typeName, precision, scale) ->
+            typeName.equalsIgnoreCase("number") && precision > 10 && scale == 0;
+
+    private static final TypeChecker INT_TYPECHECKER = (type, typeName, precision, scale) ->
+            typeName.equalsIgnoreCase("number") && precision < 10 && scale == 0;
     private static final boolean CAN_BROWSE_SCHEMA = true;
     private static final String DEFAULT_SCHEMA = "PUBLIC";
     private static final String URL_PREFIX = "jdbc:snowflake://";
@@ -29,8 +44,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
     private static final List<String> AVAILABLE_CLOUDS =
             Collections.unmodifiableList(Arrays.asList("aws", "azure", "gcp"));
 
-    public SnowflakeDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
-        super(resultSetManager, providerManager);
+    public SnowflakeDataProvider() {
         init();
     }
 
@@ -95,6 +109,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
     }
 
     private void init() {
+        initResultSetManager();
         driverClassName = DRIVER_CLASS_NAME;
         descriptor = new DataSource();
         descriptor.type = TYPE;
@@ -142,5 +157,20 @@ public class SnowflakeDataProvider extends JdbcDataProvider{
                 .append(URL_SEPARATOR)
                 .append(conn.get(DbCredentials.CLOUD))
                 .toString();
+    }
+
+    private void initResultSetManager() {
+        List<ConverterManager<?>> defaultConverterManagers
+                = DefaultResultSetManager.getDefaultConverterManagers();
+        defaultConverterManagers.set(0, new BigIntConverterManager(BIGINT_TYPECHECKER));
+        defaultConverterManagers.set(1, new IntegerTypeConverterManager(INT_TYPECHECKER));
+        List<ColumnProvider> defaultColumnProviders = DefaultResultSetManager.getDefaultColumnProviders();
+        List<TypeChecker> bigIntCheckers = new ArrayList<>();
+        bigIntCheckers.add(BIGINT_TYPECHECKER);
+        defaultColumnProviders.set(2, new BigIntColumnProvider(bigIntCheckers));
+        List<TypeChecker> intCheckers = new ArrayList<>();
+        intCheckers.add(INT_TYPECHECKER);
+        defaultColumnProviders.set(0, new IntColumnProvider(intCheckers));
+        resultSetManager = new DefaultResultSetManager(defaultConverterManagers, defaultColumnProviders);
     }
 }

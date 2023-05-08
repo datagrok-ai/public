@@ -2,7 +2,6 @@ package grok_connect.converter.complex;
 
 import grok_connect.GrokConnect;
 import grok_connect.providers.utils.DataFrameComparator;
-import grok_connect.type.complex.DefaultComplexTypeChecker;
 import grok_connect.utils.ProviderManager;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -50,7 +49,7 @@ class ComplexTypeConverterManagerTest {
         thirdColumnData.add("play");
         ProviderManager providerManager = new ProviderManager();
         GrokConnect.providerManager = providerManager;
-        complexTypeConverterManager = new ComplexTypeConverterManager(new DefaultComplexTypeChecker());
+        complexTypeConverterManager = new ComplexTypeConverterManager();
     }
 
     @Test

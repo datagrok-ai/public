@@ -6,6 +6,8 @@ import java.util.*;
 import java.math.*;
 import java.text.*;
 import java.util.regex.*;
+
+import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.text.StringEscapeUtils;
@@ -19,14 +21,13 @@ import grok_connect.connectors_info.*;
 import serialization.Types;
 
 public abstract class JdbcDataProvider extends DataProvider {
-    public ProviderManager providerManager;
-    protected final ResultSetManager resultSetManager;
+    protected ResultSetManager resultSetManager;
     protected Logger logger = LoggerFactory.getLogger(this.getClass().getName());
     protected String driverClassName;
+    protected QueryMonitor queryMonitor = QueryMonitor.getInstance();
 
-    public JdbcDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
-        this.resultSetManager = resultSetManager;
-        this.providerManager = providerManager;
+    public JdbcDataProvider() {
+        resultSetManager = DefaultResultSetManager.getDefaultManager();
     }
 
     public void prepareProvider() throws ClassNotFoundException {
@@ -136,7 +137,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 PreparedStatement statement = connection.prepareStatement(query);
                 if (supportsTransactions)
                     statement.setFetchSize(fetchSize);
-                providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
+                queryMonitor.addNewStatement(mainCallId, statement);
                 List<String> stringValues = new ArrayList<>();
                 System.out.println(names);
                 int i = 0;
@@ -167,14 +168,14 @@ public abstract class JdbcDataProvider extends DataProvider {
                     queryRun.log += logString;
                 if(statement.execute())
                     resultSet = statement.getResultSet();
-                providerManager.getQueryMonitor().removeStatement(mainCallId);
+                queryMonitor.removeStatement(mainCallId);
             } else {
                 query = manualQueryInterpolation(query, dataQuery);
 
                 Statement statement = connection.createStatement();
                 if (supportsTransactions)
                     statement.setFetchSize(fetchSize);
-                providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
+                queryMonitor.addNewStatement(mainCallId, statement);
                 statement.setQueryTimeout(timeout);
                 String logString = String.format("Query: %s \n", query);
                 logger.debug(logString);
@@ -182,14 +183,14 @@ public abstract class JdbcDataProvider extends DataProvider {
                     queryRun.log += logString;
                 if(statement.execute(query))
                     resultSet = statement.getResultSet();
-                providerManager.getQueryMonitor().removeStatement(mainCallId);
+                queryMonitor.removeStatement(mainCallId);
             }
         } else {
             // Query without parameters
             Statement statement = connection.createStatement();
             if (supportsTransactions)
                 statement.setFetchSize(fetchSize);
-            providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
+            queryMonitor.addNewStatement(mainCallId, statement);
             statement.setQueryTimeout(timeout);
             String logString = String.format("Query: %s \n", query);
             logger.debug(logString);
@@ -197,7 +198,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 queryRun.log += logString;
             if(statement.execute(query))
                 resultSet = statement.getResultSet();
-            providerManager.getQueryMonitor().removeStatement(mainCallId);
+            queryMonitor.removeStatement(mainCallId);
         }
 
         return resultSet;
@@ -341,7 +342,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
             return resultSet;
         } catch (SQLException e) {
-            if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
+            if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
                 throw new QueryCancelledByUser();
             else throw e;
         }
@@ -394,7 +395,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
         } catch (SQLException e) {
             logger.warn("An exception was thrown", e);
-            if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
+            if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
                 throw new QueryCancelledByUser();
             else throw e;
         }
@@ -404,7 +405,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                                        List<Boolean> supportedType,List<Boolean> initColumn, int maxIterations)
             throws IOException, SQLException, QueryCancelledByUser {
         logger.debug("getResultSetSubDf was called");
-        if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId"))) {
+        if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId"))) {
             logger.debug("Query was cancelled: \"{}\"", queryRun.func.query);
             throw new QueryCancelledByUser();
         }
@@ -464,12 +465,12 @@ public abstract class JdbcDataProvider extends DataProvider {
                 }
 
                 if (rowCount % 10 == 0) {
-                    if (providerManager.getQueryMonitor().checkCancelledIdResultSet(queryRun.id)) {
+                    if (queryMonitor.checkCancelledIdResultSet(queryRun.id)) {
                         DataFrame dataFrame = new DataFrame();
                         dataFrame.addColumns(columns);
 
                         resultSet.close();
-                        providerManager.getQueryMonitor().removeResultSet(queryRun.id);
+                        queryMonitor.removeResultSet(queryRun.id);
                         return dataFrame;
                     }
                     if (rowCount % 100 == 0) {
@@ -538,7 +539,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             return getResultSetSubDf(queryRun, resultSet, schemeInfo.columns, schemeInfo.supportedType, schemeInfo.initColumn, -1);
         }
         catch (SQLException e) {
-            if (providerManager.getQueryMonitor().checkCancelledId((String) queryRun.aux.get("mainCallId")))
+            if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
                 throw new QueryCancelledByUser();
             else throw e;
         }

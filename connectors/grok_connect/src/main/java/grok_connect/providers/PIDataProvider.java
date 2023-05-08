@@ -1,30 +1,27 @@
 package grok_connect.providers;
 
 import java.util.*;
-
-import grok_connect.resultset.ResultSetManager;
 import serialization.Types;
 import grok_connect.utils.*;
 import grok_connect.connectors_info.*;
 
 
 public class PIDataProvider extends JdbcDataProvider {
-    public PIDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
-        super(resultSetManager, providerManager);
+    public PIDataProvider() {
         driverClassName = "com.osisoft.jdbc.Driver";
 
         descriptor = new DataSource();
         descriptor.type = "PI";
         descriptor.description = "Query PI database";
         descriptor.connectionTemplate = new ArrayList<Property>() {{
-                                                add(new Property(Property.STRING_TYPE, DbCredentials.ACCESS_SERVER));
-                                                add(new Property(Property.STRING_TYPE, DbCredentials.SERVER));
-                                                add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
-                                                add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
-                                                        DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
-                                                add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
-                                                add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
-                                                add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
+            add(new Property(Property.STRING_TYPE, DbCredentials.ACCESS_SERVER));
+            add(new Property(Property.STRING_TYPE, DbCredentials.SERVER));
+            add(new Property(Property.STRING_TYPE, DbCredentials.DB, DbCredentials.DB_DESCRIPTION));
+            add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
+                    DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
+            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
+            add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
+            add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
                                             }};
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
         descriptor.nameBrackets = "\"";

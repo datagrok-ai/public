@@ -1,20 +1,18 @@
 package grok_connect.providers;
 
-import java.util.*;
-
-import grok_connect.resultset.ResultSetManager;
+import java.util.ArrayList;
+import grok_connect.connectors_info.DataConnection;
+import grok_connect.connectors_info.DataSource;
+import grok_connect.connectors_info.DbCredentials;
+import grok_connect.table_query.AggrFunctionInfo;
+import grok_connect.table_query.Stats;
+import grok_connect.utils.Prop;
+import grok_connect.utils.Property;
 import serialization.Types;
-import grok_connect.utils.*;
-import grok_connect.table_query.*;
-import grok_connect.connectors_info.*;
-
 
 public class AccessDataProvider extends JdbcDataProvider {
-    public AccessDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
-        super(resultSetManager, providerManager);
-
+    public AccessDataProvider() {
         driverClassName = "net.ucanaccess.jdbc.UcanaccessDriver";
-
         descriptor = new DataSource();
         descriptor.type = "Access";
         descriptor.description = "Query Access database";

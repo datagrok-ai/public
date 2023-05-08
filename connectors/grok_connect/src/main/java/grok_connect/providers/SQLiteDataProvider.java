@@ -1,8 +1,6 @@
 package grok_connect.providers;
 
 import java.util.*;
-
-import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.*;
 import grok_connect.connectors_info.*;
 
@@ -12,8 +10,7 @@ public class SQLiteDataProvider extends JdbcDataProvider {
         return false;
     }
 
-    public SQLiteDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
-        super(resultSetManager, providerManager);
+    public SQLiteDataProvider() {
         driverClassName = "org.sqlite.JDBC";
 
         descriptor = new DataSource();

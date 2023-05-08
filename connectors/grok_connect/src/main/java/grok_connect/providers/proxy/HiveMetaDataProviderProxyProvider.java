@@ -1,8 +1,6 @@
 package grok_connect.providers.proxy;
 
 import grok_connect.providers.JdbcDataProvider;
-import grok_connect.resultset.ResultSetManager;
-import grok_connect.utils.ProviderManager;
 import javassist.util.proxy.MethodHandler;
 import javassist.util.proxy.ProxyFactory;
 import java.lang.reflect.InvocationTargetException;
@@ -14,14 +12,13 @@ public class HiveMetaDataProviderProxyProvider {
     private static final List<String> SUPPORTED_METHODS =
             Collections.unmodifiableList(Arrays.asList("getSchemaSql", "getSchemasSql"));
 
-    public JdbcDataProvider getProxy(ProviderManager providerManager, ResultSetManager resultSetManager,
-                                     Class<?> clazz) {
+    public JdbcDataProvider getProxy(Class<?> clazz) {
         ProxyFactory factory = new ProxyFactory();
         factory.setSuperclass(clazz);
         factory.setFilter((method -> SUPPORTED_METHODS.contains(method.getName())));
         try {
-            return (JdbcDataProvider) factory.create(new Class<?>[]{ResultSetManager.class, ProviderManager.class},
-                    new Object[]{resultSetManager, providerManager}, getHandler());
+            return (JdbcDataProvider) factory.create(new Class<?>[]{},
+                    new Object[]{}, getHandler());
         } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException("Something went wrong when creating proxy for "
                     + factory.getSuperclass().getName(), e);

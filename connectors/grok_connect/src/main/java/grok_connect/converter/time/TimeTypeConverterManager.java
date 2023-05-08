@@ -9,6 +9,7 @@ import grok_connect.converter.time.impl.OffsetDateTimeTypeConverter;
 import grok_connect.converter.time.impl.OracleTimestampTZTypeConverter;
 import grok_connect.converter.time.impl.TimestampTypeConverter;
 import grok_connect.converter.time.impl.ZonedDateTimeTypeConverter;
+import grok_connect.type.DefaultTypeCheckers;
 import grok_connect.type.TypeChecker;
 import microsoft.sql.DateTimeOffset;
 import oracle.sql.TIMESTAMPTZ;
@@ -29,8 +30,7 @@ public class TimeTypeConverterManager extends AbstractConverterManager<Double> {
     private static final double DEFAULT_MULTIPLIER = 1000.0;
     private final Map<Class<?>, Converter<Date>> converterMap;
 
-    public TimeTypeConverterManager(TypeChecker typeChecker) {
-        super(typeChecker);
+    {
         converterMap = new HashMap<>();
         converterMap.put(LocalDateTime.class, new LocalDateTimeTypeConverter());
         converterMap.put(LocalDate.class, new LocalDateTypeConverter());
@@ -39,6 +39,14 @@ public class TimeTypeConverterManager extends AbstractConverterManager<Double> {
         converterMap.put(TIMESTAMPTZ.class, new OracleTimestampTZTypeConverter());
         converterMap.put(Timestamp.class, new TimestampTypeConverter());
         converterMap.put(ZonedDateTime.class, new ZonedDateTimeTypeConverter());
+    }
+
+    public TimeTypeConverterManager() {
+        super(DefaultTypeCheckers.DEFAULT_DATETIME_TYPECHECKER);
+    }
+
+    public TimeTypeConverterManager(TypeChecker typeChecker) {
+        super(typeChecker);
     }
 
     @Override

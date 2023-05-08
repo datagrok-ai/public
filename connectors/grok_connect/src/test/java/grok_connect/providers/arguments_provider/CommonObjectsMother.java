@@ -71,7 +71,7 @@ public class CommonObjectsMother {
 
         FuncCall funcCall2 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string id = \">28\" {pattern: int}\n"
-                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "SELECT * FROM mock_data WHERE @id(id) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "id", ">28", "int")
                 .addFuncCallOptionsPattern("id", ">28", ">",
@@ -80,7 +80,7 @@ public class CommonObjectsMother {
         // input: string id = ">=29" {pattern: int}
         FuncCall funcCall3 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string id = \">=29\" {pattern: int}\n"
-                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "SELECT * FROM mock_data WHERE @id(id) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "id", ">=29", "int")
                 .addFuncCallOptionsPattern("id", ">=29", ">=",
@@ -123,7 +123,7 @@ public class CommonObjectsMother {
         // --input: string id = "in(29, 30)" {pattern: int}
         FuncCall funcCall6 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string id = \"in(29, 30)\" {pattern: int}\n"
-                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "SELECT * FROM mock_data WHERE @id(id) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "","id", "in(29, 30)", "int")
                 .addFuncCallOptionsPattern("id", "in(29, 30)", "in",
@@ -179,7 +179,7 @@ public class CommonObjectsMother {
         // --input: string id = "min-max 29-30" {pattern: int}
         FuncCall funcCall8 = FuncCallBuilder.getBuilder()
                 .addQuery("--input: string id = \"min-max 29-30\" {pattern: int}\n"
-                        + "SELECT * FROM mock_data WHERE @id(id)\n"
+                        + "SELECT * FROM mock_data WHERE @id(id) ORDER BY id\n"
                         + "--end")
                 .addFuncParam("string", "", "id", "min-max 29-30",
                         "int")

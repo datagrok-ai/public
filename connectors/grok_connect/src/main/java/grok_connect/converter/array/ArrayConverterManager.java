@@ -4,6 +4,7 @@ import grok_connect.converter.AbstractConverterManager;
 import grok_connect.converter.Converter;
 import grok_connect.converter.array.impl.ArrayTypeConverter;
 import grok_connect.converter.array.impl.SQLArrayConverter;
+import grok_connect.type.DefaultTypeCheckers;
 import grok_connect.type.TypeChecker;
 import oracle.sql.ARRAY;
 import org.slf4j.Logger;
@@ -18,13 +19,20 @@ public class ArrayConverterManager extends AbstractConverterManager<String> {
     private static final Converter<String> defaultConverter = Object::toString;
     private final Map<Class<?>, Converter<String>> converterMap;
 
-    public ArrayConverterManager(TypeChecker typeChecker) {
-        super(typeChecker);
+    {
         converterMap = new HashMap<>();
         SQLArrayConverter sqlArrayConverter = new SQLArrayConverter();
         converterMap.put(Object.class, new ArrayTypeConverter());
         converterMap.put(Array.class, sqlArrayConverter);
         converterMap.put(ARRAY.class, sqlArrayConverter);
+    }
+
+    public ArrayConverterManager() {
+        super(DefaultTypeCheckers.DEFAULT_ARRAY_TYPECHECKER);
+    }
+
+    public ArrayConverterManager(TypeChecker typeChecker) {
+        super(typeChecker);
     }
 
     @Override

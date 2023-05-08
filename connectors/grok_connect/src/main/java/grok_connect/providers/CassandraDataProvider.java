@@ -1,17 +1,13 @@
 package grok_connect.providers;
 
 import java.util.*;
-
-import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.*;
 import grok_connect.connectors_info.*;
 
 
 public class CassandraDataProvider extends JdbcDataProvider {
-    public CassandraDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
-        super(resultSetManager, providerManager);
+    public CassandraDataProvider() {
         driverClassName = "com.github.cassandra.jdbc.CassandraDriver";
-
         descriptor = new DataSource();
         descriptor.type = "Cassandra";
         descriptor.description = "Query Cassandra database";

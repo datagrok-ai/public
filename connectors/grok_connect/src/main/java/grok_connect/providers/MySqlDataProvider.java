@@ -9,24 +9,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
-
+import grok_connect.column.*;
 import grok_connect.connectors_info.*;
-import grok_connect.resultset.ResultSetManager;
+import grok_connect.converter.ConverterManager;
+import grok_connect.converter.bool.BoolTypeConverterManager;
+import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
+import grok_connect.type.TypeChecker;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Property;
-import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryCancelledByUser;
 import serialization.DataFrame;
 import serialization.StringColumn;
 import serialization.Types;
 
 public class MySqlDataProvider extends JdbcDataProvider {
-    public MySqlDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
-        super(resultSetManager, providerManager);
-        driverClassName = "com.mysql.cj.jdbc.Driver";
+    private static final TypeChecker BOOL_TYPECHECKER = (type, typeName, precision, scale) ->
+            type == java.sql.Types.BIT && precision == 1 && scale == 0;
 
+    public MySqlDataProvider() {
+        initResultSetManager();
+        driverClassName = "com.mysql.cj.jdbc.Driver";
         descriptor = new DataSource();
         descriptor.type = "MySQL";
         descriptor.description = "Query MySQL database";
@@ -142,5 +146,16 @@ public class MySqlDataProvider extends JdbcDataProvider {
             statement.setObject(n + i, lst.get(i));
         }
         return lst.size() - 1;
+    }
+
+    private void initResultSetManager() {
+        List<ConverterManager<?>> defaultConverterManagers
+                = DefaultResultSetManager.getDefaultConverterManagers();
+        defaultConverterManagers.set(5, new BoolTypeConverterManager(BOOL_TYPECHECKER));
+        List<ColumnProvider> defaultColumnProviders = DefaultResultSetManager.getDefaultColumnProviders();
+        List<TypeChecker> boolCheckers = new ArrayList<>();
+        boolCheckers.add(BOOL_TYPECHECKER);
+        defaultColumnProviders.set(6, new BoolColumnProvider(boolCheckers));
+        resultSetManager = new DefaultResultSetManager(defaultConverterManagers, defaultColumnProviders);
     }
 }

@@ -1,13 +1,10 @@
 package grok_connect.providers;
 
 import grok_connect.connectors_info.*;
-import grok_connect.resultset.ResultSetManager;
-import grok_connect.utils.ProviderManager;
 
 
 public class FirebirdDataProvider extends JdbcDataProvider {
-    public FirebirdDataProvider(ResultSetManager resultSetManager, ProviderManager providerManager) {
-        super(resultSetManager, providerManager);
+    public FirebirdDataProvider() {
         driverClassName = "org.firebirdsql.jdbc.FBDriver";
 
         descriptor = new DataSource();
