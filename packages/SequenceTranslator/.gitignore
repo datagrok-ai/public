@@ -3,5 +3,4 @@ node_modules/
 dist/
 .vscode/
 test-report.html
-src/hardcode-to-be-eliminated/
 conda-env/

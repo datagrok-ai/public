@@ -3,7 +3,7 @@ import {DELIMITER} from '../const';
 import {sortByReverseLength} from '../helpers';
 import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
 import {SYNTHESIZERS as FORMAT} from '../const';
-import {KeyToValue, Dict, FormatDictionaryLoader} from './dictionary-loader';
+import {KeyToValue, FormatDict, JsonLoader} from '../data-loading-utils/json-loader';
 
 const EDGES = 'edges';
 const CENTER = 'center';
@@ -11,10 +11,10 @@ const CENTER = 'center';
 // todo: remove strange legacy logic with magic numbers
 export class FormatConverter {
   constructor(private sequence: string, private sourceFormat: string) {
-    this.dict = FormatDictionaryLoader.getInstance().getDictionary();
+    this.dict = JsonLoader.getInstance().getFormatDictionary();
   };
 
-  private dict: Dict;
+  private dict: FormatDict;
 
   convert(targetFormat: string): string {
     const codeMapping = this.dict[this.sourceFormat][targetFormat];

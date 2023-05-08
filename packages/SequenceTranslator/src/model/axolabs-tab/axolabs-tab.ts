@@ -6,11 +6,9 @@ import * as svg from 'save-svg-as-png';
 import $ from 'cash-dom';
 
 import {drawAxolabsPattern} from './draw-svg';
-import {AXOLABS_MAP} from '../../hardcode-to-be-eliminated/constants';
 import {isOverhang} from './helpers';
+import {JsonLoader} from '../data-loading-utils/json-loader';
 
-const baseChoices: string[] = Object.keys(AXOLABS_MAP);
-const defaultBase: string = baseChoices[0];
 const defaultPto: boolean = true;
 const defaultSequenceLength: number = 23;
 const maximalValidSequenceLength: number = 35;
@@ -18,6 +16,7 @@ const userStorageKey: string = 'SequenceTranslator';
 const exampleMinWidth: string = '400px';
 
 function generateExample(sequenceLength: number, sequenceBasis: string): string {
+  const AXOLABS_MAP = JsonLoader.getInstance().getAxolabsStyleDictionary();
   const uniqueSymbols = AXOLABS_MAP[sequenceBasis].symbols.join('');
   return uniqueSymbols.repeat(Math.floor(sequenceLength / 4)) + uniqueSymbols.slice(0, sequenceLength % 4);
 }
@@ -65,6 +64,10 @@ function translateSequence(
   let i: number = -1;
   let mainSequence = sequence.replace(/[AUGC]/g, function(x: string) {
     i++;
+    const AXOLABS_MAP = JsonLoader.getInstance().getAxolabsStyleDictionary();
+
+    const baseChoices: string[] = Object.keys(AXOLABS_MAP);
+    // const defaultBase: string = baseChoices[0];
     const indexOfSymbol = AXOLABS_MAP['RNA']['symbols'].indexOf(x);
     let symbol = AXOLABS_MAP[bases[i].value]['symbols'][indexOfSymbol];
     if (isOverhang(bases[i].value)) {
@@ -115,6 +118,10 @@ function addColumnWithTranslatedSequences(
 }
 
 export function getAxolabsTab() {
+  const AXOLABS_MAP = JsonLoader.getInstance().getAxolabsStyleDictionary();
+
+  const baseChoices: string[] = Object.keys(AXOLABS_MAP);
+  const defaultBase: string = baseChoices[0];
   const enumerateModifications = [defaultBase];
   let maximalSsLength = defaultSequenceLength;
   let maximalAsLength = defaultSequenceLength;

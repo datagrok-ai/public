@@ -2,14 +2,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {DBLoaderBase, DataLoaderDB} from './model/database-utils/loader';
+import {DBLoaderBase, DataLoaderDB} from './model/data-loading-utils/database-loader';
 
 import {engageViewForOligoSdFileUI} from './model/registration/registration';
 import {SequenceTranslatorUI} from './view/view';
-import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/database-utils/const';
+import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loading-utils/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {FormatDictionaryLoader} from './model/format-translation/dictionary-loader';
+import {JsonLoader} from './model/data-loading-utils/json-loader';
 
 class StPackage extends DG.Package {
   private _dbLoader?: DBLoaderBase;
@@ -66,7 +66,7 @@ export const _package: StPackage = new StPackage();
 
 //tags: init
 export async function initSequenceTranslator(): Promise<void> {
-  await FormatDictionaryLoader.getInstance().init();
+  await JsonLoader.getInstance().init();
   await _package.initMonomerLib();
   _package.initDBLoader().then(() => {}); // Do not wait for lists loaded from the database
 }
