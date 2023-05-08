@@ -11,7 +11,7 @@ import { chemSpace, getEmbeddingColsNames } from '../analysis/chem-space';
 import { CLIFFS_DF_NAME, activityCliffsIdx, getActivityCliffs } from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import { getSimilaritiesMarix } from '../utils/similarity-utils';
 import { createPropPanelElement, createTooltipElement } from '../analysis/activity-cliffs';
-
+import { ScaffoldTreeViewer } from '../widgets/scaffold-tree';
 
 export async function _demoChemOverview(): Promise<void> {
 
@@ -579,4 +579,17 @@ export async function _demoDatabases5(): Promise<void> {
         }
     }, 500);
 
+}
+
+export async function _demoScaffoldTree(): Promise<void> {
+    const tv: DG.TableView = await openMoleculeDataset('smiles.csv');
+    const table: DG.DataFrame = tv.dataFrame;
+    const tree = await _package.files.readAsText('scaffold-tree.json');
+    await delay(10);
+    const viewer = new ScaffoldTreeViewer();
+    viewer.autoGenerate = false;
+    viewer.dataFrame = table;
+    viewer.root.getElementsByClassName('ui-box ui-split-v')[0].remove();
+    await viewer.loadTreeStr(tree);
+    tv.dockManager.dock(viewer, DG.DOCK_TYPE.LEFT);
 }

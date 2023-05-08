@@ -63,7 +63,7 @@ import { renderMolecule } from './rendering/render-molecule';
 import { RDKitReactionRenderer } from './rendering/rdkit-reaction-renderer';
 import { structure3dWidget } from './widgets/structure3d';
 import { identifiersWidget } from './widgets/identifiers';
-import { _demoActivityCliffs, _demoChemOverview, _demoDatabases, _demoRgroupAnalysis, _demoSimilaritySearch } from './demo/demo';
+import { _demoActivityCliffs, _demoChemOverview, _demoDatabases, _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilaritySearch } from './demo/demo';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -1189,4 +1189,10 @@ export async function demoActivityCliffs(): Promise<void> {
 //meta.demoPath: Cheminformatics | Databases
 export async function demoDatabases(): Promise<void> {
   _demoDatabases();
+}
+
+//name: Demo Scaffold Tree
+//meta.demoPath: Cheminformatics | Scaffold Tree
+export async function demoScaffoldTree(): Promise<void> {
+  _demoScaffoldTree();
 }
