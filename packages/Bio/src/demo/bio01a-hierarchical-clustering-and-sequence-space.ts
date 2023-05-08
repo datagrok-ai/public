@@ -36,6 +36,9 @@ export async function demoBio01aUI() {
         ]);
         view = grok.shell.addTableView(df);
         view.grid.props.rowHeight = 22;
+
+        grok.shell.windows.showContextPanel = false;
+        grok.shell.windows.showProperties = false;
       }, {
         description: `Load dataset with macromolecules of 'fasta' notation, 'DNA' alphabet.`,
         delay: 1600,
