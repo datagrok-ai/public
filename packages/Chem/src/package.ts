@@ -33,7 +33,6 @@ import {toxicityWidget} from './widgets/toxicity';
 import {addInchiKeys, addInchis} from './panels/inchi';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 
-
 //utils imports
 import { ScaffoldTreeViewer} from "./widgets/scaffold-tree";
 import {Fingerprint} from './utils/chem-common';

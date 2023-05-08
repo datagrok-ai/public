@@ -20,20 +20,25 @@ ctx.addEventListener('message', async (e: any) => {
     console.log('RDKit (worker) initialized');
     _rdKitServiceWorker = new ServiceWorkerClass(_rdKitModule, webRoot);
     port.postMessage({op: op, retval: null});
-  } else if (op === WORKER_CALL.INIT_MOLECULES_STRUCTURES) {
+  }
+  else if (op === WORKER_CALL.INIT_MOLECULES_STRUCTURES) {
     const result = _rdKitServiceWorker!.initMoleculesStructures(args[0]);
     port.postMessage({op: op, retval: result});
-  } else if (op === WORKER_CALL.SEARCH_SUBSTRUCTURE) {
+  }
+  else if (op === WORKER_CALL.SEARCH_SUBSTRUCTURE) {
     const result = _rdKitServiceWorker!.searchSubstructure(args[0], args[1], args[2]);
     port.postMessage({op: op, retval: result});
-  } else if (op === WORKER_CALL.FREE_MOLECULES_STRUCTURES) {
+  }
+  else if (op === WORKER_CALL.FREE_MOLECULES_STRUCTURES) {
     _rdKitServiceWorker!.freeMoleculesStructures();
     _rdKitServiceWorker = null;
     port.postMessage({op: op, retval: null});
-  } else if (op === WORKER_CALL.GET_FINGERPRINTS) {
+  }
+  else if (op === WORKER_CALL.GET_FINGERPRINTS) {
     const result = _rdKitServiceWorker!.getFingerprints(args[0]);
     port.postMessage({op: op, retval: result});
-  } else if (op === WORKER_CALL.CONVERT_MOL_NOTATION) {
+  }
+  else if (op === WORKER_CALL.CONVERT_MOL_NOTATION) {
     const result = _rdKitServiceWorker!.convertMolNotation(args[0]);
     port.postMessage({op: op, retval: result});
   }

@@ -31,35 +31,35 @@ function validateMol(mol: RDMol | null, molString: string) : void {
 }
 
 export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
-  readonly _patternFpLength = 2048;
-  readonly _patternFpUint8Length = 256;
 
   constructor(module: RDModule, webRoot: string) {
     super(module, webRoot);
   }
 
-  initMoleculesStructures(dict: string[]) : void {
+  /** Creates RDMols for the specified {@link molecules}.
+   * They will be used for subsequent substructure search, or calculation of fingerprints.
+   * Returns a number of malformed molecules. */
+  initMoleculesStructures(molecules: string[]) : number {
     this.freeMoleculesStructures();
     this._rdKitMols = [];
-    let logged = false;
-    for (let i = 0; i < dict.length; ++i) {
-      const item = dict[i];
+    let malformed = 0;
+    for (let i = 0; i < molecules.length; ++i) {
+      const item = molecules[i];
       let mol;
       if (!item || item === '')
         mol = this._rdKitModule.get_mol('');
       else {
         const molSafe = getMolSafe(item, {}, this._rdKitModule);
         mol = molSafe.mol;
-        if (mol === null) {
-          if (!logged) {
-            const errorMessage = 'Chem | Possibly a malformed molString at init: `' + item + '`';
-            logged = true;
-          }
-        } else
+        if (mol === null)
+          malformed++;
+        else
           mol.is_qmol = molSafe.isQMol;
       }
       this._rdKitMols.push(mol);
     }
+
+    return malformed;
   }
 
   getQMol(molString: string) : RDMol | null {
@@ -79,7 +79,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     if (this._rdKitMols === null)
       return '[' + matches.join(', ') + ']';
 
-    let queryMol: RDMol | null = null;
+    let queryMol: RDMol | null;
 
     if (isMolBlock(queryMolString)) {
       if (queryMolString.includes(' H ') || queryMolString.includes('V3000'))
@@ -87,27 +87,28 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       else {
         const molTmp = getMolSafe(queryMolString, {"mergeQueryHs":true, "kekulize": true}, this._rdKitModule).mol;
         if (molTmp !== null) {
-          let molBlockAroma = null;
+          let molBlockAroma: string | null;
           try { molBlockAroma = molTmp!.get_aromatic_form(); }
           catch(e) { // looks like we get here when the molecule is already aromatic, so we just re-assign the block
             molBlockAroma = queryMolString;
           }
 
           molTmp.delete();
-          const newQueryMolString = syncQueryAromatics(molBlockAroma, queryMolString);
-          queryMolString = newQueryMolString;
+          queryMolString = syncQueryAromatics(molBlockAroma, queryMolString);
         }
         queryMol = this.getQMol(queryMolString);
       }
-    } else { // not a molblock
+    }
+    else { // not a molblock
       queryMol = this.getQMol(queryMolString);
       if (queryMol !== null) {
         const mol = getMolSafe(queryMolString, {mergeQueryHs: true}, this._rdKitModule).mol;
         if (mol !== null) { // check the qmol is proper
           const match = mol.get_substruct_match(queryMol);
-          if (match === '{}') {
+          if (match === '{}')
             queryMol = mol;
-          } else mol.delete();
+          else
+            mol.delete();
         } // else, this looks to be a real SMARTS
       } else { // failover to queryMolBlockFailover
         queryMol = getMolSafe(queryMolBlockFailover, {mergeQueryHs: true}, this._rdKitModule).mol; // possibly get rid of fall-over in future
