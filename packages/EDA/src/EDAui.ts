@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 // Rename PCA columns
 export function renamePCAcolumns(pcaTable: DG.DataFrame): DG.DataFrame {  
   for (const col of pcaTable.columns.toList()) 
-    col.name = 'PCA' + col.name;
+    col.name = '_PCA' + col.name;
 
   return pcaTable;
 }

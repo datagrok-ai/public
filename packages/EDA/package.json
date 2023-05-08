@@ -1,7 +1,7 @@
 {
     "name": "@datagrok/eda",
     "friendlyName": "EDA",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "Eploratory Data Analysis tools",
     "dependencies": {
         "datagrok-api": "latest",

@@ -10,6 +10,7 @@ const SAMPLES_COUNT_MIN = 1;
 const FEATURES_COUNT_MIN = 1;
 const PERCENTAGE_MIN = 0;
 const PERCENTAGE_MAX = 100;
+const MAX_ELEMENTS_COUNT = 100000000;
 
 // Error messages
 const COMP_POSITVE_MES = 'components must be positive.';
@@ -18,6 +19,7 @@ const INCORERRECT_MIN_MAX_MES = 'min must be less than max.';
 const INCORERRECT_FEATURES_MES = 'features must be positive.';
 const INCORERRECT_SAMPLES_MES = 'samples must be positive.';
 const INCORERRECT_PERCENTAGE_MES = 'violators percentage must be from the range from 0 to 100.';
+const DATAFRAME_IS_TOO_BIG_MES = 'dataframe is too big.';
 
 // Check components count (PCA, PLS)
 export function checkComponenets(features: DG.ColumnList, components: number): void {
@@ -26,6 +28,9 @@ export function checkComponenets(features: DG.ColumnList, components: number): v
 
   if (components > features.length)
     throw new Error(COMP_EXCESS);
+
+  if (features.length * features.byIndex(0).length > MAX_ELEMENTS_COUNT)
+    throw new Error(DATAFRAME_IS_TOO_BIG_MES);
 }
 
 // Check inputs of data for SVM testing generator

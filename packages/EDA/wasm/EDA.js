@@ -29,6 +29,12 @@ var principalComponentAnalysis = {
     componentsCount: {
       type: 'num'
     },
+    centerNum: {
+      type: 'num'
+    },
+    scaleNum: {
+      type: 'num'
+    },
     components: {
       type: 'newFloatColumns',
       numOfRows: {

@@ -9,14 +9,14 @@ export async function _initEDAAPI() {
   await initEDA();
 }
 
-export function _principalComponentAnalysis(table, columns, componentsCount) {
-  return callWasm(EDA, 'principalComponentAnalysis', [columns, componentsCount]);
+export function _principalComponentAnalysis(table, columns, componentsCount, centerNum, scaleNum) {
+  return callWasm(EDA, 'principalComponentAnalysis', [columns, componentsCount, centerNum, scaleNum]);
 }
 
-export async function _principalComponentAnalysisInWebWorker(table, columns, componentsCount) {
+export async function _principalComponentAnalysisInWebWorker(table, columns, componentsCount, centerNum, scaleNum) {
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL('../wasm/workers/principalComponentAnalysisWorker.js', import.meta.url));
-    worker.postMessage(getCppInput(EDA['principalComponentAnalysis'].arguments,[columns, componentsCount]));
+    worker.postMessage(getCppInput(EDA['principalComponentAnalysis'].arguments,[columns, componentsCount, centerNum, scaleNum]));
     worker.onmessage = function(e) {
       worker.terminate();
       resolve(getResult(EDA['principalComponentAnalysis'], e.data));
@@ -128,3 +128,4 @@ export async function _trainAndAnalyzeLSSVMInWebWorker(gamma, kernel, kernelPara
     }
   });
 }
+

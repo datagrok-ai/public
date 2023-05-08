@@ -10,12 +10,16 @@ import {_principalComponentAnalysisInWebWorker,
 import {checkComponenets, checkGeneratorSVMinputs} from './utils';
 
 // Principal components analysis (PCA)
-export async function computePCA(table: DG.DataFrame, features: DG.ColumnList, components: number): Promise<DG.DataFrame> 
+export async function computePCA(table: DG.DataFrame, features: DG.ColumnList, components: number,
+  center: boolean, scale: boolean): Promise<DG.DataFrame> 
 {
   checkComponenets(features, components);
 
+  const centerNum = center ? 1 : 0;
+  const scaleNum = scale ? 1 : 0;
+
   let _output: any;
-  let _promise = _principalComponentAnalysisInWebWorker(table, features, components);
+  let _promise = _principalComponentAnalysisInWebWorker(table, features, components, centerNum, scaleNum);
 
   await _promise.then(
     _result => { _output = _result; },

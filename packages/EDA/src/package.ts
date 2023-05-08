@@ -30,10 +30,14 @@ export async function init(): Promise<void> {
 //description: Principal component analysis (PCA).
 //input: dataframe table
 //input: column_list features
-//input: int components = 3
+//input: int components = 2
+//input: bool center = true
+//input: bool scale = true
 //output: dataframe result {action:join(table)}
-export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number): Promise<DG.DataFrame> {
-  return renamePCAcolumns(await computePCA(table, features, components));
+export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number,
+  center: boolean, scale: boolean): Promise<DG.DataFrame> 
+{
+  return renamePCAcolumns(await computePCA(table, features, components, center, scale));
 }
 
 //top-menu: Tools | Data Science | PLS

@@ -16,6 +16,8 @@ extern "C" {
 	      int dataNumOfRows,
 	      int dataNumOfColumns,
 	      int numOfPrincipalComponents,
+		  int centerNum,
+	      int scaleNum,
 	      float * principalComponents,
 	      int principalComponentsNumOfRows,
 	      int principalComponentsNumOfColumns);
@@ -29,6 +31,8 @@ extern "C" {
 //input: dataframe table
 //input: column_list columns
 //input: int componentsCount
+//input: int centerNum
+//input: int scaleNum
 //output: column_list components [new(columns.rowCount, componentsCount)]
 //output: dataframe result [components]
 EMSCRIPTEN_KEEPALIVE
@@ -36,12 +40,14 @@ int principalComponentAnalysis(float * data,
       int dataNumOfRows,
 	  int dataNumOfColumns,
 	  int numOfPrincipalComponents,
+	  int centerNum,
+	  int scaleNum,
 	  float * principalComponents,
 	  int principalComponentsNumOfRows,
 	  int principalComponentsNumOfColumns)
 {
 	return pca::pcaUsingCorrelationMatrix(data, dataNumOfColumns, dataNumOfRows, 
-	               numOfPrincipalComponents, principalComponents, 0);
+	  numOfPrincipalComponents, centerNum, scaleNum, principalComponents, 0);
 }
 
 //name: error
