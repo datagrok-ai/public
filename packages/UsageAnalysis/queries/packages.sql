@@ -5,6 +5,7 @@
 --meta.cache: true
 --meta.invalidate: 0 * * * *
 --connection: System:Datagrok
+--test: PackagesUsage(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'])
 with recursive selected_groups as (
   select id from groups
   where id = any(@groups)
@@ -70,6 +71,7 @@ GROUP BY res.package, res.user, time_start, time_end, res.uid, res.ugid, res.pid
 --meta.cache: true
 --meta.invalidate: 0 * * * *
 --connection: System:Datagrok
+--test: PackagesContextPaneFunctions(1681084800, 1681516800, ['878c42b0-9a50-11e6-c537-6bf8e9ab02ee'], ['00000000-0000-0000-0000-000000000000'])
 with res AS (
 select DISTINCT e.id as id_, coalesce(pp.name, p1.name, 'Core') as package, en.id, et.name,
 coalesce(pp.package_id, p1.id, '00000000-0000-0000-0000-000000000000') as pid
@@ -103,6 +105,7 @@ group by res.package, res.id, res.name, res.pid
 --meta.cache: true
 --meta.invalidate: 0 * * * *
 --connection: System:Datagrok
+--test: PackagesContextPaneLogs(1681084800, 1681516800, ['878c42b0-9a50-11e6-c537-6bf8e9ab02ee'], ['00000000-0000-0000-0000-000000000000'])
 with res as (
 select DISTINCT e.id, et.source,
 coalesce(pp1.package_id, '00000000-0000-0000-0000-000000000000') as pid
@@ -133,6 +136,7 @@ group by res.source
 --meta.cache: true
 --meta.invalidate: 0 * * * *
 --connection: System:Datagrok
+--test: PackagesContextPaneAudit(1681084800, 1681516800, ['878c42b0-9a50-11e6-c537-6bf8e9ab02ee'], ['00000000-0000-0000-0000-000000000000'])
 with res as (
 select DISTINCT e.id, et.friendly_name as name,
 coalesce(pp2.package_id, '00000000-0000-0000-0000-000000000000') as pid
