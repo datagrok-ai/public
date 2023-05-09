@@ -1,8 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, before, expect, expectFloat} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, expect, expectFloat, delay} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
-import {PeptidesModel} from '../model';
+import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {startAnalysis} from '../widgets/peptides';
 import {scaleActivity} from '../utils/misc';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
@@ -99,10 +99,38 @@ category('Model: Settings', () => {
   });
 
   test('Include columns', async () => {
+    const testColumns = {'rank': 'avg'};
 
-  }, {skipReason: 'Not implemented yet'});
+    // Include column
+    model.settings = {columns: {'rank': 'avg'}};
+
+    expect(Object.keys(model.settings.columns!)[0], Object.keys(testColumns)[0], 'Expected to include column ' +
+      `'${Object.keys(testColumns)[0]}' but '${Object.keys(model.settings.columns!)[0]}' is included instead`);
+    expect(model.settings.columns!['rank'], testColumns['rank'], `Expected to aggregate column ` +
+      `'${Object.keys(testColumns)[0]}' with '${testColumns['rank']}' but aggregated with ` +
+      `'${model.settings.columns!['rank']}' instead`);
+
+    // Remove column
+    model.settings = {columns: {}};
+    expect(Object.keys(model.settings.columns!).length, 0,
+      `Expected to remove all column aggregations but columns {${Object.keys(model.settings.columns!).join(' & ')}} ` +
+      `are still included`);
+  });
 
   test('Dendrogram', async () => {
+    // Enable dendrogram
+    model.settings = {showDendrogram: true};
+    expect(model.settings.showDendrogram, true, 'Dendrogram is disabled after enabling');
 
-  }, {skipReason: 'Not implemented yet'});
+    await delay(5000);
+
+    expect(model.findViewer(VIEWER_TYPE.DENDROGRAM) !== null, true,
+      'Dendrogram is not present in the view after 5s delay');
+
+    // Disable dendrogram
+    model.settings = {showDendrogram: false};
+    expect(model.settings.showDendrogram, false, 'Dendrogram is enabled after disabling');
+    expect(model.findViewer(VIEWER_TYPE.DENDROGRAM) === null, true,
+      'Dendrogram is present in the view after disabling');
+  }, {skipReason: 'Need to find a way to replace _package variable to call for Bio function with tests'});
 });

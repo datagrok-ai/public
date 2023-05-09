@@ -17,6 +17,10 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
 
+export enum LST_PROPERTIES {
+  WEB_LOGO_MODE = 'webLogoMode',
+  MEMBERS_RATIO_THRESHOLD = 'membersRatioThreshold',
+};
 
 export class LogoSummaryTable extends DG.JsViewer {
   _titleHost = ui.divText(VIEWER_TYPE.LOGO_SUMMARY_TABLE, {id: 'pep-viewer-title'});
@@ -31,9 +35,9 @@ export class LogoSummaryTable extends DG.JsViewer {
   constructor() {
     super();
 
-    this.webLogoMode = this.string('webLogoMode', PositionHeight.full,
+    this.webLogoMode = this.string(LST_PROPERTIES.WEB_LOGO_MODE, PositionHeight.Entropy,
       {choices: [PositionHeight.full, PositionHeight.Entropy]});
-    this.membersRatioThreshold = this.float('membersRatioThreshold', 0.3, {min: 0, max: 1.0});
+    this.membersRatioThreshold = this.float(LST_PROPERTIES.MEMBERS_RATIO_THRESHOLD, 0.3, {min: 0, max: 1.0});
   }
 
   onTableAttached(): void {

@@ -21,3 +21,4 @@ export enum MOL_FORMAT {
 
 export const EMPTY_MOLECULE_MESSAGE = 'Molecule is empty';
 export const SMARTS_MOLECULE_MESSAGE = 'Not applicable for smarts or moleculer fragments';
+export const MESSAGE_MALFORMED = 'MALFORMED_INPUT_VALUE';

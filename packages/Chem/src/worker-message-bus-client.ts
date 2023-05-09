@@ -3,7 +3,7 @@ export class WorkerMessageBusClient {
   constructor(worker: Worker) {
     this._worker = worker;
   }
-  async call(op: string, args: any[] = []) {
+  async call(op: string, args: any[] = []): Promise<any> {
     return new Promise((res, rej) => {
       // https://advancedweb.hu/how-to-use-async-await-with-postmessage/
       // {op, args} -> {op, retval} | {error}

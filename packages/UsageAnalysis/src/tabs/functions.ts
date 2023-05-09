@@ -8,7 +8,6 @@ import {UaView, Filter} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {getTime} from '../utils';
 
-
 export class FunctionsView extends UaView {
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
@@ -29,12 +28,12 @@ export class FunctionsView extends UaView {
           const dateMax = df.getCol('time_end').stats.max;
           const dateFrom = new Date(dateMin / 1000);
           const dateTo = new Date(dateMax / 1000);
-          const packages: string[] = df.getCol('package').categories;
+          const packages: string[] = df.getCol('pid').categories;
           const functions: string[] = df.getCol('function').categories;
           t.selection.init((i) => {
             const row = gen.next().value as DG.Row;
             return dateFrom <= row.time_start && row.time_start < dateTo &&
-            packages.includes(row.package) && functions.includes(row.function);
+            packages.includes(row.pid) && functions.includes(row.function);
           }, false);
           const cp = DG.Accordion.create();
           df = t.clone(t.selection);
@@ -57,12 +56,11 @@ export class FunctionsView extends UaView {
           row.time_start = row.time_start.a;
           row.time_end = row.time_end.a;
           const filter: Filter = {time_start: row.time_start / 1000, time_end: row.time_end / 1000,
-            users: [row.uid], packages: [row.package], functions: [row.function]};
+            users: [row.uid], packages: [row.pid], functions: [row.function]};
           const cp = DG.Accordion.create();
           cp.addPane('Details', () => {
             return ui.tableFromMap({'User': ui.render(`#{x.${row.uid}}`),
-              'Package': row.pid ? ui.render(`#{x.${row.pid}}`) :
-                (row.package === 'Core' ? ui.label('Core') : ui.render(`#{x.${row.package}."${row.package}"}`)),
+              'Package': row.pid === this.systemId ? ui.label('Core') : ui.render(`#{x.${row.pid}}`),
               'From': getTime(new Date(row.time_start)),
               'To': getTime(new Date(row.time_end))});
           }, true);
@@ -95,9 +93,9 @@ export class FunctionsView extends UaView {
     const df = await grok.data.query('UsageAnalysis:FunctionsContextPane', filter);
     const data: {[key: string]: [string, any, string, string][]} = {};
     for (const r of df.rows) {
-      const key = r.package + ':' + r.function;
+      const key = r.pid + ':' + r.function;
       if (!data[key]) data[key] = [];
-      data[key].push([r.rid, r.time, r.run, r.pid]);
+      data[key].push([r.rid, r.time, r.run, r.package]);
     }
     if (single && Object.keys(data).length === 1) {
       const k = Object.keys(data)[0];
@@ -107,7 +105,7 @@ export class FunctionsView extends UaView {
       const func1 = fRow.insertCell(0);
       const func2 = fRow.insertCell(1);
       func1.innerText = 'Function';
-      func2.append(ui.render(`#{x.${k}."${n}"}`));
+      func2.append(ui.render(`#{x.${data[k][0][3]}:${n}."${n}"}`));
       cp.addPane('Runs', () => {
         return ui.wait(async () => {
           const t = ui.table(data[k].sort((a, b) => a[2].localeCompare(b[2])),
@@ -119,12 +117,11 @@ export class FunctionsView extends UaView {
       return;
     }
     const keysSorted = Object.keys(data).sort((a, b) => a[a.indexOf(':') + 1].localeCompare(b[b.indexOf(':') + 1]));
-    const packages: {[key: string]: {acc: DG.Accordion, id: string | null}} = {};
+    const packages: {[key: string]: DG.Accordion} = {};
     for (const k of keysSorted) {
       const [p, n] = k.split(':', 2);
-      const id = data[k].find((e) => e[3]);
-      if (!packages[p]) packages[p] = {acc: DG.Accordion.create(), id: id ? id[3] : null};
-      const pane = packages[p].acc.addPane('', () => {
+      if (!packages[p]) packages[p] = DG.Accordion.create();
+      const pane = packages[p].addPane('', () => {
         return ui.wait(async () => {
           const t = ui.table(data[k].sort((a, b) => a[2].localeCompare(b[2])),
             (i) => [i[1].format('YYYY/MM/DD HH:mm:ss'), ui.render(`#{x.${i[0]}."${i[2]}"}`)]);
@@ -133,11 +130,11 @@ export class FunctionsView extends UaView {
         });
       }, false);
       pane.root.querySelector('.d4-accordion-pane-header')
-        ?.prepend(ui.render(`#{x.${k}."${n}"}`));
+        ?.prepend(ui.render(`#{x.${data[k][0][3]}:${n}."${n}"}`));
     }
     Object.keys(packages).forEach((k) => {
-      const pane = cp.addPane('', () => packages[k].acc.root);
-      const name = packages[k].id ? ui.render(`#{x.${packages[k].id}}`) : ui.label(k);
+      const pane = cp.addPane('', () => packages[k].root);
+      const name = k === this.systemId ? ui.label('Core') : ui.render(`#{x.${k}}`);
       name.classList.add('ua-markup');
       pane.root.querySelector('.d4-accordion-pane-header')?.prepend(name);
     });

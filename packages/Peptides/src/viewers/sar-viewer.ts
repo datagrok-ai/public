@@ -299,7 +299,7 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
   canvasContext.restore();
 }
 
-function showTooltip(cell: DG.GridCell, x: number, y: number, model: PeptidesModel): boolean {
+export function showTooltip(cell: DG.GridCell, x: number, y: number, model: PeptidesModel): boolean {
   const renderColNames = [...model.splitSeqDf.columns.names(), C.COLUMNS_NAMES.MEAN_DIFFERENCE];
   const tableCol = cell.tableColumn;
   const tableColName = tableCol?.name;

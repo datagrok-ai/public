@@ -13,7 +13,10 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   moduleInit = async (pathToRdkit: string) =>
     this.call('module::init', [pathToRdkit]);
 
-  initMoleculesStructures = async (dict: string[]) =>
+  /** Creates RDMols for the specified {@link molecules}.
+   * They will be used for subsequent substructure search, or calculation of fingerprints.
+   * Returns a number of malformed molecules. */
+  initMoleculesStructures = async (dict: string[]): Promise<number> =>
     this.call(WORKER_CALL.INIT_MOLECULES_STRUCTURES, [dict]);
 
   searchSubstructure = async (query: string, queryMolBlockFailover: string, bitset?: boolean[]) =>
