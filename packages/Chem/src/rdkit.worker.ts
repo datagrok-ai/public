@@ -33,9 +33,9 @@ ctx.addEventListener('message', async (e: any) => {
     _rdKitServiceWorker!.freeMoleculesStructures();
     _rdKitServiceWorker = null;
     port.postMessage({op: op, retval: null});
-  }
+  } 
   else if (op === WORKER_CALL.GET_FINGERPRINTS) {
-    const result = _rdKitServiceWorker!.getFingerprints(args[0]);
+    const result = _rdKitServiceWorker!.getFingerprints(args[0], args[1]);
     port.postMessage({op: op, retval: result});
   }
   else if (op === WORKER_CALL.CONVERT_MOL_NOTATION) {

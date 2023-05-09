@@ -38,29 +38,22 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     super(module, webRoot);
   }
 
-  /** Creates RDMols for the specified {@link molecules}.
-   * They will be used for subsequent substructure search, or calculation of fingerprints.
-   * Returns a number of malformed molecules. */
-  initMoleculesStructures(molecules: string[]) : number {
+  initMoleculesStructures(molecules: string[]): number {
     this.freeMoleculesStructures();
-    this._rdKitMols = [];
+    this._rdKitMols = new Array<RDMol | null>(molecules.length).fill(null);
     let malformed = 0;
     for (let i = 0; i < molecules.length; ++i) {
       const item = molecules[i];
-      let mol;
-      if (!item || item === '')
-        mol = this._rdKitModule.get_mol('');
-      else {
+      if (item && item !== '') {
         const molSafe = getMolSafe(item, {}, this._rdKitModule);
-        mol = molSafe.mol;
-        if (mol === null)
-          malformed++;
-        else
+        const mol = molSafe.mol;
+        if (mol) {
           mol.is_qmol = molSafe.isQMol;
+          this._rdKitMols[i] = mol;
+        } else
+        malformed++;        
       }
-      this._rdKitMols.push(mol);
     }
-
     return malformed;
   }
 
