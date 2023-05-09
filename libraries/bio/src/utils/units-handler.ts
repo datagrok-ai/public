@@ -1,6 +1,5 @@
 import * as DG from 'datagrok-api/dg';
 
-import {mmDistanceFunctionsNames} from '../distance-functions/macromolecule-distance-functions';
 import {ALIGNMENT, ALPHABET, candidateAlphabets, NOTATION, TAGS} from './macromolecule/consts';
 import {SeqColStats, SplitterFunc} from './macromolecule/types';
 import {
@@ -274,26 +273,6 @@ export class UnitsHandler {
     newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
     newColumn.setTag(DG.TAGS.UNITS, units);
     return newColumn;
-  }
-
-  public getDistanceFunctionName(): mmDistanceFunctionsNames {
-    // TODO add support for helm and separator notation
-    if (!this.isFasta())
-      throw new Error('Only FASTA notation is supported');
-    if (this.aligned)
-      return mmDistanceFunctionsNames.HAMMING;
-    switch (this.alphabet) {
-    case ALPHABET.DNA:
-    case ALPHABET.RNA:
-      // As DNA and RNA matrices are same as identity matrices(mostly),
-      // we can use very fast and optimized Levenshtein distance
-      return mmDistanceFunctionsNames.LEVENSHTEIN;
-    case ALPHABET.PT:
-      return mmDistanceFunctionsNames.NEEDLEMANN_WUNSCH;
-      // For default case, let's use Levenshtein distance
-    default:
-      return mmDistanceFunctionsNames.LEVENSHTEIN;
-    }
   }
 
   public constructor(col: DG.Column) {
