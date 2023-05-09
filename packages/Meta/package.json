@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.3.9",
+  "version": "3.3.10",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -2549,6 +2549,20 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Bioreactors"
       }
+    },
+    "eda": {
+      "dependencies": {
+        "1.0.3": {
+          "datagrok-api": "latest"
+        }
+      },
+      "description": "Eploratory Data Analysis tools",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/EDA"
+      },
+      "category": "Machine Learning"
     }
   }
 }
