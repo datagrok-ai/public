@@ -1,9 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DemoView, DIRECTIONS} from './demo-app'
-import { forEach } from 'wu';
-import { demoApp } from '../package';
+
+import {DemoView} from './demo-app'
+import {DEMO_APP_HIERARCHY} from './const';
+import {demoApp} from '../package';
+
 
 export class DemoAppWidget extends DG.Widget { 
 
@@ -21,20 +23,19 @@ export class DemoAppWidget extends DG.Widget {
         grok.shell.windows.help.syncCurrentObject = true;
 
         let acc = ui.accordion();
-        console.log(funcs.find(diretion =>  diretion.category == 'Viewers'));
-        DIRECTIONS.forEach(item => {
-            acc.addCountPane(item,() => {
+        DEMO_APP_HIERARCHY.children.forEach(item => {
+            acc.addCountPane(item.name, () => {
                 const root = ui.divV([], {style:{gap:'4px'}});
                 funcs.forEach(element => {
-                    if(element.category === item)
-                        root.append(ui.link(element.name, ()=>{
+                    if(element.category === item.name)
+                        root.append(ui.link(element.name, () => {
                             demoApp();
-                            demoView.tree.items.find(node => node.text == element.name)?.root.click();
+                            demoView.tree.items.find(node => node.text === element.name)?.root.click();
                         }))
                 })
                 return root;
-            }, ()=>{
-                return funcs.filter(diretion =>  diretion.category == item).length;
+            }, () => {
+                return funcs.filter(direction => direction.category === item.name).length;
             }, false)
         })
         this.root.append(acc.root);

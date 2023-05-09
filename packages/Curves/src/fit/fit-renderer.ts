@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {GridColumn} from 'datagrok-api/dg';
 
-import {fitResultProperties} from "@datagrok-libraries/statistics/src/parameter-estimation/fit-curve";
+import {FitResult, fitResultProperties} from "@datagrok-libraries/statistics/src/parameter-estimation/fit-curve";
 import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
 
 import {fitSeries, getChartData, getChartBounds, getFittedCurve,IFitChartData, IFitSeries,
@@ -25,8 +25,8 @@ function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
 }
 
 /** Performs a curve confidence interval drawing */
-function drawConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries, confidenceType: string, transform: Viewport) {
-  const fitResult = fitSeries(series);
+function drawConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries, confidenceType: string, fitResult: FitResult, transform: Viewport) {
+  //const fitResult = fitSeries(series);
   g.beginPath();
   for (let i = 0; i < series.points.length!; i++) {
     const x = transform.xToScreen(series.points[i].x);
@@ -132,10 +132,12 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         }
       }
 
+      let fitRes: any;
       if (series.showFitLine ?? true ) {
         g.strokeStyle = series.fitLineColor ?? 'black';
         g.lineWidth = 2 * ratio;
-        const curve = getFittedCurve(series);
+        fitRes = fitSeries(series);
+        const curve = fitRes.fittedCurve;//getFittedCurve(series);
 
         g.beginPath();
         for (let i = 0; i < series.points.length!; i++) {
@@ -149,12 +151,12 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         g.stroke();
       }
 
-      if (series.showCurveConfidenceInterval ?? true) {
+      if ((series.showFitLine ?? true) && (series.showCurveConfidenceInterval ?? true)) {
         g.strokeStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_STROKE_COLOR;
         g.fillStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_FILL_COLOR;
 
-        drawConfidenceInterval(g, series, CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP, viewport);
-        drawConfidenceInterval(g, series, CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM, viewport);
+        drawConfidenceInterval(g, series, CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP, fitRes, viewport);
+        drawConfidenceInterval(g, series, CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM, fitRes, viewport);
         fillConfidenceInterval(g, series, viewport);
       }
 
