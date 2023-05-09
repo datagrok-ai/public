@@ -145,7 +145,8 @@ export async function statsWidget(molCol: DG.Column<string>): Promise<DG.Widget>
     await findMCS(molCol.name, molCol.dataFrame, true, true).then((res: string) => {
       map['MCS'] = renderMolecule(res, {renderer: 'RDKit'})
     });
-  }
+  } else
+    host.appendChild(ui.divText('Main statistics for sampled data'));
 
   host.appendChild(ui.tableFromMap(map));
 
