@@ -4,9 +4,14 @@ import * as DG from 'datagrok-api/dg';
 import {RDMol} from "@datagrok-libraries/chem-meta/src/rdkit-api";
 import {getRdKitModule} from "../package";
 import {getMolSafe} from './mol-creation_rdkit';
+import { MAX_MCS_ROW_COUNT } from '../constants';
 
 
 export function getMCS(molecules: DG.Column<string>, exactAtomSearch: boolean, exactBondSearch: boolean): string {
+  if (molecules.length > MAX_MCS_ROW_COUNT) {
+    grok.shell.warning(`Too many rows, maximum for chemical space is ${MAX_MCS_ROW_COUNT}`);
+    return '';
+  }
   let rdkit = getRdKitModule();
   let mols: RDMol[] = [];
 
