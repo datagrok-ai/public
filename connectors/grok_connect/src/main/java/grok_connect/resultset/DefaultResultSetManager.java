@@ -1,58 +1,61 @@
 package grok_connect.resultset;
 
-import grok_connect.column.BigIntColumnProvider;
-import grok_connect.column.BoolColumnProvider;
-import grok_connect.column.ColumnProvider;
-import grok_connect.column.ComplexTypeColumnProvider;
-import grok_connect.column.DateTimeColumnProvider;
-import grok_connect.column.FloatColumnProvider;
-import grok_connect.column.IntColumnProvider;
-import grok_connect.column.StringColumnProvider;
-import grok_connect.converter.ConverterManager;
-import grok_connect.converter.array.ArrayConverterManager;
-import grok_connect.converter.bigint.BigIntConverterManager;
-import grok_connect.converter.bitstring.BitStringConverterManager;
-import grok_connect.converter.bool.BoolTypeConverterManager;
-import grok_connect.converter.complex.ComplexTypeConverterManager;
-import grok_connect.converter.float_type.FloatTypeConverterManager;
-import grok_connect.converter.integer.IntegerTypeConverterManager;
-import grok_connect.converter.string.StringTypeConverterManager;
-import grok_connect.converter.time.TimeTypeConverterManager;
-import grok_connect.converter.xml.XmlConverterManager;
+import grok_connect.column.ColumnManager;
+import grok_connect.column.bigint.DefaultBigIntColumnManager;
+import grok_connect.column.bool.DefaultBoolColumnManager;
+import grok_connect.column.complex.DefaultComplexColumnManager;
+import grok_connect.column.datetime.DefaultDateTimeColumnManager;
+import grok_connect.column.floats.DefaultFloatColumnManager;
+import grok_connect.column.integer.DefaultIntColumnManager;
+import grok_connect.column.string.DefaultStringColumnManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import serialization.Column;
 import serialization.StringColumn;
-import java.util.ArrayList;
-import java.util.List;
+import serialization.Types;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DefaultResultSetManager implements ResultSetManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultResultSetManager.class);
     private static final int COLUMN_NAME_INDEX = 0;
     private static ResultSetManager defaultManager;
-    private final List<ConverterManager<?>> converterManagers;
-    private final List<ColumnProvider> columnProviders;
+    private final Collection<ColumnManager<?>> columnManagers;
 
-    public DefaultResultSetManager(List<ConverterManager<?>> converterManagers,
-                                   List<ColumnProvider> columnProviders) {
-        this.columnProviders = columnProviders;
-        this.converterManagers = converterManagers;
+    public DefaultResultSetManager(Collection<ColumnManager<?>> columnManagers) {
+        this.columnManagers = columnManagers;
     }
 
     public static synchronized ResultSetManager getDefaultManager() {
         if (defaultManager == null) {
-            defaultManager = new DefaultResultSetManager(getDefaultConverterManagers(),
-                    getDefaultColumnProviders());
+            defaultManager = new DefaultResultSetManager(getDefaultManagersMap().values());
         }
         return defaultManager;
+    }
+
+    public static ResultSetManager fromManagersMap(Map<String, ColumnManager<?>> managers) {
+        return new DefaultResultSetManager(managers.values());
+    }
+
+    public static Map<String, ColumnManager<?>> getDefaultManagersMap() {
+        Map<String, ColumnManager<?>> map = new HashMap<>();
+        map.put(Types.BIG_INT, new DefaultBigIntColumnManager());
+        map.put(Types.BOOL, new DefaultBoolColumnManager());
+        map.put(Types.COLUMN_LIST, new DefaultComplexColumnManager());
+        map.put(Types.DATE_TIME, new DefaultDateTimeColumnManager());
+        map.put(Types.FLOAT, new DefaultFloatColumnManager());
+        map.put(Types.INT, new DefaultIntColumnManager());
+        map.put(Types.STRING, new DefaultStringColumnManager());
+        return map;
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public <T> T convert(Object o, int type, String typeName, int precision, int scale, Object...args) {
         LOGGER.trace("convert method was called");
-        for (ConverterManager<?> manager : converterManagers) {
-            if (manager.isSupported(type, typeName, precision, scale)) {
+        for (ColumnManager<?> manager : columnManagers) {
+            if (manager.isApplicable(type, typeName, precision, scale)) {
                 LOGGER.trace("found suitable converter manager");
                 return (T) manager.convert(o, args.length == 0 ? null : args[COLUMN_NAME_INDEX]);
             }
@@ -64,10 +67,10 @@ public class DefaultResultSetManager implements ResultSetManager {
     @Override
     public Column getColumn(int type, String typeName, int precision, int scale) {
         LOGGER.trace("getColumn method was called");
-        for (ColumnProvider columnProvider: columnProviders) {
-            if (columnProvider.isSupported(type, typeName, precision, scale)) {
+        for (ColumnManager<?> manager : columnManagers) {
+            if (manager.isApplicable(type, typeName, precision, scale)) {
                 LOGGER.trace("found suitable column provider");
-                return columnProvider.get();
+                return manager.getColumn();
             }
         }
         LOGGER.trace("couldn't find suitable column, return StringColumn");
@@ -76,54 +79,27 @@ public class DefaultResultSetManager implements ResultSetManager {
 
     @Override
     public Column getColumnWithInitSize(int type, String typeName, int precision, int scale, int size) {
-        LOGGER.trace("getColumn method with init size was called");
-        for (ColumnProvider columnProvider: columnProviders) {
-            if (columnProvider.isSupported(type, typeName, precision, scale)) {
+        LOGGER.trace("getColumnWithInitSize method was called");
+        for (ColumnManager<?> manager : columnManagers) {
+            if (manager.isApplicable(type, typeName, precision, scale)) {
                 LOGGER.trace("found suitable column provider");
-                return columnProvider.getWithInitSize(size);
+                return manager.getColumnWithInitSize(size);
             }
         }
         LOGGER.trace("couldn't find suitable column, return StringColumn");
-        return new StringColumn();
+        return new StringColumn(new String[size]);
     }
 
     @Override
     public Column getColumn(Object o) {
-        LOGGER.trace("getColumn method with init size was called for object");
-        for (ColumnProvider columnProvider: columnProviders) {
-            if (columnProvider.isSupported(o)) {
+        LOGGER.trace("getColumn method was called");
+        for (ColumnManager<?> manager : columnManagers) {
+            if (manager.isApplicable(o)) {
                 LOGGER.trace("found suitable column provider");
-                return columnProvider.get();
+                return manager.getColumn();
             }
         }
         LOGGER.trace("couldn't find suitable column, return StringColumn");
         return new StringColumn();
-    }
-
-    public static List<ColumnProvider> getDefaultColumnProviders() {
-        List<ColumnProvider> columnProviders = new ArrayList<>();
-        columnProviders.add(new IntColumnProvider());
-        columnProviders.add(new ComplexTypeColumnProvider());
-        columnProviders.add(new BigIntColumnProvider());
-        columnProviders.add(new StringColumnProvider());
-        columnProviders.add(new FloatColumnProvider());
-        columnProviders.add(new DateTimeColumnProvider());
-        columnProviders.add(new BoolColumnProvider());
-        return columnProviders;
-    }
-
-    public static List<ConverterManager<?>> getDefaultConverterManagers() {
-        List<ConverterManager<?>> converterManagers = new ArrayList<>();
-        converterManagers.add(new BigIntConverterManager());
-        converterManagers.add(new IntegerTypeConverterManager());
-        converterManagers.add(new ComplexTypeConverterManager());
-        converterManagers.add(new ArrayConverterManager());
-        converterManagers.add(new BitStringConverterManager());
-        converterManagers.add(new BoolTypeConverterManager());
-        converterManagers.add(new FloatTypeConverterManager());
-        converterManagers.add(new StringTypeConverterManager());
-        converterManagers.add(new TimeTypeConverterManager());
-        converterManagers.add(new XmlConverterManager());
-        return converterManagers;
     }
 }

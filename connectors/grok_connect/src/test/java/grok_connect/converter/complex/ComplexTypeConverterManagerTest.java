@@ -1,6 +1,8 @@
 package grok_connect.converter.complex;
 
 import grok_connect.GrokConnect;
+import grok_connect.column.ColumnManager;
+import grok_connect.column.complex.DefaultComplexColumnManager;
 import grok_connect.providers.utils.DataFrameComparator;
 import grok_connect.utils.ProviderManager;
 import org.junit.jupiter.api.BeforeAll;
@@ -21,7 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-class ComplexTypeConverterManagerTest {
+class ComplexColumnManagerTest {
     private static final String DEFAULT_MAIN_COLUMN_NAME = "Column";
     private static final String firstColumnName = "id";
     private static final String secondColumnName = "firstName";
@@ -38,7 +40,7 @@ class ComplexTypeConverterManagerTest {
     private static final Double fifthColumnData = Double.NEGATIVE_INFINITY;
     private static final Integer sixthColumnData = 2023;
     private static final Boolean seventhColumnData = true;
-    private static ComplexTypeConverterManager complexTypeConverterManager;
+    private static ColumnManager<List<Column>> complexColumnManager;
     private static DataFrameComparator dataFrameComparator;
 
     @BeforeAll
@@ -47,27 +49,26 @@ class ComplexTypeConverterManagerTest {
         thirdColumnData.add("work");
         thirdColumnData.add("rest");
         thirdColumnData.add("play");
-        ProviderManager providerManager = new ProviderManager();
-        GrokConnect.providerManager = providerManager;
-        complexTypeConverterManager = new ComplexTypeConverterManager();
+        GrokConnect.providerManager = new ProviderManager();
+        complexColumnManager = new DefaultComplexColumnManager();
     }
 
     @Test
     public void testNullArgument_ok() {
-        Assertions.assertDoesNotThrow(() -> complexTypeConverterManager
+        Assertions.assertDoesNotThrow(() -> complexColumnManager
                 .convert(null, DEFAULT_MAIN_COLUMN_NAME));
     }
 
     @Test
     public void testFlatMapArgument_ok() {
-        List<Column> actual = Assertions.assertDoesNotThrow(() -> complexTypeConverterManager
+        List<Column> actual = Assertions.assertDoesNotThrow(() -> complexColumnManager
                 .convert(getFlatMap(), DEFAULT_MAIN_COLUMN_NAME));
         Assertions.assertTrue(dataFrameComparator.isColumnsEqualUnOrdered(getExpectedForFlatMap(), actual));
     }
 
     @Test
     public void testNestedMapArgument_ok() {
-        List<Column> actual = Assertions.assertDoesNotThrow(() -> complexTypeConverterManager
+        List<Column> actual = Assertions.assertDoesNotThrow(() -> complexColumnManager
                 .convert(getNestedMap(), DEFAULT_MAIN_COLUMN_NAME));
         Assertions.assertTrue(dataFrameComparator.isColumnsEqualUnOrdered(getExpectedForNestedMap(), actual));
     }

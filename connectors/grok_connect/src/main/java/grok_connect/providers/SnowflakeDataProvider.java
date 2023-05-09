@@ -1,38 +1,24 @@
 package grok_connect.providers;
 
-import grok_connect.column.BigIntColumnProvider;
-import grok_connect.column.ColumnProvider;
-import grok_connect.column.IntColumnProvider;
+import grok_connect.column.ColumnManager;
+import grok_connect.column.bigint.OracleSnowflakeBigIntColumnManager;
+import grok_connect.column.integer.OracleSnowflakeIntColumnManager;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataQuery;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
-import grok_connect.converter.ConverterManager;
-import grok_connect.converter.bigint.BigIntConverterManager;
-import grok_connect.converter.integer.IntegerTypeConverterManager;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
-import grok_connect.type.TypeChecker;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import serialization.Types;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 public class SnowflakeDataProvider extends JdbcDataProvider {
-    private static final TypeChecker BIGINT_TYPECHECKER = (type, typeName, precision, scale) ->
-            typeName.equalsIgnoreCase("number") && precision > 10 && scale == 0;
-
-    private static final TypeChecker INT_TYPECHECKER = (type, typeName, precision, scale) ->
-            typeName.equalsIgnoreCase("number") && precision < 10 && scale == 0;
     private static final boolean CAN_BROWSE_SCHEMA = true;
     private static final String DEFAULT_SCHEMA = "PUBLIC";
     private static final String URL_PREFIX = "jdbc:snowflake://";
@@ -160,17 +146,9 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
     }
 
     private void initResultSetManager() {
-        List<ConverterManager<?>> defaultConverterManagers
-                = DefaultResultSetManager.getDefaultConverterManagers();
-        defaultConverterManagers.set(0, new BigIntConverterManager(BIGINT_TYPECHECKER));
-        defaultConverterManagers.set(1, new IntegerTypeConverterManager(INT_TYPECHECKER));
-        List<ColumnProvider> defaultColumnProviders = DefaultResultSetManager.getDefaultColumnProviders();
-        List<TypeChecker> bigIntCheckers = new ArrayList<>();
-        bigIntCheckers.add(BIGINT_TYPECHECKER);
-        defaultColumnProviders.set(2, new BigIntColumnProvider(bigIntCheckers));
-        List<TypeChecker> intCheckers = new ArrayList<>();
-        intCheckers.add(INT_TYPECHECKER);
-        defaultColumnProviders.set(0, new IntColumnProvider(intCheckers));
-        resultSetManager = new DefaultResultSetManager(defaultConverterManagers, defaultColumnProviders);
+        Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
+        defaultManagersMap.put(Types.INT, new OracleSnowflakeIntColumnManager());
+        defaultManagersMap.put(Types.BIG_INT, new OracleSnowflakeBigIntColumnManager());
+        resultSetManager = DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 }

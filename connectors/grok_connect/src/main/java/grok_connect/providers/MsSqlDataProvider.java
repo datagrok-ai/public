@@ -7,20 +7,20 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import grok_connect.column.BoolColumnProvider;
-import grok_connect.column.ColumnProvider;
+import java.util.Map;
+
+import grok_connect.column.ColumnManager;
+import grok_connect.column.bigint.ClickHouseBigIntColumnManager;
+import grok_connect.column.bool.MySqlMssqlBoolColumnManager;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataQuery;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.connectors_info.FuncParam;
-import grok_connect.converter.ConverterManager;
-import grok_connect.converter.bool.BoolTypeConverterManager;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
-import grok_connect.type.TypeChecker;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Property;
 import grok_connect.utils.QueryCancelledByUser;
@@ -28,8 +28,6 @@ import serialization.Types;
 import serialization.DataFrame;
 
 public class MsSqlDataProvider extends JdbcDataProvider {
-    private static final TypeChecker BOOL_TYPECHECKER = (type, typeName, precision, scale) ->
-            type == java.sql.Types.BIT && precision == 1 && scale == 0;
 
     public MsSqlDataProvider() {
         initResultSetManager();
@@ -160,13 +158,8 @@ public class MsSqlDataProvider extends JdbcDataProvider {
     }
 
     private void initResultSetManager() {
-        List<ConverterManager<?>> defaultConverterManagers
-                = DefaultResultSetManager.getDefaultConverterManagers();
-        defaultConverterManagers.set(5, new BoolTypeConverterManager(BOOL_TYPECHECKER));
-        List<ColumnProvider> defaultColumnProviders = DefaultResultSetManager.getDefaultColumnProviders();
-        List<TypeChecker> boolCheckers = new ArrayList<>();
-        boolCheckers.add(BOOL_TYPECHECKER);
-        defaultColumnProviders.set(6, new BoolColumnProvider(boolCheckers));
-        resultSetManager = new DefaultResultSetManager(defaultConverterManagers, defaultColumnProviders);
+        Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
+        defaultManagersMap.put(Types.BOOL, new MySqlMssqlBoolColumnManager());
+        resultSetManager = DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 }

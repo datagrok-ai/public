@@ -1,28 +1,28 @@
 package grok_connect.providers;
 
-import grok_connect.column.ColumnProvider;
-import grok_connect.column.ComplexTypeColumnProvider;
+import grok_connect.column.ColumnManager;
+import grok_connect.column.complex.Neo4jComplexColumnManager;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataQuery;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncCall;
-import grok_connect.converter.ConverterManager;
-import grok_connect.converter.complex.ComplexTypeConverterManager;
 import grok_connect.resultset.DefaultResultSetManager;
-import grok_connect.type.TypeChecker;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.SchemeInfo;
 import serialization.Column;
 import serialization.DataFrame;
-import java.sql.*;
+import serialization.Types;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class MongoDbDataProvider extends JdbcDataProvider {
-    private static final TypeChecker COMPLEX_TYPECHECKER = (type, typeName, precision, scale) ->
-            typeName.equalsIgnoreCase("NODE") || typeName.equalsIgnoreCase("map");
-
     private static final int OBJECT_INDEX = 1;
 
     public MongoDbDataProvider() {
@@ -114,13 +114,8 @@ public class MongoDbDataProvider extends JdbcDataProvider {
     }
 
     private void initResultSetManager() {
-        List<ConverterManager<?>> defaultConverterManagers
-                = DefaultResultSetManager.getDefaultConverterManagers();
-        defaultConverterManagers.set(2, new ComplexTypeConverterManager(COMPLEX_TYPECHECKER));
-        List<ColumnProvider> defaultColumnProviders = DefaultResultSetManager.getDefaultColumnProviders();
-        List<TypeChecker> complexCheckers = new ArrayList<>();
-        complexCheckers.add(COMPLEX_TYPECHECKER);
-        defaultColumnProviders.set(1, new ComplexTypeColumnProvider(complexCheckers));
-        resultSetManager = new DefaultResultSetManager(defaultConverterManagers, defaultColumnProviders);
+        Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
+        defaultManagersMap.put(Types.COLUMN_LIST, new Neo4jComplexColumnManager());
+        resultSetManager = DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 }

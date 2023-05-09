@@ -1,32 +1,24 @@
 package grok_connect.providers;
 
-import java.sql.Types;
 import java.util.ArrayList;
-import java.util.List;
-import grok_connect.column.BigIntColumnProvider;
-import grok_connect.column.ColumnProvider;
-import grok_connect.column.ComplexTypeColumnProvider;
-import grok_connect.column.IntColumnProvider;
+import java.util.Map;
+
+import grok_connect.column.ColumnManager;
+import grok_connect.column.bigint.Neo4jBigIntColumnManager;
+import grok_connect.column.bool.MySqlMssqlBoolColumnManager;
+import grok_connect.column.complex.Neo4jComplexColumnManager;
+import grok_connect.column.integer.Neo4jIntColumnManager;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
-import grok_connect.converter.ConverterManager;
-import grok_connect.converter.bigint.BigIntConverterManager;
-import grok_connect.converter.complex.ComplexTypeConverterManager;
-import grok_connect.converter.integer.IntegerTypeConverterManager;
 import grok_connect.resultset.DefaultResultSetManager;
-import grok_connect.type.TypeChecker;
 import grok_connect.utils.PatternMatcher;
 import grok_connect.utils.PatternMatcherResult;
 import grok_connect.utils.Property;
+import serialization.Types;
 
 public class Neo4jDataProvider extends JdbcDataProvider {
-    private static final TypeChecker BIGINT_TYPECHECKER = (type, typeName, precision, scale) ->
-            typeName.equals("INTEGER") || type == Types.INTEGER;
-    private static final TypeChecker INT_TYPECHECKER = (type, typeName, precision, scale) -> false;
-    private static final TypeChecker COMPLEX_TYPECHECKER = (type, typeName, precision, scale) ->
-            typeName.equalsIgnoreCase("NODE") || typeName.equalsIgnoreCase("map");
 
     public Neo4jDataProvider() {
         initResultSetManager();
@@ -151,21 +143,10 @@ public class Neo4jDataProvider extends JdbcDataProvider {
     }
 
     private void initResultSetManager() {
-        List<ConverterManager<?>> defaultConverterManagers
-                = DefaultResultSetManager.getDefaultConverterManagers();
-        defaultConverterManagers.set(0, new BigIntConverterManager(BIGINT_TYPECHECKER));
-        defaultConverterManagers.set(1, new IntegerTypeConverterManager(INT_TYPECHECKER));
-        defaultConverterManagers.set(2, new ComplexTypeConverterManager(COMPLEX_TYPECHECKER));
-        List<ColumnProvider> defaultColumnProviders = DefaultResultSetManager.getDefaultColumnProviders();
-        List<TypeChecker> bigIntCheckers = new ArrayList<>();
-        bigIntCheckers.add(BIGINT_TYPECHECKER);
-        defaultColumnProviders.set(2, new BigIntColumnProvider(bigIntCheckers));
-        List<TypeChecker> intCheckers = new ArrayList<>();
-        intCheckers.add(INT_TYPECHECKER);
-        defaultColumnProviders.set(0, new IntColumnProvider(intCheckers));
-        List<TypeChecker> complexCheckers = new ArrayList<>();
-        complexCheckers.add(COMPLEX_TYPECHECKER);
-        defaultColumnProviders.set(1, new ComplexTypeColumnProvider(complexCheckers));
-        resultSetManager = new DefaultResultSetManager(defaultConverterManagers, defaultColumnProviders);
+        Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
+        defaultManagersMap.put(Types.COLUMN_LIST, new Neo4jComplexColumnManager());
+        defaultManagersMap.put(Types.INT, new Neo4jIntColumnManager());
+        defaultManagersMap.put(Types.BIG_INT, new Neo4jBigIntColumnManager());
+        resultSetManager = DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 }
