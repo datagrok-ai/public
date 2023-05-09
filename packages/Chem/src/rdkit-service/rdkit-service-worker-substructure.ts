@@ -26,8 +26,10 @@ M  END`;
 function validateMol(mol: RDMol | null, molString: string) : void {
   if (mol === null)
     throw new Error('FATAL RDKit Error: Created a null molecule with no exception ' + molString);
-  if (!mol.is_valid())
+  if (!mol.is_valid()) {
+    mol.delete();
     throw new Error('FATAL RDKit Error: Created a not valid molecule with no exception ' + molString);
+  }
 }
 
 export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
@@ -105,8 +107,10 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         const mol = getMolSafe(queryMolString, {mergeQueryHs: true}, this._rdKitModule).mol;
         if (mol !== null) { // check the qmol is proper
           const match = mol.get_substruct_match(queryMol);
-          if (match === '{}')
+          if (match === '{}') {
+            queryMol.delete(); //remove mol object previously stored in queryMol
             queryMol = mol;
+          }
           else
             mol.delete();
         } // else, this looks to be a real SMARTS
@@ -118,13 +122,21 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     if (queryMol !== null) {
         if (bitset) {
           for (let i = 0; i < bitset.length; ++i) {
-            if (bitset[i] && this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
+            try { //get_substruct_match can potentially throw an exception, need to catch
+              if (bitset[i] && this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
               matches.push(i);
+            } catch {
+              continue;
+            }
           }
         } else {
           for (let i = 0; i < this._rdKitMols!.length; ++i) {
-            if (this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
+            try {
+              if (this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
               matches.push(i);
+            } catch {
+              continue;
+            }
           }
         }
         queryMol.delete();
