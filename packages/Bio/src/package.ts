@@ -230,6 +230,8 @@ export function sequenceAlignment(alignType: string, alignTable: string, gap: nu
   return res;
 }
 
+// -- Viewers --
+
 //name: WebLogo
 //description: WebLogo
 //tags: viewer, panel
