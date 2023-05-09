@@ -226,6 +226,8 @@ div.demo-script-countdown svg>circle {
 
 .d4-ribbon-name .ui-breadcrumbs i {
 	padding: 0 6px;
+	font-size: 10px;
+	font-weight: bold;
 }
 
 .d4-ribbon-name .ui-breadcrumbs-element:last-child {
