@@ -150,7 +150,6 @@ export namespace chem {
     resized = false;
     _sketcherTypeChanged = false;
     _autoResized = true;
-    _disabled = false;
 
     set sketcherType(type: string) {
       this._setSketcherType(type);
@@ -295,14 +294,12 @@ export namespace chem {
     }
 
     createSketcher() {
-      if (!this._disabled) {
-        this.sketcherFunctions = Func.find({tags: ['moleculeSketcher']});
-        this.setExternalModeForSubstrFilter();
-        if (this._mode === SKETCHER_MODE.INPLACE)
-          this.root.appendChild(this.createInplaceModeSketcher());
-        else
-          this.root.appendChild(this.createExternalModeSketcher());
-      }
+      this.sketcherFunctions = Func.find({ tags: ['moleculeSketcher'] });
+      this.setExternalModeForSubstrFilter();
+      if (this._mode === SKETCHER_MODE.INPLACE)
+        this.root.appendChild(this.createInplaceModeSketcher());
+      else
+        this.root.appendChild(this.createExternalModeSketcher());
     }
 
     updateExtSketcherContent() {
@@ -573,12 +570,6 @@ export namespace chem {
       const imageHost = ui.canvas();
       canvasMol(0, 0, w, h, imageHost, molecule, null, {normalizeDepiction: true, straightenDepiction: true});
       return imageHost;
-    }
-
-    disableSketcher(message: string) {
-      this._disabled = true;
-      ui.empty(this.root);
-      this.root.append(ui.divText(message));
     }
 
   }
