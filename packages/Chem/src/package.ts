@@ -173,7 +173,7 @@ export function scaffoldTreeViewer() : ScaffoldTreeViewer {
  return new ScaffoldTreeViewer();
 }
 
-//name: SubstructureFilter
+//name: Substructure Filter
 //description: RDKit-based substructure filter
 //tags: filter
 //output: filter result
@@ -1104,11 +1104,12 @@ export function addScaffoldTree(): void {
   grok.shell.tv.addViewer(ScaffoldTreeViewer.TYPE);
 }
 
-//name: ScaffoldTree
+//name: Scaffold Tree Filter
 //description: Scaffold Tree filter
 //tags: filter
 //output: filter result
-export function scaffoldTreeFilter() {
+//meta.semType: Molecule
+export function scaffoldTreeFilter(): ScaffoldTreeFilter {
   return new ScaffoldTreeFilter();
 }
 

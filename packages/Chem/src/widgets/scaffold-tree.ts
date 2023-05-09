@@ -348,8 +348,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   treeEncode: string;
 
   sizesMap: {[key: string]: {[key: string]: number}} = {
-    'small': {height: 50, width: 90},
-    'normal': {height: 80, width: 144},
+    'small': {height: 80, width: 90},
+    'normal': {height: 90, width: 144},
     'large': {height: 100, width: 180}};
   size: string;
 
@@ -1003,10 +1003,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   private createGroup(molStr: string, rootGroup: TreeViewGroup, skipDraw: boolean = false) : TreeViewGroup | null {
     if (this.molColumn === null)
       return null;
-
+    
     const bitset =  DG.BitSet.create(this.molColumn.length);
+    const box = ui.box();
     const molHost = renderMolecule(molStr, this.sizesMap[this.size].width, this.sizesMap[this.size].height, skipDraw);
-    const group = rootGroup.group(molHost, {smiles: molStr, bitset: bitset, orphansBitset : null, bitwiseNot: false});
+    box.appendChild(molHost);
+    const group = rootGroup.group(box, {smiles: molStr, bitset: bitset, orphansBitset : null, bitwiseNot: false}) ;
     this.addIcons(molHost, bitset.trueCount === 0 ? "" : bitset.trueCount.toString(), group);
 
     group.enableCheckBox(false);
@@ -1143,6 +1145,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     else if (p.name === 'bitOperation') {
       this.updateFilters();
       this._bitOpInput!.value = this.bitOperation;
+    }
+    else if (p.name === 'size') {
+      const savedTree = JSON.parse(JSON.stringify(ScaffoldTreeViewer.serializeTrees(this.tree)));
+      this.clear();
+      ScaffoldTreeViewer.deserializeTrees(savedTree, this.tree, (molStr: string, rootGroup: TreeViewGroup) => {
+        return this.createGroup(molStr, rootGroup, false);
+      });
+
+      this.updateSizes();
+      this.updateUI();
+      //this.clear();
+      //await this.loadTreeStr(savedTree);
     }
   }
 
@@ -1567,6 +1581,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
 
   add(dataFrame: DG.DataFrame) {
     this.viewer.autoGenerate = false;
+    this.viewer.size = 'normal';
     this.viewer.dataFrame = dataFrame;
     this.viewer.root.getElementsByClassName('ui-box ui-split-v')[0].remove();
     this.root.appendChild(this.viewer.root);

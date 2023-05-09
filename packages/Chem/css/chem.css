@@ -187,6 +187,7 @@
   padding: 4px;
   color:var(--blue-1);
 }
+
 .chem-scaffold-tree-toolbar {
   max-height: 24px;
   margin: 0 0 2px 2px;
@@ -201,6 +202,10 @@
   box-sizing: border-box;
 }
 
+.d4-viewer.d4-filters:hover .chem-scaffold-tree-toolbar {
+  visibility: visible;
+}
+
 .d4-viewer.d4-scaffold-tree:hover .chem-scaffold-tree-toolbar {
   visibility: visible;
 }
@@ -213,6 +218,13 @@
   /* box-sizing: content-box; */
 }
 
+.d4-root .d4-filter-group .d4-viewer .d4-filters .chem-mol-box-info .chem-mol-box-info-buttons {
+  visibility: hidden;
+  flex-grow: 1;
+  margin-top: 6px;
+  justify-content: space-between;
+}
+
 .d4-viewer.d4-scaffold-tree .chem-mol-box-info .chem-mol-box-info-buttons {
   visibility: hidden;
   flex-grow: 1;
@@ -221,6 +233,10 @@
 }
 
 .d4-viewer.d4-scaffold-tree .d4-tree-view-node:hover > .d4-tree-view-group-label > .chem-mol-box .chem-mol-box-info .chem-mol-box-info-buttons {
+  visibility: visible;
+}
+
+.d4-root .d4-filter-group .d4-viewer .d4-filters .ui-box .d4-tree-view-node:hover > .d4-tree-view-group-label > .chem-mol-box .chem-mol-box-info .chem-mol-box-info-buttons {
   visibility: visible;
 }
 
