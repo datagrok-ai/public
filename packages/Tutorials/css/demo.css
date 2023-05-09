@@ -114,6 +114,11 @@
 	padding: 4px 0;
 }
 
+.demo-app-script .tutorials-root-header > h2 {
+	margin: 0;
+	text-align: center;
+}
+
 /* Autocomplete dock */
 .demo-app-script {
 	overflow: scroll;
@@ -125,6 +130,11 @@
 
 .demo-app-script .tutorials-main-header {
 	padding: 0 12px;
+}
+
+.demo-app-script .grok-tutorial-entry > i.grok-icon {
+	min-width: 14px;
+	text-align: center;
 }
 
 .demo-app-script .fa-clock {
@@ -144,7 +154,7 @@
 }
 
 .demo-app-script .grok-tutorial-step-description {
-	padding-left: 22px;
+	padding-left: 24px;
 }
 
 .demo-app-script .grok-tutorial-step-description .hidden{
@@ -158,4 +168,68 @@
 /* play-pause btn */
 .tutorials-root-header button>i.grok-icon.fa-play {
 	color:var(--green-2);
+}
+
+/* countdown */
+div.demo-script-countdown {
+	position: relative;
+	height: 14px;
+	width: 14px;
+	text-align: center;
+}
+  
+div.demo-script-countdownnum {
+	font-size:9px;
+	color: var(--blue-1);
+	display: inline-block;
+	position:relative;
+	top:0px;
+}
+
+div.demo-script-countdown svg {
+	position: absolute;
+	top: 0;
+	right: 0;
+	width: 14px;
+	height: 14px;
+	transform: rotateY(-180deg) rotateZ(-90deg);
+}
+
+div.demo-script-countdown svg>circle {
+	stroke-dasharray: 40px;
+	stroke-dashoffset: 0px;
+	stroke-linecap: round;
+	stroke-width: 1.5px;
+	stroke: var(--blue-1);
+	fill: none;
+	animation: countdown 10s linear infinite forwards;
+}
+
+@keyframes countdown {
+	from {
+		stroke-dashoffset: 0px;
+	}
+
+	to {
+		stroke-dashoffset: 40px;
+	}
+}
+
+/* View breadcrumbs */
+.d4-ribbon-name .ui-breadcrumbs {
+	overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+	flex-wrap: nowrap;
+    padding: 0;
+}
+
+.d4-ribbon-name .ui-breadcrumbs i {
+	padding: 0 6px;
+}
+
+.d4-ribbon-name .ui-breadcrumbs-element:last-child {
+	white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
