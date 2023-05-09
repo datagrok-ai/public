@@ -33,7 +33,7 @@ export function rGroupAnalysis(col: DG.Column): void {
     ui.setUpdateIndicator(sketcher.root, true);
     try {
       let molCol = col.dataFrame.columns.byName(columnInput.value!);
-      const smarts: string = await findMCS(molCol.name, molCol.dataFrame, exactAtomsCheck.value!, exactBondsCheck.value!);
+      const smarts: string = await getMCS(molCol, exactAtomsCheck.value!, exactBondsCheck.value!);
       ui.setUpdateIndicator(sketcher.root, false);
       sketcher.setMolFile(convertMolNotation(smarts, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock));
     } catch (e: any) {
