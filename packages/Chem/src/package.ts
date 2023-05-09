@@ -491,7 +491,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     return;
   }
 
-  const runChemSpace = async () => {
+  const runChemSpace = async (): Promise<DG.Viewer | undefined> => {
     const embedColsNames = getEmbeddingColsNames(table);
 
     const chemSpaceParams = {
@@ -518,12 +518,12 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     Do you want to continue?`))
       .onOK(async () => {
         const progressBar = DG.TaskBarProgressIndicator.create(`Running Chemical space...`);
-        await runChemSpace();
+        return await runChemSpace();
         progressBar.close();
       })
       .show();
   } else
-    await runChemSpace();
+    return await runChemSpace();
 }
 
 

@@ -150,15 +150,10 @@ export namespace chem {
     resized = false;
     _sketcherTypeChanged = false;
     _autoResized = true;
-    _type = currentSketcherType;
     _disabled = false;
 
     set sketcherType(type: string) {
       this._setSketcherType(type);
-    }
-
-    get sketcherType(): string {
-      return this._type;
     }
 
     get width(): number {
@@ -512,7 +507,6 @@ export namespace chem {
         if(currentSketcherType !== sketcherType) //in case sketcher type has been changed while previous sketcher was loading
           return;
         this.sketcher = sketcher; //setting this.sketcher only after ensuring that this is last selected sketcher
-        this._type = currentSketcherType;
         ui.empty(this.host);
         this.host.appendChild(this.sketcher!.root);
         this._setSketcherSize(); //update sketcher size according to base sketcher width and height

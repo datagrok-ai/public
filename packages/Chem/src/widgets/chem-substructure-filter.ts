@@ -40,6 +40,8 @@ export class SubstructureFilter extends DG.Filter {
   syncEvent = false;
   filterId: number;
   tableName: string = '';
+  errorDiv = ui.divText(`Too many rows, maximum for substructure search is ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT}`, 'chem-substructure-limit');
+  sketcherType = DG.chem.currentSketcherType;
 
   get calculating(): boolean {return this.loader.style.display == 'initial';}
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
@@ -81,7 +83,8 @@ export class SubstructureFilter extends DG.Filter {
     this.subs.push(grok.events.onCustomEvent(SKETCHER_TYPE_CHANGED).subscribe((state: ISubstructureFilterState) => {
       if (state.colName === this.columnName && this.tableName == state.tableName && this.filterId !== state.filterId) {
         if (this.sketcher.sketcher?.isInitialized) {
-          if (DG.chem.currentSketcherType !== this.sketcher.type && this.sketcher._mode !== DG.chem.SKETCHER_MODE.EXTERNAL) {
+          if (DG.chem.currentSketcherType !== this.sketcherType && this.sketcher._mode !== DG.chem.SKETCHER_MODE.EXTERNAL) {
+            this.sketcherType = DG.chem.currentSketcherType;
             this.sketcher.sketcherType = DG.chem.currentSketcherType;
           }
         }
@@ -103,8 +106,11 @@ export class SubstructureFilter extends DG.Filter {
 
   attach(dataFrame: DG.DataFrame): void {
     if (dataFrame.rowCount > MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT) {
-      this.sketcher.disableSketcher(`Too many rows, maximum for substructure search is ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT}`);
-      return;
+      ui.tools.waitForElementInDom(this.sketcher.root).then(() => {
+        this.sketcher.root.children[0].classList.add('chem-hide-filter');
+        this.sketcher.root.append(this.errorDiv);
+        return;
+      })
     }
     super.attach(dataFrame);
     this.column ??= dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);

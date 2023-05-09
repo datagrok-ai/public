@@ -38,12 +38,12 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     super(module, webRoot);
   }
 
-  initMoleculesStructures(dict: string[]): number {
+  initMoleculesStructures(molecules: string[]): number {
     this.freeMoleculesStructures();
-    this._rdKitMols = new Array<RDMol | null>(dict.length).fill(null);
+    this._rdKitMols = new Array<RDMol | null>(molecules.length).fill(null);
     let malformed = 0;
-    for (let i = 0; i < dict.length; ++i) {
-      const item = dict[i];
+    for (let i = 0; i < molecules.length; ++i) {
+      const item = molecules[i];
       if (item && item !== '') {
         const molSafe = getMolSafe(item, {}, this._rdKitModule);
         const mol = molSafe.mol;

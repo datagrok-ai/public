@@ -18,7 +18,7 @@ const enum FING_COL_TAGS {
   invalidatedForVersion = '.invalideted.for.version',
 }
 
-let LastColumnInvalidated: string = '';
+let lastColumnInvalidated: string = '';
 
 function _chemFindSimilar(molStringsColumn: DG.Column, fingerprints: (BitArray | null)[],
   queryMolString: string, settings: { [name: string]: any }): DG.DataFrame {
@@ -81,7 +81,7 @@ function _chemGetDiversities(limit: number, molStringsColumn: DG.Column, fingerp
 }
 
 function colInvalidated(col: DG.Column): Boolean {
-  return (LastColumnInvalidated == col.name &&
+  return (lastColumnInvalidated == col.name &&
     col.getTag(FING_COL_TAGS.invalidatedForVersion) == String(col.version));
 }
 
@@ -89,7 +89,7 @@ async function _invalidate(molCol: DG.Column, createMols: boolean) {
   if (!colInvalidated(molCol)) {
     if (createMols)
       await (await getRdKitService()).initMoleculesStructures(molCol.toList());
-    LastColumnInvalidated = molCol.name;
+    lastColumnInvalidated = molCol.name;
     molCol.setTag(FING_COL_TAGS.invalidatedForVersion, String(molCol.version + 1));
   }
 }
