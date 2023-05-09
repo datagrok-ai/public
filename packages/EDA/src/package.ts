@@ -25,7 +25,7 @@ export async function init(): Promise<void> {
   await _initEDAAPI();
 }
 
-//top-menu: Tools | Data Science | PCA
+//top-menu: Tools | Data Science | Principal Component Analysis
 //name: PCA
 //description: Principal component analysis (PCA).
 //input: dataframe table
@@ -40,7 +40,7 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
   return renamePCAcolumns(await computePCA(table, features, components, center, scale));
 }
 
-//top-menu: Tools | Data Science | PLS
+//top-menu: Tools | Data Science | Multivariate Analysis (PLS)
 //name: PLS
 //description: Partial least square regression (PLS).
 //input: dataframe table
