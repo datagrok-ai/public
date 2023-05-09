@@ -41,13 +41,7 @@ export async function multipleSequenceAlignmentUI(
     // TODO: allow only macromolecule colums to be chosen
     const colInput = ui.columnInput('Sequence', table, seqCol, () => {
       performAlignment = onColInputChange(
-        colInput.value,
-        table,
-        inputRootStyles,
-        methodInput,
-        clustersColInput,
-        gapOpenInput,
-        gapExtendInput
+        colInput.value, table, inputRootStyles, methodInput, clustersColInput, gapOpenInput, gapExtendInput
       );
     }
     ) as DG.InputBase<DG.Column<string>>;
@@ -58,13 +52,7 @@ export async function multipleSequenceAlignmentUI(
     //if column is specified (from tests), run alignment and resolve with the result
     if (col) {
       performAlignment = onColInputChange(
-        col,
-        table,
-        inputRootStyles,
-        methodInput,
-        clustersColInput,
-        gapOpenInput,
-        gapExtendInput
+        col, table, inputRootStyles, methodInput, clustersColInput, gapOpenInput, gapExtendInput
       );
 
       await onDialogOk(colInput, table, performAlignment, resolve, reject);
