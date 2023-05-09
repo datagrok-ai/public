@@ -92,7 +92,7 @@ export async function statsWidget(molCol: DG.Column<string>): Promise<DG.Widget>
   const host = ui.div();
   host.style.marginLeft = '-25px';
   const size = Math.min(molCol.length, MAX_COL_LENGTH);
-  const randomIndexes = Array.from({length: size}, () => Math.floor(Math.random() * molCol.length));
+  const randomIndexes = Array.from({length: size}, (_, i) => i);
 
   function getAverage(p: IChemProperty): HTMLDivElement {
     const propertiesArray = new Array(size);
