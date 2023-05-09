@@ -22,4 +22,5 @@ export enum MOL_FORMAT {
 export const EMPTY_MOLECULE_MESSAGE = 'Molecule is empty';
 export const SMARTS_MOLECULE_MESSAGE = 'Not applicable for smarts or moleculer fragments';
 export const MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT = 200000;
+export const MAX_MCS_ROW_COUNT = 50000;
 export const MESSAGE_MALFORMED = 'MALFORMED_INPUT_VALUE';
