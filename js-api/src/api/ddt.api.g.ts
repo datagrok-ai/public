@@ -6,9 +6,9 @@ export function histogram(col: any, bitset: any, flag: boolean, options?: {bins?
   { return api.grok_histogram(toDart(col), toDart(bitset), toDart(flag), toDart(options?.bins), toDart(options?.logScale)); }
 
 export class Tags {
+  /// A user that created this entity
   static Description = 'description';
 
-  /// A user that created this entity
   static CreatedBy = 'createdBy';
 
   static SemanticDetectionDuration = '.semantic-detection-duration';
@@ -51,9 +51,9 @@ export class Tags {
 
   static OriginalViewName = '.orig.view.name';
 
+  /// Comma-separated list of domains the entity belongs to
   static CellRenderer = 'cell.renderer';
 
-  /// Comma-separated list of domains the entity belongs to
   static Domains = 'domains';
 
   static Quality = 'quality';
@@ -70,30 +70,27 @@ export class Tags {
 
   static Markup = 'markup';
 
+  /// JSON-encoded list of strings to be used in a cell editor.
   static SourcePrecision = '.source-precision';
-
-  static Formula = 'formula';
 
   /// JSON-encoded list of strings to be used in a cell editor.
   /// Applicable for string columns only.
-  /// See also [AutoChoices].
+  static Formula = 'formula';
+
   static Choices = '.choices';
 
-  /// JSON-encoded order of categories. Applicable to string columns only.
   static CategoryOrder = '.category-order';
 
   static DefaultFilter = '.default-filter';
 
   static IgnoreCustomFilter = '.ignore-custom-filter';
 
+  /// When set to 'true', switches the cell editor to a combo box that only allows to choose values
   static CustomFilterType = '.custom-filter-type';
 
+  /// When set to 'true', switches the cell editor to a combo box that only allows to choose values
   static Charts = '.charts';
 
-  /// When set to 'true', switches the cell editor to a combo box that only allows to choose values
-  /// from a list of already existing values in the column.
-  /// Applicable for string columns only.
-  /// See also [Choices].
   static AutoChoices = '.auto-choices';
 
   static ImportTime = 'import-time';
@@ -146,13 +143,13 @@ export class Tags {
 
   static DataQueryName = 'DataQuery.name';
 
+  /// Expression that was used to derive the column.
   static DataQueryCall = '.DataQuery.query.call';
 
   static Presentation = '.presentation';
 
   static QueryJson = '.query-json';
 
-  /// Expression that was used to derive the column.
   static Expression = 'expression';
 
   static TableSchema = 'table_schema';
@@ -181,15 +178,14 @@ export class Tags {
 
   static MultiValueSeparator = '.multi-value-separator';
 
+  /// Applies to columns or dataframes.
+  /// Comma-separated list of user or group names that are allowed to make changes to that column.
   static FriendlyName = 'friendlyName';
 
   static AllowRename = '.allow-rename';
 
-  /// Applies to columns or dataframes.
-  /// Comma-separated list of user or group names that are allowed to make changes to that column.
   static EditableBy = 'editableBy';
 
-  /// Pin this column if you are specifically an editor (see "editable by").
   static PinIfEditable = 'pinIfEditable';
 
 }

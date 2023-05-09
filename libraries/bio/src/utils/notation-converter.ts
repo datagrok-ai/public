@@ -4,7 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {UnitsHandler} from './units-handler';
-import {getSplitterForColumn, getStats, NOTATION, SeqColStats, SplitterFunc, TAGS} from './macromolecule';
+import {SeqColStats, SplitterFunc} from './macromolecule/types';
+import {NOTATION, TAGS} from './macromolecule/consts';
+import {getSplitterForColumn, getStats} from './macromolecule/utils';
 
 /** Class for handling conversion of notation systems in Macromolecule columns */
 export class NotationConverter extends UnitsHandler {

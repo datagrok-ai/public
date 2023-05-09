@@ -60,7 +60,8 @@ async function _testActivityCliffsOpen(dfName: string, molCol: string, activityC
     actCliffsTableView.dataFrame.getCol(molCol),
     actCliffsTableView.dataFrame.getCol(activityCol),
     80,
-    't-SNE');
+    't-SNE',
+    'Tanimoto');
   let scatterPlot: DG.Viewer | null = null;
   for (const i of actCliffsTableView.viewers) {
     if (i.type == DG.VIEWER.SCATTER_PLOT)

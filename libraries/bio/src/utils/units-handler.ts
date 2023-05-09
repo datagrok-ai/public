@@ -1,12 +1,15 @@
 import * as DG from 'datagrok-api/dg';
 
+import {ALIGNMENT, ALPHABET, candidateAlphabets, NOTATION, TAGS} from './macromolecule/consts';
+import {SeqColStats, SplitterFunc} from './macromolecule/types';
 import {
-  ALIGNMENT, ALPHABET, NOTATION, TAGS,
-  candidateAlphabets, detectAlphabet,
-  splitterAsFasta, getSplitterWithSeparator, splitterAsHelm,
-  SplitterFunc, getSplitterForColumn,
-  SeqColStats, getStats,
-} from './macromolecule';
+  detectAlphabet,
+  getSplitterForColumn,
+  getSplitterWithSeparator,
+  getStats,
+  splitterAsFasta,
+  splitterAsHelm
+} from './macromolecule/utils';
 
 /** Class for handling notation units in Macromolecule columns */
 export class UnitsHandler {
@@ -20,13 +23,6 @@ export class UnitsHandler {
     FASTA: '-',
   };
 
-  public static readonly PeptideFastaAlphabet = new Set<string>([
-    'G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',
-    'K', 'R', 'H', 'C', 'V', 'P', 'W', 'I', 'M', 'T',
-  ]);
-  public static readonly DnaFastaAlphabet = new Set<string>(['A', 'C', 'G', 'T']);
-  public static readonly RnaFastaAlphabet = new Set<string>(['A', 'C', 'G', 'U']);
-
   public static setUnitsToFastaColumn(col: DG.Column) {
     if (col.semType !== DG.SEMTYPE.MACROMOLECULE || col.getTag(DG.TAGS.UNITS) !== NOTATION.FASTA)
       throw new Error(`The column of notation '${NOTATION.FASTA}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
@@ -36,7 +32,7 @@ export class UnitsHandler {
   }
 
   public static setUnitsToSeparatorColumn(col: DG.Column, separator?: string) {
-    if (col.semType !== DG.SEMTYPE.MACROMOLECULE || col.getTag(DG.TAGS.UNITS) !== NOTATION.SEPARATOR || !separator)
+    if (col.semType !== DG.SEMTYPE.MACROMOLECULE || col.getTag(DG.TAGS.UNITS) !== NOTATION.SEPARATOR)
       throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
     if (!separator)
       throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must have the separator tag.`);
@@ -144,10 +140,12 @@ export class UnitsHandler {
   }
 
   public getAlphabetIsMultichar(): boolean {
-    if (this.notation == NOTATION.HELM || this.alphabet == ALPHABET.UN)
-      return this.column.getTag(TAGS.alphabetIsMultichar) == 'true';
-    else
+    if (this.notation === NOTATION.HELM)
+      return true;
+    else if (this.alphabet !== ALPHABET.UN)
       return false;
+    else
+      return this.column.getTag(TAGS.alphabetIsMultichar) === 'true';
   }
 
   public isFasta(): boolean { return this.notation === NOTATION.FASTA; }
@@ -279,8 +277,8 @@ export class UnitsHandler {
 
   public constructor(col: DG.Column) {
     this._column = col;
-    const units = this._column.tags[DG.TAGS.UNITS];
-    if (units !== null)
+    const units = this._column.getTag(DG.TAGS.UNITS);
+    if (units !== null && units !== undefined)
       this._units = units;
     else
       throw new Error('Units are not specified in column');
@@ -289,7 +287,11 @@ export class UnitsHandler {
       (this.isHelm()) ? UnitsHandler._defaultGapSymbolsDict.HELM :
         UnitsHandler._defaultGapSymbolsDict.SEPARATOR;
 
-    if (!this.column.tags.has(TAGS.aligned) || !this.column.tags.has(TAGS.alphabet)) {
+    if (!this.column.tags.has(TAGS.aligned) || !this.column.tags.has(TAGS.alphabet) ||
+      (!this.column.tags.has(TAGS.alphabetIsMultichar) && !this.isHelm() && this.alphabet === ALPHABET.UN)
+    ) {
+      // The following detectors and setters are to be called because the column is likely
+      // as the UnitsHandler constructor was called on the column.
       if (this.isFasta()) {
         UnitsHandler.setUnitsToFastaColumn(this.column);
       } else if (this.isSeparator()) {
@@ -313,8 +315,7 @@ export class UnitsHandler {
 
     if (!this.column.tags.has(TAGS.alphabetIsMultichar)) {
       if (this.isHelm()) {
-        throw new Error(`For column '${this.column.name}' of notation '${this.notation}' ` +
-          `tag '${TAGS.alphabetIsMultichar}' is mandatory.`);
+        this.column.setTag(TAGS.alphabetIsMultichar, 'true');
       } else if (['UN'].includes(this.alphabet)) {
         throw new Error(`For column '${this.column.name}' of alphabet '${this.alphabet}' ` +
           `tag '${TAGS.alphabetIsMultichar}' is mandatory.`);

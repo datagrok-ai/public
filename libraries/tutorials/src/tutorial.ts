@@ -428,9 +428,9 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   /** Prompts the user to put the specified value into a dialog input. */
-  protected async dlgInputAction(dlg: DG.Dialog, instructions: string,
-    caption: string, value: string, description: string = '', historyHint: boolean = false): Promise<void> {
-    const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption == caption)[0];
+  protected async dlgInputAction(dlg: DG.Dialog, instructions: string, caption: string,
+    value: string, description: string = '', historyHint: boolean = false, count: number = 0): Promise<void> {
+    const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption == caption)[count];
     if (inp == null) return;
     await this.action(instructions,
       new Observable((subscriber: any) => {

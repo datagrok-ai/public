@@ -25,7 +25,9 @@ module.exports = {
     'datagrok-api/ui': 'ui',
     'openchemlib/full.js': 'OCL',
     'rxjs': 'rxjs',
-    'rxjs/operators': 'rxjs.operators'
+    'rxjs/operators': 'rxjs.operators',
+    'cash-dom': '$',
+    'dayjs': 'dayjs',
   },
   output: {
     filename: '[name].js',

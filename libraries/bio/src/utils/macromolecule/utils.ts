@@ -1,47 +1,17 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import wu from 'wu';
-
+import {CandidateSimType, CandidateType, MonomerFreqs, SeqColStats, SplitterFunc} from './types';
+import {ALPHABET, Alphabets, candidateAlphabets, monomerRe, NOTATION, TAGS} from './consts';
+import {UnitsHandler} from '../units-handler';
 import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
-import {vectorLength, vectorDotProduct} from '@datagrok-libraries/utils/src/vector-operations';
-import {SeqPalette} from '../seq-palettes';
-import {Aminoacids, AminoacidsPalettes} from '../aminoacids';
-import {Nucleotides, NucleotidesPalettes} from '../nucleotides';
-import {UnknownSeqPalettes} from '../unknown';
-import {UnitsHandler} from '../utils/units-handler';
-
-
-/** enum type to simplify setting "user-friendly" notation if necessary */
-export const enum NOTATION {
-  FASTA = 'fasta',
-  SEPARATOR = 'separator',
-  HELM = 'helm',
-}
-
-export const enum ALIGNMENT {
-  SEQ_MSA = 'SEQ.MSA',
-  SEQ = 'SEQ',
-}
-
-export const enum ALPHABET {
-  DNA = 'DNA',
-  RNA = 'RNA',
-  PT = 'PT',
-  UN = 'UN',
-}
-
-export const enum TAGS {
-  aligned = 'aligned',
-  alphabet = 'alphabet',
-  alphabetSize = '.alphabetSize',
-  alphabetIsMultichar = '.alphabetIsMultichar',
-  separator = 'separator',
-};
-
-export type SeqColStats = { freq: MonomerFreqs, sameLength: boolean }
-export type SplitterFunc = (seq: string) => string[];
-export type MonomerFreqs = { [m: string]: number };
+import {vectorDotProduct, vectorLength} from '@datagrok-libraries/utils/src/vector-operations';
+import {SeqPalette} from '../../seq-palettes';
+import {AminoacidsPalettes} from '../../aminoacids';
+import {NucleotidesPalettes} from '../../nucleotides';
+import {UnknownSeqPalettes} from '../../unknown';
 
 /** Stats of sequences with specified splitter func, returns { freq, sameLength }.
  * @param {DG.Column} seqCol
@@ -72,8 +42,6 @@ export function getStats(seqCol: DG.Column, minLength: number, splitter: Splitte
   }
   return {freq: freq, sameLength: sameLength};
 }
-
-export const monomerRe: RegExp = /\[(\w+)\]|(\w)|(-)/g;
 
 /** Split sequence for single character monomers, square brackets multichar monomer names or gap symbol.
  * @param {any} seq object with sequence
@@ -170,14 +138,14 @@ export function monomerToShort(amino: string, maxLengthOfMonomer: number): strin
 /** */
 export function getAlphabet(alphabet: ALPHABET): Set<string> {
   switch (alphabet) {
-  case ALPHABET.DNA:
-    return UnitsHandler.DnaFastaAlphabet;
-  case ALPHABET.RNA:
-    return UnitsHandler.RnaFastaAlphabet;
-  case ALPHABET.PT:
-    return UnitsHandler.PeptideFastaAlphabet;
-  default:
-    throw new Error(`Unsupported alphabet '${alphabet}'.`);
+    case ALPHABET.DNA:
+      return Alphabets.fasta.dna;
+    case ALPHABET.RNA:
+      return Alphabets.fasta.rna;
+    case ALPHABET.PT:
+      return Alphabets.fasta.peptide;
+    default:
+      throw new Error(`Unsupported alphabet '${alphabet}'.`);
   }
 }
 
@@ -203,29 +171,19 @@ export function getAlphabetSimilarity(freq: MonomerFreqs, alphabet: Set<string>,
   return vectorDotProduct(freqV, alphabetV) / (vectorLength(freqV) * vectorLength(alphabetV));
 }
 
-export const candidateAlphabets: [string, Set<string>, number][] = [
-  [ALPHABET.PT, UnitsHandler.PeptideFastaAlphabet, 0.50],
-  [ALPHABET.DNA, UnitsHandler.DnaFastaAlphabet, 0.55],
-  [ALPHABET.RNA, UnitsHandler.RnaFastaAlphabet, 0.55],
-];
-
-/** Alphabet candidate type */
-type CandidateType = [string, Set<string>, number];
-/** Alphabet candidate similarity type */
-type CandidateSimType = [string, Set<string>, number, MonomerFreqs, number];
-
 /** From detectMacromolecule */
 export function detectAlphabet(freq: MonomerFreqs, candidates: CandidateType[], gapSymbol: string = '-') {
   const candidatesSims: CandidateSimType[] = candidates.map((c) => {
-    const sim = getAlphabetSimilarity(freq, c[1], gapSymbol);
-    return [c[0], c[1], c[2], freq, sim];
+    const sim = getAlphabetSimilarity(freq, c.alphabet, gapSymbol);
+    return new CandidateSimType(c, freq, sim);
   });
 
   let alphabetName: string;
-  const maxSim = Math.max(...candidatesSims.map((cs) => cs[4] > cs[2] ? cs[4] : -1));
+  const maxSim = Math.max(...candidatesSims.map(
+    (cs) => cs.similarity > cs.cutoff ? cs.similarity : -1));
   if (maxSim > 0) {
-    const sim = candidatesSims.find((cs) => cs[4] === maxSim)!;
-    alphabetName = sim[0];
+    const sim = candidatesSims.find((cs) => cs.similarity === maxSim)!;
+    alphabetName = sim.name;
   } else {
     alphabetName = ALPHABET.UN;
   }
@@ -253,15 +211,14 @@ export function pickUpPalette(seqCol: DG.Column, minLength: number = 5): SeqPale
 
 export function getPaletteByType(paletteType: string): SeqPalette {
   switch (paletteType) {
-  case 'PT':
-    return AminoacidsPalettes.GrokGroups;
-  case 'NT':
-  case 'DNA':
-  case 'RNA':
-    return NucleotidesPalettes.Chromatogram;
+    case ALPHABET.PT:
+      return AminoacidsPalettes.GrokGroups;
+    case ALPHABET.DNA:
+    case ALPHABET.RNA:
+      return NucleotidesPalettes.Chromatogram;
     // other
-  default:
-    return UnknownSeqPalettes.Color;
+    default:
+      return UnknownSeqPalettes.Color;
   }
 }
 

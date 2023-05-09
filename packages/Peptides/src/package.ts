@@ -13,7 +13,7 @@ import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {LogoSummaryTable} from './viewers/logo-summary';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {PeptidesModel} from './model';
-import { macromoleculeSarFastaDemoUI } from './demo/fasta';
+import {macromoleculeSarFastaDemoUI} from './demo/fasta';
 
 let monomerWorks: MonomerWorks | null = null;
 let treeHelper: ITreeHelper | null = null;

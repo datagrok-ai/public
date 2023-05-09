@@ -117,11 +117,11 @@ export async function chemDiversitySearch(
       }
     }
   } else {
-    fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint);
+    fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint, true, false);
   }
   const indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => !!f && !f.allFalse);
   if (!tooltipUse)
-    malformedDataWarning(fingerprintArray, moleculeColumn.dataFrame);
+    malformedDataWarning(fingerprintArray, moleculeColumn);
   limit = Math.min(limit, indexes.length);
 
   const diverseIndexes = getDiverseSubset(indexes.length, limit,

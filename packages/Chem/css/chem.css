@@ -287,3 +287,11 @@
   width: 335px;
   height: 0px;
 }
+
+.chem-substructure-limit-error {
+  background: white;
+}
+
+.chem-hide-filter {
+  display: none;
+}

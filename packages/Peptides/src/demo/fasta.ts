@@ -18,6 +18,7 @@ export async function macromoleculeSarFastaDemoUI(): Promise<void> {
   simpleAlignedSeqCol.setTag(bioTAGS.aligned, ALIGNMENT.SEQ_MSA);
   const simpleScaledCol = scaleActivity(simpleActivityCol, '-lg');
 
-  const model = await startAnalysis(simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, '-lg');
+  const model = await startAnalysis(
+    simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, C.SCALING_METHODS.MINUS_LG);
   model?.analysisView.addViewer('WebLogo');
 }
