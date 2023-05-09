@@ -8,9 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import grok_connect.column.ColumnManager;
-import grok_connect.column.bigint.ClickHouseBigIntColumnManager;
 import grok_connect.column.bool.MySqlMssqlBoolColumnManager;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataQuery;
@@ -19,6 +17,7 @@ import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncCall;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.resultset.DefaultResultSetManager;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
@@ -30,7 +29,6 @@ import serialization.DataFrame;
 public class MsSqlDataProvider extends JdbcDataProvider {
 
     public MsSqlDataProvider() {
-        initResultSetManager();
         driverClassName = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
         descriptor = new DataSource();
         descriptor.type = "MS SQL";
@@ -157,9 +155,10 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         return query + "top " + limit.toString() + " ";
     }
 
-    private void initResultSetManager() {
+    @Override
+    public ResultSetManager getResultSetManager() {
         Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
         defaultManagersMap.put(Types.BOOL, new MySqlMssqlBoolColumnManager());
-        resultSetManager = DefaultResultSetManager.fromManagersMap(defaultManagersMap);
+        return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 }

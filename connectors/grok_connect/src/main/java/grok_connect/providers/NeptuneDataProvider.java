@@ -9,6 +9,7 @@ import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.resultset.DefaultResultSetManager;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.CustomDriverManager;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
@@ -28,7 +29,6 @@ public class NeptuneDataProvider extends JdbcDataProvider {
     private static final String COMPLEX_COLUMN_NAME = "NODE";
 
     public NeptuneDataProvider() {
-        initResultSetManager();
         driverClassName = "software.aws.neptune.NeptuneDriver";
         descriptor = new DataSource();
         descriptor.type = "Neptune";
@@ -115,9 +115,10 @@ public class NeptuneDataProvider extends JdbcDataProvider {
         }
     }
 
-    private void initResultSetManager() {
+    @Override
+    public ResultSetManager getResultSetManager() {
         Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
         defaultManagersMap.put(Types.COLUMN_LIST, new Neo4jComplexColumnManager());
-        resultSetManager = DefaultResultSetManager.fromManagersMap(defaultManagersMap);
+        return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 }

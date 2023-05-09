@@ -17,6 +17,7 @@ import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.resultset.DefaultResultSetManager;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.Property;
@@ -32,7 +33,6 @@ public class OracleDataProvider extends JdbcDataProvider {
             "AND COL.OWNER != 'ORDDATA'";
 
     public OracleDataProvider() {
-        initResultSetManager();
         driverClassName = "oracle.jdbc.OracleDriver";
         descriptor = new DataSource();
         descriptor.type = "Oracle";
@@ -146,20 +146,23 @@ public class OracleDataProvider extends JdbcDataProvider {
                 " ORDER BY TABLE_NAME";
     }
 
+    @Override
     public String limitToSql(String query, Integer limit) {
         return "select * from (\n" + query + "\n) where ROWNUM <= " + limit.toString();
     }
 
+    @Override
     public String addBrackets(String name) {
         String brackets = descriptor.nameBrackets;
         return name.startsWith(brackets.substring(0, 1)) ? name :
                 brackets.charAt(0) + name + brackets.substring(brackets.length() - 1);
     }
 
-    private void initResultSetManager() {
+    @Override
+    public ResultSetManager getResultSetManager() {
         Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
         defaultManagersMap.put(Types.INT, new OracleSnowflakeIntColumnManager());
         defaultManagersMap.put(Types.BIG_INT, new OracleSnowflakeBigIntColumnManager());
-        resultSetManager = DefaultResultSetManager.fromManagersMap(defaultManagersMap);
+        return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 }

@@ -2,6 +2,7 @@ package grok_connect.column.bool;
 
 import grok_connect.column.ColumnManager;
 import grok_connect.converter.Converter;
+import grok_connect.resultset.ColumnMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import serialization.BoolColumn;
@@ -12,7 +13,7 @@ public class DefaultBoolColumnManager implements ColumnManager<Boolean> {
     private static final Converter<Boolean> DEFAULT_CONVERTER = value -> (Boolean) value;
 
     @Override
-    public Boolean convert(Object value, Object... args) {
+    public Boolean convert(Object value, String columnLabel) {
         LOGGER.trace("convert method was called");
         if (value == null) {
             LOGGER.trace("value is null");
@@ -22,7 +23,11 @@ public class DefaultBoolColumnManager implements ColumnManager<Boolean> {
     }
 
     @Override
-    public boolean isApplicable(int type, String typeName, int precision, int scale) {
+    public boolean isApplicable(ColumnMeta columnMeta) {
+        int type = columnMeta.getType();
+        String typeName = columnMeta.getTypeName();
+        int precision = columnMeta.getPrecision();
+        int scale = columnMeta.getScale();
         return (type == java.sql.Types.BOOLEAN) ||
                 typeName.equalsIgnoreCase("bool") || (type == java.sql.Types.BIT
                 && precision == 1 && scale == 0);
@@ -36,10 +41,5 @@ public class DefaultBoolColumnManager implements ColumnManager<Boolean> {
     @Override
     public Column getColumn() {
         return new BoolColumn();
-    }
-
-    @Override
-    public Column getColumnWithInitSize(int size) {
-        return new BoolColumn(new Boolean[size]);
     }
 }

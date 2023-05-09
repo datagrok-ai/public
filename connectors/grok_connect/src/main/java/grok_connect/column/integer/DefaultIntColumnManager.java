@@ -12,6 +12,7 @@ import grok_connect.converter.integer.DoubleTypeConverter;
 import grok_connect.converter.integer.FloatTypeConverter;
 import grok_connect.converter.integer.LongTypeConverter;
 import grok_connect.converter.integer.ShortTypeConverter;
+import grok_connect.resultset.ColumnMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import serialization.Column;
@@ -38,7 +39,7 @@ public class DefaultIntColumnManager implements ColumnManager<Integer> {
     }
 
     @Override
-    public Integer convert(Object value, Object... args) {
+    public Integer convert(Object value, String columnLabel) {
         LOGGER.trace("convert method was called");
         if (value == null) {
             LOGGER.trace("value is null");
@@ -51,7 +52,11 @@ public class DefaultIntColumnManager implements ColumnManager<Integer> {
     }
 
     @Override
-    public boolean isApplicable(int type, String typeName, int precision, int scale) {
+    public boolean isApplicable(ColumnMeta columnMeta) {
+        int type = columnMeta.getType();
+        String typeName = columnMeta.getTypeName();
+        int precision = columnMeta.getPrecision();
+        int scale = columnMeta.getScale();
         return (type == java.sql.Types.INTEGER) || (type == java.sql.Types.TINYINT) || (type == java.sql.Types.SMALLINT)
                 || typeName.equalsIgnoreCase("int4") || typeName.equalsIgnoreCase("int2")
                 || typeName.equalsIgnoreCase("int") || typeName.equalsIgnoreCase("serial2")
@@ -68,10 +73,5 @@ public class DefaultIntColumnManager implements ColumnManager<Integer> {
     @Override
     public Column getColumn() {
         return new IntColumn();
-    }
-
-    @Override
-    public Column getColumnWithInitSize(int size) {
-        return new IntColumn(new Integer[size]);
     }
 }

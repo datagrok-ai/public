@@ -8,6 +8,7 @@ import grok_connect.converter.array.ArrayTypeConverter;
 import grok_connect.converter.array.SQLArrayConverter;
 import grok_connect.converter.string.ClobTypeConverter;
 import grok_connect.converter.xml.XMLTypeConverter;
+import grok_connect.resultset.ColumnMeta;
 import oracle.sql.ARRAY;
 import oracle.xdb.XMLType;
 import org.postgresql.jdbc.PgSQLXML;
@@ -44,7 +45,7 @@ public class DefaultStringColumnManager implements ColumnManager<String> {
     }
 
     @Override
-    public String convert(Object value, Object... args) {
+    public String convert(Object value, String columnLabel) {
         LOGGER.trace("convert method was called");
         if (value == null) return "";
         Class<?> aClass = value.getClass();
@@ -61,7 +62,11 @@ public class DefaultStringColumnManager implements ColumnManager<String> {
     }
 
     @Override
-    public boolean isApplicable(int type, String typeName, int precision, int scale) {
+    public boolean isApplicable(ColumnMeta columnMeta) {
+        int type = columnMeta.getType();
+        String typeName = columnMeta.getTypeName();
+        int precision = columnMeta.getPrecision();
+        int scale = columnMeta.getScale();
         LOGGER.trace("isApplicable method was called with parameters: {}, {}, {}, {}", type,
                 typeName, precision, scale);
         return type == java.sql.Types.ARRAY ||
@@ -87,10 +92,5 @@ public class DefaultStringColumnManager implements ColumnManager<String> {
     @Override
     public Column getColumn() {
         return new StringColumn();
-    }
-
-    @Override
-    public Column getColumnWithInitSize(int size) {
-        return new StringColumn(new String[size]);
     }
 }

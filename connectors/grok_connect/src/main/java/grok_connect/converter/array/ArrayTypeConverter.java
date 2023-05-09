@@ -4,7 +4,6 @@ import grok_connect.converter.Converter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.lang.reflect.Array;
-import java.util.Arrays;
 
 public class ArrayTypeConverter implements Converter<String> {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArrayTypeConverter.class);

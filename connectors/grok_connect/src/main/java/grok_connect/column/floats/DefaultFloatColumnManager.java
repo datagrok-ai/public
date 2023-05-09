@@ -4,6 +4,7 @@ import grok_connect.column.ColumnManager;
 import grok_connect.converter.Converter;
 import grok_connect.converter.float_type.BigDecimalTypeConverter;
 import grok_connect.converter.float_type.DoubleTypeConverter;
+import grok_connect.resultset.ColumnMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import serialization.Column;
@@ -25,7 +26,7 @@ public class DefaultFloatColumnManager implements ColumnManager<Float> {
     }
 
     @Override
-    public Float convert(Object value, Object... args) {
+    public Float convert(Object value, String columnLabel) {
         LOGGER.trace("convert method was called");
         if (value == null) {
             LOGGER.trace("value is null");
@@ -38,7 +39,10 @@ public class DefaultFloatColumnManager implements ColumnManager<Float> {
     }
 
     @Override
-    public boolean isApplicable(int type, String typeName, int precision, int scale) {
+    public boolean isApplicable(ColumnMeta columnMeta) {
+        int type = columnMeta.getType();
+        String typeName = columnMeta.getTypeName();
+        int scale = columnMeta.getScale();
         return type == Types.FLOAT || type == java.sql.Types.DOUBLE || type == java.sql.Types.REAL ||
                 type == Types.DECIMAL ||
                 typeName.equalsIgnoreCase("float8") ||
@@ -59,10 +63,5 @@ public class DefaultFloatColumnManager implements ColumnManager<Float> {
     @Override
     public Column getColumn() {
         return new FloatColumn();
-    }
-
-    @Override
-    public Column getColumnWithInitSize(int size) {
-        return new FloatColumn(new Float[size]);
     }
 }

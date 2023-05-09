@@ -13,6 +13,7 @@ import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.resultset.DefaultResultSetManager;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.PatternMatcher;
 import grok_connect.utils.PatternMatcherResult;
 import grok_connect.utils.Property;
@@ -21,7 +22,6 @@ import serialization.Types;
 public class Neo4jDataProvider extends JdbcDataProvider {
 
     public Neo4jDataProvider() {
-        initResultSetManager();
         driverClassName = "org.neo4j.jdbc.Driver";
         descriptor = new DataSource();
         descriptor.type = "Neo4j";
@@ -142,11 +142,12 @@ public class Neo4jDataProvider extends JdbcDataProvider {
         return result;
     }
 
-    private void initResultSetManager() {
+    @Override
+    public ResultSetManager getResultSetManager() {
         Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
         defaultManagersMap.put(Types.COLUMN_LIST, new Neo4jComplexColumnManager());
         defaultManagersMap.put(Types.INT, new Neo4jIntColumnManager());
         defaultManagersMap.put(Types.BIG_INT, new Neo4jBigIntColumnManager());
-        resultSetManager = DefaultResultSetManager.fromManagersMap(defaultManagersMap);
+        return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 }

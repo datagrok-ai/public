@@ -2,6 +2,7 @@ package grok_connect.column.bigint;
 
 import grok_connect.column.ColumnManager;
 import grok_connect.converter.Converter;
+import grok_connect.resultset.ColumnMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import serialization.BigIntColumn;
@@ -13,14 +14,18 @@ public class DefaultBigIntColumnManager implements ColumnManager<String> {
     private static final Converter<String> DEFAULT_CONVERTER = Object::toString;
 
     @Override
-    public String convert(Object value, Object... args) {
+    public String convert(Object value, String columnLabel) {
         LOGGER.trace("convert method was called");
         LOGGER.trace("using default converter");
         return value == null ? "" : DEFAULT_CONVERTER.convert(value);
     }
 
     @Override
-    public boolean isApplicable(int type, String typeName, int precision, int scale) {
+    public boolean isApplicable(ColumnMeta columnMeta) {
+        int type = columnMeta.getType();
+        String typeName = columnMeta.getTypeName();
+        int precision = columnMeta.getPrecision();
+        int scale = columnMeta.getScale();
         return type == java.sql.Types.BIGINT
                 || typeName.equalsIgnoreCase("int8")
                 || typeName.equalsIgnoreCase("serial8")
@@ -36,10 +41,5 @@ public class DefaultBigIntColumnManager implements ColumnManager<String> {
     @Override
     public Column getColumn() {
         return new BigIntColumn();
-    }
-
-    @Override
-    public Column getColumnWithInitSize(int size) {
-        return new BigIntColumn(new String[size]);
     }
 }

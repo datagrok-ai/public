@@ -10,6 +10,7 @@ import grok_connect.column.ColumnManager;
 import grok_connect.column.bool.MySqlMssqlBoolColumnManager;
 import grok_connect.connectors_info.*;
 import grok_connect.resultset.DefaultResultSetManager;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
@@ -22,7 +23,6 @@ import serialization.Types;
 public class MySqlDataProvider extends JdbcDataProvider {
 
     public MySqlDataProvider() {
-        initResultSetManager();
         driverClassName = "com.mysql.cj.jdbc.Driver";
         descriptor = new DataSource();
         descriptor.type = "MySQL";
@@ -141,9 +141,10 @@ public class MySqlDataProvider extends JdbcDataProvider {
         return lst.size() - 1;
     }
 
-    private void initResultSetManager() {
+    @Override
+    public ResultSetManager getResultSetManager() {
         Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
         defaultManagersMap.put(Types.BOOL, new MySqlMssqlBoolColumnManager());
-        resultSetManager = DefaultResultSetManager.fromManagersMap(defaultManagersMap);
+        return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 }

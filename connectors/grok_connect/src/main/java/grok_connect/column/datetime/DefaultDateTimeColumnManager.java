@@ -9,6 +9,7 @@ import grok_connect.converter.datetime.OffsetDateTimeTypeConverter;
 import grok_connect.converter.datetime.OracleTimestampTZTypeConverter;
 import grok_connect.converter.datetime.TimestampTypeConverter;
 import grok_connect.converter.datetime.ZonedDateTimeTypeConverter;
+import grok_connect.resultset.ColumnMeta;
 import microsoft.sql.DateTimeOffset;
 import oracle.sql.DATE;
 import oracle.sql.TIMESTAMP;
@@ -45,7 +46,7 @@ public class DefaultDateTimeColumnManager implements ColumnManager<Double> {
     }
 
     @Override
-    public Double convert(Object value, Object... args) {
+    public Double convert(Object value, String columnLabel) {
         LOGGER.trace("convert method was called");
         if (value == null) {
             LOGGER.trace("value is null");
@@ -59,7 +60,9 @@ public class DefaultDateTimeColumnManager implements ColumnManager<Double> {
     }
 
     @Override
-    public boolean isApplicable(int type, String typeName, int precision, int scale) {
+    public boolean isApplicable(ColumnMeta columnMeta) {
+        int type = columnMeta.getType();
+        String typeName = columnMeta.getTypeName();
         return (type == java.sql.Types.DATE) || (type == java.sql.Types.TIME) ||
                 (type == java.sql.Types.TIMESTAMP)
                 || type == java.sql.Types.TIMESTAMP_WITH_TIMEZONE
@@ -80,10 +83,5 @@ public class DefaultDateTimeColumnManager implements ColumnManager<Double> {
     @Override
     public Column getColumn() {
         return new DateTimeColumn();
-    }
-
-    @Override
-    public Column getColumnWithInitSize(int size) {
-        return new DateTimeColumn(new Double[size]);
     }
 }

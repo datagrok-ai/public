@@ -7,6 +7,7 @@ import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.resultset.DefaultResultSetManager;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.PatternMatcher;
 import grok_connect.utils.PatternMatcherResult;
 import grok_connect.utils.Property;
@@ -18,7 +19,6 @@ import java.util.Map;
 
 public class ClickHouseProvider extends JdbcDataProvider {
     public ClickHouseProvider() {
-        initResultSetManager();
         driverClassName = "com.clickhouse.jdbc.ClickHouseDriver";
         descriptor = new DataSource();
         descriptor.type = "ClickHouse";
@@ -121,9 +121,10 @@ public class ClickHouseProvider extends JdbcDataProvider {
         return result;
     }
 
-    private void initResultSetManager() {
+    @Override
+    public ResultSetManager getResultSetManager() {
         Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
         defaultManagersMap.put(Types.BIG_INT, new ClickHouseBigIntColumnManager());
-        resultSetManager = DefaultResultSetManager.fromManagersMap(defaultManagersMap);
+        return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 }

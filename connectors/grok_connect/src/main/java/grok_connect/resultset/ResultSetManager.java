@@ -1,13 +1,17 @@
 package grok_connect.resultset;
 
 import serialization.Column;
+import java.sql.ResultSetMetaData;
+import java.util.List;
 
 public interface ResultSetManager {
-    <T> T convert(Object o, int type, String typeName, int precision, int scale, Object...args);
+    <T> T convert(Object o, ColumnMeta columnMeta);
 
-    Column getColumn(int type, String typeName, int precision, int scale);
-
-    Column getColumnWithInitSize(int type, String typeName, int precision, int scale, int size);
+    Column getColumn(ColumnMeta columnMeta);
 
     Column getColumn(Object o);
+
+    void processValue(Object o, int index, ResultSetMetaData meta);
+
+    List<Column> getProcessedColumns();
 }

@@ -3,15 +3,12 @@ package grok_connect.providers;
 import java.io.*;
 import java.sql.*;
 import java.util.*;
-import java.math.*;
 import java.text.*;
 import java.util.regex.*;
-
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.text.StringEscapeUtils;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import serialization.*;
@@ -21,14 +18,9 @@ import grok_connect.connectors_info.*;
 import serialization.Types;
 
 public abstract class JdbcDataProvider extends DataProvider {
-    protected ResultSetManager resultSetManager;
     protected Logger logger = LoggerFactory.getLogger(this.getClass().getName());
-    protected String driverClassName;
     protected QueryMonitor queryMonitor = QueryMonitor.getInstance();
-
-    public JdbcDataProvider() {
-        resultSetManager = DefaultResultSetManager.getDefaultManager();
-    }
+    protected String driverClassName;
 
     public void prepareProvider() throws ClassNotFoundException {
         Class.forName(driverClassName);
@@ -325,8 +317,6 @@ public abstract class JdbcDataProvider extends DataProvider {
 
             ResultSet resultSet = null;
 
-            DateTime queryExecutionStart = DateTime.now();
-
             if (!(queryRun.func.options != null
                     && queryRun.func.options.containsKey("batchMode")
                     && queryRun.func.options.get("batchMode").equals("true"))) {
@@ -348,61 +338,11 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
     }
 
-    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,
-            List<Boolean> supportedType,List<Boolean> initColumn) throws IOException, SQLException, QueryCancelledByUser {
-        return getResultSetSubDf(queryRun, resultSet, columns, supportedType, initColumn, 10000);
+    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet) throws IOException, SQLException, QueryCancelledByUser {
+        return getResultSetSubDf(queryRun, resultSet, 10000);
     }
 
-    public SchemeInfo resultSetScheme(FuncCall queryRun, ResultSet resultSet) throws QueryCancelledByUser, SQLException {
-        logger.debug("resultSetScheme was called");
-        try {
-            // if (resultSet == null)
-            //     return new DataFrame();
-
-            ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-
-            int columnCount = resultSetMetaData.getColumnCount();
-            List<Column> columns = new ArrayList<>(columnCount);
-            List<Boolean> supportedType = new ArrayList<>(columnCount);
-            List<Boolean> initColumn = new ArrayList<>(columnCount);
-            StringBuilder logBuilder = new StringBuilder();
-            for (int c = 1; c < columnCount + 1; c++) {
-                Column column;
-                String label = resultSetMetaData.getColumnLabel(c);
-                int type = resultSetMetaData.getColumnType(c);
-                String typeName = resultSetMetaData.getColumnTypeName(c);
-                supportedType.add(c - 1, true);
-                initColumn.add(c - 1, true);
-
-                int precision = resultSetMetaData.getPrecision(c);
-                int scale = resultSetMetaData.getScale(c);
-
-                String logString1 = String.format("Column: %s, type: %d, type name: %s, precision: %d, scale: %d \n",
-                        label, type, typeName, precision, scale);
-                logBuilder.append(logString1);
-                logger.debug(logString1);
-                column = resultSetManager.getColumn(type, typeName, precision, scale);
-                String logString2 = String.format("Java type: %s \n", column.getClass().getName());
-                logBuilder.append(logString2);
-                logger.debug(logString2);
-                column.name = label;
-                columns.add(c - 1, column);
-            }
-            if (queryRun.debugQuery) {
-                queryRun.log += logBuilder.toString();
-            }
-            return new SchemeInfo(columns, supportedType, initColumn);
-
-        } catch (SQLException e) {
-            logger.warn("An exception was thrown", e);
-            if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
-                throw new QueryCancelledByUser();
-            else throw e;
-        }
-    }
-
-    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,
-                                       List<Boolean> supportedType,List<Boolean> initColumn, int maxIterations)
+    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, int maxIterations)
             throws IOException, SQLException, QueryCancelledByUser {
         logger.debug("getResultSetSubDf was called");
         if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId"))) {
@@ -415,14 +355,13 @@ public abstract class JdbcDataProvider extends DataProvider {
         int memoryLimit = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_MEMORY_LIMIT_MB))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_MEMORY_LIMIT_MB)).intValue() : 0;
         try {
-            int columnCount = columns.size();
-
             if (resultSet == null)
                 return new DataFrame();
 
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+            int columnCount = resultSetMetaData.getColumnCount();
             logger.debug("Received resultSet meta data");
-            DateTime fillingDataframeStart = DateTime.now();
+            long fillingDataframeStart = System.currentTimeMillis();
             BufferedWriter csvWriter = null;
             if (outputCsv != null) {
                 csvWriter = new BufferedWriter(new FileWriter(outputCsv));
@@ -434,19 +373,13 @@ public abstract class JdbcDataProvider extends DataProvider {
             }
 
             int rowCount = 0;
-            List<DebugUtils.NumericColumnStats> numericColumnStats = new ArrayList<>();
-            for (int i = 0; i < columnCount; i++)
-                numericColumnStats.add(new DebugUtils.NumericColumnStats());
-
             int size = 0;
+            ResultSetManager resultSetManager = getResultSetManager();
             while ((maxIterations < 0 || rowCount < maxIterations) && resultSet.next() && (size < 100)  ) {
                 rowCount++;
 
                 for (int c = 1; c < columnCount + 1; c++) {
                     Object value = getObjectFromResultSet(resultSet, c);
-
-                    if (queryRun.debugQuery && value != null)
-                        numericColumnStats.get(c-1).updateStats(value);
 
                     if (outputCsv != null) {
                         if (value != null)
@@ -454,57 +387,39 @@ public abstract class JdbcDataProvider extends DataProvider {
 
                         csvWriter.append(c == columnCount ? '\n' : ',');
                     }
-                    int type = resultSetMetaData.getColumnType(c);
-                    String typeName = resultSetMetaData.getColumnTypeName(c);
-                    int precision = resultSetMetaData.getPrecision(c);
-                    int scale = resultSetMetaData.getScale(c);
-                    String columnLabel = resultSetMetaData.getColumnLabel(c);
-                    columns.get(c - 1).add(resultSetManager
-                            .convert(value, type, typeName, precision, scale, columnLabel));
-                    }
+                    resultSetManager.processValue(value, c, resultSetMetaData);
                 }
+            }
+            List<Column> processedColumns = resultSetManager.getProcessedColumns();
+            if (rowCount % 10 == 0) {
+                if (queryMonitor.checkCancelledIdResultSet(queryRun.id)) {
+                    DataFrame dataFrame = new DataFrame();
+                    dataFrame.addColumns(processedColumns);
 
-                if (rowCount % 10 == 0) {
-                    if (queryMonitor.checkCancelledIdResultSet(queryRun.id)) {
+                    resultSet.close();
+                    queryMonitor.removeResultSet(queryRun.id);
+                    return dataFrame;
+                }
+                if (rowCount % 100 == 0) {
+                    size = 0;
+                    for (Column column : processedColumns)
+                        size += column.memoryInBytes();
+                    size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000; // count? it's 200 lines up
+
+                    if (size > 5) {
                         DataFrame dataFrame = new DataFrame();
-                        dataFrame.addColumns(columns);
-
-                        resultSet.close();
-                        queryMonitor.removeResultSet(queryRun.id);
+                        dataFrame.addColumns(processedColumns);
                         return dataFrame;
                     }
-                    if (rowCount % 100 == 0) {
-                        size = 0;
-                        for (Column column : columns)
-                            size += column.memoryInBytes();
-                        size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000; // count? it's 200 lines up
 
-                        if (size > 5) {
-                            DataFrame dataFrame = new DataFrame();
-                            dataFrame.addColumns(columns);
-                            return dataFrame;
-                        }
-
-                        if (rowCount % 1000 == 0 && memoryLimit > 0 && size > memoryLimit)
-                            throw new SQLException("Too large query result: " +
-                                size + " > " + memoryLimit + " MB");
-                    }
+                    if (rowCount % 1000 == 0 && memoryLimit > 0 && size > memoryLimit)
+                        throw new SQLException("Too large query result: " +
+                            size + " > " + memoryLimit + " MB");
                 }
-            if (queryRun.debugQuery) {
-                StringBuilder logBuilder = new StringBuilder();
-                for (int i = 0; i < columnCount; i++) {
-                    if (!numericColumnStats.get(i).valuesCounter.equals(new BigDecimal(0))) {
-                        String logString = String.format("Column: %s, min: %s, max: %s, mean: %s\n", columns.get(i).name, numericColumnStats.get(i).min, numericColumnStats.get(i).max, numericColumnStats.get(i).mean);
-                        logBuilder.append(logString);
-                        logger.debug(logString);
-                    }
-                }
-                queryRun.log += logBuilder.toString();
             }
-            DateTime finish = DateTime.now();
 
             String logString = String.format(" dataframe filling: %s s \n",
-                    (finish.getMillis() - fillingDataframeStart.getMillis())/ 1000.0);
+                    (System.currentTimeMillis() - fillingDataframeStart / 1000.0));
             if (queryRun.debugQuery)
                 queryRun.log += logString;
             logger.debug(logString);
@@ -512,7 +427,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 csvWriter.close();
             }
             DataFrame dataFrame = new DataFrame();
-            dataFrame.addColumns(columns);
+            dataFrame.addColumns(resultSetManager.getProcessedColumns());
             return dataFrame;
         } catch (Exception e) {
             logger.warn("An exception was thrown", e);
@@ -534,9 +449,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
             if (resultSet == null)
                 return new DataFrame();
-
-            SchemeInfo schemeInfo = resultSetScheme(queryRun, resultSet);
-            return getResultSetSubDf(queryRun, resultSet, schemeInfo.columns, schemeInfo.supportedType, schemeInfo.initColumn, -1);
+            return getResultSetSubDf(queryRun, resultSet, -1);
         }
         catch (SQLException e) {
             if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
@@ -722,5 +635,9 @@ public abstract class JdbcDataProvider extends DataProvider {
                 properties.setProperty("password", conn.credentials.getPassword());
         }
         return properties;
+    }
+
+    public ResultSetManager getResultSetManager() {
+        return DefaultResultSetManager.getDefaultManager();
     }
 }

@@ -1,8 +1,11 @@
 package grok_connect.column.complex;
 
+import grok_connect.resultset.ColumnMeta;
+
 public class Neo4jComplexColumnManager extends DefaultComplexColumnManager {
     @Override
-    public boolean isApplicable(int type, String typeName, int precision, int scale) {
+    public boolean isApplicable(ColumnMeta columnMeta) {
+        String typeName = columnMeta.getTypeName();
         return typeName.equalsIgnoreCase("NODE") || typeName.equalsIgnoreCase("map");
     }
 }

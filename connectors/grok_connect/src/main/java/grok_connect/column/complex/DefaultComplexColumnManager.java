@@ -3,6 +3,7 @@ package grok_connect.column.complex;
 import grok_connect.column.ColumnManager;
 import grok_connect.converter.Converter;
 import grok_connect.converter.complex.ComplexTypeConverter;
+import grok_connect.resultset.ColumnMeta;
 import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
 import org.slf4j.Logger;
@@ -11,7 +12,6 @@ import serialization.Column;
 import serialization.ComplexTypeColumn;
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +20,6 @@ import java.util.Optional;
 public class DefaultComplexColumnManager implements ColumnManager<List<Column>> {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultComplexColumnManager.class);
     private static final Converter<Map<String, Object>> DEFAULT_CONVERTER = new ComplexTypeConverter();
-    private static final int COLUMN_NAME_INDEX = 0;
     private final Map<String, Integer> typesMap;
 
     {
@@ -34,19 +33,19 @@ public class DefaultComplexColumnManager implements ColumnManager<List<Column>> 
     }
 
     @Override
-    public List<Column> convert(Object value, Object... args) {
-        LOGGER.trace("convert method was called with args {}", Arrays.toString(args));
+    public List<Column> convert(Object value, String columnLabel) {
+        LOGGER.trace("convert method was called");
         if (value == null) {
             LOGGER.trace("value is null, return empty list");
             return new ArrayList<>();
         }
         LOGGER.debug("using default converter for class {}",
                 value.getClass());
-        return getColumnsFromMap(convert(value), (String) args[COLUMN_NAME_INDEX]);
+        return getColumnsFromMap(convert(value), columnLabel);
     }
 
     @Override
-    public boolean isApplicable(int type, String typeName, int precision, int scale) {
+    public boolean isApplicable(ColumnMeta columnMeta) {
         return false;
     }
 
@@ -58,11 +57,6 @@ public class DefaultComplexColumnManager implements ColumnManager<List<Column>> 
     @Override
     public Column getColumn() {
         return new ComplexTypeColumn();
-    }
-
-    @Override
-    public Column getColumnWithInitSize(int size) {
-        return new ComplexTypeColumn(new Column[size]);
     }
 
     protected Map<String, Object> convert(Object value) {
@@ -102,8 +96,9 @@ public class DefaultComplexColumnManager implements ColumnManager<List<Column>> 
     protected Column getColumnForObject(Object object) {
         ResultSetManager resultSetManager = DefaultResultSetManager.getDefaultManager();
         Column column = resultSetManager.getColumn(object);
-        column.add(resultSetManager.convert(object, typesMap.get(column.getType()), "",
-                0, 0));
+        ColumnMeta columnMeta = new ColumnMeta(typesMap.get(column.getType()), object.getClass().getSimpleName(), 0, 0,
+                "");
+        column.add(resultSetManager.convert(object, columnMeta));
         return column;
     }
 }

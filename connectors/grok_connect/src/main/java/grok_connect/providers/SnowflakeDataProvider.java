@@ -9,6 +9,7 @@ import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.resultset.DefaultResultSetManager;
+import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.Prop;
@@ -94,8 +95,15 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
         return 0;
     }
 
+    @Override
+    public ResultSetManager getResultSetManager() {
+        Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
+        defaultManagersMap.put(Types.INT, new OracleSnowflakeIntColumnManager());
+        defaultManagersMap.put(Types.BIG_INT, new OracleSnowflakeBigIntColumnManager());
+        return DefaultResultSetManager.fromManagersMap(defaultManagersMap);
+    }
+
     private void init() {
-        initResultSetManager();
         driverClassName = DRIVER_CLASS_NAME;
         descriptor = new DataSource();
         descriptor.type = TYPE;
@@ -143,12 +151,5 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
                 .append(URL_SEPARATOR)
                 .append(conn.get(DbCredentials.CLOUD))
                 .toString();
-    }
-
-    private void initResultSetManager() {
-        Map<String, ColumnManager<?>> defaultManagersMap = DefaultResultSetManager.getDefaultManagersMap();
-        defaultManagersMap.put(Types.INT, new OracleSnowflakeIntColumnManager());
-        defaultManagersMap.put(Types.BIG_INT, new OracleSnowflakeBigIntColumnManager());
-        resultSetManager = DefaultResultSetManager.fromManagersMap(defaultManagersMap);
     }
 }

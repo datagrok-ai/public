@@ -1,10 +1,13 @@
 package grok_connect.column.bigint;
 
+import grok_connect.resultset.ColumnMeta;
 import java.sql.Types;
 
 public class ClickHouseBigIntColumnManager extends DefaultBigIntColumnManager {
     @Override
-    public boolean isApplicable(int type, String typeName, int precision, int scale) {
+    public boolean isApplicable(ColumnMeta columnMeta) {
+        int type = columnMeta.getType();
+        String typeName = columnMeta.getTypeName();
         return type == Types.BIGINT
                 || typeName.equalsIgnoreCase("UInt32")
                 || typeName.equalsIgnoreCase("UInt64")

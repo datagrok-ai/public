@@ -24,7 +24,6 @@ public class QueryManager {
     private static final int DEFAULT_FETCH_SIZE = 10000;
     private final JdbcDataProvider provider;
     private final FuncCall query;
-    private SchemeInfo schemeInfo;
     private ResultSet resultSet;
     private Connection connection;
     private boolean changedFetchSize;
@@ -51,27 +50,12 @@ public class QueryManager {
         LOGGER.trace("ResultSet received");
     }
 
-    public void initScheme() throws QueryCancelledByUser, SQLException {
-        LOGGER.trace("Starting schemeInfo initialization");
-        if (resultSet == null) {
-            schemeInfo = new SchemeInfo(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
-            return;
-        }
-        schemeInfo = provider.resultSetScheme(query, resultSet);
-        LOGGER.trace("SchemeInfo initialization finished");
-    }
-
     public DataFrame getSubDF(int maxIterations) throws IOException, SQLException, QueryCancelledByUser {
         LOGGER.trace("getSubDF was called with argument: {}", maxIterations);
-        List<Column> columns = schemeInfo.columns;
-        for (Column column : columns) {
-            column.empty();
-        }
         DataFrame df = new DataFrame();
         if (!connection.isClosed() && !resultSet.isClosed()) {
             LOGGER.trace("Calling getResultSetSubDf");
-            df = provider.getResultSetSubDf(query, resultSet, columns,
-            schemeInfo.supportedType, schemeInfo.initColumn, maxIterations);
+            df = provider.getResultSetSubDf(query, resultSet, maxIterations);
         }
 
         if (connection.getMetaData().supportsTransactions() && df.rowCount != 0) {

@@ -71,7 +71,6 @@ public class SessionHandler {
                     if (query.debugQuery) {
                         query.log += getOnMessageLogString(DEFAULT_INITIALIZING_SCHEME_MESSAGE);
                     }
-                    queryManager.initScheme();
                     if (query.debugQuery) {
                         query.log += getOnMessageLogString(DEFAULT_FINISHED_INITIALIZATION_SCHEME_MESSAGE);
                     }
