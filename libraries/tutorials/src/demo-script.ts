@@ -34,7 +34,7 @@ export class DemoScript {
   private _steps: Step[] = [];
 
   private _mainHeader: HTMLDivElement = ui.panel([], 'tutorials-main-header');
-  private _header: HTMLHeadingElement = ui.h1('');
+  private _header: HTMLHeadingElement = ui.h2('');
   private _headerDiv: HTMLDivElement = ui.divH([], 'tutorials-root-header');
   private _stopStartBtn: HTMLButtonElement = ui.button(ui.iconFA('pause'),
     () => this._changeStopState(), 'Play / pause');
@@ -46,6 +46,8 @@ export class DemoScript {
   private _progress: HTMLProgressElement = ui.element('progress');
   private _progressSteps: HTMLDivElement = ui.divText('');
 
+  private _node: DG.DockNode | undefined;
+  private _close: HTMLButtonElement = ui.button(ui.iconFA('chevron-left'), ()=> {this._closeDock()});
 
   constructor(name: string, description: string) {
     this.name = name;
@@ -78,6 +80,7 @@ export class DemoScript {
   /** Creates script header div */
   private _createHeaderDiv(): void {
     this._header.innerText = this.name;
+    this._headerDiv.append(this._close);
     this._headerDiv.append(this._header);
 
     this._headerDiv.append(this._stopStartBtn);
@@ -111,16 +114,23 @@ export class DemoScript {
   }
 
   /** Initializes the root of the demo script */
-  private _initRoot(): void {
+  private _initRoot(): void  {
     grok.shell.windows.showContextPanel = true;
     grok.shell.windows.showHelp = false;
 
-    const node = grok.shell.dockManager.dock(this._root, DG.DOCK_TYPE.RIGHT, null, this.name, 0.3);
-    node.container.containerElement.classList.add('tutorials-demo-script-container');
+    const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[0];
+
+    this._node = grok.shell.dockManager.dock(this._root, 'fill', scriptDockNode, '');
+
+    if (scriptDockNode.parent.container.containerElement.firstElementChild?.lastElementChild?.classList.contains('tab-handle-list-container')){
+      scriptDockNode.parent.container.containerElement.firstElementChild?.lastElementChild.remove();
+    }
+
+    this._node.container.containerElement.classList.add('tutorials-demo-script-container');
 
     this._addHeader();
     this._root.append(this._mainHeader);
-
+    
     this._addDescription();
     this._root.append(this._activity);
   }
@@ -143,8 +153,10 @@ export class DemoScript {
 
       await this._steps[i].func();
       this._scrollTo(this._root, currentStep.offsetTop - this._mainHeader.offsetHeight);
+      await this._countdown(entry[i] as HTMLElement, entryIndicators[i] as HTMLElement, this._steps[i].options?.delay ? this._steps[i].options?.delay! : 2000);
       await delay(this._steps[i].options?.delay ? this._steps[i].options?.delay! : 2000);
-
+      
+  
       entryIndicators[i].className = 'grok-icon far fa-check';
       this._progress.value++;
       this._progressSteps.innerText = `Step: ${this._progress.value} of ${this.stepNumber}`;
@@ -166,6 +178,39 @@ export class DemoScript {
     element.scrollTop = y;
   }
 
+  async _countdown(el:HTMLElement, ind:HTMLElement, t:number){
+    const countdownDiv: HTMLDivElement = ui.div([],'demo-script-countdown');
+    //const countdownNumDiv: HTMLDivElement = ui.div([], 'demo-script-countdownnum');
+    
+    ind.classList.add('hidden');
+
+    let countdown = t/1000;
+    let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    let circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttributeNS(null, 'cx', '7');
+    circle.setAttributeNS(null, 'cy', '7');
+    circle.setAttributeNS(null, 'r', '6');
+    circle.setAttributeNS(null, 'style', `animation: countdown ${countdown}s linear infinite forwards`);
+    svg.append(circle);
+
+    //countdownDiv.append(countdownNumDiv);
+    countdownDiv.append(svg);
+    el.prepend(countdownDiv);
+
+    //countdownNumDiv.textContent = String(countdown);
+    const interval = setInterval(function() {
+      countdown--;
+      //countdownNumDiv.textContent = String(countdown);
+      if (countdown === 0){
+        clearInterval(interval);
+        countdownDiv.remove();
+        ind.classList.remove('hidden')
+        ind.classList.add('visible');
+      }
+    }, 1000);
+
+  }
+
   /** Changes the state of the demo script (stop/play) */
   private _changeStopState(): void {
     const icon = this._stopStartBtn.getElementsByClassName('grok-icon');
@@ -180,11 +225,8 @@ export class DemoScript {
 
   /** Restarts the script */
   private _restartScript(): void {
-    const scriptDockNode = Array.from(grok.shell.dockManager.rootNode.children)[1];
-    if (scriptDockNode.container.containerElement.classList.contains('tutorials-demo-script-container')) {
-      grok.shell.dockManager.close(scriptDockNode);
-      grok.shell.closeAll();
-    }
+    grok.shell.dockManager.close(this._node!);
+    grok.shell.closeAll();
     this._clearRoot();
     this._setInitParams();
     this.start();
@@ -195,7 +237,7 @@ export class DemoScript {
     this._root = ui.div([], {id: 'demo-script', classes: 'tutorials-root tutorials-track demo-app-script'});
 
     this._mainHeader = ui.panel([], 'tutorials-main-header');
-    this._header = ui.h1('');
+    this._header = ui.h2('');
     this._headerDiv = ui.divH([], 'tutorials-root-header');
 
     this._activity = ui.panel([], 'tutorials-root-description');
@@ -218,6 +260,10 @@ export class DemoScript {
     icon[0].className = 'grok-icon fal fa-pause';
   }
 
+  private _closeDock(): void {
+    grok.shell.dockManager.close(this._node!);
+    this.cancelScript();
+  }
 
   /** Cancels the script */
   cancelScript(): void {
