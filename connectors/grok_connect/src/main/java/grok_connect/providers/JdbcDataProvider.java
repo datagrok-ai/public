@@ -361,7 +361,6 @@ public abstract class JdbcDataProvider extends DataProvider {
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             int columnCount = resultSetMetaData.getColumnCount();
             logger.debug("Received resultSet meta data");
-            long fillingDataframeStart = System.currentTimeMillis();
             BufferedWriter csvWriter = null;
             if (outputCsv != null) {
                 csvWriter = new BufferedWriter(new FileWriter(outputCsv));
@@ -371,11 +370,10 @@ public abstract class JdbcDataProvider extends DataProvider {
                     csvWriter.append(c == columnCount ? '\n' : ',');
                 }
             }
-
+            long fillingDataframeStart = System.currentTimeMillis();
             int rowCount = 0;
-            int size = 0;
             ResultSetManager resultSetManager = getResultSetManager();
-            while ((maxIterations < 0 || rowCount < maxIterations) && resultSet.next() && (size < 100)  ) {
+            while ((maxIterations < 0 || rowCount < maxIterations) && resultSet.next()) {
                 rowCount++;
 
                 for (int c = 1; c < columnCount + 1; c++) {
@@ -401,10 +399,10 @@ public abstract class JdbcDataProvider extends DataProvider {
                     return dataFrame;
                 }
                 if (rowCount % 100 == 0) {
-                    size = 0;
+                    long size = 0L;
                     for (Column column : processedColumns)
                         size += column.memoryInBytes();
-                    size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000; // count? it's 200 lines up
+                    size = ((count > 0) ? (count * size / rowCount) : size) / 1000000;
 
                     if (size > 5) {
                         DataFrame dataFrame = new DataFrame();
