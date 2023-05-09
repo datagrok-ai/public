@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {UnitsHandler} from '../units-handler';
+import {CandidateType} from './types';
 
 /** enum type to simplify setting "user-friendly" notation if necessary */
 export const enum NOTATION {
@@ -45,8 +46,8 @@ export const Alphabets = new class {
   };
 }();
 
-export const candidateAlphabets: [string, Set<string>, number][] = [
-  [ALPHABET.PT, Alphabets.fasta.peptide, 0.50],
-  [ALPHABET.DNA, Alphabets.fasta.dna, 0.55],
-  [ALPHABET.RNA, Alphabets.fasta.rna, 0.55],
+export const candidateAlphabets: CandidateType[] = [
+  new CandidateType(ALPHABET.PT, Alphabets.fasta.peptide, 0.50),
+  new CandidateType(ALPHABET.DNA, Alphabets.fasta.dna, 0.55),
+  new CandidateType(ALPHABET.RNA, Alphabets.fasta.rna, 0.55),
 ];

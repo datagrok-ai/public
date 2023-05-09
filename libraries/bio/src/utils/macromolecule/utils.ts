@@ -138,14 +138,14 @@ export function monomerToShort(amino: string, maxLengthOfMonomer: number): strin
 /** */
 export function getAlphabet(alphabet: ALPHABET): Set<string> {
   switch (alphabet) {
-  case ALPHABET.DNA:
-    return Alphabets.fasta.dna;
-  case ALPHABET.RNA:
-    return Alphabets.fasta.rna;
-  case ALPHABET.PT:
-    return Alphabets.fasta.peptide;
-  default:
-    throw new Error(`Unsupported alphabet '${alphabet}'.`);
+    case ALPHABET.DNA:
+      return Alphabets.fasta.dna;
+    case ALPHABET.RNA:
+      return Alphabets.fasta.rna;
+    case ALPHABET.PT:
+      return Alphabets.fasta.peptide;
+    default:
+      throw new Error(`Unsupported alphabet '${alphabet}'.`);
   }
 }
 
@@ -174,15 +174,16 @@ export function getAlphabetSimilarity(freq: MonomerFreqs, alphabet: Set<string>,
 /** From detectMacromolecule */
 export function detectAlphabet(freq: MonomerFreqs, candidates: CandidateType[], gapSymbol: string = '-') {
   const candidatesSims: CandidateSimType[] = candidates.map((c) => {
-    const sim = getAlphabetSimilarity(freq, c[1], gapSymbol);
-    return [c[0], c[1], c[2], freq, sim];
+    const sim = getAlphabetSimilarity(freq, c.alphabet, gapSymbol);
+    return new CandidateSimType(c, freq, sim);
   });
 
   let alphabetName: string;
-  const maxSim = Math.max(...candidatesSims.map((cs) => cs[4] > cs[2] ? cs[4] : -1));
+  const maxSim = Math.max(...candidatesSims.map(
+    (cs) => cs.similarity > cs.cutoff ? cs.similarity : -1));
   if (maxSim > 0) {
-    const sim = candidatesSims.find((cs) => cs[4] === maxSim)!;
-    alphabetName = sim[0];
+    const sim = candidatesSims.find((cs) => cs.similarity === maxSim)!;
+    alphabetName = sim.name;
   } else {
     alphabetName = ALPHABET.UN;
   }
@@ -210,15 +211,14 @@ export function pickUpPalette(seqCol: DG.Column, minLength: number = 5): SeqPale
 
 export function getPaletteByType(paletteType: string): SeqPalette {
   switch (paletteType) {
-  case 'PT':
-    return AminoacidsPalettes.GrokGroups;
-  case 'NT':
-  case 'DNA':
-  case 'RNA':
-    return NucleotidesPalettes.Chromatogram;
+    case ALPHABET.PT:
+      return AminoacidsPalettes.GrokGroups;
+    case ALPHABET.DNA:
+    case ALPHABET.RNA:
+      return NucleotidesPalettes.Chromatogram;
     // other
-  default:
-    return UnknownSeqPalettes.Color;
+    default:
+      return UnknownSeqPalettes.Color;
   }
 }
 

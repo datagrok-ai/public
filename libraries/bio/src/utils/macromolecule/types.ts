@@ -10,6 +10,27 @@ export type SplitterFunc = (seq: string) => string[];
 export type MonomerFreqs = { [m: string]: number };
 
 /** Alphabet candidate type */
-export type CandidateType = [string, Set<string>, number];
+export class CandidateType {
+  name: string;
+  alphabet: Set<string>;
+  cutoff: number;
+
+  constructor(name: string, alphabet: Set<string>, cutoff: number) {
+    this.name = name;
+    this.alphabet = alphabet;
+    this.cutoff = cutoff;
+  }
+}
+
 /** Alphabet candidate similarity type */
-export type CandidateSimType = [string, Set<string>, number, MonomerFreqs, number];
+export class CandidateSimType extends CandidateType {
+  freq: MonomerFreqs;
+  /** Cos, max = 1, min = 0 */
+  similarity: number;
+
+  constructor(candidate: CandidateType, freq: MonomerFreqs, similarity: number) {
+    super(candidate.name, candidate.alphabet, candidate.cutoff);
+    this.freq = freq;
+    this.similarity = similarity;
+  }
+}
