@@ -4,20 +4,34 @@ title: "Release History"
 
 ## Latest version
 
-| Service                                                    | Docker Image                                                                                      |
-|------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../infrastructure.md#datagrok-components)       | [datagrok/datagrok:1.14.3](https://hub.docker.com/r/datagrok/datagrok)                            |
-| [Grok Connect](../../../access/access.md#data-connection)  | [datagrok/grok_connect:2.0.12](https://hub.docker.com/r/datagrok/grok_connect)                    |
-| Grok Spawner                                               | [datagrok/grok_spawner:1.4.2](https://hub.docker.com/r/datagrok/grok_spawner)                     |
-| [Grok Compute](../infrastructure.md#grok-compute)          | [datagrok/grok_compute:1.5.2](https://hub.docker.com/r/datagrok/grok_compute)                     |
-| [Jupyter Kernel Gateway](../../../compute/scripting.md)    | [datagrok/jupyter_kernel_gateway:1.5.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
-| [Jupyter Notebook](../../../compute/jupyter-notebook.md)   | [datagrok/jupyter_notebook:1.1.0](https://hub.docker.com/r/datagrok/jupyter_notebook)             |
-| [H2O](../infrastructure.md#h2o)                            | [datagrok/h2o:1.1.0](https://hub.docker.com/r/datagrok/h2o)                                       |
-| [CVM Nginx](../infrastructure.md#load-balancer)            | [datagrok/cvm_nginx:1.10.0](https://hub.docker.com/r/datagrok/cvm_nginx)                          |
+| Service                                                  | Docker Image                                                                                      |
+|----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
+| [Datagrok](../infrastructure.md#datagrok-components)     | [datagrok/datagrok:1.14.4](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Grok Connect](../../../access/data-connection.md)       | [datagrok/grok_connect:2.0.12](https://hub.docker.com/r/datagrok/grok_connect)                     |
+| Grok Spawner                                             | [datagrok/grok_spawner:1.4.2](https://hub.docker.com/r/datagrok/grok_spawner)                     |
+| [Grok Compute](../infrastructure.md#grok-compute)        | [datagrok/grok_compute:1.5.2](https://hub.docker.com/r/datagrok/grok_compute)                     |
+| [Jupyter Kernel Gateway](../../../compute/scripting.md)  | [datagrok/jupyter_kernel_gateway:1.5.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
+| [Jupyter Notebook](../../../compute/jupyter-notebook.md) | [datagrok/jupyter_notebook:1.1.0](https://hub.docker.com/r/datagrok/jupyter_notebook)             |
+| [H2O](../infrastructure.md#h2o)                          | [datagrok/h2o:1.1.0](https://hub.docker.com/r/datagrok/h2o)                                       |
+| [CVM Nginx](../infrastructure.md#load-balancer)          | [datagrok/cvm_nginx:1.10.0](https://hub.docker.com/r/datagrok/cvm_nginx)                          |
 
 See also:
 - [Versioning policy](versioning-policy.md)
 - [Docker-Compose](../deploy/docker-compose.md)
+
+
+## 2023-05-09 1.14.4
+
+### Addressed Issues
+
+* (Bug) GROK-12918: Viewers: Grid: An exception when dragging columns to the first position 
+* (Bug) [#1855](https://github.com/datagrok-ai/public/issues/1690622388): "Pack and zoom by filter": some data is missing 
+* (Bug) [#1852](https://github.com/datagrok-ai/public/issues/1688387395): Line chart with splitting with specific data is making Datagrok slow (row selection, interaction with line chart) 
+* (Bug) [#1840](https://github.com/datagrok-ai/public/issues/1683443128): Calculated columns: errors on missing values 
+* null 
+* (Bug) [#1837](https://github.com/datagrok-ai/public/issues/1683243127): Filters cannot be enabled if all filters were disabled in another view 
+* (Bug) [#1839](https://github.com/datagrok-ai/public/issues/1683403062): Datagrok is sporadically frozen in drag-and-drop hover state (moving columns around, adding to filters, calculated columns dialog) 
+* (Enhancement) [#1860](https://github.com/datagrok-ai/public/issues/1692715442): Grid: Support "Apply Coloring" for selected columns of compatible data type 
 
 
 ## 2023-05-03 1.14.3

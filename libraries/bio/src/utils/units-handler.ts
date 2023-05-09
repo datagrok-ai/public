@@ -1,12 +1,15 @@
 import * as DG from 'datagrok-api/dg';
 
+import {ALIGNMENT, ALPHABET, candidateAlphabets, NOTATION, TAGS} from './macromolecule/consts';
+import {SeqColStats, SplitterFunc} from './macromolecule/types';
 import {
-  ALIGNMENT, ALPHABET, NOTATION, TAGS,
-  candidateAlphabets, detectAlphabet,
-  splitterAsFasta, getSplitterWithSeparator, splitterAsHelm,
-  SplitterFunc, getSplitterForColumn,
-  SeqColStats, getStats,
-} from './macromolecule';
+  detectAlphabet,
+  getSplitterForColumn,
+  getSplitterWithSeparator,
+  getStats,
+  splitterAsFasta,
+  splitterAsHelm
+} from './macromolecule/utils';
 
 /** Class for handling notation units in Macromolecule columns */
 export class UnitsHandler {
@@ -19,13 +22,6 @@ export class UnitsHandler {
     SEPARATOR: '',
     FASTA: '-',
   };
-
-  public static readonly PeptideFastaAlphabet = new Set<string>([
-    'G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',
-    'K', 'R', 'H', 'C', 'V', 'P', 'W', 'I', 'M', 'T',
-  ]);
-  public static readonly DnaFastaAlphabet = new Set<string>(['A', 'C', 'G', 'T']);
-  public static readonly RnaFastaAlphabet = new Set<string>(['A', 'C', 'G', 'U']);
 
   public static setUnitsToFastaColumn(col: DG.Column) {
     if (col.semType !== DG.SEMTYPE.MACROMOLECULE || col.getTag(DG.TAGS.UNITS) !== NOTATION.FASTA)
@@ -292,7 +288,7 @@ export class UnitsHandler {
         UnitsHandler._defaultGapSymbolsDict.SEPARATOR;
 
     if (!this.column.tags.has(TAGS.aligned) || !this.column.tags.has(TAGS.alphabet) ||
-        (!this.column.tags.has(TAGS.alphabetIsMultichar) && !this.isHelm() && this.alphabet === ALPHABET.UN)
+      (!this.column.tags.has(TAGS.alphabetIsMultichar) && !this.isHelm() && this.alphabet === ALPHABET.UN)
     ) {
       // The following detectors and setters are to be called because the column is likely
       // as the UnitsHandler constructor was called on the column.

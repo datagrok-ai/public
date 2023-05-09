@@ -4,6 +4,7 @@
 --input: list packages
 --output: int count1
 --output: int count2
+--meta.cache: true
 --meta.invalidate: 0 * * * *
 --connection: System:Datagrok
 with recursive selected_groups as (
@@ -48,6 +49,7 @@ select (select count(distinct res.uid) as count1 from res where period = 1),
 --input: list groups
 --output: int count1
 --output: int count2
+--meta.cache: true
 --meta.invalidate: 0 * * * *
 --connection: System:Datagrok
 with recursive selected_groups as (
@@ -79,6 +81,7 @@ select (select count(distinct res.uid) as count1 from res where period = 1),
 --input: list groups
 --output: int count1
 --output: int count2
+--meta.cache: true
 --meta.invalidate: 0 * * * *
 --connection: System:Datagrok
 with recursive selected_groups as (
@@ -114,6 +117,7 @@ select (select count(distinct res.eid) as count1 from res where period = 1),
 --input: list groups
 --output: int count1
 --output: int count2
+--meta.cache: true
 --meta.invalidate: 0 * * * *
 --connection: System:Datagrok
 with recursive selected_groups as (
@@ -147,6 +151,7 @@ select (select count(distinct res.qid) as count1 from res where period = 1),
 --input: list packages
 --output: int count1
 --output: int count2
+--meta.cache: true
 --meta.invalidate: 0 * * * *
 --connection: System:Datagrok
 with recursive selected_groups as (
@@ -184,6 +189,7 @@ select (select count(distinct res.cid) as count1 from res where period = 1),
 --input: list packages
 --output: int count1
 --output: int count2
+--meta.cache: true
 --meta.invalidate: 0 * * * *
 --connection: System:Datagrok
 with recursive selected_groups as (

@@ -2,6 +2,8 @@
 --input: string date {pattern: datetime}
 --input: list groups
 --input: list packages
+--meta.cache: true
+--meta.invalidate: 0 * * * *
 --connection: System:Datagrok
 with recursive selected_groups as (
   select id from groups
@@ -60,6 +62,8 @@ res.uid, res.ugid, res.pid
 --input: list users
 --input: list packages
 --input: list functions
+--meta.cache: true
+--meta.invalidate: 0 * * * *
 --connection: System:Datagrok
 with res AS (
 select DISTINCT e.id as id_, coalesce(pp.name, p1.name, 'Core') as package,

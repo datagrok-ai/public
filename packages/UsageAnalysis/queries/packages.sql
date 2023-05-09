@@ -2,6 +2,8 @@
 --input: string date {pattern: datetime}
 --input: list groups
 --input: list packages
+--meta.cache: true
+--meta.invalidate: 0 * * * *
 --connection: System:Datagrok
 with recursive selected_groups as (
   select id from groups
@@ -65,6 +67,8 @@ GROUP BY res.package, res.user, time_start, time_end, res.uid, res.ugid, res.pid
 --input: int time_end
 --input: list users
 --input: list packages
+--meta.cache: true
+--meta.invalidate: 0 * * * *
 --connection: System:Datagrok
 with res AS (
 select DISTINCT e.id as id_, coalesce(pp.name, p1.name, 'Core') as package, en.id, et.name,
@@ -96,6 +100,8 @@ group by res.package, res.id, res.name, res.pid
 --input: int time_end
 --input: list users
 --input: list packages
+--meta.cache: true
+--meta.invalidate: 0 * * * *
 --connection: System:Datagrok
 with res as (
 select DISTINCT e.id, et.source,
@@ -124,6 +130,8 @@ group by res.source
 --input: int time_end
 --input: list users
 --input: list packages
+--meta.cache: true
+--meta.invalidate: 0 * * * *
 --connection: System:Datagrok
 with res as (
 select DISTINCT e.id, et.friendly_name as name,
