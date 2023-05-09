@@ -1,8 +1,8 @@
 {
 	"name": "@datagrok/bioreactors",
 	"friendlyName": "Bioreactor",
-	"version": "1.0.2",
-	"description": "Bioreactor simulation",
+	"version": "1.0.4",
+	"description": "Simulation of controlled fab-arm exchange mechanism.",
 	"dependencies": {
 		"datagrok-api": "latest",
 		"cash-dom": "latest",
@@ -43,6 +43,6 @@
 		"directory": "packages/Bioreactors"
 	},
 	"sources": [
-        "wasm/Reactor.js"
+        "wasm/Bioreactor.js"
     ]
 }

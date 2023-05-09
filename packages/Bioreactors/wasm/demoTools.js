@@ -1,6 +1,6 @@
 // Custom demo tools
 
-import {_simulateBioreactor} from './reactorAPI';
+import {_simulateBioreactor} from './BioreactorAPI';
 
 // custom demo
 export async function customRun() {
