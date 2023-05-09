@@ -9,8 +9,6 @@ export interface RDModule {
 }
 
 export interface RDMol {
-  d_defaultWidth: number;
-  d_default_Height: number;
   is_qmol: boolean;
 
   get_smiles(): string;

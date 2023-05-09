@@ -37,8 +37,9 @@ category('Table view', () => {
   });
 
   test('Tooltip', async () => {
-
-  }, {skipReason: 'Not implemented yet'});
+    expect(model.showMonomerTooltip(firstMonomerPair.monomer, 0, 0), true,
+      `Couldn't structure for monomer ${firstMonomerPair.monomer}`);
+  }, {skipReason: 'Need to find a way to replace _package variable to call for Bio function with tests'});
 
   test('Visible columns', async () => {
     const gridCols = model.analysisView.grid.columns;
@@ -81,7 +82,7 @@ category('Table view', () => {
       `for monomer ${firstMonomerPair.monomer} at position ${firstMonomerPair.position}`);
 
     // Clear monomer-position selection
-    model.initMonomerPositionSelection(true);
+    model.initMonomerPositionSelection({cleanInit: true});
     for (const [position, selectedMonomers] of Object.entries(model.monomerPositionSelection)) {
       expect(selectedMonomers.length, 0, `Selection is not empty for position ${position} after clearing ` +
         `monomer-position selection`);
@@ -110,7 +111,7 @@ category('Table view', () => {
       `cluster ${secondCluster.name} after deselection of cluster ${firstCluster.name}`);
 
     // Clear selection
-    model.clusterSelection = [];
+    model.initClusterSelection();
     expect(model.clusterSelection.length, 0, `Selection is not empty after clearing cluster selection`);
     expect(selection.trueCount, 0, `Selection count is not equal to 0 after clearing cluster selection`);
   });
@@ -145,7 +146,7 @@ category('Table view', () => {
       `monomer ${secondMonomerPair.monomer} at position ${secondMonomerPair.position}`);
 
     // Clear selection
-    model.initMonomerPositionFilter(true);
+    model.initMonomerPositionFilter({cleanInit: true});
     expect(filter.trueCount, df.rowCount, `Filter count is not equal to ${df.rowCount} after clearing ` +
       `monomer-position filter`);
 

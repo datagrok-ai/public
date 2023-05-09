@@ -19,6 +19,7 @@ export class UaView extends DG.ViewBase {
   uaToolbox: UaToolbox;
   viewers: UaQueryViewer[] = [];
   initialized: boolean = false;
+  systemId: string = '00000000-0000-0000-0000-000000000000';
 
   constructor(uaToolbox: UaToolbox) {
     super();

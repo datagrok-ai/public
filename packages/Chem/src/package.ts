@@ -33,7 +33,6 @@ import {toxicityWidget} from './widgets/toxicity';
 import {addInchiKeys, addInchis} from './panels/inchi';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 
-
 //utils imports
 import { ScaffoldTreeViewer} from "./widgets/scaffold-tree";
 import {Fingerprint} from './utils/chem-common';
@@ -666,11 +665,11 @@ export function ActivityCliffsEditor(call: DG.FuncCall) {
 //input: column activities
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE"] }
+//input: string similarityMetric
 //input: object options {optional: true}
 //editor: Chem:ActivityCliffsEditor
 export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
-  similarity: number, methodName: string, options?: IUMAPOptions | ITSNEOptions) {
-    const time  = Date.now();
+  similarity: number, methodName: string, similarityMetric: string, options?: IUMAPOptions | ITSNEOptions) {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
@@ -693,14 +692,14 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
     Do you want to continue?`))
       .onOK(async () => {
         const progressBar = DG.TaskBarProgressIndicator.create(`Activity cliffs running...`);
-        await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, 'Tanimoto',
+        await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, similarityMetric,
           methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
           createTooltipElement, createPropPanelElement, undefined, options);
         progressBar.close();
       })
       .show();
   } else {
-    await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, 'Tanimoto',
+    await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, similarityMetric,
       methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
       createTooltipElement, createPropPanelElement, undefined, options);
   }

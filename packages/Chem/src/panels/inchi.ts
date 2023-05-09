@@ -1,5 +1,3 @@
-import * as ui from 'datagrok-api/ui';
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {_rdKitModule} from '../utils/chem-common-rdkit';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';

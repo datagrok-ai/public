@@ -87,7 +87,7 @@ export class MonomerPosition extends DG.JsViewer {
       const aar = monomerCol.get(gridCell!.tableRowIndex!);
       chooseAction(aar, position, ev.shiftKey, this.mode === MONOMER_POSITION_MODE.INVARIANT_MAP, this.model);
       this.viewerGrid.invalidate();
-      this.model.fireBitsetChanged();
+      // this.model.fireBitsetChanged();
     });
     this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(this.model.monomerPositionDf, this.model));
 
@@ -206,7 +206,7 @@ export class MostPotentResiduesViewer extends DG.JsViewer {
       const aar = monomerCol.get(tableRowIdx);
       chooseAction(aar, position!.toFixed(), ev.shiftKey, false, this.model);
       this.viewerGrid.invalidate();
-      this.model.fireBitsetChanged();
+      // this.model.fireBitsetChanged();
     });
     this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(this.model.mostPotentResiduesDf, this.model));
     const mdCol: DG.GridColumn = this.viewerGrid.col(C.COLUMNS_NAMES.MEAN_DIFFERENCE)!;
@@ -293,13 +293,13 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
       canvasContext, currentMonomer, currentPosition, model.monomerPositionFilter, value, bound, color);
   } else {
     CR.renderMutationCliffCell(canvasContext, currentMonomer, currentPosition, model.monomerPositionStats, bound,
-      model.monomerPositionSelection, model.substitutionsInfo, model.settings.isBidirectional);
+      model.monomerPositionSelection, model.mutationCliffs, model.settings.isBidirectional);
   }
   args.preventDefault();
   canvasContext.restore();
 }
 
-function showTooltip(cell: DG.GridCell, x: number, y: number, model: PeptidesModel): boolean {
+export function showTooltip(cell: DG.GridCell, x: number, y: number, model: PeptidesModel): boolean {
   const renderColNames = [...model.splitSeqDf.columns.names(), C.COLUMNS_NAMES.MEAN_DIFFERENCE];
   const tableCol = cell.tableColumn;
   const tableColName = tableCol?.name;
@@ -324,7 +324,7 @@ function showTooltip(cell: DG.GridCell, x: number, y: number, model: PeptidesMod
 function chooseAction(aar: string, position: string, isShiftPressed: boolean, isFilter: boolean,
   model: PeptidesModel): void {
   if (!isShiftPressed)
-    model.initMonomerPositionSelection(true);
+    model.initMonomerPositionSelection({cleanInit: true, notify: false});
 
   model.modifyMonomerPositionSelection(aar, position, isFilter);
 }
