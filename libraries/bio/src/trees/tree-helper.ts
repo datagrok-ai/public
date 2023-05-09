@@ -2,8 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {ClusterMatrix, DistanceMetric, NodeCuttedType, NodeType} from './index';
 import {DistanceMatrix} from './distance-matrix';
+import {ClusterMatrix, NodeCuttedType, NodeType} from './types';
+import {DistanceMetric} from './consts';
 
 export interface ITreeHelper {
   /** Generates data frame with row per node, parent relation, distance, annotation
