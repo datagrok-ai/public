@@ -31,12 +31,13 @@ type NumberInput = DG.InputBase<number | null>;
 const IDX = {
   SS: 0,
   AS: 1,
-  threePrime: 0,
-  fivePrime: 1,
+  THREE_PRIME: 0,
+  FIVE_PRIME: 1,
 };
 
 const strands = ['SS', 'AS'] as const;
 const strandLongNames = ['Sense Strand', 'Antisense Strand'] as const;
+const terminals = [3, 5] as const;
 
 export class AxolabsTabUI {
   constructor() {
@@ -97,6 +98,58 @@ export class AxolabsTabUI {
       input.setTooltip(`ps linkage before first nucleotide of ${strandLongNames[i].toLowerCase()}`);
       return input;
     });
+
+    const strandTerminalModification = strands.map((strand) => {
+      return terminals.map((terminal) => {
+        const input = ui.stringInput(`${strand} ${terminal}\' Modification`, '', () => {
+          updateSvgScheme();
+          updateOutputExamples();
+        });
+
+        input.setTooltip(`Additional ${strand} ${terminal}\' Modification`);
+        return input;
+      })
+    });
+
+    const ssOutputExample = ui.textInput(' ', translateSequence(
+      strandInputExample[IDX.SS].value, strandBases[IDX.SS], strandPtoLinkages[IDX.SS], strandTerminalModification[IDX.SS][IDX.THREE_PRIME],strandTerminalModification[IDX.SS][IDX.FIVE_PRIME], firstStrandPto[IDX.SS].value!));
+    const asOutputExample = ui.textInput(' ', translateSequence(
+      strandInputExample[IDX.AS].value, strandBases[IDX.AS], strandPtoLinkages[IDX.AS], strandTerminalModification[IDX.AS][IDX.FIVE_PRIME], strandTerminalModification[IDX.AS][IDX.THREE_PRIME], firstStrandPto[IDX.SS].value!));
+
+    (strandInputExample[IDX.SS].input as HTMLElement).style.resize = 'none';
+    (strandInputExample[IDX.AS].input as HTMLElement).style.resize = 'none';
+
+    (strandInputExample[IDX.SS].input as HTMLElement).style.minWidth = exampleMinWidth;
+    (strandInputExample[IDX.AS].input as HTMLElement).style.minWidth = exampleMinWidth;
+
+    (ssOutputExample.input as HTMLElement).style.resize = 'none';
+    (asOutputExample.input as HTMLElement).style.resize = 'none';
+
+    (ssOutputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
+    (asOutputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
+
+    // @ts-ignore
+    ssOutputExample.input.disabled = 'true';
+    // @ts-ignore
+    asOutputExample.input.disabled = 'true';
+
+    ssOutputExample.root.append(
+      ui.div([
+        ui.button(ui.iconFA('copy', () => {}), () => {
+          navigator.clipboard.writeText(ssOutputExample.value).then(() =>
+            grok.shell.info('Sequence was copied to clipboard'));
+        }),
+      ], 'ui-input-options'),
+    );
+    asOutputExample.root.append(
+      ui.div([
+        ui.button(ui.iconFA('copy', () => {}), () => {
+          navigator.clipboard.writeText(asOutputExample.value).then(() =>
+            grok.shell.info('Sequence was copied to clipboard'));
+        }),
+      ], 'ui-input-options'),
+    );
+
 
     const firstAsPtoDiv = ui.div([]);
     firstAsPtoDiv.append(firstStrandPto[IDX.AS].root);
@@ -243,10 +296,10 @@ export class AxolabsTabUI {
 
     function updateOutputExamples() {
       ssOutputExample.value = translateSequence(
-        strandInputExample[IDX.SS].value, strandBases[IDX.SS], strandPtoLinkages[IDX.SS], ssFiveModification, ssThreeModification, firstStrandPto[IDX.SS].value!);
+        strandInputExample[IDX.SS].value, strandBases[IDX.SS], strandPtoLinkages[IDX.SS],strandTerminalModification[IDX.SS][IDX.FIVE_PRIME], strandTerminalModification[IDX.SS][IDX.THREE_PRIME], firstStrandPto[IDX.SS].value!);
       if (createAsStrand.value) {
         asOutputExample.value = translateSequence(
-          strandInputExample[IDX.AS].value, strandBases[IDX.AS], strandPtoLinkages[IDX.AS], asFiveModification, asThreeModification, firstStrandPto[IDX.AS].value!);
+          strandInputExample[IDX.AS].value, strandBases[IDX.AS], strandPtoLinkages[IDX.AS], strandTerminalModification[IDX.AS][IDX.FIVE_PRIME], strandTerminalModification[IDX.AS][IDX.THREE_PRIME], firstStrandPto[IDX.AS].value!);
       }
     }
 
@@ -260,10 +313,10 @@ export class AxolabsTabUI {
             strandBases[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value!),
             [firstStrandPto[IDX.SS].value!].concat(strandPtoLinkages[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value!)),
             [firstStrandPto[IDX.AS].value!].concat(strandPtoLinkages[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value!)),
-            ssThreeModification.value,
-            ssFiveModification.value,
-            asThreeModification.value,
-            asFiveModification.value,
+            strandTerminalModification[IDX.SS][IDX.THREE_PRIME].value,
+           strandTerminalModification[IDX.SS][IDX.FIVE_PRIME].value,
+            strandTerminalModification[IDX.AS][IDX.THREE_PRIME].value,
+            strandTerminalModification[IDX.AS][IDX.FIVE_PRIME].value,
             comment.value,
             enumerateModifications,
           ),
@@ -318,10 +371,10 @@ export class AxolabsTabUI {
         strandLengthInput[IDX.SS].value = obj[FIELD.SS_BASES].length;
         strandLengthInput[IDX.AS].value = obj[FIELD.AS_BASES].length;
 
-        ssThreeModification.value = obj[FIELD.SS_3];
-        ssFiveModification.value = obj[FIELD.SS_5];
-        asThreeModification.value = obj[FIELD.AS_3];
-        asFiveModification.value = obj[FIELD.AS_5];
+        strandTerminalModification[IDX.SS][IDX.THREE_PRIME].value = obj[FIELD.SS_3];
+       strandTerminalModification[IDX.SS][IDX.FIVE_PRIME].value = obj[FIELD.SS_5];
+        strandTerminalModification[IDX.AS][IDX.THREE_PRIME].value = obj[FIELD.AS_3];
+        strandTerminalModification[IDX.AS][IDX.FIVE_PRIME].value = obj[FIELD.AS_5];
         comment.value = obj[FIELD.COMMENT];
       });
       pi.close();
@@ -377,10 +430,10 @@ export class AxolabsTabUI {
           [FIELD.AS_BASES]: strandBases[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value),
           [FIELD.SS_PTO]: [firstStrandPto[IDX.SS].value].concat(strandPtoLinkages[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value)),
           [FIELD.AS_PTO]: [firstStrandPto[IDX.AS].value].concat(strandPtoLinkages[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value)),
-          [FIELD.SS_3]: ssThreeModification.value,
-          [FIELD.SS_5]: ssFiveModification.value,
-          [FIELD.AS_3]: asThreeModification.value,
-          [FIELD.AS_5]: asFiveModification.value,
+          [FIELD.SS_3]: strandTerminalModification[IDX.SS][IDX.THREE_PRIME].value,
+          [FIELD.SS_5]:strandTerminalModification[IDX.SS][IDX.FIVE_PRIME].value,
+          [FIELD.AS_3]: strandTerminalModification[IDX.AS][IDX.THREE_PRIME].value,
+          [FIELD.AS_5]: strandTerminalModification[IDX.AS][IDX.FIVE_PRIME].value,
           [FIELD.COMMENT]: comment.value,
         }),
         false,
@@ -571,30 +624,9 @@ export class AxolabsTabUI {
     const saveAs = ui.textInput('Save As', 'Pattern Name', () => updateSvgScheme());
     saveAs.setTooltip('Name Of New Pattern');
 
-    const ssThreeModification = ui.stringInput('SS 3\' Modification', '', () => {
-      updateSvgScheme();
-      updateOutputExamples();
-    });
-    const asThreeModification = ui.stringInput('AS 3\' Modification', '', () => {
-      updateSvgScheme();
-      updateOutputExamples();
-    });
-    ssThreeModification.setTooltip('Additional SS 3\' Modification');
-    asThreeModification.setTooltip('Additional AS 3\' Modification');
 
-    const ssFiveModification = ui.stringInput('SS 5\' Modification', '', () => {
-      updateSvgScheme();
-      updateOutputExamples();
-    });
-    const asFiveModification = ui.stringInput('AS 5\' Modification', '', () => {
-      updateSvgScheme();
-      updateOutputExamples();
-    });
-    ssFiveModification.setTooltip('Additional SS 5\' Modification');
-    asFiveModification.setTooltip('Additional AS 5\' Modification');
-
-    asModificationDiv.append(asThreeModification.root);
-    asModificationDiv.append(asFiveModification.root);
+    asModificationDiv.append(strandTerminalModification[IDX.AS][IDX.THREE_PRIME].root);
+    asModificationDiv.append(strandTerminalModification[IDX.AS][IDX.FIVE_PRIME].root);
 
     const comment = ui.textInput('Comment', '', () => updateSvgScheme());
 
@@ -632,11 +664,11 @@ export class AxolabsTabUI {
           addColumnWithIds(tables.value!.name, idVar, getShortName(saveAs.value));
         addColumnWithTranslatedSequences(
           tables.value!.name, strandVar[IDX.SS], strandBases[IDX.SS], strandPtoLinkages[IDX.SS],
-          ssFiveModification, ssThreeModification, firstStrandPto[IDX.SS].value!);
+         strandTerminalModification[IDX.SS][IDX.FIVE_PRIME], strandTerminalModification[IDX.SS][IDX.THREE_PRIME], firstStrandPto[IDX.SS].value!);
         if (createAsStrand.value) {
           addColumnWithTranslatedSequences(
             tables.value!.name, strandVar[IDX.AS], strandBases[IDX.AS], strandPtoLinkages[IDX.AS],
-            asFiveModification, asThreeModification, firstStrandPto[IDX.AS].value!);
+            strandTerminalModification[IDX.AS][IDX.FIVE_PRIME], strandTerminalModification[IDX.AS][IDX.THREE_PRIME], firstStrandPto[IDX.AS].value!);
         }
         grok.shell.v = grok.shell.getTableView(tables.value!.name);
         grok.shell.info(((createAsStrand.value) ? 'Columns were' : 'Column was') +
@@ -644,45 +676,6 @@ export class AxolabsTabUI {
         updateOutputExamples();
       }
     });
-
-    const ssOutputExample = ui.textInput(' ', translateSequence(
-      strandInputExample[IDX.SS].value, strandBases[IDX.SS], strandPtoLinkages[IDX.SS], ssThreeModification, ssFiveModification, firstStrandPto[IDX.SS].value!));
-    const asOutputExample = ui.textInput(' ', translateSequence(
-      strandInputExample[IDX.AS].value, strandBases[IDX.AS], strandPtoLinkages[IDX.AS], asFiveModification, asThreeModification, firstStrandPto[IDX.SS].value!));
-
-    (strandInputExample[IDX.SS].input as HTMLElement).style.resize = 'none';
-    (strandInputExample[IDX.AS].input as HTMLElement).style.resize = 'none';
-
-    (strandInputExample[IDX.SS].input as HTMLElement).style.minWidth = exampleMinWidth;
-    (strandInputExample[IDX.AS].input as HTMLElement).style.minWidth = exampleMinWidth;
-
-    (ssOutputExample.input as HTMLElement).style.resize = 'none';
-    (asOutputExample.input as HTMLElement).style.resize = 'none';
-
-    (ssOutputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
-    (asOutputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
-
-    // @ts-ignore
-    ssOutputExample.input.disabled = 'true';
-    // @ts-ignore
-    asOutputExample.input.disabled = 'true';
-
-    ssOutputExample.root.append(
-      ui.div([
-        ui.button(ui.iconFA('copy', () => {}), () => {
-          navigator.clipboard.writeText(ssOutputExample.value).then(() =>
-            grok.shell.info('Sequence was copied to clipboard'));
-        }),
-      ], 'ui-input-options'),
-    );
-    asOutputExample.root.append(
-      ui.div([
-        ui.button(ui.iconFA('copy', () => {}), () => {
-          navigator.clipboard.writeText(asOutputExample.value).then(() =>
-            grok.shell.info('Sequence was copied to clipboard'));
-        }),
-      ], 'ui-input-options'),
-    );
 
     asExampleDiv.append(strandInputExample[IDX.AS].root);
     asExampleDiv.append(asOutputExample.root);
@@ -748,8 +741,8 @@ export class AxolabsTabUI {
               fullyPto.root,
               firstStrandPto[IDX.SS].root,
               firstAsPtoDiv,
-              ssFiveModification.root,
-              ssThreeModification.root,
+              strandTerminalModification[IDX.SS][IDX.FIVE_PRIME].root,
+              strandTerminalModification[IDX.SS][IDX.THREE_PRIME].root,
               asModificationDiv,
             ], 'ui-form'),
           ], 'ui-form'),
