@@ -117,44 +117,26 @@ export class AxolabsTabUI {
       ))
     );
 
-    strandInputExample[IDX.SS].input.style.resize = 'none';
-    strandInputExample[IDX.AS].input.style.resize = 'none';
-
-    strandInputExample[IDX.SS].input.style.minWidth = exampleMinWidth;
-    strandInputExample[IDX.AS].input.style.minWidth = exampleMinWidth;
-
-    strandOutputExample[IDX.SS].input.style.resize = 'none';
-    strandOutputExample[IDX.AS].input.style.resize = 'none';
-
-    strandOutputExample[IDX.SS].input.style.minWidth = exampleMinWidth;
-    strandOutputExample[IDX.AS].input.style.minWidth = exampleMinWidth;
-
-    // @ts-ignore
-    strandOutputExample[IDX.SS].input.disabled = 'true';
-    // @ts-ignore
-    strandOutputExample[IDX.AS].input.disabled = 'true';
-
-    strandOutputExample[IDX.SS].root.append(
-      ui.div([
-        ui.button(ui.iconFA('copy', () => {}), () => {
-          navigator.clipboard.writeText(strandOutputExample[IDX.SS].value).then(() =>
-            grok.shell.info('Sequence was copied to clipboard'));
-        }),
-      ], 'ui-input-options'),
-    );
-    strandOutputExample[IDX.AS].root.append(
-      ui.div([
-        ui.button(ui.iconFA('copy', () => {}), () => {
-          navigator.clipboard.writeText(strandOutputExample[IDX.AS].value).then(() =>
-            grok.shell.info('Sequence was copied to clipboard'));
-        }),
-      ], 'ui-input-options'),
-    );
-
+    strands.forEach((_, i) => {
+      strandInputExample[i].input.style.resize = 'none';
+      strandInputExample[i].input.style.minWidth = exampleMinWidth;
+      strandOutputExample[i].input.style.resize = 'none';
+      strandOutputExample[i].input.style.minWidth = exampleMinWidth;
+      // todo: remove ts-ignore
+      // @ts-ignore
+      strandOutputExample[i].input.disabled = 'true';
+      strandOutputExample[i].root.append(
+        ui.div([
+          ui.button(ui.iconFA('copy', () => {}), () => {
+            navigator.clipboard.writeText(strandOutputExample[i].value).then(() =>
+              grok.shell.info('Sequence was copied to clipboard'));
+          }),
+        ], 'ui-input-options'),
+      );
+    })
 
     const firstAsPtoDiv = ui.div([]);
     firstAsPtoDiv.append(firstStrandPto[IDX.AS].root);
-
 
     function updateAsModification() {
       strandModificationItems[IDX.AS].innerHTML = '';
