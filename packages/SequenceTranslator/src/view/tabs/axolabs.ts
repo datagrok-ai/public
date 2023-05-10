@@ -75,23 +75,21 @@ export class AxolabsTabUI {
     const strandInputExample = strands.map((_, i) => {
       return ui.textInput(`${strandLongNames[i]}`, generateExample(strandLengthInput[i].value!, sequenceBase.value!));
     })
-    // const strandInputExample[IDX.SS] = ui.textInput('Sense Strand', generateExample(strandLengthInput[IDX.SS].value!, sequenceBase.value!));
-    // const strandInputExample[IDX.AS] = ui.textInput('Antisense Strand', generateExample(strandLengthInput[IDX.AS].value!, sequenceBase.value!));
-
 
     // todo: rename to strandColumnInput
-    // const inputStrandColumn = strands.map((strand, i) => {
-    // })
-    const inputSsColumn = ui.choiceInput('SS Column', '', [], (colName: string) => {
-      validateSsColumn(colName);
-      strandVar[IDX.SS] = colName;
-    });
-    inputStrandColumnDiv[IDX.SS].append(inputSsColumn.root);
-    const inputAsColumn = ui.choiceInput('AS Column', '', [], (colName: string) => {
-      validateAsColumn(colName);
-      strandVar[IDX.AS] = colName;
-    });
-    inputStrandColumnDiv[IDX.AS].append(inputAsColumn.root);
+    const inputStrandColumn = strands.map((_, i) => {
+      const input: StringInput = ui.choiceInput(`${strandLongNames[i]} Column`, '', [], (colName: string) => {
+        validateSsColumn(colName);
+        strandVar[i] = colName;
+      });
+      inputStrandColumnDiv[i].append(input.root);
+      return input;
+    })
+    // const inputStrandColumn[IDX.AS] = ui.choiceInput('AS Column', '', [], (colName: string) => {
+    //   validateAsColumn(colName);
+    //   strandVar[IDX.AS] = colName;
+    // });
+    // inputStrandColumnDiv[IDX.AS].append(inputStrandColumn[IDX.AS].root);
 
 
     function updateAsModification() {
@@ -227,9 +225,9 @@ export class AxolabsTabUI {
     }
 
     function updateInputExamples() {
-      if (inputSsColumn.value == '')
+      if (inputStrandColumn[IDX.SS].value == '')
         strandInputExample[IDX.SS].value = generateExample(strandLengthInput[IDX.SS].value!, sequenceBase.value!);
-      if (createAsStrand.value && inputAsColumn.value == '')
+      if (createAsStrand.value && inputStrandColumn[IDX.AS].value == '')
         strandInputExample[IDX.AS].value = generateExample(strandLengthInput[IDX.AS].value!, sequenceBase.value!);
     }
 
@@ -529,18 +527,18 @@ export class AxolabsTabUI {
     }
 
     const tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, (t: DG.DataFrame) => {
-      const inputSsColumn = ui.choiceInput('SS Column', '', t.columns.names(), (colName: string) => {
+      inputStrandColumn[IDX.SS] = ui.choiceInput('SS Column', '', t.columns.names(), (colName: string) => {
         validateSsColumn(colName);
         strandVar[IDX.SS] = colName;
       });
       inputStrandColumnDiv[IDX.SS].innerHTML = '';
-      inputStrandColumnDiv[IDX.SS].append(inputSsColumn.root);
-      const inputAsColumn = ui.choiceInput('AS Column', '', t.columns.names(), (colName: string) => {
+      inputStrandColumnDiv[IDX.SS].append(inputStrandColumn[IDX.SS].root);
+      inputStrandColumn[IDX.AS] = ui.choiceInput('AS Column', '', t.columns.names(), (colName: string) => {
         validateAsColumn(colName);
         strandVar[IDX.AS] = colName;
       });
       inputStrandColumnDiv[IDX.AS].innerHTML = '';
-      inputStrandColumnDiv[IDX.AS].append(inputAsColumn.root);
+      inputStrandColumnDiv[IDX.AS].append(inputStrandColumn[IDX.AS].root);
       const inputIdColumn = ui.choiceInput('ID Column', '', t.columns.names(), (colName: string) => {
         validateIdsColumn(colName);
         idVar = colName;
@@ -637,8 +635,8 @@ export class AxolabsTabUI {
         dialog
           .add(ui.divText('Length of sequences in columns doesn\'t match entered length. Update length value?'))
           .addButton('YES', () => {
-            strandLengthInput[IDX.SS].value = tables.value!.getCol(inputSsColumn.value!).getString(0).length;
-            strandLengthInput[IDX.AS].value = tables.value!.getCol(inputAsColumn.value!).getString(0).length;
+            strandLengthInput[IDX.SS].value = tables.value!.getCol(inputStrandColumn[IDX.SS].value!).getString(0).length;
+            strandLengthInput[IDX.AS].value = tables.value!.getCol(inputStrandColumn[IDX.AS].value!).getString(0).length;
             dialog.close();
           })
           .show();
