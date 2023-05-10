@@ -428,8 +428,7 @@ async function testCalculateGroup(funcName: string, colName: string) {
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     grok.shell.topMenu.find('Chem').group('Calculate').find(funcName).click();
     await getDlgAndClickOK(`cannot load ${funcName} dialog`);
-    await delay(2000);
-    expect(v.dataFrame.columns.names().includes(colName), true, `${colName} column has not been added`);
+    await awaitCheck(() => v.dataFrame.columns.names().includes(colName), `${colName} column has not been added`, 10000);
     v.close();
     grok.shell.o = ui.div();
 }
