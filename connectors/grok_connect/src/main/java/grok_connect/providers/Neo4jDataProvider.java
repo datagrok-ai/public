@@ -3,11 +3,10 @@ package grok_connect.providers;
 import java.util.ArrayList;
 import java.util.Map;
 
-import grok_connect.column.ColumnManager;
-import grok_connect.column.bigint.Neo4jBigIntColumnManager;
-import grok_connect.column.bool.MySqlMssqlBoolColumnManager;
-import grok_connect.column.complex.Neo4jComplexColumnManager;
-import grok_connect.column.integer.Neo4jIntColumnManager;
+import grok_connect.managers.ColumnManager;
+import grok_connect.managers.bigint_column.Neo4jBigIntColumnManager;
+import grok_connect.managers.complex_column.Neo4jComplexColumnManager;
+import grok_connect.managers.integer_column.Neo4jIntColumnManager;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;

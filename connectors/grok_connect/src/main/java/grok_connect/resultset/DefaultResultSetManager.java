@@ -1,13 +1,13 @@
 package grok_connect.resultset;
 
-import grok_connect.column.ColumnManager;
-import grok_connect.column.bigint.DefaultBigIntColumnManager;
-import grok_connect.column.bool.DefaultBoolColumnManager;
-import grok_connect.column.complex.DefaultComplexColumnManager;
-import grok_connect.column.datetime.DefaultDateTimeColumnManager;
-import grok_connect.column.floats.DefaultFloatColumnManager;
-import grok_connect.column.integer.DefaultIntColumnManager;
-import grok_connect.column.string.DefaultStringColumnManager;
+import grok_connect.managers.ColumnManager;
+import grok_connect.managers.bigint_column.DefaultBigIntColumnManager;
+import grok_connect.managers.bool_column.DefaultBoolColumnManager;
+import grok_connect.managers.complex_column.DefaultComplexColumnManager;
+import grok_connect.managers.datetime_column.DefaultDateTimeColumnManager;
+import grok_connect.managers.float_column.DefaultFloatColumnManager;
+import grok_connect.managers.integer_column.DefaultIntColumnManager;
+import grok_connect.managers.string_column.DefaultStringColumnManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import serialization.Column;
@@ -15,7 +15,11 @@ import serialization.StringColumn;
 import serialization.Types;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class DefaultResultSetManager implements ResultSetManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultResultSetManager.class);

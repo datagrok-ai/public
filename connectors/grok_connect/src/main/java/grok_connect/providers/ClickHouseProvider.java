@@ -1,7 +1,7 @@
 package grok_connect.providers;
 
-import grok_connect.column.ColumnManager;
-import grok_connect.column.bigint.ClickHouseBigIntColumnManager;
+import grok_connect.managers.ColumnManager;
+import grok_connect.managers.bigint_column.ClickHouseBigIntColumnManager;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;

@@ -1,8 +1,8 @@
 package grok_connect.providers;
 
-import grok_connect.column.ColumnManager;
-import grok_connect.column.bigint.OracleSnowflakeBigIntColumnManager;
-import grok_connect.column.integer.OracleSnowflakeIntColumnManager;
+import grok_connect.managers.ColumnManager;
+import grok_connect.managers.bigint_column.OracleSnowflakeBigIntColumnManager;
+import grok_connect.managers.integer_column.OracleSnowflakeIntColumnManager;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataQuery;
 import grok_connect.connectors_info.DataSource;

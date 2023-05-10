@@ -1,9 +1,7 @@
 package grok_connect.providers;
 
-import grok_connect.column.ColumnManager;
-import grok_connect.column.bigint.Neo4jBigIntColumnManager;
-import grok_connect.column.complex.Neo4jComplexColumnManager;
-import grok_connect.column.integer.Neo4jIntColumnManager;
+import grok_connect.managers.ColumnManager;
+import grok_connect.managers.complex_column.Neo4jComplexColumnManager;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;

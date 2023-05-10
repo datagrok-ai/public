@@ -20,7 +20,6 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 import serialization.DataFrame;
 
 @Disabled("Until test instance of Athena will be available")
