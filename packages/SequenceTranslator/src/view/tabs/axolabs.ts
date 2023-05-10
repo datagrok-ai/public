@@ -12,6 +12,18 @@ import {drawAxolabsPattern} from '../../model/axolabs/draw-svg';
 //@ts-ignore
 import * as svg from 'save-svg-as-png';
 
+const enum FIELD {
+  SS_BASES = 'ssBases',
+  AS_BASES = 'asBases',
+  SS_PTO = 'ssPtoLinkages',
+  AS_PTO = 'asPtoLinkages',
+  SS_3 = 'ssThreeModification',
+  SS_5 = 'ssFiveModification',
+  AS_3 = 'asThreeModification',
+  AS_5 = 'asFiveModification',
+  COMMENT = 'comment',
+};
+
 type BooleanInput = DG.InputBase<boolean | null>;     
 type StringInput = DG.InputBase<string | null>;   
 type NumberInput = DG.InputBase<number | null>;               
@@ -52,8 +64,6 @@ export class AxolabsTabUI {
     })
     const strandVar = strands.map(() => '');
     const inputStrandColumnDiv = strands.map(() => ui.div([]));
-    // const inputStrandColumnDiv[IDX.SS] = ui.div([]);
-    // const inputStrandColumnDiv[IDX.AS] = ui.div([]);
 
 
     function updateAsModification() {
@@ -247,36 +257,36 @@ export class AxolabsTabUI {
       const pi = DG.TaskBarProgressIndicator.create('Loading pattern...');
       await grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
         const obj = JSON.parse(entities[newName]);
-        sequenceBase.value = detectDefaultBasis(obj['asBases'].concat(obj['ssBases']));
-        createAsStrand.value = (obj['asBases'].length > 0);
+        sequenceBase.value = detectDefaultBasis(obj[FIELD.AS_BASES].concat(obj[FIELD.SS_BASES]));
+        createAsStrand.value = (obj[FIELD.AS_BASES].length > 0);
         saveAs.value = newName;
 
         strandBases[IDX.SS] = [];
-        for (let i = 0; i < obj['ssBases'].length; i++)
-          strandBases[IDX.SS].push(ui.choiceInput('', obj['ssBases'][i], baseChoices));
+        for (let i = 0; i < obj[FIELD.SS_BASES].length; i++)
+          strandBases[IDX.SS].push(ui.choiceInput('', obj[FIELD.SS_BASES][i], baseChoices));
 
         strandBases[IDX.AS] = [];
-        for (let i = 0; i < obj['asBases'].length; i++)
-          strandBases[IDX.AS].push(ui.choiceInput('', obj['asBases'][i], baseChoices));
+        for (let i = 0; i < obj[FIELD.AS_BASES].length; i++)
+          strandBases[IDX.AS].push(ui.choiceInput('', obj[FIELD.AS_BASES][i], baseChoices));
 
-        firstSsPto.value = obj['ssPtoLinkages'][0];
+        firstSsPto.value = obj[FIELD.SS_PTO][0];
         strandPtoLinkages[IDX.SS] = [];
-        for (let i = 1; i < obj['ssPtoLinkages'].length; i++)
-          strandPtoLinkages[IDX.SS].push(ui.boolInput('', obj['ssPtoLinkages'][i]));
+        for (let i = 1; i < obj[FIELD.SS_PTO].length; i++)
+          strandPtoLinkages[IDX.SS].push(ui.boolInput('', obj[FIELD.SS_PTO][i]));
 
-        firstAsPto.value = obj['asPtoLinkages'][0];
+        firstAsPto.value = obj[FIELD.AS_PTO][0];
         strandPtoLinkages[IDX.AS] = [];
-        for (let i = 1; i < obj['asPtoLinkages'].length; i++)
-          strandPtoLinkages[IDX.AS].push(ui.boolInput('', obj['asPtoLinkages'][i]));
+        for (let i = 1; i < obj[FIELD.AS_PTO].length; i++)
+          strandPtoLinkages[IDX.AS].push(ui.boolInput('', obj[FIELD.AS_PTO][i]));
 
-        strandLengthInput[IDX.SS].value = obj['ssBases'].length;
-        strandLengthInput[IDX.AS].value = obj['asBases'].length;
+        strandLengthInput[IDX.SS].value = obj[FIELD.SS_BASES].length;
+        strandLengthInput[IDX.AS].value = obj[FIELD.AS_BASES].length;
 
-        ssThreeModification.value = obj['ssThreeModification'];
-        ssFiveModification.value = obj['ssFiveModification'];
-        asThreeModification.value = obj['asThreeModification'];
-        asFiveModification.value = obj['asFiveModification'];
-        comment.value = obj['comment'];
+        ssThreeModification.value = obj[FIELD.SS_3];
+        ssFiveModification.value = obj[FIELD.SS_5];
+        asThreeModification.value = obj[FIELD.AS_3];
+        asFiveModification.value = obj[FIELD.AS_5];
+        comment.value = obj[FIELD.COMMENT];
       });
       pi.close();
     }
@@ -327,15 +337,15 @@ export class AxolabsTabUI {
         userStorageKey,
         saveAs.value,
         JSON.stringify({
-          'strandBases[IDX.SS]': strandBases[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value),
-          'strandBases[IDX.AS]': strandBases[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value),
-          'strandPtoLinkages[IDX.SS]': [firstSsPto.value].concat(strandPtoLinkages[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value)),
-          'strandPtoLinkages[IDX.AS]': [firstAsPto.value].concat(strandPtoLinkages[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value)),
-          'ssThreeModification': ssThreeModification.value,
-          'ssFiveModification': ssFiveModification.value,
-          'asThreeModification': asThreeModification.value,
-          'asFiveModification': asFiveModification.value,
-          'comment': comment.value,
+          [FIELD.SS_BASES]: strandBases[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value),
+          [FIELD.AS_BASES]: strandBases[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value),
+          [FIELD.SS_PTO]: [firstSsPto.value].concat(strandPtoLinkages[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value)),
+          [FIELD.AS_PTO]: [firstAsPto.value].concat(strandPtoLinkages[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value)),
+          [FIELD.SS_3]: ssThreeModification.value,
+          [FIELD.SS_5]: ssFiveModification.value,
+          [FIELD.AS_3]: asThreeModification.value,
+          [FIELD.AS_5]: asFiveModification.value,
+          [FIELD.COMMENT]: comment.value,
         }),
         false,
       ).then(() => grok.shell.info('Pattern \'' + saveAs.value + '\' was successfully uploaded!'));
