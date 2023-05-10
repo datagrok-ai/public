@@ -10,3 +10,7 @@ export const getDataFrame = (call: DG.FuncCall, name: string, direction: DIRECTI
   else
     return call.outputs[name] instanceof DG.DataFrame ? call.outputs[name] : call.outputs[name].dataFrame;
 };
+
+export const boundImportFunction = (func: DG.Func): string | undefined => {
+  return func.options['getRealData'];
+};
