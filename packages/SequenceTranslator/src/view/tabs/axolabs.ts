@@ -246,30 +246,30 @@ export class AxolabsTabUI {
       const pi = DG.TaskBarProgressIndicator.create('Loading pattern...');
       await grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
         const obj = JSON.parse(entities[newName]);
-        sequenceBase.value = detectDefaultBasis(obj['strandBases[IDX.AS]'].concat(obj['strandBases[IDX.SS]']));
-        createAsStrand.value = (obj['strandBases[IDX.AS]'].length > 0);
+        sequenceBase.value = detectDefaultBasis(obj['asBases'].concat(obj['ssBases']));
+        createAsStrand.value = (obj['asBases'].length > 0);
         saveAs.value = newName;
 
         strandBases[IDX.SS] = [];
-        for (let i = 0; i < obj['strandBases[IDX.SS]'].length; i++)
-          strandBases[IDX.SS].push(ui.choiceInput('', obj['strandBases[IDX.SS]'][i], baseChoices));
+        for (let i = 0; i < obj['ssBases'].length; i++)
+          strandBases[IDX.SS].push(ui.choiceInput('', obj['ssBases'][i], baseChoices));
 
         strandBases[IDX.AS] = [];
-        for (let i = 0; i < obj['strandBases[IDX.AS]'].length; i++)
-          strandBases[IDX.AS].push(ui.choiceInput('', obj['strandBases[IDX.AS]'][i], baseChoices));
+        for (let i = 0; i < obj['asBases'].length; i++)
+          strandBases[IDX.AS].push(ui.choiceInput('', obj['asBases'][i], baseChoices));
 
-        firstSsPto.value = obj['strandPtoLinkages[IDX.SS]'][0];
+        firstSsPto.value = obj['ssPtoLinkages'][0];
         strandPtoLinkages[IDX.SS] = [];
-        for (let i = 1; i < obj['strandPtoLinkages[IDX.SS]'].length; i++)
-          strandPtoLinkages[IDX.SS].push(ui.boolInput('', obj['strandPtoLinkages[IDX.SS]'][i]));
+        for (let i = 1; i < obj['ssPtoLinkages'].length; i++)
+          strandPtoLinkages[IDX.SS].push(ui.boolInput('', obj['ssPtoLinkages'][i]));
 
-        firstAsPto.value = obj['strandPtoLinkages[IDX.AS]'][0];
+        firstAsPto.value = obj['asPtoLinkages'][0];
         strandPtoLinkages[IDX.AS] = [];
-        for (let i = 1; i < obj['strandPtoLinkages[IDX.AS]'].length; i++)
-          strandPtoLinkages[IDX.AS].push(ui.boolInput('', obj['strandPtoLinkages[IDX.AS]'][i]));
+        for (let i = 1; i < obj['asPtoLinkages'].length; i++)
+          strandPtoLinkages[IDX.AS].push(ui.boolInput('', obj['asPtoLinkages'][i]));
 
-        strandLengthInput[IDX.SS].value = obj['strandBases[IDX.SS]'].length;
-        strandLengthInput[IDX.AS].value = obj['strandBases[IDX.AS]'].length;
+        strandLengthInput[IDX.SS].value = obj['ssBases'].length;
+        strandLengthInput[IDX.AS].value = obj['asBases'].length;
 
         ssThreeModification.value = obj['ssThreeModification'];
         ssFiveModification.value = obj['ssFiveModification'];
