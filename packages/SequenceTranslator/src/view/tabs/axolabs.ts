@@ -35,6 +35,9 @@ export class AxolabsTabUI {
   get htmlDivElement() {
     const maximalStrandLength = strands.map(() => defaultSequenceLength);
     const strandModificationItems = strands.map(() => ui.div([]));
+    const strandPtoLinkages = strands.map(() =>
+      Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto))
+    );
 
     const baseChoices: string[] = Object.keys(this.axolabsStyle);
     const defaultBase: string = baseChoices[0];
@@ -42,11 +45,11 @@ export class AxolabsTabUI {
 
     function updateAsModification() {
       strandModificationItems[IDX.AS].innerHTML = '';
-      asPtoLinkages = asPtoLinkages.concat(Array(maximalStrandLength[IDX.AS] - asBases.length).fill(fullyPto));
+      strandPtoLinkages[IDX.AS] = strandPtoLinkages[IDX.AS].concat(Array(maximalStrandLength[IDX.AS] - asBases.length).fill(fullyPto));
       asBases = asBases.concat(Array(maximalStrandLength[IDX.AS] - asBases.length).fill(sequenceBase));
       let nucleotideCounter = 0;
       for (let i = 0; i < asLength.value!; i++) {
-        asPtoLinkages[i] = ui.boolInput('', asPtoLinkages[i].value, () => {
+        strandPtoLinkages[IDX.AS][i] = ui.boolInput('', strandPtoLinkages[IDX.AS][i].value, () => {
           updateSvgScheme();
           updateOutputExamples();
         });
@@ -80,7 +83,7 @@ export class AxolabsTabUI {
             ui.div([ui.label(isOverhang(asBases[i].value) ? '' : String(nucleotideCounter))],
               {style: {width: '20px'}})!,
             ui.block75([asBases[i]])!,
-            ui.div([asPtoLinkages[i]])!,
+            ui.div([strandPtoLinkages[IDX.AS][i]])!,
           ], {style: {alignItems: 'center'}}),
         );
       }
@@ -88,11 +91,11 @@ export class AxolabsTabUI {
 
     function updateSsModification() {
       strandModificationItems[IDX.SS].innerHTML = '';
-      ssPtoLinkages = ssPtoLinkages.concat(Array(maximalStrandLength[IDX.SS] - ssBases.length).fill(fullyPto));
+      strandPtoLinkages[IDX.SS] = strandPtoLinkages[IDX.SS].concat(Array(maximalStrandLength[IDX.SS] - ssBases.length).fill(fullyPto));
       ssBases = ssBases.concat(Array(maximalStrandLength[IDX.SS] - ssBases.length).fill(sequenceBase));
       let nucleotideCounter = 0;
       for (let i = 0; i < ssLength.value!; i++) {
-        ssPtoLinkages[i] = ui.boolInput('', ssPtoLinkages[i].value, () => {
+        strandPtoLinkages[IDX.SS][i] = ui.boolInput('', strandPtoLinkages[IDX.SS][i].value, () => {
           updateSvgScheme();
           updateOutputExamples();
         });
@@ -126,7 +129,7 @@ export class AxolabsTabUI {
             ui.div([ui.label(isOverhang(ssBases[i].value) ? '' : String(nucleotideCounter))],
               {style: {width: '20px'}})!,
             ui.block75([ssBases[i]])!,
-            ui.div([ssPtoLinkages[i]])!,
+            ui.div([strandPtoLinkages[IDX.SS][i]])!,
           ], {style: {alignItems: 'center'}}),
         );
       }
@@ -153,11 +156,11 @@ export class AxolabsTabUI {
     }
 
     function updatePto(newPtoValue: boolean): void {
-      for (let i = 0; i < ssPtoLinkages.length; i++)
-      ssPtoLinkages[i].value = newPtoValue;
+      for (let i = 0; i < strandPtoLinkages[IDX.SS].length; i++)
+      strandPtoLinkages[IDX.SS][i].value = newPtoValue;
 
-      for (let i = 0; i < asPtoLinkages.length; i++)
-      asPtoLinkages[i].value = newPtoValue;
+      for (let i = 0; i < strandPtoLinkages[IDX.AS].length; i++)
+      strandPtoLinkages[IDX.AS][i].value = newPtoValue;
 
       updateSvgScheme();
     }
@@ -181,10 +184,10 @@ export class AxolabsTabUI {
 
     function updateOutputExamples() {
       ssOutputExample.value = translateSequence(
-        ssInputExample.value, ssBases, ssPtoLinkages, ssFiveModification, ssThreeModification, firstSsPto.value!);
+        ssInputExample.value, ssBases, strandPtoLinkages[IDX.SS], ssFiveModification, ssThreeModification, firstSsPto.value!);
       if (createAsStrand.value) {
         asOutputExample.value = translateSequence(
-          asInputExample.value, asBases, asPtoLinkages, asFiveModification, asThreeModification, firstAsPto.value!);
+          asInputExample.value, asBases, strandPtoLinkages[IDX.AS], asFiveModification, asThreeModification, firstAsPto.value!);
       }
     }
 
@@ -196,8 +199,8 @@ export class AxolabsTabUI {
             createAsStrand.value!,
             ssBases.slice(0, ssLength.value!).map((e) => e.value),
             asBases.slice(0, asLength.value!).map((e) => e.value),
-            [firstSsPto.value!].concat(ssPtoLinkages.slice(0, ssLength.value!).map((e) => e.value)),
-            [firstAsPto.value!].concat(asPtoLinkages.slice(0, asLength.value!).map((e) => e.value)),
+            [firstSsPto.value!].concat(strandPtoLinkages[IDX.SS].slice(0, ssLength.value!).map((e) => e.value)),
+            [firstAsPto.value!].concat(strandPtoLinkages[IDX.AS].slice(0, asLength.value!).map((e) => e.value)),
             ssThreeModification.value,
             ssFiveModification.value,
             asThreeModification.value,
@@ -243,15 +246,15 @@ export class AxolabsTabUI {
         for (let i = 0; i < obj['asBases'].length; i++)
           asBases.push(ui.choiceInput('', obj['asBases'][i], baseChoices));
 
-        firstSsPto.value = obj['ssPtoLinkages'][0];
-        ssPtoLinkages = [];
-        for (let i = 1; i < obj['ssPtoLinkages'].length; i++)
-          ssPtoLinkages.push(ui.boolInput('', obj['ssPtoLinkages'][i]));
+        firstSsPto.value = obj['strandPtoLinkages[IDX.SS]'][0];
+        strandPtoLinkages[IDX.SS] = [];
+        for (let i = 1; i < obj['strandPtoLinkages[IDX.SS]'].length; i++)
+          strandPtoLinkages[IDX.SS].push(ui.boolInput('', obj['strandPtoLinkages[IDX.SS]'][i]));
 
-        firstAsPto.value = obj['asPtoLinkages'][0];
-        asPtoLinkages = [];
-        for (let i = 1; i < obj['asPtoLinkages'].length; i++)
-          asPtoLinkages.push(ui.boolInput('', obj['asPtoLinkages'][i]));
+        firstAsPto.value = obj['strandPtoLinkages[IDX.AS]'][0];
+        strandPtoLinkages[IDX.AS] = [];
+        for (let i = 1; i < obj['strandPtoLinkages[IDX.AS]'].length; i++)
+          strandPtoLinkages[IDX.AS].push(ui.boolInput('', obj['strandPtoLinkages[IDX.AS]'][i]));
 
         ssLength.value = obj['ssBases'].length;
         asLength.value = obj['asBases'].length;
@@ -313,8 +316,8 @@ export class AxolabsTabUI {
         JSON.stringify({
           'ssBases': ssBases.slice(0, ssLength.value!).map((e) => e.value),
           'asBases': asBases.slice(0, asLength.value!).map((e) => e.value),
-          'ssPtoLinkages': [firstSsPto.value].concat(ssPtoLinkages.slice(0, ssLength.value!).map((e) => e.value)),
-          'asPtoLinkages': [firstAsPto.value].concat(asPtoLinkages.slice(0, asLength.value!).map((e) => e.value)),
+          'strandPtoLinkages[IDX.SS]': [firstSsPto.value].concat(strandPtoLinkages[IDX.SS].slice(0, ssLength.value!).map((e) => e.value)),
+          'strandPtoLinkages[IDX.AS]': [firstAsPto.value].concat(strandPtoLinkages[IDX.AS].slice(0, asLength.value!).map((e) => e.value)),
           'ssThreeModification': ssThreeModification.value,
           'ssFiveModification': ssFiveModification.value,
           'asThreeModification': asThreeModification.value,
@@ -441,8 +444,6 @@ export class AxolabsTabUI {
 
     let ssBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices));
     let asBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices));
-    let ssPtoLinkages = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto));
-    let asPtoLinkages = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto));
 
     const ssLength = ui.intInput('SS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
     ssLength.setTooltip('Length of sense strand, including overhangs');
@@ -620,11 +621,11 @@ export class AxolabsTabUI {
         if (idVar != '')
           addColumnWithIds(tables.value!.name, idVar, getShortName(saveAs.value));
         addColumnWithTranslatedSequences(
-          tables.value!.name, ssVar, ssBases, ssPtoLinkages,
+          tables.value!.name, ssVar, ssBases, strandPtoLinkages[IDX.SS],
           ssFiveModification, ssThreeModification, firstSsPto.value!);
         if (createAsStrand.value) {
           addColumnWithTranslatedSequences(
-            tables.value!.name, asVar, asBases, asPtoLinkages,
+            tables.value!.name, asVar, asBases, strandPtoLinkages[IDX.AS],
             asFiveModification, asThreeModification, firstAsPto.value!);
         }
         grok.shell.v = grok.shell.getTableView(tables.value!.name);
@@ -636,7 +637,7 @@ export class AxolabsTabUI {
 
     const ssInputExample = ui.textInput('Sense Strand', generateExample(ssLength.value!, sequenceBase.value!));
     const ssOutputExample = ui.textInput(' ', translateSequence(
-      ssInputExample.value, ssBases, ssPtoLinkages, ssThreeModification, ssFiveModification, firstSsPto.value!));
+      ssInputExample.value, ssBases, strandPtoLinkages[IDX.SS], ssThreeModification, ssFiveModification, firstSsPto.value!));
     (ssInputExample.input as HTMLElement).style.resize = 'none';
     (ssInputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
     (ssOutputExample.input as HTMLElement).style.resize = 'none';
@@ -654,7 +655,7 @@ export class AxolabsTabUI {
 
     const asInputExample = ui.textInput('Antisense Strand', generateExample(asLength.value!, sequenceBase.value!));
     const asOutputExample = ui.textInput(' ', translateSequence(
-      asInputExample.value, asBases, asPtoLinkages, asFiveModification, asThreeModification, firstSsPto.value!));
+      asInputExample.value, asBases, strandPtoLinkages[IDX.AS], asFiveModification, asThreeModification, firstSsPto.value!));
     (asInputExample.input as HTMLElement).style.resize = 'none';
     (asInputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
     (asOutputExample.input as HTMLElement).style.resize = 'none';
