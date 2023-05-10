@@ -111,10 +111,13 @@ export class AxolabsTabUI {
       })
     });
 
-    const ssOutputExample = ui.textInput(' ', translateSequence(
-      strandInputExample[IDX.SS].value, strandBases[IDX.SS], strandPtoLinkages[IDX.SS], strandTerminalModification[IDX.SS][IDX.THREE_PRIME],strandTerminalModification[IDX.SS][IDX.FIVE_PRIME], firstStrandPto[IDX.SS].value!));
-    const asOutputExample = ui.textInput(' ', translateSequence(
-      strandInputExample[IDX.AS].value, strandBases[IDX.AS], strandPtoLinkages[IDX.AS], strandTerminalModification[IDX.AS][IDX.FIVE_PRIME], strandTerminalModification[IDX.AS][IDX.THREE_PRIME], firstStrandPto[IDX.SS].value!));
+    const strandOutputExample = strands.map((_, i) =>
+      ui.textInput(' ', translateSequence(
+        strandInputExample[i].value, strandBases[i], strandPtoLinkages[i], strandTerminalModification[i][IDX.THREE_PRIME],strandTerminalModification[i][IDX.FIVE_PRIME], firstStrandPto[i].value!
+      ))
+    );
+    // const strandOutputExample[IDX.AS] = ui.textInput(' ', translateSequence(
+    //   strandInputExample[IDX.AS].value, strandBases[IDX.AS], strandPtoLinkages[IDX.AS], strandTerminalModification[IDX.AS][IDX.FIVE_PRIME], strandTerminalModification[IDX.AS][IDX.THREE_PRIME], firstStrandPto[IDX.SS].value!));
 
     (strandInputExample[IDX.SS].input as HTMLElement).style.resize = 'none';
     (strandInputExample[IDX.AS].input as HTMLElement).style.resize = 'none';
@@ -122,29 +125,29 @@ export class AxolabsTabUI {
     (strandInputExample[IDX.SS].input as HTMLElement).style.minWidth = exampleMinWidth;
     (strandInputExample[IDX.AS].input as HTMLElement).style.minWidth = exampleMinWidth;
 
-    (ssOutputExample.input as HTMLElement).style.resize = 'none';
-    (asOutputExample.input as HTMLElement).style.resize = 'none';
+    (strandOutputExample[IDX.SS].input as HTMLElement).style.resize = 'none';
+    (strandOutputExample[IDX.AS].input as HTMLElement).style.resize = 'none';
 
-    (ssOutputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
-    (asOutputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
+    (strandOutputExample[IDX.SS].input as HTMLElement).style.minWidth = exampleMinWidth;
+    (strandOutputExample[IDX.AS].input as HTMLElement).style.minWidth = exampleMinWidth;
 
     // @ts-ignore
-    ssOutputExample.input.disabled = 'true';
+    strandOutputExample[IDX.SS].input.disabled = 'true';
     // @ts-ignore
-    asOutputExample.input.disabled = 'true';
+    strandOutputExample[IDX.AS].input.disabled = 'true';
 
-    ssOutputExample.root.append(
+    strandOutputExample[IDX.SS].root.append(
       ui.div([
         ui.button(ui.iconFA('copy', () => {}), () => {
-          navigator.clipboard.writeText(ssOutputExample.value).then(() =>
+          navigator.clipboard.writeText(strandOutputExample[IDX.SS].value).then(() =>
             grok.shell.info('Sequence was copied to clipboard'));
         }),
       ], 'ui-input-options'),
     );
-    asOutputExample.root.append(
+    strandOutputExample[IDX.AS].root.append(
       ui.div([
         ui.button(ui.iconFA('copy', () => {}), () => {
-          navigator.clipboard.writeText(asOutputExample.value).then(() =>
+          navigator.clipboard.writeText(strandOutputExample[IDX.AS].value).then(() =>
             grok.shell.info('Sequence was copied to clipboard'));
         }),
       ], 'ui-input-options'),
@@ -295,10 +298,10 @@ export class AxolabsTabUI {
     }
 
     function updateOutputExamples() {
-      ssOutputExample.value = translateSequence(
+      strandOutputExample[IDX.SS].value = translateSequence(
         strandInputExample[IDX.SS].value, strandBases[IDX.SS], strandPtoLinkages[IDX.SS],strandTerminalModification[IDX.SS][IDX.FIVE_PRIME], strandTerminalModification[IDX.SS][IDX.THREE_PRIME], firstStrandPto[IDX.SS].value!);
       if (createAsStrand.value) {
-        asOutputExample.value = translateSequence(
+        strandOutputExample[IDX.AS].value = translateSequence(
           strandInputExample[IDX.AS].value, strandBases[IDX.AS], strandPtoLinkages[IDX.AS], strandTerminalModification[IDX.AS][IDX.FIVE_PRIME], strandTerminalModification[IDX.AS][IDX.THREE_PRIME], firstStrandPto[IDX.AS].value!);
       }
     }
@@ -678,14 +681,14 @@ export class AxolabsTabUI {
     });
 
     asExampleDiv.append(strandInputExample[IDX.AS].root);
-    asExampleDiv.append(asOutputExample.root);
+    asExampleDiv.append(strandOutputExample[IDX.AS].root);
 
     updateUiForNewSequenceLength();
 
     const exampleSection = ui.div([
       ui.h1('Example'),
       strandInputExample[IDX.SS].root,
-      ssOutputExample.root,
+      strandOutputExample[IDX.SS].root,
       asExampleDiv,
     ], 'ui-form');
 
