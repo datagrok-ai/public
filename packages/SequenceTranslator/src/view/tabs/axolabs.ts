@@ -116,20 +116,18 @@ export class AxolabsTabUI {
         strandInputExample[i].value, strandBases[i], strandPtoLinkages[i], strandTerminalModification[i][IDX.THREE_PRIME],strandTerminalModification[i][IDX.FIVE_PRIME], firstStrandPto[i].value!
       ))
     );
-    // const strandOutputExample[IDX.AS] = ui.textInput(' ', translateSequence(
-    //   strandInputExample[IDX.AS].value, strandBases[IDX.AS], strandPtoLinkages[IDX.AS], strandTerminalModification[IDX.AS][IDX.FIVE_PRIME], strandTerminalModification[IDX.AS][IDX.THREE_PRIME], firstStrandPto[IDX.SS].value!));
 
-    (strandInputExample[IDX.SS].input as HTMLElement).style.resize = 'none';
-    (strandInputExample[IDX.AS].input as HTMLElement).style.resize = 'none';
+    strandInputExample[IDX.SS].input.style.resize = 'none';
+    strandInputExample[IDX.AS].input.style.resize = 'none';
 
-    (strandInputExample[IDX.SS].input as HTMLElement).style.minWidth = exampleMinWidth;
-    (strandInputExample[IDX.AS].input as HTMLElement).style.minWidth = exampleMinWidth;
+    strandInputExample[IDX.SS].input.style.minWidth = exampleMinWidth;
+    strandInputExample[IDX.AS].input.style.minWidth = exampleMinWidth;
 
-    (strandOutputExample[IDX.SS].input as HTMLElement).style.resize = 'none';
-    (strandOutputExample[IDX.AS].input as HTMLElement).style.resize = 'none';
+    strandOutputExample[IDX.SS].input.style.resize = 'none';
+    strandOutputExample[IDX.AS].input.style.resize = 'none';
 
-    (strandOutputExample[IDX.SS].input as HTMLElement).style.minWidth = exampleMinWidth;
-    (strandOutputExample[IDX.AS].input as HTMLElement).style.minWidth = exampleMinWidth;
+    strandOutputExample[IDX.SS].input.style.minWidth = exampleMinWidth;
+    strandOutputExample[IDX.AS].input.style.minWidth = exampleMinWidth;
 
     // @ts-ignore
     strandOutputExample[IDX.SS].input.disabled = 'true';
