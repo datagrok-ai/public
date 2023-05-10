@@ -2,7 +2,7 @@
 import { toDart } from "../wrappers";
 let api = <any>window;
 
-export class Inputs {
+export class InputType {
   static Int = 'Int';
 
   static BigInt = 'BigInt';
