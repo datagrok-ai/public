@@ -37,6 +37,378 @@ export class AxolabsTabUI {
   private axolabsStyle: AxolabsStyle;
 
   get htmlDivElement() {
+    function updateStrandModification(strandIdx: number) {
+      strandModificationItems[strandIdx].innerHTML = '';
+      strandPtoLinkages[strandIdx] = strandPtoLinkages[strandIdx].concat(Array(maximalStrandLength[strandIdx] - strandBases[strandIdx].length).fill(fullyPto));
+      strandBases[strandIdx] = strandBases[strandIdx].concat(Array(maximalStrandLength[strandIdx] - strandBases[strandIdx].length).fill(sequenceBase));
+      let nucleotideCounter = 0;
+      for (let i = 0; i < strandLengthInput[strandIdx].value!; i++) {
+        strandPtoLinkages[strandIdx][i] = ui.boolInput('', strandPtoLinkages[strandIdx][i].value!, () => {
+          updateSvgScheme();
+          updateOutputExamples();
+        });
+        strandBases[strandIdx][i] = ui.choiceInput('', strandBases[strandIdx][i].value, baseChoices, (v: string) => {
+          if (!enumerateModifications.includes(v)) {
+            enumerateModifications.push(v);
+            isEnumerateModificationsDiv.append(
+              ui.divText('', {style: {width: '25px'}}),
+              ui.boolInput(v, true, (boolV: boolean) => {
+                if (boolV) {
+                  if (!enumerateModifications.includes(v))
+                    enumerateModifications.push(v);
+                } else {
+                  const index = enumerateModifications.indexOf(v, 0);
+                  if (index > -1)
+                    enumerateModifications.splice(index, 1);
+                }
+                updateSvgScheme();
+              }).root,
+            );
+          }
+          updateStrandModification(IDX.AS);
+          updateSvgScheme();
+          updateOutputExamples();
+        });
+        if (!isOverhang(strandBases[strandIdx][i].value!))
+          nucleotideCounter++;
+
+        strandModificationItems[strandIdx].append(
+          ui.divH([
+            ui.div([ui.label(isOverhang(strandBases[strandIdx][i].value!) ? '' : String(nucleotideCounter))],
+              {style: {width: '20px'}})!,
+            ui.block75([strandBases[strandIdx][i].root])!,
+            ui.div([strandPtoLinkages[strandIdx][i]])!,
+          ], {style: {alignItems: 'center'}}),
+        );
+      }
+    }
+
+    function updateUiForNewSequenceLength() {
+      if (strandLengthInput.every((input) => input.value! < maximalValidSequenceLength)) {
+        strands.forEach((_, i) => {
+          if (
+            strandLengthInput[i].value! > maximalStrandLength[i]
+          )
+            maximalStrandLength[i] = strandLengthInput[i].value!;
+          updateStrandModification(i);
+        })
+
+        updateSvgScheme();
+        updateInputExamples();
+        updateOutputExamples();
+      } else {
+        ui.dialog('Sequence length is out of range')
+          .add(ui.divText('Sequence length should be less than ' +
+            maximalValidSequenceLength.toString() + ' due to UI constrains.'))
+          .add(ui.divText('Please change sequence length in order to define new pattern.'))
+          .show();
+      }
+    }
+
+    // todo: unify with updatePto
+    function updatePto(newPtoValue: boolean): void {
+      strands.forEach((_, strandIdx) => {
+        for (let i = 0; i < strandPtoLinkages[strandIdx].length; i++)
+          strandPtoLinkages[strandIdx][i].value = newPtoValue;
+      })
+      updateSvgScheme();
+    }
+
+    function updateBases(newBasisValue: string): void {
+      strands.forEach((_, strandIdx) => {
+        for (let i = 0; i < strandBases[strandIdx].length; i++)
+          strandBases[strandIdx][i].value = newBasisValue;
+      })
+      updateSvgScheme();
+    }
+
+    function updateInputExamples() {
+      strands.forEach((_, i) => {
+        if (inputStrandColumn[i].value === '')
+          strandInputExample[i].value = generateExample(strandLengthInput[i].value!, sequenceBase.value!);
+      });
+    }
+
+    function updateOutputExamples() {
+      const conditions = [true, createAsStrand.value];
+      strands.forEach((_, i) => {
+        if (conditions[i]) {
+          strandOutputExample[i].value = translateSequence(
+            strandInputExample[i].value,
+            strandBases[i],
+            strandPtoLinkages[i],
+            strandTerminalModification[i][IDX.FIVE_PRIME], strandTerminalModification[i][IDX.THREE_PRIME],
+            firstStrandPto[i].value!
+          );
+        }
+      })
+    }
+
+    function updateSvgScheme() {
+      svgDiv.innerHTML = '';
+      svgDiv.append(
+        ui.span([
+
+          // todo: refactor the funciton, reduce # of args
+          drawAxolabsPattern(
+            getShortName(saveAs.value),
+            createAsStrand.value!,
+
+            strandBases[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value!),
+            strandBases[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value!),
+
+            [firstStrandPto[IDX.SS].value!].concat(strandPtoLinkages[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value!)),
+            [firstStrandPto[IDX.AS].value!].concat(strandPtoLinkages[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value!)),
+
+            strandTerminalModification[IDX.SS][IDX.THREE_PRIME].value,
+            strandTerminalModification[IDX.SS][IDX.FIVE_PRIME].value,
+
+            strandTerminalModification[IDX.AS][IDX.THREE_PRIME].value,
+            strandTerminalModification[IDX.AS][IDX.FIVE_PRIME].value,
+
+            comment.value,
+            enumerateModifications,
+          ),
+        ]),
+      );
+    }
+
+    // todo: rename
+    function detectDefaultBasis(array: string[]) {
+      const modeMap: {[index: string]: number} = {};
+      let maxEl = array[0];
+      let maxCount = 1;
+      for (let i = 0; i < array.length; i++) {
+        const el = array[i];
+        if (modeMap[el] === null)
+          modeMap[el] = 1;
+        else
+          modeMap[el]++;
+        if (modeMap[el] > maxCount) {
+          maxEl = el;
+          maxCount = modeMap[el];
+        }
+      }
+      return maxEl;
+    }
+
+    async function parsePatternAndUpdateUi(newName: string) {
+      const pi = DG.TaskBarProgressIndicator.create('Loading pattern...');
+      await grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
+        const obj = JSON.parse(entities[newName]);
+        sequenceBase.value = detectDefaultBasis(obj[FIELD.AS_BASES].concat(obj[FIELD.SS_BASES]));
+        createAsStrand.value = (obj[FIELD.AS_BASES].length > 0);
+        saveAs.value = newName;
+
+        let fields = [FIELD.SS_BASES, FIELD.AS_BASES];
+        strands.forEach((_, i) => {
+          strandBases[i] = [];
+          const field = fields[i];
+          for (let j = 0; j < obj[field].length; j++)
+            strandBases[i].push(ui.choiceInput('', obj[field][j], baseChoices));
+        })
+
+        fields = [FIELD.SS_PTO, FIELD.AS_PTO];
+        strands.forEach((_, i) => {
+          const field = fields[i];
+          firstStrandPto[i].value = obj[field][0];
+          strandPtoLinkages[i] = [];
+          for (let j = 1; j < obj[field].length; j++)
+            strandPtoLinkages[i].push(ui.boolInput('', obj[field][j]));
+        });
+
+        fields = [FIELD.SS_BASES, FIELD.AS_BASES];
+        strands.forEach((_, i) => {
+          strandLengthInput[i].value = obj[fields[i]].length;
+        })
+
+        const field = [[FIELD.SS_3, FIELD.SS_5], [FIELD.AS_3, FIELD.AS_5]];
+        strands.forEach((_, i) => {
+          terminals.forEach((_, j) => {
+            strandTerminalModification[i][j].value = obj[field[i][j]];
+          })
+        })
+        comment.value = obj[FIELD.COMMENT];
+      });
+      pi.close();
+    }
+
+    function checkWhetherAllValuesInColumnHaveTheSameLength(colName: string): boolean {
+      const col = tables.value!.getCol(colName);
+      let allLengthsAreTheSame = true;
+      for (let i = 1; i < col.length; i++) {
+        if (col.get(i - 1).length !== col.get(i).length && col.get(i).length !== 0) {
+          allLengthsAreTheSame = false;
+          break;
+        }
+      }
+      if (!allLengthsAreTheSame) {
+        const dialog = ui.dialog('Sequences lengths mismatch');
+        $(dialog.getButton('OK')).hide();
+        dialog
+          .add(ui.divText('The sequence length should match the number of Raw sequences in the input file'))
+          .add(ui.divText('\'ADD COLUMN\' to see sequences lengths'))
+          .addButton('ADD COLUMN', () => {
+            tables.value!.columns.addNewInt('Sequences lengths in ' + colName).init((j: number) => col.get(j).length);
+            grok.shell.info('Column with lengths added to \'' + tables.value!.name + '\'');
+            dialog.close();
+            grok.shell.v = grok.shell.getTableView(tables.value!.name);
+          })
+          .show();
+      }
+      if (col.get(0) !== strandLengthInput[IDX.SS].value) {
+        const d = ui.dialog('Length was updated by value to from imported file');
+        d.add(ui.divText('Latest modifications may not take effect during translation'))
+          .onOK(() => grok.shell.info('Lengths changed')).show();
+      }
+      return allLengthsAreTheSame;
+    }
+
+    async function getCurrentUserName(): Promise<string> {
+      return await grok.dapi.users.current().then((user) => {
+        return ' (created by ' + user.firstName + ' ' + user.lastName + ')';
+      });
+    }
+
+    async function postPatternToUserStorage() {
+      const currUserName = await getCurrentUserName();
+      saveAs.value = (saveAs.stringValue.includes('(created by ')) ?
+        getShortName(saveAs.value) + currUserName :
+        saveAs.stringValue + currUserName;
+      return grok.dapi.userDataStorage.postValue(
+        userStorageKey,
+        saveAs.value,
+        JSON.stringify({
+          [FIELD.SS_BASES]: strandBases[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value),
+          [FIELD.AS_BASES]: strandBases[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value),
+          [FIELD.SS_PTO]: [firstStrandPto[IDX.SS].value].concat(strandPtoLinkages[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value)),
+          [FIELD.AS_PTO]: [firstStrandPto[IDX.AS].value].concat(strandPtoLinkages[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value)),
+          [FIELD.SS_3]: strandTerminalModification[IDX.SS][IDX.THREE_PRIME].value,
+          [FIELD.SS_5]:strandTerminalModification[IDX.SS][IDX.FIVE_PRIME].value,
+          [FIELD.AS_3]: strandTerminalModification[IDX.AS][IDX.THREE_PRIME].value,
+          [FIELD.AS_5]: strandTerminalModification[IDX.AS][IDX.FIVE_PRIME].value,
+          [FIELD.COMMENT]: comment.value,
+        }),
+        false,
+      ).then(() => grok.shell.info('Pattern \'' + saveAs.value + '\' was successfully uploaded!'));
+    }
+
+    async function updatePatternsList() {
+      grok.dapi.userDataStorage.get(userStorageKey, false).then(async (entities) => {
+        const lstMy: string[] = [];
+        const lstOthers: string[] = [];
+
+        // TODO: display short name, but use long for querying userdataStorage
+        for (const ent of Object.keys(entities)) {
+          if (await isCurrentUserCreatedThisPattern(ent))
+            lstOthers.push(ent);
+          else
+            lstMy.push(ent);//getShortName(ent));
+        }
+
+        let loadPattern = ui.choiceInput('Load Pattern', '', lstMy, (v: string) => parsePatternAndUpdateUi(v));
+
+        const myOrOthersPatternList = ui.choiceInput('', 'Mine', ['Mine', 'Others'], (v: string) => {
+          const currentList = v === 'Mine' ? lstMy : lstOthers;
+          loadPattern = ui.choiceInput('Load Pattern', '', currentList, (v: string) => parsePatternAndUpdateUi(v));
+
+          loadPattern.root.append(myOrOthersPatternList.input);
+          loadPattern.root.append(loadPattern.input);
+          // @ts-ignore
+          loadPattern.input.style.maxWidth = '100px';
+          loadPattern.setTooltip('Apply Existing Pattern');
+
+          loadPatternDiv.innerHTML = '';
+          loadPatternDiv.append(loadPattern.root);
+          loadPattern.root.append(
+            ui.div([
+              ui.button(ui.iconFA('trash-alt', () => {}), async () => {
+                if (loadPattern.value === null)
+                  grok.shell.warning('Choose pattern to delete');
+                else if (await isCurrentUserCreatedThisPattern(saveAs.value))
+                  grok.shell.warning('Cannot delete pattern, created by other user');
+                else {
+                  await grok.dapi.userDataStorage.remove(userStorageKey, loadPattern.value, false)
+                    .then(() => grok.shell.info('Pattern \'' + loadPattern.value + '\' deleted'));
+                }
+                await updatePatternsList();
+              }),
+            ], 'ui-input-options'),
+          );
+        });
+        loadPattern.root.append(myOrOthersPatternList.input);
+        loadPattern.root.append(loadPattern.input);
+        // @ts-ignore
+        loadPattern.input.style.maxWidth = '100px';
+        loadPattern.setTooltip('Apply Existing Pattern');
+
+        loadPatternDiv.innerHTML = '';
+        loadPatternDiv.append(loadPattern.root);
+        loadPattern.root.append(
+          ui.div([
+            ui.button(ui.iconFA('trash-alt', () => {}), async () => {
+              if (loadPattern.value === null)
+                grok.shell.warning('Choose pattern to delete');
+              else if (await isCurrentUserCreatedThisPattern(saveAs.value))
+                grok.shell.warning('Cannot delete pattern, created by other user');
+              else {
+                await grok.dapi.userDataStorage.remove(userStorageKey, loadPattern.value, false)
+                  .then(() => grok.shell.info('Pattern \'' + loadPattern.value + '\' deleted'));
+              }
+              await updatePatternsList();
+            }),
+          ], 'ui-input-options'),
+        );
+      });
+    }
+
+    async function savePattern() {
+      await grok.dapi.userDataStorage.get(userStorageKey, false)
+        .then((entities) => {
+          if (Object.keys(entities).includes(saveAs.value)) {
+            const dialog = ui.dialog('Pattern already exists');
+            $(dialog.getButton('OK')).hide();
+            dialog
+              .add(ui.divText('Pattern name \'' + saveAs.value + '\' already exists.'))
+              .add(ui.divText('Replace pattern?'))
+              .addButton('YES', async () => {
+                await grok.dapi.userDataStorage.remove(userStorageKey, saveAs.value, false)
+                  .then(() => postPatternToUserStorage());
+                dialog.close();
+              })
+              .show();
+          } else
+            postPatternToUserStorage();
+        });
+      await updatePatternsList();
+    }
+
+    function validateStrandColumn(colName: string, strandIdx: number): void {
+      const allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(colName);
+      const firstSequence = tables.value!.getCol(colName).get(0);
+      if (allLengthsAreTheSame && firstSequence.length !== strandLengthInput[strandIdx].value)
+      strandLengthInput[strandIdx].value = tables.value!.getCol(colName).get(0).length;
+      strandInputExample[strandIdx].value = firstSequence;
+    }
+
+    function validateIdsColumn(colName: string) {
+      const col = tables.value!.getCol(colName);
+      if (col.type !== DG.TYPE.INT)
+        grok.shell.error('Column should contain integers only');
+      else if (col.categories.filter((e) => e !== '').length < col.toList().filter((e) => e !== '').length) {
+        const duplicates = findDuplicates(col.getRawData());
+        ui.dialog('Non-unique IDs')
+          .add(ui.divText('Press \'OK\' to select rows with non-unique values'))
+          .onOK(() => {
+            const selection = tables.value!.selection;
+            selection.init((i: number) => duplicates.indexOf(col.get(i)) > -1);
+            grok.shell.v = grok.shell.getTableView(tables.value!.name);
+            grok.shell.info('Rows are selected in table \'' + tables.value!.name + '\'');
+          })
+          .show();
+      }
+    }
+
     const baseChoices: string[] = Object.keys(this.axolabsStyle);
     const defaultBase: string = baseChoices[0];
     const enumerateModifications = [defaultBase];
@@ -138,352 +510,6 @@ export class AxolabsTabUI {
     const firstAsPtoDiv = ui.div([]);
     firstAsPtoDiv.append(firstStrandPto[IDX.AS].root);
 
-    function updateStrandModification(strandIdx: number) {
-      strandModificationItems[strandIdx].innerHTML = '';
-      strandPtoLinkages[strandIdx] = strandPtoLinkages[strandIdx].concat(Array(maximalStrandLength[strandIdx] - strandBases[strandIdx].length).fill(fullyPto));
-      strandBases[strandIdx] = strandBases[strandIdx].concat(Array(maximalStrandLength[strandIdx] - strandBases[strandIdx].length).fill(sequenceBase));
-      let nucleotideCounter = 0;
-      for (let i = 0; i < strandLengthInput[strandIdx].value!; i++) {
-        strandPtoLinkages[strandIdx][i] = ui.boolInput('', strandPtoLinkages[strandIdx][i].value!, () => {
-          updateSvgScheme();
-          updateOutputExamples();
-        });
-        strandBases[strandIdx][i] = ui.choiceInput('', strandBases[strandIdx][i].value, baseChoices, (v: string) => {
-          if (!enumerateModifications.includes(v)) {
-            enumerateModifications.push(v);
-            isEnumerateModificationsDiv.append(
-              ui.divText('', {style: {width: '25px'}}),
-              ui.boolInput(v, true, (boolV: boolean) => {
-                if (boolV) {
-                  if (!enumerateModifications.includes(v))
-                    enumerateModifications.push(v);
-                } else {
-                  const index = enumerateModifications.indexOf(v, 0);
-                  if (index > -1)
-                    enumerateModifications.splice(index, 1);
-                }
-                updateSvgScheme();
-              }).root,
-            );
-          }
-          updateStrandModification(IDX.AS);
-          updateSvgScheme();
-          updateOutputExamples();
-        });
-        if (!isOverhang(strandBases[strandIdx][i].value!))
-          nucleotideCounter++;
-
-        strandModificationItems[strandIdx].append(
-          ui.divH([
-            ui.div([ui.label(isOverhang(strandBases[strandIdx][i].value!) ? '' : String(nucleotideCounter))],
-              {style: {width: '20px'}})!,
-            ui.block75([strandBases[strandIdx][i].root])!,
-            ui.div([strandPtoLinkages[strandIdx][i]])!,
-          ], {style: {alignItems: 'center'}}),
-        );
-      }
-    }
-
-    function updateUiForNewSequenceLength() {
-      if (strandLengthInput.every((input) => input.value! < maximalValidSequenceLength)) {
-        strands.forEach((_, i) => {
-          if (
-            strandLengthInput[i].value! > maximalStrandLength[i]
-          )
-            maximalStrandLength[i] = strandLengthInput[i].value!;
-          updateStrandModification(i);
-        })
-
-        updateSvgScheme();
-        updateInputExamples();
-        updateOutputExamples();
-      } else {
-        ui.dialog('Sequence length is out of range')
-          .add(ui.divText('Sequence length should be less than ' +
-            maximalValidSequenceLength.toString() + ' due to UI constrains.'))
-          .add(ui.divText('Please change sequence length in order to define new pattern.'))
-          .show();
-      }
-    }
-
-    // todo: unify with updatePto
-    function updatePto(newPtoValue: boolean): void {
-      strands.forEach((_, strandIdx) => {
-        for (let i = 0; i < strandPtoLinkages[strandIdx].length; i++)
-          strandPtoLinkages[strandIdx][i].value = newPtoValue;
-      })
-      updateSvgScheme();
-    }
-
-    function updateBases(newBasisValue: string): void {
-      strands.forEach((_, strandIdx) => {
-        for (let i = 0; i < strandBases[strandIdx].length; i++)
-          strandBases[strandIdx][i].value = newBasisValue;
-      })
-      updateSvgScheme();
-    }
-
-    function updateInputExamples() {
-      strands.forEach((_, i) => {
-        if (inputStrandColumn[i].value == '')
-          strandInputExample[i].value = generateExample(strandLengthInput[i].value!, sequenceBase.value!);
-      });
-    }
-
-    function updateOutputExamples() {
-      const conditions = [true, createAsStrand.value];
-      strands.forEach((_, i) => {
-        if (conditions[i]) {
-          strandOutputExample[i].value = translateSequence(
-            strandInputExample[i].value,
-            strandBases[i],
-            strandPtoLinkages[i],
-            strandTerminalModification[i][IDX.FIVE_PRIME], strandTerminalModification[i][IDX.THREE_PRIME],
-            firstStrandPto[i].value!
-          );
-        }
-      })
-    }
-
-    function updateSvgScheme() {
-      svgDiv.innerHTML = '';
-      svgDiv.append(
-        ui.span([
-
-          // todo: refactor the funciton, reduce # of args
-          drawAxolabsPattern(
-            getShortName(saveAs.value),
-            createAsStrand.value!,
-
-            strandBases[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value!),
-            strandBases[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value!),
-
-            [firstStrandPto[IDX.SS].value!].concat(strandPtoLinkages[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value!)),
-            [firstStrandPto[IDX.AS].value!].concat(strandPtoLinkages[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value!)),
-
-            strandTerminalModification[IDX.SS][IDX.THREE_PRIME].value,
-            strandTerminalModification[IDX.SS][IDX.FIVE_PRIME].value,
-
-            strandTerminalModification[IDX.AS][IDX.THREE_PRIME].value,
-            strandTerminalModification[IDX.AS][IDX.FIVE_PRIME].value,
-
-            comment.value,
-            enumerateModifications,
-          ),
-        ]),
-      );
-    }
-
-    // todo: rename
-    function detectDefaultBasis(array: string[]) {
-      const modeMap: {[index: string]: number} = {};
-      let maxEl = array[0];
-      let maxCount = 1;
-      for (let i = 0; i < array.length; i++) {
-        const el = array[i];
-        if (modeMap[el] == null)
-          modeMap[el] = 1;
-        else
-          modeMap[el]++;
-        if (modeMap[el] > maxCount) {
-          maxEl = el;
-          maxCount = modeMap[el];
-        }
-      }
-      return maxEl;
-    }
-
-    async function parsePatternAndUpdateUi(newName: string) {
-      const pi = DG.TaskBarProgressIndicator.create('Loading pattern...');
-      await grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
-        const obj = JSON.parse(entities[newName]);
-        sequenceBase.value = detectDefaultBasis(obj[FIELD.AS_BASES].concat(obj[FIELD.SS_BASES]));
-        createAsStrand.value = (obj[FIELD.AS_BASES].length > 0);
-        saveAs.value = newName;
-
-        let fields = [FIELD.SS_BASES, FIELD.AS_BASES];
-        strands.forEach((_, i) => {
-          strandBases[i] = [];
-          const field = fields[i];
-          for (let j = 0; j < obj[field].length; j++)
-            strandBases[i].push(ui.choiceInput('', obj[field][j], baseChoices));
-        })
-
-        fields = [FIELD.SS_PTO, FIELD.AS_PTO];
-        strands.forEach((_, i) => {
-          const field = fields[i];
-          firstStrandPto[i].value = obj[field][0];
-          strandPtoLinkages[i] = [];
-          for (let j = 1; j < obj[field].length; j++)
-            strandPtoLinkages[i].push(ui.boolInput('', obj[field][j]));
-        });
-
-        fields = [FIELD.SS_BASES, FIELD.AS_BASES];
-        strands.forEach((_, i) => {
-          strandLengthInput[i].value = obj[fields[i]].length;
-        })
-
-        const field = [[FIELD.SS_3, FIELD.SS_5], [FIELD.AS_3, FIELD.AS_5]];
-        strands.forEach((_, i) => {
-          terminals.forEach((_, j) => {
-            strandTerminalModification[i][j].value = obj[field[i][j]];
-          })
-        })
-        comment.value = obj[FIELD.COMMENT];
-      });
-      pi.close();
-    }
-
-    function checkWhetherAllValuesInColumnHaveTheSameLength(colName: string): boolean {
-      const col = tables.value!.getCol(colName);
-      let allLengthsAreTheSame = true;
-      for (let i = 1; i < col.length; i++) {
-        if (col.get(i - 1).length != col.get(i).length && col.get(i).length != 0) {
-          allLengthsAreTheSame = false;
-          break;
-        }
-      }
-      if (!allLengthsAreTheSame) {
-        const dialog = ui.dialog('Sequences lengths mismatch');
-        $(dialog.getButton('OK')).hide();
-        dialog
-          .add(ui.divText('The sequence length should match the number of Raw sequences in the input file'))
-          .add(ui.divText('\'ADD COLUMN\' to see sequences lengths'))
-          .addButton('ADD COLUMN', () => {
-            tables.value!.columns.addNewInt('Sequences lengths in ' + colName).init((j: number) => col.get(j).length);
-            grok.shell.info('Column with lengths added to \'' + tables.value!.name + '\'');
-            dialog.close();
-            grok.shell.v = grok.shell.getTableView(tables.value!.name);
-          })
-          .show();
-      }
-      if (col.get(0) != strandLengthInput[IDX.SS].value) {
-        const d = ui.dialog('Length was updated by value to from imported file');
-        d.add(ui.divText('Latest modifications may not take effect during translation'))
-          .onOK(() => grok.shell.info('Lengths changed')).show();
-      }
-      return allLengthsAreTheSame;
-    }
-
-    async function getCurrentUserName(): Promise<string> {
-      return await grok.dapi.users.current().then((user) => {
-        return ' (created by ' + user.firstName + ' ' + user.lastName + ')';
-      });
-    }
-
-    async function postPatternToUserStorage() {
-      const currUserName = await getCurrentUserName();
-      saveAs.value = (saveAs.stringValue.includes('(created by ')) ?
-        getShortName(saveAs.value) + currUserName :
-        saveAs.stringValue + currUserName;
-      return grok.dapi.userDataStorage.postValue(
-        userStorageKey,
-        saveAs.value,
-        JSON.stringify({
-          [FIELD.SS_BASES]: strandBases[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value),
-          [FIELD.AS_BASES]: strandBases[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value),
-          [FIELD.SS_PTO]: [firstStrandPto[IDX.SS].value].concat(strandPtoLinkages[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value)),
-          [FIELD.AS_PTO]: [firstStrandPto[IDX.AS].value].concat(strandPtoLinkages[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value)),
-          [FIELD.SS_3]: strandTerminalModification[IDX.SS][IDX.THREE_PRIME].value,
-          [FIELD.SS_5]:strandTerminalModification[IDX.SS][IDX.FIVE_PRIME].value,
-          [FIELD.AS_3]: strandTerminalModification[IDX.AS][IDX.THREE_PRIME].value,
-          [FIELD.AS_5]: strandTerminalModification[IDX.AS][IDX.FIVE_PRIME].value,
-          [FIELD.COMMENT]: comment.value,
-        }),
-        false,
-      ).then(() => grok.shell.info('Pattern \'' + saveAs.value + '\' was successfully uploaded!'));
-    }
-
-    async function updatePatternsList() {
-      grok.dapi.userDataStorage.get(userStorageKey, false).then(async (entities) => {
-        const lstMy: string[] = [];
-        const lstOthers: string[] = [];
-
-        // TODO: display short name, but use long for querying userdataStorage
-        for (const ent of Object.keys(entities)) {
-          if (await isCurrentUserCreatedThisPattern(ent))
-            lstOthers.push(ent);
-          else
-            lstMy.push(ent);//getShortName(ent));
-        }
-
-        let loadPattern = ui.choiceInput('Load Pattern', '', lstMy, (v: string) => parsePatternAndUpdateUi(v));
-
-        const myOrOthersPatternList = ui.choiceInput('', 'Mine', ['Mine', 'Others'], (v: string) => {
-          const currentList = v == 'Mine' ? lstMy : lstOthers;
-          loadPattern = ui.choiceInput('Load Pattern', '', currentList, (v: string) => parsePatternAndUpdateUi(v));
-
-          loadPattern.root.append(myOrOthersPatternList.input);
-          loadPattern.root.append(loadPattern.input);
-          // @ts-ignore
-          loadPattern.input.style.maxWidth = '100px';
-          loadPattern.setTooltip('Apply Existing Pattern');
-
-          loadPatternDiv.innerHTML = '';
-          loadPatternDiv.append(loadPattern.root);
-          loadPattern.root.append(
-            ui.div([
-              ui.button(ui.iconFA('trash-alt', () => {}), async () => {
-                if (loadPattern.value == null)
-                  grok.shell.warning('Choose pattern to delete');
-                else if (await isCurrentUserCreatedThisPattern(saveAs.value))
-                  grok.shell.warning('Cannot delete pattern, created by other user');
-                else {
-                  await grok.dapi.userDataStorage.remove(userStorageKey, loadPattern.value, false)
-                    .then(() => grok.shell.info('Pattern \'' + loadPattern.value + '\' deleted'));
-                }
-                await updatePatternsList();
-              }),
-            ], 'ui-input-options'),
-          );
-        });
-        loadPattern.root.append(myOrOthersPatternList.input);
-        loadPattern.root.append(loadPattern.input);
-        // @ts-ignore
-        loadPattern.input.style.maxWidth = '100px';
-        loadPattern.setTooltip('Apply Existing Pattern');
-
-        loadPatternDiv.innerHTML = '';
-        loadPatternDiv.append(loadPattern.root);
-        loadPattern.root.append(
-          ui.div([
-            ui.button(ui.iconFA('trash-alt', () => {}), async () => {
-              if (loadPattern.value == null)
-                grok.shell.warning('Choose pattern to delete');
-              else if (await isCurrentUserCreatedThisPattern(saveAs.value))
-                grok.shell.warning('Cannot delete pattern, created by other user');
-              else {
-                await grok.dapi.userDataStorage.remove(userStorageKey, loadPattern.value, false)
-                  .then(() => grok.shell.info('Pattern \'' + loadPattern.value + '\' deleted'));
-              }
-              await updatePatternsList();
-            }),
-          ], 'ui-input-options'),
-        );
-      });
-    }
-
-    async function savePattern() {
-      await grok.dapi.userDataStorage.get(userStorageKey, false)
-        .then((entities) => {
-          if (Object.keys(entities).includes(saveAs.value)) {
-            const dialog = ui.dialog('Pattern already exists');
-            $(dialog.getButton('OK')).hide();
-            dialog
-              .add(ui.divText('Pattern name \'' + saveAs.value + '\' already exists.'))
-              .add(ui.divText('Replace pattern?'))
-              .addButton('YES', async () => {
-                await grok.dapi.userDataStorage.remove(userStorageKey, saveAs.value, false)
-                  .then(() => postPatternToUserStorage());
-                dialog.close();
-              })
-              .show();
-          } else
-            postPatternToUserStorage();
-        });
-      await updatePatternsList();
-    }
-
     const inputIdColumnDiv = ui.div([]);
     const svgDiv = ui.div([]);
     const asExampleDiv = ui.div([]);
@@ -507,32 +533,6 @@ export class AxolabsTabUI {
 
     const asLengthDiv = ui.div([strandLengthInput[IDX.AS].root]);
     
-    function validateStrandColumn(colName: string, strandIdx: number): void {
-      const allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(colName);
-      const firstSequence = tables.value!.getCol(colName).get(0);
-      if (allLengthsAreTheSame && firstSequence.length != strandLengthInput[strandIdx].value)
-      strandLengthInput[strandIdx].value = tables.value!.getCol(colName).get(0).length;
-      strandInputExample[strandIdx].value = firstSequence;
-    }
-
-    function validateIdsColumn(colName: string) {
-      const col = tables.value!.getCol(colName);
-      if (col.type != DG.TYPE.INT)
-        grok.shell.error('Column should contain integers only');
-      else if (col.categories.filter((e) => e != '').length < col.toList().filter((e) => e != '').length) {
-        const duplicates = findDuplicates(col.getRawData());
-        ui.dialog('Non-unique IDs')
-          .add(ui.divText('Press \'OK\' to select rows with non-unique values'))
-          .onOK(() => {
-            const selection = tables.value!.selection;
-            selection.init((i: number) => duplicates.indexOf(col.get(i)) > -1);
-            grok.shell.v = grok.shell.getTableView(tables.value!.name);
-            grok.shell.info('Rows are selected in table \'' + tables.value!.name + '\'');
-          })
-          .show();
-      }
-    }
-
     const tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, (t: DG.DataFrame) => {
       strands.forEach((strand, i) => {
         inputStrandColumn[i] = ui.choiceInput(`${strand} Column`, '', t.columns.names(), (colName: string) => {
@@ -585,7 +585,7 @@ export class AxolabsTabUI {
     const comment = ui.textInput('Comment', '', () => updateSvgScheme());
 
     const savePatternButton = ui.button('Save', () => {
-      if (saveAs.value != '')
+      if (saveAs.value !== '')
         savePattern().then(() => grok.shell.info('Pattern saved'));
       else {
         const name = ui.stringInput('Enter Name', '');
@@ -616,7 +616,7 @@ export class AxolabsTabUI {
           })
           .show();
       } else {
-        if (idVar != '')
+        if (idVar !== '')
           addColumnWithIds(tables.value!.name, idVar, getShortName(saveAs.value));
         const condition = [true, createAsStrand.value];
         strands.forEach((_, i) => {
