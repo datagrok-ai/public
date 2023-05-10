@@ -1,6 +1,5 @@
 ---
 title: "Release History"
-description: "trololo"
 ---
 
 ## Latest version
