@@ -1,17 +1,22 @@
 package grok_connect.providers;
 
+import grok_connect.GrokConnect;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.utils.*;
-
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Properties;
+import java.util.*;
 
 public class NeptuneDataProvider extends JdbcDataProvider {
+    private static final List<String> SUPPORTED_VERSIONS =
+            Collections.unmodifiableList(Arrays.asList("< 1.2.0.0 and >= 1.1.1.0", ">= 1.2.0.0"));
     public NeptuneDataProvider(ProviderManager providerManager) {
         super(providerManager);
         driverClassName = "software.aws.neptune.NeptuneDriver";
@@ -19,12 +24,15 @@ public class NeptuneDataProvider extends JdbcDataProvider {
         descriptor.type = "Neptune";
         descriptor.commentStart = "//";
         descriptor.description = "Amazon Neptune is a fully managed graph database service";
+        Property engine = new Property(Property.STRING_TYPE, "engineVersion");
+        engine.choices = SUPPORTED_VERSIONS;
         descriptor.connectionTemplate = new ArrayList<Property>() {{
             add(new Property(Property.STRING_TYPE, DbCredentials.SERVER));
             add(new Property(Property.INT_TYPE, DbCredentials.PORT, new Prop()));
             add(new Property(Property.STRING_TYPE, "serviceRegion"));
             add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
+            add(engine);
             add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_SCHEMA));
             add(new Property(Property.BOOL_TYPE, DbCredentials.CACHE_RESULTS));
             add(new Property(Property.STRING_TYPE, DbCredentials.CACHE_INVALIDATE_SCHEDULE));
@@ -56,9 +64,31 @@ public class NeptuneDataProvider extends JdbcDataProvider {
         return properties;
     }
 
-    public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        prepareProvider();
+    public Connection getConnection(DataConnection conn) throws SQLException {
+        String engineVersion = conn.get("engineVersion");
+        if (engineVersion.equals(SUPPORTED_VERSIONS.get(0))) {
+            loadDriver("neptune-jdbc-2.0.0-all.jar");
+        } else {
+            loadDriver("amazon-neptune-jdbc-driver-3.0.0.jar");
+        }
         return CustomDriverManager.getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
+    }
+
+    private void loadDriver(String name) {
+       String baseDir = getBaseDirName();
+        try {
+            URLClassLoader child = new URLClassLoader (new URL[] {new URL(String.format("jar:file://%s/lib/%s!/",
+                    baseDir, name)).toURI().toURL()},
+                    NeptuneDataProvider.class.getClassLoader());
+            Class.forName(driverClassName, true, child);
+        } catch (MalformedURLException | URISyntaxException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String getBaseDirName() {
+        Properties props = GrokConnect.getInfo();
+        return props.get("basedir").toString();
     }
 
     public String getConnectionStringImpl(DataConnection conn) {
