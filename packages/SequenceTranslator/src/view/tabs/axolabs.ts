@@ -54,13 +54,12 @@ export class AxolabsTabUI {
       updateOutputExamples();
     });
     const fullyPto = ui.boolInput('Fully PTO', defaultPto, (v: boolean) => {
-      firstStrandPto[IDX.SS].value = v;
-      firstStrandPto[IDX.AS].value = v;
+      strands.forEach((_, i) => {
+        firstStrandPto[i].value = v;
+      })
       updatePto(v);
       updateOutputExamples();
     });
-
-
 
     const maximalStrandLength = strands.map(() => defaultSequenceLength);
     // todo: remove vague legacy 'items' from name
@@ -75,7 +74,7 @@ export class AxolabsTabUI {
       const input = ui.intInput(`${strand} Length`, defaultSequenceLength, () => updateUiForNewSequenceLength());
       input.setTooltip(`Length of ${strandLongNames[i].toLowerCase()}, including overhangs`);
       return input;
-    })
+    }).filter((input) => input.value !== null);
     const strandVar = strands.map(() => '');
     // todo: rename to strandColumnInputDiv
     const inputStrandColumnDiv = strands.map(() => ui.div([]));
@@ -86,7 +85,7 @@ export class AxolabsTabUI {
     // todo: rename to strandColumnInput
     const inputStrandColumn = strands.map((_, i) => {
       const input: StringInput = ui.choiceInput(`${strandLongNames[i]} Column`, '', [], (colName: string) => {
-        validateStrandColumn(colName, IDX.SS);
+        validateStrandColumn(colName, i);
         strandVar[i] = colName;
       });
       inputStrandColumnDiv[i].append(input.root);
@@ -195,13 +194,15 @@ export class AxolabsTabUI {
     }
 
     function updateUiForNewSequenceLength() {
-      if (strandLengthInput[IDX.SS].value! < maximalValidSequenceLength && strandLengthInput[IDX.AS].value! < maximalValidSequenceLength) {
-        if (strandLengthInput[IDX.SS].value! > maximalStrandLength[IDX.SS])
-          maximalStrandLength[IDX.SS] = strandLengthInput[IDX.SS].value!;
-        if (strandLengthInput[IDX.AS].value! > maximalStrandLength[IDX.AS])
-          maximalStrandLength[IDX.AS] = strandLengthInput[IDX.AS].value!;
-        updateStrandModification(IDX.SS);
-        updateStrandModification(IDX.AS);
+      if (strandLengthInput.every((input) => input.value! < maximalValidSequenceLength)) {
+        strands.forEach((_, i) => {
+          if (
+            strandLengthInput[i].value! > maximalStrandLength[i]
+          )
+            maximalStrandLength[i] = strandLengthInput[i].value!;
+          updateStrandModification(i);
+        })
+
         updateSvgScheme();
         updateInputExamples();
         updateOutputExamples();
