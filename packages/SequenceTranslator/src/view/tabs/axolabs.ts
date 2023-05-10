@@ -52,6 +52,13 @@ export class AxolabsTabUI {
       updateBases(v);
       updateOutputExamples();
     });
+    const fullyPto = ui.boolInput('Fully PTO', defaultPto, (v: boolean) => {
+      firstStrandPto[IDX.SS].value = v;
+      firstStrandPto[IDX.AS].value = v;
+      updatePto(v);
+      updateOutputExamples();
+    });
+
 
 
     const maximalStrandLength = strands.map(() => defaultSequenceLength);
@@ -71,11 +78,10 @@ export class AxolabsTabUI {
     const strandVar = strands.map(() => '');
     // todo: rename to strandColumnInputDiv
     const inputStrandColumnDiv = strands.map(() => ui.div([]));
-
     const strandInputExample = strands.map((_, i) => {
       return ui.textInput(`${strandLongNames[i]}`, generateExample(strandLengthInput[i].value!, sequenceBase.value!));
     })
-
+   
     // todo: rename to strandColumnInput
     const inputStrandColumn = strands.map((_, i) => {
       const input: StringInput = ui.choiceInput(`${strandLongNames[i]} Column`, '', [], (colName: string) => {
@@ -85,6 +91,16 @@ export class AxolabsTabUI {
       inputStrandColumnDiv[i].append(input.root);
       return input;
     })
+
+    const firstStrandPto = strands.map((strand, i) => {
+      const input = ui.boolInput(`First ${strand} PTO`, fullyPto.value!, () => updateSvgScheme());
+      input.setTooltip(`ps linkage before first nucleotide of ${strandLongNames[i].toLowerCase()}`);
+      return input;
+    });
+
+    const firstAsPtoDiv = ui.div([]);
+    firstAsPtoDiv.append(firstStrandPto[IDX.AS].root);
+
 
     function updateAsModification() {
       strandModificationItems[IDX.AS].innerHTML = '';
@@ -227,10 +243,10 @@ export class AxolabsTabUI {
 
     function updateOutputExamples() {
       ssOutputExample.value = translateSequence(
-        strandInputExample[IDX.SS].value, strandBases[IDX.SS], strandPtoLinkages[IDX.SS], ssFiveModification, ssThreeModification, firstSsPto.value!);
+        strandInputExample[IDX.SS].value, strandBases[IDX.SS], strandPtoLinkages[IDX.SS], ssFiveModification, ssThreeModification, firstStrandPto[IDX.SS].value!);
       if (createAsStrand.value) {
         asOutputExample.value = translateSequence(
-          strandInputExample[IDX.AS].value, strandBases[IDX.AS], strandPtoLinkages[IDX.AS], asFiveModification, asThreeModification, firstAsPto.value!);
+          strandInputExample[IDX.AS].value, strandBases[IDX.AS], strandPtoLinkages[IDX.AS], asFiveModification, asThreeModification, firstStrandPto[IDX.AS].value!);
       }
     }
 
@@ -242,8 +258,8 @@ export class AxolabsTabUI {
             createAsStrand.value!,
             strandBases[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value!),
             strandBases[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value!),
-            [firstSsPto.value!].concat(strandPtoLinkages[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value!)),
-            [firstAsPto.value!].concat(strandPtoLinkages[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value!)),
+            [firstStrandPto[IDX.SS].value!].concat(strandPtoLinkages[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value!)),
+            [firstStrandPto[IDX.AS].value!].concat(strandPtoLinkages[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value!)),
             ssThreeModification.value,
             ssFiveModification.value,
             asThreeModification.value,
@@ -289,12 +305,12 @@ export class AxolabsTabUI {
         for (let i = 0; i < obj[FIELD.AS_BASES].length; i++)
           strandBases[IDX.AS].push(ui.choiceInput('', obj[FIELD.AS_BASES][i], baseChoices));
 
-        firstSsPto.value = obj[FIELD.SS_PTO][0];
+        firstStrandPto[IDX.SS].value = obj[FIELD.SS_PTO][0];
         strandPtoLinkages[IDX.SS] = [];
         for (let i = 1; i < obj[FIELD.SS_PTO].length; i++)
           strandPtoLinkages[IDX.SS].push(ui.boolInput('', obj[FIELD.SS_PTO][i]));
 
-        firstAsPto.value = obj[FIELD.AS_PTO][0];
+        firstStrandPto[IDX.AS].value = obj[FIELD.AS_PTO][0];
         strandPtoLinkages[IDX.AS] = [];
         for (let i = 1; i < obj[FIELD.AS_PTO].length; i++)
           strandPtoLinkages[IDX.AS].push(ui.boolInput('', obj[FIELD.AS_PTO][i]));
@@ -359,8 +375,8 @@ export class AxolabsTabUI {
         JSON.stringify({
           [FIELD.SS_BASES]: strandBases[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value),
           [FIELD.AS_BASES]: strandBases[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value),
-          [FIELD.SS_PTO]: [firstSsPto.value].concat(strandPtoLinkages[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value)),
-          [FIELD.AS_PTO]: [firstAsPto.value].concat(strandPtoLinkages[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value)),
+          [FIELD.SS_PTO]: [firstStrandPto[IDX.SS].value].concat(strandPtoLinkages[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value)),
+          [FIELD.AS_PTO]: [firstStrandPto[IDX.AS].value].concat(strandPtoLinkages[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value)),
           [FIELD.SS_3]: ssThreeModification.value,
           [FIELD.SS_5]: ssFiveModification.value,
           [FIELD.AS_3]: asThreeModification.value,
@@ -467,7 +483,6 @@ export class AxolabsTabUI {
     const appAxolabsDescription = ui.div([]);
     const loadPatternDiv = ui.div([]);
     const asModificationDiv = ui.div([]);
-    const firstAsPtoDiv = ui.div([]);
     const isEnumerateModificationsDiv = ui.divH([
       ui.boolInput(defaultBase, true, (v: boolean) => {
         if (v) {
@@ -541,19 +556,6 @@ export class AxolabsTabUI {
     inputIdColumnDiv.append(inputIdColumn.root);
 
     updatePatternsList();
-
-    const fullyPto = ui.boolInput('Fully PTO', defaultPto, (v: boolean) => {
-      firstSsPto.value = v;
-      firstAsPto.value = v;
-      updatePto(v);
-      updateOutputExamples();
-    });
-
-    const firstSsPto = ui.boolInput('First SS PTO', fullyPto.value!, () => updateSvgScheme());
-    firstSsPto.setTooltip('ps linkage before first nucleotide of sense strand');
-    const firstAsPto = ui.boolInput('First AS PTO', fullyPto.value!, () => updateSvgScheme());
-    firstAsPto.setTooltip('ps linkage before first nucleotide of antisense strand');
-    firstAsPtoDiv.append(firstAsPto.root);
 
     const createAsStrand = ui.boolInput('Create AS Strand', true, (v: boolean) => {
       asModificationSection.hidden = (!v);
@@ -630,11 +632,11 @@ export class AxolabsTabUI {
           addColumnWithIds(tables.value!.name, idVar, getShortName(saveAs.value));
         addColumnWithTranslatedSequences(
           tables.value!.name, strandVar[IDX.SS], strandBases[IDX.SS], strandPtoLinkages[IDX.SS],
-          ssFiveModification, ssThreeModification, firstSsPto.value!);
+          ssFiveModification, ssThreeModification, firstStrandPto[IDX.SS].value!);
         if (createAsStrand.value) {
           addColumnWithTranslatedSequences(
             tables.value!.name, strandVar[IDX.AS], strandBases[IDX.AS], strandPtoLinkages[IDX.AS],
-            asFiveModification, asThreeModification, firstAsPto.value!);
+            asFiveModification, asThreeModification, firstStrandPto[IDX.AS].value!);
         }
         grok.shell.v = grok.shell.getTableView(tables.value!.name);
         grok.shell.info(((createAsStrand.value) ? 'Columns were' : 'Column was') +
@@ -644,9 +646,9 @@ export class AxolabsTabUI {
     });
 
     const ssOutputExample = ui.textInput(' ', translateSequence(
-      strandInputExample[IDX.SS].value, strandBases[IDX.SS], strandPtoLinkages[IDX.SS], ssThreeModification, ssFiveModification, firstSsPto.value!));
+      strandInputExample[IDX.SS].value, strandBases[IDX.SS], strandPtoLinkages[IDX.SS], ssThreeModification, ssFiveModification, firstStrandPto[IDX.SS].value!));
     const asOutputExample = ui.textInput(' ', translateSequence(
-      strandInputExample[IDX.AS].value, strandBases[IDX.AS], strandPtoLinkages[IDX.AS], asFiveModification, asThreeModification, firstSsPto.value!));
+      strandInputExample[IDX.AS].value, strandBases[IDX.AS], strandPtoLinkages[IDX.AS], asFiveModification, asThreeModification, firstStrandPto[IDX.SS].value!));
 
     (strandInputExample[IDX.SS].input as HTMLElement).style.resize = 'none';
     (strandInputExample[IDX.AS].input as HTMLElement).style.resize = 'none';
@@ -744,7 +746,7 @@ export class AxolabsTabUI {
             ui.div([
               createAsStrand.root,
               fullyPto.root,
-              firstSsPto.root,
+              firstStrandPto[IDX.SS].root,
               firstAsPtoDiv,
               ssFiveModification.root,
               ssThreeModification.root,
