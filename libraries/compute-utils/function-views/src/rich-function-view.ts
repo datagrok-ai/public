@@ -142,7 +142,7 @@ export class RichFunctionView extends FunctionView {
   buildRibbonPanels(): HTMLElement[][] {
     super.buildRibbonPanels();
 
-    const play = ui.iconFA('play', async () => await this.doRun());
+    const play = ui.iconFA('play', async () => await this.doRun(), 'Run computations');
     play.classList.add('fas');
 
     const save = ui.iconFA('save', async () => {
@@ -150,7 +150,7 @@ export class RichFunctionView extends FunctionView {
         await this.saveRun(this.lastCall);
       else
         grok.shell.warning('Function was not called. Call it before saving');
-    });
+    }, 'Save the last function run');
 
     const newRibbonPanels = [
       ...this.getRibbonPanels(),

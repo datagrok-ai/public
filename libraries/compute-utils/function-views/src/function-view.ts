@@ -295,7 +295,7 @@ export abstract class FunctionView extends DG.ViewBase {
         grok.shell.windows.showProperties = !grok.shell.windows.showProperties;
         historyButton.classList.toggle('d4-current');
         grok.shell.o = this.historyRoot;
-      });
+      }, 'Open function calls history');
 
       historyButton.classList.add('d4-toggle-button');
       if (grok.shell.windows.showProperties) historyButton.classList.add('d4-current');
