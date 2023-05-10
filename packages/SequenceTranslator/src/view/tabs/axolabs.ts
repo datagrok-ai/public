@@ -50,10 +50,9 @@ export class AxolabsTabUI {
       input.setTooltip(`Length of ${strandLongNames[i].toLowerCase()}, including overhangs`);
       return input;
     })
-    // const strandLengthInput[IDX.SS] = ui.intInput('SS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
-    // strandLengthInput[IDX.SS].setTooltip('Length of sense strand, including overhangs');
-    // const strandLengthInput[IDX.AS] = ui.intInput('AS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
-    // strandLengthInput[IDX.AS].setTooltip('Length of sense strand, including overhangs');
+    const strandVar = strands.map(() => '');
+    // let strandVar[IDX.SS] = '';
+    // let strandVar[IDX.AS] = '';
 
 
     function updateAsModification() {
@@ -494,13 +493,13 @@ export class AxolabsTabUI {
     const tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, (t: DG.DataFrame) => {
       const inputSsColumn = ui.choiceInput('SS Column', '', t.columns.names(), (colName: string) => {
         validateSsColumn(colName);
-        ssVar = colName;
+        strandVar[IDX.SS] = colName;
       });
       inputSsColumnDiv.innerHTML = '';
       inputSsColumnDiv.append(inputSsColumn.root);
       const inputAsColumn = ui.choiceInput('AS Column', '', t.columns.names(), (colName: string) => {
         validateAsColumn(colName);
-        asVar = colName;
+        strandVar[IDX.AS] = colName;
       });
       inputAsColumnDiv.innerHTML = '';
       inputAsColumnDiv.append(inputAsColumn.root);
@@ -512,16 +511,14 @@ export class AxolabsTabUI {
       inputIdColumnDiv.append(inputIdColumn.root);
     });
 
-    let ssVar = '';
     const inputSsColumn = ui.choiceInput('SS Column', '', [], (colName: string) => {
       validateSsColumn(colName);
-      ssVar = colName;
+      strandVar[IDX.SS] = colName;
     });
     inputSsColumnDiv.append(inputSsColumn.root);
-    let asVar = '';
     const inputAsColumn = ui.choiceInput('AS Column', '', [], (colName: string) => {
       validateAsColumn(colName);
-      asVar = colName;
+      strandVar[IDX.AS] = colName;
     });
     inputAsColumnDiv.append(inputAsColumn.root);
     let idVar = '';
@@ -610,7 +607,7 @@ export class AxolabsTabUI {
     });
 
     const convertSequenceButton = ui.button('Convert Sequences', () => {
-      if (ssVar == '' || (createAsStrand.value && asVar == ''))
+      if (strandVar[IDX.SS] == '' || (createAsStrand.value && strandVar[IDX.AS] == ''))
         grok.shell.info('Please select table and columns on which to apply pattern');
       else if (strandLengthInput[IDX.SS].value != ssInputExample.value.length || strandLengthInput[IDX.AS].value != asInputExample.value.length) {
         const dialog = ui.dialog('Length Mismatch');
@@ -627,11 +624,11 @@ export class AxolabsTabUI {
         if (idVar != '')
           addColumnWithIds(tables.value!.name, idVar, getShortName(saveAs.value));
         addColumnWithTranslatedSequences(
-          tables.value!.name, ssVar, strandBases[IDX.SS], strandPtoLinkages[IDX.SS],
+          tables.value!.name, strandVar[IDX.SS], strandBases[IDX.SS], strandPtoLinkages[IDX.SS],
           ssFiveModification, ssThreeModification, firstSsPto.value!);
         if (createAsStrand.value) {
           addColumnWithTranslatedSequences(
-            tables.value!.name, asVar, strandBases[IDX.AS], strandPtoLinkages[IDX.AS],
+            tables.value!.name, strandVar[IDX.AS], strandBases[IDX.AS], strandPtoLinkages[IDX.AS],
             asFiveModification, asThreeModification, firstAsPto.value!);
         }
         grok.shell.v = grok.shell.getTableView(tables.value!.name);
