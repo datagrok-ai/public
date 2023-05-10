@@ -45,10 +45,15 @@ export class AxolabsTabUI {
     const strandBases = strands.map(() => 
       Array<StringInput>(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices))
     );
-    const ssLength = ui.intInput('SS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
-    ssLength.setTooltip('Length of sense strand, including overhangs');
-    const asLength = ui.intInput('AS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
-    asLength.setTooltip('Length of sense strand, including overhangs');
+    const strandLengthInput = strands.map((strand, i) => {
+      const input = ui.intInput(`${strand} Length`, defaultSequenceLength, () => updateUiForNewSequenceLength());
+      input.setTooltip(`Length of ${strandLongNames[i].toLowerCase()}, including overhangs`);
+      return input;
+    })
+    // const strandLengthInput[IDX.SS] = ui.intInput('SS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
+    // strandLengthInput[IDX.SS].setTooltip('Length of sense strand, including overhangs');
+    // const strandLengthInput[IDX.AS] = ui.intInput('AS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
+    // strandLengthInput[IDX.AS].setTooltip('Length of sense strand, including overhangs');
 
 
     function updateAsModification() {
@@ -56,7 +61,7 @@ export class AxolabsTabUI {
       strandPtoLinkages[IDX.AS] = strandPtoLinkages[IDX.AS].concat(Array(maximalStrandLength[IDX.AS] - strandBases[IDX.AS].length).fill(fullyPto));
       strandBases[IDX.AS] = strandBases[IDX.AS].concat(Array(maximalStrandLength[IDX.AS] - strandBases[IDX.AS].length).fill(sequenceBase));
       let nucleotideCounter = 0;
-      for (let i = 0; i < asLength.value!; i++) {
+      for (let i = 0; i < strandLengthInput[IDX.AS].value!; i++) {
         strandPtoLinkages[IDX.AS][i] = ui.boolInput('', strandPtoLinkages[IDX.AS][i].value!, () => {
           updateSvgScheme();
           updateOutputExamples();
@@ -102,7 +107,7 @@ export class AxolabsTabUI {
       strandPtoLinkages[IDX.SS] = strandPtoLinkages[IDX.SS].concat(Array(maximalStrandLength[IDX.SS] - strandBases[IDX.SS].length).fill(fullyPto));
       strandBases[IDX.SS] = strandBases[IDX.SS].concat(Array(maximalStrandLength[IDX.SS] - strandBases[IDX.SS].length).fill(sequenceBase));
       let nucleotideCounter = 0;
-      for (let i = 0; i < ssLength.value!; i++) {
+      for (let i = 0; i < strandLengthInput[IDX.SS].value!; i++) {
         strandPtoLinkages[IDX.SS][i] = ui.boolInput('', strandPtoLinkages[IDX.SS][i].value!, () => {
           updateSvgScheme();
           updateOutputExamples();
@@ -144,11 +149,11 @@ export class AxolabsTabUI {
     }
 
     function updateUiForNewSequenceLength() {
-      if (ssLength.value! < maximalValidSequenceLength && asLength.value! < maximalValidSequenceLength) {
-        if (ssLength.value! > maximalStrandLength[IDX.SS])
-          maximalStrandLength[IDX.SS] = ssLength.value!;
-        if (asLength.value! > maximalStrandLength[IDX.AS])
-          maximalStrandLength[IDX.AS] = asLength.value!;
+      if (strandLengthInput[IDX.SS].value! < maximalValidSequenceLength && strandLengthInput[IDX.AS].value! < maximalValidSequenceLength) {
+        if (strandLengthInput[IDX.SS].value! > maximalStrandLength[IDX.SS])
+          maximalStrandLength[IDX.SS] = strandLengthInput[IDX.SS].value!;
+        if (strandLengthInput[IDX.AS].value! > maximalStrandLength[IDX.AS])
+          maximalStrandLength[IDX.AS] = strandLengthInput[IDX.AS].value!;
         updateSsModification();
         updateAsModification();
         updateSvgScheme();
@@ -185,9 +190,9 @@ export class AxolabsTabUI {
 
     function updateInputExamples() {
       if (inputSsColumn.value == '')
-        ssInputExample.value = generateExample(ssLength.value!, sequenceBase.value!);
+        ssInputExample.value = generateExample(strandLengthInput[IDX.SS].value!, sequenceBase.value!);
       if (createAsStrand.value && inputAsColumn.value == '')
-        asInputExample.value = generateExample(asLength.value!, sequenceBase.value!);
+        asInputExample.value = generateExample(strandLengthInput[IDX.AS].value!, sequenceBase.value!);
     }
 
     function updateOutputExamples() {
@@ -205,10 +210,10 @@ export class AxolabsTabUI {
         ui.span([
           drawAxolabsPattern(getShortName(saveAs.value),
             createAsStrand.value!,
-            strandBases[IDX.SS].slice(0, ssLength.value!).map((e) => e.value!),
-            strandBases[IDX.AS].slice(0, asLength.value!).map((e) => e.value!),
-            [firstSsPto.value!].concat(strandPtoLinkages[IDX.SS].slice(0, ssLength.value!).map((e) => e.value!)),
-            [firstAsPto.value!].concat(strandPtoLinkages[IDX.AS].slice(0, asLength.value!).map((e) => e.value!)),
+            strandBases[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value!),
+            strandBases[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value!),
+            [firstSsPto.value!].concat(strandPtoLinkages[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value!)),
+            [firstAsPto.value!].concat(strandPtoLinkages[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value!)),
             ssThreeModification.value,
             ssFiveModification.value,
             asThreeModification.value,
@@ -264,8 +269,8 @@ export class AxolabsTabUI {
         for (let i = 1; i < obj['strandPtoLinkages[IDX.AS]'].length; i++)
           strandPtoLinkages[IDX.AS].push(ui.boolInput('', obj['strandPtoLinkages[IDX.AS]'][i]));
 
-        ssLength.value = obj['strandBases[IDX.SS]'].length;
-        asLength.value = obj['strandBases[IDX.AS]'].length;
+        strandLengthInput[IDX.SS].value = obj['strandBases[IDX.SS]'].length;
+        strandLengthInput[IDX.AS].value = obj['strandBases[IDX.AS]'].length;
 
         ssThreeModification.value = obj['ssThreeModification'];
         ssFiveModification.value = obj['ssFiveModification'];
@@ -299,7 +304,7 @@ export class AxolabsTabUI {
           })
           .show();
       }
-      if (col.get(0) != ssLength.value) {
+      if (col.get(0) != strandLengthInput[IDX.SS].value) {
         const d = ui.dialog('Length was updated by value to from imported file');
         d.add(ui.divText('Latest modifications may not take effect during translation'))
           .onOK(() => grok.shell.info('Lengths changed')).show();
@@ -322,10 +327,10 @@ export class AxolabsTabUI {
         userStorageKey,
         saveAs.value,
         JSON.stringify({
-          'strandBases[IDX.SS]': strandBases[IDX.SS].slice(0, ssLength.value!).map((e) => e.value),
-          'strandBases[IDX.AS]': strandBases[IDX.AS].slice(0, asLength.value!).map((e) => e.value),
-          'strandPtoLinkages[IDX.SS]': [firstSsPto.value].concat(strandPtoLinkages[IDX.SS].slice(0, ssLength.value!).map((e) => e.value)),
-          'strandPtoLinkages[IDX.AS]': [firstAsPto.value].concat(strandPtoLinkages[IDX.AS].slice(0, asLength.value!).map((e) => e.value)),
+          'strandBases[IDX.SS]': strandBases[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value),
+          'strandBases[IDX.AS]': strandBases[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value),
+          'strandPtoLinkages[IDX.SS]': [firstSsPto.value].concat(strandPtoLinkages[IDX.SS].slice(0, strandLengthInput[IDX.SS].value!).map((e) => e.value)),
+          'strandPtoLinkages[IDX.AS]': [firstAsPto.value].concat(strandPtoLinkages[IDX.AS].slice(0, strandLengthInput[IDX.AS].value!).map((e) => e.value)),
           'ssThreeModification': ssThreeModification.value,
           'ssFiveModification': ssFiveModification.value,
           'asThreeModification': asThreeModification.value,
@@ -450,21 +455,21 @@ export class AxolabsTabUI {
       }).root,
     ]);
 
-    const asLengthDiv = ui.div([asLength.root]);
+    const asLengthDiv = ui.div([strandLengthInput[IDX.AS].root]);
 
     function validateSsColumn(colName: string): void {
       const allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(colName);
       const firstSequence = tables.value!.getCol(colName).get(0);
-      if (allLengthsAreTheSame && firstSequence.length != ssLength.value)
-      ssLength.value = tables.value!.getCol(colName).get(0).length;
+      if (allLengthsAreTheSame && firstSequence.length != strandLengthInput[IDX.SS].value)
+      strandLengthInput[IDX.SS].value = tables.value!.getCol(colName).get(0).length;
       ssInputExample.value = firstSequence;
     }
 
     function validateAsColumn(colName: string): void {
       const allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(colName);
       const firstSequence = tables.value!.getCol(colName).get(0);
-      if (allLengthsAreTheSame && firstSequence.length != asLength.value)
-      asLength.value = tables.value!.getCol(colName).get(0).length;
+      if (allLengthsAreTheSame && firstSequence.length != strandLengthInput[IDX.AS].value)
+      strandLengthInput[IDX.AS].value = tables.value!.getCol(colName).get(0).length;
       asInputExample.value = firstSequence;
     }
 
@@ -607,14 +612,14 @@ export class AxolabsTabUI {
     const convertSequenceButton = ui.button('Convert Sequences', () => {
       if (ssVar == '' || (createAsStrand.value && asVar == ''))
         grok.shell.info('Please select table and columns on which to apply pattern');
-      else if (ssLength.value != ssInputExample.value.length || asLength.value != asInputExample.value.length) {
+      else if (strandLengthInput[IDX.SS].value != ssInputExample.value.length || strandLengthInput[IDX.AS].value != asInputExample.value.length) {
         const dialog = ui.dialog('Length Mismatch');
         $(dialog.getButton('OK')).hide();
         dialog
           .add(ui.divText('Length of sequences in columns doesn\'t match entered length. Update length value?'))
           .addButton('YES', () => {
-            ssLength.value = tables.value!.getCol(inputSsColumn.value!).getString(0).length;
-            asLength.value = tables.value!.getCol(inputAsColumn.value!).getString(0).length;
+            strandLengthInput[IDX.SS].value = tables.value!.getCol(inputSsColumn.value!).getString(0).length;
+            strandLengthInput[IDX.AS].value = tables.value!.getCol(inputAsColumn.value!).getString(0).length;
             dialog.close();
           })
           .show();
@@ -636,7 +641,7 @@ export class AxolabsTabUI {
       }
     });
 
-    const ssInputExample = ui.textInput('Sense Strand', generateExample(ssLength.value!, sequenceBase.value!));
+    const ssInputExample = ui.textInput('Sense Strand', generateExample(strandLengthInput[IDX.SS].value!, sequenceBase.value!));
     const ssOutputExample = ui.textInput(' ', translateSequence(
       ssInputExample.value, strandBases[IDX.SS], strandPtoLinkages[IDX.SS], ssThreeModification, ssFiveModification, firstSsPto.value!));
     (ssInputExample.input as HTMLElement).style.resize = 'none';
@@ -654,7 +659,7 @@ export class AxolabsTabUI {
       ], 'ui-input-options'),
     );
 
-    const asInputExample = ui.textInput('Antisense Strand', generateExample(asLength.value!, sequenceBase.value!));
+    const asInputExample = ui.textInput('Antisense Strand', generateExample(strandLengthInput[IDX.AS].value!, sequenceBase.value!));
     const asOutputExample = ui.textInput(' ', translateSequence(
       asInputExample.value, strandBases[IDX.AS], strandPtoLinkages[IDX.AS], asFiveModification, asThreeModification, firstSsPto.value!));
     (asInputExample.input as HTMLElement).style.resize = 'none';
@@ -720,7 +725,7 @@ export class AxolabsTabUI {
           ]),
           ui.divH([
             ui.div([
-              ssLength.root,
+              strandLengthInput[IDX.SS].root,
               asLengthDiv,
               sequenceBase.root,
               comment.root,
