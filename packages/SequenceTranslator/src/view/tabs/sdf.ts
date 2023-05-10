@@ -19,7 +19,7 @@ const enum DIRECTION {
   STRAIGHT = '5′ → 3′',
   INVERSE = '3′ → 5′',
 };
-const STRANDS = ['ss', 'as', 'as2'];
+const STRANDS = ['ss', 'as', 'as2'] as const;
 
 export class SdfTabUI {
   constructor() {

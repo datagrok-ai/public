@@ -12,6 +12,20 @@ import {drawAxolabsPattern} from '../../model/axolabs/draw-svg';
 //@ts-ignore
 import * as svg from 'save-svg-as-png';
 
+type BooleanInput = DG.InputBase<boolean | null>;     
+type StringInput = DG.InputBase<string | null>;   
+type NumberInput = DG.InputBase<number | null>;               
+
+const IDX = {
+  SS: 0,
+  AS: 1,
+  threePrime: 0,
+  fivePrime: 1,
+};
+
+const strands = ['SS', 'AS'] as const;
+const strandLongNames = ['Sense Strand', 'Antisense Strand'] as const;
+
 export class AxolabsTabUI {
   constructor() {
     this.axolabsStyle = JsonLoader.getInstance().getAxolabsStyleDictionary();
@@ -22,13 +36,14 @@ export class AxolabsTabUI {
     const baseChoices: string[] = Object.keys(this.axolabsStyle);
     const defaultBase: string = baseChoices[0];
     const enumerateModifications = [defaultBase];
-    let maximalSsLength = defaultSequenceLength;
-    let maximalAsLength = defaultSequenceLength;
+    const maximalStrandLength = strands.map(() => defaultSequenceLength);
+    // let maximalStrandLength[IDX.SS] = defaultSequenceLength;
+    // let maximalStrandLength[IDX.AS] = defaultSequenceLength;
 
     function updateAsModification() {
       asModificationItems.innerHTML = '';
-      asPtoLinkages = asPtoLinkages.concat(Array(maximalAsLength - asBases.length).fill(fullyPto));
-      asBases = asBases.concat(Array(maximalAsLength - asBases.length).fill(sequenceBase));
+      asPtoLinkages = asPtoLinkages.concat(Array(maximalStrandLength[IDX.AS] - asBases.length).fill(fullyPto));
+      asBases = asBases.concat(Array(maximalStrandLength[IDX.AS] - asBases.length).fill(sequenceBase));
       let nucleotideCounter = 0;
       for (let i = 0; i < asLength.value!; i++) {
         asPtoLinkages[i] = ui.boolInput('', asPtoLinkages[i].value, () => {
@@ -73,8 +88,8 @@ export class AxolabsTabUI {
 
     function updateSsModification() {
       ssModificationItems.innerHTML = '';
-      ssPtoLinkages = ssPtoLinkages.concat(Array(maximalSsLength - ssBases.length).fill(fullyPto));
-      ssBases = ssBases.concat(Array(maximalSsLength - ssBases.length).fill(sequenceBase));
+      ssPtoLinkages = ssPtoLinkages.concat(Array(maximalStrandLength[IDX.SS] - ssBases.length).fill(fullyPto));
+      ssBases = ssBases.concat(Array(maximalStrandLength[IDX.SS] - ssBases.length).fill(sequenceBase));
       let nucleotideCounter = 0;
       for (let i = 0; i < ssLength.value!; i++) {
         ssPtoLinkages[i] = ui.boolInput('', ssPtoLinkages[i].value, () => {
@@ -119,10 +134,10 @@ export class AxolabsTabUI {
 
     function updateUiForNewSequenceLength() {
       if (ssLength.value! < maximalValidSequenceLength && asLength.value! < maximalValidSequenceLength) {
-        if (ssLength.value! > maximalSsLength)
-          maximalSsLength = ssLength.value!;
-        if (asLength.value! > maximalAsLength)
-          maximalAsLength = asLength.value!;
+        if (ssLength.value! > maximalStrandLength[IDX.SS])
+          maximalStrandLength[IDX.SS] = ssLength.value!;
+        if (asLength.value! > maximalStrandLength[IDX.AS])
+          maximalStrandLength[IDX.AS] = asLength.value!;
         updateSsModification();
         updateAsModification();
         updateSvgScheme();
