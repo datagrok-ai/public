@@ -46,9 +46,9 @@ export function regressionCoefficientsBarChart(features: DG.ColumnList, regressi
 }
 
 // Scores Scatter Plot
-export function scoresScatterPlot(xScores: Array<DG.Column>, yScores: Array<DG.Column>): DG.Viewer {
+export function scoresScatterPlot(names: DG.Column, xScores: Array<DG.Column>, yScores: Array<DG.Column>): DG.Viewer {
   
-  let scoresColumns = [];
+  let scoresColumns = [names];
 
   for (let i = 0; i < xScores.length; i++) {
     xScores[i].name = `x.score.t${i+1}`;
@@ -68,7 +68,8 @@ export function scoresScatterPlot(xScores: Array<DG.Column>, yScores: Array<DG.C
     { title: scores.name,
       x: xScores[0].name,
       y: yScores[0].name,      
-      markerType: 'circle'
+      markerType: 'circle',
+      labels: names.name
      });
 }
 
@@ -111,7 +112,7 @@ export function addPLSvisualization(table: DG.DataFrame, features: DG.ColumnList
   view.addViewer(regressionCoefficientsBarChart(features, plsOutput[1])); 
  
   // 3. Scores Scatter Plot
-  view.addViewer(scoresScatterPlot(plsOutput[2], plsOutput[3]));
+  view.addViewer(scoresScatterPlot(table.columns.byIndex(0), plsOutput[2], plsOutput[3]));
  
   // 4. Loading Scatter Plot
   view.addViewer(loadingScatterPlot(features, plsOutput[4]));  

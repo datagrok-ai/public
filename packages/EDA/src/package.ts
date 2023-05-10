@@ -57,9 +57,12 @@ export async function PLS(table: DG.DataFrame, features: DG.ColumnList, predict:
 //meta.demoPath: Data analysis | Multivariate analysis
 export async function demoScript(): Promise<any>  {
   const demoScript = new DemoScript('Multivariate analysis', 
-    'Provides partial least sqaure regression analysis of the given data.'); 
+    'Provides partial least square regression analysis of the given data.'); 
   
-  const cars = carsDataframe();
+  const cars = carsDataframe(); 
+
+  // the following doesn't work: Access Denied
+  // const df = await grok.data.files.openTable("Demo:Files/cars.csv");
 
   const components = 3;
   const predict = cars.columns.byName('price');
