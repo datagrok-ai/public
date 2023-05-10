@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.3.16",
+  "version": "3.3.17",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -2581,6 +2581,20 @@
         "directory": "packages/EDA"
       },
       "category": "Machine Learning"
+    },
+    "usage-analysis": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "^1.13.8"
+        }
+      },
+      "description": "Platform usage analysis system",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/UsageAnalysis"
+      },
+      "category": "General"
     }
   }
 }
