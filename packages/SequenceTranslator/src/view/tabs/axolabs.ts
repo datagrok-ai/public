@@ -33,15 +33,15 @@ export class AxolabsTabUI {
   private axolabsStyle: AxolabsStyle;
 
   get htmlDivElement() {
+    const maximalStrandLength = strands.map(() => defaultSequenceLength);
+    const strandModificationItems = strands.map(() => ui.div([]));
+
     const baseChoices: string[] = Object.keys(this.axolabsStyle);
     const defaultBase: string = baseChoices[0];
     const enumerateModifications = [defaultBase];
-    const maximalStrandLength = strands.map(() => defaultSequenceLength);
-    // let maximalStrandLength[IDX.SS] = defaultSequenceLength;
-    // let maximalStrandLength[IDX.AS] = defaultSequenceLength;
 
     function updateAsModification() {
-      asModificationItems.innerHTML = '';
+      strandModificationItems[IDX.AS].innerHTML = '';
       asPtoLinkages = asPtoLinkages.concat(Array(maximalStrandLength[IDX.AS] - asBases.length).fill(fullyPto));
       asBases = asBases.concat(Array(maximalStrandLength[IDX.AS] - asBases.length).fill(sequenceBase));
       let nucleotideCounter = 0;
@@ -75,7 +75,7 @@ export class AxolabsTabUI {
         if (!isOverhang(asBases[i].value))
           nucleotideCounter++;
 
-        asModificationItems.append(
+        strandModificationItems[IDX.AS].append(
           ui.divH([
             ui.div([ui.label(isOverhang(asBases[i].value) ? '' : String(nucleotideCounter))],
               {style: {width: '20px'}})!,
@@ -87,7 +87,7 @@ export class AxolabsTabUI {
     }
 
     function updateSsModification() {
-      ssModificationItems.innerHTML = '';
+      strandModificationItems[IDX.SS].innerHTML = '';
       ssPtoLinkages = ssPtoLinkages.concat(Array(maximalStrandLength[IDX.SS] - ssBases.length).fill(fullyPto));
       ssBases = ssBases.concat(Array(maximalStrandLength[IDX.SS] - ssBases.length).fill(sequenceBase));
       let nucleotideCounter = 0;
@@ -121,7 +121,7 @@ export class AxolabsTabUI {
         if (!isOverhang(ssBases[i].value))
           nucleotideCounter++;
 
-        ssModificationItems.append(
+        strandModificationItems[IDX.SS].append(
           ui.divH([
             ui.div([ui.label(isOverhang(ssBases[i].value) ? '' : String(nucleotideCounter))],
               {style: {width: '20px'}})!,
@@ -418,8 +418,6 @@ export class AxolabsTabUI {
     const inputSsColumnDiv = ui.div([]);
     const inputAsColumnDiv = ui.div([]);
     const inputIdColumnDiv = ui.div([]);
-    const ssModificationItems = ui.div([]);
-    const asModificationItems = ui.div([]);
     const svgDiv = ui.div([]);
     const asExampleDiv = ui.div([]);
     const appAxolabsDescription = ui.div([]);
@@ -753,7 +751,7 @@ export class AxolabsTabUI {
         ui.block75([ui.divText('Modification')])!,
         ui.div([ui.divText('PTO')], {style: {paddingRight: '8px'}})!,
       ]),
-      ssModificationItems,
+      strandModificationItems[IDX.SS],
     ])!;
 
     const asModificationSection = ui.panel([
@@ -763,7 +761,7 @@ export class AxolabsTabUI {
         ui.block75([ui.divText('Modification')])!,
         ui.div([ui.divText('PTO')], {style: {paddingRight: '8px'}})!,
       ]),
-      asModificationItems,
+      strandModificationItems[IDX.AS],
     ])!;
 
     const info = ui.info(
