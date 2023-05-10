@@ -79,18 +79,12 @@ export class AxolabsTabUI {
     // todo: rename to strandColumnInput
     const inputStrandColumn = strands.map((_, i) => {
       const input: StringInput = ui.choiceInput(`${strandLongNames[i]} Column`, '', [], (colName: string) => {
-        validateSsColumn(colName);
+        validateStrandColumn(colName, IDX.SS);
         strandVar[i] = colName;
       });
       inputStrandColumnDiv[i].append(input.root);
       return input;
     })
-    // const inputStrandColumn[IDX.AS] = ui.choiceInput('AS Column', '', [], (colName: string) => {
-    //   validateAsColumn(colName);
-    //   strandVar[IDX.AS] = colName;
-    // });
-    // inputStrandColumnDiv[IDX.AS].append(inputStrandColumn[IDX.AS].root);
-
 
     function updateAsModification() {
       strandModificationItems[IDX.AS].innerHTML = '';
@@ -491,21 +485,12 @@ export class AxolabsTabUI {
 
     const asLengthDiv = ui.div([strandLengthInput[IDX.AS].root]);
     
-
-    function validateSsColumn(colName: string): void {
+    function validateStrandColumn(colName: string, strandIdx: number): void {
       const allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(colName);
       const firstSequence = tables.value!.getCol(colName).get(0);
-      if (allLengthsAreTheSame && firstSequence.length != strandLengthInput[IDX.SS].value)
-      strandLengthInput[IDX.SS].value = tables.value!.getCol(colName).get(0).length;
-      strandInputExample[IDX.SS].value = firstSequence;
-    }
-
-    function validateAsColumn(colName: string): void {
-      const allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(colName);
-      const firstSequence = tables.value!.getCol(colName).get(0);
-      if (allLengthsAreTheSame && firstSequence.length != strandLengthInput[IDX.AS].value)
-      strandLengthInput[IDX.AS].value = tables.value!.getCol(colName).get(0).length;
-      strandInputExample[IDX.AS].value = firstSequence;
+      if (allLengthsAreTheSame && firstSequence.length != strandLengthInput[strandIdx].value)
+      strandLengthInput[strandIdx].value = tables.value!.getCol(colName).get(0).length;
+      strandInputExample[strandIdx].value = firstSequence;
     }
 
     function validateIdsColumn(colName: string) {
@@ -528,13 +513,13 @@ export class AxolabsTabUI {
 
     const tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, (t: DG.DataFrame) => {
       inputStrandColumn[IDX.SS] = ui.choiceInput('SS Column', '', t.columns.names(), (colName: string) => {
-        validateSsColumn(colName);
+        validateStrandColumn(colName, IDX.SS);
         strandVar[IDX.SS] = colName;
       });
       inputStrandColumnDiv[IDX.SS].innerHTML = '';
       inputStrandColumnDiv[IDX.SS].append(inputStrandColumn[IDX.SS].root);
       inputStrandColumn[IDX.AS] = ui.choiceInput('AS Column', '', t.columns.names(), (colName: string) => {
-        validateAsColumn(colName);
+        validateStrandColumn(colName, IDX.AS);
         strandVar[IDX.AS] = colName;
       });
       inputStrandColumnDiv[IDX.AS].innerHTML = '';
