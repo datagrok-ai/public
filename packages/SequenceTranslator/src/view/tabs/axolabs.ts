@@ -51,8 +51,9 @@ export class AxolabsTabUI {
       return input;
     })
     const strandVar = strands.map(() => '');
-    // let strandVar[IDX.SS] = '';
-    // let strandVar[IDX.AS] = '';
+    const inputStrandColumnDiv = strands.map(() => ui.div([]));
+    // const inputStrandColumnDiv[IDX.SS] = ui.div([]);
+    // const inputStrandColumnDiv[IDX.AS] = ui.div([]);
 
 
     function updateAsModification() {
@@ -430,8 +431,6 @@ export class AxolabsTabUI {
       await updatePatternsList();
     }
 
-    const inputSsColumnDiv = ui.div([]);
-    const inputAsColumnDiv = ui.div([]);
     const inputIdColumnDiv = ui.div([]);
     const svgDiv = ui.div([]);
     const asExampleDiv = ui.div([]);
@@ -495,14 +494,14 @@ export class AxolabsTabUI {
         validateSsColumn(colName);
         strandVar[IDX.SS] = colName;
       });
-      inputSsColumnDiv.innerHTML = '';
-      inputSsColumnDiv.append(inputSsColumn.root);
+      inputStrandColumnDiv[IDX.SS].innerHTML = '';
+      inputStrandColumnDiv[IDX.SS].append(inputSsColumn.root);
       const inputAsColumn = ui.choiceInput('AS Column', '', t.columns.names(), (colName: string) => {
         validateAsColumn(colName);
         strandVar[IDX.AS] = colName;
       });
-      inputAsColumnDiv.innerHTML = '';
-      inputAsColumnDiv.append(inputAsColumn.root);
+      inputStrandColumnDiv[IDX.AS].innerHTML = '';
+      inputStrandColumnDiv[IDX.AS].append(inputAsColumn.root);
       const inputIdColumn = ui.choiceInput('ID Column', '', t.columns.names(), (colName: string) => {
         validateIdsColumn(colName);
         idVar = colName;
@@ -515,12 +514,12 @@ export class AxolabsTabUI {
       validateSsColumn(colName);
       strandVar[IDX.SS] = colName;
     });
-    inputSsColumnDiv.append(inputSsColumn.root);
+    inputStrandColumnDiv[IDX.SS].append(inputSsColumn.root);
     const inputAsColumn = ui.choiceInput('AS Column', '', [], (colName: string) => {
       validateAsColumn(colName);
       strandVar[IDX.AS] = colName;
     });
-    inputAsColumnDiv.append(inputAsColumn.root);
+    inputStrandColumnDiv[IDX.AS].append(inputAsColumn.root);
     let idVar = '';
     const inputIdColumn = ui.choiceInput('ID Column', '', [], (colName: string) => {
       validateIdsColumn(colName);
@@ -550,7 +549,7 @@ export class AxolabsTabUI {
 
     const createAsStrand = ui.boolInput('Create AS Strand', true, (v: boolean) => {
       asModificationSection.hidden = (!v);
-      inputAsColumnDiv.hidden = (!v);
+      inputStrandColumnDiv[IDX.AS].hidden = (!v);
       asLengthDiv.hidden = (!v);
       asModificationDiv.hidden = (!v);
       asExampleDiv.hidden = (!v);
@@ -689,10 +688,10 @@ export class AxolabsTabUI {
       ui.h1('Inputs'),
       ui.divH([
         tables.root,
-        inputSsColumnDiv,
+        inputStrandColumnDiv[IDX.SS],
       ]),
       ui.divH([
-        inputAsColumnDiv,
+        inputStrandColumnDiv[IDX.AS],
         inputIdColumnDiv,
       ]),
       ui.buttonsInput([
