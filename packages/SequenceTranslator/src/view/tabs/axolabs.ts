@@ -135,6 +135,16 @@ export class AxolabsTabUI {
       );
     })
 
+    const strandModificationSection = strands.map((_, i) => ui.panel([
+      ui.h1(`${strandLongNames[i]}`),
+      ui.divH([
+        ui.div([ui.divText('#')], {style: {width: '20px'}})!,
+        ui.block75([ui.divText('Modification')])!,
+        ui.div([ui.divText('PTO')], {style: {paddingRight: '8px'}})!,
+      ]),
+      strandModificationItems[i],
+    ]));
+
     const firstAsPtoDiv = ui.div([]);
     firstAsPtoDiv.append(firstStrandPto[IDX.AS].root);
 
@@ -594,7 +604,7 @@ export class AxolabsTabUI {
     updatePatternsList();
 
     const createAsStrand = ui.boolInput('Create AS Strand', true, (v: boolean) => {
-      asModificationSection.hidden = (!v);
+      strandModificationSection[IDX.AS].hidden = (!v);
       inputStrandColumnDiv[IDX.AS].hidden = (!v);
       asLengthDiv.hidden = (!v);
       asModificationDiv.hidden = (!v);
@@ -735,26 +745,6 @@ export class AxolabsTabUI {
       ], {style: {flexWrap: 'wrap'}}),
     ]);
 
-    const ssModificationSection = ui.panel([
-      ui.h1('Sense Strand'),
-      ui.divH([
-        ui.div([ui.divText('#')], {style: {width: '20px'}})!,
-        ui.block75([ui.divText('Modification')])!,
-        ui.div([ui.divText('PTO')], {style: {paddingRight: '8px'}})!,
-      ]),
-      strandModificationItems[IDX.SS],
-    ])!;
-
-    const asModificationSection = ui.panel([
-      ui.h1('Antisense Strand'),
-      ui.divH([
-        ui.div([ui.divText('#')], {style: {width: '20px'}})!,
-        ui.block75([ui.divText('Modification')])!,
-        ui.div([ui.divText('PTO')], {style: {paddingRight: '8px'}})!,
-      ]),
-      strandModificationItems[IDX.AS],
-    ])!;
-
     const info = ui.info(
       [
         ui.divText('\n How to define new pattern:', {style: {'font-weight': 'bolder'}}),
@@ -774,8 +764,8 @@ export class AxolabsTabUI {
       ])!,
       ui.box(
         ui.divH([
-          ssModificationSection,
-          asModificationSection,
+          strandModificationSection[IDX.SS],
+          strandModificationSection[IDX.AS],
         ]), {style: {maxWidth: '360px'}},
       ),
     ]);
