@@ -89,7 +89,7 @@ export async function Bioreactor(initial: number, final: number, step: number,
 //input: double _TimeToSwitchVal = 135.0 {units: min; caption: Switch mode time; category: Parameters}
 //output: dataframe dfSolution {caption: Solution; viewer: Line chart(x: "t, time (minutes)", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
 //editor: Compute:RichFunctionViewEditor
-//meta.isImmediate: true
+//meta.runOnStart: true
 export async function BioreactorDemo(initial: number, final: number, step: number,
   _FFoxInitial: number, _KKoxInitial: number, _FFredInitial: number, _KKredInitial: number, 
   _FfreeInitial: number, _KfreeInitial: number, _FKredInitial: number, _FKoxInitial: number,
@@ -120,12 +120,12 @@ export async function demoScript(): Promise<any>  {
       const openModelFunc: DG.Func = await grok.functions.eval('Compute:openModelFromFuncall');
       const openModelFuncCall = openModelFunc.prepare({'funccall': doeSimpleFuncCall});
       openModelFuncCall.call();
-    }, {description: 'Vary custom inputs and get results.', delay: 0})
+    }, {description: 'Vary inputs and press "RUN".', delay: 0})
     //}, {description: 'Set inputs and press "RUN".', delay: 0})
     .step('Model', async () => {} , {description: 'Only declarative equations description is required.', delay: 0})    
     .step('Essence', async () => {} , {description: 'Simulation of controlled fab-arm exchange kinetic mechanism is performed here.', delay: 0})
     .step('Performance', async () => {} , {description: '1000 times faster than the previous version.', delay: 0})
     //.step('Complexity', async () => {} , {description: 'Each time you press "RUN", a system of 13 non-linear ordinary differential equations is solved.', delay: 0})
-    .step('Complexity', async () => {} , {description: 'Each time you change inputs, a system of 13 non-linear ordinary differential equations is solved.', delay: 0})
+    .step('Complexity', async () => {} , {description: 'Each time you run computations, a system of 13 non-linear ordinary differential equations is solved.', delay: 0})
     .start();
 }
