@@ -48,8 +48,14 @@ export class AxolabsTabUI {
     const baseChoices: string[] = Object.keys(this.axolabsStyle);
     const defaultBase: string = baseChoices[0];
     const enumerateModifications = [defaultBase];
+    const sequenceBase = ui.choiceInput('Sequence Basis', defaultBase, baseChoices, (v: string) => {
+      updateBases(v);
+      updateOutputExamples();
+    });
+
 
     const maximalStrandLength = strands.map(() => defaultSequenceLength);
+    // todo: remove vague legacy 'items' from name
     const strandModificationItems = strands.map(() => ui.div([]));
     const strandPtoLinkages = strands.map(() =>
       Array<BooleanInput>(defaultSequenceLength).fill(ui.boolInput('', defaultPto))
@@ -63,7 +69,29 @@ export class AxolabsTabUI {
       return input;
     })
     const strandVar = strands.map(() => '');
+    // todo: rename to strandColumnInputDiv
     const inputStrandColumnDiv = strands.map(() => ui.div([]));
+
+    const strandInputExample = strands.map((_, i) => {
+      return ui.textInput(`${strandLongNames[i]}`, generateExample(strandLengthInput[i].value!, sequenceBase.value!));
+    })
+    // const strandInputExample[IDX.SS] = ui.textInput('Sense Strand', generateExample(strandLengthInput[IDX.SS].value!, sequenceBase.value!));
+    // const strandInputExample[IDX.AS] = ui.textInput('Antisense Strand', generateExample(strandLengthInput[IDX.AS].value!, sequenceBase.value!));
+
+
+    // todo: rename to strandColumnInput
+    // const inputStrandColumn = strands.map((strand, i) => {
+    // })
+    const inputSsColumn = ui.choiceInput('SS Column', '', [], (colName: string) => {
+      validateSsColumn(colName);
+      strandVar[IDX.SS] = colName;
+    });
+    inputStrandColumnDiv[IDX.SS].append(inputSsColumn.root);
+    const inputAsColumn = ui.choiceInput('AS Column', '', [], (colName: string) => {
+      validateAsColumn(colName);
+      strandVar[IDX.AS] = colName;
+    });
+    inputStrandColumnDiv[IDX.AS].append(inputAsColumn.root);
 
 
     function updateAsModification() {
@@ -200,17 +228,17 @@ export class AxolabsTabUI {
 
     function updateInputExamples() {
       if (inputSsColumn.value == '')
-        ssInputExample.value = generateExample(strandLengthInput[IDX.SS].value!, sequenceBase.value!);
+        strandInputExample[IDX.SS].value = generateExample(strandLengthInput[IDX.SS].value!, sequenceBase.value!);
       if (createAsStrand.value && inputAsColumn.value == '')
-        asInputExample.value = generateExample(strandLengthInput[IDX.AS].value!, sequenceBase.value!);
+        strandInputExample[IDX.AS].value = generateExample(strandLengthInput[IDX.AS].value!, sequenceBase.value!);
     }
 
     function updateOutputExamples() {
       ssOutputExample.value = translateSequence(
-        ssInputExample.value, strandBases[IDX.SS], strandPtoLinkages[IDX.SS], ssFiveModification, ssThreeModification, firstSsPto.value!);
+        strandInputExample[IDX.SS].value, strandBases[IDX.SS], strandPtoLinkages[IDX.SS], ssFiveModification, ssThreeModification, firstSsPto.value!);
       if (createAsStrand.value) {
         asOutputExample.value = translateSequence(
-          asInputExample.value, strandBases[IDX.AS], strandPtoLinkages[IDX.AS], asFiveModification, asThreeModification, firstAsPto.value!);
+          strandInputExample[IDX.AS].value, strandBases[IDX.AS], strandPtoLinkages[IDX.AS], asFiveModification, asThreeModification, firstAsPto.value!);
       }
     }
 
@@ -464,13 +492,14 @@ export class AxolabsTabUI {
     ]);
 
     const asLengthDiv = ui.div([strandLengthInput[IDX.AS].root]);
+    
 
     function validateSsColumn(colName: string): void {
       const allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(colName);
       const firstSequence = tables.value!.getCol(colName).get(0);
       if (allLengthsAreTheSame && firstSequence.length != strandLengthInput[IDX.SS].value)
       strandLengthInput[IDX.SS].value = tables.value!.getCol(colName).get(0).length;
-      ssInputExample.value = firstSequence;
+      strandInputExample[IDX.SS].value = firstSequence;
     }
 
     function validateAsColumn(colName: string): void {
@@ -478,7 +507,7 @@ export class AxolabsTabUI {
       const firstSequence = tables.value!.getCol(colName).get(0);
       if (allLengthsAreTheSame && firstSequence.length != strandLengthInput[IDX.AS].value)
       strandLengthInput[IDX.AS].value = tables.value!.getCol(colName).get(0).length;
-      asInputExample.value = firstSequence;
+      strandInputExample[IDX.AS].value = firstSequence;
     }
 
     function validateIdsColumn(colName: string) {
@@ -520,16 +549,6 @@ export class AxolabsTabUI {
       inputIdColumnDiv.append(inputIdColumn.root);
     });
 
-    const inputSsColumn = ui.choiceInput('SS Column', '', [], (colName: string) => {
-      validateSsColumn(colName);
-      strandVar[IDX.SS] = colName;
-    });
-    inputStrandColumnDiv[IDX.SS].append(inputSsColumn.root);
-    const inputAsColumn = ui.choiceInput('AS Column', '', [], (colName: string) => {
-      validateAsColumn(colName);
-      strandVar[IDX.AS] = colName;
-    });
-    inputStrandColumnDiv[IDX.AS].append(inputAsColumn.root);
 
     let idVar = '';
     const inputIdColumn = ui.choiceInput('ID Column', '', [], (colName: string) => {
@@ -539,11 +558,6 @@ export class AxolabsTabUI {
     inputIdColumnDiv.append(inputIdColumn.root);
 
     updatePatternsList();
-
-    const sequenceBase = ui.choiceInput('Sequence Basis', defaultBase, baseChoices, (v: string) => {
-      updateBases(v);
-      updateOutputExamples();
-    });
 
     const fullyPto = ui.boolInput('Fully PTO', defaultPto, (v: boolean) => {
       firstSsPto.value = v;
@@ -617,7 +631,7 @@ export class AxolabsTabUI {
     const convertSequenceButton = ui.button('Convert Sequences', () => {
       if (strandVar[IDX.SS] == '' || (createAsStrand.value && strandVar[IDX.AS] == ''))
         grok.shell.info('Please select table and columns on which to apply pattern');
-      else if (strandLengthInput[IDX.SS].value != ssInputExample.value.length || strandLengthInput[IDX.AS].value != asInputExample.value.length) {
+      else if (strandLengthInput[IDX.SS].value != strandInputExample[IDX.SS].value.length || strandLengthInput[IDX.AS].value != strandInputExample[IDX.AS].value.length) {
         const dialog = ui.dialog('Length Mismatch');
         $(dialog.getButton('OK')).hide();
         dialog
@@ -646,19 +660,16 @@ export class AxolabsTabUI {
       }
     });
 
-    const ssInputExample = ui.textInput('Sense Strand', generateExample(strandLengthInput[IDX.SS].value!, sequenceBase.value!));
-    const asInputExample = ui.textInput('Antisense Strand', generateExample(strandLengthInput[IDX.AS].value!, sequenceBase.value!));
-
     const ssOutputExample = ui.textInput(' ', translateSequence(
-      ssInputExample.value, strandBases[IDX.SS], strandPtoLinkages[IDX.SS], ssThreeModification, ssFiveModification, firstSsPto.value!));
+      strandInputExample[IDX.SS].value, strandBases[IDX.SS], strandPtoLinkages[IDX.SS], ssThreeModification, ssFiveModification, firstSsPto.value!));
     const asOutputExample = ui.textInput(' ', translateSequence(
-      asInputExample.value, strandBases[IDX.AS], strandPtoLinkages[IDX.AS], asFiveModification, asThreeModification, firstSsPto.value!));
+      strandInputExample[IDX.AS].value, strandBases[IDX.AS], strandPtoLinkages[IDX.AS], asFiveModification, asThreeModification, firstSsPto.value!));
 
-    (ssInputExample.input as HTMLElement).style.resize = 'none';
-    (asInputExample.input as HTMLElement).style.resize = 'none';
+    (strandInputExample[IDX.SS].input as HTMLElement).style.resize = 'none';
+    (strandInputExample[IDX.AS].input as HTMLElement).style.resize = 'none';
 
-    (ssInputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
-    (asInputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
+    (strandInputExample[IDX.SS].input as HTMLElement).style.minWidth = exampleMinWidth;
+    (strandInputExample[IDX.AS].input as HTMLElement).style.minWidth = exampleMinWidth;
 
     (ssOutputExample.input as HTMLElement).style.resize = 'none';
     (asOutputExample.input as HTMLElement).style.resize = 'none';
@@ -688,14 +699,14 @@ export class AxolabsTabUI {
       ], 'ui-input-options'),
     );
 
-    asExampleDiv.append(asInputExample.root);
+    asExampleDiv.append(strandInputExample[IDX.AS].root);
     asExampleDiv.append(asOutputExample.root);
 
     updateUiForNewSequenceLength();
 
     const exampleSection = ui.div([
       ui.h1('Example'),
-      ssInputExample.root,
+      strandInputExample[IDX.SS].root,
       ssOutputExample.root,
       asExampleDiv,
     ], 'ui-form');
