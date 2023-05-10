@@ -530,6 +530,7 @@ export class AxolabsTabUI {
       strandVar[IDX.AS] = colName;
     });
     inputStrandColumnDiv[IDX.AS].append(inputAsColumn.root);
+
     let idVar = '';
     const inputIdColumn = ui.choiceInput('ID Column', '', [], (colName: string) => {
       validateIdsColumn(colName);
@@ -575,24 +576,22 @@ export class AxolabsTabUI {
       updateSvgScheme();
       updateOutputExamples();
     });
+    const asThreeModification = ui.stringInput('AS 3\' Modification', '', () => {
+      updateSvgScheme();
+      updateOutputExamples();
+    });
     ssThreeModification.setTooltip('Additional SS 3\' Modification');
+    asThreeModification.setTooltip('Additional AS 3\' Modification');
 
     const ssFiveModification = ui.stringInput('SS 5\' Modification', '', () => {
       updateSvgScheme();
       updateOutputExamples();
     });
-    ssFiveModification.setTooltip('Additional SS 5\' Modification');
-
-    const asThreeModification = ui.stringInput('AS 3\' Modification', '', () => {
-      updateSvgScheme();
-      updateOutputExamples();
-    });
-    asThreeModification.setTooltip('Additional AS 3\' Modification');
-
     const asFiveModification = ui.stringInput('AS 5\' Modification', '', () => {
       updateSvgScheme();
       updateOutputExamples();
     });
+    ssFiveModification.setTooltip('Additional SS 5\' Modification');
     asFiveModification.setTooltip('Additional AS 5\' Modification');
 
     asModificationDiv.append(asThreeModification.root);
@@ -648,14 +647,30 @@ export class AxolabsTabUI {
     });
 
     const ssInputExample = ui.textInput('Sense Strand', generateExample(strandLengthInput[IDX.SS].value!, sequenceBase.value!));
+    const asInputExample = ui.textInput('Antisense Strand', generateExample(strandLengthInput[IDX.AS].value!, sequenceBase.value!));
+
     const ssOutputExample = ui.textInput(' ', translateSequence(
       ssInputExample.value, strandBases[IDX.SS], strandPtoLinkages[IDX.SS], ssThreeModification, ssFiveModification, firstSsPto.value!));
+    const asOutputExample = ui.textInput(' ', translateSequence(
+      asInputExample.value, strandBases[IDX.AS], strandPtoLinkages[IDX.AS], asFiveModification, asThreeModification, firstSsPto.value!));
+
     (ssInputExample.input as HTMLElement).style.resize = 'none';
+    (asInputExample.input as HTMLElement).style.resize = 'none';
+
     (ssInputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
+    (asInputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
+
     (ssOutputExample.input as HTMLElement).style.resize = 'none';
+    (asOutputExample.input as HTMLElement).style.resize = 'none';
+
     (ssOutputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
+    (asOutputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
+
     // @ts-ignore
     ssOutputExample.input.disabled = 'true';
+    // @ts-ignore
+    asOutputExample.input.disabled = 'true';
+
     ssOutputExample.root.append(
       ui.div([
         ui.button(ui.iconFA('copy', () => {}), () => {
@@ -664,16 +679,6 @@ export class AxolabsTabUI {
         }),
       ], 'ui-input-options'),
     );
-
-    const asInputExample = ui.textInput('Antisense Strand', generateExample(strandLengthInput[IDX.AS].value!, sequenceBase.value!));
-    const asOutputExample = ui.textInput(' ', translateSequence(
-      asInputExample.value, strandBases[IDX.AS], strandPtoLinkages[IDX.AS], asFiveModification, asThreeModification, firstSsPto.value!));
-    (asInputExample.input as HTMLElement).style.resize = 'none';
-    (asInputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
-    (asOutputExample.input as HTMLElement).style.resize = 'none';
-    (asOutputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
-    // @ts-ignore
-    asOutputExample.input.disabled = 'true';
     asOutputExample.root.append(
       ui.div([
         ui.button(ui.iconFA('copy', () => {}), () => {
@@ -682,6 +687,7 @@ export class AxolabsTabUI {
         }),
       ], 'ui-input-options'),
     );
+
     asExampleDiv.append(asInputExample.root);
     asExampleDiv.append(asOutputExample.root);
 
