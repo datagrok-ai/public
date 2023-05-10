@@ -24,9 +24,11 @@ export class DemoScript {
 
   static currentObject: DemoScript | null = null;
 
+  private _isAutomatic: boolean = false;
   private _currentStep: number = 0;
   private _isStopped: boolean = false;
   private _isCancelled: boolean = false;
+  private _isStepProcessed: boolean = false;
 
   private _root: HTMLDivElement = ui.div([], {id: 'demo-script',
     classes: 'tutorials-root tutorials-track demo-app-script'});
@@ -39,6 +41,10 @@ export class DemoScript {
   private _stopStartBtn: HTMLButtonElement = ui.button(ui.iconFA('pause'),
     () => this._changeStopState(), 'Play / pause');
   private _restartBtn: HTMLButtonElement = ui.button(ui.iconFA('redo'), () => this._restartScript(), 'Restart');
+  private _nextStepBtn: HTMLButtonElement = ui.button(ui.iconFA('step-forward'), () => {
+    if (!this._isStepProcessed)
+      this._nextStep();
+  }, 'Next step');
 
   private _activity: HTMLDivElement = ui.panel([], 'tutorials-root-description');
 
@@ -50,9 +56,10 @@ export class DemoScript {
   private _closeBtn: HTMLButtonElement = ui.button(ui.iconFA('chevron-left'), () => this._closeDock());
 
 
-  constructor(name: string, description: string) {
+  constructor(name: string, description: string, isAutomatic: boolean = false) {
     this.name = name;
     this.description = description;
+    this._isAutomatic = isAutomatic;
 
     this._progress.max = 0;
     this._progress.value = 1;
@@ -84,7 +91,7 @@ export class DemoScript {
     this._headerDiv.append(this._closeBtn);
     this._headerDiv.append(this._header);
 
-    this._headerDiv.append(this._stopStartBtn);
+    this._headerDiv.append(this._isAutomatic ? this._stopStartBtn : this._nextStepBtn);
   }
 
   /** Creates script progress div */
@@ -136,37 +143,48 @@ export class DemoScript {
     this._root.append(this._activity);
   }
 
+  /** Processes next step */
+  private async _nextStep(): Promise<void> {
+    this._isStepProcessed = true;
+    const entry = this._activity.getElementsByClassName('grok-tutorial-entry')[this._currentStep];
+    const entryIndicator = this._activity.getElementsByClassName('grok-icon')[this._currentStep];
+    const entryInstruction = this._activity.getElementsByClassName('grok-tutorial-step-description')[this._currentStep];
+
+    entryIndicator.className = 'grok-icon far fa-spinner-third fa-spin';
+    entryInstruction.classList.remove('hidden');
+    entryInstruction.classList.add('visible');
+
+    const currentStep = entry as HTMLDivElement;
+    const stepDelay = this._steps[this._currentStep].options?.delay ?
+      this._steps[this._currentStep].options?.delay! : 2000;
+
+    await this._steps[this._currentStep].func();
+    this._scrollTo(this._root, currentStep.offsetTop - this._mainHeader.offsetHeight);
+    await this._countdown(entry as HTMLElement, entryIndicator as HTMLElement, stepDelay);
+    await delay(stepDelay);
+
+    entryIndicator.className = 'grok-icon far fa-check';
+
+    this._progress.value++;
+    this._progressSteps.innerText = `Step: ${this._progress.value} of ${this.stepNumber}`;
+
+    this._currentStep++;
+    this._isStepProcessed = false;
+
+    if (this._currentStep === this.stepNumber) {
+      this._isAutomatic ? this._stopStartBtn.replaceWith(this._restartBtn) :
+        this._nextStepBtn.replaceWith(this._restartBtn);
+    }
+  }
+
   /** Starts the demo script actions */
   private async _startScript(): Promise<void> {
-    const entry = this._activity.getElementsByClassName('grok-tutorial-entry');
-    const entryIndicators = this._activity.getElementsByClassName('grok-icon');
-    const entryInstructions = this._activity.getElementsByClassName('grok-tutorial-step-description');
-
     for (let i = this._currentStep; i < this.stepNumber; i++) {
       if (this._isStopped || this._isCancelled)
         break;
 
-      entryIndicators[i].className = 'grok-icon far fa-spinner-third fa-spin';
-      entryInstructions[i].classList.remove('hidden');
-      entryInstructions[i].classList.add('visible');
-
-      const currentStep = entry[i] as HTMLDivElement;
-      const stepDelay = this._steps[i].options?.delay ? this._steps[i].options?.delay! : 2000;
-
-      await this._steps[i].func();
-      this._scrollTo(this._root, currentStep.offsetTop - this._mainHeader.offsetHeight);
-      await this._countdown(entry[i] as HTMLElement, entryIndicators[i] as HTMLElement, stepDelay);
-      await delay(stepDelay);
-
-      entryIndicators[i].className = 'grok-icon far fa-check';
-      this._progress.value++;
-      this._progressSteps.innerText = `Step: ${this._progress.value} of ${this.stepNumber}`;
-
-      this._currentStep++;
+      await this._nextStep();
     }
-
-    if (this._currentStep === this.stepNumber)
-      this._stopStartBtn.replaceWith(this._restartBtn);
   }
 
   /**
@@ -305,6 +323,8 @@ export class DemoScript {
   /** Starts the demo script */
   async start(): Promise<void> {
     this._initRoot();
-    this._startScript();
+    grok.shell.newView();
+    if (this._isAutomatic)
+      this._startScript();
   }
 }
