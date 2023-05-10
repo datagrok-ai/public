@@ -56,6 +56,8 @@ export class RichFunctionView extends FunctionView {
   protected async onFuncCallReady() {
     await super.onFuncCallReady();
     this.basePath = `scripts/${this.funcCall.func.id}/view`;
+
+    if (this.runningOnStart) await this.doRun();
   }
 
   /**
@@ -154,7 +156,7 @@ export class RichFunctionView extends FunctionView {
 
     const newRibbonPanels = [
       ...this.getRibbonPanels(),
-      ...this.isFuncImmediate && !this.options.isTabbed ? [[save]]: [[play]],
+      ...this.runningOnInput && !this.options.isTabbed ? [[save]]: [[play]],
     ];
 
     this.setRibbonPanels(newRibbonPanels);
@@ -423,7 +425,7 @@ export class RichFunctionView extends FunctionView {
           this.syncOnInput(t, val);
           this.syncValOnChanged(t, val);
 
-          if (this.isFuncImmediate)
+          if (this.runningOnInput)
             this.runOnInput(t, val);
 
           if (prop.category !== prevCategory)
@@ -442,7 +444,7 @@ export class RichFunctionView extends FunctionView {
       ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
       this.controllsDiv = ui.buttonsInput([buttonWrapper as any]);
     }
-    if (!this.isFuncImmediate)
+    if (!this.runningOnInput)
       inputs.append(this.controllsDiv);
 
     inputs.classList.remove('ui-panel');
@@ -498,7 +500,7 @@ export class RichFunctionView extends FunctionView {
     t.root.replaceWith(newTableInput.root);
     t = newTableInput;
     this.syncOnInput(t, val);
-    if (this.isFuncImmediate)
+    if (this.runningOnInput)
       this.runOnDgInput(t, val);
     this.afterInputPropertyRender.next({prop, input: t});
   }

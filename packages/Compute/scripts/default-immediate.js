@@ -17,7 +17,7 @@
 //output: double O4 {caption: Temp 4.; units: °C; category: CoolingRate3 }
 //output: double O5 {caption: Temp 5.; units: °C; category: CoolingRate3 }
 //editor: Compute:RichFunctionViewEditor
-//meta.isImmediate: true
+//meta.runOnInput: true
 
 const tt = [...Array(S2).keys()]
 const Sol = [...Array(S2).keys()].map((x) => x*2)
