@@ -148,17 +148,17 @@ export class AxolabsTabUI {
     const firstAsPtoDiv = ui.div([]);
     firstAsPtoDiv.append(firstStrandPto[IDX.AS].root);
 
-    function updateAsModification() {
-      strandModificationItems[IDX.AS].innerHTML = '';
-      strandPtoLinkages[IDX.AS] = strandPtoLinkages[IDX.AS].concat(Array(maximalStrandLength[IDX.AS] - strandBases[IDX.AS].length).fill(fullyPto));
-      strandBases[IDX.AS] = strandBases[IDX.AS].concat(Array(maximalStrandLength[IDX.AS] - strandBases[IDX.AS].length).fill(sequenceBase));
+    function updateStrandModification(strandIdx: number) {
+      strandModificationItems[strandIdx].innerHTML = '';
+      strandPtoLinkages[strandIdx] = strandPtoLinkages[strandIdx].concat(Array(maximalStrandLength[strandIdx] - strandBases[strandIdx].length).fill(fullyPto));
+      strandBases[strandIdx] = strandBases[strandIdx].concat(Array(maximalStrandLength[strandIdx] - strandBases[strandIdx].length).fill(sequenceBase));
       let nucleotideCounter = 0;
-      for (let i = 0; i < strandLengthInput[IDX.AS].value!; i++) {
-        strandPtoLinkages[IDX.AS][i] = ui.boolInput('', strandPtoLinkages[IDX.AS][i].value!, () => {
+      for (let i = 0; i < strandLengthInput[strandIdx].value!; i++) {
+        strandPtoLinkages[strandIdx][i] = ui.boolInput('', strandPtoLinkages[strandIdx][i].value!, () => {
           updateSvgScheme();
           updateOutputExamples();
         });
-        strandBases[IDX.AS][i] = ui.choiceInput('', strandBases[IDX.AS][i].value, baseChoices, (v: string) => {
+        strandBases[strandIdx][i] = ui.choiceInput('', strandBases[strandIdx][i].value, baseChoices, (v: string) => {
           if (!enumerateModifications.includes(v)) {
             enumerateModifications.push(v);
             isEnumerateModificationsDiv.append(
@@ -176,65 +176,19 @@ export class AxolabsTabUI {
               }).root,
             );
           }
-          updateAsModification();
+          updateStrandModification(IDX.AS);
           updateSvgScheme();
           updateOutputExamples();
         });
-        if (!isOverhang(strandBases[IDX.AS][i].value!))
+        if (!isOverhang(strandBases[strandIdx][i].value!))
           nucleotideCounter++;
 
-        strandModificationItems[IDX.AS].append(
+        strandModificationItems[strandIdx].append(
           ui.divH([
-            ui.div([ui.label(isOverhang(strandBases[IDX.AS][i].value!) ? '' : String(nucleotideCounter))],
+            ui.div([ui.label(isOverhang(strandBases[strandIdx][i].value!) ? '' : String(nucleotideCounter))],
               {style: {width: '20px'}})!,
-            ui.block75([strandBases[IDX.AS][i].root])!,
-            ui.div([strandPtoLinkages[IDX.AS][i]])!,
-          ], {style: {alignItems: 'center'}}),
-        );
-      }
-    }
-
-    function updateSsModification() {
-      strandModificationItems[IDX.SS].innerHTML = '';
-      strandPtoLinkages[IDX.SS] = strandPtoLinkages[IDX.SS].concat(Array(maximalStrandLength[IDX.SS] - strandBases[IDX.SS].length).fill(fullyPto));
-      strandBases[IDX.SS] = strandBases[IDX.SS].concat(Array(maximalStrandLength[IDX.SS] - strandBases[IDX.SS].length).fill(sequenceBase));
-      let nucleotideCounter = 0;
-      for (let i = 0; i < strandLengthInput[IDX.SS].value!; i++) {
-        strandPtoLinkages[IDX.SS][i] = ui.boolInput('', strandPtoLinkages[IDX.SS][i].value!, () => {
-          updateSvgScheme();
-          updateOutputExamples();
-        });
-        strandBases[IDX.SS][i] = ui.choiceInput('', strandBases[IDX.SS][i].value, baseChoices, (v: string) => {
-          if (!enumerateModifications.includes(v)) {
-            enumerateModifications.push(v);
-            isEnumerateModificationsDiv.append(
-              ui.divText('', {style: {width: '25px'}}),
-              ui.boolInput(v, true, (boolV: boolean) => {
-                if (boolV) {
-                  if (!enumerateModifications.includes(v))
-                    enumerateModifications.push(v);
-                } else {
-                  const index = enumerateModifications.indexOf(v, 0);
-                  if (index > -1)
-                    enumerateModifications.splice(index, 1);
-                }
-                updateSvgScheme();
-              }).root,
-            );
-          }
-          updateSsModification();
-          updateSvgScheme();
-          updateOutputExamples();
-        });
-        if (!isOverhang(strandBases[IDX.SS][i].value!))
-          nucleotideCounter++;
-
-        strandModificationItems[IDX.SS].append(
-          ui.divH([
-            ui.div([ui.label(isOverhang(strandBases[IDX.SS][i].value!) ? '' : String(nucleotideCounter))],
-              {style: {width: '20px'}})!,
-            ui.block75([strandBases[IDX.SS][i].root])!,
-            ui.div([strandPtoLinkages[IDX.SS][i]])!,
+            ui.block75([strandBases[strandIdx][i].root])!,
+            ui.div([strandPtoLinkages[strandIdx][i]])!,
           ], {style: {alignItems: 'center'}}),
         );
       }
@@ -246,8 +200,8 @@ export class AxolabsTabUI {
           maximalStrandLength[IDX.SS] = strandLengthInput[IDX.SS].value!;
         if (strandLengthInput[IDX.AS].value! > maximalStrandLength[IDX.AS])
           maximalStrandLength[IDX.AS] = strandLengthInput[IDX.AS].value!;
-        updateSsModification();
-        updateAsModification();
+        updateStrandModification(IDX.SS);
+        updateStrandModification(IDX.AS);
         updateSvgScheme();
         updateInputExamples();
         updateOutputExamples();
@@ -618,8 +572,9 @@ export class AxolabsTabUI {
     saveAs.setTooltip('Name Of New Pattern');
 
 
-    asModificationDiv.append(strandTerminalModification[IDX.AS][IDX.THREE_PRIME].root);
-    asModificationDiv.append(strandTerminalModification[IDX.AS][IDX.FIVE_PRIME].root);
+    terminals.forEach((_, i) => {
+      asModificationDiv.append(strandTerminalModification[IDX.AS][i].root);
+    })
 
     const comment = ui.textInput('Comment', '', () => updateSvgScheme());
 
