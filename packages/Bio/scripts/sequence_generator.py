@@ -4,15 +4,15 @@
 # language: python
 # tags: template, demo
 # input: int clusters = 1 [Number of superclusters]
-# input: int sequences = 500 [Number of sequences in each supercluster]
+# input: int num_sequences = 500 [Number of sequences in each supercluster]
 # input: int motif_length = 12 [Average length of motif]
 # input: int max_variants_position = 3 [Maximum number of different letters in conservative position in motif]
 # input: int random_length = 3 [Average length of random sequence parts before and after motif]
 # input: int dispersion = 2 [Variation of total sequence length]
 # input: string alphabet_key = 'PT' [Sequence alphabet: PT/DNA/RNA/custom. Custom alphabet is a list of values separated by comma]
 # input: bool disable_cliffs = False [Disable generation of cliffs]
-# input: float cliff_probability = 0.01 [Probability to make activity cliff of a sequence]
-# input: float cliff_strength = 4.0 [Strength of cliff]
+# input: double cliff_probability = 0.01 [Probability to make activity cliff of a sequence]
+# input: double cliff_strength = 4.0 [Strength of cliff]
 # output: dataframe sequences
 
 import random
@@ -248,7 +248,7 @@ if not grok:
     # We are not in Datagrok - need to parse command line arguments
     args = parse_command_line_args()
     clusters = args.clusters
-    sequences = args.sequences
+    num_sequences = args.sequences
     motif_length = args.motif_length
     max_variants_position = args.max_variants_position
     random_length = args.random_length
@@ -263,7 +263,7 @@ alphabet: alphabet_type = alphabets[alphabet_key].split(",") if alphabet_key in 
 # Running sequence generator
 header, data = generate_sequences(
     clusters,
-    sequences,
+    num_sequences,
     motif_length,
     max_variants_position,
     random_length,
