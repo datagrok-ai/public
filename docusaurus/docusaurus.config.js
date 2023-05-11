@@ -10,8 +10,8 @@ const config = {
   tagline: 'Datagrok: Swiss Army Knife for Data',
   url: 'https://datagrok.ai',
   baseUrl: '/',
-  onBrokenLinks: 'warn',
-  onBrokenMarkdownLinks: 'warn',
+  onBrokenLinks: 'throw',
+  onBrokenMarkdownLinks: 'throw',
   favicon: 'favicon/favicon.ico',
   staticDirectories: ['static'],
 
