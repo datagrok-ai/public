@@ -10,8 +10,9 @@ import {
   splitterAsFasta,
   splitterAsHelm
 } from './macromolecule/utils';
-import {mmDistanceFunctions, mmDistanceFunctionsNames} from '../distance-functions';
-import {mmDistanceFunctionType} from '../distance-functions/types';
+import {mmDistanceFunctions, MmDistanceFunctionsNames}
+  from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {mmDistanceFunctionType} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
 
 /** Class for handling notation units in Macromolecule columns */
 export class UnitsHandler {
@@ -277,23 +278,23 @@ export class UnitsHandler {
     return newColumn;
   }
 
-  public getDistanceFunctionName(): mmDistanceFunctionsNames {
+  public getDistanceFunctionName(): MmDistanceFunctionsNames {
     // TODO add support for helm and separator notation
     if (!this.isFasta())
       throw new Error('Only FASTA notation is supported');
     if (this.isMsa())
-      return mmDistanceFunctionsNames.HAMMING;
+      return MmDistanceFunctionsNames.HAMMING;
     switch (this.alphabet) {
     // As DNA and RNA scoring matrices are same as identity matrices(mostly),
     // we can use very fast and optimized Levenshtein distance library
       case ALPHABET.DNA:
       case ALPHABET.RNA:
-        return mmDistanceFunctionsNames.LEVENSHTEIN;
+        return MmDistanceFunctionsNames.LEVENSHTEIN;
       case ALPHABET.PT:
-        return mmDistanceFunctionsNames.NEEDLEMANN_WUNSCH;
+        return MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH;
         // For default case, let's use Levenshtein distance
       default:
-        return mmDistanceFunctionsNames.LEVENSHTEIN;
+        return MmDistanceFunctionsNames.LEVENSHTEIN;
     }
   }
 
