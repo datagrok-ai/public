@@ -39,16 +39,25 @@ export class DemoView extends DG.ViewBase {
     return DG.Func.find({meta: {'demoPath': demoPath}})[0];
   }
 
-  async startDemoFunc(func: DG.Func, viewPath: string): Promise<void> {
+  public async startDemoFunc(func: DG.Func, viewPath: string): Promise<void> {
     const path = viewPath.split('|').map((s) => s.trim()).join('/');
 
     this._closeAll();
 
-    ui.setUpdateIndicator(grok.shell.tv.root, true);
-    await func.apply();
-
-    ui.setUpdateIndicator(grok.shell.tv.root, false);
-
+    if (func.options['isDemoScript'] == 'True') {
+      ui.setUpdateIndicator(grok.shell.tv.root, true);
+        grok.shell.newView(func.name, [ ui.panel([
+          ui.h1(func.name),
+          ui.divText(func.description),
+          ui.bigButton('Start', async () => { await func.apply() })
+        ], 'demo-app-script-view')
+        ])
+      ui.setUpdateIndicator(grok.shell.tv.root, false);
+    } else {
+      ui.setUpdateIndicator(grok.shell.tv.root, true);
+      await func.apply();
+      ui.setUpdateIndicator(grok.shell.tv.root, false);
+    }
     grok.shell.v.path.includes('/apps/Tutorials/Demo') ?
       grok.shell.v.path = grok.shell.v.basePath = `/${path}` :
       grok.shell.v.path = grok.shell.v.basePath = `/apps/Tutorials/Demo/${path}`;
@@ -453,10 +462,10 @@ export class DemoView extends DG.ViewBase {
     }
 
     for (let i = 0; i < DEMO_APP_HIERARCHY.children.length; ++i) {
-      for (let j = 0; j < this.subCategories.length; j++){
+      for (let j = 0; j < DEMO_APP_HIERARCHY.children[i].children.length; j++){
         if (grok.shell.v.path === `/apps/Tutorials/Demo/${DEMO_APP_HIERARCHY.children[i].name}` || 
         grok.shell.v.path === `/apps/Tutorials/Demo` ||
-        grok.shell.v.path === `/apps/Tutorials/Demo/${DEMO_APP_HIERARCHY.children[i].name}/${this.subCategories[j]}` 
+        grok.shell.v.path === `/apps/Tutorials/Demo/${DEMO_APP_HIERARCHY.children[i].name}/${DEMO_APP_HIERARCHY.children[i].children[j].name}` 
         ){
           grok.shell.v.root.lastElementChild?.classList.add('hidden');
           

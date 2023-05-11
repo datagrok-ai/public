@@ -11,12 +11,14 @@
 }
 
 .tutorials-demo-container {
-	max-width: 280px;
-	min-width: 280px;
-	width: 280px;
-	overflow: auto;
+	max-width: 350px;
+	min-width: 350px;
+	width: 350px;
 }
 
+.tutorials-demo-container .panel-content {
+	overflow: auto;
+}
 .demo-app-card:hover {
   cursor: pointer;
 }
@@ -136,6 +138,9 @@
 	min-width: 14px;
 	text-align: center;
 }
+.demo-app-script .grok-tutorial-entry > i.grok-icon.fa-spinner-third {
+	font-weight: bold;
+}
 
 .demo-app-script .fa-clock {
 	color: var(--grey-3);
@@ -163,6 +168,29 @@
 
 .demo-app-script .grok-tutorial-step-description .visible{
 	display: block;
+}
+
+/* Demo script view */
+.demo-app-script-view {
+	max-width: 720px;
+}
+
+.demo-app-script-view h1 {
+	font-size: 20px;
+	font-weight: normal;
+	margin-bottom: 12px;
+	color: var(--grey-6);
+}
+
+.demo-app-script-view div {
+	font-size: 14px;
+	line-height: 1.5rem;
+	color: var(--grey-5);
+	margin-bottom: 12px;
+}
+
+.demo-app-script-view button.ui-btn-raised {
+	margin: 0;
 }
 
 /* play-pause btn */
@@ -238,4 +266,14 @@ div.demo-script-countdown svg>circle {
 	white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* tree.view widget */
+.demo-app-widget.d4-tree-view-root {
+	margin-top: 12px;
+	min-width: 100%;
+	overflow-y: unset;
+}
+.demo-app-widget .d4-tree-view-group {
+	width: 100%;
 }
