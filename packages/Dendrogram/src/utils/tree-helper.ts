@@ -12,8 +12,8 @@ import {
 } from '../workers/distance-matrix-calculator';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {mmDistanceFunctionsNames} from
-  '@datagrok-libraries/bio/src/distance-functions/macromolecule-distance-functions';
+import {MmDistanceFunctionsNames} from
+  '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 type TreeLeafDict = { [nodeName: string]: NodeType };
 type DataNodeDict = { [nodeName: string]: number };
 type NodeNameCallback = (nodeName: string) => void;
@@ -480,9 +480,9 @@ export class TreeHelper implements ITreeHelper {
       } else if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
         const uh = new UnitsHandler(col);
         // Use Hamming distance when sequences are aligned
-        const seqDistanceFunction: mmDistanceFunctionsNames = uh.getDistanceFunctionName();
+        const seqDistanceFunction: MmDistanceFunctionsNames = uh.getDistanceFunctionName();
 
-        if (seqDistanceFunction === mmDistanceFunctionsNames.NEEDLEMANN_WUNSCH)
+        if (seqDistanceFunction === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH)
           isUsingNeedlemanWunsch = true;
         values = await distanceMatrixWorker.calc(col.toList(), seqDistanceFunction);
       } else { throw new TypeError('Unsupported column type'); }
