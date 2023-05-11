@@ -3,34 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import {_package} from '../package';
-import {sortFunctionsByDemoPath} from './utils';
+import {sortFunctionsByHierarchy} from './utils';
+import {DEMO_APP_HIERARCHY} from './const';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
 import '../../css/demo.css';
-
-export const DIRECTIONS: string[] = [
-  'Cheminformatics',
-  'Bioinformatics',
-  'Viewers',
-];
-
-// const CHEMINFORMATICS_CATEGORIES: string[] = [];
-// const BIOINFORMATICS_CATEGORIES: string[] = [];
-// const VIEWERS_CATEGORIES: string[] = [
-//   'Data flow and hierarchy',
-//   'Data separation',
-//   'General',
-//   'Geographical',
-//   'Input and edit',
-//   'Statistical',
-//   'Time and date'
-// ];
-
-// const SUBCATEGORIES = {
-//   Cheminformatics: CHEMINFORMATICS_CATEGORIES,
-//   Bioinformatics: BIOINFORMATICS_CATEGORIES,
-//   Viewers: VIEWERS_CATEGORIES,
-// };
 
 type DemoFunc = {
   name: string;
@@ -41,10 +18,8 @@ type DemoFunc = {
   imagePath: string;
 };
 
-const resultContainer = ui.div([],'hidden');
-export function getDemoTree (){
-  
-}
+const resultContainer = ui.div([], 'hidden');
+
 
 export class DemoView extends DG.ViewBase {
   dockPanel: DG.DockNode = new DG.DockNode(undefined);
@@ -64,16 +39,25 @@ export class DemoView extends DG.ViewBase {
     return DG.Func.find({meta: {'demoPath': demoPath}})[0];
   }
 
-  async startDemoFunc(func: DG.Func, viewPath: string): Promise<void> {
+  public async startDemoFunc(func: DG.Func, viewPath: string): Promise<void> {
     const path = viewPath.split('|').map((s) => s.trim()).join('/');
 
     this._closeAll();
 
-    ui.setUpdateIndicator(grok.shell.tv.root, true);
-    await func.apply();
-
-    ui.setUpdateIndicator(grok.shell.tv.root, false);
-
+    if (func.options['isDemoScript'] == 'True') {
+      ui.setUpdateIndicator(grok.shell.tv.root, true);
+        grok.shell.newView(func.name, [ ui.panel([
+          ui.h1(func.name),
+          ui.divText(func.description),
+          ui.bigButton('Start', async () => { await func.apply() })
+        ], 'demo-app-script-view')
+        ])
+      ui.setUpdateIndicator(grok.shell.tv.root, false);
+    } else {
+      ui.setUpdateIndicator(grok.shell.tv.root, true);
+      await func.apply();
+      ui.setUpdateIndicator(grok.shell.tv.root, false);
+    }
     grok.shell.v.path.includes('/apps/Tutorials/Demo') ?
       grok.shell.v.path = grok.shell.v.basePath = `/${path}` :
       grok.shell.v.path = grok.shell.v.basePath = `/apps/Tutorials/Demo/${path}`;
@@ -116,11 +100,13 @@ export class DemoView extends DG.ViewBase {
       grok.shell.dockManager.close(panelDockNode);
   }
 
+
   public _initFunctions(): void {
-    const funcs = DG.Func.find({meta: {'demoPath': null}}).sort(sortFunctionsByDemoPath);
-    for (let i = 0; i < DIRECTIONS.length; ++i) {
+    const funcs = DG.Func.find({meta: {'demoPath': null}}).sort(sortFunctionsByHierarchy);
+
+    for (let i = 0; i < DEMO_APP_HIERARCHY.children.length; ++i) {
       const directionFuncs = funcs.filter((func) => {
-        return (func.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes(DIRECTIONS[i]);
+        return (func.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes(DEMO_APP_HIERARCHY.children[i].name);
       });
       let tempArr: string[] = [];
 
@@ -135,8 +121,6 @@ export class DemoView extends DG.ViewBase {
         const path = directionFuncs[j].options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
         const pathArray = path.split('|').map((s) => s.trim());
         
-        
-
         if (pathArray.length > 2) {
           tempArr.push(pathArray[1]);
         }  
@@ -144,7 +128,7 @@ export class DemoView extends DG.ViewBase {
         this.funcs[this.funcs.length] = {
           name: pathArray[pathArray.length - 1],
           func: directionFuncs[j],
-          category: DIRECTIONS[i],
+          category: DEMO_APP_HIERARCHY.children[i].name,
           path: path,
           keywords: (directionFuncs[j].options['keywords'] !== undefined) ? directionFuncs[j].options['keywords'] as string : '',
           imagePath: imgPath,
@@ -164,8 +148,8 @@ export class DemoView extends DG.ViewBase {
     const tree = ui.tree();
     tree.root.classList.add('demo-app-group-view');
     
-    for (let i = 0; i < DIRECTIONS.length; i++) {
-      const name = DIRECTIONS[i];
+    for (let i = 0; i < DEMO_APP_HIERARCHY.children.length; ++i) {
+      const name = DEMO_APP_HIERARCHY.children[i].name;
       //tree.group(name, null, true).root.lastChild?.appendChild(this._groupRoot(name));
       const root = this._createViewRootElement(name);
       root.classList.add('grok-gallery-grid');
@@ -262,12 +246,8 @@ export class DemoView extends DG.ViewBase {
     return root;
   }
   
-  // TODO: make config for easy showing (Cheminformatics -> Bio -> Viewers -> ...)
-  // TODO: fix search, also on input show them in view, make it work on description and keywords
 
   // TODO: in DemoScript - loading circle to end when delay ends (make interactive icon) to disappear like in balloon
-
-  // TODO: try to load breadcrumbs instead of view name (onViewLoaded)
 
   // TODO: pause on exceptions in browser and vscode, check PowerGrid problem
 
@@ -348,9 +328,9 @@ export class DemoView extends DG.ViewBase {
 
     this._createHomeNode();
 
-    for (let i = 0; i < DIRECTIONS.length; ++i) {
+    for (let i = 0; i < DEMO_APP_HIERARCHY.children.length; ++i) {
       const directionFuncs = this.funcs.filter((func) => {
-        return (func.func.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes(DIRECTIONS[i]);
+        return (func.func.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes(DEMO_APP_HIERARCHY.children[i].name);
       });
 
       for (let j = 0; j < directionFuncs.length; ++j) {
@@ -480,11 +460,12 @@ export class DemoView extends DG.ViewBase {
       else
         item.classList.add('hidden');
     }
-    for (let i = 0; i < DIRECTIONS.length; i++) {
-      for (let j = 0; j < this.subCategories.length; j++){
-        if (grok.shell.v.path === `/apps/Tutorials/Demo/${DIRECTIONS[i]}` || 
+
+    for (let i = 0; i < DEMO_APP_HIERARCHY.children.length; ++i) {
+      for (let j = 0; j < DEMO_APP_HIERARCHY.children[i].children.length; j++){
+        if (grok.shell.v.path === `/apps/Tutorials/Demo/${DEMO_APP_HIERARCHY.children[i].name}` || 
         grok.shell.v.path === `/apps/Tutorials/Demo` ||
-        grok.shell.v.path === `/apps/Tutorials/Demo/${DIRECTIONS[i]}/${this.subCategories[j]}` 
+        grok.shell.v.path === `/apps/Tutorials/Demo/${DEMO_APP_HIERARCHY.children[i].name}/${DEMO_APP_HIERARCHY.children[i].children[j].name}` 
         ){
           grok.shell.v.root.lastElementChild?.classList.add('hidden');
           

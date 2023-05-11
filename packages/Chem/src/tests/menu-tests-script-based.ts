@@ -34,7 +34,7 @@ main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
   });
 
   test('curate.smiles', async () => {
-    await curate(smiles, 'smiles');
+    await curate(DG.Test.isInBenchmark ? grok.data.demo.molecules(500) : smiles, 'smiles');
   });
 
   test('curate.molV2000', async () => {
@@ -94,7 +94,7 @@ async function curate(df: DG.DataFrame, col: string) {
     'kekulization': true, 'normalization': true, 'reionization': true,
     'neutralization': true, 'tautomerization': true, 'mainFragment': true});
   const cm = t.getCol('curated_molecule');
-  if (col !== 'smiles') {
+  if (col !== 'smiles' || DG.Test.isInBenchmark) {
     for (let i = 0; i < t.rowCount; i++) expect(cm.get(i).includes('C'), true);
     return;
   }
@@ -115,7 +115,7 @@ async function curate(df: DG.DataFrame, col: string) {
 }
 
 async function mutate(molecule: string, expected?: number) {
-  const mutations = 10;
+  const mutations = DG.Test.isInBenchmark && molecule === 'CN1C(CC(O)C1=O)C1=CN=CC=C1' ? 1000 : 10;
   const t: DG.DataFrame = await grok.functions.call('Chem:Mutate', {
     'molecule': molecule,
     'steps': 1,

@@ -422,7 +422,7 @@ M  END
 CHEMBL497863
 
 >  <Smiles>
-O=N=O
+MALFORMED_INPUT_VALUE
 
 >  <Name>
 

@@ -297,7 +297,7 @@ public class GrokConnect {
         response.status(HttpURLConnection.HTTP_INTERNAL_ERROR);
     }
 
-    private static Properties getInfo() {
+    public static Properties getInfo() {
         try {
             InputStream resourceAsStream = Thread.currentThread()
                     .getContextClassLoader()

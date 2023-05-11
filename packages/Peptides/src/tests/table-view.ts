@@ -48,8 +48,10 @@ category('Table view', () => {
     for (let colIdx = 1; colIdx < gridCols.length; colIdx++) {
       const col = gridCols.byIndex(colIdx)!;
       const tableColName = col.column!.name;
-      expect(col.visible, posCols.includes(tableColName) || (tableColName === COLUMNS_NAMES.ACTIVITY_SCALED) ||
-        visibleColumns.includes(tableColName));
+      const expectedVisibility = posCols.includes(tableColName) || (tableColName === COLUMNS_NAMES.ACTIVITY_SCALED) ||
+      visibleColumns.includes(tableColName);
+      expect(col.visible, expectedVisibility, `Column ${tableColName} is visible == ${col.visible} but should be ` +
+        `${expectedVisibility}`);
     }
   });
 

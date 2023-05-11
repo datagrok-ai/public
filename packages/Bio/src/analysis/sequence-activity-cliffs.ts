@@ -43,8 +43,8 @@ export async function getSimilaritiesMatrix(
 }
 
 export async function getChemSimilaritiesMatrix(dim: number, seqCol: DG.Column,
-  df: DG.DataFrame, colName: string, simArr: DG.Column[])
-  : Promise<DG.Column[]> {
+  df: DG.DataFrame, colName: string, simArr: (DG.Column | null)[])
+  : Promise<(DG.Column | null)[]> {
   if (seqCol.version !== seqCol.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
     await invalidateMols(seqCol, false);
   const fpDf = DG.DataFrame.create(seqCol.length);

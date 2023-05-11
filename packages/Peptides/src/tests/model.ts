@@ -2,11 +2,12 @@ import * as DG from 'datagrok-api/dg';
 
 import {category, test, before, expect, expectFloat, delay} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
-import {PeptidesModel, VIEWER_TYPE} from '../model';
+import {PeptidesModel, VIEWER_TYPE, getAggregatedColName} from '../model';
 import {startAnalysis} from '../widgets/peptides';
 import {scaleActivity} from '../utils/misc';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {COLUMNS_NAMES, SCALING_METHODS} from '../utils/constants';
+import {LogoSummaryTable} from '../viewers/logo-summary';
 
 category('Model: Settings', () => {
   let df: DG.DataFrame;
@@ -99,22 +100,37 @@ category('Model: Settings', () => {
   });
 
   test('Include columns', async () => {
-    const testColumns = {'rank': 'avg'};
+    const columnName = 'rank';
+    const testColumns = {[columnName]: DG.AGG.AVG};
 
     // Include column
-    model.settings = {columns: {'rank': 'avg'}};
+    model.settings = {columns: testColumns};
 
     expect(Object.keys(model.settings.columns!)[0], Object.keys(testColumns)[0], 'Expected to include column ' +
       `'${Object.keys(testColumns)[0]}' but '${Object.keys(model.settings.columns!)[0]}' is included instead`);
-    expect(model.settings.columns!['rank'], testColumns['rank'], `Expected to aggregate column ` +
-      `'${Object.keys(testColumns)[0]}' with '${testColumns['rank']}' but aggregated with ` +
-      `'${model.settings.columns!['rank']}' instead`);
+    expect(model.settings.columns![columnName], testColumns[columnName], `Expected to aggregate column ` +
+      `'${Object.keys(testColumns)[0]}' with '${testColumns[columnName]}' but aggregated with ` +
+      `'${model.settings.columns![columnName]}' instead`);
+
+    expect(model.analysisView.grid.col(columnName)?.visible, true, `Expected to show column '${columnName}' but ` +
+      `it is hidden`);
+
+    const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable;
+    const aggColName = getAggregatedColName(testColumns[columnName], columnName);
+    expect(lstViewer.viewerGrid.col(aggColName) !== null, true, `Expected to include column '${columnName}' in ` +
+      `${VIEWER_TYPE.LOGO_SUMMARY_TABLE} but it is absent`);
 
     // Remove column
     model.settings = {columns: {}};
     expect(Object.keys(model.settings.columns!).length, 0,
       `Expected to remove all column aggregations but columns {${Object.keys(model.settings.columns!).join(' & ')}} ` +
       `are still included`);
+
+    expect(model.analysisView.grid.col(columnName)?.visible, false, `Expected to hide column '${columnName}' but ` +
+      `it is shown`);
+
+    expect(lstViewer.viewerGrid.col(aggColName) === null, true, `Expected to remove column '${columnName}' from ` +
+      `${VIEWER_TYPE.LOGO_SUMMARY_TABLE} but it is still present`);
   });
 
   test('Dendrogram', async () => {

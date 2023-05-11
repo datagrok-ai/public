@@ -193,7 +193,7 @@ export class OverviewView extends UaView {
       'Active users': 'UsageAnalysis:UniqueUsersCount',
       'New users': 'UsageAnalysis:NewUsersCount',
       'Sessions': 'UsageAnalysis:SessionsCount',
-      'Views': 'UsageAnalysis:ViewsCount',
+      // 'Views': 'UsageAnalysis:ViewsCount',
       'Connections': 'UsageAnalysis:ConnectionsCount',
       'Queries': 'UsageAnalysis:QueriesCount',
     };

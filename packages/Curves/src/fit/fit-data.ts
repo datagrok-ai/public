@@ -251,8 +251,11 @@ export function fitSeries(series: IFitSeries, statistics: boolean = false): FitR
     }
   }
   xAtMedY = series.points[nearestXIndex].x;
+
+  let slope = series.points[0].y > series.points[series.points.length - 1].y ? 1.2 : -1.2;
+
   // params are: [max, tan, IC50, min]
-  const initialParams = [{value: dataBounds.bottom}, {value: -1.2}, {value: xAtMedY}, {value: dataBounds.top}];
+  const initialParams = [{value: dataBounds.bottom}, {value: slope}, {value: xAtMedY}, {value: dataBounds.top}];
 
   return fit(
     {x: series.points.map((p) => p.x), y: series.points.map((p) => p.y)},

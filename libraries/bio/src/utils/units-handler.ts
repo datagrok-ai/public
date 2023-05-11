@@ -1,12 +1,18 @@
 import * as DG from 'datagrok-api/dg';
 
+import {ALIGNMENT, ALPHABET, candidateAlphabets, NOTATION, TAGS} from './macromolecule/consts';
+import {SeqColStats, SplitterFunc} from './macromolecule/types';
 import {
-  ALIGNMENT, ALPHABET, NOTATION, TAGS,
-  candidateAlphabets, detectAlphabet,
-  splitterAsFasta, getSplitterWithSeparator, splitterAsHelm,
-  SplitterFunc, getSplitterForColumn,
-  SeqColStats, getStats,
-} from './macromolecule';
+  detectAlphabet,
+  getSplitterForColumn,
+  getSplitterWithSeparator,
+  getStats,
+  splitterAsFasta,
+  splitterAsHelm
+} from './macromolecule/utils';
+import {mmDistanceFunctions, MmDistanceFunctionsNames}
+  from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {mmDistanceFunctionType} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
 
 /** Class for handling notation units in Macromolecule columns */
 export class UnitsHandler {
@@ -19,13 +25,6 @@ export class UnitsHandler {
     SEPARATOR: '',
     FASTA: '-',
   };
-
-  public static readonly PeptideFastaAlphabet = new Set<string>([
-    'G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',
-    'K', 'R', 'H', 'C', 'V', 'P', 'W', 'I', 'M', 'T',
-  ]);
-  public static readonly DnaFastaAlphabet = new Set<string>(['A', 'C', 'G', 'T']);
-  public static readonly RnaFastaAlphabet = new Set<string>(['A', 'C', 'G', 'U']);
 
   public static setUnitsToFastaColumn(col: DG.Column) {
     if (col.semType !== DG.SEMTYPE.MACROMOLECULE || col.getTag(DG.TAGS.UNITS) !== NOTATION.FASTA)
@@ -129,16 +128,16 @@ export class UnitsHandler {
       return alphabetSize;
     } else {
       switch (this.alphabet) {
-      case ALPHABET.PT:
-        return 20;
-      case ALPHABET.DNA:
-      case ALPHABET.RNA:
-        return 4;
-      case 'NT':
-        console.warn(`Unexpected alphabet 'NT'.`);
-        return 4;
-      default:
-        throw new Error(`Unexpected alphabet '${this.alphabet}'.`);
+        case ALPHABET.PT:
+          return 20;
+        case ALPHABET.DNA:
+        case ALPHABET.RNA:
+          return 4;
+        case 'NT':
+          console.warn(`Unexpected alphabet 'NT'.`);
+          return 4;
+        default:
+          throw new Error(`Unexpected alphabet '${this.alphabet}'.`);
       }
     }
   }
@@ -279,6 +278,30 @@ export class UnitsHandler {
     return newColumn;
   }
 
+  public getDistanceFunctionName(): MmDistanceFunctionsNames {
+    // TODO add support for helm and separator notation
+    if (!this.isFasta())
+      throw new Error('Only FASTA notation is supported');
+    if (this.isMsa())
+      return MmDistanceFunctionsNames.HAMMING;
+    switch (this.alphabet) {
+    // As DNA and RNA scoring matrices are same as identity matrices(mostly),
+    // we can use very fast and optimized Levenshtein distance library
+      case ALPHABET.DNA:
+      case ALPHABET.RNA:
+        return MmDistanceFunctionsNames.LEVENSHTEIN;
+      case ALPHABET.PT:
+        return MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH;
+        // For default case, let's use Levenshtein distance
+      default:
+        return MmDistanceFunctionsNames.LEVENSHTEIN;
+    }
+  }
+
+  public getDistanceFunction(): mmDistanceFunctionType {
+    return mmDistanceFunctions[this.getDistanceFunctionName()]();
+  }
+
   public constructor(col: DG.Column) {
     this._column = col;
     const units = this._column.getTag(DG.TAGS.UNITS);
@@ -292,7 +315,7 @@ export class UnitsHandler {
         UnitsHandler._defaultGapSymbolsDict.SEPARATOR;
 
     if (!this.column.tags.has(TAGS.aligned) || !this.column.tags.has(TAGS.alphabet) ||
-        (!this.column.tags.has(TAGS.alphabetIsMultichar) && !this.isHelm() && this.alphabet === ALPHABET.UN)
+      (!this.column.tags.has(TAGS.alphabetIsMultichar) && !this.isHelm() && this.alphabet === ALPHABET.UN)
     ) {
       // The following detectors and setters are to be called because the column is likely
       // as the UnitsHandler constructor was called on the column.
