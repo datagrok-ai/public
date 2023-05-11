@@ -477,7 +477,7 @@ export class AxolabsTabUI {
           ui.div([ui.divText('PTO')])!,
         ]),
         modificationItems[strand],
-      ]);
+      ], {style: {paddingTop: '12px'}});
       return [strand, panel];
     }));
 
