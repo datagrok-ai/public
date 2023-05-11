@@ -71,28 +71,25 @@ export async function demoScript(): Promise<any>  {
   const plsOutput = await computePLS(cars, features, predict, components);  
 
   const sourceCars = carsDataframe();
-  grok.shell.addTableView(sourceCars);
   sourceCars.name = 'Cars';
-  let view = grok.shell.getTableView(sourceCars.name);
+  let view: any; 
 
   await demoScript
-    .step('Data', async () => {}, {description: 'Each car has many features - patterns extraction is complicated.', delay: 5000})
-    .step('Model', async () => {}, {description: 'Predict car price by its other features.', delay: 4000})
+    .step('Data', async () => {      
+      grok.shell.addTableView(sourceCars);        
+      view = grok.shell.getTableView(sourceCars.name);
+    }, {description: 'Each car has many features - patterns extraction is complicated.', delay: 0})
+    .step('Model', async () => {}, {description: 'Predict car price by its other features.', delay: 0})
     .step('Regression coeffcicients', async () => 
       {view.addViewer(regressionCoefficientsBarChart(features, plsOutput[1]))}, 
-      {description: 'The feature "diesel" affects the price the most.', delay: 5000})
+      {description: 'The feature "diesel" affects the price the most.', delay: 0})
     .step('Scores', async () => 
       {view.addViewer(scoresScatterPlot(names, plsOutput[2], plsOutput[3]))}, 
-      {description: 'Similarities & dissimilarities: alfaromeo and mercedes are different.', delay: 4000})
+      {description: 'Similarities & dissimilarities: alfaromeo and mercedes are different.', delay: 0})
     .step('Prediction', async () => 
       {view.addViewer(predictedVersusReferenceScatterPlot(names, predict, plsOutput[0]))}, 
-      {description: 'Closer to the line means better price prediction.', delay: 4000})    
+      {description: 'Closer to the line means better price prediction.', delay: 0})    
     .start();
-
-  /*await demoScript
-    .step('Run', async () => {}, {description: 'Test dataframe is loaded, and multivariate analysis is performed.', delay: 0})
-    .step('Study', async () => {addPLSvisualization(sourceCars, names, features, predict, plsOutput)}, {description: 'Investigate results.', delay: 4000})  
-    .start();*/
 }
 
 //name: Generate linear separable dataset
