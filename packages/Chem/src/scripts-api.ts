@@ -1,5 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import { getRdKitModule } from './utils/chem-common-rdkit';
+import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 
 export async function findMCS(molecules: string, df: DG.DataFrame, exactAtomSearch: boolean, exactBondSearch: boolean): Promise<string> {

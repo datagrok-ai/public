@@ -138,7 +138,7 @@ async function _testMSAOnColumn(
   if (alphabet)
     expect(srcSeqCol.getTag(bioTAGS.alphabet), alphabet);
 
-  const msaSeqCol = await multipleSequenceAlignmentUI(srcSeqCol, pepseaMethod);
+  const msaSeqCol = await multipleSequenceAlignmentUI({col: srcSeqCol, pepsea: {method: pepseaMethod}});
   expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
   expect(msaSeqCol.getTag(DG.TAGS.UNITS), tgtNotation);
   expect(msaSeqCol.getTag(bioTAGS.aligned), ALIGNMENT.SEQ_MSA);

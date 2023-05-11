@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.3.11",
+  "version": "3.3.22",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -169,6 +169,9 @@
         },
         "1.3.35": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.3.36": {
+          "datagrok-api": "^1.14.1"
         }
       },
       "description": "Tools for the Datagrok developers (TestManager, DevPanel).",
@@ -930,6 +933,9 @@
         },
         "1.8.0": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.8.1": {
+          "datagrok-api": "^1.6.0"
         }
       },
       "description": "Advanced tools for analyzing collections of peptides.",
@@ -1331,6 +1337,12 @@
           "datagrok-api": "^1.14.0"
         },
         "1.3.2": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.3.3": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.4.0": {
           "datagrok-api": "^1.14.0"
         }
       },
@@ -1983,6 +1995,15 @@
         },
         "2.4.14": {
           "datagrok-api": "^1.13.3"
+        },
+        "2.4.15": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.4.16": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.4.17": {
+          "datagrok-api": "^1.13.3"
         }
       },
       "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
@@ -2516,6 +2537,12 @@
         },
         "1.2.4": {
           "datagrok-api": "^1.11.1"
+        },
+        "1.2.5": {
+          "datagrok-api": "^1.11.1"
+        },
+        "1.2.6": {
+          "datagrok-api": "^1.11.1"
         }
       },
       "description": "Computation and visualization of hierarchical data clustering. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Dendrogram/README.md)",
@@ -2529,6 +2556,9 @@
     "biostructure-viewer": {
       "dependencies": {
         "1.0.0": {
+          "datagrok-api": "^1.10.2"
+        },
+        "1.0.1": {
           "datagrok-api": "^1.10.2"
         }
       },
@@ -2544,9 +2574,12 @@
       "dependencies": {
         "1.0.0": {
           "datagrok-api": "latest"
+        },
+        "1.1.0": {
+          "datagrok-api": "latest"
         }
       },
-      "description": "Bioreactor simulation",
+      "description": "Simulation of controlled fab-arm exchange mechanism.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -2566,6 +2599,20 @@
         "directory": "packages/EDA"
       },
       "category": "Machine Learning"
+    },
+    "usage-analysis": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "^1.13.8"
+        }
+      },
+      "description": "Platform usage analysis system",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/UsageAnalysis"
+      },
+      "category": "General"
     }
   }
 }

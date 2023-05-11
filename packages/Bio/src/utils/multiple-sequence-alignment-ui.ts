@@ -14,14 +14,19 @@ export class MsaWarning extends Error {
     super(message, options);
   }
 }
+type multipleSequenceAlginmentUIOptions = {col?: DG.Column<string> | null, clustersCol?: DG.Column | null,
+  pepsea?: {method?: typeof pepseaMethods[number], gapOpen?: number, gapExtend?: number}};
 
-export async function multipleSequenceAlignmentUI(
-  col: DG.Column<string> | null = null,
-  pepseaMethod: typeof pepseaMethods[number] = pepseaMethods[0]
-): Promise<DG.Column> {
+export async function multipleSequenceAlignmentUI(options: multipleSequenceAlginmentUIOptions = {}): Promise<DG.Column> {
   return new Promise(async (resolve, reject) => {
-    const table = col?.dataFrame ?? grok.shell.t;
-    const seqCol = col ?? table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
+    options.clustersCol ??= null;
+    options.pepsea ??= {};
+    options.pepsea.method ??= pepseaMethods[0];
+    options.pepsea.gapOpen ??= 1.53;
+    options.pepsea.gapExtend ??= 0;
+
+    const table = options.col?.dataFrame ?? grok.shell.t;
+    const seqCol = options.col ?? table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
     if (seqCol == null) {
       const errMsg = `MSAError: dataset doesn't conain any Macromolecule column`;
       grok.shell.warning(errMsg);
@@ -29,11 +34,11 @@ export async function multipleSequenceAlignmentUI(
     }
 
     // UI
-    const methodInput = ui.choiceInput('Method', pepseaMethod, pepseaMethods);
+    const methodInput = ui.choiceInput('Method', options.pepsea.method, pepseaMethods);
     methodInput.setTooltip('Alignment method');
-    const gapOpenInput = ui.floatInput('Gap open', 1.53);
+    const gapOpenInput = ui.floatInput('Gap open', options.pepsea.gapOpen);
     gapOpenInput.setTooltip('Gap opening penalty at group-to-group alignment');
-    const gapExtendInput = ui.floatInput('Gap extend', 0);
+    const gapExtendInput = ui.floatInput('Gap extend', options.pepsea.gapExtend);
     gapExtendInput.setTooltip('Gap extension penalty to skip the alignment');
     const inputRootStyles = [methodInput.root.style, gapOpenInput.root.style, gapExtendInput.root.style];
     let performAlignment: (() => Promise<DG.Column<string>>) | undefined;
@@ -41,19 +46,17 @@ export async function multipleSequenceAlignmentUI(
     // TODO: allow only macromolecule colums to be chosen
     const colInput = ui.columnInput('Sequence', table, seqCol, () => {
       performAlignment = onColInputChange(
-        colInput.value, table, inputRootStyles, methodInput, clustersColInput, gapOpenInput, gapExtendInput
-      );
+        colInput.value, table, inputRootStyles, methodInput, clustersColInput, gapOpenInput, gapExtendInput);
     }
     ) as DG.InputBase<DG.Column<string>>;
     colInput.setTooltip('Sequences column to use for alignment');
-    const clustersColInput = ui.columnInput('Clusters', table, null);
+    const clustersColInput = ui.columnInput('Clusters', table, options.clustersCol);
     clustersColInput.nullable = true;
     colInput.fireChanged();
     //if column is specified (from tests), run alignment and resolve with the result
-    if (col) {
+    if (options.col) {
       performAlignment = onColInputChange(
-        col, table, inputRootStyles, methodInput, clustersColInput, gapOpenInput, gapExtendInput
-      );
+        options.col, table, inputRootStyles, methodInput, clustersColInput, gapOpenInput, gapExtendInput);
 
       await onDialogOk(colInput, table, performAlignment, resolve, reject);
       return;
@@ -64,9 +67,7 @@ export async function multipleSequenceAlignmentUI(
       .add(methodInput)
       .add(gapOpenInput)
       .add(gapExtendInput)
-      .onOK(async () => {
-        await onDialogOk(colInput, table, performAlignment, resolve, reject);
-      })
+      .onOK(async () => {await onDialogOk(colInput, table, performAlignment, resolve, reject)})
       .show();
   });
 }

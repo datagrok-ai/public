@@ -38,22 +38,22 @@ To see all available data source connections, on the **Sidebar**, select **Manag
 <details>
 <summary> You can also search or filter data connections using these fields </summary>
 
-| Field       | Description                                 |
-|-------------|---------------------------------------------|
-| ID          |                                             |
-| name        |                                             |
-| server      |                                             |
-| port        |                                             |
-| db          |                                             |
-| login       |                                             |
-| dataSource  |                                             |
-| description |                                             |
-| createdOn   |                                             |
-| updatedOn   |                                             |
-| author      | [User](../govern/user.md) object         |
-| starredBy   | [User](../govern/user.md) object         |
-| commentedBy | [User](../govern/user.md) object         |
-| usedBy      | [User](../govern/user.md) object         |
+| Field       | Description                      |
+|-------------|----------------------------------|
+| ID          |                                  |
+| name        |                                  |
+| server      |                                  |
+| port        |                                  |
+| db          |                                  |
+| login       |                                  |
+| dataSource  |                                  |
+| description |                                  |
+| createdOn   |                                  |
+| updatedOn   |                                  |
+| author      | [User](../govern/user.md) object |
+| starredBy   | [User](../govern/user.md) object |
+| commentedBy | [User](../govern/user.md) object |
+| usedBy      | [User](../govern/user.md) object |
 
 </details>
 

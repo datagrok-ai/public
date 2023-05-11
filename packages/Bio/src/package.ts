@@ -9,7 +9,7 @@ import {
 } from './utils/cell-renderer';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {SequenceAlignment} from './seq_align';
-import {getEmbeddingColsNames, sequenceSpaceByFingerprints} from './analysis/sequence-space';
+import {getEmbeddingColsNames, sequenceSpaceByFingerprints, getSequenceSpace} from './analysis/sequence-space';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {
   createLinesGrid,
@@ -49,6 +49,7 @@ import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-c
 import {demoBio05UI} from './demo/bio05-helm-msa-sequence-space';
 import {checkInputColumnUI} from './utils/check-input-column';
 import {multipleSequenceAlignmentUI} from './utils/multiple-sequence-alignment-ui';
+import { runKalign } from './utils/multiple-sequence-alignment';
 
 export const _package = new DG.Package();
 
@@ -230,6 +231,8 @@ export function sequenceAlignment(alignType: string, alignTable: string, gap: nu
   return res;
 }
 
+// -- Viewers --
+
 //name: WebLogo
 //description: WebLogo
 //tags: viewer, panel
@@ -284,19 +287,23 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     'separator': macroMolecule.getTag(bioTAGS.separator),
     'alphabet': macroMolecule.getTag(bioTAGS.alphabet),
   };
+  const uh = new UnitsHandler(macroMolecule);
+  let columnDistanceMetric = 'Tanimoto';
+  if (uh.isFasta())
+    columnDistanceMetric = uh.getDistanceFunctionName();
   const sp = await getActivityCliffs(
     df,
     macroMolecule,
     null,
     axesNames,
-    'Activity cliffs',
+    columnDistanceMetric,
     activities,
     similarity,
     'Tanimoto',
     methodName,
     DG.SEMTYPE.MACROMOLECULE,
     tags,
-    sequenceSpaceByFingerprints,
+    getSequenceSpace,
     getChemSimilaritiesMatrix,
     createTooltipElement,
     createPropPanelElement,
@@ -347,7 +354,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
     embedAxesNames: embedColsNames,
     options: options
   };
-  const sequenceSpaceRes = await sequenceSpaceByFingerprints(chemSpaceParams);
+  const sequenceSpaceRes = await getSequenceSpace(chemSpaceParams);
   const embeddings = sequenceSpaceRes.coordinates;
   for (const col of embeddings) {
     const listValues = col.toList();
@@ -409,8 +416,19 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
 //top-menu: Bio | Alignment | MSA...
 //name: MSA...
 //tags: bio, panel
-export function multipleSequenceAlignmentAny(): void {
+export function multipleSequenceAlignmentDialog(): void {
   multipleSequenceAlignmentUI();
+}
+
+//name: Multiple Sequence Alignment
+//description: Multiple sequence alignment
+//tags: bio
+//input: column sequenceCol {semType: Macromolecule}
+//input: column clustersCol
+//output: column result
+export async function alignSequences(sequenceCol: DG.Column<string> | null = null,
+  clustersCol: DG.Column | null = null): Promise<DG.Column<string>> {
+  return multipleSequenceAlignmentUI({col: sequenceCol, clustersCol});
 }
 
 //top-menu: Bio | Structure | Composition Analysis

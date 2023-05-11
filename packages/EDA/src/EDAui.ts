@@ -7,16 +7,16 @@ import * as DG from 'datagrok-api/dg';
 // Rename PCA columns
 export function renamePCAcolumns(pcaTable: DG.DataFrame): DG.DataFrame {  
   for (const col of pcaTable.columns.toList()) 
-    col.name = '_PCA' + col.name;
+    col.name = 'PCA' + col.name;
 
   return pcaTable;
 }
 
 // Predicted vs Reference scatter plot
-export function predictedVersusReferenceScatterPlot(reference: DG.Column, prediction: DG.Column): DG.Viewer {  
+export function predictedVersusReferenceScatterPlot(samplesNames: DG.Column, reference: DG.Column, prediction: DG.Column): DG.Viewer {  
   prediction.name = reference.name + '(predicted)';
  
-  let dfReferencePrediction = DG.DataFrame.fromColumns([reference, prediction]);
+  let dfReferencePrediction = DG.DataFrame.fromColumns([samplesNames, reference, prediction]);
   dfReferencePrediction.name = 'Reference vs. Predicted';
    
   return DG.Viewer.scatterPlot(dfReferencePrediction, 
@@ -24,7 +24,8 @@ export function predictedVersusReferenceScatterPlot(reference: DG.Column, predic
       x: reference.name,
       y: prediction.name,
       showRegressionLine: true,
-      markerType: 'circle'
+      markerType: 'circle',
+      labels: samplesNames.name
      });  
 }
 
@@ -46,9 +47,9 @@ export function regressionCoefficientsBarChart(features: DG.ColumnList, regressi
 }
 
 // Scores Scatter Plot
-export function scoresScatterPlot(xScores: Array<DG.Column>, yScores: Array<DG.Column>): DG.Viewer {
+export function scoresScatterPlot(samplesNames: DG.Column, xScores: Array<DG.Column>, yScores: Array<DG.Column>): DG.Viewer {
   
-  let scoresColumns = [];
+  let scoresColumns = [samplesNames];
 
   for (let i = 0; i < xScores.length; i++) {
     xScores[i].name = `x.score.t${i+1}`;
@@ -63,12 +64,15 @@ export function scoresScatterPlot(xScores: Array<DG.Column>, yScores: Array<DG.C
   let scores = DG.DataFrame.fromColumns(scoresColumns);
   scores.name = 'Scores';
   //grok.shell.addTableView(scores);
+
+  const index = xScores.length > 1 ? 1 : 0;
  
   return DG.Viewer.scatterPlot(scores, 
     { title: scores.name,
       x: xScores[0].name,
-      y: yScores[0].name,      
-      markerType: 'circle'
+      y: xScores[index].name,      
+      markerType: 'circle',
+      labels: samplesNames.name
      });
 }
 
@@ -100,19 +104,19 @@ export function loadingScatterPlot(features: DG.ColumnList, xLoadings: Array<DG.
 }
 
 // Add PLS visualization
-export function addPLSvisualization(table: DG.DataFrame, features: DG.ColumnList, predict: DG.Column, plsOutput: any): void {
+export function addPLSvisualization(table: DG.DataFrame, samplesNames: DG.Column, features: DG.ColumnList, predict: DG.Column, plsOutput: any): void {
 
   let view = grok.shell.getTableView(table.name);
  
   // 1. Predicted vs Reference scatter plot
-  view.addViewer(predictedVersusReferenceScatterPlot(predict, plsOutput[0]));
+  view.addViewer(predictedVersusReferenceScatterPlot(samplesNames, predict, plsOutput[0]));
   
   // 2. Regression Coefficients Bar Chart
-  view.addViewer(regressionCoefficientsBarChart(features, plsOutput[1])); 
+  view.addViewer(regressionCoefficientsBarChart(features, plsOutput[1]));   
  
-  // 3. Scores Scatter Plot
-  view.addViewer(scoresScatterPlot(plsOutput[2], plsOutput[3]));
- 
-  // 4. Loading Scatter Plot
+  // 3. Loading Scatter Plot
   view.addViewer(loadingScatterPlot(features, plsOutput[4]));  
+
+  // 4. Scores Scatter Plot
+  view.addViewer(scoresScatterPlot(samplesNames, plsOutput[2], plsOutput[3]));
 }

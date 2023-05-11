@@ -11,13 +11,15 @@ import {Subject} from 'rxjs';
 import {TAGS as bioTAGS, getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
+  cutoff: number;
   hotSearch: boolean;
+  similarColumnLabel: string | null; // Use postfix Label to prevent activating table column selection editor
+
   sketchedMolecule: string = '';
   curIdx: number = 0;
   molCol: DG.Column | null = null;
   idxs: DG.Column | null = null;
   scores: DG.Column | null = null;
-  cutoff: number;
   gridSelect: boolean = false;
   targetMoleculeIdx: number = 0;
   computeCompleted = new Subject<boolean>();
@@ -26,6 +28,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     super('similarity');
     this.cutoff = this.float('cutoff', 0.01, {min: 0, max: 1});
     this.hotSearch = this.bool('hotSearch', true);
+    this.similarColumnLabel = this.string('similarColumnLabel', null);
   }
 
   init(): void {
@@ -54,7 +57,9 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
         });
         this.idxs = df.getCol('indexes');
         this.scores = df.getCol('score');
-        this.molCol = DG.Column.string('sequence',
+        const similarColumnName: string = this.similarColumnLabel != null ? this.similarColumnLabel :
+          `similar (${this.moleculeColumnName})`;
+        this.molCol = DG.Column.string(similarColumnName,
           this.idxs!.length).init((i) => this.moleculeColumn?.get(this.idxs?.get(i)));
         this.molCol.semType = DG.SEMTYPE.MACROMOLECULE;
         this.tags.forEach((tag) => this.molCol!.setTag(tag, this.moleculeColumn!.getTag(tag)));

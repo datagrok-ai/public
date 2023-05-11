@@ -8,6 +8,7 @@ import {readDataframe} from './utils';
 import {findMCS, findRGroups} from '../scripts-api';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../package';
+import {getMCS} from '../utils/most-common-subs';
 
 
 category('top menu r-groups', () => {
@@ -32,26 +33,22 @@ category('top menu r-groups', () => {
   });
 
   test('mcs.exactAtomsExactBonds', async () => {
-    const mcs = await grok.functions.call('Chem:FindMCS',
-      {molecules: 'Structure', df: dfForMcs, exactAtomSearch: true, exactBondSearch: true});
+    const mcs = getMCS(dfForMcs.col(`Structure`)!, true, true);
     expect(mcs, '[#6]-[#6]-[#7]-[#6]');
   });
 
   test('mcs.anyAtomsExactBonds', async () => {
-    const mcs = await grok.functions.call('Chem:FindMCS',
-      {molecules: 'Structure', df: dfForMcs, exactAtomSearch: false, exactBondSearch: true});
+    const mcs = getMCS(dfForMcs.col(`Structure`)!, false, true);
     expect(mcs, '[#6,#7,#8,#9]-[#6,#7,#8]-[#7,#6](-[#6,#8,#9,#16])-[#6,#7,#9]');
   });
 
   test('mcs.exactAtomsAnyBonds', async () => {
-    const mcs = await grok.functions.call('Chem:FindMCS',
-      {molecules: 'Structure', df: dfForMcs, exactAtomSearch: true, exactBondSearch: false});
+    const mcs = getMCS(dfForMcs.col(`Structure`)!, true, false);
     expect(mcs, '[#6]-,:[#6]-,:[#7]-,:[#6]-,:[#6]');
   });
 
   test('mcs.anyAtomsAnyBonds', async () => {
-    const mcs = await grok.functions.call('Chem:FindMCS',
-      {molecules: 'Structure', df: dfForMcs, exactAtomSearch: false, exactBondSearch: false});
+    const mcs = getMCS(dfForMcs.col(`Structure`)!, false, false);
     expect(mcs, `[#6,#8,#9]-,:[#6,#7,#8]-,:[#7,#6](-,:[#6,#7,#8,#16]-,:[#6,#7,#8]-,:[#6,#7]-,:\
 [#7,#6,#8]-,:[#6,#7,#8,#16]-,:[#6,#7,#8,#16])-,:[#6,#7,#8]-,:[#6,#7]-,:[#6,#7,#8]-,:[#6,#7,#8,#9]`);
   });

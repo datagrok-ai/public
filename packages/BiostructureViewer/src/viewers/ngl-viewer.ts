@@ -13,14 +13,12 @@ import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
 import {LoaderParameters, RepresentationParameters} from 'NGL';
 import * as NGL from 'NGL';
 import {intToHtml} from '@datagrok-libraries/utils/src/color';
-
-export interface INglViewer {
-  get pdb(): string;
-
-  set pdb(value: string);
-
-  get onAfterBuildView(): Observable<void>;
-}
+import {
+  INglViewer,
+  NglProps,
+  NglPropsDefault,
+  RepresentationType
+} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 
 const enum PROPS_CATS {
   DATA = 'Data',
@@ -44,15 +42,7 @@ export const enum PROPS {
 }
 
 const pdbDefault: string = '';
-
-enum RepresentationType {
-  Cartoon = 'cartoon',
-  Backbone = 'backbone',
-  BallAndStick = 'ball+stick',
-  Licorice = 'licorice',
-  Hyperball = 'hyperball',
-  Surface = 'surface'
-}
+const defaults: NglProps = NglPropsDefault;
 
 export type LigandMapItem = { rowIdx: number, compIdx: number | null };
 
@@ -87,23 +77,23 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     super();
 
     // -- Data --
-    this.pdb = this.string(PROPS.pdb, pdbDefault,
+    this.pdb = this.string(PROPS.pdb, defaults.pdb,
       {category: PROPS_CATS.DATA, userEditable: false});
-    this.pdbTag = this.string(PROPS.pdbTag, null,
+    this.pdbTag = this.string(PROPS.pdbTag, defaults.pdbTag,
       {category: PROPS_CATS.DATA, choices: []});
-    this.ligandColumnName = this.string(PROPS.ligandColumnName, null,
+    this.ligandColumnName = this.string(PROPS.ligandColumnName, defaults.ligandColumnName,
       {category: PROPS_CATS.DATA, semType: DG.SEMTYPE.MOLECULE});
 
     // -- Style --
-    this.representation = this.string(PROPS.representation, RepresentationType.Cartoon,
+    this.representation = this.string(PROPS.representation, defaults.representation,
       {category: PROPS_CATS.STYLE, choices: Object.values(RepresentationType)}) as NGL.StructureRepresentationType;
 
     // -- Behaviour --
-    this.showSelectedRowsLigands = this.bool(PROPS.showSelectedRowsLigands, false,
+    this.showSelectedRowsLigands = this.bool(PROPS.showSelectedRowsLigands, defaults.showSelectedRowsLigands,
       {category: PROPS_CATS.BEHAVIOUR});
-    this.showCurrentRowLigand = this.bool(PROPS.showCurrentRowLigand, true,
+    this.showCurrentRowLigand = this.bool(PROPS.showCurrentRowLigand, defaults.showCurrentRowLigand,
       {category: PROPS_CATS.BEHAVIOUR});
-    this.showMouseOverRowLigand = this.bool(PROPS.showMouseOverRowLigand, true,
+    this.showMouseOverRowLigand = this.bool(PROPS.showMouseOverRowLigand, defaults.showMouseOverRowLigand,
       {category: PROPS_CATS.BEHAVIOUR});
 
     // --
@@ -258,7 +248,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     await stage.loadFile(pdbBlob, {ext: 'pdb', compressed: false, binary: false, name: '<Name>'});
 
     //highlights in NGL
-    // eslint-disable-next-line camelcase, prefer-const
+    /* eslint-disable camelcase, prefer-const */
     let scheme_buffer: string[][] = [];
 
     //TODO: remove - demo purpose only
@@ -266,6 +256,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     scheme_buffer.push(['#f1532b', `* and :B`]);
     scheme_buffer.push(['green', `* and :R`]);
     scheme_buffer.push(['green', `* and :M`]);
+    /* eslint-enable camelcase, prefer-const */
 
     const schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
     const schemeObj = {color: schemeId};

@@ -29,6 +29,9 @@ export async function demoBio01bUI() {
     const demoScript = new DemoScript('Demo', '');
     await demoScript
       .step(`Loading DNA notation \'fasta\'`, async () => {
+        grok.shell.windows.showContextPanel = false;
+        grok.shell.windows.showProperties = false;
+
         [df, treeHelper, dendrogramSvc] = await Promise.all([
           _package.files.readCsv(dataFn),
           getTreeHelper(),
