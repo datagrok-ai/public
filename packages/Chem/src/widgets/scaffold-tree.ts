@@ -360,6 +360,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     // this.tree.root.classList.add('d4-tree-view-lines');
 
     this.size = this.string('size', Object.keys(this.sizesMap)[2], {choices: Object.keys(this.sizesMap)});
+    this.tree.root.classList.add('scaffold-tree-viewer');
     this.tree.root.classList.add(this.size);
     this.helpUrl = '/help/visualize/viewers/scaffold-tree.md';
 
