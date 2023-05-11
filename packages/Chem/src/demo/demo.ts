@@ -11,6 +11,8 @@ import { chemSpace, getEmbeddingColsNames } from '../analysis/chem-space';
 import { CLIFFS_DF_NAME, activityCliffsIdx, getActivityCliffs } from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import { getSimilaritiesMarix } from '../utils/similarity-utils';
 import { createPropPanelElement, createTooltipElement } from '../analysis/activity-cliffs';
+import { DimReductionMethods } from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import { BitArrayMetricsNames } from '@datagrok-libraries/ml/src/typed-metrics';
 
 
 export async function _demoChemOverview(): Promise<void> {
@@ -193,8 +195,8 @@ export async function _demoActivityCliffs(): Promise<void> {
             const molecules = table.col('smiles')!
             const progressBar = DG.TaskBarProgressIndicator.create(`Activity cliffs running...`);
             const axesNames = getEmbeddingColsNames(table);
-            scatterPlot = await getActivityCliffs(table, molecules, null as any, axesNames, 'Activity cliffs', table.col('Activity')!, 80, 'Tanimoto',
-                't-SNE', DG.SEMTYPE.MOLECULE, { 'units': molecules.tags['units'] }, chemSpace, getSimilaritiesMarix,
+            scatterPlot = await getActivityCliffs(table, molecules, null as any, axesNames, 'Activity cliffs', table.col('Activity')!, 80, BitArrayMetricsNames.Tanimoto,
+                DimReductionMethods.T_SNE, DG.SEMTYPE.MOLECULE, { 'units': molecules.tags['units'] }, chemSpace, getSimilaritiesMarix,
                 createTooltipElement, createPropPanelElement, undefined, undefined, 0.5);
             progressBar.close();
             await delay(1000);
@@ -462,7 +464,7 @@ export async function _demoDatabases4(): Promise<void> {
             if (scatterPlot)
                 scatterPlot.close();
             await delay(1000);
-            scatterPlot = (await chemSpaceTopMenu(data, data.col('canonical_smiles')!, 't-SNE', 'Tanimoto', true))!
+            scatterPlot = (await chemSpaceTopMenu(data, data.col('canonical_smiles')!, DimReductionMethods.T_SNE, BitArrayMetricsNames.Tanimoto, true))!
             await delay(1000);
             if (array.length)
                 test(array)

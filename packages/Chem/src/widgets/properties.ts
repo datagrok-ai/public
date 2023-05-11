@@ -59,7 +59,7 @@ export function getMoleculeCharge(mol: OCL.Molecule): number {
 export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget {
   const rdKitModule = getRdKitModule();
   try {
-    semValue.value = _convertMolNotation(semValue.value, 'unknown', MOL_FORMAT.SMILES, rdKitModule);
+    semValue.value = _convertMolNotation(semValue.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, rdKitModule);
   } catch (e) {
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }

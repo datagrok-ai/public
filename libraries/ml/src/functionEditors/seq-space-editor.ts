@@ -1,8 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {IDimReductionParam, ITSNEOptions, IUMAPOptions, TSNEOptions, UMAPOptions} from '../reduce-dimensionality';
+import { ITSNEOptions, IUMAPOptions } from '../reduce-dimensionality';
 import { SequenceSpaceBaseFuncEditor } from './seq-space-base-editor';
-import { SEQ_SPACE_SIMILARITY_METRICS } from '../distance-metrics-methods';
 
 export interface ISimilaritySpaceParams {
   table: DG.DataFrame;

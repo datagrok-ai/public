@@ -11,6 +11,7 @@ import {getRdKitModule} from '../utils/chem-common-rdkit';
 import { malformedDataWarning } from '../utils/malformed-data-utils';
 import { getMolSafe } from '../utils/mol-creation_rdkit';
 import '../../css/chem.css';
+import { BitArrayMetrics } from '@datagrok-libraries/ml/src/typed-metrics';
 
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   followCurrentRow: boolean;
@@ -83,7 +84,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         }
         try {
           const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
-            this.targetMolecule, this.distanceMetric, this.limit, this.cutoff, this.fingerprint as Fingerprint);
+            this.targetMolecule, this.distanceMetric as BitArrayMetrics, this.limit, this.cutoff, this.fingerprint as Fingerprint);
           this.molCol = df.getCol('smiles');
           this.idxs = df.getCol('indexes');
           this.scores = df.getCol('score');
@@ -185,7 +186,7 @@ export async function chemSimilaritySearch(
   table: DG.DataFrame,
   smiles: DG.Column,
   molecule: string,
-  metricName: string,
+  metricName: BitArrayMetrics,
   limit: number,
   minScore: number,
   fingerprint: Fingerprint,

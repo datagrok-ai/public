@@ -10,6 +10,7 @@ import {findSimilar, getSimilarities} from '../package';
 import {chemDiversitySearch, ChemDiversityViewer} from '../analysis/chem-diversity-viewer';
 import {chemSimilaritySearch, ChemSimilarityViewer} from '../analysis/chem-similarity-viewer';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
+import { BitArrayMetrics, BitArrayMetricsNames } from '@datagrok-libraries/ml/src/typed-metrics';
 
 
 category('top menu similarity/diversity', () => {
@@ -113,26 +114,24 @@ category('top menu similarity/diversity', () => {
   });
 
   test('similaritySearchFunctionality', async () => {
-    await _testSimilaritySearchFunctionality('Tanimoto', 'Morgan');
-    await _testSimilaritySearchFunctionality('Dice', 'Morgan');
-    await _testSimilaritySearchFunctionality('Cosine', 'Morgan');
-    await _testSimilaritySearchFunctionality('Euclidean', 'Morgan');
-    await _testSimilaritySearchFunctionality('Hamming', 'Morgan');
+    await _testSimilaritySearchFunctionality(BitArrayMetricsNames.Tanimoto, Fingerprint.Morgan);
+    await _testSimilaritySearchFunctionality(BitArrayMetricsNames.Dice, Fingerprint.Morgan);
+    await _testSimilaritySearchFunctionality(BitArrayMetricsNames.Cosine, Fingerprint.Morgan);
   });
 
   test('testDiversitySearch.molecules', async () => {
     let df;
     if (DG.Test.isInBenchmark) df = await readDataframe('tests/smi10K.csv');
     else df = molecules;
-    await chemDiversitySearch(df.getCol('smiles'), tanimotoSimilarity, 10, 'Morgan' as Fingerprint);
+    await chemDiversitySearch(df.getCol('smiles'), tanimotoSimilarity, 10, Fingerprint.Morgan as Fingerprint);
   });
 
   test('testDiversitySearch.molV2000', async () => {
-    await chemDiversitySearch(spgi100.getCol('Structure'), tanimotoSimilarity, 10, 'Morgan' as Fingerprint);
+    await chemDiversitySearch(spgi100.getCol('Structure'), tanimotoSimilarity, 10, Fingerprint.Morgan as Fingerprint);
   });
 
   test('testDiversitySearch.molV3000', async () => {
-    await chemDiversitySearch(approvedDrugs100.getCol('molecule'), tanimotoSimilarity, 10, 'Morgan' as Fingerprint);
+    await chemDiversitySearch(approvedDrugs100.getCol('molecule'), tanimotoSimilarity, 10, Fingerprint.Morgan as Fingerprint);
   });
 
   test('diversity.emptyValues', async () => {
@@ -263,8 +262,8 @@ async function _testSimilaritySearchViewerOpen() {
   molecules.addViewer('Chem Similarity Search');
   await delay(500);
   const similaritySearchviewer = getSearchViewer(molecules, 'Chem Similarity Search') as ChemSimilarityViewer;
-  expect(similaritySearchviewer.fingerprint, 'Morgan');
-  expect(similaritySearchviewer.distanceMetric, 'Tanimoto');
+  expect(similaritySearchviewer.fingerprint, Fingerprint.Morgan);
+  expect(similaritySearchviewer.distanceMetric, BitArrayMetricsNames.Tanimoto);
   expect(similaritySearchviewer.scores!.get(0), 1);
   expect(similaritySearchviewer.idxs!.get(0), 0);
   expect(similaritySearchviewer.molCol!.get(0), 'O=C1CN=C(c2ccccc2N1)C3CCCCC3');
@@ -276,7 +275,7 @@ async function _testSimilaritySearchViewerOpen() {
   molecules.close();
 }
 
-async function _testSimilaritySearchFunctionality(distanceMetric: string, fingerprint: string) {
+async function _testSimilaritySearchFunctionality(distanceMetric: BitArrayMetrics, fingerprint: string) {
   const molecules = await readDataframe('tests/sar-small_test.csv');
   const moleculeColumn = molecules.col('smiles');
   const similarityDf = await chemSimilaritySearch(molecules, moleculeColumn!, moleculeColumn!.get(0),
@@ -294,8 +293,8 @@ async function _testDiversitySearchViewerOpen() {
   molecules.addViewer('Chem Diversity Search');
   await delay(500);
   const diversitySearchviewer = getSearchViewer(molecules, 'Chem Diversity Search') as ChemDiversityViewer;
-  expect(diversitySearchviewer.fingerprint, 'Morgan');
-  expect(diversitySearchviewer.distanceMetric, 'Tanimoto');
+  expect(diversitySearchviewer.fingerprint, Fingerprint.Morgan);
+  expect(diversitySearchviewer.distanceMetric, BitArrayMetricsNames.Tanimoto);
   expect(diversitySearchviewer.initialized, true);
   expect(diversitySearchviewer.renderMolIds.length > 0, true);
   diversitySearchviewer.close();

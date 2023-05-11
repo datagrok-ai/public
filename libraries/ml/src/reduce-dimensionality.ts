@@ -18,8 +18,10 @@ import {Measure, KnownMetrics, AvailableMetrics, isBitArrayMetric, AvailableData
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {UMAPParameters} from 'umap-js';
 
-export const UMAP = 'UMAP';
-export const T_SNE = 't-SNE';
+export enum DimReductionMethods{
+  UMAP = 'UMAP',
+  T_SNE =  't-SNE'
+}
 
 export interface IUMAPOptions {
   learningRate?: number;

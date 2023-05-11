@@ -5,6 +5,8 @@ import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 import {getSimilarityFromDistance} from '../distance-metrics-methods';
 import { Subject } from 'rxjs';
 import '../../css/styles.css';
+import { DimReductionMethods } from '../reduce-dimensionality';
+import { BitArrayMetrics, BitArrayMetricsNames } from '../typed-metrics';
 
 export let activityCliffsIdx = 0;
 
@@ -33,8 +35,8 @@ interface IRenderedLines {
 
 export interface ISequenceSpaceParams {
   seqCol: DG.Column,
-  methodName: string,
-  similarityMetric: string,
+  methodName: DimReductionMethods,
+  similarityMetric: BitArrayMetrics,
   embedAxesNames: string[],
   options?: any
 }
@@ -77,8 +79,8 @@ const CLIFFS_FILTER_APPLIED = 'filterCliffs';
 
 // Searches for activity cliffs in a chemical dataset by selected cutoff
 export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, encodedCol: DG.Column | null,
-  axesNames: string[], scatterTitle: string, activities: DG.Column, similarity: number, similarityMetric: string,
-  methodName: string, semType: string, tags: {[index: string]: string},
+  axesNames: string[], scatterTitle: string, activities: DG.Column, similarity: number, similarityMetric: BitArrayMetrics,
+  methodName: DimReductionMethods, semType: string, tags: {[index: string]: string},
   seqSpaceFunc: (params: ISequenceSpaceParams) => Promise<ISequenceSpaceResult>,
   simMatrixFunc: (dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string,
     simArr: (DG.Column | null)[]) => Promise<(DG.Column | null)[]>,
@@ -99,7 +101,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   const seqSpaceParams = {
     seqCol: dimensionalityReduceCol,
     methodName: methodName,
-    similarityMetric: similarityMetric,
+    similarityMetric: similarityMetric as BitArrayMetrics,
     embedAxesNames: axesNames,
     options: seqSpaceOptions,
   };

@@ -16,11 +16,11 @@ export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, num
     for (let rowI = 0; rowI < molCol.length; rowI++) {
       let el: string = molCol.get(rowI);
       if (smiles) {
-        el = convertMolNotation(el, DG.UNITS.Molecule.SMILES, DG.UNITS.Molecule.MOLBLOCK);
+        el = convertMolNotation(el, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
         el === MALFORMED_MOL_V2000 ? invalid[rowI] = rowI : el;
       }
       else if (v3Kmolblock) {
-        el = convertMolNotation(el, DG.UNITS.Molecule.V3K_MOLBLOCK, DG.UNITS.Molecule.MOLBLOCK);
+        el = convertMolNotation(el, DG.chem.Notation.V3KMolBlock, DG.chem.Notation.MolBlock);
         el === MALFORMED_MOL_V2000 ? invalid[rowI] = rowI : el;
       } 
       else {
@@ -64,4 +64,3 @@ export function checkPackage(packageName: string, functionName: string) : boolea
   console.debug(`${packageName}: ${functionName} funcList.length = ${funcList.length}`);
   return funcList.length === 1 ? true : false;
 }
-

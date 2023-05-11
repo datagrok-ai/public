@@ -14,8 +14,8 @@ import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import Sketcher = DG.chem.Sketcher;
-import {activityCliffsIdx, CLIFFS_DF_NAME, getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {IUMAPOptions, ITSNEOptions, UMAP} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {IUMAPOptions, ITSNEOptions, DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
 import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, EMPTY_MOLECULE_MESSAGE, SMARTS_MOLECULE_MESSAGE, elementsTable} from './constants';
@@ -63,6 +63,7 @@ import { RDKitReactionRenderer } from './rendering/rdkit-reaction-renderer';
 import { structure3dWidget } from './widgets/structure3d';
 import { identifiersWidget } from './widgets/identifiers';
 import { _demoActivityCliffs, _demoChemOverview, _demoDatabases, _demoRgroupAnalysis, _demoSimilaritySearch } from './demo/demo';
+import { BitArrayMetrics, BitArrayMetricsNames } from '@datagrok-libraries/ml/src/typed-metrics';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -144,7 +145,7 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
   divStructures.classList.add('d4-flex-wrap');
   if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
     const molIds = await chemDiversitySearch(
-      col, similarityMetric['Tanimoto'], 7, 'Morgan' as Fingerprint, true);
+      col, similarityMetric[BitArrayMetricsNames.Tanimoto], 7, Fingerprint.Morgan, true);
 
     Object.assign(col.temp, {
       'version': version,
@@ -476,15 +477,15 @@ export function ChemSpaceEditor(call: DG.FuncCall) {
 //input: bool plotEmbeddings = true
 //input: object options {optional: true}
 //editor: Chem:ChemSpaceEditor
-export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: string,
-  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean, options?: IUMAPOptions | ITSNEOptions): Promise<DG.Viewer | undefined> {
+export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: DimReductionMethods,
+  similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean, options?: IUMAPOptions | ITSNEOptions): Promise<DG.Viewer | undefined> {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
   }
 
-  const allowedRowCount = methodName === UMAP ? 100000 : 10000;
-  const fastRowCount = methodName === UMAP ? 5000 : 2000;
+  const allowedRowCount = methodName === DimReductionMethods.UMAP ? 100000 : 10000;
+  const fastRowCount = methodName === DimReductionMethods.UMAP ? 5000 : 2000;
 
   if (table.rowCount > allowedRowCount) {
     grok.shell.warning(`Too many rows, maximum for chemical space is ${allowedRowCount}`);
@@ -497,7 +498,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     const chemSpaceParams = {
       seqCol: molecules,
       methodName: methodName,
-      similarityMetric: similarityMetric,
+      similarityMetric: similarityMetric as BitArrayMetrics,
       embedAxesNames: [embedColsNames[0], embedColsNames[1]],
       options: options
     };
@@ -535,8 +536,8 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
 //input: string yAxis
 //input: object options {optional: true}
 //output: object result
-export async function getChemSpaceEmbeddings(col: DG.Column, methodName: string,
-  similarityMetric: string = 'Tanimoto', xAxis: string, yAxis: string, options?: any): Promise<ISequenceSpaceResult> {
+export async function getChemSpaceEmbeddings(col: DG.Column, methodName: DimReductionMethods,
+  similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto, xAxis: string, yAxis: string, options?: any): Promise<ISequenceSpaceResult> {
   //need to create dataframe to add fingerprints column
   if (!col.dataFrame) {
     const dfForFp = DG.DataFrame.create(col.length);
@@ -545,7 +546,7 @@ export async function getChemSpaceEmbeddings(col: DG.Column, methodName: string,
   const chemSpaceParams = {
     seqCol: col,
     methodName: methodName,
-    similarityMetric: similarityMetric,
+    similarityMetric: similarityMetric as BitArrayMetrics,
     embedAxesNames: [xAxis, yAxis],
     options: options
   };
@@ -665,11 +666,11 @@ export function ActivityCliffsEditor(call: DG.FuncCall) {
 //input: column activities
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE"] }
-//input: string similarityMetric
+//input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: object options {optional: true}
 //editor: Chem:ActivityCliffsEditor
 export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
-  similarity: number, methodName: string, similarityMetric: string, options?: IUMAPOptions | ITSNEOptions) {
+  similarity: number, methodName: DimReductionMethods, similarityMetric: BitArrayMetrics, options?: IUMAPOptions | ITSNEOptions) {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
@@ -680,7 +681,7 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
   }
 
   const allowedRowCount = 10000;
-  const fastRowCount = methodName === UMAP ? 5000 : 2000;
+  const fastRowCount = methodName === DimReductionMethods.UMAP ? 5000 : 2000;
   if (df.rowCount > allowedRowCount) {
     grok.shell.warning(`Too many rows, maximum for activity cliffs is ${allowedRowCount}`);
     return;
@@ -849,10 +850,10 @@ export function toxicity(smiles: string): DG.Widget {
 //description: RDKit-based conversion for SMILES, SMARTS, InChi, Molfile V2000 and Molfile V3000
 //tags: unitConverter
 //input: string molecule {semType: Molecule}
-//input: string sourceNotation {choices:["smiles", "smarts", "molblock", "inchi", "v3Kmolblock"]}
-//input: string targetNotation {choices:["smiles", "smarts", "molblock", "inchi", "v3Kmolblock"]}
+//input: string sourceNotation {choices:["smiles", "smarts", "molblock", "v3Kmolblock"]}
+//input: string targetNotation {choices:["smiles", "smarts", "molblock", "v3Kmolblock"]}
 //output: string result {semType: Molecule}
-export function convertMolNotation(molecule: string, sourceNotation: string, targetNotation: string): string {
+export function convertMolNotation(molecule: string, sourceNotation: DG.chem.Notation, targetNotation: DG.chem.Notation): string {
   return _convertMolNotation(molecule, sourceNotation, targetNotation, getRdKitModule());
 }
 
@@ -980,7 +981,7 @@ export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
   ui.setUpdateIndicator(grid.root, true);
   const progressBar = DG.TaskBarProgressIndicator.create('Sorting Structures...');
   progressBar.update(0, 'Installing ScaffoldGraph..: 0% completed');
-  const fingerprints : DG.DataFrame = await callChemSimilaritySearch(dframe, molCol, smiles, 'Tanimoto', 1000000, 0.0, Fingerprint.Morgan);
+  const fingerprints : DG.DataFrame = await callChemSimilaritySearch(dframe, molCol, smiles, BitArrayMetricsNames.Tanimoto, 1000000, 0.0, Fingerprint.Morgan);
   ui.setUpdateIndicator(grid.root, false);
   progressBar.update(100, 'Sort completed');
   progressBar.close();
@@ -1108,7 +1109,7 @@ export async function callChemSimilaritySearch(
   df: DG.DataFrame,
   col: DG.Column,
   molecule: string,
-  metricName: string,
+  metricName: BitArrayMetrics,
   limit: number,
   minScore: number,
   fingerprint: string): Promise<DG.DataFrame> {
@@ -1124,7 +1125,7 @@ export async function callChemSimilaritySearch(
 //output: dataframe result
 export async function callChemDiversitySearch(
   col: DG.Column,
-  metricName: string,
+  metricName: BitArrayMetrics,
   limit: number,
   fingerprint: string): Promise<number[]> {
   return await chemDiversitySearch(col, similarityMetric[metricName], limit, fingerprint as Fingerprint);
@@ -1155,7 +1156,7 @@ export async function getScaffoldTree(data: DG.DataFrame,
     let el: string = molColumn?.get(rowI);
     if (!smiles)
       try {
-        el = convertMolNotation(el, DG.UNITS.Molecule.MOLBLOCK, DG.UNITS.Molecule.SMILES);
+        el = convertMolNotation(el, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
       }
       catch {
         invalid[rowI] = rowI;

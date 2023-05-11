@@ -10,7 +10,7 @@ const HEIGHT = 300;
 export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
   const rdKitModule = getRdKitModule();
   try {
-    molecule = _convertMolNotation(molecule, 'unknown', 'molblock', rdKitModule);
+    molecule = _convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, rdKitModule);
   } catch (e) {
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }

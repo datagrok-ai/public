@@ -21,7 +21,7 @@ export async function chemSpace(spaceParams: ISequenceSpaceParams): Promise<ISeq
   const chemSpaceResult: IReduceDimensionalityResult = await reduceDimensinalityWithNormalization(
     fpColumn as BitArray[],
     spaceParams.methodName,
-    spaceParams.similarityMetric as BitArrayMetrics,
+    spaceParams.similarityMetric,
     spaceParams.options);
   emptyAndMalformedIdxs.forEach((idx: number | null) => {
     setNullForEmptyAndMalformedData(chemSpaceResult.embedding, idx!);

@@ -6,6 +6,8 @@ import {createTableView} from './utils';
 import {activityCliffs} from '../package';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {before, after, expect, category, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
+import { DimReductionMethods } from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import { BitArrayMetricsNames } from '@datagrok-libraries/ml/src/typed-metrics';
 // const {jStat} = require('jstat');
 
 
@@ -60,8 +62,8 @@ async function _testActivityCliffsOpen(dfName: string, molCol: string, activityC
     actCliffsTableView.dataFrame.getCol(molCol),
     actCliffsTableView.dataFrame.getCol(activityCol),
     80,
-    't-SNE',
-    'Tanimoto');
+    DimReductionMethods.T_SNE,
+    BitArrayMetricsNames.Tanimoto);
   let scatterPlot: DG.Viewer | null = null;
   for (const i of actCliffsTableView.viewers) {
     if (i.type == DG.VIEWER.SCATTER_PLOT)

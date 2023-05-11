@@ -31,8 +31,8 @@ M  END`;
  */
 export function _convertMolNotation(
   moleculeString: string,
-  sourceNotation: string,
-  targetNotation: string,
+  sourceNotation: DG.chem.Notation,
+  targetNotation: DG.chem.Notation,
   rdKitModule: RDModule,
 ): string {
   if (sourceNotation === targetNotation)

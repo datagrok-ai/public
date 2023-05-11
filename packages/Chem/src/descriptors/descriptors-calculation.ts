@@ -35,7 +35,7 @@ export async function addDescriptors(smilesCol: DG.Column, viewTable: DG.DataFra
 /** Calculates descriptors for single entry*/
 export function getDescriptorsSingle(smiles: string): DG.Widget {
   const rdKitModule = getRdKitModule();
-  smiles = _convertMolNotation(smiles, 'unknown', DG.UNITS.Molecule.SMILES, rdKitModule);
+  smiles = _convertMolNotation(smiles, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, rdKitModule);
   if (smiles === MESSAGE_MALFORMED)
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   const molecule = DG.chem.isMolBlock(smiles) ? `\"${smiles}\"` : smiles;
