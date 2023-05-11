@@ -26,40 +26,35 @@ M  END`;
 function validateMol(mol: RDMol | null, molString: string) : void {
   if (mol === null)
     throw new Error('FATAL RDKit Error: Created a null molecule with no exception ' + molString);
-  if (!mol.is_valid())
+  if (!mol.is_valid()) {
+    mol.delete();
     throw new Error('FATAL RDKit Error: Created a not valid molecule with no exception ' + molString);
+  }
 }
 
 export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
-  readonly _patternFpLength = 2048;
-  readonly _patternFpUint8Length = 256;
 
   constructor(module: RDModule, webRoot: string) {
     super(module, webRoot);
   }
 
-  initMoleculesStructures(dict: string[]) : void {
+  initMoleculesStructures(molecules: string[]): number {
     this.freeMoleculesStructures();
-    this._rdKitMols = [];
-    let logged = false;
-    for (let i = 0; i < dict.length; ++i) {
-      const item = dict[i];
-      let mol;
-      if (!item || item === '')
-        mol = this._rdKitModule.get_mol('');
-      else {
+    this._rdKitMols = new Array<RDMol | null>(molecules.length).fill(null);
+    let malformed = 0;
+    for (let i = 0; i < molecules.length; ++i) {
+      const item = molecules[i];
+      if (item && item !== '') {
         const molSafe = getMolSafe(item, {}, this._rdKitModule);
-        mol = molSafe.mol;
-        if (mol === null) {
-          if (!logged) {
-            const errorMessage = 'Chem | Possibly a malformed molString at init: `' + item + '`';
-            logged = true;
-          }
-        } else
+        const mol = molSafe.mol;
+        if (mol) {
           mol.is_qmol = molSafe.isQMol;
+          this._rdKitMols[i] = mol;
+        } else
+        malformed++;        
       }
-      this._rdKitMols.push(mol);
     }
+    return malformed;
   }
 
   getQMol(molString: string) : RDMol | null {
@@ -79,7 +74,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     if (this._rdKitMols === null)
       return '[' + matches.join(', ') + ']';
 
-    let queryMol: RDMol | null = null;
+    let queryMol: RDMol | null;
 
     if (isMolBlock(queryMolString)) {
       if (queryMolString.includes(' H ') || queryMolString.includes('V3000'))
@@ -87,27 +82,30 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       else {
         const molTmp = getMolSafe(queryMolString, {"mergeQueryHs":true, "kekulize": true}, this._rdKitModule).mol;
         if (molTmp !== null) {
-          let molBlockAroma = null;
+          let molBlockAroma: string | null;
           try { molBlockAroma = molTmp!.get_aromatic_form(); }
           catch(e) { // looks like we get here when the molecule is already aromatic, so we just re-assign the block
             molBlockAroma = queryMolString;
           }
 
           molTmp.delete();
-          const newQueryMolString = syncQueryAromatics(molBlockAroma, queryMolString);
-          queryMolString = newQueryMolString;
+          queryMolString = syncQueryAromatics(molBlockAroma, queryMolString);
         }
         queryMol = this.getQMol(queryMolString);
       }
-    } else { // not a molblock
+    }
+    else { // not a molblock
       queryMol = this.getQMol(queryMolString);
       if (queryMol !== null) {
         const mol = getMolSafe(queryMolString, {mergeQueryHs: true}, this._rdKitModule).mol;
         if (mol !== null) { // check the qmol is proper
           const match = mol.get_substruct_match(queryMol);
           if (match === '{}') {
+            queryMol.delete(); //remove mol object previously stored in queryMol
             queryMol = mol;
-          } else mol.delete();
+          }
+          else
+            mol.delete();
         } // else, this looks to be a real SMARTS
       } else { // failover to queryMolBlockFailover
         queryMol = getMolSafe(queryMolBlockFailover, {mergeQueryHs: true}, this._rdKitModule).mol; // possibly get rid of fall-over in future
@@ -117,13 +115,21 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     if (queryMol !== null) {
         if (bitset) {
           for (let i = 0; i < bitset.length; ++i) {
-            if (bitset[i] && this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
+            try { //get_substruct_match can potentially throw an exception, need to catch
+              if (bitset[i] && this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
               matches.push(i);
+            } catch {
+              continue;
+            }
           }
         } else {
           for (let i = 0; i < this._rdKitMols!.length; ++i) {
-            if (this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
+            try {
+              if (this._rdKitMols[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
               matches.push(i);
+            } catch {
+              continue;
+            }
           }
         }
         queryMol.delete();

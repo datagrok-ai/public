@@ -29,6 +29,7 @@ import {previewBiostructure, viewBiostructure} from './viewers/view-preview';
 import {BiostructureViewerApp} from './apps/biostructure-viewer-app';
 import {demoBio06UI} from './demo/bio06-docking-ngl';
 import {demoBio07UI} from './demo/bio07-molecule3d-in-grid';
+import {NglGlDocService} from './utils/ngl-gl-doc-service';
 
 class Package extends DG.Package {
   private _pLogger: DG.PackageLogger;
@@ -106,7 +107,7 @@ declare const window: BsvWindowType;
 //output: object result
 export function getNglGlService(): NglGlServiceBase {
   if (!(window.$nglGlService)) {
-    const svc: NglGlService = new NglGlService();
+    const svc: NglGlServiceBase = new NglGlDocService();
     window.$nglGlService = svc;
   }
 

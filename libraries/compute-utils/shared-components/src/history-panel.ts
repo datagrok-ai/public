@@ -412,7 +412,7 @@ export class HistoryPanel {
       addToCompare.style.display = 'none';
       removeFromCompare.style.removeProperty('display');
       this.updateActionsSection();
-    });
+    }, 'Select this run');
     addToCompare.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
 
     const removeFromCompare = ui.iconFA('check-square', (ev) => {
@@ -422,7 +422,7 @@ export class HistoryPanel {
 
       this.updateActionsSection();
       addToCompare.style.removeProperty('display');
-    });
+    }, 'Unselect this run');
     removeFromCompare.classList.add('hp-funccall-card-icon');
 
     if (!this.selectedCallsSet.has(funcCall)) {
@@ -436,7 +436,7 @@ export class HistoryPanel {
     const editIcon = ui.iconFA('edit', (ev) => {
       ev.stopPropagation();
       this.showEditDialog(funcCall);
-    });
+    }, 'Edit selected run');
     editIcon.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
 
     const deleteIcon = ui.iconFA('trash-alt', async (ev) => {
@@ -444,7 +444,7 @@ export class HistoryPanel {
       const tempSet = new Set<DG.FuncCall>();
       tempSet.add(funcCall);
       this.showDeleteRunDialog(tempSet);
-    }, 'Delete the run');
+    }, 'Delete selected runs');
     deleteIcon.classList.add('hp-funccall-card-icon', 'hp-funccall-card-hover-icon');
 
     const favoritedIcon = ui.iconFA('star', null, 'Unfavorite the run');
@@ -523,7 +523,7 @@ export class HistoryPanel {
       tagInput.value = '';
     };
 
-    tagInput.addOptions(ui.iconFA('plus', addNewTag));
+    tagInput.addOptions(ui.iconFA('plus', addNewTag, 'Add this tag'));
 
     tagInput.input.onkeydown = async (ev) => {
       if (ev.key == 'Enter') {

@@ -1,9 +1,11 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+
 import {HELM_FIELDS, HELM_CORE_FIELDS, HELM_POLYMER_TYPE, HELM_MONOMER_TYPE, RGROUP_FIELDS, MODE} from '../utils/const';
-import {ALPHABET, getSplitter, NOTATION, SplitterFunc, TAGS} from '../utils/macromolecule';
-// import {UnitsHandler} from '../utils/units-handler';
+import {ALPHABET, NOTATION, TAGS} from '../utils/macromolecule/consts';
+import {SplitterFunc} from '../utils/macromolecule/types';
+import {getSplitter} from '../utils/macromolecule/utils';
 import {NotationConverter} from '../utils/notation-converter';
 import {Monomer} from '../types';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';

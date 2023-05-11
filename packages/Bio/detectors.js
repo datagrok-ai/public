@@ -120,7 +120,7 @@ class BioPackageDetectors extends DG.Package {
       const decoyAlphabets = [
         ['NUMBERS', this.numbersRawAlphabet, 0.25],
         ['SMILES', this.smilesRawAlphabet, 0.25],
-        ['SMARTS', this.smartsRawAlphabet, 0.43],
+        ['SMARTS', this.smartsRawAlphabet, 0.45],
       ];
 
       const candidateAlphabets = [
@@ -151,7 +151,7 @@ class BioPackageDetectors extends DG.Package {
       // Empty statsAsShars.freq alphabet means no strings of enough length presented in the data
       if (Object.keys(statsAsChars.freq).length === 0) return null;
 
-      const decoy = this.detectAlphabet(statsAsChars.freq, decoyAlphabets, null);
+      const decoy = this.detectAlphabet(statsAsChars.freq, decoyAlphabets, null, colNameLikely ? -0.05 : 0);
       if (decoy !== ALPHABET.UN) return null;
 
       const separator = this.detectSeparator(statsAsChars.freq);
@@ -164,7 +164,7 @@ class BioPackageDetectors extends DG.Package {
 
       if (statsAsChars.sameLength) {
         const stats = this.getStats(categoriesSample, seqMinLength, splitter);
-        const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, '-', colNameLikely);
+        const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, '-', colNameLikely ? 0.15 : 0);
         if (alphabet === ALPHABET.UN) return null;
 
         col.setTag(DG.TAGS.UNITS, units);
@@ -192,7 +192,7 @@ class BioPackageDetectors extends DG.Package {
         const aligned = stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
 
         // TODO: If separator detected, then extra efforts to detect alphabet are allowed.
-        const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, gapSymbol, colNameLikely);
+        const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, gapSymbol, colNameLikely ? 0.15 : 0);
         if (units === NOTATION.FASTA && alphabet === ALPHABET.UN && !alphabetIsMultichar) return null;
 
         // const forbidden = this.checkForbiddenWoSeparator(stats.freq);
@@ -304,9 +304,9 @@ class BioPackageDetectors extends DG.Package {
    * @param candidates  an array of pairs [name, monomer set]
    * @param {boolean} colNameLikely The column name suggests the column is Macromolecule more likely
    */
-  detectAlphabet(freq, candidates, gapSymbol, colNameLikely = false) {
+  detectAlphabet(freq, candidates, gapSymbol, simAdj = 0) {
     const candidatesSims = candidates.map((c) => {
-      const sim = this.getAlphabetSimilarity(freq, c[1], gapSymbol) + (colNameLikely ? 0.15 : 0);
+      const sim = this.getAlphabetSimilarity(freq, c[1], gapSymbol) + simAdj;
       return [c[0], c[1], c[2], freq, sim];
     });
 

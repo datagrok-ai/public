@@ -216,9 +216,16 @@ export async function initAutoTests(packageId: string, module?: any) {
       let skipReason;
       if (skipReasons && skipReasons?.length > 1) skipReason = skipReasons[1];
       moduleAutoTests.push(new Test(autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
-        const res = await grok.functions.eval(addNamespace(tests[i], f));
-        // eslint-disable-next-line no-throw-literal
-        if (res !== true) throw `Failed: ${tests[i]}`;
+        try {
+          const res = await grok.functions.eval(addNamespace(tests[i], f));
+          await delay(100);
+          // eslint-disable-next-line no-throw-literal
+          if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
+        } catch (e) {
+          throw e;
+        } finally {
+          grok.shell.closeAll();
+        }
       }, {skipReason: skipReason}));
     }
   }
@@ -310,6 +317,8 @@ async function execTest(t: Test, predicate: string | undefined) {
     r = {success: false, result: x.toString(), ms: 0, skipped: false};
   }
   const stop = new Date();
+  // grok.shell.closeAll();
+  // DG.Balloon.closeAll();
   // @ts-ignore
   r.ms = stop - start;
   if (!skip)

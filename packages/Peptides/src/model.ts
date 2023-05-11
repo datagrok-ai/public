@@ -55,7 +55,7 @@ export enum VIEWER_TYPE {
   DENDROGRAM = 'Dendrogram',
 };
 
-const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
+export const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
 
 export class PeptidesModel {
   static modelName = 'peptidesModel';
@@ -326,9 +326,9 @@ export class PeptidesModel {
         updateVars.add('mutationCliffs');
         updateVars.add('stats');
         break;
-      // case 'columns':
-      //   updateVars.add('grid');
-      //   break;
+      case 'columns':
+        updateVars.add('grid');
+        break;
       case 'maxMutations':
       case 'minActivityDelta':
         updateVars.add('mutationCliffs');
@@ -366,7 +366,7 @@ export class PeptidesModel {
         this.clusterStats = this.calculateClusterStatistics();
         break;
       case 'grid':
-        this.updateGrid();
+        this.postProcessGrids();
         break;
       case 'dendrogram':
         this.settings.showDendrogram ? this.addDendrogram() : this.closeViewer(VIEWER_TYPE.DENDROGRAM);
@@ -895,7 +895,7 @@ export class PeptidesModel {
 
     const colResults: StringDictionary = {};
     for (const [colName, aggFn] of Object.entries(this.settings.columns!)) {
-      const newColName = getAggregatedColName(colName, aggFn);
+      const newColName = getAggregatedColName(aggFn, colName);
       const value = getAggregatedValue(filteredDf.getCol(colName), aggFn, options.mask);
       colResults[newColName] = value.toFixed(options.fractionDigits);
     }
@@ -1018,7 +1018,6 @@ export class PeptidesModel {
     const sourceGridProps = sourceGrid.props;
     sourceGridProps.allowColSelection = false;
     sourceGridProps.allowEdit = false;
-    sourceGridProps.allowRowResizing = false;
     sourceGridProps.showCurrentRowIndicator = false;
     this.df.temp[C.EMBEDDING_STATUS] = false;
     for (let colIdx = 1; colIdx < sourceGridColsLen; ++colIdx) {
@@ -1026,7 +1025,6 @@ export class PeptidesModel {
       const tableColName = gridCol.column!.name;
       gridCol.visible = posCols.includes(tableColName) || (tableColName === C.COLUMNS_NAMES.ACTIVITY_SCALED) ||
         visibleColumns.includes(tableColName);
-      gridCol.width = 60;
     }
   }
 

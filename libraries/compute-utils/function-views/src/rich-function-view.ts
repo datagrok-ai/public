@@ -56,6 +56,8 @@ export class RichFunctionView extends FunctionView {
   protected async onFuncCallReady() {
     await super.onFuncCallReady();
     this.basePath = `scripts/${this.funcCall.func.id}/view`;
+
+    if (this.runningOnStart) await this.doRun();
   }
 
   /**
@@ -142,7 +144,7 @@ export class RichFunctionView extends FunctionView {
   buildRibbonPanels(): HTMLElement[][] {
     super.buildRibbonPanels();
 
-    const play = ui.iconFA('play', async () => await this.doRun());
+    const play = ui.iconFA('play', async () => await this.doRun(), 'Run computations');
     play.classList.add('fas');
 
     const save = ui.iconFA('save', async () => {
@@ -150,11 +152,11 @@ export class RichFunctionView extends FunctionView {
         await this.saveRun(this.lastCall);
       else
         grok.shell.warning('Function was not called. Call it before saving');
-    });
+    }, 'Save the last function run');
 
     const newRibbonPanels = [
       ...this.getRibbonPanels(),
-      ...this.isFuncImmediate && !this.options.isTabbed ? [[save]]: [[play]],
+      ...this.runningOnInput && !this.options.isTabbed ? [[save]]: [[play]],
     ];
 
     this.setRibbonPanels(newRibbonPanels);
@@ -423,7 +425,7 @@ export class RichFunctionView extends FunctionView {
           this.syncOnInput(t, val);
           this.syncValOnChanged(t, val);
 
-          if (this.isFuncImmediate)
+          if (this.runningOnInput)
             this.runOnInput(t, val);
 
           if (prop.category !== prevCategory)
@@ -442,7 +444,7 @@ export class RichFunctionView extends FunctionView {
       ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
       this.controllsDiv = ui.buttonsInput([buttonWrapper as any]);
     }
-    if (!this.isFuncImmediate)
+    if (!this.runningOnInput)
       inputs.append(this.controllsDiv);
 
     inputs.classList.remove('ui-panel');
@@ -498,7 +500,7 @@ export class RichFunctionView extends FunctionView {
     t.root.replaceWith(newTableInput.root);
     t = newTableInput;
     this.syncOnInput(t, val);
-    if (this.isFuncImmediate)
+    if (this.runningOnInput)
       this.runOnDgInput(t, val);
     this.afterInputPropertyRender.next({prop, input: t});
   }

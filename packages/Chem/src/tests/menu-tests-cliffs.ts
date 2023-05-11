@@ -38,8 +38,8 @@ category('top menu activity cliffs', async () => {
     DG.Balloon.closeAll();
     await _testActivityCliffsOpen('tests/Test_smiles_malformed.csv', 'canonical_smiles', 'FractionCSP3', 24);
     try {
-      await awaitCheck(() => (document.querySelector('.d4-balloon-content') as HTMLElement)?.innerText.includes(
-        '2 molecules with indexes 3,10 are possibly malformed and are not included in analysis'), 'cannot find warning balloon', 1000);
+      await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
+        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis', 'cannot find warning balloon', 1000);
     } finally {
       grok.shell.closeAll();
       DG.Balloon.closeAll();
@@ -60,7 +60,8 @@ async function _testActivityCliffsOpen(dfName: string, molCol: string, activityC
     actCliffsTableView.dataFrame.getCol(molCol),
     actCliffsTableView.dataFrame.getCol(activityCol),
     80,
-    't-SNE');
+    't-SNE',
+    'Tanimoto');
   let scatterPlot: DG.Viewer | null = null;
   for (const i of actCliffsTableView.viewers) {
     if (i.type == DG.VIEWER.SCATTER_PLOT)
