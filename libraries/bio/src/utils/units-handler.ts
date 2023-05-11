@@ -10,8 +10,9 @@ import {
   splitterAsFasta,
   splitterAsHelm
 } from './macromolecule/utils';
-import {mmDistanceFunctions, mmDistanceFunctionsNames} from '../distance-functions';
-import {mmDistanceFunctionType} from '../distance-functions/types';
+import {mmDistanceFunctions, mmDistanceFunctionsNames}
+  from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {mmDistanceFunctionType} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
 
 /** Class for handling notation units in Macromolecule columns */
 export class UnitsHandler {
