@@ -1,7 +1,7 @@
 import {
   mmDistanceFunctions,
-  mmDistanceFunctionsNames
-} from '@datagrok-libraries/bio/src/distance-functions/macromolecule-distance-functions';
+  MmDistanceFunctionsNames
+} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
 function numericDistance(a: number, b: number): number {
   return Math.abs(a - b);
@@ -9,11 +9,11 @@ function numericDistance(a: number, b: number): number {
 
 type NumberDistanceFunctions = 'numericDistance';
 
-export type DistanceFunctionNames<T> = T extends string ? mmDistanceFunctionsNames : NumberDistanceFunctions;
+export type DistanceFunctionNames<T> = T extends string ? MmDistanceFunctionsNames : NumberDistanceFunctions;
 
 export const distanceFunctions: Record<DistanceFunctionNames<any>, (a: any, b: any) => number> = {
   'numericDistance': numericDistance,
-  [mmDistanceFunctionsNames.HAMMING]: mmDistanceFunctions[mmDistanceFunctionsNames.HAMMING](),
-  [mmDistanceFunctionsNames.LEVENSHTEIN]: mmDistanceFunctions[mmDistanceFunctionsNames.LEVENSHTEIN](),
-  [mmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]: mmDistanceFunctions[mmDistanceFunctionsNames.NEEDLEMANN_WUNSCH](),
+  [MmDistanceFunctionsNames.HAMMING]: mmDistanceFunctions[MmDistanceFunctionsNames.HAMMING](),
+  [MmDistanceFunctionsNames.LEVENSHTEIN]: mmDistanceFunctions[MmDistanceFunctionsNames.LEVENSHTEIN](),
+  [MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]: mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH](),
 };
