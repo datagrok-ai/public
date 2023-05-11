@@ -1,16 +1,33 @@
-export const defaultPto: boolean = true;
-export const defaultSequenceLength: number = 23;
-export const maximalValidSequenceLength: number = 35;
-export const userStorageKey: string = 'SequenceTranslator';
-export const exampleMinWidth: string = '400px';
+export const DEFAULT_PTO: boolean = true;
+export const DEFAULT_SEQUENCE_LENGTH: number = 23;
+export const MAX_SEQUENCE_LENGTH: number = 35;
+export const USER_STORAGE_KEY: string = 'SequenceTranslator';
+export const EXAMPLE_MIN_WIDTH: string = '400px';
 
-export const IDX = {
-  SS: 0,
-  AS: 1,
-  THREE_PRIME: 0,
-  FIVE_PRIME: 1,
+export const enum JSON_FIELD {
+  SS_BASES = 'ssBases',
+  AS_BASES = 'asBases',
+  SS_PTO = 'ssPtoLinkages',
+  AS_PTO = 'asPtoLinkages',
+  SS_3 = 'ssThreeModification',
+  SS_5 = 'ssFiveModification',
+  AS_3 = 'asThreeModification',
+  AS_5 = 'asFiveModification',
+  COMMENT = 'comment',
 };
 
-export const strands = ['SS', 'AS'] as const;
-export const strandLongNames = ['Sense Strand', 'Antisense Strand'] as const;
-export const terminals = [3, 5] as const;
+export const SS = 'SS' as const;
+export const AS = 'AS' as const;
+export const STRANDS = [SS, AS];
+export const STRAND_NAME = {
+  [SS]: 'Sense Strand',
+  [AS]: 'Antisense Strand',
+}
+
+export const THREE_PRIME = 'THREE_PRIME' as const;
+export const FIVE_PRIME = 'FIVE_PRIME' as const;
+export const TERMINAL_KEYS = [THREE_PRIME, FIVE_PRIME];
+export const TERMINAL = {
+  [THREE_PRIME]: 3,
+  [FIVE_PRIME]: 5,
+}
