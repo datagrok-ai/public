@@ -28,11 +28,15 @@ category('screening tools', () => {
   });
 
   test('elementalAnalysis.smiles', async () => {
-    const df = molecules.clone();
+    let df: DG.DataFrame;
+    if (DG.Test.isInBenchmark)
+      df = await readDataframe('smiles.csv');
+    else 
+      df = molecules.clone();
     const tv = grok.shell.addTableView(df);
-    elementalAnalysis(df, df.getCol('smiles'), false, false);
+    elementalAnalysis(df, df.getCol(DG.Test.isInBenchmark ? 'canonical_smiles' : 'smiles'), false, false);
     tv.close();
-    expect(df.columns.length, 11);
+    expect(df.columns.length, DG.Test.isInBenchmark ? 20 : 11);
   });
 
   test('elementalAnalysis.molV2000', async () => {
