@@ -1,6 +1,6 @@
 import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 import {calcDistanceMatrix} from '@datagrok-libraries/utils/src/vector-operations';
-import {mmDistanceFunctions, mmDistanceFunctionsNames} from '../macromolecule-distance-functions';
+import {mmDistanceFunctions, MmDistanceFunctionsNames} from '../macromolecule-distance-functions';
 
 
 onmessage = (event) => {
@@ -8,7 +8,7 @@ onmessage = (event) => {
   const data: { error?: any; distanceMatrixData?: Matrix } = {};
   try {
     const recalculatedDistances = calcDistanceMatrix(
-      values, mmDistanceFunctions[fnName as mmDistanceFunctionsNames](options),
+      values, mmDistanceFunctions[fnName as MmDistanceFunctionsNames](options),
     );
     // normalize values
     let min = Number.MAX_VALUE;

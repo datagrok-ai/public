@@ -8,14 +8,14 @@ import {mmDistanceFunctionType} from './types';
  * Needleman distance will be used for protein sequences with known BLOSUM62 matrix
  * Levenshtein distance will be used for nucleotide sequences as for them substitution matrix is same as identity matrix
  */
-export enum mmDistanceFunctionsNames {
+export enum MmDistanceFunctionsNames {
     HAMMING = 'Hamming',
     LEVENSHTEIN = 'Levenshtein',
     NEEDLEMANN_WUNSCH = 'Needlemann-Wunsch'
 };
 
-export const mmDistanceFunctions: Record<mmDistanceFunctionsNames, (value?: any) => mmDistanceFunctionType> = {
-  [mmDistanceFunctionsNames.HAMMING]: hamming,
-  [mmDistanceFunctionsNames.LEVENSHTEIN]: levenstein,
-  [mmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]: needlemanWunch
+export const mmDistanceFunctions: Record<MmDistanceFunctionsNames, (value?: any) => mmDistanceFunctionType> = {
+  [MmDistanceFunctionsNames.HAMMING]: hamming,
+  [MmDistanceFunctionsNames.LEVENSHTEIN]: levenstein,
+  [MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]: needlemanWunch
 };

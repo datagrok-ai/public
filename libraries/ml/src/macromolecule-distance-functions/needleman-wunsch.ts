@@ -34,14 +34,14 @@ const ProtIndexes: {[id:string]:number} = {
   'W': 17, 'Y': 18, 'V': 19, 'B': 20, 'Z': 21, 'X': 22, '*': 23
 };
 
-interface needlemanWunchArgs {
+interface NeedlemanWunchArgs {
   gapOpen: number;
   gapExtend: number;
   scoringMatrix: number[][];
   alphabetIndexes: {[id:string]:number};
 }
 
-const defaultArgs: needlemanWunchArgs = {
+const defaultArgs: NeedlemanWunchArgs = {
   gapOpen: 8,
   gapExtend: 2,
   scoringMatrix: BLOSUM62,
@@ -49,7 +49,7 @@ const defaultArgs: needlemanWunchArgs = {
 };
 
 /** Returns a function that calculates the distance between two sequences based on gap penalty and matrix */
-export function needlemanWunch(args: Partial<needlemanWunchArgs>): mmDistanceFunctionType {
+export function needlemanWunch(args: Partial<NeedlemanWunchArgs>): mmDistanceFunctionType {
   return (seq1: string, seq2: string) : number => {
     const {gapOpen, gapExtend, scoringMatrix, alphabetIndexes} = {...defaultArgs, ...args};
     // As we don't need traceback, no need to store the whole matrix

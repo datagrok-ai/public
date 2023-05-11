@@ -19,7 +19,7 @@ import {
 import {calculateEuclideanDistance} from '@datagrok-libraries/utils/src/vector-operations';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Vector, StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-import {mmDistanceFunctions, mmDistanceFunctionsNames} from './macromolecule-distance-functions';
+import {mmDistanceFunctions, MmDistanceFunctionsNames} from './macromolecule-distance-functions';
 
 export enum StringMetricsNames {
   Levenshtein = 'Levenshtein',
@@ -100,9 +100,9 @@ export const AvailableMetrics = {
     [BitArrayMetricsNames.Sokal]: bitArrayDistanceMetricsMethods[BitArrayMetricsNames.Sokal],
   },
   [AvailableMetricsTypes.MacroMolecule]: { // optional args are needed for macromolecule functions which initialize them
-    [mmDistanceFunctionsNames.HAMMING]: mmDistanceFunctions[mmDistanceFunctionsNames.HAMMING],
-    [mmDistanceFunctionsNames.LEVENSHTEIN]: mmDistanceFunctions[mmDistanceFunctionsNames.LEVENSHTEIN],
-    [mmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]: mmDistanceFunctions[mmDistanceFunctionsNames.NEEDLEMANN_WUNSCH],
+    [MmDistanceFunctionsNames.HAMMING]: mmDistanceFunctions[MmDistanceFunctionsNames.HAMMING],
+    [MmDistanceFunctionsNames.LEVENSHTEIN]: mmDistanceFunctions[MmDistanceFunctionsNames.LEVENSHTEIN],
+    [MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]: mmDistanceFunctions[MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH],
   },
 };
 
@@ -118,10 +118,10 @@ export type AvailableDataTypes = keyof typeof AvailableMetrics;
 export type VectorMetrics = keyof typeof AvailableMetrics[AvailableMetricsTypes.Vector];
 export type StringMetrics = keyof typeof AvailableMetrics[AvailableMetricsTypes.String];
 export type BitArrayMetrics = keyof typeof AvailableMetrics[AvailableMetricsTypes.BitArray];
-export type KnownMetrics = StringMetrics | BitArrayMetrics | VectorMetrics | mmDistanceFunctionsNames;
+export type KnownMetrics = StringMetrics | BitArrayMetrics | VectorMetrics | MmDistanceFunctionsNames;
 
 export type ValidTypes =
-  { data: string[], metric: StringMetrics | mmDistanceFunctionsNames } |
+  { data: string[], metric: StringMetrics | MmDistanceFunctionsNames } |
   { data: Vector[], metric: VectorMetrics } |
   { data: BitArray[], metric: BitArrayMetrics };
 
@@ -179,9 +179,11 @@ export class Measure {
     const dict: { [key: string]:
       {[key2: string]: DistanceMetric | ((opts: any) => DistanceMetric)}
     } = AvailableMetrics;
+    if (!dict.hasOwnProperty(this.dataType) || !dict[this.dataType].hasOwnProperty(this.method))
+      throw new Error(`Unknown measure ${this.method} for data type ${this.dataType}`);
     return isMacroMoleculeMetric(this.method) ?
       (dict[this.dataType][this.method] as ((opts: any) => DistanceMetric))(opts) :
-       dict[this.dataType][this.method] as DistanceMetric;
+      dict[this.dataType][this.method] as DistanceMetric;
   }
 
   /**

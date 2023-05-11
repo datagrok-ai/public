@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 import {getSimilarityFromDistance} from '../distance-metrics-methods';
 import { Subject } from 'rxjs';
-import {mmDistanceFunctions, mmDistanceFunctionsNames} from '../macromolecule-distance-functions';
+import {mmDistanceFunctions, MmDistanceFunctionsNames} from '../macromolecule-distance-functions';
 import {calcDistanceMatrix, normalize} from '@datagrok-libraries/utils/src/vector-operations';
 import {createMMDistanceWorker} from '../workers/mmdistance-worker-creator';
 import '../../css/styles.css';
@@ -113,9 +113,9 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   // UMAP does not return the distance, therefore, we will have to calculate it
   // in case if the macromolecule column is selected
   let recalculatedDistances = distance;
-  if (Object.values(mmDistanceFunctionsNames).map((a) => a.toString()).includes(similarityMetric)) {
+  if (Object.values(MmDistanceFunctionsNames).map((a) => a.toString()).includes(similarityMetric)) {
     recalculatedDistances =
-     await createMMDistanceWorker(seqCol, similarityMetric as mmDistanceFunctionsNames);
+     await createMMDistanceWorker(seqCol, similarityMetric as MmDistanceFunctionsNames);
   }
   const simArr = await createSimilaritiesMatrix(dimensionalityReduceCol, recalculatedDistances,
     !!recalculatedDistances, simMatrixFunc);

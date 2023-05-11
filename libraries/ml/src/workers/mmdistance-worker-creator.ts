@@ -1,9 +1,9 @@
 import * as DG from 'datagrok-api/dg';
-import {mmDistanceFunctionsNames} from '../macromolecule-distance-functions';
+import {MmDistanceFunctionsNames} from '../macromolecule-distance-functions';
 import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 
 export function createMMDistanceWorker(valCol: DG.Column<any>,
-  dataMetric: mmDistanceFunctionsNames, options?: any,
+  dataMetric: MmDistanceFunctionsNames, options?: any,
 ): Promise<Matrix> {
   return new Promise(function(resolve, reject) {
     const worker = new Worker(new URL('./mmdistance-worker', import.meta.url));

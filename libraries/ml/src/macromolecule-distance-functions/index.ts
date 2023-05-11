@@ -1,1 +1,1 @@
-export {mmDistanceFunctionsNames, mmDistanceFunctions} from './macromolecule-distance-functions';
+export {MmDistanceFunctionsNames, mmDistanceFunctions} from './macromolecule-distance-functions';
