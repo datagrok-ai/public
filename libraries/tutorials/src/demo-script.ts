@@ -41,7 +41,7 @@ export class DemoScript {
   private _stopStartBtn: HTMLButtonElement = ui.button(ui.iconFA('pause'),
     () => this._changeStopState(), 'Play / pause');
   private _restartBtn: HTMLButtonElement = ui.button(ui.iconFA('redo'), () => this._restartScript(), 'Restart');
-  private _nextStepBtn: HTMLButtonElement = ui.button(ui.iconFA('step-forward'), () => {
+  private _nextStepBtn: HTMLButtonElement = ui.button(ui.iconFA('play'), () => {
     if (!this._isStepProcessed)
       this._nextStep();
   }, 'Next step');
@@ -91,6 +91,7 @@ export class DemoScript {
     this._headerDiv.append(this._closeBtn);
     this._headerDiv.append(this._header);
 
+    this._nextStepBtn.children[0].className = 'grok-icon fas fa-play';
     this._headerDiv.append(this._isAutomatic ? this._stopStartBtn : this._nextStepBtn);
   }
 
@@ -108,7 +109,13 @@ export class DemoScript {
     this._activity.append(ui.div(this.description, 'tutorials-root-description'));
 
     for (let i = 0; i < this.stepNumber; i++) {
-      const instructionIndicator = ui.iconFA('clock');
+      let instructionIndicator = ui.iconFA('clock');
+      if (!this._isAutomatic) {
+        if (i === 0) {
+          instructionIndicator = ui.iconFA('play', () => this._nextStep(), 'Next step');
+          instructionIndicator.className = 'grok-icon fas fa-play';
+        }
+      }
       const instructionDiv = ui.div(this._steps[i].name, 'grok-tutorial-entry-instruction');
       const currentStepDescription = ui.div(this._steps[i].options?.description,
         'grok-tutorial-step-description hidden');
@@ -174,6 +181,14 @@ export class DemoScript {
     if (this._currentStep === this.stepNumber) {
       this._isAutomatic ? this._stopStartBtn.replaceWith(this._restartBtn) :
         this._nextStepBtn.replaceWith(this._restartBtn);
+      return;
+    }
+
+    if (!this._isAutomatic) {
+      const nextStepEntryIndicator = this._activity.getElementsByClassName('grok-icon')[this._currentStep];
+      const startNextStepIcon = ui.iconFA('play', () => this._nextStep(), 'Next step');
+      startNextStepIcon.className = 'grok-icon fas fa-play';
+      nextStepEntryIndicator.replaceWith(startNextStepIcon);
     }
   }
 
@@ -251,7 +266,8 @@ export class DemoScript {
 
     if (!this._isStopped) {
       icon[0].className = 'grok-icon fal fa-pause';
-      this._startScript();
+      if (!this._isStepProcessed)
+        this._startScript();
     }
   }
 
