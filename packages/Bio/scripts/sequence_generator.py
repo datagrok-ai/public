@@ -3,24 +3,23 @@
 # description: Create the model peptides/DNA sequences with peptides data
 # language: python
 # tags: template, demo
-# input: int clusters
-# input: int sequences
-# input: int motif
-# input: int max_variants_position
-# input: int random
-# input: int dispersion
-# input: string alphabet
-# input: bool disable_cliffs
-# input: float cliff_probability
-# input: float cliff_strength
+# input: int clusters = 1 [Number of superclusters]
+# input: int sequences = 500 [Number of sequences in each supercluster]
+# input: int motif_length = 12 [Average length of motif]
+# input: int max_variants_position = 3 [Maximum number of different letters in conservative position in motif]
+# input: int random_length = 3 [Average length of random sequence parts before and after motif]
+# input: int dispersion = 2 [Variation of total sequence length]
+# input: string alphabet_key = 'PT' [Sequence alphabet: PT/DNA/RNA/custom. Custom alphabet is a list of values separated by comma]
+# input: bool disable_cliffs = False [Disable generation of cliffs]
+# input: float cliff_probability = 0.01 [Probability to make activity cliff of a sequence]
+# input: float cliff_strength = 4.0 [Strength of cliff]
 # output: dataframe sequences
 
 import random
 import argparse
 import sys
-import csv
 
-from typing import List, Tuple, Dict, Iterator
+from typing import List, Tuple, Dict, Iterator, Any
 
 alphabet_type = List[str]
 
@@ -28,6 +27,7 @@ letter_choice_type = List[str]
 motif_template_type = List[letter_choice_type]
 
 sequence_record_type = Tuple[int, str, float, bool]
+sequence_record_cluster_type = Tuple[int, str, str, float, bool]
 
 alphabets: Dict[str, str] = {
     "PT": "A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y",
@@ -59,9 +59,7 @@ def generate_motif_template(
 
 
 def generate_motif(template: motif_template_type, alphabet: alphabet_type) -> str:
-    template_with_any = [
-        (letters if not "?" in letters else alphabet) for letters in template
-    ]
+    template_with_any = [(letters if not "?" in letters else alphabet) for letters in template]
     return "".join([random.choice(letters) for letters in template_with_any])
 
 
@@ -72,24 +70,18 @@ def motif_notation(motif_template: motif_template_type) -> str:
         else:
             return f"[{''.join(letter_choice)}]"
 
-    return "".join(
-        [motif_notation_code(letter_choice) for letter_choice in motif_template]
-    )
+    return "".join([motif_notation_code(letter_choice) for letter_choice in motif_template])
 
 
 def generate_random(n: int, alphabet: alphabet_type) -> str:
     return "".join([random.choice(alphabet) for i in range(n)])
 
 
-def make_cliff(
-    motif_template: motif_template_type, alphabet: alphabet_type, motif: str
-) -> str:
+def make_cliff(motif_template: motif_template_type, alphabet: alphabet_type, motif: str) -> str:
     # Mutate conservative letter in motif
     pos = random.randrange(len(motif_template))
     while "?" in motif_template[pos]:
-        pos = (pos + 1) % len(
-            motif_template
-        )  # always will find letters since ends of motif can't be any symbol
+        pos = (pos + 1) % len(motif_template)  # always will find letters since ends of motif can't be any symbol
     outlier_letters = list(set(alphabet) - set(motif_template[pos]))
     return motif[:pos] + random.choice(outlier_letters) + motif[pos + 1 :]
 
@@ -105,14 +97,11 @@ def generate_cluster(
     cliff_probability: float,
     cliff_strength: float,
 ) -> Iterator[sequence_record_type]:
-    motif_template = generate_motif_template(
-        motif_length, alphabet, max_variants_position
-    )
+    motif_template = generate_motif_template(motif_length, alphabet, max_variants_position)
 
     activity_average = random.random() * 10
     activity_dispersion = random.random()
-    sys.stderr.write(f"Starting cluster generation {n_sequences}\n")
-    sys.stderr.write(f"Motif template: {motif_notation(motif_template)}")
+    sys.stderr.write(f"Motif template: {motif_notation(motif_template)}\n")
 
     for n_seq in range(n_sequences):
         activity = random.gauss(activity_average, activity_dispersion)
@@ -138,9 +127,9 @@ def generate_cluster(
             # sys.stderr.write(f"Cliff for sequence #{line_number:4}, cluster {n_cluster} \n")
             # sys.stderr.write(f"{activity_average}\t{motif}\t{activity}\n")
             # sys.stderr.write(f"{activity_average}\t{cliff_motif}\t{cliff_activity}\n")
+            n_seq += 1
             sequence_record = (n_seq, cliff_seq, cliff_activity, is_cliff)
             yield sequence_record
-            n_seq += 1
 
 
 def generate_sequences(
@@ -154,17 +143,15 @@ def generate_sequences(
     make_cliffs: bool,
     cliff_probability: float,
     cliff_strength: float,
-):
-    headers = ["cluster", "sequence_id", "sequence", "activity", "is_cliff"]
-    sequences = []
+) -> Tuple[List[str], List[sequence_record_cluster_type]]:
+    headers: List[str] = ["cluster", "sequence_id", "sequence", "activity", "is_cliff"]
+    sequences: List[sequence_record_cluster_type] = []
 
     for n_cluster in range(n_clusters):
         motif_length = mean_range(average_motif_length, dispersion)
 
         # sys.stderr.write(f"Cluster {n_cluster:2} motif template: {motif_notation(motif_template)}\n")
-        total_length = (
-            mean_range(average_random_length * 2, args.dispersion) + motif_length
-        )
+        total_length = mean_range(average_random_length * 2, args.dispersion) + motif_length
         prefix_length = mean_range(average_random_length, args.dispersion // 2)
         suffix_length = total_length - motif_length - prefix_length
         sys.stderr.write(f"Generating sequences for cluster {n_cluster}\n")
@@ -179,15 +166,11 @@ def generate_sequences(
             cliff_probability,
             cliff_strength,
         ):
-            sequences.append(
-                [n_cluster, f"c{n_cluster}_s{n_seq}", seq, activity, is_cliff]
-            )
+            sequences.append((n_cluster, f"c{n_cluster}_s{n_seq}", seq, activity, is_cliff))
     return headers, sequences
 
 
-# ====================================================================================
-
-if __name__ == "__main__":
+def parse_command_line_args() -> Any:
     parser = argparse.ArgumentParser(
         prog="MotifSequencesGenerator",
         description="The program generates set of sequences containing sequence motifs "
@@ -195,24 +178,21 @@ if __name__ == "__main__":
         epilog="Utility support: Gennadii Zakharov",
     )
 
-    parser.add_argument(
-        "-c", "--clusters", type=int, default=1, help="Number of clusters"
-    )
+    parser.add_argument("-c", "--clusters", type=int, default=1, help="Number of superclusters")
     parser.add_argument(
         "-s",
         "--sequences",
         type=int,
         default=500,
-        help="Number of sequences in each cluster",
+        help="Number of sequences in each supercluster",
     )
-    parser.add_argument(
-        "-m,", "--motif", type=int, default=12, help="Average length of motif"
-    )
+    parser.add_argument("-m,", "--motif-length", type=int, default=12, help="Average length of motif")
+
     parser.add_argument(
         "-r,",
-        "--random",
+        "--random-length",
         type=int,
-        default=4,
+        default=3,
         help="Average length of random sequence parts before and after motif",
     )
     parser.add_argument(
@@ -220,7 +200,7 @@ if __name__ == "__main__":
         "--dispersion",
         type=int,
         default=2,
-        help="Variation of total sequence lengths",
+        help="Variation of total sequence length",
     )
 
     available_alphabets = ",".join(list(alphabets.keys()) + ["custom"])
@@ -228,20 +208,19 @@ if __name__ == "__main__":
         "--alphabet",
         type=str,
         default=list(alphabets.keys())[0],
-        help=f"Sequence alphabet: {available_alphabets}. Custom alphabet is a list of values seprated "
-        f"by comma",
+        help=f"Sequence alphabet: {available_alphabets}. Custom alphabet is a list of values separated " f"by comma",
     )
     parser.add_argument(
         "--max-variants-position",
         type=int,
         default=3,
-        help="maximum number of different letters in motif position",
+        help="Maximum number of different letters in conservative position in motif",
     )
     parser.add_argument(
         "--cliff-probability",
         type=float,
         default=0.01,
-        help="Probabaility to make activity cliff of a sequence",
+        help="Probability to make activity cliff of a sequence",
     )
     parser.add_argument(
         "--cliff-strength",
@@ -256,36 +235,55 @@ if __name__ == "__main__":
         help="Disable generation of cliffs",
     )
 
-    args = parser.parse_args()
+    command_line_args = parser.parse_args()
 
-    alphabet: alphabet_type = (
-        alphabets[args.alphabet].split(",")
-        if args.alphabet in alphabets
-        else args.alphabet.split(",")
-    )
-
-    header, data = generate_sequences(
-        args.clusters,
-        args.sequences,
-        args.motif,
-        args.max_variants_position,
-        args.random,
-        args.dispersion,
-        alphabet,
-        not args.disable_cliffs,
-        args.cliff_probability,
-        args.cliff_strength,
-    )
+    return command_line_args
 
 
-import pandas as pd
+# ====================================================================================
 
-df = pd.DataFrame.from_records(data, columns=header)
-df.to_csv(sys.stdout, sep='\t')
-'''
-csv_writer = csv.writer(sys.stdout, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
-csv_writer.writerow(header)
-for line in data:
-    csv_writer.writerow(line)
-    # print('\t'.join(( str(s) for s in line) ))
-'''
+grok = "clusters" in globals()
+
+if not grok:
+    # We are not in Datagrok - need to parse command line arguments
+    args = parse_command_line_args()
+    clusters = args.clusters
+    sequences = args.sequences
+    motif_length = args.motif_length
+    max_variants_position = args.max_variants_position
+    random_length = args.random_length
+    dispersion = args.dispersion
+    alphabet_key = args.alphabet
+    disable_cliffs = args.disable_cliffs
+    cliff_probability = args.cliff_probability
+    cliff_strength = args.cliff_strength
+
+alphabet: alphabet_type = alphabets[alphabet_key].split(",") if alphabet_key in alphabets else alphabet_key.split(",")
+
+# Running sequence generator
+header, data = generate_sequences(
+    clusters,
+    sequences,
+    motif_length,
+    max_variants_position,
+    random_length,
+    dispersion,
+    alphabet,
+    not disable_cliffs,
+    cliff_probability,
+    cliff_strength,
+)
+
+if grok:
+    # Exporting data to Datagrok as a pandas dataframe
+    import pandas as pd
+
+    sequences = pd.DataFrame.from_records(data, columns=header)
+else:
+    # Writing results to stdout - no need to work with big and heavy Pandas
+    import csv
+
+    csv_writer = csv.writer(sys.stdout, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
+    csv_writer.writerow(header)
+    for line in data:
+        csv_writer.writerow(line)
