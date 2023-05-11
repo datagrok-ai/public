@@ -19,6 +19,7 @@ import {
 import {calculateEuclideanDistance} from '@datagrok-libraries/utils/src/vector-operations';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Vector, StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+import {mmDistanceFunctions, mmDistanceFunctionsNames} from './macromolecule-distance-functions';
 
 export enum StringMetricsNames {
   Levenshtein = 'Levenshtein',
@@ -73,7 +74,8 @@ export const bitArrayDistanceMetricsMethods: { [name: string]: (x: BitArray, y: 
 export enum AvailableMetricsTypes {
   Vector = 'Vector',
   String = 'String',
-  BitArray = 'BitArray'
+  BitArray = 'BitArray',
+  MacroMolecule = 'MacroMolecule'
 }
 
 export const AvailableMetrics = {
@@ -97,6 +99,11 @@ export const AvailableMetrics = {
     [BitArrayMetricsNames.Russel]: bitArrayDistanceMetricsMethods[BitArrayMetricsNames.Russel],
     [BitArrayMetricsNames.Sokal]: bitArrayDistanceMetricsMethods[BitArrayMetricsNames.Sokal],
   },
+  [AvailableMetricsTypes.MacroMolecule]: { // optional args are needed for macromolecule functions which initialize them
+    [mmDistanceFunctionsNames.HAMMING]: mmDistanceFunctions[mmDistanceFunctionsNames.HAMMING],
+    [mmDistanceFunctionsNames.LEVENSHTEIN]: mmDistanceFunctions[mmDistanceFunctionsNames.LEVENSHTEIN],
+    [mmDistanceFunctionsNames.NEEDLEMANN_WUNSCH]: mmDistanceFunctions[mmDistanceFunctionsNames.NEEDLEMANN_WUNSCH],
+  },
 };
 
 export const MetricToDataType: StringDictionary = Object.keys(AvailableMetrics)
@@ -111,9 +118,11 @@ export type AvailableDataTypes = keyof typeof AvailableMetrics;
 export type VectorMetrics = keyof typeof AvailableMetrics[AvailableMetricsTypes.Vector];
 export type StringMetrics = keyof typeof AvailableMetrics[AvailableMetricsTypes.String];
 export type BitArrayMetrics = keyof typeof AvailableMetrics[AvailableMetricsTypes.BitArray];
-export type KnownMetrics = StringMetrics | BitArrayMetrics | VectorMetrics;
+export type KnownMetrics = StringMetrics | BitArrayMetrics | VectorMetrics | mmDistanceFunctionsNames;
 
-export type ValidTypes = { data: string[], metric: StringMetrics } | { data: Vector[], metric: VectorMetrics } |
+export type ValidTypes =
+  { data: string[], metric: StringMetrics | mmDistanceFunctionsNames } |
+  { data: Vector[], metric: VectorMetrics } |
   { data: BitArray[], metric: BitArrayMetrics };
 
 export function isStringMetric(name: KnownMetrics) {
@@ -126,6 +135,10 @@ export function isBitArrayMetric(name: KnownMetrics) {
 
 export function isVectorMetric(name: KnownMetrics) {
   return MetricToDataType[name] == 'Vector';
+}
+
+export function isMacroMoleculeMetric(name: KnownMetrics) {
+  return MetricToDataType[name] == AvailableMetricsTypes.MacroMolecule.toString();
 }
 
 /** Manhattan distance between two sequences (match - 0, mismatch - 1) normalized for length. */
@@ -158,12 +171,17 @@ export class Measure {
 
   /**
    * Returns custom string distance function specified.
+   * @param {opts} opts Options for the measure. used for macromolecule distances
    * @return {DistanceMetric} Callback of the measure chosen.
    * @memberof Measurer
    */
-  public getMeasure(): DistanceMetric {
-    const dict: { [key: string]: { [key2: string]: DistanceMetric } } = AvailableMetrics;
-    return dict[this.dataType][this.method];
+  public getMeasure(opts?: any): DistanceMetric {
+    const dict: { [key: string]:
+      {[key2: string]: DistanceMetric | ((opts: any) => DistanceMetric)}
+    } = AvailableMetrics;
+    return isMacroMoleculeMetric(this.method) ?
+      (dict[this.dataType][this.method] as ((opts: any) => DistanceMetric))(opts) :
+       dict[this.dataType][this.method] as DistanceMetric;
   }
 
   /**
