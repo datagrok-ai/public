@@ -15,7 +15,7 @@ seq3,
 seq4`;
 
   test('testMsaPos', async () => {
-    const func: DG.Func = DG.Func.find({package: 'Bio', name: 'multipleSequenceAlignmentAny'})[0];
+    const func: DG.Func = DG.Func.find({package: 'Bio', name: 'multipleSequenceAlignmentDialog'})[0];
     const funcInputColumnProperty: DG.Property = func.inputs.find((i) => i.name == 'sequence')!;
 
     const k = 11;
@@ -67,7 +67,7 @@ seq4`;
   });
 
   test('testGetActionFunctionMeta', async () => {
-    const func: DG.Func = DG.Func.find({package: 'Bio', name: 'multipleSequenceAlignmentAny'})[0];
+    const func: DG.Func = DG.Func.find({package: 'Bio', name: 'multipleSequenceAlignmentDialog'})[0];
     const sequenceInput: DG.Property = func.inputs.find((i) => i.name == 'sequence')!;
     const k = 11;
   });
