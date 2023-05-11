@@ -13,13 +13,14 @@ import {getDendrogramService, IDendrogramService} from '@datagrok-libraries/bio/
 import {handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
-const dataFn = 'samples/sample_FASTA.csv';
+const dataFn: string = 'samples/sample_FASTA.csv';
 
 export async function demoBio01bUI() {
   let treeHelper: ITreeHelper;
   let dendrogramSvc: IDendrogramService;
-  let view: DG.TableView;
+
   let df: DG.DataFrame;
+  let view: DG.TableView;
   let activityCliffsViewer: DG.ScatterPlotViewer;
 
   const method: string = 'UMAP';

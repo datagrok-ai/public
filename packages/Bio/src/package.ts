@@ -49,6 +49,7 @@ import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-c
 import {demoBio05UI} from './demo/bio05-helm-msa-sequence-space';
 import {checkInputColumnUI} from './utils/check-input-column';
 import {multipleSequenceAlignmentUI} from './utils/multiple-sequence-alignment-ui';
+import { demoBio03UI } from './demo/bio03-atomic-level';
 
 export const _package = new DG.Package();
 
@@ -678,6 +679,15 @@ export async function demoBioSequenceSpace(): Promise<void> {
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Activity%20Cliffs
 export async function demoBioActivityCliffs(): Promise<void> {
   await demoBio01bUI();
+}
+
+// demoBio03
+//name: demoBioAtomicLevel
+//meta.demoPath: Bioinformatics | Atomic Level
+//description: Atomic level structure of Macromolecules
+//meta.path: /apps/Tutorials/Demo/Bioinformatics/Atomic%20Level
+export async function demoBioAtomicLevel(): Promise<void> {
+  await demoBio03UI();
 }
 
 // demoBio05
