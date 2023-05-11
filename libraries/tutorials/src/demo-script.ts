@@ -53,7 +53,7 @@ export class DemoScript {
   private _progressSteps: HTMLDivElement = ui.divText('');
 
   private _node?: DG.DockNode;
-  private _closeBtn: HTMLButtonElement = ui.button(ui.iconFA('chevron-left'), () => this._closeDock());
+  private _closeBtn: HTMLButtonElement = ui.button(ui.iconFA('chevron-left'), () => this._closeDock(), 'Back to demo');
 
 
   constructor(name: string, description: string, isAutomatic: boolean = false) {
@@ -91,7 +91,8 @@ export class DemoScript {
     this._headerDiv.append(this._closeBtn);
     this._headerDiv.append(this._header);
 
-    this._nextStepBtn.children[0].className = 'grok-icon fas fa-play';
+    (this._nextStepBtn.firstChild as HTMLElement).className = 'grok-icon fas fa-play';
+
     this._headerDiv.append(this._isAutomatic ? this._stopStartBtn : this._nextStepBtn);
   }
 
@@ -153,6 +154,11 @@ export class DemoScript {
   /** Processes next step */
   private async _nextStep(): Promise<void> {
     this._isStepProcessed = true;
+    if (!this._isAutomatic) {
+      this._nextStepBtn.classList.add('disabled');
+      (this._nextStepBtn.firstChild as HTMLElement).classList.add('fa-disabled');
+    }
+
     const entry = this._activity.getElementsByClassName('grok-tutorial-entry')[this._currentStep];
     const entryIndicator = this._activity.getElementsByClassName('grok-icon')[this._currentStep];
     const entryInstruction = this._activity.getElementsByClassName('grok-tutorial-step-description')[this._currentStep];
@@ -170,7 +176,9 @@ export class DemoScript {
     await this._countdown(entry as HTMLElement, entryIndicator as HTMLElement, stepDelay);
     await delay(stepDelay);
 
-    entryIndicator.className = 'grok-icon far fa-check';
+    const newEntryIndicator = ui.iconFA('check');
+    entryIndicator.replaceWith(newEntryIndicator);
+    newEntryIndicator.className = 'grok-icon far fa-check';
 
     this._progress.value++;
     this._progressSteps.innerText = `Step: ${this._progress.value} of ${this.stepNumber}`;
@@ -189,6 +197,8 @@ export class DemoScript {
       const startNextStepIcon = ui.iconFA('play', () => this._nextStep(), 'Next step');
       startNextStepIcon.className = 'grok-icon fas fa-play';
       nextStepEntryIndicator.replaceWith(startNextStepIcon);
+      this._nextStepBtn.classList.remove('disabled');
+      (this._nextStepBtn.firstChild as HTMLElement).classList.remove('fa-disabled');
     }
   }
 
@@ -306,6 +316,7 @@ export class DemoScript {
 
     const icon = this._stopStartBtn.getElementsByClassName('grok-icon');
     icon[0].className = 'grok-icon fal fa-pause';
+    this._nextStepBtn.classList.remove('disabled');
   }
 
   /** Closes demo script dock */
@@ -339,7 +350,7 @@ export class DemoScript {
   /** Starts the demo script */
   async start(): Promise<void> {
     this._initRoot();
-    grok.shell.newView();
+    grok.shell.newView(this.name);
     if (this._isAutomatic)
       this._startScript();
   }
