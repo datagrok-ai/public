@@ -165,7 +165,9 @@ const config = {
       },
 
       // Optional: Typesense search parameters: https://typesense.org/docs/0.21.0/api/search.md#search-parameters
-      typesenseSearchParameters: {},
+      typesenseSearchParameters: {
+        exhaustive_search: true,
+      },
 
       // Optional
       contextualSearch: true,
