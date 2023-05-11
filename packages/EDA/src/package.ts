@@ -8,7 +8,6 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {_initEDAAPI} from '../wasm/EDAAPI';
 import {computePCA, computePLS} from './EDAtools';
 import {renamePCAcolumns, addPLSvisualization} from './EDAui';
-import {demoPLS} from './demos';
 import {carsDataframe, testDataForBinaryClassification} from './dataGenerators';
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID, 
   getTrainedModel, getPrediction, showTrainReport, getPackedModel} from './svm';
@@ -44,27 +43,28 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
 //name: PLS
 //description: Partial least square regression (PLS).
 //input: dataframe table
+//input: column names
 //input: column_list features
 //input: column predict
 //input: int components = 3
-export async function PLS(table: DG.DataFrame, features: DG.ColumnList, predict: DG.Column, components: number): Promise<void> {
+export async function PLS(table: DG.DataFrame, names: DG.Column, features: DG.ColumnList, 
+  predict: DG.Column, components: number): Promise<void> 
+{
   const plsResults = await computePLS(table, features, predict, components);
-  addPLSvisualization(table, features, predict, plsResults);
+  addPLSvisualization(table, names, features, predict, plsResults);
 }
 
 //name: MVA demo
-//description: Multivariate analysis (PLS) demo.
+//description: Multidimensional data analysis using partial least squares (PLS) regression. PLS reduces the predictors to a smaller set of uncorrelated components and performes least squares regression on them.
 //meta.demoPath: Data analysis | Multivariate analysis
 export async function demoScript(): Promise<any>  {
   const demoScript = new DemoScript('Multivariate analysis', 
-    'Provides partial least square regression analysis of the given data.'); 
+    'Performes partial least sqaure (PLS) regression analysis of multidimensional data. Datagrok computes regression coefficients, scores, loadings and compares the predictions obtained with references.'); 
   
-  const cars = carsDataframe(); 
-
-  // the following doesn't work: Access Denied
-  // const df = await grok.data.files.openTable("Demo:Files/cars.csv");
+  const cars = carsDataframe();
 
   const components = 3;
+  const names = cars.columns.byName('model');
   const predict = cars.columns.byName('price');
   const features = cars.columns.remove('price').remove('model');
   const plsOutput = await computePLS(cars, features, predict, components);  
@@ -76,17 +76,7 @@ export async function demoScript(): Promise<any>  {
 
   await demoScript
     .step('Run', async () => {}, {description: 'Test dataframe is loaded, and multivariate analysis is performed.', delay: 0})
-    .step('Study', async () => {addPLSvisualization(sourceCars, features, predict, plsOutput)}, {description: 'Investigate results.', delay: 4000})  
-    .step('Try', async () => {
-      const params = { items: 10000, features: 100, components: 3};    
-      const itemsProp = DG.Property.js('items', DG.TYPE.INT);
-      const featuresProp = DG.Property.js('features', DG.TYPE.INT);
-      const componentsProp = DG.Property.js('components', DG.TYPE.INT);      
-      ui.dialog({title:'Set'})
-        .add(ui.input.form(params, [itemsProp, featuresProp, componentsProp]))
-        .addButton('Run', async () => await demoPLS(params.items, params.features, params.components))
-        .show();      
-    }, {description: 'Random walk test dataframe of the given size is generated, and its multivariate analysis is performed.'})    
+    .step('Study', async () => {addPLSvisualization(sourceCars, names, features, predict, plsOutput)}, {description: 'Investigate results.', delay: 4000})  
     .start();
 }
 
