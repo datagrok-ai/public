@@ -27,6 +27,8 @@ import {BiotrackViewerApp} from './apps/biotrack-viewer-app';
 import {BiostructureAndTrackViewerApp} from './apps/biostructure-and-track-viewer-app';
 import {previewBiostructure, viewBiostructure} from './viewers/view-preview';
 import {BiostructureViewerApp} from './apps/biostructure-viewer-app';
+import {demoBio06UI} from './demo/bio06-docking-ngl';
+import {demoBio07UI} from './demo/bio07-molecule3d-in-grid';
 import {NglGlDocService} from './utils/ngl-gl-doc-service';
 
 class Package extends DG.Package {
@@ -291,7 +293,7 @@ export async function nglViewerGen(): Promise<void> {
 }
 
 //name: dockingDemo
-//meta.demoPath: Cheminformatics | Docking
+//description:
 export async function dockingDemo() {
   const piMsg: string = 'Opening docking demo app ...';
   const pi: TaskBarProgressIndicator = TaskBarProgressIndicator.create(piMsg);
@@ -303,7 +305,7 @@ export async function dockingDemo() {
 }
 
 //name: inGridDemo
-//meta.demoPath: Cheminformatics | 3D Molecules in Grid
+//description:
 export async function inGridDemo() {
   const piMsg: string = 'Opening biostructure in grid demo app ...';
   const pi: TaskBarProgressIndicator = TaskBarProgressIndicator.create(piMsg);
@@ -312,4 +314,24 @@ export async function inGridDemo() {
   } finally {
     pi.close();
   }
+}
+
+// -- Demo --
+
+// demoBio06
+//name: demoBioDockingNgl
+//meta.demoPath: Cheminformatics | Docking NGL
+//description:
+//meta.path: /apps/Tutorials/Demo/Cheminformatics/Docking%20NGL
+export async function demoBioDockingNgl(): Promise<void> {
+  await demoBio06UI();
+}
+
+// demoBio07
+//name: demoBioMolecule3dInGrid
+//meta.demoPath: Cheminformatics | Molecule3D in Grid
+//description:
+//meta.path: /apps/Tutorials/Demo/Cheminformatics/Molecule3D%20in%20Grid
+export async function demoBioMolecule3dInGrid(): Promise<void> {
+  await demoBio07UI();
 }
