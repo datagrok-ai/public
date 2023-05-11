@@ -7,8 +7,8 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
 import {_initEDAAPI} from '../wasm/EDAAPI';
 import {computePCA, computePLS} from './EDAtools';
-import {renamePCAcolumns, addPLSvisualization} from './EDAui';
-import {demoPLS} from './demos';
+import {renamePCAcolumns, addPLSvisualization, regressionCoefficientsBarChart, 
+  scoresScatterPlot, predictedVersusReferenceScatterPlot} from './EDAui';
 import {carsDataframe, testDataForBinaryClassification} from './dataGenerators';
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID, 
   getTrainedModel, getPrediction, showTrainReport, getPackedModel} from './svm';
@@ -25,7 +25,7 @@ export async function init(): Promise<void> {
   await _initEDAAPI();
 }
 
-//top-menu: Tools | Data Science | PCA
+//top-menu: Tools | Data Science | Principal Component Analysis
 //name: PCA
 //description: Principal component analysis (PCA).
 //input: dataframe table
@@ -40,28 +40,32 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
   return renamePCAcolumns(await computePCA(table, features, components, center, scale));
 }
 
-//top-menu: Tools | Data Science | PLS
+//top-menu: Tools | Data Science | Multivariate Analysis (PLS)
 //name: PLS
 //description: Partial least square regression (PLS).
 //input: dataframe table
+//input: column names
 //input: column_list features
 //input: column predict
 //input: int components = 3
-export async function PLS(table: DG.DataFrame, features: DG.ColumnList, predict: DG.Column, components: number): Promise<void> {
+export async function PLS(table: DG.DataFrame, names: DG.Column, features: DG.ColumnList, 
+  predict: DG.Column, components: number): Promise<void> 
+{
   const plsResults = await computePLS(table, features, predict, components);
-  addPLSvisualization(table, features, predict, plsResults);
+  addPLSvisualization(table, names, features, predict, plsResults);
 }
 
 //name: MVA demo
-//description: Multivariate analysis (PLS) demo.
+//description: Multidimensional data analysis using partial least squares (PLS) regression. It reduces the predictors to a smaller set of uncorrelated components and performes least squares regression on them.
 //meta.demoPath: Data analysis | Multivariate analysis
 export async function demoScript(): Promise<any>  {
-  const demoScript = new DemoScript('Multivariate analysis', 
-    'Provides partial least sqaure regression analysis of the given data.'); 
+  const demoScript = new DemoScript('Partial least squares regression', 
+    'Analysis of multidimensional data.'); 
   
   const cars = carsDataframe();
 
   const components = 3;
+  const names = cars.columns.byName('model');
   const predict = cars.columns.byName('price');
   const features = cars.columns.remove('price').remove('model');
   const plsOutput = await computePLS(cars, features, predict, components);  
@@ -72,19 +76,23 @@ export async function demoScript(): Promise<any>  {
   let view = grok.shell.getTableView(sourceCars.name);
 
   await demoScript
-    .step('Run', async () => {}, {description: 'Test dataframe is loaded, and multivariate analysis is performed.', delay: 0})
-    .step('Study', async () => {addPLSvisualization(sourceCars, features, predict, plsOutput)}, {description: 'Investigate results.', delay: 4000})  
-    .step('Try', async () => {
-      const params = { items: 10000, features: 100, components: 3};    
-      const itemsProp = DG.Property.js('items', DG.TYPE.INT);
-      const featuresProp = DG.Property.js('features', DG.TYPE.INT);
-      const componentsProp = DG.Property.js('components', DG.TYPE.INT);      
-      ui.dialog({title:'Set'})
-        .add(ui.input.form(params, [itemsProp, featuresProp, componentsProp]))
-        .addButton('Run', async () => await demoPLS(params.items, params.features, params.components))
-        .show();      
-    }, {description: 'Random walk test dataframe of the given size is generated, and its multivariate analysis is performed.'})    
+    .step('Data', async () => {}, {description: 'Each car has many features - patterns extraction is complicated.', delay: 5000})
+    .step('Model', async () => {}, {description: 'Predict car price by its other features.', delay: 4000})
+    .step('Regression coeffcicients', async () => 
+      {view.addViewer(regressionCoefficientsBarChart(features, plsOutput[1]))}, 
+      {description: 'The feature "diesel" affects the price the most.', delay: 5000})
+    .step('Scores', async () => 
+      {view.addViewer(scoresScatterPlot(names, plsOutput[2], plsOutput[3]))}, 
+      {description: 'Similarities & dissimilarities: alfaromeo and mercedes are different.', delay: 4000})
+    .step('Prediction', async () => 
+      {view.addViewer(predictedVersusReferenceScatterPlot(names, predict, plsOutput[0]))}, 
+      {description: 'Closer to the line means better price prediction.', delay: 4000})    
     .start();
+
+  /*await demoScript
+    .step('Run', async () => {}, {description: 'Test dataframe is loaded, and multivariate analysis is performed.', delay: 0})
+    .step('Study', async () => {addPLSvisualization(sourceCars, names, features, predict, plsOutput)}, {description: 'Investigate results.', delay: 4000})  
+    .start();*/
 }
 
 //name: Generate linear separable dataset
