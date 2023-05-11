@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 
-import {importFasta, multipleSequenceAlignmentAny} from '../package';
+import {importFasta} from '../package';
 import {convertDo} from '../utils/convert';
 import * as C from '../utils/constants';
 import {generateLongSequence, generateManySequences, performanceTest} from './utils/sequences-generators';
@@ -146,7 +146,7 @@ category('renderers', () => {
     expect(srcSeqCol.getTag(bioTAGS.alphabet), ALPHABET.PT);
     expect(srcSeqCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
 
-    const msaSeqCol = await multipleSequenceAlignmentUI(srcSeqCol);
+    const msaSeqCol = await multipleSequenceAlignmentUI({col: srcSeqCol});
     tv.grid.invalidate();
 
     expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
