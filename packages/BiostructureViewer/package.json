@@ -5,7 +5,7 @@
     "name": "Aleksandr Tanas",
     "email": "atanas@datagrok.ai"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Protein viewers: support for multiple file formats, stand-alone viewer, and in-grid viewer.",
   "repository": {
     "type": "git",
@@ -45,6 +45,8 @@
     "@types/react": "17.0.37",
     "@types/react-dom": "17.0.11",
     "@types/react-select": "3.0.11",
+    "@types/signals": "1.0.1",
+    "@types/three": "^0.92.15",
     "@types/uniqid": "latest",
     "@types/uuid": "^9.0.1",
     "@types/wu": "latest",
