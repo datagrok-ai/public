@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.3.21",
+  "version": "3.3.22",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -2574,9 +2574,12 @@
       "dependencies": {
         "1.0.0": {
           "datagrok-api": "latest"
+        },
+        "1.1.0": {
+          "datagrok-api": "latest"
         }
       },
-      "description": "Bioreactor simulation",
+      "description": "Simulation of controlled fab-arm exchange mechanism.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
