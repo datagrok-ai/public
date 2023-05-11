@@ -194,12 +194,16 @@
 }
 
 /* play-pause btn */
-.tutorials-root-header button>i.grok-icon.fa-play {
-	color:var(--green-2);
+.tutorials-root-header button > i.grok-icon.fa-play {
+	color: var(--green-2);
+}
+
+.tutorials-root-header button > i.grok-icon.fa-play.fa-disabled {
+	color: var(--grey-2);
 }
 
 .tutorials-root-description > .grok-tutorial-entry i.grok-icon.fa-play {
-	color:var(--green-2);
+	color: var(--green-2);
 }
 
 /* countdown */

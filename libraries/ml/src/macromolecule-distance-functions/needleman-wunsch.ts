@@ -68,8 +68,8 @@ export function needlemanWunch(args: Partial<NeedlemanWunchArgs>): mmDistanceFun
     let prevRow = 0;
     let currRow = 1;
     // Initialize first row
-    for (let i = 0; i < seq1.length + 1; i++)
-      matrix[0][i] = -gapOpen - i * gapExtend;
+    for (let i = 1; i < seq1.length + 1; i++)
+      matrix[0][i] = -gapOpen - (i - 1) * gapExtend;
 
     // Calculate the rest of the matrix
     for (let i = 1; i < seq2.length + 1; i++) {
