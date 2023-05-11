@@ -656,7 +656,7 @@ export function bioSubstructureFilter(): BioSubstructureFilter {
 // demoBio01
 //name: demoBioSimilarityDiversity
 //meta.demoPath: Bioinformatics | Similarity, Diversity
-//description:
+//description: Sequence similarity tracking and evaluation dataset diversity
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Similarity,%20Diversity
 export async function demoBioSimilarityDiversity(): Promise<void> {
   await demoBio01UI();
@@ -665,7 +665,7 @@ export async function demoBioSimilarityDiversity(): Promise<void> {
 // demoBio01a
 //name:demoBioSequenceSpace
 //meta.demoPath: Bioinformatics | Sequence Space
-//description:
+//description: Exploring sequence space of Macromolecules, comparison with hierarchical clustering results
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Sequence%20Space
 export async function demoBioSequenceSpace(): Promise<void> {
   await demoBio01aUI();
@@ -674,7 +674,7 @@ export async function demoBioSequenceSpace(): Promise<void> {
 // demoBio01b
 //name: demoBioActivityCliffs
 //meta.demoPath: Bioinformatics | Activity Cliffs
-//description:
+//description: Activity Cliffs analysis on Macromolecules data
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Activity%20Cliffs
 export async function demoBioActivityCliffs(): Promise<void> {
   await demoBio01bUI();
@@ -683,7 +683,7 @@ export async function demoBioActivityCliffs(): Promise<void> {
 // demoBio05
 //name: demoBioHelmMsaSequenceSpace
 //meta.demoPath: Bioinformatics | Helm, MSA, Sequence Space
-//description:
+//description: MSA and composition analysis on Helm data
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Helm,%20MSA,%20Sequence%20Space
 export async function demoBioHelmMsaSequenceSpace(): Promise<void> {
   await demoBio05UI();

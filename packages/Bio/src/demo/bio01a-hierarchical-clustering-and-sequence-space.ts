@@ -26,7 +26,9 @@ export async function demoBio01aUI() {
   const embedCols: { [colName: string]: DG.Column<number> } = {};
 
   try {
-    const demoScript = new DemoScript('Demo', 'Exploring sequence space');
+    const demoScript = new DemoScript(
+      'Demo',
+      'Exploring sequence space of Macromolecules, comparison with hierarchical clustering results');
     await demoScript
       .step(`Loading DNA notation 'fasta'`, async () => {
         [df, treeHelper, dendrogramSvc] = await Promise.all([

@@ -26,7 +26,9 @@ export async function demoBio01bUI() {
   const idRows: { [id: number]: number } = {};
 
   try {
-    const demoScript = new DemoScript('Demo', '');
+    const demoScript = new DemoScript(
+      'Activity Cliffs',
+      'Activity Cliffs analysis on Macromolecules data');
     await demoScript
       .step(`Loading DNA notation \'fasta\'`, async () => {
         [df, treeHelper, dendrogramSvc] = await Promise.all([

@@ -24,7 +24,9 @@ export async function demoBio05UI(): Promise<void> {
   const msaHelmColName: string = 'msa(HELM)';
 
   try {
-    const demoScript = new DemoScript('Demo', 'MSA and composition analysis on Helm data.');
+    const demoScript = new DemoScript(
+      'Helm, MSA, Sequence Space',
+      'MSA and composition analysis on Helm data');
     await demoScript
       .step(`Loading peptides notation 'HELM'`, async () => {
         view = grok.shell.addTableView(df = await _package.files.readCsv(helmFn));
