@@ -7,7 +7,8 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
 import {_initEDAAPI} from '../wasm/EDAAPI';
 import {computePCA, computePLS} from './EDAtools';
-import {renamePCAcolumns, addPLSvisualization} from './EDAui';
+import {renamePCAcolumns, addPLSvisualization, regressionCoefficientsBarChart, 
+  scoresScatterPlot, predictedVersusReferenceScatterPlot} from './EDAui';
 import {carsDataframe, testDataForBinaryClassification} from './dataGenerators';
 import {LINEAR, RBF, POLYNOMIAL, SIGMOID, 
   getTrainedModel, getPrediction, showTrainReport, getPackedModel} from './svm';
@@ -55,11 +56,11 @@ export async function PLS(table: DG.DataFrame, names: DG.Column, features: DG.Co
 }
 
 //name: MVA demo
-//description: Multidimensional data analysis using partial least squares (PLS) regression. PLS reduces the predictors to a smaller set of uncorrelated components and performes least squares regression on them.
+//description: Multidimensional data analysis using partial least squares (PLS) regression. It reduces the predictors to a smaller set of uncorrelated components and performes least squares regression on them.
 //meta.demoPath: Data analysis | Multivariate analysis
 export async function demoScript(): Promise<any>  {
-  const demoScript = new DemoScript('Multivariate analysis', 
-    'Performes partial least sqaure (PLS) regression analysis of multidimensional data. Datagrok computes regression coefficients, scores, loadings and compares the predictions obtained with references.'); 
+  const demoScript = new DemoScript('Partial least squares regression', 
+    'Analysis of multidimensional data.'); 
   
   const cars = carsDataframe();
 
@@ -75,9 +76,23 @@ export async function demoScript(): Promise<any>  {
   let view = grok.shell.getTableView(sourceCars.name);
 
   await demoScript
+    .step('Data', async () => {}, {description: 'Each car has many features - patterns extraction is complicated.', delay: 5000})
+    .step('Model', async () => {}, {description: 'Predict car price by its other features.', delay: 4000})
+    .step('Regression coeffcicients', async () => 
+      {view.addViewer(regressionCoefficientsBarChart(features, plsOutput[1]))}, 
+      {description: 'The feature "diesel" affects the price the most.', delay: 5000})
+    .step('Scores', async () => 
+      {view.addViewer(scoresScatterPlot(names, plsOutput[2], plsOutput[3]))}, 
+      {description: 'Similarities & dissimilarities: alfaromeo and mercedes are different.', delay: 4000})
+    .step('Prediction', async () => 
+      {view.addViewer(predictedVersusReferenceScatterPlot(names, predict, plsOutput[0]))}, 
+      {description: 'Closer to the line means better price prediction.', delay: 4000})    
+    .start();
+
+  /*await demoScript
     .step('Run', async () => {}, {description: 'Test dataframe is loaded, and multivariate analysis is performed.', delay: 0})
     .step('Study', async () => {addPLSvisualization(sourceCars, names, features, predict, plsOutput)}, {description: 'Investigate results.', delay: 4000})  
-    .start();
+    .start();*/
 }
 
 //name: Generate linear separable dataset
