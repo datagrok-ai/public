@@ -14,7 +14,7 @@ import '../css/rich-function-view.css';
 import {FileInput} from '../../shared-components/src/file-input';
 import {startWith} from 'rxjs/operators';
 import {DIRECTION, viewerTypesMapping} from './shared/consts';
-import {getDataFrame} from './shared/utils';
+import {getDataFrame, getPropViewers} from './shared/utils';
 
 const FILE_INPUT_TYPE = 'file';
 
@@ -173,24 +173,14 @@ export class RichFunctionView extends FunctionView {
       const tabDfProps = this.categoryToParamMap[tabLabel].filter((p) => p.propertyType === DG.TYPE.DATA_FRAME);
       const tabScalarProps = this.categoryToParamMap[tabLabel].filter((p) => p.propertyType !== DG.TYPE.DATA_FRAME);
 
-      // dfProp.options['viewer'] could be empty, so we need to check it
-      const parsedTabDfProps = tabDfProps.map((dfProp) => (dfProp.options['viewer'] !== undefined) ?
-        // true and false values are retrieved as string, so we call JSON.parse on them once more
-        JSON.parse(dfProp.options['viewer'], (_, v) => v === 'true' || v === 'false' ? JSON.parse(v): v):
-        []);
+      const parsedTabDfProps = tabDfProps.map((dfProp) => getPropViewers(dfProp).config);
 
-      const dfBlocks = tabDfProps.map((dfProp, dfIndex) => {
-        let fullBlockWidth = 0;
-        parsedTabDfProps[dfIndex].forEach((_: any, viewerIndex: number) => {
-          const blockSize = parsedTabDfProps[dfIndex][viewerIndex]['block'];
+      const dfBlocks = tabDfProps.reduce((acc, dfProp, dfIndex) => {
+        const promisedViewers: Promise<DG.Viewer>[] = parsedTabDfProps[dfIndex].map(async (viewerDesc: {[key: string]: string | boolean}) => {
+          const initialValue: DG.DataFrame = this.funcCall.outputs[dfProp.name]?.value ?? this.funcCall.inputParams[dfProp.name]?.value ?? grok.data.demo.demog(1);
 
-          fullBlockWidth += blockSize ? parseInt(blockSize): 0;
-        });
-
-        const viewers: Promise<DG.Viewer[]> = Promise.all(parsedTabDfProps[dfIndex].map(async (viewerDesc: {[key: string]: string}) => {
-          const initialValue: DG.DataFrame = this.funcCall?.outputs[dfProp.name]?.value ?? this.funcCall!.inputParams[dfProp.name]?.value ?? grok.data.demo.demog(1);
-
-          const viewer = viewerTypesMapping[viewerDesc['type']] ? DG.Viewer.fromType(viewerTypesMapping[viewerDesc['type']], initialValue): await initialValue.plot.fromType(viewerDesc['type']) as DG.Viewer;
+          const viewerType = viewerDesc['type'] as string;
+          const viewer = Object.values(viewerTypesMapping).includes(viewerType) ? DG.Viewer.fromType(viewerType, initialValue): await initialValue.plot.fromType(viewerType) as DG.Viewer;
           viewer.setOptions(viewerDesc);
 
           if (this.dfToViewerMapping[dfProp.name]) this.dfToViewerMapping[dfProp.name].push(viewer); else this.dfToViewerMapping[dfProp.name] = [viewer];
@@ -198,24 +188,22 @@ export class RichFunctionView extends FunctionView {
           this.afterOutputPropertyRender.next({prop: dfProp, output: viewer});
 
           return viewer;
-        }));
+        });
 
-        viewers.then((loadedViewers) => {
+        promisedViewers.map((promisedViewer) => promisedViewer.then((loadedViewer) => {
           const subscribeOnFcChanges = () => {
             const currentParam: DG.FuncCallParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
-            const paramSub = currentParam.onChanged.subscribe(() => {
-              loadedViewers.forEach(async (viewer, idx) => {
-                if (Object.values(viewerTypesMapping).includes(viewer.type))
-                  viewer.dataFrame = currentParam.value;
-                else {
-                  // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
-                  const newViewer = await currentParam.value.plot.fromType(viewer.type) as DG.Viewer;
-                  viewer.root.replaceWith(newViewer.root);
-                  loadedViewers[idx] = newViewer;
-                }
-                this.afterOutputPropertyRender.next({prop: dfProp, output: viewer});
-              });
+            const paramSub = currentParam.onChanged.subscribe(async () => {
+              if (Object.values(viewerTypesMapping).includes(loadedViewer.type))
+                loadedViewer.dataFrame = currentParam.value;
+              else {
+                // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
+                const newViewer = await currentParam.value.plot.fromType(loadedViewer.type) as DG.Viewer;
+                loadedViewer.root.replaceWith(newViewer.root);
+                loadedViewer = newViewer;
+              }
+              this.afterOutputPropertyRender.next({prop: dfProp, output: loadedViewer});
             });
 
             this.subs.push(paramSub);
@@ -225,18 +213,9 @@ export class RichFunctionView extends FunctionView {
           this.subs.push(
             this.funcCallReplaced.subscribe(subscribeOnFcChanges),
           );
-        });
+        }));
 
         const dfBlockTitle: string = dfProp.options['caption'] ?? dfProp.name;
-
-        const dfBlock = ui.wait(async () => {
-          const loadedViewers = await viewers;
-          return ui.divH(
-            await Promise.all(
-              loadedViewers.map((viewer) => viewer.root, {style: {'flex-wrap': 'wrap'}}),
-            ),
-          );
-        });
 
         if (tabLabel === 'Input') {
           const subscribeOnFcChanges = () => {
@@ -255,12 +234,26 @@ export class RichFunctionView extends FunctionView {
           );
         }
 
-        return ui.divV([
-          // Removing title margin on top of block titles
-          ui.h2(dfBlockTitle, {...(dfIndex > 0) ? {style: {'margin-top': '0px'}} : {}}),
-          dfBlock,
-        ], {style: {...(fullBlockWidth > 0) ? {'width': `${fullBlockWidth}%`}: {'width': `100%`}}});
-      });
+        promisedViewers.map((viewer, viewerIndex) => {
+          const blockWidth: string | boolean | undefined = parsedTabDfProps[dfIndex][viewerIndex]['block'];
+          const viewerRoot = ui.wait(async () => (await viewer).root);
+          $(viewerRoot).css({'min-height': '300px'});
+
+          acc.append(
+            ui.divV([
+              ...viewerIndex === 0 ? [ui.h2(dfBlockTitle)] : [ui.h2(' ', {style: {'white-space': 'pre'}})],
+              viewerRoot,
+            ], {style: {...blockWidth ? {
+              'width': `${blockWidth}%`,
+              'max-width': `${blockWidth}%`,
+            } : {
+              'flex-grow': '1',
+            }}}),
+          );
+        });
+
+        return acc;
+      }, ui.divH([], {'style': {'flex-wrap': 'wrap'}}));
 
       const generateScalarsTable = () => {
         const table = DG.HtmlTable.create(
@@ -292,33 +285,8 @@ export class RichFunctionView extends FunctionView {
         );
       });
 
-      const dfSections = [] as HTMLElement[];
-      let currentWidth = 0;
-      let currentSection = ui.divH([], {style: {'margin-bottom': '25px'}}); // Adding small margin between sections
-      dfBlocks.forEach((dfBlock, dfIndex) => {
-        const blockWidth = parseInt(dfBlock.style.width);
-
-        if (currentWidth + blockWidth === 100) {
-          currentSection.append(dfBlock);
-          dfSections.push(currentSection);
-          currentSection = ui.divH([]);
-          currentWidth = 0;
-        } else if (currentWidth + blockWidth < 100) {
-          currentSection.append(dfBlock);
-          currentWidth += blockWidth;
-        } else {
-          dfSections.push(currentSection);
-          currentSection = ui.divH([]);
-          currentSection.append(dfBlock);
-          currentWidth = blockWidth;
-        }
-
-        if (dfIndex === dfBlocks.length - 1)
-          dfSections.push(currentSection);
-      });
-
       this.tabsElem.addPane(tabLabel, () => {
-        return ui.divV([...dfSections, ...tabScalarProps.length ? [ui.h2('Scalar values')]: [], scalarsTable]);
+        return ui.divV([dfBlocks, ...tabScalarProps.length ? [ui.h2('Scalar values')]: [], scalarsTable]);
       });
     });
 
@@ -523,14 +491,15 @@ export class RichFunctionView extends FunctionView {
   private runOnDgInput(t: DG.InputBase<DG.DataFrame>, val: DG.FuncCallParam) {
     t.onInput(async () => await this.doRun());
 
-    // DataFrame inputs has internal mutability, so we need check for it
-    const ref = t.value as DG.DataFrame;
-    const sub = ref.onDataChanged.subscribe(async () => {
-      if (this.isRunnable())
-        await this.doRun();
-    });
-
-    this.subs.push(sub);
+    // DataFrame inputs have internal mutability, so we need check for it
+    const ref = t.value as DG.DataFrame | null;
+    if (ref) {
+      const sub = ref.onDataChanged.subscribe(async () => {
+        if (this.isRunnable())
+          await this.doRun();
+      });
+      this.subs.push(sub);
+    }
   }
 
   /**

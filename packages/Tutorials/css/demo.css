@@ -170,6 +170,10 @@
 	color:var(--green-2);
 }
 
+.tutorials-root-description > .grok-tutorial-entry i.grok-icon.fa-play {
+	color:var(--green-2);
+}
+
 /* countdown */
 div.demo-script-countdown {
 	position: relative;

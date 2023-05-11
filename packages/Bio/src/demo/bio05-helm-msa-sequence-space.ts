@@ -28,6 +28,9 @@ export async function demoBio05UI(): Promise<void> {
     await demoScript
       .step(`Loading peptides notation 'HELM'`, async () => {
         view = grok.shell.addTableView(df = await _package.files.readCsv(helmFn));
+
+        grok.shell.windows.showContextPanel = false;
+        grok.shell.windows.showProperties = false;
       }, {
         description: 'Load dataset with macromolecules of \'Helm\' notation.',
         delay: 1600,
@@ -44,15 +47,6 @@ export async function demoBio05UI(): Promise<void> {
         description: 'Multiple sequence alignment (MSA) performed with PepSeA tool operating on non-natural aminoacids as well.',
         delay: 1600,
       })
-      .step('Composition analysis on MSA results', async () => {
-        wlViewer = await df.plot.fromType('WebLogo', {
-          sequenceColumnName: msaHelmColName
-        }) as DG.Viewer & IWebLogoViewer;
-        view.dockManager.dock(wlViewer, DG.DOCK_TYPE.DOWN, null, 'Composition analysis', 0.2);
-      }, {
-        description: 'Composition analysis allows to reveal functional features of sequences like motifs, or variable loops.',
-        delay: 1600,
-      })
       .step('Building sequence space', async () => {
         const method: string = 'UMAP';
         ssViewer = (await sequenceSpaceTopMenu(df, msaHelmCol,
@@ -61,6 +55,16 @@ export async function demoBio05UI(): Promise<void> {
       }, {
         description: 'Reduce sequence space dimensionality to display on 2D representation.',
         delay: 1600
+      })
+      .step('Composition analysis on MSA results', async () => {
+        wlViewer = await df.plot.fromType('WebLogo', {
+          sequenceColumnName: msaHelmColName,
+          maxHeight: 50,
+        }) as DG.Viewer & IWebLogoViewer;
+        view.dockManager.dock(wlViewer, DG.DOCK_TYPE.DOWN, null, 'Composition analysis', 0.2);
+      }, {
+        description: 'Composition analysis allows to reveal functional features of sequences like motifs, or variable loops.',
+        delay: 1600,
       })
       .start();
   } catch (err: any) {

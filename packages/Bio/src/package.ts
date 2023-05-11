@@ -49,6 +49,7 @@ import {demoBio01bUI} from './demo/bio01b-hierarchical-clustering-and-activity-c
 import {demoBio05UI} from './demo/bio05-helm-msa-sequence-space';
 import {checkInputColumnUI} from './utils/check-input-column';
 import {multipleSequenceAlignmentUI} from './utils/multiple-sequence-alignment-ui';
+import { runKalign } from './utils/multiple-sequence-alignment';
 
 export const _package = new DG.Package();
 
@@ -415,8 +416,19 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
 //top-menu: Bio | Alignment | MSA...
 //name: MSA...
 //tags: bio, panel
-export function multipleSequenceAlignmentAny(): void {
+export function multipleSequenceAlignmentDialog(): void {
   multipleSequenceAlignmentUI();
+}
+
+//name: Multiple Sequence Alignment
+//description: Multiple sequence alignment
+//tags: bio
+//input: column sequenceCol {semType: Macromolecule}
+//input: column clustersCol
+//output: column result
+export async function alignSequences(sequenceCol: DG.Column<string> | null = null,
+  clustersCol: DG.Column | null = null): Promise<DG.Column<string>> {
+  return multipleSequenceAlignmentUI({col: sequenceCol, clustersCol});
 }
 
 //top-menu: Bio | Structure | Composition Analysis

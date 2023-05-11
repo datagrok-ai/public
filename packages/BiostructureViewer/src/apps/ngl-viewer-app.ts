@@ -3,8 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../package';
-import {INglViewer, PROPS as pdbPROPS} from '../viewers/ngl-viewer';
+import {NglViewer, PROPS as pdbPROPS} from '../viewers/ngl-viewer';
 import {Observable, Subject, Unsubscribable} from 'rxjs';
+import {INglViewer} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 
 export class NglViewerApp {
   private readonly appFuncName: string;
@@ -57,13 +58,13 @@ export class NglViewerApp {
 
     this.df.currentRowIdx = -1;
 
-    const viewer: DG.JsViewer | INglViewer = (await this.df.plot.fromType('Ngl', {
+    const viewer: DG.Viewer & INglViewer = (await this.df.plot.fromType('NGL', {
       [pdbPROPS.pdb]: this.pdb,
       [pdbPROPS.ligandColumnName]: 'molecule',
-    })) as DG.JsViewer | INglViewer;
-    this.view.dockManager.dock(viewer as DG.JsViewer, DG.DOCK_TYPE.RIGHT, null, 'NGL', 0.4);
+    })) as DG.Viewer & INglViewer;
+    this.view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'NGL', 0.4);
 
-    this.viewSubs.push((viewer as INglViewer).onAfterBuildView.subscribe(() => {
+    this.viewSubs.push(viewer.onAfterBuildView.subscribe(() => {
       this._onAfterBuildView.next();
     }));
   }
