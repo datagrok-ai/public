@@ -46,7 +46,7 @@ export async function init() {
 //input: double _RVal = 0.082 {units: L atm/(mol K); caption: Gas constant; category: Parameters}
 //input: double _PVal = 1.0 {units: atm; caption: Headspace pressure; category: Parameters}
 //input: double _TimeToSwitchVal = 135.0 {units: min; caption: Switch mode time; category: Parameters}
-//output: dataframe dfSolution {caption: Solution; viewer: Line chart(x: "t, time (minutes)", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
+//output: dataframe dfSolution {caption: Solution; viewer: Line chart(block: 100, x: "t, time (minutes)", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
 //editor: Compute:RichFunctionViewEditor
 export async function Bioreactor(initial: number, final: number, step: number,
   _FFoxInitial: number, _KKoxInitial: number, _FFredInitial: number, _KKredInitial: number, 
@@ -87,7 +87,7 @@ export async function Bioreactor(initial: number, final: number, step: number,
 //input: double _RVal = 0.082 {units: L atm/(mol K); caption: Gas constant; category: Parameters}
 //input: double _PVal = 1.0 {units: atm; caption: Headspace pressure; category: Parameters}
 //input: double _TimeToSwitchVal = 135.0 {units: min; caption: Switch mode time; category: Parameters}
-//output: dataframe dfSolution {caption: Solution; viewer: Line chart(x: "t, time (minutes)", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
+//output: dataframe dfSolution {caption: Solution; viewer: Line chart(block: 100, x: "t, time (minutes)", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
 //editor: Compute:RichFunctionViewEditor
 //meta.runOnStart: true
 export async function BioreactorDemo(initial: number, final: number, step: number,
