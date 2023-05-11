@@ -10,6 +10,8 @@ import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {ViewHandler} from '../view-handler';
 import {getTime} from '../utils';
 
+const format = 'es-pa-u-hc-h23';
+const systemId = '00000000-0000-0000-0000-000000000000';
 
 export class PackagesView extends UaView {
   expanded: {[key: string]: boolean} = {f: true, l: true};
@@ -49,7 +51,7 @@ export class PackagesView extends UaView {
               'To': getTime(dateTo)});
           }, true);
           PackagesView.getFunctionsPane(cp, filter, [dateFrom, dateTo],
-            this.uaToolbox, 'Packages');
+            [row.package], this.uaToolbox, 'Packages');
           PackagesView.getLogsPane(cp, filter, [dateFrom, dateTo],
             this.uaToolbox, 'Packages');
           PackagesView.getAuditPane(cp, filter);
@@ -85,13 +87,13 @@ export class PackagesView extends UaView {
     const dateMax = df.getCol('time_end').stats.max;
     const dateFrom = new Date(dateMin / 1000);
     const dateTo = new Date(dateMax / 1000);
-    // const packages: string[] = df.getCol('pid').categories.filter((c) => c !== '');
-    const packages: string[] = df.getCol('package').categories;
+    const packages: string[] = df.getCol('pid').categories;
+    const packageNames: string[] = df.getCol('package').categories;
     const users: string[] = df.getCol('uid').categories;
     t.selection.init((i) => {
       const row = gen.next().value as DG.Row;
       return dateFrom <= row.time_start && row.time_start < dateTo &&
-        packages.includes(row.package) && users.includes(row.uid);
+        packages.includes(row.pid) && users.includes(row.uid) && packageNames.includes(row.package);
     }, false);
     df = t.clone(t.selection);
     const groups: string[] = df.getCol('ugid').categories;
@@ -124,7 +126,7 @@ export class PackagesView extends UaView {
 
     const packagesData: {[key: string]: { e: HTMLElement, c: number }} = {};
     for (const r of packagesHistogram.rows)
-      packagesData[r.pid] = {c: r['sum(count)'], e: r.pid ? ui.render(`#{x.${r.pid}}`) : ui.label('Core')};
+      packagesData[r.pid] = {c: r['sum(count)'], e: r.pid === systemId ? ui.label('Core') : ui.render(`#{x.${r.pid}}`)};
 
     const filterAccordion = DG.Accordion.create();
     const usersTable = ui.table(Object.keys(usersData).sort((a, b) =>
@@ -140,23 +142,25 @@ export class PackagesView extends UaView {
     else
       filterDiv.append(packagesTable);
     filterDiv.append(filterAccordion.root);
-    PackagesView.getFunctionsPane(a, filter, [dateFrom, dateTo], uaToolbox, backToView);
+    PackagesView.getFunctionsPane(a, filter, [dateFrom, dateTo], packageNames, uaToolbox, backToView);
     PackagesView.getLogsPane(a, filter, [dateFrom, dateTo], uaToolbox, backToView);
     PackagesView.getAuditPane(a, filter);
     grok.shell.o = cp;
   }
 
-  static async getFunctionsPane(cp: DG.Accordion, filter: Filter, date: Date[], uaToolbox: UaToolbox, backToView: string): Promise<void> {
+  static async getFunctionsPane(cp: DG.Accordion, filter: Filter, date: Date[],
+    packageNames: string[], uaToolbox: UaToolbox, backToView: string): Promise<void> {
     const button = ui.button('Details', async () => {
       uaToolbox.dateFromDD.value = getTime(date[0]);
       uaToolbox.dateToDD.value = getTime(date[1]);
       uaToolbox.backToView = backToView;
       uaToolbox.usersDD.value = filter.users.length === 1 ?
         (await grok.dapi.users.find(filter.users[0])).friendlyName : `${filter.users.length} users`;
-      uaToolbox.packagesDD.value = filter.packages.length === 1 ?
-        filter.packages[0] : `${filter.packages.length} packages`;
+      uaToolbox.packagesDD.value = packageNames.length === 1 ?
+        packageNames[0] : `${packageNames.length} packages`;
       ViewHandler.getView('Functions').getScatterPlot()
-        .reloadViewer({...filter, date: `${getTime(date[0], 'es-pa')}-${getTime(date[1], 'es-pa')}`});
+        .reloadViewer({date: `${getTime(date[0], format)}-${getTime(date[1], format)}`,
+          groups: filter.groups, packages: packageNames});
       ViewHandler.changeTab('Functions');
       uaToolbox.drilldown = ViewHandler.getCurrentView();
     });
@@ -204,9 +208,9 @@ export class PackagesView extends UaView {
       //   packageNames[0] : `${packageNames.length} packages`;
       uaToolbox.packagesDD.value = '';
       ViewHandler.getView('Events').viewers[0]
-        .reloadViewer({date: `${getTime(date[0], 'es-pa')}-${getTime(date[1], 'es-pa')}`});
+        .reloadViewer({date: `${getTime(date[0], format)}-${getTime(date[1], format)}`});
       ViewHandler.getView('Events').viewers[1]
-        .reloadViewer({date: `${getTime(date[0], 'es-pa')}-${getTime(date[1], 'es-pa')}`,
+        .reloadViewer({date: `${getTime(date[0], format)}-${getTime(date[1], format)}`,
           groups: filter.groups});
       ViewHandler.changeTab('Events');
       uaToolbox.drilldown = ViewHandler.getCurrentView();

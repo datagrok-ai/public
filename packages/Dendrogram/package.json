@@ -5,10 +5,10 @@
     "name": "Aleksandr Tanas",
     "email": "atanas@datagrok.ai"
   },
-  "version": "1.2.3",
+  "version": "1.2.5",
   "description": "Computation and visualization of hierarchical data clustering. [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Dendrogram/README.md)",
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.28.2",
+    "@datagrok-libraries/bio": "^5.29.2",
     "@datagrok-libraries/gridext": "^1.3.22",
     "@datagrok-libraries/utils": "^2.5.0",
     "cash-dom": "latest",

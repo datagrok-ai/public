@@ -37,7 +37,7 @@ const VIEWER_TABLES_PATH: {[key: string]: string} = {
 export async function viewerDemo(viewerName: string, options?: object | null) {
   const df = ['Line chart', 'Network diagram', 'Correlation plot'].includes(viewerName) ?
     await grok.data.getDemoTable(VIEWER_TABLES_PATH[viewerName]) :
-    await grok.data.loadTable(`${_package.webRoot}${VIEWER_TABLES_PATH[viewerName]}`);
+    await grok.data.loadTable(`${_package.webRoot}/${VIEWER_TABLES_PATH[viewerName]}`);
 
   const tableView = grok.shell.addTableView(df);
 
@@ -46,7 +46,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
 
   const viewer = tableView.addViewer(viewerName, options);
   
-  // because of GROK-11670
+  // because of GROK-13028
   if (viewerName === DG.VIEWER.NETWORK_DIAGRAM) {
     await delay(100);
     viewer.props.node1ColumnName = 'Source';
@@ -61,15 +61,19 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
 function dockViewers(tableView: DG.TableView, viewer: DG.Viewer, viewerName: string) {
   const rootNode = tableView.dockManager.rootNode;
 
-  // if (viewerName === 'WordCloud') {
-  //   tableView.dockManager.dock(tableView.filters(), DG.DOCK_TYPE.RIGHT, rootNode, 'Filters', 0.6);
-  //   tableView.dockManager.dock(viewer, DG.DOCK_TYPE.TOP, null, viewerName, 0.7);
-  //   return;
-  // }
+  if (viewerName === DG.VIEWER.MARKUP)
+    return;
+  if (viewerName === DG.VIEWER.STATISTICS) {
+    tableView.dockManager.dock(tableView.filters(), DG.DOCK_TYPE.RIGHT, rootNode, 'Filters', 0.6);
+    tableView.dockManager.dock(viewer, DG.DOCK_TYPE.TOP, null, viewerName, 0.7);
+    return;
+  }
 
-  const scatterplotNode = tableView.dockManager.dock(tableView.addViewer('scatterplot'), DG.DOCK_TYPE.RIGHT,
-    rootNode, 'Scatter plot', 0.5);
-  tableView.dockManager.dock(tableView.addViewer('histogram'), DG.DOCK_TYPE.RIGHT, scatterplotNode, 'Histogram', 0.3);
+  const extraViewerName = viewerName === DG.VIEWER.SCATTER_PLOT ? DG.VIEWER.BAR_CHART : DG.VIEWER.SCATTER_PLOT;
+  const extraViewer2Name = viewerName === DG.VIEWER.HISTOGRAM ? DG.VIEWER.BAR_CHART : DG.VIEWER.HISTOGRAM;
+
+  const extraViewerNode = tableView.dockManager.dock(tableView.addViewer(extraViewerName), DG.DOCK_TYPE.RIGHT, rootNode, extraViewerName, 0.5);
+  tableView.dockManager.dock(tableView.addViewer(extraViewer2Name), DG.DOCK_TYPE.RIGHT, extraViewerNode, 'histogram', 0.3);
   const viewerNode = tableView.dockManager.dock(viewer, DG.DOCK_TYPE.TOP, null, viewerName, 0.7);
   tableView.dockManager.dock(tableView.filters(), DG.DOCK_TYPE.LEFT, viewerNode, 'Filters', 0.3);
 }

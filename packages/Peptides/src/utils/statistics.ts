@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
 import {RawData} from './types';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 export type Stats = {
   count: number,
@@ -9,20 +10,14 @@ export type Stats = {
   ratio: number,
 };
 
-export type MaskInfo = {
-  trueCount: number,
-  falseCount: number,
-  mask: boolean[] | Int32Array,
-};
-
-export function getStats(data: RawData | number[], maskInfo: MaskInfo): Stats {
-  const selected = new Float32Array(maskInfo.trueCount);
-  const rest = new Float32Array(maskInfo.falseCount);
+export function getStats(data: RawData | number[], bitArray: BitArray): Stats {
+  const selected = new Float32Array(bitArray.trueCount());
+  const rest = new Float32Array(bitArray.falseCount());
 
   let selectedIndex = 0;
   let restIndex = 0;
   for (let i = 0; i < data.length; ++i) {
-    if (maskInfo.mask[i])
+    if (bitArray.getBit(i))
       selected[selectedIndex++] = data[i];
     else
       rest[restIndex++] = data[i];

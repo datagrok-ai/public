@@ -6,11 +6,13 @@ export interface RDModule {
   prefer_coordgen(prefer: boolean): void;
   get_rxn(reactionString: string, options?: string): Reaction;
   use_legacy_stereo_perception(value: boolean): boolean;
+  get_mcs(buf: number, length: number, compareElements: boolean, compareBonds: boolean): string;
+  _malloc(size: number): any;
+  _free(buf: any): any;
+  writeArrayToMemory(arr: any, buff:any): any;
 }
 
 export interface RDMol {
-  d_defaultWidth: number;
-  d_default_Height: number;
   is_qmol: boolean;
 
   get_smiles(): string;

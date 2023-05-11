@@ -13,7 +13,8 @@ export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
 
     get funcParams(): any {
       return {table: this.tableInput.value!, molecules: this.molColInput.value!, activities: this.activitiesInput.value!,
-        similarity: this.similarityInput.value!, methodName: this.methodInput.value!, options: this.algorithmOptions};
+        similarity: this.similarityInput.value!, methodName: this.methodInput.value!, similarityMetric: this.similarityMetricInput.value!,
+        options: this.algorithmOptions};
     }
   
     get paramsUI(): HTMLDivElement{
@@ -24,7 +25,8 @@ export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
       super(semtype);
       this.activitiesInput = ui.columnInput('Activities', this.tableInput.value!, this.tableInput.value!.columns.byIndex(0));
       this.activitiesInputRoot = this.activitiesInput.root;
-      this.similarityInput = ui.intInput('Similarity', 80);
+      this.similarityInput = ui.intInput('Similarity cutoff', 80);
+      ui.tooltip.bind(this.similarityInput.root, `Pairs of similar (cutoff is used) molecules with high difference in activity are considered 'cliffs'`)
       //@ts-ignore
       this.funcParamsDiv = ui.inputs([
         this.tableInput,
@@ -32,7 +34,8 @@ export class ActivityCliffsFunctionEditor extends SequenceSpaceBaseFuncEditor {
         this.activitiesInput,
         this.similarityInput,
         this.methodInput,
-        this.methodSettingsDiv
+        this.methodSettingsDiv,
+        this.similarityMetricInput,
       ], {style: {minWidth: '320px'}});
     }
 

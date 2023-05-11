@@ -28,11 +28,15 @@ category('screening tools', () => {
   });
 
   test('elementalAnalysis.smiles', async () => {
-    const df = molecules.clone();
+    let df: DG.DataFrame;
+    if (DG.Test.isInBenchmark)
+      df = await readDataframe('smiles.csv');
+    else 
+      df = molecules.clone();
     const tv = grok.shell.addTableView(df);
-    elementalAnalysis(df, df.getCol('smiles'), false, false);
+    elementalAnalysis(df, df.getCol(DG.Test.isInBenchmark ? 'canonical_smiles' : 'smiles'), false, false);
     tv.close();
-    expect(df.columns.length, 11);
+    expect(df.columns.length, DG.Test.isInBenchmark ? 20 : 11);
   });
 
   test('elementalAnalysis.molV2000', async () => {
@@ -60,8 +64,8 @@ category('screening tools', () => {
     await grok.data.detectSemanticTypes(df);
     elementalAnalysis(df, df.getCol('canonical_smiles'), false, false);
     expect(df.columns.length, 29);
-    expect(Array.from(df.row(2).cells).map((c) => c.value).join(''),
-      '1480016COc1ccc2c|c(ccc2c1)C(C)C(=O)OCCCc3cccnc300040203710400.272729992866516126340');
+    expect(Array.from(df.row(40).cells).map((c) => c.value).join(''),
+      '1480010COc1ccc2cc(ccc2c1)C(C)C(=O)OC|CCc3cccnc300040203710400.272729992866516126340');
   });
 
   after(async () => {

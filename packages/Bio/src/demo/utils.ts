@@ -7,19 +7,6 @@ import {reduceDimensinalityWithNormalization} from '@datagrok-libraries/ml/src/s
 import {StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {delay} from '@datagrok-libraries/utils/src/test';
 
-export function step(message: string, action: () => Promise<void>, delayMs: number = 1600): () => Promise<void> {
-  return async function() {
-    grok.shell.info(message);
-    const pi = DG.TaskBarProgressIndicator.create(message);
-    try {
-      await action();
-    } finally {
-      pi.close();
-      await delay(delayMs);
-    }
-  };
-}
-
 enum EMBED_COL_NAMES {
   X = 'Embed_X',
   Y = 'Embed_Y'
@@ -92,4 +79,11 @@ export async function demoSequenceSpace(
   }
   view.dockManager.dock(resSpaceViewer!, DG.DOCK_TYPE.RIGHT, null, 'Sequence Space', 0.35);
   return resSpaceViewer;
+}
+
+export function handleError(err: any): void {
+  const errMsg: string = err instanceof Error ? err.message : err.toString();
+  const stack: string | undefined = err instanceof Error ? err.stack : undefined;
+  grok.shell.error(errMsg);
+  _package.logger.error(err.message, undefined, stack);
 }
