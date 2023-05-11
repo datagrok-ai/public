@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.3.17",
+  "version": "3.3.18",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -2544,6 +2544,9 @@
     "biostructure-viewer": {
       "dependencies": {
         "1.0.0": {
+          "datagrok-api": "^1.10.2"
+        },
+        "1.0.1": {
           "datagrok-api": "^1.10.2"
         }
       },
