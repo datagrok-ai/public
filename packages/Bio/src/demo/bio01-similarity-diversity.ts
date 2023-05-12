@@ -30,7 +30,7 @@ export async function demoBio01UI() {
         // TODO: Fix column width
       }, {
         description: `Load dataset with macromolecules of 'fasta' notation, 'DNA' alphabet.`,
-        delay: 1200
+        delay: 2000
       })
       .step('Find the most similar sequences to the current one', async () => {
         const simViewer = await df.plot.fromType('Sequence Similarity Search', {
@@ -40,7 +40,7 @@ export async function demoBio01UI() {
         view.dockManager.dock(simViewer, DG.DOCK_TYPE.RIGHT, null, 'Similarity search', 0.35);
       }, {
         description: `Add 'Sequence Similarity Search' viewer.`,
-        delay: 1600
+        delay: 2000
       })
       .step('Explore most diverse sequences in a dataset', async () => {
         const divViewer = await df.plot.fromType('Sequence Diversity Search', {
@@ -50,19 +50,19 @@ export async function demoBio01UI() {
         view.dockManager.dock(divViewer, DG.DOCK_TYPE.DOWN, null, 'Diversity search', 0.27);
       }, {
         description: `Add 'Sequence Deversity Search' viewer.`,
-        delay: 1600
+        delay: 2000
       })
       .step('Choose another sequence for similarity search', async () => {
         df.currentRowIdx = 3;
       }, {
         description: 'Handling current row changed of data frame showing update of similar sequences.',
-        delay: 1600,
+        delay: 2000,
       })
       .step('One more sequence for similarity search', async () => {
         df.currentRowIdx = 7;
       }, {
         description: 'Just one more sequence to search similar ones.',
-        delay: 1600,
+        delay: 2000,
       })
       .start();
   } catch (err: any) {

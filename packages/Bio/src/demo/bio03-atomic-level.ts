@@ -7,12 +7,14 @@ import {_package, toAtomicLevel} from '../package';
 import $ from 'cash-dom';
 import {handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
+import {delay} from '@datagrok-libraries/utils/src/test';
 
-const dataFn: string = 'sample/sample_FASTA.csv';
+const dataFn: string = 'samples/sample_FASTA.csv';
 
 export async function demoBio03UI(): Promise<void> {
   let df: DG.DataFrame;
   let view: DG.TableView;
+  let dlg: DG.Dialog;
 
   try {
     await new DemoScript(
@@ -20,6 +22,9 @@ export async function demoBio03UI(): Promise<void> {
       'Atomic level structure of Macromolecules'
     )
       .step(`Loading Macromolecules notation 'Helm'`, async () => {
+        grok.shell.windows.showContextPanel = false;
+        grok.shell.windows.showProperties = false;
+
         df = await _package.files.readCsv(dataFn);
         view = grok.shell.addTableView(df);
         for (let colI: number = 0; colI < view.grid.columns.length; colI++) {
@@ -28,14 +33,31 @@ export async function demoBio03UI(): Promise<void> {
         }
       }, {
         description: `Load dataset with macromolecules of 'fasta' notation, 'PT' alphabet (protein, aminoacids).`,
-        delay: 1600,
+        delay: 2000,
       })
       .step('To atomic level', async () => {
         const seqCol = df.getCol('Sequence');
         await toAtomicLevel(df, seqCol);
       }, {
         description: 'Get atomic level structures of Macromolecules.',
-        delay: 1600,
+        delay: 2000,
+      })
+      .step('Sketcher', async () => {
+        const molColName: string = 'molfile(Sequence)';
+        df.currentCell = df.cell(1, molColName);
+        const mol: string = df.currentCell.value;
+
+        const sketcher = new DG.chem.Sketcher(DG.chem.SKETCHER_MODE.INPLACE);
+        sketcher.setMolFile(mol);
+
+        dlg = ui.dialog()
+          .add(sketcher)
+          .show();
+        await delay(3000);
+        dlg.close();
+      }, {
+        description: 'Display atomic level structure within a sketcher.',
+        delay: 2000,
       })
       .start();
   } catch (err: any) {
