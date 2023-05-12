@@ -198,7 +198,7 @@ export class PeptideSimilaritySpaceWidget {
     const elements = ui.divV([plot.root, inputs]);
 
     // Move detaching scatterplot to the grid.
-    plot.onEvent('d4-viewer-detached').subscribe((args) => {
+    plot.onEvent('d4-viewer-detached').subscribe((_args) => {
       let found = false;
 
       for (const v of this.view.viewers) {
