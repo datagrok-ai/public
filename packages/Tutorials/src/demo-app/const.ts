@@ -24,11 +24,17 @@ export const DEMO_APP_HIERARCHY = {
 				{
 					name: 'Similarity Search',
 				},
+				{
+					name: 'Scaffold Tree',
+				}
 			],
 		},
 		{
 			name: 'Bioinformatics',
 			children: [
+				{
+					name: 'Atomic Level',
+				},
 				{
 					name: 'Activity Cliffs',
 				},
@@ -56,6 +62,9 @@ export const DEMO_APP_HIERARCHY = {
 							name: 'Network Diagram',
 						},
 						{
+							name: 'Tree',
+						},
+						{
 							name: 'Tree map',
 						},
 					]
@@ -75,16 +84,22 @@ export const DEMO_APP_HIERARCHY = {
 					name: 'General',
 					children: [
 						{
+							name: 'Scatter Plot',
+						},
+						{
 							name: '3D Scatter Plot',
 						},
 						{
 							name: 'Bar Chart',
 						},
 						{
+							name: 'Chord'
+						},
+						{
 							name: 'Density Plot',
 						},
 						{
-							name: 'Heat map',
+							name: 'Heatmap',
 						},
 						{
 							name: 'Histogram',	
@@ -99,13 +114,34 @@ export const DEMO_APP_HIERARCHY = {
 							name: 'Pie Chart',
 						},
 						{
+							name: 'Radar',
+						},
+						{
+							name: 'Sankey',
+						},
+						{
+							name: 'Sunburst',
+						},
+						{
+							name: 'Surface Plot',
+						},
+						{
 							name: 'Tile Viewer',
-						}
+						},
+						{
+							name: 'Timelines',
+						},
+						{
+							name: 'Word Cloud'
+						},
 					]
 				},
 				{
 					name: 'Geographical',
 					children: [
+						{
+							name: 'Globe',
+						},
 						{
 							name: 'Map',
 						},
@@ -140,6 +176,9 @@ export const DEMO_APP_HIERARCHY = {
 						{
 							name: 'Statistics',
 						},
+						{
+							name: 'Pivot Table',
+						},
 					]
 				},
 				{
@@ -149,39 +188,6 @@ export const DEMO_APP_HIERARCHY = {
 							name: 'Calendar'
 						},
 					]
-				},
-				{
-					name: 'Chord'
-				},
-				{
-					name: 'Globe',
-				},
-				{
-					name: 'Pivot Table',
-				},
-				{
-					name: 'Radar',
-				},
-				{
-					name: 'Sankey',
-				},
-				{
-					name: 'Scatter Plot',
-				},
-				{
-					name: 'Sunburst',
-				},
-				{
-					name: 'Surface Plot',
-				},
-				{
-					name: 'Timelines',
-				},
-				{
-					name: 'Tree',
-				},
-				{
-					name: 'Word Cloud'
 				},
 			]
 		},

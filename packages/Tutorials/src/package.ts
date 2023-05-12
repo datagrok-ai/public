@@ -182,7 +182,7 @@ export function demoAppWidget(): DG.Widget {
 
 //name: scatterPlotDemo
 //description: A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the points are color-coded you can increase the number of displayed variables to three. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis..
-//meta.demoPath: Viewers | Scatter Plot
+//meta.demoPath: Viewers | General | Scatter Plot
 //test: _scatterPlotDemo()
 export async function _scatterPlotDemo() {
   await viewerDemo(DG.VIEWER.SCATTER_PLOT);
@@ -209,12 +209,13 @@ export async function _lineChartDemo() {
 //meta.demoPath: Viewers | General | Bar Chart
 //test: _barChartDemo()
 export async function _barChartDemo() {
-  await viewerDemo(DG.VIEWER.BAR_CHART);
+  await viewerDemo(DG.VIEWER.BAR_CHART, {stackColumnName: 'SEX'});
 }
 
 //name: pieChartDemo
 //description: Pie chart is useful for reflecting numerical proportions. Conceptually, it is similar to a bar chart in that it represents categorical values. A pie chart shows the relative size of a given category (a slice of the pie) compared to the entire dataset (the whole pie).
 //meta.demoPath: Viewers | General | Pie Chart
+//meta.keywords: qwerty
 //test: _pieChartDemo()
 export async function _pieChartDemo() {
   await viewerDemo(DG.VIEWER.PIE_CHART);
@@ -281,12 +282,12 @@ export async function _boxPlotDemo() {
 //meta.demoPath: Viewers | Data flow and hierarchy | Tree map
 //test: _treeMapDemo()
 export async function _treeMapDemo() {
-  await viewerDemo(DG.VIEWER.TREE_MAP);
+  await viewerDemo(DG.VIEWER.TREE_MAP, {splitByColumnNames: ['DIS_POP', 'SEX', '']});
 }
 
 //name: heatMapDemo
 //description: Heatmap is a spreadsheet (grid) that contains colors instead of numbers and strings. For numerical data, the higher values are colored red, and the lower ones appear blue. The central value is assigned a light color so that darker colors indicate a larger distance from the center. For categorical data, each possible value is set to one color from a qualitative palette.
-//meta.demoPath: Viewers | General | Heat map
+//meta.demoPath: Viewers | General | Heatmap
 //test: _heatMapDemo()
 export async function _heatMapDemo() {
   await viewerDemo(DG.VIEWER.HEAT_MAP);
@@ -358,7 +359,7 @@ export async function _shapeMapDemo() {
 
 //name: pivotTableDemo
 //description: A pivot table is a table of grouped values that aggregates the individual items of a more extensive table within one or more discrete categories. This summary might include sums, averages, or other statistics, which the pivot table groups together using a chosen aggregation function applied to the grouped values.
-//meta.demoPath: Viewers | Pivot Table
+//meta.demoPath: Viewers | Statistical | Pivot Table
 //test: _pivotTableDemo()
 export async function _pivotTableDemo() {
   await viewerDemo('Pivot table');
@@ -369,5 +370,5 @@ export async function _pivotTableDemo() {
 //meta.demoPath: Viewers | Geographical | Map
 //test: _mapDemo() //skip: GROK-13082
 export async function _mapDemo() {
-  await viewerDemo('Map');
+  await viewerDemo('Map', {renderType: 'both'});
 }

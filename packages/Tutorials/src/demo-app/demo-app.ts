@@ -247,16 +247,19 @@ export class DemoView extends DG.ViewBase {
   }
   
 
-  // TODO: in DemoScript - loading circle to end when delay ends (make interactive icon) to disappear like in balloon
-
   // TODO: pause on exceptions in browser and vscode, check PowerGrid problem
 
   // TODO: demos: FileManager: show files in folder with demo, show molecules table
   // TODO: demos: Table linking: make custom view with 2 grids and link them with the proper API (filter in one table will set uo the second table)
   // TODO: demos: Grid customizations (in PowerGrid): have to add some sparklines, also add frozen columns (check in PowerGrid)
 
-  // TODO: close demo app on categories closing
   // TODO: add demoScript node to class
+
+  // TODO: start demo scripts only by double click or enter, then create button to start it
+  // TODO: also create view of 'starting the demo script'
+  // TODO: reset scaling in network diagram viewer (miss simulation property)
+  // TODO: change color of last breadcrumbs element to --grey-6
+  // TODO: make autotests using meta.demoPath (search for it)
 
   nodeView(viewName: string, path: string): void {
     this._initWindowOptions();
