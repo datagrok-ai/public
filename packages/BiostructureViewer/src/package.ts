@@ -15,7 +15,7 @@ import {TwinPviewer} from './viewers/twin-p-viewer';
 import {PROPS as nglPROPS, NglViewer} from './viewers/ngl-viewer';
 import {NglViewerApp} from './apps/ngl-viewer-app';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
-import {PdbHelper} from './utils/pdb-helper';
+import {PdbHelper, PdbResDataFrame} from './utils/pdb-helper';
 import {PdbApp} from './apps/pdb-app';
 import {nglViewUI, nglWidgetUI} from './viewers/ngl-ui';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
@@ -164,6 +164,16 @@ export function molecule3dNglView3(file: DG.FileInfo): DG.View {
 //output: view v
 export function molecule3dNglView4(file: DG.FileInfo): DG.View {
   return previewBiostructure(file);
+}
+
+//name: openPdbResidues
+export async function openPdbResidues(fi: DG.FileInfo): Promise<void> {
+  const ph = await getPdbHelper();
+  const pdbStr: string = await fi.readAsString();
+  const pdbDf: PdbResDataFrame = await ph.pdbToDf(pdbStr, fi.fileName);
+  const view = grok.shell.addTableView(pdbDf);
+  const viewer = await pdbDf.plot.fromType('NGL', {});
+  view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'NGL', 0.40);
 }
 
 // -- Panel widgets --
