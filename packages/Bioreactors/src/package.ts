@@ -3,8 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
-
 import {_initinitBioreactor, _simulateBioreactor} from '../wasm/BioreactorAPI';
 import {customRun, showCustomRunResults} from '../wasm/demoTools';
 
@@ -108,10 +106,17 @@ export async function BioreactorDemo(initial: number, final: number, step: numbe
 //description: In-browser simulation of complex phenomena.
 //meta.demoPath: Bioreactors | Bioreactor
 export async function demoScript(): Promise<any>  {
-  const demoScript = new DemoScript('Bioreactor', 
-    'No-code construction of complex phenomena simulators is provided by Datagrok WebAutosolver tool.'); 
+  /*const demoScript = new DemoScript('Bioreactor', 
+    'No-code construction of complex phenomena simulators is provided by Datagrok WebAutosolver tool.'); */
+
+  const doeSimpleFunc: DG.Func = await grok.functions.eval('Bioreactors:BioreactorDemo');
+  const doeSimpleFuncCall = doeSimpleFunc.prepare();
+    
+  const openModelFunc: DG.Func = await grok.functions.eval('Compute:openModelFromFuncall');
+  const openModelFuncCall = openModelFunc.prepare({'funccall': doeSimpleFuncCall});
+  openModelFuncCall.call();
   
-  await demoScript    
+  /*await demoScript    
     .step('Try', async () => 
     {
       const doeSimpleFunc: DG.Func = await grok.functions.eval('Bioreactors:BioreactorDemo');
@@ -127,5 +132,5 @@ export async function demoScript(): Promise<any>  {
     .step('Performance', async () => {} , {description: '1000 times faster than the previous version.', delay: 0})
     //.step('Complexity', async () => {} , {description: 'Each time you press "RUN", a system of 13 non-linear ordinary differential equations is solved.', delay: 0})
     .step('Complexity', async () => {} , {description: 'Each time you run computations, a system of 13 non-linear ordinary differential equations is solved.', delay: 0})
-    .start();
+    .start();*/
 }

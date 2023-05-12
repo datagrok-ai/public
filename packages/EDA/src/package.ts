@@ -41,7 +41,7 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
 }
 
 //top-menu: Tools | Data Science | Multivariate Analysis (PLS)
-//name: PLS
+//name: Multivariate Analysis (PLS)
 //description: Partial least square regression (PLS).
 //input: dataframe table
 //input: column names
@@ -72,16 +72,30 @@ export async function demoScript(): Promise<any>  {
 
   const sourceCars = carsDataframe();
   sourceCars.name = 'Cars';
-  let view: any; 
+  let view: any;
+  let dialog: any;
 
   await demoScript
     .step('Data', async () => {      
       grok.shell.addTableView(sourceCars);        
       view = grok.shell.getTableView(sourceCars.name);
     }, {description: 'Each car has many features - patterns extraction is complicated.', delay: 0})
-    .step('Model', async () => {}, {description: 'Predict car price by its other features.', delay: 0})
+    .step('Model', async () => {
+      dialog = ui.dialog({title:'Multivariate Analysis (PLS)'})
+        .add(ui.tableInput('Table', sourceCars))
+        .add(ui.columnsInput('Features', cars, features.toList, {available: undefined, checked: features.names()}))
+        .add(ui.columnInput('Names', cars, names, undefined))
+        .add(ui.columnInput('Predict', cars, predict, undefined))
+        .add(ui.intInput('Components', components, undefined))
+        .onOK(() => {
+          grok.shell.info('Multivariate analysis has been already performed.');
+        })
+        .show();
+    }, {description: 'Predict car price by its other features.', delay: 0})
     .step('Regression coeffcicients', async () => 
-      {view.addViewer(regressionCoefficientsBarChart(features, plsOutput[1]))}, 
+      {
+        dialog.close();
+        view.addViewer(regressionCoefficientsBarChart(features, plsOutput[1]))}, 
       {description: 'The feature "diesel" affects the price the most.', delay: 0})
     .step('Scores', async () => 
       {view.addViewer(scoresScatterPlot(names, plsOutput[2], plsOutput[3]))}, 
