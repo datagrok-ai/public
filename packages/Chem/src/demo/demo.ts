@@ -582,10 +582,11 @@ export async function _demoDatabases5(): Promise<void> {
 }
 
 export async function _demoScaffoldTree(): Promise<void> {
-    const tv: DG.TableView = await openMoleculeDataset('smiles.csv');
+    const tv: DG.TableView = await openMoleculeDataset('mol1K.csv');
+    grok.shell.windows.showHelp = true;
+    grok.shell.windows.help.showHelp('/help/domains/chem/scaffold-tree');
     const table: DG.DataFrame = tv.dataFrame;
     const tree = await _package.files.readAsText('scaffold-tree.json');
-    await delay(10);
     const viewer = new ScaffoldTreeViewer();
     viewer.autoGenerate = false;
     viewer.dataFrame = table;
