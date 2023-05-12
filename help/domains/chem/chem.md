@@ -120,7 +120,7 @@ Datagrok supports most popular data formats, such as SMILES, SMARTS, InChI,InChi
 
 Datagrok supports conversion of various molecule identifiers, including proprietary identifiers, allowing you to work with muliple data sources and tools. For example, you can convert a SMILES string to an InChI and vice versa.
 
-[GIF]
+<img alt="Molecule identifier conversions" src={require('./molecule-identifier-conversions.gif').default} width="800px"/> 
 
 <details>
 <summary>How to use</summary>
@@ -181,7 +181,7 @@ To perform chemical structure curation:
 
   :::
 
-![Curation](chem_curation_demo.gif "Curation")<!--replace with new UI-->
+<img alt="Curation" src={require('./chem_curation_demo.gif').default} width="800px"/>
 
 </details>
 
@@ -198,7 +198,7 @@ To perform chemical structure mutation:
 1. In the **Mutate** dialog, draw or paste the desired structure and set other parameters, including the number of mutated molecules. Each mutation step can have randomized mutation mechanisms and places (select the **Randomize** checkbox).
 1. Click **OK** to execute. A new table with mutated structures opens.
 
-[GIF]
+<img alt="Mutation" src={require('./mutate.gif').default} width="800px"/>
 
 </details>
 
@@ -357,7 +357,7 @@ Datagrok offers two analytical tools to help you analyze a collection of molecul
 
 Both similarity search and diversity search are implemented as _viewers_<!--add link when we have an article on this-->, which means they are interactive and synchronized with other viewers, such as the chemical spreadsheet or info panes. This allows you to zoom in on the area of interest and perform common operations like filtering or selection.
 
-[GIF]
+<img alt="Similarity and diversity search" src={require('./similarity-and-diversity-search.gif').default} width="800px"/>
 
 <details>
 <summary>How to use</summary>
@@ -370,7 +370,6 @@ By default, similarity search finds structures similar to the selected molecule.
   ![similarity_search_sketch_target](img/similarity_search_sketch_target.gif)
 
 To change search parameters like the similarity cutoff, fingerprints type<!--we only have Morgan?-->, or distance metric, edit the viewer's properties properties by clicking the **Gear** icon (to reveal, hover over the top of the viewer).
-
 
 You can customize each molecule tile in the similarity and diversity viewers to display data from any dataset column. To add column data, open the viewer properties and select the desired column using the **Molecule Properties** control. Color-coding applied to the selected column will be picked up and displayed in the viewers. You can choose between background or text color-coding using the **Apply Color To** control. To remove highlighting, clear the color-coding from the respective column in the dataset.
 
@@ -484,7 +483,7 @@ When you work with the same sctructure repeatedly, add it to favorites for easy 
 R-group analysis decomposes a set of molecules into a core and R-groups (ligands at certain attachment positions), and visualizes the results. The query molecule
 consists of the scaffold and ligand attachment points represented by R-groups.
 
-![gt1](img/r-group-analysis.gif  "rGroups")
+<img alt="R-Group Analysis" src={require('./img/r-group-analysis.gif').default} width="800px"/>
 
 <details>
 <summary> How to use </summary>
