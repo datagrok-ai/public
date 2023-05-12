@@ -1,28 +1,31 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {category, test, expect, delay, expectFloat, before} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, expectFloat, before} from '@datagrok-libraries/utils/src/test';
 import {assessDruglikeness, drugLikenessWidget} from '../widgets/drug-likeness';
 import {getIdMap} from '../widgets/identifiers';
-import {getPanelElements, molfileWidget} from '../widgets/molfile';
+// import {getPanelElements, molfileWidget} from '../widgets/molfile';
 import {propertiesWidget} from '../widgets/properties';
 import {getStructuralAlerts, structuralAlertsWidget} from '../widgets/structural-alerts';
 import {getRisks, toxicityWidget} from '../widgets/toxicity';
-import {SubstructureFilter} from '../widgets/chem-substructure-filter';
+// import {SubstructureFilter} from '../widgets/chem-substructure-filter';
 import * as utils from './utils';
-import $ from 'cash-dom';
+// import $ from 'cash-dom';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getDescriptorsSingle} from '../descriptors/descriptors-calculation';
 import {substructureFilter} from '../package';
 import * as CONST from './const';
-import { getRdKitModule } from '../utils/chem-common-rdkit';
-import { structure2dWidget } from '../widgets/structure2d';
-import { structure3dWidget } from '../widgets/structure3d';
+import {getRdKitModule} from '../utils/chem-common-rdkit';
+import {structure2dWidget} from '../widgets/structure2d';
+import {structure3dWidget} from '../widgets/structure3d';
+import {molV2000, molV3000} from './utils';
 
 category('cell panel', async () => {
   const molStr = 'CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OCCO';
   const molFormats = [CONST.SMILES, CONST.MOL2000, CONST.MOL3000, CONST.SMARTS, CONST.EMPTY];
+  const molFormats_: {[key: string]: string} = {smiles: CONST.SMILES, molV2000: CONST.MOL2000,
+    molV3000: CONST.MOL3000, smarts: CONST.SMARTS, empty: CONST.EMPTY};
 
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
@@ -50,7 +53,6 @@ category('cell panel', async () => {
     const idMap = await getIdMap(inchiKey);
     const expectedIdMap = await utils.loadFileAsText('tests/identifiers.json');
     expect(JSON.stringify(idMap), expectedIdMap);
-
   });
 
   test('properties', async () => {
@@ -74,18 +76,16 @@ category('cell panel', async () => {
       await structuralAlertsWidget(mol);
   });
 
-  //TODO: Check if image is returned; Visual test required
-  test('structure2d-widget', async () => {
-    for (const mol of molFormats) {
-      structure2dWidget(mol);
-    }
-  });
+  for (const k of Object.keys(molFormats_)) {
+    test('structure2d-widget.' + k, async () => {
+      structure2dWidget(molFormats_[k]);
+    });
+  }
 
   //TODO: Check if image is returned; Visual test required
   test('structure3d-widget', async () => {
-    for (const mol of molFormats) {
+    for (const mol of molFormats) 
       structure3dWidget(mol);
-    }
   });
 
 
@@ -159,8 +159,18 @@ category('cell panel', async () => {
   //   expect(df.filter.trueCount, 700);
   // });
 
-  test('gasteiger-partion-charges', async () => {
+  test('gasteiger-partion-charges.smiles', async () => {
     const parameters = {mol: molStr, contours: 10};
+    await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', parameters);
+  });
+
+  test('gasteiger-partion-charges.molV2000', async () => {
+    const parameters = {mol: molV2000, contours: 10};
+    await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', parameters);
+  });
+
+  test('gasteiger-partion-charges.molV3000', async () => {
+    const parameters = {mol: molV3000, contours: 10};
     await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', parameters);
   });
 

@@ -105,8 +105,10 @@ export async function _demoSimilaritySearch(): Promise<void> {
     let tv: DG.TableView;
     demoScript
         .step('Loading table', async () => {
-            tv = await openMoleculeDataset('sar-small.csv');
+            tv = await openMoleculeDataset('smiles.csv');
             table = tv.dataFrame;
+            grok.shell.windows.showContextPanel = false;
+            grok.shell.windows.showHelp = false;
         }, { description: 'Load dataset with molecule columns', delay: 2000 })
         .step('Adding viewer', async () => {
             await delay(1000);
@@ -132,10 +134,21 @@ export async function _demoRgroupAnalysis(): Promise<void> {
     let tv: DG.TableView;
     let sketcherInput: HTMLInputElement;
     let sketcher: Element;
+
+    const findTrellisPlot = () => {
+        for (let viewer of tv.viewers) {
+            if (viewer.type === DG.VIEWER.TRELLIS_PLOT)
+                return viewer;
+        }
+        return null;
+    }
+
     demoScript
         .step('Loading table', async () => {
             tv = await openMoleculeDataset('sar-small.csv');
             table = tv.dataFrame;
+            grok.shell.windows.showContextPanel = false;
+            grok.shell.windows.showHelp = false;
         }, { description: 'Load dataset with molecule columns', delay: 2000 })
         .step('Opening R Group Analysis viewer', async () => {
             await delay(1000);
@@ -150,14 +163,16 @@ export async function _demoRgroupAnalysis(): Promise<void> {
             await delay(1000);
             Array.from(sketcher!.getElementsByTagName('span')).find(el => el.textContent === 'OK')?.click();
             await awaitCheck(() => {
-                for (let viewer of tv.viewers) {
-                    if (viewer.type === DG.VIEWER.TRELLIS_PLOT)
-                        return true;
-                }
-                return false;
+                return !!findTrellisPlot();
             },
-                'r group analysis has not been loaded', 10000);
+                'r group analysis has not been loaded', 30000);
         }, { description: 'Trellis plot is created from R Group Analysis results', delay: 2000 })
+        .step('Changing viewer type', async () => {
+            await delay(1000);
+            findTrellisPlot()?.close();
+            table.columns.addNewFloat('Activity').init((i) => Math.random());
+            tv.scatterPlot({x: 'R1', y: 'R2', jitterSize: 4, size: 'Activity'});            
+        }, { description: 'Any other type of viewer can be easily created on R Group analysis results', delay: 2000 })
         .step('Final', async () => console.log('Finished'))
         .start();
 }
@@ -238,7 +253,9 @@ export async function _demoDatabases(): Promise<void> {
     form.style.width = '130px';
 
     const queryName = ui.divText('Similarity search with threshold', { style: { width: '140px', fontWeight: 'bold' } });
-    const runButton = ui.bigButton('RUN', () => { });
+    const runButton = ui.bigButton('RUN', async () => {
+        await runQuery();
+     });
     runButton.style.width = '130px';
     const queryDiv = ui.divV([
         queryName,
@@ -266,14 +283,16 @@ export async function _demoDatabases(): Promise<void> {
         sketcherInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
         await delay(1000);
         Array.from(sketcherDlg!.getElementsByTagName('span')).find(el => el.textContent === 'OK')?.click();
+        await delay(1000);
         runButton.classList.add('chem-demo-button-pushed');
         await delay(1000);
         runButton.classList.remove('chem-demo-button-pushed');
-        ui.empty(gridDiv);
-        loading(true);
     }
 
-    const loadQueryResults = async (t: DG.DataFrame) => {
+    const runQuery = async () => {
+        ui.empty(gridDiv);
+        loading(true);
+        const t = await grok.data.query("Chembl:patternSimilaritySearchWithThreshold", { 'pattern': object.pattern, 'threshold': `${object.threshold}` });
         await grok.data.detectSemanticTypes(t);
         const grid = t.plot.grid().root;
         loading(false);
@@ -281,19 +300,33 @@ export async function _demoDatabases(): Promise<void> {
         await delay(1500);
     }
 
-    const view = grok.shell.newView('Databases', [totalDiv]);
-    view.helpUrl = `${_package.webRoot}/README.md`
+    const search = async (id: string) => {
+        await delay(1000);
+        await loadNewQuery(id);
+        await runQuery();
+    }
 
-    setTimeout(async () => {
-        for (const id of ids) {
-            await loadNewQuery(id);
-            const t = await grok.data.query("Chembl:patternSimilaritySearchWithThreshold", { 'pattern': id, 'threshold': '0.5' })
-            await loadQueryResults(t);
-        }
-        DG.chem.currentSketcherType = sketcherType;
-    }, 500);
-
+    const demoScript = new DemoScript('Demo', 'Searching chemical databases');
+    demoScript
+        .step('Performing search in databases', async () => {
+            const view = grok.shell.addView(DG.View.create());
+            view.root.append(totalDiv);
+        }, { description: `Datagrok allows you to connect various chemical databases and easily 
+        perform searches. You can create your own requests using various inputs. 
+        As an example we will browse CheMBL database and perform substructure search`, delay: 5000 })
+        .step('Searching first substructure', async () => {
+            await search(ids[0]);
+        }, { description: 'Entering substructure via standard molecule input form and performing search by clicking \'RUN\'', delay: 2000 })
+        .step('Searching second substructure', async () => {
+            await search(ids[1]);
+        }, { description: 'Repeat the same for some other substructure'})
+        .step('Searching third substructure', async () => {
+            await search(ids[2]);
+        }, { description: 'And one more search'})
+        .step('Final', async () => { DG.chem.currentSketcherType = sketcherType; })
+        .start();
 }
+
 
 export async function _demoDatabases2(): Promise<void> { //Databases integration in property panel
     const table = _importSdf(await _package.files.readAsBytes('mol1K.sdf'))[0];

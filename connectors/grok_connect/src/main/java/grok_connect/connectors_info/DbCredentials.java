@@ -39,6 +39,7 @@ public class DbCredentials
     public static final String SECRET_KEY = "secretKey";
     public static final String VPC_ENDPOINT = "VPCEndpoint";
     public static final String META_STORE = "metaStore";
+    public static final String ENGINE_VERSION = "engineVersion";
 
     public String server;
     public String port;

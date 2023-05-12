@@ -8,8 +8,8 @@
 //input: double S4 = 5 {caption: Final S4; units: cells/mL; category: Category2}
 //input: double S5 = 210.5 {caption: Final Volume; units: L; category: Category2}
 //input: double S = 31.1 {caption: Temp.; units: °C; category: Category2}
-//output: dataframe tempOnTime { viewer: Line chart(block: 50, x: "Time (hours)", y: "Temperature (°C)", showSplitSelector: false) | Statistics(block: 50); category: CoolingRate }
-//output: dataframe tempOnTime2 { viewer: Line chart(block: 25, x: "Time (hours)", y: "Temperature (°C)", showSplitSelector: false) | Grid(block: 75); category: CoolingRate2 }
+//output: dataframe tempOnTime { viewer: Line chart(block: 100, x: "Time (hours)", y: "Temperature (°C)", showSplitSelector: false) | Statistics(block: 50); category: CoolingRate }
+//output: dataframe tempOnTime2 { viewer: Line chart(block: 100, x: "Time (hours)", y: "Temperature (°C)", showSplitSelector: false) | Grid(block: 75); category: CoolingRate2 }
 //output: double O1 {caption: Temp 1.; units: °C; category: CoolingRate2 }
 //output: dataframe tempOnTime3 { caption: "My lovely caption"; viewer: Line chart(block: 75, x: "Time (hours)", y: "Temperature (°C)", showSplitSelector: false) | Grid(block: 25); category: CoolingRate2 }
 //output: double O2 {caption: Temp 2.; units: °C; category: CoolingRate3 }

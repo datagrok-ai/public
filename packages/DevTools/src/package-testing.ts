@@ -543,6 +543,8 @@ export class TestManager extends DG.ViewBase {
         .groupBy(this.testsResultsDf.columns.names())
         .where(condition)
         .aggregate();
+      const results = testInfo.getCol('success').toList();
+      const skipped = testInfo.getCol('skipped').toList().filter((b) => b).length;
       if (unhandled) {
         testInfo.rows.addNew([false, unhandled, 0, false, 'Unhandled exceptions',
           'exceptions', testInfo.get('package', 0)]);
@@ -565,14 +567,15 @@ export class TestManager extends DG.ViewBase {
           info.appendChild(ui.divText(`Category: ${cat}`));
       } else {
         if (!isTooltip) {
-          info = ui.divV([
-            ui.button('Add to workspace', () => {
-              grok.shell.addTableView(testInfo);
-            }),
-            testInfo.plot.grid().root,
-          ]);
-        } else
-          return null;
+          const resStr = ui.div();
+          resStr.innerHTML = `<span>${results.filter((b) => b).length - skipped} passed</span>\
+          <span>${results.filter((b) => !b).length} failed</span> <span>${skipped} skipped</span>`;
+          const res = ui.divH([resStr, ui.button('Add to workspace', () => {
+            grok.shell.addTableView(testInfo);
+          })]);
+          res.classList.add('dt-res-string');
+          info = ui.divV([res, testInfo.plot.grid().root]);
+        } else return null;
       }
     }
     return info;

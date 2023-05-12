@@ -4,12 +4,10 @@ set package_dir=%cd%
 
 set dirs=^
 \..\..\js-api\ ^
-\..\..\libraries\gridext\ ^
 \..\..\libraries\utils\ ^
+\..\..\libraries\gridext\ ^
 \..\..\libraries\ml\ ^
 \..\..\libraries\bio\ ^
-\..\..\packages\Bio\ ^
-\..\..\packages\Helm\ ^
 \
 
 for %%p in (%dirs%) do cd %package_dir%\%%p & call npm install

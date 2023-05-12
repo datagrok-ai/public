@@ -252,7 +252,8 @@
 }
 
 .chem-demo-button-pushed {
-  background: var(--blue-2)!important
+  background: var(--blue-2)!important;
+  border: 2px solid var(--blue-1);
 }
 
 .chem-demo-chembl-id-selected {

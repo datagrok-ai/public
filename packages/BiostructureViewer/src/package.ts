@@ -27,6 +27,7 @@ import {BiotrackViewerApp} from './apps/biotrack-viewer-app';
 import {BiostructureAndTrackViewerApp} from './apps/biostructure-and-track-viewer-app';
 import {previewBiostructure, viewBiostructure} from './viewers/view-preview';
 import {BiostructureViewerApp} from './apps/biostructure-viewer-app';
+import {NglGlDocService} from './utils/ngl-gl-doc-service';
 
 class Package extends DG.Package {
   private _pLogger: DG.PackageLogger;
@@ -104,7 +105,7 @@ declare const window: BsvWindowType;
 //output: object result
 export function getNglGlService(): NglGlServiceBase {
   if (!(window.$nglGlService)) {
-    const svc: NglGlService = new NglGlService();
+    const svc: NglGlServiceBase = new NglGlDocService();
     window.$nglGlService = svc;
   }
 
