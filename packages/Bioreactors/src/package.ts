@@ -115,22 +115,24 @@ export async function demoScript(): Promise<any>  {
   const openModelFunc: DG.Func = await grok.functions.eval('Compute:openModelFromFuncall');
   const openModelFuncCall = openModelFunc.prepare({'funccall': doeSimpleFuncCall});
   openModelFuncCall.call();
-  
-  /*await demoScript    
-    .step('Try', async () => 
-    {
-      const doeSimpleFunc: DG.Func = await grok.functions.eval('Bioreactors:BioreactorDemo');
-      const doeSimpleFuncCall = doeSimpleFunc.prepare();
-      
-      const openModelFunc: DG.Func = await grok.functions.eval('Compute:openModelFromFuncall');
-      const openModelFuncCall = openModelFunc.prepare({'funccall': doeSimpleFuncCall});
-      openModelFuncCall.call();
-    }, {description: 'Vary inputs and press "RUN".', delay: 0})
-    //}, {description: 'Set inputs and press "RUN".', delay: 0})
-    .step('Model', async () => {} , {description: 'Only declarative equations description is required.', delay: 0})    
-    .step('Essence', async () => {} , {description: 'Simulation of controlled fab-arm exchange kinetic mechanism is performed here.', delay: 0})
-    .step('Performance', async () => {} , {description: '1000 times faster than the previous version.', delay: 0})
-    //.step('Complexity', async () => {} , {description: 'Each time you press "RUN", a system of 13 non-linear ordinary differential equations is solved.', delay: 0})
-    .step('Complexity', async () => {} , {description: 'Each time you run computations, a system of 13 non-linear ordinary differential equations is solved.', delay: 0})
-    .start();*/
+
+  const info = `# Try
+  Vary inputs and press "RUN"
+  # No-code
+  Construction of complex phenomena simulators is \n 
+  provided by Datagrok WebAutosolver tool
+  # Model
+  Only declarative equations description is required.
+  # Essence
+  Simulation of controlled fab-arm exchange kinetic\n
+  mechanism is performed here.
+  # Performance
+  1000 times faster than the previous version.
+  # Complexity
+  Each time you press "RUN", a system of 13 non-linear\n
+  ordinary differential equations is solved.\n`;
+
+  ui.dialog({title: 'Bioreactor simulation'})
+  .add(ui.markdown(info))
+  .show({x: 80, y: 100});  
 }
