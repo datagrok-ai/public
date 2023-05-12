@@ -24,12 +24,12 @@ export async function _demoChemOverview(): Promise<void> {
     let propPanel: Element;
     let canvas: HTMLCanvasElement;
     demoScript
-        .step('Loading table', async () => {
+        .step('Load molecules', async () => {
             tv = await openMoleculeDataset('sar-small.csv');
             grok.shell.windows.showHelp = false;
             table = tv.dataFrame;
         }, { description: 'Load dataset with molecule columns', delay: 3000 })
-        .step('Molecule properties', async () => {
+        .step('Calculate molecule properties', async () => {
             await delay(1000);
             grok.shell.windows.showHelp = false; //for some reason help panel appears again, need to hide it
             propPanel = document.getElementsByClassName('grok-entity-prop-panel')[0];
@@ -51,7 +51,7 @@ export async function _demoChemOverview(): Promise<void> {
             canvas = tv.grid.root.getElementsByTagName('canvas')[2];
             await scrollTable(canvas, 300, 15, 100);
         }, { description: 'Molecules are rendered immediately when scrolling dataset', delay: 2000 })
-        .step('Filtering', async () => {
+        .step('Filter molecules by substructure', async () => {
             await delay(1000);
             const filters = tv.getFiltersGroup();
             await delay(1000);
@@ -67,7 +67,7 @@ export async function _demoChemOverview(): Promise<void> {
             delay(500);
             filters.close();
         }, { description: 'Filtering dataset by substructure', delay: 2000 })
-        .step('Aligning to scaffold', async () => {
+        .step('Align by scaffold', async () => {
             await delay(1000);
             grok.shell.o = tv.dataFrame.col('smiles');
             await delay(2000);
@@ -104,18 +104,18 @@ export async function _demoSimilaritySearch(): Promise<void> {
     let table: DG.DataFrame;
     let tv: DG.TableView;
     demoScript
-        .step('Loading table', async () => {
+        .step('Load data', async () => {
             tv = await openMoleculeDataset('smiles.csv');
             table = tv.dataFrame;
             grok.shell.windows.showContextPanel = false;
             grok.shell.windows.showHelp = false;
         }, { description: 'Load dataset with molecule columns', delay: 2000 })
-        .step('Adding viewer', async () => {
+        .step('Show molecules, most similar to the current', async () => {
             await delay(1000);
             const similarityViewer = tv.addViewer('Chem Similarity Search');
             grok.shell.o = similarityViewer;
         }, { description: 'Open similarity search viewer. Selected molecule becomes target.', delay: 2000 })
-        .step('Changing target molecule', async () => {
+        .step('Change target molecule', async () => {
             table.currentRowIdx = 2;
             await delay(3000);
             table.currentRowIdx = 10;
@@ -144,13 +144,13 @@ export async function _demoRgroupAnalysis(): Promise<void> {
     }
 
     demoScript
-        .step('Loading table', async () => {
+        .step('Load data', async () => {
             tv = await openMoleculeDataset('sar-small.csv');
             table = tv.dataFrame;
             grok.shell.windows.showContextPanel = false;
             grok.shell.windows.showHelp = false;
         }, { description: 'Load dataset with molecule columns', delay: 2000 })
-        .step('Opening R Group Analysis viewer', async () => {
+        .step('Specify scaffold', async () => {
             await delay(1000);
             rGroupAnalysis(table.col('smiles')!);
             await delay(2000);
@@ -159,7 +159,7 @@ export async function _demoRgroupAnalysis(): Promise<void> {
             sketcherInput.value = 'O=C1CN=C(c2ccccc2N1)C3CCCCC3';
             sketcherInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
         }, { description: 'Open R Group Analysis viewer and enter scaffold structure', delay: 2000 })
-        .step('Running R Group Analysis', async () => {
+        .step('Analyse R Groups', async () => {
             await delay(1000);
             Array.from(sketcher!.getElementsByTagName('span')).find(el => el.textContent === 'OK')?.click();
             await awaitCheck(() => {
@@ -167,7 +167,7 @@ export async function _demoRgroupAnalysis(): Promise<void> {
             },
                 'r group analysis has not been loaded', 30000);
         }, { description: 'Trellis plot is created from R Group Analysis results', delay: 2000 })
-        .step('Changing viewer type', async () => {
+        .step('Explore results if a different viewer', async () => {
             await delay(1000);
             findTrellisPlot()?.close();
             table.columns.addNewFloat('Activity').init((i) => Math.random());
@@ -185,11 +185,11 @@ export async function _demoActivityCliffs(): Promise<void> {
     let tv: DG.TableView;
     let scatterPlot: DG.Viewer;
     demoScript
-        .step('Loading table', async () => {
+        .step('Load data', async () => {
             tv = await openMoleculeDataset('activity_cliffs.csv');
             table = tv.dataFrame;
         }, { description: 'Load dataset with molecule and activity columns', delay: 2000 })
-        .step('Running activity cliffs analysis', async () => {
+        .step('Find activity cliffs', async () => {
             const molecules = table.col('smiles')!
             const progressBar = DG.TaskBarProgressIndicator.create(`Activity cliffs running...`);
             const axesNames = getEmbeddingColsNames(table);
@@ -199,13 +199,13 @@ export async function _demoActivityCliffs(): Promise<void> {
             progressBar.close();
             await delay(1000);
         }, { description: 'Results are shown on a scatter plot', delay: 2000 })
-        .step('Opening table with cliffs', async () => {
+        .step('Explore activity cliffs', async () => {
             await delay(1000);
             (Array.from(scatterPlot!.root.children)
                 .filter((it) => it.className === 'ui-btn ui-btn-ok scatter_plot_link cliffs_grid')[0] as HTMLElement).click();
             await delay(1000);
         }, { description: 'Detected cliffs are available in a separate table', delay: 2000 })
-        .step('Selecting cliffs', async () => {
+        .step('Select cliffs', async () => {
             await delay(1000);
             let cliffsGrid: DG.Viewer | null = null;
             for (const i of tv.viewers) {
