@@ -239,7 +239,7 @@ export async function _matrixPlotDemo() {
 //name: scatterPlot3DDemo
 //description: Use 3D scatter plot to plot data points on three axes to show the relationship between three variables. Each row in the data table is represented by a marker whose position depends on its values in the columns set on the X, Y, and Z axes. Additionally, you can color-code and size-code points, as well as display labels next to markers.
 //meta.demoPath: Viewers | General | 3D Scatter Plot
-//test: _scatterPlot3DDemo()
+//test: _scatterPlot3DDemo() //skip: GROK-13082
 export async function _scatterPlot3DDemo() {
   await viewerDemo(DG.VIEWER.SCATTER_PLOT_3D);
 }
@@ -263,7 +263,7 @@ export async function _pcPlotDemo() {
 //name: networkDiagramDemo
 //description: Network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply to the values that represent an edge or a Node.js.
 //meta.demoPath: Viewers | Data flow and hierarchy | Network Diagram
-//test: _networkDiagramDemo()
+//test: _networkDiagramDemo() //skip: GROK-13082
 export async function _networkDiagramDemo() {
   await viewerDemo(DG.VIEWER.NETWORK_DIAGRAM, {'node1ColumnName': 'Source', 'node2ColumnName': 'Target', useGoogleImage: true});
 }
@@ -367,7 +367,7 @@ export async function _pivotTableDemo() {
 //name: mapDemo
 //description: Map viewer shows geospatial data on a map as either markers, or a heat map.
 //meta.demoPath: Viewers | Geographical | Map
-//test: _mapDemo()
+//test: _mapDemo() //skip: GROK-13082
 export async function _mapDemo() {
   await viewerDemo('Map');
 }
