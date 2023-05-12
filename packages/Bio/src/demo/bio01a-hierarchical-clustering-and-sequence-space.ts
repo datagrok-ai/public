@@ -28,7 +28,7 @@ export async function demoBio01aUI() {
   try {
     const demoScript = new DemoScript('Demo', 'Exploring sequence space');
     await demoScript
-      .step(`Loading DNA notation 'fasta'`, async () => {
+      .step(`Load DNA sequences`, async () => {
         [df, treeHelper, dendrogramSvc] = await Promise.all([
           _package.files.readCsv(dataFn),
           getTreeHelper(),
@@ -43,13 +43,13 @@ export async function demoBio01aUI() {
         description: `Load dataset with macromolecules of 'fasta' notation, 'DNA' alphabet.`,
         delay: 1600,
       })
-      .step('Building sequence space', async () => {
+      .step('Build sequence space', async () => {
         spViewer = await demoSequenceSpace(view, df, seqColName, method);
       }, {
         description: `Reduce sequence space dimensionality to display on 2D representation.`,
         delay: 1600
       })
-      .step('Hierarchical clustering', async () => {
+      .step('Cluster sequences', async () => {
         const seqCol: DG.Column<string> = df.getCol(seqColName);
         const seqList = seqCol.toList();
         const distance: DistanceMatrix = DistanceMatrix.calc(seqList, (aSeq: string, bSeq: string) => {
@@ -62,7 +62,7 @@ export async function demoBio01aUI() {
         description: `Perform hierarchical clustering to reveal relationships between sequences.`,
         delay: 1600,
       })
-      .step('Selection', async () => {
+      .step('Select a sequence', async () => {
         df.selection.init((idx: number) => [15].includes(idx));
       }, {
         description: `Handling selection of data frame row reflecting on linked viewers.`,

@@ -26,7 +26,7 @@ export async function demoBio05UI(): Promise<void> {
   try {
     const demoScript = new DemoScript('Demo', 'MSA and composition analysis on Helm data.');
     await demoScript
-      .step(`Loading peptides notation 'HELM'`, async () => {
+      .step(`Load peptides with non-natural aminoacids in 'HELM' notation`, async () => {
         view = grok.shell.addTableView(df = await _package.files.readCsv(helmFn));
 
         grok.shell.windows.showContextPanel = false;
@@ -35,7 +35,7 @@ export async function demoBio05UI(): Promise<void> {
         description: 'Load dataset with macromolecules of \'Helm\' notation.',
         delay: 1600,
       })
-      .step('MSA on non-natural aminoacids with PepSeA', async () => {
+      .step('Align paptides with non-natural aminoacids with PepSeA', async () => {
         helmCol = df.getCol(helmColName);
         const method: string = pepseaMethods[0];
         const gapOpen: number = 1.53;
@@ -47,7 +47,7 @@ export async function demoBio05UI(): Promise<void> {
         description: 'Multiple sequence alignment (MSA) performed with PepSeA tool operating on non-natural aminoacids as well.',
         delay: 1600,
       })
-      .step('Building sequence space', async () => {
+      .step('Build sequence space', async () => {
         const method: string = 'UMAP';
         ssViewer = (await sequenceSpaceTopMenu(df, msaHelmCol,
           'UMAP', StringMetricsNames.Levenshtein, true)) as DG.ScatterPlotViewer;
@@ -56,7 +56,7 @@ export async function demoBio05UI(): Promise<void> {
         description: 'Reduce sequence space dimensionality to display on 2D representation.',
         delay: 1600
       })
-      .step('Composition analysis on MSA results', async () => {
+      .step('Analyse sequence composition', async () => {
         wlViewer = await df.plot.fromType('WebLogo', {
           sequenceColumnName: msaHelmColName,
           maxHeight: 50,

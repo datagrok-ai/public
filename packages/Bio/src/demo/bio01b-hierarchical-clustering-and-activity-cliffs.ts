@@ -28,7 +28,7 @@ export async function demoBio01bUI() {
   try {
     const demoScript = new DemoScript('Demo', '');
     await demoScript
-      .step(`Loading DNA notation \'fasta\'`, async () => {
+      .step(`Load DNA sequences`, async () => {
         grok.shell.windows.showContextPanel = false;
         grok.shell.windows.showProperties = false;
 
@@ -48,7 +48,7 @@ export async function demoBio01bUI() {
         description: 'Load dataset with macromolecules of \'fasta\' notation, \'DNA\' alphabet.',
         delay: 1600,
       })
-      .step('Analyze for activity cliffs', async () => {
+      .step('Find activity cliffs', async () => {
         activityCliffsViewer = (await activityCliffs(
           df, df.getCol('Sequence'), df.getCol('Activity'),
           80, method)) as DG.ScatterPlotViewer;
@@ -62,7 +62,7 @@ export async function demoBio01bUI() {
         description: 'Reveal similar sequences with a cliff of activity.',
         delay: 1600
       })
-      .step('Hierarchical clustering', async () => {
+      .step('Cluster sequences', async () => {
         const seqCol: DG.Column<string> = df.getCol('sequence');
         const seqList = seqCol.toList();
         const distance: DistanceMatrix = DistanceMatrix.calc(seqList, (aSeq: string, bSeq: string) => {
