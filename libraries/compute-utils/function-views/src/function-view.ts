@@ -29,7 +29,7 @@ export abstract class FunctionView extends DG.ViewBase {
    */
   constructor(
     protected initValue: string | DG.FuncCall,
-    public options: {historyEnabled: boolean, isTabbed: boolean} = {historyEnabled: true, isTabbed: false},
+    public options: {historyEnabled?: boolean, isTabbed?: boolean} = {historyEnabled: true, isTabbed: false},
   ) {
     super();
     this.box = true;
@@ -281,29 +281,27 @@ export abstract class FunctionView extends DG.ViewBase {
    * @stability Stable
  */
   buildRibbonPanels(): HTMLElement[][] {
-    const newRibbonPanels: HTMLElement[][] = [
-      [...(this.exportConfig && this.exportConfig.supportedFormats.length > 0) ? [ui.divH([
-        ui.comboPopup(
-          ui.iconFA('arrow-to-bottom'),
-          this.exportConfig.supportedFormats,
-          async (format: string) => DG.Utils.download(this.exportConfig!.filename(format), await this.exportConfig!.export(format))),
-      ])]: [],
+    const historyButton = ui.iconFA('history', () => {
+      grok.shell.windows.showProperties = !grok.shell.windows.showProperties;
+      historyButton.classList.toggle('d4-current');
+      grok.shell.o = this.historyRoot;
+    });
+
+    historyButton.classList.add('d4-toggle-button');
+    if (grok.shell.windows.showProperties) historyButton.classList.add('d4-current');
+
+    const newRibbonPanels: HTMLElement[][] =
+      [[
+        ...(this.exportConfig && this.exportConfig.supportedFormats.length > 0) ? [
+          ui.comboPopup(
+            ui.iconFA('arrow-to-bottom'),
+            this.exportConfig.supportedFormats,
+            async (format: string) => DG.Utils.download(this.exportConfig!.filename(format), await this.exportConfig!.export(format)),
+          )]: [],
+        ...this.options.historyEnabled ? [
+          historyButton,
+        ]: [],
       ]];
-
-    if (this.func?.id) {
-      const historyButton = ui.iconFA('history', () => {
-        grok.shell.windows.showProperties = !grok.shell.windows.showProperties;
-        historyButton.classList.toggle('d4-current');
-        grok.shell.o = this.historyRoot;
-      }, 'Open function calls history');
-
-      historyButton.classList.add('d4-toggle-button');
-      if (grok.shell.windows.showProperties) historyButton.classList.add('d4-current');
-
-      newRibbonPanels.push([
-        historyButton,
-      ]);
-    }
 
     this.setRibbonPanels(newRibbonPanels);
     return newRibbonPanels;

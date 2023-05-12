@@ -18,7 +18,7 @@ export async function demoBio01UI() {
   try {
     const demoScript = new DemoScript('Demo', 'Sequence similarity / diversity search');
     await demoScript
-      .step(`Loading DNA notation 'fasta'`, async () => {
+      .step(`Load DNA sequences`, async () => {
         grok.shell.windows.showContextPanel = false;
         grok.shell.windows.showProperties = false;
 
@@ -32,7 +32,7 @@ export async function demoBio01UI() {
         description: `Load dataset with macromolecules of 'fasta' notation, 'DNA' alphabet.`,
         delay: 1200
       })
-      .step('Sequence similarity search', async () => {
+      .step('Find the most similar sequences to the current one', async () => {
         const simViewer = await df.plot.fromType('Sequence Similarity Search', {
           moleculeColumnName: 'sequence',
           similarColumnLabel: 'Similar to current',
@@ -42,7 +42,7 @@ export async function demoBio01UI() {
         description: `Add 'Sequence Similarity Search' viewer.`,
         delay: 1600
       })
-      .step('Sequence diversity search', async () => {
+      .step('Explore most diverse sequences in a dataset', async () => {
         const divViewer = await df.plot.fromType('Sequence Diversity Search', {
           moleculeColumnName: 'sequence',
           diverseColumnLabel: 'Top diverse sequences of all data'
@@ -52,16 +52,16 @@ export async function demoBio01UI() {
         description: `Add 'Sequence Deversity Search' viewer.`,
         delay: 1600
       })
-      .step('Set current row 3', async () => {
+      .step('Choose another sequence for similarity search', async () => {
         df.currentRowIdx = 3;
       }, {
         description: 'Handling current row changed of data frame showing update of similar sequences.',
         delay: 1600,
       })
-      .step('Set current row 7', async () => {
+      .step('One more sequence for similarity search', async () => {
         df.currentRowIdx = 7;
       }, {
-        description: 'Changing current row to another.',
+        description: 'Just one more sequence to search similar ones.',
         delay: 1600,
       })
       .start();
