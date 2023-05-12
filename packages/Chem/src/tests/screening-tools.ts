@@ -5,8 +5,7 @@ import * as grok from 'datagrok-api/grok';
 import {category, test, before, after, expect, expectArray} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {runStructuralAlertsDetection} from '../panels/structural-alerts';
-import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RuleSet, runStructuralAlertsDetection} from '../panels/structural-alerts';
 import {elementalAnalysis} from '../../src/package';
 import {readDataframe} from './utils';
 
@@ -84,21 +83,14 @@ category('screening tools: benchmarks', () => {
 
   test('structural alerts', async () => {
     const alertsDf = DG.DataFrame.fromCsv(await _package.files.readAsText('alert-collection.csv'));
-    const ruleSetCol = alertsDf.getCol('rule_set_name');
-    const smartsCol = alertsDf.getCol('smarts');
-    const ruleIdCol = alertsDf.getCol('rule_id');
     const rdkitModule = chemCommonRdKit.getRdKitModule();
-
-    const smartsMap = new Map<string, RDMol>();
-    for (let i = 0; i < alertsDf.rowCount; i++)
-      smartsMap.set(ruleIdCol.get(i), rdkitModule.get_qmol(smartsCol.get(i)));
-
     const sarSmall = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/smi10K.csv'));
     const smilesCol = sarSmall.getCol('smiles');
-    const ruleSetList = ['BMS', 'Dundee', 'Glaxo', 'Inpharmatica', 'LINT', 'MLSMR', 'PAINS', 'SureChEMBL'];
+    const ruleSet: RuleSet = {'BMS': true, 'Dandee': true, 'Glaxo': true, 'Inpharmatica': true, 'LINT': true,
+      'MLSMR': true, 'PAINS': true, 'SureChEMBL': true};
 
     DG.time('Structural Alerts', () => {
-      runStructuralAlertsDetection(sarSmall, ruleSetList, smilesCol, ruleSetCol, ruleIdCol, smartsMap, rdkitModule);
+      runStructuralAlertsDetection(smilesCol, ruleSet, alertsDf, rdkitModule);
     });
   }, {skipReason: '#1193'});
 

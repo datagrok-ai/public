@@ -1,69 +1,72 @@
-// This file may not be used in
-import * as ui from 'datagrok-api/ui';
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {getRdKitModule, getRdKitWebRoot} from '../utils/chem-common-rdkit';
+
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
-export async function checkForStructuralAlerts(col: DG.Column<string>): Promise<void> {
-  if (col.length > 500) {
-    grok.shell.info('Could not check structural alerts: too much data (max. 500 rows)');
-    return;
-  }
-  const df = col.dataFrame;
-  const alertsDf = await grok.data.loadTable(getRdKitWebRoot() + 'files/alert-collection.csv');
-  const ruleSetCol = alertsDf.getCol('rule_set_name');
-  const smartsCol = alertsDf.getCol('smarts');
-  const ruleIdCol = alertsDf.getCol('rule_id');
-  const alertsDfLength = alertsDf.rowCount;
-  const rdkitModule = getRdKitModule();
+export type RuleId = 'PAINS' | 'BMS' | 'SureChEMBL' | 'MLSMR' | 'Dandee' | 'Inpharmatica' | 'LINT' | 'Glaxo';
+export type RuleSet = {[rule in RuleId]: boolean};
 
-  const dialog = ui.dialog('Structural Alerts');
-  for (const ruleSet of ruleSetCol.categories)
-    dialog.add(ui.boolInput(ruleSet, true));
-
-  dialog.onOK(() => {
-    const progress = DG.TaskBarProgressIndicator.create('Checking for structural alerts...');
-    const ruleSetList = dialog.inputs.filter((input) => input.value).map((input) => input.caption);
-    if (ruleSetList.length == 0)
-      return;
-    runStructuralAlertsDetection(df, ruleSetList, col, ruleSetCol, ruleIdCol, smartsMap, rdkitModule);
-    progress.close();
-  });
-
-  dialog.show();
-
-  // Caching the molecules
-  const smartsMap = new Map<string, RDMol>();
-  for (let i = 0; i < alertsDfLength; i++)
-    smartsMap.set(ruleIdCol.get(i), rdkitModule.get_qmol(smartsCol.get(i)));
-}
-
-export function runStructuralAlertsDetection(df: DG.DataFrame, ruleSetList: string[], col: DG.Column<string>,
-  ruleSetCol: DG.Column<string>, ruleIdCol: DG.Column<string>, smartsMap: Map<string, RDMol>,
+export function runStructuralAlertsDetection(moleculeCol: DG.Column<string>, ruleSet: RuleSet, alertsDf: DG.DataFrame,
   rdkitModule: RDModule): DG.DataFrame {
-  ruleSetList.forEach((ruleSetName) => df.columns.addNewBool(ruleSetName));
+  const moleculeColCategories = moleculeCol.categories;
+  const moleculeColRawData = moleculeCol.getRawData();
+  
+  // Get the necessary columns from the alerts dataframe
+  const alertsDfLength = alertsDf.rowCount;
+  const ruleSetCol: DG.Column<string> = alertsDf.getCol('rule_set_name');
+  const ruleSetColCategories = ruleSetCol.categories;
+  const ruleSetColData = ruleSetCol.getRawData();
+  const smartsCol: DG.Column<string> = alertsDf.getCol('smarts');
+  const smartsColCategories = smartsCol.categories;
+  const smartsColData = smartsCol.getRawData();
+
+  // Cache SMARTS
+  const smartsList: RDMol[] = new Array(alertsDfLength);
+  for (let alertIdx = 0; alertIdx < alertsDfLength; alertIdx++) {
+    const currentRuleSet = ruleSetColCategories[ruleSetColData[alertIdx]] as RuleId;
+    if (ruleSet[currentRuleSet])
+      smartsList[alertIdx] = rdkitModule.get_qmol(smartsColCategories[smartsColData[alertIdx]]);
+  }
+
+  // Prepare the result storage
   const skipRuleSetList: string[] = [];
-  const originalDfLength = df.rowCount;
-  const alertsDfLength = ruleSetCol.length;
+  const moleculeCount = moleculeCol.length;
+  const resultValues: {[ruleId in RuleId]?: BitArray} = {};
+  for (const [ruleName, isIncluded] of Object.entries(ruleSet)) {
+    if (isIncluded)
+      resultValues[ruleName as RuleId] = new BitArray(moleculeCount, false);
+  }
 
-  for (let i = 0; i < originalDfLength; i++) {
-    const mol = rdkitModule.get_mol(col.get(i)!);
+  // Run the structural alerts detection
+  for (let molIdx = 0; molIdx < moleculeCount; molIdx++) {
+    const molStr = moleculeColCategories[moleculeColRawData[molIdx]];
+    if (molStr === '')
+      continue;
 
-    for (let j = 0; j < alertsDfLength; j++) {
-      const currentRuleSet = ruleSetCol.get(j)!;
-      if (!ruleSetList.includes(currentRuleSet) || skipRuleSetList.includes(currentRuleSet))
+    const mol = rdkitModule.get_mol(molStr);
+
+    for (let alertIdx = 0; alertIdx < alertsDfLength; alertIdx++) {
+      const currentRuleSet = ruleSetColCategories[ruleSetColData[alertIdx]] as RuleId;
+      if (!ruleSet[currentRuleSet] || skipRuleSetList.includes(currentRuleSet))
         continue;
 
-      const matches = mol.get_substruct_match(smartsMap.get(ruleIdCol.get(j)!)!);
-      if (matches != '{}') {
+      const matches = mol.get_substruct_match(smartsList[alertIdx]);
+      if (matches !== '{}') {
         skipRuleSetList.push(currentRuleSet);
-        df.set(currentRuleSet, i, true);
+        resultValues[currentRuleSet]!.setTrue(molIdx);
       }
     }
     skipRuleSetList.length = 0;
     mol.delete();
   }
 
-  return df;
+  for (const smarts of smartsList)
+    smarts.delete();
+
+  // Build the result dataframe
+  const resultDf = DG.DataFrame.create(moleculeCount);
+  for (const [ruleName, bitArray] of Object.entries(resultValues))
+    resultDf.columns.addNewBool(ruleName).init((i) => bitArray.getBit(i));
+
+  return resultDf;
 }
