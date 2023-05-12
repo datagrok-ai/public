@@ -215,7 +215,6 @@ export async function _barChartDemo() {
 //name: pieChartDemo
 //description: Pie chart is useful for reflecting numerical proportions. Conceptually, it is similar to a bar chart in that it represents categorical values. A pie chart shows the relative size of a given category (a slice of the pie) compared to the entire dataset (the whole pie).
 //meta.demoPath: Viewers | General | Pie Chart
-//meta.keywords: qwerty
 //test: _pieChartDemo()
 export async function _pieChartDemo() {
   await viewerDemo(DG.VIEWER.PIE_CHART);
