@@ -183,7 +183,7 @@ export function demoAppWidget(): DG.Widget {
 //name: scatterPlotDemo
 //description: A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the points are color-coded you can increase the number of displayed variables to three. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis..
 //meta.demoPath: Viewers | General | Scatter Plot
-//test: _scatterPlotDemo()
+//test: _scatterPlotDemo() //wait: 300
 export async function _scatterPlotDemo() {
   await viewerDemo(DG.VIEWER.SCATTER_PLOT);
 }
@@ -191,7 +191,7 @@ export async function _scatterPlotDemo() {
 //name: histogramDemo
 //description: A histogram is a graphical representation of the distribution of numerical data.
 //meta.demoPath: Viewers | General | Histogram
-//test: _histogramDemo()
+//test: _histogramDemo() //wait: 300
 export async function _histogramDemo() {
   await viewerDemo(DG.VIEWER.HISTOGRAM);
 }
@@ -199,7 +199,7 @@ export async function _histogramDemo() {
 //name: lineChartDemo
 //description: Line chart is a simple, two-dimensional chart with an X and Y axis, each point representing a single value. The data points are joined by a line to depict a trend, usually over time.
 //meta.demoPath: Viewers | General | Line Chart
-//test: _lineChartDemo()
+//test: _lineChartDemo() //wait: 2000
 export async function _lineChartDemo() {
   await viewerDemo(DG.VIEWER.LINE_CHART);
 }
@@ -207,7 +207,7 @@ export async function _lineChartDemo() {
 //name: barChartDemo
 //description: A bar chart presents grouped data as rectangular bars with lengths proportional to the values that they represent. Unlike histograms which you can apply to display the distribution of numerical data, bar charts are primarily designed for categorical values.
 //meta.demoPath: Viewers | General | Bar Chart
-//test: _barChartDemo()
+//test: _barChartDemo() //wait: 600
 export async function _barChartDemo() {
   await viewerDemo(DG.VIEWER.BAR_CHART, {stackColumnName: 'SEX'});
 }
@@ -215,7 +215,7 @@ export async function _barChartDemo() {
 //name: pieChartDemo
 //description: Pie chart is useful for reflecting numerical proportions. Conceptually, it is similar to a bar chart in that it represents categorical values. A pie chart shows the relative size of a given category (a slice of the pie) compared to the entire dataset (the whole pie).
 //meta.demoPath: Viewers | General | Pie Chart
-//test: _pieChartDemo()
+//test: _pieChartDemo() //wait: 300
 export async function _pieChartDemo() {
   await viewerDemo(DG.VIEWER.PIE_CHART);
 }
@@ -223,7 +223,7 @@ export async function _pieChartDemo() {
 //name: trellisPlotDemo
 //description: Trellis Charts are useful for finding the structure and patterns in complex data. A Trellis Chart is a layout of smaller charts in a grid with consistent scales. Each smaller chart represents rows that belong to a corresponding category. The grid layout looks similar to a garden trellis, hence the name Trellis Chart.
 //meta.demoPath: Viewers | Data separation | Trellis Plot
-//test: _trellisPlotDemo()
+//test: _trellisPlotDemo() //wait: 300
 export async function _trellisPlotDemo() {
   await viewerDemo(DG.VIEWER.TRELLIS_PLOT);
 }
@@ -231,7 +231,7 @@ export async function _trellisPlotDemo() {
 //name: matrixPlotDemo
 //description: Use Matrix Plot to assess the relationship among many pairs of columns at the same time.
 //meta.demoPath: Viewers | Data separation | Matrix Plot
-//test: _matrixPlotDemo()
+//test: _matrixPlotDemo() //wait: 300
 export async function _matrixPlotDemo() {
   await viewerDemo(DG.VIEWER.MATRIX_PLOT);
 }
@@ -239,7 +239,7 @@ export async function _matrixPlotDemo() {
 //name: scatterPlot3DDemo
 //description: Use 3D scatter plot to plot data points on three axes to show the relationship between three variables. Each row in the data table is represented by a marker whose position depends on its values in the columns set on the X, Y, and Z axes. Additionally, you can color-code and size-code points, as well as display labels next to markers.
 //meta.demoPath: Viewers | General | 3D Scatter Plot
-//test: _scatterPlot3DDemo() //skip: GROK-13082
+//test: _scatterPlot3DDemo() //wait: 600
 export async function _scatterPlot3DDemo() {
   await viewerDemo(DG.VIEWER.SCATTER_PLOT_3D);
 }
@@ -247,7 +247,7 @@ export async function _scatterPlot3DDemo() {
 //name: densityPlotDemo
 //description: Unlike scatter plot that visualizes each individual data point, density plot splits 2D area by bins, and color-codes it depending on the number of points that fall within this bin. The darker the color, the more points it contains.
 //meta.demoPath: Viewers | General | Density Plot
-//test: _densityPlotDemo()
+//test: _densityPlotDemo() //wait: 300
 export async function _densityPlotDemo() {
   await viewerDemo(DG.VIEWER.DENSITY_PLOT);
 }
@@ -255,7 +255,7 @@ export async function _densityPlotDemo() {
 //name: pcPlotDemo
 //description: Parallel coordinates is a common way of visualizing high-dimensional geometry and analyzing multivariate data. To show a set of points in an n-dimensional space, a backdrop is drawn consisting of n parallel lines, typically vertical and equally spaced. A point in n-dimensional space is represented as a polyline with vertices on the parallel axes; the position of the vertex on the i-th axis corresponds to the i-th coordinate of the point. This visualization is closely related to time series visualization, except that it is applied to data where the axes do not correspond to points in time, and therefore do not have a natural order. Therefore, different axis arrangements may be of interest.
 //meta.demoPath: Viewers | Statistical | PC Plot
-//test: _pcPlotDemo()
+//test: _pcPlotDemo() //wait: 300
 export async function _pcPlotDemo() {
   await viewerDemo(DG.VIEWER.PC_PLOT);
 }
@@ -263,7 +263,7 @@ export async function _pcPlotDemo() {
 //name: networkDiagramDemo
 //description: Network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply to the values that represent an edge or a Node.js.
 //meta.demoPath: Viewers | Data flow and hierarchy | Network Diagram
-//test: _networkDiagramDemo() //skip: GROK-13082
+//test: _networkDiagramDemo() //wait: 1000
 export async function _networkDiagramDemo() {
   await viewerDemo(DG.VIEWER.NETWORK_DIAGRAM, {'node1ColumnName': 'Source', 'node2ColumnName': 'Target', useGoogleImage: true});
 }
@@ -271,7 +271,7 @@ export async function _networkDiagramDemo() {
 //name: boxPlotDemo
 //description: The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the five number summary: minimum, first quartile, median, third quartile, and maximum.
 //meta.demoPath: Viewers | Statistical | Box Plot
-//test: _boxPlotDemo()
+//test: _boxPlotDemo() //wait: 300
 export async function _boxPlotDemo() {
   await viewerDemo(DG.VIEWER.BOX_PLOT);
 }
@@ -279,7 +279,7 @@ export async function _boxPlotDemo() {
 //name: treeMapDemo
 //description: Treemap displays hierarchical (tree-structured) data as nested rectangles. The branches are rectangles, then tiled with smaller rectangles representing sub-branches. Rectangles have areas proportional to a specified dimension of the data using the specified aggregation function (count by default).
 //meta.demoPath: Viewers | Data flow and hierarchy | Tree map
-//test: _treeMapDemo()
+//test: _treeMapDemo() //wait: 300
 export async function _treeMapDemo() {
   await viewerDemo(DG.VIEWER.TREE_MAP, {splitByColumnNames: ['DIS_POP', 'SEX', '']});
 }
@@ -287,7 +287,7 @@ export async function _treeMapDemo() {
 //name: heatMapDemo
 //description: Heatmap is a spreadsheet (grid) that contains colors instead of numbers and strings. For numerical data, the higher values are colored red, and the lower ones appear blue. The central value is assigned a light color so that darker colors indicate a larger distance from the center. For categorical data, each possible value is set to one color from a qualitative palette.
 //meta.demoPath: Viewers | General | Heatmap
-//test: _heatMapDemo()
+//test: _heatMapDemo() //wait: 300
 export async function _heatMapDemo() {
   await viewerDemo(DG.VIEWER.HEAT_MAP);
 }
@@ -295,7 +295,7 @@ export async function _heatMapDemo() {
 //name: statisticsDemo
 //description: Provides specified descriptive statistics for the chosen columns.
 //meta.demoPath: Viewers | Statistical | Statistics
-//test: _statisticsDemo()
+//test: _statisticsDemo() //wait: 300
 export async function _statisticsDemo() {
   await viewerDemo(DG.VIEWER.STATISTICS);
 }
@@ -303,7 +303,7 @@ export async function _statisticsDemo() {
 //name: correlationPlotDemo
 //description: A quick way to assess correlations between all columns at once. Cells are color-coded by the Pearson correlation coefficient or Spearman's rank correlation coefficient . Histograms along the diagonal show the corresponding distribution. Hover over the cell to see the corresponding scatter plot. The grid is sortable. Select columns in the view by selecting corresponding rows.
 //meta.demoPath: Viewers | Statistical |Correlation Plot
-//test: _correlationPlotDemo()
+//test: _correlationPlotDemo() //wait: 300
 export async function _correlationPlotDemo() {
   await viewerDemo(DG.VIEWER.CORR_PLOT);
 }
@@ -311,7 +311,7 @@ export async function _correlationPlotDemo() {
 //name: calendarDemo
 //description: Calendar lets you analyze longitudinal data. It needs at least one column of type DateTime.
 //meta.demoPath: Viewers | Time and date | Calendar
-//test: calendarDemo()
+//test: calendarDemo() //wait: 1000
 export async function calendarDemo() {
   await viewerDemo(DG.VIEWER.CALENDAR);
 }
@@ -319,7 +319,7 @@ export async function calendarDemo() {
 //name: gridDemo
 //description: A grid table contains a set of data that is structured in rows and columns. It allows the user to scroll in both directions and can handle large numbers of items and columns.
 //meta.demoPath: Viewers | Input and edit | Grid
-//test: _gridDemo()
+//test: _gridDemo() //wait: 300
 export async function _gridDemo() {
   await viewerDemo(DG.VIEWER.GRID);
 }
@@ -327,7 +327,7 @@ export async function _gridDemo() {
 //name: markupDemo
 //description: Use this viewer to host any text, arbitrary HTML content, or markdown-formatted text. In most casees, the viewer will auto-detect content type. Use the "mode" property to explicitly specify it.
 //meta.demoPath: Viewers | General | Markup
-//test: _markupDemo()
+//test: _markupDemo() //wait: 600
 export async function _markupDemo() {
   await viewerDemo(DG.VIEWER.MARKUP);
 }
@@ -335,7 +335,7 @@ export async function _markupDemo() {
 //name: tileViewerDemo
 //description: Visualizes rows as a collection of forms that are positioned as tiles.
 //meta.demoPath: Viewers | General | Tile Viewer
-//test: _tileViewerDemo()
+//test: _tileViewerDemo() //wait: 300
 export async function _tileViewerDemo() {
   await viewerDemo(DG.VIEWER.TILE_VIEWER);
 }
@@ -343,7 +343,7 @@ export async function _tileViewerDemo() {
 //name: formDemo
 //description: Form allows you to customize the appearance of the row by manually positioning the fields, and adding other visual elements, such as pictures or panels. A form can be used either as a stand-alone viewer, or as a row template of the Tile Viewer.
 //meta.demoPath: Viewers | Input and edit | Form
-//test: _formDemo()
+//test: _formDemo() //wait: 300
 export async function _formDemo() {
   await viewerDemo(DG.VIEWER.FORM);
 }
@@ -351,7 +351,7 @@ export async function _formDemo() {
 //name: shapeMapDemo
 //description: Shows a map that is applicable for the specified dataset. Typically, it would represent a geographical area (countries, states, counties, etc), but it also supports arbitrary shapes (such as a store floor plan, brain regions, or EEG electrodes).
 //meta.demoPath: Viewers | Geographical | Shape Map
-//test: _shapeMapDemo()
+//test: _shapeMapDemo() //wait: 2000
 export async function _shapeMapDemo() {
   await viewerDemo(DG.VIEWER.SHAPE_MAP);
 }
@@ -359,7 +359,7 @@ export async function _shapeMapDemo() {
 //name: pivotTableDemo
 //description: A pivot table is a table of grouped values that aggregates the individual items of a more extensive table within one or more discrete categories. This summary might include sums, averages, or other statistics, which the pivot table groups together using a chosen aggregation function applied to the grouped values.
 //meta.demoPath: Viewers | Statistical | Pivot Table
-//test: _pivotTableDemo()
+//test: _pivotTableDemo() //wait: 300
 export async function _pivotTableDemo() {
   await viewerDemo('Pivot table');
 }
@@ -367,7 +367,7 @@ export async function _pivotTableDemo() {
 //name: mapDemo
 //description: Map viewer shows geospatial data on a map as either markers, or a heat map.
 //meta.demoPath: Viewers | Geographical | Map
-//test: _mapDemo() //skip: GROK-13082
+//test: _mapDemo() //wait: 300
 export async function _mapDemo() {
   await viewerDemo('Map', {renderType: 'both'});
 }
