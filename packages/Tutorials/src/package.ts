@@ -239,7 +239,7 @@ export async function _matrixPlotDemo() {
 //name: scatterPlot3DDemo
 //description: Use 3D scatter plot to plot data points on three axes to show the relationship between three variables. Each row in the data table is represented by a marker whose position depends on its values in the columns set on the X, Y, and Z axes. Additionally, you can color-code and size-code points, as well as display labels next to markers.
 //meta.demoPath: Viewers | General | 3D Scatter Plot
-//test: _scatterPlot3DDemo() //wait: 600
+//test: _scatterPlot3DDemo() //wait: 2000
 export async function _scatterPlot3DDemo() {
   await viewerDemo(DG.VIEWER.SCATTER_PLOT_3D);
 }
@@ -367,7 +367,7 @@ export async function _pivotTableDemo() {
 //name: mapDemo
 //description: Map viewer shows geospatial data on a map as either markers, or a heat map.
 //meta.demoPath: Viewers | Geographical | Map
-//test: _mapDemo() //wait: 300
+//test: _mapDemo() //wait: 1000
 export async function _mapDemo() {
   await viewerDemo('Map', {renderType: 'both'});
 }
