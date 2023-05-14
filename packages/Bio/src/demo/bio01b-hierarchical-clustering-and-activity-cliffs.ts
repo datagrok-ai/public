@@ -46,7 +46,7 @@ export async function demoBio01bUI() {
         lengthGCol.width = 0;
       }, {
         description: 'Load dataset with macromolecules of \'fasta\' notation, \'DNA\' alphabet.',
-        delay: 1600,
+        delay: 2000,
       })
       .step('Find activity cliffs', async () => {
         activityCliffsViewer = (await activityCliffs(
@@ -60,7 +60,7 @@ export async function demoBio01bUI() {
         cliffsLink.click();
       }, {
         description: 'Reveal similar sequences with a cliff of activity.',
-        delay: 1600
+        delay: 2000
       })
       .step('Cluster sequences', async () => {
         const seqCol: DG.Column<string> = df.getCol('sequence');
@@ -77,7 +77,7 @@ export async function demoBio01bUI() {
         activityGCol.scrollIntoView();
       }, {
         description: 'Perform hierarchical clustering to reveal relationships between sequences.',
-        delay: 1600
+        delay: 2000
       })
       .step('Browse the cliff', async () => {
         //cliffsDfGrid.dataFrame.currentRowIdx = -1; // reset
@@ -97,7 +97,7 @@ export async function demoBio01bUI() {
         // }
       }, {
         description: 'Zoom in to explore selected activity cliff details.',
-        delay: 1600
+        delay: 2000
       })
       .start();
   } catch (err: any) {

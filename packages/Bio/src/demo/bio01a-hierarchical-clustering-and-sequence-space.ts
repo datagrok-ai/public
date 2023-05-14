@@ -41,13 +41,13 @@ export async function demoBio01aUI() {
         grok.shell.windows.showProperties = false;
       }, {
         description: `Load dataset with macromolecules of 'fasta' notation, 'DNA' alphabet.`,
-        delay: 1600,
+        delay: 2000,
       })
       .step('Build sequence space', async () => {
         spViewer = await demoSequenceSpace(view, df, seqColName, method);
       }, {
         description: `Reduce sequence space dimensionality to display on 2D representation.`,
-        delay: 1600
+        delay: 2000
       })
       .step('Cluster sequences', async () => {
         const seqCol: DG.Column<string> = df.getCol(seqColName);
@@ -60,20 +60,20 @@ export async function demoBio01aUI() {
         dendrogramSvc.injectTreeForGrid(view.grid, treeRoot, undefined, 150, undefined);
       }, {
         description: `Perform hierarchical clustering to reveal relationships between sequences.`,
-        delay: 1600,
+        delay: 2000,
       })
       .step('Select a sequence', async () => {
         df.selection.init((idx: number) => [15].includes(idx));
       }, {
         description: `Handling selection of data frame row reflecting on linked viewers.`,
-        delay: 1600,
+        delay: 2000,
       })
       .step('Select a bunch of sequences', async () => {
         df.selection.init((idx: number) => [21, 9, 58].includes(idx));
         df.currentRowIdx = 27;
       }, {
         description: 'Selecting a group of rows from a data frame to show their similarity and proximity to each other on a viewer..',
-        delay: 1600,
+        delay: 2000,
       })
       .start();
   } catch (err: any) {

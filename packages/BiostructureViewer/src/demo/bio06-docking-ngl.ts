@@ -29,7 +29,7 @@ export async function demoBio06UI(): Promise<void> {
         view = grok.shell.addTableView(df);
       }, {
         description: `Load dataset wih ligand structures (sdf).`,
-        delay: 1600,
+        delay: 2000,
       })
       .step('NGL viewer with structure', async () => {
         const pdbStr: string = await _package.files.readAsText('samples/protease.pdb');
@@ -44,14 +44,14 @@ export async function demoBio06UI(): Promise<void> {
         view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.62);
       }, {
         description: `Add NGL viewer to display PDB.`,
-        delay: 1600,
+        delay: 2000,
       })
       .step('Tracking selected, current', async () => {
         df.selection.init((rowI: number) => [3, 5, 6].includes(rowI));
         df.currentRowIdx = 1;
       }, {
         description: `Display selected and current ligands along the structure with Datagrok colors.`,
-        delay: 1600,
+        delay: 2000,
       })
       .step('Tracking mouse over', async () => {
         df.selection.init((rowI) => false);
