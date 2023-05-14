@@ -1,23 +1,23 @@
 {
 	"name": "@datagrok/bioreactors",
 	"friendlyName": "Bioreactor",
-	"version": "1.0.0",
-	"description": "Bioreactor simulation",
-	"dependencies": {
-		"datagrok-api": "latest",
+	"version": "1.1.0",
+	"description": "Simulation of controlled fab-arm exchange mechanism.",
+	"dependencies": {		
+		"@datagrok-libraries/utils": "latest",
 		"cash-dom": "latest",
-		"dayjs": "latest",
-		"@datagrok-libraries/utils": "latest"
+		"datagrok-api": "latest",
+		"dayjs": "latest"
 	},
 	"author": {
-        "name": "Viktor Makarichev",
-        "email": "vmakarichev@datagrok.ai"
-    },
+		"name": "Viktor Makarichev",
+		"email": "vmakarichev@datagrok.ai"
+	},
 	"devDependencies": {
-		"webpack": "latest",
-		"webpack-cli": "latest",
 		"ts-loader": "latest",
-		"typescript": "latest"
+		"typescript": "latest",
+		"webpack": "latest",
+		"webpack-cli": "latest"
 	},
 	"scripts": {
 		"link-all": "",
@@ -42,6 +42,6 @@
 		"directory": "packages/Bioreactors"
 	},
 	"sources": [
-        "wasm/Reactor.js"
-    ]
+		"wasm/Bioreactor.js"
+	]
 }

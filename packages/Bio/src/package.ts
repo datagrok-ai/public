@@ -38,7 +38,10 @@ import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
 import {createJsonMonomerLibFromSdf, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {LIB_PATH, LIB_STORAGE_NAME, MonomerLibHelper} from './utils/monomer-lib';
+import {
+  LIB_PATH, MonomerLibHelper,
+  LIB_STORAGE_NAME, LibSettings, getUserLibSettings, setUserLibSetting, getLibFileNameList
+} from './utils/monomer-lib';
 import {getMacromoleculeColumn} from './utils/ui-utils';
 import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
@@ -50,7 +53,6 @@ import {demoBio03UI} from './demo/bio03-atomic-level';
 import {demoBio05UI} from './demo/bio05-helm-msa-sequence-space';
 import {checkInputColumnUI} from './utils/check-input-column';
 import {multipleSequenceAlignmentUI} from './utils/multiple-sequence-alignment-ui';
-import { runKalign } from './utils/multiple-sequence-alignment';
 
 export const _package = new DG.Package();
 
@@ -151,25 +153,25 @@ export async function libraryPanel(seqColumn: DG.Column): Promise<DG.Widget> {
   //@ts-ignore
   const filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
   const divInputs: HTMLDivElement = ui.div();
-  const libFileNameList: string[] = (await grok.dapi.files.list(`${LIB_PATH}`, false, ''))
-    .map((it) => it.fileName);
+  const libFileNameList: string[] = await getLibFileNameList();
   const librariesUserSettingsSet: Set<string> = new Set<string>(Object.keys(
     await grok.dapi.userDataStorage.get(LIB_STORAGE_NAME, true)));
 
   let userStoragePromise: Promise<void> = Promise.resolve();
   for (const libFileName of libFileNameList) {
-    const libInput: DG.InputBase<boolean | null> = ui.boolInput(libFileName, librariesUserSettingsSet.has(libFileName),
+    const settings = await getUserLibSettings();
+    const libInput: DG.InputBase<boolean | null> = ui.boolInput(libFileName, !settings.exclude.includes(libFileName),
       () => {
         userStoragePromise = userStoragePromise.then(async () => {
           if (libInput.value == true) {
-            // Save checked library to user settings 'Libraries'
-            await grok.dapi.userDataStorage.postValue(LIB_STORAGE_NAME, libFileName, libFileName, true);
-            await MonomerLibHelper.instance.loadLibraries(); // from libraryPanel()
+            // Checked library remove from excluded list
+            settings.exclude = settings.exclude.filter((l) => l != libFileName);
           } else {
-            // Remove unchecked library from user settings 'Libraries'
-            await grok.dapi.userDataStorage.remove(LIB_STORAGE_NAME, libFileName, true);
-            await MonomerLibHelper.instance.loadLibraries(true); // from libraryPanel()
+            // Unchecked library add to excluded list
+            if (!settings.exclude.includes(libFileName)) settings.exclude.push(libFileName);
           }
+          await setUserLibSetting(settings);
+          await MonomerLibHelper.instance.loadLibraries(true); // from libraryPanel()
           grok.shell.info('Monomer library user settings saved.');
         });
       });

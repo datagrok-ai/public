@@ -479,7 +479,7 @@ export class HistoryPanel {
       this.onRunChosen.next(funcCall.id);
 
       const allCards = [...this.myCards, ...this.favoriteCards, ...this.sharedCards];
-      allCards.forEach((c) => c.classList.remove('clicked'));
+      allCards.forEach((c) => c.classList.remove('clicked')); ``;
 
       card.classList.add('clicked');
     });

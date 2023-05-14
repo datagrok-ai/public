@@ -20,7 +20,7 @@ export async function demoBio01UI() {
       'Similarity, Diversity',
       'Sequence similarity tracking and evaluation dataset diversity');
     await demoScript
-      .step(`Loading DNA notation 'fasta'`, async () => {
+      .step(`Load DNA sequences`, async () => {
         grok.shell.windows.showContextPanel = false;
         grok.shell.windows.showProperties = false;
 
@@ -32,9 +32,9 @@ export async function demoBio01UI() {
         // TODO: Fix column width
       }, {
         description: `Load dataset with macromolecules of 'fasta' notation, 'DNA' alphabet.`,
-        delay: 1200
+        delay: 2000
       })
-      .step('Sequence similarity search', async () => {
+      .step('Find the most similar sequences to the current one', async () => {
         const simViewer = await df.plot.fromType('Sequence Similarity Search', {
           moleculeColumnName: 'sequence',
           similarColumnLabel: 'Similar to current',
@@ -42,9 +42,9 @@ export async function demoBio01UI() {
         view.dockManager.dock(simViewer, DG.DOCK_TYPE.RIGHT, null, 'Similarity search', 0.35);
       }, {
         description: `Add 'Sequence Similarity Search' viewer.`,
-        delay: 1600
+        delay: 2000
       })
-      .step('Sequence diversity search', async () => {
+      .step('Explore most diverse sequences in a dataset', async () => {
         const divViewer = await df.plot.fromType('Sequence Diversity Search', {
           moleculeColumnName: 'sequence',
           diverseColumnLabel: 'Top diverse sequences of all data'
@@ -52,19 +52,19 @@ export async function demoBio01UI() {
         view.dockManager.dock(divViewer, DG.DOCK_TYPE.DOWN, null, 'Diversity search', 0.27);
       }, {
         description: `Add 'Sequence Deversity Search' viewer.`,
-        delay: 1600
+        delay: 2000
       })
-      .step('Set current row 3', async () => {
+      .step('Choose another sequence for similarity search', async () => {
         df.currentRowIdx = 3;
       }, {
         description: 'Handling current row changed of data frame showing update of similar sequences.',
-        delay: 1600,
+        delay: 2000,
       })
-      .step('Set current row 7', async () => {
+      .step('One more sequence for similarity search', async () => {
         df.currentRowIdx = 7;
       }, {
-        description: 'Changing current row to another.',
-        delay: 1600,
+        description: 'Just one more sequence to search similar ones.',
+        delay: 2000,
       })
       .start();
   } catch (err: any) {
