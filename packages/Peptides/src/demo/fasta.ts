@@ -24,7 +24,7 @@ export async function macromoleculeSarFastaDemoUI(): Promise<void> {
 
   demo.step('Load data', async () => {grok.shell.addTableView(simpleTable);},
     {description: 'Load the dataset containing macromolecule sequences. Notice how Datagrok detects macromolecules ' +
-      'and applies a render for better visual understanding of the data', delay: 2000});
+      'and applies renderer for better visual understanding of the data', delay: 2000});
 
   let alignedCol: DG.Column<string>;
   demo.step('Align sequences', async () => {
@@ -34,11 +34,11 @@ export async function macromoleculeSarFastaDemoUI(): Promise<void> {
     'menu Bio -> Alignment -> MSA... New msa column will be added to the table', delay: 2000});
 
   let model: PeptidesModel;
-  demo.step('Run SAR analsys', async () => {
+  demo.step('Run SAR analysis', async () => {
     model = await startAnalysis(simpleActivityCol, alignedCol, null, simpleTable, simpleScaledCol,
       C.SCALING_METHODS.MINUS_LG) as PeptidesModel;
     model.analysisView.addViewer('WebLogo');
-  }, {description: 'Run SAR analsys on aligned sequences from top menu: Bio -> SAR -> Peptides...', delay: 2000});
+  }, {description: 'Run SAR analysis on aligned sequences from top menu: Bio -> SAR -> Peptides...', delay: 2000});
 
   demo.step('Browse Mutation Cliffs', async () => {model.modifyMonomerPositionSelection('D', '13', false);},
     {description: 'Browse Mutation Cliffs by selecting corresponding cells in Mutation Cliffs viewer in the bottom',

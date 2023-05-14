@@ -466,6 +466,6 @@ export abstract class FunctionView extends DG.ViewBase {
   }
 
   protected get runningOnStart() {
-    return this.func.options['runOnStart'] === 'true';
+    return this.func.options['runOnOpen'] === 'true';
   }
 }

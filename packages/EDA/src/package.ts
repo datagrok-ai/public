@@ -25,7 +25,7 @@ export async function init(): Promise<void> {
   await _initEDAAPI();
 }
 
-//top-menu: Tools | Data Science | Principal Component Analysis
+//top-menu: Tools | Data Science | Principal Component Analysis...
 //name: PCA
 //description: Principal component analysis (PCA).
 //input: dataframe table
@@ -40,8 +40,8 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
   return renamePCAcolumns(await computePCA(table, features, components, center, scale));
 }
 
-//top-menu: Tools | Data Science | Multivariate Analysis (PLS)
-//name: PLS
+//top-menu: Tools | Data Science | Multivariate Analysis (PLS)...
+//name: Multivariate Analysis (PLS)
 //description: Partial least square regression (PLS).
 //input: dataframe table
 //input: column names
@@ -56,8 +56,8 @@ export async function PLS(table: DG.DataFrame, names: DG.Column, features: DG.Co
 }
 
 //name: MVA demo
-//description: Multidimensional data analysis using partial least squares (PLS) regression. It reduces the predictors to a smaller set of uncorrelated components and performes least squares regression on them.
-//meta.demoPath: Data analysis | Multivariate analysis
+//description: Multidimensional data analysis using partial least squares (PLS) regression. It reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them.
+//meta.demoPath: Compute | Multivariate analysis
 export async function demoScript(): Promise<any>  {
   const demoScript = new DemoScript('Partial least squares regression', 
     'Analysis of multidimensional data.'); 
@@ -71,28 +71,39 @@ export async function demoScript(): Promise<any>  {
   const plsOutput = await computePLS(cars, features, predict, components);  
 
   const sourceCars = carsDataframe();
-  grok.shell.addTableView(sourceCars);
   sourceCars.name = 'Cars';
-  let view = grok.shell.getTableView(sourceCars.name);
+  let view: any;
+  let dialog: any;
 
   await demoScript
-    .step('Data', async () => {}, {description: 'Each car has many features - patterns extraction is complicated.', delay: 5000})
-    .step('Model', async () => {}, {description: 'Predict car price by its other features.', delay: 4000})
+    .step('Data', async () => {
+      grok.shell.addTableView(sourceCars);
+      view = grok.shell.getTableView(sourceCars.name);
+    }, {description: 'Each car has many features - patterns extraction is complicated.', delay: 0})
+    .step('Model', async () => {
+      dialog = ui.dialog({title:'Multivariate Analysis (PLS)'})
+        .add(ui.tableInput('Table', sourceCars))
+        .add(ui.columnsInput('Features', cars, features.toList, {available: undefined, checked: features.names()}))
+        .add(ui.columnInput('Names', cars, names, undefined))
+        .add(ui.columnInput('Predict', cars, predict, undefined))
+        .add(ui.intInput('Components', components, undefined))
+        .onOK(() => {
+          grok.shell.info('Multivariate analysis has been already performed.');
+        })
+        .show();
+    }, {description: 'Predict car price by its other features.', delay: 0})
     .step('Regression coeffcicients', async () => 
-      {view.addViewer(regressionCoefficientsBarChart(features, plsOutput[1]))}, 
-      {description: 'The feature "diesel" affects the price the most.', delay: 5000})
+      {
+        dialog.close();
+        view.addViewer(regressionCoefficientsBarChart(features, plsOutput[1]))},
+      {description: 'The feature "diesel" affects the price the most.', delay: 0})
     .step('Scores', async () => 
       {view.addViewer(scoresScatterPlot(names, plsOutput[2], plsOutput[3]))}, 
-      {description: 'Similarities & dissimilarities: alfaromeo and mercedes are different.', delay: 4000})
+      {description: 'Similarities & dissimilarities: alfaromeo and mercedes are different.', delay: 0})
     .step('Prediction', async () => 
       {view.addViewer(predictedVersusReferenceScatterPlot(names, predict, plsOutput[0]))}, 
-      {description: 'Closer to the line means better price prediction.', delay: 4000})    
+      {description: 'Closer to the line means better price prediction.', delay: 0})
     .start();
-
-  /*await demoScript
-    .step('Run', async () => {}, {description: 'Test dataframe is loaded, and multivariate analysis is performed.', delay: 0})
-    .step('Study', async () => {addPLSvisualization(sourceCars, names, features, predict, plsOutput)}, {description: 'Investigate results.', delay: 4000})  
-    .start();*/
 }
 
 //name: Generate linear separable dataset
