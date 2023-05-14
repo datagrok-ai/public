@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {sortByReverseLength} from '../helpers';
-import {SYNTHESIZERS} from '../const';
+import {SYNTHESIZERS as FORMAT} from '../const';
 import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
 import {SequenceValidator} from './sequence-validator';
 
@@ -15,7 +15,7 @@ export class FormatDetector {
 
   private libWrapper: MonomerLibWrapper;
 
-  getFormat(): string | null {
+  getFormat(): FORMAT | null {
     const possibleFormats = this.getListOfPossibleSynthesizersByFirstMatchedCode();
     if (possibleFormats.length === 0)
       return null;
@@ -30,10 +30,10 @@ export class FormatDetector {
     return possibleFormats[outputIndices.indexOf(formatIdx)];
   }
 
-  private getListOfPossibleSynthesizersByFirstMatchedCode(): string[] {
+  private getListOfPossibleSynthesizersByFirstMatchedCode(): FORMAT[] {
     const sequence = this.sequence;
-    let synthesizers: string[] = [];
-    for (const synthesizer of Object.values(SYNTHESIZERS)) {
+    let synthesizers: FORMAT[] = [];
+    for (const synthesizer of Object.values(FORMAT)) {
       let codes = sortByReverseLength(this.libWrapper.getCodesByFormat(synthesizer));
       let start = 0;
       for (let i = 0; i < sequence.length; i++) {

@@ -13,15 +13,19 @@ export const TECHNOLOGIES = {
   SI_RNA: 'siRNA',
 };
 
-export const INPUT_FORMATS = {
-  NUCLEOTIDES: 'Nucleotides',
-  BIOSPRING: 'BioSpring',
-  GCRS: 'GCRS',
-  AXOLABS: 'Axolabs',
-  MERMADE_12: 'Mermade12',
+export enum INPUT_FORMATS {
+  NUCLEOTIDES = 'Nucleotides',
+  BIOSPRING = 'BioSpring',
+  GCRS = 'GCRS',
+  AXOLABS = 'Axolabs',
+  MERMADE_12 = 'Mermade12',
 };
 
-export const SYNTHESIZERS = {
-  ...INPUT_FORMATS,
-  LCMS: 'LCMS',
+export enum SYNTHESIZERS {
+  NUCLEOTIDES = 'Nucleotides',
+  BIOSPRING = 'BioSpring',
+  GCRS = 'GCRS',
+  AXOLABS = 'Axolabs',
+  MERMAE_12 = 'Mermade12',
+  LCMS = 'LCMS',
 };
