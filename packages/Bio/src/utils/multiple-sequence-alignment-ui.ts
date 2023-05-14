@@ -44,8 +44,8 @@ export async function multipleSequenceAlignmentUI(options: multipleSequenceAlgin
     let performAlignment: (() => Promise<DG.Column<string>>) | undefined;
 
     // TODO: allow only macromolecule colums to be chosen
-    const colInput = ui.columnInput('Sequence', table, seqCol, () => {
-      performAlignment = onColInputChange(
+    const colInput = ui.columnInput('Sequence', table, seqCol, async () => {
+      performAlignment = await onColInputChange(
         colInput.value, table, inputRootStyles, methodInput, clustersColInput, gapOpenInput, gapExtendInput);
     }
     ) as DG.InputBase<DG.Column<string>>;
@@ -55,7 +55,7 @@ export async function multipleSequenceAlignmentUI(options: multipleSequenceAlgin
     colInput.fireChanged();
     //if column is specified (from tests), run alignment and resolve with the result
     if (options.col) {
-      performAlignment = onColInputChange(
+      performAlignment = await onColInputChange(
         options.col, table, inputRootStyles, methodInput, clustersColInput, gapOpenInput, gapExtendInput);
 
       await onDialogOk(colInput, table, performAlignment, resolve, reject);
@@ -105,7 +105,7 @@ async function onDialogOk(
 }
 
 
-function onColInputChange(
+async function onColInputChange(
   col: DG.Column<string>,
   table: DG.DataFrame,
   inputRootStyles: CSSStyleDeclaration[],
@@ -113,7 +113,7 @@ function onColInputChange(
   clustersColInput: DG.InputBase<DG.Column<any> | null>,
   gapOpenInput: DG.InputBase<number | null>,
   gapExtendInput: DG.InputBase<number | null>
-): (() => Promise<DG.Column<string>>) | undefined {
+): Promise<(() => Promise<DG.Column<string>>) | undefined> {
   try {
     if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
       return;
@@ -136,6 +136,19 @@ function onColInputChange(
 
       return async () => await runPepsea(col, unusedName, methodInput.value!,
           gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value);
+        } else if (checkInputColumnUI(col, col.name, [NOTATION.SEPARATOR], [ALPHABET.UN], false)) {
+          //if the column is separator with unknown alphabet, it might be helm. check if it can be converted to helm
+          const potentialColNC = new NotationConverter(col);
+          if (!await potentialColNC.checkHelmCompatibility())
+            return;
+          const helmCol = potentialColNC.convert(NOTATION.HELM);
+          for (const inputRootStyle of inputRootStyles)
+            inputRootStyle.removeProperty('display');
+          console.log(helmCol.toList());
+          // convert to helm and assign alignment function to PepSea
+    
+          return async () => await runPepsea(helmCol, unusedName, methodInput.value!,
+            gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value);
     } else {
       for (const inputRootStyle of inputRootStyles)
         inputRootStyle.display = 'none';
