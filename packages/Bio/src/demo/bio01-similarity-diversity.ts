@@ -16,7 +16,9 @@ export async function demoBio01UI() {
   let df: DG.DataFrame;
 
   try {
-    const demoScript = new DemoScript('Demo', 'Sequence similarity / diversity search');
+    const demoScript = new DemoScript(
+      'Similarity, Diversity',
+      'Sequence similarity tracking and evaluation dataset diversity');
     await demoScript
       .step(`Load DNA sequences`, async () => {
         grok.shell.windows.showContextPanel = false;
