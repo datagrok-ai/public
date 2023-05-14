@@ -29,13 +29,6 @@ const COL_NAMES = {
 };
 
 class SequenceTranslatorPackageDetectors extends DG.Package {
-  //tags: semTypeDetector
-  //input: column col
-  //output: string semType
-  detectNucleotide(col) {
-    return null;
-  }
-
   isMatchView(view) {
     if (view.type !== DG.VIEW_TYPE.TABLE_VIEW) return false;
     const colNameList = view.dataFrame.columns.names();
@@ -46,10 +39,10 @@ class SequenceTranslatorPackageDetectors extends DG.Package {
   //tags: autostart
   //description: SequenceTranslator bootstrap
   autostart() {
-    console.debug('ST: detectors.js: autostart()');
+    // console.debug('ST: detectors.js: autostart()');
 
     const eventsOnViewAdded = (view) => {
-      console.debug('ST: detectors.js: eventsOnViewAdded() handler start');
+      // console.debug('ST: detectors.js: eventsOnViewAdded() handler start');
       if (this.isMatchView(view)) {
         // Do not await view engaging
         grok.functions.call('SequenceTranslator:engageViewForOligoSdFile', {view: view})
@@ -62,7 +55,7 @@ class SequenceTranslatorPackageDetectors extends DG.Package {
 
     const viewList = [...grok.shell.views];
     for (const view of viewList) {
-      console.debug('ST: detectors.js: autostart() view found \'' + view.name + '\'');
+      // console.debug('ST: detectors.js: autostart() view found \'' + view.name + '\'');
       eventsOnViewAdded(view);
     }
     grok.events.onViewAdded.subscribe(eventsOnViewAdded);

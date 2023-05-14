@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {JsonLoader, AxolabsStyle} from '../../model/data-loading-utils/json-loader';
+import {axolabsStyleMap} from '../../model/data-loading-utils/json-loader';
 import {
   DEFAULT_PTO, DEFAULT_SEQUENCE_LENGTH, MAX_SEQUENCE_LENGTH, USER_STORAGE_KEY, EXAMPLE_MIN_WIDTH, SS, AS, STRAND_NAME, STRANDS, TERMINAL, TERMINAL_KEYS, THREE_PRIME, FIVE_PRIME, JSON_FIELD as FIELD
 } from '../../model/axolabs/const';
@@ -18,11 +18,6 @@ type BooleanInput = DG.InputBase<boolean | null>;
 type StringInput = DG.InputBase<string | null>;   
 
 export class AxolabsTabUI {
-  constructor() {
-    this.axolabsStyle = JsonLoader.getInstance().getAxolabsStyleDictionary();
-  }
-  private axolabsStyle: AxolabsStyle;
-
   get htmlDivElement() {
     function updateModification(strand: string) {
       modificationItems[strand].innerHTML = '';
@@ -388,7 +383,7 @@ export class AxolabsTabUI {
       }
     }
 
-    const baseChoices: string[] = Object.keys(this.axolabsStyle);
+    const baseChoices: string[] = Object.keys(axolabsStyleMap);
     const defaultBase: string = baseChoices[0];
     const enumerateModifications = [defaultBase];
     const sequenceBase = ui.choiceInput('Sequence Basis', defaultBase, baseChoices, (v: string) => {

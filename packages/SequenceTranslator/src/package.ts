@@ -9,7 +9,8 @@ import {SequenceTranslatorUI} from './view/view';
 import {LIB_PATH, DEFAULT_LIB_FILENAME} from './model/data-loading-utils/const';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {JsonLoader} from './model/data-loading-utils/json-loader';
+// import {JsonLoader} from './model/data-loading-utils/json-loader';
+import {getJsonData} from './model/data-loading-utils/json-loader';
 
 class StPackage extends DG.Package {
   private _dbLoader?: DBLoaderBase;
@@ -66,7 +67,7 @@ export const _package: StPackage = new StPackage();
 
 //tags: init
 export async function initSequenceTranslator(): Promise<void> {
-  await JsonLoader.getInstance().init();
+  await getJsonData();
   await _package.initMonomerLib();
   _package.initDBLoader().then(() => {}); // Do not wait for lists loaded from the database
 }

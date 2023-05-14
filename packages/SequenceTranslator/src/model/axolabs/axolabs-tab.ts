@@ -6,10 +6,10 @@ import * as svg from 'save-svg-as-png';
 import $ from 'cash-dom';
 
 import {isOverhang} from './helpers';
-import {JsonLoader} from '../data-loading-utils/json-loader';
+import {axolabsStyleMap} from '../data-loading-utils/json-loader';
 
 export function generateExample(sequenceLength: number, sequenceBasis: string): string {
-  const AXOLABS_MAP = JsonLoader.getInstance().getAxolabsStyleDictionary();
+  const AXOLABS_MAP = axolabsStyleMap;
   const uniqueSymbols = AXOLABS_MAP[sequenceBasis].symbols.join('');
   return uniqueSymbols.repeat(Math.floor(sequenceLength / 4)) + uniqueSymbols.slice(0, sequenceLength % 4);
 }
@@ -57,7 +57,7 @@ export function translateSequence(
   let i: number = -1;
   let mainSequence = sequence.replace(/[AUGC]/g, function(x: string) {
     i++;
-    const AXOLABS_MAP = JsonLoader.getInstance().getAxolabsStyleDictionary();
+    const AXOLABS_MAP = axolabsStyleMap;
 
     const baseChoices: string[] = Object.keys(AXOLABS_MAP);
     // const defaultBase: string = baseChoices[0];

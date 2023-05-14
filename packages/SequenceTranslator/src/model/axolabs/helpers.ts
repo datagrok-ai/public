@@ -1,5 +1,5 @@
 import {NUCLEOTIDES} from '../const';
-import {JsonLoader} from '../data-loading-utils/json-loader';
+import {axolabsStyleMap} from '../data-loading-utils/json-loader';
 
 export function isOverhang(modification: string): boolean {
   return modification.slice(-3) == '(o)';
@@ -49,13 +49,13 @@ export function textInsideCircle(bases: string[], index: number): string {
 }
 
 export function fontColorVisibleOnBackground(base: string): string {
-  const AXOLABS_MAP = JsonLoader.getInstance().getAxolabsStyleDictionary();
+  const AXOLABS_MAP = axolabsStyleMap;
   const rgbIntList = AXOLABS_MAP[base].color.match(/\d+/g)!.map((e) => Number(e));
   return (rgbIntList[0] * 0.299 + rgbIntList[1] * 0.587 + rgbIntList[2] * 0.114) > 186 ? '#33333' : '#ffffff';
 }
 
 export function baseColor(base: string): string {
-  const AXOLABS_MAP = JsonLoader.getInstance().getAxolabsStyleDictionary();
+  const AXOLABS_MAP = axolabsStyleMap;
   return AXOLABS_MAP[base].color;
 }
 
