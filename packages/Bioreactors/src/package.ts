@@ -3,7 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_initReactor, _simulateBioreactor} from '../wasm/reactorAPI';
+import {_initinitBioreactor, _simulateBioreactor} from '../wasm/BioreactorAPI';
+import {customRun, showCustomRunResults} from '../wasm/demoTools';
 
 export const _package = new DG.Package();
 
@@ -14,52 +15,122 @@ export function info() {
 
 //tags: init
 export async function init() { 
-  await _initReactor(); 
+  await _initinitBioreactor(); 
 }
 
 //name: Bioreactor
-//description: Bioreactor simulation.
+//description: Controlled fab-arm exchange mechanism simulation.
 //tags: model
-//input: double initial = 0.0 {caption: initial; category: time, minutes}
-//input: double final = 1000.0 {caption: final; category: time, minutes}
-//input: double step = 0.1 {caption: step; category: time, minutes}
-//input: double _FFoxInitial = 0.268 {units: mMole/Liter; caption: FFox; category: initial values}
-//input: double _KKoxInitial = 0.268 {units: mMole/Liter; caption: KKox; category: initial values}
-//input: double _FFredInitial = 0.0 {units: mMole/Liter; caption: FFred; category: initial values}
-//input: double _KKredInitial = 0.0 {units: mMole/Liter; caption: KKred; category: initial values}
-//input: double _FfreeInitial = 0.0 {units: mMole/Liter; caption: Ffree; category: initial values}
-//input: double _KfreeInitial = 0.0 {units: mMole/Liter; caption: Kfree; category: initial values}
-//input: double _FKredInitial = 0.0 {units: mMole/Liter; caption: FKred; category: initial values}
-//input: double _FKoxInitial = 0.0 {units: mMole/Liter; caption: FKox; category: initial values}
-//input: double _MEAthiolInitial = 34.0 {units: mMole/Liter; caption: MEAthiol; category: initial values}
-//input: double _CO2Initial = 0.22 {units: ; caption: CO2; category: initial values}
-//input: double _yO2PInitial = 0.209 {units: ATMa O2; caption: yO2P; category: initial values}
-//input: double _CystamineInitial = 0.0 {units: mMole/Liter; caption: Cystamine; category: initial values}
-//input: double _VLInitial = 6.6 {units: Liters; caption: VL; category: initial values}
-//input: double _qinVal = 1.0 {units: Liters gas/minute; caption: qin; category: parameters}
-//input: double _percentO2saturationVal = 100.0 {units: Dissolved Oxygen % saturation; caption: percentO2saturation; category: parameters}
-//input: double _yO2inVal = 0.209 {units: mole fraction O2; caption: yO2in; category: parameters}
-//input: double _pKa2MEAVal = 8.19 {units: pKa of MAB thiol to thiolate; caption: pKa2MEA; category: parameters}
-//input: double _HVal = 1.072069378 {units: mmole O2/ L liquid /ATM O2; caption: H; category: parameters}
-//input: double _TVal = 300.0 {units: degK; caption: T; category: parameters}
-//input: double _RVal = 0.082 {units: Liter Atm / mole degK; caption: R; category: parameters}
-//input: double _PVal = 1.0 {units: atma; caption: P; category: parameters}
-//input: double _TimeToSwitchVal = 180.0 {units: minute; caption: TimeToSwitch; category: parameters}
-//output: dataframe solution {caption: Solution; viewer: Line chart(x: "t, time (minutes)", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
+//input: double initial = 0.0 {caption: Initial; category: Time, min}
+//input: double final = 1000.0 {caption: Final; category: Time, min}
+//input: double step = 0.1 {caption: Step; category: Time, min}
+//input: double _FFoxInitial = 0.2 {units: mmol/L; caption: FF oxidized (FFox); category: Initial values} 
+//input: double _KKoxInitial = 0.2 {units: mmol/L; caption: KK oxidized (KKox); category: Initial values}
+//input: double _FFredInitial = 0.1 {units: mmol/L; caption: FF reduced (FFred); category: Initial values}
+//input: double _KKredInitial = 0.1 {units: mmol/L; caption: KK reduced (KKred); category: Initial values}
+//input: double _FfreeInitial = 0.0 {units: mmol/L; caption: F free (Ffree); category: Initial values}
+//input: double _KfreeInitial = 0.0 {units: mmol/L; caption: K free (Kfree); category: Initial values}
+//input: double _FKredInitial = 0.0 {units: mmol/L; caption: FK reduced (FKred); category: Initial values}
+//input: double _FKoxInitial = 0.0 {units: mmol/L; caption: FK oxidized (FKox); category: Initial values}
+//input: double _MEAthiolInitial = 15.0 {units: mmol/L; caption: MEAthiol (MEA); category: Initial values}
+//input: double _CO2Initial = 0.12 {units: mmol/L; caption: Dissolved oxygen (CO2); category: Initial values}
+//input: double _yO2PInitial = 0.209 {units: atm; caption: Atm headspace (yO2P); category: Initial values}
+//input: double _CYSTInitial = 0.0 {units: mmol/L; caption: Cystamine (CYST); category: Initial values}
+//input: double _VLInitial = 7.2 {units: L; caption: Liquid volume (VL); category: Initial values}
+//input: double _qinVal = 1.0 {units: L/min; caption: Gas to headspace; category: Parameters}
+//input: double _yO2inVal = 0.21 {units: ; caption: Oxygen mole fraction; category: Parameters}
+//input: double _HVal = 1.3 {units: mmol/(L atm); caption: Henry's law constant; category: Parameters}
+//input: double _TVal = 300.0 {units: K; caption: System temperature; category: Parameters}
+//input: double _RVal = 0.082 {units: L atm/(mol K); caption: Gas constant; category: Parameters}
+//input: double _PVal = 1.0 {units: atm; caption: Headspace pressure; category: Parameters}
+//input: double _TimeToSwitchVal = 135.0 {units: min; caption: Switch mode time; category: Parameters}
+//output: dataframe dfSolution {caption: Solution; viewer: Line chart(block: 100, x: "t, time (minutes)", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
 //editor: Compute:RichFunctionViewEditor
 export async function Bioreactor(initial: number, final: number, step: number,
   _FFoxInitial: number, _KKoxInitial: number, _FFredInitial: number, _KKredInitial: number, 
   _FfreeInitial: number, _KfreeInitial: number, _FKredInitial: number, _FKoxInitial: number,
-  _MEAthiolInitial: number, _CO2Initial: number, _yO2PInitial: number, _CystamineInitial: number, 
-  _VLInitial: number, _qinVal: number, _percentO2saturationVal: number, _yO2inVal: number, 
-  _pKa2MEAVal: number, _HVal: number, _TVal: number, _RVal: number, _PVal: number, 
-  _TimeToSwitchVal: number): Promise<number>
+  _MEAthiolInitial: number, _CO2Initial: number, _yO2PInitial: number, _CYSTInitial: number, 
+  _VLInitial: number, _qinVal: number, _yO2inVal: number, _HVal: number, _TVal: number, 
+  _RVal: number, _PVal: number, _TimeToSwitchVal: number): Promise<DG.DataFrame>
 {
-  return _simulateBioreactor(initial, final, step,
-    _FFoxInitial, _KKoxInitial, _FFredInitial, _KKredInitial, 
-    _FfreeInitial, _KfreeInitial, _FKredInitial, _FKoxInitial,
-    _MEAthiolInitial, _CO2Initial, _yO2PInitial, _CystamineInitial, 
-    _VLInitial, _qinVal, _percentO2saturationVal, _yO2inVal, 
-    _pKa2MEAVal, _HVal, _TVal, _RVal, _PVal, 
-    _TimeToSwitchVal);
+  return await _simulateBioreactor(initial, final, step,
+    _FFoxInitial, _KKoxInitial, _FFredInitial, _KKredInitial, _FfreeInitial, 
+    _KfreeInitial, _FKredInitial, _FKoxInitial, _MEAthiolInitial, _CO2Initial, 
+    _yO2PInitial, _CYSTInitial, _VLInitial, _qinVal, _yO2inVal, 
+    _HVal, _TVal, _RVal, _PVal, _TimeToSwitchVal);
+}
+
+//name: Bioreactor Demo
+//description: Controlled fab-arm exchange mechanism simulation.
+//input: double initial = 0.0 {caption: Initial; category: Time, min}
+//input: double final = 1000.0 {caption: Final; category: Time, min}
+//input: double step = 0.1 {caption: Step; category: Time, min}
+//input: double _FFoxInitial = 0.2 {units: mmol/L; caption: FF oxidized (FFox); category: Initial values} 
+//input: double _KKoxInitial = 0.2 {units: mmol/L; caption: KK oxidized (KKox); category: Initial values}
+//input: double _FFredInitial = 0.1 {units: mmol/L; caption: FF reduced (FFred); category: Initial values}
+//input: double _KKredInitial = 0.1 {units: mmol/L; caption: KK reduced (KKred); category: Initial values}
+//input: double _FfreeInitial = 0.0 {units: mmol/L; caption: F free (Ffree); category: Initial values}
+//input: double _KfreeInitial = 0.0 {units: mmol/L; caption: K free (Kfree); category: Initial values}
+//input: double _FKredInitial = 0.0 {units: mmol/L; caption: FK reduced (FKred); category: Initial values}
+//input: double _FKoxInitial = 0.0 {units: mmol/L; caption: FK oxidized (FKox); category: Initial values}
+//input: double _MEAthiolInitial = 15.0 {units: mmol/L; caption: MEAthiol (MEA); category: Initial values}
+//input: double _CO2Initial = 0.12 {units: mmol/L; caption: Dissolved oxygen (CO2); category: Initial values}
+//input: double _yO2PInitial = 0.209 {units: atm; caption: Atm headspace (yO2P); category: Initial values}
+//input: double _CYSTInitial = 0.0 {units: mmol/L; caption: Cystamine (CYST); category: Initial values}
+//input: double _VLInitial = 7.2 {units: L; caption: Liquid volume (VL); category: Initial values}
+//input: double _qinVal = 1.0 {units: L/min; caption: Gas to headspace; category: Parameters}
+//input: double _yO2inVal = 0.21 {units: ; caption: Oxygen mole fraction; category: Parameters}
+//input: double _HVal = 1.3 {units: mmol/(L atm); caption: Henry's law constant; category: Parameters}
+//input: double _TVal = 300.0 {units: K; caption: System temperature; category: Parameters}
+//input: double _RVal = 0.082 {units: L atm/(mol K); caption: Gas constant; category: Parameters}
+//input: double _PVal = 1.0 {units: atm; caption: Headspace pressure; category: Parameters}
+//input: double _TimeToSwitchVal = 135.0 {units: min; caption: Switch mode time; category: Parameters}
+//output: dataframe dfSolution {caption: Solution; viewer: Line chart(block: 100, x: "t, time (minutes)", sharex: "true", multiAxis: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
+//editor: Compute:RichFunctionViewEditor
+//meta.runOnStart: true
+export async function BioreactorDemo(initial: number, final: number, step: number,
+  _FFoxInitial: number, _KKoxInitial: number, _FFredInitial: number, _KKredInitial: number, 
+  _FfreeInitial: number, _KfreeInitial: number, _FKredInitial: number, _FKoxInitial: number,
+  _MEAthiolInitial: number, _CO2Initial: number, _yO2PInitial: number, _CYSTInitial: number, 
+  _VLInitial: number, _qinVal: number, _yO2inVal: number, _HVal: number, _TVal: number, 
+  _RVal: number, _PVal: number, _TimeToSwitchVal: number): Promise<DG.DataFrame>
+{
+  return await _simulateBioreactor(initial, final, step,
+    _FFoxInitial, _KKoxInitial, _FFredInitial, _KKredInitial, _FfreeInitial, 
+    _KfreeInitial, _FKredInitial, _FKoxInitial, _MEAthiolInitial, _CO2Initial, 
+    _yO2PInitial, _CYSTInitial, _VLInitial, _qinVal, _yO2inVal, 
+    _HVal, _TVal, _RVal, _PVal, _TimeToSwitchVal);
+}
+
+//name: Bioreactor Demo
+//description: In-browser simulation of complex phenomena.
+//meta.demoPath: Bioreactors | Bioreactor
+export async function demoScript(): Promise<any>  {
+  /*const demoScript = new DemoScript('Bioreactor', 
+    'No-code construction of complex phenomena simulators is provided by Datagrok WebAutosolver tool.'); */
+
+  const doeSimpleFunc: DG.Func = await grok.functions.eval('Bioreactors:BioreactorDemo');
+  const doeSimpleFuncCall = doeSimpleFunc.prepare();
+    
+  const openModelFunc: DG.Func = await grok.functions.eval('Compute:openModelFromFuncall');
+  const openModelFuncCall = openModelFunc.prepare({'funccall': doeSimpleFuncCall});
+  openModelFuncCall.call();
+  
+  /*await demoScript    
+    .step('Try', async () => 
+    {
+      const doeSimpleFunc: DG.Func = await grok.functions.eval('Bioreactors:BioreactorDemo');
+      const doeSimpleFuncCall = doeSimpleFunc.prepare();
+      
+      const openModelFunc: DG.Func = await grok.functions.eval('Compute:openModelFromFuncall');
+      const openModelFuncCall = openModelFunc.prepare({'funccall': doeSimpleFuncCall});
+      openModelFuncCall.call();
+    }, {description: 'Vary inputs and press "RUN".', delay: 0})
+    //}, {description: 'Set inputs and press "RUN".', delay: 0})
+    .step('Model', async () => {} , {description: 'Only declarative equations description is required.', delay: 0})    
+    .step('Essence', async () => {} , {description: 'Simulation of controlled fab-arm exchange kinetic mechanism is performed here.', delay: 0})
+    .step('Performance', async () => {} , {description: '1000 times faster than the previous version.', delay: 0})
+    //.step('Complexity', async () => {} , {description: 'Each time you press "RUN", a system of 13 non-linear ordinary differential equations is solved.', delay: 0})
+    .step('Complexity', async () => {} , {description: 'Each time you run computations, a system of 13 non-linear ordinary differential equations is solved.', delay: 0})
+    .start();*/
 }

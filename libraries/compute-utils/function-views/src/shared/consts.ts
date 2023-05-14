@@ -41,3 +41,5 @@ export enum DIRECTION {
   INPUT = 'Input',
   OUTPUT = 'Output'
 };
+
+export const EXPERIMENTAL_TAG = 'experimental';

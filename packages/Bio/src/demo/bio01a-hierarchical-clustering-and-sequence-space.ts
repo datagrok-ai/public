@@ -26,9 +26,11 @@ export async function demoBio01aUI() {
   const embedCols: { [colName: string]: DG.Column<number> } = {};
 
   try {
-    const demoScript = new DemoScript('Demo', 'Exploring sequence space');
+    const demoScript = new DemoScript(
+      'Demo',
+      'Exploring sequence space of Macromolecules, comparison with hierarchical clustering results');
     await demoScript
-      .step(`Loading DNA notation 'fasta'`, async () => {
+      .step(`Load DNA sequences`, async () => {
         [df, treeHelper, dendrogramSvc] = await Promise.all([
           _package.files.readCsv(dataFn),
           getTreeHelper(),
@@ -41,15 +43,15 @@ export async function demoBio01aUI() {
         grok.shell.windows.showProperties = false;
       }, {
         description: `Load dataset with macromolecules of 'fasta' notation, 'DNA' alphabet.`,
-        delay: 1600,
+        delay: 2000,
       })
-      .step('Building sequence space', async () => {
+      .step('Build sequence space', async () => {
         spViewer = await demoSequenceSpace(view, df, seqColName, method);
       }, {
         description: `Reduce sequence space dimensionality to display on 2D representation.`,
-        delay: 1600
+        delay: 2000
       })
-      .step('Hierarchical clustering', async () => {
+      .step('Cluster sequences', async () => {
         const seqCol: DG.Column<string> = df.getCol(seqColName);
         const seqList = seqCol.toList();
         const distance: DistanceMatrix = DistanceMatrix.calc(seqList, (aSeq: string, bSeq: string) => {
@@ -60,20 +62,20 @@ export async function demoBio01aUI() {
         dendrogramSvc.injectTreeForGrid(view.grid, treeRoot, undefined, 150, undefined);
       }, {
         description: `Perform hierarchical clustering to reveal relationships between sequences.`,
-        delay: 1600,
+        delay: 2000,
       })
-      .step('Selection', async () => {
+      .step('Select a sequence', async () => {
         df.selection.init((idx: number) => [15].includes(idx));
       }, {
         description: `Handling selection of data frame row reflecting on linked viewers.`,
-        delay: 1600,
+        delay: 2000,
       })
       .step('Select a bunch of sequences', async () => {
         df.selection.init((idx: number) => [21, 9, 58].includes(idx));
         df.currentRowIdx = 27;
       }, {
         description: 'Selecting a group of rows from a data frame to show their similarity and proximity to each other on a viewer..',
-        delay: 1600,
+        delay: 2000,
       })
       .start();
   } catch (err: any) {

@@ -1,0 +1,427 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "vertical",
+    "state": {
+      "width": 1128,
+      "height": 913
+    },
+    "children": [
+      {
+        "containerType": "horizontal",
+        "state": {
+          "width": 1128,
+          "height": 642
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 335,
+              "height": 642,
+              "element": {
+                "id": "91e83e10-ed50-11ed-cf53-07e1f01adf1d",
+                "type": "Filters",
+                "look": {
+                  "#type": "FiltersLook",
+                  "filters": [
+                    {
+                      "type": "categorical",
+                      "column": "SEX",
+                      "active": true,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "categorical",
+                      "column": "CONTROL",
+                      "active": true,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "categorical",
+                      "column": "RACE",
+                      "active": true,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "categorical",
+                      "column": "SEVERITY",
+                      "active": true,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "categorical",
+                      "column": "DIS_POP",
+                      "active": true,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "histogram",
+                      "column": "AGE",
+                      "active": true,
+                      "filterOutMissingValues": false,
+                      "showMissingValuesOnly": false,
+                      "showHistogram": true,
+                      "showSlider": true,
+                      "showMinMax": false,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "histogram",
+                      "column": "HEIGHT",
+                      "active": true,
+                      "filterOutMissingValues": false,
+                      "showMissingValuesOnly": false,
+                      "showHistogram": true,
+                      "showSlider": true,
+                      "showMinMax": false,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "histogram",
+                      "column": "WEIGHT",
+                      "active": true,
+                      "filterOutMissingValues": false,
+                      "showMissingValuesOnly": false,
+                      "showHistogram": true,
+                      "showSlider": true,
+                      "showMinMax": false,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "histogram",
+                      "column": "STARTED",
+                      "active": true,
+                      "filterOutMissingValues": false,
+                      "showMissingValuesOnly": false,
+                      "showHistogram": true,
+                      "showSlider": true,
+                      "showMinMax": false,
+                      "boolInput": null
+                    }
+                  ]
+                },
+                "title": "Filters"
+              }
+            },
+            "children": []
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 792,
+              "height": 642,
+              "element": {
+                "id": "91e86520-ed50-11ed-c5fa-b3db6a48285e",
+                "type": "Trellis plot",
+                "look": {
+                  "#type": "TrellisPlotLook",
+                  "xColumnNames": [
+                    "DIS_POP"
+                  ],
+                  "yColumnNames": [
+                    "SEVERITY"
+                  ],
+                  "innerViewerLook": {
+                    "#type": "PieChartLook",
+                    "categoryColumnName": "RACE",
+                    "legendVisibility": "Never",
+                    "segmentAngleColumnName": "AGE",
+                    "segmentLengthColumnName": "AGE",
+                    "showInnerPercent": false,
+                    "showInnerLabel": false,
+                    "showColumnSelector": false,
+                    "showMouseOverRowGroup": false,
+                    "marginLeft": 5,
+                    "marginTop": 5,
+                    "marginRight": 5,
+                    "marginBottom": 5
+                  }
+                },
+                "title": "Trellis plot"
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "containerType": "horizontal",
+        "state": {
+          "width": 1128,
+          "height": 270
+        },
+        "children": [
+          {
+            "containerType": "fill",
+            "state": {
+              "width": 227,
+              "height": 270,
+              "documentManager": true
+            },
+            "children": [
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 227,
+                  "height": 270,
+                  "element": {
+                    "id": "91e88c30-ed50-11ed-d7f7-d32168e38171",
+                    "type": "Grid",
+                    "look": {
+                      "#type": "GridLook",
+                      "showAddNewRowIcon": true,
+                      "addNewRowOnLastRowEdit": true,
+                      "topLevelDefaultMenu": true,
+                      "allowColumnMenu": true,
+                      "columns": [
+                        {
+                          "width": 44,
+                          "backgroundColor": 4294440951,
+                          "customName": "",
+                          "cellType": "row header"
+                        },
+                        {
+                          "width": 145,
+                          "columnName": "USUBJID"
+                        },
+                        {
+                          "width": 53,
+                          "columnName": "AGE",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 49,
+                          "columnName": "SEX"
+                        },
+                        {
+                          "width": 81,
+                          "columnName": "RACE"
+                        },
+                        {
+                          "width": 84,
+                          "columnName": "DIS_POP"
+                        },
+                        {
+                          "width": 71,
+                          "columnName": "HEIGHT",
+                          "customFormat": "0.000",
+                          "cellType": "number",
+                          "format": "0.000"
+                        },
+                        {
+                          "width": 73,
+                          "columnName": "WEIGHT",
+                          "customFormat": "0.00",
+                          "cellType": "number",
+                          "format": "0.00"
+                        },
+                        {
+                          "width": 70,
+                          "columnName": "DEMOG"
+                        },
+                        {
+                          "width": 84,
+                          "columnName": "CONTROL",
+                          "cellType": "bool"
+                        },
+                        {
+                          "width": 170,
+                          "columnName": "STARTED",
+                          "customFormat": "M/d/yyyy",
+                          "cellType": "number",
+                          "format": "M/d/yyyy"
+                        },
+                        {
+                          "width": 84,
+                          "columnName": "SEVERITY"
+                        }
+                      ]
+                    },
+                    "title": "Grid",
+                    "default": true
+                  }
+                },
+                "children": []
+              }
+            ]
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 556,
+              "height": 270,
+              "element": {
+                "id": "91e88c30-ed50-11ed-d60d-e545d2054a4e",
+                "type": "Scatter plot",
+                "look": {
+                  "#type": "ScatterPlotLook",
+                  "xColumnName": "WEIGHT",
+                  "yColumnName": "HEIGHT",
+                  "markerMinSize": 3,
+                  "markerMaxSize": 20,
+                  "viewport": ""
+                },
+                "title": "Scatter plot"
+              }
+            },
+            "children": []
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 343,
+              "height": 270,
+              "element": {
+                "id": "91e8b340-ed50-11ed-ab07-bdf4cea44645",
+                "type": "Histogram",
+                "look": {
+                  "#type": "HistogramLook",
+                  "valueColumnName": "AGE",
+                  "showXAxis": true,
+                  "showYAxis": true,
+                  "binWidthRatio": 0.9,
+                  "marginLeft": 5,
+                  "marginRight": 5
+                },
+                "title": "Histogram"
+              }
+            },
+            "children": []
+          }
+        ]
+      }
+    ],
+    "floating": [],
+    "tableId": "7d45a650-ed50-11ed-9cb3-17b98a1b5eae",
+    "tableName": "Table"
+  },
+  "columns": [
+    {
+      "name": "DIS_POP",
+      "type": "string",
+      "id": "7d4669a0-ed50-11ed-b104-f98b30112321",
+      "friendlyName": "DIS_POP",
+      "entityTags": [
+        {
+          "tag": ".id",
+          "id": "91e8da50-ed50-11ed-b1be-0714ec60380e"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "91e8da50-ed50-11ed-a0d7-4543e8be98f0"
+        }
+      ],
+      "metaParams": {
+        ".id": "7d4669a0-ed50-11ed-b104-f98b30112321",
+        ".semantic-detection-duration": "7"
+      }
+    },
+    {
+      "name": "SEVERITY",
+      "type": "string",
+      "id": "7d46b7c0-ed50-11ed-85ed-571363281162",
+      "friendlyName": "SEVERITY",
+      "entityTags": [
+        {
+          "tag": ".id",
+          "id": "91e8da50-ed50-11ed-e777-ed25fef3380d"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "91e8da50-ed50-11ed-b8a0-8f96ccfb1006"
+        }
+      ],
+      "metaParams": {
+        ".id": "7d46b7c0-ed50-11ed-85ed-571363281162",
+        ".semantic-detection-duration": "10"
+      }
+    },
+    {
+      "name": "WEIGHT",
+      "type": "double",
+      "id": "7d4690b0-ed50-11ed-f8c5-0b31735bac02",
+      "friendlyName": "WEIGHT",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "91e8da50-ed50-11ed-c58d-0fc8de3d73bb"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "91e90160-ed50-11ed-b67f-51fa4ba3ddbf"
+        },
+        {
+          "tag": ".id",
+          "id": "91e92870-ed50-11ed-a9cf-b17b4317424a"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "91e92870-ed50-11ed-db3a-5dbc90c00495"
+        }
+      ],
+      "metaParams": {
+        "format": "0.00",
+        ".source-precision": "2",
+        ".id": "7d4690b0-ed50-11ed-f8c5-0b31735bac02",
+        ".semantic-detection-duration": "6"
+      }
+    },
+    {
+      "name": "HEIGHT",
+      "type": "double",
+      "id": "7d4690b0-ed50-11ed-b18b-cb5898673cfd",
+      "friendlyName": "HEIGHT",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "91e92870-ed50-11ed-d613-cd9b9a51913c"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "91e92870-ed50-11ed-bf0f-4beee2cfb664"
+        },
+        {
+          "tag": ".id",
+          "id": "91e92870-ed50-11ed-d225-db756a78fbc7"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "91e94f80-ed50-11ed-83dd-77034660c931"
+        }
+      ],
+      "metaParams": {
+        "format": "0.000",
+        ".source-precision": "3",
+        ".id": "7d4690b0-ed50-11ed-b18b-cb5898673cfd",
+        ".semantic-detection-duration": "6"
+      }
+    },
+    {
+      "name": "AGE",
+      "type": "int",
+      "id": "7d4669a0-ed50-11ed-a453-814b5d9463e2",
+      "friendlyName": "AGE",
+      "entityTags": [
+        {
+          "tag": ".id",
+          "id": "91e94f80-ed50-11ed-afbc-abc8792c1c87"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "91e94f80-ed50-11ed-a6ca-d7be045cbfb8"
+        }
+      ],
+      "metaParams": {
+        ".id": "7d4669a0-ed50-11ed-a453-814b5d9463e2",
+        ".semantic-detection-duration": "10"
+      }
+    }
+  ],
+  "name": "Table",
+  "friendlyName": "Table",
+  "author": {
+    "id": "fb93def0-7820-11ed-a90e-d5cadbc9618b"
+  },
+  "createdOn": "2023-05-12T13:40:34.033Z"
+}
