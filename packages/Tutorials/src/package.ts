@@ -105,6 +105,7 @@ export async function tutorialsInit() {
 //name: Demo
 //tags: app
 //description: Interactive demo of major Datagrok capabilities
+//meta.icon: images/icons/demoapp-icon.png
 export function demoApp() {
   let pathSegments = window.location.pathname.split('/');
   if (!pathSegments[pathSegments.length - 1])
@@ -298,14 +299,6 @@ export async function _boxPlotDemo() {
 //test: _treeMapDemo() //wait: 300
 export async function _treeMapDemo() {
   await viewerDemo(DG.VIEWER.TREE_MAP, {splitByColumnNames: ['DIS_POP', 'SEX', '']});
-}
-
-//name: heatMapDemo
-//description: Heatmap is a spreadsheet (grid) that contains colors instead of numbers and strings. For numerical data, the higher values are colored red, and the lower ones appear blue. The central value is assigned a light color so that darker colors indicate a larger distance from the center. For categorical data, each possible value is set to one color from a qualitative palette.
-//meta.demoPath: Viewers | General | Heatmap
-//test: _heatMapDemo() //wait: 300
-export async function _heatMapDemo() {
-  await viewerDemo(DG.VIEWER.HEAT_MAP);
 }
 
 //name: statisticsDemo

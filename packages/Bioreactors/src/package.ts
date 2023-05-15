@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {_initinitBioreactor, _simulateBioreactor} from '../wasm/BioreactorAPI';
-import {customRun, showCustomRunResults} from '../wasm/demoTools';
+import {showHelpPanel} from '../wasm/helpPanel';
 
 export const _package = new DG.Package();
 
@@ -105,7 +105,7 @@ export async function BioreactorDemo(initial: number, final: number, step: numbe
 //name: Bioreactor Demo
 //description: In-browser simulation of complex phenomena.
 //meta.demoPath: Bioreactors | Bioreactor
-export async function demoScript(): Promise<any>  {
+export async function demoBioreactor(): Promise<any>  {
   /*const demoScript = new DemoScript('Bioreactor', 
     'No-code construction of complex phenomena simulators is provided by Datagrok WebAutosolver tool.'); */
 
@@ -114,25 +114,7 @@ export async function demoScript(): Promise<any>  {
     
   const openModelFunc: DG.Func = await grok.functions.eval('Compute:openModelFromFuncall');
   const openModelFuncCall = openModelFunc.prepare({'funccall': doeSimpleFuncCall});
-  openModelFuncCall.call();
+  openModelFuncCall.call();  
 
-  const info = `# Try
-  Vary inputs and press "RUN"
-  # No-code
-  Construction of complex phenomena simulators is \n 
-  provided by Datagrok WebAutosolver tool
-  # Model
-  Only declarative equations description is required.
-  # Essence
-  Simulation of controlled fab-arm exchange kinetic\n
-  mechanism is performed here.
-  # Performance
-  1000 times faster than the previous version.
-  # Complexity
-  Each time you press "RUN", a system of 13 non-linear\n
-  ordinary differential equations is solved.\n`;
-
-  ui.dialog({title: 'Bioreactor simulation'})
-  .add(ui.markdown(info))
-  .show({x: 80, y: 100});  
+  showHelpPanel(); 
 }

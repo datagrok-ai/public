@@ -25,6 +25,7 @@ export class DemoScript {
   static currentObject: DemoScript | null = null;
 
   private _isAutomatic: boolean = false;
+  private _autoStartFirstStep: boolean = false;
   private _currentStep: number = 0;
   private _isStopped: boolean = false;
   private _isCancelled: boolean = false;
@@ -56,10 +57,12 @@ export class DemoScript {
   private _closeBtn: HTMLButtonElement = ui.button(ui.iconFA('chevron-left'), () => this._closeDock(), 'Back to demo');
 
 
-  constructor(name: string, description: string, isAutomatic: boolean = false) {
+  constructor(name: string, description: string, isAutomatic: boolean = false,
+    options?: {autoStartFirstStep?: boolean}) {
     this.name = name;
     this.description = description;
     this._isAutomatic = isAutomatic;
+    this._autoStartFirstStep = options?.autoStartFirstStep ?? false;
 
     this._progress.max = 0;
     this._progress.value = 1;
@@ -351,7 +354,13 @@ export class DemoScript {
   async start(): Promise<void> {
     this._initRoot();
     grok.shell.newView(this.name);
-    if (this._isAutomatic)
+
+    if (this._isAutomatic) {
       this._startScript();
+      return;
+    }
+
+    if (this._autoStartFirstStep)
+      await this._nextStep();
   }
 }

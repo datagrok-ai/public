@@ -19,7 +19,6 @@ const VIEWER_TABLES_PATH: {[key: string]: string} = {
   'Network diagram': 'got-s1-edges.csv',
   'Box plot': 'files/demog.csv',
   'Tree map': 'files/demog.csv',
-  'Heat map': 'files/demog.csv',
   Statistics: 'files/demog.csv',
   'Correlation plot': 'sensors/eeg.csv',
   Calendar: 'files/demog.csv',
@@ -36,6 +35,24 @@ const VIEWER_LAYOUTS_FILE_NAMES: {[key: string]: string} = {
   'Trellis plot': 'trellis-plot-viewer-layout.json',
   Form: 'form-viewer-layout.json',
 };
+
+const MARKUP_CONTENT = `
+# What's Markdown?
+
+## Table name: #{t.name}
+
+## Row count: #{t.rowCount}
+
+## Selected: #{t.selection.trueCount}
+
+## Filtered: #{t.filter.trueCount}
+
+## Current row: #{t.currentRow}
+
+## Current column: #{t.currentCol}
+
+## Current cell: #{t.currentCell}
+`;
 
 
 async function getLayout(viewerName: string, df: DG.DataFrame): Promise<DG.ViewLayout> {
@@ -90,7 +107,11 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
     await delay(500);
     viewer.props.node1ColumnName = 'Source';
     viewer.props.node2ColumnName = 'Target';
+    (viewer.root.firstElementChild as HTMLElement).style.width = '100%';
   }
+
+  if (viewerName === DG.VIEWER.MARKUP)
+    viewer.props.content = MARKUP_CONTENT;
 
   grok.shell.windows.help.showHelp(viewer.helpUrl);
 
@@ -100,8 +121,11 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
 function dockViewers(tableView: DG.TableView, viewer: DG.Viewer, viewerName: string) {
   const rootNode = tableView.dockManager.rootNode;
 
-  if (viewerName === DG.VIEWER.MARKUP)
+  if (viewerName === DG.VIEWER.MARKUP) {
+    const viewerNode = tableView.dockManager.dock(viewer, DG.DOCK_TYPE.TOP, null, viewerName, 0.7);
+    tableView.dockManager.dock(tableView.filters(), DG.DOCK_TYPE.LEFT, viewerNode, 'Filters', 0.3);
     return;
+  }
   if (viewerName === DG.VIEWER.TILE_VIEWER) {
     tableView.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, viewerName, 0.75);
     return;

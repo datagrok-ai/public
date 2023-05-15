@@ -13,6 +13,8 @@ import {
 import {mmDistanceFunctions, MmDistanceFunctionsNames}
   from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {mmDistanceFunctionType} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
+import {getMonomerLibHelper, IMonomerLibHelper} from '../monomer-works/monomer-utils';
+import {HELM_POLYMER_TYPE} from './const';
 
 /** Class for handling notation units in Macromolecule columns */
 export class UnitsHandler {
@@ -113,6 +115,10 @@ export class UnitsHandler {
     return alphabet;
   }
 
+  protected get helmCompatible(): string | undefined {
+    return this.column.getTag(TAGS.isHelmCompatible);
+  }
+
   public getAlphabetSize(): number {
     if (this.notation == NOTATION.HELM || this.alphabet == ALPHABET.UN) {
       const alphabetSizeStr = this.column.getTag(TAGS.alphabetSize);
@@ -165,6 +171,7 @@ export class UnitsHandler {
 
   public isMsa(): boolean { return this.aligned ? this.aligned.toUpperCase().includes('MSA') : false; }
 
+  public isHelmCompatible(): boolean { return this.helmCompatible === 'true'; }
   /** Associate notation types with the corresponding units */
   /**
    * @return {NOTATION}     Notation associated with the units type
@@ -300,6 +307,37 @@ export class UnitsHandler {
 
   public getDistanceFunction(): mmDistanceFunctionType {
     return mmDistanceFunctions[this.getDistanceFunctionName()]();
+  }
+
+  // checks if the separator notation is compatible with helm library
+  public async checkHelmCompatibility(): Promise<boolean> {
+    // check first for the column tag to avoid extra processing
+    if (this.column.tags.has(TAGS.isHelmCompatible))
+      return this.column.getTag(TAGS.isHelmCompatible) === 'true';
+
+    // get the monolmer lib and check against the column
+    const monomerLibHelper: IMonomerLibHelper = await getMonomerLibHelper();
+    const bioLib = monomerLibHelper.getBioLib();
+    // retrieve peptides
+    const peptides = bioLib.getMonomerNamesByType(HELM_POLYMER_TYPE.PEPTIDE.toString());
+    // convert the peptides list to a set for faster lookup
+    const peptidesSet = new Set(peptides);
+    // get splitter for given separator and check if all monomers are in the lib
+    const splitterFunc = getSplitterWithSeparator(this.separator!);
+    // iterate over the columns, split them and check if all monomers are in the lib
+    //TODO maybe add missing threshhold so that if there are not too many missing monomers
+    // the column is still considered helm compatible
+    for (const row of this.column.categories) {
+      const monomers = splitterFunc(row);
+      for (const monomer of monomers) {
+        if (!peptidesSet.has(monomer)) {
+          this.column.setTag(TAGS.isHelmCompatible, 'false');
+          return false;
+        }
+      }
+    }
+    this.column.setTag(TAGS.isHelmCompatible, 'true');
+    return true;
   }
 
   public constructor(col: DG.Column) {
