@@ -19,7 +19,6 @@ const VIEWER_TABLES_PATH: {[key: string]: string} = {
   'Network diagram': 'got-s1-edges.csv',
   'Box plot': 'files/demog.csv',
   'Tree map': 'files/demog.csv',
-  'Heat map': 'files/demog.csv',
   Statistics: 'files/demog.csv',
   'Correlation plot': 'sensors/eeg.csv',
   Calendar: 'files/demog.csv',
