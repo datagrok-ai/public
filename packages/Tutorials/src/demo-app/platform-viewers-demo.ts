@@ -90,6 +90,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
     await delay(500);
     viewer.props.node1ColumnName = 'Source';
     viewer.props.node2ColumnName = 'Target';
+    (viewer.root.firstElementChild as HTMLElement).style.width = '100%';
   }
 
   grok.shell.windows.help.showHelp(viewer.helpUrl);
