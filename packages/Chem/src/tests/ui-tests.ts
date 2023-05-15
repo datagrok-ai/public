@@ -22,7 +22,7 @@ category('UI', () => {
     grok.shell.topMenu.find('Chem').group('Search').find('Similarity Search...').click();
     await awaitCheck(() => document.querySelector('.d4-chem-similarity-search') !== null, 'cannot load Similarity Search viewer', 2000);
     const similarityViewer = Array.from(v.viewers)[1];
-    await awaitCheck(() => similarityViewer.root.querySelectorAll('.chem-canvas').length === 10,
+    await awaitCheck(() => similarityViewer.root.querySelectorAll('.chem-canvas').length === 12,
       'molecules number inside Similarity viewer is different than expected', 3000);
     similarityViewer.props.distanceMetric = 'Dice';
     similarityViewer.props.limit = 5;
@@ -46,7 +46,7 @@ category('UI', () => {
     grok.shell.topMenu.find('Chem').group('Search').find('Diversity Search...').click();
     await awaitCheck(() => document.querySelector('.d4-chem-diversity-search') !== null, 'cannot load Diversity Search viewer', 2000);
     const dsvRoot = document.querySelector('.d4-chem-diversity-search') as HTMLElement;
-    await awaitCheck(() => dsvRoot.querySelectorAll('.chem-canvas').length === 10, 'molecules number != 10', 3000);
+    await awaitCheck(() => dsvRoot.querySelectorAll('.chem-canvas').length === 12, 'molecules number != 12', 3000);
     const dsv = Array.from(v.viewers)[1];
     dsv.setOptions({
       distanceMetric: 'Dice',

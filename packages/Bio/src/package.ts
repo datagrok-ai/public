@@ -295,10 +295,10 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     macroMolecule,
     null,
     axesNames,
-    'Activity cliffs',
+    'Activity cliffs', //scatterTitle
     activities,
     similarity,
-    'Tanimoto',
+    columnDistanceMetric, //similarityMetric
     methodName,
     DG.SEMTYPE.MACROMOLECULE,
     tags,
