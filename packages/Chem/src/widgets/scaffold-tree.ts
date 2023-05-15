@@ -201,7 +201,7 @@ async function updateVisibleNodesHits(thisViewer: ScaffoldTreeViewer) {
   const visibleNodes : Array<TreeViewGroup> = [];
   fillVisibleNodes(thisViewer.tree, visibleNodes);
 
-  const start = Math.floor(thisViewer.tree.root.scrollTop / thisViewer.sizesMap[thisViewer.size].width);
+  const start = Math.floor(thisViewer.tree.root.scrollTop / thisViewer.sizesMap[thisViewer.size].height);
   let end = start + Math.ceil(thisViewer.root.offsetHeight / thisViewer.sizesMap[thisViewer.size].height);
   if (end >= visibleNodes.length)
     end = visibleNodes.length - 1;
@@ -348,9 +348,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   treeEncode: string;
 
   sizesMap: {[key: string]: {[key: string]: number}} = {
-    'small': {height: 80, width: 100},
+    'small': {height: 70, width: 80},
     'normal': {height: 90, width: 120},
-    'large': {height: 100, width: 180}};
+    'large': {height: 100, width: 180}}; 
   size: string;
 
   constructor() {
@@ -361,7 +361,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this.size = this.string('size', Object.keys(this.sizesMap)[2], {choices: Object.keys(this.sizesMap)});
     this.tree.root.classList.add('scaffold-tree-viewer');
-    this.tree.root.classList.add(this.size);
+    this.tree.root.classList.add(`scaffold-tree-${this.size}`);
     this.helpUrl = '/help/visualize/viewers/scaffold-tree.md';
 
     const dataFrames = grok.shell.tables;
@@ -1299,7 +1299,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   updateSizes() {
     let lastElement = this.tree.root.classList[this.tree.root.classList.length - 1];
     this.tree.root.classList.remove(lastElement);
-    this.tree.root.classList.add(this.size);
+    this.tree.root.classList.add(`scaffold-tree-${this.size}`);
   }
 
   updateUI() {
