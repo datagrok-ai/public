@@ -3,10 +3,10 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-export function malformedDataWarning(fingerprintCol: (BitArray | null)[], dataframe: DG.DataFrame): number[] {
+export function malformedDataWarning(fingerprintCol: (BitArray | null)[], column: DG.Column): number[] {
   const malformedData: number[] = [];
   for (let i = 0; i < fingerprintCol.length; i++) {
-    if (!fingerprintCol[i])
+    if (!fingerprintCol[i] && !column.isNone(i))
       malformedData.push(i);
   }
   if (malformedData.length) {
@@ -15,7 +15,7 @@ export function malformedDataWarning(fingerprintCol: (BitArray | null)[], datafr
     const message = `${malformedData.length} molecules with indexes ${malformedIdxsForError} are possibly malformed and are not included in analysis`;
     const selectRowsButton = ui.button('Select', () => {
       for (const i of malformedData)
-        dataframe.selection.set(i!, true);
+        column.dataFrame.selection.set(i!, true);
     })
     grok.shell.warning(ui.div([ui.divText(message), selectRowsButton]));
   }

@@ -10,7 +10,7 @@ using [Datagrok packages](../develop.md#packages). Many features of the platform
 plugins. It is straightforward to create your own ones, using
 the [existing packages](https://github.com/datagrok-ai/public/tree/master/packages) as examples, and following
 our [guides](../develop.md), [API samples](https://public.datagrok.ai/js)
-, [how-to's](../how-to/develop-custom-viewer.md), and [exercises](../exercises/exercises.mdx).
+, [how-to's](../how-to/develop-custom-viewer.md), and [exercises](../exercises/exercises.md).
 
 ## What can be extended
 
@@ -47,7 +47,7 @@ With using our [JavaScript API](../js-api.md), you can create your own:
 Learn more about the platform by watching our educational content and hands-on practicing:
 
 * [Getting Started Video Walkthrough](../getting-started.md#6-videos)
-* [Development Exercises](../exercises/exercises.mdx) to practice developing on Datagrok in a good sequence and through an
+* [Development Exercises](../exercises/exercises.md) to practice developing on Datagrok in a good sequence and through an
   interesting story
 * [Community forum](https://community.datagrok.ai/) to discuss anything
 

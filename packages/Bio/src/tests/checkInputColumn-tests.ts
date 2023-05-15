@@ -2,11 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-
 import {after, before, category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
 
-import {checkInputColumn, multipleSequenceAlignmentAny} from '../package';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {checkInputColumn} from '../utils/check-input-column';
 
 category('checkInputColumn', () => {
   const csv = `seq
@@ -16,7 +15,7 @@ seq3,
 seq4`;
 
   test('testMsaPos', async () => {
-    const func: DG.Func = DG.Func.find({package: 'Bio', name: 'multipleSequenceAlignmentAny'})[0];
+    const func: DG.Func = DG.Func.find({package: 'Bio', name: 'multipleSequenceAlignmentDialog'})[0];
     const funcInputColumnProperty: DG.Property = func.inputs.find((i) => i.name == 'sequence')!;
 
     const k = 11;
@@ -68,7 +67,7 @@ seq4`;
   });
 
   test('testGetActionFunctionMeta', async () => {
-    const func: DG.Func = DG.Func.find({package: 'Bio', name: 'multipleSequenceAlignmentAny'})[0];
+    const func: DG.Func = DG.Func.find({package: 'Bio', name: 'multipleSequenceAlignmentDialog'})[0];
     const sequenceInput: DG.Property = func.inputs.find((i) => i.name == 'sequence')!;
     const k = 11;
   });

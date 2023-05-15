@@ -8,7 +8,7 @@ export class UsageWidget extends DG.Widget {
   caption: string;
   order: string;
 
-  constructor(header: HTMLDivElement) {
+  constructor() {
     const uniqueUsersDiv = ui.box(null, {style: {margin: '0 12px 0 12px'}});
     const userEventsDiv = ui.box(null, {style: {margin: '0 12px 0 12px'}});
     const userErrorsDiv = ui.box(null, {style: {margin: '0 12px 0 12px'}});

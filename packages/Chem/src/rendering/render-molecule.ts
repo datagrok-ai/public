@@ -63,7 +63,7 @@ export function renderMolecule(
         });
         menu.item('Explore', () => {
           grok.shell.o = DG.SemanticValue.fromValueType(molStr, DG.SEMTYPE.MOLECULE);
-        });
+        }, null);
         menu.show();
       },
       'More',

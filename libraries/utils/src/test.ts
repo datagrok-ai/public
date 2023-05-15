@@ -207,19 +207,29 @@ export async function initAutoTests(packageId: string, module?: any) {
   }
   const moduleAutoTests = [];
   const packFunctions = await grok.dapi.functions.filter(`package.id = "${packageId}"`).list();
-  const reg = new RegExp(/.*\/\/\s*skip[:\s]*(.*)$/);
+  const reg = new RegExp(/skip:\s*([^,\s]+)|wait:\s*(\d+)/g);
   for (const f of packFunctions) {
     const tests = f.options['test'];
     if (!(tests && Array.isArray(tests) && tests.length)) continue;
     for (let i = 0; i < tests.length; i++) {
-      const skipReasons = (tests[i] as string).match(reg);
-      let skipReason;
-      if (skipReasons && skipReasons?.length > 1) skipReason = skipReasons[1];
+      const res = (tests[i] as string).matchAll(reg);
+      const map: {skip?: string, wait?: number} = {};
+      Array.from(res).forEach((arr) => {
+        if (arr[0].startsWith('skip')) map['skip'] = arr[1];
+        else if (arr[0].startsWith('wait')) map['wait'] = parseInt(arr[2]);
+      });
       moduleAutoTests.push(new Test(autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
-        const res = await grok.functions.eval(addNamespace(tests[i], f));
-        // eslint-disable-next-line no-throw-literal
-        if (res !== true) throw `Failed: ${tests[i]}`;
-      }, {skipReason: skipReason}));
+        try {
+          const res = await grok.functions.eval(addNamespace(tests[i], f));
+          if (map.wait) await delay(map.wait);
+          // eslint-disable-next-line no-throw-literal
+          if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
+        } catch (e) {
+          throw e;
+        } finally {
+          grok.shell.closeAll();
+        }
+      }, {skipReason: map.skip}));
     }
   }
   wasRegistered[packageId] = true;
@@ -310,6 +320,8 @@ async function execTest(t: Test, predicate: string | undefined) {
     r = {success: false, result: x.toString(), ms: 0, skipped: false};
   }
   const stop = new Date();
+  // grok.shell.closeAll();
+  // DG.Balloon.closeAll();
   // @ts-ignore
   r.ms = stop - start;
   if (!skip)

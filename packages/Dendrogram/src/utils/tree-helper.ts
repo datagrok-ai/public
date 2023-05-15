@@ -7,9 +7,13 @@ import {DistanceMetric, isLeaf, NodeCuttedType, NodeType} from '@datagrok-librar
 import {NO_NAME_ROOT, parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
-import {getDistanceMatrixForNumerics, getDistanceMatrixForSequences} from '../workers/distance-worker-creator';
+import {
+  DistanceMatrixWorker
+} from '../workers/distance-matrix-calculator';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
-
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {MmDistanceFunctionsNames} from
+  '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 type TreeLeafDict = { [nodeName: string]: NodeType };
 type DataNodeDict = { [nodeName: string]: number };
 type NodeNameCallback = (nodeName: string) => void;
@@ -460,22 +464,38 @@ export class TreeHelper implements ITreeHelper {
     return treeRoot;
   }
 
-  async calcDistanceMatrix(df: DG.DataFrame, colNames: string[], method: DistanceMetric = DistanceMetric.Euclidean) {
+  async calcDistanceMatrix(
+    df: DG.DataFrame, colNames: string[], method: DistanceMetric = DistanceMetric.Euclidean
+  ) {
+    // Output distance matrix. reusing it saves a lot of memory
     let out: DistanceMatrix | null = null;
+
+    const distanceMatrixWorker = new DistanceMatrixWorker();
     const columns = colNames.map((name) => df.getCol(name));
     for (const col of columns) {
       let values: Float32Array;
-      if (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT)
-        values = await getDistanceMatrixForNumerics(col.toList() as unknown as Float32Array);
-      else if (col.semType ==='Macromolecule')
-        values = await getDistanceMatrixForSequences(col.toList() as unknown as string[]);
-      else throw new TypeError('Unsupported column type');
+      let isUsingNeedlemanWunsch: boolean = false;
+      if (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) {
+        values = await distanceMatrixWorker.calc(col.getRawData(), 'numericDistance');
+      } else if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
+        const uh = new UnitsHandler(col);
+        // Use Hamming distance when sequences are aligned
+        const seqDistanceFunction: MmDistanceFunctionsNames = uh.getDistanceFunctionName();
+
+        if (seqDistanceFunction === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH)
+          isUsingNeedlemanWunsch = true;
+        values = await distanceMatrixWorker.calc(col.toList(), seqDistanceFunction);
+      } else { throw new TypeError('Unsupported column type'); }
 
       if (!out) {
         out = new DistanceMatrix(values);
         if (columns.length > 1) {
           out.normalize();
-          out.square();
+          if (method === DistanceMetric.Euclidean)
+            out.square();
+        } else if (isUsingNeedlemanWunsch) {
+          // we need to normalize as needleman wunsch returns negative and positive values as well
+          out.normalize();
         }
       } else {
         let newMat: DistanceMatrix | null = new DistanceMatrix(values);
@@ -491,6 +511,8 @@ export class TreeHelper implements ITreeHelper {
         newMat = null;
       }
     }
+    distanceMatrixWorker.terminate();
+
     if (method === DistanceMetric.Euclidean && columns.length > 1)
       out?.sqrt();
 

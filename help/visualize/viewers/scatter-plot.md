@@ -22,6 +22,7 @@ General:
 | L                         | Toggle lasso tool      |
 | Up, Down, Left, Right     | Scroll                 |
 | R                         | Toggle regression line |
+| Alt+F                     | Show in full screen    |
 
 ## Advanced features
 

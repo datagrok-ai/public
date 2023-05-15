@@ -21,6 +21,9 @@ import './tests/similarity-diversity-tests';
 import './tests/substructure-filters-tests';
 import './tests/pepsea-tests';
 import './tests/viewers';
+import './tests/units-handler-tests';
+import './tests/to-atomic-level-tests';
+import './tests/mm-distance-tests';
 
 // Tests hanging github CI
 import './tests/activity-cliffs-tests';

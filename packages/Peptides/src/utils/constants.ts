@@ -16,6 +16,7 @@ export enum LST_COLUMN_NAMES {
   MEAN_DIFFERENCE = 'Mean difference',
   P_VALUE = 'P-Value',
   RATIO = 'Ratio',
+  CLUSTER = 'Cluster',
 }
 
 export enum CATEGORIES {
@@ -36,6 +37,7 @@ export enum TAGS {
   SETTINGS = 'settings',
   CUSTOM_CLUSTER = 'customCluster',
   UUID = 'pep-uuid',
+  MONOMER_POSITION_MODE = 'monomerPositionMode',
 }
 
 export enum SEM_TYPES {
@@ -46,3 +48,9 @@ export enum SEM_TYPES {
 export const EMBEDDING_STATUS = 'embeddingStatus';
 
 export const MULTIPLE_VIEWS = 'isMultipleViews';
+
+export enum SCALING_METHODS {
+  NONE = 'none',
+  LG = 'lg',
+  MINUS_LG = '-lg',
+}

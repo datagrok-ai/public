@@ -1,9 +1,9 @@
 {
   "name": "datagrok-api",
-  "version": "1.14.1",
+  "version": "1.14.4",
   "description": "",
   "dependencies": {
-    "@datagrok-libraries/chem-meta": "^1.0.7",
+    "@datagrok-libraries/chem-meta": "^1.0.12",
     "@types/react": "latest",
     "@types/wu": "latest",
     "cash-dom": "^8.0.0",

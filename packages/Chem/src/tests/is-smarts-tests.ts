@@ -1,7 +1,7 @@
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {before, expect, category, test} from '@datagrok-libraries/utils/src/test';
-import { isSmarts } from '../utils/mol-creation_rdkit';
+import { isFragment, isSmarts } from '../utils/mol-creation_rdkit';
 import { readDataframe } from './utils';
 
 const smarts = [
@@ -31,31 +31,6 @@ M  V30 END CTAB
 M  END
   `
 ,
-  `
-  MJ201100
-
-  9  9  0  0  0  0  0  0  0  0999 V2000
-   -0.4576    1.1558    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
-   -1.1720    1.5683    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -1.1720    2.3932    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    0.2568    2.3932    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-    0.2568    1.5683    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -1.7554    2.9766    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
-   -0.8563    3.1554    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
-   -1.3585    3.8099    0.0000 R#  0  0  0  0  0  0  0  0  0  0  0  0
-   -0.4576    0.3308    0.0000 R#  0  0  0  0  0  0  0  0  0  0  0  0
-  2  3  1  0  0  0  0
-  3  4  1  0  0  0  0
-  4  5  1  0  0  0  0
-  1  2  1  0  0  0  0
-  1  5  1  0  0  0  0
-  3  6  1  0  0  0  0
-  3  7  1  0  0  0  0
-  7  8  1  0  0  0  0
-  1  9  1  0  0  0  0
-M  RGP  2   8   1   9   2
-M  END
-`,
 `
 MJ201900
 
@@ -77,6 +52,94 @@ M  ALS   1  2 T C   N
 M  END
 `,
 `[!#6&!#7]1:[#6]:[#6]:[#6]:[#6]:[#6]:1`
+];
+
+const fragments = [
+  `
+  RDKit          2D
+
+  0  0  0  0  0  0  0  0  0  0999 V3000
+M  V30 BEGIN CTAB
+M  V30 COUNTS 6 6 0 0 0
+M  V30 BEGIN ATOM
+M  V30 1 R# 1.500000 0.000000 0.000000 0
+M  V30 2 C 0.750000 -1.299038 0.000000 0
+M  V30 3 C -0.750000 -1.299038 0.000000 0
+M  V30 4 C -1.500000 0.000000 0.000000 0
+M  V30 5 C -0.750000 1.299038 0.000000 0
+M  V30 6 C 0.750000 1.299038 0.000000 0
+M  V30 END ATOM
+M  V30 BEGIN BOND
+M  V30 1 2 1 2
+M  V30 2 1 2 3
+M  V30 3 2 3 4
+M  V30 4 1 4 5
+M  V30 5 2 5 6
+M  V30 6 1 6 1
+M  V30 END BOND
+M  V30 END CTAB
+M  END
+`,
+`
+  RDKit          2D
+
+  0  0  0  0  0  0  0  0  0  0999 V3000
+M  V30 BEGIN CTAB
+M  V30 COUNTS 6 6 0 0 0
+M  V30 BEGIN ATOM
+M  V30 1 * 1.500000 0.000000 0.000000 0
+M  V30 2 C 0.750000 -1.299038 0.000000 0
+M  V30 3 C -0.750000 -1.299038 0.000000 0
+M  V30 4 C -1.500000 0.000000 0.000000 0
+M  V30 5 C -0.750000 1.299038 0.000000 0
+M  V30 6 C 0.750000 1.299038 0.000000 0
+M  V30 END ATOM
+M  V30 BEGIN BOND
+M  V30 1 2 1 2
+M  V30 2 1 2 3
+M  V30 3 2 3 4
+M  V30 4 1 4 5
+M  V30 5 2 5 6
+M  V30 6 1 6 1
+M  V30 END BOND
+M  V30 END CTAB
+M  END
+`,
+`
+MJ201900                      
+
+  6  6  0  0  0  0  0  0  0  0999 V2000
+    7.5467   -7.6478    0.0000 R   0  0  0  0  0  0  0  0  0  0  0  0
+    8.9731   -7.6474    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    8.2613   -7.2355    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    8.9731   -8.4726    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    7.5467   -8.4763    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    8.2631   -8.8844    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  3  1  2  0  0  0  0
+  4  2  2  0  0  0  0
+  1  5  1  0  0  0  0
+  2  3  1  0  0  0  0
+  5  6  2  0  0  0  0
+  6  4  1  0  0  0  0
+M  END`,
+`
+MJ201900                      
+
+  6  6  0  0  0  0  0  0  0  0999 V2000
+    7.5467   -7.6478    0.0000 *   0  0  0  0  0  0  0  0  0  0  0  0
+    8.9731   -7.6474    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    8.2613   -7.2355    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    8.9731   -8.4726    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    7.5467   -8.4763    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    8.2631   -8.8844    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  3  1  2  0  0  0  0
+  4  2  2  0  0  0  0
+  1  5  1  0  0  0  0
+  2  3  1  0  0  0  0
+  5  6  2  0  0  0  0
+  6  4  1  0  0  0  0
+M  END`,
+`CC1(N[*:1])CCN([*:2])C1`
 ];
 
 const notSmarts = [
@@ -271,12 +334,20 @@ category('isSmarts', async () => {
     notSmarts.forEach((mol) => expect(isSmarts(mol), false));
   });
 
+  test('isFragment', async () => {
+    fragments.forEach((mol) => {
+        expect(isFragment(mol), true);
+    });
+    notSmarts.forEach((mol) => expect(isFragment(mol), false));
+  });
 
-  test('isSmarts.benchmark.100000', async () => {
+  test('benchmark.isSmarts.100000', async () => {
     const molfiles = await readDataframe('tests/molfiles_100.csv');
     const molecules = molfiles.col('molfile')!.categories;
+    console.profile('isSmarts');
     for (let i = 0; i < 100000; i++)
       isSmarts(molecules[i%100]);
+    console.profileEnd('isSmarts');
   });
 
 });

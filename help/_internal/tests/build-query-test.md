@@ -1,4 +1,4 @@
-<!-- TITLE: Tests: Build Query -->
+<!-- TITLE: Tests: Join DB Tables -->
 <!-- SUBTITLE: -->
 
 # Tests: Data query
@@ -11,10 +11,10 @@
 
 1. Expand ```PosgteSQL -> northwind -> Tables```
 
-1. Open [Build Query](../../access/databases.mdx#join-tables) dialog for **employees** DB table (from it's context menu)
+1. Open [Join DB Tables](../../access/databases.mdx#join-tables) dialog for **employees** DB table (from it's context menu)
 
-* [Build Query](../../access/databases.mdx#join-tables) dialog is open
-* Context help switched to [Build Query](../../access/databases.mdx#join-tables)
+* [Join DB Tables](../../access/databases.mdx#join-tables) dialog is open
+* Context help switched to [Join DB Tables](../../access/databases.mdx#join-tables)
 
 1. Select all columns from **employees** table for query
 

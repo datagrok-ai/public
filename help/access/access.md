@@ -38,22 +38,22 @@ To see all available data source connections, on the **Sidebar**, select **Manag
 <details>
 <summary> You can also search or filter data connections using these fields </summary>
 
-| Field       | Description                                 |
-|-------------|---------------------------------------------|
-| ID          |                                             |
-| name        |                                             |
-| server      |                                             |
-| port        |                                             |
-| db          |                                             |
-| login       |                                             |
-| dataSource  |                                             |
-| description |                                             |
-| createdOn   |                                             |
-| updatedOn   |                                             |
-| author      | [User](../govern/user.md) object         |
-| starredBy   | [User](../govern/user.md) object         |
-| commentedBy | [User](../govern/user.md) object         |
-| usedBy      | [User](../govern/user.md) object         |
+| Field       | Description                      |
+|-------------|----------------------------------|
+| ID          |                                  |
+| name        |                                  |
+| server      |                                  |
+| port        |                                  |
+| db          |                                  |
+| login       |                                  |
+| dataSource  |                                  |
+| description |                                  |
+| createdOn   |                                  |
+| updatedOn   |                                  |
+| author      | [User](../govern/user.md) object |
+| starredBy   | [User](../govern/user.md) object |
+| commentedBy | [User](../govern/user.md) object |
+| usedBy      | [User](../govern/user.md) object |
 
 </details>
 
@@ -71,7 +71,7 @@ For specific details on the configuration required, see each individual connecto
 
 A data query is a [function](../datagrok/functions/functions.md) associated with a [data connection](#data-connection)
 that typically returns a dataframe. Queries can be executed either manually, or as part of data jobs.
-Datagrok has a convenient interface for creating, running, and sharing query results, including visual query editors,
+Datagrok has a convenient interface for creating, running, and sharing query results, including aggregation editor,
 auto-generated parameter dialogs, and an ability to create dynamic dashboards to visualize query results. All data
 governance features, such as data lineage, history, and security, are applicable to queries. For more information about
 queries, see documentation for the respective data source type.

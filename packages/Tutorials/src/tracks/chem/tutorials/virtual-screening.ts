@@ -98,7 +98,7 @@ export class VirtualScreeningTutorial extends Tutorial {
         'with different counterions, and there might be different inconsistencies in the raw data. Let\'s curate ' +
         'the chemical structures given in the dataset. We will assume that all these compounds are present in the ' +
         'body in a neutralized form.';
-      const curationDlg = await this.openDialog('Open "Chem | Curate"', 'Curate Chem Structures', chemMenu, curationInfo);
+      const curationDlg = await this.openDialog('Open "Chem | Curate"', 'Curate', chemMenu, curationInfo);
 
       const neutralizationInfo = 'Perform "Neutralization" to remove charges.';
       await this.dlgInputAction(curationDlg, 'Check "Neutralization"', 'Neutralization', 'true', neutralizationInfo);
@@ -112,7 +112,7 @@ export class VirtualScreeningTutorial extends Tutorial {
       const outputComment = '';
       await this.action('Click "OK" and wait for the procedures to complete',
         grok.functions.onAfterRunAction.pipe(filter((call) => {
-          return call.func.name === 'CurateChemStructures' &&
+          return call.func.name === 'Curate' &&
           call.inputs.get('neutralization') &&
           call.inputs.get('tautomerization') &&
           call.inputs.get('mainFragment');
@@ -152,7 +152,8 @@ export class VirtualScreeningTutorial extends Tutorial {
           .some((group) => group === el.textContent))
         .get();
 
-      if (hasHistory) groupHints.push($(descriptorDlg.root).find('i.fa-history.d4-command-bar-icon')[0]​!);
+      if (hasHistory)
+        groupHints.push($(descriptorDlg.root).find('i.fa-history.d4-command-bar-icon')[0]!);
 
       const groupDescription = 'To exclude <b>ExactMolWt</b>, expand the <b>Descriptors</b> group. ' +
         'The fastest way is to check the box for the entire group and unselect this particular descriptor. ' +

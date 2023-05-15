@@ -5,7 +5,7 @@
   "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
   "author": {
     "name": "Dmytro Kovalyov",
-    "email": "kovalyov.dmytro@eigenmethod.com"
+    "email": "dkovalyov@datagrok.ai"
   },
   "repository": {
     "type": "git",
@@ -16,7 +16,7 @@
     "@datagrok-libraries/statistics": "^0.1.7",
     "@datagrok-libraries/utils": "^4.0.0",
     "cash-dom": "^8.1.0",
-    "datagrok-api": "^1.13.0",
+    "datagrok-api": "../../js-api",
     "echarts": "^5.0.0",
     "echarts-gl": "^2.0.9",
     "echarts-wordcloud": "^2.0.0",

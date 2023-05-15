@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.regex.*;
 import com.clickhouse.data.value.UnsignedByte;
 import com.clickhouse.data.value.UnsignedShort;
+import grok_connect.handlers.SessionHandler;
 import microsoft.sql.DateTimeOffset;
 import oracle.sql.TIMESTAMPTZ;
 import org.apache.commons.io.IOUtils;
@@ -25,7 +26,6 @@ import grok_connect.utils.*;
 import grok_connect.table_query.*;
 import grok_connect.connectors_info.*;
 import serialization.Types;
-
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
@@ -142,19 +142,27 @@ public abstract class JdbcDataProvider extends DataProvider {
         ResultSet resultSet = null;
         if (dataQuery.inputParamsCount() > 0) {
             query = convertPatternParamsToQueryParams(queryRun, query);
-
+            logger.debug("Query after converting: {}", query);
+            if (queryRun.debugQuery)
+                queryRun.log += String.format(SessionHandler.LOG_MESSAGE, String.format("Query after converting: %s", query));
             if (autoInterpolation()) {
                 logger.debug("Autointerpolating query");
                 StringBuilder queryBuffer = new StringBuilder();
                 List<String> names = getParameterNames(query, dataQuery, queryBuffer);
                 query = queryBuffer.toString();
-                System.out.println(query);
+                logger.debug("Interpolated query: {}", query);
+                if (queryRun.debugQuery) {
+                    queryRun.log += String.format(SessionHandler.LOG_MESSAGE, String.format("Query after interpolating: %s", query));
+                }
                 PreparedStatement statement = connection.prepareStatement(query);
                 if (supportsTransactions)
                     statement.setFetchSize(fetchSize);
                 providerManager.getQueryMonitor().addNewStatement(mainCallId, statement);
                 List<String> stringValues = new ArrayList<>();
-                System.out.println(names);
+                logger.debug("Query detected parameters: {}", names);
+                if (queryRun.debugQuery) {
+                    queryRun.log += String.format(SessionHandler.LOG_MESSAGE, String.format("Detected parameters: %s", names));
+                }
                 int i = 0;
                 for (int n = 0; n < names.size(); n++) {
                     FuncParam param = dataQuery.getParam(names.get(n));
@@ -184,13 +192,12 @@ public abstract class JdbcDataProvider extends DataProvider {
                 String logString = String.format("Query: %s; \nParams array: %s \n", statement, stringValues);
                 logger.debug(logString);
                 if (queryRun.debugQuery)
-                    queryRun.log += logString;
+                    queryRun.log += String.format(SessionHandler.LOG_MESSAGE, String.format("Executed parameters: %s", stringValues));
                 if(statement.execute())
                     resultSet = statement.getResultSet();
                 providerManager.getQueryMonitor().removeStatement(mainCallId);
             } else {
                 query = manualQueryInterpolation(query, dataQuery);
-
                 Statement statement = connection.createStatement();
                 if (supportsTransactions)
                     statement.setFetchSize(fetchSize);
@@ -199,13 +206,16 @@ public abstract class JdbcDataProvider extends DataProvider {
                 String logString = String.format("Query: %s \n", query);
                 logger.debug(logString);
                 if (queryRun.debugQuery)
-                    queryRun.log += logString;
+                    queryRun.log += String.format(SessionHandler.LOG_MESSAGE, String.format("Query manually interpolated: %s", query));
                 if(statement.execute(query))
                     resultSet = statement.getResultSet();
                 providerManager.getQueryMonitor().removeStatement(mainCallId);
             }
         } else {
             // Query without parameters
+            if (queryRun.debugQuery)
+                queryRun.log += String.format(SessionHandler.LOG_MESSAGE, "Query doesn't have any parameters");
+            logger.debug("Query without parameters");
             Statement statement = connection.createStatement();
             if (supportsTransactions)
                 statement.setFetchSize(fetchSize);
@@ -218,7 +228,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             String logString = String.format("Query: %s \n", query);
             logger.debug(logString);
             if (queryRun.debugQuery)
-                queryRun.log += logString;
+                queryRun.log += String.format(SessionHandler.LOG_MESSAGE, logString);
             if(statement.execute(query))
                 resultSet = statement.getResultSet();
             providerManager.getQueryMonitor().removeStatement(mainCallId);
@@ -350,13 +360,12 @@ public abstract class JdbcDataProvider extends DataProvider {
 
             ResultSet resultSet = null;
 
-            DateTime queryExecutionStart = DateTime.now();
 
             if (!(queryRun.func.options != null
                     && queryRun.func.options.containsKey("batchMode")
                     && queryRun.func.options.get("batchMode").equals("true"))) {
                 query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
-                System.out.println(query);
+                logger.debug("Executing query: {}", query);
                 resultSet = executeQuery(query, queryRun, connection, timeout);
             } else {
                 String[] queries = query.replaceAll("\r\n", "\n").split("\n--batch\n");
@@ -439,7 +448,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 columns.add(c - 1, column);
             }
             if (queryRun.debugQuery) {
-                queryRun.log += logBuilder.toString();
+                queryRun.log += String.format(SessionHandler.LOG_MESSAGE, logBuilder);
             }
             return new SchemeInfo(columns, supportedType, initColumn);
 
@@ -626,6 +635,13 @@ public abstract class JdbcDataProvider extends DataProvider {
                             } else if (value instanceof OffsetDateTime) {
                                 time = java.util.Date.from(((OffsetDateTime) value)
                                         .toInstant());
+                            } else if (value instanceof Instant) {
+                                time = java.util.Date.from((Instant) value);
+                            } else if (value instanceof LocalTime) {
+                                LocalTime localTime = (LocalTime) value;
+                                Instant instant = localTime.atDate(LocalDate.of(1970, 1, 1))
+                                        .atZone(ZoneId.systemDefault()).toInstant();
+                                time = java.util.Date.from(instant);
                             } else {
                                 time = ((java.util.Date) value);
                             }
@@ -647,9 +663,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                             column.name = resultSetMetaData.getColumnLabel(c);
                             columns.set(c - 1, column);
                             initColumn.set(c - 1, true);
-
-                            System.out.printf("Data type '%s' is not supported yet. Write as '%s'.\n",
-                                    resultSetMetaData.getColumnTypeName(c), column.getType());
+                            logger.debug("Data type '{}' is not supported yet. Write as '{}'", typeName, column.getType());
                         }
 
                         if (value instanceof Double)
@@ -698,14 +712,14 @@ public abstract class JdbcDataProvider extends DataProvider {
                         logger.debug(logString);
                     }
                 }
-                queryRun.log += logBuilder.toString();
+                queryRun.log += String.format(SessionHandler.LOG_MESSAGE, logBuilder);
             }
             DateTime finish = DateTime.now();
 
             String logString = String.format(" dataframe filling: %s s \n",
                     (finish.getMillis() - fillingDataframeStart.getMillis())/ 1000.0);
             if (queryRun.debugQuery)
-                queryRun.log += logString;
+                queryRun.log += String.format(SessionHandler.LOG_MESSAGE, logString);
             logger.debug(logString);
             if (outputCsv != null) {
                 csvWriter.close();

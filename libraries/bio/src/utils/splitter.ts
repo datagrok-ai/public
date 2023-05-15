@@ -1,6 +1,9 @@
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {getSplitterForColumn} from './macromolecule';
+import {getSplitterForColumn} from './macromolecule/utils';
+
 
 export function splitAlignedSequences(sequenceColumn: DG.Column<string>): DG.DataFrame {
   const splitter = getSplitterForColumn(sequenceColumn);

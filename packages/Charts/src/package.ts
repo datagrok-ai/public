@@ -110,7 +110,7 @@ export function _TreeViewer() {
   return new TreeViewer();
 }
 
-//name: Word Cloud
+//name: Word Cloud Viewer
 //description: Creates a word cloud viewer
 //tags: viewer
 //output: viewer result
@@ -122,70 +122,63 @@ export function _WordCloudViewer() {
 
 //name: chordViewerDemo
 //description: Chord viewer visualizes weighted relationships between several entities
-//meta.demoPath: Viewers | Chord
+//meta.demoPath: Viewers | General | Chord
 export async function _chordViewerDemo() {
   await viewerDemo('Chord');
 }
 
 //name: globeViewerDemo
 //description: Globe viewer represents data visualization layers on a 3-dimensional globe in a spherical projection
-//meta.demoPath: Viewers | Globe
+//meta.demoPath: Viewers | Geographical | Globe
 export async function _globeViewerDemo() {
   await viewerDemo('Globe');
 }
 
-//name: groupAnalysisViewerDemo
-//description: Group analysis viewer groups data by different options
-//meta.demoPath: Viewers | Group Analysis
-export async function _groupAnalysisViewerDemo() {
-  await viewerDemo('GroupAnalysis');
-}
-
 //name: radarViewerDemo
 //description: Radar viewer is used on multivariate data to plot groups of values over several common variables
-//meta.demoPath: Viewers | Radar
+//meta.demoPath: Viewers | General | Radar
 export async function _radarViewerDemo() {
   await viewerDemo('Radar');
 }
 
 //name: sankeyViewerDemo
 //description: Sankey viewer depicts a flow from one set of values to another
-//meta.demoPath: Viewers | Sankey
+//meta.demoPath: Viewers | General | Sankey
 export async function _sankeyViewerDemo() {
   await viewerDemo('Sankey');
 }
 
 //name: sunburstViewerDemo
 //description: Sunburst viewer displays hierarchical data
-//meta.demoPath: Viewers | Sunburst
+//meta.demoPath: Viewers | General | Sunburst
 export async function _sunburstViewerDemo() {
   await viewerDemo('Sunburst');
 }
 
 //name: surfacePlotDemo
 //description: Surface plot viewer displays a set of three-dimensional data as a mesh surface
-//meta.demoPath: Viewers | Surface Plot
+//meta.demoPath: Viewers | General | Surface Plot
 export async function _surfacePlotDemo() {
   await viewerDemo('SurfacePlot');
 }
 
 //name: timelinesViewerDemo
 //description: Timelines viewer displays the flow of events over time
-//meta.demoPath: Viewers | Timelines
+//meta.demoPath: Viewers | General | Timelines
 export async function _timelinesViewerDemo() {
   await viewerDemo('Timelines', {lineWidth: 4, markerPosition: 'above main line'});
 }
 
 //name: treeViewerDemo
 //description: Tree viewer visualizes hierarchical data by categories
-//meta.demoPath: Viewers | Tree
+//meta.demoPath: Viewers | Data flow and hierarchy | Tree
 export async function _treeViewerDemo() {
   await viewerDemo('Tree', {left: '40px', right: '75px'});
 }
 
 //name: wordCloudViewerDemo
 //description: Word Cloud viewer visualizes unstructured text data
-//meta.demoPath: Viewers | Word Cloud
+//meta.demoPath: Viewers | General | Word Cloud
 export async function _wordCloudViewerDemo() {
-  await viewerDemo('WordCloud');
+  await viewerDemo('WordCloudViewer', {drawOutOfBound: false});
 }

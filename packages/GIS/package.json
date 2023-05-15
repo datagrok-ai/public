@@ -5,7 +5,7 @@
 	"category": "Visualizations",
 	"author": {
 		"name": "Dmytro Kovalyov",
-		"email": "kovalyov.dmytro@eigenmethod.com"
+		"email": "dkovalyov@datagrok.ai"
 	},
 	"description": "GIS (geographic information system) functionality, such as maps and geocoding.",
 	"dependencies": {

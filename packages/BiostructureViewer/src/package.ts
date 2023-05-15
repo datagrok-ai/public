@@ -15,7 +15,7 @@ import {TwinPviewer} from './viewers/twin-p-viewer';
 import {PROPS as nglPROPS, NglViewer} from './viewers/ngl-viewer';
 import {NglViewerApp} from './apps/ngl-viewer-app';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
-import {PdbHelper} from './utils/pdb-helper';
+import {PdbHelper, PdbResDataFrame} from './utils/pdb-helper';
 import {PdbApp} from './apps/pdb-app';
 import {nglViewUI, nglWidgetUI} from './viewers/ngl-ui';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
@@ -27,6 +27,9 @@ import {BiotrackViewerApp} from './apps/biotrack-viewer-app';
 import {BiostructureAndTrackViewerApp} from './apps/biostructure-and-track-viewer-app';
 import {previewBiostructure, viewBiostructure} from './viewers/view-preview';
 import {BiostructureViewerApp} from './apps/biostructure-viewer-app';
+import {demoBio06UI} from './demo/bio06-docking-ngl';
+import {demoBio07UI} from './demo/bio07-molecule3d-in-grid';
+import {NglGlDocService} from './utils/ngl-gl-doc-service';
 
 class Package extends DG.Package {
   private _pLogger: DG.PackageLogger;
@@ -104,7 +107,7 @@ declare const window: BsvWindowType;
 //output: object result
 export function getNglGlService(): NglGlServiceBase {
   if (!(window.$nglGlService)) {
-    const svc: NglGlService = new NglGlService();
+    const svc: NglGlServiceBase = new NglGlDocService();
     window.$nglGlService = svc;
   }
 
@@ -161,6 +164,16 @@ export function molecule3dNglView3(file: DG.FileInfo): DG.View {
 //output: view v
 export function molecule3dNglView4(file: DG.FileInfo): DG.View {
   return previewBiostructure(file);
+}
+
+//name: openPdbResidues
+export async function openPdbResidues(fi: DG.FileInfo): Promise<void> {
+  const ph = await getPdbHelper();
+  const pdbStr: string = await fi.readAsString();
+  const pdbDf: PdbResDataFrame = await ph.pdbToDf(pdbStr, fi.fileName);
+  const view = grok.shell.addTableView(pdbDf);
+  const viewer = await pdbDf.plot.fromType('NGL', {});
+  view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'NGL', 0.40);
 }
 
 // -- Panel widgets --
@@ -290,7 +303,7 @@ export async function nglViewerGen(): Promise<void> {
 }
 
 //name: dockingDemo
-//meta.demoPath: Cheminformatics | Docking
+//description:
 export async function dockingDemo() {
   const piMsg: string = 'Opening docking demo app ...';
   const pi: TaskBarProgressIndicator = TaskBarProgressIndicator.create(piMsg);
@@ -302,7 +315,7 @@ export async function dockingDemo() {
 }
 
 //name: inGridDemo
-//meta.demoPath: Cheminformatics | 3D Molecules in Grid
+//description:
 export async function inGridDemo() {
   const piMsg: string = 'Opening biostructure in grid demo app ...';
   const pi: TaskBarProgressIndicator = TaskBarProgressIndicator.create(piMsg);
@@ -311,4 +324,24 @@ export async function inGridDemo() {
   } finally {
     pi.close();
   }
+}
+
+// -- Demo --
+
+// demoBio06
+//name: demoBioDockingNgl
+//meta.demoPath: Cheminformatics | Docking NGL
+//description:
+//meta.path: /apps/Tutorials/Demo/Cheminformatics/Docking%20NGL
+export async function demoBioDockingNgl(): Promise<void> {
+  await demoBio06UI();
+}
+
+// demoBio07
+//name: demoBioMolecule3dInGrid
+//meta.demoPath: Cheminformatics | Molecule3D in Grid
+//description:
+//meta.path: /apps/Tutorials/Demo/Cheminformatics/Molecule3D%20in%20Grid
+export async function demoBioMolecule3dInGrid(): Promise<void> {
+  await demoBio07UI();
 }

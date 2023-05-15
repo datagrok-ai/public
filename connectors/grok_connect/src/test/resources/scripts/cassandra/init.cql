@@ -58,10 +58,10 @@ stamp_type timestamp,
 duration_type duration,
 PRIMARY KEY (id));
 
-insert into datagrok.date_types (id, date_type, time_type, stamp_type, duration_type) values(1, '2011-02-03', '08:12:54',
-'2011-02-03 04:05+0000', 89h4m48s);
+insert into datagrok.date_types (id, date_type, time_type, stamp_type, duration_type) values(1, '2011-02-03', '08:12:54.111',
+'2011-02-03 04:05:01+0100', 89h4m48s);
 insert into datagrok.date_types (id, date_type, time_type, stamp_type, duration_type) values(2, '2023-04-27', '12:50:54.333',
-'2011-02-03 04:05:08.333+0300', 9m51s);
+'2011-02-03 04:05:08+0300', 9m51s);
 
 CREATE TABLE datagrok.dates_patterns(
 id bigint,

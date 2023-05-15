@@ -37,7 +37,7 @@ Seamlessly bring together data from the different silos and formats.
   browse [file shares](https://public.datagrok.ai/files)
 * [Visually explore](access/databases.mdx#database-manager) and manage relational databases
   using [schema browser](access/databases.mdx#schema-browser)
-  and [visual query](access/databases.mdx#aggregation-editor)
+  and [aggregation editor](access/databases.mdx#aggregation-editor)
 * Connect to [thousands of public datasets](access/public-datasets.md)
 * Automate via data preparation pipelines
 
@@ -117,4 +117,4 @@ Turn your data into actionable insights by using state-of-the art machine learni
   * Tutorials (go to [Datagrok Public](https://public.datagrok.ai/), find "Help" section and select "Tutorials")
   * [Video lessons](video-lessons.md) and platform overviews (full [list of topics](video-contents.md), including
       selection [for developers](develop/getting-started.md#6-videos)
-  * [Exercises for developers](develop/exercises/exercises.mdx)
+  * [Exercises for developers](develop/exercises/exercises.md)

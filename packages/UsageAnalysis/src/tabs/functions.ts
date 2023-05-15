@@ -8,7 +8,6 @@ import {UaView, Filter} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {getTime} from '../utils';
 
-
 export class FunctionsView extends UaView {
   constructor(uaToolbox: UaToolbox) {
     super(uaToolbox);
@@ -61,7 +60,7 @@ export class FunctionsView extends UaView {
           const cp = DG.Accordion.create();
           cp.addPane('Details', () => {
             return ui.tableFromMap({'User': ui.render(`#{x.${row.uid}}`),
-              'Package': ui.render(`#{x.${row.pid}}`),
+              'Package': row.pid === this.systemId ? ui.label('Core') : ui.render(`#{x.${row.pid}}`),
               'From': getTime(new Date(row.time_start)),
               'To': getTime(new Date(row.time_end))});
           }, true);
@@ -135,7 +134,7 @@ export class FunctionsView extends UaView {
     }
     Object.keys(packages).forEach((k) => {
       const pane = cp.addPane('', () => packages[k].root);
-      const name = ui.render(`#{x.${k}}`);
+      const name = k === this.systemId ? ui.label('Core') : ui.render(`#{x.${k}}`);
       name.classList.add('ua-markup');
       pane.root.querySelector('.d4-accordion-pane-header')?.prepend(name);
     });

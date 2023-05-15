@@ -10,9 +10,10 @@ import {ChemSearchBaseViewer, SIMILARITY} from './chem-search-base-viewer';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import { malformedDataWarning } from '../utils/malformed-data-utils';
 import { getMolSafe } from '../utils/mol-creation_rdkit';
+import '../../css/chem.css';
 
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
-  hotSearch: boolean;
+  followCurrentRow: boolean;
   sketchButton: HTMLElement;
   sketchedMolecule: string = '';
   curIdx: number = 0;
@@ -31,8 +32,9 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   constructor() {
     super(SIMILARITY);
     this.cutoff = this.float('cutoff', 0.01, {min: 0, max: 1});
-    this.hotSearch = this.bool('hotSearch', true);
-    this.sketchButton = ui.button(ui.icons.edit(() => {}), () => {
+    this.followCurrentRow = this.bool('followCurrentRow', true,
+      {description: 'Re-compute similarity search when changing current row'});
+    this.sketchButton = ui.icons.edit(() => {
       const sketcher = new grok.chem.Sketcher();
       const savedMolecule = this.targetMolecule;
       sketcher.setMolecule(this.targetMolecule);
@@ -53,13 +55,18 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         .show();
     })
     this.sketchButton.classList.add('similarity-search-edit');
-    this.updateMetricsLink(this, {fontSize: '10px', fontWeight: 'normal', height: '10px'});
+    this.sketchButton.classList.add('chem-mol-view-icon');
+    this.updateMetricsLink(this , {});
   }
 
   init(): void {
     this.isEditedFromSketcher = false;
-    this.hotSearch = true;
+    this.followCurrentRow = true;
     this.initialized = true;
+  }
+
+  isReferenceMolecule(idx: number): boolean {
+    return idx === this.targetMoleculeIdx && !this.isEditedFromSketcher;
   }
 
   async render(computeData = true): Promise<void> {
@@ -68,7 +75,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     if (this.moleculeColumn) {
       const progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-      if (computeData && !this.gridSelect) {
+      if (computeData && !this.gridSelect && this.followCurrentRow) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
         if (this.isEmptyOrMalformedValue()) {
           progressBar.close();
@@ -99,9 +106,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           const grid = ui.div([
             renderMolecule(
               this.targetMolecule, {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
-            label],
-          {style: {margin: '5px', padding: '3px', position: 'relative'}},
-          );
+            label]);
           let divClass = 'd4-flex-col';
           divClass += ' d4-current';
           grid.style.boxShadow = '0px 0px 1px var(--grey-6)';
@@ -111,16 +116,14 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         for (let i = 0; i < this.molCol.length; ++i) {
           const idx = this.idxs.get(i);
           const similarity = this.scores.get(i).toPrecision(2);
-          const label = idx === this.targetMoleculeIdx && !this.isEditedFromSketcher ?
-            this.sketchButton : ui.div();
-          const molProps = this.createMoleculePropertiesDiv(idx, similarity);
+          const refMolecule = this.isReferenceMolecule(idx);
+          const label = refMolecule ? this.sketchButton : ui.div();
+          const molProps = this.createMoleculePropertiesDiv(idx, refMolecule, similarity);
           const grid = ui.div([
             renderMolecule(
               this.molCol?.get(i), {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
             label,
-            molProps],
-          {style: {margin: '5px', padding: '3px', position: 'relative'}},
-          );
+            molProps]);
           let divClass = 'd4-flex-col';
           if (idx == this.curIdx) {
             divClass += ' d4-current';
@@ -154,8 +157,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           grids[cnt2++] = grid;
         }
       }
-      panel[cnt++] = ui.div(grids, {classes: 'd4-flex-wrap'});
-      this.root.appendChild(ui.div(panel, {style: {margin: '5px'}}));
+      panel[cnt++] = ui.divH(grids, 'chem-viewer-grid');
+      this.root.appendChild(ui.panel([ui.divV(panel)]));
       progressBar.close();
     }
   }
@@ -188,8 +191,8 @@ export async function chemSimilaritySearch(
   fingerprint: Fingerprint,
 ) : Promise<DG.DataFrame> {
   const targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint);
-  const fingerprintCol = await chemSearches.chemGetFingerprints(smiles, fingerprint);
-  malformedDataWarning(fingerprintCol, table);
+  const fingerprintCol = await chemSearches.chemGetFingerprints(smiles, fingerprint, true, false);
+  malformedDataWarning(fingerprintCol, smiles);
   const distances: number[] = [];
 
   const fpSim = similarityMetric[metricName];

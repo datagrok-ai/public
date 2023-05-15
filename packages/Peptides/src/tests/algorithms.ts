@@ -26,7 +26,7 @@ category('Algorithms', () => {
   });
 
   test('MutationCliffs', async () => {
-    const substInfo: type.SubstitutionsInfo = findMutations(activityCol, monomerColumns, settings);
+    const substInfo: type.MutationCliffs = findMutations(activityCol, monomerColumns, settings);
     expect(substInfo.has('C'), true);
     expect(substInfo.has('D'), true);
     expect(substInfo.has('A'), false);
