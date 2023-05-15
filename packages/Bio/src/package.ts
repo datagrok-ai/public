@@ -9,7 +9,7 @@ import {
 } from './utils/cell-renderer';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {SequenceAlignment} from './seq_align';
-import {getEmbeddingColsNames, sequenceSpaceByFingerprints} from './analysis/sequence-space';
+import {getEmbeddingColsNames, sequenceSpaceByFingerprints, getSequenceSpace} from './analysis/sequence-space';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {
   createLinesGrid,
@@ -290,19 +290,23 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     'separator': macroMolecule.getTag(bioTAGS.separator),
     'alphabet': macroMolecule.getTag(bioTAGS.alphabet),
   };
+  const uh = new UnitsHandler(macroMolecule);
+  let columnDistanceMetric = 'Tanimoto';
+  if (uh.isFasta())
+    columnDistanceMetric = uh.getDistanceFunctionName();
   const sp = await getActivityCliffs(
     df,
     macroMolecule,
     null,
     axesNames,
-    'Activity cliffs',
+    'Activity cliffs', //scatterTitle
     activities,
     similarity,
-    'Tanimoto',
+    columnDistanceMetric, //similarityMetric
     methodName,
     DG.SEMTYPE.MACROMOLECULE,
     tags,
-    sequenceSpaceByFingerprints,
+    getSequenceSpace,
     getChemSimilaritiesMatrix,
     createTooltipElement,
     createPropPanelElement,
@@ -353,7 +357,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
     embedAxesNames: embedColsNames,
     options: options
   };
-  const sequenceSpaceRes = await sequenceSpaceByFingerprints(chemSpaceParams);
+  const sequenceSpaceRes = await getSequenceSpace(chemSpaceParams);
   const embeddings = sequenceSpaceRes.coordinates;
   for (const col of embeddings) {
     const listValues = col.toList();
