@@ -105,6 +105,7 @@ export async function tutorialsInit() {
 //name: Demo
 //tags: app
 //description: Interactive demo of major Datagrok capabilities
+//meta.icon: images/icons/demoapp-icon.png
 export function demoApp() {
   let pathSegments = window.location.pathname.split('/');
   if (!pathSegments[pathSegments.length - 1])
