@@ -14,6 +14,7 @@ import {RDMol} from "@datagrok-libraries/chem-meta/src/rdkit-api";
 
 const CELL_HEIGHT = 100;
 const CELL_WIDTH = 180;
+let FLAG = false;
 
 enum BitwiseOp {
   AND = "AND",
@@ -1159,6 +1160,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   onFrameAttached(dataFrame: DG.DataFrame): void {
+    while (this.root.firstChild) 
+      this.root.removeChild(this.root.firstChild);
+
     if (this.dataFrameSwitchgInProgress) {
       this.dataFrameSwitchgInProgress = true;
       return;
@@ -1175,6 +1179,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       const orphans = node.value === null || value(node).orphans;
       if (orphans)
         return;
+
+      if (FLAG) 
+        menu.clear();
 
       menu
         .item("Add New...", () => thisViewer.openAddSketcher(node))
@@ -1266,6 +1273,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.render();
     if (this.autoGenerate)
       setTimeout(() => this.generateTree(), 1000);
+    FLAG = true;
   }
 
   detach(): void {
@@ -1542,7 +1550,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
   };
 
   get isFiltering(): boolean {
-    return true;
+    return super.isFiltering;
   };
 
   get filterSummary(): string {
@@ -1569,6 +1577,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
 
   detach(): void {
     super.detach();
+    this.viewer.clearFilters();
   };
 
   applyFilter(): void {
@@ -1579,7 +1588,6 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.viewer.autoGenerate = false;
     this.viewer.size = 'small';
     this.viewer.dataFrame = dataFrame;
-    this.viewer.root.getElementsByClassName('ui-box ui-split-v')[0].remove();
     this.root.appendChild(this.viewer.root);
   }
 }
