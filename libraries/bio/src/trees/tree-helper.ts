@@ -65,13 +65,14 @@ export interface ITreeHelper {
   calcDistanceMatrix(df: DG.DataFrame, colNames: string[],
     distanceMetric?: DistanceMetric): Promise<DistanceMatrix | null>;
 
-  parseClusterMatrix(clusterMatrix:ClusterMatrix): NodeType;
+  parseClusterMatrix(clusterMatrix: ClusterMatrix): NodeType;
 }
 
 export async function getTreeHelper(): Promise<ITreeHelper> {
-  const funcList = DG.Func.find({package: 'Dendrogram', name: 'getTreeHelper'});
+  const treeHelperPackageName: string = 'Dendrogram';
+  const funcList = DG.Func.find({package: treeHelperPackageName, name: 'getTreeHelper'});
   if (funcList.length === 0)
-    throw new Error('Package "PhyloTreeViewer"" must be installed for TreeHelper.');
+    throw new Error(`Package "${treeHelperPackageName}" must be installed for TreeHelper.`);
 
   const res: ITreeHelper = (await funcList[0].prepare().call()).getOutputParamValue() as ITreeHelper;
   return res;
