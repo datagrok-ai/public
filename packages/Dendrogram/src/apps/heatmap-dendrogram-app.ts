@@ -6,7 +6,7 @@ import {_package} from '../package';
 import {hierarchicalClusteringUI} from '../utils/hierarchical-clustering';
 import {DistanceMetric} from '@datagrok-libraries/bio/src/trees';
 
-export class HierarchicalClusteringApp {
+export class HeatmapDedndrogramApp {
   private viewed: boolean = false;
 
   private _df!: DG.DataFrame;
@@ -56,7 +56,25 @@ export class HierarchicalClusteringApp {
     if (!this.tv)
       this.tv = grok.shell.addTableView(this.df, DG.DOCK_TYPE.FILL);
 
-    this.tv.path = this.tv.basePath = `/func/${_package.name}.hierarchicalClusteringApp`;
-    await hierarchicalClusteringUI(this.df, ['HEIGHT'], DistanceMetric.Euclidean, 'ward');
+    this.tv.path = this.tv.basePath = `/func/${_package.name}.heatmapDendrogramApp`;
+    await hierarchicalClusteringUI(this.df, ['AGE'], DistanceMetric.Euclidean, 'ward');
+    const adjustTreeHeight = () => {
+      const rowCount = this.tv!.dataFrame.filter.trueCount;
+      const rowsGridHeight: number = this.tv!.grid.root.clientHeight - this.tv!.grid.colHeaderHeight;
+      this.tv!.grid.props.rowHeight = rowsGridHeight / (rowCount + 1);
+    };
+    this.tv!.grid.onBeforeDrawContent.subscribe(() => {
+      adjustTreeHeight();
+    });
+    adjustTreeHeight();
+    // tv.grid.props.showRowHeader = false;
+    this.tv!.grid.props.isGrid = false;
+    this.tv!.grid.props.isHeatmap = true;
+    this.tv!.grid.props.showRowHeader = false;
+    // this.tv!.grid.props.showAddNewRowIcon = false;
+    setTimeout(() => {
+      adjustTreeHeight();
+      this.tv!.grid.invalidate();
+    }, 10);
   }
 }

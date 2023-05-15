@@ -16,6 +16,7 @@ import {NodeType} from '@datagrok-libraries/bio/src/trees';
 import {IDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {HierarchicalClusteringSequencesApp} from './apps/hierarchical-clustering-sequences-app';
+import {HeatmapDedndrogramApp} from './apps/heatmap-dendrogram-app';
 
 export const _package = new DG.Package();
 
@@ -183,6 +184,23 @@ export async function hierarchicalClusteringApp(): Promise<void> {
     await app.init();
   } catch (err: unknown) {
     const msg: string = 'Dendrogram: hierarchicalClusteringApp() error: ' +
+      `${err instanceof Error ? err.message : (err as Object).toString()}`;
+    grok.shell.error(msg);
+    console.error(msg);
+  } finally {
+    pi.close();
+  }
+}
+
+//name:heatmapDendrogramApp
+//description: Test/demo app for hierarchical clustering (inject tree to grid)
+export async function heatmapDendrogramApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('opem Hierarchical Clustering app');
+  try {
+    const app = new HeatmapDedndrogramApp();
+    await app.init();
+  } catch (err: unknown) {
+    const msg: string = 'Dendrogram: heatmapDendrogramApp() error: ' +
       `${err instanceof Error ? err.message : (err as Object).toString()}`;
     grok.shell.error(msg);
     console.error(msg);
