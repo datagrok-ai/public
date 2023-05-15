@@ -1,7 +1,7 @@
 {
   "env": {
     "browser": true,
-    "es2021": true
+    "es2022": true
   },
   "extends": [
     "google"
@@ -24,7 +24,8 @@
       "error",
       120
     ],
-    "no-unused-vars": "warn",
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": ["warn", { "varsIgnorePattern": "^_", "argsIgnorePattern": "^_" }],
     "require-jsdoc": "off",
     "valid-jsdoc": "off",
     "spaced-comment": "off",

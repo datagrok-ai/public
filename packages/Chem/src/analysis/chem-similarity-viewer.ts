@@ -6,12 +6,14 @@ import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-meth
 import $ from 'cash-dom';
 import {Fingerprint} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
-import {ChemSearchBaseViewer} from './chem-search-base-viewer';
+import {ChemSearchBaseViewer, SIMILARITY} from './chem-search-base-viewer';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
+import { malformedDataWarning } from '../utils/malformed-data-utils';
+import { getMolSafe } from '../utils/mol-creation_rdkit';
+import '../../css/chem.css';
 
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
-  isEditedFromSketcher: boolean = false;
-  hotSearch: boolean;
+  followCurrentRow: boolean;
   sketchButton: HTMLElement;
   sketchedMolecule: string = '';
   curIdx: number = 0;
@@ -19,7 +21,6 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   idxs: DG.Column | null = null;
   scores: DG.Column | null = null;
   cutoff: number;
-  gridSelect: boolean = false;
   targetMoleculeIdx: number = 0;
 
   get targetMolecule(): string {
@@ -29,10 +30,11 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   }
 
   constructor() {
-    super('similarity');
+    super(SIMILARITY);
     this.cutoff = this.float('cutoff', 0.01, {min: 0, max: 1});
-    this.hotSearch = this.bool('hotSearch', true);
-    this.sketchButton = ui.button(ui.icons.edit(() => {}), () => {
+    this.followCurrentRow = this.bool('followCurrentRow', true,
+      {description: 'Re-compute similarity search when changing current row'});
+    this.sketchButton = ui.icons.edit(() => {
       const sketcher = new grok.chem.Sketcher();
       const savedMolecule = this.targetMolecule;
       sketcher.setMolecule(this.targetMolecule);
@@ -46,39 +48,51 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             this.sketchedMolecule = savedMolecule;
           } else {
             this.sketchedMolecule = sketcher.getMolFile();
-            this.gridSelect = false; 
+            this.gridSelect = false;
             this.render();
           }
         })
         .show();
     })
     this.sketchButton.classList.add('similarity-search-edit');
-    this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', height: '10px'});
+    this.sketchButton.classList.add('chem-mol-view-icon');
+    this.updateMetricsLink(this , {});
   }
 
   init(): void {
     this.isEditedFromSketcher = false;
-    this.hotSearch = true;
+    this.followCurrentRow = true;
     this.initialized = true;
+  }
+
+  isReferenceMolecule(idx: number): boolean {
+    return idx === this.targetMoleculeIdx && !this.isEditedFromSketcher;
   }
 
   async render(computeData = true): Promise<void> {
     if (!this.beforeRender())
       return;
-    if (this.moleculeColumn) {   
+    if (this.moleculeColumn) {
       const progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-      if (computeData && !this.gridSelect) {
+      if (computeData && !this.gridSelect && this.followCurrentRow) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        if (this.isEmptyValue() || this.checkMalformedTargetMolecule()) {
+        if (this.isEmptyOrMalformedValue()) {
           progressBar.close();
           return;
         }
-        const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
-          this.targetMolecule, this.distanceMetric, this.limit, this.cutoff, this.fingerprint as Fingerprint);
-        this.molCol = df.getCol('smiles');
-        this.idxs = df.getCol('indexes');
-        this.scores = df.getCol('score');
+        try {
+          const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
+            this.targetMolecule, this.distanceMetric, this.limit, this.cutoff, this.fingerprint as Fingerprint);
+          this.molCol = df.getCol('smiles');
+          this.idxs = df.getCol('indexes');
+          this.scores = df.getCol('score');
+        } catch (e: any){
+          grok.shell.error(e.message);
+          return;
+        } finally {
+          progressBar.close();
+        }
       } else if (this.gridSelect)
         this.gridSelect = false;
       this.clearResults();
@@ -92,29 +106,24 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           const grid = ui.div([
             renderMolecule(
               this.targetMolecule, {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
-            label],
-          {style: {margin: '5px', padding: '3px', position: 'relative'}},
-          );
+            label]);
           let divClass = 'd4-flex-col';
           divClass += ' d4-current';
           grid.style.boxShadow = '0px 0px 1px var(--grey-6)';
           $(grid).addClass(divClass);
           grids[cnt2++] = grid;
-          this.isEditedFromSketcher = false;
         }
         for (let i = 0; i < this.molCol.length; ++i) {
           const idx = this.idxs.get(i);
           const similarity = this.scores.get(i).toPrecision(2);
-          const label = idx === this.targetMoleculeIdx && !this.isEditedFromSketcher ?
-            this.sketchButton : ui.div();
-          const molProps = this.createMoleculePropertiesDiv(idx, similarity);
+          const refMolecule = this.isReferenceMolecule(idx);
+          const label = refMolecule ? this.sketchButton : ui.div();
+          const molProps = this.createMoleculePropertiesDiv(idx, refMolecule, similarity);
           const grid = ui.div([
             renderMolecule(
               this.molCol?.get(i), {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
             label,
-            molProps],
-          {style: {margin: '5px', padding: '3px', position: 'relative'}},
-          );
+            molProps]);
           let divClass = 'd4-flex-col';
           if (idx == this.curIdx) {
             divClass += ' d4-current';
@@ -148,33 +157,22 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           grids[cnt2++] = grid;
         }
       }
-      panel[cnt++] = ui.div(grids, {classes: 'd4-flex-wrap'});
-      this.root.appendChild(ui.div(panel, {style: {margin: '5px'}}));
+      panel[cnt++] = ui.divH(grids, 'chem-viewer-grid');
+      this.root.appendChild(ui.panel([ui.divV(panel)]));
       progressBar.close();
     }
   }
 
-  isEmptyValue(): boolean {
-    if (!this.targetMolecule || DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule)) {
-      grok.shell.error(`Empty molecule cannot be used for similarity search`);
+  isEmptyOrMalformedValue(): boolean {
+    const malformed = !getMolSafe(this.targetMolecule, {}, getRdKitModule()).mol;
+    const empty = !this.targetMolecule || DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule);
+    const moleculeError = malformed ? `Malformed` : empty ? `Empty` : '';
+    if (moleculeError) {
+      grok.shell.error(`${moleculeError} molecule cannot be used for similarity search`);
       this.clearResults();
       return true;
     }
     return false;
-  }
-
-  checkMalformedTargetMolecule(): boolean {
-    let mol;
-    try {
-      mol = getRdKitModule().get_mol(this.targetMolecule);
-      return false;
-    } catch (e: any) {
-      grok.shell.error(`Possibly malformed target molecule`);
-      this.clearResults();
-      return true;
-    } finally {
-      if (mol) mol.delete();
-    }
   }
 
   clearResults() {
@@ -192,15 +190,15 @@ export async function chemSimilaritySearch(
   minScore: number,
   fingerprint: Fingerprint,
 ) : Promise<DG.DataFrame> {
-  limit = Math.min(limit, smiles.length);
   const targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint);
-  const fingerprintCol = await chemSearches.chemGetFingerprints(smiles, fingerprint);
+  const fingerprintCol = await chemSearches.chemGetFingerprints(smiles, fingerprint, true, false);
+  malformedDataWarning(fingerprintCol, smiles);
   const distances: number[] = [];
 
   const fpSim = similarityMetric[metricName];
   for (let row = 0; row < fingerprintCol.length; row++) {
     const fp = fingerprintCol[row];
-    distances[row] = fp == null ? 100.0 : fpSim(targetFingerprint, fp);
+    distances[row] = (!fp || fp!.allFalse) ? 100.0 : fpSim(targetFingerprint, fp!);
   }
 
   function range(end: number) {
@@ -218,12 +216,12 @@ export async function chemSimilaritySearch(
   }
 
   const indexes = range(table.rowCount)
-    .filter((idx) => fingerprintCol[idx] != null)
+    .filter((idx) => fingerprintCol[idx] && !fingerprintCol[idx]!.allFalse)
     .sort(compare);
   const molsList = [];
   const scoresList = [];
   const molsIdxs = [];
-
+  limit = Math.min(indexes.length, limit);
   for (let n = 0; n < limit; n++) {
     const idx = indexes[n];
     const score = distances[idx];

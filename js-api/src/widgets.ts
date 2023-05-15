@@ -1,14 +1,21 @@
 import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, observeStream, StreamSubscription} from "./events";
-import {Observable, Subscription} from "rxjs";
+import * as rxjs from "rxjs";
+import {fromEvent, Observable, Subject, Subscription} from "rxjs";
 import {Func, Property, PropertyOptions} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
-import {ColorType, FILTER_TYPE, LegendPosition, Type} from "./const";
-import * as rxjs from "rxjs";
-import { filter } from 'rxjs/operators';
+import {ColorType, LegendPosition, Type} from "./const";
+import {filter, map} from 'rxjs/operators';
 import $ from "cash-dom";
 import {MapProxy} from "./utils";
 import dayjs from "dayjs";
+import typeahead from 'typeahead-standalone';
+import {Dictionary, typeaheadConfig} from 'typeahead-standalone/dist/types';
+
+import '../css/breadcrumbs.css';
+import '../css/drop-down.css';
+import '../css/typeahead-input.css';
+import '../css/tags-input.css';
 
 declare let grok: any;
 declare let DG: any;
@@ -20,6 +27,8 @@ export type RangeSliderStyle = 'barbell' | 'lines' | 'thin_barbell';
 export type SliderOptions = {
   style?: RangeSliderStyle
 }
+
+export type TypeAheadConfig = Omit<typeaheadConfig<Dictionary>, 'input' | 'className'>;
 
 export class ObjectPropertyBag {
   source: any;
@@ -778,7 +787,7 @@ export class Dialog extends DartWidget {
 /** See {@link Menu.items} */
 export interface IMenuItemsOptions<T = any> {
 
-  /** Whether or not a check box appears before the item */
+  /** Whether a check box appears before the item */
   isChecked?: (item: T) => boolean;
 
   /** If result is not null, the item is grayed out and the result is shown in the tooltip */
@@ -801,10 +810,35 @@ export interface IMenuItemOptions {
   /** Identifies a group of items where only one can be checked at a time. */
   radioGroup?: string;
 
+  /** Position in the menu */
+  order?: number;
+
+  /** Shortcut to be shown on the item. NOTE: it does not handle the keypress, just shows the shortcut*/
+  shortcut?: string;
+
+  /** Whether the menu is visible; if false, the menu is not added. Might be handy in for-loops and fluent API. */
+  visible?: boolean;
+
+  /** A function that gets called each time an item is shown.
+   * Should return null if the item is enabled, otherwise the reason why it's disabled.
+   * The reason for being disabled is shown in a tooltip. */
+  isEnabled?: () => (string | null);
+
   /** For items preceded by checkboxes, indicates if the item is checked. */
   check?: boolean;
+
+  /** Tooltip to be shown on the menu item */
+  description?: string;
 }
 
+
+export interface IShowMenuOptions {
+  element?: HTMLElement,
+  causedBy?: MouseEvent,
+  x?: number,
+  y?: number,
+  nextToElement?: boolean
+}
 
 /**
  * Menu (either top menu or popup menu).
@@ -815,7 +849,7 @@ export interface IMenuItemOptions {
  * DG.Menu.popup()
  *   .item('Show info', () => grok.shell.info('Info'))
  *   .separator()
- *   .items(['First', 'Second'], showBalloon)
+ *   .items(['First', 'Second'], (s) => grok.shell.info(s))
  *   .show();
  * */
 export class Menu {
@@ -877,7 +911,8 @@ export class Menu {
   /** For each item in items, adds a menu group with the specified text and handler. */
   items<T = any>(items: T[], onClick: (item: T) => void, options: IMenuItemsOptions<T> | null = null): Menu {
     return toJs(api.grok_Menu_Items(this.dart, items, onClick, options?.isValid, options?.isChecked,
-      options?.toString, options?.getTooltip, options?.onMouseEnter, options?.radioGroup));
+      options?.hasOwnProperty('toString') ? options.toString : null,
+      options?.getTooltip, options?.onMouseEnter, options?.radioGroup));
   }
 
   /** Adds a separator line.
@@ -888,8 +923,17 @@ export class Menu {
 
   /** Shows the menu.
    * @returns {Menu} */
-  show(): Menu {
-    return toJs(api.grok_Menu_Show(this.dart));
+  show(options?: IShowMenuOptions): Menu {
+    return toJs(api.grok_Menu_Show(this.dart, options?.element, options?.causedBy, options?.x, options?.y, options?.nextToElement));
+  }
+
+  /** Binds the menu to the specified {@link options.element} */
+  bind(element: HTMLElement): Menu {
+    element.oncontextmenu = (ev) => {
+      ev.preventDefault();
+      this.show({causedBy: ev});
+    }
+    return this;
   }
 
   get onContextMenuItemClick() {
@@ -1087,7 +1131,7 @@ export class DateInput extends InputBase<dayjs.Dayjs | null> {
     super(dart, onChanged);
   }
 
-  get value(): dayjs.Dayjs | null { 
+  get value(): dayjs.Dayjs | null {
     const date = api.grok_DateInput_Get_Value(this.dart);
     return date == null ? date : dayjs(date);
   }
@@ -1747,5 +1791,286 @@ export class FilesWidget extends DartWidget {
    * [path] accepts a full-qualified name (see [Entity.nqName]). */
   static create(params: {path?: string, dataSourceFilter?: fileShares[]} = {}): FilesWidget {
     return toJs(api.grok_FilesWidget(params));
+  }
+}
+
+export class Breadcrumbs {
+  path: string[];
+  root: HTMLDivElement;
+
+  constructor(path: string[]) {
+    this.root = ui.div();
+    this.path = path;
+
+    this.root = ui.divH(path.map((element) => ui.div(
+      ui.link(element, () => {}, '', 'ui-breadcrumbs-text-element'), 'ui-breadcrumbs-element')), 'ui-breadcrumbs');
+
+    const rootElements = this.root.getElementsByClassName('ui-breadcrumbs-element');
+    for (let i = 0; i < rootElements.length - 1; i++)
+      rootElements[i].after(ui.iconFA('chevron-right'));
+  }
+
+
+  get onPathClick(): Observable<string[]> {
+    const pathElements = this.root.getElementsByClassName('ui-breadcrumbs-text-element');
+
+    return fromEvent<MouseEvent>(pathElements, 'click')
+      .pipe(
+        map((event) => {
+          const currentElement = (event.target as HTMLElement).innerText;
+          return this.path.slice(0, this.path.indexOf(currentElement) + 1);
+        })
+      );
+  }
+}
+
+export class DropDown {
+  private _element: HTMLElement;
+  private _dropDownElement: HTMLDivElement;
+  private _isMouseOverElement: boolean;
+  private _label: string | Element;
+
+  isExpanded: boolean;
+  root: HTMLDivElement;
+
+
+  constructor(label: string | Element, createElement: () => HTMLElement) {
+    this._isMouseOverElement = false;
+    this.isExpanded = false;
+
+    this._label = label;
+    this._element = createElement();
+
+    this._dropDownElement = ui.div(ui.div(this._element), 'ui-drop-down-content');
+    this._dropDownElement.style.visibility = 'hidden';
+
+    this.root = ui.div([this._label, this._dropDownElement], 'ui-drop-down-root');
+
+    this._initEventListeners();
+  }
+
+
+  private _initEventListeners() {
+    this.root.addEventListener('mousedown', (e) => {
+      // check if the button is LMB
+      if (e.button !== 0)
+        return;
+      if (this._isMouseOverElement)
+        return;
+
+      this._setExpandedState(this.isExpanded);
+    });
+
+    this._dropDownElement.addEventListener('mouseover', () => {
+      this._isMouseOverElement = true;
+    }, false);
+
+    this._dropDownElement.addEventListener('mouseleave', () => {
+      this._isMouseOverElement = false;
+    }, false);
+
+    document.addEventListener('click', (event) => {
+      if (this.root.contains(event.target as Node))
+        return;
+      if (!this.isExpanded)
+        return;
+
+      this._setExpandedState(this.isExpanded);
+    });
+  }
+
+  private _setExpandedState(isExpanded: boolean) {
+    this.isExpanded = !isExpanded;
+    if (isExpanded) {
+      this.root.classList.remove('ui-drop-down-root-expanded');
+      this._dropDownElement.style.visibility = 'hidden';
+      return;
+    }
+
+    this.root.classList.add('ui-drop-down-root-expanded');
+    this._dropDownElement.style.visibility = 'visible';
+  }
+
+
+  get onExpand(): Observable<MouseEvent> {
+    return fromEvent<MouseEvent>(this.root, 'click').pipe(filter(() => !this._isMouseOverElement));
+  }
+
+  get onElementClick(): Observable<MouseEvent> {
+    return fromEvent<MouseEvent>(this._dropDownElement, 'click');
+  }
+
+  // TODO: add list constructor to DropDown
+}
+
+export class TypeAhead extends InputBase {
+  constructor(name: string, config: TypeAheadConfig) {
+    const inputElement = ui.stringInput(name, '');
+    super(inputElement.dart);
+
+    const typeAheadConfig: typeaheadConfig<Dictionary> = Object.assign(
+      {input: <HTMLInputElement> this.input}, config);
+
+    typeahead(typeAheadConfig);
+    this._changeStyles();
+  }
+
+  _changeStyles() {
+    this.root.getElementsByClassName('tt-list')[0].className = 'ui-input-list';
+    this.root.getElementsByClassName('ui-input-list')[0].removeAttribute('style');
+    this.root.getElementsByClassName('tt-input')[0].className = 'ui-input-editor';
+    this.root.getElementsByClassName('typeahead-standalone')[0].classList.add('ui-input-root');
+  }
+}
+
+export class TagsInput extends InputBase {
+  private _tags: string[];
+  private _tagsDiv: HTMLDivElement;
+  private _addTagIcon: HTMLElement;
+
+  private _onTagAdded: Subject<string> = new Subject<string>();
+  private _onTagRemoved: Subject<string> = new Subject<string>();
+
+
+  constructor(name: string, tags: string[], showBtn: boolean) {
+    super(ui.stringInput(name, '').dart);
+
+    this._addTagIcon = showBtn ?
+      ui.iconFA('plus', () => this.addTag((this.input as HTMLInputElement).value)) :
+      ui.iconFA('');
+
+    this._tags = tags;
+    this._tagsDiv = ui.div(tags.map((tag) => { return this._createTag(tag); }), 'ui-tag-list');
+
+    this._createRoot();
+    this._initEventListeners();
+  }
+
+
+  private _createTag(tag: string): HTMLElement {
+    const icon = ui.iconFA('times', () => this.removeTag(currentTag.innerText));
+    const currentTag = ui.span([ui.span([tag]), icon], `ui-tag`);
+    currentTag.dataset.tag = tag;
+
+    currentTag.ondblclick = () => {
+      const input = this._createTagEditInput(currentTag);
+      (currentTag.firstElementChild as HTMLElement).innerText = '';
+      currentTag.insertBefore(input, currentTag.firstElementChild);
+
+      input.select();
+      input.focus();
+    };
+
+    return currentTag;
+  }
+
+  private _createTagEditInput(currentTag: HTMLElement): HTMLInputElement {
+    const tagValue = currentTag.innerText;
+    const input = document.createElement('input');
+    input.value = tagValue;
+
+    let blurFlag = true;
+
+    input.onblur = () => {
+      if (!blurFlag)
+        return;
+      const newTag = input.value;
+      input.remove();
+      this._renameTag(tagValue, newTag, currentTag);
+    };
+
+    input.onkeyup = (event) => {
+      if (event.key === 'Escape') {
+        blurFlag = false;
+        input.remove();
+        (currentTag.firstElementChild as HTMLElement).innerText = tagValue;
+      } else if (event.key === 'Enter') {
+        blurFlag = false;
+        const newTag = input.value;
+        input.remove();
+        this._renameTag(tagValue, newTag, currentTag);
+      }
+    };
+
+    return input;
+  }
+
+  private _createRoot(): void {
+    const inputContainer = ui.div([this.captionLabel, this.input, ui.div(this._addTagIcon, 'ui-input-options')],
+      'ui-input-root');
+    const tagContainer = ui.div([ui.label(' ', 'ui-input-label'), this._tagsDiv], 'ui-input-root');
+
+    this.root.append(inputContainer, tagContainer);
+    this.root.classList.add('ui-input-tags');
+  }
+
+  private _initEventListeners(): void {
+    this.input.addEventListener('keyup', (event: KeyboardEvent) => {
+      if (event.code === 'Enter')
+        this.addTag((this.input as HTMLInputElement).value);
+    });
+
+    this.input.addEventListener('keydown', (event: KeyboardEvent) => {
+      if ((this.input as HTMLInputElement).value.length === 0 && event.code === 'Backspace')
+        this.removeTag(this._tags[0]);
+    });
+  }
+
+  private _renameTag(oldTag: string, newTag: string, currentTag: HTMLElement): void {
+    const currentTagSpan = currentTag.firstElementChild as HTMLElement;
+    if (!this._isProper(newTag)) {
+      currentTagSpan.innerText = oldTag;
+      return;
+    }
+
+    currentTagSpan.innerText = newTag;
+    currentTag.dataset.tag = newTag;
+    this._tags[this._tags.indexOf(oldTag)] = newTag;
+  }
+
+  private _isProper(tag: string): boolean {
+    return !(tag === '' || this._tags.includes(tag));
+  }
+
+
+  addTag(tag: string): void {
+    if (!this._isProper(tag))
+      return;
+
+    this._tags.unshift(tag);
+    const currentTag = this._createTag(tag);
+    this._tagsDiv.insertBefore(currentTag, this._tagsDiv.firstChild);
+    (this.input as HTMLInputElement).value = '';
+    this._onTagAdded.next(tag);
+  }
+
+  removeTag(tag: string): void {
+    const tagIndex = this._tags.indexOf(tag);
+    if (tagIndex === -1)
+      return;
+    this._tags.splice(tagIndex, 1);
+    const currentTag = this._tagsDiv.querySelector(`[data-tag="${tag}"]`);
+    this._tagsDiv.removeChild(currentTag!);
+    this._onTagRemoved.next(tag);
+  }
+
+  getTags(): string[] {
+    return this._tags;
+  }
+
+  setTags(tags: string[]): void {
+    this._tags = tags;
+    this._tagsDiv = ui.div(tags.map((tag) => { return this._createTag(tag); }), 'ui-tag-list');
+    const currentTagsDiv = this.root.getElementsByClassName('ui-tag-list')[0];
+    currentTagsDiv.replaceWith(this._tagsDiv);
+  }
+
+
+  get onTagAdded(): Observable<string> {
+    return this._onTagAdded;
+  }
+
+  get onTagRemoved(): Observable<string> {
+    return this._onTagRemoved;
   }
 }

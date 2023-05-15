@@ -4,7 +4,7 @@
     "access": "public"
   },
   "friendlyName": "Datagrok chem-meta library",
-  "version": "1.0.8",
+  "version": "1.1.0",
   "description": "",
   "dependencies": {
     "wu": "latest"
@@ -22,9 +22,10 @@
     "link": "npm link",
     "link-api": "npm link datagrok-api",
     "link-utils": "npm link @datagrok-libraries/utils",
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils",
+    "link-all": "npm link",
     "build": "tsc",
     "lint": "eslint \"./src/**/*.ts\"",
-    "lint-fix": "eslint \"./src/**/*.ts\" --fix"
+    "lint-fix": "eslint \"./src/**/*.ts\" --fix",
+    "build-all": "npm run build"
   }
 }

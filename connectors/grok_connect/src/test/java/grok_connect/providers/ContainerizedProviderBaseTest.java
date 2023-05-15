@@ -4,12 +4,12 @@ import grok_connect.connectors_info.Credentials;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataProvider;
 import grok_connect.connectors_info.DbCredentials;
+import grok_connect.providers.utils.ConstructorParameterResolver;
 import grok_connect.providers.utils.DataFrameComparator;
 import grok_connect.providers.utils.Provider;
 import grok_connect.utils.ProviderManager;
 import grok_connect.utils.QueryMonitor;
 import grok_connect.utils.SettingsManager;
-import org.apache.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 
@@ -28,6 +29,7 @@ import org.testcontainers.containers.JdbcDatabaseContainer;
   */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@ExtendWith(ConstructorParameterResolver.class)
 public abstract class ContainerizedProviderBaseTest {
     private final Provider type;
     protected JdbcDatabaseContainer<?> container;
@@ -46,9 +48,8 @@ public abstract class ContainerizedProviderBaseTest {
     public void init() {
         SettingsManager settingsManager = SettingsManager.getInstance();
         settingsManager.initSettingsWithDefaults();
-        Logger mockLogger = Mockito.mock(Logger.class);
         QueryMonitor mockMonitor = Mockito.mock(QueryMonitor.class);
-        ProviderManager providerManager = new ProviderManager(mockLogger);
+        ProviderManager providerManager = new ProviderManager();
         ProviderManager spy = Mockito.spy(providerManager);
         Mockito.when(spy.getQueryMonitor()).thenReturn(mockMonitor);
         provider = spy.getByName(type.getProperties().get("providerName").toString());

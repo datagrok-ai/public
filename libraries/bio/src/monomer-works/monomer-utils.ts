@@ -6,8 +6,10 @@ import {
   HELM_FIELDS, HELM_CORE_FIELDS, RGROUP_FIELDS, jsonSdfMonomerLibDict,
   MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME
 } from '../utils/const';
-import {getSplitter, SplitterFunc, TAGS} from '../utils/macromolecule';
 import {IMonomerLib, Monomer} from '../types/index';
+import {TAGS} from '../utils/macromolecule/consts';
+import {SplitterFunc} from '../utils/macromolecule/types';
+import {getSplitter} from '../utils/macromolecule/utils';
 
 
 export const expectedMonomerData = ['symbol', 'name', 'molfile', 'rgroups', 'polymerType', 'monomerType'];
@@ -22,7 +24,7 @@ export function encodeMonomers(col: DG.Column): DG.Column | null {
   for (let i = 0; i < col.length; ++i) {
     let encodedMonomerStr = '';
     const monomers = splitterFunc(col.get(i));
-    monomers.forEach((m) => {
+    monomers.forEach((m: string) => {
       if (!monomerSymbolDict[m]) {
         if (encodeSymbol > MONOMER_ENCODE_MAX) {
           grok.shell.error(`Not enough symbols to encode monomers`);

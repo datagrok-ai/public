@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 
 import * as C from './constants';
 import * as types from './types';
-import {PositionStats, SummaryStats, MonomerPositionStats} from '../model';
+import {PositionStats, MonomerPositionStats} from '../model';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
@@ -21,7 +21,7 @@ export function setAARRenderer(col: DG.Column, alphabet: string): void {
 
 export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
   currentPosition: string, monomerPositionStats: MonomerPositionStats, bound: DG.Rect,
-  mutationCliffsSelection: types.PositionToAARList, substitutionsInfo: types.SubstitutionsInfo,
+  mutationCliffsSelection: types.PositionToAARList, substitutionsInfo: types.MutationCliffs,
   twoColorMode: boolean = false): void {
   const positionStats = monomerPositionStats[currentPosition];
   const pVal: number = positionStats[currentAAR].pValue;

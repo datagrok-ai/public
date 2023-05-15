@@ -11,7 +11,6 @@ Commands:
     create    Create a package
     init      Modify a package template
     link      Link \`datagrok-api\` and libraries for local development
-    unlink    Revert \`grok link\`
     publish   Upload a package
     test      Run package tests
 
@@ -145,12 +144,12 @@ const HELP_LINK = `
 Usage: grok link
 
 Link \`datagrok-api\` and libraries for local development
-`;
 
-const HELP_UNLINK = `
-Usage: grok unlink
+Options:
+[--local | --npm]
 
-Revert \`grok link\`
+--local   Default. Links libraries and updates package scripts ("link-all", "build-all")
+--npm     Unlinks local packages and runs \`npm i\`
 `;
 
 const HELP_MIGRATE = `
@@ -168,7 +167,6 @@ export const help = {
   create: HELP_CREATE,
   init: HELP_INIT,
   link: HELP_LINK,
-  unlink: HELP_UNLINK,
   publish: HELP_PUBLISH,
   test: HELP_TEST,
   help: HELP

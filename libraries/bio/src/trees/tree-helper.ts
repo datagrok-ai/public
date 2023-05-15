@@ -2,8 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {NodeCuttedType, NodeType} from './index';
 import {DistanceMatrix} from './distance-matrix';
+import {ClusterMatrix, NodeCuttedType, NodeType} from './types';
+import {DistanceMetric} from './consts';
 
 export interface ITreeHelper {
   /** Generates data frame with row per node, parent relation, distance, annotation
@@ -60,6 +61,11 @@ export interface ITreeHelper {
   hierarchicalClustering(df: DG.DataFrame, distance: string, linkage: string): Promise<NodeType>;
 
   hierarchicalClusteringByDistance(distance: DistanceMatrix, linkage: string): Promise<NodeType>;
+
+  calcDistanceMatrix(df: DG.DataFrame, colNames: string[],
+    distanceMetric?: DistanceMetric): Promise<DistanceMatrix | null>;
+
+  parseClusterMatrix(clusterMatrix:ClusterMatrix): NodeType;
 }
 
 export async function getTreeHelper(): Promise<ITreeHelper> {

@@ -41,7 +41,6 @@ export namespace chem {
   export let SKETCHER_LOCAL_STORAGE = 'sketcher';
   export const STORAGE_NAME = 'sketcher';
   export const KEY = 'selected';
-  const molfileHandler = MolfileHandler.createInstance(WHITE_MOLBLOCK);
 
   export enum Notation {
     Smiles = 'smiles',
@@ -67,6 +66,7 @@ export namespace chem {
 
     onChanged: Subject<any> = new Subject<any>();
     host?: Sketcher;
+    _name: string = '';
 
     constructor() {
       super(ui.box());
@@ -254,6 +254,10 @@ export namespace chem {
 
     /** Sets SMILES, MOLBLOCK, or any other molecule representation */
     setValue(x: string) {
+      const index = extractors.map(it => it.name).indexOf('nameToSmiles');
+      const el = extractors.splice(index, 1)[0];
+      extractors.splice(extractors.length, 0, el);
+
       const extractor = extractors
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
 
@@ -290,9 +294,8 @@ export namespace chem {
     }
 
     createSketcher() {
-      this.sketcherFunctions = Func.find({tags: ['moleculeSketcher']});
+      this.sketcherFunctions = Func.find({ tags: ['moleculeSketcher'] });
       this.setExternalModeForSubstrFilter();
-      this.root.innerHTML = '';
       if (this._mode === SKETCHER_MODE.INPLACE)
         this.root.appendChild(this.createInplaceModeSketcher());
       else
@@ -321,7 +324,7 @@ export namespace chem {
     };
 
     createMoleculeTooltip(currentMolfile: string): HTMLElement{
-      molfileHandler.init(currentMolfile);
+      const molfileHandler = MolfileHandler.getInstance(currentMolfile);
       const maxDelta = 10; // in case deltaX or deltaY exceeds maxDelata we assume molecule is large one and draw it in a tooltip
       const zoom = 20; // coefficient we use to calculate size of canvas to feet molecule
       const xCoords = molfileHandler.x;
@@ -444,6 +447,8 @@ export namespace chem {
       });
 
       let optionsIcon = ui.iconFA('bars', () => {
+        const menuHost = ui.div([], {style: {position: 'fixed', 'z-index': 100}});
+        this.host.parentElement?.prepend(menuHost);
         Menu.popup()
           .item('Copy as SMILES', () => navigator.clipboard.writeText(this.getSmiles()))
           .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.getMolFile()))
@@ -457,19 +462,19 @@ export namespace chem {
           .endGroup()
           .separator()
           .items(this.sketcherFunctions.map((f) => f.friendlyName), (friendlyName: string) => {
-            if (currentSketcherType !== friendlyName) {
-                currentSketcherType = friendlyName;
-                grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, friendlyName, true);
-                this.sketcherType = currentSketcherType;
-                if (!this.resized)
-                  this._autoResized = true;
-            }
+            if (currentSketcherType === friendlyName)
+              return;
+            currentSketcherType = friendlyName;
+            grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, friendlyName, true);
+            this.sketcherType = currentSketcherType;
+            if (!this.resized)
+              this._autoResized = true;
           },
             {
               isChecked: (item) => item === currentSketcherType, toString: item => item,
               radioGroup: 'sketcher type'
             })
-          .show();
+          .show({element: menuHost, x: (this.host.parentElement?.offsetWidth ?? 0) + 10, y: 10});
       });
       $(optionsIcon).addClass('d4-input-options');
       molInputDiv.append(ui.div([this.molInput, optionsIcon], 'grok-sketcher-input'));

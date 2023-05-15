@@ -20,18 +20,17 @@ import {GridTreePlacer} from './tree-renderers/grid-tree-placer';
 import {Unsubscribable} from 'rxjs';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 
+import '../css/injected-dendrogram.css';
+
 export function injectTreeForGridUI2(
   grid: DG.Grid, treeRoot: NodeType | null, leafColName?: string, neighborWidth: number = 100, cut?: TreeCutOptions
 ): GridNeighbor {
   const th: ITreeHelper = new TreeHelper();
-
   const treeNb: GridNeighbor = attachDivToGrid(grid, neighborWidth);
-
   // const treeDiv = ui.div();
   // treeRoot.appendChild(treeDiv);
   // treeRoot.style.backgroundColor = '#FFF0F0';
   // treeRoot.style.setProperty('overflow-y', 'hidden', 'important');
-
   // TODO: adapt tree: bio.NodeType to MarkupNodeType
   if (treeRoot) markupNode(treeRoot);
   const totalLength: number = treeRoot ? (treeRoot as MarkupNodeType).subtreeLength! : 1;
@@ -101,8 +100,8 @@ export function injectTreeForGridUI2(
   function alignGridWithTree(): void {
     const [viewedRoot] = th.setGridOrder(treeRoot, grid, leafColName);
     if (viewedRoot) markupNode(viewedRoot);
-    const source = viewedRoot ? {type: 'biojs', data: viewedRoot} :
-      {type: 'biojs', data: {name: 'NONE', branch_length: 1, children: []}};
+    // const source = viewedRoot ? {type: 'biojs', data: viewedRoot} :
+    //   {type: 'biojs', data: {name: 'NONE', branch_length: 1, children: []}};
 
     renderer.treeRoot = viewedRoot as MarkupNodeType;
   }
@@ -115,10 +114,10 @@ export function injectTreeForGridUI2(
   try {
     const lineWidthProperty = DG.Property.int(D_PROPS.lineWidth,
       (obj) => {
-        let k = 11;
+        return obj;
       },
       (obj, value) => {
-        let k = 11;
+        obj = value;
       },
       1);
     lineWidthProperty.category = `Dendrogram ${D_PROPS_CATS.STYLE}`;
@@ -199,7 +198,7 @@ export function injectTreeForGridUI2(
 
       const oldSelection: DG.BitSet = grid.dataFrame.selection.clone();
       if (renderer.selections.length == 0) {
-        grid.dataFrame.selection.init((rowI) => { return false; }, false);
+        grid.dataFrame.selection.init((_) => { return false; }, false);
       } else {
         const leafCol: DG.Column | null = !!leafColName ? grid.dataFrame.getCol(leafColName) : null;
         const nodeNameSet = new Set(
@@ -300,13 +299,45 @@ export function injectTreeForGridUI2(
 
     renderer.selections = selections;
   }
+  // Variable to track if filter is changed and prevent the sorting change event
+  let filterChangeCounter = 0;
 
   function dataFrameOnFilterChanged(value: any) {
     // TODO: Filter newick tree
     console.debug('Dendrogram: injectTreeForGridUI2() grid.dataFrame.onFilterChanged()');
-
+    filterChangeCounter += 1;
     // to prevent nested fire event in event handler
-    window.setTimeout(() => { alignGridWithTree(); }, 0);
+    window.setTimeout(() => {
+      alignGridWithTree();
+    }, 0);
+  }
+
+  function dfOnSortingChanged(value?: any) {
+    // If the reordering is caused by the filter change, return
+    if (filterChangeCounter > 0) {
+      filterChangeCounter -= 1;
+      return;
+    }
+    const treeOverlay = ui.div();
+    treeOverlay.style.width = treeNb.root!.style.width;
+    treeOverlay.style.height = treeNb.root!.style.height;
+    treeOverlay.classList.add('dendrogram-overlay');
+
+    const sortInfoDiv = ui.div('Revert columns sort order to see Dendrogram Tree');
+    const realignButton = ui.button('Revert sort', () => {
+      alignGridWithTree();
+
+      treeNb?.root?.removeChild(treeOverlay);
+      sortingSub = grid.onRowsSorted.subscribe(dfOnSortingChanged);
+    });
+
+    const infoContainer = ui.divV(
+      [sortInfoDiv, realignButton]
+    );
+
+    treeOverlay.appendChild(infoContainer);
+    treeNb.root?.appendChild(treeOverlay);
+    sortingSub.unsubscribe();
   }
 
   const subs: Unsubscribable[] = [];
@@ -314,10 +345,12 @@ export function injectTreeForGridUI2(
   subs.push(renderer.onMouseOverChanged.subscribe(rendererOnMouseOverChanged));
   subs.push(renderer.onSelectionChanged.subscribe(rendererOnSelectionChanged));
 
+  let sortingSub = grid.onRowsSorted.subscribe(dfOnSortingChanged);
+  subs.push(sortingSub);
+
   subs.push(grid.dataFrame.onCurrentRowChanged.subscribe(dataFrameOnCurrentRowChanged));
   subs.push(grid.dataFrame.onMouseOverRowChanged.subscribe(dataFrameOnMouseOverRowChanged));
   subs.push(grid.dataFrame.onSelectionChanged.subscribe(dataFrameOnSelectionChanged));
-
   subs.push(grid.dataFrame.onFilterChanged.subscribe(dataFrameOnFilterChanged));
 
   return treeNb;

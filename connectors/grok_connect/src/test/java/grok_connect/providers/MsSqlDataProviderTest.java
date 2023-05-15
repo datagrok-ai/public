@@ -24,8 +24,8 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
     private static final String DEFAULT_DATABASE_NAME = "master";
     private static final String DEFAULT_SCHEMA_NAME = "dbo";
 
-    protected MsSqlDataProviderTest() {
-        super(Provider.MSSQL);
+    protected MsSqlDataProviderTest(Provider provider) {
+        super(provider);
     }
 
     @Override
@@ -59,6 +59,7 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
         // method probably should throw something when bad input
     }
 
+    @Disabled
     @DisplayName("Test of getSchema() method with correct DataConnection")
     @ParameterizedTest(name = "CORRECT ARGUMENTS")
     @Sql(path = "scripts/mssql/mssql_basic_types.sql",

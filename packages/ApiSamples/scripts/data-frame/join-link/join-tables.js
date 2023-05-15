@@ -26,9 +26,8 @@ grok.shell.addTableView(t1);
 grok.shell.addTableView(t2);
 grok.shell.addTableView(tj);
 
-// Join types:
-//   From SYNC_TYPE enum:
-//      INNER
-//      OUTER
-//      LEFT
-//      RIGHT
+// Join types from JOIN_TYPE enum:
+//   INNER
+//   OUTER
+//   LEFT
+//   RIGHT

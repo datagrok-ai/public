@@ -238,7 +238,7 @@ export class IconTool extends DG.ViewBase {
 
     drawIcon('#efefef');
 
-    this.root.append(ui.divH([
+    this.root.appendChild(ui.divH([
       ui.divV([
         canva,
         canvaOutPut,

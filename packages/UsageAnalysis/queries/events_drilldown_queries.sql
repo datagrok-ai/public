@@ -1,5 +1,4 @@
 --name: PackageInfo
---meta.cache: true
 --input: string name
 --connection: System:Datagrok
 select * from packages
@@ -8,7 +7,7 @@ where name = @name;
 
 
 --name: FunctionInfoByName
---meta.cache: true
+
 --input: string name
 --connection: System:Datagrok
 select * from event_types et
@@ -17,7 +16,6 @@ where name = @name;
 
 
 --name: TopUsersOfPackage
---meta.cache: true
 --input: string name
 --input: string date { pattern: datetime }
 --input: list users
@@ -44,7 +42,6 @@ limit 50
 
 
 --name: TopFunctionsOfPackage
---meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --input: string name
@@ -71,7 +68,6 @@ limit 50;
 
 
 --name: TopErrorsOfPackage
---meta.cache: true
 --input: string date { pattern: datetime }
 --input: list users
 --input: string name
@@ -96,7 +92,6 @@ limit 50;
 
 
 --name: TopUsersOfFunction
---meta.cache: true
 --input: string name
 --input: string date { pattern: datetime }
 --input: list users
@@ -115,7 +110,6 @@ limit 50
 
 
 --name: TopFunctionsOfSource
---meta.cache: true
 --input: string name
 --input: string date { pattern: datetime }
 --input: list users
@@ -142,7 +136,6 @@ limit 50;
 
 
 --name: TopUsersOfSource
---meta.cache: true
 --input: string name
 --input: string date { pattern: datetime }
 --input: list users

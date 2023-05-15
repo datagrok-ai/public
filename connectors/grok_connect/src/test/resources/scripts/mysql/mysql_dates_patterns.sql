@@ -1,4 +1,4 @@
-DELET FROM dates_patterns;
+DELETE FROM dates_patterns;
 
 insert into dates_patterns (date) values (CURDATE());
 insert into dates_patterns (date) values (DATE_SUB(CURDATE(), INTERVAL 1 DAY)); -- yesterday

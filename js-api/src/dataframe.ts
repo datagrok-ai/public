@@ -9,7 +9,7 @@ import {
   SimilarityMetric,
   AggregationType,
   CsvImportOptions,
-  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColorType, ColumnAggregationType
+  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColorType, ColumnAggregationType, JOIN_TYPE
 } from "./const";
 import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
@@ -388,16 +388,18 @@ export class DataFrame {
 
   /**
    * Merges two tables by the specified key columns.
-   * @param {DataFrame} t2
-   * @param {string[]} keyColumns1
-   * @param {string[]} keyColumns2
-   * @param {string[]} valueColumns1
-   * @param {string[]} valueColumns2
-   * @param {JoinType} joinType
+   * @param {DataFrame} t2 - a table to join
+   * @param {string[]} keyColumns1 - key column names from the first table
+   * @param {string[]} keyColumns2 - key column names from the second table
+   * @param {string[]} valueColumns1 - column names to copy from the first table.
+   * Pass null to add all columns, an empty array [] to not add any columns, or an array with column names to add them specifically.
+   * @param {string[]} valueColumns2 - column names to copy from the second table
+   * @param {JoinType} joinType - inner, outer, left, or right. See [DG.JOIN_TYPE]
    * @param {boolean} inPlace - merges content in-place into the source table
    * @returns {DataFrame}
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/join-link/join-tables}
    * */
-  join(t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[], valueColumns2: string[], joinType: JoinType, inPlace: boolean): DataFrame {
+  join(t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[] | null = null, valueColumns2: string[] | null = null, joinType: JoinType = JOIN_TYPE.INNER, inPlace: boolean = false): DataFrame {
     return new DataFrame(api.grok_JoinTables(this.dart, t2.dart, keyColumns1, keyColumns2, valueColumns1, valueColumns2, joinType, inPlace));
   }
 

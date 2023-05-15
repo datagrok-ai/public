@@ -6,7 +6,7 @@
   "configurations": [
     {
       "preLaunchTask": "rebuild",
-      "type": "pwa-chrome",
+      "type": "chrome",
       "request": "launch",
       "name": "Debug #{GROK_HOST_ALIAS}",
       "url": "#{GROK_HOST}",

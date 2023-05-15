@@ -7,10 +7,8 @@ on:
         required: true
         type: string
   push:
-    branches:
-      - 'master'
     paths:
-      - 'libraries/*/package.json'
+      - 'libraries/**'
 
 jobs:
   metadata:
@@ -63,7 +61,7 @@ jobs:
               unpublished_deps="$(jq -r '. | to_entries | map(select(.value | match("\\.\\./.*")))[] | "\(.key)=\(.value)"' <<<$dependencies  | tr '\n' ' ')"
               unpublished_deps=${unpublished_deps}
               if [[ $npm_version != ${current_version} ]]; then
-                if [[ $unpublished_deps == ""] ]]; then
+                if [[ $unpublished_deps == "" ]]; then
                   CHANGED_VERSION='true'
                   packages=$(grep -l "$name" packages/*/package.json | awk -F'/' '{printf ("%s ", $2)}' | sort -u)
                 else
@@ -144,7 +142,7 @@ jobs:
         if: ${{ matrix.build == 'true' }}
       - name: npm publish
         run: npm publish --access public
-        if: ${{ matrix.changed_version == 'true' }}
+        if: matrix.changed_version == 'true' && github.ref == 'refs/heads/master'
         working-directory: libraries/${{ matrix.project }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -11,7 +11,6 @@ import {
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {Measure, StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
-import * as C from './constants';
 
 /**
  * Cast an aligned sequences column to clean sequences.
@@ -199,7 +198,7 @@ export class PeptideSimilaritySpaceWidget {
     const elements = ui.divV([plot.root, inputs]);
 
     // Move detaching scatterplot to the grid.
-    plot.onEvent('d4-viewer-detached').subscribe((args) => {
+    plot.onEvent('d4-viewer-detached').subscribe((_args) => {
       let found = false;
 
       for (const v of this.view.viewers) {

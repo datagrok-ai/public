@@ -23,7 +23,8 @@ export class ChoiceInputGroups {
       searchChoices: true,
       itemSelectText: '',
     });
-
+    field.input.addEventListener('change', (event) =>
+      (document.querySelector('.ua-apply-button') as HTMLButtonElement).disabled = false);
     field.input.addEventListener('search', async (event) => {
       const newGroups: DG.Group[] = await grok.dapi.groups.getGroupsLookup(choices.input.value);
       choices.clearChoices();
@@ -31,6 +32,10 @@ export class ChoiceInputGroups {
         return {value: g.id, label: g.friendlyName};
       }));
     });
+    const all = await grok.dapi.groups.getGroupsLookup('');
+    choices.setChoices(() => all.map((g: DG.Group) => {
+      return {value: g.id, label: g.friendlyName};
+    }));
 
     return new ChoiceInputGroups(choices, field, (await grok.dapi.groups.getGroupsLookup('All users'))[0].id);
   }

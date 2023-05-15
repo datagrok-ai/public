@@ -15,5 +15,5 @@ Provides access to [OData](https://www.odata.org/) based service.
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [OData](https://www.odata.org/)

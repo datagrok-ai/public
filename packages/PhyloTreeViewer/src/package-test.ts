@@ -3,8 +3,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 
+import './tests/package-funcs-tests';
 import './tests/grid-with-tree-tests';
-import './tests/newick-phylotree-tests';
 import './tests/newick-phylocanvas-tests';
 import './tests/phylocanvas-gl-viewer-tests';
 import './tests/viewers';

@@ -1,3 +1,4 @@
+/*
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
@@ -23,7 +24,7 @@ export class TopFunctionsViewer extends UaFilterableQueryViewer {
             [new UaDataFrameQueryViewer(
               'Function Info',
               'FunctionInfoByName',
-              (t: DG.DataFrame) => DG.Viewer.grid(t).root,
+              (t: DG.DataFrame) => DG.Viewer.grid(t),
                   null as any,
                   {name: args.args.categories[0]},
                   filterStream.getValue(),
@@ -32,7 +33,7 @@ export class TopFunctionsViewer extends UaFilterableQueryViewer {
             new UaDataFrameQueryViewer(
               'Users',
               'TopUsersOfFunction',
-              (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
+              (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions),
                   null as any,
                   {name: args.args.categories[0]},
                   filterStream.getValue(),
@@ -44,8 +45,9 @@ export class TopFunctionsViewer extends UaFilterableQueryViewer {
 
           grok.shell.o = pp.getRoot();
         });
-        return viewer.root;
+        return viewer;
       },
     );
   }
 }
+*/

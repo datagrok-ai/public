@@ -301,7 +301,10 @@ function getFlagIcon(group: TreeViewGroup) : HTMLElement | null {
 
 function getNotIcon(group: TreeViewGroup) : HTMLElement | null {
   const molHost: HTMLElement = group.captionLabel;
-  const c = molHost.getElementsByClassName('fa-not-equal');
+  let c = molHost.getElementsByClassName('fa-equals');//'fa-not-equal');
+  if (c.length === 0)
+    c = molHost.getElementsByClassName('fa-not-equal');
+
   return c.length === 0 ? null : c[0] as HTMLElement;
 }
 
@@ -749,7 +752,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     ++this.treeBuildCount;
     this.cancelled = false;
     const thisViewer = this;
-    this.wrapper = SketcherDialogWrapper.create("Add New Scaffold...", "Add", group,async (molStrSketcher: string, parent: TreeViewGroup, errorMsg: string | null) => {
+    this.wrapper = SketcherDialogWrapper.create("Add new scaffold...", "Add", group,async (molStrSketcher: string, parent: TreeViewGroup, errorMsg: string | null) => {
       const child = thisViewer.createGroup(molStrSketcher, parent);
       if (child !== null) {
         enableNodeExtendArrow(child, false);
@@ -925,21 +928,21 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     notIcon!.style.cssText += ('color: ' + color);
 
     if (isNot) {
-      notIcon!.classList.remove('fal');
-      notIcon!.classList.add('fas');//, 'icon-fill');
+      notIcon!.classList.remove('fa-equals');//'fal');
+      notIcon!.classList.add('fa-not-equal');//'fas');//, 'icon-fill');
       notIcon!.style.visibility = 'visible';
     } else {
-      notIcon!.classList.remove('fas');
-      notIcon!.classList.add('fal');//, 'icon-fill');
+      notIcon!.classList.remove('fa-not-equal');//'fas');
+      notIcon!.classList.add('fa-equals');//'fal');//, 'icon-fill');
       notIcon!.style.removeProperty('visibility');
     }
   }
 
   addIcons(molHost: HTMLDivElement, label: string, group: TreeViewGroup): void {
     const thisViewer = this;
-    const notIcon = ui.iconFA('not-equal', () => thisViewer.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot), 'Exclude structures containing this scaffold');
+    const notIcon = ui.iconFA('equals', () => thisViewer.setNotBitOperation(group, !(group.value as ITreeNode).bitwiseNot), 'Exclude structures containing this scaffold');
     //notIcon.onclick = (e) => e.stopImmediatePropagation();
-    //my changes notIcon.onmousedown = (e) => e.stopImmediatePropagation();
+    //changes notIcon.onmousedown = (e) => e.stopImmediatePropagation();
 
     const zoomIcon = ui.iconFA('search-plus');
     zoomIcon.onclick = (e) => e.stopImmediatePropagation();
@@ -954,7 +957,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       ui.iconFA('pencil', () => this.openEditSketcher(group), 'Edit scaffold'),
       ui.divText(''),
       ui.iconFA('check-square', () => this.selectTableRows(group, true), 'Select rows'),
-      ui.iconFA('square', () => this.selectTableRows(group, false), 'Unselect rows'),
+      ui.iconFA('square', () => this.selectTableRows(group, false), 'Deselect rows'),
     ], 'chem-mol-box-info-buttons');
     iconsDiv.onclick = (e) => e.stopImmediatePropagation();
     iconsDiv.onmousedown = (e) => e.stopImmediatePropagation();
@@ -1099,6 +1102,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (div !== null)
         div.innerHTML = this.MoleculeColumn;
 
+      setTimeout(() => this.generateTree(), 1000);
     } else if (p.name === 'MoleculeColumn') {
       for (let n = 0; n < this.molColumns[this.tableIdx].length; ++n) {
         if (this.molColumns[this.tableIdx][n].name === this.MoleculeColumn) {
@@ -1310,12 +1314,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this._bitOpInput.setTooltip('AND: all selected substructures match \n\r OR: any selected substructures match');
     this._bitOpInput.root.style.marginLeft = '20px';
     const iconHost = ui.box(ui.divH([
-      this._iconAdd = ui.iconFA('plus', () => thisViewer.openAddSketcher(thisViewer.tree), 'Add New Root Structure'),
-      ui.iconFA('filter', () => thisViewer.clearFilters(), 'Clear Filter'),
+      this._iconAdd = ui.iconFA('plus', () => thisViewer.openAddSketcher(thisViewer.tree), 'Add new root structure'),
+      ui.iconFA('filter', () => thisViewer.clearFilters(), 'Clear filter'),
       ui.iconFA('folder-open', () => this.loadTree(), 'Open saved tree'),
       ui.iconFA('arrow-to-bottom', () => this.saveTree(), 'Save this tree to disk'),
       ui.divText(' '),
-      this._iconDelete = ui.iconFA('trash-alt', () => { thisViewer.cancelled = true; thisViewer.clear();}, 'Drop All Trees'),
+      this._iconDelete = ui.iconFA('trash-alt', () => { thisViewer.cancelled = true; thisViewer.clear();}, 'Drop all trees'),
       ui.divText(' '),
       this._bitOpInput.root
     ]), 'chem-scaffold-tree-toolbar');
@@ -1326,7 +1330,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     this._generateLink = ui.link('Generate',
       async () => await thisViewer.generateTree(),
-      'Generates Scaffold Tree',
+      'Generates scaffold tree',
       'chem-scaffold-tree-generate-hint');
     this.root.appendChild(this._generateLink);
     this.updateSizes();

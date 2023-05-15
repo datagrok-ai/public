@@ -56,9 +56,8 @@ class Neo4jDataProviderTest {
         dataFrameComparator = new DataFrameComparator();
         SettingsManager settingsManager = SettingsManager.getInstance();
         settingsManager.initSettingsWithDefaults();
-        Logger mockLogger = Mockito.mock(Logger.class);
         QueryMonitor mockMonitor = Mockito.mock(QueryMonitor.class);
-        ProviderManager providerManager = new ProviderManager(mockLogger);
+        ProviderManager providerManager = new ProviderManager();
         ProviderManager spy = Mockito.spy(providerManager);
         Mockito.when(spy.getQueryMonitor()).thenReturn(mockMonitor);
         provider = spy.getByName(type.getProperties().get("providerName").toString());
@@ -109,7 +108,7 @@ class Neo4jDataProviderTest {
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 
-    @DisplayName("Parameters support for all property types")
+    @DisplayName("Support for all property types")
     @ParameterizedTest(name = "{index} : {0}")
     @MethodSource("grok_connect.providers.arguments_provider.Neo4jObjectsMother#checkAllTypesSupport_ok")
     public void checkAllTypesSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {

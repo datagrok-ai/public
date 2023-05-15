@@ -1,12 +1,12 @@
 {
   "name": "@datagrok/helm",
   "friendlyName": "Helm",
-  "version": "2.1.7",
+  "version": "2.1.8",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
   },
-  "description": "Provides support for HELM notation (importing, detecting, rendering, conversion). [Learn more](https://github.com/datagrok-ai/public/blob/master/packages/Helm/README.md)",
+  "description": "Provides support for HELM notation (importing, detecting, rendering, conversion).",
   "sources": [
     "css/helm.css",
     "https://ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js",

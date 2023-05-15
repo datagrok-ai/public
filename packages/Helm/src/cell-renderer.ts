@@ -114,6 +114,12 @@ export class HelmCellRenderer extends DG.GridCellRenderer {
       }
 
       if (missedMonomers.size > 0) {
+        if (!grid) {
+          const r = window.devicePixelRatio;
+          h = 28;
+          g.canvas.height = h*r;
+          g.canvas.style.height = `${h}px`;
+        }
         const maxLengthWords: number[] = tableCol.temp[tempTAGS.helmMaxLengthWords] ?? [];
         if (subParts.length > maxLengthWords.length)
           maxLengthWords.push(...(new Array<number>(subParts.length - maxLengthWords.length).fill(-1)));

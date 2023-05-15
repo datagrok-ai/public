@@ -387,8 +387,15 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
     this.viewSubs.push(this.dataFrame.onSelectionChanged.subscribe(this.dataFrameOnSelectionChanged.bind(this)));
     this.viewSubs.push(this.dataFrame.onCurrentRowChanged.subscribe(this.dataFrameOnCurrentRowChanged.bind(this)));
     this.viewSubs.push(this.dataFrame.onMouseOverRowChanged.subscribe(this.dataFrameOnMouseOverRowChanged.bind(this)));
+
+    this.viewSubs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
   }
 
+  private onContextMenuHandler(menu: DG.Menu): void {
+    menu.item('Reset view', () =>{
+      this._renderer?.onResetZoom();
+    });
+  }
   // -- Handle controls events --
 
   private rootOnSizeChanged(): void {

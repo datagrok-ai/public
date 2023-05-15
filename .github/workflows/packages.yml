@@ -128,14 +128,12 @@ jobs:
       - name: Run datagrok stand
         id: datagrok-image
         if: ${{ matrix.test == 'true' }}
-        env:
-          DATAGROK_VERSION: 'bleeding-edge'
         run: |
           commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
           echo "Find grok dependencies packages"
           grok_deps="$(jq  -r '. | select( has("devDependencies") == true ).devDependencies | to_entries[] | .key | select(test("@datagrok/.*")?)' packages/${{ matrix.package }}/package.json)"
-          profiles='--profile datagrok --profile db --profile grok_spawner'
+          profiles='--profile datagrok --profile db'
           echo "Check if CVM is required for the package"
           if [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "chem" ]] || \
              [[ "$(tr '[:upper:]' '[:lower:]' <<<${{ matrix.package }})" == "simpkpd" ]] || \
@@ -153,7 +151,18 @@ jobs:
             echo "Add Grok Compute as dependency for package ${{ matrix.package }}"
             profiles+=' --profile grok_compute'
           fi
+          echo "Check if Grok Spawner is required for the package"
+          if [ -d "packages/${{ matrix.package }}/dockerfiles" ]; then
+            profiles+=' --profile grok_spawner'
+          fi
           echo "Run datagrok stand with profiles ${profiles}"
+          docker system prune -af --volumes
+          if [[ "${{ matrix.unpublished_deps }}" == "" ]]; then
+            DATAGROK_VERSION='latest'
+          else
+            DATAGROK_VERSION='bleeding-edge'
+          fi
+          export DATAGROK_VERSION
           docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
           echo "Set docker_sha"
           docker_sha=$(docker images --quiet datagrok/datagrok:bleeding-edge)
@@ -200,6 +209,7 @@ jobs:
           fi
         working-directory: packages/${{ matrix.package }}
       - name: Install datagrok tools
+        id: datagrok-tools
         if: ${{ matrix.test == 'true' }}
         run: npm install -g datagrok-tools@latest
       - name: Wait for Datagrok to become available
@@ -248,7 +258,7 @@ jobs:
           retries=5
           until grok publish ${HOST}; do
             exit=$?
-            docker logs --tail 100 $(docker ps -q -f ancestor=datagrok/datagrok:bleeding-edge)
+            docker logs --tail 100 $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
             wait=$((2 ** count))
             count=$((count + 1))
             if [ "$count" -lt "$retries" ]; then
@@ -262,7 +272,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Test Package
         if: ${{ matrix.test == 'true' }}
-        continue-on-error: ${{ matrix.package == 'ApiTests' }}
+        continue-on-error: ${{ contains(matrix.package, 'Tests') }}
         timeout-minutes: 15
         id: test-package
         run: npm run test -- --skip-build --skip-publish
@@ -270,17 +280,20 @@ jobs:
       - name: Create error notification
         if: failure() && steps.test-package.outcome == 'failure'
         run: |
-          docker logs $(docker ps -q -f ancestor=datagrok/datagrok:bleeding-edge)
-          echo "::error title=${{ matrix.package }}: failed tests with datagrok:bleeding-edge SHA=${{ steps.datagrok-image.outputs.docker_sha }}::Check test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html report for results"
+          docker logs $(docker ps -q -f "label=com.docker.compose.project=datagrok" -f "label=com.docker.compose.service=datagrok")
+          echo "::error title=${{ matrix.package }}: failed tests with datagrok:bleeding-edge SHA=${{ steps.datagrok-image.outputs.docker_sha }}::Check job output for details"
           echo "status=error" >> $GITHUB_OUTPUT
 
-      - name: Upload Artifact
-        if: always() && (steps.test-package.outcome == 'failure' || steps.test-package.outcome == 'success')
-        uses: actions/upload-artifact@v2
-        with:
-          name: test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html
-          path: packages/${{ matrix.package }}/test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html
-          retention-days: 7
+      - name: Cleanup datagrok stand
+        if: steps.datagrok-image.outcome == 'success'
+        run: |
+          docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all down --volumes
+          docker system prune -af --volumes
+
+      - name: Cleanup datagrok-tools
+        if: steps.datagrok-tools.outcome == 'success'
+        timeout-minutes: 15
+        run: npm uninstall -g datagrok-tools@latest
 
       - name: Check dockerfiles directory existence
         id: check_directory
@@ -332,7 +345,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.check.outcome == 'success' && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || matrix.package == 'ApiTests')
+        if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.check.outcome == 'success' && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || contains(matrix.package, 'Tests'))
 
       - name: Upload Docker image as artifact
         if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')

@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import { filter } from 'rxjs/operators';
-import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
+import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
 
 
 export class DataConnectorsTutorial extends Tutorial {
@@ -17,6 +17,7 @@ export class DataConnectorsTutorial extends Tutorial {
   
   demoTable: string = '';
   helpUrl: string = '';
+  prerequisites: TutorialPrerequisites = {grokConnect: true};
 
   protected async _run() {
     this.header.textContent = this.name;

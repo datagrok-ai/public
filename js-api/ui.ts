@@ -5,7 +5,7 @@
 
 import {ElementOptions, IndexPredicate} from './src/const';
 import {Viewer} from './src/viewer';
-import {VirtualView} from './src/views/view';
+import {View, VirtualView} from './src/views/view';
 import {
   Accordion,
   Dialog,
@@ -19,7 +19,12 @@ import {
   FilesWidget,
   DateInput,
   fileShares,
-  SliderOptions
+  SliderOptions,
+  Breadcrumbs,
+  DropDown,
+  TypeAhead,
+  TypeAheadConfig,
+  TagsInput
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -999,6 +1004,11 @@ export class ObjectHandler {
     return divText(this.getCaption(x));
   }
 
+  /** Renders preview list for the item. */
+  async renderPreview(x: any, context: any = null): Promise<View> {
+    return View.create();
+  }
+
   /** Renders view for the item. */
   renderView(x: any, context: any = null): HTMLElement {
     return this.renderProperties(x);
@@ -1361,6 +1371,22 @@ function _iconFA(type: string, handler: Function | null, tooltipMsg: string | nu
     e?.addEventListener('click', (e) => handler(e));
   tooltip.bind(e, tooltipMsg);
   return e;
+}
+
+export function breadcrumbs(path: string[]): Breadcrumbs {
+  return new Breadcrumbs(path);
+}
+
+export function dropDown(label: string | Element, createElement: () => HTMLElement): DropDown {
+  return new DropDown(label, createElement);
+}
+
+export function typeAhead(name: string, config: TypeAheadConfig): TypeAhead {
+  return new TypeAhead(name, config);
+}
+
+export function tagsInput(name: string, tags: string[], showBtn: boolean) {
+  return new TagsInput(name, tags, showBtn);
 }
 
 export let icons = {

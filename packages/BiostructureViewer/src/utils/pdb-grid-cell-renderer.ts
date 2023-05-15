@@ -2,9 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
+import wu from 'wu';
 import {_package, getNglGlService} from '../package';
 import {byData} from '../viewers/molstar-viewer';
 import {NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
+import {BiostructureProps, IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 
 const PDB_RENDERER_IMAGE_CACHE_KEY = 'PdbRendererImageCache';
 
@@ -39,17 +41,31 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
     // let ligandSelection: {[key: string]: any} = {};
     // twin.init(gridCell.cell.value, grok.shell.v as DG.TableView, ligandSelection);
     // twin.show(grok.shell.v as DG.TableView);
-    const indexStart = gridCell.cell.value.indexOf('TITLE');
-    const indexEnd = gridCell.cell.value.indexOf('\n', indexStart + 1);
-    const name = gridCell.cell.value.substring(indexStart + 10, indexEnd);
-    byData(gridCell.cell.value, name).then((_) => {
-      for (const v of grok.shell.views) {
-        if (v.name === name) {
-          setTimeout(() => { grok.shell.v = v; }, 100);
-          break;
-        }
-      }
-    });
+
+    const df: DG.DataFrame = gridCell.grid.dataFrame;
+
+    const value: string = gridCell.cell.value;
+    const indexStart = value.indexOf('TITLE');
+    const indexEnd = value.indexOf('\n', indexStart + 1);
+    const name = value.substring(indexStart + 10, indexEnd);
+
+    // Obtain BiostructureViewer from the view of grid.dataFrame or create and dock it.
+    const tview: DG.TableView | undefined = wu(grok.shell.tableViews)
+      .find((tv) => tv.dataFrame.id === df.id);
+    if (!tview) return;
+
+    let viewer: (DG.Viewer & IBiostructureViewer) | undefined;
+    viewer = wu(tview.viewers).find((v) => v.type === 'Biostructure') as DG.Viewer & IBiostructureViewer;
+
+    if (!viewer) {
+      df.plot.fromType('Biostructure', {pdb: value,}).then(
+        (value: DG.Widget) => {
+          viewer = value as DG.Viewer & IBiostructureViewer;
+          tview.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure Viewer', 0.3);
+        }); // Ignore promise returned
+    } else {
+      viewer.setOptions({pdb: value});
+    }
   }
 
   /**
@@ -104,15 +120,20 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
             height: gridCell.grid.props.rowHeight * r,
           },
           onAfterRender: async (canvas: HTMLCanvasElement) => {
-            _package.logger.debug('PdbRenderer.render() onAfterRender() ' + `rowIdx = ${rowIdx}`);
-            const imageStr: string = canvas.toDataURL();
-            const image: HTMLImageElement = await base64ToImg(imageStr);
+            g.save();
+            try {
+              _package.logger.debug('PdbRenderer.render() onAfterRender() ' + `rowIdx = ${rowIdx}`);
+              const imageStr: string = canvas.toDataURL();
+              const image: HTMLImageElement = await base64ToImg(imageStr);
 
-            const imageCache = gridCell.tableColumn!.temp.get(PDB_RENDERER_IMAGE_CACHE_KEY);
-            imageCache[rowIdx] = image;
-            gridCell.tableColumn!.temp.set(PDB_RENDERER_IMAGE_CACHE_KEY, imageCache);
+              const imageCache = gridCell.tableColumn!.temp.get(PDB_RENDERER_IMAGE_CACHE_KEY);
+              imageCache[rowIdx] = image;
+              gridCell.tableColumn!.temp.set(PDB_RENDERER_IMAGE_CACHE_KEY, imageCache);
 
-            service.renderOnGridCell(g, new DG.Rect(x, y, w, h), gridCell, image);
+              service.renderOnGridCell(g, new DG.Rect(x, y, w, h), gridCell, image);
+            } finally {
+              g.restore();
+            }
           }
         };
 
@@ -126,6 +147,11 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
           _package.logger.debug('PdbRenderer.render() ' + `imageCache[${rowIdx}] = null`);
         }
       }
+    } catch (err: any) {
+      const errMsg: string = err instanceof Error ? err.message : err.toString();
+      _package.logger.error(`BsV:PdbGridCellRenderer.render() no rethrown error: ${errMsg}`, undefined,
+        err instanceof Error ? err.stack : undefined);
+      //throw err; // Do not throw to prevent disabling event handler
     } finally {
       g.restore();
     }

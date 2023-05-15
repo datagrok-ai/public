@@ -8,12 +8,25 @@ import 'codemirror/mode/python/python';
 import 'codemirror/mode/octave/octave';
 import 'codemirror/mode/r/r';
 import 'codemirror/mode/julia/julia';
+import 'codemirror/mode/sql/sql.js';
+import '../css/styles.css';
 
 export function functionSignatureEditor(view: DG.View) {
-  addFseRibbon(view);
+  if (view.type == 'DataQueryView') 
+    addFseRibbonQuery(view);
+  else
+    addFseRibbonScript(view);
 }
 
-function addFseRibbon(v: DG.View) {
+function addFseRibbonQuery(v: DG.View) {
+  setTimeout(() => {
+    //@ts-ignore
+    const iconFse = ui.iconFA('magic', () => openFse(v, v.root.lastChild.lastChild.parentElement.getElementsByClassName('CodeMirror cm-s-default')[0].CodeMirror.getDoc().getValue()), 'Open Signature Editor');
+    v.root.lastChild.lastChild.parentElement.querySelectorAll('.d4-tab-header-stripe')[0].appendChild(iconFse);
+  }, 500);
+}
+
+function addFseRibbonScript(v: DG.View) {
   setTimeout(() => {
     const panels = v.getRibbonPanels();
     // @ts-ignore
@@ -26,7 +39,17 @@ function addFseRibbon(v: DG.View) {
   }, 500);
 }
 
+function getInputBaseArray(props: DG.Property[], param: any): DG.InputBase[] {
+  const inputBaseArray = props.map((prop) => {
+    const input = DG.InputBase.forProperty(prop, param);
+    input.setTooltip(tooltipMessage[prop.name as OPTIONAL_TAG_NAME]);
+    return input;
+  });
+  return inputBaseArray;
+}
+
 const DEFAULT_CATEGORY = 'Misc';
+
 
 const enum FUNC_PROPS_FIELDS {
   NAME = 'name',
@@ -37,7 +60,25 @@ const enum FUNC_PROPS_FIELDS {
   LOGIN = 'author?.login',
   SAMPLE = 'sample',
   ENVIRONMENT = 'environment',
-  TAGS = 'tags'
+  TAGS = 'tags',
+  CONNECTION = "connection"
+}
+
+const tooltipMessage = {
+  'caption': 'Custom field caption',
+  'postfix': 'Field postfix',
+  'units': 'Value unit name',
+  'editor': 'Editor',
+  'semType': 'Semantic type',
+  'columns': 'Numerical or categorical columns will be loaded',
+  'type': 'Column type',
+  'format': 'Datetime format',
+  'allowNulls': 'Validation of the missing values presence',
+  'action': 'For output parameters only',
+  'choices': 'List of choices for string parameter',
+  'suggestions': 'List of suggestions for string parameter',
+  'min': 'Minimum value',
+  'max': 'Maximum value',
 }
 
 const obligatoryFuncProps = ['name', 'description', 'helpUrl', 'language'];
@@ -45,6 +86,7 @@ const obligatoryFuncProps = ['name', 'description', 'helpUrl', 'language'];
 const functionPropsLabels = (key: FUNC_PROPS_FIELDS) => {
   switch (key) {
     case FUNC_PROPS_FIELDS.NAME: return 'Name';
+    case FUNC_PROPS_FIELDS.CONNECTION: return 'Connection';
     case FUNC_PROPS_FIELDS.DESCRIPTION: return 'Description';
     case FUNC_PROPS_FIELDS.LOGIN: return 'Author';
     case FUNC_PROPS_FIELDS.HELP_URL: return 'Help URL';
@@ -65,12 +107,14 @@ const highlightModeByLang = (key: LANGUAGE) => {
     case LANGUAGE.OCTAVE: return 'octave';
     case LANGUAGE.JULIA: return 'julia';
     case LANGUAGE.R: return 'r';
+    case LANGUAGE.SQL: return 'sql';
   }
 };
 
 const functionPropsCode = (key: string) => {
   switch (key) {
     case FUNC_PROPS_FIELDS.NAME: return 'name';
+    case FUNC_PROPS_FIELDS.CONNECTION: return 'connection';
     case FUNC_PROPS_FIELDS.DESCRIPTION: return 'description';
     case FUNC_PROPS_FIELDS.LOGIN: return 'author';
     case FUNC_PROPS_FIELDS.HELP_URL: return 'helpUrl';
@@ -152,7 +196,7 @@ const DF_TAG_NAMES = [
 const COLUMN_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.TYPE, OPTIONAL_TAG_NAME.FORMAT,
   OPTIONAL_TAG_NAME.ALLOW_NULLS, OPTIONAL_TAG_NAME.ACTION];
 const STRING_TAG_NAMES = [...Object.values(COMMON_TAG_NAME),
-  /*OPTIONAL_TAG_NAME.CHOICES ,*/ OPTIONAL_TAG_NAME.SUGGESTIONS];
+  OPTIONAL_TAG_NAME.CHOICES , OPTIONAL_TAG_NAME.SUGGESTIONS];
 const INT_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.MIN, OPTIONAL_TAG_NAME.MAX];
 
 const optionTags = ((param: DG.Property) => {
@@ -178,9 +222,11 @@ enum LANGUAGE {
   JULIA = 'julia',
   OCTAVE = 'octave',
   NODEJS = 'nodejs',
-  GROK = 'grok'
+  GROK = 'grok',
+  SQL = 'sql'
 }
-const languages = ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok'];
+const languages = ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok', 'sql'];
+
 const headerSign = (lang: LANGUAGE) => {
   switch (lang) {
     case LANGUAGE.JS:
@@ -192,11 +238,36 @@ const headerSign = (lang: LANGUAGE) => {
     case LANGUAGE.PYTHON:
     case LANGUAGE.OCTAVE:
       return '#';
+    case LANGUAGE.SQL:
+      return '--';
   }
 };
 
+let CONNECTION;
+
+async function getEditorSql(sql: string): Promise<DG.DataQuery> {
+  const regex = /--connection:\s*(\S+)/;
+  const match = sql.match(regex);
+  let connectionName;
+  if (match) 
+    connectionName = match[1];
+  const connection = await grok.functions.eval(connectionName);
+  CONNECTION = connectionName;
+  const query = connection.query('sql', sql);
+  return query;
+}
+
+
 async function openFse(v: DG.View, functionCode: string) {
-  const inputScriptCopy = DG.Script.create(functionCode);
+  let inputScriptCopy;
+  let language;
+  if (v.type == 'ScriptView') {
+    inputScriptCopy = DG.Script.create(functionCode);
+    language = inputScriptCopy.language;
+  } else {
+    inputScriptCopy = await getEditorSql(functionCode);
+    language = 'sql';
+  }
 
   const editorView = DG.View.create();
   editorView.name = v.name;
@@ -204,8 +275,13 @@ async function openFse(v: DG.View, functionCode: string) {
   const openScript = () => {
     editorView.close();
     grok.shell.addView(v);
-    // @ts-ignore
-    const editor = v.root.lastChild.lastChild.CodeMirror;
+    let editor;
+    if (v.type == 'ScriptView')
+      //@ts-ignore
+      editor = v.root.lastChild.lastChild.CodeMirror;
+    else
+      //@ts-ignore
+      editor = v.root.lastChild.lastChild.getElementsByClassName('CodeMirror cm-s-default')[0].CodeMirror;
     const doc = editor.getDoc();
     doc.setValue(myCM.getDoc().getValue());
   };
@@ -224,13 +300,18 @@ async function openFse(v: DG.View, functionCode: string) {
       .map(({ tag, val }) => `${tag}: ${val}`)
       .concat(...(param.category && param.category !== DEFAULT_CATEGORY) ? [`category: ${param.category}`] : [])
       .join('; ');
-    return `${headerSign(inputScriptCopy.language as LANGUAGE)}${direction}: ${param.propertyType} ${param.name ? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
+    return `${headerSign(language as LANGUAGE)}${direction}: ${param.propertyType} ${param.name ? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
   };
 
   const functionProps = {
     [functionPropsLabels(FUNC_PROPS_FIELDS.NAME)]: DG.Property.create(
       FUNC_PROPS_FIELDS.NAME, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.NAME],
       (x: any, v) => updateFuncPropValue(FUNC_PROPS_FIELDS.NAME, v),
+      '',
+    ),
+    [functionPropsLabels(FUNC_PROPS_FIELDS.CONNECTION)]: DG.Property.create(
+      FUNC_PROPS_FIELDS.CONNECTION, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.CONNECTION],
+      (x: any, v) => updateFuncPropValue(FUNC_PROPS_FIELDS.CONNECTION, v),
       '',
     ),
     [functionPropsLabels(FUNC_PROPS_FIELDS.DESCRIPTION)]: DG.Property.create(
@@ -379,6 +460,7 @@ async function openFse(v: DG.View, functionCode: string) {
           prop,
         )),
     );
+
     return ui.panel([
       ui.divV([
         inputs,
@@ -402,13 +484,34 @@ async function openFse(v: DG.View, functionCode: string) {
 
     if (!param) return ui.div('');
 
-    const result = ui.input.form(param,
-      [
-        ...obligatoryFuncParamsTags,
-        ...optionalFuncParamsTags.filter((prop) => optionTags(param).includes(prop.name as OPTIONAL_TAG_NAME)),
-      ]);
+    const obligatoryTagsInputBase = getInputBaseArray(obligatoryFuncParamsTags, param);
 
-    grok.shell.o = ui.divV([ui.h1(`Param: ${paramName}`), ui.block75([result])]);
+    const optionalTagsInputBase = getInputBaseArray(
+      optionalFuncParamsTags.filter((prop) => optionTags(param).includes(prop.name as OPTIONAL_TAG_NAME)),
+      param
+    );
+
+    const result = ui.form([
+      ...obligatoryTagsInputBase,
+      ...optionalTagsInputBase,
+    ]);
+
+    const helpIcon = ui.iconFA('question', () => {
+      window.open(
+        'https://datagrok.ai/help/datagrok/functions/func-params-annotation', 
+        '_blank'
+      );
+    });
+    helpIcon.classList.add('dt-help-icon');
+
+    grok.shell.o = ui.divV([
+      ui.divH(
+        [
+          ui.h1(`Param: ${paramName}`), 
+          helpIcon
+        ],
+      ), ui.block75([result])
+    ]);
   };
 
   const updateValue = (param: DG.Property, propName: string, v: any) => {
@@ -424,12 +527,12 @@ async function openFse(v: DG.View, functionCode: string) {
     (() => {
       const temp = DG.Property.create(FUNC_PARAM_FIELDS.DIRECTION, DG.TYPE.STRING,
         (x: any) => x.options?.[FUNC_PARAM_FIELDS.DIRECTION],
-        (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.DIRECTION, v), '');
+        (x: any, v) => updateFuncPropValue(FUNC_PARAM_FIELDS.DIRECTION, v), '');
       temp.fromOptions({ choices: [DIRECTION.INPUT, DIRECTION.OUTPUT] });
       return temp;
     })(),
     DG.Property.create(FUNC_PARAM_FIELDS.NAME, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.NAME],
-      (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.NAME, v), ''),
+      (x: any, v) => updateFuncPropValue(FUNC_PARAM_FIELDS.NAME, v), ''),
     (() => {
       const temp = DG.Property.create(FUNC_PARAM_FIELDS.TYPE, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.TYPE],
         (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.TYPE, v), '');
@@ -438,16 +541,16 @@ async function openFse(v: DG.View, functionCode: string) {
     })(),
     DG.Property.create(FUNC_PARAM_FIELDS.DEFAULT_VALUE, DG.TYPE.STRING,
       (x: any) => String(DG.toJs(x)[FUNC_PARAM_FIELDS.DEFAULT_VALUE] || ''),
-      (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.DEFAULT_VALUE, v), ''),
+      (x: any, v) => updateFuncPropValue(FUNC_PARAM_FIELDS.DEFAULT_VALUE, v), ''),
     (() => {
       const temp = DG.Property.create(FUNC_PARAM_FIELDS.DESCRIPTION, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.DESCRIPTION], (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.DESCRIPTION, v), '');
       temp.fromOptions({ editor: 'textarea' });
       return temp;
     })(),
     DG.Property.create(FUNC_PARAM_FIELDS.CATEGORY, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.CATEGORY],
-      (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.CATEGORY, v), ''),
+      (x: any, v) => updateFuncPropValue(FUNC_PARAM_FIELDS.CATEGORY, v), ''),
   ];
-
+  
   const obligatoryFuncParamsTags: DG.Property[] = [
     DG.Property.create(COMMON_TAG_NAME.CAPTION, DG.TYPE.STRING,
       (x: any) => x.options[COMMON_TAG_NAME.CAPTION],
@@ -479,7 +582,7 @@ async function openFse(v: DG.View, functionCode: string) {
       (x: any) => x.options[OPTIONAL_TAG_NAME.ALLOW_NULLS],
       (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.ALLOW_NULLS, v), ''),
 
-    DG.Property.create(OPTIONAL_TAG_NAME.CHOICES, DG.TYPE.LIST,
+    DG.Property.create(OPTIONAL_TAG_NAME.CHOICES, DG.TYPE.DYNAMIC,
       (x: any) => x.options[OPTIONAL_TAG_NAME.CHOICES],
       (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.CHOICES, v), ''),
 
@@ -503,7 +606,7 @@ async function openFse(v: DG.View, functionCode: string) {
       (x: any) => x.options[OPTIONAL_TAG_NAME.MIN],
       (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.MIN, v), ''),
 
-    DG.Property.create(OPTIONAL_TAG_NAME.SUGGESTIONS, DG.TYPE.STRING,
+    DG.Property.create(OPTIONAL_TAG_NAME.SUGGESTIONS, DG.TYPE.DYNAMIC,
       (x: any) => x.options[OPTIONAL_TAG_NAME.SUGGESTIONS],
       (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.SUGGESTIONS, v), ''),
 
@@ -515,6 +618,7 @@ async function openFse(v: DG.View, functionCode: string) {
       return temp;
     })(),
   ];
+
   const paramsDF = DG.DataFrame.create(functionParamsCopy.length);
   for (const p of obligatoryFuncParamsProps) {
     (paramsDF.columns as DG.ColumnList)
@@ -526,7 +630,10 @@ async function openFse(v: DG.View, functionCode: string) {
       });
   }
   (paramsDF.columns as DG.ColumnList).addNew('+', DG.TYPE.STRING);
-  paramsDF.onCurrentRowChanged.subscribe(() => onFunctionParamClick((paramsDF.currentRow as any)['Name']));
+
+  paramsDF.onCurrentRowChanged.subscribe(() => {
+    onFunctionParamClick((paramsDF.currentRow as any)['Name']);
+  });
 
   const paramsGrid = DG.Grid.create(paramsDF);
   paramsGrid.root.style.width = '100%';
@@ -566,7 +673,7 @@ async function openFse(v: DG.View, functionCode: string) {
   });
 
   const codeArea = ui.textInput('', '');
-  const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), { mode: highlightModeByLang(inputScriptCopy.language as LANGUAGE) });
+  const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), { mode: highlightModeByLang(language as LANGUAGE) });
   const uiArea = await inputScriptCopy.prepare().getEditor();
   const codePanel = ui.panel([codeArea.root]);
   codePanel.style.height = '100%';
@@ -635,22 +742,33 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const refreshPreview = async () => {
     let result = '';
+    if (v.type === 'DataQueryView') 
+      result += `${headerSign(language as LANGUAGE)}${functionPropsCode(FUNC_PROPS_FIELDS.CONNECTION)}: ${CONNECTION}\n`;
     Object.values(functionProps).map((propField) => {
       const propValue = propField.get(inputScriptCopy) || (inputScriptCopy as any)[propField.name];
-      if (!!propValue && !!propValue.length)
-        result += `${headerSign(inputScriptCopy.language as LANGUAGE)}${functionPropsCode(propField.name as FUNC_PROPS_FIELDS)}: ${propValue}\n`;
+      if (!!propValue && !!propValue.length) {
+        const propName = functionPropsCode(propField.name as FUNC_PROPS_FIELDS);
+        result += `${headerSign(language as LANGUAGE)}${functionPropsCode(propName)}: ${propValue}\n`;
+      }
     });
     functionParamsCopy.map((param) => {
       result += generateParamLine(param, param.options.direction);
     });
-    const regex = new RegExp(`^(${headerSign(inputScriptCopy.language as LANGUAGE)}.*\n)*`, 'g');
-    result += inputScriptCopy.script.substring(inputScriptCopy.script.match(regex)[0].length + 1);
-    myCM.setOption('mode', highlightModeByLang(inputScriptCopy.language as LANGUAGE));
+    const regex = new RegExp(`^(${headerSign(language as LANGUAGE)}.*\n)*`, 'g');
+    if (v.type == 'ScriptView') 
+      result += inputScriptCopy.script.substring(inputScriptCopy.script.match(regex)[0].length + 1);
+    else 
+      result += inputScriptCopy.query.substring(inputScriptCopy.query.match(regex)[0].length + 1);
+    myCM.setOption('mode', highlightModeByLang(language as LANGUAGE));
     myCM.setValue(result);
     myCM.setSize('100%', '100%');
 
-    let modifiedScript = DG.Script.create(result);
-    let newUiArea = await modifiedScript.prepare().getEditor();
+    let modifiedScript;
+    if (v.type == 'ScriptView') 
+      modifiedScript = DG.Script.create(result);
+    else 
+      modifiedScript = await getEditorSql(result);
+    const newUiArea = await modifiedScript.prepare().getEditor();
     uiArea.innerHTML = '';
     uiArea.append(newUiArea);
   };
@@ -709,5 +827,6 @@ async function openFse(v: DG.View, functionCode: string) {
       [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value || undefined;
       functionParamsState.next(functionParamsCopy);
     }
+    onFunctionParamClick((editedCell.tableRow as any)['Name']);
   });
 }

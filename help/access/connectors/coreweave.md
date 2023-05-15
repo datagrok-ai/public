@@ -27,5 +27,5 @@ Provides access to the
 
 See also:
 
-* [Data connection](../data-connection.md)
+* [Data connection](../access.md#data-connection)
 * [CoreWeave](https://docs.coreweave.com/storage/object-storage)

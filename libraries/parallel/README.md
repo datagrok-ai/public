@@ -1,3 +1,0 @@
-# Parallel
-
-Parallel Computing

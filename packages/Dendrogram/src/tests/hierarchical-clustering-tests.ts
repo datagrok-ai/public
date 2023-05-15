@@ -6,12 +6,13 @@ import {after, before, category, test, expect, expectObject, expectArray} from '
 import {hierarchicalClusteringUI} from '../utils/hierarchical-clustering';
 import {_package} from '../package-test';
 import {viewsTests} from './utils/views-tests';
-import {DistanceMetric} from '@datagrok-libraries/utils/src/type-declarations';
 import {TreeHelper} from '../utils/tree-helper';
-import {NodeType} from '@datagrok-libraries/bio/src/trees';
+import {DistanceMetric, NodeType} from '@datagrok-libraries/bio/src/trees';
 import {parseNewick} from '@datagrok-libraries/bio/src/trees/phylocanvas';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {DistanceMatrix} from '@datagrok-libraries/bio/src/trees/distance-matrix';
+import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
+import {getClusterMatrixWorker} from '../wasm/clustering-worker-creator';
 
 /*
 https://onecompiler.com/python
@@ -76,6 +77,18 @@ category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vL
     [3, 5, 0]];
   const tgt2NewickAverage = '((2:3.00,0:3.00):1.50,1:4.50);';
 
+  const tgt1ClusterMat: ClusterMatrix =
+    {mergeRow1: new Int32Array([-2, -1, -4]),
+      mergeRow2: new Int32Array([-3, 1, 2]),
+      heightsResult: new Float32Array([1, 2.5, 5.3333])};
+
+  const tgt2ClusterMat: ClusterMatrix =
+    {mergeRow1: new Int32Array([-1, -2]),
+      mergeRow2: new Int32Array([-3, 1]),
+      heightsResult: new Float32Array([3, 4.5])};
+
+  const AVERAGE_METHOD_CODE = 2;
+
   test('UI', async () => {
     const csv: string = await _package.files.readAsText('data/demog-short.csv');
     const dataDf: DG.DataFrame = DG.DataFrame.fromCsv(csv);
@@ -86,7 +99,7 @@ category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vL
     ctx.vList.push(tv);
     ctx.dfList.push(dataDf);
 
-    await hierarchicalClusteringUI(dataDf, ['HEIGHT'], 'euclidean', 'average');
+    await hierarchicalClusteringUI(dataDf, ['HEIGHT'], DistanceMetric.Euclidean, 'average');
   });
 
   test('hierarchicalClustering1', async () => {
@@ -202,5 +215,33 @@ category('hierarchicalClustering', viewsTests((ctx: { dfList: DG.DataFrame[], vL
     tgtTreeRoot.branch_length = 0;
 
     expectObject(resTreeRoot, tgtTreeRoot);
+  }
+
+  test('hierarchicalClusteringWasm1', async () => {
+    await _testHierarchicalClusteringWasm(tgt1Dist, AVERAGE_METHOD_CODE, tgt1ClusterMat);
+  });
+
+  test('hierarchicalClusteringWasm2', async () => {
+    await _testHierarchicalClusteringWasm(tgt2Dist, AVERAGE_METHOD_CODE, tgt2ClusterMat);
+  });
+
+  // test('hierarchicalClusteringWasmNoWorker1', async () => {
+  //   await _testHierarchicalClusteringWasm(tgt1Dist, AVERAGE_METHOD_CODE, tgt1ClusterMat, false);
+  // });
+
+  // test('hierarchicalClusteringWasmNoWorker2', async () => {
+  //   await _testHierarchicalClusteringWasm(tgt2Dist, AVERAGE_METHOD_CODE, tgt2ClusterMat, false);
+  // });
+
+  async function _testHierarchicalClusteringWasm(
+    distA: number[], linkage: number, tgtClusterMatrix: ClusterMatrix
+  ) {
+    //calculate number of observations from distance matrix length
+    const n = (1 + Math.sqrt(1 + 4 * 2 * distA.length)) / 2;
+    const distanceMatrix: DistanceMatrix = new DistanceMatrix(new Float32Array(distA));
+    const clusterMatrix: ClusterMatrix = await getClusterMatrixWorker(
+      distanceMatrix.data, n, linkage
+    );
+    expectObject(clusterMatrix, tgtClusterMatrix);
   }
 }));

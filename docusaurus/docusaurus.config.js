@@ -57,6 +57,10 @@ const config = {
                   "flags": "gi",
                   "replace": "(../../help/develop/$1.$2"
               },
+              {
+                "pattern": "title: \"(.*)\"",
+                "replace": "$1"
+              }
           ]
         }
       },
@@ -161,7 +165,9 @@ const config = {
       },
 
       // Optional: Typesense search parameters: https://typesense.org/docs/0.21.0/api/search.md#search-parameters
-      typesenseSearchParameters: {},
+      typesenseSearchParameters: {
+        exhaustive_search: true,
+      },
 
       // Optional
       contextualSearch: true,

@@ -632,7 +632,7 @@ public class Hive2ObjectsMother {
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern,
                                 now.toString(),
                                 dayOfMonth == 1 ? null : yesterday.toString(),
-                                lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
+                                lastDayOfWeek.getYear() >  now.getYear() || lastDayOfWeek.equals(now)?
                                         null : lastDayOfWeek.toString(),
                                 dayOfLastYear.getYear() == now.getYear() ? dayOfLastYear.toString() : null)),
                         "dat")
@@ -681,7 +681,7 @@ public class Hive2ObjectsMother {
         DataFrame expected7 = DataFrameBuilder.getBuilder()
                 .setRowCount(5)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, now.toString(),
-                                yesterday.toString(), lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
+                                yesterday.toString(), lastDayOfWeek.getYear() >  now.getYear() || lastDayOfWeek.equals(now)?
                                         null : lastDayOfWeek.toString(), dayOfLastYear.toString(),
                                 "2021-04-09")),
                         "dat")
@@ -723,8 +723,7 @@ public class Hive2ObjectsMother {
         DataFrame expected9 = DataFrameBuilder.getBuilder()
                 .setRowCount(4)
                 .setColumn(new DateTimeColumn(parser.parseDatesToDoubles(datePattern, now.toString(),
-                                yesterday.toString(), lastDayOfWeek.getMonthValue() >  lastDayOfMonth.getMonthValue() || lastDayOfWeek.equals(now)?
-                                        null : lastDayOfWeek.toString(), dayOfLastYear.toString())),
+                                yesterday.toString(), lastDayOfWeek.toString(), dayOfLastYear.toString())),
                         "dat")
                 .build();
         FuncCall funcCall10 = FuncCallBuilder.getBuilder()

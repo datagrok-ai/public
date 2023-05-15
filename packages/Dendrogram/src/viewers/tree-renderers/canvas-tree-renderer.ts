@@ -38,11 +38,13 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
   protected readonly currentStyler: ITreeStyler<TNode>;
   protected readonly mouseOverStyler: ITreeStyler<TNode>;
   protected readonly selectionStyler: ITreeStyler<TNode>;
-
+  protected readonly initialPos: { top: number, bottom: number };
   protected _mainStyler: ITreeStyler<TNode>;
   protected _mainStylerOnChangedSub!: rxjs.Unsubscribable;
 
-  get mainStyler(): ITreeStyler<TNode> { return this._mainStyler; }
+  get mainStyler(): ITreeStyler<TNode> {
+    return this._mainStyler;
+  }
 
   set mainStyler(value: ITreeStyler<TNode>) {
     if (this.view)
@@ -65,6 +67,9 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
 
     this.placer = placer;
     this.placer.onPlacingChanged.subscribe(this.placerOnChanged.bind(this));
+
+    // initial position of tree root, used for resetting zoom
+    this.initialPos = {top: placer.top, bottom: placer.bottom};
 
     this._mainStyler = mainStyler;
     this.lightStyler = lightStyler;
@@ -127,7 +132,9 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
       if (this.treeRoot) {
         const styler: ITreeStyler<TNode> = !this.mouseOver ? this._mainStyler : this.lightStyler;
         const selectionTraceList: TraceTargetType<TNode>[] = this.selections.map(
-          (sel) => { return {target: sel.node, styler: this.selectionStyler}; });
+          (sel) => {
+            return {target: sel.node, styler: this.selectionStyler};
+          });
         renderNode(
           {
             ctx: ctx, firstRowIndex: this.placer.top, lastRowIndex: this.placer.bottom,
@@ -218,6 +225,7 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
     this.subs.push(rxjs.fromEvent<MouseEvent>(this.canvas, 'mouseup').subscribe(this.canvasOnMouseUp.bind(this)));
     this.subs.push(rxjs.fromEvent<MouseEvent>(this.canvas, 'mousemove').subscribe(this.canvasOnMouseMove.bind(this)));
     this.subs.push(rxjs.fromEvent<MouseEvent>(this.canvas, 'click').subscribe(this.canvasOnClick.bind(this)));
+    this.subs.push(rxjs.fromEvent<MouseEvent>(this.canvas, 'dblclick').subscribe(this.onCanvasDoubleClick.bind(this)));
   }
 
   public override detach(): void {
@@ -254,6 +262,16 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
 
   private stylerOnChanged() {
     this.render('stylerOnChanged()');
+  }
+
+  protected onCanvasDoubleClick() {
+    if (!this.current)
+      this.onResetZoom();
+  }
+
+  public onResetZoom() {
+    this.placer.update(this.initialPos);
+    this.render('onResetZoom()');
   }
 
   protected canvasOnWheel(e: WheelEvent): void {
@@ -303,7 +321,9 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
       // console.debug('CanvasTreeRender.onMouseMove() --- getNode() ---');
       this.mouseOver = !this.treeRoot ? null : this.placer.getNode(
         this.treeRoot, canvasPoint, this._mainStyler.lineWidth, this._mainStyler.nodeSize,
-        (canvasP: DG.Point): DG.Point => { return treeToCanvasPoint(canvasP, this.canvas!, this.placer); });
+        (canvasP: DG.Point): DG.Point => {
+          return treeToCanvasPoint(canvasP, this.canvas!, this.placer);
+        });
 
       this._mainStyler.fireTooltipShow(this.mouseOver ? this.mouseOver.node : null, e);
     }
@@ -337,9 +357,7 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
 
           this.selections = selections;
         }
-      } else {
-        this.current = this.mouseOver;
-      }
+      } else { this.current = this.mouseOver; }
     }
   }
 }

@@ -14,8 +14,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import serialization.DataFrame;
 
 class MySqlDataProviderTest extends ContainerizedProviderBaseTest {
-    protected MySqlDataProviderTest() {
-        super(Provider.MYSQL);
+    protected MySqlDataProviderTest(Provider provider) {
+        super(provider);
     }
 
     @Order(4)
@@ -59,6 +59,8 @@ class MySqlDataProviderTest extends ContainerizedProviderBaseTest {
             "grok_connect.providers.arguments_provider.CommonObjectsMother#checkRegexSupport_ok"})
     public void checkParameterSupport_ok(@ConvertWith(NamedArgumentConverter.class) FuncCall funcCall, DataFrame expected) {
         funcCall.func.connection = connection;
+        String query = funcCall.func.query;
+        funcCall.func.query = query.replaceAll("--", "-- ");
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.execute(funcCall));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }

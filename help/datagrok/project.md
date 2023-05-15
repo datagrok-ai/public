@@ -20,7 +20,7 @@ inside.
 ### Dynamic data
 
 Whenever a table is created by executing a [function](../datagrok/functions/functions.md)
-(such as a [database query](../access/data-query.md)), this information gets stored with the table as a "generation
+(such as a [database query](../access/access.md#data-query)), this information gets stored with the table as a "generation
 script". This serves multiple purposes:
 
 * Provides data lineage
@@ -82,8 +82,6 @@ The following fields could be used to filter projects with [smart search](smart-
 See also:
 
 * [Create project](create-project.md)
-* [Data pipeline](../access/data-pipeline.md)
-* [Data connection](../access/data-connection.md)
-* [Data query](../access/data-query.md)
-* [Data job](../access/data-job.md)
+* [Data connection](../access/access.md#data-connection)
+* [Data query](../access/access.md#data-query)
 * [Function call](functions/function-call.md)

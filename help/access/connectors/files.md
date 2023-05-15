@@ -4,7 +4,7 @@ title: "Files"
 
 Once a file share is mounted as a network drive on a server and registered within the platform, its content gets
 automatically
-[indexed](../../access/files-indexer.md) and can be browsed.
+indexed and can be browsed.
 
 ## Connection parameters
 
@@ -25,6 +25,5 @@ automatically
 
 See also:
 
-* [File shares](../file-shares.md)
-* [Data connection](../data-connection.md)
-* [File Indexer](../../access/files-indexer.md)
+* [File shares](../file-shares.mdx)
+* [Data connection](../access.md#data-connection)

@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-//import * as grok from 'datagrok-api/grok';
+import * as grok from 'datagrok-api/grok';
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 
@@ -7,6 +7,7 @@ import './tests/pdb-helper-tests';
 import './tests/pdb-tests';
 import './tests/pdb-grid-cell-renderer-tests';
 import './tests/viewers';
+import './tests/molstar-preview-tests';
 
 export const _package = new DG.Package();
 export {tests};

@@ -2,18 +2,19 @@ package grok_connect.utils;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
-
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.ResultSet;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class QueryMonitor {
-    private List<String> statementIdsToCancel;
-    private Set<String> resultSetIdsToCancel;
-    private Multimap<String, Statement> runningStatements;
-    
-    private List<String> cancelledStatementIds;
+    private final List<String> statementIdsToCancel;
+    private final Set<String> resultSetIdsToCancel;
+    private final Multimap<String, Statement> runningStatements;
+    private final List<String> cancelledStatementIds;
 
     public QueryMonitor() {
         statementIdsToCancel = Collections.synchronizedList(new ArrayList<>());

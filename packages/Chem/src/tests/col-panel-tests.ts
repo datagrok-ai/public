@@ -21,27 +21,23 @@ CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC(C)C)`
 category('column panel', () => {
 
   test('add inchi panel', async () => {
-    await testInchiPanel('addInchisTopMenu', 'inchi');
-  }, {skipReason: 'GROK-11781'});
+    await testInchiPanel('addInchisTopMenu', 'inchi', 'inchi', 'InChI=1S/C22H22BrNO2/c1-26-22-12-9-19(13-21(22)25)16-24(14-17-5-3-2-4-6-17)15-18-7-10-20(23)11-8-18/h2-13,25H,14-16H2,1H3');
+  });
 
   test('inchi keys', async () => {
-    await testInchiPanel('addInchisKeysTopMenu', 'inchiKeys');
-  }, {skipReason: 'GROK-11781'});
+    await testInchiPanel('addInchisKeysTopMenu', 'inchiKeys', 'inchi_key', 'BRJLNESNMQYEGX-UHFFFAOYSA-N');
+  });
   
-  test('add inchi panel', async () => {
-    await testInchiPanel('addInchisPanel', 'inchi');
-  }, {skipReason: 'GROK-11781'});
-
-  test('inchi keys', async () => {
-    await testInchiPanel('addInchisKeysPanel', 'inchiKeys');
-  }, {skipReason: 'GROK-11781'});
 });
 
-async function testInchiPanel(funcName: string, tableName: string) {
+async function testInchiPanel(funcName: string, tableName: string, newColName: string, expected: string) {
   const t = DG.DataFrame.fromCsv(csvForInchi);
   t.name = tableName;
   const v = grok.shell.addTableView(t);
   await awaitCheck(() => v.name === tableName, undefined, 1000);
   await grok.functions.call(`Chem:${funcName}`, {table: t, molecules: t.columns.byName('smiles')});
+  await delay(1000);
+  expect(t.columns.names().includes(newColName), true, `${newColName} column has not been added`);
+  expect(t.col(newColName)!.get(0) === expected, true);
   v.close();
 }

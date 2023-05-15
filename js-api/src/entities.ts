@@ -344,7 +344,7 @@ export class Project extends Entity {
 
 /** Represents a data query
  * @extends Func
- * {@link https://datagrok.ai/help/access/data-query}
+ * {@link https://datagrok.ai/help/access/access#data-query}
  * */
 export class DataQuery extends Func {
   /** @constructs DataQuery*/
@@ -491,7 +491,7 @@ export class TableQueryBuilder {
 
 /** Represents a data job
  * @extends Func
- * {@link https://datagrok.ai/help/access/data-job}
+ * {@link https://datagrok.ai/help/access}
  * */
 export class DataJob extends Func {
   /** @constructs DataJob */
@@ -502,7 +502,7 @@ export class DataJob extends Func {
 
 /** Represents a data connection
  * @extends Entity
- * {@link https://datagrok.ai/help/access/data-connection}
+ * {@link https://datagrok.ai/help/access/access#data-connection}
  * */
 export class DataConnection extends Entity {
   parameters: any;
@@ -983,11 +983,11 @@ export class Package extends Entity {
 }
 
 
-export class DockerImage extends Entity {
-  constructor(dart: any) {
-    super(dart);
-  }
-}
+// export class DockerImage extends Entity {
+//   constructor(dart: any) {
+//     super(dart);
+//   }
+// }
 
 
 export class DockerContainer extends Entity {

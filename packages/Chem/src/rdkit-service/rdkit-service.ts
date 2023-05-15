@@ -1,7 +1,6 @@
 import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Fingerprint} from '../utils/chem-common';
-import {BitSet} from 'datagrok-api/dg';
 
 export class RdKitService {
   workerCount: number;
@@ -31,7 +30,7 @@ export class RdKitService {
 
   async _doParallel(
     fooScatter: (i: number, workerCount: number) => Promise<any>,
-    fooGather = (_: any) => []): Promise<any> {
+    fooGather: (_: any) => any[] = (_: any) => []): Promise<any> {
     const promises = [];
     const workerCount = this.workerCount;
     for (let i = 0; i < workerCount; i++)
@@ -41,25 +40,25 @@ export class RdKitService {
     return fooGather(data);
   }
 
-  async _initParallelWorkers(dict: string[], func: any, postFunc: any): Promise<any> {
+  async _initParallelWorkers(molecules: string[], func: any, postFunc: any): Promise<any> {
     const t = this;
     return this._doParallel(
       (i: number, nWorkers: number) => {
-        const length = dict.length;
+        const length = molecules.length;
         const segmentLength = Math.floor(length / nWorkers);
         t.segmentLength = segmentLength;
         const segment = i < (nWorkers - 1) ?
-          dict.slice(i * segmentLength, (i + 1) * segmentLength) :
-          dict.slice(i * segmentLength, length);
+          molecules.slice(i * segmentLength, (i + 1) * segmentLength) :
+          molecules.slice(i * segmentLength, length);
         return func(i, segment);
       },
       postFunc,
     );
   }
 
-  async initMoleculesStructures(dict: string[])
+  async initMoleculesStructures(molecules: string[])
     : Promise<any> {
-    return this._initParallelWorkers(dict, (i: number, segment: any) =>
+    return this._initParallelWorkers(molecules, (i: number, segment: any) =>
       this.parallelWorkers[i].initMoleculesStructures(segment),
     () => {});
   }
@@ -84,18 +83,23 @@ export class RdKitService {
       });
   }
 
-  async getFingerprints(fingerprintType: Fingerprint): Promise<Uint8Array[]> {
+  
+  async getFingerprints(fingerprintType: Fingerprint, molecules?: string[]): Promise<Uint8Array[]> {
     const t = this;
-    return (await this._doParallel(
-      (i: number, _: number) => {
-        return t.parallelWorkers[i].getFingerprints(fingerprintType);
-      },
-      (data: any) => {
-        return [].concat(...data);
-      })).map(
-      (obj: any) =>
-      // We deliberately choose Uint32Array over DG.BitSet here
-        obj.data);
+    const res = molecules ?
+      await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
+        t.parallelWorkers[i].getFingerprints(fingerprintType, segment),
+        (data: Array<Uint8Array | null>[][]) => {
+          return ([] as Array<Uint8Array | null>[]).concat(...data);
+        }) :
+      await this._doParallel(
+        (i: number, _: number) => {
+          return t.parallelWorkers[i].getFingerprints(fingerprintType, molecules);
+        },
+        (data: Array<Uint8Array | null>[][]) => {
+          return ([] as Array<Uint8Array | null>[]).concat(...data);
+        });
+    return res;
   }
 
 

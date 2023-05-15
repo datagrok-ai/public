@@ -7,8 +7,9 @@ import {UaFilter} from './filter';
 import {ViewHandler} from './view-handler';
 import {ChoiceInputGroups} from './elements/choice-input-groups';
 import {ChoiceInputPackages} from './elements/choice-input-packages';
-// import {UaView} from './tabs/ua';
+import {UaView} from './tabs/ua';
 import $ from 'cash-dom';
+
 
 export class UaToolbox {
   rootAccordion: DG.Accordion;
@@ -16,12 +17,24 @@ export class UaToolbox {
   groupsInput: ChoiceInputGroups;
   packagesInput: ChoiceInputPackages;
   filterStream: BehaviorSubject<UaFilter>;
-  // filterDDStream?: BehaviorSubject<UaFilter>;
   dateFromDD: DG.InputBase = ui.stringInput('From', '');
   dateToDD: DG.InputBase = ui.stringInput('To', '');
   usersDD: DG.InputBase = ui.stringInput('Users', '');
   packagesDD: DG.InputBase = ui.stringInput('Packages', '');
+  private _backToView: string = 'Packages';
+  set backToView(value: string) {
+    this._backToView = value;
+    if (this.backButton !== undefined)
+      this.backButton.innerText = `🠔 back to ${value.toLowerCase()}`;
+  }
+  get backToView(): string {
+    return this._backToView;
+  }
+
+  backButton?: HTMLButtonElement;
   formDD: HTMLDivElement;
+  drilldown: UaView | null = null;
+  filters: DG.AccordionPane;
 
   static async construct() {
     const date = 'this week';
@@ -44,47 +57,70 @@ export class UaToolbox {
     packagesInput: ChoiceInputPackages, filterStream: BehaviorSubject<UaFilter>) {
     this.rootAccordion = ui.accordion();
     this.formDD = ui.div();
-    const filters = this.rootAccordion.addPane('Filters', () => {
+    this.dateInput = dateInput;
+    this.groupsInput = groupsInput;
+    this.packagesInput = packagesInput;
+    this.filterStream = filterStream;
+
+    this.filters = this.rootAccordion.addPane('Filters', () => {
       const form = ui.narrowForm([
         dateInput,
         groupsInput.field,
         packagesInput.field,
       ]);
-      const applyB = ui.bigButton('Apply', () => this.applyFilter());
-      applyB.style.marginLeft = 'auto';
+      const applyB = ui.bigButton('Apply', () => {
+        applyB.disabled = true;
+        this.applyFilter();
+      });
+      applyB.classList.add('ua-apply-button');
+      applyB.disabled = true;
+      dateInput.onChanged(() => applyB.disabled = false);
       $(form).append(applyB);
       this.dateFromDD.readOnly = true;
       this.dateToDD.readOnly = true;
       this.usersDD.readOnly = true;
       this.packagesDD.readOnly = true;
-      // UaView.filterDDStream = new BehaviorSubject(uaToolbox.filterStream.value);
       this.formDD = ui.narrowForm([
         this.dateFromDD,
         this.dateToDD,
         this.usersDD,
         this.packagesDD,
       ]);
-      // this.formDD.style.display = 'none';
-      this.formDD.style.border = '1px dashed #80949b';
-      this.formDD.style.borderRadius = '5px';
-      this.formDD.style.backgroundColor = '#F1FAFD';
-      this.formDD.style.marginBottom = '24px';
-      this.formDD.querySelectorAll('.ui-input-editor')
-        .forEach((i) => (i as HTMLElement).style.backgroundColor = '#c9e6f3');
+      this.formDD.style.display = 'none';
+      const closeButton = ui.button('', () => this.exitDrilldown(), 'Close drilldown filter');
+      closeButton.classList.add('ua-close-button', 'fal', 'fa-times');
+      this.backButton = ui.button(`🠔 back`, () => {
+        ViewHandler.changeTab(this._backToView);
+        this.exitDrilldown();
+      }, 'Back to previous tab');
+      this.backButton.classList.add('ua-back-button');
+      this.formDD.append(this.backButton);
+      this.formDD.prepend(closeButton);
+      this.formDD.classList.add('ua-drilldown-form');
       return form;
     }, true);
-    filters.root.before(this.formDD);
-    // grok.events.onCurrentViewChanged.subscribe((view) => {
-    //   console.log(grok.shell.v);
-    //   if (!(view instanceof UaView)) return;
-    //   view = view as UaView;
-    //   this.filterDDStream = view.filterDDStream;
-    //   if (view.checkLabels()) this.formDD.style.display= 'block';
-    // });
-    this.dateInput = dateInput;
-    this.groupsInput = groupsInput;
-    this.packagesInput = packagesInput;
-    this.filterStream = filterStream;
+    this.filters.root.before(this.formDD);
+
+    ViewHandler.UA.tabs.onTabChanged.subscribe((_) => {
+      if (this.formDD.style.display === 'block') this.exitDrilldown();
+      if (this.checkLabels()) {
+        this.formDD.style.display = 'block';
+        this.filters.root.style.display = 'none';
+      }
+    });
+  }
+
+  exitDrilldown() {
+    this.formDD.style.display = 'none';
+    this.clearFormDD();
+    this.drilldown?.viewers.forEach((v) => v.reloadViewer());
+    this.drilldown = null;
+    this.filters.root.style.display = 'flex';
+  }
+
+  checkLabels() {
+    return [this.dateFromDD.value, this.dateToDD.value,
+      this.usersDD.value, this.packagesDD.value].some((val) => val);
   }
 
   clearFormDD() {
@@ -103,7 +139,6 @@ export class UaToolbox {
   }
 
   applyFilter() {
-    this.clearFormDD();
     this.filterStream.next(this.getFilter());
     ViewHandler.getInstance().setUrlParam('date', this.dateInput.value, true);
     ViewHandler.getInstance().setUrlParam('users', this.groupsInput.getSelectedGroups().join(','), true);

@@ -84,9 +84,13 @@ export async function getBrowserPage(puppeteer: any, params: {} = defaultLaunchP
 export function runWithTimeout(timeout: number, f: () => any): Promise<any> {
   return new Promise(async (resolve, reject) => {
     const timeoutId = setTimeout(() => reject(`Timeout exceeded: ${timeout} ms`), timeout);
-    const resolveValue = await f();
-    clearTimeout(timeoutId);
-    resolve(resolveValue);
+    try {
+      const resolveValue = await f();
+      clearTimeout(timeoutId);
+      resolve(resolveValue);
+    } catch (e) {
+      reject(e);
+    }
   });
 }
 

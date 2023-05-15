@@ -1,3 +1,4 @@
+/*
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -23,7 +24,7 @@ export class TopPackagesViewer extends UaFilterableQueryViewer {
         viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
           this.categorySelected(args.args.categories[0]);
         });
-        return viewer.root;
+        return viewer;
       },
     );
   }
@@ -61,7 +62,7 @@ export class TopPackagesViewer extends UaFilterableQueryViewer {
         new UaDataFrameQueryViewer(
           'Users',
           'TopUsersOfPackage',
-          (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
+          (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions),
           null as any,
           {name: category},
           this.filterSubscription.getValue(),
@@ -75,3 +76,4 @@ export class TopPackagesViewer extends UaFilterableQueryViewer {
     grok.shell.o = pp.getRoot();
   }
 }
+*/

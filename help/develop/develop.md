@@ -29,7 +29,7 @@ package might contain different things:
 * JavaScript [functions](../datagrok/functions/functions.md), [viewers](../visualize/viewers/viewers.md)
   , [widgets](../visualize/widgets.md), [applications](../develop/how-to/build-an-app.md)
 * [Scripts](../compute/scripting.md) written in R, Python, Octave, Grok, Julia, JavaScript, NodeJS, or Java
-* [Queries](../access/data-query.md) and [connections](../access/data-connection.md)
+* [Queries](../access/access.md#data-query) and [connections](../access/access.md#data-connection)
 * [Tables](../access/supported-formats.md#tabular-formats), files, and other objects
 
 See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) for examples, or follow
@@ -59,8 +59,8 @@ In addition to that, it might contain the following folders:
 * `swaggers`: REST APIs in [Swagger/OpenAPI](../access/open-api.md) format.
   Examples: [EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore)
   , [Swaggers](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers)
-* `connections` and `queries`: [connections](../access/data-connection.md)
-  and [queries](../access/data-query.md) for data retrieval.
+* `connections` and `queries`: [connections](../access/access.md#data-connection)
+  and [queries](../access/access.md#data-query) for data retrieval.
   Examples: [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl)
   , [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
 * `css`: CSS files for custom styling.
@@ -71,7 +71,7 @@ In addition to that, it might contain the following folders:
   <!--, [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst)-->
 * `layouts`: `json` files with table view [layouts](how-to/layouts.md)
 * `schemas`: `yaml` files with property schemas
-* `jobs`: [data jobs](../access/data-job.md)
+* `jobs`: data jobs
 
 ### <a href="#" id="package.json"></a>package.json
 
@@ -365,7 +365,7 @@ our [public packages](https://github.com/datagrok-ai/public/tree/master/packages
 
 To test a package in CI, you need the following:
 
-1. Set up a stand for workflow. It is elementary to do using [docker-compose](admin/docker-compose.md)
+1. Set up a stand for workflow. It is elementary to do using [docker-compose](admin/deploy/docker-compose.md)
 2. Install the latest [datagrok-tools](https://www.npmjs.com/package/datagrok-tools)
 3. [Publish package](#publication-with-automation-tools) to the stand
 4. Run tests using [grok test](how-to/test-packages.md#local-testing)
@@ -374,11 +374,12 @@ To test a package in CI, you need the following:
 
 To install dependent grok packages in [our
 workflow](https://github.com/datagrok-ai/public/blob/master/.github/workflows/packages.yml), you can
-use `grokDependencies` in [package.json](#packagejson)
+use `devDependencies` in [package.json](#packagejson) We used an individual `grokDependencies`
+section earlier, but now this content is moved to `devDependencies` for a better CI process
 
 ```json
 {
-  "grokDependencies": {
+  "devDependencies": {
     "@datagrok/chem": "latest"
   }
 }

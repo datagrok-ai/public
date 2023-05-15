@@ -15,7 +15,6 @@ export async function getStructuralAlerts(molecule: string): Promise<number[]> {
   if (alertsDf == null)
     await loadSADataset();
   rdKitModule ??= getRdKitModule();
-  molecule =  _convertMolNotation(molecule, 'unknown', 'smiles', rdKitModule);
 
   const alerts: number[] = [];
   const mol = rdKitModule.get_mol(molecule);
@@ -71,6 +70,9 @@ export async function structuralAlertsWidget(molecule: string): Promise<DG.Widge
     imageHost.height = height * r;
     imageHost.style.width = width.toString() + 'px';
     imageHost.style.height = height.toString() + 'px';
+      //in case molecule is smiles setting correct coordinates to save molecule orientation
+    if (!DG.chem.isMolBlock(molecule))
+      molecule = _convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock, rdKitModule!);
     drawMoleculeToCanvas(0, 0, width * r, height * r, imageHost, molecule, smartsCol.get(i));
     const host = ui.div([description, imageHost], 'd4-flex-col');
     host.style.margin = '5px';

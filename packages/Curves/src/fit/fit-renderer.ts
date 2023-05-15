@@ -1,16 +1,17 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {GridColumn, Paint} from 'datagrok-api/dg';
+import {GridColumn} from 'datagrok-api/dg';
 
-import {fitResultProperties} from "@datagrok-libraries/statistics/src/parameter-estimation/fit-curve";
+import {FitResult, fitResultProperties} from "@datagrok-libraries/statistics/src/parameter-estimation/fit-curve";
 import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
 
 import {fitSeries, getChartData, getChartBounds, getFittedCurve,IFitChartData, IFitSeries,
   CONFIDENCE_INTERVAL_FILL_COLOR, CONFIDENCE_INTERVAL_STROKE_COLOR, CURVE_CONFIDENCE_INTERVAL_BOUNDS,
   TAG_FIT_CHART_FORMAT, TAG_FIT_CHART_FORMAT_3DX} from './fit-data';
 import {convertXMLToIFitChartData} from './fit-parser';
-import {ITransform, Transform} from "./transform";
+import {Viewport} from "./transform";
+import {MultiCurveViewer} from "./multi-curve-viewer";
 
 /** Performs a chart layout, returning [viewport, xAxis, yAxis] */
 function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
@@ -24,13 +25,14 @@ function layoutChart(rect: DG.Rect): [DG.Rect, DG.Rect?, DG.Rect?] {
 }
 
 /** Performs a curve confidence interval drawing */
-function drawConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries, confidenceType: string, transform: ITransform) {
+function drawConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries, confidenceType: string, fitResult: FitResult, transform: Viewport) {
+  //const fitResult = fitSeries(series);
   g.beginPath();
   for (let i = 0; i < series.points.length!; i++) {
     const x = transform.xToScreen(series.points[i].x);
     const y = confidenceType === CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP
-    ? transform.yToScreen(fitSeries(series).confidenceTop(series.points[i].x))
-    : transform.yToScreen(fitSeries(series).confidenceBottom(series.points[i].x));
+    ? transform.yToScreen(fitResult.confidenceTop(series.points[i].x))
+    : transform.yToScreen(fitResult.confidenceBottom(series.points[i].x));
     if (i === 0)
       g.moveTo(x, y);
     else
@@ -40,11 +42,12 @@ function drawConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries,
 }
 
 /** Performs a curve confidence interval filling */
-function fillConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries, transform: ITransform) {
+function fillConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries, transform: Viewport) {
+  const fitResult = fitSeries(series);
   g.beginPath();
   for (let i = 0; i < series.points.length!; i++) {
     const x = transform.xToScreen(series.points[i].x);
-    const y = transform.yToScreen(fitSeries(series).confidenceTop(series.points[i].x));
+    const y = transform.yToScreen(fitResult.confidenceTop(series.points[i].x));
     if (i === 0)
       g.moveTo(x, y);
     else
@@ -54,7 +57,7 @@ function fillConfidenceInterval(g: CanvasRenderingContext2D, series: IFitSeries,
   // reverse traverse to make a shape of confidence interval to fill it
   for (let i = series.points.length! - 1; i >= 0; i--) {
     const x = transform.xToScreen(series.points[i].x);
-    const y = transform.yToScreen(fitSeries(series).confidenceBottom(series.points[i].x));
+    const y = transform.yToScreen(fitResult.confidenceBottom(series.points[i].x));
     g.lineTo(x, y);
   }
   g.closePath();
@@ -74,6 +77,12 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     grok.shell.o = gridCell;
   }
 
+  onDoubleClick(gridCell: DG.GridCell, e: MouseEvent) {
+    ui.dialog({title: 'Edit chart'})
+      .add(MultiCurveViewer.fromChartData(getChartData(gridCell)).root)
+      .show();
+  }
+
   renderCurves(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, data: IFitChartData) {
     g.save();
     g.beginPath();
@@ -84,11 +93,11 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     const [dataBox, xAxisBox, yAxisBox] = layoutChart(screenBounds);
 
     const dataBounds = getChartBounds(data);
-    const transform = Transform.linear(dataBounds, dataBox);
+    const viewport = new Viewport(dataBounds, dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
     const minSize = Math.min(dataBox.width, dataBox.height);
     const ratio = minSize > 100 ? 1 : 0.2 + (minSize / 100) * 0.8;
 
-    DG.Paint.coordinateGrid(g, dataBounds, xAxisBox, yAxisBox, dataBox);
+    viewport.drawCoordinateGrid(g, xAxisBox, yAxisBox);
 
     for (const series of data.series!) {
       if (series.showPoints ?? true) {
@@ -107,8 +116,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
             }
 
             g.beginPath();
-            g.moveTo(transform.xToScreen(p.x), transform.yToScreen(minY));
-            g.lineTo(transform.xToScreen(p.x), transform.yToScreen(maxY));
+            g.moveTo(viewport.xToScreen(p.x), viewport.yToScreen(minY));
+            g.lineTo(viewport.xToScreen(p.x), viewport.yToScreen(maxY));
             g.stroke();
 
             candleStart = null;
@@ -116,22 +125,24 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           else if (!candleStart) {
             DG.Paint.marker(g,
               p.outlier ? DG.MARKER_TYPE.OUTLIER : DG.MARKER_TYPE.CIRCLE,
-              transform.xToScreen(p.x), transform.yToScreen(p.y),
+              viewport.xToScreen(p.x), viewport.yToScreen(p.y),
               series.pointColor ? DG.Color.fromHtml(series.pointColor) : DG.Color.scatterPlotMarker,
               (p.outlier ? 6 : 4) * ratio);
           }
         }
       }
 
+      let fitRes: any;
       if (series.showFitLine ?? true ) {
         g.strokeStyle = series.fitLineColor ?? 'black';
         g.lineWidth = 2 * ratio;
-        const curve = getFittedCurve(series);
+        fitRes = fitSeries(series);
+        const curve = fitRes.fittedCurve;//getFittedCurve(series);
 
         g.beginPath();
         for (let i = 0; i < series.points.length!; i++) {
-          const x = transform.xToScreen(series.points[i].x);
-          const y = transform.yToScreen(curve(series.points[i].x));
+          const x = viewport.xToScreen(series.points[i].x);
+          const y = viewport.yToScreen(curve(series.points[i].x));
           if (i == 0)
             g.moveTo(x, y);
           else
@@ -140,13 +151,13 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         g.stroke();
       }
 
-      if (series.showCurveConfidenceInterval ?? true) {
+      if ((series.showFitLine ?? true) && (series.showCurveConfidenceInterval ?? true)) {
         g.strokeStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_STROKE_COLOR;
         g.fillStyle = series.confidenceIntervalColor ?? CONFIDENCE_INTERVAL_FILL_COLOR;
 
-        drawConfidenceInterval(g, series, CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP, transform);
-        drawConfidenceInterval(g, series, CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM, transform);
-        fillConfidenceInterval(g, series, transform);
+        drawConfidenceInterval(g, series, CURVE_CONFIDENCE_INTERVAL_BOUNDS.TOP, fitRes, viewport);
+        drawConfidenceInterval(g, series, CURVE_CONFIDENCE_INTERVAL_BOUNDS.BOTTOM, fitRes, viewport);
+        fillConfidenceInterval(g, series, viewport);
       }
 
 

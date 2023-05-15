@@ -5,6 +5,8 @@ import {getDescriptorsPy} from '../scripts-api';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import { _package } from '../package';
+import { addCopyIcon } from '../utils/ui-utils';
+import { MESSAGE_MALFORMED } from '../constants';
 
 const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
@@ -33,11 +35,9 @@ export async function addDescriptors(smilesCol: DG.Column, viewTable: DG.DataFra
 /** Calculates descriptors for single entry*/
 export function getDescriptorsSingle(smiles: string): DG.Widget {
   const rdKitModule = getRdKitModule();
-  try {
-    smiles = _convertMolNotation(smiles, 'unknown', 'smiles', rdKitModule);
-  } catch (e) {
+  smiles = _convertMolNotation(smiles, 'unknown', DG.UNITS.Molecule.SMILES, rdKitModule);
+  if (smiles === MESSAGE_MALFORMED)
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
-  }
   const molecule = DG.chem.isMolBlock(smiles) ? `\"${smiles}\"` : smiles;
   const widget = new DG.Widget(ui.div());
   const result = ui.div();
@@ -60,13 +60,13 @@ export function getDescriptorsSingle(smiles: string): DG.Widget {
         removeChildren(result);
         const map: { [_: string]: any } = {};
         for (const descriptor of selected)
-          map[descriptor] = table.col(descriptor).get(0);
-
+          map[descriptor] = table.col(descriptor).get(0); 
         result.appendChild(ui.tableFromMap(map));
       });
     });
   };
 
+  addCopyIcon(result, 'Descriptors');
   widget.root.appendChild(result);
   widget.root.appendChild(selectButton);
 

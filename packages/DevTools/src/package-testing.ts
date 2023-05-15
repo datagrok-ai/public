@@ -74,8 +74,8 @@ export class TestManager extends DG.ViewBase {
   selectedNode: DG.TreeViewGroup | DG.TreeViewNode;
   nodeDict: { [id: string]: any } = {};
   debugMode = false;
-  benchmarkMode = false;
-  runSkippedMode = true;
+  benchmarkMode = DG.Test.isInBenchmark;
+  runSkippedMode = false;
   tree: DG.TreeViewGroup;
   ribbonPanelDiv = undefined;
   dockLeft;
@@ -92,7 +92,8 @@ export class TestManager extends DG.ViewBase {
     this.testFunctions = await this.collectPackages();
     this.testManagerView = DG.View.create();
     const testFromUrl = pathSegments.length > 4 ?
-      {packName: pathSegments[4], catName: pathSegments[5], testName: pathSegments[6]} : null;
+      {packName: pathSegments[4], catName: pathSegments.slice(5, -1).join(': '),
+        testName: pathSegments[pathSegments.length - 1]} : null;
     const testUIElements: ITestManagerUI = await this.createTestManagerUI(testFromUrl);
     this.testManagerView.name = this.name;
     addView(this.testManagerView);
@@ -101,7 +102,7 @@ export class TestManager extends DG.ViewBase {
     this.testManagerView.append(testUIElements.ribbonPanelDiv);
     this.testManagerView.append(testUIElements.testsTree.root);
     if (this.dockLeft)
-      grok.shell.dockManager.dock(this.testManagerView.root, 'left', null, this.name);
+      grok.shell.dockManager.dock(this.testManagerView.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.25);
     this.runTestsForSelectedNode();
   }
 
@@ -172,7 +173,7 @@ export class TestManager extends DG.ViewBase {
     const testPassed = ui.div();
     category.resultDiv = testPassed;
     const subnode = node.group(category.name, null, category.expand);
-    subnode.root.children[0].append(testPassed);
+    subnode.root.children[0].appendChild(testPassed);
     this.setRunTestsMenuAndLabelClick(subnode, category, NODE_TYPE.CATEGORY);
     if (testFromUrl && testFromUrl.catName === category.fullName)
       this.selectedNode = subnode;
@@ -230,9 +231,10 @@ export class TestManager extends DG.ViewBase {
         this.selectedNode = packNode;
         await this.collectPackageTests(packNode, pack, testFromUrl);
       }
-      packNode.root.children[0].append(testPassed);
+      packNode.root.children[0].appendChild(testPassed);
       packNode.onNodeExpanding.subscribe(() => {
-        this.collectPackageTests(packNode, pack);
+        packNode.root.children[0].appendChild(ui.loader());
+        this.collectPackageTests(packNode, pack).then((_) => packNode.root.children[0].lastChild.remove());
       });
     }
 
@@ -265,17 +267,21 @@ export class TestManager extends DG.ViewBase {
     //runAllButton.classList.add('btn-outline');
     runTestsButton.classList.add('ui-btn-outline');
 
-    const debugButton = ui.boolInput('Debug', false, () => {this.debugMode = !this.debugMode;});
+    const debugButton = ui.boolInput('Debug', this.debugMode, () => {this.debugMode = !this.debugMode;});
     debugButton.captionLabel.style.order = '1';
     debugButton.captionLabel.style.marginLeft = '5px';
     debugButton.root.style.marginLeft = '10px';
 
-    const benchmarkButton = ui.boolInput('Benchmark', false, () => {this.benchmarkMode = !this.benchmarkMode;});
+    const benchmarkButton = ui.boolInput('Benchmark', this.benchmarkMode, () => {
+      this.benchmarkMode = !this.benchmarkMode;
+      DG.Test.isInBenchmark = this.benchmarkMode;
+    });
     benchmarkButton.captionLabel.style.order = '1';
     benchmarkButton.captionLabel.style.marginLeft = '5px';
     benchmarkButton.root.style.marginLeft = '5px';
 
-    const runSkippedButton = ui.boolInput('Run skipped', true, () => {this.runSkippedMode = !this.runSkippedMode;});
+    const runSkippedButton = ui.boolInput('Run skipped', this.runSkippedMode,
+      () => {this.runSkippedMode = !this.runSkippedMode;});
     runSkippedButton.captionLabel.style.order = '1';
     runSkippedButton.captionLabel.style.marginLeft = '5px';
     runSkippedButton.root.style.marginLeft = '5px';
@@ -325,7 +331,7 @@ export class TestManager extends DG.ViewBase {
     icon.style.marginTop = '0px';
     if (running) {
       resultDiv.innerHTML = '';
-      resultDiv.append(icon);
+      resultDiv.appendChild(icon);
     } else
       resultDiv.innerHTML = '';
   }
@@ -340,7 +346,7 @@ export class TestManager extends DG.ViewBase {
     if (skipped) icon.style.color = 'var(--orange-2)';
     else icon.style.color = passed ? 'var(--green-2)' : 'var(--red-3)';
     iconDiv.innerHTML = '';
-    iconDiv.append(icon);
+    iconDiv.appendChild(icon);
   }
 
   updateIconUnhandled(category: ICategory) {
@@ -537,6 +543,8 @@ export class TestManager extends DG.ViewBase {
         .groupBy(this.testsResultsDf.columns.names())
         .where(condition)
         .aggregate();
+      const results = testInfo.getCol('success').toList();
+      const skipped = testInfo.getCol('skipped').toList().filter((b) => b).length;
       if (unhandled) {
         testInfo.rows.addNew([false, unhandled, 0, false, 'Unhandled exceptions',
           'exceptions', testInfo.get('package', 0)]);
@@ -554,23 +562,22 @@ export class TestManager extends DG.ViewBase {
           ui.divText(`Time, ms: ${time}`),
         ]);
         if (nodeType !== NODE_TYPE.TEST)
-          info.append(ui.divText(`Test: ${testInfo.get('name', 0)}`));
+          info.appendChild(ui.divText(`Test: ${testInfo.get('name', 0)}`));
         if (nodeType === NODE_TYPE.PACKAGE)
-          info.append(ui.divText(`Category: ${cat}`));
+          info.appendChild(ui.divText(`Category: ${cat}`));
       } else {
         if (!isTooltip) {
-          info = ui.divV([
-            ui.button('Add to workspace', () => {
-              grok.shell.addTableView(testInfo);
-            }),
-            testInfo.plot.grid().root,
-          ]);
-        } else
-          return null;
+          const resStr = ui.div();
+          resStr.innerHTML = `<span>${results.filter((b) => b).length - skipped} passed</span>\
+          <span>${results.filter((b) => !b).length} failed</span> <span>${skipped} skipped</span>`;
+          const res = ui.divH([resStr, ui.button('Add to workspace', () => {
+            grok.shell.addTableView(testInfo);
+          })]);
+          res.classList.add('dt-res-string');
+          info = ui.divV([res, testInfo.plot.grid().root]);
+        } else return null;
       }
     }
     return info;
   };
 }
-
-
