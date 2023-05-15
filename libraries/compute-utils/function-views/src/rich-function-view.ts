@@ -236,7 +236,7 @@ export class RichFunctionView extends FunctionView {
       ...this.getRibbonPanels(),
       [
         ...this.runningOnInput && !this.options.isTabbed ? [play]: [...this.isUploadMode.value ? [save] : [play]],
-        ...!this.runningOnInput ? [toggleUploadMode]: [],
+        toggleUploadMode,
       ],
     ];
 
@@ -324,7 +324,10 @@ export class RichFunctionView extends FunctionView {
         promisedViewers.map((viewer, viewerIndex) => {
           const blockWidth: string | boolean | undefined = parsedTabDfProps[dfIndex][viewerIndex]['block'];
           const viewerRoot = ui.wait(async () => (await viewer).root);
-          $(viewerRoot).css({'min-height': '300px'});
+          $(viewerRoot).css({
+            'min-height': '300px',
+            'flex-grow': '1',
+          });
 
           acc.append(
             ui.divV([
@@ -340,7 +343,7 @@ export class RichFunctionView extends FunctionView {
         });
 
         return acc;
-      }, ui.divH([], {'style': {'flex-wrap': 'wrap'}}));
+      }, ui.divH([], {'style': {'flex-wrap': 'wrap', 'flex-grow': '1'}}));
 
       const generateScalarsTable = () => {
         const table = DG.HtmlTable.create(
@@ -348,7 +351,9 @@ export class RichFunctionView extends FunctionView {
           (scalarProp: DG.Property) =>
             [scalarProp.caption ?? scalarProp.name, this.funcCall.outputs[scalarProp.name], scalarProp.options['units']],
         ).root;
-        table.style.maxWidth = '400px';
+        $(table).css({
+          'max-width': '400px',
+        });
         this.afterOutputSacalarTableRender.next(table);
         return table;
       };
@@ -373,7 +378,7 @@ export class RichFunctionView extends FunctionView {
       });
 
       this.outputsTabsElem.addPane(tabLabel, () => {
-        return ui.divV([dfBlocks, ...tabScalarProps.length ? [ui.h2('Scalar values')]: [], scalarsTable]);
+        return ui.divV([dfBlocks, ...tabScalarProps.length ? [ui.h2('Scalar values'), scalarsTable]: []]);
       });
     });
 
@@ -545,9 +550,7 @@ export class RichFunctionView extends FunctionView {
       const buttonWrapper = ui.div([runButton]);
       ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
       this.controllsDiv = ui.buttonsInput([buttonWrapper as any]);
-    }
-    if (!this.runningOnInput)
-      inputs.append(this.controllsDiv);
+    };
 
     inputs.classList.remove('ui-panel');
     inputs.style.paddingTop = '0px';
