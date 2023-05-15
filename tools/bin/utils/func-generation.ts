@@ -14,6 +14,7 @@ export enum FUNC_TYPES {
   FILE_VIEWER = 'fileViewer',
   SETTINGS_EDITOR = 'packageSettingsEditor',
   VIEWER = 'viewer',
+  FILTER = 'filter',
 }
 
 /** Generates an annotation header for a function based on provided metadata. */
@@ -61,7 +62,15 @@ export const reservedDecorators: {[decorator: string]: {metadata: FuncMetadata, 
     metadata: {
       tags: [FUNC_TYPES.VIEWER],
       inputs: [],
-      outputs: [{name: 'viewer', type: 'viewer'}],
+      outputs: [{name: 'result', type: 'viewer'}],
+    },
+    genFunc: generateClassFunc,
+  },
+  grokFilter: {
+    metadata: {
+      tags: [FUNC_TYPES.FILTER],
+      inputs: [],
+      outputs: [{name: 'result', type: 'filter'}],
     },
     genFunc: generateClassFunc,
   },
@@ -92,7 +101,7 @@ export const reservedDecorators: {[decorator: string]: {metadata: FuncMetadata, 
   grokFileViewer: {
     metadata: {
       tags: [FUNC_TYPES.FILE_VIEWER],
-      inputs: [{name: 'file', type: 'file'}],
+      inputs: [{name: 'f', type: 'file'}],
       outputs: [{name: 'v', type: 'view'}],
     },
     genFunc: generateFunc,
@@ -101,7 +110,7 @@ export const reservedDecorators: {[decorator: string]: {metadata: FuncMetadata, 
     metadata: {
       tags: [FUNC_TYPES.SETTINGS_EDITOR],
       inputs: [],
-      outputs: [{name: 'widget', type: 'widget'}],
+      outputs: [{name: 'result', type: 'widget'}],
     },
     genFunc: generateFunc,
   },

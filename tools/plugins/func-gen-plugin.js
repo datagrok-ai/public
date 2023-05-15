@@ -114,7 +114,7 @@ class FuncGeneratorPlugin {
 
         const className = node.id.name;
         imports.push(generateImport(className, modifyImportPath(path.dirname(this.options.outputPath), file)));
-        const funcName = options.name ?? `_${className}`;
+        const funcName = `_${className}`;
         functions.push(reservedDecorators[name]['genFunc'](getFuncAnnotation({
           ...reservedDecorators[name]['metadata'],
           ...options,
