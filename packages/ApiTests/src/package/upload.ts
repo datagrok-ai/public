@@ -22,7 +22,7 @@ category('Package', () => {
     const response = await fetch(`${grok.dapi.root}/users/current/dev_key?getNew=false`,
       {method: 'GET', credentials: 'include'});
     key = await response.json();
-    query = await grok.functions.eval('ApiTests:PackageTest');
+    query = await grok.functions.eval('DBTests:PackageTest');
   });
 
   async function publish(debug: boolean) {

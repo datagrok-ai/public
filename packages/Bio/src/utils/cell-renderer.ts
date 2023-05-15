@@ -57,9 +57,9 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
   get cellType(): string { return 'sequence'; }
 
-  get defaultHeight(): number { return 30; }
+  get defaultHeight(): number | null { return 30; }
 
-  get defaultWidth(): number { return 230; }
+  get defaultWidth(): number | null { return 230; }
 
   onClick(gridCell: DG.GridCell, e: MouseEvent): void {
     const colTemp: TempType = gridCell.cell.column.temp;
@@ -350,7 +350,7 @@ export function drawMoleculeDifferenceOnCanvas(
   g.restore();
 }
 
-interface IComparedSequences{
+interface IComparedSequences {
   subParts1: string[];
   subParts2: string[];
 }
@@ -401,6 +401,6 @@ function fillShorterSequence(subParts1: string[], subParts2: string[]): ICompare
     return numIdenticalStart > numIdenticalEnd ? subparts.concat(emptyMonomersArray) : emptyMonomersArray.concat(subparts);
   }
 
-  subParts1.length > subParts2.length ?  subParts2 = concatWithEmptyVals(subParts2) : subParts1 = concatWithEmptyVals(subParts1);
+  subParts1.length > subParts2.length ? subParts2 = concatWithEmptyVals(subParts2) : subParts1 = concatWithEmptyVals(subParts1);
   return {subParts1: subParts1, subParts2: subParts2};
 }

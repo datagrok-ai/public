@@ -252,7 +252,8 @@
 }
 
 .chem-demo-button-pushed {
-  background: var(--blue-2)!important
+  background: var(--blue-2)!important;
+  border: 2px solid var(--blue-1);
 }
 
 .chem-demo-chembl-id-selected {
@@ -278,4 +279,20 @@
 .chem-viewer-grid > div > div.chem-mol-box {
   margin: 0 auto;
   position: relative;
+}
+
+.chem-tooltip-widget {
+  position: relative;
+  top: -80px;
+  left: 120px;
+  width: 335px;
+  height: 0px;
+}
+
+.chem-substructure-limit-error {
+  background: white;
+}
+
+.chem-hide-filter {
+  display: none;
 }

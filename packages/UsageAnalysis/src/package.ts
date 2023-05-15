@@ -19,8 +19,8 @@ export function usageAnalysisApp(): void {
 //input: dynamic header
 //output: widget result
 //tags: dashboard
-export function usageWidget(header: HTMLDivElement): DG.Widget {
-  return new UsageWidget(header);
+export function usageWidget(): DG.Widget {
+  return new UsageWidget();
 }
 
 //name: Create JIRA ticket

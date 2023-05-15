@@ -36,13 +36,13 @@ export class FileInput {
       if (isValid) {
         this.visibleInput.input.classList.remove('error');
         this.visibleInput.input.classList.add('success');
-        const newIcon = ui.iconFA('times', () => this.reset());
+        const newIcon = ui.iconFA('times', () => this.reset(), 'Reset uploaded file');
         this.icon.replaceWith(newIcon);
         this.icon = newIcon;
       } else {
         this.visibleInput.input.classList.remove('success');
         this.visibleInput.input.classList.add('error');
-        const newIcon = ui.iconFA('redo', () => this.hiddenInput.click());
+        const newIcon = ui.iconFA('redo', () => this.hiddenInput.click(), 'Re-upload a file');
         this.icon.replaceWith(newIcon);
         this.icon = newIcon;
       }
@@ -140,7 +140,7 @@ export class FileInput {
 
   private reset() {
     this.visibleInput.input.classList.value = 'ui-input-editor default';
-    const newIcon = ui.iconFA('cloud-upload', () => this.hiddenInput.click());
+    const newIcon = ui.iconFA('cloud-upload', () => this.hiddenInput.click(), 'Choose a file to upload');
     this.icon.replaceWith(newIcon);
     this.icon = newIcon;
     this.visibleInput.value = 'Drag-n-drop here';

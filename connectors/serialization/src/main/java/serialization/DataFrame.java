@@ -100,6 +100,30 @@ public class DataFrame {
         }
     }
 
+    public void merge(DataFrame dataFrame) {
+        if (!Objects.equals(columns.size(), dataFrame.columns.size()) && rowCount != 0) {
+            throw new RuntimeException("Can't merge dataframes with different row count");
+        }
+        if (rowCount == 0) {
+            addColumns(dataFrame.columns);
+            return;
+        }
+        for (int i = 0; i < columns.size(); i++) {
+            Column column = columns.get(i);
+            Column columnToMerge = dataFrame.columns.get(i);
+            if (!column.name.equals(columnToMerge.name)) {
+                throw new RuntimeException("Can't merge dataframes of columns with different names");
+            }
+            for (int j = 0; j < columnToMerge.length; j++) {
+                column.add(columnToMerge.get(j));
+            }
+        }
+        Column column = columns.get(0);
+        if (column != null) {
+            rowCount = column.length;
+        }
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

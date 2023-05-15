@@ -239,47 +239,47 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
 
       const plugin: PluginContext = this.viewer.plugin;
       switch (property.name) {
-      case PROPS.layoutShowLog: {
-        //plugin.layout.setProps({layoutShowLog: value;});
+        case PROPS.layoutShowLog: {
+          //plugin.layout.setProps({layoutShowLog: value;});
 
-        //PluginCommands.Layout.Update(plugin, );
-        const k = 11;
-      }
-        break;
-      case PROPS.layoutShowControls: {
-        // eslint-disable-next-line new-cap
-        await PluginCommands.Layout.Update(plugin, {state: {showControls: this.layoutShowControls}});
-        const k = 11;
-      }
-        break;
-      case PROPS.layoutIsExpanded: {
-        //eslint-disable-next-line new-cap
-        await PluginCommands.Layout.Update(plugin, {state: {isExpanded: this.layoutIsExpanded}});
-      }
-        break;
-      case PROPS.layoutRegionStateLeft:
-      case PROPS.layoutRegionStateTop:
-      case PROPS.layoutRegionStateRight:
-      case PROPS.layoutRegionStateBottom: {
-        //eslint-disable-next-line new-cap
-        await PluginCommands.Layout.Update(plugin, {
-          state: {
-            regionState: {
-              left: this.layoutRegionStateLeft,
-              top: this.layoutRegionStateTop,
-              right: this.layoutRegionStateRight,
-              bottom: this.layoutRegionStateBottom
+          //PluginCommands.Layout.Update(plugin, );
+          const k = 11;
+        }
+          break;
+        case PROPS.layoutShowControls: {
+          // eslint-disable-next-line new-cap
+          await PluginCommands.Layout.Update(plugin, {state: {showControls: this.layoutShowControls}});
+          const k = 11;
+        }
+          break;
+        case PROPS.layoutIsExpanded: {
+          //eslint-disable-next-line new-cap
+          await PluginCommands.Layout.Update(plugin, {state: {isExpanded: this.layoutIsExpanded}});
+        }
+          break;
+        case PROPS.layoutRegionStateLeft:
+        case PROPS.layoutRegionStateTop:
+        case PROPS.layoutRegionStateRight:
+        case PROPS.layoutRegionStateBottom: {
+          //eslint-disable-next-line new-cap
+          await PluginCommands.Layout.Update(plugin, {
+            state: {
+              regionState: {
+                left: this.layoutRegionStateLeft,
+                top: this.layoutRegionStateTop,
+                right: this.layoutRegionStateRight,
+                bottom: this.layoutRegionStateBottom
+              }
             }
-          }
-        });
-      }
-        break;
-      case PROPS.layoutControlsDisplay: {
-        //eslint-disable-next-line new-cap
-        await PluginCommands.Layout.Update(plugin,
-          {state: {controlsDisplay: this.layoutControlsDisplay as PluginLayoutControlsDisplay}});
-      }
-        break;
+          });
+        }
+          break;
+        case PROPS.layoutControlsDisplay: {
+          //eslint-disable-next-line new-cap
+          await PluginCommands.Layout.Update(plugin,
+            {state: {controlsDisplay: this.layoutControlsDisplay as PluginLayoutControlsDisplay}});
+        }
+          break;
         // case PROPS.viewportShowExpand: {
         //   await PluginCommands.State.ToggleExpanded(plugin,
         //     {state: {isExpanded: this.viewportShowExpand}})
@@ -289,13 +289,13 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     };
 
     switch (property.name) {
-    case PROPS.representation:
-      break;
-    case PROPS.showImportControls:
-      break;
-    case PROPS.layoutIsExpanded:
-      this.viewerProps[PROPS.layoutIsExpanded] = this.layoutIsExpanded;
-      break;
+      case PROPS.representation:
+        break;
+      case PROPS.showImportControls:
+        break;
+      case PROPS.layoutIsExpanded:
+        this.viewerProps[PROPS.layoutIsExpanded] = this.layoutIsExpanded;
+        break;
     }
 
     const propName: string = property.name;
@@ -307,10 +307,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
     }
 
     switch (property.name) {
-    case PROPS.pdb:
-    case PROPS.pdbTag:
-      this.setData();
-      break;
+      case PROPS.pdb:
+      case PROPS.pdbTag:
+        this.setData();
+        break;
     }
   }
 
@@ -336,13 +336,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
 
     const superDetach = super.detach.bind(this);
     this.detachPromise = this.detachPromise.then(async () => { // detach
+      await this.viewPromise;
       if (this.viewed) {
         await this.destroyView('detach');
         this.viewed = false;
       }
       superDetach();
-    }).catch((reason: any) => {
-      grok.shell.error(reason.toString());
     });
   }
 
@@ -374,8 +373,6 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
         await this.buildView('setData');
         this.viewed = true;
       }
-    }).catch((reason: any) => {
-      grok.shell.error(reason.toString());
     }).finally(() => {
       this.setDataInProgress = false;
     });
@@ -537,9 +534,9 @@ export async function initViewer(viewName: string = 'Mol*'): Promise<RcsbViewer>
  * @param {string} pdbId ID of an entity in PDB.
  */
 export async function byId(pdbId: string) {
-  initViewer()
-    .then((v: any) => {
-      v.loadPdb(pdbId);
+  await initViewer()
+    .then((v: RcsbViewer) => {
+      v.loadPdbId(pdbId);
     });
   //v.handleResize();
 }
@@ -550,7 +547,7 @@ export async function byId(pdbId: string) {
  * @param {string} data Data in PDB
  */
 export async function byData(data: string, name: string = 'Mol*') {
-  initViewer(name)
+  await initViewer(name)
     .then(async (viewer: RcsbViewer) => {
       // detecting format by data content
       let format: BuiltInTrajectoryFormat = 'pdb';
@@ -571,9 +568,9 @@ export async function viewMolstarUI(content: string, name?: string): Promise<voi
 
 /** Creates view with Molstar viewer to preview Biostructure (PDB) */
 export function previewMolstarUI(file: DG.FileInfo): DG.View {
-  const builtinFormats = BuiltInTrajectoryFormats.map(obj => obj[0]) as string[];
+  const builtinFormats = BuiltInTrajectoryFormats.map((obj) => obj[0]) as string[];
   const extendedFormats = ['cif', 'mcif'];
-  if(!isSupportedFormat()) {
+  if (!isSupportedFormat()) {
     grok.shell.error(`Unsupported format: ${file.extension}`);
     throw new Error(`Unsupported format: ${file.extension}`);
   }
@@ -603,7 +600,7 @@ export function previewMolstarUI(file: DG.FileInfo): DG.View {
       .then(() => {}); // Ignoring Promise returned
   }
 
-  function isSupportedFormat(){
+  function isSupportedFormat() {
     return [...builtinFormats, ...extendedFormats].includes(file.extension);
   }
 

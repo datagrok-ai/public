@@ -120,15 +120,20 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
             height: gridCell.grid.props.rowHeight * r,
           },
           onAfterRender: async (canvas: HTMLCanvasElement) => {
-            _package.logger.debug('PdbRenderer.render() onAfterRender() ' + `rowIdx = ${rowIdx}`);
-            const imageStr: string = canvas.toDataURL();
-            const image: HTMLImageElement = await base64ToImg(imageStr);
+            g.save();
+            try {
+              _package.logger.debug('PdbRenderer.render() onAfterRender() ' + `rowIdx = ${rowIdx}`);
+              const imageStr: string = canvas.toDataURL();
+              const image: HTMLImageElement = await base64ToImg(imageStr);
 
-            const imageCache = gridCell.tableColumn!.temp.get(PDB_RENDERER_IMAGE_CACHE_KEY);
-            imageCache[rowIdx] = image;
-            gridCell.tableColumn!.temp.set(PDB_RENDERER_IMAGE_CACHE_KEY, imageCache);
+              const imageCache = gridCell.tableColumn!.temp.get(PDB_RENDERER_IMAGE_CACHE_KEY);
+              imageCache[rowIdx] = image;
+              gridCell.tableColumn!.temp.set(PDB_RENDERER_IMAGE_CACHE_KEY, imageCache);
 
-            service.renderOnGridCell(g, new DG.Rect(x, y, w, h), gridCell, image);
+              service.renderOnGridCell(g, new DG.Rect(x, y, w, h), gridCell, image);
+            } finally {
+              g.restore();
+            }
           }
         };
 
@@ -142,6 +147,11 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
           _package.logger.debug('PdbRenderer.render() ' + `imageCache[${rowIdx}] = null`);
         }
       }
+    } catch (err: any) {
+      const errMsg: string = err instanceof Error ? err.message : err.toString();
+      _package.logger.error(`BsV:PdbGridCellRenderer.render() no rethrown error: ${errMsg}`, undefined,
+        err instanceof Error ? err.stack : undefined);
+      //throw err; // Do not throw to prevent disabling event handler
     } finally {
       g.restore();
     }

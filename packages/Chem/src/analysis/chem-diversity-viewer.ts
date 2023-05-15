@@ -21,7 +21,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
   constructor(tooltipUse = false, col?: DG.Column) {
     super(DIVERSITY, col);
     this.renderMolIds = [];
-    this.updateMetricsLink(this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
+    this.updateMetricsLink(this, {fontSize: '13px', fontWeight: 'normal', paddingBottom: '15px'});
     this.tooltipUse = tooltipUse;
   }
 
@@ -48,7 +48,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
 
       panel[cnt++] = this.metricsDiv;
       for (let i = 0; i < this.renderMolIds.length; ++i) {
-        const molProps = this.createMoleculePropertiesDiv(this.renderMolIds[i]);
+        const molProps = this.createMoleculePropertiesDiv(this.renderMolIds[i], false);
         const grid = ui.div([
           renderMolecule(
             this.moleculeColumn!.get(this.renderMolIds[i]),
@@ -117,11 +117,11 @@ export async function chemDiversitySearch(
       }
     }
   } else {
-    fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint);
+    fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint, true, false);
   }
   const indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => !!f && !f.allFalse);
   if (!tooltipUse)
-    malformedDataWarning(fingerprintArray, moleculeColumn.dataFrame);
+    malformedDataWarning(fingerprintArray, moleculeColumn);
   limit = Math.min(limit, indexes.length);
 
   const diverseIndexes = getDiverseSubset(indexes.length, limit,

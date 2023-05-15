@@ -14,11 +14,11 @@ import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import Sketcher = DG.chem.Sketcher;
-import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {IUMAPOptions, ITSNEOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {activityCliffsIdx, CLIFFS_DF_NAME, getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {IUMAPOptions, ITSNEOptions, UMAP} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
-import {EMPTY_MOLECULE_MESSAGE, SMARTS_MOLECULE_MESSAGE, elementsTable} from './constants';
+import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, EMPTY_MOLECULE_MESSAGE, SMARTS_MOLECULE_MESSAGE, elementsTable} from './constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
 //widget imports
@@ -32,7 +32,6 @@ import {toxicityWidget} from './widgets/toxicity';
 //panels imports
 import {addInchiKeys, addInchis} from './panels/inchi';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
-
 
 //utils imports
 import { ScaffoldTreeViewer} from "./widgets/scaffold-tree";
@@ -63,7 +62,7 @@ import { renderMolecule } from './rendering/render-molecule';
 import { RDKitReactionRenderer } from './rendering/rdkit-reaction-renderer';
 import { structure3dWidget } from './widgets/structure3d';
 import { identifiersWidget } from './widgets/identifiers';
-import { _demoActivityCliffs, _demoChemOverview, _demoDatabases, _demoRgroupAnalysis, _demoSimilaritySearch } from './demo/demo';
+import { _demoActivityCliffs, _demoChemOverview, _demoDatabases, _demoDatabases4, _demoMoleculesVisualizations, _demoRgroupAnalysis, _demoSimilarityDiversitySearch, _demoSimilaritySearch } from './demo/demo';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -140,13 +139,12 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
   }
 
   const divMain = ui.div();
-  divMain.append(ui.divText('Most diverse structures'));
+  divMain.append(ui.divText('Most diverse structures', {style: {'position': 'relative', 'left': '20px'}}));
   const divStructures = ui.div();
   divStructures.classList.add('d4-flex-wrap');
-
   if (col.temp['version'] !== version || col.temp['molIds'].length === 0) {
     const molIds = await chemDiversitySearch(
-      col, similarityMetric['Tanimoto'], 9, 'Morgan' as Fingerprint, true);
+      col, similarityMetric['Tanimoto'], 7, 'Morgan' as Fingerprint, true);
 
     Object.assign(col.temp, {
       'version': version,
@@ -156,11 +154,13 @@ export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined
 
   const molIdsCached = col.temp['molIds'];
   for (let i = 0; i < molIdsCached.length; ++i) {
-    divStructures.append(renderMolecule(col.get(molIdsCached[i]), {width: 150, height: 75}));
+    divStructures.append(renderMolecule(col.get(molIdsCached[i]), {width: 75, height: 32}));
   }
 
   divMain.append(divStructures);
-  return new DG.Widget(divMain);
+  const widget = new DG.Widget(divMain);
+  widget.root.classList.add('chem-tooltip-widget');
+  return widget;
 }
 
 //name: Scaffold Tree
@@ -262,7 +262,7 @@ export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Co
   assure.notNull(molColumn, 'molColumn');
 
   try {
-    const fingerprints = await chemSearches.chemGetFingerprints(molColumn, Fingerprint.Morgan);
+    const fingerprints = await chemSearches.chemGetFingerprints(molColumn, Fingerprint.Morgan, true, false);
     const fingerprintsBitsets: (DG.BitSet | null)[] = [];
     for (let i = 0; i < fingerprints.length; ++i) {
       const fingerprint = fingerprints[i] ? DG.BitSet.fromBytes(fingerprints[i]!.getRawData().buffer, fingerprints[i]!.length) : null;
@@ -406,8 +406,11 @@ export function diversitySearchTopMenu(): void {
 //name: SearchSubstructureEditor
 //tags: editor
 //input: funccall call
-export function SearchSubstructureEditor(call: DG.FuncCall) {
-  
+export function searchSubstructureEditor(call: DG.FuncCall) {
+  if (grok.shell.tv.dataFrame.rowCount > MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT) {
+    grok.shell.warning(`Too many rows, maximum for substructure search is ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT}`);
+    return;
+  }
   const molColumns = grok.shell.tv.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
   if (!molColumns.length) {
     grok.shell.warning(`Data doesn't contain molecule columns`);
@@ -480,25 +483,47 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     return;
   }
 
-  const embedColsNames = getEmbeddingColsNames(table);
+  const allowedRowCount = methodName === UMAP ? 100000 : 10000;
+  const fastRowCount = methodName === UMAP ? 5000 : 2000;
 
-  const chemSpaceParams = {
-    seqCol: molecules,
-    methodName: methodName,
-    similarityMetric: similarityMetric,
-    embedAxesNames: [embedColsNames[0], embedColsNames[1]],
-    options: options
-  };
-  const chemSpaceRes = await chemSpace(chemSpaceParams);
-  const embeddings = chemSpaceRes.coordinates;
-
-  for (const col of embeddings) {
-    table.columns.add(col);
+  if (table.rowCount > allowedRowCount) {
+    grok.shell.warning(`Too many rows, maximum for chemical space is ${allowedRowCount}`);
+    return;
   }
-  if (plotEmbeddings)
-    return grok.shell
-      .tableView(table.name)
-      .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical Space'});
+
+  const runChemSpace = async (): Promise<DG.Viewer | undefined> => {
+    const embedColsNames = getEmbeddingColsNames(table);
+
+    const chemSpaceParams = {
+      seqCol: molecules,
+      methodName: methodName,
+      similarityMetric: similarityMetric,
+      embedAxesNames: [embedColsNames[0], embedColsNames[1]],
+      options: options
+    };
+    const chemSpaceRes = await chemSpace(chemSpaceParams);
+    const embeddings = chemSpaceRes.coordinates;
+  
+    for (const col of embeddings)
+      table.columns.add(col);
+
+    if (plotEmbeddings)
+      return grok.shell
+        .tableView(table.name)
+        .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
+  }
+
+  if (table.rowCount > fastRowCount) {
+    ui.dialog().add(ui.divText(`Chemical space analysis might take several minutes.
+    Do you want to continue?`))
+      .onOK(async () => {
+        const progressBar = DG.TaskBarProgressIndicator.create(`Running Chemical space...`);
+        return await runChemSpace();
+        progressBar.close();
+      })
+      .show();
+  } else
+    return await runChemSpace();
 }
 
 
@@ -549,16 +574,16 @@ export async function getChemSimilaritiesMatrix(dim: number, col: DG.Column,
 //name: Elemental Analysis
 //description: function that implements elemental analysis
 //input: dataframe table
-//input: column molCol { semType: Molecule }
-//input: bool radarView = false
-//input: bool radarGrid = false
-export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarView: boolean, radarGrid: boolean): void {
-  if (molCol.semType !== DG.SEMTYPE.MOLECULE) {
-    grok.shell.info(`The column ${molCol.name} doesn't contain molecules`);
+//input: column molecules { semType: Molecule }
+//input: bool radarViewer = false { description: "Add a standalone radar viewer" }
+//input: bool radarGrid = false { description: "Show radar in grid cells" }
+export function elementalAnalysis(table: DG.DataFrame, molecules: DG.Column, radarViewer: boolean, radarGrid: boolean): void {
+  if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
+    grok.shell.info(`The column ${molecules.name} doesn't contain molecules`);
     return;
   }
 
-  const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molCol);
+  const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molecules);
   let columnNames: string[] = [];
 
   if (invalid.filter((el) => el !== null).length > 0) {
@@ -583,7 +608,7 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
 
   let view = grok.shell.getTableView(table.name);
 
-  if (radarView) {
+  if (radarViewer) {
     const packageExists = checkPackage('Charts', '_radarViewerDemo');
     if (packageExists) {
       let radarViewer = DG.Viewer.fromType('Radar', table, {
@@ -598,7 +623,7 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
   if (radarGrid) {
     const packageExists = checkPackage('PowerGrid', 'radarCellRenderer');
     if (packageExists) {
-      let gc = view.grid.columns.add({gridColumnName: `elements (${molCol.name})`, cellType: 'radar'});
+      let gc = view.grid.columns.add({gridColumnName: `elements (${molecules.name})`, cellType: 'radar'});
       gc.settings = {columnNames: columnNames};
       gc.width = 300;
     } else {
@@ -640,10 +665,11 @@ export function ActivityCliffsEditor(call: DG.FuncCall) {
 //input: column activities
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE"] }
+//input: string similarityMetric
 //input: object options {optional: true}
 //editor: Chem:ActivityCliffsEditor
 export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
-  similarity: number, methodName: string, options?: IUMAPOptions | ITSNEOptions) {
+  similarity: number, methodName: string, similarityMetric: string, options?: IUMAPOptions | ITSNEOptions) {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
@@ -652,20 +678,28 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
     grok.shell.error(`Column ${activities.name} is not numeric`);
     return;
   }
+
+  const allowedRowCount = 10000;
+  const fastRowCount = methodName === UMAP ? 5000 : 2000;
+  if (df.rowCount > allowedRowCount) {
+    grok.shell.warning(`Too many rows, maximum for activity cliffs is ${allowedRowCount}`);
+    return;
+  }
+
   const axesNames = getEmbeddingColsNames(df);
-  if (df.rowCount > 10000) {
+  if (df.rowCount > fastRowCount) {
     ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
     Do you want to continue?`))
       .onOK(async () => {
         const progressBar = DG.TaskBarProgressIndicator.create(`Activity cliffs running...`);
-        await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, 'Tanimoto',
+        await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, similarityMetric,
           methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
           createTooltipElement, createPropPanelElement, undefined, options);
         progressBar.close();
       })
       .show();
   } else {
-    await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, 'Tanimoto',
+    await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, similarityMetric,
       methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
       createTooltipElement, createPropPanelElement, undefined, options);
   }
@@ -1158,9 +1192,9 @@ export async function demoChemOverview(): Promise<void> {
 
 
 //name: Demo Similarity Search
-//meta.demoPath: Cheminformatics | Similarity Search
-export async function demoSimilaritySearch(): Promise<void> {
-  _demoSimilaritySearch();
+//meta.demoPath: Cheminformatics | Similarity & Diversity Search
+export async function demoSimilarityDiversitySearch(): Promise<void> {
+  _demoSimilarityDiversitySearch();
 }
 
 
@@ -1180,5 +1214,5 @@ export async function demoActivityCliffs(): Promise<void> {
 //name: Demo Databases
 //meta.demoPath: Cheminformatics | Databases
 export async function demoDatabases(): Promise<void> {
-  _demoDatabases();
+  _demoDatabases4();
 }

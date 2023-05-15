@@ -14,11 +14,10 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 
 export async function chemSpace(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
-  const fpColumn = await chemGetFingerprints(spaceParams.seqCol, Fingerprint.Morgan);
-  const emptyMolIdxs = fpColumn.map((el: BitArray | null, idx: number) => el && el.allFalse ? idx : null).filter((it) => it !== null);
-  const malformedIdxs = malformedDataWarning(fpColumn, spaceParams.seqCol.dataFrame);
-  const emptyAndMalformedIdxs = emptyMolIdxs.concat(malformedIdxs);
-  setEmptyBitArraysForMalformed(fpColumn);
+  const fpColumn = await chemGetFingerprints(spaceParams.seqCol, Fingerprint.Morgan, true, false);
+  const emptyAndMalformedIdxs = fpColumn.map((el: BitArray | null, idx: number) => !el ? idx : null).filter((it) => it !== null);
+  malformedDataWarning(fpColumn, spaceParams.seqCol);
+  setEmptyBitArraysForMalformed(fpColumn); //need to replace nulls with empty BitArrays since dimensionality reducing algorithmns fail in case fpColumn contains nulls. TODO: fix on dim reduction side
   const chemSpaceResult: IReduceDimensionalityResult = await reduceDimensinalityWithNormalization(
     fpColumn as BitArray[],
     spaceParams.methodName,

@@ -17,3 +17,9 @@
     justify-content: center;
     align-items: center;
 }
+
+.dendrogram-loader{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}

@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 // https://gitlab.com/cgps/phylocanvas/phylocanvas.gl
 
-import {NodeType} from './index';
+import {NodeType} from './types';
 
 export const TreeTypes = {
   Circular: 'cr',

@@ -4,6 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {CARD_VIEW_TYPE, FUNCTIONS_VIEW_TYPE, SCRIPTS_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from './shared/consts';
+import {getPropViewers} from './shared/utils';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const RUN_ID_COL_LABEL = 'RunId' as const;
@@ -27,21 +28,6 @@ export class RunComparisonView extends DG.TableView {
       configFunc?: DG.Func,
     },
   ) {
-    const getPropViewers = (prop: DG.Property): {name: string, config: Record<string, string | boolean>[]} => {
-      const viewersRawConfig = prop.options[VIEWER_PATH];
-      return (viewersRawConfig !== undefined) ?
-        // true and false values are retrieved as string, so we parse them separately
-        {name: prop.name, config: JSON.parse(viewersRawConfig, (k, v) => {
-          if (v === 'true') return true;
-          if (v === 'false') return false;
-          // Converting internal Dart labels to JS DG.VIEWER labels
-          if (k === 'type') return viewerTypesMapping[v] || v;
-
-          return v;
-        })}:
-        {name: prop.name, config: []};
-    };
-
     const configFunc = options.configFunc ?? comparedRuns[0].func;
 
     const allParamViewers = [

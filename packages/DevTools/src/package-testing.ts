@@ -173,7 +173,7 @@ export class TestManager extends DG.ViewBase {
     const testPassed = ui.div();
     category.resultDiv = testPassed;
     const subnode = node.group(category.name, null, category.expand);
-    subnode.root.children[0].append(testPassed);
+    subnode.root.children[0].appendChild(testPassed);
     this.setRunTestsMenuAndLabelClick(subnode, category, NODE_TYPE.CATEGORY);
     if (testFromUrl && testFromUrl.catName === category.fullName)
       this.selectedNode = subnode;
@@ -231,9 +231,9 @@ export class TestManager extends DG.ViewBase {
         this.selectedNode = packNode;
         await this.collectPackageTests(packNode, pack, testFromUrl);
       }
-      packNode.root.children[0].append(testPassed);
+      packNode.root.children[0].appendChild(testPassed);
       packNode.onNodeExpanding.subscribe(() => {
-        packNode.root.children[0].append(ui.loader());
+        packNode.root.children[0].appendChild(ui.loader());
         this.collectPackageTests(packNode, pack).then((_) => packNode.root.children[0].lastChild.remove());
       });
     }
@@ -331,7 +331,7 @@ export class TestManager extends DG.ViewBase {
     icon.style.marginTop = '0px';
     if (running) {
       resultDiv.innerHTML = '';
-      resultDiv.append(icon);
+      resultDiv.appendChild(icon);
     } else
       resultDiv.innerHTML = '';
   }
@@ -346,7 +346,7 @@ export class TestManager extends DG.ViewBase {
     if (skipped) icon.style.color = 'var(--orange-2)';
     else icon.style.color = passed ? 'var(--green-2)' : 'var(--red-3)';
     iconDiv.innerHTML = '';
-    iconDiv.append(icon);
+    iconDiv.appendChild(icon);
   }
 
   updateIconUnhandled(category: ICategory) {
@@ -543,6 +543,8 @@ export class TestManager extends DG.ViewBase {
         .groupBy(this.testsResultsDf.columns.names())
         .where(condition)
         .aggregate();
+      const results = testInfo.getCol('success').toList();
+      const skipped = testInfo.getCol('skipped').toList().filter((b) => b).length;
       if (unhandled) {
         testInfo.rows.addNew([false, unhandled, 0, false, 'Unhandled exceptions',
           'exceptions', testInfo.get('package', 0)]);
@@ -560,19 +562,20 @@ export class TestManager extends DG.ViewBase {
           ui.divText(`Time, ms: ${time}`),
         ]);
         if (nodeType !== NODE_TYPE.TEST)
-          info.append(ui.divText(`Test: ${testInfo.get('name', 0)}`));
+          info.appendChild(ui.divText(`Test: ${testInfo.get('name', 0)}`));
         if (nodeType === NODE_TYPE.PACKAGE)
-          info.append(ui.divText(`Category: ${cat}`));
+          info.appendChild(ui.divText(`Category: ${cat}`));
       } else {
         if (!isTooltip) {
-          info = ui.divV([
-            ui.button('Add to workspace', () => {
-              grok.shell.addTableView(testInfo);
-            }),
-            testInfo.plot.grid().root,
-          ]);
-        } else
-          return null;
+          const resStr = ui.div();
+          resStr.innerHTML = `<span>${results.filter((b) => b).length - skipped} passed</span>\
+          <span>${results.filter((b) => !b).length} failed</span> <span>${skipped} skipped</span>`;
+          const res = ui.divH([resStr, ui.button('Add to workspace', () => {
+            grok.shell.addTableView(testInfo);
+          })]);
+          res.classList.add('dt-res-string');
+          info = ui.divV([res, testInfo.plot.grid().root]);
+        } else return null;
       }
     }
     return info;
