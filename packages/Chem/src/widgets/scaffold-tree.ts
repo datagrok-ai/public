@@ -805,7 +805,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         thisViewer.wrapper = null;
       }
     }, async(strMolSketch: string) => {
-      await this.filterByStruct(strMolSketch);
+      //await this.filterByStruct(strMolSketch);
     });
     this.wrapper.show();
   }
@@ -863,9 +863,15 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.molColumn?.dataFrame.selection.andNot(bitset);
   }
 
-  updateFilters(): void {
-    if (this.molColumn === null)
+  updateFilters(isFiltering = true): void {
+    if (this.molColumn === null) 
       return;
+
+    if (!isFiltering) {
+      this.bitset = null;
+      this.dataFrame.rows.requestFilter();
+      return;
+    }
 
     const checkedNodes = this.tree.items.filter((v) => v.checked);
     if(checkedNodes.length === 0) {
@@ -1564,9 +1570,10 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.createViewer(dataFrame);
   };
 
-  saveState(): void {
+  saveState(): any {
     const state = super.saveState();
     state.savedTree = JSON.stringify(ScaffoldTreeViewer.serializeTrees(this.viewer.tree));
+    this.viewer.updateFilters(this.isFiltering);
     return state;
   }
 
@@ -1581,7 +1588,6 @@ export class ScaffoldTreeFilter extends DG.Filter {
   };
 
   applyFilter(): void {
-
   };
 
   createViewer(dataFrame: DG.DataFrame) {
