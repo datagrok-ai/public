@@ -61,7 +61,7 @@ category('top menu similarity/diversity', () => {
         0.4821428656578064, 0.4736842215061188, 0.4736842215061188, 0.4655172526836395, 0.4576271176338196, 0.4545454680919647,
         0.44999998807907104]);
     } finally {tv.close();}
-  });
+  }, {skipReason: 'GROK-12227'});
 
   test('similarity.emptyInput', async () => {
     empty.currentRowIdx = 0;

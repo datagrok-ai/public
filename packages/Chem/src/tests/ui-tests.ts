@@ -343,7 +343,7 @@ category('UI', () => {
     expandAccordionPane(pp, 'Actions');
     (Array.from(pp.querySelectorAll('.d4-link-action'))
       .find((el) => el.textContent === 'Chem | Fingerprints...') as HTMLElement).click();
-    await getDlgAndClickOK('cannot load Fingerprints dialog');
+    await getDlgAndClickOK('cannot load Fingerprints dialog', 'Fingerprints');
     await delay(1000);
     expect(smiles.columns.names().includes('Fingerprints'), true, `Fingerprints column has not been added`);
   }, {skipReason: 'GROK-13025'});
@@ -359,11 +359,11 @@ category('UI', () => {
   });
 
   test('to inchi', async () => {
-    await testCalculateGroup('To InchI...', 'inchi');
+    await testCalculateGroup('To InchI...', 'inchi', 'To InchI');
   });
 
   test('to inchi keys', async () => {
-    await testCalculateGroup('To InchI Keys...', 'inchi_key');
+    await testCalculateGroup('To InchI Keys...', 'inchi_key', 'To InchI Keys');
   });
 
   after(async () => {
@@ -378,12 +378,12 @@ async function awaitPanel(pp: HTMLElement, name: string, ms: number = 5000): Pro
   }, `cannot find ${name} property`, ms);
 }
 
-async function testCalculateGroup(funcName: string, colName: string) {
+async function testCalculateGroup(funcName: string, colName: string, dlgName: string) {
   const smiles = grok.data.demo.molecules(20);
   const v = grok.shell.addTableView(smiles);
   await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
   grok.shell.topMenu.find('Chem').group('Calculate').find(funcName).click();
-  await getDlgAndClickOK(`cannot load ${funcName} dialog`);
+  await getDlgAndClickOK(`cannot load ${funcName} dialog`, dlgName);
   await awaitCheck(() => v.dataFrame.columns.names().includes(colName), `${colName} column has not been added`, 10000);
   v.close();
   grok.shell.o = ui.div();
@@ -400,11 +400,14 @@ async function expandAccordionPane(propPanel: HTMLElement, elName: string) {
     await pane.click();
 }
 
-async function getDlgAndClickOK(error: string) {
+async function getDlgAndClickOK(error: string, header: string) {
+  const dlg = () => {
+    return Array.from(document.getElementsByClassName('d4-dialog'))
+      .filter((dlg) => dlg.getElementsByClassName('d4-dialog-header')[0].children[0].textContent === header)
+  }
   await awaitCheck(() => {
-    return document.querySelector('.d4-dialog') !== null;
+    return dlg().length > 0;
   }, error, 5000);
   await delay(1000);
-  Array.from(document.querySelector('.d4-dialog')!.getElementsByTagName('span'))
-    .find((el) => el.textContent === 'OK')?.click();
+  Array.from(dlg()[0].getElementsByTagName('span')).find((el) => el.textContent === 'OK')?.click();
 }
