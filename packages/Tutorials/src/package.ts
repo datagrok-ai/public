@@ -180,6 +180,22 @@ export function demoAppWidget(): DG.Widget {
   return new DemoAppWidget();
 }
 
+//name: filesDemo
+//description: The File Manager is an interface that allows you to manage connections, browse and preview file content, and perform standard file and folder actions such as opening, downloading, deleting, and renaming.
+//meta.demoPath: Data Access | Files
+//test: _filesDemo() //wait: 300
+export function _filesDemo() {
+  grok.shell.addView(DG.FilesView.create());
+}
+
+//name: databasesDemo
+//description: Database Manager provides a hierarchical browsing interface for schemas and database objects, such as queries, tables, and table columns (if supported by the providers). You can perform various operations like adding new connections and queries, previewing data, running queries, and managing objects using context actions that are accessible through right-clicking an object.
+//meta.demoPath: Data Access | Databases
+//test: _databasesDemo() //wait: 300
+export async function _databasesDemo() {
+  grok.shell.addView(DG.View.createByType(DG.View.DATABASES));
+}
+
 //name: scatterPlotDemo
 //description: A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the points are color-coded you can increase the number of displayed variables to three. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis..
 //meta.demoPath: Viewers | General | Scatter Plot
