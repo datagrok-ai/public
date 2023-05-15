@@ -9,14 +9,16 @@ import {handleError} from './utils';
 import {SequenceDiversityViewer} from '../analysis/sequence-diversity-viewer';
 import {SequenceSimilarityViewer} from '../analysis/sequence-similarity-viewer';
 
-const dataFn: string = 'data/sample_FASTA_DNA.csv';
+const dataFn: string = 'data/sample_FASTA_PT_activity.csv';
 
 export async function demoBio01UI() {
   let view: DG.TableView;
   let df: DG.DataFrame;
 
   try {
-    const demoScript = new DemoScript('Demo', 'Sequence similarity / diversity search');
+    const demoScript = new DemoScript(
+      'Similarity, Diversity',
+      'Sequence similarity tracking and evaluation dataset diversity');
     await demoScript
       .step(`Load DNA sequences`, async () => {
         grok.shell.windows.showContextPanel = false;
@@ -25,12 +27,16 @@ export async function demoBio01UI() {
         df = await _package.files.readCsv(dataFn);
         view = grok.shell.addTableView(df);
 
-        view.grid.columns.byName('id')!.width = 0;
-        view.grid.columns.byName('sequence')!.width = 500;
+        view.grid.columns.byName('cluster')!.visible = false;
+        view.grid.columns.byName('sequence_id')!.visible = false;
+        view.grid.columns.byName('sequence')!.width = 300;
+        view.grid.columns.byName('activity')!.visible = false;
+        view.grid.columns.byName('is_cliff')!.visible = false;
+
         // TODO: Fix column width
       }, {
         description: `Load dataset with macromolecules of 'fasta' notation, 'DNA' alphabet.`,
-        delay: 1200
+        delay: 2000
       })
       .step('Find the most similar sequences to the current one', async () => {
         const simViewer = await df.plot.fromType('Sequence Similarity Search', {
@@ -40,7 +46,7 @@ export async function demoBio01UI() {
         view.dockManager.dock(simViewer, DG.DOCK_TYPE.RIGHT, null, 'Similarity search', 0.35);
       }, {
         description: `Add 'Sequence Similarity Search' viewer.`,
-        delay: 1600
+        delay: 2000
       })
       .step('Explore most diverse sequences in a dataset', async () => {
         const divViewer = await df.plot.fromType('Sequence Diversity Search', {
@@ -50,19 +56,19 @@ export async function demoBio01UI() {
         view.dockManager.dock(divViewer, DG.DOCK_TYPE.DOWN, null, 'Diversity search', 0.27);
       }, {
         description: `Add 'Sequence Deversity Search' viewer.`,
-        delay: 1600
+        delay: 2000
       })
       .step('Choose another sequence for similarity search', async () => {
         df.currentRowIdx = 3;
       }, {
         description: 'Handling current row changed of data frame showing update of similar sequences.',
-        delay: 1600,
+        delay: 2000,
       })
       .step('One more sequence for similarity search', async () => {
         df.currentRowIdx = 7;
       }, {
         description: 'Just one more sequence to search similar ones.',
-        delay: 1600,
+        delay: 2000,
       })
       .start();
   } catch (err: any) {

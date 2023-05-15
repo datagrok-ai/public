@@ -64,6 +64,12 @@
   left: 120px;
 }
 
+.dt-input {
+  width: 250px;
+  position: relative;
+  margin-left: -40px;
+}
+
 .dt-res-string {
   align-items: center;
 }

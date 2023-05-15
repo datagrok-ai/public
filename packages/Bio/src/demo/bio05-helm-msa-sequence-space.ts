@@ -22,9 +22,12 @@ export async function demoBio05UI(): Promise<void> {
 
   const helmColName: string = 'HELM';
   const msaHelmColName: string = 'msa(HELM)';
+  const dimRedMethod: string = 'UMAP';
 
   try {
-    const demoScript = new DemoScript('Demo', 'MSA and composition analysis on Helm data.');
+    const demoScript = new DemoScript(
+      'Helm, MSA, Sequence Space',
+      'MSA and composition analysis on Helm data');
     await demoScript
       .step(`Load peptides with non-natural aminoacids in 'HELM' notation`, async () => {
         view = grok.shell.addTableView(df = await _package.files.readCsv(helmFn));
@@ -33,9 +36,9 @@ export async function demoBio05UI(): Promise<void> {
         grok.shell.windows.showProperties = false;
       }, {
         description: 'Load dataset with macromolecules of \'Helm\' notation.',
-        delay: 1600,
+        delay: 2000,
       })
-      .step('Align paptides with non-natural aminoacids with PepSeA', async () => {
+      .step('Align peptides with non-natural aminoacids with PepSeA', async () => {
         helmCol = df.getCol(helmColName);
         const method: string = pepseaMethods[0];
         const gapOpen: number = 1.53;
@@ -45,16 +48,15 @@ export async function demoBio05UI(): Promise<void> {
         await grok.data.detectSemanticTypes(df);
       }, {
         description: 'Multiple sequence alignment (MSA) performed with PepSeA tool operating on non-natural aminoacids as well.',
-        delay: 1600,
+        delay: 2000,
       })
       .step('Build sequence space', async () => {
-        const method: string = 'UMAP';
         ssViewer = (await sequenceSpaceTopMenu(df, msaHelmCol,
-          'UMAP', StringMetricsNames.Levenshtein, true)) as DG.ScatterPlotViewer;
+          dimRedMethod, StringMetricsNames.Levenshtein, true)) as DG.ScatterPlotViewer;
         view.dockManager.dock(ssViewer, DG.DOCK_TYPE.RIGHT, null, 'Sequence Space', 0.35);
       }, {
         description: 'Reduce sequence space dimensionality to display on 2D representation.',
-        delay: 1600
+        delay: 2000
       })
       .step('Analyse sequence composition', async () => {
         wlViewer = await df.plot.fromType('WebLogo', {
@@ -64,7 +66,7 @@ export async function demoBio05UI(): Promise<void> {
         view.dockManager.dock(wlViewer, DG.DOCK_TYPE.DOWN, null, 'Composition analysis', 0.2);
       }, {
         description: 'Composition analysis allows to reveal functional features of sequences like motifs, or variable loops.',
-        delay: 1600,
+        delay: 2000,
       })
       .start();
   } catch (err: any) {
