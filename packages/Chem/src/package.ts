@@ -177,6 +177,7 @@ export function scaffoldTreeViewer() : ScaffoldTreeViewer {
 //tags: filter
 //output: filter result
 //meta.semType: Molecule
+//meta.primaryFilter: true
 export function substructureFilter(): SubstructureFilter {
   return new SubstructureFilter();
 }
