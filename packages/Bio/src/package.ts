@@ -407,9 +407,15 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
   }
   if (!checkInputColumnUI(macroMolecule, 'To Atomic Level'))
     return;
-  const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
+  const appPath = 'System:AppData/Bio';
+  const fileSource = new DG.FileSource(appPath);
+  const monomersLibFile = await fileSource.readAsText(HELM_CORE_LIB_FILENAME);
   const monomersLibObject: any[] = JSON.parse(monomersLibFile);
-  await _toAtomicLevel(df, macroMolecule, monomersLibObject);
+  const columnWithMols = await _toAtomicLevel(df, macroMolecule, monomersLibObject);
+  if (columnWithMols !== null) {
+    df.columns.add(columnWithMols, true);
+    await grok.data.detectSemanticTypes(df);
+  }
 }
 
 //top-menu: Bio | Alignment | MSA...
