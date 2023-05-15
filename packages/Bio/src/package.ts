@@ -683,6 +683,7 @@ export function bioSubstructureFilter(): BioSubstructureFilter {
 //meta.demoPath: Bioinformatics | Similarity, Diversity
 //description: Sequence similarity tracking and evaluation dataset diversity
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Similarity,%20Diversity
+//meta.isDemoScript: True
 export async function demoBioSimilarityDiversity(): Promise<void> {
   await demoBio01UI();
 }
@@ -692,6 +693,7 @@ export async function demoBioSimilarityDiversity(): Promise<void> {
 //meta.demoPath: Bioinformatics | Sequence Space
 //description: Exploring sequence space of Macromolecules, comparison with hierarchical clustering results
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Sequence%20Space
+//meta.isDemoScript: True
 export async function demoBioSequenceSpace(): Promise<void> {
   await demoBio01aUI();
 }
@@ -701,6 +703,7 @@ export async function demoBioSequenceSpace(): Promise<void> {
 //meta.demoPath: Bioinformatics | Activity Cliffs
 //description: Activity Cliffs analysis on Macromolecules data
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Activity%20Cliffs
+//meta.isDemoScript: True
 export async function demoBioActivityCliffs(): Promise<void> {
   await demoBio01bUI();
 }
@@ -710,6 +713,7 @@ export async function demoBioActivityCliffs(): Promise<void> {
 //meta.demoPath: Bioinformatics | Atomic Level
 //description: Atomic level structure of Macromolecules
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Atomic%20Level
+//meta.isDemoScript: True
 export async function demoBioAtomicLevel(): Promise<void> {
   await demoBio03UI();
 }
@@ -719,6 +723,7 @@ export async function demoBioAtomicLevel(): Promise<void> {
 //meta.demoPath: Bioinformatics | Helm, MSA, Sequence Space
 //description: MSA and composition analysis on Helm data
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Helm,%20MSA,%20Sequence%20Space
+//meta.isDemoScript: True
 export async function demoBioHelmMsaSequenceSpace(): Promise<void> {
   await demoBio05UI();
 }

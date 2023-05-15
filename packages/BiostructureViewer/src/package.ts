@@ -333,6 +333,7 @@ export async function inGridDemo() {
 //meta.demoPath: Cheminformatics | Docking NGL
 //description:
 //meta.path: /apps/Tutorials/Demo/Cheminformatics/Docking%20NGL
+//meta.isDemoScript: True
 export async function demoBioDockingNgl(): Promise<void> {
   await demoBio06UI();
 }
@@ -342,6 +343,7 @@ export async function demoBioDockingNgl(): Promise<void> {
 //meta.demoPath: Cheminformatics | Molecule3D in Grid
 //description:
 //meta.path: /apps/Tutorials/Demo/Cheminformatics/Molecule3D%20in%20Grid
+//meta.isDemoScript: True
 export async function demoBioMolecule3dInGrid(): Promise<void> {
   await demoBio07UI();
 }

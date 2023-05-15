@@ -1187,6 +1187,7 @@ export function removeDuplicates(molecules: string[], molecule: string): string[
 
 //name: Demo Chem Overview
 //meta.demoPath: Cheminformatics | Overview
+//meta.isDemoScript: True
 export async function demoChemOverview(): Promise<void> {
   _demoChemOverview();
 }
@@ -1201,6 +1202,7 @@ export async function demoSimilarityDiversitySearch(): Promise<void> {
 
 //name: Demo R Group Analysis
 //meta.demoPath: Cheminformatics | R Group Analysis
+//meta.isDemoScript: True
 export async function demoRgroupAnalysis(): Promise<void> {
   _demoRgroupAnalysis();
 }
@@ -1208,6 +1210,7 @@ export async function demoRgroupAnalysis(): Promise<void> {
 
 //name: Demo Activity Cliffs
 //meta.demoPath: Cheminformatics | Molecule Activity Cliffs
+//meta.isDemoScript: True
 export async function demoActivityCliffs(): Promise<void> {
   _demoActivityCliffs();
 }
