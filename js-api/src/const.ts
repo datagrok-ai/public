@@ -286,6 +286,23 @@ export const TAGS = {
     SCAFFOLD: 'chem-scaffold'
   }
 }
+    
+export const InputType = {
+  Int: 'Int',
+  BigInt: 'BigInt',
+  Float: 'Float',
+  QNum: 'QNum',
+  Slider: 'Slider',
+  Bool: 'Bool',
+  TextArea: 'TextArea',
+  Text: 'Text',
+  Date: 'Date',
+  Map: 'Map',
+  List: 'List',
+  Color: 'Color',
+  Column: 'Column',
+  Radio: 'Radio'
+}
 
 export const FUNC_TYPES = {
   /** An application that gets shown in the app store.
