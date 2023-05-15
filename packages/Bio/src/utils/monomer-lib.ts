@@ -15,6 +15,31 @@ export const LIB_STORAGE_NAME = 'Libraries';
 export const LIB_PATH = 'System:AppData/Bio/libraries/';
 export const LIB_DEFAULT: { [fileName: string]: string } = {'HELMCoreLibrary.json': 'HELMCoreLibrary.json'};
 
+/** Type for user settings of monomer library set to use. */
+export type LibSettings = {
+  exclude: string[],
+}
+
+export async function getLibFileNameList(): Promise<string[]> {
+  const res: string[] = (await grok.dapi.files.list(`${LIB_PATH}`, false, ''))
+    .map((it) => it.fileName);
+  return res;
+}
+
+export async function getUserLibSettings(): Promise<LibSettings> {
+  const resStr: string = await grok.dapi.userDataStorage.getValue(LIB_STORAGE_NAME, 'Settings', true);
+  const res: LibSettings = resStr ? JSON.parse(resStr) : {exclude: []};
+
+  // Fix empty object returned in case there is no settings stored for user
+  res.exclude = res.exclude instanceof Array ? res.exclude : [];
+
+  return res;
+}
+
+export async function setUserLibSetting(value: LibSettings): Promise<void> {
+  await grok.dapi.userDataStorage.postValue(LIB_STORAGE_NAME, 'Settings', JSON.stringify(value), true);
+}
+
 export class MonomerLib implements IMonomerLib {
   private _monomers: { [type: string]: { [name: string]: Monomer } } = {};
   private _onChanged = new Subject<any>();
@@ -104,11 +129,16 @@ export class MonomerLibHelper implements IMonomerLibHelper {
    */
   async loadLibraries(reload: boolean = false): Promise<void> {
     return this.loadLibrariesPromise = this.loadLibrariesPromise.then(async () => {
-      const userLibrariesSettings: string[] = Object.keys(await grok.dapi.userDataStorage.get(LIB_STORAGE_NAME, true));
-      const libs: IMonomerLib[] = await Promise.all(userLibrariesSettings.map((libFileName) => {
-        //TODO handle whether files are in place
-        return this.readLibrary(LIB_PATH, libFileName);
-      }));
+      const [libFileNameList, settings]: [string[], LibSettings] = await Promise.all([
+        getLibFileNameList(),
+        getUserLibSettings()
+      ]);
+      const libs: IMonomerLib[] = await Promise.all(libFileNameList
+        .filter((libFileName) => !settings.exclude.includes(libFileName))
+        .map((libFileName) => {
+          //TODO handle whether files are in place
+          return this.readLibrary(LIB_PATH, libFileName);
+        }));
       this._monomerLib.updateLibs(libs, reload);
     });
   }

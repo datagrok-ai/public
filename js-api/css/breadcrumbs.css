@@ -9,11 +9,13 @@
 }
 
 .ui-breadcrumbs-element:last-child a {
-    color: var(--steel-5);
+    color: var(--grey-6);
     cursor: default;
 }
 
 .ui-breadcrumbs i {
+    font-size: 10px;
+    font-weight: bold;
     color: var(--grey-3);
     padding: 0 12px;
     cursor: default;

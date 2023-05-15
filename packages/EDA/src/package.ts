@@ -25,7 +25,7 @@ export async function init(): Promise<void> {
   await _initEDAAPI();
 }
 
-//top-menu: Tools | Data Science | Principal Component Analysis
+//top-menu: Tools | Data Science | Principal Component Analysis...
 //name: PCA
 //description: Principal component analysis (PCA).
 //input: dataframe table
@@ -40,7 +40,7 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
   return renamePCAcolumns(await computePCA(table, features, components, center, scale));
 }
 
-//top-menu: Tools | Data Science | Multivariate Analysis (PLS)
+//top-menu: Tools | Data Science | Multivariate Analysis (PLS)...
 //name: Multivariate Analysis (PLS)
 //description: Partial least square regression (PLS).
 //input: dataframe table
@@ -56,8 +56,8 @@ export async function PLS(table: DG.DataFrame, names: DG.Column, features: DG.Co
 }
 
 //name: MVA demo
-//description: Multidimensional data analysis using partial least squares (PLS) regression. It reduces the predictors to a smaller set of uncorrelated components and performes least squares regression on them.
-//meta.demoPath: Data analysis | Multivariate analysis
+//description: Multidimensional data analysis using partial least squares (PLS) regression. It reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them.
+//meta.demoPath: Compute | Multivariate analysis
 export async function demoScript(): Promise<any>  {
   const demoScript = new DemoScript('Partial least squares regression', 
     'Analysis of multidimensional data.'); 
@@ -76,8 +76,8 @@ export async function demoScript(): Promise<any>  {
   let dialog: any;
 
   await demoScript
-    .step('Data', async () => {      
-      grok.shell.addTableView(sourceCars);        
+    .step('Data', async () => {
+      grok.shell.addTableView(sourceCars);
       view = grok.shell.getTableView(sourceCars.name);
     }, {description: 'Each car has many features - patterns extraction is complicated.', delay: 0})
     .step('Model', async () => {
@@ -95,14 +95,14 @@ export async function demoScript(): Promise<any>  {
     .step('Regression coeffcicients', async () => 
       {
         dialog.close();
-        view.addViewer(regressionCoefficientsBarChart(features, plsOutput[1]))}, 
+        view.addViewer(regressionCoefficientsBarChart(features, plsOutput[1]))},
       {description: 'The feature "diesel" affects the price the most.', delay: 0})
     .step('Scores', async () => 
       {view.addViewer(scoresScatterPlot(names, plsOutput[2], plsOutput[3]))}, 
       {description: 'Similarities & dissimilarities: alfaromeo and mercedes are different.', delay: 0})
     .step('Prediction', async () => 
       {view.addViewer(predictedVersusReferenceScatterPlot(names, predict, plsOutput[0]))}, 
-      {description: 'Closer to the line means better price prediction.', delay: 0})    
+      {description: 'Closer to the line means better price prediction.', delay: 0})
     .start();
 }
 
