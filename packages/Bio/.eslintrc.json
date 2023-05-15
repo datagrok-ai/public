@@ -15,14 +15,8 @@
     "@typescript-eslint"
   ],
   "rules": {
-    "indent": [
-      "error",
-      2
-    ],
-    "max-len": [
-      "error",
-      120
-    ],
+    "indent": ["error", 2, {"SwitchCase": 1}],
+    "max-len": ["error", 120],
     "no-unused-vars": "off",
     "@typescript-eslint/no-unused-vars": "warn",
     "require-jsdoc": "off",

@@ -13,7 +13,7 @@ import {getDendrogramService, IDendrogramService} from '@datagrok-libraries/bio/
 import {handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
-const dataFn: string = 'samples/sample_FASTA.csv';
+const dataFn: string = 'data/sample_FASTA_PT_activity.csv';
 
 export async function demoBio01bUI() {
   let treeHelper: ITreeHelper;
@@ -23,7 +23,7 @@ export async function demoBio01bUI() {
   let view: DG.TableView;
   let activityCliffsViewer: DG.ScatterPlotViewer;
 
-  const method: string = 'UMAP';
+  const dimRedMethod: string = 'UMAP';
   const idRows: { [id: number]: number } = {};
 
   try {
@@ -43,10 +43,9 @@ export async function demoBio01bUI() {
 
         view = grok.shell.addTableView(df);
         view.grid.props.rowHeight = 22;
-        const uniProtKbGCol = view.grid.columns.byName('UniProtKB')!;
-        uniProtKbGCol.width = 75;
-        const lengthGCol = view.grid.columns.byName('Length')!;
-        lengthGCol.width = 0;
+        view.grid.columns.byName('cluster')!.visible = false;
+        view.grid.columns.byName('sequence')!.width = 300;
+        view.grid.columns.byName('is_cliff')!.visible = false;
       }, {
         description: 'Load dataset with macromolecules of \'fasta\' notation, \'DNA\' alphabet.',
         delay: 2000,
@@ -54,7 +53,7 @@ export async function demoBio01bUI() {
       .step('Find activity cliffs', async () => {
         activityCliffsViewer = (await activityCliffs(
           df, df.getCol('Sequence'), df.getCol('Activity'),
-          80, method)) as DG.ScatterPlotViewer;
+          80, dimRedMethod)) as DG.ScatterPlotViewer;
         view.dockManager.dock(activityCliffsViewer, DG.DOCK_TYPE.RIGHT, null, 'Activity Cliffs', 0.35);
 
         // Show grid viewer with the cliffs
@@ -86,7 +85,7 @@ export async function demoBio01bUI() {
         //cliffsDfGrid.dataFrame.currentRowIdx = -1; // reset
         const cliffsDfGrid: DG.Grid = activityCliffsViewer.dataFrame.temp[acTEMPS.cliffsDfGrid];
         //cliffsDfGrid.dataFrame.selection.init((i) => i == currentCliffIdx);
-        cliffsDfGrid.dataFrame.currentRowIdx = 0;
+        if (cliffsDfGrid.dataFrame.rowCount > 0) cliffsDfGrid.dataFrame.currentRowIdx = 0;
         //cliffsDfGrid.dataFrame.selection.set(currentCliffIdx, true, true);
 
         // /* workaround to select rows of the cliff */

@@ -22,6 +22,7 @@ export async function demoBio05UI(): Promise<void> {
 
   const helmColName: string = 'HELM';
   const msaHelmColName: string = 'msa(HELM)';
+  const dimRedMethod: string = 'UMAP';
 
   try {
     const demoScript = new DemoScript(
@@ -37,7 +38,7 @@ export async function demoBio05UI(): Promise<void> {
         description: 'Load dataset with macromolecules of \'Helm\' notation.',
         delay: 2000,
       })
-      .step('Align paptides with non-natural aminoacids with PepSeA', async () => {
+      .step('Align peptides with non-natural aminoacids with PepSeA', async () => {
         helmCol = df.getCol(helmColName);
         const method: string = pepseaMethods[0];
         const gapOpen: number = 1.53;
@@ -50,9 +51,8 @@ export async function demoBio05UI(): Promise<void> {
         delay: 2000,
       })
       .step('Build sequence space', async () => {
-        const method: string = 'UMAP';
         ssViewer = (await sequenceSpaceTopMenu(df, msaHelmCol,
-          'UMAP', StringMetricsNames.Levenshtein, true)) as DG.ScatterPlotViewer;
+          dimRedMethod, StringMetricsNames.Levenshtein, true)) as DG.ScatterPlotViewer;
         view.dockManager.dock(ssViewer, DG.DOCK_TYPE.RIGHT, null, 'Sequence Space', 0.35);
       }, {
         description: 'Reduce sequence space dimensionality to display on 2D representation.',
