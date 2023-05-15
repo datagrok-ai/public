@@ -9,7 +9,7 @@ import {handleError} from './utils';
 import {SequenceDiversityViewer} from '../analysis/sequence-diversity-viewer';
 import {SequenceSimilarityViewer} from '../analysis/sequence-similarity-viewer';
 
-const dataFn: string = 'data/sample_FASTA_DNA.csv';
+const dataFn: string = 'data/sample_FASTA_PT_activity.csv';
 
 export async function demoBio01UI() {
   let view: DG.TableView;
@@ -27,8 +27,12 @@ export async function demoBio01UI() {
         df = await _package.files.readCsv(dataFn);
         view = grok.shell.addTableView(df);
 
-        view.grid.columns.byName('id')!.width = 0;
-        view.grid.columns.byName('sequence')!.width = 500;
+        view.grid.columns.byName('cluster')!.visible = false;
+        view.grid.columns.byName('sequence_id')!.visible = false;
+        view.grid.columns.byName('sequence')!.width = 300;
+        view.grid.columns.byName('activity')!.visible = false;
+        view.grid.columns.byName('is_cliff')!.visible = false;
+
         // TODO: Fix column width
       }, {
         description: `Load dataset with macromolecules of 'fasta' notation, 'DNA' alphabet.`,

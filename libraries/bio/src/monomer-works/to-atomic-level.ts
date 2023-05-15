@@ -128,11 +128,11 @@ type NumberWrapper = {
 /** Convert Macromolecule column into Molecule column storing molfile V3000 with the help of a monomer library  */
 export async function _toAtomicLevel(
   df: DG.DataFrame, macroMolCol: DG.Column<string>, monomersLibList: any[]
-): Promise<void> {
+): Promise<DG.Column | null> {
   // todo: remove this from the library
   if (DG.Func.find({package: 'Chem', name: 'getRdKitModule'}).length === 0) {
     grok.shell.warning('Transformation to atomic level requires package "Chem" installed.');
-    return;
+    return null;
   }
 
   if (macroMolCol.semType !== DG.SEMTYPE.MACROMOLECULE) {
@@ -140,7 +140,7 @@ export async function _toAtomicLevel(
       `Only the ${DG.SEMTYPE.MACROMOLECULE} columns can be converted to atomic
       level, the chosen column has semType ${macroMolCol.semType}`
     );
-    return;
+    return null;
   }
 
   // convert 'helm' to 'separator' units
@@ -163,7 +163,7 @@ export async function _toAtomicLevel(
     grok.shell.warning(
       `Unexpected column's '${macroMolCol.name}' alphabet '${alphabet}'.`
     );
-    return;
+    return null;
   }
 
   // work in standard mode, where, as in HELMCoreLibrary:
@@ -189,8 +189,7 @@ export async function _toAtomicLevel(
 
   newCol.semType = DG.SEMTYPE.MOLECULE;
   newCol.setTag(DG.TAGS.UNITS, DG.UNITS.Molecule.MOLBLOCK);
-  df.columns.add(newCol, true);
-  await grok.data.detectSemanticTypes(df);
+  return newCol;
 }
 
 /** Get a mapping of peptide symbols to HELM monomer library
@@ -236,7 +235,7 @@ function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string[][] {
   for (let row = 0; row < columnLength; ++row) {
     const macroMolecule = macroMolCol.get(row);
     // todo: handle the exception case when macroMolecule is null
-    result[row] = macroMolecule ? splitterFunc(macroMolecule) : [];
+    result[row] = macroMolecule ? splitterFunc(macroMolecule).filter((monomerCode) => monomerCode !== '' ) : [];
   }
   return result;
 }

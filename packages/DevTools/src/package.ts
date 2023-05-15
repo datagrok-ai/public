@@ -7,7 +7,7 @@ import {EntityType} from './constants';
 import '../css/styles.css';
 // import * as tests from './tests/test-examples';
 import {TestManager} from './package-testing';
-import {functionSignatureEditor} from './function-signature-editor';
+import {functionSignatureEditor} from './signature-editor/function-signature-editor';
 import {addToJSContextCommand, getMinifiedClassNameMap, hasSupportedType, _renderDevPanel} from './dev-panel';
 import {_testDetectorsDialog, _testDetectorsStandard} from './utils/test-detectors';
 

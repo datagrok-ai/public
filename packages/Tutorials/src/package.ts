@@ -105,6 +105,7 @@ export async function tutorialsInit() {
 //name: Demo
 //tags: app
 //description: Interactive demo of major Datagrok capabilities
+//meta.icon: images/icons/demoapp-icon.png
 export function demoApp() {
   let pathSegments = window.location.pathname.split('/');
   if (!pathSegments[pathSegments.length - 1])
@@ -178,6 +179,22 @@ function setPath(path: string, tutorialRunners: TutorialRunner[]): void {
 //output: widget tutorial
 export function demoAppWidget(): DG.Widget {
   return new DemoAppWidget();
+}
+
+//name: filesDemo
+//description: The File Manager is an interface that allows you to manage connections, browse and preview file content, and perform standard file and folder actions such as opening, downloading, deleting, and renaming.
+//meta.demoPath: Data Access | Files
+//test: _filesDemo() //wait: 300
+export function _filesDemo() {
+  grok.shell.addView(DG.FilesView.create());
+}
+
+//name: databasesDemo
+//description: Database Manager provides a hierarchical browsing interface for schemas and database objects, such as queries, tables, and table columns (if supported by the providers). You can perform various operations like adding new connections and queries, previewing data, running queries, and managing objects using context actions that are accessible through right-clicking an object.
+//meta.demoPath: Data Access | Databases
+//test: _databasesDemo() //wait: 300
+export async function _databasesDemo() {
+  grok.shell.addView(DG.View.createByType(DG.View.DATABASES));
 }
 
 //name: scatterPlotDemo

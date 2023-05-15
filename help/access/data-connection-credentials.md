@@ -42,4 +42,4 @@ To use the AWS Secrets Manager in a database connection, follow these steps:
 
 For more information about using the AWS Secrets Manager, see the [Amazon Web Services Secrets Manager User Guide](https://docs.aws.amazon.com/secretsmanager/latest/userguide/introduction.html).
 
-![Use the AWS Secrets Manager in a database connection](credentials.gif)
+<img alt="Use the AWS Secrets Manager in a database connection" src={require('./credentials.gif').default} width="800px"/>

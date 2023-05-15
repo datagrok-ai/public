@@ -11,7 +11,7 @@ import {getDendrogramService, IDendrogramService} from '@datagrok-libraries/bio/
 import {demoSequenceSpace, handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
-const dataFn = 'data/sample_FASTA_DNA.csv';
+const dataFn = 'data/sample_FASTA_PT_activity.csv';
 const seqColName = 'sequence';
 
 export async function demoBio01aUI() {
@@ -21,7 +21,7 @@ export async function demoBio01aUI() {
   let df: DG.DataFrame;
   let spViewer: DG.ScatterPlotViewer;
 
-  const method: string = 'UMAP';
+  const dimRedMethod: string = 'UMAP';
   const idRows: { [id: number]: number } = {};
   const embedCols: { [colName: string]: DG.Column<number> } = {};
 
@@ -38,6 +38,9 @@ export async function demoBio01aUI() {
         ]);
         view = grok.shell.addTableView(df);
         view.grid.props.rowHeight = 22;
+        view.grid.columns.byName('cluster')!.visible = false;
+        view.grid.columns.byName('sequence')!.width = 200;
+        view.grid.columns.byName('is_cliff')!.visible = false;
 
         grok.shell.windows.showContextPanel = false;
         grok.shell.windows.showProperties = false;
@@ -46,7 +49,7 @@ export async function demoBio01aUI() {
         delay: 2000,
       })
       .step('Build sequence space', async () => {
-        spViewer = await demoSequenceSpace(view, df, seqColName, method);
+        spViewer = await demoSequenceSpace(view, df, seqColName, dimRedMethod);
       }, {
         description: `Reduce sequence space dimensionality to display on 2D representation.`,
         delay: 2000
@@ -71,7 +74,10 @@ export async function demoBio01aUI() {
         delay: 2000,
       })
       .step('Select a bunch of sequences', async () => {
-        df.selection.init((idx: number) => [21, 9, 58].includes(idx));
+        const seqIdCol: DG.Column<string> = df.getCol('sequence_id');
+        df.selection.init((rowI: number) => {
+          return ['c0_seq120', 'c0_seq105', 'c0_seq121', 'c0_seq93'].includes(seqIdCol.get(rowI)!);
+        });
         df.currentRowIdx = 27;
       }, {
         description: 'Selecting a group of rows from a data frame to show their similarity and proximity to each other on a viewer..',
