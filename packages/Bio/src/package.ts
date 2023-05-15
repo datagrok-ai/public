@@ -9,7 +9,7 @@ import {
 } from './utils/cell-renderer';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {SequenceAlignment} from './seq_align';
-import {getEmbeddingColsNames, sequenceSpaceByFingerprints} from './analysis/sequence-space';
+import {getEmbeddingColsNames, sequenceSpaceByFingerprints, getSequenceSpace} from './analysis/sequence-space';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {
   createLinesGrid,
@@ -290,6 +290,10 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     'separator': macroMolecule.getTag(bioTAGS.separator),
     'alphabet': macroMolecule.getTag(bioTAGS.alphabet),
   };
+  const uh = new UnitsHandler(macroMolecule);
+  let columnDistanceMetric = 'Tanimoto';
+  if (uh.isFasta())
+    columnDistanceMetric = uh.getDistanceFunctionName();
   const sp = await getActivityCliffs(
     df,
     macroMolecule,
@@ -302,7 +306,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     methodName,
     DG.SEMTYPE.MACROMOLECULE,
     tags,
-    sequenceSpaceByFingerprints,
+    getSequenceSpace,
     getChemSimilaritiesMatrix,
     createTooltipElement,
     createPropPanelElement,
@@ -353,7 +357,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
     embedAxesNames: embedColsNames,
     options: options
   };
-  const sequenceSpaceRes = await sequenceSpaceByFingerprints(chemSpaceParams);
+  const sequenceSpaceRes = await getSequenceSpace(chemSpaceParams);
   const embeddings = sequenceSpaceRes.coordinates;
   for (const col of embeddings) {
     const listValues = col.toList();
@@ -407,15 +411,15 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
   }
   if (!checkInputColumnUI(macroMolecule, 'To Atomic Level'))
     return;
-  const appPath = 'System:AppData/Bio';
-  const fileSource = new DG.FileSource(appPath);
-  const monomersLibFile = await fileSource.readAsText(HELM_CORE_LIB_FILENAME);
-  const monomersLibObject: any[] = JSON.parse(monomersLibFile);
-  const columnWithMols = await _toAtomicLevel(df, macroMolecule, monomersLibObject);
-  if (columnWithMols !== null) {
-    df.columns.add(columnWithMols, true);
+  const monomerLib: IMonomerLib = (await getMonomerLibHelper()).getBioLib();
+  const atomicLevelRes = await _toAtomicLevel(df, macroMolecule, monomerLib);
+  if (atomicLevelRes.col !== null) {
+    df.columns.add(atomicLevelRes.col, true);
     await grok.data.detectSemanticTypes(df);
   }
+
+  if (atomicLevelRes.warnings && atomicLevelRes.warnings.length > 0)
+    grok.shell.warning(ui.list(atomicLevelRes.warnings));
 }
 
 //top-menu: Bio | Alignment | MSA...
