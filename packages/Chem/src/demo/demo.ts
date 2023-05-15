@@ -590,7 +590,7 @@ export async function _demoScaffoldTree(): Promise<void> {
     const viewer = new ScaffoldTreeViewer();
     viewer.autoGenerate = false;
     viewer.dataFrame = table;
-    viewer.root.getElementsByClassName('ui-box ui-split-v')[0].remove();
+    viewer.size = 'small';
     await viewer.loadTreeStr(tree);
     tv.dockManager.dock(viewer, DG.DOCK_TYPE.LEFT);
 }
