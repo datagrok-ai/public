@@ -519,8 +519,9 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     Do you want to continue?`))
       .onOK(async () => {
         const progressBar = DG.TaskBarProgressIndicator.create(`Running Chemical space...`);
-        return await runChemSpace();
+        const res =  await runChemSpace();
         progressBar.close();
+        return res;
       })
       .show();
   } else
