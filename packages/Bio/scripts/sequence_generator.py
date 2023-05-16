@@ -151,8 +151,8 @@ def generate_sequences(
         motif_length = mean_range(average_motif_length, dispersion)
 
         # sys.stderr.write(f"Cluster {n_cluster:2} motif template: {motif_notation(motif_template)}\n")
-        total_length = mean_range(average_random_length * 2, args.dispersion) + motif_length
-        prefix_length = mean_range(average_random_length, args.dispersion // 2)
+        total_length = mean_range(average_random_length * 2, dispersion) + motif_length
+        prefix_length = mean_range(average_random_length, dispersion // 2)
         suffix_length = total_length - motif_length - prefix_length
         sys.stderr.write(f"Generating sequences for cluster {n_cluster}\n")
         for n_seq, seq, activity, is_cliff in generate_cluster(
