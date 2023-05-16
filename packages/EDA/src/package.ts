@@ -91,7 +91,7 @@ export async function demoMultivariateAnalysis(): Promise<any>  {
         .onOK(() => {
           grok.shell.info('Multivariate analysis has been already performed.');
         })
-        .show();
+        .show({x: 400, y: 140});
     }, {description: 'Predict car price by its other features.', delay: 0})
     .step('Regression coeffcicients', async () => 
       {
