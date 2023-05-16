@@ -9,7 +9,7 @@ import {
 } from './utils/cell-renderer';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {SequenceAlignment} from './seq_align';
-import {getEmbeddingColsNames, sequenceSpaceByFingerprints} from './analysis/sequence-space';
+import {getEmbeddingColsNames, sequenceSpaceByFingerprints, getSequenceSpace} from './analysis/sequence-space';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {
   createLinesGrid,
@@ -290,19 +290,23 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     'separator': macroMolecule.getTag(bioTAGS.separator),
     'alphabet': macroMolecule.getTag(bioTAGS.alphabet),
   };
+  const uh = new UnitsHandler(macroMolecule);
+  let columnDistanceMetric = 'Tanimoto';
+  if (uh.isFasta())
+    columnDistanceMetric = uh.getDistanceFunctionName();
   const sp = await getActivityCliffs(
     df,
     macroMolecule,
     null,
     axesNames,
-    'Activity cliffs',
+    'Activity cliffs', //scatterTitle
     activities,
     similarity,
-    'Tanimoto',
+    columnDistanceMetric, //similarityMetric
     methodName,
     DG.SEMTYPE.MACROMOLECULE,
     tags,
-    sequenceSpaceByFingerprints,
+    getSequenceSpace,
     getChemSimilaritiesMatrix,
     createTooltipElement,
     createPropPanelElement,
@@ -353,7 +357,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
     embedAxesNames: embedColsNames,
     options: options
   };
-  const sequenceSpaceRes = await sequenceSpaceByFingerprints(chemSpaceParams);
+  const sequenceSpaceRes = await getSequenceSpace(chemSpaceParams);
   const embeddings = sequenceSpaceRes.coordinates;
   for (const col of embeddings) {
     const listValues = col.toList();
@@ -407,9 +411,15 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
   }
   if (!checkInputColumnUI(macroMolecule, 'To Atomic Level'))
     return;
-  const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
-  const monomersLibObject: any[] = JSON.parse(monomersLibFile);
-  await _toAtomicLevel(df, macroMolecule, monomersLibObject);
+  const monomerLib: IMonomerLib = (await getMonomerLibHelper()).getBioLib();
+  const atomicLevelRes = await _toAtomicLevel(df, macroMolecule, monomerLib);
+  if (atomicLevelRes.col !== null) {
+    df.columns.add(atomicLevelRes.col, true);
+    await grok.data.detectSemanticTypes(df);
+  }
+
+  if (atomicLevelRes.warnings && atomicLevelRes.warnings.length > 0)
+    grok.shell.warning(ui.list(atomicLevelRes.warnings));
 }
 
 //top-menu: Bio | Alignment | MSA...
@@ -673,6 +683,7 @@ export function bioSubstructureFilter(): BioSubstructureFilter {
 //meta.demoPath: Bioinformatics | Similarity, Diversity
 //description: Sequence similarity tracking and evaluation dataset diversity
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Similarity,%20Diversity
+//meta.isDemoScript: True
 export async function demoBioSimilarityDiversity(): Promise<void> {
   await demoBio01UI();
 }
@@ -682,6 +693,7 @@ export async function demoBioSimilarityDiversity(): Promise<void> {
 //meta.demoPath: Bioinformatics | Sequence Space
 //description: Exploring sequence space of Macromolecules, comparison with hierarchical clustering results
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Sequence%20Space
+//meta.isDemoScript: True
 export async function demoBioSequenceSpace(): Promise<void> {
   await demoBio01aUI();
 }
@@ -691,6 +703,7 @@ export async function demoBioSequenceSpace(): Promise<void> {
 //meta.demoPath: Bioinformatics | Activity Cliffs
 //description: Activity Cliffs analysis on Macromolecules data
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Activity%20Cliffs
+//meta.isDemoScript: True
 export async function demoBioActivityCliffs(): Promise<void> {
   await demoBio01bUI();
 }
@@ -700,6 +713,7 @@ export async function demoBioActivityCliffs(): Promise<void> {
 //meta.demoPath: Bioinformatics | Atomic Level
 //description: Atomic level structure of Macromolecules
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Atomic%20Level
+//meta.isDemoScript: True
 export async function demoBioAtomicLevel(): Promise<void> {
   await demoBio03UI();
 }
@@ -709,6 +723,7 @@ export async function demoBioAtomicLevel(): Promise<void> {
 //meta.demoPath: Bioinformatics | Helm, MSA, Sequence Space
 //description: MSA and composition analysis on Helm data
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Helm,%20MSA,%20Sequence%20Space
+//meta.isDemoScript: True
 export async function demoBioHelmMsaSequenceSpace(): Promise<void> {
   await demoBio05UI();
 }

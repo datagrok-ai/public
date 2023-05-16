@@ -52,18 +52,6 @@ export async function demoSequenceSpace(
         embedCol.init((rowI) => { return embedColData[rowI]; });
       }
 
-      const rowCount: number = df.rowCount;
-      const idCol: DG.Column = df.getCol('id');
-      for (let idRowI = 0; idRowI < rowCount; idRowI++) {
-        const id = idCol.get(idRowI);
-        //idRows[id] = idRowI;
-      }
-
-      for (const embedColName of Object.values(EMBED_COL_NAMES)) {
-        const embedCol: DG.Column<number> = df.getCol(embedColName);
-        //embedCols[embedColName] = embedCol;
-      }
-
       const t3: number = Date.now();
       _package.logger.debug('MLB: MlbVrSpaceBrowser.buildView(), postprocess reduceDimensionality ' +
         `ET: ${((t3 - t2) / 1000)} s`);

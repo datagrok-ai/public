@@ -62,7 +62,7 @@ import { renderMolecule } from './rendering/render-molecule';
 import { RDKitReactionRenderer } from './rendering/rdkit-reaction-renderer';
 import { structure3dWidget } from './widgets/structure3d';
 import { identifiersWidget } from './widgets/identifiers';
-import { _demoActivityCliffs, _demoChemOverview, _demoDatabases, _demoRgroupAnalysis, _demoSimilaritySearch } from './demo/demo';
+import { _demoActivityCliffs, _demoChemOverview, _demoDatabases, _demoDatabases4, _demoMoleculesVisualizations, _demoRgroupAnalysis, _demoSimilarityDiversitySearch, _demoSimilaritySearch } from './demo/demo';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -177,6 +177,7 @@ export function scaffoldTreeViewer() : ScaffoldTreeViewer {
 //tags: filter
 //output: filter result
 //meta.semType: Molecule
+//meta.primaryFilter: true
 export function substructureFilter(): SubstructureFilter {
   return new SubstructureFilter();
 }
@@ -1186,20 +1187,22 @@ export function removeDuplicates(molecules: string[], molecule: string): string[
 
 //name: Demo Chem Overview
 //meta.demoPath: Cheminformatics | Overview
+//meta.isDemoScript: True
 export async function demoChemOverview(): Promise<void> {
   _demoChemOverview();
 }
 
 
 //name: Demo Similarity Search
-//meta.demoPath: Cheminformatics | Similarity Search
-export async function demoSimilaritySearch(): Promise<void> {
-  _demoSimilaritySearch();
+//meta.demoPath: Cheminformatics | Similarity & Diversity Search
+export async function demoSimilarityDiversitySearch(): Promise<void> {
+  _demoSimilarityDiversitySearch();
 }
 
 
 //name: Demo R Group Analysis
 //meta.demoPath: Cheminformatics | R Group Analysis
+//meta.isDemoScript: True
 export async function demoRgroupAnalysis(): Promise<void> {
   _demoRgroupAnalysis();
 }
@@ -1207,6 +1210,7 @@ export async function demoRgroupAnalysis(): Promise<void> {
 
 //name: Demo Activity Cliffs
 //meta.demoPath: Cheminformatics | Molecule Activity Cliffs
+//meta.isDemoScript: True
 export async function demoActivityCliffs(): Promise<void> {
   _demoActivityCliffs();
 }
@@ -1214,5 +1218,5 @@ export async function demoActivityCliffs(): Promise<void> {
 //name: Demo Databases
 //meta.demoPath: Cheminformatics | Databases
 export async function demoDatabases(): Promise<void> {
-  _demoDatabases();
+  _demoDatabases4();
 }

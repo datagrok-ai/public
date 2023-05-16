@@ -53,6 +53,17 @@ export const DEMO_APP_HIERARCHY = {
 			],
 		},
 		{
+			name: 'Data Access',
+			children: [
+				{
+					name: 'Files',
+				},
+				{
+					name: 'Databases',
+				},
+			]
+		},
+		{
 			name: 'Viewers',
 			children: [
 				{
@@ -200,7 +211,7 @@ export const DEMO_APP_HIERARCHY = {
 			]
 		},
 		{
-			name: 'Data analysis',
+			name: 'Compute',
 			children: [
 				{
 					name: 'Multivariate analysis',
