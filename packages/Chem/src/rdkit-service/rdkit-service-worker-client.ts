@@ -2,6 +2,7 @@ import RdKitWorkerClass from '../rdkit.worker.ts'; // .ts!
 import {WORKER_CALL} from './rdkit-service-worker-api';
 import {WorkerMessageBusClient} from '../worker-message-bus-client';
 import {Fingerprint} from '../utils/chem-common';
+import { RuleId } from '../panels/structural-alerts.js';
 
 export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   constructor() {
@@ -28,4 +29,7 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
 
   convertMolNotation = async (targetNotation: string, bitset?: boolean[]) =>
     this.call(WORKER_CALL.CONVERT_MOL_NOTATION, [targetNotation, bitset]);
+
+  getStructuralAlerts = async (alerts: {[rule in RuleId]?: string[]}, start: number, end: number) =>
+    this.call(WORKER_CALL.GET_STRUCTURAL_ALERTS, [alerts, start, end]);
 }
