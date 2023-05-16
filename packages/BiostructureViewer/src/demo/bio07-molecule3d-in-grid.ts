@@ -15,7 +15,10 @@ export async function demoBio07UI(): Promise<void> {
   let viewer: DG.Viewer & IBiostructureViewer;
 
   try {
-    await new DemoScript('Demo', 'View structures PDB in grid')
+    await new DemoScript(
+      'Molecule3D in Grid',
+      'View structures PDB in grid'
+    )
       .step('Loading structures', async () => {
         grok.shell.windows.showContextPanel = false;
         grok.shell.windows.showProperties = false;
