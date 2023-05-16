@@ -4,8 +4,8 @@
   "description": "Integration with the PubChem web service.",
   "version": "1.1.9",
   "author": {
-    "name": "Leonid Stolbov",
-    "email": "lstolbov@datagrok.ai"
+    "name": "Volodymyr Dyma",
+    "email": "vdyma@datagrok.ai"
   },
   "repository": {
     "type": "git",

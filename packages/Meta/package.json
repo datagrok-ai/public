@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.3.33",
+  "version": "3.3.38",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -528,6 +528,9 @@
           "datagrok-api": "^1.14.0"
         },
         "1.6.8": {
+          "datagrok-api": "^1.14.0"
+        },
+        "1.6.9": {
           "datagrok-api": "^1.14.0"
         }
       },
@@ -1356,6 +1359,9 @@
         },
         "1.4.0": {
           "datagrok-api": "^1.14.0"
+        },
+        "1.4.1": {
+          "datagrok-api": "^1.14.0"
         }
       },
       "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
@@ -1420,6 +1426,9 @@
           "datagrok-api": "^1.11.0"
         },
         "1.0.25": {
+          "datagrok-api": "^1.14.1"
+        },
+        "1.0.26": {
           "datagrok-api": "^1.14.1"
         }
       },
@@ -2596,6 +2605,9 @@
         },
         "1.0.3": {
           "datagrok-api": "^1.10.2"
+        },
+        "1.0.5": {
+          "datagrok-api": "^1.10.2"
         }
       },
       "description": "Protein viewers: support for multiple file formats, stand-alone viewer, and in-grid viewer.",
@@ -2649,6 +2661,20 @@
         "directory": "packages/UsageAnalysis"
       },
       "category": "General"
+    },
+    "dbtests": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "latest"
+        }
+      },
+      "description": "Automated tests for JDBC Providers",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/DBTests"
+      },
+      "category": "Development"
     }
   }
 }

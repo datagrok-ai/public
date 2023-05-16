@@ -127,7 +127,7 @@ export async function initChem(): Promise<void> {
 export async function initChemAutostart(): Promise<void> { }
 
 //name: Chemistry | Most Diverse Structures
-//tags: tooltip, panel
+//tags: tooltip
 //input: column col {semType: Molecule}
 //output: widget
 export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined> {
@@ -519,8 +519,9 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     Do you want to continue?`))
       .onOK(async () => {
         const progressBar = DG.TaskBarProgressIndicator.create(`Running Chemical space...`);
-        return await runChemSpace();
+        const res =  await runChemSpace();
         progressBar.close();
+        return res;
       })
       .show();
   } else

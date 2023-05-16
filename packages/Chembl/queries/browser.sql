@@ -1,4 +1,4 @@
---name: cbAllChemblStructures
+--name: _cbAllChemblStructures
 --connection: Chembl
 select
   canonical_smiles, molregno
@@ -7,7 +7,7 @@ from
 limit 1000
 --end
 
---name: cbFindByMolregno
+--name: _cbFindByMolregno
 --connection: Chembl
 --input: int molregno
 select
@@ -28,7 +28,7 @@ where
  compound_records.molregno = @molregno
 --end
 
---name: cbChemblBrowserQuery
+--name: _cbChemblBrowserQuery
 --connection: Chembl
 --input: string substructure
 --input: string molecule_type
@@ -59,7 +59,7 @@ where
  limit 10000
 --end
 
---name: compoundsSelectiveToOneTargetOverSecond
+--name: _compoundsSelectiveToOneTargetOverSecond
 --connection: Chembl
 --input: string selectiveFor = "CHEMBL301"
 --input: string over = "CHEMBL4036"
@@ -90,7 +90,7 @@ AND act.standard_value        > 200
 AND td.chembl_id              = @over;
 --end
 
---name: compoundActivityDetailsForTarget
+--name: _compoundActivityDetailsForTarget
 --connection: Chembl
 --input: string target = "CHEMBL1827"
 SELECT m.chembl_id AS compound_chembl_id,
