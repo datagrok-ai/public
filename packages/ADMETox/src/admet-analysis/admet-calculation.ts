@@ -125,7 +125,7 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
   }
 }
 
-function processCsv(csvString: string | null): DG.DataFrame {
+function processCsv(csvString: string | null | undefined): DG.DataFrame {
   csvString = csvString!.replaceAll('"', '');
   const table = DG.DataFrame.fromCsv(csvString);
   table.rows.removeAt(table.rowCount - 1);
@@ -227,17 +227,22 @@ function openModelsDialog(selected: any, onOK: any): void {
     };
 
     for (const property of properties[groupName]['models']) {
-      const item = group.item(property['name'], property);
-      item.enableCheckBox(selected.includes(property['name']));
-      items.push(item);
-
-      item.checkBox!.onchange = (_e) => {
-        countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
-        if (item.checked) 
-          selectedModels[item.text] = groupName;
-      };
+      if (property['skip'] === false) {
+        const item = group.item(property['name'], property);
+        item.enableCheckBox(selected.includes(property['name']));
+        items.push(item);
+        
+        item.checkBox!.onchange = (_e) => {
+          countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
+          if (item.checked) 
+            selectedModels[item.text] = groupName;
+        };
+      }
     }
 
+    if (group.items.length === 0) 
+      group.remove(); 
+    
     checkAll(false);
   }
 
@@ -263,12 +268,12 @@ function openModelsDialog(selected: any, onOK: any): void {
     countLabel.textContent = `${keys.length} checked`;
   }
 
-  let bIColor = ui.boolInput('Color Coding', true);
-  tree.root.appendChild(bIColor.root);
+  //let bIColor = ui.boolInput('Color Coding', true);
+  //tree.root.appendChild(bIColor.root);
 
-  bIColor.onChanged(async () => {
+  /*bIColor.onChanged(async () => {
     _COLOR = bIColor.value!.toString();
-  });
+  });*/
   
 
   let dlg = ui.dialog('ADME/Tox');
