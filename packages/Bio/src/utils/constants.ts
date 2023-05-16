@@ -1,3 +1,5 @@
+import {pepseaMethods} from './pepsea';
+
 export enum COLUMNS_NAMES {
   SPLIT_COL = '~split',
   ACTIVITY = '~activity',
@@ -59,3 +61,17 @@ export namespace PEPSEA {
   export const SEPARATOR = '.';
 }
 
+export const kalignVersion = '3.3.1';
+
+export const msaDefaultOptions = {
+  pepsea: {
+    gapOpen: 1.53,
+    gapExtend: 0,
+    method: pepseaMethods[0],
+  },
+  kalign: {
+    gapOpen: null,
+    gapExtend: null,
+    terminalGap: null,
+  },
+} as const;
