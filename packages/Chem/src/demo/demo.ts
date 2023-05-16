@@ -11,7 +11,8 @@ import { chemSpace, getEmbeddingColsNames } from '../analysis/chem-space';
 import { CLIFFS_DF_NAME, activityCliffsIdx, getActivityCliffs } from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import { getSimilaritiesMarix } from '../utils/similarity-utils';
 import { createPropPanelElement, createTooltipElement } from '../analysis/activity-cliffs';
-
+import { ScaffoldTreeViewer } from '../widgets/scaffold-tree';
+import {TreeViewGroup} from "datagrok-api/dg";
 
 export async function _demoChemOverview(): Promise<void> {
 
@@ -705,4 +706,26 @@ export async function _demoDatabases5(): Promise<void> {
         }
     }, 500);
 
+}
+
+export async function _demoScaffoldTree(): Promise<void> {
+    const tv: DG.TableView = await openMoleculeDataset('mol1K.csv');
+    grok.shell.windows.showHelp = true;
+    //@ts-ignore
+    grok.shell.windows.help.showHelp('/help/domains/chem/scaffold-tree');
+    const table: DG.DataFrame = tv.dataFrame;
+    const tree = await _package.files.readAsText('scaffold_tree.json');
+    const viewer = new ScaffoldTreeViewer();
+    viewer.autoGenerate = false;
+    viewer.dataFrame = table;
+    viewer.size = 'small';
+    viewer.addOrphanFolders = false;
+    await viewer.loadTreeStr(tree);
+    if (viewer.tree.children.length > 1) {
+        for (let n = 0; n < viewer.tree.children.length; ++n) {
+            (viewer.tree.children[n] as TreeViewGroup).expanded = true;
+        }
+    }
+    tv.dockManager.dock(viewer, DG.DOCK_TYPE.LEFT, null, undefined, 0.44);
+    grok.shell.o = viewer;
 }
