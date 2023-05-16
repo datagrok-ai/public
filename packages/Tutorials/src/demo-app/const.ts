@@ -22,7 +22,7 @@ export const DEMO_APP_HIERARCHY = {
 					name: 'R Group Analysis',
 				},
 				{
-					name: 'Similarity Search',
+					name: 'Similarity & Diversity Search',
 				},
 				{
 					name: 'Scaffold Tree',

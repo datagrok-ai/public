@@ -1187,6 +1187,7 @@ export function removeDuplicates(molecules: string[], molecule: string): string[
 
 //name: Demo Chem Overview
 //meta.demoPath: Cheminformatics | Overview
+//description: Overview of Cheminformatics functionality
 //meta.isDemoScript: True
 export async function demoChemOverview(): Promise<void> {
   _demoChemOverview();
@@ -1194,6 +1195,7 @@ export async function demoChemOverview(): Promise<void> {
 
 
 //name: Demo Similarity Search
+//description: Searching for most similar or diverse molecules in dataset
 //meta.demoPath: Cheminformatics | Similarity & Diversity Search
 export async function demoSimilarityDiversitySearch(): Promise<void> {
   _demoSimilarityDiversitySearch();
@@ -1201,6 +1203,7 @@ export async function demoSimilarityDiversitySearch(): Promise<void> {
 
 
 //name: Demo R Group Analysis
+//description: R Group Analysis including R-group decomposition and  visual analysis of the obtained R-groups
 //meta.demoPath: Cheminformatics | R Group Analysis
 //meta.isDemoScript: True
 export async function demoRgroupAnalysis(): Promise<void> {
@@ -1209,6 +1212,7 @@ export async function demoRgroupAnalysis(): Promise<void> {
 
 
 //name: Demo Activity Cliffs
+//description: Searching similar structures with significant activity difference
 //meta.demoPath: Cheminformatics | Molecule Activity Cliffs
 //meta.isDemoScript: True
 export async function demoActivityCliffs(): Promise<void> {
@@ -1216,7 +1220,8 @@ export async function demoActivityCliffs(): Promise<void> {
 }
 
 //name: Demo Databases
-//meta.demoPath: Cheminformatics | Databases
+//description: Running various queries to chemical databases using convenient input forms
+//meta.demoPath: Cheminformatics | Chemical Databases
 export async function demoDatabases(): Promise<void> {
   _demoDatabases4();
 }

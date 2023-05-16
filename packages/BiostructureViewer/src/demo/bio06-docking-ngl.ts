@@ -17,7 +17,10 @@ export async function demoBio06UI(): Promise<void> {
   let viewer: DG.Viewer & INglViewer;
 
   try {
-    await new DemoScript('Demo', 'Docking ligands along the structure')
+    await new DemoScript(
+      'Docking NGL',
+      'Docking ligands along the structure'
+    )
       .step('Loading ligands', async () => {
         grok.shell.windows.showContextPanel = false;
         grok.shell.windows.showProperties = false;
