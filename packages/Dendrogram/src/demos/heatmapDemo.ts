@@ -28,19 +28,21 @@ export async function heatmapDemo() {
     );
     // const viewerNode = tv.dockManager.dock(tv.grid, DG.DOCK_TYPE.TOP, null, DG.VIEWER.HEAT_MAP, 0.7);
     tv.dockManager.dock(tv.filters(), DG.DOCK_TYPE.LEFT, rootNode, DG.VIEWER.FILTERS, 0.2);
-      tv!.grid.onBeforeDrawContent.subscribe(() => {
-        adjustTreeHeight();
-      });
+    grok.shell.windows.showHelp = true;
+    grok.shell.windows.help.showHelp('/help/visualize/viewers/heat-map.md');
+    tv!.grid.onBeforeDrawContent.subscribe(() => {
       adjustTreeHeight();
-      // tv.grid.props.showRowHeader = false;
-      tv!.grid.props.isGrid = false;
-      tv!.grid.props.isHeatmap = true;
-      tv!.grid.props.showRowHeader = false;
-      // this.tv!.grid.props.showAddNewRowIcon = false;
-      setTimeout(() => {
-        adjustTreeHeight();
+    });
+    adjustTreeHeight();
+    // tv.grid.props.showRowHeader = false;
+    tv!.grid.props.isGrid = false;
+    tv!.grid.props.isHeatmap = true;
+    tv!.grid.props.showRowHeader = false;
+    // this.tv!.grid.props.showAddNewRowIcon = false;
+    setTimeout(() => {
+      adjustTreeHeight();
         tv!.grid.invalidate();
-      }, 10);
+    }, 100);
   } catch (err) {
     console.error(err);
   }
