@@ -127,7 +127,7 @@ export async function initChem(): Promise<void> {
 export async function initChemAutostart(): Promise<void> { }
 
 //name: Chemistry | Most Diverse Structures
-//tags: tooltip, panel
+//tags: tooltip
 //input: column col {semType: Molecule}
 //output: widget
 export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined> {
