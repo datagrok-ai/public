@@ -46,8 +46,9 @@ export class DemoView extends DG.ViewBase {
 
     if (func.options['isDemoScript'] == 'True') {
       ui.setUpdateIndicator(grok.shell.tv.root, true);
-        grok.shell.newView(func.name, [ ui.panel([
-          ui.h1(func.name),
+      const pathElements = viewPath.split('|').map((s) => s.trim());  
+      grok.shell.newView(pathElements[pathElements.length - 1], [ ui.panel([
+          ui.h1(pathElements[pathElements.length - 1]),
           ui.divText(func.description),
           ui.bigButton('Start', async () => { await func.apply() })
         ], 'demo-app-script-view')
