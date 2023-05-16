@@ -46,9 +46,11 @@ export async function demoBio06UI(): Promise<void> {
         });
         view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.62);
       }, {
-        description: `Add NGL viewer to display PDB.`,
+        description: `Add NGL viewer to display PDB. ` +
+          `Try to change the current, selected ligands to see them along the structure.`,
         delay: 2000,
       })
+      /*
       .step('Tracking selected, current', async () => {
         df.selection.init((rowI: number) => [3, 5, 6].includes(rowI));
         df.currentRowIdx = 1;
@@ -68,6 +70,7 @@ export async function demoBio06UI(): Promise<void> {
         description: `Display mouse overed ligands along the structure.`,
         delay: 1000,
       })
+      /**/
       .start();
   } catch (err: any) {
     handleError(err);

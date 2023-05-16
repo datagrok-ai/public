@@ -120,7 +120,7 @@ export function demoApp() {
     const path = pathElements.join('/');
 
     const func = DemoView.findDemoFunc(pathElements.join(' | '));
-    func ? demoView.startDemoFunc(func, path) : demoView.nodeView(pathElements[pathElements.length - 1], path);
+    func ? demoView.startDemoFunc(func, pathElements.join(' | ')) : demoView.nodeView(pathElements[pathElements.length - 1], path);
   }
 }
 

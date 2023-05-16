@@ -61,6 +61,7 @@ export async function demoBio05UI(): Promise<void> {
       .step('Analyse sequence composition', async () => {
         wlViewer = await df.plot.fromType('WebLogo', {
           sequenceColumnName: msaHelmColName,
+          positionWidth: 40,
           maxHeight: 50,
         }) as DG.Viewer & IWebLogoViewer;
         view.dockManager.dock(wlViewer, DG.DOCK_TYPE.DOWN, null, 'Composition analysis', 0.2);
