@@ -83,14 +83,15 @@ category('screening tools: benchmarks', () => {
 
   test('structural alerts', async () => {
     const alertsDf = DG.DataFrame.fromCsv(await _package.files.readAsText('alert-collection.csv'));
-    const rdkitModule = chemCommonRdKit.getRdKitModule();
+    // const rdkitModule = chemCommonRdKit.getRdKitModule();
+    const rdkitService = await chemCommonRdKit.getRdKitService();
     const sarSmall = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/smi10K.csv'));
     const smilesCol = sarSmall.getCol('smiles');
     const ruleSet: RuleSet = {'BMS': true, 'Dandee': true, 'Glaxo': true, 'Inpharmatica': true, 'LINT': true,
       'MLSMR': true, 'PAINS': true, 'SureChEMBL': true};
 
-    DG.time('Structural Alerts', () => {
-      runStructuralAlertsDetection(smilesCol, ruleSet, alertsDf, rdkitModule);
+    await DG.timeAsync('Structural Alerts', async () => {
+      await runStructuralAlertsDetection(smilesCol, ruleSet, alertsDf, rdkitService);
     });
   }, {skipReason: '#1193'});
 

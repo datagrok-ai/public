@@ -3,6 +3,8 @@ import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {syncQueryAromatics} from '../utils/aromatic-utils';
 import {getMolSafe} from '../utils/mol-creation_rdkit';
 import {isMolBlock} from '../utils/chem-common';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import { RuleId } from '../panels/structural-alerts';
 
 export enum MolNotation {
   Smiles = 'smiles',
@@ -170,5 +172,58 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
     console.log('Finished Worker ' + results.length);
     return results;
+  }
+
+  getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}, start: number = 0, end: number = 0): {[rule in RuleId]?: boolean[]} {
+    if (this._rdKitMols === null)
+      return {};
+
+    if (start < 0 || end < 0 || start > this._rdKitMols!.length || end > this._rdKitMols!.length || start > end)
+      return {};
+
+    const moleculeCount = start === 0 && end === 0 ? this._rdKitMols!.length : end - start;
+
+    const ruleSmartsMap: {[rule in RuleId]?: (RDMol | null)[]} = {};
+    const rules = Object.keys(alerts) as RuleId[];
+    for (let rule of rules) {
+      const ruleLength = alerts[rule]!.length;
+      ruleSmartsMap[rule] = new Array(ruleLength);
+      for (let smartsIdx = 0; smartsIdx < ruleLength; smartsIdx++)
+        ruleSmartsMap[rule]![smartsIdx] = this.getQMol(alerts[rule]![smartsIdx]);
+    }
+
+    // Prepare the result storage
+    const resultValues: {[ruleId in RuleId]?: BitArray} = {};
+    for (const rule of rules)
+      resultValues[rule] = new BitArray(moleculeCount, false);
+
+    // Run the structural alerts detection
+    for (let molIdx = start; molIdx < start + moleculeCount; molIdx++) {
+      const mol = this._rdKitMols[molIdx];
+      if (mol === null)
+        continue;
+
+      for (const rule of rules) {
+        const ruleSmarts = ruleSmartsMap[rule]!;
+        for (let alertIdx = 0; alertIdx < ruleSmarts.length; alertIdx++) {
+          const smarts = ruleSmarts[alertIdx];
+          if (smarts === null)
+            continue;
+
+          const matches = mol.get_substruct_match(smarts);
+          if (matches !== '{}') {
+            resultValues[rule]!.setTrue(molIdx);
+            break;
+          }
+        }
+      }
+    }
+
+    for (const smartsList of Object.values(ruleSmartsMap)) {
+      for (const smarts of smartsList)
+        smarts?.delete();
+    }
+
+    return Object.fromEntries(Object.entries(resultValues).map(([key, value]) => [key, value!.getRangeAsList(0, value.length)]));
   }
 }

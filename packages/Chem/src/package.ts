@@ -735,12 +735,13 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, col: DG.Colum
 
   const ruleSet: RuleSet = {'PAINS': pains, 'BMS': bms, 'SureChEMBL': sureChembl, 'MLSMR': mlsmr,
     'Dandee': dandee, 'Inpharmatica': inpharmatica, 'LINT': lint, 'Glaxo': glaxo};
-  const rdkitModule = chemCommonRdKit.getRdKitModule();
+  // const rdkitModule = chemCommonRdKit.getRdKitModule();
+  const rdkitService = await chemCommonRdKit.getRdKitService();
   const alertsDf = await grok.data.loadTable(chemCommonRdKit.getRdKitWebRoot() + 'files/alert-collection.csv');
 
   const progress = DG.TaskBarProgressIndicator.create('Detecting structural alerts...');
   try {
-    const resultDf = runStructuralAlertsDetection(col, ruleSet, alertsDf, rdkitModule);
+    const resultDf = await runStructuralAlertsDetection(col, ruleSet, alertsDf, rdkitService);
     for (const resultCol of resultDf.columns)
       table.columns.add(resultCol);
   } catch (e) {
