@@ -23,7 +23,7 @@ export const viewerTypesMapping: {[key: string]: string} = {
   ['pcplot']: DG.VIEWER.PC_PLOT,
   ['piechart']: DG.VIEWER.PIE_CHART,
   ['scatterplot']: DG.VIEWER.SCATTER_PLOT,
-  ['scatterplot3d']: DG.VIEWER.SCATTER_PLOT_3D,
+  ['3dscatterplot']: DG.VIEWER.SCATTER_PLOT_3D,
   ['shapemap']: DG.VIEWER.SHAPE_MAP,
   ['statistics']: DG.VIEWER.STATISTICS,
   ['tileviewer']: DG.VIEWER.TILE_VIEWER,

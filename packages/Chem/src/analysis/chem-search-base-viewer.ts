@@ -94,6 +94,10 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     }
     if (property.name === 'limit' && property.get(this) > MAX_LIMIT )
       this.limit = MAX_LIMIT;
+    if (property.name === 'moleculeProperties') {
+      this.render(false);
+      return;
+    }
     this.render();
   }
 

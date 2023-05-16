@@ -13,7 +13,7 @@ import {FunctionView} from './function-view';
 import '../css/rich-function-view.css';
 import {FileInput} from '../../shared-components/src/file-input';
 import {startWith} from 'rxjs/operators';
-import {DIRECTION, EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
+import {DIRECTION, EXPERIMENTAL_TAG, VIEWER_PATH, viewerTypesMapping} from './shared/consts';
 import {boundImportFunction, getDataFrame, getPropViewers} from './shared/utils';
 
 const FILE_INPUT_TYPE = 'file';
@@ -235,8 +235,9 @@ export class RichFunctionView extends FunctionView {
     const newRibbonPanels = [
       ...this.getRibbonPanels(),
       [
-        ...this.runningOnInput && !this.options.isTabbed ? [play]: [...this.isUploadMode.value ? [save] : [play]],
-        ...!this.runningOnInput ? [toggleUploadMode]: [],
+        ...this.runningOnInput || this.options.isTabbed ? []: [play],
+        ...(this.hasUploadMode && this.isUploadMode.value) ? [save] : [],
+        ...this.hasUploadMode ? [toggleUploadMode]: [],
       ],
     ];
 
@@ -273,7 +274,7 @@ export class RichFunctionView extends FunctionView {
           return viewer;
         });
 
-        promisedViewers.map((promisedViewer) => promisedViewer.then((loadedViewer) => {
+        const reactiveViewers = promisedViewers.map((promisedViewer) => promisedViewer.then((loadedViewer) => {
           const subscribeOnFcChanges = () => {
             const currentParam: DG.FuncCallParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
@@ -299,6 +300,8 @@ export class RichFunctionView extends FunctionView {
           this.subs.push(
             this.funcCallReplaced.subscribe(subscribeOnFcChanges),
           );
+
+          return loadedViewer;
         }));
 
         const dfBlockTitle: string = dfProp.options['caption'] ?? dfProp.name;
@@ -321,26 +324,29 @@ export class RichFunctionView extends FunctionView {
           );
         }
 
-        promisedViewers.map((viewer, viewerIndex) => {
+        const wrappedViewers = reactiveViewers.map((promisedViewer, viewerIndex) => {
           const blockWidth: string | boolean | undefined = parsedTabDfProps[dfIndex][viewerIndex]['block'];
-          const viewerRoot = ui.wait(async () => (await viewer).root);
-          $(viewerRoot).css({'min-height': '300px'});
+          const viewerRoot = ui.wait(async () => (await promisedViewer).root);
+          $(viewerRoot).css({
+            'min-height': '300px',
+            'flex-grow': '1',
+          });
 
-          acc.append(
-            ui.divV([
-              ...viewerIndex === 0 ? [ui.h2(dfBlockTitle)] : [ui.h2(' ', {style: {'white-space': 'pre'}})],
-              viewerRoot,
-            ], {style: {...blockWidth ? {
-              'width': `${blockWidth}%`,
-              'max-width': `${blockWidth}%`,
-            } : {
-              'flex-grow': '1',
-            }}}),
-          );
+          return ui.divV([
+            ...viewerIndex === 0 ? [ui.h2(dfBlockTitle)] : [ui.h2(' ', {style: {'white-space': 'pre'}})],
+            viewerRoot,
+          ], {style: {...blockWidth ? {
+            'width': `${blockWidth}%`,
+            'max-width': `${blockWidth}%`,
+          } : {
+            'flex-grow': '1',
+          }}});
         });
 
+        acc.append(...wrappedViewers);
+
         return acc;
-      }, ui.divH([], {'style': {'flex-wrap': 'wrap'}}));
+      }, ui.divH([], {'style': {'flex-wrap': 'wrap', 'flex-grow': '1'}}));
 
       const generateScalarsTable = () => {
         const table = DG.HtmlTable.create(
@@ -348,7 +354,9 @@ export class RichFunctionView extends FunctionView {
           (scalarProp: DG.Property) =>
             [scalarProp.caption ?? scalarProp.name, this.funcCall.outputs[scalarProp.name], scalarProp.options['units']],
         ).root;
-        table.style.maxWidth = '400px';
+        $(table).css({
+          'max-width': '400px',
+        });
         this.afterOutputSacalarTableRender.next(table);
         return table;
       };
@@ -373,7 +381,7 @@ export class RichFunctionView extends FunctionView {
       });
 
       this.outputsTabsElem.addPane(tabLabel, () => {
-        return ui.divV([dfBlocks, ...tabScalarProps.length ? [ui.h2('Scalar values')]: [], scalarsTable]);
+        return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [ui.h2('Scalar values'), scalarsTable]: []]);
       });
     });
 
@@ -545,9 +553,7 @@ export class RichFunctionView extends FunctionView {
       const buttonWrapper = ui.div([runButton]);
       ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
       this.controllsDiv = ui.buttonsInput([buttonWrapper as any]);
-    }
-    if (!this.runningOnInput)
-      inputs.append(this.controllsDiv);
+    };
 
     inputs.classList.remove('ui-panel');
     inputs.style.paddingTop = '0px';

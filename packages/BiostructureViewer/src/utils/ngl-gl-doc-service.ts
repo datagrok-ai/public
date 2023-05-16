@@ -31,8 +31,9 @@ export class NglGlDocService implements NglGlServiceBase {
     this.hostDiv.style.position = 'absolute';
     this.hostDiv.style.left = '0px';
     this.hostDiv.style.right = '0px';
-    this.hostDiv.style.width = '0px';
-    this.hostDiv.style.height = '0px';
+    this.hostDiv.style.width = '300px';
+    this.hostDiv.style.height = '300px';
+    this.hostDiv.style.visibility = 'hidden';
     document.body.appendChild(this.hostDiv);
 
     this._queue = [];
@@ -65,7 +66,10 @@ export class NglGlDocService implements NglGlServiceBase {
   }
 
   private async _processQueue() {
-    const {key, task} = this._queue.shift()!;
+    const queueItem = this._queue.shift();
+    if (!queueItem) return; // in case of empty queue
+
+    const {key, task} = queueItem!;
     if (key) delete this._queueDict[key];
     try {
       const r = window.devicePixelRatio;
@@ -85,10 +89,14 @@ export class NglGlDocService implements NglGlServiceBase {
       this.nglDiv.style.width = `${Math.floor(task.props.width) / r}px`;
       this.nglDiv.style.height = `${Math.floor(task.props.height) / r}px`;
 
+      const canvas = this.nglDiv.querySelector('canvas')!;
+      canvas.width = Math.floor(task.props.width);
+      canvas.height = Math.floor(task.props.height);
+
       this.task = task;
       this.key = key;
       this.emptyPaintingSize = undefined;
-      await this.ngl.handleResize();
+      await this.ngl.viewer.setSize(task.props.width, task.props.height);
     } catch (err: any) {
       const errMsg: string = err instanceof Error ? err.message : err.toString();
       _package.logger.error(`BsV:NglGlService._processQueue() no rethrown error: ${errMsg}`, undefined,
