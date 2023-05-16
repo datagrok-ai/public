@@ -105,7 +105,7 @@ M  END
     if (mol !== null) {
       try {
         if (mol.is_valid()) {
-          let molHasOwnCoords = mol.has_coords();
+          let molHasOwnCoords = !!mol.has_coords();
           const scaffoldIsMolBlock = DG.chem.isMolBlock(scaffoldMolString);
           if (scaffoldIsMolBlock) {
             const rdKitScaffoldMolCtx = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false, {mergeQueryHs: true, isSubstructure: true}).molCtx;

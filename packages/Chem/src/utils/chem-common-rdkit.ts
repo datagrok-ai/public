@@ -27,7 +27,7 @@ const RDKIT_COMMON_RENDER_OPTS: {[key: string]: any} = {
   minFontSize: -1,
   maxFontSize: -1,
   annotationFontScale: 0.7,
-  highlightBondWidthMultiplier: 12,
+  highlightBondWidthMultiplier: 20,
   dummyIsotopeLabels: false,
   atomColourPalette: {
     0: [0.1, 0.1, 0.1],
@@ -42,6 +42,7 @@ const RDKIT_COMMON_RENDER_OPTS: {[key: string]: any} = {
     35: [0.0, 0.498, 0.0],
     53: [0.247, 0.0, 0.498],
   },
+  highlightColour: [1.0, 0.7, 0.7, 1.0],
   backgroundColour: [1, 1, 1, 1],
   queryColour: [0, 0, 0, 1],
 };
