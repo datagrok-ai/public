@@ -339,6 +339,14 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 * Databases: error in the **Sharing** tab of the **Context Pane** after deleting the shared query.
 
 
+## 2023-05-16 1.13.15
+
+### Addressed Issues
+
+* GROK-12596: Core: Viewers: support for NaN and +/\- Infinity (WIP)
+* [#1882](https://github.com/datagrok-ai/public/issues/1702133761): Scatterplot: reset min max on column change
+
+
 ## 2023-04-18 1.13.13
 
 ### Addressed Issues
