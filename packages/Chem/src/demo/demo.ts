@@ -52,7 +52,7 @@ export async function _demoChemOverview(): Promise<void> {
         'FractionCSP3',
         'HeavyAtomCount']
 
-    const demoScript = new DemoScript('Overview', 'Overview of Cheminformatics functionality');
+    const demoScript = new DemoScript('Overview', 'Overview of Cheminformatics functionality', undefined, {autoStartFirstStep: true});
     let table: DG.DataFrame;
     let tv: DG.TableView;
     let propPanel: Element;
@@ -209,7 +209,7 @@ export async function _demoMoleculesVisualizations(): Promise<void> {
 
 export async function _demoRgroupAnalysis(): Promise<void> {
 
-    const demoScript = new DemoScript('R-Group Analysis', 'Performing R Group Analysis');
+    const demoScript = new DemoScript('R-Group Analysis', 'Performing R Group Analysis', undefined, {autoStartFirstStep: true});
     let table: DG.DataFrame;
     let tv: DG.TableView;
     let sketcherInput: HTMLInputElement;
@@ -259,7 +259,7 @@ export async function _demoRgroupAnalysis(): Promise<void> {
 
 export async function _demoActivityCliffs(): Promise<void> {
 
-    const demoScript = new DemoScript('Activity Cliffs', 'Searching similar structures with significant activity difference');
+    const demoScript = new DemoScript('Activity Cliffs', 'Searching similar structures with significant activity difference', undefined, {autoStartFirstStep: true});
     let table: DG.DataFrame;
     let tv: DG.TableView;
     let scatterPlot: DG.Viewer;
