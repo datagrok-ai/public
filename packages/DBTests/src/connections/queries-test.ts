@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 import {_package} from '../package-test';
 
 category('Connections', () => {
-
   test('queriesTest', async () => {
     const queries = await grok.dapi.queries
       .filter(`options.testExpectedRows != null and package.shortName = "${_package.name}"`).include('params').list();
@@ -86,6 +85,6 @@ category('Connections', () => {
 
 async function getExecutionTime(dataQueryName: string): Promise<number> {
   const startTime = Date.now();
-  await grok.functions.eval('ApiTests:' + dataQueryName);
+  await grok.functions.eval('Dbtests:' + dataQueryName);
   return Date.now() - startTime;
 }
