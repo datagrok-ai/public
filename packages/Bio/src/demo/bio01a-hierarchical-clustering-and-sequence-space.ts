@@ -27,7 +27,7 @@ export async function demoBio01aUI() {
 
   try {
     const demoScript = new DemoScript(
-      'Demo',
+      'Sequence Space',
       'Exploring sequence space of Macromolecules, comparison with hierarchical clustering results');
     await demoScript
       .step(`Load DNA sequences`, async () => {
