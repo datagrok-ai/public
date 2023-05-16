@@ -112,8 +112,8 @@ Eq("Sky", "Sky")    // false
 Pads the string `s` with the `padding` symbol on the left if `s` is shorter than `width`.
 
 ```javascript
-PadLeft("x", 3, ".")       // "..x"
-PadLeft("123", 3, ".")     // "123"
+PadLeft("x", 3, "-")       // "--x"
+PadLeft("123", 3, "-")     // "123"
 ```
 
 ## <a name="padright"></a>PadRight(`s`, `width`, `padding`)
@@ -121,8 +121,8 @@ PadLeft("123", 3, ".")     // "123"
 Pads the string `s` with the `padding` symbol on the right if `s` is shorter than `width`.
 
 ```javascript
-PadRight("x", 3, ".")       // "x.."
-PadRight("123", 3, ".")     // "123"
+PadRight("x", 3, "-")       // "x--"
+PadRight("123", 3, "-")     // "123"
 ```
 
 ## <a name="parsefloat"></a>ParseFloat(`s`)
