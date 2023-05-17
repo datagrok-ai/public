@@ -27,6 +27,6 @@ Molstar component built-in control knobs are also available.
 
 ## See also
 
-* [Viewers](../viewers/viewers,md)
+* [Viewers](../viewers/viewers.md)
 * [MolStar](https://molstar.org/)
 * [NGL Viewer](./ngl.md)
