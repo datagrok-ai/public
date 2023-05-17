@@ -37,7 +37,6 @@ export class MainTabUI {
     DG.debounce<string>(this.onInput, 300).subscribe(async () => {
       this.init();
       await this.updateLayout();
-      // onSequenceChanged(sequence);
     });
   }
 
@@ -107,10 +106,9 @@ export class MainTabUI {
 
   private updateTable(): void {
     this.outputTableDiv.innerHTML = '';
-    const format = (new FormatDetector(this.sequence)).getFormat();
     // todo: does not detect correctly (U-A)(U-A)
-    const indexOfInvalidChar = (format === null) ? 0 : (new SequenceValidator(this.sequence)).getInvalidCodeIndex(format!);
-    const outputSequenceObj = convertSequence(this.sequence, indexOfInvalidChar, format);
+    const indexOfInvalidChar = (!this.format) ? 0 : (new SequenceValidator(this.sequence)).getInvalidCodeIndex(this.format!);
+    const outputSequenceObj = convertSequence(this.sequence, indexOfInvalidChar, this.format);
     const tableRows = [];
 
     for (const key of Object.keys(outputSequenceObj).slice(1)) {

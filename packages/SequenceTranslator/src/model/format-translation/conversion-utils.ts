@@ -4,63 +4,64 @@ import {FormatConverter} from './format-converter';
 const NO_TRANSLATION_MSG = 'No translation table available';
 export const UNDEFINED_SEQ_MSG = 'Type of input sequence is undefined';
 
-export function convertSequence(sequence: string, indexOfFirstInvalidChar: number, format: FORMAT | null): {[key: string]: string} {
+export function convertSequence(sequence: string, indexOfFirstInvalidChar: number, sourceFormat: FORMAT | null): {[key: string]: string} {
   if (indexOfFirstInvalidChar !== -1) {
     return {
       indexOfFirstInvalidChar: indexOfFirstInvalidChar.toString(),
       Error: UNDEFINED_SEQ_MSG,
     };
   }
-  if (format === FORMAT.NUCLEOTIDES ) {
+  if (sourceFormat === FORMAT.NUCLEOTIDES) {
     const converter = new FormatConverter(sequence, FORMAT.NUCLEOTIDES);
     return {
       type: FORMAT.NUCLEOTIDES,
-      Nucleotides: sequence,
-      BioSpring: converter.convertTo(FORMAT.BIOSPRING),
-      GCRS: converter.convertTo(FORMAT.GCRS),
+      [FORMAT.NUCLEOTIDES]: sequence,
+      [FORMAT.BIOSPRING]: converter.convertTo(FORMAT.BIOSPRING),
+      [FORMAT.GCRS]: converter.convertTo(FORMAT.GCRS),
     };
   }
-  if (format === FORMAT.BIOSPRING) {
+  if (sourceFormat === FORMAT.BIOSPRING) {
     const converter = new FormatConverter(sequence, FORMAT.BIOSPRING);
     return {
       type: FORMAT.BIOSPRING + ' ' + TECHNOLOGIES.ASO_GAPMERS,
-      Nucleotides: converter.convertTo(FORMAT.NUCLEOTIDES),
-      BioSpring: sequence,
-      GCRS: converter.convertTo(FORMAT.GCRS),
+      [FORMAT.NUCLEOTIDES]: converter.convertTo(FORMAT.NUCLEOTIDES),
+      [FORMAT.BIOSPRING]: sequence,
+      [FORMAT.GCRS]: converter.convertTo(FORMAT.GCRS),
     };
   }
-  if (format === FORMAT.GCRS) {
+  if (sourceFormat === FORMAT.GCRS) {
     const converter = new FormatConverter(sequence, FORMAT.GCRS);
     return {
       type: FORMAT.GCRS + ' ' + TECHNOLOGIES.ASO_GAPMERS,
-      Nucleotides: converter.convertTo(FORMAT.NUCLEOTIDES),
-      BioSpring: converter.convertTo(FORMAT.BIOSPRING),
-      Axolabs: converter.convertTo(FORMAT.AXOLABS),
-      Mermade12: converter.convertTo(FORMAT.MERMADE_12),
-      GCRS: sequence,
-      LCMS: converter.convertTo(FORMAT.LCMS),
+      [FORMAT.NUCLEOTIDES]: converter.convertTo(FORMAT.NUCLEOTIDES),
+      [FORMAT.BIOSPRING]: converter.convertTo(FORMAT.BIOSPRING),
+      [FORMAT.AXOLABS]: converter.convertTo(FORMAT.AXOLABS),
+      [FORMAT.MERMADE_12]: converter.convertTo(FORMAT.MERMADE_12),
+      [FORMAT.GCRS]: sequence,
+      [FORMAT.LCMS]: converter.convertTo(FORMAT.LCMS),
+      [FORMAT.HELM]: converter.convertTo(FORMAT.HELM)
     };
   }
-  if (format === FORMAT.AXOLABS) {
+  if (sourceFormat === FORMAT.AXOLABS) {
     const converter = new FormatConverter(sequence, FORMAT.AXOLABS);
     return {
       type: FORMAT.AXOLABS + ' ' + TECHNOLOGIES.SI_RNA,
-      Nucleotides: converter.convertTo(FORMAT.NUCLEOTIDES),
-      BioSpring: converter.convertTo(FORMAT.BIOSPRING),
-      Axolabs: sequence,
-      GCRS: converter.convertTo(FORMAT.GCRS),
+      [FORMAT.NUCLEOTIDES]: converter.convertTo(FORMAT.NUCLEOTIDES),
+      [FORMAT.BIOSPRING]: converter.convertTo(FORMAT.BIOSPRING),
+      [FORMAT.AXOLABS]: sequence,
+      [FORMAT.GCRS]: converter.convertTo(FORMAT.GCRS),
     };
   }
-  if (format === FORMAT.MERMADE_12) {
+  if (sourceFormat === FORMAT.MERMADE_12) {
     return {
       type: FORMAT.MERMADE_12,
-      Nucleotides: NO_TRANSLATION_MSG,
-      GCRS: NO_TRANSLATION_MSG,
-      Mermade12: sequence,
+      [FORMAT.NUCLEOTIDES]: NO_TRANSLATION_MSG,
+      [FORMAT.GCRS]: NO_TRANSLATION_MSG,
+      [FORMAT.MERMADE_12]: sequence,
     };
   }
   return {
     type: UNDEFINED_SEQ_MSG,
-    Nucleotides: UNDEFINED_SEQ_MSG,
+    [FORMAT.NUCLEOTIDES]: UNDEFINED_SEQ_MSG,
   };
 }

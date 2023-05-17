@@ -14,6 +14,7 @@ export const TECHNOLOGIES = {
 };
 
 export enum INPUT_FORMATS {
+  HELM = 'HELM',
   NUCLEOTIDES = 'Nucleotides',
   BIOSPRING = 'BioSpring',
   GCRS = 'GCRS',
@@ -22,6 +23,7 @@ export enum INPUT_FORMATS {
 };
 
 export enum SYNTHESIZERS {
+  HELM = 'HELM', // helm is not a synthesizer, rename enum
   NUCLEOTIDES = 'Nucleotides',
   BIOSPRING = 'BioSpring',
   GCRS = 'GCRS',

@@ -132,6 +132,29 @@ export class MonomerLibWrapper {
     return df;
   }
 
+  // todo: refactor, unify with getCodesByFormat
+  getGcrsCodesWithoutLinkages(): string[] {
+    let codes: string[] = [];
+    const format = SYNTHESIZERS.GCRS;
+    const monomers = this.getMonomersByFormat(SYNTHESIZERS.GCRS);
+    for (const monomer of monomers) {
+      if (monomer.name.includes('linkage'))
+        continue;
+      const codesObj = this.getCodesObject(monomer);
+      if (Array.isArray(codesObj[format])) {
+        const array = codesObj[format] as string[];
+        codes = codes.concat(array);
+      } else {
+        for (const technology in codesObj[format]) {
+          const obj = codesObj[format] as TechnologiesObject;
+          codes = codes.concat(obj[technology]);
+        }
+      }
+    }
+    console.log('codes wo linkages:', codes);
+    return codes;
+  }
+
   private formatMonomerForViewer(sourceObj: Monomer): {[key: string]: string} {
     const formattedObject: {[key: string]: string} = {};
     formattedObject[REQ.NAME] = sourceObj[REQ.NAME];
