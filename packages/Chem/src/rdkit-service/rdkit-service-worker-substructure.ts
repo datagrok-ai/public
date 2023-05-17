@@ -174,8 +174,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return results;
   }
 
-  getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}): {[rule in RuleId]?: boolean[]} {
-    if (this._rdKitMols === null) {
+  getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}, molecules?: string[]): {[rule in RuleId]?: boolean[]} {
+    if (this._rdKitMols === null && typeof molecules === 'undefined') {
       console.debug(`getStructuralAlerts: No molecules to process`);
       return {};
     }
@@ -189,14 +189,16 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         ruleSmartsMap[rule]![smartsIdx] = this.getQMol(alerts[rule]![smartsIdx]);
     }
 
+    const molsCount = molecules?.length ?? this._rdKitMols!.length;
     // Prepare the result storage
     const resultValues: {[ruleId in RuleId]?: BitArray} = {};
     for (const rule of rules)
-      resultValues[rule] = new BitArray(this._rdKitMols.length, false);
+      resultValues[rule] = new BitArray(molsCount, false);
 
     // Run the structural alerts detection
-    for (let molIdx = 0; molIdx < this._rdKitMols.length; molIdx++) {
-      const mol = this._rdKitMols[molIdx];
+    for (let molIdx = 0; molIdx < molsCount; molIdx++) {
+      const mol = typeof molecules !== 'undefined' ? getMolSafe(molecules[molIdx], {}, this._rdKitModule).mol :
+        this._rdKitMols![molIdx];
       if (mol === null) {
         console.debug(`Molecule ${molIdx} is null`);
         continue;
@@ -218,6 +220,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           }
         }
       }
+      mol.delete();
     }
 
     for (const smartsList of Object.values(ruleSmartsMap)) {
@@ -225,7 +228,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         smarts?.delete();
     }
 
-    this.freeMoleculesStructures();
+    this._rdKitMols = null;
 
     return Object.fromEntries(Object.entries(resultValues).map(([k, val]) => [k, val.getRangeAsList(0, val.length)]));
   }
