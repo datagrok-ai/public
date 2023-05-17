@@ -118,21 +118,21 @@ export class RdKitService {
       });
   }
 
-  async getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}): Promise<[RuleId, boolean[]][]> {
+  async getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}, molecules?: string[]): Promise<[RuleId, boolean[]][]> {
     const t = this;
-    return this._doParallel(
-      (i: number, _nWorkers: number) => t.parallelWorkers[i].getStructuralAlerts(alerts),
-      (data: {[rule in RuleId]?: boolean[]}[]): [RuleId, boolean[]][] => {
-        const result: {[rule in RuleId]?: boolean[]} = {};
-        for (let k = 0; k < data.length; ++k) {
-          const part = data[k];
-          for (const ruleId of Object.keys(part)) {
-            result[ruleId as RuleId] ??= [];
-            result[ruleId as RuleId] = result[ruleId as RuleId]!.concat(...part[ruleId as RuleId]!);
-          }
+    const fooGather = (data: {[rule in RuleId]?: boolean[]}[]): [RuleId, boolean[]][] => {
+      const result: {[rule in RuleId]?: boolean[]} = {};
+      for (let k = 0; k < data.length; ++k) {
+        const part = data[k];
+        for (const ruleId of Object.keys(part)) {
+          result[ruleId as RuleId] ??= [];
+          result[ruleId as RuleId] = result[ruleId as RuleId]!.concat(...part[ruleId as RuleId]!);
         }
-
-        return Object.entries(result) as [RuleId, boolean[]][];
-      });
+      }
+      return Object.entries(result) as [RuleId, boolean[]][];
+    };
+    return molecules ? this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
+        t.parallelWorkers[i].getStructuralAlerts(alerts, segment), fooGather) :
+      this._doParallel((i: number, _nWorkers: number) => t.parallelWorkers[i].getStructuralAlerts(alerts), fooGather);
   }
 }

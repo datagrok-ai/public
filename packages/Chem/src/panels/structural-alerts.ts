@@ -26,8 +26,7 @@ export async function runStructuralAlertsDetection(moleculeCol: DG.Column<string
     }
   }
 
-  await rdkitService.initMoleculesStructures(moleculeCol.toList());
-  const result = await rdkitService.getStructuralAlerts(smarts);
+  const result = await rdkitService.getStructuralAlerts(smarts, moleculeCol.toList());
 
   // Build the result dataframe
   const resultDf = DG.DataFrame.create(moleculeCol.length);
