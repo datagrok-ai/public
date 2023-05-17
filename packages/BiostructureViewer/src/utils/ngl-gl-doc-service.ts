@@ -5,6 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import {_package} from '../package';
 import * as NGL from 'NGL';
 import {NglGlServiceBase, NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
+import {SignalBinding} from 'signals';
+
 
 const TASK_TIMEOUT: number = 2000;
 
@@ -18,13 +20,13 @@ export class NglGlDocService implements NglGlServiceBase {
   private readonly _queueDict: { [key: keyof any]: NglGlTask };
   /** The flag allows {@link _processQueue}() on add item to the queue with {@link render}() */
   private _busy: boolean = false;
+  private nglRenderedBinding: SignalBinding<any>;
 
   constructor() {
     const r = window.devicePixelRatio;
 
     this.nglDiv = ui.div([], 'd4-ngl-viewer');
     this.ngl = new NGL.Stage(this.nglDiv);
-    this.ngl.viewer.signals.rendered.add(this.onNglRendered.bind(this));
 
     // The single NGL component
     this.hostDiv = ui.box(this.nglDiv);
@@ -102,7 +104,8 @@ export class NglGlDocService implements NglGlServiceBase {
 
       this.task = task;
       this.key = key;
-      this.ngl.viewer.render(true);
+      this.nglRenderedBinding = this.ngl.viewer.signals.rendered.add(this.onNglRendered, this);
+      this.ngl.viewer.render(false);
     } catch (err: any) {
       const errMsg: string = err instanceof Error ? err.message : err.toString();
       _package.logger.error(`BsV:NglGlService._processQueue() no rethrown error: ${errMsg}`, undefined,
@@ -136,6 +139,7 @@ export class NglGlDocService implements NglGlServiceBase {
   private key?: keyof any = undefined;
 
   private async onNglRendered(): Promise<void> {
+    this.nglRenderedBinding.detach();
     if (this.task === undefined) return;
     _package.logger.debug('NglGlService.onNglRendered() ' + `key = ${JSON.stringify(this.key)}`);
     try {
