@@ -127,7 +127,7 @@ export function getNglGlService(): NglGlServiceBase {
 //name: importPdb
 //description: Opens PDB file
 //tags: file-handler
-//meta.ext: mmcif, cifCore, pdb, pdbqt, gro, xyz
+//meta.ext: mmcif, cifCore, pdb, pdbqt, gro
 //input: string fileContent
 //output: list tables
 export async function importPdb(fileContent: string): Promise<DG.DataFrame[]> {
@@ -141,10 +141,22 @@ export async function importPdb(fileContent: string): Promise<DG.DataFrame[]> {
   return [];
 }
 
+/* as file is handled as string we don't know its extension, thus we need a separate handler **/
+//name: importXYZ
+//description: Opens XYZ file
+//tags: file-handler
+//meta.ext: xyz
+//input: string fileContent
+//output: list tables
+export async function importXYZ(fileContent: string): Promise<DG.DataFrame[]> {
+  await viewBiostructure(fileContent, 'xyz');
+  return [];
+}
+
 // -- File (pre)viewers --
 
 // eslint-disable-next-line max-len
-//tags: fileViewer, fileViewer-mol, fileViewer-cif, fileViewer-mcif, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-ent, fileViewer-pqr, fileViewer-mmtf, fileViewer-mtl, fileViewer-sd, fileViewer-pdbqt
+//tags: fileViewer, fileViewer-mol, fileViewer-cif, fileViewer-mcif, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-ent, fileViewer-pqr, fileViewer-mmtf, fileViewer-mtl, fileViewer-sd, fileViewer-pdbqt, fileViewer-xyz
 //input: file file
 //output: view v
 export function molecule3dNglView1(file: DG.FileInfo): DG.View {
