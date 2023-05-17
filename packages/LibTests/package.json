@@ -7,7 +7,7 @@
     "datagrok-api": "latest",
     "cash-dom": "latest",
     "dayjs": "latest",
-    "@datagrok-libraries/utils": "latest",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "rxjs": "^6.6.7",
     "wu": "latest"
   },
