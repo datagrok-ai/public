@@ -174,14 +174,11 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return results;
   }
 
-  getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}, start: number = 0, end: number = 0): {[rule in RuleId]?: boolean[]} {
-    if (this._rdKitMols === null)
+  getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}): {[rule in RuleId]?: boolean[]} {
+    if (this._rdKitMols === null) {
+      console.debug(`getStructuralAlerts: No molecules to process`);
       return {};
-
-    if (start < 0 || end < 0 || start > this._rdKitMols!.length || end > this._rdKitMols!.length || start > end)
-      return {};
-
-    const moleculeCount = start === 0 && end === 0 ? this._rdKitMols!.length : end - start;
+    }
 
     const ruleSmartsMap: {[rule in RuleId]?: (RDMol | null)[]} = {};
     const rules = Object.keys(alerts) as RuleId[];
@@ -195,20 +192,24 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     // Prepare the result storage
     const resultValues: {[ruleId in RuleId]?: BitArray} = {};
     for (const rule of rules)
-      resultValues[rule] = new BitArray(moleculeCount, false);
+      resultValues[rule] = new BitArray(this._rdKitMols.length, false);
 
     // Run the structural alerts detection
-    for (let molIdx = start; molIdx < start + moleculeCount; molIdx++) {
+    for (let molIdx = 0; molIdx < this._rdKitMols.length; molIdx++) {
       const mol = this._rdKitMols[molIdx];
-      if (mol === null)
+      if (mol === null) {
+        console.debug(`Molecule ${molIdx} is null`);
         continue;
+      }
 
       for (const rule of rules) {
         const ruleSmarts = ruleSmartsMap[rule]!;
         for (let alertIdx = 0; alertIdx < ruleSmarts.length; alertIdx++) {
           const smarts = ruleSmarts[alertIdx];
-          if (smarts === null)
+          if (smarts === null) {
+            console.debug(`Smarts ${alertIdx} for rule ${rule} is null at molecule ${molIdx}`);
             continue;
+          }
 
           const matches = mol.get_substruct_match(smarts);
           if (matches !== '{}') {
@@ -224,6 +225,6 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         smarts?.delete();
     }
 
-    return Object.fromEntries(Object.entries(resultValues).map(([key, value]) => [key, value!.getRangeAsList(0, value.length)]));
+    return Object.fromEntries(Object.entries(resultValues).map(([k, val]) => [k, val.getRangeAsList(0, val.length)]));
   }
 }
