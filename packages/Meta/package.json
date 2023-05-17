@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.3.46",
+  "version": "3.3.47",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -2643,9 +2643,12 @@
         },
         "1.1.0": {
           "datagrok-api": "latest"
+        },
+        "1.1.1": {
+          "datagrok-api": "latest"
         }
       },
-      "description": "Simulation of controlled fab-arm exchange mechanism.",
+      "description": "Simulation of controlled fab-arm exchange mechanism",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -2656,9 +2659,12 @@
       "dependencies": {
         "1.0.3": {
           "datagrok-api": "latest"
+        },
+        "1.1.0": {
+          "datagrok-api": "latest"
         }
       },
-      "description": "Eploratory Data Analysis tools",
+      "description": "Exploratory Data Analysis Tools",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
