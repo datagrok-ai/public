@@ -724,7 +724,7 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 //input: bool sureChembl {caption: SureChEMBL; default: false, description: "MedChem unfriendly compounds from SureChEMBL"}
 //input: bool mlsmr {caption: MLSMR; default: false, description: "NIH MLSMR Excluded Functionality Filters"}
 //input: bool dandee {caption: Dandee; default: false, description: "University of Dundee NTD Screening Library filters"}
-//input: bool inpharmatica {caption: Inpharmatica; default: false, "Inpharmatica filters""}
+//input: bool inpharmatica {caption: Inpharmatica; default: false, description: "Inpharmatica filters"}
 //input: bool lint {caption: LINT; default: false, description: "Pfizer LINT filters"}
 //input: bool glaxo {caption: Glaxo; default: false, description: "Glaxo Wellcome Hard filters"}
 export async function structuralAlertsTopMenu(table: DG.DataFrame, col: DG.Column, pains: boolean, bms: boolean,
