@@ -546,11 +546,10 @@ export async function byId(pdbId: string) {
  *
  * @param {string} data Data in PDB
  */
-export async function byData(data: string, name: string = 'Mol*') {
+export async function byData(data: string, name: string = 'Mol*', format: BuiltInTrajectoryFormat = 'pdb') {
   await initViewer(name)
     .then(async (viewer: RcsbViewer) => {
       // detecting format by data content
-      let format: BuiltInTrajectoryFormat = 'pdb';
       let binary: boolean = false;
       if (data.includes('mmcif_pdbx.dic')) {
         format = 'mmcif';
@@ -562,12 +561,20 @@ export async function byData(data: string, name: string = 'Mol*') {
   //v.handleResize();
 }
 
-export async function viewMolstarUI(content: string, name?: string): Promise<void> {
-  await byData(content, name);
+export async function viewMolstarUI(content: string, name?: string, format?: BuiltInTrajectoryFormat): Promise<void> {
+  await byData(content, name, format);
 }
 
-/** Creates view with Molstar viewer to preview Biostructure (PDB) */
-export function previewMolstarUI(file: DG.FileInfo): DG.View {
+interface MolstarPreviewReturnType {
+  view: DG.View;
+  loadingPromise: Promise<void>;
+}
+
+/** Creates view with Molstar viewer to preview Biostructure (PDB)
+ * returns the view immidiately, but the viewer is created asynchronously and promise
+ * for that is returned separately which resolves once the viewer is initialized.
+*/
+export function previewMolstarUI(file: DG.FileInfo): MolstarPreviewReturnType {
   const builtinFormats = BuiltInTrajectoryFormats.map((obj) => obj[0]) as string[];
   const extendedFormats = ['cif', 'mcif'];
   if (!isSupportedFormat()) {
@@ -588,29 +595,32 @@ export function previewMolstarUI(file: DG.FileInfo): DG.View {
       for (const sub of subs) sub.unsubscribe();
   }));
 
-  function loadString(data: string) {
-    const binary: boolean = false;
-    viewer.loadStructureFromData(data, formatLoader as BuiltInTrajectoryFormat, binary)
-      .then(() => {}); // Ignoring Promise returned
-  }
-
-  function loadBytes(bytes: any) {
-    const binary: boolean = false;
-    viewer.loadStructureFromData(bytes, formatLoader as BuiltInTrajectoryFormat, binary)
-      .then(() => {}); // Ignoring Promise returned
-  }
-
   function isSupportedFormat() {
     return [...builtinFormats, ...extendedFormats].includes(file.extension);
   }
+  async function loadString(data: string) {
+    const binary: boolean = false;
+    await viewer.loadStructureFromData(data, formatLoader as BuiltInTrajectoryFormat, binary);
+  }
 
-  // Handling binary data formats separately
-  if (isSupportedFormat())
-    file.readAsString().then(loadString);
-  else
-    file.readAsBytes().then(loadBytes);
+  async function loadBytes(bytes: any) {
+    const binary: boolean = false;
+    await viewer.loadStructureFromData(bytes, formatLoader as BuiltInTrajectoryFormat, binary);
+  }
 
-  return view;
+  const loadingPromise = new Promise<void>(async (resolve, reject) => {
+    try {
+      if (isSupportedFormat())
+        await loadString(await file.readAsString());
+      else
+        await loadBytes(await file.readAsBytes());
+      resolve();
+    } catch (e) {
+      reject(e);
+    }
+  });
+
+  return {view, loadingPromise};
 }
 
 function castProps(src: BiostructureProps): Partial<RcsbViewerProps> {
