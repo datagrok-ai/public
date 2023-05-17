@@ -32,7 +32,7 @@ export async function runStructuralAlertsDetection(moleculeCol: DG.Column<string
   // Build the result dataframe
   const resultDf = DG.DataFrame.create(moleculeCol.length);
   for (const [ruleName, boolArray] of result)
-    resultDf.columns.addNewBool(ruleName).init((i) => boolArray[i]);
+    resultDf.columns.addNewBool(resultDf.columns.getUnusedName(ruleName)).init((i) => boolArray[i]);
 
   return resultDf;
 }
