@@ -152,10 +152,10 @@ function setPath(path: string, tutorialRunners: TutorialRunner[]): void {
     'access': da,
   };
 
-  if (pathParts.length !== 5)
+  if (pathParts.length !== 6)
     return;
 
-  const [trackName, tutorialName] = pathParts.slice(3);
+  const [trackName, tutorialName] = pathParts.slice(4);
   let track: Track | null = null;
   let trackIdx: number | null = null;
   if (trackName in trackShortNames) {
