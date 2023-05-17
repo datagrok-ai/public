@@ -565,16 +565,11 @@ export async function viewMolstarUI(content: string, name?: string, format?: Bui
   await byData(content, name, format);
 }
 
-interface MolstarPreviewReturnType {
-  view: DG.View;
-  loadingPromise: Promise<void>;
-}
-
 /** Creates view with Molstar viewer to preview Biostructure (PDB)
  * returns the view immidiately, but the viewer is created asynchronously and promise
  * for that is returned separately which resolves once the viewer is initialized.
 */
-export function previewMolstarUI(file: DG.FileInfo): MolstarPreviewReturnType {
+export function previewMolstarUI(file: DG.FileInfo): { view: DG.View, loadingPromise: Promise<void> } {
   const builtinFormats = BuiltInTrajectoryFormats.map((obj) => obj[0]) as string[];
   const extendedFormats = ['cif', 'mcif'];
   if (!isSupportedFormat()) {
