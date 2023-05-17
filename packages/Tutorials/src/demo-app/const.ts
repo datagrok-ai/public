@@ -4,13 +4,13 @@ export const DEMO_APP_HIERARCHY = {
 			name: 'Cheminformatics',
 			children: [
 				{
-					name: 'Molecule3D in Grid',
+					name: 'Proteins',
 				},
 				{
 					name: 'Chemical Databases',
 				},
 				{
-					name: 'Docking NGL',
+					name: 'Docking Conformations',
 				},
 				{
 					name: 'Molecule Activity Cliffs',

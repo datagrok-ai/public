@@ -12,7 +12,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     'principle of multivariate statistics, which involves observation ' +
     'and analysis of more than one statistical outcome variable at a time';
   }
-  get steps() { return 5; }
+  get steps() { return 7; }
     
   demoTable: string = 'cars.csv';
   helpUrl: string = 'https://datagrok.ai/help/explore/multivariate-analysis/pls';
@@ -30,15 +30,15 @@ export class MultivariateAnalysisTutorial extends Tutorial {
 
     this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML); 
 
-    const dlg = await this.openDialog('Click on "ML | Multivariate Analysis (PLS)..."',
-      'Multivariate Analysis (PLS)', this.getMenuItem('ML'));
+    const dlg = await this.openDialog('Click on "ML | PLS"',
+      'PLS', this.getMenuItem('ML'));
 
     await this.dlgInputAction(dlg, 'Set "Table" to "cars"', 'Table', 'cars');
     await this.dlgInputAction(dlg, 'Set "Predict" to "price"', 'Predict', 'price');
 
-    await this.dlgInputAction(dlg, 'Set "Features" to "All".', 'Features',
+    await this.dlgInputAction(dlg, 'Select all columns, except "model" and "price", as "Features"', 'Features',
       this.t!.columns.names().filter((n: string) => n !== 'model' && n !== 'price').join(','),
-      'Click "All" in the column selection dialog.');
+      'Click "All" in the column selection dialog and uncheck two columns: "model" and "price".');
     await this.dlgInputAction(dlg, 'Set the number of components to "3"', 'Components', '3');
 
     const outcomeDescription = `Once you run the analysis, the following visualizations will appear:
@@ -53,7 +53,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     'to learn more about multivariate analysis, or navigate to a documentation page by clicking the "Open in new tab" button.';
 
     await this.action('Click "OK" and wait for the analysis to complete.', 
-      grok.functions.onAfterRunAction.pipe(filter((call) => call.func.name === 'MultivariateAnalysis')),
+      grok.functions.onAfterRunAction.pipe(filter((call) => call.func.name === 'PLS')),
       null, outcomeDescription
     );
   }

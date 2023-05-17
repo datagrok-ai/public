@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { addCustomHelp, closeAllAccordionPanes, demoScaffold, getAccordionPane, openMoleculeDataset, openSketcher, scrollTable } from '../utils/demo-utils';
+import { closeAllAccordionPanes, demoScaffold, getAccordionPane, openMoleculeDataset, openSketcher, scrollTable } from '../utils/demo-utils';
 import { DemoScript } from '@datagrok-libraries/tutorials/src/demo-script';
 import { awaitCheck, delay } from '@datagrok-libraries/utils/src/test';
 import { _importSdf } from '../open-chem/sdf-importer';
@@ -131,7 +131,9 @@ export async function _demoChemOverview(): Promise<void> {
             table.col('NOCount')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.CONDITIONAL);
             table.col('NOCount')!.setTag(DG.TAGS.COLOR_CODING_CONDITIONAL, '{"0 - 6.25":"#73aff5","6.25 - 12.50":"#ffa500","12.50 - 18.75":"#ff5140","18.75 - 25":"#50af28"}');            
             table.col('RingCount')!.setTag(DG.TAGS.COLOR_CODING_TYPE, DG.COLOR_CODING_TYPE.CONDITIONAL);
-            addCustomHelp('https://datagrok.ai/help/domains/chem/cheminformatics', 'cheminformatics');
+            grok.shell.windows.showHelp = true;
+            //@ts-ignore
+            grok.shell.windows.help.showHelp('/help/domains/chem/cheminformatics');
             DG.chem.currentSketcherType = sketcherType;
         })
         .start();
@@ -173,7 +175,9 @@ export async function _demoSimilarityDiversitySearch(): Promise<void> {
     const layoutString = await _package.files.readAsText('demo_files/similarity_diversity.layout');
     const layout = DG.ViewLayout.fromJson(layoutString);
     tv.loadLayout(layout);
-    addCustomHelp('https://datagrok.ai/help/domains/chem/cheminformatics', 'molecule similarity and diversity search');
+    grok.shell.windows.showHelp = true;
+    //@ts-ignore
+    grok.shell.windows.help.showHelp('/help/domains/chem/cheminformatics');
 }
 
 

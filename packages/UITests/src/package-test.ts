@@ -1,3 +1,6 @@
+import * as DG from 'datagrok-api/dg';
+import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
+
 import './ui/inputs';
 import './ui/forms';
 import './ui/divs';
@@ -42,15 +45,15 @@ import './viewers/filters';
 // import './gui/viewers/scatter-plot-3d';
 // import './gui/viewers/word-cloud';
 
-import * as DG from 'datagrok-api/dg';
-import {runTests, tests} from '@datagrok-libraries/utils/src/test';
-
 export const _package = new DG.Package();
 export {tests};
 
 //name: test
+//input: string category {optional: true}
+//input: string test {optional: true}
+//input: object testContext {optional: true}
 //output: dataframe result
-export async function test(): Promise<DG.DataFrame> {
-  const data = await runTests();
+export async function test(category: string, test: string, testContext: TestContext): Promise<DG.DataFrame> {
+  const data = await runTests({category, test, testContext});
   return DG.DataFrame.fromObjects(data)!;
 }

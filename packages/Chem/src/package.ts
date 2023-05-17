@@ -654,7 +654,11 @@ export function ActivityCliffsEditor(call: DG.FuncCall) {
   ui.dialog({title: 'Activity Cliffs'})
     .add(funcEditor.paramsUI)
     .onOK(async () => {
-      call.func.prepare(funcEditor.funcParams).call(true);
+      const params = funcEditor.funcParams;
+      if (params.activities)
+        call.func.prepare(funcEditor.funcParams).call(true);
+      else
+        grok.shell.error(`Column with activities has not been selected. Table contains no numeric columns.`);
     })
     .show();
 }

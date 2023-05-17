@@ -130,7 +130,7 @@ services:
     profiles: ["all", "db"]
 
   northwind:
-    image: datagrok/demo_db:latest
+    image: datagrok/demo_db_postgres:12-1.1.0
     environment:
       POSTGRES_DB: northwind
     ports:
@@ -145,7 +145,7 @@ services:
     profiles: ["demo", "postgres_northwind", "northwind"]
 
   chembl:
-    image: datagrok/demo_db_chembl:latest
+    image: datagrok/demo_db_chembl:12.9-rdkit2022032-32
     environment:
       POSTGRES_DB: chembl
     ports:
@@ -160,7 +160,7 @@ services:
     profiles: ["demo", "postgres_chembl", "chembl"]
 
   unichem:
-    image: datagrok/demo_db_unichem:latest
+    image: datagrok/demo_db_postgres:12-1.1.0
     environment:
       POSTGRES_DB: unichem
     ports:
@@ -175,7 +175,7 @@ services:
     profiles: ["demo", "postgres_unichem", "unichem"]
 
   starbucks:
-    image: datagrok/demo_db:latest
+    image: datagrok/demo_db_postgres:latest-1.1.0
     environment:
       POSTGRES_DB: starbucks
     ports:
@@ -190,7 +190,7 @@ services:
     profiles: ["demo", "postgres_starbucks", "starbucks"]
 
   world:
-    image: datagrok/demo_db:latest
+    image: datagrok/demo_db_postgres:12-1.1.0
     environment:
       POSTGRES_DB: world
     ports:
