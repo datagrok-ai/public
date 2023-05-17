@@ -157,7 +157,7 @@ export class RichFunctionView extends FunctionView {
     if (!this.controllsDiv) {
       const runButton = this.getRunButton();
       const runButtonWrapper = ui.div([runButton]);
-      const saveButton = ui.bigButton('Save', () => this.saveExperimentalRun(this.funcCall), 'Save uploaded data');
+      const saveButton = ui.bigButton('Save', async () => await this.saveExperimentalRun(this.funcCall), 'Save uploaded data');
       $(saveButton).hide();
 
       this.isUploadMode.subscribe((newValue) => {
@@ -612,9 +612,11 @@ export class RichFunctionView extends FunctionView {
     const tempCall = await(await grok.functions.eval('Sin')).prepare({x: 1}).call();
     expFuncCall.dart.r2 = tempCall.dart.r2;
 
-    let tagsRef = expFuncCall.options['tags'];
-    tagsRef = tagsRef ? tagsRef.push(EXPERIMENTAL_TAG) : [EXPERIMENTAL_TAG];
+    let tagsRef = expFuncCall.options['tags'] as undefined | string[];
+    tagsRef = tagsRef ? [...tagsRef, EXPERIMENTAL_TAG] : [EXPERIMENTAL_TAG];
     expFuncCall.options['tags'] = tagsRef;
+
+    expFuncCall.newId();
 
     await this.saveRun(expFuncCall);
   }
