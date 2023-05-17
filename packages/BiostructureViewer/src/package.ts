@@ -27,8 +27,8 @@ import {BiotrackViewerApp} from './apps/biotrack-viewer-app';
 import {BiostructureAndTrackViewerApp} from './apps/biostructure-and-track-viewer-app';
 import {previewBiostructure, viewBiostructure} from './viewers/view-preview';
 import {BiostructureViewerApp} from './apps/biostructure-viewer-app';
-import {demoBio06UI} from './demo/bio06-docking-ngl';
-import {demoBio07UI} from './demo/bio07-molecule3d-in-grid';
+import {demoBio06NoScript} from './demo/bio06-docking-ngl';
+import {demoBio07NoScript} from './demo/bio07-molecule3d-in-grid';
 import {NglGlDocService} from './utils/ngl-gl-doc-service';
 
 class Package extends DG.Package {
@@ -50,6 +50,13 @@ class Package extends DG.Package {
 }
 
 export const _package = new Package();
+
+//name: init
+//tags: init
+//description:
+export async function init() {
+  _package.logger.debug('BiostructureViewer.initBiostructureViewer() init package start');
+}
 
 //name: pdbCellRenderer
 //tags: cellRenderer
@@ -167,6 +174,7 @@ export function molecule3dNglView4(file: DG.FileInfo): DG.View {
 }
 
 //name: openPdbResidues
+//input: file fi
 export async function openPdbResidues(fi: DG.FileInfo): Promise<void> {
   const ph = await getPdbHelper();
   const pdbStr: string = await fi.readAsString();
@@ -329,21 +337,21 @@ export async function inGridDemo() {
 // -- Demo --
 
 // demoBio06
-//name: demoBioDockingNgl
-//meta.demoPath: Cheminformatics | Docking NGL
+//name: demoBioDockingConformations
+//meta.demoPath: Cheminformatics | Docking Conformations
 //description: Docking ligands along the structure
-//meta.path: /apps/Tutorials/Demo/Cheminformatics/Docking%20NGL
-//meta.isDemoScript: True
-export async function demoBioDockingNgl(): Promise<void> {
-  await demoBio06UI();
+//meta.path: /apps/Tutorials/Demo/Cheminformatics/Docking%20Conformations
+export async function demoBioDockingConformations(): Promise<void> {
+  // Do not use any script for this demo (askalkin, 2023-05-17)
+  //await demoBio06UI();
+  await demoBio06NoScript();
 }
 
-// demoBio07
-//name: demoBioMolecule3dInGrid
-//meta.demoPath: Cheminformatics | Molecule3D in Grid
-//description: View structures PDB in grids
-//meta.path: /apps/Tutorials/Demo/Cheminformatics/Molecule3D%20in%20Grid
-//meta.isDemoScript: True
-export async function demoBioMolecule3dInGrid(): Promise<void> {
-  await demoBio07UI();
-}
+// // demoBio07
+// //name: demoBioProteins
+// //meta.demoPath: Cheminformatics | Proteins
+// //description: View structures PDB in grids
+// //meta.path: /apps/Tutorials/Demo/Cheminformatics/Proteins
+// export async function demoBioProteins(): Promise<void> {
+//   await demoBio07NoScript();
+// }

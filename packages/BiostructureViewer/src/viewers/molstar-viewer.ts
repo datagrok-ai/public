@@ -151,6 +151,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
 
   constructor() {
     super();
+    this.helpUrl = '/help/visualize/viewers/biostructure';
 
     // -- Data --
     this.pdb = this.string(PROPS.pdb, pdbDefault,

@@ -75,6 +75,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
 
   constructor() {
     super();
+    this.helpUrl = '/help/visualize/viewers/ngl';
 
     // -- Data --
     this.pdb = this.string(PROPS.pdb, defaults.pdb,

@@ -5,7 +5,10 @@ import * as DG from 'datagrok-api/dg';
 import {_package} from '../package';
 import * as NGL from 'NGL';
 import {NglGlServiceBase, NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
+import {SignalBinding} from 'signals';
 
+
+const TASK_TIMEOUT: number = 2000;
 
 export class NglGlDocService implements NglGlServiceBase {
   private readonly nglDiv: HTMLDivElement;
@@ -17,13 +20,13 @@ export class NglGlDocService implements NglGlServiceBase {
   private readonly _queueDict: { [key: keyof any]: NglGlTask };
   /** The flag allows {@link _processQueue}() on add item to the queue with {@link render}() */
   private _busy: boolean = false;
+  private nglRenderedBinding: SignalBinding<any>;
 
   constructor() {
     const r = window.devicePixelRatio;
 
     this.nglDiv = ui.div([], 'd4-ngl-viewer');
     this.ngl = new NGL.Stage(this.nglDiv);
-    this.ngl.viewer.signals.rendered.add(this.onNglRendered.bind(this));
 
     // The single NGL component
     this.hostDiv = ui.box(this.nglDiv);
@@ -67,10 +70,16 @@ export class NglGlDocService implements NglGlServiceBase {
 
   private async _processQueue() {
     const queueItem = this._queue.shift();
-    if (!queueItem) return; // in case of empty queue
+    if (!queueItem) {
+      _package.logger.error('BsV: NglGlService._processQueue() queueItem = undefined ');
+      return;
+    } // in case of empty queue
 
     const {key, task} = queueItem!;
-    if (key) delete this._queueDict[key];
+    if (key) {
+      _package.logger.debug('NglGlService._processQueue() ' + `key = ${key.toString()}`);
+      delete this._queueDict[key];
+    }
     try {
       const r = window.devicePixelRatio;
 
@@ -88,15 +97,15 @@ export class NglGlDocService implements NglGlServiceBase {
 
       this.nglDiv.style.width = `${Math.floor(task.props.width) / r}px`;
       this.nglDiv.style.height = `${Math.floor(task.props.height) / r}px`;
-
-      const canvas = this.nglDiv.querySelector('canvas')!;
+      const canvas = this.ngl.viewer.renderer.domElement;
       canvas.width = Math.floor(task.props.width);
       canvas.height = Math.floor(task.props.height);
+      await this.ngl.viewer.setSize(task.props.width, task.props.height);
 
       this.task = task;
       this.key = key;
-      this.emptyPaintingSize = undefined;
-      await this.ngl.viewer.setSize(task.props.width, task.props.height);
+      this.nglRenderedBinding = this.ngl.viewer.signals.rendered.add(this.onNglRendered, this);
+      this.ngl.viewer.render(false);
     } catch (err: any) {
       const errMsg: string = err instanceof Error ? err.message : err.toString();
       _package.logger.error(`BsV:NglGlService._processQueue() no rethrown error: ${errMsg}`, undefined,
@@ -112,7 +121,7 @@ export class NglGlDocService implements NglGlServiceBase {
 
     for (let qI = this._queue.length - 1; qI >= 0; qI--) {
       const {key, task, dt} = this._queue[qI];
-      if ((nowDt - dt) > 400) {
+      if ((nowDt - dt) > TASK_TIMEOUT) {
         // stalled task
         this._queue.splice(qI);
         delete this._queueDict[key!];
@@ -126,20 +135,18 @@ export class NglGlDocService implements NglGlServiceBase {
     }
   }
 
-  private emptyPaintingSize?: number = undefined;
   private task?: NglGlTask = undefined;
   private key?: keyof any = undefined;
 
   private async onNglRendered(): Promise<void> {
+    this.nglRenderedBinding.detach();
+    if (this.task === undefined) return;
+    _package.logger.debug('NglGlService.onNglRendered() ' + `key = ${JSON.stringify(this.key)}`);
     try {
-      if (this.task === undefined) return;
-      _package.logger.debug('NglGlService onAfterRenderHandler() ' + `key = ${JSON.stringify(this.key)}`);
-
       const canvas = this.ngl.viewer.renderer.domElement;
       await this.task.onAfterRender(canvas);
       this.task = undefined;
       this.key = undefined;
-      this.emptyPaintingSize = undefined;
 
       if (this._queue.length > 0) {
         // Schedule processQueue the next item only afterRender has asynchronously completed for the previous one
@@ -150,7 +157,7 @@ export class NglGlDocService implements NglGlServiceBase {
       }
     } catch (err: any) {
       const errMsg: string = err instanceof Error ? err.message : err.toString();
-      _package.logger.error(`BsV:NglGlService.onNglRendered() no rethrown error : ${errMsg}`, undefined,
+      _package.logger.error(`NglGlService.onNglRendered() no rethrown error : ${errMsg}`, undefined,
         err instanceof Error ? err.stack : undefined);
       //throw err; // Do not throw to prevent disabling event/signal handler
     }
