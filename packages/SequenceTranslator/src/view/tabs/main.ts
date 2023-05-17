@@ -8,10 +8,11 @@ import * as rxjs from 'rxjs';
 import {highlightInvalidSubsequence} from '../utils/colored-input/input-painters';
 import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
 import {INPUT_FORMATS} from '../../model/const';
+import {SYNTHESIZERS as FORMAT} from '../../model/const';
 import {SequenceToSmilesConverter} from '../../model/sequence-to-structure-utils/sequence-to-smiles';
 import {SequenceToMolfileConverter} from '../../model/sequence-to-structure-utils/sequence-to-molfile';
-import {convertSequence, UNDEFINED_SEQ_MSG} from '../../model/format-translation/conversion-utils';
-import {drawMolecule} from '../utils/draw-molecule';
+import {convertSequence} from '../../model/format-translation/conversion-utils';
+import {MoleculeImage} from '../utils/molecule-img';
 import {download} from '../../model/helpers';
 import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, DEFAULT_INPUT} from '../const/main-tab';
 import {FormatDetector} from '../../model/parsing-validation/format-detector';
@@ -48,7 +49,7 @@ export class MainTabUI {
   private inputSequenceBase: DG.InputBase;
   private molfile: string;
   private sequence: string;
-  private format: string;
+  private format: FORMAT | null;
 
   async getHtmlElement(): Promise<HTMLDivElement> {
     const sequenceColoredInput = new ColoredTextInput(this.inputSequenceBase, highlightInvalidSubsequence);
@@ -135,24 +136,19 @@ export class MainTabUI {
   }
 
   private async updateMolImg(): Promise<void> {
-    this.moleculeImgDiv.innerHTML = ''; // ??
-    // todo: eliminate after refactoring legacy
-    const format = (new FormatDetector(this.sequence)).getFormat();
-    if (format === null)
-      throw new Error('ST: wrong input format');
-    const indexOfInvalidChar = (new SequenceValidator(this.sequence)).getInvalidCodeIndex(format);
-    const outputSequenceObj = convertSequence(this.sequence, indexOfInvalidChar, format);
-    if (outputSequenceObj.type !== UNDEFINED_SEQ_MSG && outputSequenceObj.Error !== UNDEFINED_SEQ_MSG) {
-      const formCanvasWidth = 500;
-      const formCanvasHeight = 170;
-      await drawMolecule(this.moleculeImgDiv, formCanvasWidth, formCanvasHeight, this.molfile);
-    }
+    const canvasWidth = 500;
+    const canvasHeight = 170;
+    const molImgObj = new MoleculeImage(this.molfile);
+    await molImgObj.drawMolecule(this.moleculeImgDiv, canvasWidth, canvasHeight);
+    // should the canvas be returned from the above function?
+    $(this.moleculeImgDiv).find('canvas').css('float', 'inherit');
   }
 
   // todo: sort mehtods
   private init(): void {
     this.sequence = this.getFormattedSequence();
-    this.format = this.getInputFormat();
+    // this.format = this.getInputFormat();
+    this.format = (new FormatDetector(this.sequence)).getFormat();
 
     // warning: getMolfile relies on this.format, so the order is important
     this.molfile = this.getMolfile();
@@ -163,16 +159,18 @@ export class MainTabUI {
   }
 
   private getMolfile(): string {
+    if (!this.format)
+      return '';
     const molfile = (new SequenceToMolfileConverter(this.sequence, false, this.format)).convert();
     return molfile;
   }
 
-  private getInputFormat(): string {
-    const format = (new FormatDetector(this.sequence)).getFormat();
-    if (format === null)
-      throw new Error('ST: undefined sequence format')
-    return format;
-  }
+  // private getInputFormat(): FORMAT {
+  //   const format = (new FormatDetector(this.sequence)).getFormat();
+  //   if (format === null)
+  //     throw new Error('ST: undefined sequence format')
+  //   return format;
+  // }
 
   private async updateLayout(): Promise<void> {
     this.updateTable();

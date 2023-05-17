@@ -165,7 +165,6 @@ export class SdfTabUI {
     const canvasHeight = 150;
     const molImgObj = new MoleculeImage(molfile);
     await molImgObj.drawMolecule(this.moleculeImgDiv, canvasWidth, canvasHeight);
-    // await drawMolecule(moleculeImgDiv, canvasWidth, canvasHeight, molfile);
     // should the canvas be returned from the above function?
     $(this.moleculeImgDiv).find('canvas').css('float', 'inherit');
   }

@@ -26,6 +26,6 @@ export enum SYNTHESIZERS {
   BIOSPRING = 'BioSpring',
   GCRS = 'GCRS',
   AXOLABS = 'Axolabs',
-  MERMAE_12 = 'Mermade12',
+  MERMADE_12 = 'Mermade12',
   LCMS = 'LCMS',
 };

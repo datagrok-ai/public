@@ -11,9 +11,9 @@ const CENTER = 'center';
 
 // todo: remove strange legacy logic with magic numbers
 export class FormatConverter {
-  constructor(private sequence: string, private sourceFormat: string) { };
+  constructor(private sequence: string, private sourceFormat: FORMAT) { };
 
-  convert(targetFormat: string): string {
+  convertTo(targetFormat: FORMAT): string {
     const codeMapping = formatDictionary[this.sourceFormat][targetFormat];
     if (codeMapping === undefined) {
       throw new Error (`ST: unsupported translation direction ${this.sourceFormat} -> ${targetFormat}`);
@@ -39,18 +39,27 @@ export class FormatConverter {
   }
 
   private simpleConversion(codeMapping: KeyToValue) {
-    const regex = this.buildRegex(Object.keys(codeMapping));
+    const regex = this.buildRegex(sortByReverseLength(Object.keys(codeMapping)));
     return this.sequence.replace(regex, (code) => codeMapping[code]);
   }
 
   private bioSpringToGcrs(codeMapping: KeyToValue): string {
     let count: number = -1;
-    return this.sequence.replace(this.buildRegex(Object.keys(codeMapping)),
-      function(x: string) {
+    return this.sequence.replace(this.buildRegex(Object.keys(codeMapping)), (x: string) => {
         count++;
         return (count == 4) ? codeMapping[x].slice(0, -3) + 'ps' : (count == 14) ? codeMapping[x].slice(0, -2) + 'nps' : codeMapping[x];
       });
   }
+
+  // private gcrsToHelm(codeMapping: KeyToValue): string {
+  //   const regex = this.buildRegex(Object.keys(codeMapping));
+  //   const helm = this.sequence.replace(regex, (match: string) => {
+  //     return ;
+  //   });
+  // }
+
+  // private helmToGcrs(codeMapping: KeyToValue): string {
+  // }
 
   private gcrsToLcms(codeMapping: KeyToValue): string {
     try {
@@ -77,7 +86,7 @@ export class FormatConverter {
 
   private nucleotidesToBioSpring(edgeCodeMapping: KeyToValue, centerCodeMapping: KeyToValue): string {
     let count: number = -1;
-    return this.sequence.replace(this.buildRegex(Object.keys(edgeCodeMapping)), function(x: string) {
+    return this.sequence.replace(this.buildRegex(Object.keys(edgeCodeMapping)), (x: string) => {
       count++;
       return (count > 4 && count < 15) ? centerCodeMapping[x] : edgeCodeMapping[x];
     });
@@ -85,7 +94,7 @@ export class FormatConverter {
 
   private nucleotidesToGCRS(edgeCodeMapping: KeyToValue, centerCodeMapping: KeyToValue): string {
     let count: number = -1;
-    return this.sequence.replace(this.buildRegex(Object.keys(edgeCodeMapping)), function(x: string) {
+    return this.sequence.replace(this.buildRegex(Object.keys(edgeCodeMapping)), (x: string) => {
       count++;
       if (count < 5) return (count == 4) ? edgeCodeMapping[x].slice(0, -3) + 'ps' : edgeCodeMapping[x];
       if (count < 15) return (count == 14) ? centerCodeMapping[x].slice(0, -2) + 'nps' : centerCodeMapping[x];

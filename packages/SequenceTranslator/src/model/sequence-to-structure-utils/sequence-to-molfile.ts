@@ -5,10 +5,11 @@ import * as DG from 'datagrok-api/dg';
 
 import {MonomerSequenceParser} from './monomer-code-parser';
 import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
+import {SYNTHESIZERS as FORMAT} from '../../model/const';
 
 export class SequenceToMolfileConverter {
   constructor(
-    sequence: string, invert: boolean = false, format: string
+    sequence: string, invert: boolean = false, format: FORMAT
   ) {
     this.lib = MonomerLibWrapper.getInstance();
     const codeToNameMap = this.lib.getCodeToNameMap(format);

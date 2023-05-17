@@ -16,39 +16,39 @@ export function convertSequence(sequence: string, indexOfFirstInvalidChar: numbe
     return {
       type: FORMAT.NUCLEOTIDES,
       Nucleotides: sequence,
-      BioSpring: converter.convert(FORMAT.BIOSPRING),
-      GCRS: converter.convert(FORMAT.GCRS),
+      BioSpring: converter.convertTo(FORMAT.BIOSPRING),
+      GCRS: converter.convertTo(FORMAT.GCRS),
     };
   }
   if (format === FORMAT.BIOSPRING) {
     const converter = new FormatConverter(sequence, FORMAT.BIOSPRING);
     return {
       type: FORMAT.BIOSPRING + ' ' + TECHNOLOGIES.ASO_GAPMERS,
-      Nucleotides: converter.convert(FORMAT.NUCLEOTIDES),
+      Nucleotides: converter.convertTo(FORMAT.NUCLEOTIDES),
       BioSpring: sequence,
-      GCRS: converter.convert(FORMAT.GCRS),
+      GCRS: converter.convertTo(FORMAT.GCRS),
     };
   }
   if (format === FORMAT.GCRS) {
     const converter = new FormatConverter(sequence, FORMAT.GCRS);
     return {
       type: FORMAT.GCRS + ' ' + TECHNOLOGIES.ASO_GAPMERS,
-      Nucleotides: converter.convert(FORMAT.NUCLEOTIDES),
-      BioSpring: converter.convert(FORMAT.BIOSPRING),
-      Axolabs: converter.convert(FORMAT.AXOLABS),
-      Mermade12: converter.convert(FORMAT.MERMADE_12),
+      Nucleotides: converter.convertTo(FORMAT.NUCLEOTIDES),
+      BioSpring: converter.convertTo(FORMAT.BIOSPRING),
+      Axolabs: converter.convertTo(FORMAT.AXOLABS),
+      Mermade12: converter.convertTo(FORMAT.MERMADE_12),
       GCRS: sequence,
-      LCMS: converter.convert(FORMAT.LCMS),
+      LCMS: converter.convertTo(FORMAT.LCMS),
     };
   }
   if (format === FORMAT.AXOLABS) {
     const converter = new FormatConverter(sequence, FORMAT.AXOLABS);
     return {
       type: FORMAT.AXOLABS + ' ' + TECHNOLOGIES.SI_RNA,
-      Nucleotides: converter.convert(FORMAT.NUCLEOTIDES),
-      BioSpring: converter.convert(FORMAT.BIOSPRING),
+      Nucleotides: converter.convertTo(FORMAT.NUCLEOTIDES),
+      BioSpring: converter.convertTo(FORMAT.BIOSPRING),
       Axolabs: sequence,
-      GCRS: converter.convert(FORMAT.GCRS),
+      GCRS: converter.convertTo(FORMAT.GCRS),
     };
   }
   if (format === FORMAT.MERMADE_12) {
