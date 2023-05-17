@@ -1,8 +1,6 @@
 import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import { category, test, before } from '@datagrok-libraries/utils/src/test';
-import { defaulCheckersSeq, expectDeepEqual } from '@datagrok-libraries/utils/src/expect'
+import {category, test, before} from '@datagrok-libraries/utils/src/test';
+import {defaulCheckersSeq, expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 
 // TODO: move to the lib later?
 function throwTester(fn: Function, expectedMessage?: any) {
@@ -12,12 +10,12 @@ function throwTester(fn: Function, expectedMessage?: any) {
   } catch (e) {
     err = e;
   }
-  if (!expectedMessage && !err) {
+  if (!expectedMessage && !err)
     return;
-  }
-  if (err?.message === expectedMessage) {
+
+  if (err?.message === expectedMessage)
     return;
-  }
+
   throw new Error(`Expected error message ${expectedMessage}, got ${err?.message}`);
 }
 
@@ -28,7 +26,7 @@ category('expectDeepEqual', async () => {
   test('null equal values', async () => {
     throwTester(
       () => {
-        expectDeepEqual(null, undefined)
+        expectDeepEqual(null, undefined);
       });
   });
 
@@ -36,7 +34,7 @@ category('expectDeepEqual', async () => {
     throwTester(
       () => {
         expectDeepEqual(true, true);
-      }, );
+      } );
   });
 
   test('boolean non-equal values', async () => {
@@ -92,7 +90,7 @@ category('expectDeepEqual', async () => {
   test('float equality tolerance', async () => {
     throwTester(
       () => {
-        expectDeepEqual(1.09, 1.01, { floatTolerance: 0.1 });
+        expectDeepEqual(1.09, 1.01, {floatTolerance: 0.1});
       });
   });
 
@@ -106,73 +104,79 @@ category('expectDeepEqual', async () => {
   test('global prefix', async () => {
     throwTester(
       () => {
-        expectDeepEqual('asdf', 1, { prefix: 'My Prefix' });
+        expectDeepEqual('asdf', 1, {prefix: 'My Prefix'});
       }, 'My Prefix: Type mismatch or no checker defined: expected 1, got asdf');
   });
 
   test('array equal', async () => {
     throwTester(
       () => {
-        expectDeepEqual(['asdf', 1.09, null], ['asdf', 1.01, null], { floatTolerance: 0.1 });
+        expectDeepEqual(['asdf', 1.09, null], ['asdf', 1.01, null], {floatTolerance: 0.1});
       });
   });
 
   test('array different lenght', async () => {
     throwTester(
       () => {
-        expectDeepEqual(['asdf', 1.09, null, null], ['asdf', 1.01, null], { floatTolerance: 0.1 });
+        expectDeepEqual(['asdf', 1.09, null, null], ['asdf', 1.01, null], {floatTolerance: 0.1});
       }, 'Arrays are of different length: actual array length is 4 and expected array length is 3');
   });
 
   test('array different content', async () => {
     throwTester(
       () => {
-        expectDeepEqual(['asdf', 1.09, null], ['fdsa', 2.01, true], { floatTolerance: 0.1 });
+        expectDeepEqual(['asdf', 1.09, null], ['fdsa', 2.01, true], {floatTolerance: 0.1});
       },
       `['0']: Expected fdsa, got asdf\n` +
         `['1']: Expected 2.01, got 1.09 (tolerance = 0.1)\n` +
-        `['2']: Type mismatch or no checker defined: expected true, got null`)
+        `['2']: Type mismatch or no checker defined: expected true, got null`);
   });
 
   test('array different content limit error report', async () => {
     throwTester(
       () => {
-        expectDeepEqual(['asdf', 1.09, null], ['fdsa', 2.01, true], { floatTolerance: 0.1, maxErrorsReport: 1 });
+        expectDeepEqual(['asdf', 1.09, null], ['fdsa', 2.01, true], {floatTolerance: 0.1, maxErrorsReport: 1});
       },
-      `['0']: Expected fdsa, got asdf`)
+      `['0']: Expected fdsa, got asdf`);
   });
 
   test('array nested equal', async () => {
     throwTester(
       () => {
-        expectDeepEqual([['asdf', 1.09], [null, 1], undefined], [['asdf', 1.01], [null, 1], undefined], { floatTolerance: 0.1 });
+        expectDeepEqual(
+          [['asdf', 1.09], [null, 1], undefined],
+          [['asdf', 1.01], [null, 1], undefined],
+          {floatTolerance: 0.1});
       });
   });
 
   test('array nested different', async () => {
     throwTester(
       () => {
-        expectDeepEqual([['asdf', 1.09], [null, true], undefined], [['asdf', 2.01], [null, true], 0], { floatTolerance: 0.1 });
+        expectDeepEqual(
+          [['asdf', 1.09], [null, true], undefined],
+          [['asdf', 2.01], [null, true], 0],
+          {floatTolerance: 0.1});
       },
       `['1'].['0']: Expected 2.01, got 1.09 (tolerance = 0.1)\n` +
         `['2']: Type mismatch or no checker defined: expected 0, got undefined`);
   });
 
   test('object equal', async () => {
-    const o1 = { a: 1.01, b: true, c: null, d: 'asdf'}
-    const o2 = { a: 1.09, b: true, c: null, d: 'asdf'}
+    const o1 = {a: 1.01, b: true, c: null, d: 'asdf'};
+    const o2 = {a: 1.09, b: true, c: null, d: 'asdf'};
     throwTester(
       () => {
-        expectDeepEqual(o1, o2, { floatTolerance: 0.1 });
+        expectDeepEqual(o1, o2, {floatTolerance: 0.1});
       });
   });
 
   test('object non-equal', async () => {
-    const o1 = { a: 1.01, b: false, c: null, d: 'asdf'}
-    const o2 = { a: 2.01, b: true, c: true, d: 'fdsa'}
+    const o1 = {a: 1.01, b: false, c: null, d: 'asdf'};
+    const o2 = {a: 2.01, b: true, c: true, d: 'fdsa'};
     throwTester(
       () => {
-        expectDeepEqual(o1, o2, { floatTolerance: 0.1 });
+        expectDeepEqual(o1, o2, {floatTolerance: 0.1});
       },
       `['a']: Expected 2.01, got 1.01 (tolerance = 0.1)\n` +
         `['b']: Expected true, got false\n` +
@@ -181,24 +185,24 @@ category('expectDeepEqual', async () => {
   });
 
   test('object nested equal', async () => {
-    const o1 = { a: {a: 1.01, b: true, c: null }, d: 'asdf', f: [{a: 1.1},{b:2}]}
-    const o2 = { a: {a: 1.09, b: true, c: null }, d: 'asdf', f: [{a: 1.1},{b:2}]}
+    const o1 = {a: {a: 1.01, b: true, c: null}, d: 'asdf', f: [{a: 1.1}, {b: 2}]};
+    const o2 = {a: {a: 1.09, b: true, c: null}, d: 'asdf', f: [{a: 1.1}, {b: 2}]};
     throwTester(
       () => {
-        expectDeepEqual(o1, o2, { floatTolerance: 0.1 });
+        expectDeepEqual(o1, o2, {floatTolerance: 0.1});
       });
   });
 
   test('object nested non-equal', async () => {
-    const o1 = { a: {a: 1.01, b: true, c: null }, d: 'asdf', f: [{a: 1.1},{b:2}]}
-    const o2 = { a: {a: 1.09, b: true, c: 1 }, d: 'asdf', f: [{a: 1.1},{b:4}]}
+    const o1 = {a: {a: 1.01, b: true, c: null}, d: 'asdf', f: [{a: 1.1}, {b: 2}]};
+    const o2 = {a: {a: 1.09, b: true, c: 1}, d: 'asdf', f: [{a: 1.1}, {b: 4}]};
     throwTester(
       () => {
-        expectDeepEqual(o1, o2, { floatTolerance: 0.1 });
+        expectDeepEqual(o1, o2, {floatTolerance: 0.1});
       },
       `['c'].['a']: Type mismatch or no checker defined: expected 1, got null\n` +
         `['b'].['1'].['f']: Expected 4, got 2`);
-  })
+  });
 
   test('dataframe equal', async () => {
     const c1 = [true, false];
@@ -220,7 +224,7 @@ category('expectDeepEqual', async () => {
     ]);
     throwTester(
       () => {
-        expectDeepEqual(df1, df2, { floatTolerance: 0.1 });
+        expectDeepEqual(df1, df2, {floatTolerance: 0.1});
       });
   });
 
@@ -261,14 +265,14 @@ category('expectDeepEqual', async () => {
     const o1 = {
       a: 1.01,
       b: df1,
-    }
+    };
     const o2 = {
       a: 1.09,
       b: df2,
-    }
+    };
     throwTester(
       () => {
-        expectDeepEqual(o1, o2, { floatTolerance: 0.1 });
+        expectDeepEqual(o1, o2, {floatTolerance: 0.1});
       });
   });
 
@@ -284,14 +288,14 @@ category('expectDeepEqual', async () => {
     const o1 = {
       a: 1.01,
       b: df1,
-    }
+    };
     const o2 = {
       a: 1.09,
       b: df2,
-    }
+    };
     throwTester(
       () => {
-        expectDeepEqual(o1, o2, { floatTolerance: 0.1 });
+        expectDeepEqual(o1, o2, {floatTolerance: 0.1});
       },
       `['0'].['b'].['c1'].['b']: Expected 2.1, got 1.1 (tolerance = 0.1)\n` +
         `['0'].['b'].['c1'].['b']: Expected 3.1, got 2.1 (tolerance = 0.1)`);
@@ -301,12 +305,12 @@ category('expectDeepEqual', async () => {
     const o1 = {};
     const o2 = {};
     const predicate = () => true;
-    const checker = () => {throw new Error('custom checker error')};
+    const checker = () => {throw new Error('custom checker error');};
     throwTester(
       () => {
-        expectDeepEqual(o1, o2, { checkersSeq: [{name: 'custom', predicate, checker}, ...defaulCheckersSeq] });
+        expectDeepEqual(o1, o2, {checkersSeq: [{name: 'custom', predicate, checker}, ...defaulCheckersSeq]});
       },
-      'custom checker error'
+      'custom checker error',
     );
   });
 });

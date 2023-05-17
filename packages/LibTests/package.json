@@ -1,0 +1,49 @@
+{
+  "name": "@datagrok/lib-tests",
+  "friendlyName": "Lib Tests",
+  "version": "1.0.0",
+  "description": "Automated tests for libraries",
+  "dependencies": {
+    "datagrok-api": "latest",
+    "cash-dom": "latest",
+    "dayjs": "latest",
+    "@datagrok-libraries/utils": "latest",
+    "rxjs": "^6.6.7",
+    "wu": "latest"
+  },
+  "devDependencies": {
+    "@types/wu": "^2.1.42",
+    "@typescript-eslint/eslint-plugin": "^5.26.0",
+    "@typescript-eslint/parser": "^5.26.0",
+    "eslint": "^8.16.0",
+    "eslint-config-google": "^0.14.0",
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest"
+  },
+  "scripts": {
+    "link-all": "npm link @datagrok-libraries/utils @datagrok-libraries/ml datagrok-api",
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
+    "debug-lib-tests": "webpack && grok publish",
+    "release-lib-tests": "webpack && grok publish --release",
+    "build-lib-tests": "webpack",
+    "build": "webpack",
+    "debug-lib-tests-dev": "webpack && grok publish dev",
+    "release-lib-tests-dev": "webpack && grok publish dev --release",
+    "debug-lib-tests-local": "webpack && grok publish local",
+    "release-lib-tests-local": "webpack && grok publish local --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:datagrok-ai/public.git",
+    "directory": "packages/LibTests"
+  }
+}
