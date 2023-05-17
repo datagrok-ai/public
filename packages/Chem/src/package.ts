@@ -718,15 +718,15 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 //top-menu: Chem | Analyze | Structural Alerts...
 //name: Structural Alerts
 //input: dataframe table [Input data table] {caption: Table}
-//input: column molecules {caption: Molecules; type:categorical; semType: Molecule}
-//input: bool pains {caption: PAINS; default: true}
-//input: bool bms {caption: BMS; default: true}
-//input: bool sureChembl {caption: SureChEMBL; default: true}
-//input: bool mlsmr {caption: MLSMR; default: true}
-//input: bool dandee {caption: Dandee; default: true}
-//input: bool inpharmatica {caption: Inpharmatica; default: true}
-//input: bool lint {caption: LINT; default: true}
-//input: bool glaxo {caption: Glaxo; default: true}
+//input: column molecules {caption: Molecules; type: categorical; semType: Molecule}
+//input: bool pains {caption: PAINS; default: true, description: "Pan Assay Interference Compounds filters"}
+//input: bool bms {caption: BMS; default: false, description: "Bristol-Myers Squibb HTS Deck filters"}
+//input: bool sureChembl {caption: SureChEMBL; default: false, description: "MedChem unfriendly compounds from SureChEMBL"}
+//input: bool mlsmr {caption: MLSMR; default: false, description: "NIH MLSMR Excluded Functionality Filters"}
+//input: bool dandee {caption: Dandee; default: false, description: "University of Dundee NTD Screening Library filters"}
+//input: bool inpharmatica {caption: Inpharmatica; default: false, "Inpharmatica filters""}
+//input: bool lint {caption: LINT; default: false, description: "Pfizer LINT filters"}
+//input: bool glaxo {caption: Glaxo; default: false, description: "Glaxo Wellcome Hard filters"}
 export async function structuralAlertsTopMenu(table: DG.DataFrame, col: DG.Column, pains: boolean, bms: boolean,
   sureChembl: boolean, mlsmr: boolean, dandee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
   ): Promise<void> {
@@ -735,7 +735,6 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, col: DG.Colum
 
   const ruleSet: RuleSet = {'PAINS': pains, 'BMS': bms, 'SureChEMBL': sureChembl, 'MLSMR': mlsmr,
     'Dandee': dandee, 'Inpharmatica': inpharmatica, 'LINT': lint, 'Glaxo': glaxo};
-  // const rdkitModule = chemCommonRdKit.getRdKitModule();
   const rdkitService = await chemCommonRdKit.getRdKitService();
   const alertsDf = await grok.data.loadTable(chemCommonRdKit.getRdKitWebRoot() + 'files/alert-collection.csv');
 
