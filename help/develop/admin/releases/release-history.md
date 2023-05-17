@@ -67,7 +67,7 @@ See also:
 * GROK-12854: Bio | Demo: Helm (WIP)
 * (Improvement) GROK-12547: Bio | Tools: Fix detectMacromolecule aggressivity (WIP)
 * (Enhancement) [#1798](https://github.com/datagrok-ai/public/issues/1669098656): Making columns created from chem descriptors auto updatable. 
-* (Improvement) GROK-12864: Add <is null> and <is not null> operators for patterns (WIP)
+* (Improvement) GROK-12864: Add `<is null>` and `<is not null>` operators for patterns (WIP)
 * GROK-12866: Core: Harmonize package meta 
 * GROK-12869: Create test class and test cases 
 * GROK-12870: Create test queries 
