@@ -11,9 +11,10 @@ import {historyUtils} from '../../history-utils';
 import '../css/pipeline-view.css';
 import {RunComparisonView} from './run-comparison-view';
 import {CARD_VIEW_TYPE} from './shared/consts';
+import {getFuncFriendlyName} from './shared/utils';
 
 export class PipelineView extends ComputationView {
-  public steps = {} as {[scriptNqName: string]: { editor: string, view: FunctionView }};
+  public steps = {} as {[scriptNqName: string]: { func: DG.Func, editor: string, view: FunctionView }};
   public onStepCompleted = new Subject<DG.FuncCall>();
 
   private stepTabs: DG.TabControl | null = null;
@@ -89,6 +90,9 @@ export class PipelineView extends ComputationView {
       return stepScript;
     });
     const loadedScripts = await Promise.all(stepScripts) as DG.Script[];
+    loadedScripts.forEach((loadedScript) => {
+      this.steps[loadedScript.nqName].func = loadedScript;
+    });
     this.root.classList.remove('ui-panel');
 
     const editorFuncs = {} as {[editor: string]: DG.Func};
@@ -175,7 +179,7 @@ export class PipelineView extends ComputationView {
     const tabs = Object.entries(this.steps)
       .reduce((prev, [funcName, step]) => ({
         ...prev,
-        [funcName]: step.view.root,
+        [getFuncFriendlyName(step.func) ?? step.func.name]: step.view.root,
       }), {} as Record<string, HTMLElement>);
 
     const pipelineTabs = ui.tabControl(tabs);
