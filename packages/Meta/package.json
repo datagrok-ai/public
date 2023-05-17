@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.3.53",
+  "version": "3.3.54",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -2735,6 +2735,19 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/UITests"
+      }
+    },
+    "curves": {
+      "dependencies": {
+        "1.0.1": {
+          "datagrok-api": "^1.15.0"
+        }
+      },
+      "description": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/Curves"
       }
     }
   }
