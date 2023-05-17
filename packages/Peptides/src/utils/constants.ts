@@ -16,6 +16,7 @@ export enum LST_COLUMN_NAMES {
   MEAN_DIFFERENCE = 'Mean difference',
   P_VALUE = 'P-Value',
   RATIO = 'Ratio',
+  CLUSTER = 'Cluster',
 }
 
 export enum CATEGORIES {

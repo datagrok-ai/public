@@ -12,7 +12,8 @@ import {
 } from '../workers/distance-matrix-calculator';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {DistanceFunctionNames} from '../workers/distance-functions';
+import {MmDistanceFunctionsNames} from
+  '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 type TreeLeafDict = { [nodeName: string]: NodeType };
 type DataNodeDict = { [nodeName: string]: number };
 type NodeNameCallback = (nodeName: string) => void;
@@ -471,19 +472,18 @@ export class TreeHelper implements ITreeHelper {
 
     const distanceMatrixWorker = new DistanceMatrixWorker();
     const columns = colNames.map((name) => df.getCol(name));
-    const hammingColumns: string[] = [];
     for (const col of columns) {
       let values: Float32Array;
+      let isUsingNeedlemanWunsch: boolean = false;
       if (col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) {
         values = await distanceMatrixWorker.calc(col.getRawData(), 'numericDistance');
-      } else if (col.semType ==='Macromolecule') {
+      } else if (col.semType === DG.SEMTYPE.MACROMOLECULE) {
         const uh = new UnitsHandler(col);
         // Use Hamming distance when sequences are aligned
-        let seqDistanceFunction: DistanceFunctionNames<string> = 'levenstein';
-        if (uh.isMsa()) {
-          seqDistanceFunction = 'hamming';
-          hammingColumns.push(col.name);
-        }
+        const seqDistanceFunction: MmDistanceFunctionsNames = uh.getDistanceFunctionName();
+
+        if (seqDistanceFunction === MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH)
+          isUsingNeedlemanWunsch = true;
         values = await distanceMatrixWorker.calc(col.toList(), seqDistanceFunction);
       } else { throw new TypeError('Unsupported column type'); }
 
@@ -493,6 +493,9 @@ export class TreeHelper implements ITreeHelper {
           out.normalize();
           if (method === DistanceMetric.Euclidean)
             out.square();
+        } else if (isUsingNeedlemanWunsch) {
+          // we need to normalize as needleman wunsch returns negative and positive values as well
+          out.normalize();
         }
       } else {
         let newMat: DistanceMatrix | null = new DistanceMatrix(values);
@@ -508,8 +511,6 @@ export class TreeHelper implements ITreeHelper {
         newMat = null;
       }
     }
-    if (hammingColumns.length > 0)
-      grok.shell.info(`Using hamming distance for columns: ${hammingColumns.join(', ')}`);
     distanceMatrixWorker.terminate();
 
     if (method === DistanceMetric.Euclidean && columns.length > 1)

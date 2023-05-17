@@ -2,7 +2,7 @@
 import * as DG from 'datagrok-api/dg';
 
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
-import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ALIGNMENT, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 //@ts-ignore: there are no types for this library
 import Aioli from '@biowasm/aioli';
 
@@ -25,7 +25,8 @@ function _stringsToFasta(sequences: string[]): string {
  *
  * @param {DG.Column} srcCol Column with sequences.
  * @param {boolean} isAligned Whether the column is aligned.
- * @param {string} unUsedName
+ * @param {string | undefined} unUsedName
+ * @param {DG.Column | null} clustersCol Column with clusters.
  * @return {Promise<DG.Column>} Aligned sequences.
  */
 export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = false, unUsedName: string = '',
@@ -40,7 +41,7 @@ export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = 
   if (clustersCol.type != DG.COLUMN_TYPE.STRING)
     clustersCol = clustersCol.convertTo(DG.TYPE.STRING);
   clustersCol.compact();
-  
+
   //TODO: use fixed-size inner arrays, but first need to expose the method to get each category count
   const clustersColCategories = clustersCol.categories;
   const clustersColData = clustersCol.getRawData();
@@ -61,8 +62,6 @@ export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = 
   for (let clusterIdx = 0; clusterIdx < clustersColCategories.length; ++clusterIdx) {
     const clusterSequences = fastaSequences[clusterIdx];
     const fasta = _stringsToFasta(clusterSequences);
-    
-    console.log(['fasta.length =', fasta.length]);
 
     await CLI.fs.writeFile(fastaInputFilename, fasta);
     const output = await CLI.exec(`kalign ${fastaInputFilename} -f fasta -o ${fastaOutputFilename}`);
@@ -82,8 +81,7 @@ export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = 
   // units
   const srcUnits = srcCol.getTag(DG.TAGS.UNITS);
   //aligned
-  const srcAligned = srcCol.getTag(bioTAGS.aligned);
-  const tgtAligned = srcAligned + '.MSA';
+  const tgtAligned = ALIGNMENT.SEQ_MSA;
   //alphabet
   const srcAlphabet = srcCol.getTag(bioTAGS.alphabet);
 

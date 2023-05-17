@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {_package} from '../package';
 import {hierarchicalClusteringUI} from '../utils/hierarchical-clustering';
-import { DistanceMetric } from '@datagrok-libraries/bio/src/trees';
+import {DistanceMetric} from '@datagrok-libraries/bio/src/trees';
 
 export class HierarchicalClusteringApp {
   private viewed: boolean = false;

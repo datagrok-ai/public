@@ -16,6 +16,7 @@ import {NodeType} from '@datagrok-libraries/bio/src/trees';
 import {IDendrogramService} from '@datagrok-libraries/bio/src/trees/dendrogram';
 import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {HierarchicalClusteringSequencesApp} from './apps/hierarchical-clustering-sequences-app';
+import {heatmapDemo} from './demos/heatmapDemo';
 
 export const _package = new DG.Package();
 
@@ -260,3 +261,13 @@ export async function previewNewick(file: DG.FileInfo) {
 export async function hierarchicalClustering(): Promise<void> {
   hierarchicalClusteringDialog();
 }
+
+// -- Demo --
+
+//name: heatMapDemo
+// eslint-disable-next-line max-len
+//description: Heatmap is a spreadsheet (grid) that contains colors instead of numbers and strings. For numerical data, the higher values are colored red, and the lower ones appear blue. The central value is assigned a light color so that darker colors indicate a larger distance from the center. For categorical data, each possible value is set to one color from a qualitative palette.
+//meta.demoPath: Viewers | General | Heatmap
+export async function _heatMapDemo() {
+  await heatmapDemo();
+};

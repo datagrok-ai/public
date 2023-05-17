@@ -4,6 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 import {getSimilarityFromDistance} from '../distance-metrics-methods';
 import { Subject } from 'rxjs';
+import {mmDistanceFunctions, MmDistanceFunctionsNames} from '../macromolecule-distance-functions';
+import {calcDistanceMatrix, normalize} from '@datagrok-libraries/utils/src/vector-operations';
+import {createMMDistanceWorker} from '../workers/mmdistance-worker-creator';
 import '../../css/styles.css';
 
 export let activityCliffsIdx = 0;
@@ -67,7 +70,6 @@ interface ISaliLims {
 }
 
 const filterCliffsSubj = new Subject<string>();
-const nonNormalizedDistances = ['Levenshtein'];
 const LINES_DF_ACT_DIFF_COL_NAME = 'act_diff';
 const LINES_DF_SALI_COL_NAME = 'sali';
 const LINES_DF_SIM_COL_NAME = 'sim';
@@ -108,8 +110,15 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   for (const col of coordinates)
     df.columns.add(col);
 
-  const simArr = await createSimilaritiesMatrix(dimensionalityReduceCol, distance,
-    !distance || nonNormalizedDistances.includes(similarityMetric), simMatrixFunc);
+  // UMAP does not return the distance, therefore, we will have to calculate it
+  // in case if the macromolecule column is selected
+  let recalculatedDistances = distance;
+  if (Object.values(MmDistanceFunctionsNames).map((a) => a.toString()).includes(similarityMetric)) {
+    recalculatedDistances =
+     await createMMDistanceWorker(seqCol, similarityMetric as MmDistanceFunctionsNames);
+  }
+  const simArr = await createSimilaritiesMatrix(dimensionalityReduceCol, recalculatedDistances,
+    !!recalculatedDistances, simMatrixFunc);
 
   const cliffsMetrics: IActivityCliffsMetrics = getActivityCliffsMetrics(simArr, similarityLimit, activities);
 
@@ -319,7 +328,7 @@ async function createSimilaritiesMatrix(col: DG.Column, distance: Matrix, countF
   const dim = col.length;
   let simArr: (DG.Column | null)[] = Array(dim - 1);
 
-  if (countFromDistance) {
+  if (!countFromDistance) {
     simArr = await simMatrixFunc(dim, col, dfSeq, 'seq', simArr);
   } else {
     getSimilaritiesFromDistances(dim, distance, simArr);

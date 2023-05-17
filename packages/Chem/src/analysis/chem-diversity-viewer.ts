@@ -12,6 +12,7 @@ import {ChemSearchBaseViewer, DIVERSITY} from './chem-search-base-viewer';
 import { malformedDataWarning } from '../utils/malformed-data-utils';
 import { getRdKitModule } from '../package';
 import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import { getMolSafe } from '../utils/mol-creation_rdkit';
 
 export class ChemDiversityViewer extends ChemSearchBaseViewer {
   renderMolIds: number[];
@@ -98,30 +99,31 @@ export async function chemDiversitySearch(
   moleculeColumn: DG.Column, similarity: (a: BitArray, b: BitArray) => number,
   limit: number, fingerprint: Fingerprint, tooltipUse: boolean = false): Promise<number[]> {
 
-  let fingerprintArray: (BitArray | null)[] = [];
+  let fingerprintArray: (BitArray | null)[];
   if (tooltipUse) {
     const size = Math.min(moleculeColumn.length, 1000);
-    const randomIndexes = Array.from({length: size}, () => Math.floor(Math.random() * moleculeColumn.length));
+    fingerprintArray = new Array<BitArray | null>(size).fill(null);
+    const randomIndexes = Array.from({ length: size }, () => Math.floor(Math.random() * moleculeColumn.length));
     for (let i = 0; i < randomIndexes.length; ++i) {
-      let mol: RDMol | null = null;
-      try {
-        mol = getRdKitModule().get_mol(moleculeColumn.get(randomIndexes[i]));
-        let fp = mol.get_morgan_fp_as_uint8array(JSON.stringify({
-          radius: defaultMorganFpRadius,
-          nBits: defaultMorganFpLength,
-        }));
-        fingerprintArray[i] = rdKitFingerprintToBitArray(fp);
-      } catch (e) {
-      } finally {
-        mol?.delete();
+      let mol: RDMol | null = getMolSafe(moleculeColumn.get(randomIndexes[i]), {}, getRdKitModule()).mol;
+      if (mol && mol.is_valid()) {
+        try {
+          let fp = mol.get_morgan_fp_as_uint8array(JSON.stringify({
+            radius: defaultMorganFpRadius,
+            nBits: defaultMorganFpLength,
+          }));
+          fingerprintArray[i] = rdKitFingerprintToBitArray(fp);
+        } catch (e) {
+        } 
       }
+      mol?.delete();
     }
   } else {
-    fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint);
+    fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint, true, false);
   }
   const indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => !!f && !f.allFalse);
   if (!tooltipUse)
-    malformedDataWarning(fingerprintArray, moleculeColumn.dataFrame);
+    malformedDataWarning(fingerprintArray, moleculeColumn);
   limit = Math.min(limit, indexes.length);
 
   const diverseIndexes = getDiverseSubset(indexes.length, limit,

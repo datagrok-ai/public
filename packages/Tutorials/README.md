@@ -20,3 +20,4 @@ If you want to disable a track, set its property to *false*.
 See also:
 
 - [How to write tutorials](https://datagrok.ai/help/develop/how-to/write-tutorials)
+- [How to write demo scripts](https://datagrok.ai/help/develop/how-to/write-demo-scripts)

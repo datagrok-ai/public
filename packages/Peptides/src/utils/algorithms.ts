@@ -5,12 +5,12 @@ import {getTypedArrayConstructor} from './misc';
 type MutationCliffInfo = {pos: string, seq1monomer: string, seq2monomer: string, seq1Idx: number, seq2Idx: number};
 
 export function findMutations(activityArray: type.RawData, monomerInfoArray: type.RawColumn[],
-  settings: type.PeptidesSettings = {}): type.SubstitutionsInfo {
+  settings: type.PeptidesSettings = {}): type.MutationCliffs {
   const nCols = monomerInfoArray.length;
   if (nCols == 0)
     throw new Error(`PepAlgorithmError: Couldn't find any column of semType '${C.SEM_TYPES.MONOMER}'`);
 
-  const substitutionsInfo: type.SubstitutionsInfo = new Map();
+  const substitutionsInfo: type.MutationCliffs = new Map();
   const nRows = activityArray.length;
   for (let seq1Idx = 0; seq1Idx < nRows - 1; seq1Idx++) {
     for (let seq2Idx = seq1Idx + 1; seq2Idx < nRows; seq2Idx++) {

@@ -4,7 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {UnitsHandler} from './units-handler';
-import {getSplitterForColumn, getStats, NOTATION, SeqColStats, SplitterFunc, TAGS} from './macromolecule';
+import {SeqColStats, SplitterFunc} from './macromolecule/types';
+import {NOTATION, TAGS} from './macromolecule/consts';
+import {getSplitterForColumn, getStats} from './macromolecule/utils';
 
 /** Class for handling conversion of notation systems in Macromolecule columns */
 export class NotationConverter extends UnitsHandler {
@@ -56,14 +58,14 @@ export class NotationConverter extends UnitsHandler {
    */
   private getHelmWrappers(): string[] {
     const prefix = (this.isDna()) ? 'DNA1{' :
-      (this.isRna()) ? 'RNA1{' :
+      (this.isRna() || this.isHelmCompatible()) ? 'RNA1{' :
         (this.isPeptide()) ? 'PEPTIDE1{' :
           'Unknown'; // this case should be handled as exceptional
 
     if (prefix === 'Unknown')
       throw new Error('Neither peptide, nor nucleotide');
 
-    const postfix = '}$$$';
+    const postfix = '}$$$$';
     const leftWrapper = (this.isDna()) ? 'D(' :
       (this.isRna()) ? 'R(' : ''; // no wrapper for peptides
     const rightWrapper = (this.isDna() || this.isRna()) ? ')P' : ''; // no wrapper for peptides

@@ -299,16 +299,25 @@ export function injectTreeForGridUI2(
 
     renderer.selections = selections;
   }
+  // Variable to track if filter is changed and prevent the sorting change event
+  let filterChangeCounter = 0;
 
   function dataFrameOnFilterChanged(value: any) {
     // TODO: Filter newick tree
     console.debug('Dendrogram: injectTreeForGridUI2() grid.dataFrame.onFilterChanged()');
-
+    filterChangeCounter += 1;
     // to prevent nested fire event in event handler
-    window.setTimeout(() => { alignGridWithTree(); }, 0);
+    window.setTimeout(() => {
+      alignGridWithTree();
+    }, 0);
   }
 
   function dfOnSortingChanged(value?: any) {
+    // If the reordering is caused by the filter change, return
+    if (filterChangeCounter > 0) {
+      filterChangeCounter -= 1;
+      return;
+    }
     const treeOverlay = ui.div();
     treeOverlay.style.width = treeNb.root!.style.width;
     treeOverlay.style.height = treeNb.root!.style.height;
@@ -339,6 +348,7 @@ export function injectTreeForGridUI2(
   let sortingSub = grid.onRowsSorted.subscribe(dfOnSortingChanged);
   subs.push(sortingSub);
 
+  subs.push(grid.onRowsResized.subscribe(dataFrameOnFilterChanged));
   subs.push(grid.dataFrame.onCurrentRowChanged.subscribe(dataFrameOnCurrentRowChanged));
   subs.push(grid.dataFrame.onMouseOverRowChanged.subscribe(dataFrameOnMouseOverRowChanged));
   subs.push(grid.dataFrame.onSelectionChanged.subscribe(dataFrameOnSelectionChanged));

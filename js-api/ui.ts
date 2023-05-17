@@ -5,7 +5,7 @@
 
 import {ElementOptions, IndexPredicate} from './src/const';
 import {Viewer} from './src/viewer';
-import {VirtualView} from './src/views/view';
+import {View, VirtualView} from './src/views/view';
 import {
   Accordion,
   Dialog,
@@ -1002,6 +1002,11 @@ export class ObjectHandler {
   /** Renders properties list for the item. */
   renderProperties(x: any, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
+  }
+
+  /** Renders preview list for the item. */
+  async renderPreview(x: any, context: any = null): Promise<View> {
+    return View.create();
   }
 
   /** Renders view for the item. */

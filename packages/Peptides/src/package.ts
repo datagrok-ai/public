@@ -13,7 +13,7 @@ import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {LogoSummaryTable} from './viewers/logo-summary';
 import {MonomerWorks} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {PeptidesModel} from './model';
-import { macromoleculeSarFastaDemoUI } from './demo/fasta';
+import {macromoleculeSarFastaDemoUI} from './demo/fasta';
 
 let monomerWorks: MonomerWorks | null = null;
 let treeHelper: ITreeHelper | null = null;
@@ -176,6 +176,7 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
 //name: Macromolecule SAR Analysis
 //description: Macromolecule SAR Analysis demo on peptide sequences in FASTA format
 //meta.demoPath: Bioinformatics | Macromolecule SAR Analysis
+//meta.isDemoScript: True
 export async function macromoleculeSarFastaDemo(): Promise<void> {
   return macromoleculeSarFastaDemoUI();
 }

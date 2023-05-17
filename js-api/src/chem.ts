@@ -107,14 +107,6 @@ export namespace chem {
       return 400;
     }
 
-    get name(): string {
-      return this._name;
-    }
-
-    set name(s: string) {
-      this._name = s;
-    }
-
     /** Override to provide custom initialization. At this point, the root is already in the DOM. */
     async init(host: Sketcher) {
       this.host = host;
@@ -302,9 +294,8 @@ export namespace chem {
     }
 
     createSketcher() {
-      this.sketcherFunctions = Func.find({tags: ['moleculeSketcher']});
+      this.sketcherFunctions = Func.find({ tags: ['moleculeSketcher'] });
       this.setExternalModeForSubstrFilter();
-      this.root.innerHTML = '';
       if (this._mode === SKETCHER_MODE.INPLACE)
         this.root.appendChild(this.createInplaceModeSketcher());
       else
@@ -513,7 +504,6 @@ export namespace chem {
         if(currentSketcherType !== sketcherType) //in case sketcher type has been changed while previous sketcher was loading
           return;
         this.sketcher = sketcher; //setting this.sketcher only after ensuring that this is last selected sketcher
-        this.sketcher!.name = currentSketcherType;
         ui.empty(this.host);
         this.host.appendChild(this.sketcher!.root);
         this._setSketcherSize(); //update sketcher size according to base sketcher width and height

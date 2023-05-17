@@ -1,4 +1,7 @@
 declare module 'NGL' {
+  import {Signal} from 'signals';
+  import {Box3, Scene, WebGLRenderer} from 'three';
+
   export type LoaderParameters = {
     ext: string,
     compressed: boolean,
@@ -38,6 +41,8 @@ declare module 'NGL' {
   }
 
   export class Stage {
+    viewer: Viewer;
+
     get compList(): Component[];
 
     //TODO: Find out is host arg mandatory
@@ -52,5 +57,51 @@ declare module 'NGL' {
     async loadFile(path: String | File | Blob, params: Partial<LoaderParameters>): Promise<void>;
 
     dispose(): undefined;
+  }
+
+  export class Viewer {
+    signals: ViewerSignals;
+
+    container: HTMLElement;
+    wrapper: HTMLElement;
+
+    sampleLevel: number;
+
+    stats: Stats;
+
+    width: number;
+    height: number;
+
+    scene: Scene;
+
+    renderer: WebGLRenderer;
+    boundingBox: Box3;
+
+    setSize(width: number, height: number): void;
+  }
+
+  export class Stats {
+    signals: {
+      updated: Signal
+    };
+
+    maxDuration: number;
+    minDuration: number;
+    avgDuration: number;
+    lastDuration: number;
+
+    prevFpsTime: number;
+    lastFps: number;
+    lastFrames: number;
+    frames: number;
+    count: number;
+
+    startTime: number;
+    currentTime: number;
+  }
+
+  export interface ViewerSignals {
+    ticked: Signal,
+    rendered: Signal
   }
 }

@@ -1,12 +1,20 @@
 import * as DG from 'datagrok-api/dg';
 
+import {ALIGNMENT, ALPHABET, candidateAlphabets, NOTATION, TAGS} from './macromolecule/consts';
+import {SeqColStats, SplitterFunc} from './macromolecule/types';
 import {
-  ALIGNMENT, ALPHABET, NOTATION, TAGS,
-  candidateAlphabets, detectAlphabet,
-  splitterAsFasta, getSplitterWithSeparator, splitterAsHelm,
-  SplitterFunc, getSplitterForColumn,
-  SeqColStats, getStats,
-} from './macromolecule';
+  detectAlphabet,
+  getSplitterForColumn,
+  getSplitterWithSeparator,
+  getStats,
+  splitterAsFasta,
+  splitterAsHelm
+} from './macromolecule/utils';
+import {mmDistanceFunctions, MmDistanceFunctionsNames}
+  from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {mmDistanceFunctionType} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
+import {getMonomerLibHelper, IMonomerLibHelper} from '../monomer-works/monomer-utils';
+import {HELM_POLYMER_TYPE} from './const';
 
 /** Class for handling notation units in Macromolecule columns */
 export class UnitsHandler {
@@ -19,13 +27,6 @@ export class UnitsHandler {
     SEPARATOR: '',
     FASTA: '-',
   };
-
-  public static readonly PeptideFastaAlphabet = new Set<string>([
-    'G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',
-    'K', 'R', 'H', 'C', 'V', 'P', 'W', 'I', 'M', 'T',
-  ]);
-  public static readonly DnaFastaAlphabet = new Set<string>(['A', 'C', 'G', 'T']);
-  public static readonly RnaFastaAlphabet = new Set<string>(['A', 'C', 'G', 'U']);
 
   public static setUnitsToFastaColumn(col: DG.Column) {
     if (col.semType !== DG.SEMTYPE.MACROMOLECULE || col.getTag(DG.TAGS.UNITS) !== NOTATION.FASTA)
@@ -114,6 +115,10 @@ export class UnitsHandler {
     return alphabet;
   }
 
+  protected get helmCompatible(): string | undefined {
+    return this.column.getTag(TAGS.isHelmCompatible);
+  }
+
   public getAlphabetSize(): number {
     if (this.notation == NOTATION.HELM || this.alphabet == ALPHABET.UN) {
       const alphabetSizeStr = this.column.getTag(TAGS.alphabetSize);
@@ -129,16 +134,16 @@ export class UnitsHandler {
       return alphabetSize;
     } else {
       switch (this.alphabet) {
-      case ALPHABET.PT:
-        return 20;
-      case ALPHABET.DNA:
-      case ALPHABET.RNA:
-        return 4;
-      case 'NT':
-        console.warn(`Unexpected alphabet 'NT'.`);
-        return 4;
-      default:
-        throw new Error(`Unexpected alphabet '${this.alphabet}'.`);
+        case ALPHABET.PT:
+          return 20;
+        case ALPHABET.DNA:
+        case ALPHABET.RNA:
+          return 4;
+        case 'NT':
+          console.warn(`Unexpected alphabet 'NT'.`);
+          return 4;
+        default:
+          throw new Error(`Unexpected alphabet '${this.alphabet}'.`);
       }
     }
   }
@@ -166,6 +171,7 @@ export class UnitsHandler {
 
   public isMsa(): boolean { return this.aligned ? this.aligned.toUpperCase().includes('MSA') : false; }
 
+  public isHelmCompatible(): boolean { return this.helmCompatible === 'true'; }
   /** Associate notation types with the corresponding units */
   /**
    * @return {NOTATION}     Notation associated with the units type
@@ -279,6 +285,61 @@ export class UnitsHandler {
     return newColumn;
   }
 
+  public getDistanceFunctionName(): MmDistanceFunctionsNames {
+    // TODO add support for helm and separator notation
+    if (!this.isFasta())
+      throw new Error('Only FASTA notation is supported');
+    if (this.isMsa())
+      return MmDistanceFunctionsNames.HAMMING;
+    switch (this.alphabet) {
+    // As DNA and RNA scoring matrices are same as identity matrices(mostly),
+    // we can use very fast and optimized Levenshtein distance library
+      case ALPHABET.DNA:
+      case ALPHABET.RNA:
+        return MmDistanceFunctionsNames.LEVENSHTEIN;
+      case ALPHABET.PT:
+        return MmDistanceFunctionsNames.NEEDLEMANN_WUNSCH;
+        // For default case, let's use Levenshtein distance
+      default:
+        return MmDistanceFunctionsNames.LEVENSHTEIN;
+    }
+  }
+
+  public getDistanceFunction(): mmDistanceFunctionType {
+    return mmDistanceFunctions[this.getDistanceFunctionName()]();
+  }
+
+  // checks if the separator notation is compatible with helm library
+  public async checkHelmCompatibility(): Promise<boolean> {
+    // check first for the column tag to avoid extra processing
+    if (this.column.tags.has(TAGS.isHelmCompatible))
+      return this.column.getTag(TAGS.isHelmCompatible) === 'true';
+
+    // get the monolmer lib and check against the column
+    const monomerLibHelper: IMonomerLibHelper = await getMonomerLibHelper();
+    const bioLib = monomerLibHelper.getBioLib();
+    // retrieve peptides
+    const peptides = bioLib.getMonomerNamesByType(HELM_POLYMER_TYPE.PEPTIDE.toString());
+    // convert the peptides list to a set for faster lookup
+    const peptidesSet = new Set(peptides);
+    // get splitter for given separator and check if all monomers are in the lib
+    const splitterFunc = getSplitterWithSeparator(this.separator!);
+    // iterate over the columns, split them and check if all monomers are in the lib
+    //TODO maybe add missing threshhold so that if there are not too many missing monomers
+    // the column is still considered helm compatible
+    for (const row of this.column.categories) {
+      const monomers = splitterFunc(row);
+      for (const monomer of monomers) {
+        if (!peptidesSet.has(monomer)) {
+          this.column.setTag(TAGS.isHelmCompatible, 'false');
+          return false;
+        }
+      }
+    }
+    this.column.setTag(TAGS.isHelmCompatible, 'true');
+    return true;
+  }
+
   public constructor(col: DG.Column) {
     this._column = col;
     const units = this._column.getTag(DG.TAGS.UNITS);
@@ -292,7 +353,7 @@ export class UnitsHandler {
         UnitsHandler._defaultGapSymbolsDict.SEPARATOR;
 
     if (!this.column.tags.has(TAGS.aligned) || !this.column.tags.has(TAGS.alphabet) ||
-        (!this.column.tags.has(TAGS.alphabetIsMultichar) && !this.isHelm() && this.alphabet === ALPHABET.UN)
+      (!this.column.tags.has(TAGS.alphabetIsMultichar) && !this.isHelm() && this.alphabet === ALPHABET.UN)
     ) {
       // The following detectors and setters are to be called because the column is likely
       // as the UnitsHandler constructor was called on the column.
