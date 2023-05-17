@@ -2,9 +2,9 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import { category, test, before } from '@datagrok-libraries/utils/src/test';
-import { expectDeepEqual } from '@datagrok-libraries/utils/src/expect'
+import { defaulCheckersSeq, expectDeepEqual } from '@datagrok-libraries/utils/src/expect'
 
-// TODO: move to the lib later
+// TODO: move to the lib later?
 function throwTester(fn: Function, expectedMessage?: any) {
   let err: any;
   try {
@@ -297,4 +297,16 @@ category('expectDeepEqual', async () => {
         `['0'].['b'].['c1'].['b']: Expected 3.1, got 2.1 (tolerance = 0.1)`);
   });
 
+  test('custom checker', async () => {
+    const o1 = {};
+    const o2 = {};
+    const predicate = () => true;
+    const checker = () => {throw new Error('custom checker error')};
+    throwTester(
+      () => {
+        expectDeepEqual(o1, o2, { checkersSeq: [{name: 'custom', predicate, checker}, ...defaulCheckersSeq] });
+      },
+      'custom checker error'
+    );
+  });
 });
