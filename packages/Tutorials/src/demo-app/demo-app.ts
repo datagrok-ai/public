@@ -59,9 +59,17 @@ export class DemoView extends DG.ViewBase {
       await func.apply();
       ui.setUpdateIndicator(grok.shell.tv.root, false);
     }
-    grok.shell.v.path.includes('/apps/Tutorials/Demo') ?
-      grok.shell.v.path = grok.shell.v.basePath = `/${path}` :
-      grok.shell.v.path = grok.shell.v.basePath = `/apps/Tutorials/Demo/${path}`;
+    grok.shell.v.path = grok.shell.v.basePath = '';
+    if (grok.shell.v.basePath.includes('/apps/Tutorials/Demo')) {
+      grok.shell.v.path = `/${path}`;
+    }
+    else {
+      grok.shell.v.basePath = '/apps/Tutorials/Demo';
+      grok.shell.v.path = `/${path}`;
+    }
+    // temporary fix, change after all demo scripts are using meta.isDemoScript
+    if ((func.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes('Viewers'))    
+      grok.shell.v.path = grok.shell.v.basePath = `/apps/Tutorials/Demo/${path}`
     
     this._setBreadcrumbsInViewName(viewPath.split('|').map((s) => s.trim()));
   }
@@ -81,7 +89,10 @@ export class DemoView extends DG.ViewBase {
     });
 
     const viewNameRoot = grok.shell.v.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
-    viewNameRoot?.firstChild?.replaceWith(breadcrumbs.root);
+    if (viewNameRoot) {
+      viewNameRoot.textContent = '';
+      viewNameRoot.appendChild(breadcrumbs.root);
+    }
   }
 
   private _closeAll(): void {

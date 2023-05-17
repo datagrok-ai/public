@@ -7,7 +7,7 @@ export const DEMO_APP_HIERARCHY = {
 					name: 'Molecule3D in Grid',
 				},
 				{
-					name: 'Databases',
+					name: 'Chemical Databases',
 				},
 				{
 					name: 'Docking NGL',

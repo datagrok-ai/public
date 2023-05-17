@@ -331,7 +331,7 @@ export async function inGridDemo() {
 // demoBio06
 //name: demoBioDockingNgl
 //meta.demoPath: Cheminformatics | Docking NGL
-//description:
+//description: Docking ligands along the structure
 //meta.path: /apps/Tutorials/Demo/Cheminformatics/Docking%20NGL
 //meta.isDemoScript: True
 export async function demoBioDockingNgl(): Promise<void> {
@@ -341,7 +341,7 @@ export async function demoBioDockingNgl(): Promise<void> {
 // demoBio07
 //name: demoBioMolecule3dInGrid
 //meta.demoPath: Cheminformatics | Molecule3D in Grid
-//description:
+//description: View structures PDB in grids
 //meta.path: /apps/Tutorials/Demo/Cheminformatics/Molecule3D%20in%20Grid
 //meta.isDemoScript: True
 export async function demoBioMolecule3dInGrid(): Promise<void> {

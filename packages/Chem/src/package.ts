@@ -62,7 +62,7 @@ import { renderMolecule } from './rendering/render-molecule';
 import { RDKitReactionRenderer } from './rendering/rdkit-reaction-renderer';
 import { structure3dWidget } from './widgets/structure3d';
 import { identifiersWidget } from './widgets/identifiers';
-import { _demoActivityCliffs, _demoChemOverview, _demoDatabases, _demoDatabases4, _demoMoleculesVisualizations, _demoRgroupAnalysis, _demoSimilarityDiversitySearch, _demoSimilaritySearch } from './demo/demo';
+import { _demoActivityCliffs, _demoChemOverview, _demoDatabases, _demoDatabases4, _demoMoleculesVisualizations, _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilarityDiversitySearch, _demoSimilaritySearch } from './demo/demo';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -127,7 +127,7 @@ export async function initChem(): Promise<void> {
 export async function initChemAutostart(): Promise<void> { }
 
 //name: Chemistry | Most Diverse Structures
-//tags: tooltip, panel
+//tags: tooltip
 //input: column col {semType: Molecule}
 //output: widget
 export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined> {
@@ -519,8 +519,9 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     Do you want to continue?`))
       .onOK(async () => {
         const progressBar = DG.TaskBarProgressIndicator.create(`Running Chemical space...`);
-        return await runChemSpace();
+        const res =  await runChemSpace();
         progressBar.close();
+        return res;
       })
       .show();
   } else
@@ -663,7 +664,7 @@ export function ActivityCliffsEditor(call: DG.FuncCall) {
 //description: detect activity cliffs
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}
-//input: column activities
+//input: column activities {type:numerical}
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: string similarityMetric
@@ -1224,4 +1225,11 @@ export async function demoActivityCliffs(): Promise<void> {
 //meta.demoPath: Cheminformatics | Chemical Databases
 export async function demoDatabases(): Promise<void> {
   _demoDatabases4();
+}
+
+//name: Demo Scaffold Tree
+//description: Running scaffold analysis with hierarchical tree
+//meta.demoPath: Cheminformatics | Scaffold Tree
+export async function demoScaffold(): Promise<void> {
+  _demoScaffoldTree();
 }
