@@ -121,16 +121,14 @@ export class RdKitService {
   async getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}): Promise<[RuleId, boolean[]][]> {
     const t = this;
     return this._doParallel(
-      (i: number, _nWorkers: number) => {
-        return t.parallelWorkers[i].getStructuralAlerts(alerts, i * t.segmentLength, (i + 1) * t.segmentLength);
-      },
+      (i: number, _nWorkers: number) => t.parallelWorkers[i].getStructuralAlerts(alerts),
       (data: {[rule in RuleId]?: boolean[]}[]): [RuleId, boolean[]][] => {
         const result: {[rule in RuleId]?: boolean[]} = {};
         for (let k = 0; k < data.length; ++k) {
           const part = data[k];
-          for (const ruleId in part) {
+          for (const ruleId of Object.keys(part)) {
             result[ruleId as RuleId] ??= [];
-            result[ruleId as RuleId]!.concat(...part[ruleId as RuleId]!);
+            result[ruleId as RuleId] = result[ruleId as RuleId]!.concat(...part[ruleId as RuleId]!);
           }
         }
 

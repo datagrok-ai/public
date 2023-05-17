@@ -30,6 +30,6 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   convertMolNotation = async (targetNotation: string, bitset?: boolean[]) =>
     this.call(WORKER_CALL.CONVERT_MOL_NOTATION, [targetNotation, bitset]);
 
-  getStructuralAlerts = async (alerts: {[rule in RuleId]?: string[]}, start: number, end: number) =>
-    this.call(WORKER_CALL.GET_STRUCTURAL_ALERTS, [alerts, start, end]);
+  getStructuralAlerts = async (alerts: {[rule in RuleId]?: string[]}) =>
+    this.call(WORKER_CALL.GET_STRUCTURAL_ALERTS, [alerts]);
 }
