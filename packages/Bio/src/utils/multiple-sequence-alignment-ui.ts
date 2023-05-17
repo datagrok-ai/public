@@ -10,7 +10,7 @@ import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-conv
 import {_package} from '../package';
 import {multipleSequenceAlginmentUIOptions} from './types';
 import {kalignVersion, msaDefaultOptions} from './constants';
-
+import '../../css/msa.css';
 export class MsaWarning extends Error {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
@@ -42,9 +42,7 @@ export async function multipleSequenceAlignmentUI(
     // UI for Kalign alignment
     const terminalGapInput = ui.floatInput('Terminal gap', options?.kalign?.terminalGap ?? null);
     terminalGapInput.setTooltip('Penalty for opening a gap at the beginning or end of the sequence');
-    const kalignVersionDiv = ui.p(`Kalign version: ${kalignVersion}`,
-      {style: {marginBottom: 0, textAlign: 'end', fontSize: '12px', opacity: 0.8}}
-    );
+    const kalignVersionDiv = ui.p(`Kalign version: ${kalignVersion}`, 'kalign-version');
 
     // shared UI
     const gapOpenInput = ui.floatInput('Gap open', options.pepsea.gapOpen);
