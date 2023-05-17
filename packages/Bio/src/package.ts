@@ -506,16 +506,17 @@ export async function sdfToJsonLib(table: DG.DataFrame) {
   const jsonMonomerLibrary = createJsonMonomerLibFromSdf(table);
 }
 
-//name: Representations
-//tags: panel, widgets
-//input: cell macroMolecule {semType: Macromolecule}
-//output: widget result
-export async function peptideMolecule(macroMolecule: DG.Cell): Promise<DG.Widget> {
-  const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
-  const monomersLibObject: any[] = JSON.parse(monomersLibFile);
-
-  return representationsWidget(macroMolecule, monomersLibObject);
-}
+// 2023-05-17 Representations does not work at BioIT
+// //name: Representations
+// //tags: panel, widgets
+// //input: cell macroMolecule {semType: Macromolecule}
+// //output: widget result
+// export async function peptideMolecule(macroMolecule: DG.Cell): Promise<DG.Widget> {
+//   const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
+//   const monomersLibObject: any[] = JSON.parse(monomersLibFile);
+//
+//   return representationsWidget(macroMolecule, monomersLibObject);
+// }
 
 //name: importFasta
 //description: Opens FASTA file
