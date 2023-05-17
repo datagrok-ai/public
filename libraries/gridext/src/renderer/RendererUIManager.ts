@@ -277,7 +277,7 @@ export class RendererUIManager {
     if (dart === null)
       return false;
 
-    const b = dart.m_managerUIRenderer instanceof RendererUIManagerImpl;
+    const b = dart.m_managerUIRenderer !== undefined;
     return b;
   }
 
