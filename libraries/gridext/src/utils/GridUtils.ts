@@ -97,11 +97,17 @@ export function installGridForColumn(grid : DG.Grid, colGrid : DG.GridColumn) : 
 
 export function setGridColumnRenderer(colGrid : DG.GridColumn, renderer : GridCellRendererEx) : void {
   const dart : any = DG.toDart(colGrid);
+  if (dart === null)
+    return;
+
   dart.m_renderer = renderer;
 }
 
 export function getGridColumnRenderer(colGrid : DG.GridColumn) : GridCellRendererEx | null {
   const dart : any = DG.toDart(colGrid);
+  if (dart === null)
+    return null;
+
   const renderer = dart.m_renderer;
   if (renderer === undefined)
     return null;
