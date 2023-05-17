@@ -16,7 +16,7 @@
     "@datagrok-libraries/statistics": "^0.1.7",
     "@datagrok-libraries/utils": "^4.0.0",
     "cash-dom": "^8.1.0",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.15.0",
     "echarts": "^5.0.0",
     "echarts-gl": "^2.0.9",
     "echarts-wordcloud": "^2.0.0",
