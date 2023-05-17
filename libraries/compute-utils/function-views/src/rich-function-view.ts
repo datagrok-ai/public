@@ -511,6 +511,12 @@ export class RichFunctionView extends FunctionView {
             this.funcCall.inputs[prop.name] = file;
             this.checkDisability.next();
           });
+
+          if (this.runningOnInput) {
+            const sub = t.onFileUploaded.subscribe(async () => await this.doRun());
+            this.subs.push(sub);
+          }
+
           if (prop.category !== prevCategory)
             inputs.append(ui.h2(prop.category));
 
