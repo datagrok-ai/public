@@ -96,7 +96,6 @@ category('Helm', () => {
   complexMonomers.forEach((helm, i) => {
     test(complexTestNames[i], async () => {
       const monomersArray = parseHelm(helm);
-      console.log(monomersArray);
       monomersArray.sort();
       const expected = complexMonomersExpected[i];
       expected.sort();
