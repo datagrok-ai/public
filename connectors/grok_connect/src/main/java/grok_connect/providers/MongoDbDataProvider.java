@@ -9,6 +9,7 @@ import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.ProviderManager;
 import grok_connect.utils.SchemeInfo;
 import org.bson.Document;
+import org.slf4j.Logger;
 import serialization.BoolColumn;
 import serialization.Column;
 import serialization.DataFrame;
@@ -51,15 +52,15 @@ public class MongoDbDataProvider extends JdbcDataProvider {
 
         DataQuery dataQuery = queryRun.func;
         Connection connection = getConnection(dataQuery.connection);
-        ResultSet resultSet = getResultSet(queryRun, connection);
+        ResultSet resultSet = getResultSet(queryRun, connection, logger);
         List<Column> columns = getTypedColumns(resultSet);
         DataFrame dataFrame = getResultSetSubDf(queryRun, resultSet, columns,
-                new ArrayList<>(), new ArrayList<>(), 0);
+                new ArrayList<>(), new ArrayList<>(), 0, null);
         return dataFrame;
     }
 
     @Override
-    public ResultSet getResultSet(FuncCall queryRun, Connection connection) {
+    public ResultSet getResultSet(FuncCall queryRun, Connection connection, Logger logger) {
         try {
             PreparedStatement statement = connection.prepareStatement(queryRun.func.query);
             return statement.executeQuery();
@@ -69,14 +70,15 @@ public class MongoDbDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public SchemeInfo resultSetScheme(FuncCall queryRun, ResultSet resultSet) {
+    public SchemeInfo resultSetScheme(FuncCall queryRun, ResultSet resultSet, Logger queryLogger) {
         return new SchemeInfo(getTypedColumns(resultSet), new ArrayList<>(), new ArrayList<>());
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,
-                                    List<Boolean> supportedType,List<Boolean> initColumn, int maxIterations) throws SQLException {
+                                       List<Boolean> supportedType, List<Boolean> initColumn,
+                                       int maxIterations, Logger queryLogger) throws SQLException {
         do {
             Object object = resultSet.getObject(OBJECT_INDEX);
             if (object instanceof String) {
