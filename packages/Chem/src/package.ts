@@ -664,7 +664,7 @@ export function ActivityCliffsEditor(call: DG.FuncCall) {
 //description: detect activity cliffs
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}
-//input: column activities
+//input: column activities {type:numerical}
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: string similarityMetric
