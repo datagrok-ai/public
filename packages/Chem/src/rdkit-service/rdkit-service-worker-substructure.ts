@@ -225,6 +225,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         smarts?.delete();
     }
 
+    this.freeMoleculesStructures();
+
     return Object.fromEntries(Object.entries(resultValues).map(([k, val]) => [k, val.getRangeAsList(0, val.length)]));
   }
 }
