@@ -448,7 +448,9 @@ export function SubstructureSearchTopMenu(molecules: DG.Column): void {
     .find((el) => Array.from(el!.getElementsByTagName('label')).find(it => it.textContent === molecules.name));
   if (filterHeader) {
     setTimeout(() => {
-      ((filterHeader.parentElement as HTMLElement).getElementsByClassName('sketch-link')[0] as HTMLElement).click();
+      const sketchLink = (filterHeader.parentElement as HTMLElement).getElementsByClassName('sketch-link')[0];
+      const element = sketchLink ?? (filterHeader.parentElement as HTMLElement).getElementsByClassName('chem-canvas')[0];
+      (element as HTMLElement).click();
     }, 500);
   }
 }
