@@ -274,6 +274,9 @@ export class RendererUIManager {
 
   static isRegistered(grid : DG.Grid) : boolean {
     const dart = DG.toDart(grid);
+    if (dart === null)
+      return false;
+
     const b = dart.m_managerUIRenderer instanceof RendererUIManagerImpl;
     return b;
   }
@@ -283,6 +286,10 @@ export class RendererUIManager {
     if(RendererUIManager.isRegistered(grid)) {
       return false;
     }
+
+    const dart = DG.toDart(grid);
+    if (dart === null)
+      return false;
 
     const manager = new RendererUIManagerImpl(grid);
     return true;
@@ -294,6 +301,9 @@ export class RendererUIManager {
     }
 
     const dart = DG.toDart(grid);
+    if (dart === null)
+      return false;
+
     const manager = dart.m_managerUIRenderer;
     manager.dispose();
     return true;
