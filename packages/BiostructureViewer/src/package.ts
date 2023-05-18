@@ -359,11 +359,11 @@ export async function demoBioDockingConformations(): Promise<void> {
   await demoBio06NoScript();
 }
 
-// // demoBio07
-// //name: demoBioProteins
-// //meta.demoPath: Cheminformatics | Proteins
-// //description: View structures PDB in grids
-// //meta.path: /apps/Tutorials/Demo/Cheminformatics/Proteins
-// export async function demoBioProteins(): Promise<void> {
-//   await demoBio07NoScript();
-// }
+// demoBio07
+//name: demoBioProteins
+//meta.demoPath: Cheminformatics | Proteins
+//description: View structures PDB in grids
+//meta.path: /apps/Tutorials/Demo/Cheminformatics/Proteins
+export async function demoBioProteins(): Promise<void> {
+  await demoBio07NoScript();
+}
