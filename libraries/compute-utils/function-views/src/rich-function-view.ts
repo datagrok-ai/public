@@ -380,9 +380,11 @@ export class RichFunctionView extends FunctionView {
         );
       });
 
-      this.outputsTabsElem.addPane(tabLabel, () => {
-        return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [ui.h2('Scalar values'), scalarsTable]: []]);
-      });
+      if (tabScalarProps.length > 0 || tabDfProps.reduce((viewersCount, prop) => {viewersCount+= getPropViewers(prop).config.length; return viewersCount;}, 0) > 0) {
+        this.outputsTabsElem.addPane(tabLabel, () => {
+          return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [ui.h2('Scalar values'), scalarsTable]: []]);
+        });
+      }
     });
 
     const outputBlock = ui.box();
