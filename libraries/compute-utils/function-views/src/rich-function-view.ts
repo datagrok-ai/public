@@ -14,7 +14,7 @@ import '../css/rich-function-view.css';
 import {FileInput} from '../../shared-components/src/file-input';
 import {startWith} from 'rxjs/operators';
 import {DIRECTION, EXPERIMENTAL_TAG, VIEWER_PATH, viewerTypesMapping} from './shared/consts';
-import {boundImportFunction, getDataFrame, getPropViewers} from './shared/utils';
+import {boundImportFunction, getDataFrame, getFuncRunLabel, getPropViewers} from './shared/utils';
 
 const FILE_INPUT_TYPE = 'file';
 
@@ -91,7 +91,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public getRunButton(name = 'Run') {
-    const runButton = ui.bigButton(name, async () => await this.doRun());
+    const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
     const disabilitySub = this.checkDisability.subscribe(() => {
       const isValid = this.isRunnable();
       runButton.disabled = !isValid;

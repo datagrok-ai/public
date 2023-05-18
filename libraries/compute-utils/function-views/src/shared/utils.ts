@@ -33,3 +33,7 @@ export const getPropViewers = (prop: DG.Property): {name: string, config: Record
 export const getFuncFriendlyName = (func: DG.Func) => {
   return func.options['friendlyName'];
 };
+
+export const getFuncRunLabel = (func: DG.Func) => {
+  return func.options['runLabel'];
+};
