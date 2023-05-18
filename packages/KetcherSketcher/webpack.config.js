@@ -32,7 +32,7 @@ module.exports = {
   },
   output: {
     filename: '[name].js',
-    library: 'ketcher',
+    library: 'ketchersketcher',
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },
