@@ -11,13 +11,20 @@ import {historyUtils} from '../../history-utils';
 import '../css/pipeline-view.css';
 import {RunComparisonView} from './run-comparison-view';
 import {CARD_VIEW_TYPE} from './shared/consts';
-import {getFuncFriendlyName} from './shared/utils';
 
 export class PipelineView extends ComputationView {
-  public steps = {} as {[scriptNqName: string]: { func: DG.Func, editor: string, view: FunctionView }};
+  public steps = {} as {[scriptNqName: string]: {
+    func: DG.Func, editor: string, view: FunctionView, options?: {friendlyName?: string}
+  }};
   public onStepCompleted = new Subject<DG.FuncCall>();
 
   private stepTabs: DG.TabControl | null = null;
+
+  // Sets current step of pipeline
+  public set currentTabName(name: string) {
+    if (this.stepTabs?.getPane(name))
+      this.stepTabs!.currentPane = this.stepTabs?.getPane(name);
+  }
 
   // PipelineView unites several export files into single ZIP file
   protected pipelineViewExportExtensions: () => Record<string, string> = () => {
@@ -39,16 +46,13 @@ export class PipelineView extends ComputationView {
 
     const zipConfig = {} as Zippable;
 
-    for (const {stepView, stepFunc} of Object.entries(this.steps)
-      .map(
-        ([_, step]) => ({stepView: step.view, stepFunc: step.func}),
-      )) {
-      this.stepTabs.currentPane = this.stepTabs.getPane(getFuncFriendlyName(stepFunc) ?? stepFunc.name);
+    for (const step of Object.values(this.steps)) {
+      this.stepTabs.currentPane = this.stepTabs.getPane(step.options?.friendlyName ?? step.func.name);
 
       await new Promise((r) => setTimeout(r, 100));
-      const stepBlob = await stepView.exportConfig!.export('Excel');
+      const stepBlob = await step.view.exportConfig!.export('Excel');
 
-      zipConfig[stepView.exportConfig!.filename('Excel')] = [new Uint8Array(await stepBlob.arrayBuffer()), {level: 0}];
+      zipConfig[step.view.exportConfig!.filename('Excel')] = [new Uint8Array(await stepBlob.arrayBuffer()), {level: 0}];
     };
 
     return new Blob([zipSync(zipConfig)]);
@@ -63,7 +67,10 @@ export class PipelineView extends ComputationView {
 
   constructor(
     funcName: string,
-    private stepsConfig: {funcName: string}[],
+    private stepsConfig: {
+      funcName: string,
+      friendlyName?: string
+    }[],
   ) {
     super(
       funcName,
@@ -76,7 +83,7 @@ export class PipelineView extends ComputationView {
 
     this.stepsConfig.forEach((stepConfig) => {
       //@ts-ignore
-      this.steps[stepConfig.funcName] = {};
+      this.steps[stepConfig.funcName] = {options: {friendlyName: stepConfig.friendlyName}};
     });
 
     this.subs.push(
@@ -179,10 +186,10 @@ export class PipelineView extends ComputationView {
   }
 
   public override buildIO() {
-    const tabs = Object.entries(this.steps)
-      .reduce((prev, [funcName, step]) => ({
+    const tabs = Object.values(this.steps)
+      .reduce((prev, step) => ({
         ...prev,
-        [getFuncFriendlyName(step.func) ?? step.func.name]: step.view.root,
+        [step.options?.friendlyName ?? step.func.name]: step.view.root,
       }), {} as Record<string, HTMLElement>);
 
     const pipelineTabs = ui.tabControl(tabs);
