@@ -504,7 +504,7 @@ export function awesome() {
 }
 ```
 
-The above way is typically preferred. Optional parameters, such as `meta.icon` `meta.toolbox`, and `meta.viewerPath`,
+The above way is typically preferred. Optional parameters, such as `meta.icon`, `meta.toolbox`, and `meta.viewerPath`,
 can be used. The `meta.icon` parameter accepts a path to a viewer icon file in the package and replaces the default icon
 with it in the UI. The `meta.toolbox` parameter, when enabled, adds your viewer to the toolbox in a table view. The
 `meta.viewerPath` parameter defines a path under which the viewer is shown in the top menu. The default path is
