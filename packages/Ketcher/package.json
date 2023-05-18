@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/ketcher",
   "friendlyName": "Ketcher",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "author": {
     "name": "Maria Dolotova",
     "email": "maria.dolotova@arcadia.spb.ru"
@@ -17,9 +17,9 @@
     "datagrok-api": "^1.13.2",
     "@datagrok-libraries/utils": "^1.19.3",
     "file-loader": "^6.2.0",
-    "ketcher-core": "^1.5.0",
-    "ketcher-react": "^2.5.1",
-    "ketcher-standalone": "^1.4.0",
+    "ketcher-core": "^2.9.0",
+    "ketcher-react": "^2.9.0",
+    "ketcher-standalone": "^2.9.0",
     "miew": "^0.10.0"
   },
   "devDependencies": {
