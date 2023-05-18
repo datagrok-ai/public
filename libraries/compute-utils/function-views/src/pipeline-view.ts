@@ -39,9 +39,12 @@ export class PipelineView extends ComputationView {
 
     const zipConfig = {} as Zippable;
 
-    for (const {nqName, stepView} of Object.entries(this.steps)
-      .map(([nqName, step]) => ({nqName, stepView: step.view}))) {
-      this.stepTabs.currentPane = this.stepTabs?.getPane(nqName);
+    for (const {stepView, stepFunc} of Object.entries(this.steps)
+      .map(
+        ([_, step]) => ({stepView: step.view, stepFunc: step.func}),
+      )) {
+      this.stepTabs.currentPane = this.stepTabs.getPane(getFuncFriendlyName(stepFunc) ?? stepFunc.name);
+
       await new Promise((r) => setTimeout(r, 100));
       const stepBlob = await stepView.exportConfig!.export('Excel');
 
