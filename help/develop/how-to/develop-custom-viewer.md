@@ -497,17 +497,18 @@ import {AwesomeViewer} from './awesome-viewer.js'
 //tags: viewer
 //meta.icon: images/icon.svg
 //meta.toolbox: true
+//meta.viewerPath: Subcategory Name | Friendly Viewer Name
 //output: viewer result
 export function awesome() {
   return new AwesomeViewer();
 }
 ```
 
-The above way is typically preferred. Optional parameters, such as `meta.icon`
-and `meta.toolbox`, can be used. The `meta.icon` parameter accepts a path to a
-viewer icon file in the package and replaces the default icon with it in the UI.
-The `meta.toolbox` parameter, when enabled, adds your viewer to the toolbox in a
-table view.
+The above way is typically preferred. Optional parameters, such as `meta.icon` `meta.toolbox`, and `meta.viewerPath`,
+can be used. The `meta.icon` parameter accepts a path to a viewer icon file in the package and replaces the default icon
+with it in the UI. The `meta.toolbox` parameter, when enabled, adds your viewer to the toolbox in a table view. The
+`meta.viewerPath` parameter defines a path under which the viewer is shown in the top menu. The default path is
+`Add > JavaScript Viewers > <Package Name> > <Friendly Viewer Name>`.
 
 There is also a less common form to register a viewer:
 
