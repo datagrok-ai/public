@@ -1,5 +1,5 @@
 import * as React from "react";
-import * as ReactDOM from "react-dom";
+import * as ReactDOM from 'react-dom/client';
 import * as grok from "datagrok-api/grok";
 import * as ui from "datagrok-api/ui";
 import * as DG from "datagrok-api/dg";
@@ -10,7 +10,7 @@ import {Ketcher} from "ketcher-core";
 import "ketcher-react/dist/index.css";
 import "../css/editor.css";
 import { chem } from "datagrok-api/grok";
-import { KETCHER_MOLV2000, KETCHER_MOLV3000 } from "./constants";
+import { KETCHER_MOLV2000, KETCHER_MOLV3000, KETCHER_WINDOW_OBJECT } from "./constants";
 
 let sketcherId = 0;
 
@@ -37,20 +37,22 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
       },
       onInit: (ketcher: Ketcher) => {
         this._sketcher = ketcher;
+        //@ts-ignore
+        window[KETCHER_WINDOW_OBJECT] = ketcher;
         (this._sketcher.editor as any).subscribe("change", async (_: any) => {
           this._smiles = await this._sketcher!.getSmiles();
           this._molV2000 = await this._sketcher!.getMolfile(KETCHER_MOLV2000);
           this._molV3000 = await this._sketcher!.getMolfile(KETCHER_MOLV3000);
           this.onChanged.next(null);
         });
-        this._sketcher.editor.zoom(0.5);
       },
     };
 
     this.ketcherHost = ui.div([], 'ketcher-host');
 
     let component = React.createElement(Editor, props, null);
-    ReactDOM.render(component, this.ketcherHost);
+    const root = ReactDOM.createRoot(this.ketcherHost);
+    root.render(component);
 
     this.root.appendChild(this.ketcherHost);
   }
