@@ -7,17 +7,12 @@ import {DockingApp} from './apps/docking-app';
 import {byId, byData, MolstarViewer} from './viewers/molstar-viewer';
 import {SaguaroViewer} from './viewers/saguaro-viewer';
 import {PdbGridCellRenderer} from './utils/pdb-grid-cell-renderer';
-import {NglGlService} from './utils/ngl-gl-service';
 import {NglForGridTestApp} from './apps/ngl-for-grid-test-app';
 import {nglViewerGen as _nglViewerGen} from './utils/ngl-viewer-gen';
-
-import {TwinPviewer} from './viewers/twin-p-viewer';
-import {PROPS as nglPROPS, NglViewer} from './viewers/ngl-viewer';
+import {NglViewer} from './viewers/ngl-viewer';
 import {NglViewerApp} from './apps/ngl-viewer-app';
-import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
 import {PdbHelper, PdbResDataFrame} from './utils/pdb-helper';
-import {PdbApp} from './apps/pdb-app';
-import {nglViewUI, nglWidgetUI} from './viewers/ngl-ui';
+import {nglWidgetUI} from './viewers/ngl-ui';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {NglGlServiceBase} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 import {TaskBarProgressIndicator} from 'datagrok-api/dg';
@@ -30,6 +25,7 @@ import {BiostructureViewerApp} from './apps/biostructure-viewer-app';
 import {demoBio06NoScript} from './demo/bio06-docking-ngl';
 import {demoBio07NoScript} from './demo/bio07-molecule3d-in-grid';
 import {NglGlDocService} from './utils/ngl-gl-doc-service';
+import {LigandsWithBiostructureApp, LigandsWithNglApp} from './apps/ligands-with';
 
 class Package extends DG.Package {
   private _pLogger: DG.PackageLogger;
@@ -267,6 +263,29 @@ export async function biostructureAndTrackViewerApp(): Promise<void> {
     pi.close();
   }
 }
+
+//name: ligandsWithNglApp
+export async function ligandsWithNglApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('Ligands with NGL app');
+  try {
+    const app = new LigandsWithNglApp('ligandsWithNglApp');
+    await app.init();
+  } finally {
+    pi.close();
+  }
+}
+
+//name: ligandsWithBiostructureApp
+export async function ligandsWithBiostructureApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('Ligands with Biostructure app');
+  try {
+    const app = new LigandsWithBiostructureApp('ligandsWithBiostructureApp');
+    await app.init();
+  } finally {
+    pi.close();
+  }
+}
+
 
 // -- Viewers --
 
