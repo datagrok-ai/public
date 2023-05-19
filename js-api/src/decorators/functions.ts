@@ -5,6 +5,8 @@ export namespace decorators {
    * @param description - function description in UI.
    * @param icon - path to an icon file from the package root.
    * @param toolbox - set to true to add the viewer icon to the toolbox.
+   * @param viewerPath - viewer path in the top menu, should include the viewer name (Add | JavaScript Viewers | \<ViewerPath\>).
+   *   The default path is "Add > JavaScript Viewers > \<Package Name\> > \<Friendly Viewer Name\>".
    * 
    * See also: {@link https://datagrok.ai/help/develop/how-to/develop-custom-viewer}
    * 
@@ -36,6 +38,7 @@ export namespace decorators {
     description?: string,
     icon?: string,
     toolbox?: boolean,
+    viewerPath?: string,
   }) {
     return function(constructor: Function) {};
   }
