@@ -4,10 +4,12 @@ import {sortByReverseLength} from '../helpers';
 import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
 import {SYNTHESIZERS as FORMAT} from '../const';
 import {KeyToValue} from '../data-loading-utils/types';
-import {formatDictionary} from '../data-loading-utils/json-loader';
+import {formatDictionary, codesToHelmDictionary} from '../data-loading-utils/json-loader';
 
 const EDGES = 'edges';
 const CENTER = 'center';
+const LINKAGE = 'linkage';
+const PHOSPHORUS = 'p';
 
 // todo: remove strange legacy logic with magic numbers
 export class FormatConverter {
@@ -55,49 +57,35 @@ export class FormatConverter {
 
   private gcrsToHelm(): string {
     function getPattern(arr: string[]): string {
-      const escaped = arr.map((key) => key.replace(/[.*+?^${}()|\\]/g, '\\$&'));
+      const escaped = arr.map((key) => key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
       return escaped.join('|');
     }
-    const lib = MonomerLibWrapper.getInstance();
-    const nucleotideCodes = lib.getGcrsCodesWithoutLinkages().sort((a, b) => b.length - a.length);
-    const phosphateCodes = lib.getCodesByFormat(FORMAT.GCRS).filter((el) => !nucleotideCodes.includes(el)).sort((a, b) => b.length - a.length);
-    const nucleotideRegExp = new RegExp(getPattern(nucleotideCodes), 'g');
-    const phosphateRegExp = new RegExp(`P.(${getPattern(phosphateCodes)})`, 'g');
-    this.sequence = this.sequence.replace(nucleotideRegExp, (match) => {
-      let group = match;
-      if (group.length > 1) {
-        group = `[${group}]`;
-      }
-      group = group.replace(/[()]/g, '');
-      return `D(${group})P.`;
-    })
-      .replace(phosphateRegExp, (match, group) => `[${group}].`)
-      .slice(0, -1);
-    if (this.sequence[this.sequence.length - 1] === 'P') 
-      this.sequence = this.sequence.slice(0, -1);
-    return `DNA1{${this.sequence}}$$$`;
-    // gcrs.sort((a, b) => b.length - a.length);
-    // nucleotides.sort((a, b) => b.length - a.length);
-    // const escaped = nucleotides.map((key) => key.replace(/[.*+?^${}()|\\]/g, '\\$&'));
-    // const pattern = escaped.join('|');
-    // console.log('pattern:', pattern);
-    // const nucleotideCode = new RegExp(pattern, 'g');
-    // sequence = sequence.replace(nucleotideCode, (match) => {
-    //   console.log('match:', match);
-    //   let group = match;
-    //   if (group.length > 1) {
-    //     group = `[${group}]`;
-    //   }
-    //   group = group.replace(/[()]/g, '');
-    //   return `D(${group})P.`;
-    // })
-    //   .replace(/P.ps/g, '[ps].')
-    //   .slice(0, -1);
-    // return `DNA1{${sequence}}$$$`;
-  }
 
-  // private helmToGcrs(codeMapping: KeyToValue): string {
-  // }
+    function sortCallback(a: string, b: string) {return b.length - a.length};
+
+    const dict = codesToHelmDictionary[FORMAT.GCRS] as {[key: string]: string[]};
+
+    const gcrsCodes = Object.keys(dict).sort(sortCallback);
+    const gcrsRegExp = new RegExp(getPattern(gcrsCodes), 'g');
+
+    this.sequence = this.sequence.replace(gcrsRegExp, (match) => dict[match][0] + '.');
+
+    const phosphateCodesSet = new Set<string>();
+    gcrsCodes.forEach((code) => {
+      if (dict[code].includes(LINKAGE))
+        phosphateCodesSet.add(dict[code][0]);
+    });
+    const phosphateCodes = Array.from(phosphateCodesSet).sort(sortCallback);
+    const phosphateCodesPattern = getPattern(phosphateCodes.map((el) => el.replaceAll('.', '')));
+    const phosphateRegExp = new RegExp(`${PHOSPHORUS}.(${phosphateCodesPattern})`, 'g');
+
+    this.sequence = this.sequence.slice(0, -1); // strip last dot
+    if (this.sequence[this.sequence.length - 1] === PHOSPHORUS) 
+      this.sequence = this.sequence.slice(0, -1);
+
+    this.sequence = this.sequence.replace(phosphateRegExp, (match, group) => group);
+    return `RNA1{${this.sequence}}$$$$`;
+  }
 
   private gcrsToLcms(codeMapping: KeyToValue): string {
     try {
