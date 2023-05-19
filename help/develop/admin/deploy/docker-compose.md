@@ -23,7 +23,7 @@ We recommend this method if you want to jump-start with Datagrok on your local m
 1. Download one-click installation script (Right-click on the link below and choose "Save link as..."
    Don't add any extension):
    1. [For MacOS/Linux](https://raw.githubusercontent.com/datagrok-ai/public/master/docker/datagrok-install-local).
-   2. For Windows: Not available yet. Please use manual installation instead.
+   2. [For Windows](https://raw.githubusercontent.com/datagrok-ai/public/master/docker/datagrok-install-local.cmd).
 
 2. Run installation script
 
@@ -139,7 +139,7 @@ To run Datagrok with exact CVM features, specify them in the command line using 
 
 It is possible to run multiple stands of Datagrok on one host machine. To do so:
 
-1. Run the first stand [as usual](#instructions)
+1. Run the first stand as described in [instruction](#installing-datagrok-manually)
 2. Set the Datagrok image version with the `DATAGROK_VERSION` environment variable. It can be any tag from
    [Docker Hub](https://hub.docker.com/r/datagrok/datagrok/tags). The default value is `latest`.
 
@@ -184,7 +184,7 @@ It is possible to run multiple stands of Datagrok on one host machine. To do so:
     ```
 
 4. The last step is to run the second stand. It is important to change the project name to start the second Datagrok
-   stand. The project name in [the standard instructions](#instructions), which were used for the first stand,
+   stand. The project name in [the standard instructions](#installing-datagrok-manually), which were used for the first stand,
    is `datagrok`. For example, you can add an increment to the project name: `datagrok_2`
 
    ```shell
