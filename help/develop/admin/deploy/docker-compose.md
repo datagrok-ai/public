@@ -22,7 +22,7 @@ We recommend this method if you want to jump-start with Datagrok on your local m
 
 1. Download one-click installation script (Right-click on the link below and choose "Save link as..."
    Don't add any extension):
-   1. [For MacOS/Linux](https://raw.githubusercontent.com/datagrok-ai/public/master/docker/datagrok-install-local).
+   1. [For MacOS/Linux](https://raw.githubusercontent.com/datagrok-ai/public/master/docker/datagrok-install-local.sh).
    2. [For Windows](https://raw.githubusercontent.com/datagrok-ai/public/master/docker/datagrok-install-local.cmd).
 
 2. Run installation script
