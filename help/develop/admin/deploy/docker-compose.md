@@ -3,7 +3,7 @@ title: "Try Datagrok Locally"
 slug: /develop/admin/docker-compose
 ---
 
-This document contains instructions for running Datagrok on a machine
+This document contains instructions for running Datagrok on a local machine
 via [Docker Compose](https://docs.docker.com/compose/).
 
 This method doesn't require cloud-based hosting. It automatically fetches, configures, and runs the required Docker
@@ -20,15 +20,12 @@ We recommend this method if you want to jump-start with Datagrok on your local m
 
 ## One-click installation
 
-1. Download one-click installation script:
-   1. [For MacOS/Linux](https://github.com/datagrok-ai/public/blob/master/docker/datagrok-install-local).
+1. Download one-click installation script (Right-click on the link below and choose "Save link as..."
+   Don't add any extension):
+   1. [For MacOS/Linux](https://raw.githubusercontent.com/datagrok-ai/public/master/docker/datagrok-install-local).
    2. For Windows: Not available yet. Please use manual installation instead.
 
-2. Download a Docker Compose YAML
-   file: [link](https://github.com/datagrok-ai/public/blob/master/docker/localhost.docker-compose.yaml).
-   Place it in the same folder with the installation script.
-
-3. Run installation script
+2. Run installation script
 
 ## Installing Datagrok manually
 
@@ -36,7 +33,7 @@ If you have some issues with the one-click installation script,
 you can install Datagrok manually.
 
 1. Download a Docker Compose YAML
-   file: [link](https://github.com/datagrok-ai/public/blob/master/docker/localhost.docker-compose.yaml).
+   file: [link](https://raw.githubusercontent.com/datagrok-ai/public/master/docker/localhost.docker-compose.yaml).
 
 2. To start up Datagrok, or get the last updates run these commands:
 
