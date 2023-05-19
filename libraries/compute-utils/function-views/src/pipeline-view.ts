@@ -3,18 +3,20 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {zipSync, Zippable} from 'fflate';
-import {Subject} from 'rxjs';
+import {Subject, combineLatest} from 'rxjs';
 import {filter} from 'rxjs/operators';
+import $ from 'cash-dom';
 import {FunctionView} from './function-view';
 import {ComputationView} from './computation-view';
 import {historyUtils} from '../../history-utils';
 import '../css/pipeline-view.css';
 import {RunComparisonView} from './run-comparison-view';
 import {CARD_VIEW_TYPE} from './shared/consts';
+import wu from 'wu';
 
 export class PipelineView extends ComputationView {
   public steps = {} as {[scriptNqName: string]: {
-    func: DG.Func, editor: string, view: FunctionView, options?: {friendlyName?: string}
+    func: DG.Func, editor: string, view: FunctionView, idx: number, options?: {friendlyName?: string}
   }};
   public onStepCompleted = new Subject<DG.FuncCall>();
 
@@ -81,9 +83,9 @@ export class PipelineView extends ComputationView {
   public override async init() {
     await this.loadFuncCallById();
 
-    this.stepsConfig.forEach((stepConfig) => {
+    this.stepsConfig.forEach((stepConfig, idx) => {
       //@ts-ignore
-      this.steps[stepConfig.funcName] = {options: {friendlyName: stepConfig.friendlyName}};
+      this.steps[stepConfig.funcName] = {idx, options: {friendlyName: stepConfig.friendlyName}};
     });
 
     this.subs.push(
@@ -143,6 +145,67 @@ export class PipelineView extends ComputationView {
       const view = await editorFunc.apply({'call': scriptCall}) as FunctionView;
 
       this.steps[loadedScript.nqName].view = view;
+
+      const step = this.steps[loadedScript.nqName];
+
+      const subscribeOnDisableEnable = () => {
+        const outerSub = step.view.funcCallReplaced.subscribe(() => {
+          const subscribeForTabsDisabling = () => {
+            wu(step.view.funcCall.inputParams.values() as DG.FuncCallParam[]).forEach(
+              (param) => {
+                const disableFollowingTabs = () => {
+                  const tabsCount = this.stepTabs!.panes.length;
+
+                  Array.from(
+                    {length: tabsCount - (step.idx + 1)},
+                    (_, index) => step.idx + 1 + index,
+                  ).forEach((idxToDisable) => {
+                    $(this.stepTabs!.panes[idxToDisable].header).addClass('d4-disabled');
+                    ui.tooltip.bind(
+                      this.stepTabs!.panes[idxToDisable].header, 'Previous steps are required to be completed.',
+                    );
+                  });
+                };
+
+                const sub = param.onChanged.subscribe(disableFollowingTabs);
+                this.subs.push(sub);
+
+                // DG.DataFrames have interior mutability
+                if (param.property.propertyType === DG.TYPE.DATA_FRAME && param.value) {
+                  const sub = (param.value as DG.DataFrame).onDataChanged.subscribe(disableFollowingTabs);
+                  this.subs.push(sub);
+                }
+              });
+          };
+          subscribeForTabsDisabling();
+
+          const subscribeForTabsEnabling = () => {
+            const sub = grok.functions.onAfterRunAction.pipe(
+              filter((run) => step.view.funcCall.id === run.id && !!run),
+            ).subscribe((run) => {
+              if (step.idx + 1 < this.stepTabs!.panes.length) {
+                $(this.stepTabs!.panes[step.idx + 1].header).removeClass('d4-disabled');
+                ui.tooltip.bind(this.stepTabs!.panes[step.idx + 1].header, '');
+              }
+            });
+            this.subs.push(sub);
+          };
+          subscribeForTabsEnabling();
+        });
+        this.subs.push(outerSub);
+      };
+
+      subscribeOnDisableEnable();
+      this.funcCallReplaced.subscribe(() => {
+        subscribeOnDisableEnable();
+
+        if (this.isHistorical) {
+          this.stepTabs!.panes.forEach((stepTab) => {
+            $(stepTab.header).removeClass('d4-disabled');
+            ui.tooltip.bind(stepTab.header, '');
+          });
+        }
+      });
 
       await this.onAfterStepFuncCallApply(loadedScript.nqName, scriptCall, view);
     });
@@ -207,6 +270,12 @@ export class PipelineView extends ComputationView {
     pipelineTabs.root.style.height = '100%';
     pipelineTabs.root.style.width = '100%';
 
+    if (!this.isHistorical) {
+      pipelineTabs.panes
+        .filter((_, idx) => idx >= 1)
+        .forEach((stepTab) => {$(stepTab.header).addClass('d4-disabled');});
+    }
+
     this.stepTabs = pipelineTabs;
 
     return pipelineTabs.root;
@@ -254,7 +323,7 @@ export class PipelineView extends ComputationView {
     await this.onBeforeLoadRun();
 
     pulledChildRuns.forEach(async (pulledChildRun) => {
-      this.steps[pulledChildRun.func.nqName].view.loadRun(pulledChildRun.id);
+      this.steps[pulledChildRun.func.nqName].view.linkFunccall(await historyUtils.loadRun(pulledChildRun.id));
     });
     this.lastCall = pulledParentRun;
 

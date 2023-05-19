@@ -472,4 +472,8 @@ export abstract class FunctionView extends DG.ViewBase {
   protected get runningOnStart() {
     return this.func.options['runOnOpen'] === 'true';
   }
+
+  protected get isHistorical() {
+    return this.funcCall.options['isHistorical'] === true;
+  }
 }

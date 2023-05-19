@@ -293,6 +293,22 @@ export class RichFunctionView extends FunctionView {
               this.afterOutputPropertyRender.next({prop: dfProp, output: loadedViewer});
             });
 
+            this.funcCallReplaced.subscribe(async () => {
+              const currentParamValue = this.funcCall.outputs[dfProp.name] ?? this.funcCall.inputs[dfProp.name];
+
+              $(this.outputsTabsElem.root).show();
+              $(this.outputsTabsElem.getPane(tabLabel).header).show();
+
+              if (Object.values(viewerTypesMapping).includes(loadedViewer.type))
+                loadedViewer.dataFrame = currentParamValue;
+              else {
+                // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
+                const newViewer = await currentParamValue.plot.fromType(loadedViewer.type) as DG.Viewer;
+                loadedViewer.root.replaceWith(newViewer.root);
+                loadedViewer = newViewer;
+              }
+            });
+
             this.subs.push(paramSub);
           };
 
@@ -371,6 +387,12 @@ export class RichFunctionView extends FunctionView {
             scalarsTable = newScalarsTable;
           });
 
+          this.funcCallReplaced.subscribe(() => {
+            const newScalarsTable = generateScalarsTable();
+            scalarsTable.replaceWith(newScalarsTable);
+            scalarsTable = newScalarsTable;
+          });
+
           this.subs.push(paramSub);
         };
 
@@ -394,14 +416,6 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async onAfterLoadRun(loadedRun: DG.FuncCall) {
-    wu(this.funcCall.outputParams.values() as DG.FuncCallParam[]).forEach((out) => {
-      this.funcCall.setParamValue(out.name, loadedRun.outputs[out.name]);
-    });
-
-    wu(this.funcCall.inputParams.values() as DG.FuncCallParam[]).forEach((inp) => {
-      this.funcCall.setParamValue(inp.name, loadedRun.inputs[inp.name]);
-    });
-
     this.outputsTabsElem.root.style.removeProperty('display');
     this.outputsTabsElem.panes.forEach((tab) => {
       tab.header.style.removeProperty('display');
