@@ -110,7 +110,7 @@ export enum PROPS {
 const pdbDefault: string = '';
 const defaults: BiostructureProps = BiostructurePropsDefault;
 
-export type LigandMapItem = { rowIdx: number, compKey: string | null };
+export type LigandMapItem = { rowIdx: number, structureRefs: Array<string> | null };
 export type LigandMap = { selected: LigandMapItem[], current: LigandMapItem | null, hovered: LigandMapItem | null };
 
 export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
@@ -155,8 +155,6 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
   // propsEngine = new class {
   //
   // }(this);
-
-  private ligandRefSet: Set<string> = new Set();
 
   constructor() {
     super();
@@ -588,16 +586,17 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
       ...(this.ligands.current ? [this.ligands.current] : []),
       ...(this.ligands.hovered ? [this.ligands.hovered] : [])
     ];
-    const ligandDict: { [key: string]: LigandMapItem } = {};
-    for (const ligand of allLigands)
-      if (ligand.compKey) ligandDict[ligand.compKey] = ligand;
 
-    for (const ligandRef of this.ligandRefSet) {
-      this.viewer!.plugin.commands.dispatch(PluginCommands.State.RemoveObject,
-        {state: this.viewer!.plugin.state.data,
-          ref: ligandRef}).then(() => this.ligandRefSet.delete(ligandRef));
+    const refRemovingPromises: Promise<void>[] = [];
+    for (const ligand of allLigands) {
+      if (!ligand.structureRefs) continue;
+      for (const lingandRef of ligand.structureRefs) {
+        refRemovingPromises.push(this.viewer!.plugin.commands.dispatch(PluginCommands.State.RemoveObject,
+          {state: this.viewer!.plugin.state.data,
+            ref: lingandRef}));
+      }
     }
-    for (const ligand of allLigands) ligand.compKey = null; // unbind with this.stage.compList
+    for (const ligand of allLigands) ligand.structureRefs = null; // unbind with this.stage.compList
   }
 
   /** Builds up ligands on the stage view */
@@ -607,34 +606,34 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
 
     this.ligands.selected = !this.showSelectedRowsLigands ? [] :
       wu(this.dataFrame.selection.getSelectedIndexes())
-        .map((selRowIdx) => { return {rowIdx: selRowIdx, compKey: null}; })
+        .map((selRowIdx) => { return {rowIdx: selRowIdx, structureRefs: null}; })
         .toArray();
     this.ligands.current = !this.showCurrentRowLigand ? null :
-      this.dataFrame.currentRowIdx >= 0 ? {rowIdx: this.dataFrame.currentRowIdx, compKey: null} : null;
+      this.dataFrame.currentRowIdx >= 0 ? {rowIdx: this.dataFrame.currentRowIdx, structureRefs: null} : null;
     this.ligands.hovered = !this.showMouseOverRowLigand ? null :
-      this.dataFrame.mouseOverRowIdx >= 0 ? {rowIdx: this.dataFrame.mouseOverRowIdx, compKey: null} : null;
+      this.dataFrame.mouseOverRowIdx >= 0 ? {rowIdx: this.dataFrame.mouseOverRowIdx, structureRefs: null} : null;
 
     /** Adds ligand and returns component key */
-    const addLigandOnStage = async (rowIdx: number, _color: DG.Color | null): Promise<string | null> => {
+    const addLigandOnStage = async (rowIdx: number, _color: DG.Color | null): Promise<Array<string> | null> => {
       const plugin = this.viewer!.plugin;
       const ligandLabel: string = `<Ligand at row ${rowIdx}>`;
       const ligandStr = this.getLigandStrOfRow(rowIdx);
       const _moldata = await plugin.builders.data.rawData({data: ligandStr, label: 'moldata'});
       const _moltraj = await plugin.builders.structure.parseTrajectory(
         _moldata, 'sdf');
-      const model = await plugin.builders.structure.createModel(_moltraj);
-      const structure = await plugin.builders.structure.createStructure(model);
-      const a = await plugin.builders.structure.tryCreateComponentStatic(
-        structure, 'ligand', {label: ligandLabel}
+      const _model = await plugin.builders.structure.createModel(_moltraj);
+      const _structure = await plugin.builders.structure.createStructure(_model);
+      const _component = await plugin.builders.structure.tryCreateComponentStatic(
+        _structure, 'ligand', {label: ligandLabel}
       );
       await plugin.builders.structure.hierarchy.applyPreset(_moltraj, 'default',
         {representationPreset: 'polymer-and-ligand'});
-      this.ligandRefSet.add(_moldata.ref);
-      this.ligandRefSet.add(_moltraj.ref);
-      this.ligandRefSet.add(model.ref);
-      this.ligandRefSet.add(structure.ref);
-      this.ligandRefSet.add(a!.ref);
-      return ligandLabel;
+      // this.ligandRefSet.add(_moldata.ref);
+      // this.ligandRefSet.add(_moltraj.ref);
+      // this.ligandRefSet.add(model.ref);
+      // this.ligandRefSet.add(structure.ref);
+      // this.ligandRefSet.add(a!.ref);
+      return [_moldata.ref, _moltraj.ref, _model.ref, _structure.ref, _component!.ref];
     };
 
     const selCount = this.ligands.selected.length;
@@ -644,19 +643,19 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer {
           (selCount > 1 ? DG.Color.selectedRows : null) :
           (selCount > 1 ? DG.Color.scaleColor(selI, 0, selCount, 0.5) : null);
 
-      selectedLigand.compKey = await addLigandOnStage(selectedLigand.rowIdx, color);
+      selectedLigand.structureRefs = await addLigandOnStage(selectedLigand.rowIdx, color);
     }
     if (this.ligands.current) {
       const color = this.showSelectedRowsLigands ? DG.Color.currentRow : null;
 
-      this.ligands.current.compKey = await addLigandOnStage(this.ligands.current.rowIdx, color);
+      this.ligands.current.structureRefs = await addLigandOnStage(this.ligands.current.rowIdx, color);
     }
     if (this.ligands.hovered) {
       // TODO: color hovered ligand
       const color =
         this.showSelectedRowsLigands || this.showCurrentRowLigand ?
           DG.Color.mouseOverRows : null;
-      this.ligands.hovered.compKey = await addLigandOnStage(this.ligands.hovered.rowIdx, color);
+      this.ligands.hovered.structureRefs = await addLigandOnStage(this.ligands.hovered.rowIdx, color);
     }
   }
 }
