@@ -14,37 +14,14 @@ import {
   russelDistance,
   sokalDistance,
   tanimotoDistance,
-} from './distance-metrics-methods';
+} from '../distance-metrics-methods';
 
 import {calculateEuclideanDistance} from '@datagrok-libraries/utils/src/vector-operations';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Vector, StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-import {mmDistanceFunctions, MmDistanceFunctionsNames} from './macromolecule-distance-functions';
+import {mmDistanceFunctions, MmDistanceFunctionsNames} from '../macromolecule-distance-functions';
+import { AvailableMetricsTypes, BitArrayMetricsNames, StringMetricsNames, VectorMetricsNames } from './consts';
 
-export enum StringMetricsNames {
-  Levenshtein = 'Levenshtein',
-  JaroWinkler = 'Jaro-Winkler',
-  Manhattan = 'Manhattan',
-}
-
-export enum VectorMetricsNames {
-  Euclidean = 'Euclidean',
-}
-
-export enum BitArrayMetricsNames {
-  Tanimoto = 'Tanimoto',
-  Dice = 'Dice',
-  Asymmetric = 'Asymmetric',
-  BraunBlanquet = 'Braun-Blanquet',
-  Cosine = 'Cosine',
-  Kulczynski = 'Kulczynski',
-  McConnaughey = 'Mc-Connaughey',
-  RogotGoldberg = 'Rogot-Goldberg',
-  Russel = 'Russel',
-  Sokal = 'Sokal',
-  Hamming = 'Hamming',
-  Euclidean = 'Euclidean',
-}
 
 export const vectorDistanceMetricsMethods: { [name: string]: (x: Vector, y: Vector) => number } = {
   [VectorMetricsNames.Euclidean]: calculateEuclideanDistance,
@@ -70,13 +47,6 @@ export const bitArrayDistanceMetricsMethods: { [name: string]: (x: BitArray, y: 
   [BitArrayMetricsNames.Hamming]: hammingDistance,
   [BitArrayMetricsNames.Euclidean]: euclideanDistance,
 };
-
-export enum AvailableMetricsTypes {
-  Vector = 'Vector',
-  String = 'String',
-  BitArray = 'BitArray',
-  MacroMolecule = 'MacroMolecule'
-}
 
 export const AvailableMetrics = {
   [AvailableMetricsTypes.Vector]: {

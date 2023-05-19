@@ -1,5 +1,5 @@
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import { BitArrayMetricsNames } from './typed-metrics';
+import { BitArrayMetricsNames } from './typed-metrics/consts';
 
 export const similarityMetric: { [name: string]: (x: BitArray, y: BitArray) => number } = {
   [BitArrayMetricsNames.Tanimoto]: tanimotoSimilarity,

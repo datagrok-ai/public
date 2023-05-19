@@ -14,7 +14,7 @@ import {
   assert,
 } from '@datagrok-libraries/utils/src/vector-operations';
 import {SPEBase, PSPEBase, OriginalSPE} from './spe';
-import {Measure, KnownMetrics, AvailableMetrics, isBitArrayMetric, AvailableDataTypes} from './typed-metrics';
+import {Measure, KnownMetrics, AvailableMetrics, isBitArrayMetric, AvailableDataTypes} from './typed-metrics/typed-metrics';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {UMAPParameters} from 'umap-js';
 

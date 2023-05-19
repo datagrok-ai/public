@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { DimReductionMethods, IDimReductionParam, ITSNEOptions, IUMAPOptions, TSNEOptions, UMAPOptions } from '../reduce-dimensionality';
 import { SEQ_SPACE_SIMILARITY_METRICS } from '../distance-metrics-methods';
-import { BitArrayMetricsNames } from '../typed-metrics';
+import { BitArrayMetricsNames } from '../typed-metrics/consts';
 
 export const SEQ_COL_NAMES = {
     [DG.SEMTYPE.MOLECULE]: 'Molecules',

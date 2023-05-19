@@ -9,7 +9,7 @@ import {calcDistanceMatrix, normalize} from '@datagrok-libraries/utils/src/vecto
 import {createMMDistanceWorker} from '../workers/mmdistance-worker-creator';
 import '../../css/styles.css';
 import { DimReductionMethods } from '../reduce-dimensionality';
-import { BitArrayMetrics, BitArrayMetricsNames } from '../typed-metrics';
+import { BitArrayMetrics } from '../typed-metrics/typed-metrics';
 
 export let activityCliffsIdx = 0;
 
@@ -39,7 +39,7 @@ interface IRenderedLines {
 export interface ISequenceSpaceParams {
   seqCol: DG.Column,
   methodName: DimReductionMethods,
-  similarityMetric: BitArrayMetrics,
+  similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
   embedAxesNames: string[],
   options?: any
 }
@@ -81,7 +81,7 @@ const CLIFFS_FILTER_APPLIED = 'filterCliffs';
 
 // Searches for activity cliffs in a chemical dataset by selected cutoff
 export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, encodedCol: DG.Column | null,
-  axesNames: string[], scatterTitle: string, activities: DG.Column, similarity: number, similarityMetric: BitArrayMetrics,
+  axesNames: string[], scatterTitle: string, activities: DG.Column, similarity: number, similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames,
   methodName: DimReductionMethods, semType: string, tags: {[index: string]: string},
   seqSpaceFunc: (params: ISequenceSpaceParams) => Promise<ISequenceSpaceResult>,
   simMatrixFunc: (dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string,
