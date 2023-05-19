@@ -158,7 +158,7 @@ category('expectDeepEqual', async () => {
           [['asdf', 2.01], [null, true], 0],
           {floatTolerance: 0.1});
       },
-      `['1'].['0']: Expected 2.01, got 1.09 (tolerance = 0.1)\n` +
+      `['0'].['1']: Expected 2.01, got 1.09 (tolerance = 0.1)\n` +
         `['2']: Type mismatch or no checker defined: expected 0, got undefined`);
   });
 
@@ -200,8 +200,8 @@ category('expectDeepEqual', async () => {
       () => {
         expectDeepEqual(o1, o2, {floatTolerance: 0.1});
       },
-      `['c'].['a']: Type mismatch or no checker defined: expected 1, got null\n` +
-        `['b'].['1'].['f']: Expected 4, got 2`);
+      `['a'].['c']: Type mismatch or no checker defined: expected 1, got null\n` +
+        `['f'].['1'].['b']: Expected 4, got 2`);
   });
 
   test('dataframe equal', async () => {
@@ -297,8 +297,8 @@ category('expectDeepEqual', async () => {
       () => {
         expectDeepEqual(o1, o2, {floatTolerance: 0.1});
       },
-      `['0'].['b'].['c1'].['b']: Expected 2.1, got 1.1 (tolerance = 0.1)\n` +
-        `['0'].['b'].['c1'].['b']: Expected 3.1, got 2.1 (tolerance = 0.1)`);
+      `['b'].['c1'].['b'].['0']: Expected 2.1, got 1.1 (tolerance = 0.1)\n` +
+        `['b'].['c1'].['b'].['0']: Expected 3.1, got 2.1 (tolerance = 0.1)`);
   });
 
   test('custom checker', async () => {

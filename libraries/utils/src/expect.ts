@@ -200,12 +200,12 @@ class ExpectRunner {
 
   private checkDeep(path: string[], actual: any, expected: any) {
     const pathLength = path.length;
-    this.state.currentPath.unshift(...path);
+    this.state.currentPath.push(...path);
     if (this.state.currentPath.length > this.options.maxDepth)
       throw new ExpectError(`Max depth ${this.options.maxDepth} is exceeded, potentially a circular structure`);
 
     this.matchChecker(actual, expected);
-    this.state.currentPath.splice(0, pathLength);
+    this.state.currentPath.splice(-pathLength);
   }
 
   private matchChecker(actual: any, expected: any) {
