@@ -454,7 +454,6 @@ export class AxolabsTabUI {
           }));
         return [strand, inputs];
       }));
-    console.log('terminalModification:', terminalModification);
 
     const outputExample = Object.fromEntries(STRANDS.map((strand) => {
       const input = ui.textInput(' ', translateSequence(

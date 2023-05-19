@@ -3,12 +3,16 @@ import {DELIMITER} from '../const';
 import {sortByReverseLength} from '../helpers';
 import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
 import {SYNTHESIZERS as FORMAT} from '../const';
-import {KeyToValue} from '../data-loading-utils/types';
+import {KeyToValue, CodesInfo} from '../data-loading-utils/types';
 import {formatDictionary, codesToHelmDictionary} from '../data-loading-utils/json-loader';
+
+const GROUP_TYPE = {
+  NUCLEOSIDE: 'nucleoside',
+  LINKAGE: 'linkage',
+} as const;
 
 const EDGES = 'edges';
 const CENTER = 'center';
-const LINKAGE = 'linkage';
 const PHOSPHORUS = 'p';
 
 // todo: remove strange legacy logic with magic numbers
@@ -63,21 +67,20 @@ export class FormatConverter {
 
     function sortCallback(a: string, b: string) {return b.length - a.length};
 
-    const dict = codesToHelmDictionary[FORMAT.GCRS] as {[key: string]: string[]};
+    const codesInfoObject = codesToHelmDictionary[FORMAT.GCRS] as CodesInfo;
+
+    const dict = Object.assign({}, ...Object.values(codesInfoObject)) as {[code: string]: string};
 
     const gcrsCodes = Object.keys(dict).sort(sortCallback);
     const gcrsRegExp = new RegExp(getPattern(gcrsCodes), 'g');
 
-    this.sequence = this.sequence.replace(gcrsRegExp, (match) => dict[match][0] + '.');
+    this.sequence = this.sequence.replace(gcrsRegExp, (match) => dict[match] + '.');
 
-    const phosphateCodesSet = new Set<string>();
-    gcrsCodes.forEach((code) => {
-      if (dict[code].includes(LINKAGE))
-        phosphateCodesSet.add(dict[code][0]);
-    });
-    const phosphateCodes = Array.from(phosphateCodesSet).sort(sortCallback);
-    const phosphateCodesPattern = getPattern(phosphateCodes.map((el) => el.replaceAll('.', '')));
-    const phosphateRegExp = new RegExp(`${PHOSPHORUS}.(${phosphateCodesPattern})`, 'g');
+    const phosphateHELMCodes = Array.from(
+      new Set(Object.values(codesInfoObject[GROUP_TYPE.LINKAGE]))
+    ).sort(sortCallback);
+    const phosphateHELMPattern = getPattern(phosphateHELMCodes);
+    const phosphateRegExp = new RegExp(`${PHOSPHORUS}\.(${phosphateHELMPattern})`, 'g');
 
     this.sequence = this.sequence.slice(0, -1); // strip last dot
     if (this.sequence[this.sequence.length - 1] === PHOSPHORUS) 

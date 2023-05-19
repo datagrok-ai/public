@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {APP_PATH, FORMAT_DICT_FILENAME, AXOLABS_STYLE_FILENAME, CODES_TO_HELM_DICT_FILENAME} from './const';
-import {FormatDict, AxolabsStyle} from './types';
+import {FormatDict, AxolabsStyle, FormatToHELMDict} from './types';
 
 const fileSource = new DG.FileSource(APP_PATH);
 async function parse(path: string): Promise<any> {
@@ -13,7 +13,7 @@ async function parse(path: string): Promise<any> {
 
 export let formatDictionary: FormatDict;
 export let axolabsStyleMap: AxolabsStyle;
-export let codesToHelmDictionary: {[key: string]: {[key: string]: string[]}};
+export let codesToHelmDictionary: FormatToHELMDict;
 
 export async function getJsonData(): Promise<void> {
   try {

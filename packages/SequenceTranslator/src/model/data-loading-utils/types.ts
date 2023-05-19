@@ -17,3 +17,14 @@ export type AxolabsStyle = {
     color: string,
   }
 };
+
+export type CodesInfo = {
+    [key: string]: { // nucleoside or phosphate
+      [code: string]: string
+    }
+  }
+
+
+export type FormatToHELMDict = {
+  [sourceFormat: string]: CodesInfo
+}
