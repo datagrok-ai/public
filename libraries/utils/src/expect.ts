@@ -61,8 +61,8 @@ function nullPredicate(actual: any, expected: any) {
   return actual == null && expected == null;
 }
 
-function nullChecker(_actual: any, _expected: any) {
-  return undefined;
+function nullChecker() {
+  return;
 }
 
 

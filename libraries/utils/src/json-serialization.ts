@@ -24,14 +24,21 @@ export function serialize(obj: any, space = 2) {
 export function deserialize(obj: string) {
   return JSON.parse(
     obj,
-    (_key, value) => {
-      if (value && value[customTypeKey] && value.value) {
-        switch (value[customTypeKey]) {
-        case 'DataFrame':
-          return DG.DataFrame.fromByteArray(new Uint8Array(value.value));
-        }
-      }
-      return value;
-    }
+    transform
   );
+}
+
+export function applyTransformations(obj: any) {
+  return deserialize(JSON.stringify(obj));
+}
+
+// just apply df transform if the data
+export function transform(_key: string, value: any) {
+  if (value && value[customTypeKey] && value.value) {
+    switch (value[customTypeKey]) {
+    case 'DataFrame':
+      return DG.DataFrame.fromByteArray(new Uint8Array(value.value));
+    }
+  }
+  return value;
 }
