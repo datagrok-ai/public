@@ -139,6 +139,8 @@ export async function hierarchicalClusteringUI(
     //   DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'cluster', [])]);
     loaderNB.close();
     injectTreeForGridUI2(tv.grid, newickRoot, undefined, neighborWidth);
+
+    tv.grid.invalidate();
   } catch (err) {
     console.error(err);
     tv.grid.invalidate();

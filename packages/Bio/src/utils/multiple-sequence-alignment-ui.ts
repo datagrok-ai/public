@@ -8,7 +8,9 @@ import {pepseaMethods, runPepsea} from './pepsea';
 import {checkInputColumnUI} from './check-input-column';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
 import {_package} from '../package';
-
+import {multipleSequenceAlginmentUIOptions} from './types';
+import {kalignVersion, msaDefaultOptions} from './constants';
+import '../../css/msa.css';
 export class MsaWarning extends Error {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
@@ -16,43 +18,60 @@ export class MsaWarning extends Error {
 }
 
 export async function multipleSequenceAlignmentUI(
-  col: DG.Column<string> | null = null,
-  pepseaMethod: typeof pepseaMethods[number] = pepseaMethods[0]
+  options: multipleSequenceAlginmentUIOptions = {}
 ): Promise<DG.Column> {
   return new Promise(async (resolve, reject) => {
-    const table = col?.dataFrame ?? grok.shell.t;
-    const seqCol = col ?? table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
+    options.clustersCol ??= null;
+    options.pepsea ??= {};
+    options.pepsea.method ??= msaDefaultOptions.pepsea.method;
+    options.pepsea.gapOpen ??= msaDefaultOptions.pepsea.gapOpen;
+    options.pepsea.gapExtend ??= msaDefaultOptions.pepsea.gapExtend;
+
+    const table = options.col?.dataFrame ?? grok.shell.t;
+    const seqCol = options.col ?? table.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
     if (seqCol == null) {
       const errMsg = `MSAError: dataset doesn't conain any Macromolecule column`;
       grok.shell.warning(errMsg);
       reject(new MsaWarning(errMsg));
     }
 
-    // UI
-    const methodInput = ui.choiceInput('Method', pepseaMethod, pepseaMethods);
+    // UI for PepSea alignment
+    const methodInput = ui.choiceInput('Method', options.pepsea.method, pepseaMethods);
     methodInput.setTooltip('Alignment method');
-    const gapOpenInput = ui.floatInput('Gap open', 1.53);
+
+    // UI for Kalign alignment
+    const terminalGapInput = ui.floatInput('Terminal gap', options?.kalign?.terminalGap ?? null);
+    terminalGapInput.setTooltip('Penalty for opening a gap at the beginning or end of the sequence');
+    const kalignVersionDiv = ui.p(`Kalign version: ${kalignVersion}`, 'kalign-version');
+
+    // shared UI
+    const gapOpenInput = ui.floatInput('Gap open', options.pepsea.gapOpen);
     gapOpenInput.setTooltip('Gap opening penalty at group-to-group alignment');
-    const gapExtendInput = ui.floatInput('Gap extend', 0);
+    const gapExtendInput = ui.floatInput('Gap extend', options.pepsea.gapExtend);
     gapExtendInput.setTooltip('Gap extension penalty to skip the alignment');
-    const inputRootStyles = [methodInput.root.style, gapOpenInput.root.style, gapExtendInput.root.style];
+
+    const pepseaInputRootStyles: CSSStyleDeclaration[] = [methodInput.root.style];
+    const kalignInputRootStyles: CSSStyleDeclaration[] = [terminalGapInput.root.style, kalignVersionDiv.style];
+
     let performAlignment: (() => Promise<DG.Column<string>>) | undefined;
 
     // TODO: allow only macromolecule colums to be chosen
-    const colInput = ui.columnInput('Sequence', table, seqCol, () => {
-      performAlignment = onColInputChange(
-        colInput.value, table, inputRootStyles, methodInput, clustersColInput, gapOpenInput, gapExtendInput
+    const colInput = ui.columnInput('Sequence', table, seqCol, async () => {
+      performAlignment = await onColInputChange(
+        colInput.value, table, pepseaInputRootStyles, kalignInputRootStyles,
+        methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput
       );
     }
     ) as DG.InputBase<DG.Column<string>>;
     colInput.setTooltip('Sequences column to use for alignment');
-    const clustersColInput = ui.columnInput('Clusters', table, null);
+    const clustersColInput = ui.columnInput('Clusters', table, options.clustersCol);
     clustersColInput.nullable = true;
     colInput.fireChanged();
     //if column is specified (from tests), run alignment and resolve with the result
-    if (col) {
-      performAlignment = onColInputChange(
-        col, table, inputRootStyles, methodInput, clustersColInput, gapOpenInput, gapExtendInput
+    if (options.col) {
+      performAlignment = await onColInputChange(
+        options.col, table, pepseaInputRootStyles, kalignInputRootStyles,
+        methodInput, clustersColInput, gapOpenInput, gapExtendInput, terminalGapInput
       );
 
       await onDialogOk(colInput, table, performAlignment, resolve, reject);
@@ -64,9 +83,9 @@ export async function multipleSequenceAlignmentUI(
       .add(methodInput)
       .add(gapOpenInput)
       .add(gapExtendInput)
-      .onOK(async () => {
-        await onDialogOk(colInput, table, performAlignment, resolve, reject);
-      })
+      .add(terminalGapInput)
+      .add(kalignVersionDiv)
+      .onOK(async () => { await onDialogOk(colInput, table, performAlignment, resolve, reject); })
       .show();
   });
 }
@@ -104,15 +123,13 @@ async function onDialogOk(
 }
 
 
-function onColInputChange(
-  col: DG.Column<string>,
-  table: DG.DataFrame,
-  inputRootStyles: CSSStyleDeclaration[],
-  methodInput: DG.InputBase<string | null>,
-  clustersColInput: DG.InputBase<DG.Column<any> | null>,
-  gapOpenInput: DG.InputBase<number | null>,
-  gapExtendInput: DG.InputBase<number | null>
-): (() => Promise<DG.Column<string>>) | undefined {
+async function onColInputChange(
+  col: DG.Column<string>, table: DG.DataFrame,
+  pepseaInputRootStyles: CSSStyleDeclaration[], kalignInputRootStyles: CSSStyleDeclaration[],
+  methodInput: DG.InputBase<string | null>, clustersColInput: DG.InputBase<DG.Column<any> | null>,
+  gapOpenInput: DG.InputBase<number | null>, gapExtendInput: DG.InputBase<number | null>,
+  terminalGapInput: DG.InputBase<number | null>
+): Promise<(() => Promise<DG.Column<string>>) | undefined> {
   try {
     if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
       return;
@@ -121,8 +138,10 @@ function onColInputChange(
     if (checkInputColumnUI(col, col.name,
       [NOTATION.FASTA, NOTATION.SEPARATOR], [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT], false)
     ) { // Kalign - natural alphabets. if the notation is separator, convert to fasta and then run kalign
-      for (const inputRootStyle of inputRootStyles)
-        inputRootStyle.display = 'none';
+      switchDialog(pepseaInputRootStyles, kalignInputRootStyles, 'kalign');
+      gapOpenInput.value = null;
+      gapExtendInput.value = null;
+      terminalGapInput.value = null;
       const potentialColNC = new NotationConverter(col);
       const performCol: DG.Column<string> = potentialColNC.isFasta() ? col :
         potentialColNC.convert(NOTATION.FASTA);
@@ -130,20 +149,50 @@ function onColInputChange(
     } else if (checkInputColumnUI(col, col.name,
       [NOTATION.HELM], [], false)
     ) { // PepSeA branch - Helm notation or separator notation with unknown alphabets
-      for (const inputRootStyle of inputRootStyles)
-        inputRootStyle.removeProperty('display');
+      switchDialog(pepseaInputRootStyles, kalignInputRootStyles, 'pepsea');
+      gapOpenInput.value = msaDefaultOptions.pepsea.gapOpen;
+      gapExtendInput.value = msaDefaultOptions.pepsea.gapExtend;
 
       return async () => await runPepsea(col, unusedName, methodInput.value!,
           gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value);
-    } else {
-      for (const inputRootStyle of inputRootStyles)
-        inputRootStyle.display = 'none';
+    } else if (checkInputColumnUI(col, col.name, [NOTATION.SEPARATOR], [ALPHABET.UN], false)) {
+      //if the column is separator with unknown alphabet, it might be helm. check if it can be converted to helm
+      const potentialColNC = new NotationConverter(col);
+      if (!await potentialColNC.checkHelmCompatibility())
+        return;
+      const helmCol = potentialColNC.convert(NOTATION.HELM);
+      switchDialog(pepseaInputRootStyles, kalignInputRootStyles, 'pepsea');
+      gapOpenInput.value = msaDefaultOptions.pepsea.gapOpen;
+      gapExtendInput.value = msaDefaultOptions.pepsea.gapExtend;
+      // convert to helm and assign alignment function to PepSea
 
+      return async () => await runPepsea(helmCol, unusedName, methodInput.value!,
+            gapOpenInput.value!, gapExtendInput.value!, clustersColInput.value);
+    } else {
+      switchDialog(pepseaInputRootStyles, kalignInputRootStyles, 'kalign');
       return;
     }
   } catch (err: any) {
     const errMsg: string = err instanceof Error ? err.message : err.toString();
     grok.shell.error(errMsg);
     _package.logger.error(errMsg);
+  }
+}
+
+type MSADialogType = 'kalign' | 'pepsea';
+
+function switchDialog(
+  pepseaInputRootStyles: CSSStyleDeclaration[], kalignInputRootStyles: CSSStyleDeclaration[], dialogType: MSADialogType
+) {
+  if (dialogType === 'kalign') {
+    for (const inputRootStyle of pepseaInputRootStyles)
+      inputRootStyle.display = 'none';
+    for (const inputRootStyle of kalignInputRootStyles)
+      inputRootStyle.removeProperty('display');
+  } else {
+    for (const inputRootStyle of kalignInputRootStyles)
+      inputRootStyle.display = 'none';
+    for (const inputRootStyle of pepseaInputRootStyles)
+      inputRootStyle.removeProperty('display');
   }
 }

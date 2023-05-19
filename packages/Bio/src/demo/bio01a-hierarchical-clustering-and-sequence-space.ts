@@ -11,7 +11,7 @@ import {getDendrogramService, IDendrogramService} from '@datagrok-libraries/bio/
 import {demoSequenceSpace, handleError} from './utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 
-const dataFn = 'data/sample_FASTA_DNA.csv';
+const dataFn = 'data/sample_FASTA_PT_activity.csv';
 const seqColName = 'sequence';
 
 export async function demoBio01aUI() {
@@ -21,14 +21,16 @@ export async function demoBio01aUI() {
   let df: DG.DataFrame;
   let spViewer: DG.ScatterPlotViewer;
 
-  const method: string = 'UMAP';
+  const dimRedMethod: string = 'UMAP';
   const idRows: { [id: number]: number } = {};
   const embedCols: { [colName: string]: DG.Column<number> } = {};
 
   try {
-    const demoScript = new DemoScript('Demo', 'Exploring sequence space');
+    const demoScript = new DemoScript(
+      'Sequence Space',
+      'Exploring sequence space of Macromolecules, comparison with hierarchical clustering results');
     await demoScript
-      .step(`Loading DNA notation 'fasta'`, async () => {
+      .step(`Load DNA sequences`, async () => {
         [df, treeHelper, dendrogramSvc] = await Promise.all([
           _package.files.readCsv(dataFn),
           getTreeHelper(),
@@ -36,17 +38,23 @@ export async function demoBio01aUI() {
         ]);
         view = grok.shell.addTableView(df);
         view.grid.props.rowHeight = 22;
+        view.grid.columns.byName('cluster')!.visible = false;
+        view.grid.columns.byName('sequence')!.width = 200;
+        view.grid.columns.byName('is_cliff')!.visible = false;
+
+        grok.shell.windows.showContextPanel = false;
+        grok.shell.windows.showProperties = false;
       }, {
         description: `Load dataset with macromolecules of 'fasta' notation, 'DNA' alphabet.`,
-        delay: 1600,
+        delay: 2000,
       })
-      .step('Building sequence space', async () => {
-        spViewer = await demoSequenceSpace(view, df, seqColName, method);
+      .step('Build sequence space', async () => {
+        spViewer = await demoSequenceSpace(view, df, seqColName, dimRedMethod);
       }, {
         description: `Reduce sequence space dimensionality to display on 2D representation.`,
-        delay: 1600
+        delay: 2000
       })
-      .step('Hierarchical clustering', async () => {
+      .step('Cluster sequences', async () => {
         const seqCol: DG.Column<string> = df.getCol(seqColName);
         const seqList = seqCol.toList();
         const distance: DistanceMatrix = DistanceMatrix.calc(seqList, (aSeq: string, bSeq: string) => {
@@ -57,20 +65,23 @@ export async function demoBio01aUI() {
         dendrogramSvc.injectTreeForGrid(view.grid, treeRoot, undefined, 150, undefined);
       }, {
         description: `Perform hierarchical clustering to reveal relationships between sequences.`,
-        delay: 1600,
+        delay: 2000,
       })
-      .step('Selection', async () => {
+      .step('Select a sequence', async () => {
         df.selection.init((idx: number) => [15].includes(idx));
       }, {
         description: `Handling selection of data frame row reflecting on linked viewers.`,
-        delay: 1600,
+        delay: 2000,
       })
       .step('Select a bunch of sequences', async () => {
-        df.selection.init((idx: number) => [21, 9, 58].includes(idx));
+        const seqIdCol: DG.Column<string> = df.getCol('sequence_id');
+        df.selection.init((rowI: number) => {
+          return ['c0_seq120', 'c0_seq105', 'c0_seq121', 'c0_seq93'].includes(seqIdCol.get(rowI)!);
+        });
         df.currentRowIdx = 27;
       }, {
         description: 'Selecting a group of rows from a data frame to show their similarity and proximity to each other on a viewer..',
-        delay: 1600,
+        delay: 2000,
       })
       .start();
   } catch (err: any) {

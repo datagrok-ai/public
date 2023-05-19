@@ -2,6 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 import {Column, DataFrame, DataQuery, FuncCall} from 'datagrok-api/dg';
+import './connections/queries-test';
+
 export const _package = new DG.Package();
 export {tests};
 

@@ -6,6 +6,7 @@ import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import * as grok from 'datagrok-api/grok';
 
 export interface ISequenceSpaceResult {
@@ -53,6 +54,23 @@ export async function sequenceSpaceByFingerprints(spaceParams: ISequenceSpacePar
   return result;
 }
 
+export async function getSequenceSpace(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
+  const uh = new UnitsHandler(spaceParams.seqCol);
+  if (uh.isFasta()) {
+    const distanceFName = uh.getDistanceFunctionName();
+    const sequenceSpaceResult = await reduceDimensinalityWithNormalization(
+      spaceParams.seqCol.toList(),
+      spaceParams.methodName,
+      distanceFName,
+      spaceParams.options);
+    console.log(sequenceSpaceResult);
+    const cols: DG.Column[] = spaceParams.embedAxesNames.map(
+      (name: string, index: number) => DG.Column.fromFloat32Array(name, sequenceSpaceResult.embedding[index]));
+    return {distance: sequenceSpaceResult.distance, coordinates: new DG.ColumnList(cols)};
+  } else {
+    return await sequenceSpaceByFingerprints(spaceParams);
+  }
+}
 
 export function getEmbeddingColsNames(df: DG.DataFrame) {
   const axes = ['Embed_X', 'Embed_Y'];

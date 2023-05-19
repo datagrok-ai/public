@@ -62,8 +62,8 @@ import { renderMolecule } from './rendering/render-molecule';
 import { RDKitReactionRenderer } from './rendering/rdkit-reaction-renderer';
 import { structure3dWidget } from './widgets/structure3d';
 import { identifiersWidget } from './widgets/identifiers';
-import { _demoActivityCliffs, _demoChemOverview, _demoDatabases, _demoRgroupAnalysis, _demoSimilaritySearch } from './demo/demo';
 import { BitArrayMetrics, BitArrayMetricsNames } from '@datagrok-libraries/ml/src/typed-metrics';
+import { _demoActivityCliffs, _demoChemOverview, _demoDatabases, _demoDatabases4, _demoMoleculesVisualizations, _demoRgroupAnalysis, _demoScaffoldTree, _demoSimilarityDiversitySearch, _demoSimilaritySearch } from './demo/demo';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -128,7 +128,7 @@ export async function initChem(): Promise<void> {
 export async function initChemAutostart(): Promise<void> { }
 
 //name: Chemistry | Most Diverse Structures
-//tags: tooltip, panel
+//tags: tooltip
 //input: column col {semType: Molecule}
 //output: widget
 export async function chemTooltip(col: DG.Column): Promise<DG.Widget | undefined> {
@@ -178,6 +178,7 @@ export function scaffoldTreeViewer() : ScaffoldTreeViewer {
 //tags: filter
 //output: filter result
 //meta.semType: Molecule
+//meta.primaryFilter: true
 export function substructureFilter(): SubstructureFilter {
   return new SubstructureFilter();
 }
@@ -448,7 +449,9 @@ export function SubstructureSearchTopMenu(molecules: DG.Column): void {
     .find((el) => Array.from(el!.getElementsByTagName('label')).find(it => it.textContent === molecules.name));
   if (filterHeader) {
     setTimeout(() => {
-      ((filterHeader.parentElement as HTMLElement).getElementsByClassName('sketch-link')[0] as HTMLElement).click();
+      const sketchLink = (filterHeader.parentElement as HTMLElement).getElementsByClassName('sketch-link')[0];
+      const element = sketchLink ?? (filterHeader.parentElement as HTMLElement).getElementsByClassName('chem-canvas')[0];
+      (element as HTMLElement).click();
     }, 500);
   }
 }
@@ -519,8 +522,9 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
     Do you want to continue?`))
       .onOK(async () => {
         const progressBar = DG.TaskBarProgressIndicator.create(`Running Chemical space...`);
-        return await runChemSpace();
+        const res =  await runChemSpace();
         progressBar.close();
+        return res;
       })
       .show();
   } else
@@ -653,7 +657,11 @@ export function ActivityCliffsEditor(call: DG.FuncCall) {
   ui.dialog({title: 'Activity Cliffs'})
     .add(funcEditor.paramsUI)
     .onOK(async () => {
-      call.func.prepare(funcEditor.funcParams).call(true);
+      const params = funcEditor.funcParams;
+      if (params.activities)
+        call.func.prepare(funcEditor.funcParams).call(true);
+      else
+        grok.shell.error(`Column with activities has not been selected. Table contains no numeric columns.`);
     })
     .show();
 }
@@ -663,7 +671,7 @@ export function ActivityCliffsEditor(call: DG.FuncCall) {
 //description: detect activity cliffs
 //input: dataframe table [Input data table]
 //input: column molecules {type:categorical; semType: Molecule}
-//input: column activities
+//input: column activities {type:numerical}
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
@@ -1187,33 +1195,48 @@ export function removeDuplicates(molecules: string[], molecule: string): string[
 
 //name: Demo Chem Overview
 //meta.demoPath: Cheminformatics | Overview
+//description: Overview of Cheminformatics functionality
+//meta.isDemoScript: True
 export async function demoChemOverview(): Promise<void> {
   _demoChemOverview();
 }
 
 
 //name: Demo Similarity Search
-//meta.demoPath: Cheminformatics | Similarity Search
-export async function demoSimilaritySearch(): Promise<void> {
-  _demoSimilaritySearch();
+//description: Searching for most similar or diverse molecules in dataset
+//meta.demoPath: Cheminformatics | Similarity & Diversity Search
+export async function demoSimilarityDiversitySearch(): Promise<void> {
+  _demoSimilarityDiversitySearch();
 }
 
 
 //name: Demo R Group Analysis
+//description: R Group Analysis including R-group decomposition and  visual analysis of the obtained R-groups
 //meta.demoPath: Cheminformatics | R Group Analysis
+//meta.isDemoScript: True
 export async function demoRgroupAnalysis(): Promise<void> {
   _demoRgroupAnalysis();
 }
 
 
 //name: Demo Activity Cliffs
+//description: Searching similar structures with significant activity difference
 //meta.demoPath: Cheminformatics | Molecule Activity Cliffs
+//meta.isDemoScript: True
 export async function demoActivityCliffs(): Promise<void> {
   _demoActivityCliffs();
 }
 
 //name: Demo Databases
-//meta.demoPath: Cheminformatics | Databases
+//description: Running various queries to chemical databases using convenient input forms
+//meta.demoPath: Cheminformatics | Chemical Databases
 export async function demoDatabases(): Promise<void> {
-  _demoDatabases();
+  _demoDatabases4();
+}
+
+//name: Demo Scaffold Tree
+//description: Running scaffold analysis with hierarchical tree
+//meta.demoPath: Cheminformatics | Scaffold Tree
+export async function demoScaffold(): Promise<void> {
+  _demoScaffoldTree();
 }

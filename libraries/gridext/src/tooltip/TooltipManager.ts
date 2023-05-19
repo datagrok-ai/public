@@ -7,6 +7,10 @@ import * as GridUtils from '../utils/GridUtils';
 const VIEWERS : Array<DG.Viewer> = [];
 
 function indexofViewer(viewer: DG.Viewer) : number {
+  const dart = toDart(viewer);
+  if (dart === null)
+    return -1;
+
   for (let n = 0; n < VIEWERS.length; ++n) {
     if(toDart(VIEWERS[n]) === toDart(viewer))
       return n;

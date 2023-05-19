@@ -10,6 +10,7 @@
     "@datagrok-libraries/utils": "latest"
   },
   "devDependencies": {
+    "datagrok-tools": "latest",
     "webpack": "latest",
     "webpack-cli": "latest"
   },

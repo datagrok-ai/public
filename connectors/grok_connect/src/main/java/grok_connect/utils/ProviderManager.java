@@ -90,6 +90,9 @@ public class ProviderManager {
     }
 
     public JdbcDataProvider getByName(String name) {
+        if (name.equals("Neptune")) {
+            return new NeptuneDataProvider(ProviderManager.this);
+        }
         LOGGER.trace("getByName with argument {} was called", name);
         return providersMap.get(name);
     }

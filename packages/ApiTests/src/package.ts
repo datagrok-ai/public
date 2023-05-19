@@ -76,3 +76,13 @@ export function dummyPackageFunction(a: number, b: number) {
   const c = a + b;
   return c;
 }
+
+//name: dummyDataFrameFunction
+//input: dataframe table [Data table]
+//output: int count 
+//output: dataframe tableOut
+export function dummyDataFrameFunction(table: DG.DataFrame) {
+  const count = table.rowCount;
+  const tableOut = table;
+  return {tableOut, count};
+}

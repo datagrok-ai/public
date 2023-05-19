@@ -108,6 +108,7 @@ export async function treeInGridCellApp(): Promise<void> {
 //description: Opens Newick file
 //input: viewer grid
 //input: string newickText
+//input: string leafColName {optional: true}
 export async function injectTreeToGrid(grid: DG.Grid, newickText: string, leafColName?: string) {
   const colNameList: string[] = grid.dataFrame.columns.names();
   leafColName = leafColName ??
@@ -117,8 +118,7 @@ export async function injectTreeToGrid(grid: DG.Grid, newickText: string, leafCo
     colNameList.find((colName) => colName.toLowerCase() == 'id');
   if (!leafColName)
     throw new Error('The leaf column name can not be inferred. Specify it as an argument.');
-
-  injectTreeToGridUI(grid, newickText, leafColName!);
+  await injectTreeToGridUI(grid, newickText, leafColName!);
 }
 
 type PtvWindowType = Window & { $phylocanvasGlService?: PhylocanvasGlService };

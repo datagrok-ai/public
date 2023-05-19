@@ -15,7 +15,7 @@ import {TwinPviewer} from './viewers/twin-p-viewer';
 import {PROPS as nglPROPS, NglViewer} from './viewers/ngl-viewer';
 import {NglViewerApp} from './apps/ngl-viewer-app';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
-import {PdbHelper} from './utils/pdb-helper';
+import {PdbHelper, PdbResDataFrame} from './utils/pdb-helper';
 import {PdbApp} from './apps/pdb-app';
 import {nglViewUI, nglWidgetUI} from './viewers/ngl-ui';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
@@ -27,6 +27,9 @@ import {BiotrackViewerApp} from './apps/biotrack-viewer-app';
 import {BiostructureAndTrackViewerApp} from './apps/biostructure-and-track-viewer-app';
 import {previewBiostructure, viewBiostructure} from './viewers/view-preview';
 import {BiostructureViewerApp} from './apps/biostructure-viewer-app';
+import {demoBio06NoScript} from './demo/bio06-docking-ngl';
+import {demoBio07NoScript} from './demo/bio07-molecule3d-in-grid';
+import {NglGlDocService} from './utils/ngl-gl-doc-service';
 
 class Package extends DG.Package {
   private _pLogger: DG.PackageLogger;
@@ -47,6 +50,13 @@ class Package extends DG.Package {
 }
 
 export const _package = new Package();
+
+//name: init
+//tags: init
+//description:
+export async function init() {
+  _package.logger.debug('BiostructureViewer.initBiostructureViewer() init package start');
+}
 
 //name: pdbCellRenderer
 //tags: cellRenderer
@@ -104,7 +114,7 @@ declare const window: BsvWindowType;
 //output: object result
 export function getNglGlService(): NglGlServiceBase {
   if (!(window.$nglGlService)) {
-    const svc: NglGlService = new NglGlService();
+    const svc: NglGlServiceBase = new NglGlDocService();
     window.$nglGlService = svc;
   }
 
@@ -117,7 +127,7 @@ export function getNglGlService(): NglGlServiceBase {
 //name: importPdb
 //description: Opens PDB file
 //tags: file-handler
-//meta.ext: mmcif, cifCore, pdb, pdbqt, gro, xyz
+//meta.ext: mmcif, cifCore, pdb, pdbqt, gro
 //input: string fileContent
 //output: list tables
 export async function importPdb(fileContent: string): Promise<DG.DataFrame[]> {
@@ -131,10 +141,22 @@ export async function importPdb(fileContent: string): Promise<DG.DataFrame[]> {
   return [];
 }
 
+/* as file is handled as string we don't know its extension, thus we need a separate handler **/
+//name: importXYZ
+//description: Opens XYZ file
+//tags: file-handler
+//meta.ext: xyz
+//input: string fileContent
+//output: list tables
+export async function importXYZ(fileContent: string): Promise<DG.DataFrame[]> {
+  await viewBiostructure(fileContent, 'xyz');
+  return [];
+}
+
 // -- File (pre)viewers --
 
 // eslint-disable-next-line max-len
-//tags: fileViewer, fileViewer-mol, fileViewer-cif, fileViewer-mcif, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-ent, fileViewer-pqr, fileViewer-mmtf, fileViewer-mtl, fileViewer-sd, fileViewer-pdbqt
+//tags: fileViewer, fileViewer-mol, fileViewer-cif, fileViewer-mcif, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-ent, fileViewer-pqr, fileViewer-mmtf, fileViewer-mtl, fileViewer-sd, fileViewer-pdbqt, fileViewer-xyz
 //input: file file
 //output: view v
 export function molecule3dNglView1(file: DG.FileInfo): DG.View {
@@ -161,6 +183,17 @@ export function molecule3dNglView3(file: DG.FileInfo): DG.View {
 //output: view v
 export function molecule3dNglView4(file: DG.FileInfo): DG.View {
   return previewBiostructure(file);
+}
+
+//name: openPdbResidues
+//input: file fi
+export async function openPdbResidues(fi: DG.FileInfo): Promise<void> {
+  const ph = await getPdbHelper();
+  const pdbStr: string = await fi.readAsString();
+  const pdbDf: PdbResDataFrame = await ph.pdbToDf(pdbStr, fi.fileName);
+  const view = grok.shell.addTableView(pdbDf);
+  const viewer = await pdbDf.plot.fromType('NGL', {});
+  view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'NGL', 0.40);
 }
 
 // -- Panel widgets --
@@ -290,7 +323,7 @@ export async function nglViewerGen(): Promise<void> {
 }
 
 //name: dockingDemo
-//meta.demoPath: Cheminformatics | Docking
+//description:
 export async function dockingDemo() {
   const piMsg: string = 'Opening docking demo app ...';
   const pi: TaskBarProgressIndicator = TaskBarProgressIndicator.create(piMsg);
@@ -302,7 +335,7 @@ export async function dockingDemo() {
 }
 
 //name: inGridDemo
-//meta.demoPath: Cheminformatics | 3D Molecules in Grid
+//description:
 export async function inGridDemo() {
   const piMsg: string = 'Opening biostructure in grid demo app ...';
   const pi: TaskBarProgressIndicator = TaskBarProgressIndicator.create(piMsg);
@@ -311,4 +344,26 @@ export async function inGridDemo() {
   } finally {
     pi.close();
   }
+}
+
+// -- Demo --
+
+// demoBio06
+//name: demoBioDockingConformations
+//meta.demoPath: Cheminformatics | Docking Conformations
+//description: Docking ligands along the structure
+//meta.path: /apps/Tutorials/Demo/Cheminformatics/Docking%20Conformations
+export async function demoBioDockingConformations(): Promise<void> {
+  // Do not use any script for this demo (askalkin, 2023-05-17)
+  //await demoBio06UI();
+  await demoBio06NoScript();
+}
+
+// demoBio07
+//name: demoBioProteins
+//meta.demoPath: Cheminformatics | Proteins
+//description: View structures PDB in grids
+//meta.path: /apps/Tutorials/Demo/Cheminformatics/Proteins
+export async function demoBioProteins(): Promise<void> {
+  await demoBio07NoScript();
 }

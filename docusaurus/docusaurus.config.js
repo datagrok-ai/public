@@ -10,8 +10,8 @@ const config = {
   tagline: 'Datagrok: Swiss Army Knife for Data',
   url: 'https://datagrok.ai',
   baseUrl: '/',
-  onBrokenLinks: 'warn',
-  onBrokenMarkdownLinks: 'warn',
+  onBrokenLinks: 'throw',
+  onBrokenMarkdownLinks: 'throw',
   favicon: 'favicon/favicon.ico',
   staticDirectories: ['static'],
 
@@ -165,7 +165,9 @@ const config = {
       },
 
       // Optional: Typesense search parameters: https://typesense.org/docs/0.21.0/api/search.md#search-parameters
-      typesenseSearchParameters: {},
+      typesenseSearchParameters: {
+        exhaustive_search: true,
+      },
 
       // Optional
       contextualSearch: true,

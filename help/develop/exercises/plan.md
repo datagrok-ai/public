@@ -27,7 +27,7 @@ perspective.
    1. [File shares](../../access/file-shares). Add the dataset to your *Home* directory.
    1. [Databases](../../access/databases.mdx#database-manager).
       1. Watch a [DB exploration video](https://www.youtube.com/watch?v=YJmSvh3_uCM).
-      1. Follow the [Data connectors](https://dev.datagrok.ai/apps/tutorials/DataAccess/DataConnectors) tutorial to
+      1. Follow the [Data connectors](https://dev.datagrok.ai/apps/tutorials/Tutorials/DataAccess/DataConnectors) tutorial to
          connect to a Postgres DB and run a query.
    1. [Webservices](../../access/open-api). Browse the [Webservices Manager](https://public.datagrok.ai/webservices)
       (Data > Webservices).
@@ -40,15 +40,15 @@ perspective.
       sort records by double-clicking a column header, resize rows/columns.
 1. Viewers:
    1. Learn how to work with visualizations on the platform by completing these tutorials:
-      1. [Scatter plot](https://dev.datagrok.ai/apps/tutorials/ExploratoryDataAnalysis/ScatterPlot)
-      1. [Viewers](https://dev.datagrok.ai/apps/tutorials/ExploratoryDataAnalysis/Viewers)
-      1. [Filters](https://dev.datagrok.ai/apps/tutorials/ExploratoryDataAnalysis/Filters)
-      1. [Embedded viewers](https://dev.datagrok.ai/apps/tutorials/ExploratoryDataAnalysis/EmbeddedViewers)
+      1. [Scatter plot](https://dev.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/ScatterPlot)
+      1. [Viewers](https://dev.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/Viewers)
+      1. [Filters](https://dev.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/Filters)
+      1. [Embedded viewers](https://dev.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/EmbeddedViewers)
    1. Watch an [Interactive data visualization video](https://www.youtube.com/watch?v=67LzPsdNrEc)
    1. Read [documentation](../../visualize/viewers/viewers.md)
    1. Add different viewers using the previously imported dataset
 1. Dashboards:
-   1. Complete the [Dashboards](https://dev.datagrok.ai/apps/tutorials/ExploratoryDataAnalysis/Dashboards) tutorial
+   1. Complete the [Dashboards](https://dev.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/Dashboards) tutorial
    1. Create a dashboard and share it with your mentor
 
 ## Day 2
@@ -73,7 +73,7 @@ The goal for today is to gain experience with the platform by learning about its
       `#text`, `#conversion`, etc.). Run simple functions, e.g., `Abs`, `Add` or `And`, from the context panel and the
       console.
 1. Scripting:
-   1. Complete the [Scripting](https://dev.datagrok.ai/apps/tutorials/MachineLearning/Scripting) tutorial
+   1. Complete the [Scripting](https://dev.datagrok.ai/apps/tutorials/Tutorials/MachineLearning/Scripting) tutorial
    1. Read documentation:
       1. [Scripting for non-developers](../../compute/scripting-for-non-developers.mdx)
       1. [Scripting](../../compute/scripting.md)

@@ -1,0 +1,365 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 1211,
+      "height": 582
+    },
+    "children": [
+      {
+        "containerType": "vertical",
+        "state": {
+          "width": 602,
+          "height": 582
+        },
+        "children": [
+          {
+            "containerType": "fill",
+            "state": {
+              "width": 602,
+              "height": 287,
+              "documentManager": true
+            },
+            "children": [
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 602,
+                  "height": 287,
+                  "element": {
+                    "id": "008b6c10-ed50-11ed-d222-bf9906e2bbe2",
+                    "type": "Grid",
+                    "look": {
+                      "#type": "GridLook",
+                      "showAddNewRowIcon": true,
+                      "addNewRowOnLastRowEdit": true,
+                      "rowHeight": 100,
+                      "topLevelDefaultMenu": true,
+                      "allowColumnMenu": true,
+                      "columns": [
+                        {
+                          "width": 44,
+                          "backgroundColor": 4294440951,
+                          "customName": "",
+                          "cellType": "row header"
+                        },
+                        {
+                          "width": 89,
+                          "columnName": "molregno",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 200,
+                          "columnName": "canonical_smiles",
+                          "cellType": "Molecule"
+                        },
+                        {
+                          "width": 186,
+                          "columnName": "NumSaturatedHeterocycles",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 181,
+                          "columnName": "NumAliphaticHeterocycles",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 177,
+                          "columnName": "NumAliphaticCarbocycles",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 78,
+                          "columnName": "NOCount",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 143,
+                          "columnName": "NumSaturatedRings",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 178,
+                          "columnName": "NumAromaticCarbocycles",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 96,
+                          "columnName": "NHOHCount",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 86,
+                          "columnName": "RingCount",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 146,
+                          "columnName": "NumRotatableBonds",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 183,
+                          "columnName": "NumAromaticHeterocycles",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 182,
+                          "columnName": "NumSaturatedCarbocycles",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 129,
+                          "columnName": "NumHeteroatoms",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 138,
+                          "columnName": "NumAliphaticRings",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 105,
+                          "columnName": "FractionCSP3",
+                          "customFormat": "0.00000",
+                          "cellType": "number",
+                          "format": "0.00000"
+                        },
+                        {
+                          "width": 127,
+                          "columnName": "HeavyAtomCount",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 139,
+                          "columnName": "NumAromaticRings",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 122,
+                          "columnName": "NumHAcceptors",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 104,
+                          "columnName": "NumHDonors",
+                          "cellType": "number"
+                        },
+                        {
+                          "visible": false,
+                          "columnName": "~canonical_smilesMorganFingerprints"
+                        },
+                        {
+                          "width": 93,
+                          "columnName": "Embed_X_1",
+                          "cellType": "number"
+                        },
+                        {
+                          "width": 92,
+                          "columnName": "Embed_Y_1",
+                          "cellType": "number"
+                        }
+                      ]
+                    },
+                    "title": "Grid",
+                    "default": true
+                  }
+                },
+                "children": []
+              }
+            ]
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 602,
+              "height": 294,
+              "element": {
+                "id": "008bba30-ed50-11ed-8d00-dffe5444f3f1",
+                "type": "Scatter plot",
+                "look": {
+                  "#type": "ScatterPlotLook",
+                  "xColumnName": "Embed_X_1",
+                  "yColumnName": "Embed_Y_1",
+                  "markerMinSize": 3,
+                  "markerMaxSize": 20,
+                  "viewport": "",
+                  "title": "Chem space"
+                },
+                "title": "Chem space"
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "containerType": "vertical",
+        "state": {
+          "width": 608,
+          "height": 582
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 608,
+              "height": 235,
+              "element": {
+                "id": "008c0850-ed50-11ed-cc83-d1cdb1b30947",
+                "type": "Chem Similarity Search",
+                "look": {
+                  "#type": "JsViewerHostLook",
+                  "fingerprint": "Morgan",
+                  "limit": 12,
+                  "distanceMetric": "Tanimoto",
+                  "size": "small",
+                  "moleculeColumnName": "canonical_smiles",
+                  "moleculeProperties": [],
+                  "applyColorTo": "background",
+                  "cutoff": 0.01,
+                  "followCurrentRow": true
+                },
+                "title": "Chem Similarity Search"
+              }
+            },
+            "children": []
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 608,
+              "height": 94,
+              "element": {
+                "id": "008c7d80-ed50-11ed-da62-63d126bd074a",
+                "type": "Markup",
+                "look": {
+                  "#type": "MarkupViewerLook",
+                  "content": "# Molecular Similarity & Diversity\n      \nClick on the molecule on the diversity viewer(below) to see similar molecules"
+                },
+                "title": "Markup"
+              }
+            },
+            "children": []
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 608,
+              "height": 251,
+              "element": {
+                "id": "008c7d80-ed50-11ed-a1b2-8d39e43907e5",
+                "type": "Chem Diversity Search",
+                "look": {
+                  "#type": "JsViewerHostLook",
+                  "fingerprint": "Morgan",
+                  "limit": 12,
+                  "distanceMetric": "Tanimoto",
+                  "size": "small",
+                  "moleculeColumnName": "canonical_smiles",
+                  "moleculeProperties": [],
+                  "applyColorTo": "background"
+                },
+                "title": "Chem Diversity Search"
+              }
+            },
+            "children": []
+          }
+        ]
+      }
+    ],
+    "floating": [],
+    "tableId": "42992bc0-ed50-11ed-d640-bd8759dd83d2",
+    "tableName": "Table"
+  },
+  "columns": [
+    {
+      "name": "canonical_smiles",
+      "type": "string",
+      "semType": "Molecule",
+      "id": "4299ef10-ed50-11ed-d685-f121e513c6b3",
+      "friendlyName": "Canonical_smiles",
+      "entityTags": [
+        {
+          "tag": ".id",
+          "id": "008ccba0-ed50-11ed-da36-59840a545729"
+        },
+        {
+          "tag": "units",
+          "id": "008ccba0-ed50-11ed-f7b5-a5e1ad50f185"
+        },
+        {
+          "tag": "quality",
+          "id": "008cf2b0-ed50-11ed-9d26-6f3bbec3239e"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "008cf2b0-ed50-11ed-83eb-f572c3946119"
+        },
+        {
+          "tag": "cell.renderer",
+          "id": "008cf2b0-ed50-11ed-a2af-4b992d2f0ed3"
+        },
+        {
+          "tag": ".invalideted.for.version",
+          "id": "008cf2b0-ed50-11ed-9b0e-e7fb0f59072d"
+        },
+        {
+          "tag": ".Morgan.Column",
+          "id": "008d19c0-ed50-11ed-c0b1-e79faba5c7bb"
+        },
+        {
+          "tag": ".Morgan.Version",
+          "id": "008d19c0-ed50-11ed-8a03-816debaf9db0"
+        }
+      ],
+      "metaParams": {
+        ".id": "4299ef10-ed50-11ed-d685-f121e513c6b3",
+        "units": "smiles",
+        "quality": "Molecule",
+        ".semantic-detection-duration": "162",
+        "cell.renderer": "Molecule",
+        ".invalideted.for.version": "9",
+        ".Morgan.Column": "~canonical_smilesMorganFingerprints",
+        ".Morgan.Version": "9"
+      }
+    },
+    {
+      "name": "Embed_X_1",
+      "type": "double",
+      "id": "008d40d0-ed50-11ed-b3c0-430f40050dfd",
+      "friendlyName": "Embed_ X_1",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "008d40d0-ed50-11ed-ba8d-e5040aab1d68"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "0"
+      }
+    },
+    {
+      "name": "Embed_Y_1",
+      "type": "double",
+      "id": "008d67e0-ed50-11ed-bf53-6d52077059ab",
+      "friendlyName": "Embed_ Y_1",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "008d67e0-ed50-11ed-cf47-9500b214a90a"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "0"
+      }
+    }
+  ],
+  "name": "Table",
+  "friendlyName": "Table",
+  "author": {
+    "id": "17e48710-7820-11ed-e531-353563a9ca73"
+  },
+  "createdOn": "2023-05-12T19:48:43.981Z"
+}

@@ -16,6 +16,7 @@ import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-me
 
 const enum FING_COL_TAGS {
   invalidatedForVersion = '.invalideted.for.version',
+  molsCreatedForVersion = '.mols.created.for.version',
 }
 
 let lastColumnInvalidated: string = '';
@@ -80,15 +81,18 @@ function _chemGetDiversities(limit: number, molStringsColumn: DG.Column, fingerp
   return diversities;
 }
 
-function colInvalidated(col: DG.Column): Boolean {
+function colInvalidated(col: DG.Column, createMols: boolean): Boolean {
   return (lastColumnInvalidated == col.name &&
-    col.getTag(FING_COL_TAGS.invalidatedForVersion) == String(col.version));
+    col.getTag(FING_COL_TAGS.invalidatedForVersion) == String(col.version)  &&
+    (!createMols || col.getTag(FING_COL_TAGS.molsCreatedForVersion) == String(col.version)));
 }
 
 async function _invalidate(molCol: DG.Column, createMols: boolean) {
-  if (!colInvalidated(molCol)) {
-    if (createMols)
+  if (!colInvalidated(molCol, createMols)) {
+    if (createMols) {
       await (await getRdKitService()).initMoleculesStructures(molCol.toList());
+      molCol.setTag(FING_COL_TAGS.molsCreatedForVersion, String(molCol.version + 2));
+    }
     lastColumnInvalidated = molCol.name;
     molCol.setTag(FING_COL_TAGS.invalidatedForVersion, String(molCol.version + 1));
   }
@@ -108,7 +112,7 @@ function checkForFingerprintsColumn(col: DG.Column, fingerprintsType: Fingerprin
   return null;
 }
 
-function saveFingerprintsToCol(col: DG.Column, fgs: Uint8Array[], fingerprintsType: Fingerprint): void {
+function saveFingerprintsToCol(col: DG.Column, fgs: Uint8Array[], fingerprintsType: Fingerprint, createdMols: boolean): void {
   if (!col.dataFrame)
     throw new Error('Column has no parent dataframe');
 
@@ -124,6 +128,8 @@ function saveFingerprintsToCol(col: DG.Column, fgs: Uint8Array[], fingerprintsTy
   newCol.init((i) => fgs[i]);
 
   col.setTag(colNameTag, fingerprintColumnName);
+  if(createdMols)
+    col.setTag(FING_COL_TAGS.molsCreatedForVersion, String(col.version + 3));
   col.setTag(colVerTag, String(col.version + 2));
   col.setTag(FING_COL_TAGS.invalidatedForVersion, String(col.version + 1));
 }
@@ -140,7 +146,7 @@ async function getUint8ArrayFingerprints(
       await _invalidate(molCol, createMols);
       const molecules = createMols ? undefined : molCol.toList();
       const fingerprints = await (await getRdKitService()).getFingerprints(fingerprintsType, molecules);
-      saveFingerprintsToCol(molCol, fingerprints, fingerprintsType);
+      saveFingerprintsToCol(molCol, fingerprints, fingerprintsType, createMols);
       chemEndCriticalSection();
       return fingerprints;
     }

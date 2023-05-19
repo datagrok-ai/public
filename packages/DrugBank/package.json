@@ -3,8 +3,8 @@
   "friendlyName": "DrugBank",
   "version": "1.0.9",
   "author": {
-    "name": "Leonid Stolbov",
-    "email": "lstolbov@datagrok.ai"
+    "name": "Volodymyr Dyma",
+    "email": "vdyma@datagrok.ai"
   },
   "description": "Molecular similarity and substructure search capabilities in the [DrugBank](https://go.drugbank.com/) [Open Structures](https://go.drugbank.com/releases/latest#open-data) dataset.",
   "repository": {

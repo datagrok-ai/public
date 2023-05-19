@@ -18,7 +18,7 @@ export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
   try {
     sdf = (await smilesTo3DCoordinates(molecule)).replaceAll('\\n', '\n');
   } catch (e) {
-    return new DG.Widget(ui.divText('Molecule has no atoms'));
+    return new DG.Widget(ui.divText('Molecule has no atoms or malformed'));
   }
   const stringBlob = new Blob([sdf], {type: 'text/plain'});
 

@@ -8,7 +8,7 @@ import {readDataframe} from './utils';
 import {findMCS, findRGroups} from '../scripts-api';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../package';
-import { getMCS } from '../utils/most-common-subs';
+import {getMCS} from '../utils/most-common-subs';
 
 
 category('top menu r-groups', () => {

@@ -70,6 +70,21 @@ export class ModelHandler extends DG.ObjectHandler {
     return markup;
   }
 
+  async renderPreview(x: DG.Func) {
+    const editorName = x.options.editor ?? 'Compute:RichFunctionEditor';
+    const editor = await grok.functions.find(editorName);
+    if (editor !== null && editor instanceof DG.Func) {
+      console.log(editor);
+      const viewCall = editor.prepare({'call': x.prepare()});
+      await viewCall.call(false, undefined, {processed: true});
+      const view = viewCall.getOutputParamValue();
+      if (view instanceof DG.View)
+        return view;
+    }
+    //@ts-ignore
+    return super.renderPreview(x);
+  }
+
   renderProperties(x: DG.Func) {
     const a = ui.accordion('ComputeModel');
     a.context = x;
