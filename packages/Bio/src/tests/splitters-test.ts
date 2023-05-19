@@ -2,9 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, expect, expectArray, expectObject} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test, expect, expectArray, expectObject, delay} from '@datagrok-libraries/utils/src/test';
 import * as C from '../utils/constants';
-import {splitToMonomers, _package, getHelmMonomers} from '../package';
+import {_package, getHelmMonomers} from '../package';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {TAGS as bioTAGS, splitterAsFasta, splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
@@ -89,12 +89,9 @@ category('splitters', () => {
     // call to calculate 'cell.renderer' tag
     await grok.data.detectSemanticTypes(df);
 
-    dfList.push(df);
-    tvList.push(tv);
-
-    splitToMonomers();
+    await grok.functions.call('Bio:splitToMonomers');
     expect(df.columns.names().includes('17'), true);
-  }, {skipReason: 'GROK-12766'});
+  });
 
   test('getHelmMonomers', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(
