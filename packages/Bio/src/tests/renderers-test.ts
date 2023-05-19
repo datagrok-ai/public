@@ -53,7 +53,7 @@ category('renderers', () => {
 
   test('afterConvert', async () => {
     await _testAfterConvert();
-  }, {skipReason: 'GROK-12765'});
+  });
 
   test('selectRendererBySemType', async () => {
     await _selectRendererBySemType();
