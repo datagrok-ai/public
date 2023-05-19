@@ -178,7 +178,7 @@ export class RichFunctionView extends FunctionView {
         runButtonWrapper as any,
       ]);
       $(this.controllsDiv.children.item(1)).css('gap', '0px');
-      this.controllsDiv.style.position = 'sticky';
+      $(this.controllsDiv).css({'margin-top': '0px', 'position': 'sticky'});
     }
 
     const controlsWrapper = ui.div(this.controllsDiv, 'ui-form');
