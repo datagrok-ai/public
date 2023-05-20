@@ -60,14 +60,14 @@ category('Connections', () => {
   test('External Provider First part', async () => {
     const query = await grok.dapi.queries.filter(`friendlyName = "Compounds"`).include('params').first();
     const call = query.prepare();
-    call.call();
+    await call.call();
     setTimeout(() => {
       const t = call.getOutputParamValue() as DG.DataFrame;
       if (t == null)
       // eslint-disable-next-line no-throw-literal
         throw 'First rows await time exceeded';
     }, 2000);
-  });
+  }, {skipReason: 'Couldn\'t find test query'});
 
   test('Cache test for Table_Wide', async () => {
     const dataQueryName = 'PostgresqlTestCacheTableWide';
