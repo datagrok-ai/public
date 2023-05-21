@@ -288,7 +288,7 @@ export function paintColHeaderCell(g : CanvasRenderingContext2D | null, nX : num
 //arLines an array that after the call will contain the words layout. Each element of the array is another array representing the layout of an individual line.
 //strText a string containing text to be layouted.
 //nWidth the width of bounded range.
- function calcWordsCellLayout(ctx: CanvasRenderingContext2D, arLines: string[][], strText: string, nWidth: number) {
+export function calcWordsCellLayout(ctx: CanvasRenderingContext2D, arLines: string[][], strText: string, nWidth: number) {
   while(arLines.length > 0) {
     arLines.pop();
   }
