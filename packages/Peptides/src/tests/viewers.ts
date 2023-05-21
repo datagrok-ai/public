@@ -18,7 +18,7 @@ category('Viewers: Basic', () => {
   const viewers = DG.Func.find({package: 'Peptides', tags: ['viewer']}).map((f) => f.friendlyName);
   for (const v of viewers) {
     test(v, async () => {
-      await testViewer(v, df.clone(), true);
+      await testViewer(v, df.clone(), {detectSemanticTypes: true});
     }, {skipReason: 'GROK-11534'});
   }
 });

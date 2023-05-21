@@ -9,7 +9,7 @@
 	},
 	"description": "GIS (geographic information system) functionality, such as maps and geocoding.",
 	"dependencies": {
-		"@datagrok-libraries/utils": "^1.11.1",
+		"@datagrok-libraries/utils": "^4.0.7",
 		"cash-dom": "latest",
 		"datagrok-api": "^1.12.0",
 		"dayjs": "latest",

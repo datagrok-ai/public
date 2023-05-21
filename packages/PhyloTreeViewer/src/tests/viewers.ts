@@ -20,7 +20,7 @@ category('Viewers', () => {
       await testViewer(v, await (async () => {
         const newickStr: string = await _package.files.readAsText('data/tree95.nwk');
         return treeHelper.newickToDf(newickStr, 'tree95');
-      })(), true);
+      })(), {detectSemanticTypes: true});
     });
   }
 });
