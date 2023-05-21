@@ -372,7 +372,7 @@ export function isDialogPresent(dialogTitle: string): boolean {
  * @return {Promise<void>} The test is considered successful if it completes without errors
  */
 export async function testViewer(v: string, df: DG.DataFrame,
-  options?: {detectSemanticTypes: boolean, readOnly: boolean}): Promise<void> {
+  options?: {detectSemanticTypes?: boolean, readOnly?: boolean}): Promise<void> {
   if (options?.detectSemanticTypes) await grok.data.detectSemanticTypes(df);
   const tv = grok.shell.addTableView(df);
   const viewerName = `[name=viewer-${v.replace(/\s+/g, '-')} i]`;
