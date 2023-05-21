@@ -8,12 +8,12 @@ import java.util.List;
 import java.util.UUID;
 
 public class QueryLoggerImpl implements QueryLogger {
-    private final MapAppender appender;
+    private final ListAppender appender;
     private final Logger logger;
 
     public QueryLoggerImpl(List<String> logLevels) {
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        appender = new MapAppender();
+        appender = new ListAppender();
         UUID uuid = UUID.randomUUID();
         appender.setName(uuid.toString());
         appender.setContext(context);

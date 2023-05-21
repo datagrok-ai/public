@@ -77,9 +77,10 @@ public class QueryManager {
         }
 
         if (connection.getMetaData().supportsTransactions() && df.rowCount != 0) {
-            Double memInBytes = df.memoryInBytes() / 1024.0;
+            int dataFrameWeight = df.memoryInBytes();
+            Double memInBytes = dataFrameWeight / 1024.0;
             double fetchSize = df.rowCount / memInBytes * 30000;
-            logger.debug("Dataframe weight: {} bytes", memInBytes);
+            logger.debug("Dataframe weight: {} bytes", dataFrameWeight);
             if (fetchSize > 40000)
                 fetchSize = 40000;
             logger.debug("Fetch size: {}", fetchSize);
