@@ -1,24 +1,22 @@
 package grok_connect.handlers;
 
-import com.google.gson.reflect.TypeToken;
+import com.google.gson.Gson;
+import grok_connect.connectors_info.DataQueryRunResult;
 import grok_connect.log.QueryLogger;
 import grok_connect.utils.QueryChunkNotSent;
 import grok_connect.utils.QueryManager;
 import org.eclipse.jetty.websocket.api.Session;
-import com.google.gson.Gson;
 import java.nio.ByteBuffer;
-import java.util.Map;
+import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 import grok_connect.GrokConnect;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import serialization.DataFrame;
 
 public class SessionHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SessionHandler.class);
-    private static final Gson gson = new Gson();
     private static final int rowsPerChunk = 10000;
     private static final String MESSAGE_START = "QUERY";
     private static final String OK_RESPONSE = "DATAFRAME PART OK";
@@ -42,19 +40,27 @@ public class SessionHandler {
     }
 
     public void onError(Throwable err) throws Throwable {
-        dataFrame = null; // free some memory, maybe gc is benevolent today
         Throwable cause = err.getCause(); // we need to get cause, because error is wrapped by runtime exception
-        String message = socketErrorMessage(cause);
         if (cause instanceof OutOfMemoryError) {
             // guess it won't work because there is no memory left!
-            LOGGER.error(message);
+            logger.error("Out of memory");
             GrokConnect.needToReboot = true;
         } else {
-            LOGGER.debug(message);
+            String message = cause.getMessage();
+            String stackTrace = Arrays.stream(cause.getStackTrace()).map(StackTraceElement::toString)
+                    .collect(Collectors.joining(System.lineSeparator()));
+            logger.warn("An exception was thrown");
+            logger.debug("Error message: {}", message);
+            logger.debug("Stack trace: {}", stackTrace);
+            DataQueryRunResult result = new DataQueryRunResult();
+            result.errorMessage = message;
+            result.errorStackTrace = stackTrace;
+            result.log = queryLogger.dumpLogMessages();
+            session.getRemote().sendString(socketErrorMessage(new Gson().toJson(result)));
+            session.close();
+            queryManager.closeConnection();
         }
-        session.getRemote().sendString(message);
-        session.close();
-        queryManager.closeConnection();
+
     }
 
     public void onMessage(String message) throws Throwable {
@@ -104,7 +110,7 @@ public class SessionHandler {
             bytes = dataFrame.toByteArray();
             logger.debug("DataFrame was converted to byteArray, execution time: {} ms",
                     System.currentTimeMillis() - start);
-            logger.debug("Sending checkSum message");
+            logger.debug("Sending checkSum message with bytes length of {}", bytes.length);
             session.getRemote().sendString(checksumMessage(bytes.length));
         } else {
             logger.debug("Closing connection");
@@ -126,10 +132,7 @@ public class SessionHandler {
         return queryManager;
     }
 
-    private String socketErrorMessage(Throwable th) {
-        Map<String, String> stackTrace = GrokConnect.printError(th);
-        stackTrace.put("log", queryLogger.dumpLogMessages());
-        return String.format("ERROR: %s", gson.toJson(stackTrace,
-                new TypeToken<Map<String, String>>() { }.getType()));
+    private String socketErrorMessage(String s) {
+        return String.format("ERROR: %s", s);
     }
 }

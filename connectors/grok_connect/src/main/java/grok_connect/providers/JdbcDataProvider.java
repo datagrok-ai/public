@@ -144,7 +144,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             long convertingStartTime = System.currentTimeMillis();
             query = convertPatternParamsToQueryParams(queryRun, query);
             queryLogger.debug("Query after converting: {}, time taken to convert: {} ms",
-                    query, System.currentTimeMillis() - convertingStartTime);
+                    query.replaceAll("\n", ""), System.currentTimeMillis() - convertingStartTime);
             if (autoInterpolation()) {
                 queryLogger.trace("Query will be auto interpolated");
                 StringBuilder queryBuffer = new StringBuilder();
@@ -152,7 +152,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                 List<String> names = getParameterNames(query, dataQuery, queryBuffer);
                 query = queryBuffer.toString();
                 queryLogger.debug("Interpolated query: {}, time taken to interpolate: {} ms",
-                        query, System.currentTimeMillis() - interpolatingStartTime);
+                        query.replaceAll("\n", ""), System.currentTimeMillis() - interpolatingStartTime);
                 PreparedStatement statement = connection.prepareStatement(query);
                 if (supportsTransactions)
                     statement.setFetchSize(fetchSize);
