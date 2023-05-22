@@ -16,6 +16,9 @@ export class FormatDetector {
   private libWrapper: MonomerLibWrapper;
 
   getFormat(): FORMAT | null {
+    // todo: reliable criterion
+    if (this.sequence.startsWith('RNA'))
+      return FORMAT.HELM;
     const possibleFormats = this.getListOfPossibleSynthesizersByFirstMatchedCode();
     if (possibleFormats.length === 0)
       return null;

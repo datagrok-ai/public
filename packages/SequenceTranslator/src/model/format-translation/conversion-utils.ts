@@ -5,7 +5,7 @@ const NO_TRANSLATION_MSG = 'No translation table available';
 export const UNDEFINED_SEQ_MSG = 'Type of input sequence is undefined';
 
 export function convertSequence(sequence: string, indexOfFirstInvalidChar: number, sourceFormat: FORMAT | null): {[key: string]: string} {
-  if (indexOfFirstInvalidChar !== -1) {
+  if (indexOfFirstInvalidChar !== -1 && sourceFormat !== FORMAT.HELM) {
     return {
       indexOfFirstInvalidChar: indexOfFirstInvalidChar.toString(),
       Error: UNDEFINED_SEQ_MSG,
@@ -59,6 +59,21 @@ export function convertSequence(sequence: string, indexOfFirstInvalidChar: numbe
       [FORMAT.GCRS]: NO_TRANSLATION_MSG,
       [FORMAT.MERMADE_12]: sequence,
     };
+  }
+  if (sourceFormat === FORMAT.HELM) {
+    const gcrsSequence = (new FormatConverter(sequence, sourceFormat)).convertTo(FORMAT.GCRS);
+    const converter = new FormatConverter(gcrsSequence, FORMAT.GCRS);
+    const helmSequence = sequence;
+    return {
+      type: FORMAT.HELM,
+      [FORMAT.GCRS]: gcrsSequence,
+      [FORMAT.NUCLEOTIDES]: converter.convertTo(FORMAT.NUCLEOTIDES),
+      [FORMAT.BIOSPRING]: converter.convertTo(FORMAT.BIOSPRING),
+      [FORMAT.AXOLABS]: converter.convertTo(FORMAT.AXOLABS),
+      [FORMAT.MERMADE_12]: converter.convertTo(FORMAT.MERMADE_12),
+      [FORMAT.LCMS]: converter.convertTo(FORMAT.LCMS),
+      [FORMAT.HELM]: helmSequence,
+    }
   }
   return {
     type: UNDEFINED_SEQ_MSG,

@@ -1,7 +1,7 @@
-import {FormatDetector} from './format-detector';
 import {NUCLEOTIDES} from '../const';
 import {MonomerLibWrapper} from '../monomer-lib/lib-wrapper';
 import {sortByReverseLength} from '../helpers';
+import {SYNTHESIZERS as FORMAT} from '../const';
 
 export class SequenceValidator {
   constructor(private sequence: string) {
@@ -10,6 +10,8 @@ export class SequenceValidator {
   private libWrapper: MonomerLibWrapper;
 
   getInvalidCodeIndex(format: string): number {
+    if (format === FORMAT.HELM)
+      return this.sequence.length;
     const firstUniqueCharacters = ['r', 'd']; // what for?
     const codes = sortByReverseLength(
       this.libWrapper.getCodesByFormat(format)

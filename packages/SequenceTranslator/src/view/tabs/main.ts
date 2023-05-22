@@ -17,6 +17,7 @@ import {download} from '../../model/helpers';
 import {SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG, DEFAULT_INPUT} from '../const/main-tab';
 import {FormatDetector} from '../../model/parsing-validation/format-detector';
 import {SequenceValidator} from '../../model/parsing-validation/sequence-validator';
+import {FormatConverter} from '../../model/format-translation/format-converter';
 
 export class MainTabUI {
   constructor() {
@@ -150,6 +151,7 @@ export class MainTabUI {
 
     // warning: getMolfile relies on this.format, so the order is important
     this.molfile = this.getMolfile();
+    // this.molfile = '';
   }
 
   private getFormattedSequence(): string {
@@ -159,18 +161,16 @@ export class MainTabUI {
   private getMolfile(): string {
     if (!this.format)
       return '';
+    if (this.format === FORMAT.HELM) {
+      const gcrs = (new FormatConverter(this.sequence, this.format).convertTo(FORMAT.GCRS));
+      return (new SequenceToMolfileConverter(gcrs, false, FORMAT.GCRS).convert());
+    }
     const molfile = (new SequenceToMolfileConverter(this.sequence, false, this.format)).convert();
     return molfile;
   }
 
-  // private getInputFormat(): FORMAT {
-  //   const format = (new FormatDetector(this.sequence)).getFormat();
-  //   if (format === null)
-  //     throw new Error('ST: undefined sequence format')
-  //   return format;
-  // }
-
   private async updateLayout(): Promise<void> {
+    this.inputFormatChoiceInput.value = this.format;
     this.updateTable();
     await this.updateMolImg();
   }
