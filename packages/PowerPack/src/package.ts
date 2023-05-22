@@ -190,9 +190,12 @@ export function viewerGallery(): void {
 }
 
 //name: FuzzyFilter
+//friendlyName: Fuzzy Filter
 //description: search related texts
 //tags: filter
 //output: filter result
+//meta.semType: Text
+//meta.primaryFilter: true
 export function fuzzyFilter(): FuzzyFilter {
   return new FuzzyFilter();
 }

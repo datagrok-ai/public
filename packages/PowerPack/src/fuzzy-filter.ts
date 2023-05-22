@@ -35,7 +35,7 @@ export class FuzzyFilter extends DG.Filter {
         let filterResult = fuse.search(this.input)
         this.bitset = DG.BitSet.create(this.dataFrame?.rowCount ?? 0, (i: number) => false)
         for (let res of filterResult)
-            if (res.score != undefined && res.score < 0.7)
+            if (res.score != undefined && res.score < 0.5)
                 this.bitset.set(res.refIndex, true, false)
 
         this.lastCol = this.column;
