@@ -678,7 +678,7 @@ export function ActivityCliffsEditor(call: DG.FuncCall) {
 //input: object options {optional: true}
 //editor: Chem:ActivityCliffsEditor
 export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
-  similarity: number, methodName: DimReductionMethods, similarityMetric: BitArrayMetrics, options?: IUMAPOptions | ITSNEOptions) {
+  similarity: number, methodName: DimReductionMethods, similarityMetric: BitArrayMetrics, options?: IUMAPOptions | ITSNEOptions): Promise<void> {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
@@ -695,22 +695,24 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
     return;
   }
 
+  const runActCliffs = async (): Promise<void> => {
+    await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, similarityMetric,
+    methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
+    createTooltipElement, createPropPanelElement, undefined, options);
+  }
+
   const axesNames = getEmbeddingColsNames(df);
   if (df.rowCount > fastRowCount) {
     ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
     Do you want to continue?`))
       .onOK(async () => {
         const progressBar = DG.TaskBarProgressIndicator.create(`Activity cliffs running...`);
-        await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, similarityMetric,
-          methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
-          createTooltipElement, createPropPanelElement, undefined, options);
+        await runActCliffs();
         progressBar.close();
       })
       .show();
   } else {
-    await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, similarityMetric,
-      methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
-      createTooltipElement, createPropPanelElement, undefined, options);
+    await runActCliffs();
   }
 }
 

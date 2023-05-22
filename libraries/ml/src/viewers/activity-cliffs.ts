@@ -132,7 +132,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   df.columns.add(cliffCol);
 
   const saliMinMax = getSaliMinMax(cliffsMetrics.saliVals);
-  const saliOpacityCoef = 0.8/(saliMinMax.max - saliMinMax.min);;
+  const saliOpacityCoef = 0.8 / (saliMinMax.max - saliMinMax.min);
 
   const view = grok.shell.getTableView(df.name);
   view.grid.columns.byName(cliffCol.name)!.visible = false;
@@ -182,13 +182,8 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   sp.root.append(filterCliffsButton.root);
 
   filterCliffsSubj.subscribe((s: string) => {
-    if (s !== '') {
-      if (s !== cliffCol.name)
-        filterCliffsButton.enabled = false;
-    } else {
-      filterCliffsButton.enabled = true;
-    }
-  })
+    filterCliffsButton.enabled = s !== '' ? s !== cliffCol.name ? false : true : true;
+  });
 
   //closing docked grid when viewer is closed
   const viewerClosedSub = grok.events.onViewerClosed.subscribe((v) => {
@@ -198,7 +193,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
       viewerClosedSub.unsubscribe();
       view.subs = view.subs.filter((sub) => sub !== viewerClosedSub);
     }
-  })
+  });
   view.subs.push(viewerClosedSub);
 
 
@@ -357,11 +352,7 @@ function getActivityCliffsMetrics(simArr: (DG.Column | null)[], similarityLimit:
         cliffsMolIds.add(i + j + 1);
         simVals.push(sim);
         const diff = Math.abs(activities.get(i) - activities.get(i + j + 1));
-        if (sim != 1) {
-          saliVals.push(diff / (1 - sim));
-        } else {
-          saliVals.push(Infinity);
-        }
+        saliVals.push(sim != 1 ? diff / (1 - sim) : Infinity);
       }
     }
   }
@@ -466,7 +457,7 @@ function renderLines(sp: DG.ScatterPlotViewer, xAxis: string, yAxis: string, lin
     const line = new Path2D();
     line.moveTo(lines[i].a[0], lines[i].a[1]);
     const color = lines[i].selected ? '255,255,0' : '0,128,0';
-    const opacity = saliVals[i] === Infinity ? 1 : 0.2 + (saliVals[i] - saliMin)*saliOpacityCoef;
+    const opacity = saliVals[i] === Infinity ? 1 : 0.2 + (saliVals[i] - saliMin) * saliOpacityCoef;
     ctx.strokeStyle = `rgba(${color},${opacity})`;
     ctx.lineWidth = lines[i].id === linesRes.linesDf.currentRowIdx ? 3 : 1;
     line.lineTo(lines[i].b[0], lines[i].b[1]);
