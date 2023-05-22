@@ -719,14 +719,14 @@ export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column): void 
 //name: Structural Alerts
 //input: dataframe table [Input data table] {caption: Table}
 //input: column molecules {caption: Molecules; type: categorical; semType: Molecule}
-//input: bool pains {caption: PAINS; default: true, description: "Pan Assay Interference Compounds filters"}
-//input: bool bms {caption: BMS; default: false, description: "Bristol-Myers Squibb HTS Deck filters"}
-//input: bool sureChembl {caption: SureChEMBL; default: false, description: "MedChem unfriendly compounds from SureChEMBL"}
-//input: bool mlsmr {caption: MLSMR; default: false, description: "NIH MLSMR Excluded Functionality Filters"}
-//input: bool dandee {caption: Dandee; default: false, description: "University of Dundee NTD Screening Library filters"}
-//input: bool inpharmatica {caption: Inpharmatica; default: false, description: "Inpharmatica filters"}
-//input: bool lint {caption: LINT; default: false, description: "Pfizer LINT filters"}
-//input: bool glaxo {caption: Glaxo; default: false, description: "Glaxo Wellcome Hard filters"}
+//input: bool pains {caption: PAINS; default: true; description: "Pan Assay Interference Compounds filters"}
+//input: bool bms {caption: BMS; default: false; description: "Bristol-Myers Squibb HTS Deck filters"}
+//input: bool sureChembl {caption: SureChEMBL; default: false; description: "MedChem unfriendly compounds from SureChEMBL"}
+//input: bool mlsmr {caption: MLSMR; default: false; description: "NIH MLSMR Excluded Functionality filters"}
+//input: bool dandee {caption: Dandee; default: false; description: "University of Dundee NTD Screening Library filters"}
+//input: bool inpharmatica {caption: Inpharmatica; default: false; description: "Inpharmatica filters"}
+//input: bool lint {caption: LINT; default: false; description: "Pfizer LINT filters"}
+//input: bool glaxo {caption: Glaxo; default: false; description: "Glaxo Wellcome Hard filters"}
 export async function structuralAlertsTopMenu(table: DG.DataFrame, col: DG.Column, pains: boolean, bms: boolean,
   sureChembl: boolean, mlsmr: boolean, dandee: boolean, inpharmatica: boolean, lint: boolean, glaxo: boolean,
   ): Promise<void> {
