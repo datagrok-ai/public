@@ -5,8 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import {PdbEntry} from '../pdb-entry.js';
 import * as NGL from 'NGL';
 
-// export let _package = new DG.Package();
-
 const getCircularReplacer = (): (this: any, key: string, value: any) => any => {
   const seen = new WeakSet();
   return (key: string, value: any) => {

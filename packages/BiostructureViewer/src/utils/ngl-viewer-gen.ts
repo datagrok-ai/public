@@ -1,7 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {_package} from '../package';
+
+import {_package} from '../package-utils';
 
 export async function nglViewerGen(): Promise<void> {
   const mol2Str: string = await _package.files.readAsText('samples/dc.mol2');

@@ -3,11 +3,9 @@ import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 
 import {category, test, testViewer} from '@datagrok-libraries/utils/src/test';
-//import {_package} from './package-test-int';
-import {PdbHelper} from '../utils/pdb-helper';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
-import {getPdbHelper} from '../package';
 import {_packageName} from './utils';
+import {_getPdbHelper} from '../package-utils';
 
 
 category('Viewers', () => {
@@ -17,7 +15,7 @@ category('Viewers', () => {
   for (const v of viewers) {
     test(v, async () => {
       await testViewer(v, await (async () => {
-        const ph: IPdbHelper = await getPdbHelper();
+        const ph: IPdbHelper = await _getPdbHelper();
         const pdbFn: string = `System:AppData/${_packageName}/samples/1bdq.pdb`;
         const pdbStr: string = await grok.dapi.files.readAsText(pdbFn);
         const df: DG.DataFrame = await ph.pdbToDf(pdbStr, '1bdq');

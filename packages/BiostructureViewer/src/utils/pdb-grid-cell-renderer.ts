@@ -3,8 +3,8 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
-import {_package, getNglGlService} from '../package';
-import {byData} from '../viewers/molstar-viewer';
+import {_package} from '../package-utils';
+import {_getNglGlService} from '../package-utils';
 import {NglGlTask} from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
 import {BiostructureProps, IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 
@@ -58,7 +58,7 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
     viewer = wu(tview.viewers).find((v) => v.type === 'Biostructure') as DG.Viewer & IBiostructureViewer;
 
     if (!viewer) {
-      df.plot.fromType('Biostructure', {pdb: value,}).then(
+      df.plot.fromType('Biostructure', {pdb: value}).then(
         (value: DG.Widget) => {
           viewer = value as DG.Viewer & IBiostructureViewer;
           tview.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure Viewer', 0.3);
@@ -84,7 +84,7 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
     cellStyle: DG.GridCellStyle
   ): void {
     const r = window.devicePixelRatio;
-    const service = getNglGlService();
+    const service = _getNglGlService();
 
     if (gridCell.tableRowIndex == null || gridCell.tableColumn == null) return;
 

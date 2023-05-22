@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../package';
+import {_package} from '../package-utils';
 import $ from 'cash-dom';
 import {v4 as uuidv4} from 'uuid';
 
@@ -100,23 +100,23 @@ export class SaguaroViewer extends DG.JsViewer {
       return;
     }
     switch (property.name) {
-    case PROPS.borderColor:
-      const borderColorValue: string = intToHtmlA(this.borderColor);
-      break;
+      case PROPS.borderColor:
+        const borderColorValue: string = intToHtmlA(this.borderColor);
+        break;
 
-    case PROPS.rowTitleWidth:
-    case PROPS.trackWidth:
-    case PROPS.includeAxis:
-    case PROPS.includeTooltip:
-    case PROPS.disableMenu:
-    case PROPS.borderWidth:
-    case PROPS.hideInnerBorder:
-    case PROPS.hideTrackFrameGlow:
-    case PROPS.highlightHoverPosition:
-    case PROPS.hideRowGlow:
-      const propValue: any = this.props.get(property.name);
-      this.boardConfigDataProps[property.name as keyof RcsbFvBoardConfigInterface] = propValue;
-      break;
+      case PROPS.rowTitleWidth:
+      case PROPS.trackWidth:
+      case PROPS.includeAxis:
+      case PROPS.includeTooltip:
+      case PROPS.disableMenu:
+      case PROPS.borderWidth:
+      case PROPS.hideInnerBorder:
+      case PROPS.hideTrackFrameGlow:
+      case PROPS.highlightHoverPosition:
+      case PROPS.hideRowGlow:
+        const propValue: any = this.props.get(property.name);
+        this.boardConfigDataProps[property.name as keyof RcsbFvBoardConfigInterface] = propValue;
+        break;
     }
   }
 

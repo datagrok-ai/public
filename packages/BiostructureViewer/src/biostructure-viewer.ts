@@ -2,18 +2,13 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {TwinPviewer} from '../viewers/twin-p-viewer';
-import {_package} from '../package-utils';
+import {_package} from './package-utils';
+import {TwinPviewer} from './viewers/twin-p-viewer';
 
-export class DockingApp {
-  private readonly appFuncName: string = '';
+export class BioStructureViewer {
   bsView: DG.TableView;
   twinPviewer: TwinPviewer;
   ligandSelection: { [key: string]: any };
-
-  constructor(appFuncName: string = 'dockingApp') {
-    this.appFuncName = appFuncName;
-  }
 
   private changeId = async (): Promise<void> => {
     const chains = ['A', 'B'];
@@ -33,8 +28,8 @@ export class DockingApp {
   };
 
   private setView = async (): Promise<void> => {
-    // let table = (await grok.data.loadTable(_package.webRoot + 'files/samples/dock.csv'));
-    const table: DG.DataFrame = await _package.files.readCsv('samples/dock.csv');
+
+    let table = (await grok.data.loadTable(_package.webRoot + 'files/samples/dock.csv'));
 
     this.bsView = grok.shell.addTableView(table);
 
@@ -52,7 +47,7 @@ export class DockingApp {
             this.ligandSelection[gc.cell.value][0] = !this.ligandSelection[gc.cell.value][0];
             this.twinPviewer.changeLigands(this.bsView, this.ligandSelection);
           })
-        ], {style: {alignItems: 'center'}});
+        ]);
       }
     });
 
@@ -63,6 +58,6 @@ export class DockingApp {
 
   public async init() {
     await this.setView();
-    await this.changeId();
+    this.changeId();
   }
 }

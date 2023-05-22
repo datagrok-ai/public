@@ -3,9 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {_packageName} from './utils';
+import {_getPdbHelper} from '../package-utils';
 import {category/*, expect*/, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
-import {getPdbHelper} from '../package';
 import {PdbResDataFrame} from '../utils/pdb-helper';
 
 
@@ -16,7 +16,7 @@ category('pdbHelper', () => {
 });
 
 async function _testPdbToDf(): Promise<void> {
-  const ph: IPdbHelper = await getPdbHelper();
+  const ph: IPdbHelper = await _getPdbHelper();
   const pdbCnt: string = await grok.dapi.files.readAsText(`System:AppData/${_packageName}/samples/1bdq.pdb`);
   const df: DG.DataFrame = await ph.pdbToDf(pdbCnt, '1bdq');
   expect(df.rowCount, 198);
