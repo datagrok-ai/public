@@ -745,6 +745,8 @@ export class RichFunctionView extends FunctionView {
 
     const tabControl = this.outputsTabsElem;
     for (const tabLabel of this.tabsLabels) {
+      if (!tabControl.getPane(tabLabel)) continue;
+
       tabControl.currentPane = tabControl.getPane(tabLabel);
       await new Promise((r) => setTimeout(r, 100));
       if (tabLabel === 'Input') {
