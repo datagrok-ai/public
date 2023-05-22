@@ -25,7 +25,7 @@ function addFseRibbonQuery(v: DG.View) {
   setTimeout(() => {
     const iconFse = ui.iconFA('magic', () => openFse(v, editor(v)), 'Open Signature Editor');
     //@ts-ignore
-    v.ribbonMenu.root.previousSibling.append(ui.div(iconFse,'d4-ribbon-item'));
+    v.ribbonMenu.root.previousSibling?.append(ui.div(iconFse,'d4-ribbon-item'));
   }, 500);
 }
 
