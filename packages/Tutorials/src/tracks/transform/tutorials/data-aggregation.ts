@@ -24,6 +24,10 @@ export class AggregationTutorial extends Tutorial {
     this.header.textContent = this.name;
     this.title('Aggregation');
 
+    this.describe('<b>Aggregation Editor</b> is a visual tool for summarizing and pivoting ' +
+      'table data. It comes with a wide set of aggregation functions. We will learn how to ' +
+      'aggregate data on a demographics dataset.');
+
     await this.action('Open Aggregation Editor', grok.functions.onAfterRunAction.pipe(
       filter((call) => call.func.name === 'CmdAggregateRows')), this.getMenuItem('Data'),
       'Select <b>Data > Aggregate Rows</b> in the top menu, or press <b>Alt+A</b>.');
@@ -81,7 +85,9 @@ export class AggregationTutorial extends Tutorial {
 
     await this.action('Change a column to "WEIGHT"', findColTag(aggRoot, 'avg(WEIGHT)', () =>
       $(aggRoot).find(colTagSelector).length === 1), null, 'You can change the aggregation column ' +
-      'and function from the context menu. Let\'s calculate the average weight for each patient ' +
+      'and function from the context menu. For example, if you are adding multiple columns using the ' +
+      'same aggregation function, you can set it as default by pressing the "+" sign and choosing ' +
+      'it under the "Aggregation" submenu. Let\'s calculate the average weight for each patient ' +
       'group instead of age. Right-click the aggregation field and select <b>Column > WEIGHT</b>.');
 
     this.title('Interactivity');
@@ -100,5 +106,23 @@ export class AggregationTutorial extends Tutorial {
       this.t!.filter.onChanged.pipe(filter(() => this.t!.filter.trueCount === 75)), null,
       'The filter should be based on the last row in the aggregated table (the values are ' +
       '"Other, M").');
+
+    this.title('History');
+
+    const serializedParams = '[{"#type":"GroupAggregation","aggType":"key","colName":"RACE"},' +
+      '{"#type":"GroupAggregation","aggType":"key","colName":"SEX"},{"#type":"GroupAggregation",' +
+      '"aggType":"pivot","colName":"DIS_POP"},{"#type":"GroupAggregation","aggType":"avg","colName":"WEIGHT"}]';
+
+    await this.action('Save parameters', interval(1000).pipe(filter(() => {
+        const historyStr = window.localStorage['grok-aggregation-history'];
+        if (!historyStr)
+          return false;
+        const history = JSON.parse(historyStr);
+        return JSON.stringify(history[history.length - 1]) === serializedParams;
+      })), $('i.grok-icon.fa-history.d4-command-bar-icon')[0],
+      'Click on the history icon and select <b>Save parameters</b> from the menu. Note that parameters are ' +
+      'also saved automatically when you click "OK" to add the aggregated dataframe to the workspace. This ' +
+      'can be useful if you choose to reset the entered parameters. To return previously used parameters, ' +
+      'simply select them when clicking the history icon.');
   }
 }
