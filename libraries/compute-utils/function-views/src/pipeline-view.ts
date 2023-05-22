@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {zipSync, Zippable} from 'fflate';
-import {Subject, combineLatest} from 'rxjs';
+import {Subject} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import $ from 'cash-dom';
 import {FunctionView} from './function-view';
@@ -323,7 +323,9 @@ export class PipelineView extends ComputationView {
     await this.onBeforeLoadRun();
 
     pulledChildRuns.forEach(async (pulledChildRun) => {
-      this.steps[pulledChildRun.func.nqName].view.linkFunccall(await historyUtils.loadRun(pulledChildRun.id));
+      const childRun = await historyUtils.loadRun(pulledChildRun.id);
+      this.steps[pulledChildRun.func.nqName].view.linkFunccall(childRun);
+      this.steps[pulledChildRun.func.nqName].view.lastCall = childRun;
     });
     this.lastCall = pulledParentRun;
 
