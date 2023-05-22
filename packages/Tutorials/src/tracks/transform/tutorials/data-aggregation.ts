@@ -8,19 +8,20 @@ import { filter } from 'rxjs/operators';
 
 
 export class AggregationTutorial extends Tutorial {
-  get name() {
+  get name(): string {
     return 'Data Aggregation';
   }
-  get description() {
+  get description(): string {
     return 'Learn different ways of data aggregation and pivoting';
   }
-  get steps() {
+  get steps(): number {
     return 10;
   }
 
   helpUrl: string = 'https://datagrok.ai/help/transform/aggregate-rows';
 
   protected async _run() {
+    this.header.textContent = this.name;
     this.title('Aggregation');
 
     await this.action('Open Aggregation Editor', grok.functions.onAfterRunAction.pipe(
@@ -33,11 +34,71 @@ export class AggregationTutorial extends Tutorial {
       'lists all columns of the source dataframe. You can see column stats in the tooltip and ' +
       'drag relevant columns to the editor on the right in order to aggregate or pivot by them.');
 
+    const colTagSelector = 'div.d4-tag-editor.d4-pivot-column-tags span.d4-tag';
+    const findColTag = (root: HTMLElement, colName: string, condition: (() => boolean) | null = null) =>
+      interval(1000).pipe(filter(() => {
+        const tag = $(root).find(colTagSelector)
+          .filter((idx, el) => el.textContent?.toUpperCase() === colName.toUpperCase())[0];
+        return tag != null && (condition === null ? true : condition());
+    }));
+
+    const groupByRoot = $('.grok-pivot-column-panel').filter((_, el) =>
+      el.textContent?.startsWith('Group by') === true)[0]!;
+
     const groupByCol1 = 'RACE';
-    await this.action(`Group rows by "${groupByCol1}"`, interval(1000).pipe(filter(() =>
-      $('div.d4-tag-editor.d4-pivot-column-tags span.d4-tag').filter((idx, el) =>
-      el.textContent?.toUpperCase() === groupByCol1)[0] != null)),
-      $('.grok-pivot-column-panel').filter((idx, el) => el.textContent?.startsWith('Group by') ===
-      true).find('.grok-pivot-column-tags-plus')[0], '');
+    await this.action(`Group rows by column "${groupByCol1}"`, findColTag(groupByRoot, groupByCol1),
+      groupByRoot.querySelector('.grok-pivot-column-tags-plus') as HTMLElement, 'To group rows, put ' +
+      'the corresponding column in the "Group by" field. Click on the <b>"+"</b> sign next to the ' +
+      'field header and select the column.');
+
+    const groupByCol2 = 'SEX';
+    await this.action(`Group rows by column "${groupByCol2}"`, findColTag(groupByRoot, groupByCol2),
+      null, 'Another way to add a column to group by is to drag it from the column list on the right. ' +
+      'Add the second column to the grouping list.');
+
+    this.title('Pivoting');
+
+    this.describe('Pivoting is a way to transform data to group values belonging to the same ' +
+      'category in columns instead of rows. Let\'s pivot our dataset by the patient\'s condition.');
+
+    const pivotRoot = $('.grok-pivot-column-panel').filter((_, el) =>
+      el.textContent?.startsWith('Pivot') === true)[0]!;
+
+    const pivotCol = 'DIS_POP';
+    await this.action(`Pivot data by column "${pivotCol}"`, findColTag(pivotRoot, pivotCol),
+      pivotRoot.querySelector('.grok-pivot-column-tags-plus') as HTMLElement);
+
+    this.title('Aggregation');
+
+    const aggRoot = $('.grok-pivot-column-panel').filter((_, el) =>
+      el.textContent?.startsWith('Aggregate') === true)[0]!;
+
+    await this.action('Leave only the "avg(AGE)" aggregation',
+      findColTag(aggRoot, 'avg(AGE)', () => $(aggRoot).find(colTagSelector).length === 1), null,
+      'Initially, the editor shows the average values for the "AGE" and "HEIGHT" columns. To keep ' +
+      'only one aggregation, right-click this aggregation and select <b>Remove others</b> in the ' +
+      'context menu.');
+
+    await this.action('Change a column to "WEIGHT"', findColTag(aggRoot, 'avg(WEIGHT)', () =>
+      $(aggRoot).find(colTagSelector).length === 1), null, 'You can change the aggregation column ' +
+      'and function from the context menu. Let\'s calculate the average weight for each patient ' +
+      'group instead of age. Right-click the aggregation field and select <b>Column > WEIGHT</b>.');
+
+    this.title('Interactivity');
+
+    this.describe('To make data exploration easier, the aggregated table is linked with the source ' +
+      'table. Whenever a row is selected in the aggregated table, corresponding rows get selected ' +
+      'in the source table. When current record changes, the source table gets filtered to show ' +
+      'only rows associated with the current record.');
+
+    await this.action('Select rows in the source table with values of the first aggregated row',
+      this.t!.selection.onChanged.pipe(filter(() => this.t!.selection.trueCount === 37)), null,
+      'Click on the first row in the aggregated table while holding <b>Shift</b>. This way you ' +
+      'will select all the corresponding rows in the source table (the values are "Asian, F").');
+
+    await this.action('Click on the last row in the aggregated table to filter by it',
+      this.t!.filter.onChanged.pipe(filter(() => this.t!.filter.trueCount === 75)), null,
+      'The filter should be based on the last row in the aggregated table (the values are ' +
+      '"Other, M").');
   }
 }
