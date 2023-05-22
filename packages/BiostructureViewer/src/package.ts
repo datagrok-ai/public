@@ -372,6 +372,7 @@ export async function inGridDemo() {
 //meta.demoPath: Cheminformatics | Docking Conformations
 //description: Docking ligands along the structure
 //meta.path: /apps/Tutorials/Demo/Cheminformatics/Docking%20Conformations
+//test: demoBioDockingConformations() //wait: 2000, skip: skip
 export async function demoBioDockingConformations(): Promise<void> {
   // Do not use any script for this demo (askalkin, 2023-05-17)
   //await demoBio06UI();
@@ -383,6 +384,7 @@ export async function demoBioDockingConformations(): Promise<void> {
 //meta.demoPath: Cheminformatics | Proteins
 //description: View structures PDB in grids
 //meta.path: /apps/Tutorials/Demo/Cheminformatics/Proteins
+//test: demoBioProteins() //wait: 3000
 export async function demoBioProteins(): Promise<void> {
   await demoBio07NoScript();
 }
