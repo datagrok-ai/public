@@ -19,6 +19,7 @@ import { HtmlWidget } from './widgets/html-widget';
 import { PowerPackSettingsEditor } from './settings-editor';
 import { viewersDialog } from './viewers-gallery';
 import { TableView, VIEWER } from 'datagrok-api/dg';
+import { FuzzyFilter } from './fuzzy-filter';
 
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -186,4 +187,12 @@ export function viewerGallery(): void {
       panel[0][0].after(btn);
     }
   });
+}
+
+//name: FuzzyFilter
+//description: search related texts
+//tags: filter
+//output: filter result
+export function fuzzyFilter(): FuzzyFilter {
+  return new FuzzyFilter();
 }

@@ -12,7 +12,7 @@ RESET='\033[0m'
 timeout=30
 
 compose_config_name="localhost.docker-compose.yaml"
-datagrok_public_repo_url="https://github.com/datagrok-ai/public/blob/master/docker/${compose_config_name}"
+datagrok_public_repo_url="https://raw.githubusercontent.com/datagrok-ai/public/master/docker/${compose_config_name}"
 datagrok_local_url="http://localhost:8080/"
 
 script_name="$0"
@@ -70,13 +70,8 @@ function check_installation() {
 
 function datagrok_install() {
     if [ ! -f "${compose_config_path}" ]; then
-        message "Please download the Datagrok config file via browser from ${datagrok_public_repo_url}"
-        message "and place it in the folder ${script_dir}"
-        echo "This operation can't be done automatically due to a bug in Github configuration :("
-        echo "The fix is still in progress..."
-        #message "Retriving Datagrok config file"
-        #curl -o ${compose_config_path} ${datagrok_public_repo_url}
-        exit 255
+        message "Downloading Datagrok config file"
+        curl -o ${compose_config_path} ${datagrok_public_repo_url}
     fi
     message "Pulling Datagrok images (this can take a while depending on your Internet connection speed)"
     docker compose -f "${compose_config_path}" --profile all pull

@@ -1,6 +1,6 @@
 //name: Neo4jPatternsAll
 //connection: Neo4jDBTests
-//test: Dbtests:expectTable(Neo4jPatternsAll(), OpenFile('System:AppData/Dbtests/common/data1-30.d42'))
+//test: Dbtests:expectTable(Neo4jPatternsAll(), OpenFile('System:AppData/Dbtests/neo4j/data1-30.d42'))
 MATCH(p:Person) RETURN p.id AS id, p.first_name AS first_name,
     p.last_name AS last_name, p.email AS email, p.gender AS gender, p.ip_address AS ip_address,
     p.bool AS bool, p.country AS country, p.date AS date, p.some_number AS some_number;

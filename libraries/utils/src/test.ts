@@ -362,35 +362,55 @@ export function isDialogPresent(dialogTitle: string): boolean {
   return false;
 }
 
-export async function testViewer(v: string, df: DG.DataFrame, detectSemanticTypes: boolean = false): Promise<void> {
-  if (detectSemanticTypes) await grok.data.detectSemanticTypes(df);
+/**
+ * Universal test for viewers. It search viewers in DOM by tags: canvas, svg, img, input, h1, a
+ * @param  {string} v Viewer name
+ * @param  {DG.DataFrame} df Dataframe to use. Should have at least 3 rows
+ * @param  {boolean} options.detectSemanticTypes Specify whether to detect semantic types or not
+ * @param  {boolean} options.readOnly If set to true, the dataframe will not be modified during the test
+ * @param  {object} options List of options (optional)
+ * @return {Promise<void>} The test is considered successful if it completes without errors
+ */
+export async function testViewer(v: string, df: DG.DataFrame,
+  options?: {detectSemanticTypes?: boolean, readOnly?: boolean}): Promise<void> {
+  if (options?.detectSemanticTypes) await grok.data.detectSemanticTypes(df);
   const tv = grok.shell.addTableView(df);
   const viewerName = `[name=viewer-${v.replace(/\s+/g, '-')} i]`;
-  const selector = `${viewerName} canvas,${viewerName} svg,${viewerName} img,
+  let selector = `${viewerName} canvas,${viewerName} svg,${viewerName} img,
     ${viewerName} input,${viewerName} h1,${viewerName} a`;
   const res = [];
   try {
     let viewer = tv.addViewer(v);
     await awaitCheck(() => document.querySelector(selector) !== null,
       'cannot load viewer', 3000);
+    const tag = document.querySelector(selector)?.tagName;
     res.push(Array.from(tv.viewers).length);
-    Array.from(df.row(0).cells).forEach((c) => c.value = null);
-    df.rows.select((row) => row.idx > 1 && row.idx < 7);
-    for (let i = 7; i < 12; i++) df.filter.set(i, false);
-    df.currentRowIdx = 1;
-    const props = viewer.getOptions(true).look;
-    const newProps: Record<string, boolean> = {};
-    Object.keys(props).filter((k) => typeof props[k] === 'boolean').forEach((k) => newProps[k] = !props[k]);
+    if (!options?.readOnly) {
+      Array.from(df.row(0).cells).forEach((c) => c.value = null);
+      const num = df.rowCount < 20 ? Math.floor(df.rowCount / 2) : 10;
+      df.rows.select((row) => row.idx >= 0 && row.idx < num);
+      await delay(50);
+      for (let i = num; i < num * 2; i++) df.filter.set(i, false);
+      await delay(50);
+      df.currentRowIdx = 1;
+      // df.columns.names().forEach((c) => df.columns.remove(c));
+    }
+    const optns = viewer.getOptions(true).look;
+    const props = viewer.getProperties();
+    const newProps: Record<string, string | boolean> = {};
+    Object.keys(optns).filter((k) => typeof optns[k] === 'boolean').forEach((k) => newProps[k] = !optns[k]);
+    props.filter((p) => p.choices !== null)
+      .forEach((p) => newProps[p.name] = p.choices.find((c) => c !== optns[p.name])!);
     viewer.setOptions(newProps);
-    await delay(250);
+    await delay(300);
     const layout = tv.saveLayout();
     const oldProps = viewer.getOptions().look;
     tv.resetLayout();
     res.push(Array.from(tv.viewers).length);
     tv.loadLayout(layout);
+    selector = `${viewerName} ${tag}`;
     await awaitCheck(() => document.querySelector(selector) !== null,
       'cannot load viewer from layout', 3000);
-    await delay(250);
     res.push(Array.from(tv.viewers).length);
     viewer = Array.from(tv.viewers).find((v) => v.type !== 'Grid')!;
     expectArray(res, [2, 1, 2]);
@@ -398,5 +418,6 @@ export async function testViewer(v: string, df: DG.DataFrame, detectSemanticType
   } finally {
     tv.close();
     grok.shell.closeTable(df);
+    DG.Balloon.closeAll();
   }
 }

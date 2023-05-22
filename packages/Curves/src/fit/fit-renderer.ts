@@ -98,6 +98,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     viewport.drawCoordinateGrid(g, xAxisBox, yAxisBox);
 
     for (const series of data.series!) {
+      series.points.sort((a, b) => a.x - b.x);
       const fitResult = fitSeries(series, !!data.chartOptions?.showStatistics);
       if (series.showPoints ?? true) {
         g.strokeStyle = series.pointColor ?? '0xFF40699c';

@@ -29,6 +29,7 @@ import './views/layouts';
 import './views/files-view';
 import './viewers/viewers';
 import './viewers/filters';
+import './gui/viewers/scatter-plot';
 
 // import './gui/viewers/bar-chart';
 // import './gui/viewers/box-plot';
@@ -41,7 +42,6 @@ import './viewers/filters';
 // import './gui/viewers/network-diagram';
 // import './gui/viewers/pc-plot';
 // import './gui/viewers/pie-chart';
-// import './gui/viewers/scatter-plot';
 // import './gui/viewers/scatter-plot-3d';
 // import './gui/viewers/word-cloud';
 

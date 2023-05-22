@@ -13,8 +13,8 @@ import {FunctionView} from './function-view';
 import '../css/rich-function-view.css';
 import {FileInput} from '../../shared-components/src/file-input';
 import {startWith} from 'rxjs/operators';
-import {DIRECTION, EXPERIMENTAL_TAG, VIEWER_PATH, viewerTypesMapping} from './shared/consts';
-import {boundImportFunction, getDataFrame, getPropViewers} from './shared/utils';
+import {DIRECTION, EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
+import {boundImportFunction, getDataFrame, getFuncRunLabel, getPropViewers} from './shared/utils';
 
 const FILE_INPUT_TYPE = 'file';
 
@@ -91,7 +91,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public getRunButton(name = 'Run') {
-    const runButton = ui.bigButton(name, async () => await this.doRun());
+    const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
     const disabilitySub = this.checkDisability.subscribe(() => {
       const isValid = this.isRunnable();
       runButton.disabled = !isValid;
@@ -157,7 +157,7 @@ export class RichFunctionView extends FunctionView {
     if (!this.controllsDiv) {
       const runButton = this.getRunButton();
       const runButtonWrapper = ui.div([runButton]);
-      const saveButton = ui.bigButton('Save', () => this.saveExperimentalRun(this.funcCall), 'Save uploaded data');
+      const saveButton = ui.bigButton('Save', async () => await this.saveExperimentalRun(this.funcCall), 'Save uploaded data');
       $(saveButton).hide();
 
       this.isUploadMode.subscribe((newValue) => {
@@ -178,7 +178,7 @@ export class RichFunctionView extends FunctionView {
         runButtonWrapper as any,
       ]);
       $(this.controllsDiv.children.item(1)).css('gap', '0px');
-      this.controllsDiv.style.position = 'sticky';
+      $(this.controllsDiv).css({'margin-top': '0px', 'position': 'sticky'});
     }
 
     const controlsWrapper = ui.div(this.controllsDiv, 'ui-form');
@@ -293,6 +293,22 @@ export class RichFunctionView extends FunctionView {
               this.afterOutputPropertyRender.next({prop: dfProp, output: loadedViewer});
             });
 
+            this.funcCallReplaced.subscribe(async () => {
+              const currentParamValue = this.funcCall.outputs[dfProp.name] ?? this.funcCall.inputs[dfProp.name];
+
+              $(this.outputsTabsElem.root).show();
+              $(this.outputsTabsElem.getPane(tabLabel).header).show();
+
+              if (Object.values(viewerTypesMapping).includes(loadedViewer.type))
+                loadedViewer.dataFrame = currentParamValue;
+              else {
+                // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
+                const newViewer = await currentParamValue.plot.fromType(loadedViewer.type) as DG.Viewer;
+                loadedViewer.root.replaceWith(newViewer.root);
+                loadedViewer = newViewer;
+              }
+            });
+
             this.subs.push(paramSub);
           };
 
@@ -371,6 +387,12 @@ export class RichFunctionView extends FunctionView {
             scalarsTable = newScalarsTable;
           });
 
+          this.funcCallReplaced.subscribe(() => {
+            const newScalarsTable = generateScalarsTable();
+            scalarsTable.replaceWith(newScalarsTable);
+            scalarsTable = newScalarsTable;
+          });
+
           this.subs.push(paramSub);
         };
 
@@ -380,9 +402,11 @@ export class RichFunctionView extends FunctionView {
         );
       });
 
-      this.outputsTabsElem.addPane(tabLabel, () => {
-        return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [ui.h2('Scalar values'), scalarsTable]: []]);
-      });
+      if (tabScalarProps.length > 0 || tabDfProps.reduce((viewersCount, prop) => {viewersCount+= getPropViewers(prop).config.length; return viewersCount;}, 0) > 0) {
+        this.outputsTabsElem.addPane(tabLabel, () => {
+          return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [ui.h2('Scalar values'), scalarsTable]: []]);
+        });
+      }
     });
 
     const outputBlock = ui.box();
@@ -392,14 +416,6 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async onAfterLoadRun(loadedRun: DG.FuncCall) {
-    wu(this.funcCall.outputParams.values() as DG.FuncCallParam[]).forEach((out) => {
-      this.funcCall.setParamValue(out.name, loadedRun.outputs[out.name]);
-    });
-
-    wu(this.funcCall.inputParams.values() as DG.FuncCallParam[]).forEach((inp) => {
-      this.funcCall.setParamValue(inp.name, loadedRun.inputs[inp.name]);
-    });
-
     this.outputsTabsElem.root.style.removeProperty('display');
     this.outputsTabsElem.panes.forEach((tab) => {
       tab.header.style.removeProperty('display');
@@ -612,9 +628,11 @@ export class RichFunctionView extends FunctionView {
     const tempCall = await(await grok.functions.eval('Sin')).prepare({x: 1}).call();
     expFuncCall.dart.r2 = tempCall.dart.r2;
 
-    let tagsRef = expFuncCall.options['tags'];
-    tagsRef = tagsRef ? tagsRef.push(EXPERIMENTAL_TAG) : [EXPERIMENTAL_TAG];
+    let tagsRef = expFuncCall.options['tags'] as undefined | string[];
+    tagsRef = tagsRef ? [...tagsRef, EXPERIMENTAL_TAG] : [EXPERIMENTAL_TAG];
     expFuncCall.options['tags'] = tagsRef;
+
+    expFuncCall.newId();
 
     await this.saveRun(expFuncCall);
   }
@@ -727,6 +745,8 @@ export class RichFunctionView extends FunctionView {
 
     const tabControl = this.outputsTabsElem;
     for (const tabLabel of this.tabsLabels) {
+      if (!tabControl.getPane(tabLabel)) continue;
+
       tabControl.currentPane = tabControl.getPane(tabLabel);
       await new Promise((r) => setTimeout(r, 100));
       if (tabLabel === 'Input') {

@@ -10,7 +10,7 @@ category('viewers', () => {
   const viewers = DG.Func.find({package: 'Bio', tags: ['viewer']}).map((f) => f.friendlyName);
   for (const v of viewers) {
     test(v, async () => {
-      await testViewer(v, await readDataframe('data/sample_FASTA_DNA.csv'), true);
+      await testViewer(v, await readDataframe('data/sample_FASTA_DNA.csv'), {detectSemanticTypes: true});
     });
   }
 });

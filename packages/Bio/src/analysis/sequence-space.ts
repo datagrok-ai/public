@@ -8,6 +8,9 @@ import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-
 import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import * as grok from 'datagrok-api/grok';
+import { NotationConverter } from '@datagrok-libraries/bio/src/utils/notation-converter';
+import { ALPHABET, NOTATION } from '@datagrok-libraries/bio/src/utils/macromolecule';
+import { MmDistanceFunctionsNames } from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
 export interface ISequenceSpaceResult {
   distance: Matrix;
@@ -55,15 +58,24 @@ export async function sequenceSpaceByFingerprints(spaceParams: ISequenceSpacePar
 }
 
 export async function getSequenceSpace(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
-  const uh = new UnitsHandler(spaceParams.seqCol);
-  if (uh.isFasta()) {
-    const distanceFName = uh.getDistanceFunctionName();
+  const nc = new NotationConverter(spaceParams.seqCol);
+  if (nc.isFasta() || (nc.isSeparator() && nc.alphabet && nc.alphabet !== ALPHABET.UN)) {
+    let distanceFName = MmDistanceFunctionsNames.LEVENSHTEIN;
+    let seqList = spaceParams.seqCol.toList();
+    if (nc.isSeparator()) {
+      const fastaCol = nc.convert(NOTATION.FASTA);
+      seqList = fastaCol.toList();
+      const uh = new UnitsHandler(fastaCol);
+      distanceFName = uh.getDistanceFunctionName();
+    }
+    else {
+      distanceFName = nc.getDistanceFunctionName();
+    }
     const sequenceSpaceResult = await reduceDimensinalityWithNormalization(
-      spaceParams.seqCol.toList(),
+      seqList,
       spaceParams.methodName,
       distanceFName,
       spaceParams.options);
-    console.log(sequenceSpaceResult);
     const cols: DG.Column[] = spaceParams.embedAxesNames.map(
       (name: string, index: number) => DG.Column.fromFloat32Array(name, sequenceSpaceResult.embedding[index]));
     return {distance: sequenceSpaceResult.distance, coordinates: new DG.ColumnList(cols)};

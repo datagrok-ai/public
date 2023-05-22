@@ -32,7 +32,7 @@ import {substructureSearchDialog} from './substructure-search/substructure-searc
 import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {delay} from '@datagrok-libraries/utils/src/test';
-import {getStats, splitterAsHelm, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {getStats, splitterAsHelm, TAGS as bioTAGS, ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
@@ -55,6 +55,7 @@ import {checkInputColumnUI} from './utils/check-input-column';
 import {multipleSequenceAlignmentUI} from './utils/multiple-sequence-alignment-ui';
 import { MmDistanceFunctionsNames } from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import { BitArrayMetrics, BitArrayMetricsNames, StringMetricsNames } from '@datagrok-libraries/ml/src/typed-metrics';
+import { NotationConverter } from '@datagrok-libraries/bio/src/utils/notation-converter';
 
 export const _package = new DG.Package();
 
@@ -292,13 +293,22 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     'separator': macroMolecule.getTag(bioTAGS.separator),
     'alphabet': macroMolecule.getTag(bioTAGS.alphabet),
   };
-  const uh = new UnitsHandler(macroMolecule);
+  const nc = new NotationConverter(macroMolecule);
   let columnDistanceMetric: BitArrayMetricsNames | MmDistanceFunctionsNames = BitArrayMetricsNames.Tanimoto;
-  if (uh.isFasta())
-    columnDistanceMetric = uh.getDistanceFunctionName();
+  let seqCol = macroMolecule;
+  if (nc.isFasta() || (nc.isSeparator() && nc.alphabet && nc.alphabet !== ALPHABET.UN)){
+    if (nc.isFasta()){
+      columnDistanceMetric = nc.getDistanceFunctionName();
+    } else {
+      seqCol = nc.convert(NOTATION.FASTA);
+      const uh = new UnitsHandler(seqCol);
+      columnDistanceMetric = uh.getDistanceFunctionName();
+      tags.units = NOTATION.FASTA;
+    }
+  }
   const sp = await getActivityCliffs(
     df,
-    macroMolecule,
+    seqCol,
     null,
     axesNames,
     'Activity cliffs', //scatterTitle

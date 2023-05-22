@@ -282,7 +282,7 @@ function getObjectiveDerivative(of: ObjectiveFunction, curveFunction: (params: n
   return (drvTop - drvBottom)/(2*step);
 }
 
-function getAuc(fittedCurve: (x: number) => number,
+export function getAuc(fittedCurve: (x: number) => number,
                 data: {x: number[], y: number[]}): number {
   let auc = 0;
 
@@ -296,7 +296,7 @@ function getAuc(fittedCurve: (x: number) => number,
   return auc;
 }
 
-function getDetCoeff(fittedCurve: (x: number) => number,
+export function getDetCoeff(fittedCurve: (x: number) => number,
                      data: {x: number[], y: number[]}): number {
   let ssRes = 0;
   let ssTot = 0;

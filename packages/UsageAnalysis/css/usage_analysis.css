@@ -82,6 +82,10 @@
   display: flex;
 }
 
+.ua-cards .ua-card .grok-wait {
+  height: 50px;
+}
+
 .ua-cards .ua-card {
   width: 100px;
   margin: 12px;
@@ -91,6 +95,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  position: relative;
 }
 
 .ua-cards .ua-card > .grok-wait > .ui-div {
