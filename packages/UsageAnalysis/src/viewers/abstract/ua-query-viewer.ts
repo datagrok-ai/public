@@ -5,25 +5,31 @@ import * as DG from 'datagrok-api/dg';
 import {UaFilter} from '../../filter';
 import {UaViewer} from './ua-viewer';
 import ColorHash from 'color-hash';
+import {data} from "datagrok-api/grok";
 
 const colorHash = new ColorHash();
 
 export abstract class UaQueryViewer extends UaViewer {
   queryName?: string;
-  viewerFunction: (t: DG.DataFrame) => DG.Viewer;
+  createViewer: (t: DG.DataFrame) => DG.Viewer;
   getDataFrame?: () => Promise<DG.DataFrame>;
+  processDataFrame?: (t: DG.DataFrame) => DG.DataFrame;
   dataFrame?: Promise<DG.DataFrame>;
   staticFilter: Object = {};
   filter: Object = {};
   viewer: DG.Viewer | undefined;
 
-  protected constructor(name: string, options: {queryName?: string, viewerFunction: (t: DG.DataFrame) => DG.Viewer,
+  activated = false;
+
+  protected constructor(name: string, options: {queryName?: string, createViewer: (t: DG.DataFrame) => DG.Viewer,
     setStyle?: Function | null, staticFilter?: Object | null, filter?: UaFilter | null,
-    getDataFrame?: () => Promise<DG.DataFrame>}) {
+    getDataFrame?: () => Promise<DG.DataFrame>, processDataFrame?: (t: DG.DataFrame) => DG.DataFrame, activated?: boolean}) {
     super(name, options.setStyle);
     this.queryName = options.queryName;
-    this.viewerFunction = options.viewerFunction;
+    this.createViewer = options.createViewer;
     this.getDataFrame = options.getDataFrame;
+    this.processDataFrame = options.processDataFrame;
+    this.activated = options.activated ?? false;
     // if (staticFilter) this.staticFilter = staticFilter;
     if (options.filter)
       this.filter = options.filter;
@@ -33,9 +39,7 @@ export abstract class UaQueryViewer extends UaViewer {
   reloadViewer(staticFilter?: object) {
     // console.log('reloading');
     this.dataFrame = new Promise<DG.DataFrame>((resolve, reject) => {
-      this.loader.style.display = 'block';
-      if (this.viewer !== undefined)
-        this.viewer.root.style.display = 'none';
+      this.loader.classList.add('ua-wait');
       const filter = {...this.filter, ...staticFilter};
       // console.log(this.queryName);
       if (this.queryName === undefined) {
@@ -58,11 +62,14 @@ export abstract class UaQueryViewer extends UaViewer {
   }
 
   postQuery(dataFrame: DG.DataFrame): DG.DataFrame {
-    this.viewer = this.viewerFunction(dataFrame);
+    if (this.processDataFrame)
+      dataFrame = this.processDataFrame!(dataFrame);
+    this.viewer ??= this.createViewer(dataFrame);
+    this.viewer.dataFrame = dataFrame;
     this.root.appendChild(this.viewer!.root);
     this.viewer!.dataFrame = dataFrame ?? this.viewer!.dataFrame;
     this.viewer!.root.style.display = 'flex';
-    this.loader.style.display = 'none';
+    this.loader.classList.remove('ua-wait');
     return dataFrame;
   }
 }
