@@ -28,6 +28,7 @@ const VIEWER_TABLES_PATH: {[key: string]: string} = {
   Form: 'files/sar-small.csv',
   'Shape Map': 'geo/us_2016_election_by_county.csv',
   'Pivot table': 'files/demog.csv',
+  Filters: 'files/SPGI.csv',
 };
 
 const VIEWER_LAYOUTS_FILE_NAMES: {[key: string]: string} = {
@@ -35,8 +36,7 @@ const VIEWER_LAYOUTS_FILE_NAMES: {[key: string]: string} = {
   Form: 'form-viewer-layout.json',
 };
 
-const MARKUP_CONTENT = `
-# What's Markdown?
+const MARKUP_CONTENT = `# What's Markdown?
 
 ## Table name: #{t.name}
 
@@ -50,8 +50,7 @@ const MARKUP_CONTENT = `
 
 ## Current column: #{t.currentCol}
 
-## Current cell: #{t.currentCell}
-`;
+## Current cell: #{t.currentCell}`;
 
 
 async function getLayout(viewerName: string, df: DG.DataFrame): Promise<DG.ViewLayout> {
@@ -91,7 +90,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
     return;
   }
   
-  if (viewerName === DG.VIEWER.TILE_VIEWER) {
+  if (['Tile Viewer', 'Filters'].includes(viewerName)) {
     DG.debounce(df.onSemanticTypeDetected, 800).subscribe((_) => {
       const viewer = tableView.addViewer(viewerName, options);
       grok.shell.windows.help.showHelp(viewer.helpUrl);
@@ -126,8 +125,9 @@ function dockViewers(tableView: DG.TableView, viewer: DG.Viewer, viewerName: str
     tableView.dockManager.dock(tableView.filters(), DG.DOCK_TYPE.LEFT, viewerNode, 'Filters', 0.3);
     return;
   }
-  if (viewerName === DG.VIEWER.TILE_VIEWER) {
-    tableView.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, viewerName, 0.75);
+  if (['Filters', 'Tile Viewer'].includes(viewerName)) {
+    tableView.dockManager.dock(viewer, viewerName === DG.VIEWER.FILTERS ? DG.DOCK_TYPE.LEFT : DG.DOCK_TYPE.RIGHT,
+      null, viewerName, viewerName === DG.VIEWER.FILTERS ? 0.55 : 0.75);
     return;
   }
   if (viewerName === DG.VIEWER.STATISTICS) {

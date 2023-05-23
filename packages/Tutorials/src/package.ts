@@ -372,3 +372,11 @@ export async function _shapeMapDemo() {
 export async function _pivotTableDemo() {
   await viewerDemo('Pivot table');
 }
+
+//name: filtersDemo
+//description: Filter is a set of controls for quick filtering, selection, and visual assessment of column values.
+//meta.demoPath: Viewers | General | Filters
+//test: _filtersDemo() //wait: 2000
+export async function _filtersDemo() {
+  await viewerDemo(DG.VIEWER.FILTERS);
+}
