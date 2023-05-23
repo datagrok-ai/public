@@ -9,11 +9,10 @@ export async function getSimilaritiesMarix(dim: number, smiles: DG.Column, dfSmi
   colName: string, simArr: (DG.Column | null)[]): Promise<(DG.Column | null)[]> {
   let fingerprints = await chemGetFingerprints(dfSmiles.col(colName)!, Fingerprint.Morgan, true, false);
   for (let i = 0; i != dim - 1; ++i) {
-    fingerprints.shift();
-    const queryMolString = smiles.get(i)!;
-    simArr[i] = queryMolString.length != 0 ?
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances',
-      _chemGetSimilarities(queryMolString, fingerprints)) : null;
+    const fp = fingerprints.shift();
+    simArr[i] = fp ?
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances',
+        _chemGetSimilarities(smiles.get(i)!, fingerprints)) : null;
   }
   return simArr;
 }
