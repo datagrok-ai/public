@@ -19,13 +19,15 @@ The first step is to initialize a `DemoScript`:
 
 ```typescript
 export function demo() {
-  const demoScript = new DemoScript('Demo', 'Demo description', true);
+  const demoScript = new DemoScript('Demo', 'Demo description', true, {autoStartFirstStep: true});
   // ...
 }
 ```
 
 Each demo script should have a `name`, `description`, and an `isAutomatic`
-flag that sets the type of script.
+flag that sets the type of script. Additionally, there are optional
+parameters, such as `autoStartFirstStep`, that automatically initiate the
+first step in manual scripts.
 
 After initialization, you need to add steps using the `step()` function:
 
