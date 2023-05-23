@@ -579,8 +579,8 @@ export async function getChemSimilaritiesMatrix(dim: number, col: DG.Column,
 //description: function that implements elemental analysis
 //input: dataframe table
 //input: column molecules { semType: Molecule }
-//input: bool radarViewer = false { description: "Add a standalone radar viewer" }
-//input: bool radarGrid = false { description: "Show radar in grid cells" }
+//input: bool radarViewer = false { description: Add a standalone radar viewer }
+//input: bool radarGrid = false { description: Show radar in grid cells }
 export function elementalAnalysis(table: DG.DataFrame, molecules: DG.Column, radarViewer: boolean, radarGrid: boolean): void {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.info(`The column ${molecules.name} doesn't contain molecules`);
