@@ -522,6 +522,16 @@ We’ve added `Qnum` to supported column types and fixed the issue with the exec
 * Databases: error in the **Sharing** tab of the **Context Pane** after deleting the shared query.
 
 
+## 2023-05-16 1.13.15
+
+### Addressed Issues
+
+* GROK-12596: Core: Viewers: support for NaN and +/\- Infinity (WIP)
+* [#1616](https://github.com/datagrok-ai/public/issues/1616): Scatter plot: zoom slider behaviour is inconsistent for inverted axes
+* [#1671](https://github.com/datagrok-ai/public/issues/1671): Line chart: connects the first and last values when resizing the window
+* [#1852](https://github.com/datagrok-ai/public/issues/1852): Line chart with splitting with specific data is making Datagrok slow (row selection, interaction with line chart) 
+
+
 ## 2023-04-18 1.13.13
 
 ### Addressed Issues
