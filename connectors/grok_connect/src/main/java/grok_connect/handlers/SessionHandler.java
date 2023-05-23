@@ -23,7 +23,6 @@ public class SessionHandler {
     private static final String OK_RESPONSE = "DATAFRAME PART OK";
     private static final String END_MESSAGE = "EOF";
     private static final String SIZE_RECIEVED_MESSAGE = "DATAFRAME PART SIZE RECEIVED";
-    private static final String LOG_RECIEVED_MESSAGE = "LOG RECEIVED";
     private final Session session;
     private final ExecutorService threadPool;
     private Future<DataFrame> fdf;
@@ -116,6 +115,7 @@ public class SessionHandler {
             logger.debug("Sending checkSum message with bytes length of {}", bytes.length);
             session.getRemote().sendString(checksumMessage(bytes.length));
         } else {
+            logger.debug("Closing connection");
             queryManager.closeConnection();
             logger.debug("DB connection was closed");
             session.getRemote().sendString("COMPLETED");
