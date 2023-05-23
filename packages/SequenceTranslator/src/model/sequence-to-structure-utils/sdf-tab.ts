@@ -9,8 +9,6 @@ import {SequenceToMolfileConverter} from './sequence-to-molfile';
 import {linkStrandsV3000} from './mol-transformations';
 import {SYNTHESIZERS} from '../const';
 
-import '../../view/css/sdf-tab.css';
-
 export type StrandData = {
   strand: string,
   invert: boolean

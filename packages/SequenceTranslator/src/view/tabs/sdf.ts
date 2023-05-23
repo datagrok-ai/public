@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
+import '../css/sdf-tab.css';
 import $ from 'cash-dom';
 
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';

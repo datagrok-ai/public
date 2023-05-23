@@ -4,6 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
+import '../css/main-tab.css';
+import $ from 'cash-dom';
 
 import {highlightInvalidSubsequence} from '../utils/colored-input/input-painters';
 import {ColoredTextInput} from '../utils/colored-input/colored-text-input';
@@ -23,11 +25,11 @@ export class MainTabUI {
   constructor() {
     this.moleculeImgDiv = ui.block([]);
     this.outputTableDiv = ui.div([]);
-    this.inputFormatChoiceInput = ui.choiceInput('', INPUT_FORMATS.GCRS, Object.values(INPUT_FORMATS));
-    this.inputFormatChoiceInput.onInput(async () => {
+    this.formatChoiceInput = ui.choiceInput('', INPUT_FORMATS.GCRS, Object.values(INPUT_FORMATS));
+    this.formatChoiceInput.onInput(async () => {
       await this.updateLayout();
     });
-    this.inputSequenceBase = ui.textInput('', DEFAULT_INPUT,
+    this.sequenceInputBase = ui.textInput('', DEFAULT_INPUT,
       (sequence: string) => {
         // Send event to DG.debounce()
         this.onInput.next(sequence);
@@ -45,14 +47,14 @@ export class MainTabUI {
   private onInput = new rxjs.Subject<string>();
   private moleculeImgDiv: HTMLDivElement;
   private outputTableDiv: HTMLDivElement;
-  private inputFormatChoiceInput: DG.InputBase;
-  private inputSequenceBase: DG.InputBase;
+  private formatChoiceInput: DG.InputBase;
+  private sequenceInputBase: DG.InputBase;
   private molfile: string;
   private sequence: string;
   private format: FORMAT | null;
 
   async getHtmlElement(): Promise<HTMLDivElement> {
-    const sequenceColoredInput = new ColoredTextInput(this.inputSequenceBase, highlightInvalidSubsequence);
+    const sequenceColoredInput = new ColoredTextInput(this.sequenceInputBase, highlightInvalidSubsequence);
 
     const downloadMolfileButton = ui.button(
       'Get Molfile',
@@ -64,15 +66,16 @@ export class MainTabUI {
       () => { this.copySmiles(); },
       'Copy SMILES for the sequence');
 
-    const formatChoiceInput = ui.div([this.inputFormatChoiceInput]);
+    const formatChoiceInput = ui.div([this.formatChoiceInput]);
 
-    const tableRow = {
+    const inputTableRow = {
       format: formatChoiceInput,
       textInput: sequenceColoredInput.root,
     };
     const upperBlock = ui.table(
-      [tableRow], (item) => [item.format, item.textInput]
+      [inputTableRow], (item) => [item.format, item.textInput]
     );
+    upperBlock.classList.add('st-main-input-table');
 
     const outputTable = ui.block([
       this.outputTableDiv,
@@ -94,12 +97,12 @@ export class MainTabUI {
 
   private saveMolfile(): void {
     const result = (new SequenceToMolfileConverter(this.sequence, false,
-      this.inputFormatChoiceInput.value!)).convert();
+      this.formatChoiceInput.value!)).convert();
     download(this.sequence + '.mol', encodeURIComponent(result));
   }
 
   private copySmiles(): void {
-    const smiles = (new SequenceToSmilesConverter(this.sequence, false, this.inputFormatChoiceInput.value!)).convert();
+    const smiles = (new SequenceToSmilesConverter(this.sequence, false, this.formatChoiceInput.value!)).convert();
     navigator.clipboard.writeText(smiles).then(
       () => grok.shell.info(SEQUENCE_COPIED_MSG)
     );
@@ -126,12 +129,11 @@ export class MainTabUI {
         sequence: sequence,
       });
     }
+    const outputValues = ui.table(tableRows, (item) => [item.format, item.sequence], ['OUTPUT FORMAT', 'OUTPUT SEQUENCE']);
+    outputValues.classList.add('st-main-output-table');
 
-    this.outputTableDiv.append(
-      ui.div([
-        ui.table(tableRows, (item) => [item.format, item.sequence], ['OUTPUT FORMAT', 'OUTPUT SEQUENCE'])
-      ])
-    );
+    this.outputTableDiv.append(ui.div([outputValues]));
+    // this.outputTableDiv.classList.add()
   }
 
   private async updateMolImg(): Promise<void> {
@@ -155,7 +157,7 @@ export class MainTabUI {
   }
 
   private getFormattedSequence(): string {
-    return this.inputSequenceBase.value.replace(/\s/g, '');
+    return this.sequenceInputBase.value.replace(/\s/g, '');
   }
 
   private getMolfile(): string {
@@ -170,7 +172,7 @@ export class MainTabUI {
   }
 
   private async updateLayout(): Promise<void> {
-    this.inputFormatChoiceInput.value = this.format;
+    this.formatChoiceInput.value = this.format;
     this.updateTable();
     await this.updateMolImg();
   }
