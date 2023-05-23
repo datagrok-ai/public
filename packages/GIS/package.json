@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/gis",
 	"friendlyName": "GIS",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"category": "Visualizations",
 	"author": {
 		"name": "Dmytro Kovalyov",
