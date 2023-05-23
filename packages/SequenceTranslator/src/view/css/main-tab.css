@@ -16,6 +16,7 @@
 .st-main-output-table {
   margin-top: 20px;
   margin-right: 20px;
+  margin-bottom: 10px;
 }
 
 .st-main-output-table table {
@@ -29,6 +30,11 @@
 
 .st-main-output-table tr > td:first-child {
   width: 120px;
+}
+
+.st-main-output-table tr:nth-child(odd) td:nth-child(even),
+.st-main-output-table tr:nth-child(even) td:nth-child(odd){
+  background-color: var(--grey-1);
 }
 
 .st-main-output-table td a {

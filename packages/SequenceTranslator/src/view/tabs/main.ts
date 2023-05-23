@@ -130,11 +130,9 @@ export class MainTabUI {
       });
     }
     const outputTable = ui.table(tableRows, (item) => [item.format, item.sequence], ['OUTPUT FORMAT', 'OUTPUT SEQUENCE']);
-    // outputTable.classList.add('st-main-output-table');
 
     this.outputTableDiv.append(outputTable);
     this.outputTableDiv.classList.add('st-main-output-table');
-    // this.outputTableDiv.classList.add()
   }
 
   private async updateMolImg(): Promise<void> {
