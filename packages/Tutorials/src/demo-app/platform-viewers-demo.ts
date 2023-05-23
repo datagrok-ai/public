@@ -76,6 +76,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
 
   const tableView = grok.shell.addTableView(df);
 
+  grok.shell.windows.showContextPanel = false;
   grok.shell.windows.showHelp = true;
   grok.shell.windows.help.syncCurrentObject = false;
 
