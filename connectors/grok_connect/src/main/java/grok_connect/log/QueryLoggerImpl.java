@@ -2,8 +2,8 @@ package grok_connect.log;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
-import com.google.gson.Gson;
 import org.slf4j.LoggerFactory;
+import serialization.DataFrame;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,7 +35,7 @@ public class QueryLoggerImpl implements QueryLogger {
     }
 
     @Override
-    public String dumpLogMessages() {
-        return appender.getLog().toCsv();
+    public DataFrame dumpLogMessages() {
+        return appender.getLog();
     }
 }

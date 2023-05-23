@@ -18,6 +18,7 @@ import serialization.DataFrame;
 
 public class SessionHandler {
     private static final int rowsPerChunk = 10000;
+    private static final String COMPLETED = "COMPLETED_OK";
     private static final String MESSAGE_START = "QUERY";
     private static final String OK_RESPONSE = "DATAFRAME PART OK";
     private static final String END_MESSAGE = "EOF";
@@ -55,7 +56,7 @@ public class SessionHandler {
             DataQueryRunResult result = new DataQueryRunResult();
             result.errorMessage = message;
             result.errorStackTrace = stackTrace;
-            result.log = queryLogger.dumpLogMessages();
+//            result.log = queryLogger.dumpLogMessages();
             session.getRemote().sendString(socketErrorMessage(new Gson().toJson(result)));
             session.close();
             queryManager.closeConnection();
@@ -70,7 +71,7 @@ public class SessionHandler {
             queryLogger = queryManager.getQueryLogger();
             logger = queryLogger.getLogger();
             logger.info("GrokConnect version: {}", GrokConnect.properties.getProperty("version"));
-            logger.debug("Received messages that starts with {}", MESSAGE_START);
+            logger.debug("Received message that starts with {}", MESSAGE_START);
             queryManager.initResultSet();
             if (queryManager.isResultSetInitialized()) {
                 queryManager.initScheme();
@@ -78,17 +79,18 @@ public class SessionHandler {
             } else {
                 dataFrame = new DataFrame();
             }
-
-        } else if (message.startsWith(LOG_RECIEVED_MESSAGE)) {
-            logger.debug("Received messages that starts with {}", LOG_RECIEVED_MESSAGE);
-            session.getRemote().sendString(END_MESSAGE);
-            session.close();
-            return;
         } else if (message.startsWith(SIZE_RECIEVED_MESSAGE)) {
-            logger.debug("Received messages that starts with {}", SIZE_RECIEVED_MESSAGE);
+            logger.debug("Received message that starts with {}", SIZE_RECIEVED_MESSAGE);
             fdf = threadPool.submit(() -> queryManager.getSubDF(rowsPerChunk));
             logger.debug("Sending bytes");
             session.getRemote().sendBytes(ByteBuffer.wrap(bytes));
+            return;
+        } else if (message.startsWith(COMPLETED)) {
+            logger.debug("Received message that starts with {}", COMPLETED);
+            session.getRemote().sendBytes(ByteBuffer.wrap(queryLogger.dumpLogMessages().toByteArray()));
+            queryLogger.closeLogger();
+            session.getRemote().sendString(END_MESSAGE);
+            session.close();
             return;
         } else {
             if (!message.equals(OK_RESPONSE)) {
@@ -99,6 +101,7 @@ public class SessionHandler {
                 }
             }
             else {
+                logger.debug("Received message that starts with {}", OK_RESPONSE);
                 firstTry = true;
                 oneDfSent = true;
                 if (queryManager.isResultSetInitialized())
@@ -113,19 +116,14 @@ public class SessionHandler {
             logger.debug("Sending checkSum message with bytes length of {}", bytes.length);
             session.getRemote().sendString(checksumMessage(bytes.length));
         } else {
-            logger.debug("Closing connection");
             queryManager.closeConnection();
-            session.getRemote().sendString(socketLogMessage(queryLogger.dumpLogMessages()));
-            queryLogger.closeLogger();
+            logger.debug("DB connection was closed");
+            session.getRemote().sendString("COMPLETED");
         }
     }
 
     public String checksumMessage(int i) {
         return String.format("DATAFRAME PART SIZE: %d", i);
-    }
-
-    public String socketLogMessage(String s) {
-        return String.format("LOG: %s", s);
     }
 
     public QueryManager getQueryManager() {
