@@ -29,3 +29,7 @@ export const getPropViewers = (prop: DG.Property): {name: string, config: Record
     })}:
     {name: prop.name, config: []};
 };
+
+export const getFuncRunLabel = (func: DG.Func) => {
+  return func.options['runLabel'];
+};

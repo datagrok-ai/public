@@ -1,4 +1,4 @@
-import { ValidationResult } from "./interfaces";
+import { ValidationResult } from '../utils/interfaces';
 
 
 export function validateConf(config: any): ValidationResult {

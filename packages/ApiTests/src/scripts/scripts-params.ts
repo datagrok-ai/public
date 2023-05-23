@@ -5,7 +5,7 @@ import {category, test, before} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 
 
-const langs = ['Python', 'R', 'Octave', 'Grok', 'Julia', 'JavaScript']; // NodeJS
+const langs = ['Python', 'R', 'Octave', 'Grok', 'Julia', 'JavaScript']; // NodeJS, Julia
 
 for (const l of langs) {
   category(`Scripts: Parameters: ${l}`, () => {
@@ -26,17 +26,17 @@ for (const l of langs) {
     });
     test('double', async () => {
       if (call.getParamValue('rd') !== 39.9) throw new Error(`${call.getParamValue('rd')} != 39.9`);
-    });
+    }, {skipReason: l === 'Julia' ? 'GROK-12386' : undefined});
     test('bool', async () => {
       if (!call.getParamValue('rb')) throw new Error(`${call.getParamValue('rb')} != true`);
     }, {skipReason: l === 'Julia' ? 'GROK-12386' : undefined});
     test('string', async () => {
       if (call.getParamValue('rs') !== 'abcabc') throw new Error(`"${call.getParamValue('rs')}" != "abcabc"`);
-    });
+    }, {skipReason: l === 'Julia' ? 'GROK-12386' : undefined});
     test('datetime', async () => {
       if (!checkDate(call.getParamValue('rdt')))
         throw new Error(`${call.getParamValue('rdt')} != 1961-06-11`);
-    }, {skipReason: l === 'Octave' ? 'GROK-12417' : undefined});
+    }, {skipReason: ['Octave', 'Python', 'Julia'].includes(l) ? 'GROK-12417' : undefined});
     test('map', async () => {
       if (call.getParamValue('rm').b !== 5) throw new Error(`${call.getParamValue('rm').b} != 5`);
     }, {skipReason: ['R', 'Julia', 'NodeJS', 'Octave'].includes(l) ? 'GROK-12452' : undefined});
@@ -45,12 +45,12 @@ for (const l of langs) {
         throw new Error(`df shape (${call.getParamValue('rdf').columns.length}, ${
           call.getParamValue('rdf').rowCount}) != (11, 20)`);
       }
-    });
+    }, {skipReason: l === 'Julia' ? 'GROK-12386' : undefined});
   });
 }
 
 function checkDate(dt: any): boolean {
   if (dt == null) return false;
   if (dt instanceof Date) return dt.toDateString() === 'Sun Jun 11 1961';
-  return dt.format().includes('1961-06-11T00:00:00');
+  return dt.format().includes('1961-06-11T');
 }

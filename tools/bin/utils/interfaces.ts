@@ -35,3 +35,28 @@ export interface PackageFile {
   canView?: string[],
   category?: string,
 }
+
+export interface ValidationResult {
+  message: string,
+  value: boolean,
+  warnings?: string[],
+}
+
+export interface Indexable {
+  [key: string]: any,
+}
+
+export interface FuncMetadata extends Indexable {
+  name?: string,
+  inputs: FuncParam[],
+  outputs: FuncParam[],
+  tags?: string[],
+  description?: string,
+}
+
+export interface FuncParam {
+  name?: string,
+  type: string,
+}
+
+export type FuncValidator = ({}: FuncMetadata) => ValidationResult;

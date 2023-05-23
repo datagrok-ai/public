@@ -76,18 +76,15 @@ export class NglGlService implements NglGlServiceBase {
     await this.ngl.compList[0].addRepresentation('cartoon');
     await this.ngl.compList[0].autoView();
 
-    const canvas = this.nglDiv.querySelector('canvas');
-    canvas!.width = Math.floor(task.props.width);
-    canvas!.height = Math.floor(task.props.height);
+    const canvas = this.nglDiv.querySelector('canvas')!;
+    canvas.width = Math.floor(task.props.width);
+    canvas.height = Math.floor(task.props.height);
 
     this.task = task;
     this.key = key;
     this.emptyPaintingSize = undefined;
 
     await this.ngl.handleResize();
-
-    // await new Promise((r) => setTimeout(r, 4000));
-    let k = 11;
   }
 
   private emptyPaintingSize?: number = undefined;

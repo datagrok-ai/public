@@ -76,7 +76,7 @@ export namespace historyUtils {
    * Thus, we should load them separately, and it is time-consuming. If you don't need actual values of DF-s,
    * you can skip DF loading using {@link skipDfLoad} param.
    * @param funcCallId FuncCall ID to load
-   * @param skipDfLoad If true, skips replacing TableInfo with th actual dataframe
+   * @param skipDfLoad If true, skips replacing TableInfo with the actual dataframe
    * @returns Requested FuncCall
    */
   export async function loadRun(funcCallId: string, skipDfLoad = false) {

@@ -11,7 +11,7 @@ import * as testUtils from '../utils/test-utils';
 
 export function test(args: TestArgs): boolean {
   const options = Object.keys(args).slice(1);
-  const commandOptions = ['host', 'csv', 'gui', 'skip-build', 'skip-publish'];
+  const commandOptions = ['host', 'csv', 'gui', 'skip-build', 'skip-publish', 'category'];
   const nArgs = args['_'].length;
   const curDir = process.cwd();
   const grokDir = path.join(os.homedir(), '.grok');
@@ -113,14 +113,15 @@ export function test(args: TestArgs): boolean {
       })
     }
 
-    function runTest(timeout: number): Promise<resultObject> {
+    function runTest(timeout: number, options: {category?: string} = {}): Promise<resultObject> {
       return testUtils.runWithTimeout(timeout, async () => {
         const targetPackage: string = process.env.TARGET_PACKAGE ?? '#{PACKAGE_NAMESPACE}';
         console.log(`Testing ${targetPackage} package...\n`);
 
-        let r: resultObject = await page.evaluate((targetPackage): Promise<resultObject> => {
+        let r: resultObject = await page.evaluate((targetPackage, options): Promise<resultObject> => {
           return new Promise<resultObject>((resolve, reject) => {
-            (<any>window).grok.functions.eval(targetPackage + ':test()').then((df: any) => {
+            const testCall = `${targetPackage}:test(${options.category ? `category="${options.category}"` : ''})`;
+            (<any>window).grok.functions.eval(testCall).then((df: any) => {
               let failed = false;
               let skipReport = '';
               let passReport = '';
@@ -128,7 +129,7 @@ export function test(args: TestArgs): boolean {
 
               if (df == null) {
                 failed = true;
-                failReport = 'Fail reason: No package tests found';
+                failReport = `Fail reason: No package tests found${options.category ? ` for category "${options.category}"` : ''}`;
                 resolve({failReport, skipReport, passReport, failed});
               }
 
@@ -154,7 +155,7 @@ export function test(args: TestArgs): boolean {
               resolve({failReport, skipReport, passReport, failed, csv});
             }).catch((e: any) => reject(e));
           });
-        }, targetPackage);
+        }, targetPackage, options);
 
         return r;
       });
@@ -169,7 +170,7 @@ export function test(args: TestArgs): boolean {
         throw e;
       }
 
-      const r = await runTest(7200000);
+      const r = await runTest(7200000, {category: args.category});
 
       if (r.csv && args.csv) {
         fs.writeFileSync(path.join(curDir, 'test-report.csv'), r.csv, 'utf8');
@@ -202,6 +203,7 @@ export function test(args: TestArgs): boolean {
 
 interface TestArgs {
   _: string[],
+  category?: string,
   host?: string,
   csv?: boolean,
   gui?: boolean,

@@ -32,8 +32,13 @@ export enum PluginLayoutControlsDisplayType {
   REACTIVE = 'reactive'
 }
 
+export type MolstarDataType = {
+  ext: string, data: string | Uint8Array, options?: { dataLabel?: string, },
+};
+
 export const BiostructurePropsDefault = new class {
   // -- Data --
+  data: MolstarDataType | null = null;
   pdb: string | null = null;
   pdbTag: string | null = null;
   ligandColumnName: string | null = null;

@@ -14,7 +14,7 @@ import '../css/rich-function-view.css';
 import {FileInput} from '../../shared-components/src/file-input';
 import {startWith} from 'rxjs/operators';
 import {DIRECTION, EXPERIMENTAL_TAG, viewerTypesMapping} from './shared/consts';
-import {boundImportFunction, getDataFrame, getPropViewers} from './shared/utils';
+import {boundImportFunction, getDataFrame, getFuncRunLabel, getPropViewers} from './shared/utils';
 
 const FILE_INPUT_TYPE = 'file';
 
@@ -91,7 +91,7 @@ export class RichFunctionView extends FunctionView {
   }
 
   public getRunButton(name = 'Run') {
-    const runButton = ui.bigButton(name, async () => await this.doRun());
+    const runButton = ui.bigButton(getFuncRunLabel(this.func) ?? name, async () => await this.doRun());
     const disabilitySub = this.checkDisability.subscribe(() => {
       const isValid = this.isRunnable();
       runButton.disabled = !isValid;
@@ -157,7 +157,7 @@ export class RichFunctionView extends FunctionView {
     if (!this.controllsDiv) {
       const runButton = this.getRunButton();
       const runButtonWrapper = ui.div([runButton]);
-      const saveButton = ui.bigButton('Save', () => this.saveExperimentalRun(this.funcCall), 'Save uploaded data');
+      const saveButton = ui.bigButton('Save', async () => await this.saveExperimentalRun(this.funcCall), 'Save uploaded data');
       $(saveButton).hide();
 
       this.isUploadMode.subscribe((newValue) => {
@@ -178,7 +178,7 @@ export class RichFunctionView extends FunctionView {
         runButtonWrapper as any,
       ]);
       $(this.controllsDiv.children.item(1)).css('gap', '0px');
-      this.controllsDiv.style.position = 'sticky';
+      $(this.controllsDiv).css({'margin-top': '0px', 'position': 'sticky'});
     }
 
     const controlsWrapper = ui.div(this.controllsDiv, 'ui-form');
@@ -235,8 +235,9 @@ export class RichFunctionView extends FunctionView {
     const newRibbonPanels = [
       ...this.getRibbonPanels(),
       [
-        ...this.runningOnInput && !this.options.isTabbed ? [play]: [...this.isUploadMode.value ? [save] : [play]],
-        ...!this.runningOnInput ? [toggleUploadMode]: [],
+        ...this.runningOnInput || this.options.isTabbed ? []: [play],
+        ...(this.hasUploadMode && this.isUploadMode.value) ? [save] : [],
+        ...this.hasUploadMode ? [toggleUploadMode]: [],
       ],
     ];
 
@@ -273,7 +274,7 @@ export class RichFunctionView extends FunctionView {
           return viewer;
         });
 
-        promisedViewers.map((promisedViewer) => promisedViewer.then((loadedViewer) => {
+        const reactiveViewers = promisedViewers.map((promisedViewer) => promisedViewer.then((loadedViewer) => {
           const subscribeOnFcChanges = () => {
             const currentParam: DG.FuncCallParam = this.funcCall.outputParams[dfProp.name] ?? this.funcCall.inputParams[dfProp.name];
 
@@ -292,6 +293,22 @@ export class RichFunctionView extends FunctionView {
               this.afterOutputPropertyRender.next({prop: dfProp, output: loadedViewer});
             });
 
+            this.funcCallReplaced.subscribe(async () => {
+              const currentParamValue = this.funcCall.outputs[dfProp.name] ?? this.funcCall.inputs[dfProp.name];
+
+              $(this.outputsTabsElem.root).show();
+              $(this.outputsTabsElem.getPane(tabLabel).header).show();
+
+              if (Object.values(viewerTypesMapping).includes(loadedViewer.type))
+                loadedViewer.dataFrame = currentParamValue;
+              else {
+                // User-defined viewers (e.g. OutliersSelectionViewer) could created only asynchronously
+                const newViewer = await currentParamValue.plot.fromType(loadedViewer.type) as DG.Viewer;
+                loadedViewer.root.replaceWith(newViewer.root);
+                loadedViewer = newViewer;
+              }
+            });
+
             this.subs.push(paramSub);
           };
 
@@ -299,6 +316,8 @@ export class RichFunctionView extends FunctionView {
           this.subs.push(
             this.funcCallReplaced.subscribe(subscribeOnFcChanges),
           );
+
+          return loadedViewer;
         }));
 
         const dfBlockTitle: string = dfProp.options['caption'] ?? dfProp.name;
@@ -321,26 +340,29 @@ export class RichFunctionView extends FunctionView {
           );
         }
 
-        promisedViewers.map((viewer, viewerIndex) => {
+        const wrappedViewers = reactiveViewers.map((promisedViewer, viewerIndex) => {
           const blockWidth: string | boolean | undefined = parsedTabDfProps[dfIndex][viewerIndex]['block'];
-          const viewerRoot = ui.wait(async () => (await viewer).root);
-          $(viewerRoot).css({'min-height': '300px'});
+          const viewerRoot = ui.wait(async () => (await promisedViewer).root);
+          $(viewerRoot).css({
+            'min-height': '300px',
+            'flex-grow': '1',
+          });
 
-          acc.append(
-            ui.divV([
-              ...viewerIndex === 0 ? [ui.h2(dfBlockTitle)] : [ui.h2(' ', {style: {'white-space': 'pre'}})],
-              viewerRoot,
-            ], {style: {...blockWidth ? {
-              'width': `${blockWidth}%`,
-              'max-width': `${blockWidth}%`,
-            } : {
-              'flex-grow': '1',
-            }}}),
-          );
+          return ui.divV([
+            ...viewerIndex === 0 ? [ui.h2(dfBlockTitle)] : [ui.h2(' ', {style: {'white-space': 'pre'}})],
+            viewerRoot,
+          ], {style: {...blockWidth ? {
+            'width': `${blockWidth}%`,
+            'max-width': `${blockWidth}%`,
+          } : {
+            'flex-grow': '1',
+          }}});
         });
 
+        acc.append(...wrappedViewers);
+
         return acc;
-      }, ui.divH([], {'style': {'flex-wrap': 'wrap'}}));
+      }, ui.divH([], {'style': {'flex-wrap': 'wrap', 'flex-grow': '1'}}));
 
       const generateScalarsTable = () => {
         const table = DG.HtmlTable.create(
@@ -348,7 +370,9 @@ export class RichFunctionView extends FunctionView {
           (scalarProp: DG.Property) =>
             [scalarProp.caption ?? scalarProp.name, this.funcCall.outputs[scalarProp.name], scalarProp.options['units']],
         ).root;
-        table.style.maxWidth = '400px';
+        $(table).css({
+          'max-width': '400px',
+        });
         this.afterOutputSacalarTableRender.next(table);
         return table;
       };
@@ -363,6 +387,12 @@ export class RichFunctionView extends FunctionView {
             scalarsTable = newScalarsTable;
           });
 
+          this.funcCallReplaced.subscribe(() => {
+            const newScalarsTable = generateScalarsTable();
+            scalarsTable.replaceWith(newScalarsTable);
+            scalarsTable = newScalarsTable;
+          });
+
           this.subs.push(paramSub);
         };
 
@@ -372,9 +402,11 @@ export class RichFunctionView extends FunctionView {
         );
       });
 
-      this.outputsTabsElem.addPane(tabLabel, () => {
-        return ui.divV([dfBlocks, ...tabScalarProps.length ? [ui.h2('Scalar values')]: [], scalarsTable]);
-      });
+      if (tabScalarProps.length > 0 || tabDfProps.reduce((viewersCount, prop) => {viewersCount+= getPropViewers(prop).config.length; return viewersCount;}, 0) > 0) {
+        this.outputsTabsElem.addPane(tabLabel, () => {
+          return ui.divV([...tabDfProps.length ? [dfBlocks]: [], ...tabScalarProps.length ? [ui.h2('Scalar values'), scalarsTable]: []]);
+        });
+      }
     });
 
     const outputBlock = ui.box();
@@ -384,14 +416,6 @@ export class RichFunctionView extends FunctionView {
   }
 
   public async onAfterLoadRun(loadedRun: DG.FuncCall) {
-    wu(this.funcCall.outputParams.values() as DG.FuncCallParam[]).forEach((out) => {
-      this.funcCall.setParamValue(out.name, loadedRun.outputs[out.name]);
-    });
-
-    wu(this.funcCall.inputParams.values() as DG.FuncCallParam[]).forEach((inp) => {
-      this.funcCall.setParamValue(inp.name, loadedRun.inputs[inp.name]);
-    });
-
     this.outputsTabsElem.root.style.removeProperty('display');
     this.outputsTabsElem.panes.forEach((tab) => {
       tab.header.style.removeProperty('display');
@@ -503,6 +527,12 @@ export class RichFunctionView extends FunctionView {
             this.funcCall.inputs[prop.name] = file;
             this.checkDisability.next();
           });
+
+          if (this.runningOnInput) {
+            const sub = t.onFileUploaded.subscribe(async () => await this.doRun());
+            this.subs.push(sub);
+          }
+
           if (prop.category !== prevCategory)
             inputs.append(ui.h2(prop.category));
 
@@ -545,9 +575,7 @@ export class RichFunctionView extends FunctionView {
       const buttonWrapper = ui.div([runButton]);
       ui.tooltip.bind(buttonWrapper, () => runButton.disabled ? (this.isRunning ? 'Computations are in progress' : 'Some inputs are invalid') : '');
       this.controllsDiv = ui.buttonsInput([buttonWrapper as any]);
-    }
-    if (!this.runningOnInput)
-      inputs.append(this.controllsDiv);
+    };
 
     inputs.classList.remove('ui-panel');
     inputs.style.paddingTop = '0px';
@@ -600,9 +628,11 @@ export class RichFunctionView extends FunctionView {
     const tempCall = await(await grok.functions.eval('Sin')).prepare({x: 1}).call();
     expFuncCall.dart.r2 = tempCall.dart.r2;
 
-    let tagsRef = expFuncCall.options['tags'];
-    tagsRef = tagsRef ? tagsRef.push(EXPERIMENTAL_TAG) : [EXPERIMENTAL_TAG];
+    let tagsRef = expFuncCall.options['tags'] as undefined | string[];
+    tagsRef = tagsRef ? [...tagsRef, EXPERIMENTAL_TAG] : [EXPERIMENTAL_TAG];
     expFuncCall.options['tags'] = tagsRef;
+
+    expFuncCall.newId();
 
     await this.saveRun(expFuncCall);
   }
@@ -715,6 +745,8 @@ export class RichFunctionView extends FunctionView {
 
     const tabControl = this.outputsTabsElem;
     for (const tabLabel of this.tabsLabels) {
+      if (!tabControl.getPane(tabLabel)) continue;
+
       tabControl.currentPane = tabControl.getPane(tabLabel);
       await new Promise((r) => setTimeout(r, 100));
       if (tabLabel === 'Input') {

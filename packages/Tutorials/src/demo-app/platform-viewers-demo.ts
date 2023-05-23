@@ -5,7 +5,6 @@ import {_package} from '../package';
 import {delay} from '@datagrok-libraries/utils/src/test';
 
 
-// TODO: add customized datasets, fix the docking, etc.
 const VIEWER_TABLES_PATH: {[key: string]: string} = {
   'Scatter plot': 'files/demog.csv',
   Histogram: 'files/demog.csv',
@@ -20,38 +19,98 @@ const VIEWER_TABLES_PATH: {[key: string]: string} = {
   'Network diagram': 'got-s1-edges.csv',
   'Box plot': 'files/demog.csv',
   'Tree map': 'files/demog.csv',
-  'Heat map': 'files/demog.csv',
   Statistics: 'files/demog.csv',
   'Correlation plot': 'sensors/eeg.csv',
   Calendar: 'files/demog.csv',
   Grid: 'files/demog.csv',
   Markup: 'files/demog.csv',
-  'Tile Viewer': 'files/demog.csv',
-  Form: 'files/demog.csv',
-  'Shape Map': 'files/demog.csv',
+  'Tile Viewer': 'chem/sar_small.csv',
+  Form: 'files/sar-small.csv',
+  'Shape Map': 'geo/us_2016_election_by_county.csv',
   'Pivot table': 'files/demog.csv',
-  Map: 'files/demog.csv',
+  Filters: 'files/SPGI.csv',
 };
 
+const VIEWER_LAYOUTS_FILE_NAMES: {[key: string]: string} = {
+  'Trellis plot': 'trellis-plot-viewer-layout.json',
+  Form: 'form-viewer-layout.json',
+};
+
+const MARKUP_CONTENT = `# What's Markdown?
+
+## Table name: #{t.name}
+
+## Row count: #{t.rowCount}
+
+## Selected: #{t.selection.trueCount}
+
+## Filtered: #{t.filter.trueCount}
+
+## Current row: #{t.currentRow}
+
+## Current column: #{t.currentCol}
+
+## Current cell: #{t.currentCell}`;
+
+
+async function getLayout(viewerName: string, df: DG.DataFrame): Promise<DG.ViewLayout> {
+  const layout = await _package.files.readAsText(VIEWER_LAYOUTS_FILE_NAMES[viewerName]);
+  const modifiedLayout = DG.ViewLayout.fromJson(layout.replaceAll("tableName", df.name));
+  return modifiedLayout;
+}
+
+async function loadViewerDemoLayout(tableView: DG.TableView, viewerName: string): Promise<void> {
+  const layout = await getLayout(viewerName, tableView.dataFrame);
+  tableView.loadLayout(layout);
+  const viewer = Array.from(grok.shell.tv.viewers).find((viewer) => viewer.type === viewerName);
+  if (viewer)
+    grok.shell.windows.help.showHelp(viewer.helpUrl);
+}
 
 export async function viewerDemo(viewerName: string, options?: object | null) {
-  const df = ['Line chart', 'Network diagram', 'Correlation plot'].includes(viewerName) ?
+  const df = ['Line chart', 'Network diagram', 'Correlation plot', 'Tile Viewer', 'Shape Map'].includes(viewerName) ?
     await grok.data.getDemoTable(VIEWER_TABLES_PATH[viewerName]) :
     await grok.data.loadTable(`${_package.webRoot}/${VIEWER_TABLES_PATH[viewerName]}`);
 
   const tableView = grok.shell.addTableView(df);
 
+  grok.shell.windows.showContextPanel = false;
   grok.shell.windows.showHelp = true;
   grok.shell.windows.help.syncCurrentObject = false;
+
+  if (['Form', 'Trellis plot'].includes(viewerName)) {
+    if (viewerName === DG.VIEWER.FORM) {
+      DG.debounce(df.onSemanticTypeDetected, 800).subscribe(async (_) => {
+        await loadViewerDemoLayout(tableView, viewerName);
+      });
+      return;
+    }
+
+    await loadViewerDemoLayout(tableView, viewerName);   
+    return;
+  }
+  
+  if (['Tile Viewer', 'Filters'].includes(viewerName)) {
+    DG.debounce(df.onSemanticTypeDetected, 800).subscribe((_) => {
+      const viewer = tableView.addViewer(viewerName, options);
+      grok.shell.windows.help.showHelp(viewer.helpUrl);
+      dockViewers(tableView, viewer, viewerName);
+    });
+    return;
+  }
 
   const viewer = tableView.addViewer(viewerName, options);
   
   // because of GROK-13028
   if (viewerName === DG.VIEWER.NETWORK_DIAGRAM) {
-    await delay(100);
+    await delay(500);
     viewer.props.node1ColumnName = 'Source';
     viewer.props.node2ColumnName = 'Target';
+    (viewer.root.firstElementChild as HTMLElement).style.width = '100%';
   }
+
+  if (viewerName === DG.VIEWER.MARKUP)
+    viewer.props.content = MARKUP_CONTENT;
 
   grok.shell.windows.help.showHelp(viewer.helpUrl);
 
@@ -61,8 +120,16 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
 function dockViewers(tableView: DG.TableView, viewer: DG.Viewer, viewerName: string) {
   const rootNode = tableView.dockManager.rootNode;
 
-  if (viewerName === DG.VIEWER.MARKUP)
+  if (viewerName === DG.VIEWER.MARKUP) {
+    const viewerNode = tableView.dockManager.dock(viewer, DG.DOCK_TYPE.TOP, null, viewerName, 0.7);
+    tableView.dockManager.dock(tableView.filters(), DG.DOCK_TYPE.LEFT, viewerNode, 'Filters', 0.3);
     return;
+  }
+  if (['Filters', 'Tile Viewer'].includes(viewerName)) {
+    tableView.dockManager.dock(viewer, viewerName === DG.VIEWER.FILTERS ? DG.DOCK_TYPE.LEFT : DG.DOCK_TYPE.RIGHT,
+      null, viewerName, viewerName === DG.VIEWER.FILTERS ? 0.55 : 0.75);
+    return;
+  }
   if (viewerName === DG.VIEWER.STATISTICS) {
     tableView.dockManager.dock(tableView.filters(), DG.DOCK_TYPE.RIGHT, rootNode, 'Filters', 0.6);
     tableView.dockManager.dock(viewer, DG.DOCK_TYPE.TOP, null, viewerName, 0.7);

@@ -22,7 +22,7 @@ category('Viewers', () => {
         const pdbStr: string = await grok.dapi.files.readAsText(pdbFn);
         const df: DG.DataFrame = await ph.pdbToDf(pdbStr, '1bdq');
         return df;
-      })(), true);
+      })(), {detectSemanticTypes: true});
     });
   }
 });

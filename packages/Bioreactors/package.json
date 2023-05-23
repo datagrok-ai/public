@@ -1,48 +1,50 @@
 {
-	"name": "@datagrok/bioreactors",
-	"friendlyName": "Bioreactor",
-	"version": "1.1.0",
-	"description": "Simulation of controlled fab-arm exchange mechanism.",
-	"dependencies": {
-		"datagrok-api": "latest",
-		"cash-dom": "latest",
-		"dayjs": "latest",
-		"@datagrok-libraries/utils": "latest",
-		"@datagrok-libraries/tutorials": "^1.3.0"
-	},
-	"author": {
-        "name": "Viktor Makarichev",
-        "email": "vmakarichev@datagrok.ai"
+    "name": "@datagrok/bioreactors",
+    "friendlyName": "Bioreactor",
+    "version": "1.1.1",
+    "description": "Simulation of controlled fab-arm exchange mechanism",
+    "dependencies": {
+      "datagrok-api": "latest",
+      "cash-dom": "latest",
+      "dayjs": "latest",
+      "@datagrok-libraries/utils": "^4.0.7",
+      "@datagrok-libraries/tutorials": "^1.3.3"
     },
-	"devDependencies": {
-		"webpack": "latest",
-		"webpack-cli": "latest",
-		"ts-loader": "latest",
-		"typescript": "latest"
-	},
-	"scripts": {
-		"link-all": "",
-		"debug-bioreactors": "webpack && grok publish",
-		"release-bioreactors": "webpack && grok publish --release",
-		"build-bioreactors": "webpack",
-		"build": "webpack",
-		"debug-bioreactors-dev": "webpack && grok publish dev",
-		"release-bioreactors-dev": "webpack && grok publish dev --release",
-		"debug-bioreactors-local": "webpack && grok publish local",
-		"release-bioreactors-local": "webpack && grok publish local --release"
-	},
-	"canEdit": [
-		"Developers"
-	],
-	"canView": [
-		"All users"
-	],
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/datagrok-ai/public.git",
-		"directory": "packages/Bioreactors"
-	},
-	"sources": [
-        "wasm/Bioreactor.js"
+    "author": {
+      "name": "Viktor Makarichev",
+      "email": "vmakarichev@datagrok.ai"
+    },
+    "devDependencies": {
+      "webpack": "latest",
+      "webpack-cli": "latest",
+      "ts-loader": "latest",
+      "typescript": "latest"
+    },
+    "scripts": {
+      "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/tutorials",
+      "debug-bioreactors": "webpack && grok publish",
+      "release-bioreactors": "webpack && grok publish --release",
+      "build-bioreactors": "webpack",
+      "build": "webpack",
+      "debug-bioreactors-dev": "webpack && grok publish dev",
+      "release-bioreactors-dev": "webpack && grok publish dev --release",
+      "debug-bioreactors-local": "webpack && grok publish local",
+      "release-bioreactors-local": "webpack && grok publish local --release",
+      "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/tutorials run build && npm run build"
+    },
+    "canEdit": [
+      "Developers"
+    ],
+    "canView": [
+      "All users"
+    ],
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/datagrok-ai/public.git",
+      "directory": "packages/Bioreactors"
+    },
+    "category": "",
+    "sources": [
+      "wasm/Bioreactor.js"
     ]
-}
+  }

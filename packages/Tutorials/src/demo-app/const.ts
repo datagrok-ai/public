@@ -4,13 +4,13 @@ export const DEMO_APP_HIERARCHY = {
 			name: 'Cheminformatics',
 			children: [
 				{
-					name: 'Molecule3D in Grid',
+					name: 'Proteins',
 				},
 				{
-					name: 'Databases',
+					name: 'Chemical Databases',
 				},
 				{
-					name: 'Docking NGL',
+					name: 'Docking Conformations',
 				},
 				{
 					name: 'Molecule Activity Cliffs',
@@ -22,13 +22,19 @@ export const DEMO_APP_HIERARCHY = {
 					name: 'R Group Analysis',
 				},
 				{
-					name: 'Similarity Search',
+					name: 'Similarity & Diversity Search',
 				},
+				{
+					name: 'Scaffold Tree',
+				}
 			],
 		},
 		{
 			name: 'Bioinformatics',
 			children: [
+				{
+					name: 'Atomic Level',
+				},
 				{
 					name: 'Activity Cliffs',
 				},
@@ -47,6 +53,17 @@ export const DEMO_APP_HIERARCHY = {
 			],
 		},
 		{
+			name: 'Data Access',
+			children: [
+				{
+					name: 'Files',
+				},
+				{
+					name: 'Databases',
+				},
+			]
+		},
+		{
 			name: 'Viewers',
 			children: [
 				{
@@ -54,6 +71,9 @@ export const DEMO_APP_HIERARCHY = {
 					children: [
 						{
 							name: 'Network Diagram',
+						},
+						{
+							name: 'Tree',
 						},
 						{
 							name: 'Tree map',
@@ -75,16 +95,25 @@ export const DEMO_APP_HIERARCHY = {
 					name: 'General',
 					children: [
 						{
+							name: 'Scatter Plot',
+						},
+						{
 							name: '3D Scatter Plot',
 						},
 						{
 							name: 'Bar Chart',
 						},
 						{
+							name: 'Chord'
+						},
+						{
 							name: 'Density Plot',
 						},
 						{
-							name: 'Heat map',
+							name: 'Filters',
+						},
+						{
+							name: 'Heatmap',
 						},
 						{
 							name: 'Histogram',	
@@ -99,13 +128,34 @@ export const DEMO_APP_HIERARCHY = {
 							name: 'Pie Chart',
 						},
 						{
+							name: 'Radar',
+						},
+						{
+							name: 'Sankey',
+						},
+						{
+							name: 'Sunburst',
+						},
+						{
+							name: 'Surface Plot',
+						},
+						{
 							name: 'Tile Viewer',
-						}
+						},
+						{
+							name: 'Timelines',
+						},
+						{
+							name: 'Word Cloud'
+						},
 					]
 				},
 				{
 					name: 'Geographical',
 					children: [
+						{
+							name: 'Globe',
+						},
 						{
 							name: 'Map',
 						},
@@ -140,6 +190,9 @@ export const DEMO_APP_HIERARCHY = {
 						{
 							name: 'Statistics',
 						},
+						{
+							name: 'Pivot Table',
+						},
 					]
 				},
 				{
@@ -149,39 +202,6 @@ export const DEMO_APP_HIERARCHY = {
 							name: 'Calendar'
 						},
 					]
-				},
-				{
-					name: 'Chord'
-				},
-				{
-					name: 'Globe',
-				},
-				{
-					name: 'Pivot Table',
-				},
-				{
-					name: 'Radar',
-				},
-				{
-					name: 'Sankey',
-				},
-				{
-					name: 'Scatter Plot',
-				},
-				{
-					name: 'Sunburst',
-				},
-				{
-					name: 'Surface Plot',
-				},
-				{
-					name: 'Timelines',
-				},
-				{
-					name: 'Tree',
-				},
-				{
-					name: 'Word Cloud'
 				},
 			]
 		},
@@ -194,7 +214,7 @@ export const DEMO_APP_HIERARCHY = {
 			]
 		},
 		{
-			name: 'Data analysis',
+			name: 'Compute',
 			children: [
 				{
 					name: 'Multivariate analysis',
