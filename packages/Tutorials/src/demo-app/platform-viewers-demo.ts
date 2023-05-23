@@ -28,7 +28,6 @@ const VIEWER_TABLES_PATH: {[key: string]: string} = {
   Form: 'files/sar-small.csv',
   'Shape Map': 'geo/us_2016_election_by_county.csv',
   'Pivot table': 'files/demog.csv',
-  Map: 'geo/earthquakes.csv',
 };
 
 const VIEWER_LAYOUTS_FILE_NAMES: {[key: string]: string} = {
@@ -70,7 +69,7 @@ async function loadViewerDemoLayout(tableView: DG.TableView, viewerName: string)
 }
 
 export async function viewerDemo(viewerName: string, options?: object | null) {
-  const df = ['Line chart', 'Network diagram', 'Correlation plot', 'Tile Viewer', 'Shape Map', 'Map'].includes(viewerName) ?
+  const df = ['Line chart', 'Network diagram', 'Correlation plot', 'Tile Viewer', 'Shape Map'].includes(viewerName) ?
     await grok.data.getDemoTable(VIEWER_TABLES_PATH[viewerName]) :
     await grok.data.loadTable(`${_package.webRoot}/${VIEWER_TABLES_PATH[viewerName]}`);
 
@@ -92,7 +91,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
     return;
   }
   
-  if (['Tile Viewer', 'Map'].includes(viewerName)) {
+  if (viewerName === DG.VIEWER.TILE_VIEWER) {
     DG.debounce(df.onSemanticTypeDetected, 800).subscribe((_) => {
       const viewer = tableView.addViewer(viewerName, options);
       grok.shell.windows.help.showHelp(viewer.helpUrl);

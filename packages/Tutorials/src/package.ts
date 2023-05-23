@@ -372,11 +372,3 @@ export async function _shapeMapDemo() {
 export async function _pivotTableDemo() {
   await viewerDemo('Pivot table');
 }
-
-//name: mapDemo
-//description: Map viewer shows geospatial data on a map as either markers, or a heat map.
-//meta.demoPath: Viewers | Geographical | Map
-//test: _mapDemo() //wait: 2000, skip: GROK-11670
-export async function _mapDemo() {
-  await viewerDemo('Map', {renderType: 'both'});
-}
