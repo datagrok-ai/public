@@ -30,7 +30,8 @@ export class FuzzyFilter extends DG.Filter {
             }
 
         let fuse = new Fuse(this.column?.toList() ?? [], 
-            {includeScore: true, isCaseSensitive: false, ignoreLocation: true});
+            {includeScore: true, isCaseSensitive: false, ignoreLocation: true,
+                 useExtendedSearch: true, includeMatches: true});
 
         let filterResult = fuse.search(this.input)
         this.bitset = DG.BitSet.create(this.dataFrame?.rowCount ?? 0, (i: number) => false)
