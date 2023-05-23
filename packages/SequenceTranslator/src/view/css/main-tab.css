@@ -1,6 +1,5 @@
 /* Naming convention: class names should begin with st and tab name (main, axo, sdf) to avoid naming collitions */
 .st-main-input-table {
-  /* background-color: azure; */
   width: 100%;
 }
 
@@ -16,14 +15,22 @@
 
 .st-main-output-table {
   margin-top: 20px;
+  margin-right: 20px;
 }
 
-.st-main-output-table td:has(a) {
-  /* background-color: pink; */
-  max-width: 800px;
+.st-main-output-table table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.st-main-output-table table tbody tr td {
+  max-width: 20%;
+}
+
+.st-main-output-table tr > td:first-child {
+  width: 120px;
 }
 
 .st-main-output-table td a {
   overflow-wrap: break-word;
-  max-width: 100%;
 }

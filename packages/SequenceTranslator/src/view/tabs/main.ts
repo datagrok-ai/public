@@ -129,10 +129,11 @@ export class MainTabUI {
         sequence: sequence,
       });
     }
-    const outputValues = ui.table(tableRows, (item) => [item.format, item.sequence], ['OUTPUT FORMAT', 'OUTPUT SEQUENCE']);
-    outputValues.classList.add('st-main-output-table');
+    const outputTable = ui.table(tableRows, (item) => [item.format, item.sequence], ['OUTPUT FORMAT', 'OUTPUT SEQUENCE']);
+    // outputTable.classList.add('st-main-output-table');
 
-    this.outputTableDiv.append(ui.div([outputValues]));
+    this.outputTableDiv.append(outputTable);
+    this.outputTableDiv.classList.add('st-main-output-table');
     // this.outputTableDiv.classList.add()
   }
 
