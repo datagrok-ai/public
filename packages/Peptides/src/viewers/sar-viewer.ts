@@ -323,8 +323,12 @@ export function showTooltip(cell: DG.GridCell, x: number, y: number, model: Pept
 
 function chooseAction(aar: string, position: string, isShiftPressed: boolean, isFilter: boolean,
   model: PeptidesModel): void {
-  if (!isShiftPressed)
-    model.initMonomerPositionSelection({cleanInit: true, notify: false});
+  if (!isShiftPressed) {
+    if (isFilter)
+      model.initMonomerPositionFilter({cleanInit: true, notify: false});
+    else
+      model.initMonomerPositionSelection({cleanInit: true, notify: false});
+  }
 
   model.modifyMonomerPositionSelection(aar, position, isFilter);
 }
