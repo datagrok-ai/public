@@ -15,6 +15,7 @@ export const defaultLaunchParameters: utils.Indexable = {
     '--disable-features=site-per-process',
   ],
   ignoreHTTPSErrors: true,
+  headless: 'new',
 };
 
 export async function getToken(url: string, key: string) {
@@ -97,4 +98,14 @@ export function runWithTimeout(timeout: number, f: () => any): Promise<any> {
 export function exitWithCode(code: number): void {
   console.log(`Exiting with code ${code}`);
   process.exit(code);
+}
+
+export class TestContext {
+  catchUnhandled = true;
+  report = false;
+
+  constructor(catchUnhandled?: boolean, report?: boolean) {
+    if (catchUnhandled !== undefined) this.catchUnhandled = catchUnhandled;
+    if (report !== undefined) this.report = report;
+  };
 }
