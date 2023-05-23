@@ -1,9 +1,12 @@
 --name: _protein classification
+--friendlyName: Misc | Protein Classification
 --connection: Chembl
 select protein_class_id, parent_id, pref_name, definition, class_level from protein_classification
 --end
 
+
 --name: _bioactivity data for bacterial targets for @organism
+--friendlyName: Browse | Bioactivity for bacterial targets for @organism
 --connection: Chembl
 --input: string organism = "Shigella" {suggestions: Chembl:organisms}
 --tags: unit-test
@@ -24,7 +27,9 @@ FROM target_dictionary td
     AND oc.L1 = 'Bacteria';
 --end
 
+
 --name: _compounds which are selective to one target over a second target
+--friendlyName: Browse | Compounds selective to one target over a second target
 --connection: Chembl
 --input: string selectiveFor = "CHEMBL301"
 --input: string over = "CHEMBL4036"
@@ -55,7 +60,9 @@ AND act.standard_value        > 200
 AND td.chembl_id              = @over;
 --end
 
+
 --name: _PK data from 'Curated Drug Pharmacokinetic Data' source for @drug
+--friendlyName: Browse | PK for @drug
 --connection: Chembl
 --input: string drug = "LEVOFLOXACIN"
 SELECT DISTINCT
@@ -95,7 +102,9 @@ GROUP BY d.title, a.assay_id, a.description, cr.molregno, cr.compound_name, act.
 ORDER BY cr.compound_name, act.toid, act.standard_type;
 --end
 
+
 --name: compound activity details for all targets containing @protein
+--friendlyName: Browse | Compound activity details for all targets containing @protein
 --connection: Chembl
 --input: string protein = "P08172"
 SELECT DISTINCT
@@ -124,7 +133,9 @@ FROM compound_structures s
     AND cs.accession = @protein;
 --end
 
+
 --name: compound activity details for @target
+--friendlyName: Browse | Compound activity details for @target
 --connection: Chembl
 --input: string target = "CHEMBL1827"
 --meta.cache: true
@@ -155,60 +166,11 @@ AND a.tid            = t.tid
 AND t.chembl_id      = @target;
 --end
 
+
 --name: unichemUnitTestQuery
+--friendlyName: Misc | Unichem Test
 --connection: Unichem
 --tags: unit-test
 --meta.testExpected: 1
 select count(from_id) from src10src11
---end
-
---name: _compoundNames
---connection: Chembl
---input: string sub
---tags: unit-test
-select distinct compound_name from compound_structures
-where compound_name ilike '%' || @sub || '%'
-limit 50
---end
-
---name: _organisms
---connection: Chembl
---input: string sub
---tags: unit-test
-select distinct organism from target_dictionary
-where organism ilike '%' || @sub || '%'
-limit 50
---end
-
---name: _proteinTypes
---connection: Chembl
---input: string sub
---tags: unit-test
-select distinct short_name from protein_classification
-where short_name ilike '%' || @sub || '%'
-limit 50
---end
-
---name: _targetTypes
---connection: Chembl
---input: string sub
-select target_type from target_type
-where target_type ilike '%' || @sub || '%'
-limit 50
---end
-
---name: _assayTypes
---connection: Chembl
---input: string sub
-select assay_type from assay_type
-where assay_type ilike '%' || @sub || '%'
-limit 50
---end
-
---name: _relationshipTypes
---connection: Chembl
---input: string sub
-select relationship_type from relationship_type
-where relationship_type ilike '%' || @sub || '%'
-limit 50
 --end

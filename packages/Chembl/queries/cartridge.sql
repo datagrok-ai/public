@@ -1,4 +1,5 @@
 --name: patternSimilaritySearch
+--friendlyName: Search | Pattern Similarity
 --connection: Chembl
 --input: string pattern {semType: Molecule}
 --input: int maxRows = 1000
@@ -11,6 +12,7 @@ limit @maxRows
 --end
 
 --name: patternSimilaritySearchWithThreshold
+--friendlyName: Search | Pattern Similarity
 --connection: Chembl
 --meta.batchMode: true
 --input: string pattern {semType: Molecule}
@@ -21,6 +23,7 @@ select * from get_mfp2_neighbors(@pattern);
 --end
 
 --name: patternSubstructureSearch
+--friendlyName: Search | Substructure
 --connection: Chembl
 --input: string pattern {semType: Substructure}
 --input: int maxRows = 1000
