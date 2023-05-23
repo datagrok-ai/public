@@ -1,23 +1,22 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-// TODO: clean up this module
 import {chemGetFingerprints} from '../chem-searches';
-import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {reduceDimensinalityWithNormalization} from '@datagrok-libraries/ml/src/sequence-space';
 import {Fingerprint} from '../utils/chem-common';
 import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 import {IReduceDimensionalityResult} from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {ISequenceSpaceParams, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import { malformedDataWarning, setEmptyBitArraysForMalformed } from '../utils/malformed-data-utils';
+import {malformedDataWarning, setEmptyBitArraysForMalformed} from '../utils/malformed-data-utils';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 
 export async function chemSpace(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
   const fpColumn = await chemGetFingerprints(spaceParams.seqCol, Fingerprint.Morgan, true, false);
-  const emptyAndMalformedIdxs = fpColumn.map((el: BitArray | null, idx: number) => !el ? idx : null).filter((it) => it !== null);
+  const emptyAndMalformedIdxs = fpColumn.map((el: BitArray | null, idx: number) =>
+    !el ? idx : null).filter((it) => it !== null);
   malformedDataWarning(fpColumn, spaceParams.seqCol);
-  setEmptyBitArraysForMalformed(fpColumn); //need to replace nulls with empty BitArrays since dimensionality reducing algorithmns fail in case fpColumn contains nulls. TODO: fix on dim reduction side
+  /* need to replace nulls with empty BitArrays since dimensionality reducing algorithmns
+  fail in case fpColumn contains nulls. TODO: fix on dim reduction side */
+  setEmptyBitArraysForMalformed(fpColumn);
   const chemSpaceResult: IReduceDimensionalityResult = await reduceDimensinalityWithNormalization(
     fpColumn as BitArray[],
     spaceParams.methodName,
@@ -25,12 +24,12 @@ export async function chemSpace(spaceParams: ISequenceSpaceParams): Promise<ISeq
     spaceParams.options);
   emptyAndMalformedIdxs.forEach((idx: number | null) => {
     setNullForEmptyAndMalformedData(chemSpaceResult.embedding, idx!);
-    if (chemSpaceResult.distance) {
+    if (chemSpaceResult.distance)
       setNullForEmptyAndMalformedData(chemSpaceResult.distance, idx!);
-    }
-  })
-  const cols: DG.Column[] = spaceParams.embedAxesNames.map((name: string, index: number) => DG.Column.fromFloat32Array(name, chemSpaceResult.embedding[index]));
-  return { distance: chemSpaceResult.distance, coordinates: new DG.ColumnList(cols) };
+  });
+  const cols: DG.Column[] = spaceParams.embedAxesNames.map((name: string, index: number) =>
+    DG.Column.fromFloat32Array(name, chemSpaceResult.embedding[index]));
+  return {distance: chemSpaceResult.distance, coordinates: new DG.ColumnList(cols)};
 }
 
 function setNullForEmptyAndMalformedData(matrix: Matrix, idx: number) {

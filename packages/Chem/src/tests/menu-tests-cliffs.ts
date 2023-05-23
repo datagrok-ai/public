@@ -6,8 +6,8 @@ import {createTableView} from './utils';
 import {activityCliffs} from '../package';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {before, after, expect, category, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
-import { DimReductionMethods } from '@datagrok-libraries/ml/src/reduce-dimensionality';
-import { BitArrayMetricsNames } from '@datagrok-libraries/ml/src/typed-metrics';
+import {DimReductionMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 // const {jStat} = require('jstat');
 
 
@@ -41,7 +41,8 @@ category('top menu activity cliffs', async () => {
     await _testActivityCliffsOpen('tests/Test_smiles_malformed.csv', 'canonical_smiles', 'FractionCSP3', 24);
     try {
       await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
-        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis', 'cannot find warning balloon', 1000);
+        '3 molecules with indexes 14,31,41 are possibly malformed and are not included in analysis',
+      'cannot find warning balloon', 1000);
     } finally {
       grok.shell.closeAll();
       DG.Balloon.closeAll();

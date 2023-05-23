@@ -45,15 +45,15 @@ export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
           nglHost.style.width = `${w}px`;
           nglHost.style.height = `${h}px`;
           const waitParentEl = nglHost.parentElement;
-          if(waitParentEl?.classList.contains('grok-wait')){
+          if (waitParentEl?.classList.contains('grok-wait')) {
             waitParentEl.style.width = `${w}px`;
             waitParentEl.style.height = `${h}px`;
           }
           stage.handleResize();
-        })
+        });
       }
     }
-  })
+  });
 
   return new DG.Widget(nglHost);
 }

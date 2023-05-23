@@ -1,7 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-
 import {category, before, after, expect, test, delay, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import {setDialogInputValue, isColumnPresent} from './gui-utils';
 
@@ -12,7 +11,7 @@ category('UI', () => {
 
   before(async () => {
     grok.shell.closeAll();
-    grok.shell.windows.showProperties = true; 
+    grok.shell.windows.showProperties = true;
   });
 
   test('similarity search', async () => {
@@ -20,7 +19,8 @@ category('UI', () => {
     v = grok.shell.addTableView(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     grok.shell.topMenu.find('Chem').group('Search').find('Similarity Search...').click();
-    await awaitCheck(() => document.querySelector('.d4-chem-similarity-search') !== null, 'cannot load Similarity Search viewer', 2000);
+    await awaitCheck(() => document.querySelector('.d4-chem-similarity-search') !== null,
+      'cannot load Similarity Search viewer', 2000);
     const similarityViewer = Array.from(v.viewers)[1];
     await awaitCheck(() => similarityViewer.root.querySelectorAll('.chem-canvas').length === 12,
       'molecules number inside Similarity viewer is different than expected', 3000);
@@ -30,7 +30,7 @@ category('UI', () => {
       'molecules number inside Similarity viewer is different than expected after change "Limit" property', 3000);
     const similarityLable = similarityViewer.root.getElementsByClassName('similarity-prop-value')[1] as HTMLElement;
     if (similarityLable.innerText != '0.22')
-      throw 'Expected Similarity Lable for 2nd molecule does not match the "Dice" metric';
+      throw new Error('Expected Similarity Lable for 2nd molecule does not match the "Dice" metric');
     const closeBtn = document.getElementsByClassName('panel-titlebar disable-selection panel-titlebar-tabhost')[0]
       ?.getElementsByClassName('grok-icon grok-font-icon-close')[0] as HTMLElement;
     closeBtn?.click();
@@ -44,7 +44,8 @@ category('UI', () => {
     v = grok.shell.addTableView(smiles);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     grok.shell.topMenu.find('Chem').group('Search').find('Diversity Search...').click();
-    await awaitCheck(() => document.querySelector('.d4-chem-diversity-search') !== null, 'cannot load Diversity Search viewer', 2000);
+    await awaitCheck(() => document.querySelector('.d4-chem-diversity-search') !== null,
+      'cannot load Diversity Search viewer', 2000);
     const dsvRoot = document.querySelector('.d4-chem-diversity-search') as HTMLElement;
     await awaitCheck(() => dsvRoot.querySelectorAll('.chem-canvas').length === 12, 'molecules number != 12', 3000);
     const dsv = Array.from(v.viewers)[1];
@@ -74,10 +75,12 @@ category('UI', () => {
       'Gasteiger charges script output was not rendered in the panel', 10000);
     const pecilIcon = document.getElementsByClassName('grok-icon fal fa-pencil')[0] as HTMLElement;
     pecilIcon?.click();
-    const contours = document.getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-gasteiger_partial_charges')[0]
+    const contours = document
+      .getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-gasteiger_partial_charges')[0]
       .getElementsByClassName('ui-input-editor')[0] as HTMLInputElement;
     contours.value = '15';
-    const applyBtn = document.getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-gasteiger_partial_charges')[0]
+    const applyBtn = document
+      .getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-gasteiger_partial_charges')[0]
       .getElementsByClassName('ui-btn ui-btn-ok')[0] as HTMLElement;
     applyBtn?.click();
     await delay(50);
@@ -99,7 +102,8 @@ category('UI', () => {
       .find((el) => el.textContent === 'Identifiers') as HTMLElement;
     await delay(200);
     if (!ih.classList.contains('expanded')) ih.click();
-    await awaitCheck(() => (ih.nextSibling as HTMLElement).querySelector('table') !== null, 'cannot load Identifiers', 15000);
+    await awaitCheck(() => (ih.nextSibling as HTMLElement)
+      .querySelector('table') !== null, 'cannot load Identifiers', 15000);
     const it = ih.nextSibling as HTMLElement;
     for (const i of ['SCHEMBL5536145', '18722989', 'CHEMBL2262190']) {
       expect(Array.from(it.querySelectorAll('.ui-link.d4-link-external'))
@@ -396,15 +400,15 @@ function findAccordionPanelElement(propPanel: HTMLElement, elName: string): HTML
 
 async function expandAccordionPane(propPanel: HTMLElement, elName: string) {
   const pane = findAccordionPanelElement(propPanel, elName);
-  if (!pane.classList.contains('expanded')) 
+  if (!pane.classList.contains('expanded'))
     await pane.click();
 }
 
 async function getDlgAndClickOK(error: string, header: string) {
   const dlg = () => {
     return Array.from(document.getElementsByClassName('d4-dialog'))
-      .filter((dlg) => dlg.getElementsByClassName('d4-dialog-header')[0].children[0].textContent === header)
-  }
+      .filter((dlg) => dlg.getElementsByClassName('d4-dialog-header')[0].children[0].textContent === header);
+  };
   await awaitCheck(() => {
     return dlg().length > 0;
   }, error, 5000);

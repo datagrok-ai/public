@@ -4,7 +4,7 @@ import MolNotation = DG.chem.Notation;
 
 // datagrok libraries dependencies
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
-import { getMolSafe } from './mol-creation_rdkit';
+import {getMolSafe} from './mol-creation_rdkit';
 
 
 export const MALFORMED_MOL_V2000 = `
