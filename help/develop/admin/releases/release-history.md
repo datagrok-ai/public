@@ -24,7 +24,7 @@ See also:
 
 We've launched a new version of the Datagrok platform 1.15.0. This update introduces various enhancements in computations, platform governance, stability, and overall usability. Some of the key improvements in this release include:
 * Namespaces view for easy access to all data sources and content within the platform. Now you can explore and access all available data in one centralized location.
-* [EDA package](#eda) using partial least squares regression for the multivariate data analysis.
+* [EDA package](release-history.md#eda) using partial least squares regression for the multivariate data analysis.
 * [Bioreactors package](#bioreactors) for the simulation of the mechanism of Controlled Fab-Arm Exchange.
 * Usage Analysis package for studying usage statistics. It enables you to analyze user activity, package distribution, and function usage to gain valuable insights for statistical analysis. To learn more, see [Usage Analysis](https://datagrok.ai/help/govern/usage-analysis#usage-analysis-application).
 * [Demo application](https://public.datagrok.ai/apps/Tutorials/Demo), an interactive educational resource showcasing the diverse capabilities and features of the DataGrok platform. It offers tutorials and demonstrations for hands-on learning of data manipulation, visualization, modeling, and more.
@@ -122,7 +122,7 @@ We've launched a new version of the Datagrok platform 1.15.0. This update introd
 
 We’ve released Usage Analysis 1.0.0, a tool for comprehensive statistics and insights into usage patterns on the Datagrok platform. Gain a deeper understanding of user interactions, make data-driven decisions, and optimize performance to enhance the user experience. To learn more, see [Usage Analysis](https://datagrok.ai/help/govern/usage-analysis#usage-analysis-application).
 
-#### [EDA ](https://github.com/datagrok-ai/public/tree/master/packages/EDA)
+#### [EDA](https://github.com/datagrok-ai/public/tree/master/packages/EDA)
 
 We’ve implemented the multivariate data analysis using partial least squares (PLS) regression in the EDA package. Our solution reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them. To provide high-performance in-browser computations, we use WebAssembly. For details, see [Multivariate analysis](https://datagrok.ai/help/explore/multivariate-analysis/pls).
 
