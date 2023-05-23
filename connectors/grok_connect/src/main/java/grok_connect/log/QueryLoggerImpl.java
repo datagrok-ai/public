@@ -8,12 +8,12 @@ import java.util.List;
 import java.util.UUID;
 
 public class QueryLoggerImpl implements QueryLogger {
-    private final ListAppender appender;
+    private final DataFrameAppender appender;
     private final Logger logger;
 
     public QueryLoggerImpl(List<String> logLevels) {
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        appender = new ListAppender();
+        appender = new DataFrameAppender();
         UUID uuid = UUID.randomUUID();
         appender.setName(uuid.toString());
         appender.setContext(context);
@@ -36,6 +36,6 @@ public class QueryLoggerImpl implements QueryLogger {
 
     @Override
     public String dumpLogMessages() {
-        return new Gson().toJson(appender.getLog());
+        return appender.getLog().toCsv();
     }
 }
