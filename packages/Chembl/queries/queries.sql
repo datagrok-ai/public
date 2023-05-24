@@ -174,3 +174,62 @@ AND t.chembl_id      = @target;
 --meta.testExpected: 1
 select count(from_id) from src10src11
 --end
+
+
+--name: FracClassification
+--friendlyName: Search | fracClassification
+--connection: Chembl 
+--input: string level1 {category: Level1_Description; choices: Query("SELECT DISTINCT level1_description FROM frac_classification")}
+--input: string level2 {category: Level2_Description; choices: Query("SELECT DISTINCT level2_description FROM frac_classification where level1_description = @level1")}
+--input: string level3 {category: Level3_Description; choices: Query("SELECT DISTINCT level3_description FROM frac_classification where level2_description = @level2")}
+--input: string level4 {category: Level4_Description; choices: Query("SELECT DISTINCT level4_description FROM frac_classification where level3_description = @level3")}
+SELECT * 
+FROM compound_structures s
+INNER JOIN molecule_frac_classification m 
+ON s.molregno = m.molregno
+INNER JOIN frac_classification f
+ON m.frac_class_id = f.frac_class_id
+WHERE f.level4_description = @level4
+--end
+
+
+--name: QueryBySubstructure
+--friendlyName: Search | queryBySubstructure
+--connection: Chembl 
+--meta.batchMode: true
+--input: string substructure {category: Substructure; semType: Molecule}
+--input: string threshold = '0.1' 
+--input: string actionType {category: Action; choices: Query("SELECT DISTINCT action_type from drug_mechanism")}
+--input: string mechanismOfAction {category: Action Mechanism; choices: Query("SELECT DISTINCT mechanism_of_action from drug_mechanism where action_type = @actionType")}
+--input: string country {category: Country; choices: Query("SELECT DISTINCT country from research_companies")}
+--input: list company {category: Companies; choices: Query("SELECT DISTINCT company from research_companies where country = @country")}
+SELECT set_config('rdkit.tanimoto_threshold', @threshold, true);
+--batch
+SELECT *
+FROM compound_structures s
+INNER JOIN drug_mechanism d
+ON s.molregno = d.molregno
+INNER JOIN molecule_synonyms m
+ON s.molregno = m.molregno
+INNER JOIN research_companies r
+ON m.res_stem_id = r.res_stem_id
+WHERE s.molregno IN (SELECT molregno FROM get_mfp2_neighbors(@substructure))
+AND d.action_type = @actionType
+AND d.mechanism_of_action = @mechanismOfAction
+AND r.country = @country
+AND r.company IN (
+  SELECT unnest(@company)
+)
+--end
+
+
+--name: ByChemblIds
+--friendlyName: Search | byChemblIds
+--connection: Chembl 
+--input: list chemblIds = ['CHEMBL1185'] {inputType: TextArea}
+SELECT *
+FROM molecule_dictionary
+WHERE chembl_id IN (
+  SELECT unnest(@chemblIds)
+);
+--end
