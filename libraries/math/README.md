@@ -5,6 +5,6 @@ This library will contain high performance computation code using wasm + web-wor
 
 ## Current content
 
-#### Hierarchical clustering
+### Hierarchical clustering
 
 Hierarchical clustering is a part of math library which uses web-workers and c++ code compiled to wasm to cluster data.
