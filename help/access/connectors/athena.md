@@ -69,8 +69,8 @@ service using SQL queries via a JDBC driver.
 ## Supported features
 
 * Schema browsing
-* Build query
-* Visual query
+* Join DB tables
+* Aggregation query
 * Connection test
 
 ## Usage example: link csv files from s3 with athena

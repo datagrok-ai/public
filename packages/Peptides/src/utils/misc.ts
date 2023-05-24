@@ -15,15 +15,16 @@ export function getSeparator(col: DG.Column<string>): string {
   return col.getTag(C.TAGS.SEPARATOR) ?? '';
 }
 
-export function scaleActivity(activityCol: DG.Column<number>, scaling: string = 'none'): DG.Column<number> {
+export function scaleActivity(activityCol: DG.Column<number>, scaling: C.SCALING_METHODS = C.SCALING_METHODS.NONE,
+): DG.Column<number> {
   let formula = (x: number): number => x;
   switch (scaling) {
-  case 'none':
+  case C.SCALING_METHODS.NONE:
     break;
-  case 'lg':
+  case C.SCALING_METHODS.LG:
     formula = (x: number): number => Math.log10(x);
     break;
-  case '-lg':
+  case C.SCALING_METHODS.MINUS_LG:
     formula = (x: number): number => -Math.log10(x);
     break;
   default:
@@ -62,7 +63,7 @@ export function calculateSelected(df: DG.DataFrame): type.MonomerSelectionStats 
 //     gc.cell.value == DG.INT_NULL || gc.cell.value == DG.FLOAT_NULL;
 // }
 
-export function extractMonomerInfo(col: DG.Column<string>): type.RawColumn {
+export function extractColInfo(col: DG.Column<string>): type.RawColumn {
   return {
     name: col.name,
     cat: col.categories,
@@ -70,11 +71,11 @@ export function extractMonomerInfo(col: DG.Column<string>): type.RawColumn {
   };
 }
 
-export function wrapDistroAndStatsDefault(labels: HTMLDivElement, histRoot: HTMLElement, tableMap: StringDictionary,
-  isTooltip: boolean = false): HTMLDivElement {
-  const result = ui.divV([labels, histRoot, ui.tableFromMap(tableMap)]);
+export function getStatsSummary(legend: HTMLDivElement, hist: DG.Viewer<DG.IHistogramLookSettings>,
+  statsMap: StringDictionary, isTooltip: boolean = false): HTMLDivElement {
+  const result = ui.divV([legend, hist.root, ui.tableFromMap(statsMap)]);
   result.style.minWidth = '200px';
   if (isTooltip)
-    histRoot.style.maxHeight = '150px';
+    hist.root.style.maxHeight = '150px';
   return result;
 }

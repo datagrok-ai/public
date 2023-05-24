@@ -127,16 +127,20 @@ export class SaguaroViewer extends DG.JsViewer {
     // -- Props editors --
 
     superOnTableAttached();
-    this.setData(this.dataFrame);
+    this.setData();
   }
 
   override detach(): void {
+    if (this.setDataInProgress) return;
+
     const superDetach = super.detach.bind(this);
-    this.viewPromise = this.viewPromise.then(async () => {
+    this.detachPromise = this.detachPromise.then(async () => {
+      await this.viewPromise;
       if (this.viewed) {
         await this.destroyView('detach'); // detach
         this.viewed = false;
       }
+      superDetach();
     }).catch((reason: any) => {
       grok.shell.error(reason.toString());
     });
@@ -144,15 +148,19 @@ export class SaguaroViewer extends DG.JsViewer {
 
   // -- Data --
 
-  setData(df: DG.DataFrame): void {
-    _package.logger.debug('MolstarTrackViewer.setData() ');
+  setData(): void {
+    if (!this.setDataInProgress) this.setDataInProgress = true; else return;
+    _package.logger.debug('BiotrackViewer.setData() ');
+
     this.viewPromise = this.viewPromise.then(async () => { // setData
       if (this.viewed) {
         await this.destroyView('setData'); // setData
         this.viewed = false;
       }
-    }).then(() => {
-      this.dataFrame = df;
+    }).then(async () => {
+      await this.detachPromise;
+
+      // TODO: Data
     }).then(async () => {
       if (!this.viewed) {
         await this.buildView('setData'); // setData
@@ -160,11 +168,16 @@ export class SaguaroViewer extends DG.JsViewer {
       }
     }).catch((reason: any) => {
       grok.shell.error(reason.toString());
+    }).then(() => {
+      this.setDataInProgress = false;
     });
   }
 
   // -- View --
   private viewPromise: Promise<void> = Promise.resolve();
+  private detachPromise: Promise<void> = Promise.resolve();
+  private setDataInProgress: boolean = false;
+
   private viewerDivId: string;
   private viewerDiv?: HTMLDivElement;
   private viewer?: RcsbFv;
@@ -175,7 +188,7 @@ export class SaguaroViewer extends DG.JsViewer {
   boardConfigDataProps: RcsbFvBoardConfigInterface = {};
 
   private async destroyView(purpose: string): Promise<void> {
-    _package.logger.debug(`MolstarTrackViewer.destroyView( purpose='${purpose}' )`);
+    _package.logger.debug(`BiotrackViewer.destroyView( purpose='${purpose}' )`);
     if (true) {
       // Clear viewer
     }
@@ -190,7 +203,7 @@ export class SaguaroViewer extends DG.JsViewer {
   }
 
   private async buildView(purpose: string): Promise<void> {
-    _package.logger.debug(`MolstarTrackViewer.buildView( purpose='${purpose}' )`);
+    _package.logger.debug(`BiotrackViewer.buildView( purpose='${purpose}' )`);
 
     if (!this.viewerDiv) {
       this.viewerDivId = uuidv4();
@@ -315,7 +328,7 @@ export class SaguaroViewer extends DG.JsViewer {
 
       const cw: number = this.root.clientWidth;
       const ch: number = this.root.clientHeight;
-      _package.logger.debug('MolstarTrackViewer.calcSize( ${cw.toString()} x ${ch.toString()} )');
+      _package.logger.debug('BiotrackViewer.calcSize( ${cw.toString()} x ${ch.toString()} )');
 
       this.viewerDiv.style.width = `${cw}px`;
       this.viewerDiv.style.height = `${ch}px`;
@@ -341,7 +354,7 @@ export class SaguaroViewer extends DG.JsViewer {
   // -- Handle events --
 
   private rootOnSizeChanged(value: any): void {
-    _package.logger.debug('MolstarTrackViewer.rootOnSizeChanged() ');
+    _package.logger.debug('BiotrackViewer.rootOnSizeChanged() ');
     this.calcSize();
   }
 }

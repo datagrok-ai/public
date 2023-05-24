@@ -1,10 +1,9 @@
 import {getClustersFromDistMatWasm} from './clusterizerWasm';
-import {ClusteringWorkerInput} from './clustering-worker-creator';
 import {ClusterMatrix} from '@datagrok-libraries/bio/src/trees';
 
 
 onmessage = (event) => {
-  const {distMatArray, n, methodCode}:ClusteringWorkerInput = event.data;
+  const {distMatArray, n, methodCode} = event.data;
   const data: { error?: any; clusterMatrix?: ClusterMatrix } = {};
   try {
     getClustersFromDistMatWasm(distMatArray, n, methodCode)

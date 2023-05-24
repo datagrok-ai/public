@@ -50,7 +50,7 @@ const Configuration = {
     "subject-case": [0, "always", ['sentence-case']],
     "subject-empty": [2, "never"],
     "subject-full-stop": [2, "never", "."],
-    "subject-max-length": [2, "always", 60],
+    "subject-max-length": [1, "always", 60],
     "subject-min-length": [2, "always", 1],
     "subject-exclamation-mark": [0, "never"],
     "type-enum": [0, "always"],

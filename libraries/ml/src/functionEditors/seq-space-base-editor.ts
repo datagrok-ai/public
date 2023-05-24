@@ -2,10 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { IDimReductionParam, ITSNEOptions, IUMAPOptions, TSNEOptions, T_SNE, UMAP, UMAPOptions } from '../reduce-dimensionality';
+import { SEQ_SPACE_SIMILARITY_METRICS } from '../distance-metrics-methods';
 
 export const SEQ_COL_NAMES = {
-    [DG.SEMTYPE.MOLECULE]: 'Molecule',
-    [DG.SEMTYPE.MACROMOLECULE]: 'Sequence'
+    [DG.SEMTYPE.MOLECULE]: 'Molecules',
+    [DG.SEMTYPE.MACROMOLECULE]: 'Sequences'
 }
 
 export class SequenceSpaceBaseFuncEditor {
@@ -19,6 +20,7 @@ export class SequenceSpaceBaseFuncEditor {
       [UMAP]: new UMAPOptions(),
       [T_SNE]: new TSNEOptions()
     };
+    similarityMetricInput: DG.InputBase;
   
     get algorithmOptions(): IUMAPOptions | ITSNEOptions {
       const algorithmParams: UMAPOptions | TSNEOptions = this.methodsParams[this.methodInput.value!];
@@ -54,6 +56,8 @@ export class SequenceSpaceBaseFuncEditor {
       this.methodInput.root.prepend(this.methodSettingsIcon);
       this.methodSettingsDiv = ui.inputs([]);
       let settingsOpened = false;
+
+      this.similarityMetricInput = ui.choiceInput('Similarity', 'Tanimoto', SEQ_SPACE_SIMILARITY_METRICS);
     }
   
     createAlgorithmSettingsDiv(paramsForm: HTMLDivElement, params: UMAPOptions | TSNEOptions): HTMLElement {

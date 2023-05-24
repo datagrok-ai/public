@@ -1,12 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {GridCell} from 'datagrok-api/dg';
-import {divV} from 'datagrok-api/ui';
 
-import * as fit from './fit-data';
-import {fitSeries} from './fit-data';
+import {fitSeries, getChartData, getColumnChartOptions, fitSeriesProperties, fitChartDataProperties} from './fit-data';
 import {fitResultProperties} from '@datagrok-libraries/statistics/src/parameter-estimation/fit-curve';
-import {MultiCurveViewer} from "./multi-curve-viewer";
+import {MultiCurveViewer} from './multi-curve-viewer';
 
 
 function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property): void {
@@ -14,8 +11,8 @@ function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property): void {
   grid.dataFrame.columns
     .addNew(p.name, p.propertyType as DG.ColumnType)
     .init((i) => {
-      const chartData = fit.getChartData(
-        GridCell.fromColumnRow(grid, chartColumn.name, grid.tableRowToGrid(i)));
+      const chartData = getChartData(
+        DG.GridCell.fromColumnRow(grid, chartColumn.name, grid.tableRowToGrid(i)));
       const fitResult = fitSeries(chartData.series![0], true);
       return p.get(fitResult);
     });
@@ -23,7 +20,6 @@ function addStatisticsColumn(chartColumn: DG.GridColumn, p: DG.Property): void {
 
 
 export class FitGridCellHandler extends DG.ObjectHandler {
-
   get type(): string {
     return 'GridCell';
   }
@@ -34,17 +30,17 @@ export class FitGridCellHandler extends DG.ObjectHandler {
 
   renderProperties(gridCell: DG.GridCell, context: any = null): HTMLElement {
     const acc = ui.accordion();
-    const chartData = fit.getChartData(gridCell);
-    const columnChartOptions = fit.getColumnChartOptions(gridCell.gridColumn);
+    const chartData = getChartData(gridCell);
+    const columnChartOptions = getColumnChartOptions(gridCell.gridColumn);
     const refresh = {onValueChanged: (_: any) => gridCell.grid.invalidate()};
 
     acc.addPane('Options', () => ui.divV([
-        ui.input.form(columnChartOptions.seriesOptions, fit.fitSeriesProperties, refresh),
-        ui.input.form(chartData.chartOptions, fit.fitChartDataProperties, refresh),
+        ui.input.form(columnChartOptions.seriesOptions, fitSeriesProperties, refresh),
+        ui.input.form(columnChartOptions.chartOptions, fitChartDataProperties, refresh),
       ]));
 
     acc.addPane('Results', () => {
-      const host = divV([]);
+      const host = ui.divV([]);
 
       for (let i = 0; i < chartData.series!.length; i++) {
         const series = chartData.series![i];

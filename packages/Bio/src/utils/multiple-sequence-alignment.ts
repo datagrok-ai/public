@@ -2,11 +2,12 @@
 import * as DG from 'datagrok-api/dg';
 
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
-import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ALIGNMENT, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 //@ts-ignore: there are no types for this library
 import Aioli from '@biowasm/aioli';
 
 import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
+import {kalignVersion} from './constants';
 const fastaInputFilename = 'input.fa';
 const fastaOutputFilename = 'result.fasta';
 
@@ -25,11 +26,16 @@ function _stringsToFasta(sequences: string[]): string {
  *
  * @param {DG.Column} srcCol Column with sequences.
  * @param {boolean} isAligned Whether the column is aligned.
- * @param {string} unUsedName
+ * @param {string | undefined} unUsedName
+ * @param {DG.Column | null} clustersCol Column with clusters.
+ * @param {number | undefined} gapOpen Gap open penalty.
+ * @param {number | undefined} gapExtend Gap extend penalty.
+ * @param {number | undefined} terminalGap Terminal gap penalty.
  * @return {Promise<DG.Column>} Aligned sequences.
  */
 export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = false, unUsedName: string = '',
-  clustersCol: DG.Column | null = null): Promise<DG.Column> {
+  clustersCol: DG.Column | null = null, gapOpen?: number, gapExtend?: number, terminalGap?: number
+): Promise<DG.Column> {
   let sequences: string[] = srcCol.toList();
 
   if (isAligned)
@@ -40,7 +46,7 @@ export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = 
   if (clustersCol.type != DG.COLUMN_TYPE.STRING)
     clustersCol = clustersCol.convertTo(DG.TYPE.STRING);
   clustersCol.compact();
-  
+
   //TODO: use fixed-size inner arrays, but first need to expose the method to get each category count
   const clustersColCategories = clustersCol.categories;
   const clustersColData = clustersCol.getRawData();
@@ -54,18 +60,21 @@ export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = 
 
   const CLI = await new Aioli([
     'base/1.0.0',
-    {tool: 'kalign', version: '3.3.1', reinit: true}
+    {tool: 'kalign', version: kalignVersion, reinit: true}
   ]);
   const tgtCol = DG.Column.string(unUsedName, sequencesLength);
 
   for (let clusterIdx = 0; clusterIdx < clustersColCategories.length; ++clusterIdx) {
     const clusterSequences = fastaSequences[clusterIdx];
     const fasta = _stringsToFasta(clusterSequences);
-    
-    console.log(['fasta.length =', fasta.length]);
 
     await CLI.fs.writeFile(fastaInputFilename, fasta);
-    const output = await CLI.exec(`kalign ${fastaInputFilename} -f fasta -o ${fastaOutputFilename}`);
+    const gapOpenCommand = `${gapOpen !== undefined ? ` --gpo ${gapOpen}` : ''}`;
+    const gapExtendCommand = `${gapExtend !== undefined ? ` --gpe ${gapExtend}` : ''}`;
+    const terminalGapCommand = `${terminalGap !== undefined ? ` --tgpe ${terminalGap}` : ''}`;
+    const extraParams = `${gapOpenCommand}${gapExtendCommand}${terminalGapCommand}`;
+
+    const output = await CLI.exec(`kalign ${fastaInputFilename} -f fasta -o ${fastaOutputFilename}${extraParams}`);
     console.warn(output);
 
     const buf = await CLI.cat(fastaOutputFilename);
@@ -82,8 +91,7 @@ export async function runKalign(srcCol: DG.Column<string>, isAligned: boolean = 
   // units
   const srcUnits = srcCol.getTag(DG.TAGS.UNITS);
   //aligned
-  const srcAligned = srcCol.getTag(bioTAGS.aligned);
-  const tgtAligned = srcAligned + '.MSA';
+  const tgtAligned = ALIGNMENT.SEQ_MSA;
   //alphabet
   const srcAlphabet = srcCol.getTag(bioTAGS.alphabet);
 

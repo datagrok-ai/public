@@ -126,8 +126,9 @@ const HELP_TEST = `
 Usage: grok test
 
 Options:
-[--host] [--csv]
+[--category] [--host] [--csv] [--gui] [--skip-build] [--skip-publish]
 
+--category       Specify a category name to run tests for
 --host           Host alias as in the config file
 --csv            Save the test report in a CSV file
 --gui            Launch graphical interface (non-headless mode)

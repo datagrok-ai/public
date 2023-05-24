@@ -13,36 +13,22 @@ export class NglGlService implements NglGlServiceBase {
 
   hostDn?: DG.DockNode;
 
-  //private renderQueue: Subject<bio.NglGlRenderTask>;
   private readonly _queue: { key?: keyof any, task: NglGlTask }[];
   private readonly _queueDict: { [key: keyof any]: NglGlTask };
+  /** The flag allows {@link _processQueue}() on add item to the queue with {@link render}() */
+  private _busy: boolean = false;
 
   constructor() {
     const r = window.devicePixelRatio;
 
     this.nglDiv = ui.div([], 'd4-ngl-viewer');
-    this.nglDiv.style.width = `${300 / r}px`;
-    this.nglDiv.style.height = `${300 / r}px`;
-
-    // const blanket = ui.div();
-    // blanket.style.position = 'absolute';
-    // blanket.style.width = `${200 / r}px`;
-    // blanket.style.height = `${200 / r}px`;
-
-    // const windows = grok.shell.windows;
-    // windows.showProperties = false;
 
     this.ngl = new NGL.Stage(this.nglDiv);
-    // this.ngl.viewer.renderer.domElement.width = 300;
-    // this.ngl.viewer.renderer.domElement.height = 300;
     this.ngl.viewer.signals.rendered.add(this.onNglRendered.bind(this));
 
     this._queue = [];
     this._queueDict = {};
   }
-
-  /* The flag allows _processQueue() on add item to the queue */
-  private _busy: boolean = false;
 
   render(task: NglGlTask, key?: keyof any): void {
     //_package.logger.debug('NglGlService.render() start ' + `name: ${name}`);
@@ -90,18 +76,15 @@ export class NglGlService implements NglGlServiceBase {
     await this.ngl.compList[0].addRepresentation('cartoon');
     await this.ngl.compList[0].autoView();
 
-    const canvas = this.nglDiv.querySelector('canvas');
-    canvas!.width = Math.floor(task.props.width);
-    canvas!.height = Math.floor(task.props.height);
+    const canvas = this.nglDiv.querySelector('canvas')!;
+    canvas.width = Math.floor(task.props.width);
+    canvas.height = Math.floor(task.props.height);
 
     this.task = task;
     this.key = key;
     this.emptyPaintingSize = undefined;
 
     await this.ngl.handleResize();
-
-    // await new Promise((r) => setTimeout(r, 4000));
-    let k = 11;
   }
 
   private emptyPaintingSize?: number = undefined;

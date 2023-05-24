@@ -1,19 +1,18 @@
 import * as DG from 'datagrok-api/dg';
 
 import {getSimilarityFromDistance} from '@datagrok-libraries/ml/src/distance-metrics-methods';
-import * as chemSearches from '../chem-searches';
 import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 import { _chemGetSimilarities, chemGetFingerprints } from '../chem-searches';
+import { Fingerprint } from './chem-common';
 
 export async function getSimilaritiesMarix(dim: number, smiles: DG.Column, dfSmiles: DG.DataFrame,
   colName: string, simArr: (DG.Column | null)[]): Promise<(DG.Column | null)[]> {
-  let fingerprints = await chemGetFingerprints(dfSmiles.col(colName)!);
+  let fingerprints = await chemGetFingerprints(dfSmiles.col(colName)!, Fingerprint.Morgan, true, false);
   for (let i = 0; i != dim - 1; ++i) {
-    fingerprints.shift();
-    const queryMolString = smiles.get(i)!;
-    simArr[i] = queryMolString.length != 0 ?
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances',
-      _chemGetSimilarities(queryMolString, fingerprints)) : null;
+    const fp = fingerprints.shift();
+    simArr[i] = fp ?
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances',
+        _chemGetSimilarities(smiles.get(i)!, fingerprints)) : null;
   }
   return simArr;
 }

@@ -18,7 +18,7 @@ export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
   try {
     sdf = (await smilesTo3DCoordinates(molecule)).replaceAll('\\n', '\n');
   } catch (e) {
-    return new DG.Widget(ui.divText('Molecule has no atoms'));
+    return new DG.Widget(ui.divText('Molecule has no atoms or malformed'));
   }
   const stringBlob = new Blob([sdf], {type: 'text/plain'});
 
@@ -40,11 +40,16 @@ export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
       const accPanel = nglHost.closest('.panel-content') as HTMLElement;
       if (accPanel) {
         ui.onSizeChanged(accPanel).subscribe((_) => {
-          if (accPanel.clientHeight > 300 && accPanel.clientWidth > 300) {
-              nglHost.style.width = `${accPanel.clientWidth}px`;
-              nglHost.style.height = `${accPanel.clientHeight}px`;
-              stage.setSize(accPanel.clientWidth, accPanel.clientHeight);
+          const w = Math.max(accPanel.clientWidth, 300);
+          const h = Math.max(accPanel.clientHeight, 300);
+          nglHost.style.width = `${w}px`;
+          nglHost.style.height = `${h}px`;
+          const waitParentEl = nglHost.parentElement;
+          if(waitParentEl?.classList.contains('grok-wait')){
+            waitParentEl.style.width = `${w}px`;
+            waitParentEl.style.height = `${h}px`;
           }
+          stage.handleResize();
         })
       }
     }

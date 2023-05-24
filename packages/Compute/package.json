@@ -1,66 +1,67 @@
 {
-	"name": "@datagrok/compute",
-	"friendlyName": "Compute",
-	"version": "1.3.2",
-	"author": {
-		"name": "Aufar Zakiev",
-		"email": "aufar.zakiev@softwarecountry.com"
-	},
-	"description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/datagrok-ai/public.git",
-		"directory": "packages/Compute"
-	},
-	"dependencies": {
-		"@datagrok-libraries/compute-utils": "^1.2.0",
-		"cash-dom": "latest",
-		"datagrok-api": "^1.14.0",
-		"dayjs": "latest",
-		"rxjs": "^6.5.5",
-		"source-map-loader": "^4.0.1",
-		"ts-loader": "latest",
-		"typescript": "latest",
-		"wu": "latest"
-	},
-	"devDependencies": {
-		"@types/wu": "latest",
-		"@typescript-eslint/eslint-plugin": "^5.1.0",
-		"@typescript-eslint/parser": "^5.1.0",
-		"css-loader": "^6.5.1",
-		"eslint": "^8.0.1",
-		"eslint-config-google": "^0.14.0",
-		"style-loader": "^3.3.1",
-		"webpack": "latest",
-		"webpack-cli": "latest"
-	},
-	"scripts": {
-		"link-api": "npm link datagrok-api",
-		"link-utils": "npm link @datagrok-libraries/utils",
-		"link-all": "npm link datagrok-api @datagrok-libraries/utils",
-		"debug-compute": "webpack & grok publish localhost --release",
-		"release-compute": "webpack && grok publish localhost --release",
-		"build-compute": "webpack",
-		"build": "webpack",
-		"build-compute-local": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build",
-		"debug-compute-dev": "webpack && grok publish dev",
-		"release-compute-dev": "grok publish dev --release",
-		"debug-compute-local": "grok publish local",
-		"release-compute-local": "grok publish local --release",
-		"debug-compute-localhost": "grok publish localhost",
-		"release-compute-localhost": "grok publish localhost --release",
-		"debug-compute-compose": "grok publish compose",
-		"release-compute-compose": "grok publish compose --release"
-	},
-	"sources": [
-		"common/exceljs.min.js",
-		"common/html2canvas.min.js"
-	],
-	"canEdit": [
-		"Developers"
-	],
-	"canView": [
-		"All users"
-	],
-	"category": "Machine Learning"
+  "name": "@datagrok/compute",
+  "friendlyName": "Compute",
+  "version": "1.4.2",
+  "author": {
+    "name": "Aufar Zakiev",
+    "email": "aufar.zakiev@softwarecountry.com"
+  },
+  "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Compute"
+  },
+  "dependencies": {
+    "@datagrok-libraries/compute-utils": "^1.5.0",
+    "cash-dom": "latest",
+    "datagrok-api": "^1.14.0",
+    "dayjs": "latest",
+    "rxjs": "^6.5.5",
+    "source-map-loader": "^4.0.1",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "wu": "latest"
+  },
+  "devDependencies": {
+    "@types/wu": "latest",
+    "@typescript-eslint/eslint-plugin": "^5.1.0",
+    "@typescript-eslint/parser": "^5.1.0",
+    "css-loader": "^6.5.1",
+    "eslint": "^8.0.1",
+    "eslint-config-google": "^0.14.0",
+    "style-loader": "^3.3.1",
+    "webpack": "latest",
+    "webpack-cli": "latest"
+  },
+  "scripts": {
+    "link-api": "npm link datagrok-api",
+    "link-utils": "npm link @datagrok-libraries/utils",
+    "link-all": "npm link datagrok-api @datagrok-libraries/compute-utils",
+    "debug-compute": "webpack & grok publish localhost --release",
+    "release-compute": "webpack && grok publish localhost --release",
+    "build-compute": "webpack",
+    "build": "webpack",
+    "build-compute-local": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build",
+    "debug-compute-dev": "webpack && grok publish dev",
+    "release-compute-dev": "grok publish dev --release",
+    "debug-compute-local": "grok publish local",
+    "release-compute-local": "grok publish local --release",
+    "debug-compute-localhost": "grok publish localhost",
+    "release-compute-localhost": "grok publish localhost --release",
+    "debug-compute-compose": "grok publish compose",
+    "release-compute-compose": "grok publish compose --release",
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/compute-utils run build && npm run build"
+  },
+  "sources": [
+    "common/exceljs.min.js",
+    "common/html2canvas.min.js"
+  ],
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "category": "Machine Learning"
 }

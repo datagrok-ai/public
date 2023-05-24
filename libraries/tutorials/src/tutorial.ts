@@ -24,7 +24,7 @@ export abstract class Tutorial extends DG.Widget {
   get url(): string {
     const removeSpaces = (s: string) => s.split(' ').join('');
     const root = window.location.origin;
-    return `${root}/apps/tutorials/${removeSpaces(this.track!.name)}/${removeSpaces(this.name)}`;
+    return `${root}/apps/tutorials/Tutorials/${removeSpaces(this.track!.name)}/${removeSpaces(this.name)}`;
   }
 
   imageUrl: string = '';
@@ -228,6 +228,7 @@ export abstract class Tutorial extends DG.Widget {
     }, `Copy the tutorial link`);
 
     closeTutorial.style.minWidth = '30px';
+    this.header.textContent = this.name;
     this.headerDiv.append(ui.divH([this.header, linkIcon], {style: {alignItems: 'center'}}));
     this.headerDiv.append(closeTutorial);
   }
@@ -428,9 +429,9 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   /** Prompts the user to put the specified value into a dialog input. */
-  protected async dlgInputAction(dlg: DG.Dialog, instructions: string,
-    caption: string, value: string, description: string = '', historyHint: boolean = false): Promise<void> {
-    const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption == caption)[0];
+  protected async dlgInputAction(dlg: DG.Dialog, instructions: string, caption: string,
+    value: string, description: string = '', historyHint: boolean = false, count: number = 0): Promise<void> {
+    const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption == caption)[count];
     if (inp == null) return;
     await this.action(instructions,
       new Observable((subscriber: any) => {

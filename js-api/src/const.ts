@@ -132,6 +132,7 @@ export enum GRID_COLUMN_TAGS {
 /** Commonly used options on the function level */
 export enum FUNC_OPTIONS {
   DEMO_PATH = 'demoPath',    // Demo path, such as 'Viewers | Radar'
+  IS_DEMO_SCRIPT = 'isDemoScript'
 }
 
 // export type FILTER_TYPE =
@@ -285,6 +286,23 @@ export const TAGS = {
   CHEM: {
     SCAFFOLD: 'chem-scaffold'
   }
+}
+    
+export const InputType = {
+  Int: 'Int',
+  BigInt: 'BigInt',
+  Float: 'Float',
+  QNum: 'QNum',
+  Slider: 'Slider',
+  Bool: 'Bool',
+  TextArea: 'TextArea',
+  Text: 'Text',
+  Date: 'Date',
+  Map: 'Map',
+  List: 'List',
+  Color: 'Color',
+  Column: 'Column',
+  Radio: 'Radio'
 }
 
 export const FUNC_TYPES = {

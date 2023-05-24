@@ -9,6 +9,7 @@ General:
 |                      |                       |
 |----------------------|-----------------------|
 | Right click          | Context menu          |
+| Alt+F                | Show in full screen   |
 | Click on date        | Filter by date        |
 | Click on year        | Filter by year        |
 | Click on day of week | Filter by day of week |
