@@ -48,10 +48,8 @@ export class AbstractVertLayoutTextRenderer extends GridCellRendererEx {
     g.textAlign = "left";
     g.textBaseline = "top";
 
-    g.fillRect(nX, nY, nW, nH);
-
+    //g.fillRect(nX, nY, nW, nH);
     const nYInset = 2;
-
     let nHAvail = nH;
     let nWAvail = nW;
 
