@@ -12,7 +12,7 @@ import '../css/tutorial.css';
 import {Track} from '@datagrok-libraries/tutorials/src/track';
 import {DemoView} from './demo-app/demo-app';
 import {viewerDemo} from './demo-app/platform-viewers-demo';
-import { DemoAppWidget } from './demo-app/widget';
+import {DemoAppWidget} from './demo-app/widget';
 
 export const _package = new DG.Package();
 
