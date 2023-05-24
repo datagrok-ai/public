@@ -5,10 +5,8 @@ slug: /develop/admin/docker-compose
 
 This document contains instructions for running Datagrok on a local machine
 via [Docker Compose](https://docs.docker.com/compose/).
-
-This method doesn't require cloud-based hosting. It automatically fetches, configures, and runs the required Docker
-images.
-
+This method doesn't require cloud-based hosting. 
+It automatically fetches, configures, and runs the required Docker images.
 We recommend this method if you want to jump-start with Datagrok on your local machine.
 
 ## Prerequisites
@@ -18,56 +16,78 @@ We recommend this method if you want to jump-start with Datagrok on your local m
 2. Minimal hardware requirements: 30 GB of free disk space, 2 CPUs, 4 GB RAM.
    Recommended hardware requirements: > 30 GB of free disk space, 4 CPUs, 8 GB RAM, or higher.
 
-## One-click installation
+## Installing Datagrok
 
-1. Download one-click installation script (Right-click on the link below and choose "Save link as..."
-   Don't add any extension):
-   1. [For MacOS/Linux](https://raw.githubusercontent.com/datagrok-ai/public/master/docker/datagrok-install-local.sh).
-   2. [For Windows](https://raw.githubusercontent.com/datagrok-ai/public/master/docker/datagrok-install-local.cmd).
+You have two options to install Datagrok: run a one-click installation script or install Datagrok manually.
 
-2. Run installation script
+### Option 1: One-click installation script
 
-## Installing Datagrok manually
+To download the installation script, right-click the link below and select "Save link as...". 
+Don't add any file extension. 
 
-If you have some issues with the one-click installation script,
-you can install Datagrok manually.
+   1. MacOS/Linux[Download installation script](https://raw.githubusercontent.com/datagrok-ai/public/master/docker/datagrok-install-local.sh).
+   2. Windows[Download installation script](https://raw.githubusercontent.com/datagrok-ai/public/master/docker/datagrok-install-local.cmd).
 
-1. Download a Docker Compose YAML
-   file: [link](https://raw.githubusercontent.com/datagrok-ai/public/master/docker/localhost.docker-compose.yaml).
+Once the script is downloaded, run it to initiate the installation.
 
-2. To start up Datagrok, or get the last updates run these commands:
+When installation finishes, the login page opens automatically [login to Datagrok](#login-to-datagrok)
 
-   ```shell
-   docker compose -f localhost.docker-compose.yaml --profile all pull
-   docker compose -f localhost.docker-compose.yaml --project-name datagrok --profile all up -d
-   ```
+### Option 2: Manual installation
 
-   Datagrok will deploy a new database automatically.
+To install Datagrok manually, download a 
+[Docker Compose YAML file](https://raw.githubusercontent.com/datagrok-ai/public/master/docker/localhost.docker-compose.yaml) 
+and then run the following commands to spin up Datagrok or get the latest updates:
 
-   In case you get an error on Windows running `docker-compose up` related to a `WriteFile`
-   function, try running `cmd`
-   in Administrator mode (this is a [known issue](https://github.com/docker/compose/issues/4531) of Docker on some
-   computers).
-3. When the docker compose finishes, wait about a minute while the Datagrok server is spinning up.
-   Once the server is up and running, the login page should be available
-   at [http://localhost:8080](http://localhost:8080). 
-4. Login to Datagrok:
-     * username `admin`
-     * password `admin`
-5. To shut down Datagrok use the command:
+```shell
+docker compose -f localhost.docker-compose.yaml --profile all pull
+docker compose -f localhost.docker-compose.yaml --project-name datagrok --profile all up -d
+```
 
-   ```shell
-   docker compose -f localhost.docker-compose.yaml --project-name datagrok --profile all stop
-   ```
+Datagrok deploys a new database automatically.
+
+:::note
+
+   If you encounter an error related to a `WriteFile` function when running `docker-compose up` on Windows, 
+   try running the command prompt (`cmd`) in Administrator mode. 
+   This is a [known issue](https://github.com/docker/compose/issues/4531)
+   with Docker on certain computers.
+
+:::
+  
+After the docker compose process is completed, wait for approximately 1 minute for the Datagrok server to spin up. 
+
+Once the server is up and running, open the [login page](http://localhost:8080)
+
+### Login to Datagrok
+
+On the [login page](http://localhost:8080) enter the following credentials:
+
+* username `admin`
+* password `admin`
+
+:::note
+
+   If you see the message `Datagrok server is unavaliable` on the login page,
+   just wait for approximately 1 minute and reload the page. 
+
+:::
+
+### Shutting down Datagrok
+
+To shut down Datagrok use this command: 
+
+```shell 
+docker compose -f localhost.docker-compose.yaml --project-name datagrok --profile all stop
+```
    
-   All the data will be saved in the [Docker volumes](https://docs.docker.com/storage/volumes/). 
+All the data is saved in the [Docker volumes](https://docs.docker.com/storage/volumes/). 
 
-6. If you want to reset
-   Datagrok to factory settings, including all created users, projects, connections, etc., run the following command:
+To reset Datagrok to factory settings, including all created users, projects, connections, etc., 
+run the following command: 
 
-   ```shell
-   docker compose -f localhost.docker-compose.yaml --project-name datagrok --profile all down --volumes
-   ```
+```shell
+docker compose -f localhost.docker-compose.yaml --project-name datagrok --profile all down --volumes
+```
 
 ## Advanced usage
 
@@ -139,53 +159,62 @@ To run Datagrok with exact CVM features, specify them in the command line using 
 
 It is possible to run multiple stands of Datagrok on one host machine. To do so:
 
-1. Run the first stand as described in [instruction](#installing-datagrok-manually)
-2. Set the Datagrok image version with the `DATAGROK_VERSION` environment variable. It can be any tag from
+Run the first stand as described in [instruction](#option-2-manual-installation).
+
+Set the Datagrok image version with the `DATAGROK_VERSION` environment variable. It can be any tag from
    [Docker Hub](https://hub.docker.com/r/datagrok/datagrok/tags). The default value is `latest`.
 
-   For Windows users:
+For Windows users: 
 
-    ```shell
-    set DATAGROK_VERSION=latest
-    ```
+ ```shell
+ set DATAGROK_VERSION=latest
+ ```
 
-   For Unix/Linux users:
+For Unix/Linux users:
 
-    ```shell
-    export DATAGROK_VERSION='latest'
-    ```
+ ```shell
+ export DATAGROK_VERSION='latest'
+ ```
 
-3. Set environment variables for mapped ports: `DATAGROK_PORT` (the default value is `8080`), `DATAGROK_DB_PORT` (the
-   default value is `5432`), `DATAGROK_CVM_PORT` (the default value is `8090`)
-   , `DATAGROK_H2O_PORT` (the default value is `54321`), `DATAGROK_H2O_HELPER_PORT` (the default value is `5005`)
-   , `DATAGROK_GROK_SPAWNER_PORT` (the default value is `8000`). To start the second stand properly the values should
-   differ from the ports of the existing stands. For example, you can increment every port value by 1.
+Set environment variables for mapped ports:
 
-   For Windows users:
+| Environment variable       | Default value |
+|----------------------------|---------------|
+| DATAGROK_PORT              | 8080          |
+| DATAGROK_DB_PORT           | 5432          |
+| DATAGROK_CVM_PORT          | 8090          |
+| DATAGROK_H2O_PORT          | 54321         |  
+| DATAGROK_H2O_HELPER_PORT   | 5005          | 
+| DATAGROK_GROK_SPAWNER_PORT | 8000          | 
+    
+To start the second stand properly the values should
+differ from the ports of the existing stands. For example, you can increment every port value by 1.
 
-    ```shell
-    set DATAGROK_PORT=8081
-    set DATAGROK_DB_PORT=5433
-    set DATAGROK_CVM_PORT=8091
-    set DATAGROK_H2O_PORT=54322
-    set DATAGROK_H2O_HELPER_PORT=5006
-    set DATAGROK_GROK_SPAWNER_PORT=8001
-    ```
+For Windows users:
 
-   For Unix/Linux users:
+ ```shell
+ set DATAGROK_PORT=8081
+ set DATAGROK_DB_PORT=5433
+ set DATAGROK_CVM_PORT=8091
+ set DATAGROK_H2O_PORT=54322
+ set DATAGROK_H2O_HELPER_PORT=5006
+ set DATAGROK_GROK_SPAWNER_PORT=8001
+ ```
 
-    ```shell
-    export DATAGROK_PORT='8081'
-    export DATAGROK_DB_PORT='5433'
-    export DATAGROK_CVM_PORT='8091'
-    export DATAGROK_H2O_PORT='54322'
-    export DATAGROK_H2O_HELPER_PORT='5006'
-    export DATAGROK_GROK_SPAWNER_PORT='8001'
-    ```
+For Linux/MacOS users:
 
-4. The last step is to run the second stand. It is important to change the project name to start the second Datagrok
-   stand. The project name in [the standard instructions](#installing-datagrok-manually), which were used for the first stand,
-   is `datagrok`. For example, you can add an increment to the project name: `datagrok_2`
+ ```shell
+ export DATAGROK_PORT='8081'
+ export DATAGROK_DB_PORT='5433'
+ export DATAGROK_CVM_PORT='8091'
+ export DATAGROK_H2O_PORT='54322'
+ export DATAGROK_H2O_HELPER_PORT='5006'
+ export DATAGROK_GROK_SPAWNER_PORT='8001'
+ ```
+
+The last step is to run the second stand. It is important to change the project name to start the second Datagrok
+stand. The project name in [the standard instructions](#option-2-manual-installation), which were used for the first stand,
+is `datagrok`. For example, you can add an increment to the project name: `datagrok_2`
 
    ```shell
    docker compose -f localhost.docker-compose.yaml --project-name datagrok_2 --profile all up -d
@@ -193,9 +222,7 @@ It is possible to run multiple stands of Datagrok on one host machine. To do so:
 
 ### Demo Databases
 
-Datagrok provides demo databases with demo data for the full experience.
-
-If you want to install demo databases with Datagrok locally, run
+Datagrok provides demo databases with demo dataTo install demo databases with Datagrok locally, run
 
 ```shell
 docker compose -f localhost.docker-compose.yaml --project-name datagrok --profile all --profile demo up -d
@@ -249,7 +276,8 @@ docker compose -f localhost.docker-compose.yaml --project-name datagrok --profil
     docker compose -f localhost.docker-compose.yaml --project-name datagrok --profile all exec <service> /bin/sh
     ```
 
-5. Docker logs might take up all your free disk space. If such a situation has already taken place, add to the Docker daemon
+5. Docker logs might take up all your free disk space. If such a situation has already taken place, 
+   add to the Docker daemon
    configuration log properties. For more about configuring Docker log options, you can refer
    to [the official documentation](https://docs.docker.com/config/containers/logging/local/#usage).
 
