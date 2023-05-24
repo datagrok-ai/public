@@ -68,7 +68,7 @@ export class DemoView extends DG.ViewBase {
       grok.shell.v.path = `/${path}`;
     }
     // temporary fix, change after all demo scripts are using meta.isDemoScript
-    if ((func.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes('Viewers'))    
+    if ((func.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes('Visualization'))    
       grok.shell.v.path = grok.shell.v.basePath = `/apps/Tutorials/Demo/${path}`
     
     this._setBreadcrumbsInViewName(viewPath.split('|').map((s) => s.trim()));
