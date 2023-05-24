@@ -3,8 +3,8 @@
 # description: Create the model peptides/DNA sequences with peptides data
 # language: python
 # tags: template, demo
-# input: int clusters = 1 [Number of superclusters]
-# input: int num_sequences = 500 [Number of sequences in each supercluster]
+# input: int clusters = 5 [Number of superclusters]
+# input: int num_sequences = 50 [Number of sequences in each supercluster]
 # input: int motif_length = 12 [Average length of motif]
 # input: int max_variants_position = 3 [Maximum number of different letters in conservative position in motif]
 # input: int random_length = 3 [Average length of random sequence parts before and after motif]
@@ -59,7 +59,9 @@ def generate_motif_template(
 
 
 def generate_motif(template: motif_template_type, alphabet: alphabet_type) -> str:
-    template_with_any = [(letters if not "?" in letters else alphabet) for letters in template]
+    template_with_any = [
+        (letters if not "?" in letters else alphabet) for letters in template
+    ]
     return "".join([random.choice(letters) for letters in template_with_any])
 
 
@@ -70,18 +72,24 @@ def motif_notation(motif_template: motif_template_type) -> str:
         else:
             return f"[{''.join(letter_choice)}]"
 
-    return "".join([motif_notation_code(letter_choice) for letter_choice in motif_template])
+    return "".join(
+        [motif_notation_code(letter_choice) for letter_choice in motif_template]
+    )
 
 
 def generate_random(n: int, alphabet: alphabet_type) -> str:
     return "".join([random.choice(alphabet) for i in range(n)])
 
 
-def make_cliff(motif_template: motif_template_type, alphabet: alphabet_type, motif: str) -> str:
+def make_cliff(
+    motif_template: motif_template_type, alphabet: alphabet_type, motif: str
+) -> str:
     # Mutate conservative letter in motif
     pos = random.randrange(len(motif_template))
     while "?" in motif_template[pos]:
-        pos = (pos + 1) % len(motif_template)  # always will find letters since ends of motif can't be any symbol
+        pos = (pos + 1) % len(
+            motif_template
+        )  # always will find letters since ends of motif can't be any symbol
     outlier_letters = list(set(alphabet) - set(motif_template[pos]))
     return motif[:pos] + random.choice(outlier_letters) + motif[pos + 1 :]
 
@@ -97,7 +105,9 @@ def generate_cluster(
     cliff_probability: float,
     cliff_strength: float,
 ) -> Iterator[sequence_record_type]:
-    motif_template = generate_motif_template(motif_length, alphabet, max_variants_position)
+    motif_template = generate_motif_template(
+        motif_length, alphabet, max_variants_position
+    )
 
     activity_average = random.random() * 10
     activity_dispersion = random.random()
@@ -166,7 +176,9 @@ def generate_sequences(
             cliff_probability,
             cliff_strength,
         ):
-            sequences.append((n_cluster, f"c{n_cluster}_s{n_seq}", seq, activity, is_cliff))
+            sequences.append(
+                (n_cluster, f"c{n_cluster}_s{n_seq}", seq, activity, is_cliff)
+            )
     return headers, sequences
 
 
@@ -178,15 +190,19 @@ def parse_command_line_args() -> Any:
         epilog="Utility support: Gennadii Zakharov",
     )
 
-    parser.add_argument("-c", "--clusters", type=int, default=1, help="Number of superclusters")
+    parser.add_argument(
+        "-c", "--clusters", type=int, default=5, help="Number of superclusters"
+    )
     parser.add_argument(
         "-s",
         "--sequences",
         type=int,
-        default=500,
+        default=50,
         help="Number of sequences in each supercluster",
     )
-    parser.add_argument("-m,", "--motif-length", type=int, default=12, help="Average length of motif")
+    parser.add_argument(
+        "-m,", "--motif-length", type=int, default=12, help="Average length of motif"
+    )
 
     parser.add_argument(
         "-r,",
@@ -208,7 +224,8 @@ def parse_command_line_args() -> Any:
         "--alphabet",
         type=str,
         default=list(alphabets.keys())[0],
-        help=f"Sequence alphabet: {available_alphabets}. Custom alphabet is a list of values separated " f"by comma",
+        help=f"Sequence alphabet: {available_alphabets}. Custom alphabet is a list of values separated "
+        f"by comma",
     )
     parser.add_argument(
         "--max-variants-position",
@@ -258,7 +275,11 @@ if not grok:
     cliff_probability = args.cliff_probability
     cliff_strength = args.cliff_strength
 
-alphabet: alphabet_type = alphabets[alphabet_key].split(",") if alphabet_key in alphabets else alphabet_key.split(",")
+alphabet: alphabet_type = (
+    alphabets[alphabet_key].split(",")
+    if alphabet_key in alphabets
+    else alphabet_key.split(",")
+)
 
 # Running sequence generator
 header, data = generate_sequences(
