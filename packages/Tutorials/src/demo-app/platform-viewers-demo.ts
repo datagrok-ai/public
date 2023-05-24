@@ -22,7 +22,7 @@ const VIEWER_TABLES_PATH: {[key: string]: string} = {
   Statistics: 'files/demog.csv',
   'Correlation plot': 'sensors/eeg.csv',
   Calendar: 'files/demog.csv',
-  Grid: 'files/demog.csv',
+  Grid: 'files/smiles.csv',
   Markup: 'files/demog.csv',
   'Tile Viewer': 'chem/sar_small.csv',
   Form: 'files/sar-small.csv',
@@ -34,6 +34,7 @@ const VIEWER_TABLES_PATH: {[key: string]: string} = {
 const VIEWER_LAYOUTS_FILE_NAMES: {[key: string]: string} = {
   'Trellis plot': 'trellis-plot-viewer-layout.json',
   Form: 'form-viewer-layout.json',
+  Grid: 'grid-layout.json',
 };
 
 const MARKUP_CONTENT = `# What's Markdown?
@@ -78,7 +79,7 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
   grok.shell.windows.showHelp = true;
   grok.shell.windows.help.syncCurrentObject = false;
 
-  if (['Form', 'Trellis plot'].includes(viewerName)) {
+  if (['Form', 'Trellis plot', 'Grid'].includes(viewerName)) {
     if (viewerName === DG.VIEWER.FORM) {
       DG.debounce(df.onSemanticTypeDetected, 800).subscribe(async (_) => {
         await loadViewerDemoLayout(tableView, viewerName);
