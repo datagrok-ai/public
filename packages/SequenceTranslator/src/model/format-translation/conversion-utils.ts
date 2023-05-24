@@ -14,7 +14,6 @@ export function convertSequence(sequence: string, indexOfFirstInvalidChar: numbe
   if (sourceFormat === FORMAT.NUCLEOTIDES) {
     const converter = new FormatConverter(sequence, FORMAT.NUCLEOTIDES);
     return {
-      type: FORMAT.NUCLEOTIDES,
       [FORMAT.BIOSPRING]: converter.convertTo(FORMAT.BIOSPRING),
       [FORMAT.GCRS]: converter.convertTo(FORMAT.GCRS),
     };
@@ -22,7 +21,6 @@ export function convertSequence(sequence: string, indexOfFirstInvalidChar: numbe
   if (sourceFormat === FORMAT.BIOSPRING) {
     const converter = new FormatConverter(sequence, FORMAT.BIOSPRING);
     return {
-      type: FORMAT.BIOSPRING + ' ' + TECHNOLOGIES.ASO_GAPMERS,
       [FORMAT.NUCLEOTIDES]: converter.convertTo(FORMAT.NUCLEOTIDES),
       [FORMAT.GCRS]: converter.convertTo(FORMAT.GCRS),
     };
@@ -30,7 +28,6 @@ export function convertSequence(sequence: string, indexOfFirstInvalidChar: numbe
   if (sourceFormat === FORMAT.GCRS) {
     const converter = new FormatConverter(sequence, FORMAT.GCRS);
     return {
-      type: FORMAT.GCRS + ' ' + TECHNOLOGIES.ASO_GAPMERS,
       [FORMAT.NUCLEOTIDES]: converter.convertTo(FORMAT.NUCLEOTIDES),
       [FORMAT.BIOSPRING]: converter.convertTo(FORMAT.BIOSPRING),
       [FORMAT.AXOLABS]: converter.convertTo(FORMAT.AXOLABS),
@@ -42,7 +39,6 @@ export function convertSequence(sequence: string, indexOfFirstInvalidChar: numbe
   if (sourceFormat === FORMAT.AXOLABS) {
     const converter = new FormatConverter(sequence, FORMAT.AXOLABS);
     return {
-      type: FORMAT.AXOLABS + ' ' + TECHNOLOGIES.SI_RNA,
       [FORMAT.NUCLEOTIDES]: converter.convertTo(FORMAT.NUCLEOTIDES),
       [FORMAT.BIOSPRING]: converter.convertTo(FORMAT.BIOSPRING),
       [FORMAT.GCRS]: converter.convertTo(FORMAT.GCRS),
@@ -50,7 +46,6 @@ export function convertSequence(sequence: string, indexOfFirstInvalidChar: numbe
   }
   if (sourceFormat === FORMAT.MERMADE_12) {
     return {
-      type: FORMAT.MERMADE_12,
       [FORMAT.NUCLEOTIDES]: NO_TRANSLATION_MSG,
       [FORMAT.GCRS]: NO_TRANSLATION_MSG,
     };
