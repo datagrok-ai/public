@@ -40,7 +40,7 @@ public class SessionHandler {
     }
 
     public void onError(Throwable err) throws Throwable {
-        Throwable cause = err.getCause(); // we need to get cause, because error is wrapped by runtime exception
+        Throwable cause = err.getCause() == null ? err : err.getCause(); // we need to get cause, because error is wrapped by runtime exception
         if (cause instanceof OutOfMemoryError) {
             // guess it won't work because there is no memory left!
             logger.error("Out of memory");
@@ -55,7 +55,7 @@ public class SessionHandler {
             DataQueryRunResult result = new DataQueryRunResult();
             result.errorMessage = message;
             result.errorStackTrace = stackTrace;
-//            result.log = queryLogger.dumpLogMessages();
+            result.log = queryLogger.dumpLogMessages().toCsv();
             session.getRemote().sendString(socketErrorMessage(new Gson().toJson(result)));
             session.close();
             queryManager.closeConnection();
