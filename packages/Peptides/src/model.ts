@@ -39,8 +39,8 @@ export type SummaryStats = {
   minPValue: number, maxPValue: number,
   minRatio: number, maxRatio: number,
 };
-export type PositionStats = { [monomer: string]: Stats } & { general: SummaryStats };
-export type MonomerPositionStats = { [position: string]: PositionStats } & { general: SummaryStats };
+export type PositionStats = {[monomer: string]: Stats} & {general: SummaryStats};
+export type MonomerPositionStats = {[position: string]: PositionStats} & {general: SummaryStats};
 export type ClusterStats = {[cluster: string]: Stats};
 export enum CLUSTER_TYPE {
   ORIGINAL = 'original',
@@ -82,7 +82,7 @@ export class PeptidesModel {
   isInitialized = false;
   _analysisView?: DG.TableView;
 
-  monomerMap: { [key: string]: { molfile: string, fullName: string } } = {};
+  monomerMap: {[key: string]: {molfile: string, fullName: string}} = {};
   monomerLib: IMonomerLib | null = null; // To get monomers from lib(s)
   monomerWorks: MonomerWorks | null = null; // To get processed monomers
 
@@ -93,8 +93,8 @@ export class PeptidesModel {
   initBitset: DG.BitSet;
   isInvariantMapTrigger: boolean = false;
   headerSelectedMonomers: type.MonomerSelectionStats = {};
-  webLogoBounds: { [positon: string]: { [monomer: string]: DG.Rect } } = {};
-  cachedWebLogoTooltip: { bar: string; tooltip: HTMLDivElement | null; } = {bar: '', tooltip: null};
+  webLogoBounds: {[positon: string]: {[monomer: string]: DG.Rect}} = {};
+  cachedWebLogoTooltip: {bar: string, tooltip: HTMLDivElement | null} = {bar: '', tooltip: null};
   _monomerPositionDf?: DG.DataFrame;
   _alphabet?: string;
   _mostPotentResiduesDf?: DG.DataFrame;

@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {GisViewer} from '../src/gis-viewer';
+import {gisDemo} from './gis-demo';
 import * as GisTypes from '../src/gis-semtypes';
 //OpenLayers functionality import
 import {OpenLayers, getKMZData} from '../src/gis-openlayer';
@@ -596,4 +597,10 @@ export function gisAreaWidget(gisArea: any): DG.Widget | null {
   return new DG.Widget(ui.divText('gis Area widget ' + strToAdd, widgetStyle));
 }
 
-
+//name: mapDemo
+//description: Map viewer shows geospatial data on a map as either markers, or a heat map.
+//meta.demoPath: Viewers | Geographical | Map
+//test: _mapDemo() //wait: 2000, skip: GROK-11670
+export async function _mapDemo() {
+  await gisDemo({renderType: 'both'});
+}

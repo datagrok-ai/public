@@ -373,10 +373,10 @@ export async function _pivotTableDemo() {
   await viewerDemo('Pivot table');
 }
 
-//name: mapDemo
-//description: Map viewer shows geospatial data on a map as either markers, or a heat map.
-//meta.demoPath: Viewers | Geographical | Map
-//test: _mapDemo() //wait: 2000, skip: GROK-11670
-export async function _mapDemo() {
-  await viewerDemo('Map', {renderType: 'both'});
+//name: filtersDemo
+//description: Filter is a set of controls for quick filtering, selection, and visual assessment of column values.
+//meta.demoPath: Viewers | General | Filters
+//test: _filtersDemo() //wait: 2000
+export async function _filtersDemo() {
+  await viewerDemo(DG.VIEWER.FILTERS);
 }

@@ -110,6 +110,9 @@ export const DEMO_APP_HIERARCHY = {
 							name: 'Density Plot',
 						},
 						{
+							name: 'Filters',
+						},
+						{
 							name: 'Heatmap',
 						},
 						{
