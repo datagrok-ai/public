@@ -61,6 +61,9 @@ export const DEMO_APP_HIERARCHY = {
 				{
 					name: 'Databases',
 				},
+				{
+					name: 'Table Linking',
+				},
 			]
 		},
 		{
