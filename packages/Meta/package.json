@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.3.71",
+  "version": "3.3.75",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1563,6 +1563,9 @@
         },
         "1.0.22": {
           "datagrok-api": "^1.15.0"
+        },
+        "1.0.23": {
+          "datagrok-api": "^1.15.0"
         }
       },
       "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
@@ -2476,6 +2479,9 @@
         },
         "1.1.0": {
           "datagrok-api": "^1.15.0"
+        },
+        "1.1.1": {
+          "datagrok-api": "^1.15.0"
         }
       },
       "description": "GIS (geographic information system) functionality, such as maps and geocoding.",
@@ -2609,6 +2615,12 @@
           "datagrok-api": "^1.15.0"
         },
         "1.2.10": {
+          "datagrok-api": "^1.15.0"
+        },
+        "1.2.11": {
+          "datagrok-api": "^1.15.0"
+        },
+        "1.2.12": {
           "datagrok-api": "^1.15.0"
         }
       },

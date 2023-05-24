@@ -599,7 +599,7 @@ export function gisAreaWidget(gisArea: any): DG.Widget | null {
 
 //name: mapDemo
 //description: Map viewer shows geospatial data on a map as either markers, or a heat map.
-//meta.demoPath: Viewers | Geographical | Map
+//meta.demoPath: Visualization | Geographical | Map
 //test: _mapDemo() //wait: 2000, skip: GROK-11670
 export async function _mapDemo() {
   await gisDemo({renderType: 'both'});
