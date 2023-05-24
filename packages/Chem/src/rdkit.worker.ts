@@ -42,4 +42,8 @@ ctx.addEventListener('message', async (e: any) => {
     const result = _rdKitServiceWorker!.convertMolNotation(args[0]);
     port.postMessage({op: op, retval: result});
   }
+  else if (op === WORKER_CALL.MOST_COMMON_STRUCTURE) {
+    const result = _rdKitServiceWorker!.mostCommonStructure(args[0], args[1], args[2]);
+    port.postMessage({op: op, retval: result});
+  }
 });

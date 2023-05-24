@@ -116,4 +116,9 @@ export class RdKitService {
         return [].concat(...data);
       });
   }
+
+  async getMCS(molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean): Promise<string> {
+    // MCS does not support parallelization, so we will use the first worker
+    return await this.parallelWorkers[0].mostCommonStructure(molecules, exactAtomSearch, exactBondSearch);
+  }
 }

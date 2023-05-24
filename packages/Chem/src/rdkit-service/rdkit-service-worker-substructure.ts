@@ -174,4 +174,41 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     console.log('Finished Worker ' + results.length);
     return results;
   }
+
+  mostCommonStructure(molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean): string {
+    const mols: RDMol[] = [];
+
+    for (let i = 0; i < molecules.length; i++) {
+      const molString = molecules[i];
+      const molSafe = getMolSafe(molString!, {}, this._rdKitModule);
+      if (molSafe.mol !== null && !molSafe.isQMol && molSafe.mol.is_valid())
+        mols.push(molSafe.mol);
+      else
+        molSafe.mol?.delete();
+    }
+    if (mols.length > 0) {
+      const arr = new Uint32Array(mols.length);
+
+      for (let i = 0; i < mols.length; i++) {
+      //@ts-ignore
+        arr[i] = mols[i].$$.ptr;
+      }
+
+      //as wasm works with 8 bit and 32 bit are used
+      const buff = this._rdKitModule._malloc(mols.length * 4);
+
+      // >> 2 is the reduction of element number of 32 bit vs 8 bit for offset
+      //@ts-ignore
+      this._rdKitModule.HEAPU32.set(arr, buff >> 2);
+
+      const smarts: string = this._rdKitModule.get_mcs(buff, mols.length, exactAtomSearch, exactBondSearch);
+
+      this._rdKitModule._free(buff);
+
+      for (let j = 0; j < mols.length; j++)
+        mols[j].delete();
+      return smarts;
+    }
+    return '';
+  } 
 }

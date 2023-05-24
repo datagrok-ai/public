@@ -28,4 +28,7 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
 
   convertMolNotation = async (targetNotation: string, bitset?: boolean[]) =>
     this.call(WORKER_CALL.CONVERT_MOL_NOTATION, [targetNotation, bitset]);
+  
+  mostCommonStructure = async (molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean): Promise<string> =>
+    this.call(WORKER_CALL.MOST_COMMON_STRUCTURE, [molecules, exactAtomSearch, exactBondSearch]);
 }
