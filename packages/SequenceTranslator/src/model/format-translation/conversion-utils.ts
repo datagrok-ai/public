@@ -15,7 +15,6 @@ export function convertSequence(sequence: string, indexOfFirstInvalidChar: numbe
     const converter = new FormatConverter(sequence, FORMAT.NUCLEOTIDES);
     return {
       type: FORMAT.NUCLEOTIDES,
-      [FORMAT.NUCLEOTIDES]: sequence,
       [FORMAT.BIOSPRING]: converter.convertTo(FORMAT.BIOSPRING),
       [FORMAT.GCRS]: converter.convertTo(FORMAT.GCRS),
     };
@@ -25,7 +24,6 @@ export function convertSequence(sequence: string, indexOfFirstInvalidChar: numbe
     return {
       type: FORMAT.BIOSPRING + ' ' + TECHNOLOGIES.ASO_GAPMERS,
       [FORMAT.NUCLEOTIDES]: converter.convertTo(FORMAT.NUCLEOTIDES),
-      [FORMAT.BIOSPRING]: sequence,
       [FORMAT.GCRS]: converter.convertTo(FORMAT.GCRS),
     };
   }
@@ -37,7 +35,6 @@ export function convertSequence(sequence: string, indexOfFirstInvalidChar: numbe
       [FORMAT.BIOSPRING]: converter.convertTo(FORMAT.BIOSPRING),
       [FORMAT.AXOLABS]: converter.convertTo(FORMAT.AXOLABS),
       [FORMAT.MERMADE_12]: converter.convertTo(FORMAT.MERMADE_12),
-      [FORMAT.GCRS]: sequence,
       [FORMAT.LCMS]: converter.convertTo(FORMAT.LCMS),
       [FORMAT.HELM]: converter.convertTo(FORMAT.HELM)
     };
@@ -48,7 +45,6 @@ export function convertSequence(sequence: string, indexOfFirstInvalidChar: numbe
       type: FORMAT.AXOLABS + ' ' + TECHNOLOGIES.SI_RNA,
       [FORMAT.NUCLEOTIDES]: converter.convertTo(FORMAT.NUCLEOTIDES),
       [FORMAT.BIOSPRING]: converter.convertTo(FORMAT.BIOSPRING),
-      [FORMAT.AXOLABS]: sequence,
       [FORMAT.GCRS]: converter.convertTo(FORMAT.GCRS),
     };
   }
@@ -57,13 +53,11 @@ export function convertSequence(sequence: string, indexOfFirstInvalidChar: numbe
       type: FORMAT.MERMADE_12,
       [FORMAT.NUCLEOTIDES]: NO_TRANSLATION_MSG,
       [FORMAT.GCRS]: NO_TRANSLATION_MSG,
-      [FORMAT.MERMADE_12]: sequence,
     };
   }
   if (sourceFormat === FORMAT.HELM) {
     const gcrsSequence = (new FormatConverter(sequence, sourceFormat)).convertTo(FORMAT.GCRS);
     const converter = new FormatConverter(gcrsSequence, FORMAT.GCRS);
-    const helmSequence = sequence;
     return {
       type: FORMAT.HELM,
       [FORMAT.GCRS]: gcrsSequence,
@@ -72,7 +66,6 @@ export function convertSequence(sequence: string, indexOfFirstInvalidChar: numbe
       [FORMAT.AXOLABS]: converter.convertTo(FORMAT.AXOLABS),
       [FORMAT.MERMADE_12]: converter.convertTo(FORMAT.MERMADE_12),
       [FORMAT.LCMS]: converter.convertTo(FORMAT.LCMS),
-      [FORMAT.HELM]: helmSequence,
     }
   }
   return {
