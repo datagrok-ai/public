@@ -129,7 +129,7 @@ export class MainTabUI {
         sequence: sequence,
       });
     }
-    const outputTable = ui.table(tableRows, (item) => [item.format, item.sequence], ['OUTPUT FORMAT', 'OUTPUT SEQUENCE']);
+    const outputTable = ui.table(tableRows, (item) => [item.format, item.sequence], ['FORMAT', 'SEQUENCE']);
 
     this.outputTableDiv.append(outputTable);
     this.outputTableDiv.classList.add('st-main-output-table');
