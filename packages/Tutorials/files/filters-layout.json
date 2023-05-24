@@ -1,0 +1,129 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 1390,
+      "height": 913
+    },
+    "children": [
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 424,
+          "height": 913,
+          "element": {
+            "id": "ac1a4b20-ed50-11ed-af60-75bfbee6c4fc",
+            "type": "Filters",
+            "look": {
+              "#type": "FiltersLook",
+              "filters": [
+                {
+                  "type": "Chem:substructureFilter",
+                  "column": "smiles",
+                  "active": true,
+                  "columnName": "smiles",
+                  "molBlock": "\n  MJ201900                      \n\n  6  6  0  0  0  0  0  0  0  0999 V2000\n   -0.6696    1.1598    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.3839    0.7473    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.3839   -0.0776    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.6696   -0.4902    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0448   -0.0776    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0448    0.7473    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  2  0  0  0  0\n  2  3  1  0  0  0  0\n  3  4  2  0  0  0  0\n  4  5  1  0  0  0  0\n  5  6  2  0  0  0  0\n  6  1  1  0  0  0  0\nM  END\n",
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Mol Wt.",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "R3 fmla",
+                  "active": true,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "text",
+                  "active": true,
+                  "boolInput": null
+                }
+              ]
+            },
+            "title": "Filters"
+          }
+        },
+        "children": []
+      },
+      {
+        "containerType": "fill",
+        "state": {
+          "width": 965,
+          "height": 913,
+          "documentManager": true
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 965,
+              "height": 913,
+              "element": {
+                "id": "ac1a7230-ed50-11ed-c864-57db121d9c0b",
+                "type": "Grid",
+                "look": {
+                  "#type": "GridLook",
+                  "showAddNewRowIcon": true,
+                  "addNewRowOnLastRowEdit": true,
+                  "rowHeight": 100,
+                  "topLevelDefaultMenu": true,
+                  "allowColumnMenu": true,
+                  "columns": [
+                    {
+                      "width": 36,
+                      "backgroundColor": 4294440951,
+                      "customName": "",
+                      "cellType": "row header"
+                    },
+                    {
+                      "width": 200,
+                      "columnName": "smiles",
+                      "cellType": "Molecule"
+                    },
+                    {
+                      "width": 96,
+                      "columnName": "Mol Wt.",
+                      "cellType": "number",
+                      "format": "0.0000000"
+                    },
+                    {
+                      "width": 70,
+                      "columnName": "R3 fmla"
+                    },
+                    {
+                      "width": 400,
+                      "columnName": "text"
+                    }
+                  ]
+                },
+                "title": "Grid",
+                "default": true
+              }
+            },
+            "children": []
+          }
+        ]
+      }
+    ],
+    "floating": [],
+    "tableId": "166f1620-ed50-11ed-ae00-1103f9f0bb71",
+    "tableName": "sar_small (2)"
+  },
+  "name": "SarSmall2",
+  "friendlyName": "sar_small (2)",
+  "author": {
+    "id": "fb93def0-7820-11ed-a90e-d5cadbc9618b"
+  },
+  "createdOn": "2023-05-24T16:47:29.999Z"
+}
