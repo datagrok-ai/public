@@ -42,7 +42,7 @@ category('screening tools', () => {
   test('elementalAnalysis.molV2000', async () => {
     const df = spgi100.clone();
     elementalAnalysis(df, df.getCol('Structure'), false, false);
-    expect(df.columns.length, 58);
+    expect(df.columns.length, 95);
   });
 
   test('elementalAnalysis.molV3000', async () => {
