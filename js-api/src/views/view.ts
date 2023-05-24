@@ -644,6 +644,7 @@ export class TableView extends View {
   /**
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/word-cloud | word cloud}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/word-cloud}
+   *  @deprecated
    *  @param options
    *  @returns {Viewer} */
   wordCloud(options: object | null = null): Viewer {
