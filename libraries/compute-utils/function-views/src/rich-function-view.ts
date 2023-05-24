@@ -830,7 +830,7 @@ export class RichFunctionView extends FunctionView {
 }
 
 const getSheetName = (name: string, direction: DIRECTION) => {
-  const idealName = `${direction} - ${name}`;
+  const idealName = `${name}`;
   return (idealName.length > 31) ? name.substring(0, 32) : idealName;
 };
 
