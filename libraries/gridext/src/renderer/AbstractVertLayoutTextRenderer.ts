@@ -21,9 +21,14 @@ export class AbstractVertLayoutTextRenderer extends GridCellRendererEx {
   render(g: CanvasRenderingContext2D, nX: number, nY: number, nW: number, nH: number, cellGrid: DG.GridCell, style: DG.GridCellStyle): void {
     super.render(g, nX, nY, nW, nH, cellGrid, style);
 
-    const cell : DG.Cell = cellGrid.cell;
-    const crBack = DG.Color.toHtml(style.backColor);
-    if (crBack !== undefined) {
+    let cell : DG.Cell | null = null;
+    try {
+      cell = cellGrid.cell;
+    } catch (e) {
+      cell = null;
+    }
+    const crBack = cell === null ? null : DG.Color.getCellColorHtml(cell);
+    if (crBack !== null && crBack !== undefined) {
       g.fillStyle = crBack;
       g.fillRect(nX,nY, nW, nH);
     }
@@ -43,10 +48,8 @@ export class AbstractVertLayoutTextRenderer extends GridCellRendererEx {
     g.textAlign = "left";
     g.textBaseline = "top";
 
-    g.fillRect(nX, nY, nW, nH);
-
+    //g.fillRect(nX, nY, nW, nH);
     const nYInset = 2;
-
     let nHAvail = nH;
     let nWAvail = nW;
 

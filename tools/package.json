@@ -5,8 +5,8 @@
   "homepage": "https://github.com/datagrok-ai/public/tree/master/tools#readme",
   "dependencies": {
     "@babel/parser": "^7.21.2",
-    "@babel/traverse": "^7.21.2",
     "@babel/runtime": "^7.16.0",
+    "@babel/traverse": "^7.21.2",
     "archiver": "^4.0.2",
     "archiver-promise": "^1.0.0",
     "fs": "latest",
@@ -18,7 +18,7 @@
     "node-recursive-directory": "^1.2.0",
     "os": "^0.1.1",
     "path": "^0.12.7",
-    "puppeteer": "^13.7.0"
+    "puppeteer": "^20.3.0"
   },
   "scripts": {
     "link": "npm link",

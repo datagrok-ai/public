@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getRdKitModule, getRdKitWebRoot} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
-import { getMolSafe } from '../utils/mol-creation_rdkit';
+import {getMolSafe} from '../utils/mol-creation_rdkit';
 
 const CHEMBL = 'Chembl';
 const PUBCHEM = 'PubChem';
@@ -135,7 +135,8 @@ export async function getIdMap(inchiKey: string): Promise<{[k:string]: any} | nu
 }
 
 async function getIUPACName(smiles: string): Promise<string> {
-  const preparedSmiles = smiles.replaceAll(TRIPLE_BOND, TRIPLE_BOND_REPLACE_SYMBOL); // need to escape # sign (triple bond) in URL
+  // need to escape # sign (triple bond) in URL
+  const preparedSmiles = smiles.replaceAll(TRIPLE_BOND, TRIPLE_BOND_REPLACE_SYMBOL);
   const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${preparedSmiles}/property/IUPACName/JSON`;
   const response = await fetch(url);
   const responseJson = await response.json();
@@ -165,9 +166,10 @@ export async function identifiersWidget(molfile: string): Promise<DG.Widget> {
 }
 
 
-function createIdentifiersMap(molfile: string, inchi: string, inchiKey: string, idMap: {[k: string]: any} | null): {[k: string]: any} {
+function createIdentifiersMap(molfile: string, inchi: string, inchiKey: string,
+  idMap: {[k: string]: any} | null): {[k: string]: any} {
   const map: {[k: string]: any} = {};
-  const smiles =  _convertMolNotation(molfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles, getRdKitModule());
+  const smiles = _convertMolNotation(molfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles, getRdKitModule());
   map['Name'] = ui.wait(async () => ui.divText(await getIUPACName(smiles)));
   map['Smiles'] = smiles;
   map['Inchi'] = inchi;
@@ -179,13 +181,12 @@ function createIdentifiersMap(molfile: string, inchi: string, inchiKey: string, 
       map[source] = ui.link(identifier.id, () => window.open(identifier.link));
   }
   function extractMainIdentifier(source: string, map: {[k: string]: any}, idMap: {[k: string]: any} | null) {
-      const identifier = idMap ? idMap[source.toLowerCase()] : null;
-      if (identifier) {
-        map[source] = ui.link(identifier.id, () => window.open(identifier.link));
-        delete idMap![source.toLowerCase()];
-      } else {
-        map[source] = '-';
-      }
-    }
+    const identifier = idMap ? idMap[source.toLowerCase()] : null;
+    if (identifier) {
+      map[source] = ui.link(identifier.id, () => window.open(identifier.link));
+      delete idMap![source.toLowerCase()];
+    } else
+      map[source] = '-';
+  }
   return map;
 }

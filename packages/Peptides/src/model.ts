@@ -19,8 +19,8 @@ import * as uuid from 'uuid';
 
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {calculateSelected, extractMonomerInfo, scaleActivity, getStatsSummary} from './utils/misc';
-import {MonomerPosition, MostPotentResiduesViewer} from './viewers/sar-viewer';
+import {calculateSelected, extractColInfo, scaleActivity, getStatsSummary} from './utils/misc';
+import {MONOMER_POSITION_PROPERTIES, MonomerPosition, MostPotentResiduesViewer} from './viewers/sar-viewer';
 import * as CR from './utils/cell-renderer';
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
 import {getActivityDistribution, getDistributionLegend, getDistributionWidget, getStatsTableMap,
@@ -78,7 +78,7 @@ export class PeptidesModel {
   _monomerPositionSelection!: type.PositionToAARList;
   _monomerPositionFilter!: type.PositionToAARList;
   _clusterSelection!: string[];
-  _mutationCliffs?: type.MutationCliffs;
+  _mutationCliffs: type.MutationCliffs | null = null;
   isInitialized = false;
   _analysisView?: DG.TableView;
 
@@ -170,18 +170,15 @@ export class PeptidesModel {
     return col.getTag(bioTAGS.alphabet);
   }
 
-  get mutationCliffs(): type.MutationCliffs {
-    if (this._mutationCliffs)
-      return this._mutationCliffs;
+  get mutationCliffs(): type.MutationCliffs | null {
+    // if (this._mutationCliffs)
+    //   return this._mutationCliffs;
 
-    const scaledActivityCol: DG.Column<number> = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-    //TODO: set categories ordering the same to share compare indexes instead of strings
-    const monomerColumns: type.RawColumn[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractMonomerInfo);
-    this._mutationCliffs = findMutations(scaledActivityCol.getRawData(), monomerColumns, this.settings);
-    return this._mutationCliffs;
+    // this.updateMutationCliffs(false);
+    return this._mutationCliffs!;
   }
 
-  set mutationCliffs(si: type.MutationCliffs) {
+  set mutationCliffs(si: type.MutationCliffs | null) {
     this._mutationCliffs = si;
   }
 
@@ -354,10 +351,7 @@ export class PeptidesModel {
         this.createScaledCol();
         break;
       case 'mutationCliffs':
-        const scaledActivityCol: DG.Column<number> = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-        //TODO: set categories ordering the same to share compare indexes instead of strings
-        const monomerCols: type.RawColumn[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractMonomerInfo);
-        this.mutationCliffs = findMutations(scaledActivityCol.getRawData(), monomerCols, this.settings);
+        this.updateMutationCliffs();
         break;
       case 'stats':
         this.monomerPositionStats = this.calculateMonomerPositionStatistics();
@@ -388,6 +382,22 @@ export class PeptidesModel {
 
     //TODO: handle settings change
     this._settingsSubject.next(this.settings);
+  }
+
+  updateMutationCliffs(notify: boolean = true): void {
+    const scaledActivityCol: DG.Column<number> = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    //TODO: set categories ordering the same to share compare indexes instead of strings
+    const monomerCols: type.RawColumn[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractColInfo);
+    const targetCol = typeof this.settings.targetColumnName !== 'undefined' ?
+      extractColInfo(this.df.getCol(this.settings.targetColumnName)) : null;
+    const mpViewer = this.findViewer(VIEWER_TYPE.MONOMER_POSITION) as MonomerPosition | null;
+    const currentTarget = mpViewer?.getProperty(MONOMER_POSITION_PROPERTIES.TARGET)?.get(mpViewer);
+    const targetOptions = {targetCol: targetCol, currentTarget: currentTarget};
+    const mutationCliffs = findMutations(scaledActivityCol.getRawData(), monomerCols, this.settings, targetOptions);
+    if (notify)
+      this.mutationCliffs = mutationCliffs;
+    else
+      this._mutationCliffs = mutationCliffs;
   }
 
   createMonomerPositionDf(): DG.DataFrame {
@@ -1097,6 +1107,8 @@ export class PeptidesModel {
     this.updateGrid();
     this.fireBitsetChanged(true);
     this.analysisView.grid.invalidate();
+    if (typeof this.settings.targetColumnName === 'undefined')
+      this.updateMutationCliffs();
   }
 
   findViewer(viewerType: VIEWER_TYPE): DG.Viewer | null {
@@ -1121,6 +1133,12 @@ export class PeptidesModel {
     const [dockType, refNode, ratio] = mostPotentResidues === null ? [DG.DOCK_TYPE.DOWN, null, undefined] :
       [DG.DOCK_TYPE.LEFT, this.findViewerNode(VIEWER_TYPE.MOST_POTENT_RESIDUES), 0.7];
     dm.dock(monomerPosition, dockType, refNode, VIEWER_TYPE.MONOMER_POSITION, ratio);
+    if (typeof this.settings.targetColumnName !== 'undefined') {
+      const target = monomerPosition.getProperty(MONOMER_POSITION_PROPERTIES.TARGET)!;
+      const choices = this.df.getCol(this.settings.targetColumnName!).categories;
+      target.choices = choices;
+      target.set(monomerPosition, choices[0]);
+    }
   }
 
   async addMostPotentResidues(): Promise<void> {

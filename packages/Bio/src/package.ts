@@ -10,7 +10,7 @@ import {
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {SequenceAlignment} from './seq_align';
 import {getEmbeddingColsNames, sequenceSpaceByFingerprints, getSequenceSpace} from './analysis/sequence-space';
-import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {ISequenceSpaceParams, getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {
   createLinesGrid,
   createPropPanelElement,
@@ -43,7 +43,7 @@ import {
   LIB_STORAGE_NAME, LibSettings, getUserLibSettings, setUserLibSetting, getLibFileNameList
 } from './utils/monomer-lib';
 import {getMacromoleculeColumn} from './utils/ui-utils';
-import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {DimReductionMethods, ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {SequenceSpaceFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/seq-space-editor';
 import {ActivityCliffsFunctionEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-editor';
 import {demoBio01UI} from './demo/bio01-similarity-diversity';
@@ -53,6 +53,8 @@ import {demoBio03UI} from './demo/bio03-atomic-level';
 import {demoBio05UI} from './demo/bio05-helm-msa-sequence-space';
 import {checkInputColumnUI} from './utils/check-input-column';
 import {multipleSequenceAlignmentUI} from './utils/multiple-sequence-alignment-ui';
+import { MmDistanceFunctionsNames } from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import { BitArrayMetrics, BitArrayMetricsNames, StringMetricsNames } from '@datagrok-libraries/ml/src/typed-metrics';
 import { NotationConverter } from '@datagrok-libraries/bio/src/utils/notation-converter';
 
 export const _package = new DG.Package();
@@ -280,7 +282,7 @@ export function SeqActivityCliffsEditor(call: DG.FuncCall) {
 //output: viewer result
 //editor: Bio:SeqActivityCliffsEditor
 export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column, activities: DG.Column,
-  similarity: number, methodName: string, options?: IUMAPOptions | ITSNEOptions
+  similarity: number, methodName: DimReductionMethods, options?: IUMAPOptions | ITSNEOptions
 ): Promise<DG.Viewer | undefined> {
   if (!checkInputColumnUI(macroMolecule, 'Activity Cliffs'))
     return;
@@ -292,7 +294,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     'alphabet': macroMolecule.getTag(bioTAGS.alphabet),
   };
   const nc = new NotationConverter(macroMolecule);
-  let columnDistanceMetric = 'Tanimoto';
+  let columnDistanceMetric: BitArrayMetricsNames | MmDistanceFunctionsNames = BitArrayMetricsNames.Tanimoto;
   let seqCol = macroMolecule;
   if (nc.isFasta() || (nc.isSeparator() && nc.alphabet && nc.alphabet !== ALPHABET.UN)){
     if (nc.isFasta()){
@@ -347,8 +349,8 @@ export function SequenceSpaceEditor(call: DG.FuncCall) {
 //input: bool plotEmbeddings = true
 //input: object options {optional: true}
 //editor: Bio:SequenceSpaceEditor
-export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: string,
-  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean, options?: IUMAPOptions | ITSNEOptions
+export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: DimReductionMethods,
+  similarityMetric: BitArrayMetrics | MmDistanceFunctionsNames = BitArrayMetricsNames.Tanimoto, plotEmbeddings: boolean, options?: IUMAPOptions | ITSNEOptions
 ): Promise<DG.Viewer | undefined> {
   // Delay is required for initial function dialog to close before starting invalidating of molfiles.
   // Otherwise, dialog is freezing
@@ -360,7 +362,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
   const withoutEmptyValues = DG.DataFrame.fromColumns([macroMolecule]).clone();
   const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, macroMolecule);
 
-  const chemSpaceParams = {
+  const chemSpaceParams: ISequenceSpaceParams = {
     seqCol: withoutEmptyValues.col(macroMolecule.name)!,
     methodName: methodName,
     similarityMetric: similarityMetric,

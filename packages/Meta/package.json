@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.3.76",
+  "version": "3.3.82",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -550,6 +550,9 @@
         },
         "1.6.13": {
           "datagrok-api": "^1.14.0"
+        },
+        "1.6.15": {
+          "datagrok-api": "^1.14.0"
         }
       },
       "description": "Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses.",
@@ -975,6 +978,9 @@
         },
         "1.8.3": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.9.0": {
+          "datagrok-api": "^1.6.0"
         }
       },
       "description": "Advanced tools for analyzing collections of peptides.",
@@ -1395,6 +1401,9 @@
         },
         "1.4.2": {
           "datagrok-api": "^1.14.0"
+        },
+        "1.6.0": {
+          "datagrok-api": "^1.14.0"
         }
       },
       "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md).",
@@ -1462,6 +1471,9 @@
           "datagrok-api": "^1.14.1"
         },
         "1.0.26": {
+          "datagrok-api": "^1.14.1"
+        },
+        "1.0.27": {
           "datagrok-api": "^1.14.1"
         }
       },
@@ -2058,6 +2070,9 @@
           "datagrok-api": "^1.13.3"
         },
         "2.4.30": {
+          "datagrok-api": "^1.13.3"
+        },
+        "2.4.31": {
           "datagrok-api": "^1.13.3"
         }
       },
@@ -2791,6 +2806,19 @@
         "directory": "packages/KetcherSketcher"
       },
       "category": "Cheminformatics"
+    },
+    "lib-tests": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "latest"
+        }
+      },
+      "description": "Automated tests for libraries",
+      "repository": {
+        "type": "git",
+        "url": "git@github.com:datagrok-ai/public.git",
+        "directory": "packages/LibTests"
+      }
     }
   }
 }

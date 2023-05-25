@@ -1,37 +1,45 @@
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import { BitArrayMetricsNames } from './typed-metrics/consts';
 
 export const similarityMetric: { [name: string]: (x: BitArray, y: BitArray) => number } = {
-  'Tanimoto': tanimotoSimilarity,
-  'Dice': diceSimilarity,
-  'Asymmetric': asymmetricSimilarity,
-  'Braun-Blanquet': braunBlanquetSimilarity,
-  'Cosine': cosineSimilarity,
-  'Kulczynski': kulczynskiSimilarity,
-  'Mc-Connaughey': mcConnaugheySimilarity,
-  'Rogot-Goldberg': rogotGoldbergSimilarity,
-  'Russel': russelSimilarity,
-  'Sokal': sokalSimilarity,
-  'Hamming': hammingSimilarity,
-  'Euclidean': euclideanSimilarity,
+  [BitArrayMetricsNames.Tanimoto]: tanimotoSimilarity,
+  [BitArrayMetricsNames.Dice]: diceSimilarity,
+  [BitArrayMetricsNames.Asymmetric]: asymmetricSimilarity,
+  [BitArrayMetricsNames.BraunBlanquet]: braunBlanquetSimilarity,
+  [BitArrayMetricsNames.Cosine]: cosineSimilarity,
+  [BitArrayMetricsNames.Kulczynski]: kulczynskiSimilarity,
+  [BitArrayMetricsNames.McConnaughey]: mcConnaugheySimilarity,
+  [BitArrayMetricsNames.RogotGoldberg]: rogotGoldbergSimilarity,
+  [BitArrayMetricsNames.Russel]: russelSimilarity,
+  [BitArrayMetricsNames.Sokal]: sokalSimilarity,
+  [BitArrayMetricsNames.Hamming]: hammingSimilarity,
+  [BitArrayMetricsNames.Euclidean]: euclideanSimilarity,
 };
 
 export const distanceMetrics: { [name: string]: (x: BitArray, y: BitArray) => number } = {
-  'Tanimoto': tanimotoDistance,
-  'Dice': diceDistance,
-  'Asymmetric': asymmetricDistance,
-  'Braun-Blanquet': braunBlanquetDistance,
-  'Cosine': cosineDistance,
-  'Kulczynski': kulczynskiDistance,
-  'Mc-Connaughey': mcConnaugheyDistance,
-  'Rogot-Goldberg': rogotGoldbergDistance,
-  'Russel': russelDistance,
-  'Sokal': sokalDistance,
-  'Hamming': hammingDistance,
-  'Euclidean': euclideanDistance,
+  [BitArrayMetricsNames.Tanimoto]: tanimotoDistance,
+  [BitArrayMetricsNames.Dice]: diceDistance,
+  [BitArrayMetricsNames.Asymmetric]: asymmetricDistance,
+  [BitArrayMetricsNames.BraunBlanquet]: braunBlanquetDistance,
+  [BitArrayMetricsNames.Cosine]: cosineDistance,
+  [BitArrayMetricsNames.Kulczynski]: kulczynskiDistance,
+  [BitArrayMetricsNames.McConnaughey]: mcConnaugheyDistance,
+  [BitArrayMetricsNames.RogotGoldberg]: rogotGoldbergDistance,
+  [BitArrayMetricsNames.Russel]: russelDistance,
+  [BitArrayMetricsNames.Sokal]: sokalDistance,
+  [BitArrayMetricsNames.Hamming]: hammingDistance,
+  [BitArrayMetricsNames.Euclidean]: euclideanDistance,
 };
 
-export const CHEM_SIMILARITY_METRICS = ['Tanimoto', 'Dice', 'Cosine', 'Hamming', 'Euclidean'];
-export const SEQ_SPACE_SIMILARITY_METRICS = ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal'];
+export const CHEM_SIMILARITY_METRICS = [
+  BitArrayMetricsNames.Tanimoto,
+  BitArrayMetricsNames.Dice,
+  BitArrayMetricsNames.Cosine];
+export const SEQ_SPACE_SIMILARITY_METRICS = [
+  BitArrayMetricsNames.Tanimoto,
+  BitArrayMetricsNames.Asymmetric,
+  BitArrayMetricsNames.Cosine,
+  BitArrayMetricsNames.Sokal ];
 
 export function tanimotoSimilarity(x: BitArray, y: BitArray): number {
   const total = x.trueCount() + y.trueCount();
