@@ -129,6 +129,7 @@ class UMAPReducer extends Reducer {
   protected distanceFn: Function;
   protected vectors: number[][];
   protected distanceMatrix?: Matrix;
+  protected usingDistanceMatrix: boolean;
   /**
    * Creates an instance of UMAPReducer.
    * @param {Options} options Options to pass to the constructor.
@@ -141,7 +142,8 @@ class UMAPReducer extends Reducer {
 
     this.distanceFn = options.distanceFn!;
     this.vectors = new Array(this.data.length).fill(0).map((_, i) => [i]);
-    if (!options.preCalculateDistanceMatrix && this.data.length > MAX_DISTANCE_MATRIX_ROWS) {
+    this.usingDistanceMatrix = !(!options.preCalculateDistanceMatrix && this.data.length > MAX_DISTANCE_MATRIX_ROWS);
+    if (!this.usingDistanceMatrix) {
       options.distanceFn = this._encodedDistance.bind(this);
     } else {
       this.distanceMatrix = Array(this.data.length).fill(0).map(() => new Float32Array(this.data.length).fill(0));
@@ -187,14 +189,15 @@ class UMAPReducer extends Reducer {
    * @return {any} Cartesian coordinate of this embedding.
    */
   public transform(): { [key: string]: Matrix } {
-    this.distanceMatrix = calcNormalizedDistanceMatrix(this.data, this.distanceFn as DistanceMetric);
+    if(this.usingDistanceMatrix)
+      this.distanceMatrix = calcNormalizedDistanceMatrix(this.data, this.distanceFn as DistanceMetric);
     const embedding = this.reducer.fit(this.vectors);
 
     function arrayCast2Coordinates(data: number[][]): Coordinates {
       return new Array(data.length).fill(0).map((_, i) => (Vector.from(data[i])));
     }
 
-    return {embedding: arrayCast2Coordinates(embedding), distance: this.distanceMatrix};
+    return {embedding: arrayCast2Coordinates(embedding), ...(this.distanceMatrix ? {distance: this.distanceMatrix} : {})};
   }
 }
 
