@@ -112,13 +112,12 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   for (const col of coordinates)
     df.columns.add(col);
 
-  // UMAP does not return the distance, therefore, we will have to calculate it
-  // in case if the macromolecule column is selected
   let recalculatedDistances = distance;
-  if (Object.values(MmDistanceFunctionsNames).map((a) => a.toString()).includes(similarityMetric)) {
+  if (Object.values(MmDistanceFunctionsNames).map((a) => a.toString()).includes(similarityMetric) && !distance) {
     recalculatedDistances =
      await createMMDistanceWorker(seqCol, similarityMetric as MmDistanceFunctionsNames);
   }
+
   const simArr = await createSimilaritiesMatrix(dimensionalityReduceCol, recalculatedDistances,
     !!recalculatedDistances, simMatrixFunc);
 
