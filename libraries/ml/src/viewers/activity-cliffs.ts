@@ -112,8 +112,14 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column, enc
   for (const col of coordinates)
     df.columns.add(col);
 
-  const simArr = await createSimilaritiesMatrix(dimensionalityReduceCol, distance,
-    !!distance, simMatrixFunc);
+  let recalculatedDistances = distance;
+  if (Object.values(MmDistanceFunctionsNames).map((a) => a.toString()).includes(similarityMetric) && !distance) {
+    recalculatedDistances =
+     await createMMDistanceWorker(seqCol, similarityMetric as MmDistanceFunctionsNames);
+  }
+
+  const simArr = await createSimilaritiesMatrix(dimensionalityReduceCol, recalculatedDistances,
+    !!recalculatedDistances, simMatrixFunc);
 
   const cliffsMetrics: IActivityCliffsMetrics = getActivityCliffsMetrics(simArr, similarityLimit, activities);
 

@@ -45,6 +45,11 @@ export interface IDimReductionParam {
   placeholder?: string;
 }
 
+/** Umap uses precalculated distance matrix to save time. though for too much data, memory becomes constraint.
+ * if we have 100 000 rows, distance matrix will take ~10gb of memory and probably overflow.
+ */
+export const MAX_DISTANCE_MATRIX_ROWS = 10000;
+
 export class UMAPOptions {
   learningRate: IDimReductionParam =  {uiName: 'Learinig rate', value: 1, tooltip: 'The initial learning rate for the embedding optimization'};
   nComponents: IDimReductionParam = {uiName: 'Components', value: 2, tooltip: 'The number of components (dimensions) to project the data to'};
@@ -111,7 +116,7 @@ class TSNEReducer extends Reducer {
   }
 }
 
-export type UmapOptions = Options & UMAPParameters;
+export type UmapOptions = Options & UMAPParameters & {preCalculateDistanceMatrix?: boolean};
 
 /**
  * Implements UMAP dimensionality reduction.
@@ -123,7 +128,7 @@ class UMAPReducer extends Reducer {
   protected reducer: umj.UMAP;
   protected distanceFn: Function;
   protected vectors: number[][];
-  protected distanceMatrix: Matrix;
+  protected distanceMatrix?: Matrix;
   /**
    * Creates an instance of UMAPReducer.
    * @param {Options} options Options to pass to the constructor.
@@ -136,8 +141,12 @@ class UMAPReducer extends Reducer {
 
     this.distanceFn = options.distanceFn!;
     this.vectors = new Array(this.data.length).fill(0).map((_, i) => [i]);
-    this.distanceMatrix = Array(this.data.length).fill(0).map(() => new Float32Array(this.data.length).fill(0));
-    options.distanceFn = this._encodedDistance.bind(this);
+    if (!options.preCalculateDistanceMatrix && this.data.length > MAX_DISTANCE_MATRIX_ROWS) {
+      options.distanceFn = this._encodedDistance.bind(this);
+    } else {
+      this.distanceMatrix = Array(this.data.length).fill(0).map(() => new Float32Array(this.data.length).fill(0));
+      options.distanceFn = this._encodedDistanceMatrix.bind(this);
+    }
     if (this.data.length < 15)
       options.nNeighbors = this.data.length - 1;
     this.reducer = new umj.UMAP(options);
@@ -153,8 +162,12 @@ class UMAPReducer extends Reducer {
    * @return {number} Distance metric.
    * @memberof UMAPReducer
    */
+  protected _encodedDistanceMatrix(a: number[], b: number[]): number {
+    return this.distanceMatrix![a[0]][b[0]];
+  }
+
   protected _encodedDistance(a: number[], b: number[]): number {
-    return this.distanceMatrix[a[0]][b[0]];
+    return this.distanceFn(this.data[a[0]], this.data[b[0]]);
   }
 
   /**
