@@ -12,7 +12,7 @@ export async function getClusterMatrixWorker(
   distMatArray: Float32Array, n: number, methodCode: number
 ): Promise<ClusterMatrix> {
   return new Promise(function(resolve, reject) {
-    const worker = new Worker(new URL('./clustering-worker.ts', import.meta.url));
+    const worker = new Worker(new URL('./clustering-worker', import.meta.url));
     worker.postMessage({distMatArray, n, methodCode});
     worker.onmessage = ({data: {error, clusterMatrix}}): void => {
       worker.terminate();
